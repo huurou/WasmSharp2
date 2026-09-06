@@ -91,8 +91,8 @@
   - _Boundary: InstructionGenerator_
   - _Requirements: 4.1, 5.5, 6.2, 6.5_
 
-- [ ] 5. 同期実行の共通状態を用意する
-- [ ] 5.1 実行結果に正常値と失敗原因を保持する
+- [x] 5. 同期実行の共通状態を用意する
+- [x] 5.1 実行結果に正常値と失敗原因を保持する
   - 正常・trap・exhaustionを区別し、失敗に原因、適用上限、関数index、byte offsetを保持する。
   - 構築操作で値の組み合わせを限定し、命令単位の正常結果と関数全体の戻り値のコレクションを同じ契約で扱う。
   - default・空の正常結果・失敗では戻り値を非defaultの空配列として取得でき、値を含む正常結果と失敗情報も保持されることをテストで確認する。
@@ -100,7 +100,7 @@
   - _Depends: 2.1, 2.3, 3.2_
   - _Requirements: 2.7, 5.5, 6.6, 6.7, 6.9_
 
-- [ ] 5.2 実行ポリシーと同期コンテキストの深さ・寿命を揃える
+- [x] 5.2 実行ポリシーと同期コンテキストの深さ・寿命を揃える
   - 正の最大呼び出し深さと既定値1024を持つ変更不能な実行ポリシーを用意する。
   - 同じスレッドの同期呼び出しで現在のコンテキストを共有し、最外側が選んだ上限を固定する。
   - 呼び出しへの入退出で深さを増減し、上限に達した入場は深さを変えず拒否する。内側の退出で外側のコンテキストを解除しない。
@@ -110,7 +110,7 @@
   - _Depends: 3.2_
   - _Requirements: 5.8, 5.9, 5.10, 5.11, 6.8, 6.9_
 
-- [ ] 5.3 静的定義と関数実体の所有関係を統合する
+- [x] 5.3 静的定義と関数実体の所有関係を統合する
   - 型、関数の型index・圧縮locals・入力命令の配列、export、入力長と元位置を、入力から独立した不変の静的定義として保持する。
   - モジュールが静的定義、インスタンスがモジュールと関数実体、関数が所有インスタンスとindexを保持し、そのindexから関数型を取得する内部接点を揃える。
   - 公開の変更操作や構築の迂回口を増やさず、内部構築による定義の保持と関数型の参照を確認する。これを後続のフレーム保持テストでも利用する。
@@ -119,7 +119,7 @@
   - _Depends: 2.3, 4.1, 5.2_
   - _Requirements: 1.2, 1.5, 2.6, 5.3_
 
-- [ ] 5.4 フレームと値スタックの保持・拡張・復元を用意する
+- [x] 5.4 フレームと値スタックの保持・拡張・復元を用意する
   - 関数、pc、引数開始位置、operand開始位置を持つ明示フレームと、使用数を管理する値領域を用意する。
   - 空の領域から必要時に拡張し、既存のフレームと値を保つ。必要数と倍増の計算でoverflowと保持上限を区別する。
   - 入場前の使用位置と深さへ戻せるようにし、除いた領域の参照を解除する。容量変更を越えて配列への参照を保持しない。
@@ -308,3 +308,4 @@
 ## Implementation Notes
 
 - 4.2: 生成する`Interpreter.RunLoop(WasmExecutionContext context, int entryFrameCount)`は`FrameCount`と、pcを進めて`Instruction`を値で返す`ReadNextInstruction()`を使用する。handlerは`static ExecutionResult Handler(WasmExecutionContext context, in Instruction instruction)`で、非Successをそのまま返す。6.1では`GeneratorTestSource.EXECUTION_CONTRACTS`と実型を照合し、入口の準備・正常結果の取り出し・finallyでの復元は6.2の`Run`で接続する。
+- 5.4: `EnsureCapacity(operandBase, maxOperandStack, location)`で関数入口の領域を確保してから`PushFrame`・`PushValue`を使う。`GetFrame`は値を返し、`Restore(frameCount, valueCount, callDepth)`は除いた参照を解除して入場前の使用数・深さへ戻す。生成命令を読む`ReadNextInstruction()`と関数終了処理は6.1で接続する。

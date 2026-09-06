@@ -1,10 +1,53 @@
-﻿namespace WasmSharp;
+﻿using System.Collections.Immutable;
+using WasmSharp.Modules;
+
+namespace WasmSharp;
 
 /// <summary>
 /// 静的なmodule定義を表現するクラス
 /// </summary>
 public sealed class WasmModule
 {
+    /// <summary>
+    /// 型index順の関数型を保持する不変配列
+    /// </summary>
+    internal ImmutableArray<WasmFunctionType> Types { get; }
+
+    /// <summary>
+    /// 関数index順のデコード済み関数定義を保持する不変配列
+    /// </summary>
+    internal ImmutableArray<DecodedFunction> Functions { get; }
+
+    /// <summary>
+    /// 関数exportの宣言を保持する不変配列
+    /// </summary>
+    internal ImmutableArray<FunctionExport> Exports { get; }
+
+    /// <summary>
+    /// デコード元の入力バイナリのバイト数
+    /// </summary>
+    internal long InputLength { get; }
+
+    /// <summary>
+    /// デコードした型、関数とexportをコピーしてmodule定義を構築する
+    /// </summary>
+    /// <param name="types">型index順の関数型</param>
+    /// <param name="functions">関数index順の関数定義</param>
+    /// <param name="exports">関数exportの宣言</param>
+    /// <param name="inputLength">入力バイナリのバイト数</param>
+    internal WasmModule(
+        ReadOnlySpan<WasmFunctionType> types,
+        ReadOnlySpan<DecodedFunction> functions,
+        ReadOnlySpan<FunctionExport> exports,
+        long inputLength
+    )
+    {
+        Types = ImmutableArray.Create(types);
+        Functions = ImmutableArray.Create(functions);
+        Exports = ImmutableArray.Create(exports);
+        InputLength = inputLength;
+    }
+
     /// <summary>
     /// 入力バイト列をmoduleにデコードする
     /// </summary>

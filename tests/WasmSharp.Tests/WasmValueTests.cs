@@ -1,3 +1,5 @@
+using WasmSharp.Tests.Fixtures;
+
 namespace WasmSharp.Tests;
 
 public class WasmValue_FromI32Tests
@@ -439,7 +441,7 @@ public class WasmValue_FromFuncRefTests
     public async Task 関数参照を構築する_種類とnullまたは参照先を保持する(bool isNull)
     {
         // Arrange
-        var expected = isNull ? null : new WasmFunction();
+        var expected = isNull ? null : FunctionFixture.Create();
 
         // Act
         var value = WasmValue.FromFuncRef(expected);
@@ -467,7 +469,7 @@ public class WasmValue_AsFuncRefTests
             WasmValue.FromF64(0),
             WasmValue.FromV128(0, 0),
             WasmValue.FromExternRef(null),
-            WasmValue.FromExternRef(new WasmFunction()),
+            WasmValue.FromExternRef(FunctionFixture.Create()),
         ];
 
         // Act & Assert
@@ -558,7 +560,7 @@ public class WasmValue_AsExternRefTests
             WasmValue.FromF64(0),
             WasmValue.FromV128(0, 0),
             WasmValue.FromFuncRef(null),
-            WasmValue.FromFuncRef(new WasmFunction()),
+            WasmValue.FromFuncRef(FunctionFixture.Create()),
         ];
 
         // Act & Assert
