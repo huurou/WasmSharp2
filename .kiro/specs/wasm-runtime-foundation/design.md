@@ -510,6 +510,8 @@ WasmUnverifiedRangeは`Stage`、`long StartOffset`、`long EndOffset`（排他�
 
 実装時は`dotnet build WasmSharp2.slnx -c Release`で警告・エラー0を確認してから、`dotnet run --project tests/WasmSharp.Tests/WasmSharp.Tests.csproj -c Release --no-build`と`dotnet run --project tests/WasmSharp.Generators.Tests/WasmSharp.Generators.Tests.csproj -c Release --no-build`を実行する。focused実行にはTUnitの`--treenode-filter`を使う。テストクラスは対象型/メソッド別、メソッド名は日本語、AAA、TUnitのawait付きassertionとする。
 
+2026-09-06のユーザー承認により、既存の`WasmValue`の`low64_`・`kind_`のCS0169はタスク2.1、`high64_`・`reference_`のCS0169はタスク2.2で解消する。それまではこの既存警告4件だけをタスク完了・テスト実行前の警告0判定から除外する。CS0169の警告抑止は追加せず、生成器の警告0条件と基盤全体の最終検証での警告・エラー0は維持する。
+
 この設計生成ではコード/テストを実装・実行したとは扱わない。実装完了時の記録では、公開定数経路、負例、内部契約を分けて示し、call/start/host/trap命令/SIMD/公式全件は未対応または未検証と明記する（7.3）。性能ベンチマーク、並行実行保証、公式corpus固定は本仕様の完了条件に加えない。
 
 ## 実装順序と引き継ぎ
