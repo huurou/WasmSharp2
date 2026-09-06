@@ -14,12 +14,12 @@ public sealed class ThrowingReadStream(IOException exception) : Stream
 
     public override int Read(byte[] buffer, int offset, int count)
     {
-        throw new NotImplementedException();
+        throw exception;
     }
 
     public override int Read(Span<byte> buffer)
     {
-        throw new NotImplementedException();
+        throw exception;
     }
 
     public override long Seek(long offset, SeekOrigin origin)

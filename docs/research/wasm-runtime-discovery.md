@@ -69,7 +69,7 @@ Core仕様はISA、バイナリ、検証、実行、テキスト表現を定義�
 | `assert_uninstantiable` | module形式の`assert_trap`。Instantiate中のtrap |
 | `assert_trap` | invoke/get actionでtrap |
 | `assert_exhaustion` | actionでスタック枯渇。通常の仕様trapと識別が必要 |
-| `assert_return` | 値列・型・個数・期待値patternの一致 |
+| `assert_return` | 値のコレクション・型・個数・期待値patternの一致 |
 
 上表の根拠は[公式JSON仕様](https://github.com/WebAssembly/wabt/blob/main/docs/wast2json.md)。`text`は参照interpreterの期待診断であり、その英文をライブラリの公開例外メッセージ契約として採用する必要はない。Instantiate中のtrapとlink errorは同一段階でも違う原因なので、例外型または型付きreasonで区別する必要がある。
 

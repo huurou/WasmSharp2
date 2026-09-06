@@ -2,7 +2,7 @@
 
 ## 概要
 
-本仕様は、C#の利用者がWasmバイナリをDecode・Validate・Instantiate・Invokeの4段階で扱い、4種類のscalar定数返却を実行できる最小基盤を提供する。値のビット列、関数型、結果列、段階ごとの失敗を明示的に扱えることを価値とする。
+本仕様は、C#の利用者がWasmバイナリをDecode・Validate・Instantiate・Invokeの4段階で扱い、4種類のscalar定数返却を実行できる最小基盤を提供する。値のビット列、関数型、戻り値のコレクション、段階ごとの失敗を明示的に扱えることを価値とする。
 
 現在の公開型の骨組みを完成させ、同じ`WasmModule`が静的定義と検証成功後の実行コードを所有する。検証と線形化を同一パスで行い、命令宣言から生成した単一switchループで実行する。実装対象は引数・localsなし、戻り値1個、scalar constとendだけの関数であり、Core 2.0全体の完成を意味しない。
 
@@ -21,7 +21,7 @@
 ### 本仕様が所有するもの（This Spec Owns）
 
 - 4段階の公開契約、同じモジュール上の検証成功フラグと実行表現の所有。
-- Core 2.0の7種類の値、関数型、結果列、および原因別の例外契約。
+- Core 2.0の7種類の値、関数型、戻り値のコレクション、および原因別の例外契約。
 - boundedなバイナリ読み取り、sectionの枠組み、type/function/export/codeの構文と定数関数の検証・実行。
 - 命令の唯一の定義元と通常ビルドでの生成、共通ホスト境界、実行コンテキスト・フレーム・分岐のスタック基準。
 
@@ -46,9 +46,9 @@
 
 ### 再検証の契機（Revalidation Triggers）
 
-値/関数型/結果列の形、失敗型・reason・未確認範囲、検証成功の所有、opcode表と生成契約、pc/スタック基準、実行上限や同期コンテキストを変更した場合は全ランタイム下流を再検証する。公開操作と失敗分類の変更はconformance-runner、関数同一性とホスト境界の変更はhost-linkingへ通知する。SDK/Roslynの変更は通常ビルドでの生成、対象Core版の変更は否定入力の分類を再検証する。
+値/関数型/戻り値のコレクションの形、失敗型・reason・未確認範囲、検証成功の所有、opcode表と生成契約、pc/スタック基準、実行上限や同期コンテキストを変更した場合は全ランタイム下流を再検証する。公開操作と失敗分類の変更はconformance-runner、関数同一性とホスト境界の変更はhost-linkingへ通知する。SDK/Roslynの変更は通常ビルドでの生成、対象Core版の変更は否定入力の分類を再検証する。
 
-特にnumeric-controlでは、`end`の文脈に応じた線形化と、バイナリopcodeから実行opcodeへの対応を見直す。分岐情報、br_tableのラベル列、メモリのmemargを追加する仕様では、DecodedInstruction/Instructionの即値表現と生成契約を変更する。現在の1属性行から1実行opcodeを生成する形やWasmValue単一の即値を、後続でも無変更で使える契約とはしない。単一定義元と単一実行ループの方針は維持する。
+特にnumeric-controlでは、`end`の文脈に応じた線形化と、バイナリopcodeから実行opcodeへの対応を見直す。分岐情報、br_tableのラベルの配列、メモリのmemargを追加する仕様では、DecodedInstruction/Instructionの即値表現と生成契約を変更する。現在の1属性行から1実行opcodeを生成する形やWasmValue単一の即値を、後続でも無変更で使える契約とはしない。単一定義元と単一実行ループの方針は維持する。
 
 ## アーキテクチャ
 
@@ -94,7 +94,7 @@ flowchart LR
 | 対象 | 選択 | 用途・制約 |
 | --- | --- | --- |
 | ランタイム | net10.0 / nullable有効 | 既存を維持。確認したSDKは10.0.400 |
-| 値と入力 | ImmutableArray、BinaryPrimitives、BitConverter、UTF8Encoding | 不変な列、little-endian、ビット保持、厳格な名前検査 |
+| 値と入力 | ImmutableArray、BinaryPrimitives、BitConverter、UTF8Encoding | 不変配列、little-endian、ビット保持、厳格な名前検査 |
 | 命令生成 | netstandard2.0 / C# 13.0 / Microsoft.CodeAnalysis.CSharp 4.14.0 | IIncrementalGenerator、ビルド時Analyzer参照のみ |
 | テスト | net10.0 / TUnit 1.66.10 | 既存プロジェクトを拡張。generatorテストも同じ版 |
 
@@ -113,7 +113,7 @@ Roslynは必要な既存APIを備えた固定版を選ぶ。最新版を必要�
 | `src/WasmSharp/Modules/WasmBinaryReader.cs` | バイト境界、LEB、名前、固定幅即値の読み取り |
 | `src/WasmSharp/Modules/ModuleDecoder.cs` | module/sectionと関数本体の構文解析 |
 | `src/WasmSharp/Modules/ModuleValidator.cs` | 静的検証と同一パスの線形化 |
-| `src/WasmSharp/Modules/DecodedFunction.cs` | 関数の型index、圧縮locals、入力命令列 |
+| `src/WasmSharp/Modules/DecodedFunction.cs` | 関数の型index、圧縮locals、入力命令の配列 |
 | `src/WasmSharp/Modules/DecodedInstruction.cs` | opcode識別子、即値、元位置 |
 | `src/WasmSharp/Modules/LocalDeclaration.cs` | localsの個数と型の組 |
 | `src/WasmSharp/Modules/FunctionExport.cs` | export名、関数index、元位置 |
@@ -148,11 +148,11 @@ Roslynは必要な既存APIを備えた固定版を選ぶ。最新版を必要�
 | `tests/WasmSharp.Tests/WasmInstance_GetGlobalTests.cs`、`tests/WasmSharp.Tests/WasmInstance_GetMemoryTests.cs`、`tests/WasmSharp.Tests/WasmInstance_GetTableTests.cs` | 基盤インスタンスでの名前不在とnull引数の分類 |
 | `tests/WasmSharp.Tests/WasmFunction_InvokeTests.cs` | 4段階の定数返却と引数契約 |
 | `tests/WasmSharp.Tests/WasmValueTests.cs` | 構築/取得メソッドごとのテストクラスを同居 |
-| `tests/WasmSharp.Tests/WasmFunctionTypeTests.cs`、`tests/WasmSharp.Tests/WasmResultsTests.cs` | それぞれ構築/列取得のメソッド別クラス |
+| `tests/WasmSharp.Tests/WasmFunctionTypeTests.cs`、`tests/WasmSharp.Tests/WasmResultsTests.cs` | それぞれ構築/コレクション取得のメソッド別クラス |
 | `tests/WasmSharp.Tests/Execution/WasmExecutionContextTests.cs` | 内部の入退出/深さ操作をメソッド別クラスで検証 |
 | `tests/WasmSharp.Tests/Execution/ExecutionBoundary_ThrowIfFailedTests.cs` | 共通結果の例外変換 |
-| `tests/WasmSharp.Tests/Execution/ExecutionResult_ValuesTests.cs` | defaultと正常/失敗結果の列の取得 |
-| `tests/WasmSharp.Tests/Exceptions/WasmUnsupportedFeatureException_ConstructorTests.cs` | 既存コンストラクターでも未確認範囲を空列として取得できること |
+| `tests/WasmSharp.Tests/Execution/ExecutionResult_ValuesTests.cs` | defaultと正常/失敗時の戻り値コレクションの取得 |
+| `tests/WasmSharp.Tests/Exceptions/WasmUnsupportedFeatureException_ConstructorTests.cs` | 既存コンストラクターでも未確認範囲を空のコレクションとして取得できること |
 | `tests/WasmSharp.Generators.Tests/WasmSharp.Generators.Tests.csproj` | TUnitと生成器/Roslynのテスト参照 |
 | `tests/WasmSharp.Generators.Tests/InstructionGenerator_InitializeTests.cs` | generator driverによる宣言更新・診断・生成ソース検証 |
 | `tests/WasmSharp.Tests/README.md` | 基盤で実行した対象・コマンドと未対応/未検証範囲の記録 |
@@ -168,7 +168,7 @@ Roslynは必要な既存APIを備えた固定版を選ぶ。最新版を必要�
 | `src/WasmSharp/WasmFunction.cs` | 実体と型、optionsなしのInvoke |
 | `src/WasmSharp/WasmExecutionOptions.cs` | 正の上限と既定値1024の契約 |
 | `src/WasmSharp/WasmValue.cs` | 既存格納領域による型付き構築/取得 |
-| `src/WasmSharp/WasmFunctionType.cs`、`src/WasmSharp/WasmResults.cs` | 不変の型列/結果列 |
+| `src/WasmSharp/WasmFunctionType.cs`、`src/WasmSharp/WasmResults.cs` | 型と戻り値を保持する不変配列 |
 | `src/WasmSharp/Exceptions/WasmException.cs` | 既存コンストラクターを保持し、任意のLocationを追加 |
 | `src/WasmSharp/Exceptions/WasmDecodeException.cs`、`src/WasmSharp/Exceptions/WasmValidateException.cs` | ランタイムの発生位置を付ける構築経路 |
 | `src/WasmSharp/Exceptions/WasmUnsupportedFeatureException.cs` | Featureと未確認範囲を追加 |
@@ -218,11 +218,11 @@ sequenceDiagram
 | 2.1, 2.2, 2.3 | scalar/vectorの型とビット | WasmValue | Kind、From/As | 全種類とビット境界 |
 | 2.4, 2.9 | 参照種別と同一性 | WasmValue、WasmFunction | FuncRef/ExternRef | null、同じ参照、異なる参照 |
 | 2.5, 2.8 | 型違い拒否と明示契約 | WasmValue、WasmFunction | 型付き操作 | 誤取得/公開シグネチャ |
-| 2.6, 2.7 | 型列と結果列 | WasmFunctionType、WasmResults | ImmutableArray | 個数/順序/元配列の変更 |
+| 2.6, 2.7 | 型と戻り値のコレクション | WasmFunctionType、WasmResults | ImmutableArray | 個数/順序/元配列の変更 |
 | 3.1, 3.7 | bytes/Stream入力 | WasmModule、WasmBinaryReader | Decode | short read、非seek、読取不可 |
 | 3.2, 3.3 | ヘッダー/長さ/LEB | WasmBinaryReader | bounded読み取り | 正負の符号化 |
 | 3.4, 3.5, 3.6 | section/name | ModuleDecoder | 順序と件数、UTF-8 | custom/重複/名前破損 |
-| 4.1, 4.2, 4.3 | 型と参照関係 | ModuleValidator | Validate | index、export名、結果列 |
+| 4.1, 4.2, 4.3 | 型と参照関係 | ModuleValidator | Validate | index、export名、戻り値のコレクション |
 | 4.4, 4.5 | 未対応と部分失敗 | ModuleValidator、WasmModule | 成果一括反映 | 後半失敗とInstantiate拒否 |
 | 5.1, 5.2, 5.3, 5.4 | 実体の生成と取得 | WasmModule、WasmInstance | Instantiate/GetFunction | 別実体/名前不在 |
 | 5.5, 5.6, 5.7 | 定数の呼び出し | Interpreter、WasmFunction | Invoke | 4種類/引数不正/反復 |
@@ -238,7 +238,7 @@ sequenceDiagram
 
 | 担当 | 責務 | 要件 | 主な依存 | 契約 |
 | --- | --- | --- | --- | --- |
-| WasmValue / WasmFunctionType / WasmResults | 値と列 | 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9 | BCL P0 | 公開操作、不変状態 |
+| WasmValue / WasmFunctionType / WasmResults | 値とコレクション | 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9 | BCL P0 | 公開操作、不変状態 |
 | WasmModule / ModuleDecoder / ModuleValidator | 定義と検証成功 | 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 4.1, 4.2, 4.3, 4.4, 4.5 | WasmBinaryReader、InstructionSet P0 | 公開操作、状態 |
 | InstructionSet / InstructionGenerator | 定義と生成の同期 | 4.1, 5.5, 6.2, 6.5 | Roslyn P0 | ビルド処理 |
 | WasmInstance / WasmFunction | 実体と呼び出し | 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.8, 6.1, 6.7 | WasmModule、ExecutionBoundary P0 | 公開操作、状態 |
@@ -263,7 +263,7 @@ sequenceDiagram
 | WasmFunctionType | コンストラクター`(ReadOnlySpan<WasmValueKind> parameters, ReadOnlySpan<WasmValueKind> results)`、`ImmutableArray<WasmValueKind> Parameters/Results { get; }` |
 | WasmResults | コンストラクター`(ReadOnlySpan<WasmValue> values)`、`ImmutableArray<WasmValue> Values { get; }` |
 
-列は構築時にコピーする。型列の各要素はCore 2.0の7種類だけを受理し、未定義enum値と既存ExnRefは`ArgumentOutOfRangeException`とする。空列と複数結果を表現できることは、その関数の実行対応を保証しない。
+入力のコレクションは構築時にコピーする。型のコレクションの各要素はCore 2.0の7種類だけを受理し、未定義enum値と既存ExnRefは`ArgumentOutOfRangeException`とする。空のコレクションと複数結果を表現できることは、その関数の実行対応を保証しない。
 
 WasmValueのコンストラクターは非公開とする。kindを確認した取得のみ許し、誤取得は`InvalidOperationException`。既存enumのI32=0を維持するため`default(WasmValue)`はi32の0と定義する。整数は2の補数、floatはビット再解釈だけで格納し、演算やNaN正規化をしない。v128のlow64はバイト0〜7、high64は8〜15をlittle-endianで表す。参照の取得で内容をコピーせず、func/externのnullもKindで区別する。externref専用object操作は汎用変換の禁止の例外である。
 
@@ -308,7 +308,7 @@ u32/s32は最大5バイト、s64は10バイト。最終バイトの未使用ビ�
 
 localsは個数/型の圧縮宣言を読み、各u32個数をulongに累算し、加算のたびに合計が2^32以上ならDecode失敗とする。直前の合計は2^32未満なので、この累算自体もoverflowしない。引数/locals/結果が最小形の範囲外でも、対応済み構文の解析を途中で打ち切らない。平坦な本体でのelse、end欠落、end後のbody余剰は構文違反である。
 
-Validateは最初に全型index・関数indexとexport名を確認する。その後各関数で命令を1度走査し、型スタックと線形コードを同時に作る。constを0個/複数含む場合もend時の実際の型列と宣言結果列を先に比較し、不一致ならWasmValidateExceptionとする。一致した本体に対して、引数0・locals総数0・結果1・const1の実行形を確認し、範囲外ならWasmUnsupportedFeatureExceptionとする。定義関数が0個のモジュールも、対応した構文と検証規則を満たす限り個数だけで拒否しない。
+Validateは最初に全型index・関数indexとexport名を確認する。その後各関数で命令を1度走査し、型スタックと線形コードを同時に作る。constを0個/複数含む場合も、end時にスタック上の値の型・個数・順序を、宣言された戻り値型のコレクションと先に比較し、不一致ならWasmValidateExceptionとする。一致した本体に対して、引数0・locals総数0・結果1・const1の実行形を確認し、範囲外ならWasmUnsupportedFeatureExceptionとする。定義関数が0個のモジュールも、対応した構文と検証規則を満たす限り個数だけで拒否しない。
 
 ### 命令の正本と生成契約
 
@@ -346,7 +346,7 @@ Decoderは通常opcodeまたはprefix後のu32を読んで表を引く。未割�
 - `InstructionGenerator : IIncrementalGenerator`をAnalyzerとしてProjectReferenceする（OutputItemType=Analyzer、ReferenceOutputAssembly=false）。Roslyn PackageReferenceはPrivateAssets=allとする。
 - `ForAttributeWithMetadataName`で表を抽出し、軽量の生成用データへ変換する。コンパイル対象をロード・実行しない。
 - `InstructionSet.g.cs`はlookup情報と対応済み実行opcodeを生成する。`Interpreter.g.cs`は単一のwhile/switch本体を生成し、caseからhandlerを直接呼ぶ。Decode/Validateに必要な即値/規則の分類も同じdescriptorから読む。
-- handler共通シグネチャは`ExecutionResult Handler(WasmExecutionContext context, in Instruction instruction)`。`PushConstant`は即値を積み、`Return`は結果を保持して現在のフレームを取り除く。正常な命令処理は空の結果列を持つSuccessを返す。Runは今回の入口より後のフレームが残る間だけループし、入口フレームの終了後に最終結果列を取り出す。
+- handler共通シグネチャは`ExecutionResult Handler(WasmExecutionContext context, in Instruction instruction)`。`PushConstant`は即値を積み、`Return`は結果を保持して現在のフレームを取り除く。正常な命令処理は空の戻り値コレクションを持つSuccessを返す。Runは今回の入口より後のフレームが残る間だけループし、入口フレームの終了後に関数全体の戻り値コレクションを取り出す。
 - handlerのTrap/ExhaustionはReason、関数index、byte offsetと、上限到達ならLimitを含む同じExecutionResultで伝える。Runは失敗結果を変更せず直ちに返す。例外へ変換するまでに原因を失うstatusだけの経路や、コンテキストに別の可変失敗スロットを設けない。
 - opcode重複、不完全な対応済み行、handler不在/シグネチャ不一致をビルドエラーにする。生成が欠けたとき手書きの代替switchを使わない。
 - `EmitCompilerGeneratedFiles`とobj配下の出力先を設定する。通常のdotnet buildで生成し、生成物をソースglobへ再追加しない。生成コマンドの手動実行を要求しない。
@@ -424,12 +424,12 @@ Interpreter.Runは呼び出し前のフレーム数、値スタック位置、�
 
 ### 実行結果
 
-ExecutionResultは次のget-only情報を持つreadonly structとする。`ExecutionStatus`はSuccess/Trap/Exhaustionの列挙型で、Successはその操作の正常終了を示す。命令単位のSuccessと関数実行全体のSuccessは、同じ型でそれぞれ空の結果列/最終結果列を返す。
+ExecutionResultは次のget-only情報を持つreadonly structとする。`ExecutionStatus`はSuccess/Trap/Exhaustionの列挙型で、Successはその操作の正常終了を示す。命令単位のSuccessと関数実行全体のSuccessは、同じ型でそれぞれ空の戻り値コレクション/関数全体の戻り値コレクションを返す。
 
 | 情報 | 型と不変条件 |
 | --- | --- |
 | Status | ExecutionStatus |
-| Values | ImmutableArray<WasmValue>。getterで未初期化の格納値をEmptyへ正規化し、失敗時とdefaultの結果は空列 |
+| Values | ImmutableArray<WasmValue>。getterで未初期化の格納値をEmptyへ正規化し、失敗時とdefaultの結果は空のコレクション |
 | TrapReason | WasmTrapReason?。Trapのときだけ必須 |
 | ExhaustionReason | WasmExhaustionReason?。Exhaustionのときだけ必須 |
 | Limit | int?。CallDepthLimitのとき適用した正の上限 |
@@ -440,7 +440,7 @@ ExecutionResultは次のget-only情報を持つreadonly structとする。`Execu
 
 `default(ImmutableArray<T>)`自体は空配列ではない。ExecutionResultのValuesは非公開の`values_`を使い、getterを`values_.IsDefault ? ImmutableArray<WasmValue>.Empty : values_`とする。この正規化により、default(ExecutionResult)でもValues.IsDefaultはfalse、Lengthは0で、列挙可能になる。default構築ではコンストラクターを通らないため、コンストラクター内の初期化だけに依存しない。
 
-**コストの選択**: 各命令が診断用の任意情報と結果列を含むstructを返すため、statusだけを返す場合より値の受け渡し量が増え、頻繁な実行経路でコピーが残る可能性がある。正確なサイズ・コピー回数・速度差はABI/JITに依存し、未測定である。失敗時だけコンテキストに詳細を書けば戻り値を小さくできるが、読み取り・初期化・再入時の所有を追加管理する必要がある。現時点では明示的な結果伝達を採用し、命令数が増えた段階で必要に応じて計測して見直す。ADR 0004の例外コスト回避を、方式全体の性能優位の保証とはしない。
+**コストの選択**: 各命令が診断用の任意情報と戻り値のコレクションを含むstructを返すため、statusだけを返す場合より値の受け渡し量が増え、頻繁な実行経路でコピーが残る可能性がある。正確なサイズ・コピー回数・速度差はABI/JITに依存し、未測定である。失敗時だけコンテキストに詳細を書けば戻り値を小さくできるが、読み取り・初期化・再入時の所有を追加管理する必要がある。現時点では明示的な結果伝達を採用し、命令数が増えた段階で必要に応じて計測して見直す。ADR 0004の例外コスト回避を、方式全体の性能優位の保証とはしない。
 
 WasmTrapReasonはUnreachable、IntegerDivideByZero、IntegerOverflow、InvalidConversionToInteger、MemoryOutOfBounds、TableOutOfBounds、IndirectCallTypeMismatch、UninitializedElementを共通の識別子として定める。これらを発生させる命令は後続の所有であり、本基盤では定数handlerから返さない。WasmExhaustionReasonはCallDepthLimitを持ち、後続の資源上限は原因ごとに追加する。
 
@@ -458,7 +458,7 @@ WasmTrapReasonはUnreachable、IntegerDivideByZero、IntegerOverflow、InvalidCo
 | 不正な引数/名前 | ArgumentException系 | 引数名。Wasmの失敗に変換しない |
 | 未検証Instantiate/値の誤取得 | InvalidOperationException | 状態/型の契約違反 |
 | 管理した深さ上限 | WasmExhaustionException | CallDepthLimit、適用Limit、Location |
-| .NETでの入力/列の保持上限 | WasmImplementationLimitException | InputSize/CollectionSize、Location |
+| .NETでの入力/コレクションの保持上限 | WasmImplementationLimitException | InputSize/CollectionSize、Location |
 | 実行環境の能力不足 | 既存WasmPlatformCapabilityException | 後続の能力を要する機能で使用 |
 | Stream/ホストが投げた.NET例外 | 元の例外 | 型と実体を維持し、ラップしない |
 
@@ -468,7 +468,7 @@ WasmTrapReasonはUnreachable、IntegerDivideByZero、IntegerOverflow、InvalidCo
 
 WasmInvokeExceptionをランタイムから新しく投げる用途は本仕様には設けない。既存の公開型を削除する変更を今回の基盤設計に含めないため保持するのであり、将来用の新規抽象化として採用するものではない。
 
-WasmUnverifiedRangeは`Stage`、`long StartOffset`、`long EndOffset`（排他的）、`string Description`の不変recordとする。UnverifiedRangesはget-onlyのImmutableArrayとし、プロパティ初期値をEmptyにする。既存3コンストラクターを含む全構築経路で非defaultを維持し、追加のコンストラクターへ渡されたdefaultの列もEmptyへ正規化する。従来コンストラクターの空列は「診断情報が渡されていない」という意味で、検査済みの証明ではない。Decodeの未対応では、その構文を検査できなかった先頭から入力末尾までのDecode範囲と、入力全体のValidate未実施を示す範囲を持たせる。Validateの未対応では、当該関数以降の未完了検証範囲を持たせる。検査できなかったのは構文か意味論かをStageで区別する。
+WasmUnverifiedRangeは`Stage`、`long StartOffset`、`long EndOffset`（排他的）、`string Description`の不変recordとする。UnverifiedRangesはget-onlyのImmutableArrayとし、プロパティ初期値をEmptyにする。既存3コンストラクターを含む全構築経路で非defaultを維持し、追加のコンストラクターへ渡されたdefaultの配列もEmptyへ正規化する。従来コンストラクターの空のコレクションは「診断情報が渡されていない」という意味で、検査済みの証明ではない。Decodeの未対応では、その構文を検査できなかった先頭から入力末尾までのDecode範囲と、入力全体のValidate未実施を示す範囲を持たせる。Validateの未対応では、当該関数以降の未完了検証範囲を持たせる。検査できなかったのは構文か意味論かをStageで区別する。
 
 ### 違反と未実装の優先順位
 
@@ -484,8 +484,8 @@ WasmUnverifiedRangeは`Stage`、`long StartOffset`、`long EndOffset`（排他�
 ### 値と内部の共通契約
 
 - WasmValueの型付き構築/取得で整数境界、正負0、正負無限大、複数NaN payload、任意のv128上下64bitを確認する。func/externのtyped null、参照の同一性、誤取得も扱う（2.1, 2.2, 2.3, 2.4, 2.5, 2.9）。
-- WasmFunctionType/WasmResultsで空列、複数要素の順序、構築元配列の後変更を確認する。型列のExnRef/未定義enumを拒否する（2.6, 2.7, 2.8）。
-- ExecutionResultのdefault/空の正常結果/失敗と、WasmUnsupportedFeatureExceptionの既存コンストラクターで、取得する列がIsDefault=false、Length=0、列挙可能であることを確認する。非空の結果列と未確認範囲の保持も確認する（2.7, 6.3）。
+- WasmFunctionType/WasmResultsで空のコレクション、複数要素の順序、構築元配列の後変更を確認する。型のコレクションのExnRef/未定義enumを拒否する（2.6, 2.7, 2.8）。
+- ExecutionResultのdefault/空の正常結果/失敗と、WasmUnsupportedFeatureExceptionの既存コンストラクターで、取得する配列がIsDefault=false、Length=0、列挙可能であることを確認する。非空の戻り値のコレクションと未確認範囲の保持も確認する（2.7, 6.3）。
 - WasmExecutionContextの内部入退出を同じ同期区間内で扱い、上限1の2段目拒否、A=100/B=10の共有、内側退出後の外側維持、例外時のfinally、次の独立コンテキストを確認する。深さ・参照同一性・現在の参照などの観測値をその場でローカル変数へ退避し、finallyで解除した後にTUnitのawait付きassertionを実行する。退避するのは後で変わるコンテキストの参照だけではなく、その時点の深さや同一性の判定結果である。容量拡張が既存フレーム/値を保持することも内部契約で確認する（5.8, 5.9, 5.10, 5.11, 6.9）。
 - ExecutionBoundary.ThrowIfFailedでtrapとexhaustionが異なる公開型になり、Instantiate段階のtrapがWasmInstantiateExceptionにならないことを確認する。ホスト例外の実際のcallback経路は後続に残す（6.1, 6.6, 6.7, 6.8）。
 

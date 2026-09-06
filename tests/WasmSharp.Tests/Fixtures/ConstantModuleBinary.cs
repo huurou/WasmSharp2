@@ -49,7 +49,7 @@ public static class ConstantModuleBinary
         AppendSection(module, 0x03, functionIndices);
         AppendSection(module, 0x07, exportEntries);
         AppendSection(module, 0x0A, code);
-        return module.ToArray();
+        return [.. module];
     }
 
     private static void AppendSection(List<byte> module, byte id, List<byte> payload)

@@ -11,14 +11,14 @@ WasmSharp2の利用者は、WasmバイナリをC#から明示的に扱い、破�
 | 区分 | 範囲 |
 | --- | --- |
 | 最小実行経路 | type・function・export・codeで記述された、importを必要としない上記の定数返却関数を、4段階を通して実行する。受入確認の最小モジュールは1つの型・1つの定義関数・1つの関数exportを持つが、個数を1つに制限しない。対応済みの定数返却関数を複数持つモジュールも対象とする。 |
-| 共通の利用契約 | Core 2.0の値の種類、関数の引数型列・結果型列、valueと結果列、静的モジュールとインスタンスの区別、処理段階と失敗分類を扱う。値の構築・取得にはscalar・v128・参照を含む。 |
+| 共通の利用契約 | Core 2.0の値の種類、関数の引数型のコレクション・戻り値型のコレクション、valueと戻り値のコレクション、静的モジュールとインスタンスの区別、処理段階と失敗分類を扱う。値の構築・取得にはscalar・v128・参照を含む。 |
 | バイナリの共通規則 | ヘッダー、長さ、整数、名前、sectionの枠組み、および最小実行経路の構文と検証規則を扱う。全section・全命令の意味論の実装は要求しない。 |
 | 初期の利用契約 | 単一スレッドでの同期実行を保証する。検証済みモジュールの共有や独立した別インスタンスの利用を含め、マルチスレッド利用の動作保証は対象外とする。 |
 | 後続の実行機能 | 引数・localsを用いる実行、複数戻り値、数値演算、完全な制御構文、分岐、call、unreachable、globalsは`wasm-numeric-control`で扱う。メモリ・テーブル・参照命令・ホスト連携・start・SIMD命令はそれぞれの後続仕様で扱う。 |
 | 公式適合検証 | 公式テスト素材の固定・変換は`wasm-test-corpus`、JSONとspectestによる全件実行・集計は`wasm-conformance-runner`で扱う。本仕様の完了にこれらの完成は要求しない。 |
 | 全体の対象外 | WAT・WASTの解析、WASI、Component Model、JavaScript/Web API、既存エンジンへの実行委譲、およびCore 2.0外の機能を追加しない。 |
 
-最小経路以外のCore 2.0機能は、未実装である間は要件6の分類を適用する。`v128`や参照の値を扱えることは、それらを用いる命令の実行対応を意味しない。同様に、引数型列・結果型列を表現できることは、引数を使う関数や複数戻り値関数の実行対応を意味しない。
+最小経路以外のCore 2.0機能は、未実装である間は要件6の分類を適用する。`v128`や参照の値を扱えることは、それらを用いる命令の実行対応を意味しない。同様に、引数型のコレクション・戻り値型のコレクションを表現できることは、引数を使う関数や複数戻り値関数の実行対応を意味しない。
 
 実装方式と後続が共有する内部契約は、[ブリーフ](brief.md)、[ロードマップ](../../steering/roadmap.md)、[用語集](../../../CONTEXT.md)、[ADR 0001](../../../docs/adr/0001-explicit-staged-runtime-api.md)、[ADR 0002](../../../docs/adr/0002-single-pass-linear-interpreter.md)、[ADR 0003](../../../docs/adr/0003-core2-fixed-conformance-profile.md)、[ADR 0004](../../../docs/adr/0004-trap-result-propagation.md)の既存方針を設計へ引き継ぐ。2026-09-06の追加確認で、検証成功時に同じモジュールが実行表現を保持する方式を[ADR 0005](../../../docs/adr/0005-module-owned-validation-state.md)、命令定義と実行処理をコード生成で同期する方式を[ADR 0006](../../../docs/adr/0006-generated-instruction-dispatch.md)に記録した。残る公開APIの引数・戻り値の詳細、実行表現の具体的な構造、生成方式の詳細、分岐・呼び出しのスタック基準は設計段階で具体化する。
 
@@ -37,7 +37,7 @@ WasmSharp2の利用者は、WasmバイナリをC#から明示的に扱い、破�
 5. While モジュール定義が検証済みとして利用される間, the WasmSharp2 shall 検証成功の根拠となった定義と異なる内容が検証済みとして実行されることを防ぐ。
 6. When 検証済みのモジュールに再度Validateを要求した場合, the WasmSharp2 shall 再検証せずに同じ`WasmModule`を返す。
 
-### 要件2: 明示的な値・型と結果列
+### 要件2: 明示的な値・型と戻り値のコレクション
 
 **目的:** ライブラリ利用者として、Wasmの型と値を明示して構築・取得し、暗黙変換による情報の変化なく受け渡したい。
 
@@ -48,8 +48,8 @@ WasmSharp2の利用者は、WasmバイナリをC#から明示的に扱い、破�
 3. When 利用者が`v128`のvalueを明示的に構築して取得した場合, the WasmSharp2 shall 128ビットの内容を保持する。
 4. When 利用者が`funcref`または`externref`のvalueを明示的に構築して取得した場合, the WasmSharp2 shall 参照の種類、nullかどうか、および非null参照の同一性を保持する。
 5. If 利用者がvalueの種類と異なる型で値を取得しようとした場合, then the WasmSharp2 shall 暗黙変換せずに拒否し、呼び出しの契約違反として識別可能にする。
-6. When 利用者が関数型を構築または参照した場合, the WasmSharp2 shall 引数型列と結果型列を区別し、それぞれの型・個数・順序を取得可能にする。
-7. When 利用者が結果列を取得した場合, the WasmSharp2 shall 結果の個数、順序、および各要素の型と値を取得可能にする。
+6. When 利用者が関数型を構築または参照した場合, the WasmSharp2 shall 引数型のコレクションと戻り値型のコレクションを区別し、それぞれの型・個数・順序を取得可能にする。
+7. When 利用者が戻り値のコレクションを取得した場合, the WasmSharp2 shall 結果の個数、順序、および各要素の型と値を取得可能にする。
 8. The WasmSharp2 shall 値の受け渡しを`WasmValue`で明示する利用契約とし、汎用の`object`・`dynamic`引数、CLR型からの暗黙変換、delegateからの関数型推論を提供しない。
 9. When 利用者がCLRオブジェクトの参照から`externref`のvalueを明示的に構築して取得した場合, the WasmSharp2 shall 元のCLRオブジェクトの参照を取得可能にし、同じオブジェクトから再度構築した場合も参照先の同一性を保持する。
 
@@ -77,7 +77,7 @@ WasmSharp2の利用者は、WasmバイナリをC#から明示的に扱い、破�
 
 1. When 構文が正しい最小実行経路のモジュールをValidateし、使用する型と関数の添字、export名、および関数の結果型がCore 2.0の検証規則を満たす場合, the WasmSharp2 shall 検証を成功させる。
 2. If 検証する範囲に存在しない型・関数を指す添字、または重複したexport名が存在した場合, then the WasmSharp2 shall `WasmValidateException`で検証不成立を通知する。
-3. If 対応する命令だけからなる関数本体の終了時に、得られる値の型または個数が宣言した結果型列と一致しない場合, then the WasmSharp2 shall `WasmValidateException`で検証不成立を通知する。
+3. If 対応する命令だけからなる関数本体の終了時に、得られる値の型または個数が宣言した戻り値型のコレクションと一致しない場合, then the WasmSharp2 shall `WasmValidateException`で検証不成立を通知する。
 4. If 型や命令などの未実装機能によって検証を完了できない場合, then the WasmSharp2 shall 要件6の未実装分類を通知し、その定義を検証済みにしない。
 5. If 検証が途中で失敗した場合, then the WasmSharp2 shall 途中まで処理した内容をインスタンス化可能な結果として利用者へ提供しない。
 
@@ -91,8 +91,8 @@ WasmSharp2の利用者は、WasmバイナリをC#から明示的に扱い、破�
 2. When 同じ検証済みモジュールから複数回Instantiateした場合, the WasmSharp2 shall 同じ静的定義に基づく別個のインスタンスを生成する。
 3. When 利用者がインスタンスから存在する関数export名を指定した場合, the WasmSharp2 shall そのexportに対応する呼び出し対象と関数型を取得可能にする。
 4. If 利用者が存在しない関数export名を指定した場合, then the WasmSharp2 shall `ArgumentException`系の例外で呼び出し対象を取得できないことを通知し、モジュールの検証不成立やWasmのtrapとは区別する。
-5. When `i32.const`・`i64.const`・`f32.const`・`f64.const`のいずれかと`end`だけからなる、引数・localsなし、戻り値1個の関数を空の引数列でInvokeした場合, the WasmSharp2 shall 定数の型とビット列を保持した1個のvalueを結果列として返す。
-6. If 最小実行経路の引数なし関数に空でない引数列を渡してInvokeした場合, then the WasmSharp2 shall 呼び出しを拒否し、Wasmのtrapとは異なる呼び出しの契約違反として通知する。
+5. When `i32.const`・`i64.const`・`f32.const`・`f64.const`のいずれかと`end`だけからなる、引数・localsなし、戻り値1個の関数を空の引数コレクションでInvokeした場合, the WasmSharp2 shall 定数の型とビット列を保持した1個のvalueを含むコレクションを返す。
+6. If 最小実行経路の引数なし関数に空でない引数コレクションを渡してInvokeした場合, then the WasmSharp2 shall 呼び出しを拒否し、Wasmのtrapとは異なる呼び出しの契約違反として通知する。
 7. When 最小実行経路の同じ関数を繰り返しInvokeした場合, the WasmSharp2 shall 各呼び出しで同じ型とビット列の1個の結果を返す。
 8. The WasmSharp2 shall インスタンスが新たなWasm実行コンテキストを開くときに用いる上限値を実行ポリシーとしてインスタンスに保持し、Invokeの公開操作には呼び出しごとの実行オプション引数を設けない。
 9. When 同じWasm実行コンテキスト内で関数を呼び出した場合, the WasmSharp2 shall 呼び出し深さをその実行コンテキスト単位で共有し、個々のInvokeの開始によって初期化しない。
