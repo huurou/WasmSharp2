@@ -8,11 +8,11 @@ C#でWebAssemblyバイナリをデコード・検証・インスタンス化・�
 
 ## 現状
 
-- `src/WasmSharp`は.NET 10の公開型とメソッド署名の骨組み。`Decode`・`Validate`・`Instantiate`・`Invoke`は未実装。
+- `src/WasmSharp`は.NET 10の公開型とメソッドシグネチャの骨組み。`Decode`・`Validate`・`Instantiate`・`Invoke`は未実装。
 - `tests/WasmSharp.Tests`は.NET 10・TUnit 1.66.10のプロジェクト定義のみで、テスト本体はない。`tools`は空。
 - `thirdParties`には公式specとWABTのソースがある。specは3.0系で、初期Core 2.0のテスト集合としてそのまま扱えない。
 - 同梱WABTの宣言版は1.0.41だが、公式の同名タグとfeature既定値が異なる。上流commitは未特定であり、版名だけでは固定済みとは言えない。
-- 既存の正式specとsteeringはない。既存コメントと公開型の意図を確認し、署名の骨組みを完成済み契約とは扱わない。
+- 既存の正式specとsteeringはない。既存コメントと公開型の意図を確認し、メソッドシグネチャの骨組みを完成済み契約とは扱わない。
 
 ## 進め方の選択
 

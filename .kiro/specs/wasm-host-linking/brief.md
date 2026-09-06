@@ -6,7 +6,7 @@
 
 ## 現状
 
-`WasmHostModule`は空、host callbackの署名だけがある。`WasmModule.Instantiate`も未実装。着手前に数値・制御・globals、メモリ、テーブル・参照の個別の実体と意味論が整備される。
+`WasmHostModule`は空、host callbackの引数・戻り値の定義だけがある。`WasmModule.Instantiate`も未実装。着手前に数値・制御・globals、メモリ、テーブル・参照の個別の実体と意味論が整備される。
 
 ## 望む結果
 
@@ -46,4 +46,4 @@ JSONのmodule/registerコマンド、spectestのprintや定義値、テスト結
 
 ## 制約と確認事項
 
-固定公式素材のimports/linking/start/初期化とリソース共有を公開APIで検証する。関数呼び出しの型・引数個数・戻り値を曖昧に変換しない。既存callbackがSpanを返す署名の安全な寿命・所有を設計で確定し、骨組みだから安全と見なさない。文書は日本語（`ja`）。
+固定公式素材のimports/linking/start/初期化とリソース共有を公開APIで検証する。関数呼び出しの型・引数個数・戻り値を曖昧に変換しない。既存callbackが返すSpanの安全な寿命・所有を設計で確定し、骨組みだから安全と見なさない。文書は日本語（`ja`）。

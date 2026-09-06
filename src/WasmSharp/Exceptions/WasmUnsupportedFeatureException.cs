@@ -1,7 +1,7 @@
 ﻿namespace WasmSharp.Exceptions;
 
 /// <summary>
-/// 未サポート機能例外 仕様上有効だが未実装
+/// 未実装の機能に遭遇したことを示す例外
 /// </summary>
 public class WasmUnsupportedFeatureException : WasmException
 {
