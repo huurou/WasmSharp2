@@ -73,8 +73,8 @@
   - _Boundary: WasmTrapException, WasmTrapReason, WasmExhaustionException, WasmImplementationLimitException_
   - _Requirements: 6.1, 6.6, 6.7, 6.9_
 
-- [ ] 4. 命令宣言から情報と実行分岐を生成する
-- [ ] 4.1 (P) 命令宣言を解析して共通の命令情報を生成する
+- [x] 4. 命令宣言から情報と実行分岐を生成する
+- [x] 4.1 (P) 命令宣言を解析して共通の命令情報を生成する
   - opcode・名前・即値・スタック効果・検証規則・handlerを表す宣言形式と、未対応行の省略形式を用意する。
   - 属性から宣言を抽出し、lookup情報と対応済み実行opcodeを同じ入力から生成する。
   - ランタイムへの実際の命令登録に先立ち、生成器テスト内の最小宣言で生成ソースをコンパイルでき、宣言の変更がlookupに反映されることを確認する。
@@ -82,7 +82,7 @@
   - _Depends: 1.1_
   - _Requirements: 4.1, 6.2, 6.5_
 
-- [ ] 4.2 単一の実行分岐と宣言不整合の診断を生成する
+- [x] 4.2 単一の実行分岐と宣言不整合の診断を生成する
   - 同じ宣言から単一のwhile/switchを生成し、対応する静的handlerを直接呼び出す。
   - 正常時は入口フレームが残る間だけ続行し、失敗時は原因・上限・元位置を含む結果を変更せず返す生成処理にする。
   - opcode重複、不完全な対応行、handler不在・シグネチャ不一致をビルドエラーにする。
@@ -304,3 +304,7 @@
   - _Boundary: WasmSharp.Tests, WasmSharp.Generators.Tests_
   - _Depends: 4.2, 10.1, 10.2_
   - _Requirements: 7.1, 7.2, 7.3_
+
+## Implementation Notes
+
+- 4.2: 生成する`Interpreter.RunLoop(WasmExecutionContext context, int entryFrameCount)`は`FrameCount`と、pcを進めて`Instruction`を値で返す`ReadNextInstruction()`を使用する。handlerは`static ExecutionResult Handler(WasmExecutionContext context, in Instruction instruction)`で、非Successをそのまま返す。6.1では`GeneratorTestSource.EXECUTION_CONTRACTS`と実型を照合し、入口の準備・正常結果の取り出し・finallyでの復元は6.2の`Run`で接続する。

@@ -15,8 +15,7 @@ public class WasmUnsupportedFeatureException : WasmException
     /// <summary>
     /// 構文検査または検証が完了していない入力範囲。空であることは検査済みの証明ではない
     /// </summary>
-    public ImmutableArray<WasmUnverifiedRange> UnverifiedRanges { get; } =
-        ImmutableArray<WasmUnverifiedRange>.Empty;
+    public ImmutableArray<WasmUnverifiedRange> UnverifiedRanges { get; } = [];
 
     /// <summary>
     /// 例外を初期化する
@@ -56,8 +55,6 @@ public class WasmUnsupportedFeatureException : WasmException
         : base(message, location, innerException)
     {
         Feature = feature;
-        UnverifiedRanges = unverifiedRanges.IsDefault
-            ? ImmutableArray<WasmUnverifiedRange>.Empty
-            : unverifiedRanges;
+        UnverifiedRanges = unverifiedRanges.IsDefault ? [] : unverifiedRanges;
     }
 }

@@ -45,7 +45,7 @@ public class WasmTrapException_ConstructorTests
     [Arguments(WasmTrapReason.TableOutOfBounds, WasmProcessingStage.Instantiate)]
     [Arguments(WasmTrapReason.IndirectCallTypeMismatch, WasmProcessingStage.Instantiate)]
     [Arguments(WasmTrapReason.UninitializedElement, WasmProcessingStage.Instantiate)]
-    public async Task trapの診断を指定する_原因と発生段階と入力位置を保持する(
+    public async Task Trapの診断を指定する_原因と発生段階と入力位置を保持する(
         WasmTrapReason reason,
         WasmProcessingStage stage
     )

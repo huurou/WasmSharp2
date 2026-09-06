@@ -18,5 +18,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\WasmSharp.Generators\WasmSharp.Generators.csproj" />
+    <EmbeddedResource
+      Include="..\..\src\WasmSharp\Instructions\InstructionAttribute.cs;..\..\src\WasmSharp\Instructions\OpcodeKey.cs;..\..\src\WasmSharp\Instructions\ImmediateKind.cs;..\..\src\WasmSharp\Instructions\StackEffectKind.cs;..\..\src\WasmSharp\Instructions\ValidationRule.cs"
+      LogicalName="InstructionContracts.%(Filename)%(Extension)"
+    />
   </ItemGroup>
 </Project>
