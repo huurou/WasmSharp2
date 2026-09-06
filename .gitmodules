@@ -1,0 +1,6 @@
+[submodule "thirdParties/WebAssembly-spec"]
+	path = thirdParties/WebAssembly-spec
+	url = https://github.com/WebAssembly/spec.git
+[submodule "thirdParties/wabt"]
+	path = thirdParties/wabt
+	url = https://github.com/WebAssembly/wabt.git
