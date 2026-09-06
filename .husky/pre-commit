@@ -1,0 +1,9 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+# 日本語のファイル名を正しく取得できるよう、フック内だけでGitのパス引用を無効にする。
+export "GIT_CONFIG_KEY_${GIT_CONFIG_COUNT:-0}=core.quotePath"
+export "GIT_CONFIG_VALUE_${GIT_CONFIG_COUNT:-0}=false"
+export GIT_CONFIG_COUNT=$((${GIT_CONFIG_COUNT:-0} + 1))
+
+dotnet husky run --group pre-commit
