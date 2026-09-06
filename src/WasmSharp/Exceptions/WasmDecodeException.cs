@@ -24,4 +24,17 @@ public class WasmDecodeException : WasmException
     /// <param name="innerException">原因となった例外</param>
     public WasmDecodeException(string? message, Exception? innerException)
         : base(message, innerException) { }
+
+    /// <summary>
+    /// メッセージ、発生位置、原因となった例外を指定して例外を初期化する
+    /// </summary>
+    /// <param name="message">例外の原因を説明するメッセージ</param>
+    /// <param name="location">失敗した処理段階と入力上の位置</param>
+    /// <param name="innerException">原因となった例外</param>
+    public WasmDecodeException(
+        string? message,
+        WasmFailureLocation location,
+        Exception? innerException
+    )
+        : base(message, location, innerException) { }
 }
