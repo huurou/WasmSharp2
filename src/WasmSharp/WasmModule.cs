@@ -1,4 +1,5 @@
 ﻿using System.Collections.Immutable;
+using WasmSharp.Execution;
 using WasmSharp.Modules;
 
 namespace WasmSharp;
@@ -8,6 +9,11 @@ namespace WasmSharp;
 /// </summary>
 public sealed class WasmModule
 {
+    /// <summary>
+    /// 全関数の検証成功時に設定する関数index順の実行コード
+    /// </summary>
+    internal ImmutableArray<FunctionCode> FunctionCodes { get; set; } = [];
+
     /// <summary>
     /// 型index順の関数型を保持する不変配列
     /// </summary>

@@ -1,4 +1,5 @@
-﻿using WasmSharp.Modules;
+﻿using WasmSharp.Execution;
+using WasmSharp.Modules;
 
 namespace WasmSharp;
 
@@ -21,6 +22,11 @@ public sealed class WasmFunction
     /// 所属するmoduleが保持するデコード済み関数定義
     /// </summary>
     internal DecodedFunction Definition => Instance.Module.Functions[(int)FunctionIndex];
+
+    /// <summary>
+    /// 所属するmoduleが同じ関数indexに保持する実行コード
+    /// </summary>
+    internal FunctionCode Code => Instance.Module.FunctionCodes[(int)FunctionIndex];
 
     /// <summary>
     /// functionの型

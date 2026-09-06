@@ -130,8 +130,8 @@
 
 ## 定数経路の構築
 
-- [ ] 6. 命令生成と最小のランタイムを統合する
-- [ ] 6.1 最小命令の生成物を実行表現へ統合する
+- [x] 6. 命令生成と最小のランタイムを統合する
+- [x] 6.1 最小命令の生成物を実行表現へ統合する
   - 定数4種類と関数終端の宣言を、実際の定数push・終了handlerと同じビルドへ組み込む。
   - 生成された実行opcodeを持つ線形命令と、不変な関数実行コード・最大operand数を用意する。5.3で完成した所有関係へ、モジュールの実行コード保持と関数indexからの参照だけを追加する。
   - 生成ループが参照する実行表現、フレーム、結果、partial宣言とhandlerをすべて揃え、定数のpushと関数終了時の結果保持を接続する。公開段階の接続は後続タスクが担当する。
@@ -141,7 +141,7 @@
   - _Depends: 4.2, 5.1, 5.3, 5.4_
   - _Requirements: 1.5, 4.1, 5.3, 5.5_
 
-- [ ] 6.2 関数入口と終了時のスタック復元を実行ループへ統合する
+- [x] 6.2 関数入口と終了時のスタック復元を実行ループへ統合する
   - 深さを先に確認して入口の必要容量を確保し、現在の関数と適用上限を持つexhaustion、または位置付きの保持上限例外へ分類する。
   - 今回の入口フレームが終了した時点で戻り、結果を取り出してからfinallyで今回のフレーム・値・深さを復元する。
   - 内側の実行が外側のフレームを実行・破棄しないこと、正常・失敗・例外時の復元、失敗結果の情報保持を内部経路で確認する。
@@ -149,14 +149,14 @@
   - _Boundary: Interpreter, WasmExecutionContext, ExecutionResult_
   - _Requirements: 5.5, 5.9, 5.10, 5.11, 6.7, 6.8, 6.9_
 
-- [ ] 6.3 Core 2.0の通常命令の割当を命令表へ登録する
+- [x] 6.3 Core 2.0の通常命令の割当を命令表へ登録する
   - 保存版の通常opcodeについて、対応済みの定数・終端を保ち、残りの割当済み命令を番号と名前を持つ未対応行として同じ定義元へ登録する。
   - 保存版との照合で番号・名前の欠落と重複を確認し、未対応命令の即値・意味論や分類用の第二の手管理一覧を追加しない。
   - 通常命令の既知未対応と未割当をlookupで区別でき、定数・終端だけが実行対象のままであることをテストで確認する。
   - _Boundary: InstructionSet_
   - _Requirements: 6.2, 6.4, 6.5_
 
-- [ ] 6.4 Core 2.0のFC拡張命令の割当を命令表へ登録する
+- [x] 6.4 Core 2.0のFC拡張命令の割当を命令表へ登録する
   - 保存版のFC拡張命令を、prefix・番号・名前を持つ未対応行として同じ定義元へ登録する。
   - 通常opcodeと同じ番号でもprefixによって区別し、割当範囲外の番号を未対応として一括受理しない。
   - FCの割当済み命令と範囲外の代表値をlookupで分類するテストを通し、命令の即値や実行処理を追加しない。
@@ -164,7 +164,7 @@
   - _Boundary: InstructionSet_
   - _Requirements: 6.2, 6.4, 6.5_
 
-- [ ] 6.5 Core 2.0のFD拡張命令の割当を命令表へ登録する
+- [x] 6.5 Core 2.0のFD拡張命令の割当を命令表へ登録する
   - 保存版のFD拡張命令の番号と名前を同じ定義元へ登録し、SIMD命令は未対応行として扱う。
   - 保存版の厳密な集合と照合し、欠番とCore 2.0外の番号を範囲だけで受理しない。
   - FDの割当済み命令・欠番・範囲外の代表値をlookupで区別でき、通常命令・FCの分類も維持されることをテストで確認する。
@@ -309,3 +309,5 @@
 
 - 4.2: 生成する`Interpreter.RunLoop(WasmExecutionContext context, int entryFrameCount)`は`FrameCount`と、pcを進めて`Instruction`を値で返す`ReadNextInstruction()`を使用する。handlerは`static ExecutionResult Handler(WasmExecutionContext context, in Instruction instruction)`で、非Successをそのまま返す。6.1では`GeneratorTestSource.EXECUTION_CONTRACTS`と実型を照合し、入口の準備・正常結果の取り出し・finallyでの復元は6.2の`Run`で接続する。
 - 5.4: `EnsureCapacity(operandBase, maxOperandStack, location)`で関数入口の領域を確保してから`PushFrame`・`PushValue`を使う。`GetFrame`は値を返し、`Restore(frameCount, valueCount, callDepth)`は除いた参照を解除して入場前の使用数・深さへ戻す。生成命令を読む`ReadNextInstruction()`と関数終了処理は6.1で接続する。
+- 6.1〜6.2: 生成器テストと実型のhandler・命令取得契約を照合済み。`Interpreter.Run`は検証済みの引数・localsが0の経路を実行し、結果をコピーしてからfinallyで復元する。生成ループのtrap/exhaustion伝達は生成器テスト、入口exhaustion・保持上限・途中例外の復元は内部Runで確認した。実trap命令・実ホストcallbackの例外同一性は後続仕様の検証範囲。
+- 6.3〜6.5: 割当照合は固定した公式付録`index-instructions.py`と`macros.def`をテストへ埋め込み、`Core2InstructionFixture`で番号・名前を抽出する。通常183件・FC18件・FD236件と欠番を照合し、分類用の第二の手管理一覧は持たない。拡張opcodeの付録表記はLEBバイト列で、通常の0x1Bと0x1Cはどちらも`select`。

@@ -13,5 +13,13 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\WasmSharp\WasmSharp.csproj" />
+    <EmbeddedResource
+      Include="..\..\thirdParties\WebAssembly-spec\document\core\appendix\index-instructions.py"
+      LogicalName="Core2.Instructions"
+    />
+    <EmbeddedResource
+      Include="..\..\thirdParties\WebAssembly-spec\document\core\util\macros.def"
+      LogicalName="Core2.Macros"
+    />
   </ItemGroup>
 </Project>

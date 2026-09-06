@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using WasmSharp.Exceptions;
 
 namespace WasmSharp.Execution;
@@ -189,6 +190,29 @@ public sealed class WasmExecutionContext
     }
 
     /// <summary>
+    /// 現在の関数の次命令を値で取得し、関数内のpcを1つ進める
+    /// </summary>
+    internal Instruction ReadNextInstruction()
+    {
+        var frameIndex = FrameCount - 1;
+        var frame = frames_[frameIndex];
+        var instruction = frame.Function.Code.Instructions[frame.Pc];
+        frames_[frameIndex].Pc++;
+        return instruction;
+    }
+
+    /// <summary>
+    /// 末尾の結果を引数開始位置へ順序を保って移し、現在の関数を終了する
+    /// </summary>
+    internal void CompleteFrame()
+    {
+        var frame = frames_[FrameCount - 1];
+        var resultCount = frame.Function.Type.Results.Length;
+        Array.Copy(values_, ValueCount - resultCount, values_, frame.StackBase, resultCount);
+        Restore(FrameCount - 1, frame.StackBase + resultCount, CallDepth - 1);
+    }
+
+    /// <summary>
     /// 共有値スタックの指定位置に保持している値を取得する
     /// </summary>
     /// <param name="index">共有値スタック内の位置</param>
@@ -196,6 +220,14 @@ public sealed class WasmExecutionContext
     internal WasmValue GetValue(int index)
     {
         return values_[index];
+    }
+
+    /// <summary>
+    /// 指定範囲を作業スタックから独立した戻り値の配列へコピーする
+    /// </summary>
+    internal ImmutableArray<WasmValue> CopyValues(int start, int count)
+    {
+        return ImmutableArray.Create(values_.AsSpan(start, count));
     }
 
     /// <summary>
