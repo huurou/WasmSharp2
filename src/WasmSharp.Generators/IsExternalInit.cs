@@ -3,5 +3,7 @@ namespace System.Runtime.CompilerServices;
 
 #pragma warning restore IDE0130 // Namespace がフォルダー構造と一致しません
 
-// netstandard2.0で生成用データ型のinitとrecordを使用するために定義する。
+/// <summary>
+/// netstandard2.0で生成用データ型のinitとrecordを使用するための補助型
+/// </summary>
 internal static class IsExternalInit { }

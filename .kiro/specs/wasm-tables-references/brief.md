@@ -28,7 +28,7 @@ Core 2.0の`funcref/externref`、複数table、element segment、table命令、`
 
 - function呼び出しと結果保持は数値・制御の機構を使い、間接callのための第二の実行系を作らない。
 - table/elementの初期化処理は後続のリンク済みInstantiateでも同じ意味論を使う。
-- 外部参照を作成・受け渡す際も明示的なWasm値・参照契約を使い、汎用object/dynamic引数や暗黙のboxing規約を公開APIへ持ち込まない。
+- 外部参照を作成・受け渡す際も明示的なvalue・参照契約を使い、汎用object/dynamic引数や暗黙のboxing規約を公開APIへ持ち込まない。
 
 ## この仕様が所有しないこと
 
