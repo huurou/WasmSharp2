@@ -43,6 +43,8 @@
 - 利用者→公開操作→デコード/検証または実行処理→値・命令情報という呼び出し方向とする。実行処理からDecode/Validateを呼ばない。生成器はランタイムのアセンブリを参照しない。
 - モジュール、インスタンス、関数、値は同じランタイム内のドメインモデルである。関数参照が実体の同一性を保持する参照関係は、逆方向の段階実行や循環したプロジェクト参照を許す根拠にはしない。
 - `thirdParties`、WABT、公式ランナー、外部プロセス、DIコンテナへの実行時依存を追加しない。
+- テストのビルド時依存として、`WasmSharp.Tests`は固定した`thirdParties/WebAssembly-spec`（commit `05ca4182176763112561ae20153975c12bd689e4`）の`document/core/appendix/index-instructions.py`と`document/core/util/macros.def`を埋め込む。セットアップ時にこのsubmoduleを取得する。WABTのビルドや公式テスト全件の実行は要求しない。
+- `WasmSharp.Generators.Tests`はランタイムの命令宣言用5ファイル（`InstructionAttribute`、`OpcodeKey`、`ImmediateKind`、`StackEffectKind`、`ValidationRule`）と`ExecutionResult.cs`・`Instruction.cs`をソースとして埋め込み、テスト内のRoslynコンパイルに使用する。移動・改名時は同テストcsprojの`EmbeddedResource`を更新し、生成器テストを再実行する。これはテスト入力の依存であり、生成器本体からランタイムへのアセンブリ参照は追加しない。
 
 ### 再検証の契機（Revalidation Triggers）
 
@@ -53,6 +55,8 @@
 ## アーキテクチャ
 
 ### 既存構成の分析
+
+以下は2026-09-06の設計着手時点の構成であり、現在の固定版は技術選択表に記載する。
 
 `src/WasmSharp`は.NET 10、`tests/WasmSharp.Tests`は.NET 10/TUnit 1.66.10で、テスト本体は存在しない。`WasmValue`の`low64_`・`high64_`・`reference_`をそのまま利用する。`WasmModule`と`WasmInstance`の日本語コメント、特に「Exportsは持たせない」を維持する。
 
@@ -95,8 +99,8 @@ flowchart LR
 | --- | --- | --- |
 | ランタイム | net10.0 / nullable有効 | 既存を維持。確認したSDKは10.0.400 |
 | 値と入力 | ImmutableArray、BinaryPrimitives、BitConverter、UTF8Encoding | 不変配列、little-endian、ビット保持、厳格な名前検査 |
-| 命令生成 | netstandard2.0 / C# 13.0 / Microsoft.CodeAnalysis.CSharp 4.14.0 | IIncrementalGenerator、ビルド時Analyzer参照のみ |
-| テスト | net10.0 / TUnit 1.66.10 | 既存プロジェクトを拡張。generatorテストも同じ版 |
+| 命令生成 | netstandard2.0 / C# 13.0 / Microsoft.CodeAnalysis.CSharp 5.9.0 | IIncrementalGenerator、ビルド時Analyzer参照のみ |
+| テスト | net10.0 / TUnit 1.66.16 | 既存プロジェクトを拡張。generatorテストも同じ版 |
 
 Roslynは必要な既存APIを備えた固定版を選ぶ。最新版を必要条件にしない。生成器以外へ新しい外部パッケージを追加しない。[Roslyn公式資料](https://github.com/dotnet/roslyn/blob/main/docs/features/incremental-generators.cookbook.md)に従いC#宣言からソースを追加し、実行時reflectionや独自DSLを使わない。
 
@@ -139,6 +143,7 @@ Roslynは必要な既存APIを備えた固定版を選ぶ。最新版を必要�
 | `src/WasmSharp.Generators/WasmSharp.Generators.csproj` | ランタイム参照を持たない生成器のビルド定義 |
 | `src/WasmSharp.Generators/InstructionGenerator.cs` | 属性抽出、検査、命令情報とループ生成。生成用の小さなデータ型は同居 |
 | `src/WasmSharp.Generators/IsExternalInit.cs` | netstandard2.0でinit/recordを使うための内部ポリフィル |
+| `src/WasmSharp.Generators/AnalyzerReleases.Shipped.md`、`src/WasmSharp.Generators/AnalyzerReleases.Unshipped.md` | Analyzer診断のリリース履歴。AdditionalFilesで登録し、RS2008の診断管理を満たす |
 | `tests/WasmSharp.Tests/Fixtures/ConstantModuleBinary.cs` | 最小バイナリと負例の生成。WATは解析しない |
 | `tests/WasmSharp.Tests/Fixtures/ChunkedReadStream.cs` | short readと非seek入力の試験 |
 | `tests/WasmSharp.Tests/WasmModule_DecodeTests.cs` | バイナリ境界と未対応分類 |
@@ -154,6 +159,7 @@ Roslynは必要な既存APIを備えた固定版を選ぶ。最新版を必要�
 | `tests/WasmSharp.Tests/Execution/ExecutionResult_ValuesTests.cs` | defaultと正常/失敗時の戻り値コレクションの取得 |
 | `tests/WasmSharp.Tests/Exceptions/WasmUnsupportedFeatureException_ConstructorTests.cs` | 既存コンストラクターでも未確認範囲を空のコレクションとして取得できること |
 | `tests/WasmSharp.Generators.Tests/WasmSharp.Generators.Tests.csproj` | TUnitと生成器/Roslynのテスト参照 |
+| `tests/WasmSharp.Generators.Tests/GeneratorTestSource.cs` | 埋め込んだ実ソースと最小の実行スタブによるRoslynコンパイル・生成結果の実行 |
 | `tests/WasmSharp.Generators.Tests/InstructionGenerator_InitializeTests.cs` | generator driverによる宣言更新・診断・生成ソース検証 |
 
 生成中間出力のルートは`src/WasmSharp/obj/<構成>/net10.0/generated/`とし、CompilerGeneratedFilesOutputPathに設定する。Roslynはその下へ生成器のアセンブリ名と型の完全名を付けるため、本設計の出力先は`generated/WasmSharp.Generators/WasmSharp.Generators.InstructionGenerator/InstructionSet.g.cs`と、同じディレクトリの`Interpreter.g.cs`になる。前者がInstructionDescriptorと実行opcode列挙も生成する。これらを手で作成・変更・Git管理しない。
@@ -173,9 +179,10 @@ Roslynは必要な既存APIを備えた固定版を選ぶ。最新版を必要�
 | `src/WasmSharp/Exceptions/WasmUnsupportedFeatureException.cs` | Featureと未確認範囲を追加 |
 | `src/WasmSharp/Exceptions/WasmTrapException.cs` | trap reasonと発生位置を追加 |
 | `src/WasmSharp/WasmSharp.csproj` | Analyzer参照、中間生成出力、内部契約テスト用InternalsVisibleTo |
+| `tests/WasmSharp.Tests/WasmSharp.Tests.csproj` | 固定Core 2.0命令付録の2ファイルをテスト素材として埋め込む |
 | `WasmSharp2.slnx` | 生成器と生成器テストプロジェクトを追加 |
 
-`WasmHostModule.cs`、`WasmValueKind.cs`、メモリ/テーブル/tag、他の既存例外は本仕様で変更を要求しない。既存テストcsprojの参照は足りており、必要のない設定変更を加えない。
+`WasmHostModule.cs`、`WasmValueKind.cs`、メモリ/テーブル/tag、他の既存例外は本仕様で変更を要求しない。
 
 ## 処理フロー
 
@@ -379,7 +386,7 @@ Invokeは引数個数と型を実行前に検査し、不一致はArgumentExcept
 | `ExecutionBoundary.Invoke(WasmFunction function, ReadOnlySpan<WasmValue> arguments, WasmProcessingStage stage)` | WasmResultsを返す。共通の入退出と結果例外化を所有 |
 | `ExecutionBoundary.ThrowIfFailed(ExecutionResult result, WasmProcessingStage stage)` | 正常なら戻る。失敗の元位置にstageを付けてWasmFailureLocationを作り、trap/exhaustionの公開例外化を行う唯一の場所 |
 | `WasmExecutionContext.Enter(WasmExecutionOptions options, out bool isOutermost)` | 現在のコンテキストを返す。nullならoptionsの上限を固定して作る |
-| `WasmExecutionContext.TryEnterCall()` / `ExitCall()` | 上限以内なら深さを増やすbool操作と、対応する減算 |
+| `WasmExecutionContext.TryEnterCall()` / `ExitCall()` | 上限以内なら深さを増やすbool操作と、深さだけを戻す内部操作。フレームの通常終了はCompleteFrame、Run終了時の復元はRestoreが担当 |
 | `WasmExecutionContext.Exit(bool isOutermost)` | 最外側なら現在の参照を解除する。内側は解除しない |
 | `Interpreter.Run(WasmExecutionContext context, WasmFunction function, ReadOnlySpan<WasmValue> arguments, WasmProcessingStage stage)` | ExecutionResultを返す。今回追加したフレーム/値/深さを終了時に戻す。stageは入口の実装上限の診断に用いる |
 
@@ -388,6 +395,8 @@ Invokeは引数個数と型を実行前に検査し、不一致はArgumentExcept
 コンテキストを開いたインスタンスのMaxCallDepthは、正常/trap/例外で終わるまで変更しない。A=100の深さ50からB=10へ入ると51/100、B単独なら1/10となる。同じスレッドのホスト再入も同じコンテキストで数える。別スレッドや非同期へ伝播しない。
 
 Interpreter.Runは呼び出し前のフレーム数、値スタック位置、深さを記録し、finallyでその位置に戻す。内側のRunは外側のフレームを実行/破棄せず、今回の入口フレームが完了したところで戻る。正常結果は復元前に取り出す。ExecutionBoundaryもfinallyでExitを呼ぶため、途中例外でも現在の参照が残らない。ホスト例外のcatch/ラップは追加しない。
+
+通常の関数終了は`CompleteFrame()`が結果を保持し、フレーム数と深さを1段戻す。`Run`のfinallyは保存した絶対値へ復元するため、正常終了後に深さを再度減算しない。現行の`Run`へ渡すargumentsは公開Invokeの個数検査とValidateの実行形検査により常に空であり、引数の配置は行わない。numeric-controlでparametersの拒否を解除するときは、引数・localsの配置とOperandBaseの計算、callからの復元を同時に実装・検証する。
 
 **スタックの容量**: コンテキスト作成時の値/フレーム配列は空とし、最初の関数入口で必要数を確保する。値領域の必要数は`OperandBase + FunctionCode.MaxOperandStack`、フレームは現在数+1とする。ネスト時は既存の使用領域を保ち、空きが不足した配列だけを必要数と現在容量の2倍の大きい方まで拡張する。計算はulongで行い、Array.MaxLengthを超える倍増分は抑える。必要数自体を保持できない場合は、Runが入口でWasmImplementationLimitExceptionのCollectionSizeを投げ、ExecutionBoundaryから受け取ったstageと対象関数のindex/本体位置でLocationを設定する。これは仕様上のtrapではなく、失敗結果へ変換したりホスト例外を捕捉して加工したりしない。深さ制限は別にTryEnterCallで先に確認する。命令ごとの配列確保は行わず、退出時は除いた使用領域の参照をクリアする。ネストや容量変更を越えて配列へのref/Spanを保持せず、indexから取り直す。
 
@@ -508,6 +517,8 @@ WasmUnverifiedRangeは`Stage`、`long StartOffset`、`long EndOffset`（排他�
 ### 生成と検証の順序
 
 生成器のテストは、最小の宣言からlookupとコンパイル可能なswitchが生成されること、表の変更が両者に反映されること、重複opcode/handler不整合が診断になることに絞る。生成文字列全体の巨大snapshotを正本にしない。ランタイムの4段階テストが実際に生成ループを通ることを統合確認とする。
+
+命令宣言用の型とExecutionResult・Instructionは実ソースを使用し、factoryと結果配列の正規化を手書きで複製しない。WasmExecutionContextと値・reasonのスタブは生成ループの単体検証に必要な範囲に限定する。実コンテキスト・実handlerとの統合は、通常ビルドとランタイムの4段階テストで確認する。
 
 実装時は`dotnet build WasmSharp2.slnx -c Release`で警告・エラー0を確認してから、`dotnet run --project tests/WasmSharp.Tests/WasmSharp.Tests.csproj -c Release --no-build`と`dotnet run --project tests/WasmSharp.Generators.Tests/WasmSharp.Generators.Tests.csproj -c Release --no-build`を実行する。focused実行にはTUnitの`--treenode-filter`を使う。テストクラスは対象型/メソッド別、メソッド名は日本語、AAA、TUnitのawait付きassertionとする。
 

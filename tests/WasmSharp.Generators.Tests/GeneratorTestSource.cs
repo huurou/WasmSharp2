@@ -10,7 +10,6 @@ internal static class GeneratorTestSource
 {
     public const string EXECUTION_CONTRACTS = """
         global using System;
-        global using System.Collections.Immutable;
         namespace WasmSharp
         {
             public readonly record struct WasmValue(long Bits);
@@ -22,25 +21,15 @@ internal static class GeneratorTestSource
         }
         namespace WasmSharp.Execution
         {
-            internal enum ExecutionStatus { Success, Trap, Exhaustion }
-            internal readonly record struct ExecutionResult(
-                ExecutionStatus Status,
-                ImmutableArray<WasmValue> Values,
-                Exceptions.WasmTrapReason? TrapReason,
-                Exceptions.WasmExhaustionReason? ExhaustionReason,
-                int? Limit,
-                uint? FunctionIndex,
-                long? ByteOffset);
-            internal readonly record struct Instruction(
-                Instructions.ExecutionOpcode Opcode, WasmValue Immediate, long ByteOffset);
-            internal sealed class WasmExecutionContext
+            internal sealed class WasmExecutionContext(int frameCount)
             {
                 public Instruction[] Instructions { get; init; } = [];
-                public int FrameCount { get; set; }
+                internal int FrameCount { get; private set; } = frameCount;
                 public int Pc { get; private set; }
                 public WasmValue Value { get; set; }
                 public uint FunctionIndex => 7;
                 public Instruction ReadNextInstruction() => Instructions[Pc++];
+                internal void CompleteFrame() => FrameCount--;
             }
         }
         """;
@@ -60,7 +49,13 @@ internal static class GeneratorTestSource
         var assembly = typeof(GeneratorTestSource).Assembly;
         var contracts = assembly
             .GetManifestResourceNames()
-            .Where(x => x.StartsWith("InstructionContracts.", StringComparison.Ordinal))
+            .Where(x =>
+                x.StartsWith("InstructionContracts.", StringComparison.Ordinal)
+                || (
+                    executionContracts is not null
+                    && x.StartsWith("ExecutionContracts.", StringComparison.Ordinal)
+                )
+            )
             .Select(x =>
             {
                 using var reader = new StreamReader(assembly.GetManifestResourceStream(x)!);

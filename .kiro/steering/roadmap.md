@@ -96,7 +96,7 @@ Decode・Validate・Instantiate・Invokeを別々の機能仕様にせず、機�
 
 ## Specs (dependency order)
 
-- [ ] wasm-runtime-foundation -- 明示的な4段階APIと値・型・失敗分類、最小の線形実行基盤。 Dependencies: none
+- [x] wasm-runtime-foundation -- 明示的な4段階APIと値・型・失敗分類、最小の線形実行基盤。 Dependencies: none
 - [ ] wasm-test-corpus -- Core 2.0公式テスト・WABT・実効featureを固定し、JSONとモジュール素材を生成する。 Dependencies: wasm-runtime-foundation
 - [ ] wasm-conformance-runner -- 基盤対応範囲のJSON実行と、固定スイート全体の結果分類・集計・回帰比較を行う初期ランナーを整備する。 Dependencies: wasm-runtime-foundation, wasm-test-corpus
 - [ ] wasm-numeric-control -- スカラー数値、関数、構造化制御、複数値、globalsを4段階で実装し、対応するランナー機能と公式回帰確認を加える。 Dependencies: wasm-runtime-foundation, wasm-conformance-runner

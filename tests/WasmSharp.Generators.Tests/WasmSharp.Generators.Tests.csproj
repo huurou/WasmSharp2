@@ -18,5 +18,9 @@
       Include="..\..\src\WasmSharp\Instructions\InstructionAttribute.cs;..\..\src\WasmSharp\Instructions\OpcodeKey.cs;..\..\src\WasmSharp\Instructions\ImmediateKind.cs;..\..\src\WasmSharp\Instructions\StackEffectKind.cs;..\..\src\WasmSharp\Instructions\ValidationRule.cs"
       LogicalName="InstructionContracts.%(Filename)%(Extension)"
     />
+    <EmbeddedResource
+      Include="..\..\src\WasmSharp\Execution\ExecutionResult.cs;..\..\src\WasmSharp\Execution\Instruction.cs"
+      LogicalName="ExecutionContracts.%(Filename)%(Extension)"
+    />
   </ItemGroup>
 </Project>

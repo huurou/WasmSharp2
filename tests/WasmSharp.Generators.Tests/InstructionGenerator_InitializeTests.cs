@@ -32,13 +32,13 @@ internal class InstructionGenerator_InitializeTests
                     internal static ExecutionResult First(WasmExecutionContext context, in Instruction instruction)
                     {
                         context.Value = instruction.Immediate;
-                        context.FrameCount--;
+                        context.CompleteFrame();
                         return default;
                     }
                     internal static ExecutionResult Second(WasmExecutionContext context, in Instruction instruction)
                     {
                         context.Value = new(instruction.Immediate.Bits + 1);
-                        context.FrameCount--;
+                        context.CompleteFrame();
                         return default;
                     }
                 }
@@ -84,9 +84,8 @@ internal class InstructionGenerator_InitializeTests
             originalOutput,
             """
             WasmSharp.Instructions.InstructionSet.TryGet(new(0, 0x41), out var descriptor);
-            var context = new WasmSharp.Execution.WasmExecutionContext
+            var context = new WasmSharp.Execution.WasmExecutionContext(1)
             {
-                FrameCount = 1,
                 Instructions = [new(descriptor.ExecutionOpcode!.Value, new(41), 100)]
             };
             var result = WasmSharp.Execution.Interpreter.TestRun(context);
@@ -97,9 +96,8 @@ internal class InstructionGenerator_InitializeTests
             output,
             $$"""
             var found = WasmSharp.Instructions.InstructionSet.TryGet(new(0, {{code}}), out var descriptor);
-            var context = new WasmSharp.Execution.WasmExecutionContext
+            var context = new WasmSharp.Execution.WasmExecutionContext(1)
             {
-                FrameCount = 1,
                 Instructions = [new(descriptor.ExecutionOpcode!.Value, new(41), 100)]
             };
             var result = WasmSharp.Execution.Interpreter.TestRun(context);
@@ -268,8 +266,13 @@ internal class InstructionGenerator_InitializeTests
     }
 
     [Test]
-    [Arguments("Trap", "Exceptions.WasmTrapReason.IntegerDivideByZero", "null", "null")]
-    [Arguments("Exhaustion", "null", "Exceptions.WasmExhaustionReason.CallDepthLimit", "12")]
+    [Arguments("Trap", "WasmSharp.Exceptions.WasmTrapReason.IntegerDivideByZero", "null", "null")]
+    [Arguments(
+        "Exhaustion",
+        "null",
+        "WasmSharp.Exceptions.WasmExhaustionReason.CallDepthLimit",
+        "12"
+    )]
     public async Task Handlerが失敗する_原因と上限と元位置をそのまま返して次の命令を実行しない(
         string status,
         string trapReason,
@@ -278,6 +281,10 @@ internal class InstructionGenerator_InitializeTests
     )
     {
         // Arrange
+        var failure =
+            status == "Trap"
+                ? $"ExecutionResult.Trap({trapReason}, context.FunctionIndex, instruction.ByteOffset)"
+                : $"ExecutionResult.Exhaustion({exhaustionReason}, {limit}, context.FunctionIndex, instruction.ByteOffset)";
         var compilation = GeneratorTestSource.CreateCompilation(
             $$"""
             namespace WasmSharp.Instructions
@@ -292,8 +299,7 @@ internal class InstructionGenerator_InitializeTests
                 {
                     internal static ExecutionResult TestRun(WasmExecutionContext context) => RunLoop(context, 1);
                     internal static ExecutionResult Fail(WasmExecutionContext context, in Instruction instruction)
-                        => new(ExecutionStatus.{{status}}, [], {{trapReason}}, {{exhaustionReason}},
-                            {{limit}}, context.FunctionIndex, instruction.ByteOffset);
+                        => {{failure}};
                 }
             }
             """,
@@ -314,14 +320,14 @@ internal class InstructionGenerator_InitializeTests
             output,
             $$"""
             WasmSharp.Instructions.InstructionSet.TryGet(new(0, 0x41), out var descriptor);
-            var context = new WasmSharp.Execution.WasmExecutionContext
+            var context = new WasmSharp.Execution.WasmExecutionContext(2)
             {
-                FrameCount = 2,
                 Instructions = [new(descriptor.ExecutionOpcode!.Value, default, 12345678901L)]
             };
             var result = WasmSharp.Execution.Interpreter.TestRun(context);
-            var expected = WasmSharp.Execution.Interpreter.Fail(context, in context.Instructions[0]);
-            return result == expected && result.Status == WasmSharp.Execution.ExecutionStatus.{{status}}
+            return result.Status == WasmSharp.Execution.ExecutionStatus.{{status}}
+                && result.TrapReason == {{trapReason}} && result.ExhaustionReason == {{exhaustionReason}}
+                && result.Limit == {{limit}} && result.Values.IsEmpty && !result.Values.IsDefault
                 && result.FunctionIndex == 7 && result.ByteOffset == 12345678901L
                 && context.Pc == 1 && context.FrameCount == 2;
             """
@@ -396,7 +402,7 @@ internal class InstructionGenerator_InitializeTests
                     }
                     internal static ExecutionResult Return(WasmExecutionContext context, in Instruction instruction)
                     {
-                        context.FrameCount--;
+                        context.CompleteFrame();
                         return default;
                     }
                 }
@@ -445,14 +451,14 @@ internal class InstructionGenerator_InitializeTests
             $$"""
             WasmSharp.Instructions.InstructionSet.TryGet(new(0, 0x41), out var constant);
             WasmSharp.Instructions.InstructionSet.TryGet(new(0, 0x0B), out var end);
-            var context = new WasmSharp.Execution.WasmExecutionContext
+            var context = new WasmSharp.Execution.WasmExecutionContext({{entryFrameCount + 1}})
             {
-                FrameCount = {{entryFrameCount + 1}},
                 Instructions = [new(constant.ExecutionOpcode!.Value, new(42), 100),
                     new(end.ExecutionOpcode!.Value, default, 102)]
             };
             var result = WasmSharp.Execution.Interpreter.TestRun(context, {{entryFrameCount}});
             return result.Status == WasmSharp.Execution.ExecutionStatus.Success
+                && result.Values.IsEmpty && !result.Values.IsDefault
                 && context.Value.Bits == 42 && context.Pc == 2 && context.FrameCount == {{entryFrameCount}};
             """
         );
