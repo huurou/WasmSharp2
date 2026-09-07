@@ -6,7 +6,7 @@
 
 ## 現状
 
-`WasmTable`は空クラス、`WasmValueKind`にはFuncRef/ExternRefがあるが実装済みではない。着手前に基盤の値・型契約と数値・制御、固定公式素材が整備される。
+discovery時点の`WasmTable`は空クラス、`WasmValueKind`にはFuncRef/ExternRefがあるが実装済みではない。着手前に基盤の値・型契約と数値・制御、固定公式素材、ランナーと結果baselineが整備される。
 
 ## 望む結果
 
@@ -22,6 +22,7 @@ Core 2.0の`funcref/externref`、複数table、element segment、table命令、`
 - **対象**: table型・limits、複数table、table.get/set/size/grow、table.copy/fill/init、elem.drop。
 - **対象**: active/passive/declarative element、初期化式と添字、初期化trap。
 - **対象**: call_indirectのtable要素・関数型照合とtrap、通常のホスト利用に必要なtable・参照の明示的公開操作。
+- **対象**: 同じランナーツールの参照の引数・結果、null・同一性、element初期化時のassert_uninstantiableの判定と、公式検証・回帰確認。メモリ仕様の完成を待たず必要な判定を実装し、既存対応があれば再利用する。
 - **対象外**: 型付き関数参照、call_ref、GC、再帰型、exnref、64bit table、ホストimportの名前・型照合。
 
 ## 責務の接点
@@ -36,14 +37,14 @@ Core 2.0の`funcref/externref`、複数table、element segment、table命令、`
 
 ## 上流・下流
 
-- **上流**: `wasm-numeric-control`。
+- **上流**: `wasm-numeric-control`（共通基盤・公式素材・ランナーを含む）。
 - **下流**: `wasm-host-linking`。`wasm-linear-memory`とは並行できる。
 
 ## 既存仕様との関係
 
-- **拡張する既存仕様**: なし。
+- **拡張する既存仕様**: `wasm-conformance-runner`が整備したツールを拡張する。初期仕様の完了条件は変更せず、本仕様の要件・タスクで追加対応を扱う。
 - **隣接**: globalsとcallの共通経路は数値・制御を利用し、参照型固有の処理だけを追加する。共有リソースとしての接続はホスト連携が担当する。
 
 ## 制約と確認事項
 
-固定公式素材でnull、同一参照、型不一致、table境界、element mode、間接call等を公開APIから確認する。ホストimportが必要なケースはホスト連携・ランナーの統合確認へ引き継ぐ。CLR参照の保持方法は実装詳細であり、Wasmの同一性を失わないことを契約とする。文書は日本語（`ja`）。
+テーブル・参照機能を追加するたびに固定公式スイートをランナーで実行し、null、同一参照、型不一致、table境界、element mode、間接call等を公開APIから確認する。完了時は[ロードマップの公式検証方針](../../steering/roadmap.md#公式検証の方針と完了条件)に従い、全体の結果差分、追加機能の対象ケースの合格、既存合格ケースの退行がないことを確認する。ホストimport等が必要なケースは出典・理由・所管仕様を記録し、前提機能が揃った時点で再検証する。CLR参照の保持方法は実装詳細であり、Wasmの同一性を失わないことを契約とする。文書は日本語（`ja`）。

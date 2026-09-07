@@ -4,7 +4,7 @@
 
 実装者は、実装の不足と仕様違反を変わらない公式テスト集合上で追いたい。入力版やfeatureが途中で変わると、過去の合格結果と比較できない。
 
-## 現状
+## discovery時点の現状（2026-09-06）
 
 同梱公式specは3.0系。同梱WABTは宣言版1.0.41だが、同名の公式タグとfeature既定値が一致せず、上流commitも未特定。変換用の自作ツール・固定manifest・生成済み公式素材は整備されていない。
 
@@ -14,7 +14,7 @@ Core 2.0の公式入力集合、変換器、全feature状態と生成物を再�
 
 ## 方針
 
-公式specのCore 2.0保存版に対応する固定commitを選び、`wast2json`を固定条件で実行する。候補は`v2.0.0`の`test/core`（SIMD配下を含む）。実際の変換で確認してから固定値を確定する。ライブラリ実装と独立に進める。
+公式specのCore 2.0保存版に対応する固定commitを選び、`wast2json`を固定条件で実行する。候補は`v2.0.0`の`test/core`（SIMD配下を含む）。実際の変換で確認してから固定値を確定する。基盤の次、初期ランナーの前に整備する。素材生成はランタイムへ依存しない。
 
 ## 範囲
 
@@ -36,8 +36,8 @@ Core 2.0の公式入力集合、変換器、全feature状態と生成物を再�
 
 ## 上流・下流
 
-- **上流**: なし。[ロードマップ](../../steering/roadmap.md)のCore 2.0範囲と固定方針。
-- **下流**: `wasm-numeric-control`以降の機能検証、および`wasm-conformance-runner`。
+- **上流**: `wasm-runtime-foundation`（作業順のみ）。[ロードマップ](../../steering/roadmap.md)のCore 2.0範囲と固定方針。
+- **下流**: `wasm-conformance-runner`の初期baselineと、同じ素材を使う`wasm-numeric-control`以降の継続的な公式回帰確認。
 
 ## 既存仕様との関係
 

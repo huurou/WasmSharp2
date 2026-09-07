@@ -6,7 +6,9 @@ C#でWebAssemblyバイナリをデコード・検証・インスタンス化・�
 
 2026-09-06のdiscoveryで、ユーザーは複数仕様への分割、初期Core 2.0、下記8仕様を機能ごとに4段階を通して実装する進め方を承認した。Core 3.0は将来の別計画とする。この承認はdiscoveryの方針承認であり、後続のrequirements・design・tasksや実装の承認ではない。文書の言語は日本語とし、後続で生成する`spec.json.language`は`ja`とする。
 
-## 現状
+2026-09-07の順序見直しでは、進行中の`wasm-runtime-foundation`を先頭に保ち、公式素材、ランナーの初期基盤、各実行機能の順に進める。基盤の承認済み要件・設計・タスクは維持する。後続機能では必要なランナー対応と公式スイートによる回帰確認も完了条件に含める。
+
+## discovery時点の現状（2026-09-06）
 
 - `src/WasmSharp`は.NET 10の公開型とメソッドシグネチャの骨組み。`Decode`・`Validate`・`Instantiate`・`Invoke`は未実装。
 - `tests/WasmSharp.Tests`は.NET 10・TUnit 1.66.10のプロジェクト定義のみで、テスト本体はない。`tools`は空。
@@ -16,7 +18,7 @@ C#でWebAssemblyバイナリをデコード・検証・インスタンス化・�
 
 ## 進め方の選択
 
-- **採用**: 小さな4段階の実行基盤を作り、数値・制御、メモリ、参照、ホスト連携、SIMDを縦に追加する。公式テスト素材の固定・生成は基盤と並行して整備する。規模は大。
+- **採用**: 小さな4段階の実行基盤を完成させ、公式テスト素材の固定・生成とランナーの初期基盤を整備してから、数値・制御、メモリ、参照、ホスト連携、SIMDを縦に追加する。各機能の実装に合わせて同じランナーを拡張し、固定スイートを継続実行する。規模は大。
 - **理由**: 各機能の仕様解釈と実行結果を早く対応づけられ、未実装と不具合の差分を固定したテスト集合上で追える。
 - **検討した別案**: Core 2.0全体のDecode・Validateを先行し、その後Instantiate・Invokeを完成させる。段階内の作業はまとまるが実行結果による確認が遅くなるため採用しない。こちらも規模は大。
 - **範囲の別案**: Core 1.0限定ではSIMD等が完了目標に入らず、Core 3.0から開始するとGC等の追加設計とWABTの変換対応不足を同時に扱う必要がある。今回はCore 2.0を選択した。
@@ -69,7 +71,18 @@ C#でWebAssemblyバイナリをデコード・検証・インスタンス化・�
 
 前のmodule/register失敗で実行できない後続commandも、依存先の失敗を理由付きで記録して合格扱いにしない。集計ではセットアップcommandとassertionの件数を区別する。
 
-③以降の機能は固定済み公式素材を選んで検証する。全ランナーが完成するまではTUnitから公開APIへ生成済み`.wasm`を渡し、対象と期待値の出典を記録する。WAST用の簡易パーサーは作らない。最後にランナーで全対象を実行し、対象内の`failed`・`unsupported`・`tool_error`・依存による未実行が0であることを確認する。ランナーとSIMDの両方が揃う前にCore 2.0準拠の完成を宣言しない。
+`wasm-runtime-foundation`は既存の完了条件で先に完成させる。その後、`wasm-test-corpus`と`wasm-conformance-runner`の初期基盤を整備し、基盤の実装状態で固定スイート全体を処理した最初の結果baselineを保存する。この時点でCore 2.0全件合格は要求しない。
+
+`wasm-numeric-control`以降は、各機能の実装単位ごとに必要なランナー対応も加えて固定スイート全体をコマンドで実行する。実装中の絞り込み実行は可能だが、機能の完了確認では全体の実行結果と直前のbaselineとの差分を残す。TUnitの個別テストは補助として使い、公式JSONの期待値判定や全体の回帰確認を代替しない。WAST用の簡易パーサーは作らない。
+
+- 追加機能の対象ケースのうち、必要なランタイム機能が揃ったものは合格を要求する。必要なJSON command・期待値比較・ホスト設定の不足を理由に検証を後回しにしない。
+- 以前`passed`だったケースが他の結果や未実行へ変わっていないことを確認する。合格件数だけでなく、元ファイルとcommandを特定して比較する。
+- 後続のランタイム機能を必要とするケースは、出典・未成立の理由・必要な機能と所管仕様を記録する。その機能が揃った段階で再検証し、対象集合やfeature flagから除外しない。
+- ランナー側のJSON未対応や期待値比較の不足は`tool_error`とし、ランタイムの`unsupported`へ置き換えない。前提commandの失敗による未実行も元の原因に結びつけて記録する。
+
+最後は同じランナーで全対象を実行し、対象内の`failed`・`unsupported`・`tool_error`・依存による未実行が0であることを確認する。全8仕様と各機能に伴うランナー拡張が揃う前にCore 2.0準拠の完成を宣言しない。
+
+最後の機能を統合する担当が、全8仕様とランナー拡張を統合した同じコード状態で最終実行を行い、コード状態・固定profile・生成物と結果を対応づけて記録する。ホスト連携とSIMDを別々の状態で検証した結果を足し合わせて最終確認の代わりにしない。
 
 公式テスト合格は固定した集合での証拠として扱い、未収録の動作まで証明したとは言わない。各仕様では該当するCore 2.0の規則と実装・検証の対応も確認する。テストを追加・修正した場合は先に警告・エラーのないビルドを確認してからコマンドで実行し、既存のC#・TUnit規則に従う。
 
@@ -77,20 +90,32 @@ C#でWebAssemblyバイナリをデコード・検証・インスタンス化・�
 
 Decode・Validate・Instantiate・Invokeを別々の機能仕様にせず、機能ごとに4段階を通す。共通の機械だけ基盤にまとめ、メモリ・テーブル・ホスト連携・SIMDの意味論をそれぞれの仕様に集める。テスト素材の生成とランタイム利用者としてのランナーは、依存する入力と責務が違うため分ける。
 
+`wasm-conformance-runner`の初期仕様は、基盤の公開APIで実行できる公式ケースと、全commandの結果記録・回帰比較までを完成させる。spectestや後続機能の公開APIを待たない。各機能に必要なランナー拡張は、その機能仕様の受入作業として同じツール内へ追加する。JSON処理・期待値比較・spectestの配置はツール側に保ち、ランタイム内部への専用hookや別ランナーを作らない。
+
 独立した仕様の並行作業は可能だが、共通の命令テーブル・モジュール解析・実行ループへの編集は衝突し得る。設計で共通契約を先に固め、実装時は同じファイルの並行編集を避けて統合する。依存関係は仕様作成・完了確認の前提を表し、不要な実装レイヤーや公開拡張口を要求するものではない。
 
 ## Specs (dependency order)
 
 - [ ] wasm-runtime-foundation -- 明示的な4段階APIと値・型・失敗分類、最小の線形実行基盤。 Dependencies: none
-- [ ] wasm-test-corpus -- Core 2.0公式テスト・WABT・実効featureを固定し、JSONとモジュール素材を生成する。 Dependencies: none
-- [ ] wasm-numeric-control -- スカラー数値、関数、構造化制御、複数値、globalsを4段階で実装する。 Dependencies: wasm-runtime-foundation, wasm-test-corpus
-- [ ] wasm-linear-memory -- 線形メモリ、data segment、load/store、bulk memoryを実装する。 Dependencies: wasm-numeric-control
-- [ ] wasm-tables-references -- テーブル、参照値、element segment、間接呼び出し、bulk tableを実装する。 Dependencies: wasm-numeric-control
-- [ ] wasm-host-linking -- 明示型のホスト関数、import/exportの共有、リンクとstartを実装する。 Dependencies: wasm-linear-memory, wasm-tables-references
-- [ ] wasm-simd -- v128とCore 2.0 SIMDを共通命令テーブル・実行ループに実装する。 Dependencies: wasm-linear-memory
-- [ ] wasm-conformance-runner -- 公開APIだけでspectestとJSONコマンドを実行し、公式適合結果を分類・集計する。 Dependencies: wasm-test-corpus, wasm-host-linking
+- [ ] wasm-test-corpus -- Core 2.0公式テスト・WABT・実効featureを固定し、JSONとモジュール素材を生成する。 Dependencies: wasm-runtime-foundation
+- [ ] wasm-conformance-runner -- 基盤対応範囲のJSON実行と、固定スイート全体の結果分類・集計・回帰比較を行う初期ランナーを整備する。 Dependencies: wasm-runtime-foundation, wasm-test-corpus
+- [ ] wasm-numeric-control -- スカラー数値、関数、構造化制御、複数値、globalsを4段階で実装し、対応するランナー機能と公式回帰確認を加える。 Dependencies: wasm-runtime-foundation, wasm-conformance-runner
+- [ ] wasm-linear-memory -- 線形メモリ、data segment、load/store、bulk memoryと初期化trapの公式検証を実装する。 Dependencies: wasm-numeric-control
+- [ ] wasm-tables-references -- テーブル、参照値、element segment、間接呼び出し、bulk tableと参照の公式期待値判定を実装する。 Dependencies: wasm-numeric-control
+- [ ] wasm-host-linking -- 明示型のホスト関数、import/exportの共有、リンクとstartを実装し、ツール側のspectestとregisterを完成させる。 Dependencies: wasm-linear-memory, wasm-tables-references
+- [ ] wasm-simd -- v128とCore 2.0 SIMDを共通命令テーブル・実行ループに実装し、ランナーのlane期待値判定を加える。 Dependencies: wasm-linear-memory
 
-仕様を作る波は、①基盤と素材、②数値・制御、③メモリとテーブル・参照、④ホスト連携とSIMD、⑤ランナー。ランナー自身はSIMD命令を実装せず、基盤の`WasmValue`でv128の入出力を扱う。SIMD未完成時はその実行を`unsupported`として扱い、全体の完成条件は別途全8仕様を要求する。
+作業順は、①進行中の基盤、②公式素材、③初期ランナーとbaseline、④数値・制御、⑤メモリとテーブル・参照、⑥ホスト連携とSIMD。素材から基盤への依存は、基盤を最初に完成させる作業順の指定であり、素材生成ツールがランタイムを参照する要求ではない。⑤の2仕様は並行可能。⑥のホスト連携は⑤の両方を必要とし、SIMDはメモリが揃えば着手できる。各機能の完了時に同じスイートで回帰確認し、最後に全体の合格条件を確認する。
+
+初期ランナー完了後に加えるツール側の対応は次の機能仕様で実装・検証する。これらを初期ランナーの完了前提へ戻して循環依存を作らない。
+
+| 機能仕様 | 同時に加えるランナー対応 |
+| --- | --- |
+| `wasm-numeric-control` | 引数・複数戻り値、global取得、数値結果・NaN、trap・exhaustionの判定 |
+| `wasm-linear-memory` | data初期化時のtrapを含むインスタンス化失敗の判定 |
+| `wasm-tables-references` | 参照の引数・結果、null・同一性、element初期化trapの判定 |
+| `wasm-host-linking` | spectest、module/registerと共有状態、リンク不成立・start・importを含む統合確認 |
+| `wasm-simd` | v128の引数・結果、laneごとのビット列・NaN patternの判定 |
 
 ## 将来のCore 3.0
 
