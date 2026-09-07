@@ -172,8 +172,8 @@
   - _Boundary: InstructionSet_
   - _Requirements: 6.2, 6.4, 6.5_
 
-- [ ] 7. バイナリから独立した静的定義を得る
-- [ ] 7.1 入力境界・整数・名前を厳密に読み取る
+- [x] 7. バイナリから独立した静的定義を得る
+- [x] 7.1 入力境界・整数・名前を厳密に読み取る
   - sectionと関数本体の限定範囲を越えない読み取りを用意し、宣言長と残量をoverflowなしに比較する。
   - u32・s32・s64の最大幅と未使用ビットを検査し、合法な非最短LEBを受理する。
   - 浮動小数点数のlittle-endianビット列と厳格なUTF-8名を読み、破損には元位置を付ける。
@@ -182,7 +182,7 @@
   - _Depends: 3.1, 3.2_
   - _Requirements: 3.2, 3.3, 3.6, 6.4, 6.7_
 
-- [ ] 7.2 ヘッダー・section・型・exportの構文を読み取る
+- [x] 7.2 ヘッダー・section・型・exportの構文を読み取る
   - ヘッダーとCore 2.0のsection順序・重複・ID・payload境界を検査する。
   - 引数型と戻り値型の配列、および関数exportの名前・種類・index・元位置を静的定義へ保持する。
   - custom sectionの名前を検査して残る内容を読み飛ばし、配置や複数存在が実行対象の定義を変えないようにする。
@@ -191,7 +191,7 @@
   - _Depends: 2.3, 6.1, 7.1_
   - _Requirements: 3.2, 3.4, 3.5, 3.6, 6.4, 6.5_
 
-- [ ] 7.3 関数本体と圧縮localsの構文を読み取る
+- [x] 7.3 関数本体と圧縮localsの構文を読み取る
   - functionとcodeの件数、body長、型index、locals宣言、生成命令情報に基づく定数即値と終端を読み取る。
   - localsを展開せず個数を累算し、合計がちょうど2の32乗以上となる入力を破損として拒否する。
   - 引数・locals・結果が最小形を外れても対応済み構文の解析を続け、平坦なelse、end欠落、end後の余剰を構文違反にする。
@@ -200,7 +200,7 @@
   - _Depends: 6.5_
   - _Requirements: 3.2, 3.4, 4.1, 6.4, 6.5_
 
-- [ ] 7.4 未対応と確定済みの構文違反を区別する
+- [x] 7.4 未対応と確定済みの構文違反を区別する
   - 割当済み未対応のsection・命令では、機能名と中断位置、残りのDecode範囲と全体のValidate未実施範囲を通知する。
   - 未割当の値型・external kind・opcode、FC/FDの不正LEBや欠番はCore 2.0の破損に分類する。
   - 中断前に確定した長さ・順序・重複・文法違反を未対応で置き換えず、中断後の入力を検査済みとしない。
@@ -209,7 +209,7 @@
   - _Depends: 3.1, 6.5_
   - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5_
 
-- [ ] 7.5 バイト列とストリームの公開デコードを統合する
+- [x] 7.5 バイト列とストリームの公開デコードを統合する
   - デコード結果を入力から独立した静的モジュールへ接続し、インスタンス生成・実行を行わず返す。
   - ストリームの現在位置からEOFまで同期で読み、short readと非seekを扱い、入力を保持・再読込・Disposeしない。
   - null・読み取り不可を引数不正とし、元のI/O例外をラップせず伝播する。入力保持上限は専用の実装上限に分類する。
@@ -306,6 +306,8 @@
   - _Requirements: 7.1, 7.2, 7.3_
 
 ## Implementation Notes
+
+- 7.1〜7.5: バイト列・Streamの公開Decodeを接続し、Releaseビルドの警告・エラー0、ランタイム328件・生成器27件の成功と各小タスクの独立レビューを確認した。data section到達時はcodeを後置できないため、未対応内容より先にfunction/codeの件数不一致を通知する。入力保持上限は書き込み前の比較をレビューし、約2GBの実入力は未検証。4段階を通した入力変更からの独立・両入力の内容一致は10.1で確認する。
 
 - 4.2: 生成する`Interpreter.RunLoop(WasmExecutionContext context, int entryFrameCount)`は`FrameCount`と、pcを進めて`Instruction`を値で返す`ReadNextInstruction()`を使用する。handlerは`static ExecutionResult Handler(WasmExecutionContext context, in Instruction instruction)`で、非Successをそのまま返す。6.1では`GeneratorTestSource.EXECUTION_CONTRACTS`と実型を照合し、入口の準備・正常結果の取り出し・finallyでの復元は6.2の`Run`で接続する。
 - 5.4: `EnsureCapacity(operandBase, maxOperandStack, location)`で関数入口の領域を確保してから`PushFrame`・`PushValue`を使う。`GetFrame`は値を返し、`Restore(frameCount, valueCount, callDepth)`は除いた参照を解除して入場前の使用数・深さへ戻す。生成命令を読む`ReadNextInstruction()`と関数終了処理は6.1で接続する。

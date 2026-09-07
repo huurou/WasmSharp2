@@ -1,4 +1,5 @@
 ﻿using System.Collections.Immutable;
+using WasmSharp.Exceptions;
 using WasmSharp.Execution;
 using WasmSharp.Modules;
 
@@ -61,7 +62,7 @@ public sealed class WasmModule
     /// <returns>デコードされたモジュール</returns>
     public static WasmModule Decode(ReadOnlySpan<byte> bytes)
     {
-        throw new NotImplementedException();
+        return ModuleDecoder.Decode(bytes);
     }
 
     /// <summary>
@@ -71,12 +72,37 @@ public sealed class WasmModule
     /// <returns>デコードされたmodule</returns>
     public static WasmModule Decode(Stream stream)
     {
+        ArgumentNullException.ThrowIfNull(stream);
         if (!stream.CanRead)
         {
             throw new ArgumentException("入力ストリームが読み取り不可でした。", nameof(stream));
         }
 
-        throw new NotImplementedException();
+        using var buffer = new MemoryStream();
+        Span<byte> chunk = stackalloc byte[4096];
+        while (true)
+        {
+            var count = stream.Read(chunk);
+            if (count == 0)
+            {
+                break;
+            }
+
+            // 入力元のLengthやseekに依存せず、実際に読んだ量で保持上限を確認する。
+            if (count > Array.MaxLength - buffer.Length)
+            {
+                throw new WasmImplementationLimitException(
+                    "入力バイナリが保持上限を超えています。",
+                    WasmImplementationLimitReason.InputSize,
+                    Array.MaxLength,
+                    new(WasmProcessingStage.Decode, buffer.Length)
+                );
+            }
+
+            buffer.Write(chunk[..count]);
+        }
+
+        return Decode(buffer.GetBuffer().AsSpan(0, (int)buffer.Length));
     }
 
     /// <summary>
