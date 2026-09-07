@@ -2,7 +2,7 @@ using WasmSharp.Exceptions;
 
 namespace WasmSharp.Tests.Exceptions;
 
-public class WasmFailureLocation_ConstructorTests
+internal class WasmFailureLocation_ConstructorTests
 {
     [Test]
     public async Task 段階だけを指定する_不明な入力位置と関数とsectionをnullで保持する()

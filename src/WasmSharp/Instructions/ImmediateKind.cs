@@ -3,7 +3,7 @@ namespace WasmSharp.Instructions;
 /// <summary>
 /// 命令の即値の符号化
 /// </summary>
-public enum ImmediateKind
+internal enum ImmediateKind
 {
     /// <summary>
     /// 即値の読み取りが未対応

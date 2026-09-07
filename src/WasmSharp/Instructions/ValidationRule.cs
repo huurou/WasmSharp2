@@ -3,7 +3,7 @@ namespace WasmSharp.Instructions;
 /// <summary>
 /// 命令に適用する検証規則
 /// </summary>
-public enum ValidationRule
+internal enum ValidationRule
 {
     /// <summary>
     /// 命令の検証が未対応

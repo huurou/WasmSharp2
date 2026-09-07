@@ -5,7 +5,7 @@ namespace WasmSharp.Execution;
 /// <summary>
 /// 線形命令を実行するインタープリタ
 /// </summary>
-public static partial class Interpreter
+internal static partial class Interpreter
 {
     /// <summary>
     /// 今回の関数入口から実行し、終了時に呼び出し前のスタックと深さへ戻す

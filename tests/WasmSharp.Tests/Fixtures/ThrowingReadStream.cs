@@ -1,6 +1,6 @@
 namespace WasmSharp.Tests.Fixtures;
 
-public sealed class ThrowingReadStream(IOException exception) : Stream
+internal sealed class ThrowingReadStream(IOException exception) : Stream
 {
     public override bool CanRead => true;
     public override bool CanSeek => false;

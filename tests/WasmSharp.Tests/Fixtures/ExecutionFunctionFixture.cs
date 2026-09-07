@@ -3,7 +3,7 @@ using WasmSharp.Execution;
 
 namespace WasmSharp.Tests.Fixtures;
 
-public static class ExecutionFunctionFixture
+internal static class ExecutionFunctionFixture
 {
     public static WasmFunction Create(
         ImmutableArray<Instruction> instructions,

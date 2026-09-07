@@ -1,6 +1,6 @@
 namespace WasmSharp.Tests;
 
-public class WasmExecutionOptions_ConstructorTests
+internal class WasmExecutionOptions_ConstructorTests
 {
     [Test]
     [Arguments(1)]
@@ -27,7 +27,7 @@ public class WasmExecutionOptions_ConstructorTests
     }
 }
 
-public class WasmExecutionOptions_DefaultTests
+internal class WasmExecutionOptions_DefaultTests
 {
     [Test]
     public async Task 既定のポリシーを取得する_最大呼び出し深さが1024になる()

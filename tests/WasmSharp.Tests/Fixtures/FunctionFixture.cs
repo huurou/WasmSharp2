@@ -1,6 +1,6 @@
 namespace WasmSharp.Tests.Fixtures;
 
-public static class FunctionFixture
+internal static class FunctionFixture
 {
     public static WasmFunction Create()
     {

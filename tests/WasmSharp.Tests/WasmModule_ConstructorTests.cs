@@ -2,7 +2,7 @@ using WasmSharp.Modules;
 
 namespace WasmSharp.Tests;
 
-public class WasmModule_ConstructorTests
+internal class WasmModule_ConstructorTests
 {
     [Test]
     public async Task 元の配列を変更する_型と関数とexportと入力長を独立して保持する()

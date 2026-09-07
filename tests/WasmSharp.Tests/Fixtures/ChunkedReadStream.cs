@@ -1,6 +1,6 @@
 namespace WasmSharp.Tests.Fixtures;
 
-public sealed class ChunkedReadStream : Stream
+internal sealed class ChunkedReadStream : Stream
 {
     private readonly Stream inner_;
     private readonly int chunkSize_;

@@ -6,7 +6,7 @@ using Microsoft.CodeAnalysis.CSharp;
 
 namespace WasmSharp.Generators.Tests;
 
-public static class GeneratorTestSource
+internal static class GeneratorTestSource
 {
     public const string EXECUTION_CONTRACTS = """
         global using System;
@@ -22,8 +22,8 @@ public static class GeneratorTestSource
         }
         namespace WasmSharp.Execution
         {
-            public enum ExecutionStatus { Success, Trap, Exhaustion }
-            public readonly record struct ExecutionResult(
+            internal enum ExecutionStatus { Success, Trap, Exhaustion }
+            internal readonly record struct ExecutionResult(
                 ExecutionStatus Status,
                 ImmutableArray<WasmValue> Values,
                 Exceptions.WasmTrapReason? TrapReason,
@@ -31,9 +31,9 @@ public static class GeneratorTestSource
                 int? Limit,
                 uint? FunctionIndex,
                 long? ByteOffset);
-            public readonly record struct Instruction(
+            internal readonly record struct Instruction(
                 Instructions.ExecutionOpcode Opcode, WasmValue Immediate, long ByteOffset);
-            public sealed class WasmExecutionContext
+            internal sealed class WasmExecutionContext
             {
                 public Instruction[] Instructions { get; init; } = [];
                 public int FrameCount { get; set; }
@@ -77,9 +77,9 @@ public static class GeneratorTestSource
                             global using System;
                             namespace WasmSharp.Execution
                             {
-                                public readonly struct ExecutionResult;
-                                public sealed class WasmExecutionContext;
-                                public readonly struct Instruction;
+                                internal readonly struct ExecutionResult;
+                                internal sealed class WasmExecutionContext;
+                                internal readonly struct Instruction;
                             }
                             """
                     )
@@ -113,7 +113,7 @@ public static class GeneratorTestSource
         var output = compilation.AddSyntaxTrees(
             CSharpSyntaxTree.ParseText(
                 $$"""
-                public static class Probe
+                internal static class Probe
                 {
                     public static bool Run()
                     {

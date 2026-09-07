@@ -104,7 +104,7 @@ Roslynは必要な既存APIを備えた固定版を選ぶ。最新版を必要�
 
 ## ファイル構成計画（File Structure Plan）
 
-パスはリポジトリルートからの相対パス。公開型は現在の`WasmSharp`名前空間を維持し、新しい補助処理は扱う機能ごとに配置する。クラスの可視性と命名はC#規則に従い、段階を迂回する構築・変更操作はinternal以下とする。
+パスはリポジトリルートからの相対パス。公開型は現在の`WasmSharp`名前空間を維持し、新しい補助処理は扱う機能ごとに配置する。型は利用者向けの公開APIに必要なものだけpublicとし、Modules・Execution・Instructionsの内部型、命令情報と実行分岐の生成型、source generator本体はinternalとする。型内に閉じる補助型はprivateとする。命名はC#規則に従い、段階を迂回する構築・変更操作はinternal以下とする。
 
 ### 新規ファイル
 
@@ -411,7 +411,7 @@ Interpreter.Runは呼び出し前のフレーム数、値スタック位置、�
 | WasmModule | isValidated_、ImmutableArrayのFunctionCode、名前辞書 | 全成功時のみ設定。falseの状態で実行コードを使わない |
 | DecodedFunction | uint TypeIndex、long BodyOffset、ImmutableArrayのLocalDeclaration/DecodedInstruction | 型indexはDecodeでは未検証。localsを巨大配列へ先に展開しない |
 | DecodedInstruction | OpcodeKey、WasmValue Immediate、long ByteOffset | Immediateの解釈はdescriptorが決める。endのImmediateは参照しない |
-| FunctionCode | ImmutableArrayのInstruction、int MaxOperandStack | sealed class。型検証と同じパスで完成した非defaultの配列からinternalコンストラクターでのみ構築し、get-onlyで保持する。モジュールに属する |
+| FunctionCode | ImmutableArrayのInstruction、int MaxOperandStack | internal sealed class。型検証と同じパスで完成した非defaultの配列からプライマリコンストラクターで構築し、get-onlyで保持する。モジュールに属する |
 | Instruction | 生成された実行opcode、WasmValue Immediate、long ByteOffset | 実行可能な命令だけを含む |
 | WasmInstance | モジュール参照、関数配列、ExecutionOptions | 同じ定義から作る別インスタンスで関数実体を共有しない |
 | WasmFunction | 所有WasmInstance、uint関数index | 型・FunctionCode・入口位置を所有モジュールの同じindexから取得する |

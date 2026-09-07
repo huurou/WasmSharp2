@@ -2,7 +2,7 @@ using TUnit.Assertions.Enums;
 
 namespace WasmSharp.Tests.Fixtures;
 
-public class ChunkedReadStream_ReadTests
+internal class ChunkedReadStream_ReadTests
 {
     [Test]
     public async Task 配列へ繰り返し読み取る_指定位置へ短く読みEOFで0を返す()
@@ -88,7 +88,7 @@ public class ChunkedReadStream_ReadTests
     }
 }
 
-public class ChunkedReadStream_SeekTests
+internal class ChunkedReadStream_SeekTests
 {
     [Test]
     public async Task Seek可能な入力を包む_非seekとして位置と長さの照会を拒否する()
@@ -117,7 +117,7 @@ public class ChunkedReadStream_SeekTests
     }
 }
 
-public class ChunkedReadStream_DisposeTests
+internal class ChunkedReadStream_DisposeTests
 {
     [Test]
     public async Task 破棄する_内側のストリームも閉じる()

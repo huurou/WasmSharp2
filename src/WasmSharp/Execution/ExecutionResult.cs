@@ -6,7 +6,7 @@ namespace WasmSharp.Execution;
 /// <summary>
 /// 命令または関数の正常結果と実行失敗の情報
 /// </summary>
-public readonly struct ExecutionResult
+internal readonly struct ExecutionResult
 {
     /// <summary>
     /// 正常終了時の戻り値。未指定の場合はdefaultを保持する
@@ -134,7 +134,7 @@ public readonly struct ExecutionResult
 /// <summary>
 /// 命令または関数の実行状態
 /// </summary>
-public enum ExecutionStatus
+internal enum ExecutionStatus
 {
     /// <summary>
     /// 正常終了

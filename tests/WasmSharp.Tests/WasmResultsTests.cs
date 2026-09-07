@@ -1,6 +1,6 @@
 namespace WasmSharp.Tests;
 
-public class WasmResults_ConstructorTests
+internal class WasmResults_ConstructorTests
 {
     [Test]
     public async Task 空の配列を指定する_戻り値のコレクションが空になる()

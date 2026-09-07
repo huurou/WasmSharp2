@@ -2,7 +2,7 @@ using WasmSharp.Execution;
 
 namespace WasmSharp.Tests.Execution;
 
-public class WasmExecutionContext_TryEnterCallTests
+internal class WasmExecutionContext_TryEnterCallTests
 {
     [Test]
     public async Task 上限1で2段目へ入る_深さを変えずに拒否し退出後は再入場できる()
@@ -43,7 +43,7 @@ public class WasmExecutionContext_TryEnterCallTests
     }
 }
 
-public class WasmExecutionContext_EnterTests
+internal class WasmExecutionContext_EnterTests
 {
     [Test]
     public async Task 上限100の深さ50から上限10へ入る_同じコンテキストで51段目へ入る()
@@ -111,7 +111,7 @@ public class WasmExecutionContext_EnterTests
     }
 }
 
-public class WasmExecutionContext_ExitTests
+internal class WasmExecutionContext_ExitTests
 {
     [Test]
     public async Task 同期区間で例外が発生する_finallyで深さと現在の参照を戻し元の例外を保つ()

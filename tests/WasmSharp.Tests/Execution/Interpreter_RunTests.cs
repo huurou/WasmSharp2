@@ -5,7 +5,7 @@ using WasmSharp.Tests.Fixtures;
 
 namespace WasmSharp.Tests.Execution;
 
-public class Interpreter_RunTests
+internal class Interpreter_RunTests
 {
     [Test]
     [Arguments(WasmProcessingStage.Invoke)]

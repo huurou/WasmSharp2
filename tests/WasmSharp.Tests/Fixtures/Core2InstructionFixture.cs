@@ -2,7 +2,7 @@ using System.Text.RegularExpressions;
 
 namespace WasmSharp.Tests.Fixtures;
 
-public static class Core2InstructionFixture
+internal static class Core2InstructionFixture
 {
     public static Dictionary<uint, string> Read(byte prefix)
     {

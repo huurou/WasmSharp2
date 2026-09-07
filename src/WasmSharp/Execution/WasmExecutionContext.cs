@@ -6,7 +6,7 @@ namespace WasmSharp.Execution;
 /// <summary>
 /// 同じスレッドの同期呼び出しで共有する実行状態
 /// </summary>
-public sealed class WasmExecutionContext
+internal sealed class WasmExecutionContext
 {
     /// <summary>
     /// 現在のスレッドで同期呼び出しが共有する実行コンテキスト

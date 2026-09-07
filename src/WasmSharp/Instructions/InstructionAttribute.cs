@@ -4,7 +4,7 @@ namespace WasmSharp.Instructions;
 /// 命令情報と実行分岐の生成に用いる命令宣言
 /// </summary>
 [AttributeUsage(AttributeTargets.Class, AllowMultiple = true, Inherited = false)]
-public sealed class InstructionAttribute(
+internal sealed class InstructionAttribute(
     byte prefix,
     uint code,
     string name,

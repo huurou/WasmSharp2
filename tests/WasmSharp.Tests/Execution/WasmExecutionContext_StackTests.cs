@@ -4,7 +4,7 @@ using WasmSharp.Tests.Fixtures;
 
 namespace WasmSharp.Tests.Execution;
 
-public class WasmExecutionContext_CalculateCapacityTests
+internal class WasmExecutionContext_CalculateCapacityTests
 {
     [Test]
     [Arguments(0, 0UL, 0)]
@@ -68,7 +68,7 @@ public class WasmExecutionContext_CalculateCapacityTests
     }
 }
 
-public class WasmExecutionContext_EnsureCapacityTests
+internal class WasmExecutionContext_EnsureCapacityTests
 {
     [Test]
     public async Task 必要数の加算がintの上限を超える_位置付き保持上限を伝播して外側の状態を保つ()
@@ -130,7 +130,7 @@ public class WasmExecutionContext_EnsureCapacityTests
     }
 }
 
-public class WasmExecutionContext_RestoreTests
+internal class WasmExecutionContext_RestoreTests
 {
     [Test]
     public async Task 内側で領域を拡張して復元する_外側の値とフレームを保ち除いた参照を解除する()

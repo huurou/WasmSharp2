@@ -2,7 +2,7 @@ using WasmSharp.Exceptions;
 
 namespace WasmSharp.Tests.Exceptions;
 
-public class WasmTrapException_ConstructorTests
+internal class WasmTrapException_ConstructorTests
 {
     [Test]
     public async Task 既存の構築経路を使う_原因と位置は未指定のまま既存の情報を保持する()

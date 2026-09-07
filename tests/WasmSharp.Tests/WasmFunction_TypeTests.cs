@@ -1,6 +1,6 @@
 namespace WasmSharp.Tests;
 
-public class WasmFunction_TypeTests
+internal class WasmFunction_TypeTests
 {
     [Test]
     public async Task 複数の定義から関数実体を作る_所有モジュールの同じ添字から型を取得する()

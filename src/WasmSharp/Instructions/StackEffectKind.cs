@@ -3,7 +3,7 @@ namespace WasmSharp.Instructions;
 /// <summary>
 /// 命令のスタック効果
 /// </summary>
-public enum StackEffectKind
+internal enum StackEffectKind
 {
     /// <summary>
     /// スタック効果の処理が未対応

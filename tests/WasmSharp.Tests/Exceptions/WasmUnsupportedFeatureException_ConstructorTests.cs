@@ -3,7 +3,7 @@ using WasmSharp.Exceptions;
 
 namespace WasmSharp.Tests.Exceptions;
 
-public class WasmUnsupportedFeatureException_ConstructorTests
+internal class WasmUnsupportedFeatureException_ConstructorTests
 {
     [Test]
     [Arguments(true)]

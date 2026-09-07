@@ -2,7 +2,7 @@ using WasmSharp.Exceptions;
 
 namespace WasmSharp.Tests.Exceptions;
 
-public class WasmExhaustionException_ConstructorTests
+internal class WasmExhaustionException_ConstructorTests
 {
     [Test]
     [Arguments(WasmProcessingStage.Instantiate, 1)]

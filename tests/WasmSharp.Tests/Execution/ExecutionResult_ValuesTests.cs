@@ -4,7 +4,7 @@ using WasmSharp.Execution;
 
 namespace WasmSharp.Tests.Execution;
 
-public class ExecutionResult_ValuesTests
+internal class ExecutionResult_ValuesTests
 {
     [Test]
     public async Task 既定値と空の正常結果と失敗_列挙可能な空配列を返す()
@@ -36,7 +36,7 @@ public class ExecutionResult_ValuesTests
     }
 }
 
-public class ExecutionResult_SuccessTests
+internal class ExecutionResult_SuccessTests
 {
     [Test]
     public async Task 複数の戻り値を指定する_型と順序とビット列を保持する()
@@ -67,7 +67,7 @@ public class ExecutionResult_SuccessTests
     }
 }
 
-public class ExecutionResult_TrapTests
+internal class ExecutionResult_TrapTests
 {
     [Test]
     public async Task trapを構築する_原因と元位置だけを保持する()
@@ -91,7 +91,7 @@ public class ExecutionResult_TrapTests
     }
 }
 
-public class ExecutionResult_ExhaustionTests
+internal class ExecutionResult_ExhaustionTests
 {
     [Test]
     public async Task exhaustionを構築する_原因と適用上限と元位置を保持する()

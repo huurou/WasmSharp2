@@ -1,6 +1,6 @@
 namespace WasmSharp.Tests.Fixtures;
 
-public class ConstantModuleBinary_CreateTests
+internal class ConstantModuleBinary_CreateTests
 {
     [Test]
     [Arguments(

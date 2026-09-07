@@ -12,7 +12,7 @@ namespace WasmSharp.Generators;
 /// Wasm命令の宣言からソースを生成するインクリメンタルジェネレーター
 /// </summary>
 [Generator(LanguageNames.CSharp)]
-public sealed class InstructionGenerator : IIncrementalGenerator
+internal sealed class InstructionGenerator : IIncrementalGenerator
 {
     private static readonly DiagnosticDescriptor duplicateOpcode_ = new(
         "WSIG001",
@@ -220,7 +220,7 @@ public sealed class InstructionGenerator : IIncrementalGenerator
             /// <summary>
             /// 対応済み命令の実行opcode
             /// </summary>
-            public enum ExecutionOpcode
+            internal enum ExecutionOpcode
             {
 
             """
@@ -250,7 +250,7 @@ public sealed class InstructionGenerator : IIncrementalGenerator
             /// <param name="StackEffect">スタック効果</param>
             /// <param name="Validation">検証規則</param>
             /// <param name="ExecutionOpcode">対応済み命令の実行opcode。未対応の場合はnull</param>
-            public readonly record struct InstructionDescriptor(
+            internal readonly record struct InstructionDescriptor(
                 OpcodeKey Opcode,
                 string Name,
                 ImmediateKind Immediate,
@@ -261,7 +261,7 @@ public sealed class InstructionGenerator : IIncrementalGenerator
             /// <summary>
             /// 命令宣言から生成された命令情報の参照先
             /// </summary>
-            public static partial class InstructionSet
+            internal static partial class InstructionSet
             {
                 private static readonly global::System.Collections.Generic.Dictionary<OpcodeKey, InstructionDescriptor> descriptors_ = new()
                 {
@@ -304,7 +304,7 @@ public sealed class InstructionGenerator : IIncrementalGenerator
             /// <summary>
             /// 線形命令を実行するインタープリタ
             /// </summary>
-            public static partial class Interpreter
+            internal static partial class Interpreter
             {
                 /// <summary>
                 /// 今回の入口フレームが終了するまで命令を実行し、失敗結果はそのまま返す

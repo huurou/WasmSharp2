@@ -2,7 +2,7 @@ using WasmSharp.Tests.Fixtures;
 
 namespace WasmSharp.Tests;
 
-public class WasmValue_FromI32Tests
+internal class WasmValue_FromI32Tests
 {
     [Test]
     [Arguments(0)]
@@ -27,7 +27,7 @@ public class WasmValue_FromI32Tests
     }
 }
 
-public class WasmValue_AsI32Tests
+internal class WasmValue_AsI32Tests
 {
     [Test]
     public async Task 異なる種類を取得する_状態の契約違反として拒否する()
@@ -71,7 +71,7 @@ public class WasmValue_AsI32Tests
     }
 }
 
-public class WasmValue_FromI64Tests
+internal class WasmValue_FromI64Tests
 {
     [Test]
     [Arguments(0L)]
@@ -98,7 +98,7 @@ public class WasmValue_FromI64Tests
     }
 }
 
-public class WasmValue_AsI64Tests
+internal class WasmValue_AsI64Tests
 {
     [Test]
     public async Task 異なる種類を取得する_状態の契約違反として拒否する()
@@ -125,7 +125,7 @@ public class WasmValue_AsI64Tests
     }
 }
 
-public class WasmValue_FromF32Tests
+internal class WasmValue_FromF32Tests
 {
     [Test]
     [Arguments(0x00000000U)]
@@ -161,7 +161,7 @@ public class WasmValue_FromF32Tests
     }
 }
 
-public class WasmValue_FromF32BitsTests
+internal class WasmValue_FromF32BitsTests
 {
     [Test]
     [Arguments(0x00000000U)]
@@ -197,7 +197,7 @@ public class WasmValue_FromF32BitsTests
     }
 }
 
-public class WasmValue_AsF32Tests
+internal class WasmValue_AsF32Tests
 {
     [Test]
     public async Task 異なる種類を取得する_状態の契約違反として拒否する()
@@ -224,7 +224,7 @@ public class WasmValue_AsF32Tests
     }
 }
 
-public class WasmValue_AsF32BitsTests
+internal class WasmValue_AsF32BitsTests
 {
     [Test]
     public async Task 異なる種類を取得する_状態の契約違反として拒否する()
@@ -251,7 +251,7 @@ public class WasmValue_AsF32BitsTests
     }
 }
 
-public class WasmValue_FromF64Tests
+internal class WasmValue_FromF64Tests
 {
     [Test]
     [Arguments(0x0000000000000000UL)]
@@ -287,7 +287,7 @@ public class WasmValue_FromF64Tests
     }
 }
 
-public class WasmValue_FromF64BitsTests
+internal class WasmValue_FromF64BitsTests
 {
     [Test]
     [Arguments(0x0000000000000000UL)]
@@ -323,7 +323,7 @@ public class WasmValue_FromF64BitsTests
     }
 }
 
-public class WasmValue_AsF64Tests
+internal class WasmValue_AsF64Tests
 {
     [Test]
     public async Task 異なる種類を取得する_状態の契約違反として拒否する()
@@ -350,7 +350,7 @@ public class WasmValue_AsF64Tests
     }
 }
 
-public class WasmValue_AsF64BitsTests
+internal class WasmValue_AsF64BitsTests
 {
     [Test]
     public async Task 異なる種類を取得する_状態の契約違反として拒否する()
@@ -377,7 +377,7 @@ public class WasmValue_AsF64BitsTests
     }
 }
 
-public class WasmValue_FromV128Tests
+internal class WasmValue_FromV128Tests
 {
     [Test]
     [Arguments(0UL, 0UL)]
@@ -406,7 +406,7 @@ public class WasmValue_FromV128Tests
     }
 }
 
-public class WasmValue_AsV128Tests
+internal class WasmValue_AsV128Tests
 {
     [Test]
     public async Task 異なる種類を取得する_状態の契約違反として拒否する()
@@ -433,7 +433,7 @@ public class WasmValue_AsV128Tests
     }
 }
 
-public class WasmValue_FromFuncRefTests
+internal class WasmValue_FromFuncRefTests
 {
     [Test]
     [Arguments(true)]
@@ -455,7 +455,7 @@ public class WasmValue_FromFuncRefTests
     }
 }
 
-public class WasmValue_AsFuncRefTests
+internal class WasmValue_AsFuncRefTests
 {
     [Test]
     public async Task 異なる種類を取得する_状態の契約違反として拒否する()
@@ -483,7 +483,7 @@ public class WasmValue_AsFuncRefTests
     }
 }
 
-public class WasmValue_FromExternRefTests
+internal class WasmValue_FromExternRefTests
 {
     [Test]
     public async Task Nullを構築する_ExternRefの種類とnullを保持する()
@@ -546,7 +546,7 @@ public class WasmValue_FromExternRefTests
     }
 }
 
-public class WasmValue_AsExternRefTests
+internal class WasmValue_AsExternRefTests
 {
     [Test]
     public async Task 異なる種類を取得する_状態の契約違反として拒否する()

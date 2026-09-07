@@ -482,4 +482,4 @@ namespace WasmSharp.Instructions;
 [Instruction(0xFD, 0xFD, "i32x4.trunc_sat_f64x2_u_zero")]
 [Instruction(0xFD, 0xFE, "f64x2.convert_low_i32x4_s")]
 [Instruction(0xFD, 0xFF, "f64x2.convert_low_i32x4_u")]
-public static partial class InstructionSet;
+internal static partial class InstructionSet;

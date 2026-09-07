@@ -1,6 +1,6 @@
 namespace WasmSharp.Tests;
 
-public class WasmFunctionType_ConstructorTests
+internal class WasmFunctionType_ConstructorTests
 {
     [Test]
     public async Task 空の配列を指定する_引数型と戻り値型の配列が空になる()

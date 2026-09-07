@@ -4,7 +4,7 @@ using WasmSharp.Instructions;
 
 namespace WasmSharp.Tests.Execution;
 
-public class Interpreter_PushConstantTests
+internal class Interpreter_PushConstantTests
 {
     [Test]
     [Arguments(0x41, ImmediateKind.I32, StackEffectKind.PushI32)]

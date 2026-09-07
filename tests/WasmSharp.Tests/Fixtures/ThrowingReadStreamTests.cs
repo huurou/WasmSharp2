@@ -1,6 +1,6 @@
 namespace WasmSharp.Tests.Fixtures;
 
-public class ThrowingReadStream_ReadTests
+internal class ThrowingReadStream_ReadTests
 {
     [Test]
     public async Task 配列へ読み取る_指定したIO例外の実体を投げる()

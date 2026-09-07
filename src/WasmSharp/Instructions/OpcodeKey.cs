@@ -5,4 +5,4 @@ namespace WasmSharp.Instructions;
 /// </summary>
 /// <param name="Prefix">通常命令では0、拡張命令ではprefix</param>
 /// <param name="Code">命令番号</param>
-public readonly record struct OpcodeKey(byte Prefix, uint Code);
+internal readonly record struct OpcodeKey(byte Prefix, uint Code);

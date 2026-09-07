@@ -2,7 +2,7 @@ using System.Text;
 
 namespace WasmSharp.Tests.Fixtures;
 
-public static class ConstantModuleBinary
+internal static class ConstantModuleBinary
 {
     public static byte[] Create(byte resultType, params byte[] instructions)
     {

@@ -3,7 +3,7 @@ using Microsoft.CodeAnalysis.CSharp;
 
 namespace WasmSharp.Generators.Tests;
 
-public class InstructionGenerator_InitializeTests
+internal class InstructionGenerator_InitializeTests
 {
     [Test]
     [Arguments(0x42, "i64.const", "I64", "PushI64")]
@@ -22,11 +22,11 @@ public class InstructionGenerator_InitializeTests
             {
                 [Instruction(0, 0x41, "i32.const", ImmediateKind.I32, StackEffectKind.PushI32,
                     ValidationRule.Constant, nameof(Execution.Interpreter.First))]
-                public static partial class InstructionSet;
+                internal static partial class InstructionSet;
             }
             namespace WasmSharp.Execution
             {
-                public static partial class Interpreter
+                internal static partial class Interpreter
                 {
                     internal static ExecutionResult TestRun(WasmExecutionContext context) => RunLoop(context, 0);
                     internal static ExecutionResult First(WasmExecutionContext context, in Instruction instruction)
@@ -121,11 +121,11 @@ public class InstructionGenerator_InitializeTests
             {
                 [Instruction(0, 0x41, "i32.const", ImmediateKind.I32, StackEffectKind.PushI32,
                     ValidationRule.Constant, nameof(Execution.Interpreter.Handler))]
-                public static partial class InstructionSet;
+                internal static partial class InstructionSet;
             }
             namespace WasmSharp.Execution
             {
-                public static partial class Interpreter
+                internal static partial class Interpreter
                 {
                     internal static ExecutionResult Handler(WasmExecutionContext context, in Instruction instruction)
                         => throw new System.NotSupportedException();
@@ -174,11 +174,11 @@ public class InstructionGenerator_InitializeTests
             namespace WasmSharp.Instructions
             {
                 [Instruction(0, 0x41, "i32.const", {{metadata}})]
-                public static partial class InstructionSet;
+                internal static partial class InstructionSet;
             }
             namespace WasmSharp.Execution
             {
-                public static partial class Interpreter
+                internal static partial class Interpreter
                 {
                     internal static ExecutionResult Handler(WasmExecutionContext context, in Instruction instruction)
                         => default;
@@ -246,11 +246,11 @@ public class InstructionGenerator_InitializeTests
             {
                 [Instruction(0, 0x41, "i32.const", ImmediateKind.I32, StackEffectKind.PushI32,
                     ValidationRule.Constant, "Handler")]
-                public static partial class InstructionSet;
+                internal static partial class InstructionSet;
             }
             namespace WasmSharp.Execution
             {
-                public partial class Interpreter
+                internal partial class Interpreter
                 {
                     {{method}}
                 }
@@ -284,11 +284,11 @@ public class InstructionGenerator_InitializeTests
             {
                 [Instruction(0, 0x41, "test.failure", ImmediateKind.I32, StackEffectKind.PushI32,
                     ValidationRule.Constant, nameof(Execution.Interpreter.Fail))]
-                public static partial class InstructionSet;
+                internal static partial class InstructionSet;
             }
             namespace WasmSharp.Execution
             {
-                public static partial class Interpreter
+                internal static partial class Interpreter
                 {
                     internal static ExecutionResult TestRun(WasmExecutionContext context) => RunLoop(context, 1);
                     internal static ExecutionResult Fail(WasmExecutionContext context, in Instruction instruction)
@@ -338,7 +338,7 @@ public class InstructionGenerator_InitializeTests
             {
                 [Instruction(0xFD, 1, "first")]
                 [Instruction(0xFD, 1, "second")]
-                public static partial class InstructionSet;
+                internal static partial class InstructionSet;
             }
             """
         );
@@ -381,11 +381,11 @@ public class InstructionGenerator_InitializeTests
                     ValidationRule.Constant, nameof(Execution.Interpreter.PushConstant))]
                 [Instruction(0, 0x0B, "end", ImmediateKind.None, StackEffectKind.FunctionEnd,
                     ValidationRule.FunctionEnd, nameof(Execution.Interpreter.Return))]
-                public static partial class InstructionSet;
+                internal static partial class InstructionSet;
             }
             namespace WasmSharp.Execution
             {
-                public static partial class Interpreter
+                internal static partial class Interpreter
                 {
                     internal static ExecutionResult TestRun(WasmExecutionContext context, int entryFrameCount)
                         => RunLoop(context, entryFrameCount);
@@ -466,7 +466,7 @@ public class InstructionGenerator_InitializeTests
             namespace WasmSharp.Instructions
             {
                 [Instruction(0xFC, 0, "before")]
-                public static partial class InstructionSet;
+                internal static partial class InstructionSet;
             }
             """;
         var compilation = GeneratorTestSource.CreateCompilation(DECLARATION);
@@ -531,11 +531,11 @@ public class InstructionGenerator_InitializeTests
                 [Instruction(0, 0x41, "i32.const", ImmediateKind.I32, StackEffectKind.PushI32,
                     ValidationRule.Constant, nameof(Execution.Interpreter.PushConstant))]
                 [Instruction(0xFC, 0, "i32.trunc_sat_f32_s")]
-                public static partial class InstructionSet;
+                internal static partial class InstructionSet;
             }
             namespace WasmSharp.Execution
             {
-                public static partial class Interpreter
+                internal static partial class Interpreter
                 {
                     internal static ExecutionResult PushConstant(WasmExecutionContext context, in Instruction instruction)
                         => default;

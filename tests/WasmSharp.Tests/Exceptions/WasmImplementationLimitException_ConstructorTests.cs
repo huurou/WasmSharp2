@@ -2,7 +2,7 @@ using WasmSharp.Exceptions;
 
 namespace WasmSharp.Tests.Exceptions;
 
-public class WasmImplementationLimitException_ConstructorTests
+internal class WasmImplementationLimitException_ConstructorTests
 {
     [Test]
     [Arguments(WasmImplementationLimitReason.InputSize, WasmProcessingStage.Decode, int.MaxValue)]

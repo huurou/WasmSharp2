@@ -2,7 +2,7 @@ using WasmSharp.Exceptions;
 
 namespace WasmSharp.Tests.Exceptions;
 
-public class WasmException_ConstructorTests
+internal class WasmException_ConstructorTests
 {
     [Test]
     public async Task 既存の構築経路を使う_診断なしでメッセージと元の例外を保持する()

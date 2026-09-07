@@ -3,7 +3,7 @@ using WasmSharp.Tests.Fixtures;
 
 namespace WasmSharp.Tests.Instructions;
 
-public class InstructionSet_TryGetTests
+internal class InstructionSet_TryGetTests
 {
     [Test]
     [Arguments((byte)0, 183)]

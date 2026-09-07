@@ -5,7 +5,7 @@ using WasmSharp.Tests.Fixtures;
 
 namespace WasmSharp.Tests.Execution;
 
-public class Interpreter_ReturnTests
+internal class Interpreter_ReturnTests
 {
     [Test]
     public async Task 内側の関数を終了する_結果を引数開始位置へ保持し外側の値とフレームを残す()

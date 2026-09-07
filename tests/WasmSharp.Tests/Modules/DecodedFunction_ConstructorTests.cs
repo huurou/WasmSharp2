@@ -3,7 +3,7 @@ using WasmSharp.Modules;
 
 namespace WasmSharp.Tests.Modules;
 
-public class DecodedFunction_ConstructorTests
+internal class DecodedFunction_ConstructorTests
 {
     [Test]
     public async Task 元の配列を変更する_圧縮localsと命令と元位置を独立して保持する()
