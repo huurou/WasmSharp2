@@ -84,7 +84,7 @@ internal readonly struct ExecutionResult
     /// <returns>指定した戻り値を保持する正常結果</returns>
     internal static ExecutionResult Success(ImmutableArray<WasmValue> values = default)
     {
-        return new(ExecutionStatus.Success, values);
+        return new ExecutionResult(ExecutionStatus.Success, values);
     }
 
     /// <summary>
@@ -96,7 +96,7 @@ internal readonly struct ExecutionResult
     /// <returns>trapを表す実行結果</returns>
     internal static ExecutionResult Trap(WasmTrapReason reason, uint functionIndex, long byteOffset)
     {
-        return new(
+        return new ExecutionResult(
             ExecutionStatus.Trap,
             trapReason: reason,
             functionIndex: functionIndex,
@@ -121,7 +121,7 @@ internal readonly struct ExecutionResult
     )
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(limit);
-        return new(
+        return new ExecutionResult(
             ExecutionStatus.Exhaustion,
             exhaustionReason: reason,
             limit: limit,

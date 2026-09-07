@@ -35,9 +35,13 @@ internal static partial class Interpreter
             context.EnsureCapacity(
                 valueCount,
                 function.Code.MaxOperandStack,
-                new(stage, function.Definition.BodyOffset, function.FunctionIndex)
+                new WasmFailureLocation(
+                    stage,
+                    function.Definition.BodyOffset,
+                    function.FunctionIndex
+                )
             );
-            context.PushFrame(new(function, valueCount, valueCount));
+            context.PushFrame(new ExecutionFrame(function, valueCount, valueCount));
             var result = RunLoop(context, frameCount);
             if (result.Status != ExecutionStatus.Success)
             {

@@ -65,7 +65,7 @@ internal static class ModuleValidator
                     {
                         throw new WasmValidateException(
                             "関数の結果の型・個数・順序が宣言と一致しません。",
-                            new(
+                            new WasmFailureLocation(
                                 WasmProcessingStage.Validate,
                                 instruction.ByteOffset,
                                 (uint)index,
@@ -81,7 +81,7 @@ internal static class ModuleValidator
             }
 
             instructions.Add(
-                new(
+                new Instruction(
                     descriptor.ExecutionOpcode!.Value,
                     instruction.Immediate,
                     instruction.ByteOffset
@@ -109,9 +109,14 @@ internal static class ModuleValidator
             throw new WasmUnsupportedFeatureException(
                 "未実装の関数実行形に遭遇しました。",
                 feature,
-                new(WasmProcessingStage.Validate, function.BodyOffset, (uint)index, 10),
+                new WasmFailureLocation(
+                    WasmProcessingStage.Validate,
+                    function.BodyOffset,
+                    (uint)index,
+                    10
+                ),
                 [
-                    new(
+                    new WasmUnverifiedRange(
                         WasmProcessingStage.Validate,
                         function.BodyOffset,
                         module.InputLength,
@@ -121,7 +126,7 @@ internal static class ModuleValidator
             );
         }
 
-        return new(instructions.MoveToImmutable(), maxOperandStack);
+        return new FunctionCode(instructions.MoveToImmutable(), maxOperandStack);
     }
 
     /// <summary>
@@ -138,13 +143,18 @@ internal static class ModuleValidator
             {
                 throw new WasmValidateException(
                     "参照する関数型が存在しません。",
-                    new(WasmProcessingStage.Validate, function.BodyOffset, (uint)index, 10),
+                    new WasmFailureLocation(
+                        WasmProcessingStage.Validate,
+                        function.BodyOffset,
+                        (uint)index,
+                        10
+                    ),
                     null
                 );
             }
         }
 
-        HashSet<string> names = new(StringComparer.Ordinal);
+        var names = new HashSet<string>(StringComparer.Ordinal);
         foreach (var export in module.Exports)
         {
             var location = new WasmFailureLocation(

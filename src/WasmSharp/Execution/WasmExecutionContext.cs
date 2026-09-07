@@ -67,7 +67,7 @@ internal sealed class WasmExecutionContext
     internal static WasmExecutionContext Enter(WasmExecutionOptions options, out bool isOutermost)
     {
         isOutermost = current_ is null;
-        return current_ ??= new(options);
+        return current_ ??= new WasmExecutionContext(options);
     }
 
     /// <summary>

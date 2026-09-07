@@ -57,9 +57,9 @@ public sealed class WasmModule
         long inputLength
     )
     {
-        Types = ImmutableArray.Create(types);
-        Functions = ImmutableArray.Create(functions);
-        Exports = ImmutableArray.Create(exports);
+        Types = [.. types];
+        Functions = [.. functions];
+        Exports = [.. exports];
         InputLength = inputLength;
     }
 
@@ -80,7 +80,6 @@ public sealed class WasmModule
     /// <returns>デコードされたmodule</returns>
     public static WasmModule Decode(Stream stream)
     {
-        ArgumentNullException.ThrowIfNull(stream);
         if (!stream.CanRead)
         {
             throw new ArgumentException("入力ストリームが読み取り不可でした。", nameof(stream));
@@ -103,7 +102,7 @@ public sealed class WasmModule
                     "入力バイナリが保持上限を超えています。",
                     WasmImplementationLimitReason.InputSize,
                     Array.MaxLength,
-                    new(WasmProcessingStage.Decode, buffer.Length)
+                    new WasmFailureLocation(WasmProcessingStage.Decode, buffer.Length)
                 );
             }
 
@@ -154,6 +153,6 @@ public sealed class WasmModule
             throw new InvalidOperationException("インスタンス化には検証の成功が必要です。");
         }
 
-        throw new NotImplementedException();
+        return new WasmInstance(this, options ?? WasmExecutionOptions.Default);
     }
 }

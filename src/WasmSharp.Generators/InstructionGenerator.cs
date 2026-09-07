@@ -127,7 +127,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
             || arguments.Any(x => x.Kind == TypedConstantKind.Error)
         )
         {
-            return new(
+            return new InstructionDeclaration(
                 0,
                 0,
                 "",

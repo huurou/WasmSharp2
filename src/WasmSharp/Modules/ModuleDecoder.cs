@@ -110,7 +110,7 @@ internal static class ModuleDecoder
             throw reader.Error("functionとcodeの件数が一致しません。");
         }
 
-        return new(
+        return new WasmModule(
             CollectionsMarshal.AsSpan(types),
             CollectionsMarshal.AsSpan(functions),
             CollectionsMarshal.AsSpan(exports),
@@ -152,7 +152,7 @@ internal static class ModuleDecoder
             var locals = ReadLocals(ref body);
             var instructions = ReadInstructions(ref body, inputLength);
             functions.Add(
-                new(
+                new DecodedFunction(
                     functionTypes[(int)index],
                     offset,
                     CollectionsMarshal.AsSpan(locals),
@@ -180,7 +180,7 @@ internal static class ModuleDecoder
                 throw reader.Error("localsの合計がCore 2.0の上限を超えています。", offset);
             }
 
-            locals.Add(new(localCount, type));
+            locals.Add(new LocalDeclaration(localCount, type));
         }
 
         return locals;
@@ -233,7 +233,7 @@ internal static class ModuleDecoder
                 );
             }
 
-            instructions.Add(new(opcode, immediate, offset));
+            instructions.Add(new DecodedInstruction(opcode, immediate, offset));
             if (descriptor.Validation == ValidationRule.FunctionEnd)
             {
                 RequireEnd(ref reader);
@@ -259,7 +259,10 @@ internal static class ModuleDecoder
             var parameters = ReadValueTypes(ref reader);
             var results = ReadValueTypes(ref reader);
             types.Add(
-                new(CollectionsMarshal.AsSpan(parameters), CollectionsMarshal.AsSpan(results))
+                new WasmFunctionType(
+                    CollectionsMarshal.AsSpan(parameters),
+                    CollectionsMarshal.AsSpan(results)
+                )
             );
         }
 
@@ -320,7 +323,7 @@ internal static class ModuleDecoder
                 throw Unsupported(ref reader, feature, inputLength, kindOffset);
             }
 
-            exports.Add(new(name, reader.ReadU32(), offset));
+            exports.Add(new FunctionExport(name, reader.ReadU32(), offset));
         }
 
         return exports;
@@ -364,18 +367,23 @@ internal static class ModuleDecoder
         long offset
     )
     {
-        return new(
+        return new WasmUnsupportedFeatureException(
             "未実装の機能に遭遇しました。",
             feature,
             reader.Location(offset),
             [
-                new(
+                new WasmUnverifiedRange(
                     WasmProcessingStage.Decode,
                     offset,
                     inputLength,
                     "この構文以降のデコードが未完了です。"
                 ),
-                new(WasmProcessingStage.Validate, 0, inputLength, "入力全体の検証が未実施です。"),
+                new WasmUnverifiedRange(
+                    WasmProcessingStage.Validate,
+                    0,
+                    inputLength,
+                    "入力全体の検証が未実施です。"
+                ),
             ]
         );
     }

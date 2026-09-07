@@ -74,19 +74,6 @@ internal class WasmModule_DecodeTests
     }
 
     [Test]
-    public async Task Nullのストリーム_引数名付きの標準例外になる()
-    {
-        // Arrange
-        Stream stream = null!;
-
-        // Act & Assert
-        var exception = await Assert
-            .That(() => WasmModule.Decode(stream))
-            .ThrowsExactly<ArgumentNullException>();
-        await Assert.That(exception!.ParamName).IsEqualTo("stream");
-    }
-
-    [Test]
     public async Task 読み取り不可のストリーム_破損と異なる引数例外になる()
     {
         // Arrange

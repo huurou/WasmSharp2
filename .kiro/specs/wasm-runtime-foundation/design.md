@@ -145,7 +145,7 @@ Roslynは必要な既存APIを備えた固定版を選ぶ。最新版を必要�
 | `tests/WasmSharp.Tests/WasmModule_ValidateTests.cs` | 型、名前、検証成功状態 |
 | `tests/WasmSharp.Tests/WasmModule_InstantiateTests.cs` | 検証前拒否、別インスタンス、実行ポリシー |
 | `tests/WasmSharp.Tests/WasmInstance_GetFunctionTests.cs` | 名前解決と関数の同一性 |
-| `tests/WasmSharp.Tests/WasmInstance_GetGlobalTests.cs`、`tests/WasmSharp.Tests/WasmInstance_GetMemoryTests.cs`、`tests/WasmSharp.Tests/WasmInstance_GetTableTests.cs` | 基盤インスタンスでの名前不在とnull引数の分類 |
+| `tests/WasmSharp.Tests/WasmInstance_GetGlobalTests.cs`、`tests/WasmSharp.Tests/WasmInstance_GetMemoryTests.cs`、`tests/WasmSharp.Tests/WasmInstance_GetTableTests.cs` | 基盤インスタンスでの名前不在の分類 |
 | `tests/WasmSharp.Tests/WasmFunction_InvokeTests.cs` | 4段階の定数返却と引数契約 |
 | `tests/WasmSharp.Tests/WasmValueTests.cs` | 構築/取得メソッドごとのテストクラスを同居 |
 | `tests/WasmSharp.Tests/WasmFunctionTypeTests.cs`、`tests/WasmSharp.Tests/WasmResultsTests.cs` | それぞれ構築/コレクション取得のメソッド別クラス |
@@ -282,7 +282,7 @@ public WasmInstance Instantiate(
 ```
 
 - Decodeは入力から独立した不変の型・関数・export定義を所有するモジュールを返す。バイト列やStreamの保持・後の再読み取りに依存しない。実行・インスタンス生成をしない。
-- Streamはnullを`ArgumentNullException`、読み取り不可を`ArgumentException`とし、呼び出し元の現在位置からEOFまで同期で読む。seek/Lengthを要求せず、short readを扱い、Disposeしない。I/O例外は元のまま伝播する。
+- Streamは読み取り不可を`ArgumentException`とし、呼び出し元の現在位置からEOFまで同期で読む。seek/Lengthを要求せず、short readを扱い、Disposeしない。I/O例外は元のまま伝播する。
 - `isValidated_`は初期false。Validateは一時領域で全関数の検証/線形化とexport名辞書を作り、全成功時のみフィールドへ反映して最後にtrueにする。失敗時のモジュールは未検証のまま。同じ入力を再Validateできるが、失敗成果を再利用しない。
 - 成功済みValidateは直ちにthisを返し、再検証/再生成しない。定義・関数コード・名前辞書を外部へ変更可能な形で渡さない。
 - Instantiateはfalseなら`InvalidOperationException`。成功済みなら関数index順に別インスタンスの関数実体を作る。importは存在しないため空hostModulesで成立する。余分なhostModulesは参照せず、ホストの実行やリンク照合を追加しない。
@@ -363,9 +363,11 @@ Decoderは通常opcodeまたはprefix後のu32を読んで表を引く。未割�
 
 MaxCallDepthは1以上、Defaultは1024。options省略時はDefaultを用いる。不正値はArgumentOutOfRangeException。インスタンスに渡した後も変更できないrecordとし、withによる不正値への変更を許すinit setterを公開しない。1024は設定の既定値であり、任意のホストコードのCLRスタック安全性の保証ではない。
 
-モジュールは検証時に作ったordinal比較のexport名→関数index辞書を非公開で保持し、インスタンスはindex→WasmFunction配列を保持する。GetFunctionはnullをArgumentNullException、不在をArgumentExceptionとする。同じ関数を指す複数export名や繰り返し取得は同じWasmFunction実体を返す。別インスタンスの定義関数は別実体である。公開Exportsコレクションを追加しない。
+モジュールは検証時に作ったordinal比較のexport名→関数index辞書を非公開で保持し、インスタンスはindex→WasmFunction配列を保持する。GetFunctionは名前の不在をArgumentExceptionとする。同じ関数を指す複数export名や繰り返し取得は同じWasmFunction実体を返す。別インスタンスの定義関数は別実体である。公開Exportsコレクションを追加しない。
 
-GetGlobal/GetMemory/GetTableもnullはArgumentNullException、指定した種類のexport名が存在しなければArgumentExceptionとする。本基盤のDecode/Validateを通過して生成されるインスタンスはこれらのexportを持たないため、非nullの名前は常に名前不在として拒否する。同名の関数exportがあっても種類が違うので同じ扱いである。生のNotImplementedExceptionを残さず、リソース定義を含む入力に対するunsupportedはデコード/検証段階で通知する。リソースの取得成功経路は各後続仕様が追加する。
+GetGlobal/GetMemory/GetTableも指定した種類のexport名が存在しなければArgumentExceptionとする。本基盤のDecode/Validateを通過して生成されるインスタンスはこれらのexportを持たないため、名前不在として拒否する。同名の関数exportがあっても種類が違うので同じ扱いである。生のNotImplementedExceptionを残さず、リソース定義を含む入力に対するunsupportedはデコード/検証段階で通知する。リソースの取得成功経路は各後続仕様が追加する。
+
+2026-09-07のユーザー指示により、非nullableな参照型引数には明示的なnullチェックを追加しない。DecodeのStreamとGetFunction/GetGlobal/GetMemory/GetTableの名前を含め、null入力時の例外の種類は本仕様の検証対象にしない。
 
 Invokeは引数個数と型を実行前に検査し、不一致はArgumentException。本基盤の対象関数は空引数だけを受理する。結果は呼び出しの作業スタックから独立したWasmResultsへコピーし、次のInvokeで変わらない。
 
@@ -502,7 +504,7 @@ WasmUnverifiedRangeは`Stage`、`long StartOffset`、`long EndOffset`（排他�
 - i32/i64/f32/f64の4種類を、小バイナリ→Decode→Validate→空hostModulesでInstantiate→GetFunction→空引数でInvokeの順に実行し、結果1個と正確なbitsを確認する（1.1, 5.1, 5.5, 7.1）。
 - 異なる定数を返す複数関数、複数exportの同一関数、同じmoduleの別インスタンス、同じ関数の反復呼び出しと先行結果の保持を確認する（5.2, 5.3, 5.7）。
 - export不在と空でない引数はArgumentException系、段階を飛ばす利用はInvalidOperationException、正負バイナリは対応する段階例外であることを確認する（5.4, 5.6, 7.2）。
-- 同じ基盤インスタンスへGetGlobal/GetMemory/GetTableを呼び、nullと名前不在（同名の関数exportを含む）がArgumentException系となり、NotImplementedExceptionが漏れないことを確認する（6.1, 6.7, 7.2）。
+- 同じ基盤インスタンスへGetGlobal/GetMemory/GetTableを呼び、名前不在（同名の関数exportを含む）がArgumentException系となり、NotImplementedExceptionが漏れないことを確認する（6.1, 6.7, 7.2）。
 
 ### 生成と検証の順序
 

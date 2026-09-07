@@ -53,7 +53,12 @@ internal ref struct WasmBinaryReader
     internal WasmBinaryReader ReadRange(uint length, uint? functionIndex = null)
     {
         var start = Position;
-        return new(ReadBytes(length), start, SectionId, functionIndex ?? FunctionIndex);
+        return new WasmBinaryReader(
+            ReadBytes(length),
+            start,
+            SectionId,
+            functionIndex ?? FunctionIndex
+        );
     }
 
     internal uint ReadU32()
@@ -134,11 +139,16 @@ internal ref struct WasmBinaryReader
 
     internal readonly WasmFailureLocation Location(long? offset = null)
     {
-        return new(WasmProcessingStage.Decode, offset ?? Position, FunctionIndex, SectionId);
+        return new WasmFailureLocation(
+            WasmProcessingStage.Decode,
+            offset ?? Position,
+            FunctionIndex,
+            SectionId
+        );
     }
 
     internal readonly WasmDecodeException Error(string message, long? offset = null)
     {
-        return new(message, Location(offset), null);
+        return new WasmDecodeException(message, Location(offset), null);
     }
 }

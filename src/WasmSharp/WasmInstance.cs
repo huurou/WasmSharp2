@@ -35,7 +35,7 @@ public sealed class WasmInstance
         var functions = ImmutableArray.CreateBuilder<WasmFunction>(module.Functions.Length);
         for (var i = 0; i < module.Functions.Length; i++)
         {
-            functions.Add(new(this, (uint)i));
+            functions.Add(new WasmFunction(this, (uint)i));
         }
         Functions = functions.MoveToImmutable();
     }
@@ -47,7 +47,11 @@ public sealed class WasmInstance
     /// <returns>呼び出し対象の関数</returns>
     public WasmFunction GetFunction(string name)
     {
-        throw new NotImplementedException();
+        if (!Module.FunctionExportIndices.TryGetValue(name, out var index))
+        {
+            throw new ArgumentException("指定した名前の関数exportが存在しません。", nameof(name));
+        }
+        return Functions[index];
     }
 
     /// <summary>
@@ -57,7 +61,7 @@ public sealed class WasmInstance
     /// <returns>globalに格納されたvalue</returns>
     public WasmValue GetGlobal(string name)
     {
-        throw new NotImplementedException();
+        throw new ArgumentException("指定した名前のglobal exportが存在しません。", nameof(name));
     }
 
     /// <summary>
@@ -67,7 +71,7 @@ public sealed class WasmInstance
     /// <returns>memoru</returns>
     public WasmMemory GetMemory(string name)
     {
-        throw new NotImplementedException();
+        throw new ArgumentException("指定した名前のmemory exportが存在しません。", nameof(name));
     }
 
     /// <summary>
@@ -77,7 +81,7 @@ public sealed class WasmInstance
     /// <returns>table</returns>
     public WasmTable GetTable(string name)
     {
-        throw new NotImplementedException();
+        throw new ArgumentException("指定した名前のtable exportが存在しません。", nameof(name));
     }
 
     /// <summary>
