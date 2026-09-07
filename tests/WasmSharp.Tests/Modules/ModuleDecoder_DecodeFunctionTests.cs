@@ -29,7 +29,7 @@ internal partial class ModuleDecoder_DecodeTests
     [Test]
     [Arguments("0A0A010801FFFFFFFF0F7F0B", 1)]
     [Arguments("0A0C010A02FEFFFFFF0F7F017E0B", 2)]
-    public async Task locals合計がu32最大値_巨大配列へ展開せず圧縮宣言を保持する(
+    public async Task Locals合計がu32最大値_巨大配列へ展開せず圧縮宣言を保持する(
         string codeSection,
         int count
     )
@@ -101,7 +101,7 @@ internal partial class ModuleDecoder_DecodeTests
     }
 
     [Test]
-    public async Task functionに対応するcodeがない_件数不一致を破損にする()
+    public async Task Functionに対応するcodeがない_件数不一致を破損にする()
     {
         // Arrange
         var bytes = Convert.FromHexString("0061736D0100000003020100");

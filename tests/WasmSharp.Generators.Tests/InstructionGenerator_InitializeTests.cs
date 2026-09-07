@@ -113,7 +113,7 @@ internal class InstructionGenerator_InitializeTests
     }
 
     [Test]
-    public async Task handlerだけを不正なシグネチャへ変更する_同じdriverで診断が更新される()
+    public async Task Handlerだけを不正なシグネチャへ変更する_同じdriverで診断が更新される()
     {
         // Arrange
         const string DECLARATION = """
@@ -230,7 +230,7 @@ internal class InstructionGenerator_InitializeTests
         "static ref ExecutionResult Handler(WasmExecutionContext context, in Instruction instruction)",
         "WSIG004"
     )]
-    public async Task handlerが存在しないか契約と異なる_属性位置付きのビルドエラーを報告する(
+    public async Task Handlerが存在しないか契約と異なる_属性位置付きのビルドエラーを報告する(
         string signature,
         string expectedId
     )
@@ -270,7 +270,7 @@ internal class InstructionGenerator_InitializeTests
     [Test]
     [Arguments("Trap", "Exceptions.WasmTrapReason.IntegerDivideByZero", "null", "null")]
     [Arguments("Exhaustion", "null", "Exceptions.WasmExhaustionReason.CallDepthLimit", "12")]
-    public async Task handlerが失敗する_原因と上限と元位置をそのまま返して次の命令を実行しない(
+    public async Task Handlerが失敗する_原因と上限と元位置をそのまま返して次の命令を実行しない(
         string status,
         string trapReason,
         string exhaustionReason,
@@ -329,7 +329,7 @@ internal class InstructionGenerator_InitializeTests
     }
 
     [Test]
-    public async Task opcodeが重複する_属性位置付きのビルドエラーを報告する()
+    public async Task Opcodeが重複する_属性位置付きのビルドエラーを報告する()
     {
         // Arrange
         var compilation = GeneratorTestSource.CreateCompilation(

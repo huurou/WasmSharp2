@@ -69,18 +69,23 @@ internal static class ModuleDecoder
                     section.ReadName();
                     section.ReadBytes((uint)section.Remaining);
                     break;
+
                 case 1:
                     types = ReadTypes(ref section);
                     break;
+
                 case 7:
                     exports = ReadExports(ref section, bytes.Length);
                     break;
+
                 case 3:
                     functionTypes = ReadFunctionTypes(ref section);
                     break;
+
                 case 10:
                     functions = ReadCode(ref section, functionTypes, bytes.Length);
                     break;
+
                 default:
                     var feature = id switch
                     {

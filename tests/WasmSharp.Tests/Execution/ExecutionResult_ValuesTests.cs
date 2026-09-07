@@ -70,7 +70,7 @@ internal class ExecutionResult_SuccessTests
 internal class ExecutionResult_TrapTests
 {
     [Test]
-    public async Task trapを構築する_原因と元位置だけを保持する()
+    public async Task Trapを構築する_原因と元位置だけを保持する()
     {
         // Arrange
         const uint FUNCTION_INDEX = uint.MaxValue;
@@ -94,7 +94,7 @@ internal class ExecutionResult_TrapTests
 internal class ExecutionResult_ExhaustionTests
 {
     [Test]
-    public async Task exhaustionを構築する_原因と適用上限と元位置を保持する()
+    public async Task Exhaustionを構築する_原因と適用上限と元位置を保持する()
     {
         // Arrange
         const int LIMIT = 100;

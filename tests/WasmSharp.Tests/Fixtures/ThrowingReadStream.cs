@@ -6,6 +6,7 @@ internal sealed class ThrowingReadStream(IOException exception) : Stream
     public override bool CanSeek => false;
     public override bool CanWrite => false;
     public override long Length => throw new NotSupportedException();
+
     public override long Position
     {
         get => throw new NotSupportedException();
