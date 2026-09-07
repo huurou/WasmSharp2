@@ -1,0 +1,56 @@
+name: Unit tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Fetch Core 2.0 specification
+        run: git submodule update --init --depth 1 thirdParties/WebAssembly-spec
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Build
+        id: build
+        run: dotnet build WasmSharp2.slnx -c Release --warnaserror
+
+      - name: Run runtime tests
+        run: >-
+          dotnet run --project tests/WasmSharp.Tests/WasmSharp.Tests.csproj
+          -c Release --no-build -- --report-trx
+          --results-directory "${{ github.workspace }}/TestResults/WasmSharp.Tests"
+
+      - name: Run generator tests
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: >-
+          dotnet run --project tests/WasmSharp.Generators.Tests/WasmSharp.Generators.Tests.csproj
+          -c Release --no-build -- --report-trx
+          --results-directory "${{ github.workspace }}/TestResults/WasmSharp.Generators.Tests"
+
+      - name: Upload test results
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: unit-test-results
+          path: TestResults/**/*.trx
