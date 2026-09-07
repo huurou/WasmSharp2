@@ -10,6 +10,14 @@ namespace WasmSharp;
 /// </summary>
 public sealed class WasmModule
 {
+    private bool isValidated_;
+
+    /// <summary>
+    /// 検証成功時に確定するordinalのexport名と関数indexの対応
+    /// </summary>
+    internal ImmutableDictionary<string, int> FunctionExportIndices { get; private set; } =
+        ImmutableDictionary.Create<string, int>(StringComparer.Ordinal);
+
     /// <summary>
     /// 全関数の検証成功時に設定する関数index順の実行コード
     /// </summary>
@@ -111,7 +119,23 @@ public sealed class WasmModule
     /// <returns>検証済みのmodulle</returns>
     public WasmModule Validate()
     {
-        throw new NotImplementedException();
+        if (isValidated_)
+        {
+            return this;
+        }
+
+        var functionCodes = ModuleValidator.Validate(this);
+        var functionExportIndices = Exports.ToImmutableDictionary(
+            x => x.Name,
+            x => (int)x.FunctionIndex,
+            StringComparer.Ordinal
+        );
+        // 全成果が揃ってから反映し、最後に検証成功状態にする。
+        FunctionCodes = functionCodes;
+        FunctionExportIndices = functionExportIndices;
+        isValidated_ = true;
+
+        return this;
     }
 
     /// <summary>
@@ -125,6 +149,11 @@ public sealed class WasmModule
         WasmExecutionOptions? options = default
     )
     {
+        if (!isValidated_)
+        {
+            throw new InvalidOperationException("インスタンス化には検証の成功が必要です。");
+        }
+
         throw new NotImplementedException();
     }
 }
