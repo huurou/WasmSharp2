@@ -436,6 +436,33 @@ internal class WasmValue_AsV128Tests
 internal class WasmValue_FromFuncRefTests
 {
     [Test]
+    public async Task 公開操作で取得した関数を往復する_TypedNullと区別して関数実体を保持する()
+    {
+        // Arrange
+        var function = WasmModule
+            .Decode(ConstantModuleBinary.Create(0x7F, 0x41, 0x2A, 0x0B))
+            .Validate()
+            .Instantiate([])
+            .GetFunction("run");
+
+        // Act
+        var value = WasmValue.FromFuncRef(function);
+        var roundTrip = WasmValue.FromFuncRef(value.AsFuncRef());
+        var nullValue = WasmValue.FromFuncRef(null);
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(value.Kind).IsEqualTo(WasmValueKind.FuncRef);
+            await Assert.That(roundTrip.Kind).IsEqualTo(WasmValueKind.FuncRef);
+            await Assert.That(value.AsFuncRef()).IsSameReferenceAs(function);
+            await Assert.That(roundTrip.AsFuncRef()).IsSameReferenceAs(function);
+            await Assert.That(nullValue.Kind).IsEqualTo(WasmValueKind.FuncRef);
+            await Assert.That(nullValue.AsFuncRef()).IsNull();
+        }
+    }
+
+    [Test]
     [Arguments(true)]
     [Arguments(false)]
     public async Task 関数参照を構築する_種類とnullまたは参照先を保持する(bool isNull)

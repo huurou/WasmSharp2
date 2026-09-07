@@ -6,6 +6,75 @@ namespace WasmSharp.Tests;
 internal class WasmModule_ValidateTests
 {
     [Test]
+    [Arguments("0105016000017E030201000A0601040041010B")]
+    [Arguments("0105016000017F030201000A040102000B")]
+    [Arguments("0105016000017F030201000A08010600410141020B")]
+    [Arguments("01060160017F017E030201000A0601040041010B")]
+    public async Task 結果の型や個数が不一致_未実装より先にValidateの失敗を通知する(string sections)
+    {
+        // Arrange
+        var bytes = Convert.FromHexString("0061736D01000000" + sections);
+        using var stream = new MemoryStream(bytes);
+        WasmModule[] modules = [WasmModule.Decode(bytes), WasmModule.Decode(stream)];
+
+        // Act & Assert
+        foreach (var module in modules)
+        {
+            var exception = await Assert
+                .That(() => module.Validate())
+                .ThrowsExactly<WasmValidateException>();
+            await Assert
+                .That(exception!.Location)
+                .IsEqualTo(new(WasmProcessingStage.Validate, bytes.Length - 1, 0, 10));
+            await Assert
+                .That(() => module.Instantiate([]))
+                .ThrowsExactly<InvalidOperationException>();
+        }
+    }
+
+    [Test]
+    [Arguments("01060160017F017F030201000A0601040041010B", "function.parameters", 24L)]
+    [Arguments("0105016000017F030201000A08010601017F41010B", "function.locals", 23L)]
+    [Arguments("0106016000027F7E030201000A08010600410142020B", "function.results", 24L)]
+    public async Task 型は有効だが実行形が未対応_検証の未確認範囲を通知しインスタンス化を拒否する(
+        string sections,
+        string feature,
+        long bodyOffset
+    )
+    {
+        // Arrange
+        var bytes = Convert.FromHexString("0061736D01000000" + sections);
+        using var stream = new MemoryStream(bytes);
+        WasmModule[] modules = [WasmModule.Decode(bytes), WasmModule.Decode(stream)];
+
+        // Act & Assert
+        foreach (var module in modules)
+        {
+            var exception = await Assert
+                .That(() => module.Validate())
+                .ThrowsExactly<WasmUnsupportedFeatureException>();
+            using (Assert.Multiple())
+            {
+                await Assert.That(exception!.Feature).IsEqualTo(feature);
+                await Assert
+                    .That(exception.Location)
+                    .IsEqualTo(new(WasmProcessingStage.Validate, bodyOffset, 0, 10));
+                await Assert.That(exception.UnverifiedRanges.Length).IsEqualTo(1);
+                await Assert
+                    .That(exception.UnverifiedRanges[0].Stage)
+                    .IsEqualTo(WasmProcessingStage.Validate);
+                await Assert.That(exception.UnverifiedRanges[0].StartOffset).IsEqualTo(bodyOffset);
+                await Assert
+                    .That(exception.UnverifiedRanges[0].EndOffset)
+                    .IsEqualTo((long)bytes.Length);
+            }
+            await Assert
+                .That(() => module.Instantiate([]))
+                .ThrowsExactly<InvalidOperationException>();
+        }
+    }
+
+    [Test]
     public async Task 後半関数の結果型が不正_再試行しても検証失敗しインスタンス化できない()
     {
         // Arrange

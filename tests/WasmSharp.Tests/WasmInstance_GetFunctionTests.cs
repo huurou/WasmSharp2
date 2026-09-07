@@ -25,6 +25,10 @@ internal class WasmInstance_GetFunctionTests
         var alias = first.GetFunction("alias");
         var otherFunction = first.GetFunction("Run");
         var otherInstance = second.GetFunction("run");
+        var result = function.Invoke([]);
+        var aliasResult = alias.Invoke([]);
+        var otherFunctionResult = otherFunction.Invoke([]);
+        var otherInstanceResult = otherInstance.Invoke([]);
 
         // Assert
         using (Assert.Multiple())
@@ -37,6 +41,10 @@ internal class WasmInstance_GetFunctionTests
             await Assert.That(function.Type.Results.Single()).IsEqualTo(WasmValueKind.I64);
             await Assert.That(otherFunction.Type.Results.Single()).IsEqualTo(WasmValueKind.I32);
             await Assert.That(ReferenceEquals(first.GetFunction(""), otherFunction)).IsTrue();
+            await Assert.That(result.Values.Single().AsI64()).IsEqualTo(2L);
+            await Assert.That(aliasResult.Values.Single().AsI64()).IsEqualTo(2L);
+            await Assert.That(otherFunctionResult.Values.Single().AsI32()).IsEqualTo(1);
+            await Assert.That(otherInstanceResult.Values.Single().AsI64()).IsEqualTo(2L);
         }
     }
 

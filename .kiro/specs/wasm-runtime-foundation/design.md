@@ -155,7 +155,6 @@ Roslynは必要な既存APIを備えた固定版を選ぶ。最新版を必要�
 | `tests/WasmSharp.Tests/Exceptions/WasmUnsupportedFeatureException_ConstructorTests.cs` | 既存コンストラクターでも未確認範囲を空のコレクションとして取得できること |
 | `tests/WasmSharp.Generators.Tests/WasmSharp.Generators.Tests.csproj` | TUnitと生成器/Roslynのテスト参照 |
 | `tests/WasmSharp.Generators.Tests/InstructionGenerator_InitializeTests.cs` | generator driverによる宣言更新・診断・生成ソース検証 |
-| `tests/WasmSharp.Tests/README.md` | 基盤で実行した対象・コマンドと未対応/未検証範囲の記録 |
 
 生成中間出力のルートは`src/WasmSharp/obj/<構成>/net10.0/generated/`とし、CompilerGeneratedFilesOutputPathに設定する。Roslynはその下へ生成器のアセンブリ名と型の完全名を付けるため、本設計の出力先は`generated/WasmSharp.Generators/WasmSharp.Generators.InstructionGenerator/InstructionSet.g.cs`と、同じディレクトリの`Interpreter.g.cs`になる。前者がInstructionDescriptorと実行opcode列挙も生成する。これらを手で作成・変更・Git管理しない。
 
@@ -176,7 +175,7 @@ Roslynは必要な既存APIを備えた固定版を選ぶ。最新版を必要�
 | `src/WasmSharp/WasmSharp.csproj` | Analyzer参照、中間生成出力、内部契約テスト用InternalsVisibleTo |
 | `WasmSharp2.slnx` | 生成器と生成器テストプロジェクトを追加 |
 
-`WasmHostModule.cs`、`WasmValueKind.cs`、メモリ/テーブル/tag、他の既存例外は本仕様で変更を要求しない。既存テストcsprojの参照は足りており、必要のない設定変更を加えない。基盤の検証結果は`tests/WasmSharp.Tests/README.md`に対象・実行コマンド・未検証範囲を記録する。
+`WasmHostModule.cs`、`WasmValueKind.cs`、メモリ/テーブル/tag、他の既存例外は本仕様で変更を要求しない。既存テストcsprojの参照は足りており、必要のない設定変更を加えない。
 
 ## 処理フロー
 
@@ -514,7 +513,7 @@ WasmUnverifiedRangeは`Stage`、`long StartOffset`、`long EndOffset`（排他�
 
 2026-09-06のユーザー承認により、既存の`WasmValue`の`low64_`・`kind_`のCS0169はタスク2.1、`high64_`・`reference_`のCS0169はタスク2.2で解消する。それまではこの既存警告4件だけをタスク完了・テスト実行前の警告0判定から除外する。CS0169の警告抑止は追加せず、生成器の警告0条件と基盤全体の最終検証での警告・エラー0は維持する。
 
-この設計生成ではコード/テストを実装・実行したとは扱わない。実装完了時の記録では、公開定数経路、負例、内部契約を分けて示し、call/start/host/trap命令/SIMD/公式全件は未対応または未検証と明記する（7.3）。性能ベンチマーク、並行実行保証、公式corpus固定は本仕様の完了条件に加えない。
+この設計生成ではコード/テストを実装・実行したとは扱わない。性能ベンチマーク、並行実行保証、公式corpus固定は本仕様の完了条件に加えない。
 
 ## 実装順序と引き継ぎ
 
