@@ -73,7 +73,7 @@ foreach ($inputFile in $inputs) {
 
 この確認は固定commitの選定と取得・変換の確認に限る。
 JSONの`module_type=text`に対応する`.wat`も変換器の出力として残すが、ランタイムの対象外とし、合格件数に含めない。
-正式なcorpus manifest、入力・生成物のhash一覧、基盤対応範囲のassertionの評価と初回baselineは`conformance-runner`で整備する。後続機能に必要な判定は各機能仕様で同じツールへ追加する。
+正式なcorpus manifest、入力・生成物のhash一覧、spectest・registerを含む実行・リンク基盤の公式評価と初回baselineは、`host-linking`に続く`conformance-runner`で整備する。後続機能に必要な判定は各機能仕様で同じツールへ追加する。
 
 ## 移行時の確認結果
 

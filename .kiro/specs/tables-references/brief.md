@@ -2,49 +2,51 @@
 
 ## 課題
 
-利用者は関数参照や外部参照を保持し、テーブルを使って間接呼び出しを行いたい。スカラー機能だけでは参照の型と同一性、null、element segment、間接callのtrapを表現できない。
+利用者は関数・外部参照をguest命令で扱い、tableとelement segmentによる間接呼出しを実行したい。リソースの生成・共有だけでは参照命令、element初期化、call_indirectの検証とtrapを扱えない。
 
 ## 現状
 
-discovery時点の`WasmTable`は空クラス、`WasmValueKind`にはFuncRef/ExternRefがあるが実装済みではない。着手前に基盤の値・型契約と数値・制御、固定公式素材、ランナーと結果baselineが整備される。
+着手時にはhost-linkingの参照保持・table型/limits・null初期化・生成・import/export、numeric-controlの制御機構、conformance-runnerのspectest・register・初回baselineを利用できる。
 
 ## 望む結果
 
-Core 2.0の`funcref/externref`、複数table、element segment、table命令、`call_indirect`を4段階で扱える。参照の同一性とnullを保ち、型・添字・境界・間接呼び出しの不一致を適切に判定できる。
+同じ参照・table実体でCore 2.0のref命令、table命令、element、call_indirectを4段階で扱える。null・同一性・型・添字・境界を保ち、imported tableにも同じ意味論を適用する。
 
 ## 方針
 
-基盤のWasmValue・型表現と単一実行機構を拡張する。参照固有の検証とtableの意味論を本仕様に集め、ホスト連携へ同じリソースと参照を渡す。3.0のheap typeやGCを先行実装しない。
+共通のWasmValue・型・関数呼出し・リソース機構へ参照固有の検証と命令を追加する。基本のtable生成・リンクを重複実装せず、3.0のheap typeやGCを先行導入しない。
 
 ## 範囲
 
-- **対象**: Core 2.0の参照型、ref.null/ref.func/ref.is_null、参照のlocals・globals・引数・結果・typed select、宣言済み関数参照の規則。
-- **対象**: table型・limits、複数table、table.get/set/size/grow、table.copy/fill/init、elem.drop。
-- **対象**: active/passive/declarative element、初期化式と添字、初期化trap。
-- **対象**: call_indirectのtable要素・関数型照合とtrap、通常のホスト利用に必要なtable・参照の明示的公開操作。
-- **対象**: 同じランナーツールの参照の引数・結果、null・同一性、element初期化時のassert_uninstantiableの判定と、公式検証・回帰確認。メモリ仕様の完成を待たず必要な判定を実装し、既存対応があれば再利用する。
-- **対象外**: 型付き関数参照、call_ref、GC、再帰型、exnref、64bit table、ホストimportの名前・型照合。
+- **対象**: ref.null/ref.func/ref.is_null、参照を使うlocals・globals・引数・結果・typed selectの固有規則、宣言済み関数参照の検証。
+- **対象**: table.get/set/size/grow/copy/fill/init、elem.drop、複数tableの命令処理。
+- **対象**: active/passive/declarative element、参照の初期化式・添字・mode、初期化trap。
+- **対象**: call_indirectの要素・関数型照合とtrap、既存の直接callと共通の結果受渡し。
+- **対象**: imported table・共有参照への命令とelement初期化、startとの順序と失敗時の観測可能な副作用。
+- **対象**: 同じランナーの参照引数・結果、null・同一性比較、element初期化を含む公式検証と回帰比較。必要な判定はメモリ仕様の完成を待たず追加する。
+- **対象外**: tableの基本型・limits・生成・リンク・公開ホスト操作の再実装、型付き関数参照、call_ref、GC、再帰型、exnref、64bit table。
 
 ## 責務の接点
 
-- function呼び出しと結果保持は数値・制御の機構を使い、間接callのための第二の実行系を作らない。
-- table/elementの初期化処理は後続のリンク済みInstantiateでも同じ意味論を使う。
-- 外部参照を作成・受け渡す際も明示的なvalue・参照契約を使い、汎用object/dynamic引数や暗黙のboxing規約を公開APIへ持ち込まない。
+- 関数呼出しとフレームはhost-linking、構造化制御はnumeric-controlの機構を使う。間接callのための別実行系を作らない。
+- tableの保持・null初期化・同一性は先行契約を使い、guest命令とelement固有の規則を本仕様が所有する。
+- 参照globalの初期化式・ref命令の型規則を既存global実体へ追加する。外部参照も明示的なvalue契約を使い、object/dynamic汎用引数で代用しない。
+- element初期化を既存Instantiateへ追加し、完了後に先行仕様のstartを実行する。data固有の処理はlinear-memoryが所有する。
 
 ## この仕様が所有しないこと
 
-ホストmodule登録、import/exportの接続、WASI、テストだけの参照レジストリをランタイムへ置くことは所有しない。
+ホストmodule登録とimport照合、WASI、ランタイムへのテスト専用参照レジストリ、scalar数値演算は所有しない。
 
 ## 上流・下流
 
-- **上流**: `numeric-control`（共通基盤・公式素材・ランナーを含む）。
-- **下流**: `host-linking`。`linear-memory`とは並行できる。
+- **上流**: numeric-control。host-linkingとconformance-runnerの能力を引き継ぐ。
+- **下流**: 全体のCore 2.0統合確認。linear-memoryとは並行できる。
 
 ## 既存仕様との関係
 
-- **拡張する既存仕様**: `conformance-runner`が整備したツールを拡張する。初期仕様の完了条件は変更せず、本仕様の要件・タスクで追加対応を扱う。
-- **隣接**: globalsとcallの共通経路は数値・制御を利用し、参照型固有の処理だけを追加する。共有リソースとしての接続はホスト連携が担当する。
+- **拡張する既存仕様**: host-linkingの参照・table・Instantiate、numeric-controlの制御、conformance-runnerの値比較を拡張する。
+- **隣接**: globalの共通実体はhost-linking、参照固有の初期化と検証は本仕様、data初期化はlinear-memory。
 
 ## 制約と確認事項
 
-テーブル・参照機能を追加するたびに固定公式スイートをランナーで実行し、null、同一参照、型不一致、table境界、element mode、間接call等を公開APIから確認する。完了時は[ロードマップの公式検証方針](../../steering/roadmap.md#公式検証の方針と完了条件)に従い、全体の結果差分、追加機能の対象ケースの合格、既存合格ケースの退行がないことを確認する。ホストimport等が必要なケースは出典・理由・所管仕様を記録し、前提機能が揃った時点で再検証する。CLR参照の保持方法は実装詳細であり、Wasmの同一性を失わないことを契約とする。文書は日本語（`ja`）。
+機能追加ごとに固定公式スイートを実行し、[ロードマップの公式検証方針](../../steering/roadmap.md#公式検証の方針と完了条件)に従って対象ケースの合格と回帰がないことを確認する。null・同一参照・型不一致・table境界・element mode・間接callを公開APIから検証する。後続機能待ちのケースは理由と所管を残す。文書は日本語（ja）。

@@ -10,7 +10,7 @@ C#でWebAssemblyバイナリをデコード・検証・インスタンス化・�
 
 下記7仕様を機能ごとに4段階を通して実装する。公式テスト素材の固定・生成から実行・回帰比較までは、`conformance-runner`で一つの仕様・ツールとして扱う。Core 3.0は将来の別計画とする。この分割方針の承認と、各仕様のrequirements・design・tasks・実装の承認は区別する。文書の言語は日本語とし、`spec.json.language`は`ja`とする。
 
-完成済みの`runtime-foundation`を利用して公式適合検証ツールと初回baselineを整備し、その後に各実行機能を進める。基盤の承認済み要件・設計・タスクの内容は維持し、仕様統合に伴う参照先を揃える。後続機能では必要なランナー対応と公式スイートによる回帰確認も完了条件に含める。
+完成済みの`runtime-foundation`に続き、`host-linking`で関数呼出し・リソース生成・import/exportの実行・リンク基盤を整備する。その公開能力を使って`conformance-runner`のspectest・registerと初回baselineを成立させ、その後に各命令・初期化機能を追加する。基盤の承認済み要件・設計・タスクと完成状態は維持する。後続機能では同じ公式スイートによる回帰確認も完了条件に含める。
 
 ## discovery時点の現状（2026-09-06）
 
@@ -22,8 +22,9 @@ C#でWebAssemblyバイナリをデコード・検証・インスタンス化・�
 
 ## 進め方の選択
 
-- **採用**: 小さな4段階の実行基盤を完成させ、公式テスト素材の固定・生成から実行までを一つのツールで整備してから、数値・制御、メモリ、参照、ホスト連携、SIMDを縦に追加する。各機能の実装に合わせて同じランナーを拡張し、固定スイートを継続実行する。規模は大。
-- **理由**: 各機能の仕様解釈と実行結果を早く対応づけられ、未実装と不具合の差分を固定したテスト集合上で追える。
+- **採用**: 最小基盤に実行・リンク基盤を加えてから、素材生成・spectest・register・実行・回帰比較を一つの公式ツールで整備する。数値・制御、メモリ命令、テーブル・参照命令、SIMDはその後に追加する。規模は大。
+- **理由**: 公式スイートのimportやmodule間共有を初期から利用し、各機能の実装時に仕様解釈と実行結果を確認できる。リソースの生成・共有とguest命令の意味論を分け、未実装と不具合を同じ固定集合で追跡する。
+- **順序の別案**: ホスト連携を全命令・segment初期化の後まで遅らせると、importを使う公式ケースの検証も遅れる。共通の実行・リンク能力を先行し、data/element固有の処理は各機能へ置く。
 - **検討した別案**: Core 2.0全体のDecode・Validateを先行し、その後Instantiate・Invokeを完成させる。段階内の作業はまとまるが実行結果による確認が遅くなるため採用しない。こちらも規模は大。
 - **範囲の別案**: Core 1.0限定ではSIMD等が完了目標に入らず、Core 3.0から開始するとGC等の追加設計とWABTの変換対応不足を同時に扱う必要がある。今回はCore 2.0を選択した。
 
@@ -53,11 +54,13 @@ C#でWebAssemblyバイナリをデコード・検証・インスタンス化・�
 - `WasmModule`は静的定義、`WasmInstance`は実行時の実体という既存の区別を保つ。検証前のInstantiateを防ぐ契約、検証成功後の実行表現の所有権は基盤で決める。
 - 基盤はCore 2.0の値・型・添字空間と、後続が使うデコード結果・命令情報・スタック・実行結果の共通契約を持つ。各機能の具体的なデコード、検証、初期化、実行はその機能の仕様が所有する。
 - scalarとvector・参照をやり取りできる`WasmValue`の契約を基盤で決める。各命令の意味論は該当機能が持つ。参照の同一性を明示的に表し、汎用`object`引数で代用しない。
-- メモリ・テーブル・globalを定義して利用する機能は各機能仕様が所有する。ホスト連携はそれらのリソースをimport/exportで結び、同一性を保つ責務を持つ。guestメモリ命令やtable命令をホスト連携側に再実装しない。
+- `host-linking`は関数の引数・結果0個/複数・locals・直接call/return、return後の到達不能部分を含む関数本体の型検証、globalの生成・スカラー初期化・get/set、memory/tableの型・limits・生成・公開取得、4種のimport/exportと同一性を所有する。memory/tableのguest命令とdata/element初期化は各機能仕様が同じ実体へ追加し、リソース表現を複製しない。
+- `host-linking`は通常利用に必要なimportの識別情報を公開する。依存の把握をinstance生成や無関係な未実装命令のDecode成功へ依存させず、取得できた情報と未確認範囲を区別する。ランナーはこの能力で失敗したregisterへの依存を特定し、独自のバイナリ解析やWAST解析で補わない。
+- startの型検証・実行と共通のInstantiate順序は`host-linking`が所有する。data/element初期化と、共有リソースに対する初期化・startの複合挙動は各segmentの所有仕様が追加・検証する。未対応のsegmentを無視してstartを実行しない。
 - `WasmInstance`の既存コメント「Exportsは持たせない」を守る。公開取得操作と共有リソースの扱いは通常の埋め込み利用を根拠に設計する。`GetGlobal`の値取得だけでmutable globalの共有を表現できると決めつけない。
-- 分岐のstack heightの基準、loop引数とblock結果の保持数、関数呼び出し時のスタック基準は基盤と数値・制御で一致させる。CLRの再帰呼び出しに依存してテストプロセスを落とす構成を避ける。
+- 関数呼出しのフレーム・引数と結果の受渡しは`host-linking`で基盤を拡張する。`numeric-control`の分岐・loopも同じスタック基準を使う。直接call・start・ホスト再入には初期から既存の実行コンテキストと深さ制限を適用し、CLRの再帰呼出しに依存してプロセスを落とさない。
 - Instantiate中のstartやsegment初期化のtrapをリンク不成立へ変換しない。呼び出し契約違反、ホスト処理の例外、実装制限・資源枯渇も、Wasmの仕様trapと無差別に混同しない。具体的な型・reasonの割り当てはrequirements/designで確定する。
-- 未実装に遭遇して検証を終えられない場合、`unsupported`は「有効性を証明済み」を意味しない。判定できなかった範囲も記録し、不正なバイナリを一括して未実装へ分類しない。Core 2.0外の命令についても、選定仕様の否定テストの期待値を勝手に変更しない。
+- 未実装に遭遇して検証を終えられない場合、`runtime_unsupported`は「有効性を証明済み」を意味しない。判定できなかった範囲も記録し、不正なバイナリを一括して未実装へ分類しない。Core 2.0外の命令についても、選定仕様の否定テストの期待値を勝手に変更しない。
 
 ## 公式検証の方針と完了条件
 
@@ -67,24 +70,34 @@ C#でWebAssemblyバイナリをデコード・検証・インスタンス化・�
 
 `wast2json`はtext構文エラーのテスト等に`.wat`も生成する。ランナーの実行処理はJSONの`module_type=text`を対象外として記録し、そのファイルを開かない。これらを合格件数に含めない。バイナリのmalformed/invalid、unlinkable、Instantiate中のtrap、Invoke中のtrap、exhaustion、戻り値の型・個数・ビット列・NaN patternはそれぞれの意味で判定する。
 
-- `passed`: 該当assertionまたは必要なセットアップが期待どおり成立。
-- `failed`: 実装済み経路の結果が期待と不一致。
-- `unsupported`: ランタイムの未実装を観測。
+- `passed`: 該当assertionが期待どおり成立、または必要なセットアップ・単独actionが正常に完了。
+- `failed`: 判定した結果が期待と不一致。
+- `runtime_unsupported`: ランタイムの未実装を観測。
+- `runner_unsupported`: ランナーがcommandや期待値の比較に未対応。
+- `runner_error`: 変換失敗、JSONの破損、素材の欠落などで検証処理が異常で成立しない。
 - `out_of_scope`: テキスト形式など明示された対象外。
-- `tool_error`: 変換不能、JSON未対応、実行準備の故障など、ランタイムの意味論を検証できていない。
+- `blocked`: 前提が成立せず、依存するcommandを実行できない。
 
-前のmodule/register失敗で実行できない後続commandも、依存先の失敗を理由付きで記録して合格扱いにしない。集計ではセットアップcommandとassertionの件数を区別する。
+前のmodule/register失敗で実行できない後続commandは`blocked`とし、依存先の失敗を理由付きで記録して合格扱いにしない。集計ではセットアップ・単独action・assertionの件数を区別する。
 
-`runtime-foundation`は既存の完了条件で先に完成させる。その後、`conformance-runner`で素材の固定・生成から実行までを整備し、基盤の実装状態で固定スイート全体を処理した最初の結果baselineを保存する。この時点でCore 2.0全件合格は要求しない。
+生成済み素材の実行は保存したmanifestと生成物だけで行い、元WASTやWABTを必要としない。baselineは利用者の環境に保存し、共有・共同レビューを必須にしない。実行結果の比較では、検証プロファイルと入力・生成物の一覧・hashが一致すれば、変換器の実行ファイルhashが異なっても同じ固定スイートとして比較し、変換器の差異は出典情報として残す。
+
+素材生成では、入力と出力先の配置ディレクトリだけが変わっても生成物の内容とhashを維持する。変換baseline比較は、全対象の比較と結果の記録・出力が完了し、入力・生成物の一覧とhash、変換結果、生成条件が一致して`runner_error`が0件の場合だけ終了コード0とし、差異や比較未完了を含むそれ以外は非0とする。
+
+`runtime-foundation`の完成状態を維持し、次に`host-linking`を公開APIの直接テストで検証する。この段階では完成済みランナーを前提にしない。`conformance-runner`の初期完了で、全入力の素材生成と再現性、spectestとregisterを使う実行・リンク経路、全commandの記録と初回baselineをまとめて公式検証する。
+
+初回公式受入では、全体の`failed`と入力単位・command単位の`runner_error`を0件とし、最小基盤と実行・リンク基盤の対応範囲で前提が揃うケースを合格させる。import・register・ホスト関数・共有リソースを、ランナーや公開APIの不足を理由に未対応へ残さない。後続のguest命令・segment・参照/SIMD比較を必要とするケースは、理由・必要機能・所管を記録した未対応と、それに依存する`blocked`を残せる。Core 2.0全件合格はこの段階では要求しない。
 
 `numeric-control`以降は、各機能の実装単位ごとに必要なランナー対応も加えて固定スイート全体をコマンドで実行する。実装中の絞り込み実行は可能だが、機能の完了確認では全体の実行結果と直前のbaselineとの差分を残す。TUnitの個別テストは補助として使い、公式JSONの期待値判定や全体の回帰確認を代替しない。WAST用の簡易パーサーは作らない。
 
 - 追加機能の対象ケースのうち、必要なランタイム機能が揃ったものは合格を要求する。必要なJSON command・期待値比較・ホスト設定の不足を理由に検証を後回しにしない。
-- 以前`passed`だったケースが他の結果や未実行へ変わっていないことを確認する。合格件数だけでなく、元ファイルとcommandを特定して比較する。
+- 同じ固定スイートで以前`passed`だったケースが別の分類へ変わる、または結果から欠落する場合は、回帰としてNGとする。合格件数だけでなく、元ファイルとcommandを特定して比較する。
 - 後続のランタイム機能を必要とするケースは、出典・未成立の理由・必要な機能と所管仕様を記録する。その機能が揃った段階で再検証し、対象集合やfeature flagから除外しない。
-- ランナー側のJSON未対応や期待値比較の不足は`tool_error`とし、ランタイムの`unsupported`へ置き換えない。前提commandの失敗による未実行も元の原因に結びつけて記録する。
+- ランナー側のcommandや期待値比較の未対応は`runner_unsupported`とし、JSONの破損や素材の欠落などの`runner_error`、ランタイムの`runtime_unsupported`へ置き換えない。前提commandの失敗による`blocked`も元の原因に結びつけて記録する。
 
-最後は同じランナーで全対象を実行し、対象内の`failed`・`unsupported`・`tool_error`・依存による未実行が0であることを確認する。全7仕様と各機能に伴うランナー拡張が揃う前にCore 2.0準拠の完成を宣言しない。
+通常実行は、全対象の結果記録・出力が完了して`failed`・`runner_error`が0件なら終了コード0とし、これらがある場合は非0とする。理由・所管仕様を記録した後続機能に伴う未対応と、それらを原因とする`blocked`が残るだけでは非0にしない。回帰比較は、以前の`passed`の別分類への変化・欠落や比較条件の不一致も非0とし、比較が成立して`failed`・`runner_error`・回帰がなければ0とする。最終判定は、下記のCore 2.0全体の完了条件をすべて満たす場合だけ0とし、それ以外は非0とする。
+
+最後は同じランナーで全対象を実行し、固定スイートの`out_of_scope`を除く全ケースが`passed`であることを確認する。未処理・欠落・件数未確定を残さず、`failed`・`runtime_unsupported`・`runner_unsupported`・`runner_error`・`blocked`はすべて0件とする。全7仕様と各機能に伴うランナー拡張が揃う前にCore 2.0準拠の完成を宣言しない。
 
 最後の機能を統合する担当が、全7仕様とランナー拡張を統合した同じコード状態で最終実行を行い、コード状態・固定profile・生成物と結果を対応づけて記録する。ホスト連携とSIMDを別々の状態で検証した結果を足し合わせて最終確認の代わりにしない。
 
@@ -92,32 +105,31 @@ C#でWebAssemblyバイナリをデコード・検証・インスタンス化・�
 
 ## 分割と依存関係の意図
 
-Decode・Validate・Instantiate・Invokeを別々の機能仕様にせず、機能ごとに4段階を通す。共通の機械だけ基盤にまとめ、メモリ・テーブル・ホスト連携・SIMDの意味論をそれぞれの仕様に集める。公式適合検証は、素材生成から実行結果の確認までが一つの利用目的なので、一つの仕様・ツールにまとめる。素材の固定・生成と実行・判定は内部の工程として区別し、生成済み素材を再利用した実行も可能にする。
+Decode・Validate・Instantiate・Invokeを別々の機能仕様にせず、機能ごとに4段階を通す。最小基盤の次に関数実行と外部要素の生成・リンクを`host-linking`へ集め、数値演算・構造化制御、memory/table命令とsegment、SIMDはそれぞれの仕様が追加する。公式適合検証は、素材生成から実行結果の確認までを一つの仕様・ツールで扱い、生成済み素材も再利用できる。
 
-`conformance-runner`の初期仕様は、固定公式素材の生成・再現性確認、基盤の公開APIで実行できる公式ケース、全commandの結果記録・回帰比較までを完成させる。spectestや後続機能の公開APIを待たない。各機能に必要なランナー拡張は、その機能仕様の受入作業として同じツール内へ追加する。素材生成・JSON処理・期待値比較・spectestの配置はツール側に保ち、ランタイム内部への専用hookや別ランナーを作らない。
+`conformance-runner`の初期仕様は`host-linking`を上流とし、spectest・register、スカラー引数と結果0個/複数、global取得、公開段階と失敗分類に基づくassertion判定を含める。素材生成とJSON処理は実行・リンク基盤と並行して作業できるが、初回公式受入は両方が揃ってから行う。後続の参照・SIMD期待値比較等は各機能で同じツールへ追加する。ランタイム内部への専用hookや別ランナーは作らない。
 
 独立した仕様の並行作業は可能だが、共通の命令テーブル・モジュール解析・実行ループへの編集は衝突し得る。設計で共通契約を先に固め、実装時は同じファイルの並行編集を避けて統合する。依存関係は仕様作成・完了確認の前提を表し、不要な実装レイヤーや公開拡張口を要求するものではない。
 
 ## Specs (dependency order)
 
 - [x] runtime-foundation -- 明示的な4段階APIと値・型・失敗分類、最小の線形実行基盤。 Dependencies: none
-- [ ] conformance-runner -- Core 2.0公式素材の固定・生成から基盤対応範囲の実行、固定スイート全体の結果分類・集計・回帰比較と初回baselineまでを一つのツールで整備する。 Dependencies: runtime-foundation
-- [ ] numeric-control -- スカラー数値、関数、構造化制御、複数値、globalsを4段階で実装し、対応するランナー機能と公式回帰確認を加える。 Dependencies: runtime-foundation, conformance-runner
-- [ ] linear-memory -- 線形メモリ、data segment、load/store、bulk memoryと初期化trapの公式検証を実装する。 Dependencies: numeric-control
-- [ ] tables-references -- テーブル、参照値、element segment、間接呼び出し、bulk tableと参照の公式期待値判定を実装する。 Dependencies: numeric-control
-- [ ] host-linking -- 明示型のホスト関数、import/exportの共有、リンクとstartを実装し、ツール側のspectestとregisterを完成させる。 Dependencies: linear-memory, tables-references
-- [ ] simd -- v128とCore 2.0 SIMDを共通命令テーブル・実行ループに実装し、ランナーのlane期待値判定を加える。 Dependencies: linear-memory
+- [ ] host-linking -- 関数実行、global・memory・tableの生成と共有、import/export、ホストcallbackとstartを公開APIで扱う実行・リンク基盤。 Dependencies: runtime-foundation
+- [ ] conformance-runner -- 固定公式素材の生成、spectest・register、公開API実行・判定、全commandの結果記録・回帰比較と初回baseline。 Dependencies: host-linking
+- [ ] numeric-control -- スカラー数値命令と構造化制御を共通実行機構へ追加し、数値trap・再帰・複数値制御を公式検証する。 Dependencies: host-linking, conformance-runner
+- [ ] linear-memory -- スカラーload/store、data segment、bulk memoryと初期化・実行のtrapを公式検証する。 Dependencies: numeric-control
+- [ ] tables-references -- 参照命令、table操作、element segment、間接呼出しと初期化・実行のtrapを公式検証する。 Dependencies: numeric-control
+- [ ] simd -- v128とCore 2.0 SIMDを共通命令テーブル・実行ループに実装し、lane期待値判定を加える。 Dependencies: linear-memory
 
-作業順は、①完成済みの基盤、②素材生成から実行までの公式適合検証ツールと初回baseline、③数値・制御、④メモリとテーブル・参照、⑤ホスト連携とSIMD。素材生成そのものはランタイムの実装状況に依存しない。④の2仕様は並行可能。⑤のホスト連携は④の両方を必要とし、SIMDはメモリが揃えば着手できる。各機能の完了時に同じスイートで回帰確認し、最後に全体の合格条件を確認する。
+作業順は、①完成済みの最小基盤、②実行・リンク基盤、③公式適合検証ツールと初回baseline、④数値・制御、⑤メモリとテーブル・参照、⑥SIMD。⑤の2仕様は並行可能で、SIMDはメモリが揃えば着手できる。②は③を完了前提にせず、③で②の公式統合受入も行う。④以降は機能の完了時に同じスイートで回帰確認する。
 
-初期ランナー完了後に加えるツール側の対応は次の機能仕様で実装・検証する。これらを初期ランナーの完了前提へ戻して循環依存を作らない。
+初期ランナーはspectest・registerとスカラー入出力、global取得、段階別の否定assertionを扱う。以後のツール拡張と統合確認は次の機能仕様で行う。
 
-| 機能仕様 | 同時に加えるランナー対応 |
+| 機能仕様 | 同時に加えるランナー対応・統合確認 |
 | --- | --- |
-| `numeric-control` | 引数・複数戻り値、global取得、数値結果・NaN、trap・exhaustionの判定 |
-| `linear-memory` | data初期化時のtrapを含むインスタンス化失敗の判定 |
-| `tables-references` | 参照の引数・結果、null・同一性、element初期化trapの判定 |
-| `host-linking` | spectest、module/registerと共有状態、リンク不成立・start・importを含む統合確認 |
+| `numeric-control` | 数値演算・構造化制御・再帰の公式ケース。必要な期待値・診断対応の拡張は初期のscalar比較と段階別判定を再利用 |
+| `linear-memory` | data初期化とstart・共有memoryの複合ケース。初期のassert_uninstantiable判定を再利用 |
+| `tables-references` | 参照の引数・結果、null・同一性、element初期化とstart・共有tableの複合ケース |
 | `simd` | v128の引数・結果、laneごとのビット列・NaN patternの判定 |
 
 ## 将来のCore 3.0

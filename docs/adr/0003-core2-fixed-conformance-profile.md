@@ -8,6 +8,14 @@ status: accepted
 
 WASTを自前で解析する案に対し、wast2jsonで分解し、自作ツールの実行処理はJSONと`.wasm`だけを読む方式を採用する。素材の固定・生成から実行・回帰比較までは`conformance-runner`が一つのツールで扱う。仕様版・公式入力集合・変換器・生成物・全feature状態を固定し、対象内は未実装でもON、対象外はOFF、`--enable-all`は禁止とする。実装進捗でフラグを変えると入力と合格集合を比較できなくなるため、更新は実装の進捗と分離して追跡する。
 
-変換器が出力するテキスト構文エラー用の`.wat`等は実行対象外として記録し、実行処理では開かず、合格件数に含めない。素材同定のためのWAST/WATのhash計算と、自作の構文解析・意味解釈を区別する。変換できない入力はツール不成立であり、ランタイム未実装を観測したことにはしない。3.0への拡張時も2.0の固定素材と結果baselineを残し、否定テストの期待値まで両版で同じだとは扱わない。
+変換器が出力するテキスト構文エラー用の`.wat`等は実行対象外として記録し、実行処理では開かず、合格件数に含めない。素材同定のためのWAST/WATのhash計算と、自作の構文解析・意味解釈を区別する。変換できない入力は`runner_error`であり、ランナーの未対応を示す`runner_unsupported`や、ランタイムの未実装を示す`runtime_unsupported`とは区別する。3.0への拡張時も2.0の固定素材と結果baselineを残し、否定テストの期待値まで両版で同じだとは扱わない。
 
-仕様・ツールの調査時点の根拠は[discovery調査](../research/wasm-runtime-discovery.md)、現在の固定commitと取得・変換手順は[外部ソースの固定](../../thirdParties/README.md)に記録する。manifestと生成から実行までの完了条件は[conformance-runnerの要件](../../.kiro/specs/conformance-runner/requirements.md)で定める。
+仕様・ツールの調査時点の根拠は[discovery調査](../research/wasm-runtime-discovery.md)、現在の固定commitと取得・変換手順は[外部ソースの固定](../../thirdParties/README.md)に記録する。公式適合検証の範囲は[conformance-runnerのブリーフ](../../.kiro/specs/conformance-runner/brief.md)、実装順序と全体の完了条件は[ロードマップ](../../.kiro/steering/roadmap.md)に従う。
+
+## 公式検証より先に実行・リンク基盤を整備する
+
+公式スイートを機能追加の早期から使うため、最小基盤に続く`host-linking`で関数実行、global・memory・tableの生成と共有、4種のimport/export、ホストcallbackとstartを実装する。`conformance-runner`はその公開能力でspectest・registerを構成し、最初の公式実行からリンクを扱う。
+
+ホスト連携をメモリ・テーブル命令の完成後まで遅らせると、先行機能のimport依存ケースも検証を待つことになる。一方、data/element初期化まで一括して前倒しすると早期基盤が各命令機能へ依存する。このためリソースの生成・型照合・同一性を`host-linking`に、guest命令とsegment固有の初期化・startとの統合を各機能仕様に分ける。同じリソースと実行機構を使い、意味論を二重実装しない。
+
+実行・リンク基盤は公開APIの直接テストで検証し、完成済みランナーを前提にしない。ランナーの初回受入で実行・リンク基盤の公式統合検証も行い、以後は各機能の追加時に固定suite全体とbaseline差分を確認する。未対応の命令やsegmentを無視してセットアップを合格させず、前提不成立は原因へ結び付けて記録する。

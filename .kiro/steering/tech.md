@@ -42,4 +42,4 @@ TUnitはAAA、日本語の条件・期待結果名、`await Assert.That(...)`を
 
 ランタイムテストは固定Core 2.0仕様の命令付録をビルド時に埋め込む。基盤テストにはspec submoduleが必要で、WABTのビルドは不要。外部ソースの取得・固定・変換手順は[thirdParties/README.md](../../thirdParties/README.md)に保持する。
 
-公式適合検証では、`conformance-runner`が固定したCore 2.0 profileでの素材生成から実行・回帰比較までを扱う。WABTの`wast2json`からJSONとモジュール素材を得て、自作ツールの実行処理の入力はJSONと`.wasm`に限定する。素材同定のためのWAST/WATのhash計算は行うが、構文解析・意味解釈は行わない。実装進捗で対象集合やfeature flagを減らさず、全体の回帰確認と結果分類は[ロードマップ](roadmap.md)に従う。
+公式適合検証では、`host-linking`の実行・リンク基盤を先に公開APIの直接テストで確認する。`conformance-runner`はその能力でspectest・registerを構成し、固定Core 2.0 profileでの素材生成から実行・回帰比較までを扱う。初回公式受入には先行基盤の統合確認も含める。WABTの`wast2json`からJSONとモジュール素材を得て、自作ツールの実行処理の入力はJSONと`.wasm`に限定する。素材同定のためのWAST/WATのhash計算は行うが、構文解析・意味解釈は行わない。実装進捗で対象集合やfeature flagを減らさず、全体の回帰確認と結果分類は[ロードマップ](roadmap.md)に従う。

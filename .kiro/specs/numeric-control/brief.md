@@ -2,49 +2,49 @@
 
 ## 課題
 
-利用者は、数値計算・関数・制御構文を持つWasmを正しく実行したい。最小基盤だけでは実際の関数の型検証、分岐、複数値、globals、計算trapを扱えない。
+利用者は数値計算と構造化制御を持つWasmを実行したい。先行する関数実行・リンク基盤だけでは、演算、条件分岐、loop、複数値blockや計算trapを扱えない。
 
 ## 現状
 
-discovery時点のリポジトリは骨組みのみ。この仕様の着手前に最小基盤、固定公式素材、初期ランナーと結果baselineが整備される。基盤の定数返却経路と共通の値・型・実行機構を拡張する。
+着手時にはruntime-foundationとhost-linkingの関数引数・結果・locals・直接call・global・import/export、conformance-runnerのspectest・register・初回baselineを利用できる。スカラー数値演算と構造化制御は本仕様で追加する。
 
 ## 望む結果
 
-Core 2.0のスカラー数値、定義関数、locals、構造化制御、複数値、定義globalsを4段階を通して扱える。正常な戻り値、検証不成立、数値trap、再帰による実行制限を区別して確認できる。
+Core 2.0のスカラー数値演算と構造化制御を4段階で扱い、正常結果、検証不成立、数値trap、再帰によるexhaustionを公式スイートで確認できる。importやホスト連携を使うケースも、必要な命令が揃った段階で実行する。
 
 ## 方針
 
-命令を共通テーブルに登録し、型スタックと制御スタックから同一パスで実行コードと分岐情報を生成する。呼び出しも共通の実行機構で扱い、分岐による完了値の外側への伝播を導入しない。
+先行仕様の関数フレームと単一実行ループへ数値・制御命令を追加する。型検査と線形化を同一パスで行い、分岐をtargetPc・stackHeight・keepCountへ落とす。呼出し・locals・globalの機構を再実装しない。
 
 ## 範囲
 
-- **対象**: `i32/i64/f32/f64`の数値命令、sign-extension、non-trapping conversions、再解釈、比較、parametric命令のスカラー経路。
-- **対象**: 関数型、引数・複数戻り値、locals、直接call、return、block/loop/if、br/br_if/br_table、unreachableと型スタックの多相性。
-- **対象**: 定義globalの型・可変性・初期化式・get/set・値の公開取得。Core 2.0の制限に従う。
-- **対象**: 該当バイナリのデコード、検証と線形化、定義の初期化、実行、型不一致と数値trap、呼び出し深さ制限・exhaustionの共通処理。
-- **対象**: 同じランナーツールの引数・複数戻り値・global取得・数値結果とNaNの比較を拡張し、assert_trap/assert_exhaustionを含む公式検証と回帰確認を行う。
-- **対象外**: メモリ、テーブル、参照命令、call_indirect、ホスト関数呼び出しとimport解決、start、SIMDの命令意味論。
+- **対象**: i32/i64/f32/f64の数値演算、sign-extension、non-trapping conversions、再解釈、比較、スカラーselect。
+- **対象**: block/loop/if、br/br_if/br_table、unreachable、複数値blockとloop引数。host-linkingのreturnに必要な型検証を引き継ぎ、構造化制御・unreachableに伴う型スタックの多相性へ拡張する。
+- **対象**: 先行するcall/return・locals・global・ホストcallbackと構造化制御の統合、数値trap、制御構文を使う再帰と深さ制限の公式検証。
+- **対象**: 固定公式スイートの全体実行と回帰比較。既存のscalar入出力・NaN比較・assert_trap/assert_exhaustionを使い、追加機能に必要なツール側の不足も解消する。
+- **対象外**: 関数の基本呼出し・引数と結果・locals・dropの再実装、globalの生成/get/set・import解決・startの再実装、memory/table命令、参照命令、SIMD。
 
 ## 責務の接点
 
-- 基盤の命令定義元とswitchを拡張し、分岐のstack height基準を一意にする。loopラベルが保持する引数とblockラベルが保持する結果を区別する。
-- 定義globalを保持する実体・公開取得と更新の契約を整え、ホスト連携が同じリソースのimport/exportを実装できるようにする。
-- select・locals・callの共通処理をスカラー固定の別体系にせず、基盤の値・型表現で後続のv128・参照も受け渡せる形にする。参照固有の検証は参照仕様が持つ。
+- 関数呼出し時のスタック基準はhost-linkingの契約に従う。loopラベルが保持する引数とblockラベルが保持する結果を区別する。
+- globalの型・実体・スカラー初期化・get/setはhost-linkingが所有する。本仕様は制御・演算との組み合わせを扱い、別のglobal表現を作らない。
+- 共通の値・型を使い、後続の参照/v128も運べる制御機構にする。参照固有の型検証とvector命令の意味論は各機能仕様が追加する。
+- trapとexhaustionは既存の実行結果と共通ホスト境界を使う。呼出し深さの上限適用は先行仕様から有効であり、本仕様で初めて導入するものではない。
 
 ## この仕様が所有しないこと
 
-共有リソースのimport/export解決、ホストdelegateの登録、Wasm例外処理やtail-callは所有しない。公式JSONの処理と期待値判定はランタイム本体へ置かず、本仕様の受入作業として既存ランナーツールを拡張する。
+共有リソース・ホスト登録・spectest・JSON共通処理は所有しない。公式期待値の判定をランタイムへ持ち込まず、必要なツール対応は同じconformance-runnerへ追加する。
 
 ## 上流・下流
 
-- **上流**: `runtime-foundation`、`conformance-runner`（固定公式素材と初回baselineを含む）。
-- **下流**: `linear-memory`と`tables-references`。さらにホスト連携・SIMDへ接続する。
+- **上流**: host-linking、conformance-runner。
+- **下流**: linear-memoryとtables-references。simdも同じ制御・実行機構を使う。
 
 ## 既存仕様との関係
 
-- **拡張する既存仕様**: `conformance-runner`が整備したツールを拡張する。初期仕様の完了条件は変更せず、本仕様の要件・タスクで追加対応を扱う。ランタイム側は基盤が定めた共通契約を利用する。
-- **隣接**: globalsの定義と命令は本仕様、外部との共有とimport照合は`host-linking`。重複したglobal表現を作らない。
+- **拡張する既存仕様**: host-linkingが提供する実行機構と、conformance-runnerの公式検証能力を拡張する。
+- **隣接**: memory/table・参照・SIMDに固有の命令と初期化は各仕様が所有する。
 
 ## 制約と確認事項
 
-数値・制御・複数値・global・再帰等を追加するたびに、必要なランナー対応とともに固定公式スイートを実行する。完了時は[ロードマップの公式検証方針](../../steering/roadmap.md#公式検証の方針と完了条件)に従い、全体の結果差分、追加機能の対象ケースの合格、既存合格ケースの退行がないことを確認する。参照やimport等へ依存するケースは出典・理由・所管の後続仕様を記録し、前提機能が揃った時点で再検証する。floatではビット表現、NaN、符号付き0、丸め、整数境界の仕様差に注意する。trapに.NET例外を使わず、CLRのStackOverflowでプロセスを落とさない。文書は日本語（`ja`）。
+機能の追加ごとに固定公式スイートを実行し、[ロードマップの公式検証方針](../../steering/roadmap.md#公式検証の方針と完了条件)に従って追加対象の合格と既存passedの退行がないことを確認する。後続のmemory/table命令・segment・参照/SIMDに依存するケースは理由と所管を残す。floatのbits・NaN・符号付き0・丸め・整数境界を守り、CLRのStackOverflowでプロセスを落とさない。文書は日本語（ja）。

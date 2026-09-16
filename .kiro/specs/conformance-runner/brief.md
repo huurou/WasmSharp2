@@ -2,71 +2,70 @@
 
 ## 課題
 
-実装者は機能を追加するたびに固定した公式スイートを実行し、期待する失敗段階と実行結果、既存合格ケースの回帰を確認したい。入力版やfeatureが変わると過去の結果と比較できないため、素材の固定・生成から実行・回帰比較までを一つの工程として整備する。内部APIに依存した検証では、通常利用者が同じ能力を利用できる証拠にならない。
+実装者は機能を追加するたびに固定公式スイートを実行し、仕様違反・実装不足・既存合格ケースの回帰を確認したい。初回からspectestとregisterを使ってimportやmodule間共有を検証でき、素材の出典と結果を同じケース単位で追跡できる必要がある。
 
 ## 現状
 
-WasmSharpの最小実行基盤があり、公式specとWABTの採用版・取得・変換手順は[外部ソースの固定](../../../thirdParties/README.md)に記録されている。正式なmanifest、素材生成から実行までを扱うツールとspectestは未実装。本仕様は基盤の4段階API・値・型・失敗分類を利用し、数値・制御、メモリ、参照、ホスト登録・共有リソース、SIMD命令の完成は前提にしない。
+最小基盤と、公式spec・WABTの固定版および取得・ビルド手順がある。正式manifestと公式ランナーは未実装。本仕様の実行・判定は、先行するhost-linkingが提供する関数実行・リソース生成・import/export・start・依存情報の公開契約を利用する。素材生成とJSON処理の作業は先行できる。
 
 ## 望む結果
 
-固定したCore 2.0公式入力全体を外部の`wast2json`で変換し、生成されたJSONと`.wasm`を基盤の公開APIで実行できる。素材の生成条件とhashを追跡し、全commandの結果から初回baselineと回帰差分を得られる。元ファイルと位置、期待段階、実際の結果、未実行理由まで、一つのツールで確認できる。
+一つのツールで公式素材の固定・生成から、公開APIによる実行、期待値判定、結果保存・回帰比較までを行う。spectest・register・スカラー引数と結果・global取得・段階別assertionを初期から扱い、最小基盤と実行・リンク基盤の対応範囲を公式ケースで確認する。
 
 ## 方針
 
-ランタイムの通常の利用者として、素材の固定・生成から実行・判定・回帰比較までを担う一つのツールを作る。素材生成のみ・生成済み素材の実行のみも選択できる。生成はランタイムの実装状況に依存させず、実行時はJSONのcommandを順に処理して名前付きmoduleと直近module、前提commandへの依存を管理する。初期の実行対象は基盤の対応範囲とし、後続機能が必要な範囲も黙って落とさず記録する。各機能仕様が必要な対応を同じツールへ追加する。WAST構文やWasm演算を再実装しない。
+固定したCore 2.0の全公式入力をwast2jsonでJSONと個別モジュールへ変換する。ランナーは通常の埋め込み利用者としてWasmSharpの公開APIのみを使い、入力ごとにmoduleと登録状態を分離してcommandを順に処理する。素材生成のみ・生成済み素材の実行のみも可能とし、後続仕様は同じツールへ必要な比較能力を追加する。
 
 ## 範囲
 
-- **対象**: SIMDを含むCore 2.0公式入力集合、仕様版・入力元commit・対象path、WABTソースと実行ファイルの同定、取得・ビルド条件、Core 2.0内ON・範囲外OFFの実効featureとCLI引数の固定。
-- **対象**: 全入力の外部変換、JSON・`.wasm`・`.wat`の一覧とhash、生成条件のmanifest、変換成功・失敗・未処理範囲の報告、再生成と変換baselineの比較。
-- **対象**: 固定版JSONのcommand全体の列挙、moduleとinvoke action、名前付きmoduleと直近module、失敗時の後続commandの扱い。
-- **対象**: 基盤の公開APIによるimportなしのmoduleの4段階実行、binaryのassert_malformed/assert_invalid、引数なし・スカラー1結果のassert_return。
-- **対象**: 初期の結果比較に必要な型・個数、整数・floatのビット列、符号付き0とNaN patternの判定。
-- **対象**: passed/failed/unsupported/out_of_scope/tool_error、セットアップとassertionの別集計、固定profileと入力・生成物hashを含む結果記録、回帰差分。
-- **後続仕様で追加**: 引数・複数戻り値・global取得・trap・exhaustion、segment初期化trap、参照、spectestとregister・リンク、v128 laneの対応。下表の所管仕様で実装・検証する。
-- **対象外**: WAST/WATの自作解析、変換器の実装、ランタイム内部の操作、独自のWasm演算、3.0固有commandやrelaxed-SIMDを初期の検証範囲へ追加すること。
-
-## 後続機能に伴う拡張
-
-| 所管仕様 | 同じランナーツールへ加える受入作業 |
-| --- | --- |
-| `numeric-control` | 引数・複数戻り値、global取得、数値結果・NaNの比較を拡張し、assert_trap/assert_exhaustionを検証する。 |
-| `linear-memory` | data初期化時のtrapを含むassert_uninstantiableを検証する。 |
-| `tables-references` | 参照の引数・結果、null・同一性、element初期化時のassert_uninstantiableを検証する。メモリ仕様が未完成でも必要な判定を実装し、既存対応があれば再利用する。 |
-| `host-linking` | 明示型のspectest関数・globals・memory・tableを公開APIで構成し、registerとmodule間の共有状態、assert_unlinkable、startを含むassert_uninstantiableを検証する。 |
-| `simd` | v128の引数・結果とlaneごとのビット列・NaN patternを判定する。 |
-
-JSON処理・期待値比較・spectestはツール側の責務を維持する。後続仕様ではこの拡張を実装タスクと完了条件に含め、初期ランナーを未完了のまま待たせる依存関係にしない。
+- **対象**: SIMDを含む固定Core 2.0のtest/core全WAST入力、採用spec/WABTの取得元・commit・source hash・実行ファイルhash・ビルド条件、全featureの既定値と実効ON/OFF、変換引数。
+- **対象**: 全件変換、入力とJSON/wasm/watの対応・path・hashを保持するmanifest、照合、変換失敗・未処理・未確定の報告、再生成と変換baselineの比較。
+- **対象**: JSON全commandの列挙、通常module・名前付きmodule・直近module、spectest、registerと再登録、invoke/get、前提commandへの依存と共有状態。
+- **対象**: spectestの固定Core 2.0環境。明示型のホスト関数7個、immutable数値global 4個、funcref tableとmemoryを、先行仕様の公開APIで生成する。
+- **対象**: スカラー引数、結果0個・1個・複数、スカラーglobal取得、型・個数・ビット列・符号付き0・NaN patternの比較。
+- **対象**: binaryのassert_malformed/assert_invalid、assert_return、assert_unlinkable、assert_trap/assert_exhaustion、assert_uninstantiableの段階別判定。実行自体が後続命令やsegmentを必要とするケースは、その前提が揃った段階で成立させる。
+- **対象**: 7分類による全結果の保存、セットアップ・単独action・assertion別の集計、実行結果baseline、ケース単位の回帰比較、用途別終了コード。
+- **後続仕様で追加**: 参照の引数・結果とnull・同一性比較、v128 laneのビット列・NaN比較。各命令やsegment追加に伴う公式ケースは既存の段階別判定で実行し、必要なツール対応を同じ仕様の受入作業として加える。
+- **対象外**: WAST/WATの自作解析、Wasm演算・import型照合の再実装、ランタイム内部アクセス、専用hook、Core 3.0/proposal profile、baseline共有サービス。
 
 ## 責務の接点
 
-- 素材生成と実行の間では、本ツールが記録するmanifestと生成物を使う。変換baselineと実行結果baselineを区別し、JSON未対応や破損・変換不能をランタイム未実装と報告しない。
-- ランナー側にcommandや期待値の対応がない場合は`tool_error`とする。`unsupported`は公開APIでランタイムの未実装を観測した場合に使う。前提module/registerが成立しなかった後続commandは、元の原因を参照する理由付き未実行として記録する。
-- `.wat`は素材一覧とhashの追跡対象とするが、実行処理では開かず、`module_type=text`を理由付き対象外とする。対象外を合格件数へ入れない。
-- Instantiate内のtrapとリンク不成立を原因で区別する。`text`の参照診断を公開例外メッセージの完全一致契約へ置き換えない。
-- specに必要な機能が公開APIで表現できなければ、通常利用にも必要な能力かを確認して所管仕様へ戻す。reflection・内部アクセス・専用hookで迂回しない。
+- host-linkingは通常利用の関数・リソース・リンク・依存情報を所有する。本ツールはspectestの具体値、JSONのregisterと登録名、command状態と期待値判定を所有する。
+- 依存するregister/moduleが失敗したケースは原因commandを参照するblockedとし、以前の成功moduleへ代替しない。名前付きmodule名とimport用登録名を区別し、否定assertion内のmoduleで直近moduleを変更しない。
+- 公開能力で得たimport情報から実際の登録依存を特定し、無関係な後続moduleまで停止しない。存在しない登録名による期待されたリンク不成立と、既知の前提commandの失敗を区別する。依存情報を取得できない場合は、取得操作の実際の失敗を記録し、架空の依存を作らない。
+- binaryの構文不成立はDecode、型検証不成立はValidate、リンク不成立はInstantiateで判定する。start/segment初期化のtrapとリンク不成立を混同せず、trapとexhaustionも分ける。参照診断textと公開例外メッセージの完全一致を条件にしない。
+- WASTと生成watは素材同定のhash対象とするが、自作の構文解析・意味解釈は行わない。module_type=textは実行処理で参照先を開かずout_of_scopeにし、素材照合の入力異常とは別に記録する。
+
+## 結果とbaseline
+
+結果はpassed、failed、runtime_unsupported、runner_unsupported、runner_error、out_of_scope、blockedを区別する。runtime_unsupportedは公開APIで観測した未実装であり、有効性の証明や期待invalid/trapとして扱わない。runner_unsupportedはcommand・値比較の未対応、runner_errorは変換・素材・JSON等の異常である。後続未対応には必要機能と所管仕様、blockedには原因commandを残す。
+
+元入力の相対pathとJSON内command順序をケースの識別に使い、行番号も保存する。同じ行の複数commandを区別し、全commandを一つの分類で数える。入力単位の異常はcommand数へ重複加算しない。JSONを列挙できない入力の件数は未確定とし、0や推測のblocked件数にしない。
+
+変換baselineと実行結果baselineは別に利用者の環境へ保存し、比較で自動置換しない。変換比較は入力・生成物の一覧/hash、変換状態、変換器source/executable hash、ビルド条件・profile・引数等を比較する。実行結果比較はprofileと入力・生成物の一覧/hashが一致すれば可能とし、変換器実行ファイルhashだけの違いは出典差異にする。以前passedだったケースの別分類への変化・欠落は回帰としてNGにする。
+
+配置rootだけの変更では生成物の内容/hashを変えない。生成時は元入力と生成物、実行のみでは保存した生成物をmanifestと照合する。実行のみは元WAST・WABT・生成時の配置先を必要としない。固定条件の更新は通常の再生成と区別した明示操作にし、旧baselineと差分を残す。
+
+通常実行は全対象の記録・出力完了とfailed・入力/command runner_errorが0で終了0にする。理由・所管を持つ後続未対応と、それが原因のblockedだけでは非0にしない。変換比較は比較完了・条件一致・runner_error 0、回帰比較は比較成立・完了・failed/runner_error/回帰0を要求する。最終判定は未処理・欠落・件数未確定・runner_errorなし、out_of_scope以外の全commandがpassedの場合だけ0とする。複数工程のいずれかが非0条件なら操作全体も非0にする。
 
 ## この仕様が所有しないこと
 
-SIMD命令の実行、メモリ・table・globalの意味論、importの型照合はライブラリが所有する。本仕様の初期完了に、後続機能の公開APIやspectestの完成は要求しない。公式期待値を実装結果に合わせて変更しない。
+ランタイムの関数・global・memory・tableの意味論やimport照合は所有しない。実装結果に合わせて公式入力・期待値・featureを変更しない。ランナーと公開APIの不足によって初期範囲のimport/registerを先送りしない。
 
 ## 上流・下流
 
-- **上流**: `runtime-foundation`。[ロードマップ](../../steering/roadmap.md)のCore 2.0範囲と固定方針、既存の外部ソース取得・変換手順。
-- **下流**: `numeric-control`以降の全機能の公式実行・回帰確認と、全仕様統合後のCore 2.0全体の公式適合確認。
+- **上流**: host-linking。runtime-foundationの公開契約と、[外部ソースの固定](../../../thirdParties/README.md)を引き継ぐ。
+- **下流**: numeric-control、linear-memory、tables-references、simdの公式検証と全体の最終判定。
 
 ## 既存仕様との関係
 
-- **拡張する既存仕様**: なし。
-- **隣接**: 各機能仕様が公開APIと必要なツール側の対応を一緒に追加する。`host-linking`と`simd`は初期ランナーの上流ではなく、その拡張を担う後続仕様。
+- **拡張する既存仕様**: なし。先行ランタイムの不具合は所管へ戻し、ツール側で期待値や失敗分類を変更して補わない。
+- **隣接**: 数値・制御と各リソース仕様は命令・初期化の意味論と公式統合確認、参照/SIMD仕様は対応するツール比較も所有する。spectest・registerは本仕様の初期範囲で完成させる。
 
 ## 制約と確認事項
 
-`--enable-all`と`--no-check`は禁止し、入力やfeatureをランタイムの実装進捗で変更しない。公式入力・期待値と既存の外部ソース、LICENSE・NOTICEを保持する。固定条件の更新は通常の再生成と区別した明示操作とし、旧baselineとの差分を追跡できるようにする。
+--enable-allと--no-checkは禁止し、固定Core 2.0内ON・範囲外OFFを維持する。公式入力・外部ソース・LICENSE/NOTICEを変更しない。全入力の変換成功、照合と同条件での再生成一致を実コマンドで確認する。
 
-初期完了では、固定公式入力全体の変換に成功し、manifest・生成物の照合と同じ条件での再生成による一致を確認する。変換失敗・変換未処理・照合不一致は0件とする。生成済み素材だけを使った再実行も確認する。
+初回受入では固定suite全体を処理し、最小基盤と実行・リンク基盤で前提が揃う全ケースのpassed、全体failed・入力/command runner_error 0、全command記録、初回baseline保存と再実行・回帰比較を確認する。対象ケースをpassed一覧から逆算せず、対応範囲と依存関係から特定する。ホスト関数、共有global、memory/tableのimport/export、register後の別moduleからの利用を実際の公式ケースで確認する。
 
-初期完了では、基盤の対応範囲で前提が揃う公式ケースの実行・合格、全対象commandの結果記録、初回baselineと同じケース単位での差分比較を確認する。対応範囲の公式ケースが未成立の場合は原因を確認し、ランナー側の不足を解消する。基盤の不具合であれば基盤へ修正を戻し、後続機能への依存とは区別する。初期完了を全対象合格と扱わない。
-
-`unsupported`・`tool_error`と前提commandの失敗による未実行を隠さず、全対象を処理した集計を出す。未成立のケースには出典・理由・必要な機能と所管仕様を記録し、未実装が期待されたtrap/invalidとして合格にならないようにする。後続機能では[ロードマップの公式検証方針](../../steering/roadmap.md#公式検証の方針と完了条件)に従い、追加機能の対象ケースの合格と既存合格ケースの退行がないことを確認する。最終的には全仕様を統合した状態で、Core 2.0バイナリ対象集合のfailed・unsupported・tool_error・依存未実行が0になることを要求する。テキスト対象と公式スイートが証明しない範囲を区別して報告する。文書は日本語（`ja`）。
+後続命令・segment・参照/SIMD比較に依存する未成立ケースは理由と所管を残す。この段階でCore 2.0全件合格は要求しない。機能追加後の全体実行・回帰比較と最終完了は[ロードマップ](../../steering/roadmap.md)に従う。コマンド名、保存形式、内部構造、hash方式と0以外の終了値は後続の設計で定める。文書は日本語（ja）。

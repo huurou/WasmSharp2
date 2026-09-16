@@ -2,49 +2,48 @@
 
 ## 課題
 
-利用者はWasmのバイト列メモリとdata segmentを利用した計算を実行したい。数値・制御だけでは、load/store、初期化、メモリ拡張、bulk操作とそのtrapを扱えない。
+利用者は線形メモリに対するload/storeやdata segmentを使う計算を実行したい。リソースの生成・import/exportができても、guest命令、segment初期化、bulk操作の意味論は別に必要である。
 
 ## 現状
 
-discovery時点の`WasmMemory`は空クラス。着手時には基盤・数値制御・固定公式素材・ランナーと結果baselineを利用できる。メモリの具体的な意味論は未実装として扱う。
+着手時にはhost-linkingのmemory型・limits・生成・共有・公開アクセス、numeric-controlの演算と制御、conformance-runnerのspectest・register・段階別assertionとbaselineを利用できる。
 
 ## 望む結果
 
-Core 2.0の線形メモリを定義・初期化・公開取得して、スカラーload/store、size/grow、bulk memoryを実行できる。境界違反によるtrap、growの失敗値、検証不成立を仕様どおり区別できる。
+同じmemory実体を使ってCore 2.0のスカラーload/store、size/grow、data初期化、bulk memoryを実行できる。imported memoryにも同じ意味論を適用し、境界trap・grow失敗値・検証不成立を区別する。
 
 ## 方針
 
-メモリの宣言・即値・data情報のDecodeから、型検証、segment初期化、実行までを一つの機能仕様として実装する。数値・制御の実行機構へ登録し、WasmMemoryの所有と利用契約をホスト連携へ渡す。
+guest命令とdata segmentのDecodeから検証・初期化・実行までを本仕様へ集める。memoryの型・割当・共有機構を作り直さず、共通のリソース操作とInstantiate順序へ機能を追加する。
 
 ## 範囲
 
-- **対象**: Core 2.0のメモリ型・limits・32bitアドレス・ページ、1モジュールのメモリ数制約。
-- **対象**: スカラーload/store、符号拡張load、狭幅store、size/grow、アドレスとoffset・alignmentの規則。
-- **対象**: active/passive data、data count、memory.init/copy/fill、data.drop、初期化と実行の境界trap。
-- **対象**: 通常のホスト利用にも意味のあるメモリ生成・取得・内容アクセスの公開契約、所有と同一性。
-- **対象**: 同じランナーツールでdata初期化時のassert_uninstantiableを判定するために必要な対応と、メモリ機能の公式検証・回帰確認。
-- **対象外**: memory64、multi-memory、shared memory/threads、SIMDのload/store命令、importの照合と名前解決、WASI。
+- **対象**: スカラーload/store、符号拡張load、狭幅store、size/grow、32bitアドレス・offset・alignmentの規則。
+- **対象**: active/passive data、data count、memory.init/copy/fill、data.drop、初期化・実行の境界trap。
+- **対象**: 定義memoryとimported memoryへの同じ命令・初期化の適用、共有memoryの変更とstart実行順序、初期化/start失敗時の観測可能な副作用。
+- **対象**: 既存assert_uninstantiable等によるdata初期化trapの判定、公式スイート全体とbaseline差分による回帰確認。必要なツール側の対応も本仕様で追加する。
+- **対象外**: memoryの基本型・limits・生成・import照合の再実装、memory64、multi-memory、shared memory/threads、SIMD load/store、WASI。
 
 ## 責務の接点
 
-- Instantiate時のdata初期化は本仕様の意味論を使い、後続のホスト連携も同じ処理を呼ぶ。start実行はホスト連携が所有する。
-- imported memoryの型・宣言表現は共通moduleの形に合わせるが、解決と同一性の接続はホスト連携が行う。
-- SIMDは本仕様のメモリアクセスと境界処理を使い、別の線形メモリを作らない。
+- memoryの型・割当・同一性・公開内容アクセスはhost-linkingの契約を使う。guest命令固有の境界・grow失敗値・trapを本仕様が所有する。
+- data初期化を既存Instantiateへ追加し、その完了後に先行仕様のstart実行を行う。imported memoryに対する副作用を含め、初期化とstartの順序を確認する。
+- SIMDは本仕様のメモリアクセスと境界処理を使う。table/elementの初期化はtables-referencesが所有する。
 
 ## この仕様が所有しないこと
 
-table/elementやreference値、ホストmoduleの登録、spectest、全JSON assertion、OS固有メモリ最適化は所有しない。
+ホストmodule登録、spectest、table/element、JSON共通判定、OS固有のメモリ最適化は所有しない。
 
 ## 上流・下流
 
-- **上流**: `numeric-control`（共通基盤・公式素材・ランナーを含む）。
-- **下流**: `host-linking`、`simd`。`tables-references`とは並行できる。
+- **上流**: numeric-control。host-linkingとconformance-runnerの能力を引き継ぐ。
+- **下流**: simdと全体の統合確認。tables-referencesとは並行できる。
 
 ## 既存仕様との関係
 
-- **拡張する既存仕様**: `conformance-runner`が整備したツールを拡張する。初期仕様の完了条件は変更せず、本仕様の要件・タスクで追加対応を扱う。
-- **隣接**: data初期化のtrapをInstantiate共通境界へ返す。メモリimport照合を本仕様とホスト連携で二重実装しない。
+- **拡張する既存仕様**: host-linkingのmemory実体とInstantiate経路、conformance-runnerの公式検証を拡張する。
+- **隣接**: import型照合はhost-linking、table/elementはtables-references、vectorメモリ命令はsimd。
 
 ## 制約と確認事項
 
-メモリ機能を追加するたびに固定公式スイートをランナーで実行する。完了時は[ロードマップの公式検証方針](../../steering/roadmap.md#公式検証の方針と完了条件)に従い、全体の結果差分、追加機能の対象ケースの合格、既存合格ケースの退行がないことを確認する。後続の参照・import・SIMD等が必要なケースは出典・理由・所管仕様を記録し、前提機能が揃った時点で再検証する。大きなunsignedアドレスとoffsetをCLRの整数overflowや配列例外の偶然の挙動へ委ねない。grow失敗を一律trapにせず仕様の戻り値を守る。資源制限と機能未実装を混同せず、対応範囲を記録する。文書は日本語（`ja`）。
+機能を追加するたびに固定公式スイートを実行し、[ロードマップの公式検証方針](../../steering/roadmap.md#公式検証の方針と完了条件)に従って対象ケースの合格と回帰がないことを確認する。unsignedアドレスとoffsetをCLRのoverflowや配列例外へ委ねず、grow失敗・trap・資源制限・未実装を区別する。後続機能待ちのケースは理由と所管を残す。文書は日本語（ja）。

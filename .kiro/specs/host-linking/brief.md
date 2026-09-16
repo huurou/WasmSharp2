@@ -2,49 +2,55 @@
 
 ## 課題
 
-埋め込み利用者は、ホスト関数やリソースをWasmへ渡し、複数moduleを組み合わせたい。名前が合うだけの接続や値のコピーでは、関数型・可変性・limits・共有状態の仕様を満たせない。
+埋め込み利用者は、関数に引数を渡し、ホスト関数や共有リソースをWasmへ接続し、複数moduleを組み合わせたい。公式検証でもspectestとregisterを利用するため、import/exportと基本的な関数実行を各命令機能の完成後まで待たせることはできない。
 
 ## 現状
 
-discovery時点の`WasmHostModule`は空、host callbackの引数・戻り値の定義だけがある。着手前に数値・制御・globals、メモリ、テーブル・参照の個別の実体と意味論、公式ランナーが整備される。spectestとregisterによるホスト連携の検証対応は本仕様で加える。
+runtime-foundationの最小定数返却経路と共通の値・型・例外・実行機構がある。import、引数・localsを使う実行、ホストcallback、global・memory・tableの具体的な生成・共有は未実装。本仕様の着手・完了にconformance-runnerの完成を要求しない。
 
 ## 望む結果
 
-明示的な関数型とWasmValueによるホスト関数登録、import/exportの接続、共有リソースの同一性、初期化とstartを公開APIで扱える。リンク不成立とInstantiate中のtrapを区別できる。通常の利用者として構成したspectestと既存ランナーで、先行機能のimport依存ケースも検証できる。
+関数呼出しと外部要素の生成・リンクを通常の公開APIで扱える。型を明示したホスト関数、既存instanceから得た関数・リソースを別moduleへ接続し、共有状態の同一性を保つ。後続ランナーがこの能力でspectest・registerとimport依存の追跡を実装できる。
 
 ## 方針
 
-既存のWasmHostModule・WasmFunctionType・WasmInstanceの意図を踏まえて公開操作を完成させる。個別機能が持つリソース・初期化処理を接続し、独立した複製を作らない。ホスト関数の型はdelegateから推測せず明示宣言する。
+本仕様を最小基盤の次に実装する実行・リンク基盤とする。関数フレーム、global・memory・tableの実体、外部要素の型照合を一度だけ実装し、後続の数値・制御とリソース命令が同じ機構を拡張する。公開APIの直接テストで成立させ、公式スイートでの統合受入はconformance-runnerの初回完了時に行う。
 
 ## 範囲
 
-- **対象**: 関数・global・memory・tableのimport/export、名前解決、仕様の型・可変性・limits照合、importと定義の添字空間。
-- **対象**: ホスト関数型と引数・結果の明示契約、host callback呼び出し、結果の所有・寿命、ホスト側の失敗とWasm trapの区別。
-- **対象**: module間とホスト間のリソース同一性、mutable globalの共有、再export、instance状態。
-- **対象**: Instantiateの初期化順序、importされたglobal等を使う初期化、data/element処理の接続、startの型検証と実行、失敗時に観測できる副作用。
-- **対象**: 同じランナーツールへのspectestの明示型host関数・globals・memory・tableの構成、module/registerと共有状態、assert_unlinkableとstartを含むassert_uninstantiableの対応、公式検証・回帰確認。
-- **対象外**: メモリ/table命令や数値演算の再実装、WASI、JS API、4段階を畳むローダー、delegate型の推論、ランタイム本体へのspectestの組み込み。
+- **対象**: 関数型、引数、結果0個・1個・複数、locals、local.get/set/tee、直接call、return、drop。return後の到達不能部分に必要な型スタックの多相性を含めて関数本体を検証し、定義関数・import関数・ホストcallbackを同じ呼出し契約で扱う。
+- **対象**: globalの型・可変性・実体、スカラー定数とimported immutable global.getによる初期化、global.get/set、公開取得・更新、同一実体の共有。参照・v128の初期化式の拡張はそれぞれの機能仕様が追加する。
+- **対象**: Core 2.0のmemory/tableの型・limits、定義・割当・export、通常のホスト利用に必要な生成・取得・内容アクセス。memoryはゼロ、tableは型に対応したnullで初期化し、funcref/externrefの保持と同一性を保つ。
+- **対象**: 関数・global・memory・tableのimport/export、名前解決、関数型・可変性・limitsの照合、importと定義の添字空間、再export。リンク不成立を公開失敗分類で示す。
+- **対象**: 明示型ホストcallback、引数・結果の所有と寿命、ホスト例外の実体を保つ伝播、同期的な再入。直接callとstartにも既存の実行コンテキスト・深さ制限を適用する。
+- **対象**: 通常利用に必要なimportのmodule名・item名・外部要素の種類と型の取得。instance生成や無関係な未実装命令のDecode成功を前提とせず依存を把握でき、取得情報と未確認範囲を区別する公開契約。
+- **対象**: Instantiateの共通の順序、startの型検証と実行、リンク不成立・startのtrap・exhaustion・ホスト例外の区別。
+- **対象外**: スカラー数値演算と構造化制御の網羅、guestのmemory/table命令、data/element初期化、call_indirect・参照命令・SIMD命令、WASI。
+- **対象外**: WAST/JSONの解釈、spectestの具体的な定義、registerコマンドとbaseline。これらはconformance-runnerが所有する。
 
 ## 責務の接点
 
-- 各機能が所有する初期化処理を順序どおり呼ぶ。importなしの既存経路も同じ処理を使い、意味論を二重化しない。
-- startとhost呼び出し中のtrapは内部の実行結果で伝え、Instantiate/Invokeの共通ホスト境界で例外に変換する。リンク不成立へ置換しない。
-- `GetGlobal`で取得した値をコピーするだけでは共有可変globalを表せない。既存の「Exportsは持たせない」を守りながら、通常利用に必要な共有操作を設計する。
+- 完成済み基盤の4段階・値・型・命令定義・単一実行ループを拡張し、基本呼出しのための第二の実行系を作らない。後続のblock/loop分岐も同じフレームと結果受渡しを使う。
+- memory/tableのリソース実体と公開ホスト操作は本仕様、guestのsize/growを含む命令とsegmentはlinear-memory・tables-referencesが所有する。リソースを増やす共通操作も実体側に集め、guest命令固有の失敗値やtrapへの変換は命令側が担当する。
+- 参照の保持・null初期値はリソース生成のために扱うが、ref.*命令や宣言済み関数参照、element mode等の検証はtables-referencesへ置く。
+- data/elementの初期化と、共有状態・start失敗後の副作用の複合検証は各segmentの所有仕様が同じInstantiate経路へ追加する。未対応のsegmentを無視してstartへ進まない。
+- import情報の取得はmodule全体の有効性や実行可能性の証明ではない。破損して依存を特定できない場合と、取得済みの依存先が不成立の場合を区別できる契約にする。
+- instanceにExportsコレクションを追加せず、通常利用に必要な名前による取得・共有操作を設計する。globalの値コピーをリソース共有の代わりにしない。
 
 ## この仕様が所有しないこと
 
-JSONのmodule/registerコマンド、spectestのprintや定義値、テスト結果の集計はツール側に置く。本仕様の受入作業として既存ランナーを拡張するが、テストの都合だけの公開能力をランタイムへ追加しない。
+公式テスト用の名前や値、結果分類、素材管理をランタイムへ組み込まない。delegateから型を推論せず、reflectionやテスト専用hookで公開能力の不足を補わない。後続の命令・segmentの完成を本仕様の前提にしない。
 
 ## 上流・下流
 
-- **上流**: `linear-memory`、`tables-references`（共通基盤・公式素材・ランナーを含む）。
-- **下流**: importに依存していた先行機能の公式ケースの再検証と、全体のCore 2.0適合確認。`simd`とは独立に進められる。
+- **上流**: runtime-foundation。
+- **下流**: conformance-runner、numeric-control。linear-memory・tables-references・simdも同じ呼出し・リソース・リンク契約を利用する。
 
 ## 既存仕様との関係
 
-- **拡張する既存仕様**: `conformance-runner`が整備したツールを拡張する。初期仕様の完了条件は変更せず、本仕様の要件・タスクで追加対応を扱う。
-- **隣接**: globals・memory・tableの実体と初期化は既存機能仕様の所有。リンク側が同じ意味論を利用する。
+- **拡張する既存仕様**: runtime-foundationの実装を拡張するが、完成済み仕様の受入範囲と承認状態は変更しない。
+- **隣接**: numeric-controlは演算・構造化制御、linear-memoryとtables-referencesはguest命令・segmentを追加する。spectest・registerはconformance-runnerの初期範囲とする。
 
 ## 制約と確認事項
 
-ホスト連携機能を追加するたびに固定公式スイートをランナーで実行し、imports/linking/start/初期化とリソース共有を公開APIで検証する。完了時は[ロードマップの公式検証方針](../../steering/roadmap.md#公式検証の方針と完了条件)に従い、全体の結果差分、追加機能の対象ケースの合格、既存合格ケースの退行がないことを確認する。先行機能から引き継いだimport依存ケースも対象に含め、SIMD等の未完成機能が必要なものは出典・理由・所管仕様を記録して再検証へ引き継ぐ。関数呼び出しの型・引数個数・戻り値を曖昧に変換しない。既存callbackが返すSpanの安全な寿命・所有を設計で確定し、骨組みだから安全と見なさない。文書は日本語（`ja`）。
+本仕様の受入は公開APIを使う正負のTUnitテストで行い、関数と4種の外部要素、型不一致、同一性、callbackの所有・例外、start・呼出し深さ制限を確認する。ランナーの初回受入で同じ能力を公式ケースにも通す。Wasmのtrapに.NET例外を内部伝播として使わず、ホスト境界で変換する。本文書は分担を定めるbriefであり、requirements・design・tasksと実装の承認は別に行う。文書は日本語（ja）。

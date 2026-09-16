@@ -2,7 +2,7 @@
 
 調査日: 2026-09-06。公式仕様、WebAssembly公式リポジトリ、手元の同梱ソースを参照した。ビルド、`wast2json`の実行、公式テストの実行は行っていない。
 
-同梱ソースや候補CLIの記述は調査時点の状態を示す。現在の採用版と取得・変換手順は[外部ソースの固定](../../thirdParties/README.md)、素材生成から実行・回帰比較までの範囲は[conformance-runner](../../.kiro/specs/conformance-runner/requirements.md)を参照する。
+同梱ソースや候補CLIの記述は調査時点の状態を示す。現在の採用版と取得・変換手順は[外部ソースの固定](../../thirdParties/README.md)、素材生成から実行・回帰比較までの範囲は[conformance-runner](../../.kiro/specs/conformance-runner/brief.md)を参照する。
 
 調査後のユーザー選択: 初期の最終スコープをCore 2.0とし、将来Core 3.0へ拡張できる方針とする。初期の2.0 profileを実装進捗で変更せず、3.0は将来明示的に追加する別スコープ・別profileとして扱う。拡張可能であることは公開APIや内部型体系を変更せず移行できる保証ではない。
 
