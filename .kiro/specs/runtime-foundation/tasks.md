@@ -262,7 +262,7 @@
   - 実行への入退出をfinallyで保護し、ホスト由来や保持上限の例外をcatchしてラップ・再分類しない。
   - 正常・trap・exhaustionの結果変換を内部契約テストで確認し、例外時の内部入退出については5.2のテストを参照する。
   - 共通実行経路の実装レビューで、実行器と境界が復元・退出をfinallyで行い、投げられた.NET例外を捕捉してラップ・再分類する処理がないことを確認する。
-  - 保持上限の伝播・復元の試験を、ホスト例外の同一性確認の代わりにしない。実ホストcallbackが投げた例外の型・参照同一性と実経路での復元は後続のwasm-host-linkingで確認し、基盤で未検証の範囲として10.3に引き継ぐ。
+  - 保持上限の伝播・復元の試験を、ホスト例外の同一性確認の代わりにしない。実ホストcallbackが投げた例外の型・参照同一性と実経路での復元は後続のhost-linkingで確認し、基盤で未検証の範囲として10.3に引き継ぐ。
   - _Boundary: ExecutionBoundary_
   - _Depends: 3.2, 5.1, 5.2, 6.2, 9.1_
   - _Requirements: 5.9, 5.10, 5.11, 6.1, 6.6, 6.7, 6.8, 6.9_
@@ -306,7 +306,7 @@
 
 ## Implementation Notes
 
-- 9.1〜9.3: Instantiate、名前による関数取得、optionsなしの公開Invokeを接続した。実行失敗の例外化は`ExecutionBoundary.ThrowIfFailed`に集約し、Interpreterの復元と境界の退出をfinallyで行う。公開i32定数経路・反復結果の保持・引数不正、内部のtrap/exhaustion変換とコンテキスト退出を検証し、Releaseビルドは警告・エラー0、ランタイム384件・生成器27件が成功、各小タスクの独立レビューとCSharpier検査も通過した。ユーザー指示により非nullableな名前・Streamのnullチェックと対応テストを削除し、設計も整合させた。4種類すべての公開受入は10.1、実ホストcallbackの例外同一性と実経路の復元はwasm-host-linkingに残す。
+- 9.1〜9.3: Instantiate、名前による関数取得、optionsなしの公開Invokeを接続した。実行失敗の例外化は`ExecutionBoundary.ThrowIfFailed`に集約し、Interpreterの復元と境界の退出をfinallyで行う。公開i32定数経路・反復結果の保持・引数不正、内部のtrap/exhaustion変換とコンテキスト退出を検証し、Releaseビルドは警告・エラー0、ランタイム384件・生成器27件が成功、各小タスクの独立レビューとCSharpier検査も通過した。ユーザー指示により非nullableな名前・Streamのnullチェックと対応テストを削除し、設計も整合させた。4種類すべての公開受入は10.1、実ホストcallbackの例外同一性と実経路の復元はhost-linkingに残す。
 
 - 8.1〜8.3: 全体の添字・ordinalのexport名検証を先行し、命令表の検証規則・スタック効果を使った同一パスの型検査と線形化を公開Validateへ接続した。全成功時だけ実行コードと`FunctionExportIndices`を反映し、再Validateは同じモジュールを返す。未検証・後半失敗・再試行後のInstantiate拒否を公開操作で確認した。Releaseビルドは警告・エラー0、ランタイム360件・生成器27件が成功し、各小タスクの独立レビューとCSharpier検査も通過した。Instantiateの成功経路と名前辞書による関数取得は9.1、公開Invokeは9.3で接続する。
 

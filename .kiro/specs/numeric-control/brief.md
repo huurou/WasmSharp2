@@ -1,4 +1,4 @@
-# ブリーフ: wasm-numeric-control
+# ブリーフ: numeric-control
 
 ## 課題
 
@@ -37,13 +37,13 @@ Core 2.0のスカラー数値、定義関数、locals、構造化制御、複数
 
 ## 上流・下流
 
-- **上流**: `wasm-runtime-foundation`、`wasm-conformance-runner`（固定公式素材と初回baselineを含む）。
-- **下流**: `wasm-linear-memory`と`wasm-tables-references`。さらにホスト連携・SIMDへ接続する。
+- **上流**: `runtime-foundation`、`conformance-runner`（固定公式素材と初回baselineを含む）。
+- **下流**: `linear-memory`と`tables-references`。さらにホスト連携・SIMDへ接続する。
 
 ## 既存仕様との関係
 
-- **拡張する既存仕様**: `wasm-conformance-runner`が整備したツールを拡張する。初期仕様の完了条件は変更せず、本仕様の要件・タスクで追加対応を扱う。ランタイム側は基盤が定めた共通契約を利用する。
-- **隣接**: globalsの定義と命令は本仕様、外部との共有とimport照合は`wasm-host-linking`。重複したglobal表現を作らない。
+- **拡張する既存仕様**: `conformance-runner`が整備したツールを拡張する。初期仕様の完了条件は変更せず、本仕様の要件・タスクで追加対応を扱う。ランタイム側は基盤が定めた共通契約を利用する。
+- **隣接**: globalsの定義と命令は本仕様、外部との共有とimport照合は`host-linking`。重複したglobal表現を作らない。
 
 ## 制約と確認事項
 

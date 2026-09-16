@@ -2,6 +2,8 @@
 
 調査日: 2026-09-06。公式仕様、WebAssembly公式リポジトリ、手元の同梱ソースを参照した。ビルド、`wast2json`の実行、公式テストの実行は行っていない。
 
+同梱ソースや候補CLIの記述は調査時点の状態を示す。現在の採用版と取得・変換手順は[外部ソースの固定](../../thirdParties/README.md)、素材生成から実行・回帰比較までの範囲は[conformance-runner](../../.kiro/specs/conformance-runner/requirements.md)を参照する。
+
 調査後のユーザー選択: 初期の最終スコープをCore 2.0とし、将来Core 3.0へ拡張できる方針とする。初期の2.0 profileを実装進捗で変更せず、3.0は将来明示的に追加する別スコープ・別profileとして扱う。拡張可能であることは公開APIや内部型体系を変更せず移行できる保証ではない。
 
 ## 確認できた仕様の範囲
@@ -26,7 +28,7 @@ Core仕様はISA、バイナリ、検証、実行、テキスト表現を定義�
 
 **提案:** 選定仕様の版・日付またはcommit、testsuiteのcommitと対象path、WABTの版・commit、全featureの実効ON/OFF、変換オプションを一緒に固定する。更新は実装進捗とは別操作とし、生成物のhashと結果baselineの差分を残す。合格は固定した対象集合に対して報告する。
 
-独立確認で、Core 2.0の入力元候補として公式specの`v2.0.0`（commit `05ca4182176763112561ae20153975c12bd689e4`）を確認した。対象は`test/core`配下で、`simd`サブディレクトリも含める。現在同梱された3.0系のテスト全体を2.0用に流用せず、テスト素材を整備する仕様で保存版との対応と変換結果を確認して固定する。[公式Core 2.0タグ](https://github.com/WebAssembly/spec/tree/v2.0.0/test/core)、[同タグのSIMDテスト](https://github.com/WebAssembly/spec/blob/v2.0.0/test/core/simd/simd_const.wast)
+独立確認で、Core 2.0の入力元候補として公式specの`v2.0.0`（commit `05ca4182176763112561ae20153975c12bd689e4`）を確認した。対象は`test/core`配下で、`simd`サブディレクトリも含める。調査時点で同梱されていた3.0系のテスト全体を2.0用に流用せず、保存版との対応と変換結果を確認して固定する方針とした。[公式Core 2.0タグ](https://github.com/WebAssembly/spec/tree/v2.0.0/test/core)、[同タグのSIMDテスト](https://github.com/WebAssembly/spec/blob/v2.0.0/test/core/simd/simd_const.wast)
 
 ## 手元WABTとCore 3.0の問題
 
@@ -59,7 +61,7 @@ Core仕様はISA、バイナリ、検証、実行、テキスト表現を定義�
 
 公式文書は`wast2json`がJSON、`.wasm`、`.wat`を出力すると明記する。同梱[WriteInvalidModule](/D:/source/repos/WasmSharp2/thirdParties/wabt/src/binary-writer-spec.cc:418)では通常のテキストmoduleとbinary moduleは`.wasm`/`module_type="binary"`、quote形式は`.wat`/`module_type="text"`になる。テキストが構文的に壊れている`assert_malformed`は有効なWasmバイナリに変換できない。[公式JSON仕様](https://github.com/WebAssembly/wabt/blob/main/docs/wast2json.md)
 
-**提案:** runnerはJSONの`module_type`だけを見てtext対象を`out_of_scope(text-format)`として記録し、`.wat`を開かない。バイナリ対象の失敗と分母を分ける。対象テキストassertionを合格として数えず、「公式スイート全件適合」ではなく「選定版のバイナリ対象集合」を報告する。
+**提案:** runnerの実行処理はJSONの`module_type`だけを見てtext対象を`out_of_scope(text-format)`として記録し、`.wat`を開かない。バイナリ対象の失敗と分母を分ける。対象テキストassertionを合格として数えず、「公式スイート全件適合」ではなく「選定版のバイナリ対象集合」を報告する。
 
 | JSON command | 検証する結果 |
 | --- | --- |

@@ -1,4 +1,4 @@
-# 技術設計: wasm-runtime-foundation
+# 技術設計: runtime-foundation
 
 ## 概要
 
@@ -29,10 +29,10 @@
 
 | 所有する仕様 | 本基盤から引き継ぐもの | 本基盤で実装しないもの |
 | --- | --- | --- |
-| wasm-numeric-control | 命令表、検証/線形化、フレームと分岐基準、exhaustion | 完全な型/制御スタック、分岐解決、call、数値演算、globals |
-| wasm-linear-memory / wasm-tables-references / wasm-simd | 値表現、添字規約、命令追加経路 | リソースの意味論、初期化、各命令 |
-| wasm-host-linking | 空import経路、インスタンスの関数同一性、共通実行境界 | import照合、callback登録/結果の寿命、start、共有リソース |
-| wasm-test-corpus / wasm-conformance-runner | 通常の公開操作と例外 | corpus固定、WABT実行、JSON/spectest、集計 |
+| numeric-control | 命令表、検証/線形化、フレームと分岐基準、exhaustion | 完全な型/制御スタック、分岐解決、call、数値演算、globals |
+| linear-memory / tables-references / simd | 値表現、添字規約、命令追加経路 | リソースの意味論、初期化、各命令 |
+| host-linking | 空import経路、インスタンスの関数同一性、共通実行境界 | import照合、callback登録/結果の寿命、start、共有リソース |
+| conformance-runner | 通常の公開操作と例外 | corpus固定、WABT実行、JSON/spectest、集計 |
 
 後続で使う共通の内部契約を定めることと、後続の命令を実装することを分ける。テスト専用の公開操作は追加しない。
 
@@ -534,6 +534,6 @@ WasmUnverifiedRangeは`Stage`、`long StartOffset`、`long EndOffset`（排他�
 
 ## 参照
 
-- [要件](requirements.md)、[調査と設計判断](research.md)、[ロードマップ](../../steering/roadmap.md)
+- [要件](requirements.md)、[discovery調査](../../../docs/research/wasm-runtime-discovery.md)、[設計判断](../../../docs/adr/)、[ロードマップ](../../steering/roadmap.md)
 - [Core 2.0保存版](https://webassembly.github.io/spec/versions/core/WebAssembly-2.0.pdf): 値と型§2.3/4.2.1、定数§4.4.1、符号化§5.2、命令§5.4、module§5.5、検証§3.4。
 - [ADR 0002](../../../docs/adr/0002-single-pass-linear-interpreter.md)、[0004](../../../docs/adr/0004-trap-result-propagation.md)、[0005](../../../docs/adr/0005-module-owned-validation-state.md)、[0006](../../../docs/adr/0006-generated-instruction-dispatch.md)、[0007](../../../docs/adr/0007-propagate-host-exceptions.md)、[0008](../../../docs/adr/0008-instance-options-and-execution-context.md)。

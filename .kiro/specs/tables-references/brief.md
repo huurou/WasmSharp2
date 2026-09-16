@@ -1,4 +1,4 @@
-# ブリーフ: wasm-tables-references
+# ブリーフ: tables-references
 
 ## 課題
 
@@ -37,12 +37,12 @@ Core 2.0の`funcref/externref`、複数table、element segment、table命令、`
 
 ## 上流・下流
 
-- **上流**: `wasm-numeric-control`（共通基盤・公式素材・ランナーを含む）。
-- **下流**: `wasm-host-linking`。`wasm-linear-memory`とは並行できる。
+- **上流**: `numeric-control`（共通基盤・公式素材・ランナーを含む）。
+- **下流**: `host-linking`。`linear-memory`とは並行できる。
 
 ## 既存仕様との関係
 
-- **拡張する既存仕様**: `wasm-conformance-runner`が整備したツールを拡張する。初期仕様の完了条件は変更せず、本仕様の要件・タスクで追加対応を扱う。
+- **拡張する既存仕様**: `conformance-runner`が整備したツールを拡張する。初期仕様の完了条件は変更せず、本仕様の要件・タスクで追加対応を扱う。
 - **隣接**: globalsとcallの共通経路は数値・制御を利用し、参照型固有の処理だけを追加する。共有リソースとしての接続はホスト連携が担当する。
 
 ## 制約と確認事項

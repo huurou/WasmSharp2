@@ -1,10 +1,10 @@
-# wasm-runtime-foundation 実装統合検証
+# runtime-foundation 実装統合検証
 
 検証日: 2026-09-07（JST）
 
 ## 対象と判定
 - DECISION: GO
-- 対象: 承認済み `wasm-runtime-foundation` の全10タスク（小タスク32件、チェック項目42件）と全50受入基準。
+- 対象: 承認済み `runtime-foundation` の全10タスク（小タスク32件、チェック項目42件）と全50受入基準。
 - コード状態: HEAD `311bd4c69926612c8bd1a5e03d874f4f1b674427` と開始時のステージ済み8ファイルの変更を含む作業ツリー。
 - 初回検証: mainによる機械検証・公開経路確認と、要件網羅・設計境界の担当エージェントによる評価を合成してGO。
 - 独立再検証: 会話履歴を引き継がない別エージェント（clean_validation）が、現仕様・コードを読み、機械検証も独自に再実行してGO／VERIFIEDを確認した。
@@ -76,7 +76,7 @@ dotnet tests/WasmSharp.Tests/bin/Release/net10.0/WasmSharp.Tests.dll --treenode-
 
 - STATUS: VERIFIED
 - CLAIM_TYPE: FEATURE_GO
-- CLAIM: wasm-runtime-foundationは承認済みの基盤範囲で機能統合検証と履歴なしの独立再検証を通過した。
+- CLAIM: runtime-foundationは承認済みの基盤範囲で機能統合検証と履歴なしの独立再検証を通過した。
 - EVIDENCE: 上記の全テスト、実動確認、全50受入基準の対応、設計・境界・共有状態の評価、Blockedなし。
 - コード状態の一致: 初回検証と独立再検証の間にsrc/testsのソース・プロジェクトが変更されていないことをSHA256で照合した。
 - GAPS: 必須検証の不足なし。後続仕様と明示された保証外の範囲は前節に記録した。

@@ -1,4 +1,4 @@
-# ブリーフ: wasm-host-linking
+# ブリーフ: host-linking
 
 ## 課題
 
@@ -37,12 +37,12 @@ JSONのmodule/registerコマンド、spectestのprintや定義値、テスト結
 
 ## 上流・下流
 
-- **上流**: `wasm-linear-memory`、`wasm-tables-references`（共通基盤・公式素材・ランナーを含む）。
-- **下流**: importに依存していた先行機能の公式ケースの再検証と、全体のCore 2.0適合確認。`wasm-simd`とは独立に進められる。
+- **上流**: `linear-memory`、`tables-references`（共通基盤・公式素材・ランナーを含む）。
+- **下流**: importに依存していた先行機能の公式ケースの再検証と、全体のCore 2.0適合確認。`simd`とは独立に進められる。
 
 ## 既存仕様との関係
 
-- **拡張する既存仕様**: `wasm-conformance-runner`が整備したツールを拡張する。初期仕様の完了条件は変更せず、本仕様の要件・タスクで追加対応を扱う。
+- **拡張する既存仕様**: `conformance-runner`が整備したツールを拡張する。初期仕様の完了条件は変更せず、本仕様の要件・タスクで追加対応を扱う。
 - **隣接**: globals・memory・tableの実体と初期化は既存機能仕様の所有。リンク側が同じ意味論を利用する。
 
 ## 制約と確認事項
