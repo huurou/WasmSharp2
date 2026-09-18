@@ -81,7 +81,7 @@ internal class HostLinkingModuleBinary_CreateTests
         // Act & Assert
         await Assert.That(() => WasmModule.Decode(bytes)).ThrowsExactly<WasmDecodeException>();
         await Assert
-            .That(() => WasmModule.Decode(bytes[..^1]))
+            .That(() => WasmModule.Decode(bytes.AsSpan()[..^1]))
             .ThrowsExactly<WasmDecodeException>();
     }
 

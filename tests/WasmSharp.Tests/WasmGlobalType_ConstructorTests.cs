@@ -5,7 +5,7 @@ internal class WasmGlobalType_ConstructorTests
     [Test]
     [Arguments(WasmValueKind.F64, true)]
     [Arguments(WasmValueKind.ExternRef, false)]
-    public async Task globalの型を記述する_値型と可変性を保持して別の記述へコピーできる(
+    public async Task Globalの型を記述する_値型と可変性を保持して別の記述へコピーできる(
         WasmValueKind valueKind,
         bool isMutable
     )

@@ -6,7 +6,7 @@ internal class WasmLimits_ConstructorTests
     [Arguments(1u, null)]
     [Arguments(2u, 4u)]
     [Arguments(uint.MaxValue, 0u)]
-    public async Task limitsを記述する_不正な大小関係も保持して別の記述へコピーできる(
+    public async Task Limitsを記述する_不正な大小関係も保持して別の記述へコピーできる(
         uint minimum,
         uint? maximum
     )

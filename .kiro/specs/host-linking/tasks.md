@@ -37,8 +37,8 @@
 
 ## 共有リソース
 
-- [ ] 2. ホストから共有リソースを生成・操作できるようにする
-- [ ] 2.1 (P) globalの型・可変性・現在値を管理する
+- [x] 2. ホストから共有リソースを生成・操作できるようにする
+- [x] 2.1 (P) globalの型・可変性・現在値を管理する
   - 7種の値型について初期値と更新値の型を照合し、ビット列と参照同一性を保持する。
   - immutable更新と型違いを区別し、拒否時は現在値を変更しない。
   - ホストからの生成・取得・更新の正負テストで、同じ実体の更新と失敗時不変を確認する。
@@ -46,7 +46,7 @@
   - _Depends: 1.3_
   - _Requirements: 4.1, 4.5, 4.6_
 
-- [ ] 2.2 (P) memoryの割当と範囲コピーを実装する
+- [x] 2.2 (P) memoryの割当と範囲コピーを実装する
   - 65,536バイト単位のゼロ初期化領域と現在ページ数・任意最大値・バイト長を保持する。
   - ページ境界を跨ぐ読み書きで全範囲を先に検査し、末尾の長さ0を許す。4GiBの長さを単一配列のint範囲へ縮めない。
   - 読み出しコピーが後の更新に追従せず、範囲外書込みが部分変更を残さないことを確認する。
@@ -54,7 +54,7 @@
   - _Depends: 1.3_
   - _Requirements: 5.1, 5.2, 5.5_
 
-- [ ] 2.3 (P) tableの割当と参照要素操作を実装する
+- [x] 2.3 (P) tableの割当と参照要素操作を実装する
   - funcref/externrefの型別nullで初期化し、現在要素数と任意最大値を保持する。
   - 位置と参照型を検査し、null・非nullの参照同一性を保つ。仕様上限と配列保持上限を区別する。
   - 正常な取得・設定と、範囲外・型違い・初期保持上限による拒否をテストで確認する。
@@ -62,7 +62,7 @@
   - _Depends: 1.3_
   - _Requirements: 6.1, 6.2, 6.3, 6.6, 10.8_
 
-- [ ] 2.4 memoryを既存内容を保って増大する
+- [x] 2.4 memoryを既存内容を保って増大する
   - 上限と加算を割当前に検査し、成功時だけ追加ページをゼロ初期化して確定する。
   - 増大量0、成功時・false時の元サイズ、宣言・仕様上限を扱い、実割当の例外は変換せず既存状態を維持する。
   - 成功・予測可能な失敗・増大量0のテストでサイズと内容を確認する。巨大割当や実OOMを通常テストの必須条件にしない。
@@ -70,7 +70,7 @@
   - _Depends: 2.2_
   - _Requirements: 5.3, 5.4, 10.8_
 
-- [ ] 2.5 (P) tableを指定参照で増大する
+- [x] 2.5 (P) tableを指定参照で増大する
   - 追加領域を指定参照で初期化し、既存要素と参照同一性を保って確定する。
   - 宣言・仕様・配列保持上限はfalseで返し、実割当例外は変換しない。増大量0でも初期参照型を検査する。
   - 成功時・false時の元サイズ、型違い時の不変更、追加要素の同一性を確認する。
@@ -417,3 +417,76 @@
 - `dotnet run --project tests/WasmSharp.Generators.Tests/WasmSharp.Generators.Tests.csproj -c Release --no-build -- --report-trx --results-directory TestResults/host-linking-claude-generators`: 終了0、passed 36 / failed 0 / skipped 0。
 - Claudeの判定はコード読解の証拠であり、上記build/testは主担当が別途実行した。追加修正はテスト基盤だけで、ランタイム本体・タスク2以降・公式suite・実OOM・実CLR stackは対象外。
 - 修正部分の独立レビュー: `kiro-review` APPROVED、修正必須の指摘なし。`dotnet build WasmSharp2.slnx -c Release --warnaserror`を再実行し終了0・警告0・エラー0。上記両suiteの出力先を`TestResults/host-linking-claude-review-runtime`と`TestResults/host-linking-claude-review-generators`として再実行し、455/0/0と36/0/0、各終了0。対象3ファイルのCSharpier check・diff checkも終了0。主担当が最新TRXの件数を確認し、`kiro-verify-completion`: タスク1の追加レビュー対応VERIFIED。ステージング・コミットなし。
+
+### タスク2の実行前提（2026-09-19）
+
+- 開始時の作業ツリーはクリーン。前提1.1〜1.4と仕様の承認状態を確認。手動モードで2.1〜2.5を順に実装し、サブタスクごとに独立レビューと完了検証を行う。
+- 検証対象の公開境界は設計のWasmGlobal、WasmMemory、WasmTable。ライブラリのsmokeは既存の公開Decode → Validate → Instantiate → Invokeテストに含める。guest命令・import/exportへの接続は後続タスク。
+- 初回の標準Releaseビルドは終了0・警告0・エラー0。その後の復元でNU1301（NuGet SSL接続）と、サンドボックスのパッケージ保存先を参照するNETSDK1064が発生。`dotnet restore WasmSharp2.slnx --source C:/Users/taihe/.nuget/packages --packages C:/Users/taihe/.nuget/packages -p:NuGetAudit=false`は終了0。以後は`dotnet build WasmSharp2.slnx -c Release --no-restore --warnaserror`を使用し、成功確認後にテストを実行する。依存バージョン・リポジトリ設定は変更していない。
+
+### 2.1 globalの生成と値の更新
+
+- Task Brief: 7種の値型を保持し、mutable更新と取得済み値の保持、immutable・型違いの拒否時不変を公開コンストラクターとValueで確認する（4.1、4.5、4.6）。不正な型記述とnullを生成時に拒否する。
+- RED_PHASE_OUTPUT: `dotnet run --project tests/WasmSharp.Tests/WasmSharp.Tests.csproj -c Release --no-build -- --treenode-filter '/*/*/WasmGlobal_ConstructorTests/*' --report-trx --results-directory TestResults/host-linking-2.1-red-create`はフラグOFFで終了1、passed 0 / failed 1 / skipped 0。ON後の出力先`host-linking-2.1-green-create-retry`は終了0、1/0/0。先行する`green-create`はビルド失敗後に古いDLLで誤実行したもので、検証証拠から除外する。
+- 契約検査追加前に、同形式でfilterを`/*/*/WasmGlobal_*Tests/*`、出力先を`host-linking-2.1-red-contract`として実行し終了1、3/6/0。検査実装・フラグ除去後の`host-linking-2.1-green`は終了0、9/0/0。各有効なテスト実行直前のReleaseビルドは終了0・警告0・エラー0。対象3ファイルのCSharpier formatは終了0。
+- 未実施範囲: Wasm命令によるglobal操作、module間共有、公式suite、実OOM・実CLR stack。
+- 独立レビュー: `kiro-review` APPROVED。Releaseビルドは終了0・警告0・エラー0、runtimeとgeneratorの全suiteは出力先`TestResults/host-linking-2.1-review-runtime`と`TestResults/host-linking-2.1-review-generators`で464/0/0と36/0/0、各終了0。対象3ファイルのCSharpier checkは終了0。主担当が最新TRXを確認し、`kiro-verify-completion`: TASK 2.1 VERIFIED。
+
+### 2.2 memoryの生成と範囲コピー
+
+- Task Brief: 65,536バイト単位のページ配列とulongのバイト長で生成し、Read/Writeの全範囲をコピー前に検査する。末尾ゼロ長、3ページを跨ぐコピー、入力・出力バッファの独立性、拒否時の転送先/memory不変を確認する（5.1、5.2、5.5）。4GiBを単一int長へ変換せず、巨大割当はテストしない。
+- RED_PHASE_OUTPUT: 標準のruntime `dotnet run --no-build`に`--treenode-filter '/*/*/WasmMemory_ConstructorTests/*' --report-trx --results-directory TestResults/host-linking-2.2-red-create`を指定し、OFFで終了1、passed 2 / failed 1 / skipped 0。ON後の生成テスト3件は次の`red-copy`で全件成功。
+- コピー実装前にfilterを`/*/*/WasmMemory_*Tests/*`として`host-linking-2.2-red-copy`へ実行し終了1、7/10/0。実装後の`host-linking-2.2-green-copy`は終了0、17/0/0。
+- limits検査前のconstructor filter・出力先`host-linking-2.2-red-limits`は終了1、3/3/0。検査実装・フラグ除去後の全memory filter・`host-linking-2.2-green`は終了0、21/0/0。各テスト実行前のRelease `--no-restore --warnaserror`ビルドは終了0・警告0・エラー0。対象4ファイルのCSharpier formatは終了0。
+- 未実施範囲: 増大は2.4、guest命令・import/exportへの接続は後続タスク。4GiBの実割当・実OOM・公式suite・実CLR stackは未実施。
+- 独立レビュー: `kiro-review` APPROVED。Releaseビルドは終了0・警告0・エラー0。runtime/generatorの全suiteは`TestResults/host-linking-2.2-review-runtime`と`TestResults/host-linking-2.2-review-generators`で485/0/0と36/0/0、各終了0。対象4ファイルのCSharpier check・diff checkも終了0。主担当が最新TRXを確認し、`kiro-verify-completion`: TASK 2.2 VERIFIED。
+
+### 2.3 tableの生成と参照要素操作
+
+- Task Brief: FuncRef/ExternRefだけを許可し、型別null初期化、非null/null設定と参照同一性、位置・型違いの拒否時不変を公開APIで確認する（6.1、6.2、6.3、6.6、10.8）。uint最大値の宣言を受け入れ、初期要素数のArray.MaxLength超過は位置なしのWasmImplementationLimitExceptionとして割当前に拒否する。
+- RED_PHASE_OUTPUT: `dotnet run --project tests/WasmSharp.Tests/WasmSharp.Tests.csproj -c Release --no-build -- --treenode-filter '/*/*/WasmTable_ConstructorTests/*' --report-trx --results-directory TestResults/host-linking-2.3-red-create`はOFFで終了1、passed 1 / failed 10 / skipped 0。ON・生成実装後の`host-linking-2.3-green-create`は終了0、11/0/0。
+- Get/Set検査実装前に同形式のfilterを`/*/*/WasmTable_*Tests/*`、出力先を`host-linking-2.3-red-elements`として実行し終了1、11/11/0。実装・フラグ除去後の`host-linking-2.3-green`は終了0、22/0/0。各テスト直前のRelease `--no-restore --warnaserror`ビルドは終了0・警告0・エラー0。対象4ファイルのCSharpier formatは終了0。
+- 未実施範囲: 増大は2.5、guest命令・module間共有は後続タスク。巨大割当・実OOM・公式suite・実CLR stackは未実施。
+- 独立レビュー: `kiro-review` APPROVED。Releaseビルドは終了0・警告0・エラー0。runtime/generatorの全suiteは`TestResults/host-linking-2.3-review-runtime`と`TestResults/host-linking-2.3-review-generators`で507/0/0と36/0/0、各終了0。対象4ファイルのCSharpier check・diff checkも終了0。主担当が最新TRXを確認し、`kiro-verify-completion`: TASK 2.3 VERIFIED。
+
+### 2.4 memoryの増大
+
+- Task Brief: ulong加算で宣言・仕様上限を割当前に確認し、追加ページの全割当後にだけページ表を差し替える。成功/false時の元サイズ、増大量0、既存内容・取得済みコピー・追加ゼロ領域・増大後の境界コピーを確認する（5.3、5.4、10.8）。実割当例外は捕捉せず既存表を保つ。
+- RED_PHASE_OUTPUT: `dotnet run --project tests/WasmSharp.Tests/WasmSharp.Tests.csproj -c Release --no-build -- --treenode-filter '/*/*/WasmMemory_TryGrowTests/*' --report-trx --results-directory TestResults/host-linking-2.4-red`はOFFで終了1、passed 3 / failed 4 / skipped 0。ON・実装後の`host-linking-2.4-green`は終了0、7/0/0。
+- フラグ除去後にfilterを`/*/*/WasmMemory_*Tests/*`、出力先を`host-linking-2.4-final`として実行し終了0、28/0/0。各テスト前のRelease `--no-restore --warnaserror`ビルドは終了0・警告0・エラー0。対象2ファイルのCSharpier formatは終了0。
+- 未実施範囲: 実OOM・4GiBの実割当は強制せず、失敗時の確定前不変更はコードレビューでも確認する。guest命令・module接続・公式suite・実CLR stackは未実施。
+- 独立レビュー: `kiro-review` APPROVED。Releaseビルドは終了0・警告0・エラー0。runtime/generatorの全suiteは`TestResults/host-linking-2.4-review-runtime`と`TestResults/host-linking-2.4-review-generators`で514/0/0と36/0/0、各終了0。対象2ファイルのCSharpier check・diff checkも終了0。主担当が最新TRXを確認し、`kiro-verify-completion`: TASK 2.4 VERIFIED。
+
+### 2.5 tableの増大
+
+- Task Brief: 追加要素を指定されたnull/非null参照で初期化し、既存と追加の参照同一性を保持する。型検査はdelta=0や上限判定より先に行い、宣言・仕様・配列保持上限は割当前にfalseを返す。新配列の割当・コピー・初期化後だけ確定する（6.4、6.5、6.6、10.8）。
+- RED_PHASE_OUTPUT: `dotnet run --project tests/WasmSharp.Tests/WasmSharp.Tests.csproj -c Release --no-build -- --treenode-filter '/*/*/WasmTable_TryGrowTests/*' --report-trx --results-directory TestResults/host-linking-2.5-red`はOFFで終了1、passed 3 / failed 7 / skipped 0。ON・実装後の`host-linking-2.5-green`は終了0、10/0/0。
+- フラグ除去後にfilterを`/*/*/WasmTable_*Tests/*`、出力先を`host-linking-2.5-final`として実行し終了0、32/0/0。各テスト前のRelease `--no-restore --warnaserror`ビルドは終了0・警告0・エラー0。対象2ファイルのCSharpier formatは終了0。
+- 未実施範囲: 実OOMを強制せず、割当失敗時不変は確定順序と例外を捕捉しないコードでも確認する。guest命令・module接続・公式suite・実CLR stackは未実施。
+- 独立レビュー: `kiro-review` APPROVED。主担当が最新TRXを確認し、`kiro-verify-completion`: TASK 2.5 VERIFIED。下記の最終状態に対するビルド・両suite・静的検査を独立レビュアーが実行した。
+
+### タスク2の完了範囲
+
+- 2.1〜2.5はそれぞれ独立レビューAPPROVED、完了検証VERIFIED。globalの生成・更新、memoryの生成・範囲コピー・増大、tableの生成・参照操作・増大を実装した。変更は本体3ファイル、専用テスト10ファイル、この実装記録。TDD用フラグはすべて除去済み。
+- `dotnet build WasmSharp2.slnx -c Release --no-restore --warnaserror`: 終了0、警告0、エラー0。
+- `dotnet run --project tests/WasmSharp.Tests/WasmSharp.Tests.csproj -c Release --no-build -- --report-trx --results-directory TestResults/host-linking-2.5-review-runtime`: 終了0、passed 524 / failed 0 / skipped 0。
+- `dotnet run --project tests/WasmSharp.Generators.Tests/WasmSharp.Generators.Tests.csproj -c Release --no-build -- --report-trx --results-directory TestResults/host-linking-2.5-review-generators`: 終了0、passed 36 / failed 0 / skipped 0。両suite合計560件でskipを成功へ加算していない。
+- 変更CS全13ファイルを明示した`dotnet csharpier check`と`git diff --check`は終了0。placeholder・一時フラグ・未実装例外の残存なし。既存の公開定数実行を含む回帰も成功。
+- 残り32小タスク（3以降）は未着手。guest命令、import/export統合、公式Core 2.0適合、実OOM・4GiB実割当・実CLR stackの証明は含めない。手動モードのため`kiro-validate-impl host-linking`は自動実行せず、ステージング・コミットも行っていない。
+
+### タスク2のClaude Codeレビューと修正（2026-09-19）
+
+- 対象: レビュー開始時の未コミット17ファイル（すべてステージ済み、未ステージ・未追跡なし）。タスク2の本体・専用テスト・記録と、既存テスト3ファイルの変更を含む。claude-code-reviewスキルの明示実行に基づき、送信先Anthropicと対象資料・読み取り専用の範囲を伝え、Claude Code 2.1.274へ依頼した。
+- 実行: `--print --safe-mode --tools Read,Glob,Grep --allowedTools Read,Glob,Grep --disallowedTools mcp__* --permission-mode dontAsk --strict-mcp-config --no-session-persistence --output-format stream-json --verbose`を使用。CLI終了0、最終resultはsuccess。17ファイルの確認一覧を含む最終回答を取得した。入力・出力はリポジトリ外の一時ディレクトリに保存。レビュー中の17ファイルのSHA-256、インデックス内容、HEADは開始時と一致し、Claudeによる編集なし。
+- 指摘1を採用: 不変globalの生成でも`Value = initialValue`が更新用setterを呼び、InvalidOperationExceptionとなる。現在のコードで既存テスト2件の失敗を再現した。WasmGlobalに明示的な値フィールドを設け、生成時の型検査後は直接初期値を設定する。setterの可変性・型検査は維持し、生成時にsetterを経由しない理由をコメントに記載した。
+- 指摘2は現在の検証証拠を更新する点を採用: 前回の実装完了時は値フィールドへの直接代入で、今回のレビュー開始時はsetter経由へ変更されていた。過去の検証記録は当時のコードの結果として保持し、今回の再現・修正後の結果を本節へ追記する。過去の成功件数を現行コードの証拠には流用していない。
+- 指摘3は不採用: memoryの範囲外例外のParamNameをoffset/バッファ名に分ける提案は任意の診断改善。仕様は範囲全体の拒否と例外分類を要求しており、ParamNameの細分は要求していない。拒否時不変は満たしているため、追加引数や分岐は設けない。
+- 指摘4は不採用: 空memoryのケースはサイズ・最大値・長さ0のRead成立を、範囲外offsetと空バッファのケースは長さ0でも拒否する境界を確認している。ゼロ初期化は非空2ページ、部分変更なしは非空バッファの別ケースで検証済み。空バッファに対するAllの自明な成立だけを根拠にテスト不足とは判断せず、重複テストは増やさない。
+- 指摘5は情報として確認し変更なし: tableのuint上限は配列保持上限にも包含されるが、仕様上限と実装上限を明示しており挙動上の欠陥はない。
+- Codexの追加確認: `WasmMemory_TryGrowTests.cs`の改行コードが混在し、CSharpier checkが終了1となることを再現。対象ファイルの整形のみ行い、既存のIDE0230抑制やテスト内容は維持した。
+- 修正前: Releaseビルドは終了0・警告0・エラー0。下記suiteコマンドの出力先を`TestResults/host-linking-2-claude-before-runtime`と`TestResults/host-linking-2-claude-before-generators`として実行し、runtimeは終了1・passed 522 / failed 2 / skipped 0、generatorは終了0・36/0/0。不変globalの生成と更新拒否を検証する既存2テストが生成時に失敗したため、新たな重複テストは不要とした。
+- 修正後: `dotnet build WasmSharp2.slnx -c Release --no-restore --warnaserror`は終了0・警告0・エラー0。
+- `dotnet run --project tests/WasmSharp.Tests/WasmSharp.Tests.csproj -c Release --no-build -- --report-trx --results-directory TestResults/host-linking-2-claude-after-runtime`: 終了0、passed 524 / failed 0 / skipped 0。
+- `dotnet run --project tests/WasmSharp.Generators.Tests/WasmSharp.Generators.Tests.csproj -c Release --no-build -- --report-trx --results-directory TestResults/host-linking-2-claude-after-generators`: 終了0、passed 36 / failed 0 / skipped 0。両suite合計560件成功。
+- 対象C#全16ファイルのCSharpier checkは終了0。最新TRXと修正差分を確認し、`kiro-verify-completion`: タスク2のレビュー対応VERIFIED。Claudeの指摘は静的読解によるもので、上記build/testはCodexが別途実行した。
+- 未実施範囲: タスク3以降、公式suite、実OOM・4GiB実割当・実CLR stack。修正は既存テストで再現・回復が確認できる局所変更のため、Claudeによる再レビューは行っていない。今回の修正と記録は未ステージで残し、開始時のステージ内容・HEADは維持する。
