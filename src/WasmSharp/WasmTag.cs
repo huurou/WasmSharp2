@@ -1,4 +1,4 @@
-﻿namespace WasmSharp;
+namespace WasmSharp;
 
 /// <summary>
 /// tagを表現するクラス

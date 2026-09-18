@@ -1,4 +1,4 @@
-﻿namespace WasmSharp.Exceptions;
+namespace WasmSharp.Exceptions;
 
 /// <summary>
 /// 実行中のtrap時例外

@@ -1,4 +1,4 @@
-﻿namespace WasmSharp.Exceptions;
+namespace WasmSharp.Exceptions;
 
 /// <summary>
 /// 型規則や構造規則への違反などによりValidateに失敗したことを示す例外

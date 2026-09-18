@@ -1,4 +1,4 @@
-﻿namespace WasmSharp.Exceptions;
+namespace WasmSharp.Exceptions;
 
 /// <summary>
 /// WasmSharp例外基底クラス

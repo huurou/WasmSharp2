@@ -1,4 +1,4 @@
-﻿namespace WasmSharp.Exceptions;
+namespace WasmSharp.Exceptions;
 
 /// <summary>
 /// Invoke時例外

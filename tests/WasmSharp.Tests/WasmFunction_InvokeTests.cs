@@ -1,9 +1,41 @@
+using WasmSharp.Exceptions;
 using WasmSharp.Tests.Fixtures;
 
 namespace WasmSharp.Tests;
 
 internal class WasmFunction_InvokeTests
 {
+    [Test]
+    [Arguments(false)]
+    [Arguments(true)]
+    public async Task ホスト関数を実行接続前に呼ぶ_callbackを実行せず未対応として拒否する(
+        bool withInstance
+    )
+    {
+        // Arrange
+        var called = false;
+        var type = new WasmFunctionType([], []);
+        WasmHostCallback callback = _ =>
+        {
+            called = true;
+            return new([]);
+        };
+        WasmHostInstanceCallback instanceCallback = (_, _) =>
+        {
+            called = true;
+            return new([]);
+        };
+        var function = withInstance
+            ? WasmFunction.CreateHost(type, instanceCallback)
+            : WasmFunction.CreateHost(type, callback);
+
+        // Act & Assert
+        await Assert
+            .That(() => function.Invoke([]))
+            .ThrowsExactly<WasmUnsupportedFeatureException>();
+        await Assert.That(called).IsFalse();
+    }
+
     [Test]
     [Arguments("")]
     [Arguments("00060161FF0B0D00")]

@@ -1,4 +1,4 @@
-﻿namespace WasmSharp;
+namespace WasmSharp;
 
 /// <summary>
 /// 実行時のオプション設定

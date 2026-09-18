@@ -1,4 +1,4 @@
-﻿namespace WasmSharp.Exceptions;
+namespace WasmSharp.Exceptions;
 
 /// <summary>
 /// インスタンス化やリンクの失敗などによりInstantiateに失敗したことを示す例外

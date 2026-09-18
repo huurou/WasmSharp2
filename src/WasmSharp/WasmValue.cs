@@ -1,4 +1,4 @@
-﻿namespace WasmSharp;
+namespace WasmSharp;
 
 /// <summary>
 /// valueを表現するクラス

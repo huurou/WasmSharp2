@@ -1,4 +1,4 @@
-﻿using System.Collections.Immutable;
+using System.Collections.Immutable;
 using WasmSharp.Exceptions;
 using WasmSharp.Execution;
 using WasmSharp.Modules;

@@ -1,4 +1,4 @@
-﻿namespace WasmSharp;
+namespace WasmSharp;
 
 /// <summary>
 /// memoryを表現するクラス
