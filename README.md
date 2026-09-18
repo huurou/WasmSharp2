@@ -30,7 +30,7 @@ dotnet run --project tests/WasmSharp.Generators.Tests/WasmSharp.Generators.Tests
 dotnet csharpier check .
 ```
 
-生成器テストは、`src/WasmSharp/Instructions`の命令宣言用5ファイルと`src/WasmSharp/Execution`の`ExecutionResult.cs`・`Instruction.cs`をソースとして埋め込み、テスト内のRoslynコンパイルに使用します。対象ファイルを移動・改名する場合は、`tests/WasmSharp.Generators.Tests/WasmSharp.Generators.Tests.csproj`の`EmbeddedResource`も更新してください。
+生成器テストは、`src/WasmSharp/Instructions`の命令宣言用5ファイル、`src/WasmSharp/Execution`の`ExecutionResult.cs`・`Instruction.cs`、`src/WasmSharp/Modules/DecodedInstruction.cs`をソースとして埋め込み、テスト内のRoslynコンパイルに使用します。対象ファイルを移動・改名する場合は、`tests/WasmSharp.Generators.Tests/WasmSharp.Generators.Tests.csproj`の`EmbeddedResource`も更新してください。
 
 ## GitHub Actions
 

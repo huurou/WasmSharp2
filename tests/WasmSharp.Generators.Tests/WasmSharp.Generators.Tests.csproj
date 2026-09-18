@@ -22,5 +22,9 @@
       Include="..\..\src\WasmSharp\Execution\ExecutionResult.cs;..\..\src\WasmSharp\Execution\Instruction.cs"
       LogicalName="ExecutionContracts.%(Filename)%(Extension)"
     />
+    <EmbeddedResource
+      Include="..\..\src\WasmSharp\Modules\DecodedInstruction.cs"
+      LogicalName="ModuleContracts.%(Filename)%(Extension)"
+    />
   </ItemGroup>
 </Project>

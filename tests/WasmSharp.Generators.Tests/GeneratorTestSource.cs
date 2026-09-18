@@ -47,13 +47,17 @@ internal static class GeneratorTestSource
     )
     {
         var assembly = typeof(GeneratorTestSource).Assembly;
+        // デコード済み命令も実行契約側のWasmValueに依存するため、同じ条件で取り込む。
         var contracts = assembly
             .GetManifestResourceNames()
             .Where(x =>
                 x.StartsWith("InstructionContracts.", StringComparison.Ordinal)
                 || (
                     executionContracts is not null
-                    && x.StartsWith("ExecutionContracts.", StringComparison.Ordinal)
+                    && (
+                        x.StartsWith("ExecutionContracts.", StringComparison.Ordinal)
+                        || x.StartsWith("ModuleContracts.", StringComparison.Ordinal)
+                    )
                 )
             )
             .Select(x =>

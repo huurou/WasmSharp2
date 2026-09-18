@@ -34,4 +34,9 @@ internal enum ImmediateKind
     /// リトルエンディアンで符号化された64ビット浮動小数点数のビット列
     /// </summary>
     F64Bits,
+
+    /// <summary>
+    /// 符号なしLEB128で符号化された32ビット添字
+    /// </summary>
+    Index,
 }

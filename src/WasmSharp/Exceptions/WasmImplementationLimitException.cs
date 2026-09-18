@@ -6,13 +6,13 @@ namespace WasmSharp.Exceptions;
 /// <param name="message">例外の原因を説明するメッセージ</param>
 /// <param name="reason">保持できない入力またはコレクションの原因</param>
 /// <param name="limit">保持できるサイズの上限</param>
-/// <param name="location">失敗した処理段階と入力上の位置</param>
+/// <param name="location">失敗した処理段階と入力上の位置。ホスト単独の資源生成ではnull</param>
 /// <param name="innerException">原因となった例外</param>
 public class WasmImplementationLimitException(
     string? message,
     WasmImplementationLimitReason reason,
     int limit,
-    WasmFailureLocation location,
+    WasmFailureLocation? location = null,
     Exception? innerException = null
 ) : WasmException(message, location, innerException)
 {

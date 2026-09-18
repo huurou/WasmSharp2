@@ -6,6 +6,86 @@ namespace WasmSharp.Generators.Tests;
 internal class InstructionGenerator_InitializeTests
 {
     [Test]
+    [Arguments(0x00, "unreachable", "None", "Unreachable")]
+    [Arguments(0x10, "call", "Index", "Call")]
+    [Arguments(0x0F, "return", "None", "Return")]
+    [Arguments(0x1A, "drop", "None", "Drop")]
+    [Arguments(0x20, "local.get", "Index", "LocalGet")]
+    [Arguments(0x21, "local.set", "Index", "LocalSet")]
+    [Arguments(0x22, "local.tee", "Index", "LocalTee")]
+    [Arguments(0x23, "global.get", "Index", "GlobalGet")]
+    [Arguments(0x24, "global.set", "Index", "GlobalSet")]
+    public async Task ホスト連携の命令情報を宣言する_実ソースの添字と値即値を独立してhandlerへ渡す(
+        int code,
+        string name,
+        string immediate,
+        string rule
+    )
+    {
+        // Arrange
+        var compilation = GeneratorTestSource.CreateCompilation(
+            $$"""
+            namespace WasmSharp.Instructions
+            {
+                [Instruction(0, {{code}}, "{{name}}", ImmediateKind.{{immediate}},
+                    StackEffectKind.{{rule}}, ValidationRule.{{rule}}, nameof(Execution.Interpreter.Handler))]
+                internal static partial class InstructionSet;
+            }
+            namespace WasmSharp.Execution
+            {
+                internal static partial class Interpreter
+                {
+                    internal static ExecutionResult TestRun(WasmExecutionContext context) => RunLoop(context, 0);
+                    internal static ExecutionResult Handler(WasmExecutionContext context, in Instruction instruction)
+                    {
+                        context.Value = new(instruction.Immediate.Bits + instruction.Index);
+                        context.CompleteFrame();
+                        return default;
+                    }
+                }
+            }
+            """,
+            GeneratorTestSource.EXECUTION_CONTRACTS
+        );
+        GeneratorDriver driver = CSharpGeneratorDriver.Create(new InstructionGenerator());
+
+        // Act
+        driver = driver.RunGeneratorsAndUpdateCompilation(
+            compilation,
+            out var output,
+            out var diagnostics
+        );
+
+        // Assert
+        await Assert.That(diagnostics).IsEmpty();
+        await GeneratorTestSource.AssertCompilesAndRuns(
+            output,
+            $$"""
+            var found = WasmSharp.Instructions.InstructionSet.TryGet(new(0, {{code}}), out var descriptor);
+            var decoded = new WasmSharp.Modules.DecodedInstruction(new(0, {{code}}), new(42), 12345678901L, uint.MaxValue);
+            var instruction = new WasmSharp.Execution.Instruction(descriptor.ExecutionOpcode!.Value,
+                decoded.Immediate, decoded.ByteOffset, decoded.Index);
+            var context = new WasmSharp.Execution.WasmExecutionContext(1) { Instructions = [instruction] };
+            var result = WasmSharp.Execution.Interpreter.TestRun(context);
+            var oldDecoded = new WasmSharp.Modules.DecodedInstruction(new(0, 0x41), new(42), 100);
+            var oldInstruction = new WasmSharp.Execution.Instruction(descriptor.ExecutionOpcode.Value, new(42), 100);
+            return found && descriptor.Name == "{{name}}"
+                && descriptor.Immediate == WasmSharp.Instructions.ImmediateKind.{{immediate}}
+                && descriptor.StackEffect == WasmSharp.Instructions.StackEffectKind.{{rule}}
+                && descriptor.Validation == WasmSharp.Instructions.ValidationRule.{{rule}}
+                && decoded.Opcode == new WasmSharp.Instructions.OpcodeKey(0, {{code}})
+                && decoded.Index == uint.MaxValue && instruction.Index == uint.MaxValue
+                && decoded.Immediate.Bits == 42 && instruction.Immediate.Bits == 42
+                && instruction.ByteOffset == 12345678901L
+                && oldDecoded.Index == 0 && oldInstruction.Index == 0
+                && oldDecoded.Immediate.Bits == 42 && oldInstruction.Immediate.Bits == 42
+                && result.Status == WasmSharp.Execution.ExecutionStatus.Success
+                && context.Value.Bits == 4294967337L;
+            """
+        );
+    }
+
+    [Test]
     [Arguments(0x42, "i64.const", "I64", "PushI64")]
     [Arguments(0x43, "f32.const", "F32Bits", "PushF32")]
     [Arguments(0x44, "f64.const", "F64Bits", "PushF64")]
