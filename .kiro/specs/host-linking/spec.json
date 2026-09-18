@@ -1,0 +1,22 @@
+{
+  "feature_name": "host-linking",
+  "created_at": "2026-09-16T23:51:57.8341125+09:00",
+  "updated_at": "2026-09-18T19:40:09+09:00",
+  "language": "ja",
+  "phase": "tasks-generated",
+  "approvals": {
+    "requirements": {
+      "generated": true,
+      "approved": true
+    },
+    "design": {
+      "generated": true,
+      "approved": true
+    },
+    "tasks": {
+      "generated": true,
+      "approved": true
+    }
+  },
+  "ready_for_implementation": true
+}

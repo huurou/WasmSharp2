@@ -6,7 +6,7 @@
 
 ## 現状
 
-着手時にはruntime-foundationとhost-linkingの関数引数・結果・locals・直接call・global・import/export、conformance-runnerのspectest・register・初回baselineを利用できる。スカラー数値演算と構造化制御は本仕様で追加する。
+着手時にはruntime-foundationとhost-linkingの関数引数・結果・locals・直接call・unreachable・global・import/export、conformance-runnerのspectest・register・初回baselineを利用できる。スカラー数値演算と構造化制御は本仕様で追加する。
 
 ## 望む結果
 
@@ -19,10 +19,10 @@ Core 2.0のスカラー数値演算と構造化制御を4段階で扱い、正�
 ## 範囲
 
 - **対象**: i32/i64/f32/f64の数値演算、sign-extension、non-trapping conversions、再解釈、比較、スカラーselect。
-- **対象**: block/loop/if、br/br_if/br_table、unreachable、複数値blockとloop引数。host-linkingのreturnに必要な型検証を引き継ぎ、構造化制御・unreachableに伴う型スタックの多相性へ拡張する。
+- **対象**: block/loop/if、br/br_if/br_table、複数値blockとloop引数。host-linkingのreturn・unreachableに必要な型検証を引き継ぎ、構造化制御に伴う型スタックの多相性へ拡張する。
 - **対象**: 先行するcall/return・locals・global・ホストcallbackと構造化制御の統合、数値trap、制御構文を使う再帰と深さ制限の公式検証。
 - **対象**: 固定公式スイートの全体実行と回帰比較。既存のscalar入出力・NaN比較・assert_trap/assert_exhaustionを使い、追加機能に必要なツール側の不足も解消する。
-- **対象外**: 関数の基本呼出し・引数と結果・locals・dropの再実装、globalの生成/get/set・import解決・startの再実装、memory/table命令、参照命令、SIMD。
+- **対象外**: 関数の基本呼出し・引数と結果・locals・drop・unreachableの再実装、globalの生成/get/set・import解決・startの再実装、memory/table命令、参照命令、SIMD。
 
 ## 責務の接点
 

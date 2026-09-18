@@ -213,7 +213,7 @@ sequenceDiagram
     Boundary-->>Caller: WasmResultsまたは公開例外
 ```
 
-最外側だけが終了時に現在の参照を解除する。後続のstartも同じ境界にInstantiate段階を渡す。ホストが投げた.NET例外をcatchしてtrap結果へ変換する経路は設けない。
+Wasm実行コンテキストを開始した入口だけが終了時に現在の参照を解除する。後続のstartも同じ境界にInstantiate段階を渡す。C#からの単独ホスト呼び出しはinstance指定の有無にかかわらずこの開始条件に含めず、後続のhost-linkingがWasm実行への入口と区別する。ホストが投げた.NET例外をcatchしてtrap結果へ変換する経路は設けない。
 
 ## 要件との対応
 
@@ -367,6 +367,8 @@ Decoderは通常opcodeまたはprefix後のu32を読んで表を引く。未割�
 | WasmFunction | `WasmFunctionType Type { get; }`、`WasmResults Invoke(ReadOnlySpan<WasmValue> arguments)` |
 | WasmExecutionOptions | `WasmExecutionOptions(int maxCallDepth)`、get-onlyの`int MaxCallDepth`、`static WasmExecutionOptions Default { get; }` |
 
+このInvoke契約は基盤の定義関数を対象とする。host-linkingでは関数の同一性を保ってホスト関数を追加し、C#から呼び出し時にinstanceを明示する操作と、instanceを受け取る・受け取らない両callback形式を設計する。ホスト関数を取得元instanceへ固定せず、Instance引数をWasmの関数型や値引数へ加えない。
+
 MaxCallDepthは1以上、Defaultは1024。options省略時はDefaultを用いる。不正値はArgumentOutOfRangeException。インスタンスに渡した後も変更できないrecordとし、withによる不正値への変更を許すinit setterを公開しない。1024は設定の既定値であり、任意のホストコードのCLRスタック安全性の保証ではない。
 
 モジュールは検証時に作ったordinal比較のexport名→関数index辞書を非公開で保持し、インスタンスはindex→WasmFunction配列を保持する。GetFunctionは名前の不在をArgumentExceptionとする。同じ関数を指す複数export名や繰り返し取得は同じWasmFunction実体を返す。別インスタンスの定義関数は別実体である。公開Exportsコレクションを追加しない。
@@ -374,6 +376,8 @@ MaxCallDepthは1以上、Defaultは1024。options省略時はDefaultを用いる
 GetGlobal/GetMemory/GetTableも指定した種類のexport名が存在しなければArgumentExceptionとする。本基盤のDecode/Validateを通過して生成されるインスタンスはこれらのexportを持たないため、名前不在として拒否する。同名の関数exportがあっても種類が違うので同じ扱いである。生のNotImplementedExceptionを残さず、リソース定義を含む入力に対するunsupportedはデコード/検証段階で通知する。リソースの取得成功経路は各後続仕様が追加する。
 
 2026-09-07のユーザー指示により、非nullableな参照型引数には明示的なnullチェックを追加しない。DecodeのStreamとGetFunction/GetGlobal/GetMemory/GetTableの名前を含め、null入力時の例外の種類は本仕様の検証対象にしない。
+
+host-linkingのinstance必須callbackは、呼び出し時のinstance省略・nullをcallback実行前に拒否する機能契約を持つ。これは一般的な非nullable引数への防御的null検査とは区別し、同仕様で実装・受入確認する。
 
 Invokeは引数個数と型を実行前に検査し、不一致はArgumentException。本基盤の対象関数は空引数だけを受理する。結果は呼び出しの作業スタックから独立したWasmResultsへコピーし、次のInvokeで変わらない。
 
@@ -390,7 +394,9 @@ Invokeは引数個数と型を実行前に検査し、不一致はArgumentExcept
 | `WasmExecutionContext.Exit(bool isOutermost)` | 最外側なら現在の参照を解除する。内側は解除しない |
 | `Interpreter.Run(WasmExecutionContext context, WasmFunction function, ReadOnlySpan<WasmValue> arguments, WasmProcessingStage stage)` | ExecutionResultを返す。今回追加したフレーム/値/深さを終了時に戻す。stageは入口の実装上限の診断に用いる |
 
-現在のコンテキストは`[ThreadStatic] private static WasmExecutionContext? current_;`とし、初期化式を付けない。深さは同時に入っているWasmFunctionの数で、最外側関数を1と数える。入る直前の深さが上限なら増やさずExhaustionを返す。通常のguest→guest呼び出しは後続でフレーム追加として実装し、CLR再帰を使わない。
+現在のコンテキストは`[ThreadStatic] private static WasmExecutionContext? current_;`とし、初期化式を付けない。深さはそのコンテキスト内で同時に入っているWasmFunctionの数で、コンテキストの入口の関数を1と数える。入る直前の深さが上限なら増やさずExhaustionを返す。通常のguest→guest呼び出しは後続でフレーム追加として実装し、CLR再帰を使わない。
+
+ホスト関数をC#から単独で呼ぶ場合は、callbackの形式やInstance引数の指定によって新しいコンテキストを開始せず、Wasm定義関数またはstartへ入る時点で開始する。指定されたinstanceのmemoryを読み書きするだけでは開始しない。開始したWasm実行が終了してホストへ戻った時点で解除し、その後の別のWasm呼び出しでは新しい入口のinstanceの上限を使う。既存コンテキスト内では、Instance引数の有無を問わずホスト関数も深さへ数え、同期再入で同じコンテキストを共有する。具体的なホスト呼び出し境界はhost-linkingで追加する。
 
 コンテキストを開いたインスタンスのMaxCallDepthは、正常/trap/例外で終わるまで変更しない。A=100の深さ50からB=10へ入ると51/100、B単独なら1/10となる。同じスレッドのホスト再入も同じコンテキストで数える。別スレッドや非同期へ伝播しない。
 
@@ -423,8 +429,8 @@ Interpreter.Runは呼び出し前のフレーム数、値スタック位置、�
 | DecodedInstruction | OpcodeKey、WasmValue Immediate、long ByteOffset | Immediateの解釈はdescriptorが決める。endのImmediateは参照しない |
 | FunctionCode | ImmutableArrayのInstruction、int MaxOperandStack | internal sealed class。型検証と同じパスで完成した非defaultの配列からプライマリコンストラクターで構築し、get-onlyで保持する。モジュールに属する |
 | Instruction | 生成された実行opcode、WasmValue Immediate、long ByteOffset | 実行可能な命令だけを含む |
-| WasmInstance | モジュール参照、関数配列、ExecutionOptions | 同じ定義から作る別インスタンスで関数実体を共有しない |
-| WasmFunction | 所有WasmInstance、uint関数index | 型・FunctionCode・入口位置を所有モジュールの同じindexから取得する |
+| WasmInstance | モジュール参照、関数配列、ExecutionOptions | 同じ定義から作る別instanceで定義関数の実体を共有しない。host-linkingでimportする関数は元の同一実体を共有する |
+| WasmFunction（基盤の定義関数） | 所有WasmInstance、uint関数index | 型・FunctionCode・入口位置を所有moduleの同じindexから取得する。host-linkingのホスト関数にこの所有関係を要求しない |
 | ExecutionFrame | WasmFunction Function、int Pc/StackBase/OperandBase | 現在の関数とその値領域の基準 |
 | WasmExecutionContext | 固定上限、深さ、ExecutionFrame[]とWasmValue[]および使用数 | 同期呼び出し連鎖だけが使用し、終了時に復元/解除 |
 

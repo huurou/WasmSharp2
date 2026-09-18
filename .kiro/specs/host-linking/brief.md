@@ -18,13 +18,13 @@ runtime-foundationの最小定数返却経路と共通の値・型・例外・�
 
 ## 範囲
 
-- **対象**: 関数型、引数、結果0個・1個・複数、locals、local.get/set/tee、直接call、return、drop。return後の到達不能部分に必要な型スタックの多相性を含めて関数本体を検証し、定義関数・import関数・ホストcallbackを同じ呼出し契約で扱う。
+- **対象**: 関数型、引数、結果0個・1個・複数、locals、local.get/set/tee、直接call、return、drop、unreachable。return・unreachable後の到達不能部分に必要な型スタックの多相性を含めて関数本体を検証し、定義関数・import関数・ホストcallbackを同じ呼出し契約で扱う。unreachableによる実際のWasm trapをInvokeとstartの公開経路で確認する。
 - **対象**: globalの型・可変性・実体、スカラー定数とimported immutable global.getによる初期化、global.get/set、公開取得・更新、同一実体の共有。参照・v128の初期化式の拡張はそれぞれの機能仕様が追加する。
-- **対象**: Core 2.0のmemory/tableの型・limits、定義・割当・export、通常のホスト利用に必要な生成・取得・内容アクセス。memoryはゼロ、tableは型に対応したnullで初期化し、funcref/externrefの保持と同一性を保つ。
+- **対象**: Core 2.0のmemory/tableの型・limits、定義・割当・export、通常のホスト利用に必要な生成・取得・内容アクセス。memoryは範囲指定の読み書きとし、内部領域の借用ビューは公開しない。memoryはゼロ、tableは型に対応したnullで初期化し、funcref/externrefの保持と同一性を保つ。
 - **対象**: 関数・global・memory・tableのimport/export、名前解決、関数型・可変性・limitsの照合、importと定義の添字空間、再export。リンク不成立を公開失敗分類で示す。
-- **対象**: 明示型ホストcallback、引数・結果の所有と寿命、ホスト例外の実体を保つ伝播、同期的な再入。直接callとstartにも既存の実行コンテキスト・深さ制限を適用する。
+- **対象**: 明示型ホストcallback、引数・結果の所有と寿命、ホスト例外の実体を保つ伝播、同期的な再入。登録時に第1引数にWasmInstanceを受け取る形式と受け取らない形式を区別し、前者はinstanceの省略・nullを実行前に拒否する。関数を取得元instanceへ固定せず、C#からは呼び出し時にinstanceを明示でき、Wasmからは呼び出し元instanceを渡す。Instance引数はWasmの関数型・値引数に含めず、start中も定義memory等のexportを取得可能にする。
 - **対象**: 通常利用に必要なimportのmodule名・item名・外部要素の種類と型の取得。instance生成や無関係な未実装命令のDecode成功を前提とせず依存を把握でき、取得情報と未確認範囲を区別する公開契約。
-- **対象**: Instantiateの共通の順序、startの型検証と実行、リンク不成立・startのtrap・exhaustion・ホスト例外の区別。
+- **対象**: Instantiateの共通の順序、startの型検証と実行、リンク不成立・startのtrap・exhaustion・ホスト例外の区別。start前に構築・接続・リソース初期化を完了し、start失敗後も保存済みのinstance・関数・リソースを無効化しない。
 - **対象外**: スカラー数値演算と構造化制御の網羅、guestのmemory/table命令、data/element初期化、call_indirect・参照命令・SIMD命令、WASI。
 - **対象外**: WAST/JSONの解釈、spectestの具体的な定義、registerコマンドとbaseline。これらはconformance-runnerが所有する。
 
@@ -34,7 +34,9 @@ runtime-foundationの最小定数返却経路と共通の値・型・例外・�
 - memory/tableのリソース実体と公開ホスト操作は本仕様、guestのsize/growを含む命令とsegmentはlinear-memory・tables-referencesが所有する。リソースを増やす共通操作も実体側に集め、guest命令固有の失敗値やtrapへの変換は命令側が担当する。
 - 参照の保持・null初期値はリソース生成のために扱うが、ref.*命令や宣言済み関数参照、element mode等の検証はtables-referencesへ置く。
 - data/elementの初期化と、共有状態・start失敗後の副作用の複合検証は各segmentの所有仕様が同じInstantiate経路へ追加する。未対応のsegmentを無視してstartへ進まない。
-- import情報の取得はmodule全体の有効性や実行可能性の証明ではない。破損して依存を特定できない場合と、取得済みの依存先が不成立の場合を区別できる契約にする。
+- start失敗時はInstantiateを例外で終了し、完了済みの副作用を戻さない。保存済み参照から操作を続けられるが、startによる初期化完了は保証せず、利用継続はホストが判断する。
+- 呼び出し深さとcallbackのInstance引数を分離する。既存コンテキストのない単独ホスト呼び出しは、instance指定の有無やリソース操作だけでは開始せず、Wasm定義関数またはstartへ入る時点で、その入口のinstanceの上限を使って開始する。既存Wasm実行からの同期再入は同じコンテキストを引き継ぎ、開始したWasm実行が終了してホストへ戻った後の別のWasm呼び出しは、新しいコンテキストと上限で実行する。
+- import情報の取得はmodule全体の有効性や実行可能性の証明ではない。必要情報を完全取得した場合だけ一覧を返し、空一覧によるimportなしと取得失敗を区別する。破損して依存を特定できない場合は部分一覧を公開せず、取得済みの依存先が不成立の場合と区別する。
 - instanceにExportsコレクションを追加せず、通常利用に必要な名前による取得・共有操作を設計する。globalの値コピーをリソース共有の代わりにしない。
 
 ## この仕様が所有しないこと

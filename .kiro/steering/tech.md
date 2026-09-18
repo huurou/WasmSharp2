@@ -1,5 +1,5 @@
 ---
-updated_at: 2026-09-16
+updated_at: 2026-09-17
 ---
 
 # 技術方針
@@ -32,7 +32,9 @@ updated_at: 2026-09-16
 
 バイト列や値・型のコレクション入力には`ReadOnlySpan<T>`を使い、保持する定義・型・結果はコピーして`ImmutableArray<T>`等で所有する。後続の呼び出しや元バッファの変更で、返却済みの結果が変わらない契約を保つ。数値の取得・構築ではWasmのビット列を保持する。
 
-実行ポリシーはinstanceが保持し、最外側の呼び出しが開いたWasm実行コンテキストの上限を固定する。同一スレッドの同期的なネスト呼び出しは`[ThreadStatic]`のコンテキストを共有する。保証範囲は単一スレッドでの同期実行であり、並行利用・非同期フローへの伝播は対象外とする（[ADR 0008](../../docs/adr/0008-instance-options-and-execution-context.md)）。
+実行ポリシーはinstanceが保持し、Wasm実行への入口が開いたコンテキストの上限を固定する。既存コンテキストのない単独ホスト呼び出しは、instance指定の有無やリソース操作だけでは開始せず、Wasm定義関数またはstartへ入った時点で開始する。そのWasm実行が終了してホストへ戻った後の別のWasm呼び出しは、新しい入口のinstanceの上限を使う。Instance引数はアクセス情報として深さ管理と分け、同一スレッドの同期的なネスト呼び出しは`[ThreadStatic]`のコンテキストを共有する。保証範囲は単一スレッドでの同期実行であり、並行利用・非同期フローへの伝播は対象外とする（[ADR 0008](../../docs/adr/0008-instance-options-and-execution-context.md)）。
+
+ホスト関数はinstanceを受け取る形式と受け取らない形式を明示登録し、関数の同一性と呼び出し時のinstance情報を分ける（[ADR 0010](../../docs/adr/0010-host-function-instance-context.md)）。start前にランタイムの構築・接続・リソース初期化を完了し、start失敗後もホストが保存したinstance・関数・リソースを自動的に無効化しない（[ADR 0011](../../docs/adr/0011-retain-references-after-start-failure.md)）。
 
 ## 開発と検証
 

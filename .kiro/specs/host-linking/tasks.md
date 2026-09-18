@@ -1,0 +1,358 @@
+# 実装計画
+
+各小タスクは1〜3時間を目安とし、原則は記載順に進める。並列候補は2.1〜2.3、および2.4と2.5だけとし、タスク1全体と明示した依存が完了してから実施する。共通型・fixture・プロジェクト設定はタスク1で先行整備し、並列中は各リソースと専用テストだけを変更する。共有箇所の変更が必要になった場合は直列化する。
+
+各実装タスクで正負テストを追加・更新し、Releaseビルドの警告・エラー0を確認後、対象テストをコマンド実行する。TUnitのAAA、日本語名、メソッド別クラス、await付きassertionに従い、同期contextの観測はawait前に終える。各タスクのレビューと検証結果を末尾の実装記録へ追記する。後半の受入タスクは不足する公開経路を補い、成立済みの単体テストを重複追加しない。
+
+## 基盤
+
+- [ ] 1. 既存の検証環境と共通入力を整える
+- [ ] 1.1 既存ランタイムと生成器の検証前提を確立する
+  - .NET 10、固定Core 2.0 spec素材、既存のランタイム・生成器・両TUnit構成を確認し、必要な復元とビルド設定を整える。
+  - 生成器をビルド時依存に保ち、既存の命令契約ソース取り込みを維持する。WABTや公式ランナーを前提にしない。
+  - 既存の定数返却経路を含む両テストが、警告・エラー0のReleaseビルド後にコマンドで成功する。
+  - _Boundary: WasmSharp.Tests, WasmSharp.Generators.Tests_
+  - _Requirements: 1.6, 12.5_
+
+- [ ] 1.2 ホスト連携の正負バイナリを構築できる入力fixtureを用意する
+  - 型、4種import/export、リソース、locals、start、任意の命令バイト列を組み合わせ、既存の定数専用fixtureを維持する。
+  - 不正添字・長さ・UTF-8・途中破損を補正せず表現し、非seek・short read・I/O失敗は既存fixtureを再利用する。
+  - 正負入力を決定的なバイト列で再現でき、WAT/WAST解析や内部実行hookを使わない。
+  - _Boundary: WasmSharp.Tests_
+  - _Requirements: 1.4, 12.1, 12.4_
+
+- [ ] 1.3 リソースと外部要素の共通型・生成診断を整える
+  - limits、globalの値型と可変性、4種の外部要素を設計どおり記述できるようにする。
+  - limits記述では不正な大小関係も保持し、ホスト生成の契約違反とバイナリのValidate失敗を分ける。ホスト単独の資源生成に位置情報を強制しない。
+  - 型情報が不変に保持され、処理段階外の実装保持上限を位置なしで表せることをテストで確認する。
+  - _Boundary: WasmLimits, WasmGlobalType, WasmExternalKind, WasmImplementationLimitException_
+  - _Requirements: 4.1, 5.1, 6.1, 7.8, 10.8_
+
+- [ ] 1.4 添字付き命令の共通表現を生成テストへ統合する
+  - 命令のuint添字を値即値と区別して保持し、デコード済み命令と実行命令へ一貫した表現を用意する。
+  - 対象命令の即値・検証規則を記述する共通情報と、生成器テストの実ソース取り込み・コンパイル入力を同時に整える。handlerのない命令はまだ対応済みとして登録しない。
+  - 添字の保持と既存定数命令の互換性を確認し、通常ビルドと生成器テストが新しい命令表現で成功する。
+  - _Boundary: DecodedInstruction, Instruction, ImmediateKind, ValidationRule, StackEffectKind, WasmSharp.Generators.Tests_
+  - _Requirements: 1.6, 3.1, 3.2_
+
+## 共有リソース
+
+- [ ] 2. ホストから共有リソースを生成・操作できるようにする
+- [ ] 2.1 (P) globalの型・可変性・現在値を管理する
+  - 7種の値型について初期値と更新値の型を照合し、ビット列と参照同一性を保持する。
+  - immutable更新と型違いを区別し、拒否時は現在値を変更しない。
+  - ホストからの生成・取得・更新の正負テストで、同じ実体の更新と失敗時不変を確認する。
+  - _Boundary: WasmGlobal_
+  - _Depends: 1.3_
+  - _Requirements: 4.1, 4.5, 4.6_
+
+- [ ] 2.2 (P) memoryの割当と範囲コピーを実装する
+  - 65,536バイト単位のゼロ初期化領域と現在ページ数・任意最大値・バイト長を保持する。
+  - ページ境界を跨ぐ読み書きで全範囲を先に検査し、末尾の長さ0を許す。4GiBの長さを単一配列のint範囲へ縮めない。
+  - 読み出しコピーが後の更新に追従せず、範囲外書込みが部分変更を残さないことを確認する。
+  - _Boundary: WasmMemory_
+  - _Depends: 1.3_
+  - _Requirements: 5.1, 5.2, 5.5_
+
+- [ ] 2.3 (P) tableの割当と参照要素操作を実装する
+  - funcref/externrefの型別nullで初期化し、現在要素数と任意最大値を保持する。
+  - 位置と参照型を検査し、null・非nullの参照同一性を保つ。仕様上限と配列保持上限を区別する。
+  - 正常な取得・設定と、範囲外・型違い・初期保持上限による拒否をテストで確認する。
+  - _Boundary: WasmTable_
+  - _Depends: 1.3_
+  - _Requirements: 6.1, 6.2, 6.3, 6.6, 10.8_
+
+- [ ] 2.4 memoryを既存内容を保って増大する
+  - 上限と加算を割当前に検査し、成功時だけ追加ページをゼロ初期化して確定する。
+  - 増大量0、成功時・false時の元サイズ、宣言・仕様上限を扱い、実割当の例外は変換せず既存状態を維持する。
+  - 成功・予測可能な失敗・増大量0のテストでサイズと内容を確認する。巨大割当や実OOMを通常テストの必須条件にしない。
+  - _Boundary: WasmMemory_
+  - _Depends: 2.2_
+  - _Requirements: 5.3, 5.4, 10.8_
+
+- [ ] 2.5 (P) tableを指定参照で増大する
+  - 追加領域を指定参照で初期化し、既存要素と参照同一性を保って確定する。
+  - 宣言・仕様・配列保持上限はfalseで返し、実割当例外は変換しない。増大量0でも初期参照型を検査する。
+  - 成功時・false時の元サイズ、型違い時の不変更、追加要素の同一性を確認する。
+  - _Boundary: WasmTable_
+  - _Depends: 2.3_
+  - _Requirements: 6.4, 6.5, 6.6, 10.8_
+
+## 関数実体と提供登録
+
+- [ ] 3. 明示型の関数と名前付き提供登録を用意する
+- [ ] 3.1 定義関数と両形式のホスト関数を区別して保持する
+  - 定義関数の所属instanceとmodule全体の関数添字を保持し、定義配列の添字と区別する。
+  - ホスト関数は明示関数型とどちらか一方のcallback形式を保持し、結果を所有済みの値集合にする。取得元instanceへ所属させない。
+  - 両形式を生成して型を取得でき、不正な生成引数を拒否する。既存定義関数の定数呼出しを維持する。
+  - _Boundary: WasmFunction, WasmHostModule_
+  - _Depends: 1.3_
+  - _Requirements: 2.10, 7.9, 8.1_
+
+- [ ] 3.2 4種の提供登録と原子的な重複拒否を実装する
+  - 名前は完全一致とし、空文字列を許しnullを拒否する。種類をまたぐ同名itemを拒否する。
+  - 提供元追加時に対応表をスナップショットし、名前の組が1件でも重複したら全件を追加しない。同じmodule名の非重複itemは追加できる。
+  - 実体をコピーせず、追加後の定義変更が既存登録へ影響しないことと、引数なし提供元の互換性を確認する。
+  - _Boundary: WasmImports, WasmHostModule_
+  - _Depends: 2.1, 2.4, 2.5, 3.1_
+  - _Requirements: 7.1, 7.13_
+
+## 静的定義
+
+- [ ] 4. 外部要素とstartを実行せずに読み取る
+- [ ] 4.1 バイナリ共通読取を既存Decodeへ統合する
+  - ヘッダー、sectionの外枠・順序、型、import記述を共有reader上へまとめ、既存Decodeから使う。
+  - 構文と意味論を分け、生の添字・limits・元位置を保持する。第二のバイナリパーサーを作らない。
+  - 既存の符号化・UTF-8・Stream・失敗位置のテストが同じ分類で成功する。
+  - _Boundary: ModuleBinaryFormat, ModuleDecoder_
+  - _Depends: 1.2, 1.3_
+  - _Requirements: 1.4, 1.6, 11.1_
+
+- [ ] 4.2 4種のimport/exportとmemory/table定義を読み取る
+  - 関数・global・memory・tableのimport、全種類のexport、memory/table定義を静的moduleへ保持する。
+  - import宣言順、各種類の生の添字、limits、元位置を保持し、対応済みsectionの旧Unsupported期待を更新する。
+  - バイト列とStreamの正負入力で静的情報を保持し、破損をDecode失敗にできる。callbackも資源割当も行わない。
+  - _Boundary: ModuleDecoder, WasmModule_
+  - _Requirements: 1.1, 1.4, 7.7_
+
+- [ ] 4.3 global初期化式とstartを読み取り未対応segmentを区別する
+  - globalの型・初期化式とstartの関数添字を保持し、スカラー定数とglobal取得の式を構文として読む。
+  - data/element/data_countを無視せず、未対応機能・位置・未確認範囲を返す。既知の構文違反を未対応へ置き換えない。
+  - 対象sectionの正例と破損例、未対応segmentを持つ入力で、実行を伴わない段階別失敗を確認する。
+  - _Boundary: ModuleDecoder, WasmModule_
+  - _Requirements: 1.1, 1.4, 1.5, 4.2, 9.1_
+
+## 独立したimport調査
+
+- [ ] 5. 実行可否と独立して完全なimport情報を公開する
+- [ ] 5.1 全sectionを走査して完全な要求型一覧を作る
+  - 共通readerでtype/importを完全に読み、宣言順の名前・種類・要求型を型付きで所有する。
+  - 他payloadは解釈せずスキップするが、後続sectionの外枠・重複・終端まで確認し、成功時にも未確認範囲を保持する。
+  - 完全取得とimportなしを返し、未対応本体やsegmentでも取得でき、後続破損では部分一覧を返さないことを内部テストで確認する。
+  - _Boundary: ImportInspector, WasmImportInspection, WasmImportInfo_
+  - _Depends: 4.1, 4.3_
+  - _Requirements: 11.1, 11.2, 11.3, 11.4, 11.5, 11.6_
+
+- [ ] 5.2 import調査の公開入口と失敗診断を統合する
+  - バイト列とStreamから調査を呼べるようにし、module生成・検証済み化・登録・割当・実行を要求しない。
+  - 構文破損、型未解決、未対応、実装制限を位置・未確認範囲・元診断付きで区別する。I/Oと実OOMは元の例外を伝播する。
+  - 非seek・現在位置・非close、null/非readable拒否を公開操作で確認し、失敗結果に一覧を公開しない。
+  - _Boundary: WasmModule, ImportInspector, WasmImportInspectionException_
+  - _Requirements: 11.1, 11.2, 11.3, 11.4, 11.5, 11.6, 12.4_
+
+## 宣言の検証
+
+- [ ] 6. リンク前に型と添字の整合性を検証する
+- [ ] 6.1 外部要素の添字空間・export・limitsを検証する
+  - 各種類でimportが定義に先行する添字空間を検査し、種類を跨ぐexport名重複を拒否する。
+  - memory合計1個、最小/最大の関係と仕様上限を検証し、複数tableは許可する。
+  - 範囲外添字・不正limitsはValidateで拒否し、成功時だけ全体の検証状態とexport索引を反映する。
+  - _Boundary: ModuleValidator_
+  - _Depends: 4.2, 4.3_
+  - _Requirements: 1.2, 3.2, 3.6, 7.7, 7.8_
+
+- [ ] 6.2 global初期化式とstartの型を検証する
+  - global初期化はスカラー定数またはimported immutable global取得とし、宣言型と1個の結果を照合する。
+  - mutable/定義global参照を拒否し、importからのv128/参照値を許す。startは定義/importいずれも有効添字かつ引数・結果0個とする。
+  - start検証の正負はimport関数を使って確認し、Validateがcallback/startを実行しないことを確かめる。結果0個の定義startが検証に成功する正例は9.2で確認する。
+  - _Boundary: ModuleValidator_
+  - _Requirements: 1.2, 4.2, 4.3, 9.1, 9.3_
+
+## リンクと構築
+
+- [ ] 7. importを照合して構築済み実体を名前で取得する
+- [ ] 7.1 提供登録を全件照合してリンク診断を返す
+  - Instantiate開始時の登録を確定し、必要なimportだけを宣言ごとに名前・種類・型で照合する。
+  - 関数型列とglobal型/可変性、memory/tableの現在サイズ・最大値・参照型を照合し、不一致を変換や自動増大で補わない。
+  - 不在・種類・型不一致の診断で宣言番号と名前・位置を確認し、同名importの個別照合と余分な提供itemの無影響をテストする。
+  - _Boundary: ModuleInstantiator, WasmInstantiateException_
+  - _Depends: 3.2, 6.2_
+  - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.12_
+
+- [ ] 7.2 リンク済み実体と定義リソースをinstanceへ統合する
+  - 全import照合後に4種の表を構築し、定義実体だけをinstanceごとに割当・初期化する。global式の値を型・ビット列・参照同一性を保って設定する。
+  - 未検証のInstantiateを拒否し、既存の提供元spanと空入力も同じ構築へ接続する。保持上限と実割当失敗をリンク失敗へ変換しない。
+  - startなし入力の構築と定義の独立性・import共有を公開操作で確認する。startの実行接続は11.2まで未対応として拒否し、黙って成功させない。
+  - _Boundary: WasmModule, ModuleInstantiator, WasmInstance_
+  - _Depends: 2.1, 2.4, 2.5, 3.1, 7.1_
+  - _Requirements: 1.3, 4.2, 4.7, 5.1, 6.1, 7.7, 7.11, 9.4, 10.8_
+
+- [ ] 7.3 名前による4種の取得と再exportを完成する
+  - 同じ対象の別名・反復取得・再exportで関数とリソースの同一性を保つ。
+  - globalの現在値取得を維持し、共有実体取得を追加する。名前不在・種類違いは呼出し契約違反として拒否する。
+  - 定義関数の元instanceとmodule全体添字を保ち、ホスト関数を取得元へ固定せず、全種類の取得・同一性のテストを通す。
+  - _Boundary: WasmInstance_
+  - _Requirements: 2.10, 4.5, 7.9, 7.10, 7.11_
+
+## 関数実行
+
+- [ ] 8. 引数・locals・結果をフレームで管理して実行する
+- [ ] 8.1 フレームの引数・localsと複数結果の受渡しを拡張する
+  - 引数先頭とoperand先頭を分け、追加localsを型別ゼロ/nullで初期化する。
+  - 終了時は宣言結果だけを順序どおり返し、localsと一時値を除く。必要量の加算・保持上限を区別する。
+  - 内部実行テストで0/複数引数結果、7種の初期値、呼出し間の分離を確認し、既存定数経路も維持する。
+  - _Boundary: Interpreter, WasmExecutionContext, ExecutionFrame, FunctionCode_
+  - _Depends: 7.3_
+  - _Requirements: 2.1, 2.3, 2.8, 2.9_
+
+- [ ] 8.2 locals操作・値の破棄・unreachableを命令宣言と実行へ統合する
+  - local取得・設定・値を残す設定、最上位valueの破棄を実装する。
+  - unreachableは元関数添字と位置を持つ内部trap結果とし、後続命令を実行しない。
+  - 各handlerと対応する命令宣言を同時に有効化し、生成器テスト入力も追随させる。内部実行ループのテストで値の順序と同一性、設定結果、後続未実行を確認する。
+  - _Boundary: InstructionSet, Interpreter, WasmSharp.Generators.Tests_
+  - _Depends: 1.4, 8.1_
+  - _Requirements: 2.4, 2.7, 2.9, 10.1_
+
+- [ ] 8.3 直接callとreturnの命令宣言と単一実行ループを統合する
+  - 定義関数の直接callでcalleeフレームを追加し、引数・戻り先・結果を同じ実行ループで管理する。
+  - importした定義関数の元instanceを使い、return後の命令を実行しない。guest再帰にCLR再帰や公開Invokeを使わない。
+  - 各handlerと対応する命令宣言・生成器テスト入力を同時に接続する。内部実行ループのテストで入れ子locals・結果順序・元instance、小さい深さ上限と終了後の深さ解放を確認する。
+  - _Boundary: InstructionSet, Interpreter, WasmExecutionContext, WasmSharp.Generators.Tests_
+  - _Requirements: 2.5, 2.6, 2.8, 2.10, 10.3, 10.5, 10.6_
+
+- [ ] 8.4 global命令の宣言と所属instanceの共有実体操作を統合する
+  - 実行中の定義関数の所属instanceからglobalを解決し、現在値の取得とmutable値の更新を行う。
+  - 検証済み命令へ重複した型検査を追加せず、型・ビット列・参照同一性を維持する。
+  - 各handlerと対応する命令宣言・生成器テスト入力を同時に接続し、内部実行ループのテストでホストとの相互更新とimport定義関数の元globalを確認する。
+  - _Boundary: InstructionSet, Interpreter, WasmSharp.Generators.Tests_
+  - _Depends: 2.1, 7.3_
+  - _Requirements: 2.10, 4.4, 4.5_
+
+## 命令宣言と検証の統合
+
+- [ ] 9. 新命令をDecode・型検証・生成実行へ統合する
+- [ ] 9.1 添字即値のDecodeと生成経路全体を統合確認する
+  - 先行整備した命令宣言と添字表現を使って即値を読み取り、元位置とuint添字をデコード済み命令へ保持する。
+  - handler署名と通常ビルド生成を維持し、8.2〜8.4で追加した宣言・handler・生成器テスト入力の組合せを確認する。共有ファイルは直列編集する。
+  - 対象命令のDecodeと生成コードのコンパイルを確認し、旧Unsupported負例を本来の構文失敗へ更新する。未終端call即値と後続命令の未対応を区別する。
+  - _Boundary: ModuleDecoder, InstructionSet, WasmSharp.Generators.Tests_
+  - _Depends: 1.4, 4.3, 8.2, 8.3, 8.4_
+  - _Requirements: 1.1, 1.4, 1.5, 3.1_
+
+- [ ] 9.2 引数・locals・call・globalの型検査と線形化を拡張する
+  - 0/1/複数引数結果と追加locals、local/globalの添字・可変性、callの入出力とreturn/endの宣言結果を検証する。
+  - 検証と線形化を同一パスで行い、圧縮localsを早期に巨大展開せず、合計と保持上限を区別する。
+  - 型・個数・添字の正負テストを通し、旧Unsupported期待を更新する。引数・結果0個の定義startがValidateに成功する正例もここで確認し、全体失敗時に一部関数を実行可能にしない。
+  - _Boundary: ModuleValidator_
+  - _Depends: 8.1, 9.1_
+  - _Requirements: 1.2, 2.1, 2.3, 3.1, 3.2, 3.3, 3.6, 9.1_
+
+- [ ] 9.3 到達不能部分の型多相性を検証する
+  - return/unreachable後は関数底でのpopだけにunknownを与え、明示的に積まれた具体型を維持する。
+  - 到達不能でも添字・global可変性・既知型不一致・end余剰値を検査する。
+  - 多相性で成立する正例を受理し、不正local、immutable更新、具体型不一致を含む負例を拒否する。
+  - _Boundary: ModuleValidator_
+  - _Requirements: 3.1, 3.3, 3.4, 3.5_
+
+## ホスト呼出しと同期再入
+
+- [ ] 10. ホスト境界と実行コンテキストを完成する
+- [ ] 10.1 両形式のcallbackへ値を渡し結果を検査する
+  - 共通の内部ホスト呼出しで、callback引数を呼出し専用コピーへ移し、指定形式だけにinstanceを渡す。
+  - 結果のnull・型・個数を確認してからguestを継続し、結果の所有と元のホスト例外実体を維持する。
+  - 内部呼出しの正負テストで引数順序・不正結果による後続未実行・例外同一性を確認する。
+  - _Boundary: Interpreter_
+  - _Depends: 3.1, 8.3, 9.3_
+  - _Requirements: 8.2, 8.3, 8.4, 8.5, 8.6_
+
+- [ ] 10.2 公開呼出しへ関数種別・instance指定・context選択を統合する
+  - 値引数の不一致を実行前に拒否し、instance必須hostの省略/nullを拒否する。instanceなしhostと定義関数は追加instanceを無視する。
+  - 単独host呼出しではcontextを作らず、定義関数入口では元instanceの上限を選ぶ。既存contextがあれば継承し、作った入口だけが解除する。
+  - 両公開呼出し形式、定義関数へのnull/別instance、単独hostからの資源操作とWasm入口を公開テストで確認する。
+  - _Boundary: WasmFunction, ExecutionBoundary_
+  - _Depends: 10.1_
+  - _Requirements: 2.2, 2.10, 8.9, 8.10, 8.11, 10.4, 10.9, 10.10, 10.11_
+
+- [ ] 10.3 Wasmからのhost呼出しと同期再入の保存復元を統合する
+  - guestからのhost callは直前の定義関数のinstanceを渡し、frameを追加せず深さ1段を消費してfinallyで戻す。
+  - 同一/別instanceへの再入は外側contextを共有し、入口frame/value/depthまで復元して内側ループを終了する。
+  - 再入中のstack拡張でもcallback引数と外側localsが変わらず、内側trapをホストが捕捉した後に外側を継続できる公開テストを通す。
+  - _Boundary: Interpreter, WasmExecutionContext, ExecutionBoundary_
+  - _Requirements: 2.8, 8.4, 8.7, 8.8, 10.3, 10.6, 10.7_
+
+- [ ] 10.4 ホスト往復のstack余裕と失敗診断を統合する
+  - 再入入口とcallback直前でCLR stack余裕を確認し、深さ上限とは別のexhaustion理由と未計測上限を返す。
+  - runtime結果だけを共通境界で例外化し、Invokeの段階・元位置を保持する。ホストからの同型例外を再分類しない。
+  - 内部結果境界でHostStackLimit・Limit=null・復元を確認し、公開の直接再帰/host再入でexhaustionと独立再実行を確認する。
+  - _Boundary: Interpreter, ExecutionBoundary, ExecutionResult, WasmExhaustionException_
+  - _Requirements: 10.2, 10.3, 10.5, 10.6, 10.7, 10.8_
+
+## start統合
+
+- [ ] 11. 構築済みinstanceでstartを実行する
+- [ ] 11.1 start専用入口を共通実行境界へ統合する
+  - 新規contextはstart所有instanceの上限とし、既存contextがあれば共有する。start自体の余分な深さを加えない。
+  - 定義/import定義/hostのstartを同じ関数呼出しへ接続し、hostにはstart所有instance、import定義には元の資源環境を使う。
+  - 内部境界テストでInstantiate段階のtrap/exhaustionと、再入で既に例外化したホスト例外の元実体維持を確認する。
+  - _Boundary: ExecutionBoundary_
+  - _Depends: 10.4_
+  - _Requirements: 9.3, 9.5, 10.2, 10.3, 10.4, 10.10_
+
+- [ ] 11.2 構築・export公開・start実行をInstantiateへ統合する
+  - 全リンク・割当・初期化とexport取得可能化の後にstartを毎回1回実行し、成功した場合だけinstanceを返す。
+  - リンク/割当失敗時はstartを実行せず、start中断時は完了済み副作用や保存済み参照を戻したり無効化したりしない。
+  - start中callbackから定義memoryと関数を取得でき、startなし・各start形式・再Instantiateの公開正負テストを通す。
+  - _Boundary: ModuleInstantiator, WasmInstance, ExecutionBoundary_
+  - _Depends: 7.2, 7.3, 11.1_
+  - _Requirements: 8.8, 9.2, 9.3, 9.4, 9.5, 9.6, 9.7, 9.8_
+
+## 公開操作の受入
+
+- [ ] 12. 公開経路の統合受入と基盤回帰を完了する
+- [ ] 12.1 関数の値受渡しと命令の組合せを公開操作で確認する
+  - 0/1/複数引数結果と7種の値を往復し、NaN/v128ビット列と参照同一性を確認する。
+  - local/call/return/drop/globalを組み合わせ、呼出しごとのlocals分離、元instanceの資源、return/unreachable後の未実行を確認する。
+  - 公開4段階を通る正負入力が期待結果・型拒否・実trapを示し、既存の最小定数経路も成功する。
+  - _Boundary: WasmSharp.Tests_
+  - _Depends: 9.3, 10.4, 11.2_
+  - _Requirements: 1.6, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 2.10, 4.4, 10.1, 12.1_
+
+- [ ] 12.2 複数instanceの共有・再exportとリンク失敗を確認する
+  - 4種の別名/再exportの同一性、定義の独立性、ホストとguestのglobal相互更新、memory/tableの共有更新・増大を確認する。
+  - 増大後の現在サイズを使う型照合、同名importの個別照合、提供重複の全件拒否、不在・種類・型不一致を公開操作で区別する。
+  - 読み出しコピーの保持と再入後の現在memoryへの書込みを確認し、取得元に関係なく共有先で更新を観測できる。
+  - _Boundary: WasmSharp.Tests_
+  - _Requirements: 4.5, 4.7, 5.6, 6.7, 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.9, 7.10, 7.11, 7.12, 7.13, 12.2_
+
+- [ ] 12.3 callbackのinstance選択・寿命・例外を公開操作で確認する
+  - 両形式の登録/実行、省略/null拒否、異なる明示instanceで同じhost実体を呼ぶ経路を確認する。
+  - 別instanceの定義関数経由・再export host直接・host start・C#直接の4経路で渡すinstanceを確認する。
+  - 再入によるstack拡張後も引数が安定し、返却元再利用後も結果が安定し、不正結果でguestを再開せず元例外実体を伝播する。
+  - _Boundary: WasmSharp.Tests_
+  - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5, 8.6, 8.7, 8.8, 8.9, 8.10, 8.11, 12.2, 12.6_
+
+- [ ] 12.4 contextの上限選択と中断回復を公開操作で確認する
+  - 単独hostからの資源操作だけ・B直接・AからBネスト・A終了後Bを、両callback形式で確認する。
+  - 異なる上限を持つinstance間の再帰/再入、host startとimport定義startで、入口上限と資源環境を分離して確認する。
+  - Invoke/startの実trap、両形式のhost再入exhaustion、内側例外捕捉後の継続、中断後の独立Invoke/Instantiateが成立する。
+  - _Boundary: WasmSharp.Tests_
+  - _Requirements: 10.1, 10.2, 10.3, 10.4, 10.5, 10.6, 10.7, 10.9, 10.10, 10.11, 12.3, 12.7_
+
+- [ ] 12.5 start失敗後の保存参照と副作用を公開操作で確認する
+  - start前の構築/接続/初期化済み状態から、callbackがinstance・関数・リソースを保存する。
+  - trapとホスト例外による中断後に共有状態と保存参照を操作し、start完了や再実行を暗黙に要求しないことを確認する。
+  - 失敗したInstantiateがinstanceを返さず、保存参照による後続呼出しと完了済み副作用が残るテストを通す。
+  - _Boundary: WasmSharp.Tests_
+  - _Requirements: 9.2, 9.4, 9.5, 9.6, 9.7, 9.8, 12.8_
+
+- [ ] 12.6 import情報と未対応segmentの境界を公開操作で確認する
+  - 完全取得、空一覧、未対応本体/segmentの読み飛ばしと未確認範囲、未解決型、途中/後続破損を区別する。
+  - 同じ入力で情報取得成功とDecode未対応が両立し、調査成功を実行可能性へ昇格させない。
+  - data/element/data_countは完全処理で未対応となりstartを一度も実行せず、調査失敗は部分一覧を返さない。
+  - _Boundary: WasmSharp.Tests_
+  - _Depends: 5.2, 11.2_
+  - _Requirements: 1.5, 11.1, 11.2, 11.3, 11.4, 11.5, 11.6, 12.1, 12.4_
+
+- [ ] 12.7 全体ビルドと両テストsuiteで最終受入を確認する
+  - Releaseビルドの警告・エラー0後、ランタイムと生成器の全suiteをコマンド実行し、変更した公開経路と基盤回帰を確認する。
+  - 対象、コマンド、終了コード、passed/failed/skipped、未実施範囲を実装記録に残し、skipを成功へ加算しない。
+  - 直接テストの成功を公式全件適合と表現せず、後続命令/segment、公式ランナー、実OOM・実CLR stack確認の実施有無を区別して受入結果を確定する。
+  - _Boundary: WasmSharp.Tests, WasmSharp.Generators.Tests_
+  - _Requirements: 1.6, 12.1, 12.2, 12.3, 12.4, 12.5, 12.6, 12.7, 12.8_
+
+## 実装記録（Implementation Notes）
+
+タスク計画の確認: 12大タスク・41小タスク、受入基準99/99件の対応、依存関係・責務境界・実行前提を確認済み。Task Plan Review Gateと独立したTask-Graph Sanity ReviewはPASS。
+
+実装・ビルド・テストは未実施。実装時に各タスクの対象・コマンド・終了コード・passed/failed/skipped・未実施範囲を追記する。実CLR stackの境界確認を行う場合は独立プロセスで実施し、通常suiteに巨大割当や実OOMを強制しない。
+

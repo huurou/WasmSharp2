@@ -1,5 +1,5 @@
 ---
-updated_at: 2026-09-16
+updated_at: 2026-09-17
 ---
 
 # WasmSharp2ロードマップ
@@ -54,11 +54,12 @@ C#でWebAssemblyバイナリをデコード・検証・インスタンス化・�
 - `WasmModule`は静的定義、`WasmInstance`は実行時の実体という既存の区別を保つ。検証前のInstantiateを防ぐ契約、検証成功後の実行表現の所有権は基盤で決める。
 - 基盤はCore 2.0の値・型・添字空間と、後続が使うデコード結果・命令情報・スタック・実行結果の共通契約を持つ。各機能の具体的なデコード、検証、初期化、実行はその機能の仕様が所有する。
 - scalarとvector・参照をやり取りできる`WasmValue`の契約を基盤で決める。各命令の意味論は該当機能が持つ。参照の同一性を明示的に表し、汎用`object`引数で代用しない。
-- `host-linking`は関数の引数・結果0個/複数・locals・直接call/return、return後の到達不能部分を含む関数本体の型検証、globalの生成・スカラー初期化・get/set、memory/tableの型・limits・生成・公開取得、4種のimport/exportと同一性を所有する。memory/tableのguest命令とdata/element初期化は各機能仕様が同じ実体へ追加し、リソース表現を複製しない。
-- `host-linking`は通常利用に必要なimportの識別情報を公開する。依存の把握をinstance生成や無関係な未実装命令のDecode成功へ依存させず、取得できた情報と未確認範囲を区別する。ランナーはこの能力で失敗したregisterへの依存を特定し、独自のバイナリ解析やWAST解析で補わない。
-- startの型検証・実行と共通のInstantiate順序は`host-linking`が所有する。data/element初期化と、共有リソースに対する初期化・startの複合挙動は各segmentの所有仕様が追加・検証する。未対応のsegmentを無視してstartを実行しない。
+- `host-linking`は関数の引数・結果0個/複数・locals・直接call/return・drop・unreachable、return・unreachable後の到達不能部分を含む関数本体の型検証、globalの生成・スカラー初期化・get/set、memory/tableの型・limits・生成・公開取得、4種のimport/exportと同一性を所有する。unreachableによる実際のWasm trapをInvokeとstartの公開経路で確認する。memory/tableのguest命令とdata/element初期化は各機能仕様が同じ実体へ追加し、リソース表現を複製しない。
+- `host-linking`は通常利用に必要なimportの識別情報を公開する。依存の把握をinstance生成や無関係な未実装命令のDecode成功へ依存させず、完全に取得した一覧だけを返し、空一覧によるimportなしと取得失敗を区別する。失敗時の部分一覧は公開しない。ランナーはこの能力で失敗したregisterへの依存を特定し、独自のバイナリ解析やWAST解析で補わない。
+- startの型検証・実行と共通のInstantiate順序は`host-linking`が所有する。start前に構築・接続・リソース初期化を完了し、start失敗時はInstantiateを例外で終了するが、副作用を戻さず保存済みのinstance・関数・リソースも無効化しない。startによる初期化完了は保証せず、利用継続はホストが判断する。data/element初期化と、共有リソースに対する初期化・startの複合挙動は各segmentの所有仕様が追加・検証する。未対応のsegmentを無視してstartを実行しない。
 - `WasmInstance`の既存コメント「Exportsは持たせない」を守る。公開取得操作と共有リソースの扱いは通常の埋め込み利用を根拠に設計する。`GetGlobal`の値取得だけでmutable globalの共有を表現できると決めつけない。
-- 関数呼出しのフレーム・引数と結果の受渡しは`host-linking`で基盤を拡張する。`numeric-control`の分岐・loopも同じスタック基準を使う。直接call・start・ホスト再入には初期から既存の実行コンテキストと深さ制限を適用し、CLRの再帰呼出しに依存してプロセスを落とさない。
+- ホスト関数は取得元instanceへ固定せず、C#からは呼び出し時にinstanceを明示可能とし、Wasmからは呼び出し元instanceを与える。登録時にInstance引数を取る形式と取らない形式を分け、前者の省略・nullはcallback実行前に拒否する。Instance引数はWasmの関数型・値引数に含めず、Instantiateの成功も証明しない。
+- 関数呼出しのフレーム・引数と結果の受渡しは`host-linking`で基盤を拡張する。`numeric-control`の分岐・loopも同じスタック基準を使う。既存コンテキストのない単独ホスト呼び出しはinstanceの指定・省略やリソース操作だけでは開始せず、Wasmへ入る時点で、その入口のinstanceの上限を使って開始する。開始したWasm実行が終了してホストへ戻った後の別のWasm呼び出しは、新しいコンテキストを使う。直接call・start・既存Wasm実行からのホスト再入はcallbackの形式と無関係に同じコンテキストと深さ制限を使う。guest間の再帰をCLRの再帰呼び出しへ依存させない。
 - Instantiate中のstartやsegment初期化のtrapをリンク不成立へ変換しない。呼び出し契約違反、ホスト処理の例外、実装制限・資源枯渇も、Wasmの仕様trapと無差別に混同しない。具体的な型・reasonの割り当てはrequirements/designで確定する。
 - 未実装に遭遇して検証を終えられない場合、`runtime_unsupported`は「有効性を証明済み」を意味しない。判定できなかった範囲も記録し、不正なバイナリを一括して未実装へ分類しない。Core 2.0外の命令についても、選定仕様の否定テストの期待値を勝手に変更しない。
 

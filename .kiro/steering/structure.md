@@ -1,5 +1,5 @@
 ---
-updated_at: 2026-09-16
+updated_at: 2026-09-17
 ---
 
 # プロジェクト構成
@@ -25,7 +25,7 @@ updated_at: 2026-09-16
 ## 公開境界と依存関係
 
 - 利用者向けの契約を`public`とし、内部実装は`internal`以下に保つ。テストによる内部参照には対象テストプロジェクトへの`InternalsVisibleTo`を用いる。
-- `WasmModule`は静的定義と実行コード、`WasmInstance`は実行時の実体を所有する。functionは所属instanceと関数indexで定義・実行コードへ到達する。
+- `WasmModule`は静的定義と実行コード、`WasmInstance`は実行時の実体を所有する。定義関数は所属instanceと関数indexで定義・実行コードへ到達する。ホスト関数は取得元instanceへ固定せず、同一実体を共有し、必要なinstanceは呼び出し時に渡す。
 - instanceの公開取得操作は`GetFunction`などの名前による操作とする。`WasmInstance`に`Exports`コレクションを追加しない。
 - 命令宣言とhandlerからの生成方式、生成器のビルド時参照は[技術方針](tech.md)に従う。ランタイムをテスト・公式ランナー・WABTへ依存させない。
 - 通常ビルドの生成ソースは`obj/`、外部ツールのビルドや変換成果物は`artifacts/`等の出力先に置き、手書きの正本と分ける。
