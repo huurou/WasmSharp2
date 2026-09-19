@@ -32,10 +32,10 @@ internal class WasmHostModule_DefineTests
             await Assert
                 .That(exception!.ParamName)
                 .IsEqualTo(nullName ? "name" : kind.ToString().ToLowerInvariant());
-            await Assert.That(module.Snapshot().Count).IsEqualTo(1);
+            await Assert.That(module.Snapshot.Count).IsEqualTo(1);
             await Assert
                 .That(
-                    module.Snapshot()["keep"] is WasmExternalValue.Function f
+                    module.Snapshot["keep"] is WasmExternalValue.Function f
                         && ReferenceEquals(f.Value, original)
                 )
                 .IsTrue();
@@ -58,10 +58,10 @@ internal class WasmHostModule_DefineTests
         await Assert.That(() => Define(module, "same", kind)).ThrowsExactly<ArgumentException>();
         using (Assert.Multiple())
         {
-            await Assert.That(module.Snapshot().Count).IsEqualTo(1);
+            await Assert.That(module.Snapshot.Count).IsEqualTo(1);
             await Assert
                 .That(
-                    module.Snapshot()["same"] is WasmExternalValue.Function f
+                    module.Snapshot["same"] is WasmExternalValue.Function f
                         && ReferenceEquals(f.Value, original)
                 )
                 .IsTrue();
@@ -83,7 +83,7 @@ internal class WasmHostModule_DefineTests
         module.Define("value", global);
         module.Define("Value", memory);
         module.Define("table", table);
-        var items = module.Snapshot();
+        var items = module.Snapshot;
 
         // Assert
         using (Assert.Multiple())

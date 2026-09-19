@@ -10,11 +10,12 @@ internal class ExecutionBoundary_InvokeTests
     public async Task 外側の呼び出し深さが上限に達している_外側の上限で拒否し状態と参照を保つ()
     {
         // Arrange
-        var function = WasmModule
-            .Decode(ConstantModuleBinary.Create(0x7F, 0x41, 0x2A, 0x0B))
-            .Validate()
-            .Instantiate([], new(100))
-            .GetFunction("run");
+        var function = (WasmDefinedFunction)
+            WasmModule
+                .Decode(ConstantModuleBinary.Create(0x7F, 0x41, 0x2A, 0x0B))
+                .Validate()
+                .Instantiate([], new(100))
+                .GetFunction("run");
         var outerRemains = false;
         (int Frames, int Values, int Depth) state = default;
 
@@ -39,7 +40,7 @@ internal class ExecutionBoundary_InvokeTests
                 finally
                 {
                     outer.Restore(0, 0, 0);
-                    outer.Exit(isOutermost);
+                    WasmExecutionContext.Exit(isOutermost);
                 }
             })
             .ThrowsExactly<WasmExhaustionException>();
@@ -79,7 +80,7 @@ internal class ExecutionBoundary_InvokeTests
                 finally
                 {
                     cleared = WasmExecutionContext.Current is null;
-                    WasmExecutionContext.Current?.Exit(true);
+                    WasmExecutionContext.Exit(true);
                 }
             })
             .ThrowsExactly<WasmImplementationLimitException>();

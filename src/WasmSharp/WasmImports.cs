@@ -19,7 +19,7 @@ public sealed class WasmImports
     public void Add(WasmHostModule module)
     {
         ArgumentNullException.ThrowIfNull(module);
-        var items = module.Snapshot();
+        var items = module.Snapshot;
         if (!modules_.TryGetValue(module.Name, out var existing))
         {
             existing = ImmutableDictionary.Create<string, WasmExternalValue>(
@@ -43,10 +43,10 @@ public sealed class WasmImports
     /// <summary>
     /// 後続の提供登録に影響されない名前の対応表を取得する
     /// </summary>
-    internal ImmutableDictionary<
-        string,
-        ImmutableDictionary<string, WasmExternalValue>
-    > Snapshot() => modules_;
+    internal ImmutableDictionary<string, ImmutableDictionary<string, WasmExternalValue>> Snapshot()
+    {
+        return modules_;
+    }
 }
 
 /// <summary>

@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using WasmSharp.Execution;
 
 namespace WasmSharp;
 
@@ -35,7 +36,7 @@ public sealed class WasmInstance
         var functions = ImmutableArray.CreateBuilder<WasmFunction>(module.Functions.Length);
         for (var i = 0; i < module.Functions.Length; i++)
         {
-            functions.Add(new WasmFunction(this, (uint)i));
+            functions.Add(new WasmDefinedFunction(this, (uint)i, (uint)i));
         }
         Functions = functions.MoveToImmutable();
     }

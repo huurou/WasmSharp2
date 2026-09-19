@@ -118,6 +118,10 @@
 ### 判断: 関数実体・instance・contextを分離する
 
 - 一般化: import/export/start/C#呼出しは同じ関数実体に対する入口の違いである。
+- 型の分離: WasmFunctionは公開操作を集約するabstract classとし、Execution配下のWasmDefinedFunction・WasmHostFunction・WasmInstanceHostFunctionをinternal sealedの具体型とする。基底のprivate protectedコンストラクターで外部継承を閉じる。所属instanceと定義コード、各形式のcallbackを種類ごとに保持し、nullableメンバーの組合せで種類を表さない。
+- 実行との接続: ExecutionBoundaryで共通型から具体型へ分岐する。ExecutionFrameとInterpreter.RunはWasmDefinedFunctionを受け取り、hostをWasmコードとして実行する経路を型で制約する。定義関数は両添字を明示して構築する。公開GetFunction・CreateHost・funcref・登録表は同じWasmFunction参照を使い続ける。
+- 代案との比較: 種類enumとnullable群の併用は不正な組合せを残す。公開sealed型が別の実体を包む案は同じ関数に2つのobjectを要し、現在の呼出し側に必要な能力を増やさない。具体型を公開する必要もない。通常のclass継承だけで表現でき、追加ライブラリや仮想Invokeの拡張点は不要とする。
+- 移行と検証: 型保持のタスク3.3で既存関数と実行fixtureを移行し、生成時null拒否・型/参照同一性・別添字・定数Invoke・引数拒否・実行状態復元を確認する。callback実行とinstance付きInvokeは既存のタスク10で接続し、タスク3.3では既存の未対応拒否を維持する。
 - 選択: hostは型とcallback形式だけを保持し、instanceは呼出し時情報とする。startの入口ポリシーはstart所有instanceから選ぶ。
 - 公開署名: instanceの明示は`Invoke(WasmInstance instance, ReadOnlySpan<WasmValue> arguments)`、省略は`Invoke(ReadOnlySpan<WasmValue> arguments)`とする。明示指定側をnullableにする必要はない。実行時にnullが渡された場合の要件8.10・8.11の扱いは型注釈と分ける。
 - 簡素化: 元instanceを覚えるexportラッパー、start失敗後の失効フラグ、contextを持つhost専用objectを作らない。

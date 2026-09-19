@@ -12,7 +12,7 @@ internal class WasmHostModule_ConstructorTests
         using (Assert.Multiple())
         {
             await Assert.That(module.Name).IsEqualTo("");
-            await Assert.That(module.Snapshot()).IsEmpty();
+            await Assert.That(module.Snapshot).IsEmpty();
         }
     }
 

@@ -97,6 +97,15 @@
   - _Depends: 2.1, 2.4, 2.5, 3.1_
   - _Requirements: 7.1, 7.13_
 
+- [x] 3.3 関数実体を種類別の型へ分離する
+  - WasmFunctionを外部継承できない公開抽象型とし、定義関数と2形式のホスト関数をinternal sealedの具体型へ分ける。種類固有の情報を基底型から除き、各callbackを非nullableで保持する。
+  - ExecutionBoundaryは具体型で分岐し、Interpreter.RunとExecutionFrameはWasmDefinedFunctionだけを受け取る。WasmInstanceの生成時にはmodule全体添字と定義添字を明示する。
+  - 既存の型取得・生成時null拒否・関数参照の同一性・定数Invoke・引数不一致・実行状態復元を維持する。ホストcallback実行とinstance指定Invokeはタスク10で接続し、今回も既存の未対応拒否を維持する。
+  - 内部契約テストとfixtureを新しい型へ移し、警告・エラー0のReleaseビルド後にruntimeとgeneratorの両suiteを確認する。挙動変更のないリファクタリングとして機能フラグ・作為的なREDは追加しない。
+  - _Boundary: WasmFunction, Execution/WasmDefinedFunction, Execution/WasmHostFunction, Execution/WasmInstanceHostFunction, WasmInstance, ExecutionBoundary, Interpreter, ExecutionFrame, WasmSharp.Testsの関連テストとfixture_
+  - _Depends: 3.1, 3.2_
+  - _Requirements: 2.2, 2.10, 7.9, 8.1_
+
 ## 静的定義
 
 - [ ] 4. 外部要素とstartを実行せずに読み取る
@@ -174,7 +183,7 @@
   - 未検証のInstantiateを拒否し、既存の提供元spanと空入力も同じ構築へ接続する。保持上限と実割当失敗をリンク失敗へ変換しない。
   - startなし入力の構築と定義の独立性・import共有を公開操作で確認する。startの実行接続は11.2まで未対応として拒否し、黙って成功させない。
   - _Boundary: WasmModule, ModuleInstantiator, WasmInstance_
-  - _Depends: 2.1, 2.4, 2.5, 3.1, 7.1_
+  - _Depends: 2.1, 2.4, 2.5, 3.3, 7.1_
   - _Requirements: 1.3, 4.2, 4.7, 5.1, 6.1, 7.7, 7.11, 9.4, 10.8_
 
 - [ ] 7.3 名前による4種の取得と再exportを完成する
@@ -252,7 +261,7 @@
   - 結果のnull・型・個数を確認してからguestを継続し、結果の所有と元のホスト例外実体を維持する。
   - 内部呼出しの正負テストで引数順序・不正結果による後続未実行・例外同一性を確認する。
   - _Boundary: Interpreter_
-  - _Depends: 3.1, 8.3, 9.3_
+  - _Depends: 3.3, 8.3, 9.3_
   - _Requirements: 8.2, 8.3, 8.4, 8.5, 8.6_
 
 - [ ] 10.2 公開呼出しへ関数種別・instance指定・context選択を統合する
@@ -535,3 +544,18 @@
 - `dotnet run --project tests/WasmSharp.Generators.Tests/WasmSharp.Generators.Tests.csproj -c Release --no-build -- --report-trx --results-directory TestResults/host-linking-3-claude-after-generators`: 終了0、passed 36 / failed 0 / skipped 0。両suite合計595件成功、skipを成功へ加算していない。
 - 上記本体3ファイルとテスト6ファイルを明示した`dotnet csharpier check`は終了0（Checked 9 files）。`git diff --check`と`git diff --cached --check`も終了0。最新TRX・修正差分と全5件の採否を確認し、`kiro-verify-completion`: タスク3のレビュー対応VERIFIED。Claudeは静的レビューのみを担当し、build/test/format確認はCodexが別途実行した。
 - 未実施範囲: タスク4以降のimport照合・再export・guest操作・callback実行接続・同期再入・start、公式suite、feature全体の完了検証。挙動変更や未解決の疑義を伴わない局所修正のためClaudeによる再レビューは実施しない。修正と記録は未ステージで残し、開始時のインデックスとHEADを維持する。
+
+### 3.3 関数実体の種類別分離（2026-09-19）
+
+- 承認と範囲: ユーザーが公開抽象型と種類別の内部具体型への設計変更・レビュー・実装を明示依頼した。手動モードで追加タスク3.3だけを実施し、この改訂について設計・タスクの承認状態を維持する。開始時の作業ツリーはクリーン、HEADは`5bd2126f2c202af0dd2da22244397d64a67a834d`。要件とタスク4以降の実装範囲は変更しない。
+- 設計レビュー: 履歴を引き継がない独立レビュアーがドラフトと現行コードを照合しGO。要件対応99/99（欠落・余分・重複0）、必須境界4節、構成要素18/18の具体パス、42小タスクの依存に欠落・循環なしを確認した。7.2と10.1は3.3へ依存する。追加のTypeテスト移動先は実装時に配置計画へ補記した。
+- Task Brief: WasmFunctionの公開操作と関数の参照同一性を維持し、元instance・両添字・定義コードはWasmDefinedFunctionだけへ、各非nullable callbackはWasmHostFunction/WasmInstanceHostFunctionへ分離する。基底はprivate protectedコンストラクターを持つabstract class、具体型はinternal sealedとする。ExecutionBoundaryで型分岐し、Interpreter.RunとExecutionFrameを定義関数専用にする。共通の引数検証・定数Invoke・失敗後の実行状態復元を維持する。
+- 基準確認: `dotnet build WasmSharp2.slnx -c Release --no-restore --warnaserror`は終了0・警告0・エラー0。続く`dotnet run --project tests/WasmSharp.Tests/WasmSharp.Tests.csproj -c Release --no-build -- --treenode-filter '/*/*/WasmFunction_*Tests/*' --report-trx --results-directory TestResults/host-linking-3.3-baseline`は終了0、passed 32 / failed 0 / skipped 0。
+- RED_PHASE_OUTPUT: 非挙動変更のリファクタリングのため対象外。機能フラグや作為的な失敗テストは追加せず、既存のConstructor/TypeテストをExecution配下のWasmDefinedFunctionへ移し、CreateHostと内部fixture・frame入力を更新した。移行途中の初回ビルドは旧Typeテストの基底固有メンバー参照でCS1061の4エラーとなり、テストは実行しなかった。定義関数型へ移した後の同Releaseビルドは終了0・警告0・エラー0。
+- 実装後の対象検証: `dotnet run --project tests/WasmSharp.Tests/WasmSharp.Tests.csproj -c Release --no-build -- --treenode-filter '/*/*/(WasmFunction_*Tests)|(WasmDefinedFunction_*Tests)|(Interpreter_*Tests)|(ExecutionBoundary_*Tests)|(WasmExecutionContext_*Tests)/*' --report-trx --results-directory TestResults/host-linking-3.3-focused`は終了0、passed 67 / failed 0 / skipped 0。変更CS全17ファイルの`dotnet csharpier check`と`git diff --check`は終了0。
+- 独立実装レビュー: 履歴を引き継がない別のレビュアーが`kiro-review`に従って現行差分と未追跡5ファイルを直接確認しAPPROVED。修正必須の指摘なし。本体8ファイル・関連テスト/fixture9ファイル・仕様4文書の境界内であり、残存placeholder・秘密情報パターン・新規依存・公開Invokeへの内部再入なし。下記ビルドと全suiteをレビュアーが独立実行した。
+- `dotnet build WasmSharp2.slnx -c Release --no-restore --warnaserror`: 終了0、警告0、エラー0。成功を確認してから両suiteを実行。
+- `dotnet run --project tests/WasmSharp.Tests/WasmSharp.Tests.csproj -c Release --no-build -- --report-trx --results-directory TestResults/host-linking-3.3-review-runtime`: 終了0、passed 559 / failed 0 / skipped 0。
+- `dotnet run --project tests/WasmSharp.Generators.Tests/WasmSharp.Generators.Tests.csproj -c Release --no-build -- --report-trx --results-directory TestResults/host-linking-3.3-review-generators`: 終了0、passed 36 / failed 0 / skipped 0。両suite合計595件成功、skipを成功へ加算していない。
+- 変更CS17ファイルのCSharpier check、`git diff --check`、`git diff --cached --check`は各終了0。主担当も両TRXの件数と現行差分を直接確認し、`kiro-verify-completion`: TASK 3.3 VERIFIED。検証後の追加編集は本完了記録だけで、CS内容は同一。ステージング・コミットは行わず、開始時のインデックスとHEADを維持した。
+- 未実施範囲: host callback実行・instance付きInvoke・import/reexport接続・start・公式suite・feature全体の完了検証。既存のホストInvoke未対応拒否はExecutionBoundaryへ移し、callbackを実行せずcontextも開始しない。タスク10の実行接続を今回の型分離へ混ぜない。

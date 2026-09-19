@@ -48,7 +48,7 @@ internal class WasmImports_AddTests
     [Test]
     [Arguments("env", "Env")]
     [Arguments("\u00e9", "e\u0301")]
-    public async Task module名だけが異なる同名itemを追加する_名前を完全一致で区別する(
+    public async Task Module名だけが異なる同名itemを追加する_名前を完全一致で区別する(
         string firstName,
         string secondName
     )

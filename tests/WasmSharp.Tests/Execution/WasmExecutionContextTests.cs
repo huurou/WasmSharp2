@@ -28,7 +28,7 @@ internal class WasmExecutionContext_TryEnterCallTests
         }
         finally
         {
-            context.Exit(isOutermost);
+            WasmExecutionContext.Exit(isOutermost);
         }
 
         // Assert
@@ -74,7 +74,7 @@ internal class WasmExecutionContext_EnterTests
             }
             finally
             {
-                inner.Exit(isInnerOutermost);
+                WasmExecutionContext.Exit(isInnerOutermost);
             }
             outerRemains =
                 ReferenceEquals(WasmExecutionContext.Current, outer) && outer.CallDepth == 50;
@@ -85,12 +85,12 @@ internal class WasmExecutionContext_EnterTests
             {
                 outer.ExitCall();
             }
-            outer.Exit(isOutermost);
+            WasmExecutionContext.Exit(isOutermost);
         }
         var cleared = WasmExecutionContext.Current is null;
         var next = WasmExecutionContext.Enter(new(10), out var isNextOutermost);
         var nextDepth = next.CallDepth;
-        next.Exit(isNextOutermost);
+        WasmExecutionContext.Exit(isNextOutermost);
 
         // Assert
         using (Assert.Multiple())
@@ -143,7 +143,7 @@ internal class WasmExecutionContext_ExitTests
                         finally
                         {
                             inner.ExitCall();
-                            inner.Exit(isInnerOutermost);
+                            WasmExecutionContext.Exit(isInnerOutermost);
                         }
                     }
                     finally
@@ -155,7 +155,7 @@ internal class WasmExecutionContext_ExitTests
                 finally
                 {
                     outer.ExitCall();
-                    outer.Exit(isOutermost);
+                    WasmExecutionContext.Exit(isOutermost);
                     cleared = WasmExecutionContext.Current is null;
                     exitedDepth = outer.CallDepth;
                 }

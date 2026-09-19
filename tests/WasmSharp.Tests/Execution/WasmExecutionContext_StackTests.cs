@@ -106,7 +106,7 @@ internal class WasmExecutionContext_EnsureCapacityTests
                 finally
                 {
                     context.Restore(0, 0, 0);
-                    context.Exit(isOutermost);
+                    WasmExecutionContext.Exit(isOutermost);
                     restored =
                         context.FrameCount == 0
                         && context.ValueCount == 0
@@ -149,8 +149,8 @@ internal class WasmExecutionContext_RestoreTests
             90
         );
         var instance = new WasmInstance(module, WasmExecutionOptions.Default);
-        var function = instance.Functions[0];
-        var innerFunction = instance.Functions[1];
+        var function = (WasmDefinedFunction)instance.Functions[0];
+        var innerFunction = (WasmDefinedFunction)instance.Functions[1];
         var reference = new object();
         var context = WasmExecutionContext.Enter(new(10), out var isOutermost);
         var location = new WasmFailureLocation(WasmProcessingStage.Invoke, 30, 0);
@@ -206,7 +206,7 @@ internal class WasmExecutionContext_RestoreTests
             context.Restore(0, 0, 0);
             fullyRestored =
                 context.FrameCount == 0 && context.ValueCount == 0 && context.CallDepth == 0;
-            context.Exit(isOutermost);
+            WasmExecutionContext.Exit(isOutermost);
         }
 
         // Assert

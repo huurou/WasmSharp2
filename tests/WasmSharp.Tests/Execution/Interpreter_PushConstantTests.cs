@@ -34,7 +34,8 @@ internal class Interpreter_PushConstantTests
         {
             FunctionCodes = [code],
         };
-        var function = new WasmInstance(module, WasmExecutionOptions.Default).Functions[0];
+        var function = (WasmDefinedFunction)
+            new WasmInstance(module, WasmExecutionOptions.Default).Functions[0];
         var context = WasmExecutionContext.Enter(WasmExecutionOptions.Default, out var isOutermost);
         Instruction instruction;
         ExecutionResult result;
@@ -58,7 +59,7 @@ internal class Interpreter_PushConstantTests
         finally
         {
             context.Restore(0, 0, 0);
-            context.Exit(isOutermost);
+            WasmExecutionContext.Exit(isOutermost);
         }
 
         // Assert

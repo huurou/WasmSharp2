@@ -96,7 +96,7 @@ internal sealed class WasmExecutionContext
     /// 最外側の呼び出しの終了時に、現在のスレッドからコンテキストの参照を解除する
     /// </summary>
     /// <param name="isOutermost">対応するEnterで取得した最外側かどうかの値</param>
-    internal void Exit(bool isOutermost)
+    internal static void Exit(bool isOutermost)
     {
         if (isOutermost)
         {

@@ -5,7 +5,7 @@ namespace WasmSharp.Tests.Fixtures;
 
 internal static class ExecutionFunctionFixture
 {
-    public static WasmFunction Create(
+    public static WasmDefinedFunction Create(
         ImmutableArray<Instruction> instructions,
         WasmValueKind resultKind = WasmValueKind.I32,
         int maxOperandStack = 1
@@ -20,6 +20,6 @@ internal static class ExecutionFunctionFixture
         {
             FunctionCodes = [new([], 0), new(instructions, maxOperandStack)],
         };
-        return new WasmInstance(module, new(1)).Functions[1];
+        return (WasmDefinedFunction)new WasmInstance(module, new(1)).Functions[1];
     }
 }

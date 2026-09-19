@@ -12,7 +12,7 @@ internal static partial class Interpreter
     /// </summary>
     internal static ExecutionResult Run(
         WasmExecutionContext context,
-        WasmFunction function,
+        WasmDefinedFunction function,
         ReadOnlySpan<WasmValue> arguments,
         WasmProcessingStage stage
     )

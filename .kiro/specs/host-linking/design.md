@@ -37,7 +37,7 @@ C#の埋め込み利用者が、引数・複数結果を持つWasm関数、明�
 
 公開値・型・診断 ← 静的module情報／リソース実体 ← 検証・線形化／リンク構築 ← 実行ループ ← 公開入口、の方向を守る。公開ファサードは内部処理を呼ぶが、内部処理はファサードの公開操作で再入せず内部契約を使う。例外は、ホスト自身が同期再入のために公開Invokeを呼ぶ場合である。
 
-`WasmModule`は静的定義と検証成功後のコードを所有し、`WasmInstance`はその定義と実行時の関数・リソース表を参照する。`ExecutionFrame`は定義関数を介して所属instanceへ到達する。関数実体が所属instanceを参照するオブジェクト上の相互参照は許すが、moduleの静的定義にinstanceを保持しない。ライブラリからテスト・ランナー・WABT・生成器の実行時コードへの依存は禁止する。
+`WasmModule`は静的定義と検証成功後のコードを所有し、`WasmInstance`はその定義と実行時の関数・リソース表を参照する。公開の`WasmFunction`は共通の抽象型とし、定義関数と2形式のホスト関数を別の内部具体型で表す。`ExecutionFrame`は`WasmDefinedFunction`だけを保持して所属instanceへ到達する。定義関数実体が所属instanceを参照するオブジェクト上の相互参照は許すが、moduleの静的定義にinstanceを保持しない。ライブラリからテスト・ランナー・WABT・生成器の実行時コードへの依存は禁止する。
 
 ### 再検証の契機（Revalidation Triggers）
 
@@ -104,6 +104,9 @@ graph TD
 | `src/WasmSharp/WasmExternalKind.cs` | Function/Table/Memory/Globalの識別 |
 | `src/WasmSharp/WasmImportInfo.cs` | 名前・種類・要求型の型付きimport情報 |
 | `src/WasmSharp/WasmImportInspection.cs` | 完全取得したimport一覧と未確認範囲 |
+| `src/WasmSharp/Execution/WasmDefinedFunction.cs` | 元instanceと両添字を保持し、定義・実行コードへ到達する関数実体 |
+| `src/WasmSharp/Execution/WasmHostFunction.cs` | 明示型とinstance不要のcallbackを保持する関数実体 |
+| `src/WasmSharp/Execution/WasmInstanceHostFunction.cs` | 明示型とinstance必須のcallbackを保持する関数実体 |
 | `src/WasmSharp/Modules/ImportInspector.cs` | 実行に依存しないimport情報取得 |
 | `src/WasmSharp/Modules/ModuleBinaryFormat.cs` | ヘッダー、section順序、型・import記述の共有読み取り |
 | `src/WasmSharp/Modules/ModuleImport.cs` | 生の型添字を含むimport宣言と元位置 |
@@ -120,7 +123,7 @@ graph TD
 | --- | --- |
 | `src/WasmSharp/WasmModule.cs` | 静的定義、4種export対応、InspectImports入口と登録集合overload |
 | `src/WasmSharp/WasmInstance.cs` | 4種のindex表、名前による実体取得 |
-| `src/WasmSharp/WasmFunction.cs` | 定義関数／ホスト関数、型明示生成、instance指定Invoke |
+| `src/WasmSharp/WasmFunction.cs` | 関数の公開抽象型、Type、型明示生成、共通の引数検証とInvoke入口 |
 | `src/WasmSharp/WasmHostModule.cs` | 名前付き提供元とDefine、両callback delegate |
 | `src/WasmSharp/WasmMemory.cs` | ページ単位の記憶領域と範囲コピー・増大 |
 | `src/WasmSharp/WasmTable.cs` | 参照配列と要素操作・増大 |
@@ -132,7 +135,7 @@ graph TD
 | `src/WasmSharp/Instructions/ImmediateKind.cs`、`src/WasmSharp/Instructions/ValidationRule.cs`、`src/WasmSharp/Instructions/StackEffectKind.cs` | 添字即値と関数・local・globalの型規則 |
 | `src/WasmSharp/Execution/FunctionCode.cs` | 追加local型と必要スタック量 |
 | `src/WasmSharp/Execution/Instruction.cs` | 実行命令のuint添字 |
-| `src/WasmSharp/Execution/ExecutionFrame.cs` | 引数・locals・operandの基準と所属関数 |
+| `src/WasmSharp/Execution/ExecutionFrame.cs` | 引数・locals・operandの基準とWasmDefinedFunctionの保持 |
 | `src/WasmSharp/Execution/WasmExecutionContext.cs` | 共有stack操作、型別locals初期化、深さ復元 |
 | `src/WasmSharp/Execution/Interpreter.cs` | call/return/local/global/drop/unreachableとhost内部呼出し |
 | `src/WasmSharp/Execution/ExecutionBoundary.cs` | 定義・host・startの入口、共通失敗変換 |
@@ -147,6 +150,8 @@ graph TD
 
 - 既存`tests/WasmSharp.Tests/WasmModule_DecodeTests.cs`、`WasmModule_ValidateTests.cs`、`WasmModule_InstantiateTests.cs`、`WasmFunction_InvokeTests.cs`、4種Get操作のテストを拡張する。
 - 新規`tests/WasmSharp.Tests/WasmModule_InspectImportsTests.cs`、`WasmFunction_CreateHostTests.cs`、`WasmInstance_GetGlobalResourceTests.cs`、`WasmImports_AddTests.cs`、`WasmHostModule_DefineTests.cs`を置く。
+- 定義関数の添字・元instanceの検証は`tests/WasmSharp.Tests/WasmFunction_ConstructorTests.cs`から`tests/WasmSharp.Tests/Execution/WasmDefinedFunction_ConstructorTests.cs`へ移す。内部実行用`tests/WasmSharp.Tests/Fixtures/FunctionFixture.cs`・`ExecutionFunctionFixture.cs`はWasmDefinedFunctionを返す。`tests/WasmSharp.Tests/Execution/Interpreter_ReturnTests.cs`・`Interpreter_PushConstantTests.cs`・`WasmExecutionContext_StackTests.cs`のframe入力と`ExecutionBoundary_InvokeTests.cs`の定義情報参照も同型に合わせる。公開生成・登録・参照値のテストは共通のWasmFunctionを通す。
+- 定義元の型取得とinstanceごとの独立性を確認する`tests/WasmSharp.Tests/WasmFunction_TypeTests.cs`は`tests/WasmSharp.Tests/Execution/WasmDefinedFunction_TypeTests.cs`へ移し、定義関数固有の情報を参照する。
 - global/memory/tableは`tests/WasmSharp.Tests/WasmGlobal_ConstructorTests.cs`・`WasmGlobal_ValueTests.cs`、`WasmMemory_ConstructorTests.cs`・`WasmMemory_ReadTests.cs`・`WasmMemory_WriteTests.cs`・`WasmMemory_TryGrowTests.cs`、`WasmTable_ConstructorTests.cs`・`WasmTable_GetTests.cs`・`WasmTable_SetTests.cs`・`WasmTable_TryGrowTests.cs`へ分ける。
 - 内部規則は既存`tests/WasmSharp.Tests/Modules/ModuleValidator_ValidateTests.cs`、`Execution/ExecutionBoundary_InvokeTests.cs`、`Execution/Interpreter_RunTests.cs`、`Execution/WasmExecutionContextTests.cs`を拡張する。start入口は`tests/WasmSharp.Tests/Execution/ExecutionBoundary_RunStartTests.cs`へ置く。
 - 入力生成は新規`tests/WasmSharp.Tests/Fixtures/HostLinkingModuleBinary.cs`へまとめる。生成器の実ソース取り込みが必要なら`tests/WasmSharp.Generators.Tests/WasmSharp.Generators.Tests.csproj`と`GeneratorTestSource.cs`、既存`InstructionGenerator_InitializeTests.cs`を更新する。
@@ -295,6 +300,7 @@ instanceを受け取らない形式では、この追加引数をcallbackへ渡�
 | WasmImports / WasmHostModule | 提供登録 | 7.1, 7.13 | 入: 利用者 P0、出: 外部実体 P0 | Service / State |
 | ModuleInstantiator / WasmInstance | リンク・構築・名前取得 | 7.2, 7.9, 9.2 | 入: WasmModule P0、出: 資源・ExecutionBoundary P0 | Service / State |
 | WasmFunction / ExecutionBoundary | 公開呼出しとhost契約 | 8.1, 8.9, 10.9 | 入: 利用者・ModuleInstantiator P0、出: Interpreter P0 | Service |
+| WasmDefinedFunction / WasmHostFunction / WasmInstanceHostFunction | 種類ごとの必須情報と関数の同一性 | 2.10, 7.9, 8.1 | 入: WasmInstance・WasmFunction・ExecutionBoundary P0、出: 元instanceまたはcallback P0 | State |
 | Interpreter / WasmExecutionContext | frameと単一実行ループ | 2.5, 3.4, 10.3 | 入: ExecutionBoundary P0、出: 関数・資源 P0、外: .NET stack検査 P1 | Service / State |
 | WasmGlobal / WasmMemory / WasmTable | 共有実体とホスト操作 | 4.1, 5.1, 6.1 | 入: 利用者・実行・構築 P0、出: WasmValueと型 P0 | Service / State |
 | ImportInspector | 限定した依存調査 | 11.1, 11.4 | 入: WasmModule P0、出: ModuleBinaryFormat P0 | Service |
@@ -423,7 +429,10 @@ public WasmResults Invoke(WasmInstance instance, ReadOnlySpan<WasmValue> argumen
 
 instanceを明示するoverloadの第1引数は非nullableとする。instanceを渡さない呼び出しは`Invoke(arguments)`で表す。非nullable注釈とは別に、実行時にnullが渡された場合の扱いは以下の契約に従う。
 
-- WasmFunction内部は定義関数とホスト関数を区別する。定義関数は元instanceと関数indexを持つ。hostは型といずれか1形式のcallbackを持ち、取得元instanceを保持しない。
+- WasmFunctionはpublic abstract classとし、Typeは公開の抽象プロパティ、CreateHostとInvokeは共通の公開操作とする。基底コンストラクターはprivate protectedとし、ライブラリ外からの継承・任意の関数実装を許さない。3つの具体型はExecution名前空間のinternal sealed classとする。
+- WasmDefinedFunctionだけが非nullableの元Instance、module全体のFunctionIndex、定義配列の添字を保持し、DefinitionとCodeを提供する。構築時は両添字を明示し、import先で元instanceや添字を差し替えない。
+- WasmHostFunctionは明示型と非nullableのWasmHostCallback、WasmInstanceHostFunctionは明示型と非nullableのWasmHostInstanceCallbackをそれぞれ保持する。CreateHostの各overloadはtype/callbackのnullを拒否して対応する具体型を返す。取得元instance、定義コード、別形式のnullable callbackは持たない。
+- 基底型にInstance・FunctionIndex・Definition・Code・callback・IsHostを置かず、nullの組合せや別の種類フラグで判別しない。名前取得・提供登録・funcref・import/reexportは同じWasmFunction参照を共有し、取得元ごとのラッパーを生成しない。
 - 全Invokeは引数個数・型を実行前に確認する。instance必須hostへの省略/nullはArgumentNullExceptionでcallback前に拒否する。instanceなしhostは指定の有無にかかわらずinstanceをcallbackへ渡さない。
 - 定義関数への`Invoke(instance, arguments)`は、instanceがnull・定義元・別instanceのいずれでも、instance引数を検証せず無視する。値引数の個数・型は通常どおり検証し、実行環境と新しいcontextの上限は定義元instanceから選ぶ。既存contextがあればその上限を維持する。
 - WasmからHをcallする場合は直前の定義frame所属instanceを渡す。B → AのF → HはA、B → Aから再exportしたHはB、Aのstart=HはA。C#のInvokeは指定instanceだけを使う。
@@ -432,6 +441,8 @@ instanceを明示するoverloadの第1引数は非nullableとする。instance�
 - callbackの例外は捕捉して再分類しない。ランタイムと同じ例外型でも元の実体をそのまま伝播する。
 
 ### フレーム・実行コンテキスト・失敗境界
+
+`ExecutionFrame.Function`と定義関数を実行する`Interpreter.Run`のfunction引数はWasmDefinedFunctionとする。ExecutionBoundaryは共通のWasmFunctionを受けて具体型で呼出し先を選び、定義関数だけをInterpreter.Runへ渡す。guestのcallも具体型で分岐し、hostをWasmコードのframeへ入れない。公開Invokeの引数検証は基底型へ集約し、具体型ごとの仮想Invokeや公開Invokeへの内部再入を増やさない。
 
 `StackBase`は引数先頭、`OperandBase`は引数と追加locals直後。定義関数への直接callはcallerの引数領域をcalleeの引数として使い、戻り先pcを保持したframeを追加する。同じRunLoopを続け、handlerから公開Invokeや再帰Interpreter.Runを呼ばない。end/returnは末尾の宣言結果を順序どおりStackBaseへ移し、localsと他の一時値を除いてframeを終了する。
 
@@ -477,8 +488,8 @@ Streamは現在位置から最後まで読み、seek/Lengthを要求せず、閉
 | --- | --- | --- |
 | WasmModule | types、imports、定義関数、global/memory/table定義、exports、optional start、検証後FunctionCode | 外部から変更不可、検証全体成功時だけコードを公開 |
 | WasmInstance | module、ExecutionOptions、4種のimport先行index表 | index表の参照先は構築後固定。実体の可変状態は共有 |
-| 定義WasmFunction | 所属instance、module全体のfunction index、型 | import/reexportで所属を変更しない |
-| host WasmFunction | 型、callback形式とdelegate | instanceに所属せず、同じ実体を共有 |
+| WasmDefinedFunction | 所属instance、module全体のfunction index、定義配列index | Type・Definition・Codeは元instanceから取得し、import/reexportで所属を変更しない |
+| WasmHostFunction / WasmInstanceHostFunction | 型、それぞれの非nullable callback | instanceに所属せず、同じ実体を共有 |
 | WasmGlobal/Memory/Table | 型・最大値・現在値または現在領域 | mutable状態の所有者はこの実体だけ |
 | WasmImports | 名前の組から外部実体への対応 | 同名の差替え不可、コピーするのは対応表のみ |
 

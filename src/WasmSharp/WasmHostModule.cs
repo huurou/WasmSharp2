@@ -36,6 +36,11 @@ public sealed class WasmHostModule
     public string Name { get; }
 
     /// <summary>
+    /// 現在の名前と実体の対応を、後続の定義変更に影響されない形で取得する
+    /// </summary>
+    internal ImmutableDictionary<string, WasmExternalValue> Snapshot => items_;
+
+    /// <summary>
     /// 空のmodule名を持つ提供元を構築する
     /// </summary>
     public WasmHostModule()
@@ -94,11 +99,6 @@ public sealed class WasmHostModule
         ArgumentNullException.ThrowIfNull(table);
         Define(name, new WasmExternalValue.Table(table));
     }
-
-    /// <summary>
-    /// 現在の名前と実体の対応を、後続の定義変更に影響されない形で取得する
-    /// </summary>
-    internal ImmutableDictionary<string, WasmExternalValue> Snapshot() => items_;
 
     private void Define(string name, WasmExternalValue value)
     {

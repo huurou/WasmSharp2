@@ -1,8 +1,9 @@
+using WasmSharp.Execution;
 using WasmSharp.Tests.Fixtures;
 
-namespace WasmSharp.Tests;
+namespace WasmSharp.Tests.Execution;
 
-internal class WasmFunction_ConstructorTests
+internal class WasmDefinedFunction_ConstructorTests
 {
     [Test]
     public async Task 関数添字と定義添字が異なる_元instanceの定義と実行コードを使う()
@@ -19,13 +20,12 @@ internal class WasmFunction_ConstructorTests
             .Instantiate([]);
 
         // Act
-        var function = new WasmFunction(instance, uint.MaxValue, 1);
+        var function = new WasmDefinedFunction(instance, uint.MaxValue, 1);
         var result = function.Invoke([]);
 
         // Assert
         using (Assert.Multiple())
         {
-            await Assert.That(function.IsHost).IsFalse();
             await Assert.That(ReferenceEquals(function.Instance, instance)).IsTrue();
             await Assert.That(function.FunctionIndex).IsEqualTo(uint.MaxValue);
             await Assert

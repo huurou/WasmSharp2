@@ -18,7 +18,8 @@ internal class Interpreter_ReturnTests
             [],
             90
         );
-        var function = new WasmInstance(module, WasmExecutionOptions.Default).Functions[0];
+        var function = (WasmDefinedFunction)
+            new WasmInstance(module, WasmExecutionOptions.Default).Functions[0];
         var reference = new object();
         var found = InstructionSet.TryGet(new(0, 0x0B), out var descriptor);
         var instruction = new Instruction(descriptor.ExecutionOpcode!.Value, default, 88);
@@ -63,7 +64,7 @@ internal class Interpreter_ReturnTests
         finally
         {
             context.Restore(0, 0, 0);
-            context.Exit(isOutermost);
+            WasmExecutionContext.Exit(isOutermost);
         }
 
         // Assert
@@ -81,7 +82,7 @@ internal class Interpreter_ReturnTests
             await Assert.That(outerValue.AsI32()).IsEqualTo(42);
             await Assert.That(first.AsExternRef()).IsSameReferenceAs(reference);
             await Assert.That(second.AsI64()).IsEqualTo(123);
-            await Assert.That(cleared).IsEqualTo(default(WasmValue));
+            await Assert.That(cleared).IsEqualTo(default);
             await Assert.That(frameCount).IsEqualTo(1);
             await Assert.That(valueCount).IsEqualTo(3);
             await Assert.That(depth).IsEqualTo(1);

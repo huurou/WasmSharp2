@@ -47,7 +47,7 @@ internal class Interpreter_RunTests
                 finally
                 {
                     context.Restore(0, 0, 0);
-                    context.Exit(isOutermost);
+                    WasmExecutionContext.Exit(isOutermost);
                 }
             })
             .ThrowsExactly<WasmImplementationLimitException>();
@@ -113,7 +113,7 @@ internal class Interpreter_RunTests
                 finally
                 {
                     context.Restore(0, 0, 0);
-                    context.Exit(isOutermost);
+                    WasmExecutionContext.Exit(isOutermost);
                 }
             })
             .ThrowsExactly<InvalidOperationException>();
@@ -122,7 +122,7 @@ internal class Interpreter_RunTests
         {
             await Assert.That(actualFrame).IsEqualTo(frame);
             await Assert.That(clearedFrame.Function).IsNull();
-            await Assert.That(clearedValue).IsEqualTo(default(WasmValue));
+            await Assert.That(clearedValue).IsEqualTo(default);
             await Assert.That(state).IsEqualTo((1, 1, 1));
             await Assert.That(nextResult.Status).IsEqualTo(ExecutionStatus.Success);
             await Assert.That(nextResult.Values.Single().AsI32()).IsEqualTo(42);
@@ -165,7 +165,7 @@ internal class Interpreter_RunTests
         finally
         {
             context.Restore(0, 0, 0);
-            context.Exit(isOutermost);
+            WasmExecutionContext.Exit(isOutermost);
         }
 
         // Assert
@@ -199,7 +199,7 @@ internal class Interpreter_RunTests
         finally
         {
             context.Restore(0, 0, 0);
-            context.Exit(isOutermost);
+            WasmExecutionContext.Exit(isOutermost);
         }
 
         // Assert
@@ -250,7 +250,7 @@ internal class Interpreter_RunTests
         finally
         {
             context.Restore(0, 0, 0);
-            context.Exit(isOutermost);
+            WasmExecutionContext.Exit(isOutermost);
         }
 
         // Assert
@@ -260,7 +260,7 @@ internal class Interpreter_RunTests
             await Assert.That(result.Values.Length).IsEqualTo(1);
             await Assert.That(result.Values[0]).IsEqualTo(value);
             await Assert.That(restored).IsTrue();
-            await Assert.That(context.GetValue(0)).IsEqualTo(default(WasmValue));
+            await Assert.That(context.GetValue(0)).IsEqualTo(default);
             await Assert.That(context.GetFrame(0).Function).IsNull();
         }
     }

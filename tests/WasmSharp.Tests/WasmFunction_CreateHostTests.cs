@@ -1,3 +1,5 @@
+using WasmSharp.Execution;
+
 namespace WasmSharp.Tests;
 
 internal class WasmFunction_CreateHostTests
@@ -47,18 +49,24 @@ internal class WasmFunction_CreateHostTests
         using (Assert.Multiple())
         {
             await Assert.That(ReferenceEquals(function.Type, type)).IsTrue();
-            await Assert.That(function.IsHost).IsTrue();
-            await Assert
-                .That(ReferenceEquals(function.HostCallback, withInstance ? null : callback))
-                .IsTrue();
-            await Assert
-                .That(
-                    ReferenceEquals(
-                        function.HostInstanceCallback,
-                        withInstance ? instanceCallback : null
+            if (withInstance)
+            {
+                await Assert
+                    .That(
+                        function is WasmInstanceHostFunction host
+                            && ReferenceEquals(host.Callback, instanceCallback)
                     )
-                )
-                .IsTrue();
+                    .IsTrue();
+            }
+            else
+            {
+                await Assert
+                    .That(
+                        function is WasmHostFunction host
+                            && ReferenceEquals(host.Callback, callback)
+                    )
+                    .IsTrue();
+            }
         }
     }
 }
