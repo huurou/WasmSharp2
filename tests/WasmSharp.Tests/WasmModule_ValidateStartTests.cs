@@ -15,6 +15,12 @@ internal partial class WasmModule_ValidateTests
         // Arrange
         var calls = 0;
         var host = new WasmHostModule("env");
+        host.Define("g", new WasmGlobal(new(WasmValueKind.I32, false), WasmValue.FromI32(0)));
+        host.Define(
+            "other",
+            WasmFunction.CreateHost(new([WasmValueKind.I32], [WasmValueKind.I32]), _ => new([]))
+        );
+        host.Define("t", new WasmTable(WasmValueKind.FuncRef, new(0)));
         host.Define(
             "start",
             WasmFunction.CreateHost(
@@ -56,7 +62,8 @@ internal partial class WasmModule_ValidateTests
         var exception = await Assert
             .That(() => module.Instantiate([host]))
             .ThrowsExactly<WasmUnsupportedFeatureException>();
-        await Assert.That(exception!.Location!.Stage).IsEqualTo(WasmProcessingStage.Instantiate);
+        await Assert.That(exception!.Feature).IsEqualTo("section.start");
+        await Assert.That(exception.Location!.Stage).IsEqualTo(WasmProcessingStage.Instantiate);
         await Assert.That(calls).IsEqualTo(0);
     }
 
@@ -111,7 +118,7 @@ internal partial class WasmModule_ValidateTests
                 HostLinkingModuleBinary.Start(index),
                 HostLinkingModuleBinary.Code(([], [0x41, 0, 0x0B])),
             }
-            : new[] { HostLinkingModuleBinary.Start(index) };
+            : [HostLinkingModuleBinary.Start(index)];
         var module = WasmModule.Decode(HostLinkingModuleBinary.Create(sections));
 
         // Act & Assert

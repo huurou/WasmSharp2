@@ -1,3 +1,5 @@
+using WasmSharp.Modules.ExternalValues;
+
 namespace WasmSharp.Tests;
 
 internal class WasmImports_AddTests
@@ -32,13 +34,13 @@ internal class WasmImports_AddTests
             await Assert.That(after[moduleName].Count).IsEqualTo(2);
             await Assert
                 .That(
-                    after[moduleName][""] is WasmExternalValue.Function f
+                    after[moduleName][""] is FunctionExternalValue f
                         && ReferenceEquals(f.Value, function)
                 )
                 .IsTrue();
             await Assert
                 .That(
-                    after[moduleName]["new"] is WasmExternalValue.Global g
+                    after[moduleName]["new"] is GlobalExternalValue g
                         && ReferenceEquals(g.Value, global)
                 )
                 .IsTrue();
@@ -73,13 +75,13 @@ internal class WasmImports_AddTests
             await Assert.That(snapshot.Count).IsEqualTo(2);
             await Assert
                 .That(
-                    snapshot[firstName]["same"] is WasmExternalValue.Function f
+                    snapshot[firstName]["same"] is FunctionExternalValue f
                         && ReferenceEquals(f.Value, function)
                 )
                 .IsTrue();
             await Assert
                 .That(
-                    snapshot[secondName]["same"] is WasmExternalValue.Memory m
+                    snapshot[secondName]["same"] is MemoryExternalValue m
                         && ReferenceEquals(m.Value, memory)
                 )
                 .IsTrue();
@@ -120,8 +122,7 @@ internal class WasmImports_AddTests
             await Assert.That(items.ContainsKey("new-last")).IsFalse();
             await Assert
                 .That(
-                    items["same"] is WasmExternalValue.Function f
-                        && ReferenceEquals(f.Value, function)
+                    items["same"] is FunctionExternalValue f && ReferenceEquals(f.Value, function)
                 )
                 .IsTrue();
         }
@@ -187,26 +188,18 @@ internal class WasmImports_AddTests
             await Assert.That(items.ContainsKey("later")).IsFalse();
             await Assert
                 .That(
-                    items["function"] is WasmExternalValue.Function f
+                    items["function"] is FunctionExternalValue f
                         && ReferenceEquals(f.Value, function)
                 )
                 .IsTrue();
             await Assert
-                .That(
-                    items["global"] is WasmExternalValue.Global g
-                        && ReferenceEquals(g.Value, global)
-                )
+                .That(items["global"] is GlobalExternalValue g && ReferenceEquals(g.Value, global))
                 .IsTrue();
             await Assert
-                .That(
-                    items["memory"] is WasmExternalValue.Memory m
-                        && ReferenceEquals(m.Value, memory)
-                )
+                .That(items["memory"] is MemoryExternalValue m && ReferenceEquals(m.Value, memory))
                 .IsTrue();
             await Assert
-                .That(
-                    items["table"] is WasmExternalValue.Table t && ReferenceEquals(t.Value, table)
-                )
+                .That(items["table"] is TableExternalValue t && ReferenceEquals(t.Value, table))
                 .IsTrue();
         }
     }

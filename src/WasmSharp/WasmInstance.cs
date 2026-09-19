@@ -1,5 +1,7 @@
 using System.Collections.Immutable;
+using WasmSharp.Exceptions;
 using WasmSharp.Execution;
+using WasmSharp.Modules;
 
 namespace WasmSharp;
 
@@ -9,15 +11,32 @@ namespace WasmSharp;
 /// <remarks>Exportsは持たせない</remarks>
 public sealed class WasmInstance
 {
+    private readonly ImmutableDictionary<string, ModuleExport> exports_;
+
     /// <summary>
     /// このinstanceの元となる静的なmodule定義
     /// </summary>
     internal WasmModule Module { get; }
 
     /// <summary>
-    /// このinstanceに所属する関数を関数index順に保持する不変配列
+    /// importを先頭に置き、定義関数を続けたmodule全体の関数index表
     /// </summary>
     internal ImmutableArray<WasmFunction> Functions { get; }
+
+    /// <summary>
+    /// importを先頭に置いたglobalの実体表
+    /// </summary>
+    internal ImmutableArray<WasmGlobal> Globals { get; }
+
+    /// <summary>
+    /// importを先頭に置いたmemoryの実体表
+    /// </summary>
+    internal ImmutableArray<WasmMemory> Memories { get; }
+
+    /// <summary>
+    /// importを先頭に置いたtableの実体表
+    /// </summary>
+    internal ImmutableArray<WasmTable> Tables { get; }
 
     /// <summary>
     /// このinstanceが新しい実行コンテキストを開くときのポリシー
@@ -25,18 +44,48 @@ public sealed class WasmInstance
     public WasmExecutionOptions ExecutionOptions { get; }
 
     /// <summary>
-    /// module定義と実行ポリシーを保持し、所属する関数の実体を構築する
+    /// importとリソース定義を持たないmoduleのinstanceを構築する
     /// </summary>
     /// <param name="module">元となる静的なmodule定義</param>
     /// <param name="options">新しい実行コンテキストを開くときの実行ポリシー</param>
     internal WasmInstance(WasmModule module, WasmExecutionOptions options)
+        : this(module, options, [], [], [], []) { }
+
+    /// <summary>
+    /// importした関数を接続し、このinstanceに所属する定義関数を構築する
+    /// </summary>
+    internal WasmInstance(
+        WasmModule module,
+        WasmExecutionOptions options,
+        ImmutableArray<WasmFunction> importedFunctions,
+        ImmutableArray<WasmGlobal> globals,
+        ImmutableArray<WasmMemory> memories,
+        ImmutableArray<WasmTable> tables
+    )
     {
         Module = module;
         ExecutionOptions = options;
-        var functions = ImmutableArray.CreateBuilder<WasmFunction>(module.Functions.Length);
+        Globals = globals;
+        Memories = memories;
+        Tables = tables;
+        exports_ = module.Exports.ToImmutableDictionary(x => x.Name, StringComparer.Ordinal);
+        var functionCount = (long)importedFunctions.Length + module.Functions.Length;
+        if (functionCount > Array.MaxLength)
+        {
+            throw new WasmImplementationLimitException(
+                "関数表が保持上限を超えています。",
+                WasmImplementationLimitReason.CollectionSize,
+                Array.MaxLength,
+                new WasmFailureLocation(WasmProcessingStage.Instantiate, SectionId: 3)
+            );
+        }
+        var functions = ImmutableArray.CreateBuilder<WasmFunction>((int)functionCount);
+        functions.AddRange(importedFunctions);
         for (var i = 0; i < module.Functions.Length; i++)
         {
-            functions.Add(new WasmDefinedFunction(this, (uint)i, (uint)i));
+            functions.Add(
+                new WasmDefinedFunction(this, (uint)(importedFunctions.Length + i), (uint)i)
+            );
         }
         Functions = functions.MoveToImmutable();
     }
@@ -48,6 +97,7 @@ public sealed class WasmInstance
     /// <returns>呼び出し対象の関数</returns>
     public WasmFunction GetFunction(string name)
     {
+        ArgumentNullException.ThrowIfNull(name);
         if (!Module.FunctionExportIndices.TryGetValue(name, out var index))
         {
             throw new ArgumentException("指定した名前の関数exportが存在しません。", nameof(name));
@@ -62,17 +112,27 @@ public sealed class WasmInstance
     /// <returns>globalに格納されたvalue</returns>
     public WasmValue GetGlobal(string name)
     {
-        throw new ArgumentException("指定した名前のglobal exportが存在しません。", nameof(name));
+        return Globals[GetExportIndex(name, WasmExternalKind.Global)].Value;
+    }
+
+    /// <summary>
+    /// 指定したexport名の共有global実体を取得する
+    /// </summary>
+    /// <param name="name">globalのexport名</param>
+    /// <returns>共有されるglobalの実体</returns>
+    public WasmGlobal GetGlobalResource(string name)
+    {
+        return Globals[GetExportIndex(name, WasmExternalKind.Global)];
     }
 
     /// <summary>
     /// 指定したexport名のmemoryを取得する
     /// </summary>
     /// <param name="name">memoryのexport名</param>
-    /// <returns>memoru</returns>
+    /// <returns>memory</returns>
     public WasmMemory GetMemory(string name)
     {
-        throw new ArgumentException("指定した名前のmemory exportが存在しません。", nameof(name));
+        return Memories[GetExportIndex(name, WasmExternalKind.Memory)];
     }
 
     /// <summary>
@@ -82,7 +142,17 @@ public sealed class WasmInstance
     /// <returns>table</returns>
     public WasmTable GetTable(string name)
     {
-        throw new ArgumentException("指定した名前のtable exportが存在しません。", nameof(name));
+        return Tables[GetExportIndex(name, WasmExternalKind.Table)];
+    }
+
+    private int GetExportIndex(string name, WasmExternalKind kind)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+        if (!exports_.TryGetValue(name, out var export) || export.Kind != kind)
+        {
+            throw new ArgumentException("指定した名前と種類のexportが存在しません。", nameof(name));
+        }
+        return (int)export.Index;
     }
 
     /// <summary>

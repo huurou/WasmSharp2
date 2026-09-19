@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using WasmSharp.Modules.ExternalValues;
 
 namespace WasmSharp;
 
@@ -46,57 +47,5 @@ public sealed class WasmImports
     internal ImmutableDictionary<string, ImmutableDictionary<string, WasmExternalValue>> Snapshot()
     {
         return modules_;
-    }
-}
-
-/// <summary>
-/// 4種の外部実体を型付きで保持する閉じた階層
-/// </summary>
-internal abstract class WasmExternalValue
-{
-    private WasmExternalValue() { }
-
-    /// <summary>
-    /// 関数実体の提供
-    /// </summary>
-    internal sealed class Function(WasmFunction value) : WasmExternalValue
-    {
-        /// <summary>
-        /// 共有する関数実体
-        /// </summary>
-        internal WasmFunction Value { get; } = value;
-    }
-
-    /// <summary>
-    /// global実体の提供
-    /// </summary>
-    internal sealed class Global(WasmGlobal value) : WasmExternalValue
-    {
-        /// <summary>
-        /// 共有するglobal実体
-        /// </summary>
-        internal WasmGlobal Value { get; } = value;
-    }
-
-    /// <summary>
-    /// memory実体の提供
-    /// </summary>
-    internal sealed class Memory(WasmMemory value) : WasmExternalValue
-    {
-        /// <summary>
-        /// 共有するmemory実体
-        /// </summary>
-        internal WasmMemory Value { get; } = value;
-    }
-
-    /// <summary>
-    /// table実体の提供
-    /// </summary>
-    internal sealed class Table(WasmTable value) : WasmExternalValue
-    {
-        /// <summary>
-        /// 共有するtable実体
-        /// </summary>
-        internal WasmTable Value { get; } = value;
     }
 }

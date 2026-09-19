@@ -1,3 +1,4 @@
+using WasmSharp.Modules.ExternalValues;
 using WasmSharp.Tests.Fixtures;
 
 namespace WasmSharp.Tests;
@@ -35,7 +36,7 @@ internal class WasmHostModule_DefineTests
             await Assert.That(module.Snapshot.Count).IsEqualTo(1);
             await Assert
                 .That(
-                    module.Snapshot["keep"] is WasmExternalValue.Function f
+                    module.Snapshot["keep"] is FunctionExternalValue f
                         && ReferenceEquals(f.Value, original)
                 )
                 .IsTrue();
@@ -61,7 +62,7 @@ internal class WasmHostModule_DefineTests
             await Assert.That(module.Snapshot.Count).IsEqualTo(1);
             await Assert
                 .That(
-                    module.Snapshot["same"] is WasmExternalValue.Function f
+                    module.Snapshot["same"] is FunctionExternalValue f
                         && ReferenceEquals(f.Value, original)
                 )
                 .IsTrue();
@@ -91,24 +92,16 @@ internal class WasmHostModule_DefineTests
             await Assert.That(module.Name).IsEqualTo("env");
             await Assert.That(items.Count).IsEqualTo(4);
             await Assert
-                .That(
-                    items[""] is WasmExternalValue.Function f && ReferenceEquals(f.Value, function)
-                )
+                .That(items[""] is FunctionExternalValue f && ReferenceEquals(f.Value, function))
                 .IsTrue();
             await Assert
-                .That(
-                    items["value"] is WasmExternalValue.Global g && ReferenceEquals(g.Value, global)
-                )
+                .That(items["value"] is GlobalExternalValue g && ReferenceEquals(g.Value, global))
                 .IsTrue();
             await Assert
-                .That(
-                    items["Value"] is WasmExternalValue.Memory m && ReferenceEquals(m.Value, memory)
-                )
+                .That(items["Value"] is MemoryExternalValue m && ReferenceEquals(m.Value, memory))
                 .IsTrue();
             await Assert
-                .That(
-                    items["table"] is WasmExternalValue.Table t && ReferenceEquals(t.Value, table)
-                )
+                .That(items["table"] is TableExternalValue t && ReferenceEquals(t.Value, table))
                 .IsTrue();
         }
     }

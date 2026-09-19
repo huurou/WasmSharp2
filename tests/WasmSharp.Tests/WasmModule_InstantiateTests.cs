@@ -2,7 +2,7 @@ using WasmSharp.Tests.Fixtures;
 
 namespace WasmSharp.Tests;
 
-internal class WasmModule_InstantiateTests
+internal partial class WasmModule_InstantiateTests
 {
     [Test]
     public async Task 検証済みの定義を繰り返しインスタンス化する_別の実体に指定と既定のポリシーを保持する()

@@ -101,6 +101,11 @@ graph TD
 | `src/WasmSharp/WasmGlobalType.cs` | 値型と可変性の不変な型記述 |
 | `src/WasmSharp/WasmLimits.cs` | uint最小値とnullable uint最大値の型記述 |
 | `src/WasmSharp/WasmImports.cs` | 提供登録集合を所有し、重複を登録時に拒否 |
+| `src/WasmSharp/Modules/ExternalValues/WasmExternalValue.cs` | 外部実体の提供を表す内部基底型 |
+| `src/WasmSharp/Modules/ExternalValues/FunctionExternalValue.cs` | 関数実体の提供 |
+| `src/WasmSharp/Modules/ExternalValues/GlobalExternalValue.cs` | global実体の提供 |
+| `src/WasmSharp/Modules/ExternalValues/MemoryExternalValue.cs` | memory実体の提供 |
+| `src/WasmSharp/Modules/ExternalValues/TableExternalValue.cs` | table実体の提供 |
 | `src/WasmSharp/WasmExternalKind.cs` | Function/Table/Memory/Globalの識別 |
 | `src/WasmSharp/WasmImportInfo.cs` | 名前・種類・要求型の型付きimport情報 |
 | `src/WasmSharp/WasmImportInspection.cs` | 完全取得したimport一覧と未確認範囲 |
@@ -368,7 +373,7 @@ public WasmInstance Instantiate(
 
 名前は`StringComparer.Ordinal`で比較し、空文字列も有効、名前・提供元・実体のnullはArgumentNullExceptionとする。登録済みの対応付けを上書きする操作は設けない。Instantiate開始時に登録集合をスナップショットし、start中に登録元を変更しても既存instanceの接続先は変わらない。
 
-内部の辞書値は4種の実体を保持する閉じた`WasmExternalValue`型階層とし、WasmImports.csに同居させる。種類ごとの型付きケースから照合・index表を構築し、objectへの格納やuncheckedなcastを接続契約にしない。
+内部の辞書値は`WasmExternalValue`基底型と、4種の実体を保持するinternal sealedの派生型で表す。`Modules/ExternalValues/`に基底型を含めて1型1ファイルで配置し、入れ子クラスにしない。種類ごとの型付きケースから照合・index表を構築し、objectへの格納やuncheckedなcastを接続契約にしない。
 
 既存span overloadは入力を一時的なWasmImportsへAddしてから同じ構築経路へ渡す。集合間の重複はこの登録処理でArgumentExceptionとなり、リンク照合・割当・startへ進まない。既存の空`Instantiate([])`を維持する。WasmImportsはIEnumerableやcollection builderを実装せずcollection expressionの対象にしないため、この呼出しは曖昧にならない。既存のWasmHostModuleの引数なし構築も維持し、Nameが空文字列の空の提供元として扱う。
 

@@ -272,14 +272,14 @@ internal partial class ModuleValidator_ValidateTests
                     ("", "", 1, [0x6F, .. HostLinkingModuleBinary.Limits(uint.MaxValue)])
                 ),
             }
-            : new[]
-            {
+            :
+            [
                 HostLinkingModuleBinary.Tables(
                     (0x70, uint.MaxValue, uint.MaxValue),
                     (0x6F, uint.MaxValue, null)
                 ),
                 HostLinkingModuleBinary.Memories((65536, 65536)),
-            };
+            ];
         var module = WasmModule.Decode(HostLinkingModuleBinary.Create(sections));
 
         // Act

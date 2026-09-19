@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using WasmSharp.Modules.ExternalValues;
 
 namespace WasmSharp;
 
@@ -64,7 +65,7 @@ public sealed class WasmHostModule
     public void Define(string name, WasmFunction function)
     {
         ArgumentNullException.ThrowIfNull(function);
-        Define(name, new WasmExternalValue.Function(function));
+        Define(name, new FunctionExternalValue(function));
     }
 
     /// <summary>
@@ -75,7 +76,7 @@ public sealed class WasmHostModule
     public void Define(string name, WasmGlobal global)
     {
         ArgumentNullException.ThrowIfNull(global);
-        Define(name, new WasmExternalValue.Global(global));
+        Define(name, new GlobalExternalValue(global));
     }
 
     /// <summary>
@@ -86,7 +87,7 @@ public sealed class WasmHostModule
     public void Define(string name, WasmMemory memory)
     {
         ArgumentNullException.ThrowIfNull(memory);
-        Define(name, new WasmExternalValue.Memory(memory));
+        Define(name, new MemoryExternalValue(memory));
     }
 
     /// <summary>
@@ -97,7 +98,7 @@ public sealed class WasmHostModule
     public void Define(string name, WasmTable table)
     {
         ArgumentNullException.ThrowIfNull(table);
-        Define(name, new WasmExternalValue.Table(table));
+        Define(name, new TableExternalValue(table));
     }
 
     private void Define(string name, WasmExternalValue value)

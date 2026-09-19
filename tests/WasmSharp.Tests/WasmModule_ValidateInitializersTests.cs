@@ -32,13 +32,9 @@ internal partial class WasmModule_ValidateTests
         // Assert
         await Assert.That(validated).IsSameReferenceAs(module);
         await Assert.That(module.Validate()).IsSameReferenceAs(module);
-        // Act & Assert
-        var exception = await Assert
-            .That(() => module.Instantiate([]))
-            .ThrowsExactly<WasmUnsupportedFeatureException>();
-        await Assert.That(exception!.Feature).IsEqualTo("section.global");
-        await Assert.That(exception.Location!.Stage).IsEqualTo(WasmProcessingStage.Instantiate);
-        await Assert.That(exception.UnverifiedRanges.IsEmpty).IsTrue();
+        await Assert
+            .That(module.Instantiate([]).GetGlobal("g").Kind)
+            .IsEqualTo(module.Globals[1].Type.ValueKind);
     }
 
     [Test]

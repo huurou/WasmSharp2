@@ -204,58 +204,9 @@ public sealed class WasmModule
     }
 
     /// <summary>
-    /// 検証済みでも構築・実行が未対応の定義はinstance生成前に拒否する
+    /// moduleをインスタンス化する
     /// </summary>
-    private void RequireSupportedInstantiation()
-    {
-        // 構築が未対応の定義を黙って無視しない。
-        if (!Imports.IsEmpty)
-        {
-            throw UnsupportedInstantiation("section.import", Imports[0].ByteOffset, 2);
-        }
-        if (!Tables.IsEmpty)
-        {
-            throw UnsupportedInstantiation("section.table", Tables[0].ByteOffset, 4);
-        }
-        if (!Memories.IsEmpty)
-        {
-            throw UnsupportedInstantiation("section.memory", Memories[0].ByteOffset, 5);
-        }
-        if (!Globals.IsEmpty)
-        {
-            throw UnsupportedInstantiation("section.global", Globals[0].ByteOffset, 6);
-        }
-        if (Start is { } start)
-        {
-            throw UnsupportedInstantiation("section.start", start.ByteOffset, 8);
-        }
-    }
-
-    /// <summary>
-    /// 完了済みの静的検証と区別して、構築段階の未対応を通知する
-    /// </summary>
-    /// <param name="feature">未対応の機能名</param>
-    /// <param name="offset">定義のバイト位置</param>
-    /// <param name="sectionId">定義を含むsection</param>
-    /// <returns>構築段階の未対応診断</returns>
-    private static WasmUnsupportedFeatureException UnsupportedInstantiation(
-        string feature,
-        long offset,
-        byte sectionId
-    )
-    {
-        return new WasmUnsupportedFeatureException(
-            "この定義のインスタンス化は未実装です。",
-            feature,
-            new WasmFailureLocation(WasmProcessingStage.Instantiate, offset, null, sectionId),
-            []
-        );
-    }
-
-    /// <summary>
-    /// host moduleでimportを解決しmoduleをインスタンス化する
-    /// </summary>
-    /// <param name="hostModules">importする関数やリソースを提供するhost moduleのリスト</param>
+    /// <param name="hostModules">ホストモジュールのリスト</param>
     /// <param name="options">実行時のオプション設定</param>
     /// <returns>instance</returns>
     public WasmInstance Instantiate(
@@ -263,12 +214,37 @@ public sealed class WasmModule
         WasmExecutionOptions? options = default
     )
     {
+        RequireValidated();
+        var imports = new WasmImports();
+        foreach (var hostModule in hostModules)
+        {
+            imports.Add(hostModule);
+        }
+        return Instantiate(imports, options);
+    }
+
+    /// <summary>
+    /// moduleをインスタンス化する
+    /// </summary>
+    /// <param name="imports">提供登録集合</param>
+    /// <param name="options">実行時のオプション設定</param>
+    /// <returns>構築済みinstance</returns>
+    public WasmInstance Instantiate(WasmImports imports, WasmExecutionOptions? options = null)
+    {
+        RequireValidated();
+        ArgumentNullException.ThrowIfNull(imports);
+        return ModuleInstantiator.Instantiate(
+            this,
+            imports,
+            options ?? WasmExecutionOptions.Default
+        );
+    }
+
+    private void RequireValidated()
+    {
         if (!isValidated_)
         {
             throw new InvalidOperationException("インスタンス化には検証の成功が必要です。");
         }
-
-        RequireSupportedInstantiation();
-        return new WasmInstance(this, options ?? WasmExecutionOptions.Default);
     }
 }

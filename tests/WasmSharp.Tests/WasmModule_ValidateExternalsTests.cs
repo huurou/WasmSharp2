@@ -49,20 +49,15 @@ internal partial class WasmModule_ValidateTests
         // Act & Assert
         var exception = await Assert
             .That(() => module.Instantiate([]))
-            .ThrowsExactly<WasmUnsupportedFeatureException>();
-        await Assert.That(exception!.Feature).IsEqualTo("section.import");
+            .ThrowsExactly<WasmInstantiateException>();
+        await Assert.That(exception!.Reason).IsEqualTo(WasmInstantiateReason.MissingImport);
         await Assert.That(exception.Location!.Stage).IsEqualTo(WasmProcessingStage.Instantiate);
-        await Assert.That(exception.UnverifiedRanges.IsEmpty).IsTrue();
     }
 
     [Test]
-    [Arguments((byte)4, "01700000", "section.table")]
-    [Arguments((byte)5, "010000", "section.memory")]
-    public async Task 資源定義の検証に成功_構築の未対応はInstantiateで拒否する(
-        byte id,
-        string hex,
-        string feature
-    )
+    [Arguments((byte)4, "01700000")]
+    [Arguments((byte)5, "010000")]
+    public async Task 資源定義の検証に成功_Instantiateで構築できる(byte id, string hex)
     {
         // Arrange
         var module = WasmModule.Decode(
@@ -77,11 +72,7 @@ internal partial class WasmModule_ValidateTests
         // Assert
         await Assert.That(module.FunctionExportIndices.IsEmpty).IsTrue();
         // Act & Assert
-        var exception = await Assert
-            .That(() => module.Instantiate([]))
-            .ThrowsExactly<WasmUnsupportedFeatureException>();
-        await Assert.That(exception!.Feature).IsEqualTo(feature);
-        await Assert.That(exception.Location!.Stage).IsEqualTo(WasmProcessingStage.Instantiate);
+        await Assert.That(() => module.Instantiate([])).ThrowsNothing();
     }
 
     [Test]
