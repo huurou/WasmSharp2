@@ -155,6 +155,31 @@ public sealed class WasmModule
     }
 
     /// <summary>
+    /// 入力バイト列から完全なimport情報と未確認範囲を取得する。moduleの有効性は保証しない
+    /// </summary>
+    /// <param name="bytes">入力バイト列</param>
+    /// <returns>完全取得したimport情報と未確認範囲</returns>
+    public static WasmImportInspection InspectImports(ReadOnlySpan<byte> bytes)
+    {
+        return ImportInspector.Inspect(bytes);
+    }
+
+    /// <summary>
+    /// ストリームの現在位置からimport情報を取得する。入力は閉じず、seekを要求しない
+    /// </summary>
+    /// <param name="stream">読み取り可能な入力ストリーム</param>
+    /// <returns>完全取得したimport情報と未確認範囲</returns>
+    public static WasmImportInspection InspectImports(Stream stream)
+    {
+        ArgumentNullException.ThrowIfNull(stream);
+        if (!stream.CanRead)
+        {
+            throw new ArgumentException("入力ストリームが読み取り不可でした。", nameof(stream));
+        }
+        return ImportInspector.Inspect(stream);
+    }
+
+    /// <summary>
     /// moduleがWasmの型規則と構造規則を満たすか検証する
     /// </summary>
     /// <returns>検証済みのmodulle</returns>
