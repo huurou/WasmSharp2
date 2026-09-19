@@ -159,9 +159,7 @@ internal partial class WasmModule_DecodeTests
                 .IsEqualTo(new(WasmProcessingStage.Decode, 13, null, 6));
             await Assert.That(exception.UnverifiedRanges.Length).IsEqualTo(2);
             await Assert.That(exception.UnverifiedRanges[0].StartOffset).IsEqualTo(13L);
-            await Assert
-                .That(exception.UnverifiedRanges[0].EndOffset)
-                .IsEqualTo((long)bytes.Length);
+            await Assert.That(exception.UnverifiedRanges[0].EndOffset).IsEqualTo(bytes.Length);
             await Assert
                 .That(exception.UnverifiedRanges[1].Stage)
                 .IsEqualTo(WasmProcessingStage.Validate);

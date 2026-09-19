@@ -83,9 +83,7 @@ internal class WasmModule_InspectImportsTests
                     );
                 await Assert.That(exception.InnerException).IsTypeOf<WasmDecodeException>();
                 await Assert.That(exception.UnverifiedRanges[0].StartOffset).IsEqualTo(offset);
-                await Assert
-                    .That(exception.UnverifiedRanges[0].EndOffset)
-                    .IsEqualTo((long)bytes.Length);
+                await Assert.That(exception.UnverifiedRanges[0].EndOffset).IsEqualTo(bytes.Length);
                 await Assert
                     .That(exception.UnverifiedRanges[^1].Stage)
                     .IsEqualTo(WasmProcessingStage.Validate);
@@ -112,7 +110,7 @@ internal class WasmModule_InspectImportsTests
 
         // Assert
         await Assert.That(result.Imports.Single().Name).IsEqualTo("g");
-        await Assert.That(result.UnverifiedRanges[^1].EndOffset).IsEqualTo((long)bytes.Length);
+        await Assert.That(result.UnverifiedRanges[^1].EndOffset).IsEqualTo(bytes.Length);
         await Assert.That(input.Position).IsEqualTo(input.Length);
         await Assert.That(stream.CanRead).IsTrue();
     }
@@ -218,7 +216,7 @@ internal class WasmModule_InspectImportsTests
             .That(exception.Location)
             .IsEqualTo(new WasmFailureLocation(WasmProcessingStage.Decode, 11, null, 2));
         await Assert.That(exception.UnverifiedRanges[0].StartOffset).IsEqualTo(11L);
-        await Assert.That(exception.UnverifiedRanges[^1].EndOffset).IsEqualTo((long)bytes.Length);
+        await Assert.That(exception.UnverifiedRanges[^1].EndOffset).IsEqualTo(bytes.Length);
     }
 
     [Test]

@@ -64,9 +64,7 @@ internal partial class WasmModule_ValidateTests
                     .That(exception.UnverifiedRanges[0].Stage)
                     .IsEqualTo(WasmProcessingStage.Validate);
                 await Assert.That(exception.UnverifiedRanges[0].StartOffset).IsEqualTo(bodyOffset);
-                await Assert
-                    .That(exception.UnverifiedRanges[0].EndOffset)
-                    .IsEqualTo((long)bytes.Length);
+                await Assert.That(exception.UnverifiedRanges[0].EndOffset).IsEqualTo(bytes.Length);
             }
             await Assert
                 .That(() => module.Instantiate([]))
@@ -124,9 +122,7 @@ internal partial class WasmModule_ValidateTests
                 .That(exception.UnverifiedRanges[0].Stage)
                 .IsEqualTo(WasmProcessingStage.Validate);
             await Assert.That(exception.UnverifiedRanges[0].StartOffset).IsEqualTo(49L);
-            await Assert
-                .That(exception.UnverifiedRanges[0].EndOffset)
-                .IsEqualTo((long)bytes.Length);
+            await Assert.That(exception.UnverifiedRanges[0].EndOffset).IsEqualTo(bytes.Length);
             await Assert
                 .That(() => module.Instantiate([]))
                 .ThrowsExactly<InvalidOperationException>();

@@ -44,7 +44,7 @@ internal partial class ModuleDecoder_DecodeTests
         using (Assert.Multiple())
         {
             await Assert.That(function.Locals.Length).IsEqualTo(count);
-            await Assert.That(function.Locals.Sum(x => (long)x.Count)).IsEqualTo(4294967295L);
+            await Assert.That(function.Locals.Sum(x => x.Count)).IsEqualTo(4294967295L);
             await Assert.That(function.Locals[0].Type).IsEqualTo(WasmValueKind.I32);
             await Assert.That(function.Instructions.Length).IsEqualTo(1);
             await Assert.That(function.Instructions[0].Opcode).IsEqualTo(new OpcodeKey(0, 0x0B));

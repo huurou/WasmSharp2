@@ -118,21 +118,24 @@ internal class WasmHostModule_DefineTests
             case WasmExternalKind.Function:
                 module.Define(name, nullValue ? (WasmFunction)null! : FunctionFixture.Create());
                 break;
+
             case WasmExternalKind.Global:
                 module.Define(
                     name,
                     nullValue
-                        ? (WasmGlobal)null!
+                        ? null!
                         : new WasmGlobal(new(WasmValueKind.I32, true), WasmValue.FromI32(1))
                 );
                 break;
+
             case WasmExternalKind.Memory:
-                module.Define(name, nullValue ? (WasmMemory)null! : new WasmMemory(new(0)));
+                module.Define(name, nullValue ? null! : new WasmMemory(new(0)));
                 break;
+
             case WasmExternalKind.Table:
                 module.Define(
                     name,
-                    nullValue ? (WasmTable)null! : new WasmTable(WasmValueKind.FuncRef, new(0))
+                    nullValue ? null! : new WasmTable(WasmValueKind.FuncRef, new(0))
                 );
                 break;
         }

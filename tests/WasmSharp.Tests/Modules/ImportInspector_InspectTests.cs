@@ -126,7 +126,7 @@ internal class ImportInspector_InspectTests
             await Assert
                 .That(result.UnverifiedRanges[^1].Stage)
                 .IsEqualTo(WasmProcessingStage.Validate);
-            await Assert.That(result.UnverifiedRanges[^1].EndOffset).IsEqualTo((long)bytes.Length);
+            await Assert.That(result.UnverifiedRanges[^1].EndOffset).IsEqualTo(bytes.Length);
         }
     }
 

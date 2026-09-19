@@ -73,7 +73,7 @@ internal partial class ModuleDecoder_DecodeTests
             await Assert.That(module.Exports[0].Index).IsEqualTo(uint.MaxValue);
             await Assert.That(module.Exports[1].Index).IsEqualTo(0u);
             await Assert.That(module.Exports[0].ByteOffset).IsEqualTo(firstExportOffset);
-            await Assert.That(module.InputLength).IsEqualTo((long)bytes.Length);
+            await Assert.That(module.InputLength).IsEqualTo(bytes.Length);
         }
     }
 

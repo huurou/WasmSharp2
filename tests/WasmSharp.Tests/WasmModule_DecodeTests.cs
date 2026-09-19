@@ -113,16 +113,12 @@ internal partial class WasmModule_DecodeTests
                 .That(exception.UnverifiedRanges[0].Stage)
                 .IsEqualTo(WasmProcessingStage.Decode);
             await Assert.That(exception.UnverifiedRanges[0].StartOffset).IsEqualTo(8L);
-            await Assert
-                .That(exception.UnverifiedRanges[0].EndOffset)
-                .IsEqualTo((long)bytes.Length);
+            await Assert.That(exception.UnverifiedRanges[0].EndOffset).IsEqualTo(bytes.Length);
             await Assert
                 .That(exception.UnverifiedRanges[1].Stage)
                 .IsEqualTo(WasmProcessingStage.Validate);
             await Assert.That(exception.UnverifiedRanges[1].StartOffset).IsEqualTo(0L);
-            await Assert
-                .That(exception.UnverifiedRanges[1].EndOffset)
-                .IsEqualTo((long)bytes.Length);
+            await Assert.That(exception.UnverifiedRanges[1].EndOffset).IsEqualTo(bytes.Length);
         }
     }
 
@@ -138,7 +134,7 @@ internal partial class WasmModule_DecodeTests
         // Assert
         using (Assert.Multiple())
         {
-            await Assert.That(module.InputLength).IsEqualTo((long)bytes.Length);
+            await Assert.That(module.InputLength).IsEqualTo(bytes.Length);
             await Assert.That(module.Functions.Length).IsEqualTo(1);
             await Assert.That(module.FunctionCodes.Length).IsEqualTo(0);
         }
@@ -162,7 +158,7 @@ internal partial class WasmModule_DecodeTests
         // Assert
         using (Assert.Multiple())
         {
-            await Assert.That(module.InputLength).IsEqualTo((long)bytes.Length);
+            await Assert.That(module.InputLength).IsEqualTo(bytes.Length);
             await Assert.That(module.Functions.Length).IsEqualTo(1);
             await Assert.That(module.FunctionCodes.Length).IsEqualTo(0);
             await Assert.That(input.Position).IsEqualTo(input.Length);
@@ -188,7 +184,7 @@ internal partial class WasmModule_DecodeTests
         // Assert
         using (Assert.Multiple())
         {
-            await Assert.That(module.InputLength).IsEqualTo((long)bytes.Length);
+            await Assert.That(module.InputLength).IsEqualTo(bytes.Length);
             await Assert.That(module.Functions[0].Instructions[0].Immediate.AsI32()).IsEqualTo(42);
             await Assert.That(input.CanRead).IsTrue();
         }
@@ -274,16 +270,12 @@ internal partial class WasmModule_DecodeTests
                 .That(exception.UnverifiedRanges[0].Stage)
                 .IsEqualTo(WasmProcessingStage.Decode);
             await Assert.That(exception.UnverifiedRanges[0].StartOffset).IsEqualTo(33L);
-            await Assert
-                .That(exception.UnverifiedRanges[0].EndOffset)
-                .IsEqualTo((long)bytes.Length);
+            await Assert.That(exception.UnverifiedRanges[0].EndOffset).IsEqualTo(bytes.Length);
             await Assert
                 .That(exception.UnverifiedRanges[1].Stage)
                 .IsEqualTo(WasmProcessingStage.Validate);
             await Assert.That(exception.UnverifiedRanges[1].StartOffset).IsEqualTo(0L);
-            await Assert
-                .That(exception.UnverifiedRanges[1].EndOffset)
-                .IsEqualTo((long)bytes.Length);
+            await Assert.That(exception.UnverifiedRanges[1].EndOffset).IsEqualTo(bytes.Length);
             await Assert.That(stream.CanRead).IsTrue();
         }
     }

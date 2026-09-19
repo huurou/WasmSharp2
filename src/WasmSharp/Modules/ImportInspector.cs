@@ -125,9 +125,11 @@ internal static class ImportInspector
                         SkipPayload(ref section, ranges);
                     }
                     break;
+
                 case 1:
                     types = ModuleBinaryFormat.ReadTypes(ref section);
                     break;
+
                 case 2:
                     foreach (var import in ModuleBinaryFormat.ReadImports(ref section))
                     {
@@ -170,6 +172,7 @@ internal static class ImportInspector
                         );
                     }
                     break;
+
                 default:
                     SkipPayload(ref section, ranges);
                     break;
