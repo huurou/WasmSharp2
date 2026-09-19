@@ -91,9 +91,8 @@ internal partial class WasmModule_DecodeTests
         // Act & Assert
         var exception = await Assert
             .That(() => module.Validate())
-            .ThrowsExactly<WasmUnsupportedFeatureException>();
-        await Assert.That(exception!.Feature).IsEqualTo("section.global");
-        await Assert.That(exception.Location!.Stage).IsEqualTo(WasmProcessingStage.Validate);
+            .ThrowsExactly<WasmValidateException>();
+        await Assert.That(exception!.Location!.Stage).IsEqualTo(WasmProcessingStage.Validate);
         await Assert.That(() => module.Instantiate([])).ThrowsExactly<InvalidOperationException>();
     }
 

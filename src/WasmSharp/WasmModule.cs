@@ -15,13 +15,13 @@ public sealed class WasmModule
     private bool isValidated_;
 
     /// <summary>
-    /// 検証成功時に確定するordinalのexport名と関数indexの対応
+    /// 検証成功時に確定するordinalのexport名と、importを含むmodule全体の関数indexの対応
     /// </summary>
     internal ImmutableDictionary<string, int> FunctionExportIndices { get; private set; } =
         ImmutableDictionary.Create<string, int>(StringComparer.Ordinal);
 
     /// <summary>
-    /// 全関数の検証成功時に設定する関数index順の実行コード
+    /// 全関数の検証成功時に設定する、importを含まない定義順の実行コード
     /// </summary>
     internal ImmutableArray<FunctionCode> FunctionCodes { get; set; } = [];
 
@@ -190,13 +190,11 @@ public sealed class WasmModule
             return this;
         }
 
-        RequireSupportedDefinitions();
         var functionCodes = ModuleValidator.Validate(this);
-        var functionExportIndices = Exports.ToImmutableDictionary(
-            x => x.Name,
-            x => (int)x.Index,
-            StringComparer.Ordinal
-        );
+        var functionExportIndices = Exports
+            .Where(x => x.Kind == WasmExternalKind.Function)
+            .ToImmutableDictionary(x => x.Name, x => (int)x.Index, StringComparer.Ordinal);
+
         // 全成果が揃ってから反映し、最後に検証成功状態にする。
         FunctionCodes = functionCodes;
         FunctionExportIndices = functionExportIndices;
@@ -205,60 +203,52 @@ public sealed class WasmModule
         return this;
     }
 
-    private void RequireSupportedDefinitions()
+    /// <summary>
+    /// 検証済みでも構築・実行が未対応の定義はinstance生成前に拒否する
+    /// </summary>
+    private void RequireSupportedInstantiation()
     {
-        // 対応する意味検証が揃うまでは、静的定義を旧検証経路で無視しない。
+        // 構築が未対応の定義を黙って無視しない。
         if (!Imports.IsEmpty)
         {
-            throw UnsupportedDefinition("section.import", Imports[0].ByteOffset, 2);
+            throw UnsupportedInstantiation("section.import", Imports[0].ByteOffset, 2);
         }
         if (!Tables.IsEmpty)
         {
-            throw UnsupportedDefinition("section.table", Tables[0].ByteOffset, 4);
+            throw UnsupportedInstantiation("section.table", Tables[0].ByteOffset, 4);
         }
         if (!Memories.IsEmpty)
         {
-            throw UnsupportedDefinition("section.memory", Memories[0].ByteOffset, 5);
+            throw UnsupportedInstantiation("section.memory", Memories[0].ByteOffset, 5);
         }
         if (!Globals.IsEmpty)
         {
-            throw UnsupportedDefinition("section.global", Globals[0].ByteOffset, 6);
-        }
-        foreach (var export in Exports)
-        {
-            if (export.Kind != WasmExternalKind.Function)
-            {
-                throw UnsupportedDefinition(
-                    $"export.{export.Kind.ToString().ToLowerInvariant()}",
-                    export.ByteOffset,
-                    7
-                );
-            }
+            throw UnsupportedInstantiation("section.global", Globals[0].ByteOffset, 6);
         }
         if (Start is { } start)
         {
-            throw UnsupportedDefinition("section.start", start.ByteOffset, 8);
+            throw UnsupportedInstantiation("section.start", start.ByteOffset, 8);
         }
     }
 
-    private WasmUnsupportedFeatureException UnsupportedDefinition(
+    /// <summary>
+    /// 完了済みの静的検証と区別して、構築段階の未対応を通知する
+    /// </summary>
+    /// <param name="feature">未対応の機能名</param>
+    /// <param name="offset">定義のバイト位置</param>
+    /// <param name="sectionId">定義を含むsection</param>
+    /// <returns>構築段階の未対応診断</returns>
+    private static WasmUnsupportedFeatureException UnsupportedInstantiation(
         string feature,
         long offset,
         byte sectionId
     )
     {
         return new WasmUnsupportedFeatureException(
-            "この定義の検証は未実装です。",
+            "この定義のインスタンス化は未実装です。",
             feature,
-            new WasmFailureLocation(WasmProcessingStage.Validate, offset, null, sectionId),
-            [
-                new WasmUnverifiedRange(
-                    WasmProcessingStage.Validate,
-                    0,
-                    InputLength,
-                    "入力全体の検証が未完了です。"
-                ),
-            ]
+            new WasmFailureLocation(WasmProcessingStage.Instantiate, offset, null, sectionId),
+            []
         );
     }
 
@@ -278,6 +268,7 @@ public sealed class WasmModule
             throw new InvalidOperationException("インスタンス化には検証の成功が必要です。");
         }
 
+        RequireSupportedInstantiation();
         return new WasmInstance(this, options ?? WasmExecutionOptions.Default);
     }
 }

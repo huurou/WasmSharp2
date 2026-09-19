@@ -30,11 +30,10 @@ internal partial class WasmModule_DecodeTests
         // Act & Assert
         var exception = await Assert
             .That(() => module.Validate())
-            .ThrowsExactly<WasmUnsupportedFeatureException>();
-        await Assert.That(exception!.Feature).IsEqualTo("section.start");
+            .ThrowsExactly<WasmValidateException>();
         await Assert
-            .That(exception.Location)
-            .IsEqualTo(new(WasmProcessingStage.Validate, 10, null, 8));
+            .That(exception!.Location)
+            .IsEqualTo(new(WasmProcessingStage.Validate, 10, uint.MaxValue, 8));
         await Assert.That(() => module.Instantiate([])).ThrowsExactly<InvalidOperationException>();
     }
 

@@ -160,14 +160,11 @@ internal partial class WasmModule_DecodeTests
     }
 
     [Test]
-    [Arguments((byte)2, "0100000000", "section.import")]
-    [Arguments((byte)4, "01700000", "section.table")]
-    [Arguments((byte)5, "010000", "section.memory")]
-    [Arguments((byte)7, "01000300", "export.global")]
-    public async Task 読取対応済み定義の検証が未実装_検証済みにせずInstantiateを拒否する(
+    [Arguments((byte)2, "0100000000")]
+    [Arguments((byte)7, "01000300")]
+    public async Task 読取済みの型やexport参照が不正_検証済みにせずInstantiateを拒否する(
         byte id,
-        string hex,
-        string feature
+        string hex
     )
     {
         // Arrange
@@ -180,11 +177,10 @@ internal partial class WasmModule_DecodeTests
         // Act & Assert
         var exception = await Assert
             .That(() => module.Validate())
-            .ThrowsExactly<WasmUnsupportedFeatureException>();
+            .ThrowsExactly<WasmValidateException>();
         using (Assert.Multiple())
         {
-            await Assert.That(exception!.Feature).IsEqualTo(feature);
-            await Assert.That(exception.Location!.Stage).IsEqualTo(WasmProcessingStage.Validate);
+            await Assert.That(exception!.Location!.Stage).IsEqualTo(WasmProcessingStage.Validate);
             await Assert.That(module.FunctionCodes.IsEmpty).IsTrue();
         }
         await Assert.That(() => module.Instantiate([])).ThrowsExactly<InvalidOperationException>();

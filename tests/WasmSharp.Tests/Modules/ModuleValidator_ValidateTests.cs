@@ -5,7 +5,7 @@ using WasmSharp.Tests.Fixtures;
 
 namespace WasmSharp.Tests.Modules;
 
-internal class ModuleValidator_ValidateTests
+internal partial class ModuleValidator_ValidateTests
 {
     [Test]
     [Arguments("60017F017F", "0041010B", "function.parameters")]

@@ -151,8 +151,8 @@
 
 ## 宣言の検証
 
-- [ ] 6. リンク前に型と添字の整合性を検証する
-- [ ] 6.1 外部要素の添字空間・export・limitsを検証する
+- [x] 6. リンク前に型と添字の整合性を検証する
+- [x] 6.1 外部要素の添字空間・export・limitsを検証する
   - 各種類でimportが定義に先行する添字空間を検査し、種類を跨ぐexport名重複を拒否する。
   - memory合計1個、最小/最大の関係と仕様上限を検証し、複数tableは許可する。
   - 範囲外添字・不正limitsはValidateで拒否し、成功時だけ全体の検証状態とexport索引を反映する。
@@ -160,7 +160,7 @@
   - _Depends: 4.2, 4.3_
   - _Requirements: 1.2, 3.2, 3.6, 7.7, 7.8_
 
-- [ ] 6.2 global初期化式とstartの型を検証する
+- [x] 6.2 global初期化式とstartの型を検証する
   - global初期化はスカラー定数またはimported immutable global取得とし、宣言型と1個の結果を照合する。
   - mutable/定義global参照を拒否し、importからのv128/参照値を許す。startは定義/importいずれも有効添字かつ引数・結果0個とする。
   - start検証の正負はimport関数を使って確認し、Validateがcallback/startを実行しないことを確かめる。結果0個の定義startが検証に成功する正例は9.2で確認する。
@@ -675,3 +675,45 @@
 - ビルド成功後の`dotnet run --project tests/WasmSharp.Tests/WasmSharp.Tests.csproj -c Release --no-build -- --report-trx --results-directory TestResults/claude-review-host-linking-5-runtime`: 終了0、passed 672 / failed 0 / skipped 0。新規コンストラクターテスト2件と既存のI/O・模擬OOMテストを含む。主担当が最新TRXの結果と対象コードを直接確認した。
 - 未実施範囲: 生成器suiteの再実行（生成器・本体の変更なし）、Claude自身によるビルド・テスト、巨大入力/実OOM、UnsupportedFeatureの実入力、Core 2.0一次資料との網羅照合、公式suite、タスク6以降とfeature全体の完了検証。局所的なテスト補完で疑義は解消したためClaudeへの再送は行っていない。レビュー依頼文・元回答はリポジトリ外の一時フォルダに保存した。
 - 通常/cachedの`git -c core.excludesFile= diff --check`は各終了0。開始時と最終のインデックスSHA-256は一致し、ステージ済み内容・ブランチ・履歴を変更していない。今回の修正はテスト2ファイルと本記録のみで、未ステージ・未追跡の作業ツリーに残した。主担当の`kiro-verify-completion`: タスク5の外部レビュー、全3所見の判定、採用2件のテスト補完と関連検証はVERIFIED。
+
+### 6.1 外部要素の宣言検証（2026-09-19）
+
+- Task Brief: 4種のimport先行の添字空間、関数型参照、種類を跨ぐexport名重複、memory合計1個、memory/tableのlimitsをModuleValidatorで検証する。型・添字・limits不正は位置付きWasmValidateException、複数tableと仕様上限の宣言は割当なしで受理する（1.2、3.2、3.6、7.7、7.8、design「デコード・検証・静的情報」）。
+- 境界補足: 成功状態とexport索引の反映を確認するため、WasmModule.Validateへの最小接続と既存Decodeテストの旧Unsupported期待の更新を含む。関数export索引だけを作り、非関数を混入させず、コードと一緒に全体成功時だけ確定する。未実装のリンク・資源構築を黙って無視しないよう、その拒否はInstantiate段階へ移した。global初期化式/startのValidate拒否は6.2まで維持する。WasmInstanceの構築・取得は変更していない。
+- RED_PHASE_OUTPUT: 各実行前の `dotnet build WasmSharp2.slnx -c Release --no-restore --warnaserror --disable-build-servers` は終了0、警告0、エラー0。`dotnet run --project tests/WasmSharp.Tests/WasmSharp.Tests.csproj -c Release --no-build -- --treenode-filter '/*/*/ModuleValidator_ValidateTests/各種類のimportと定義をexportする*' --report-trx --results-directory TestResults/host-linking-6.1-red-indices` は一時フラグOFFで終了1、passed 0 / failed 1 / skipped 0（importを含むexport添字を旧検証が拒否）。
+- 負例追加後、filter `/*/*/ModuleValidator_ValidateTests/*`、出力先 `TestResults/host-linking-6.1-red-declarations` は終了1、25/23/0。型参照、limits、memory個数の未検査と関数添字の診断ずれを検出した。ON・実装後の `host-linking-6.1-green-declarations` は終了0、48/0/0。
+- 公開接続前、filter `/*/*/WasmModule_ValidateTests/(外部要素の検証に成功*)|(資源定義の検証に成功*)|(Import後の後半関数が検証失敗*)`、出力先 `TestResults/host-linking-6.1-red-public` は終了1、0/5/0（旧Validate入口のUnsupported）。接続・一時フラグ削除後のReleaseビルドは終了0、警告0、エラー0。filter `/*/*/(ModuleValidator_ValidateTests)|(WasmModule_ValidateTests)|(WasmModule_DecodeTests)/*`、出力先 `TestResults/host-linking-6.1-final` は終了0、165/0/0。
+- 開始時の作業ツリーは変更なし。検証は宣言と既存定数実行の範囲であり、実割当・リンク・start実行・公式suite・feature全体は未実施。独立レビューと完了判定はこの記録後に実施する。
+- 履歴を引き継がない独立レビュアーの `kiro-review`: TASK 6.1 APPROVED、必須修正なし。上記Releaseビルド終了0・警告0・エラー0の後、標準runtimeコマンドの出力先 `TestResults/host-linking-6.1-review-runtime` は終了0、passed 702 / failed 0 / skipped 0。生成器の標準コマンド `dotnet run --project tests/WasmSharp.Generators.Tests/WasmSharp.Generators.Tests.csproj -c Release --no-build -- --report-trx --results-directory TestResults/host-linking-6.1-review-generators` は終了0、36/0/0。対象7 CSのCSharpier check、git差分空白検査は終了0。
+- 主担当が両最新TRX、変更差分、構造化APPROVED判定を直接確認し、`kiro-verify-completion`: TASK 6.1 VERIFIED。コードはレビュー中に変更せず、確認後に6.1のみ完了チェックを更新した。ステージング・コミットは行っていない。
+
+### 6.2 global初期化式とstartの型検証（2026-09-19）
+
+- Task Brief: 公開Validateでglobal初期化式を評価せず検証し、結果1個と宣言型の一致を要求する。global.getはimported immutableに限定し、7種の値型を許す。startはimport先行の関数添字を解決し、引数・結果0個を要求する。失敗時はコード/export索引を反映せず、Validateでcallback/startを実行しない（1.2、4.2、4.3、9.1、9.3、design「デコード・検証・静的情報」）。
+- 実装: ModuleValidatorでglobal式とstartを関数本体より先に検証する。定数判定は既存InstructionSetを用い、式の評価・資源割当・リンクを追加しない。WasmModuleの旧Validate拒否を除去し、構築未対応のInstantiate拒否だけを残した。旧Decodeテストは生情報保持を維持し、意味不正の期待をWasmValidateExceptionへ更新した。
+- RED_PHASE_OUTPUT: 各テスト実行前の `dotnet build WasmSharp2.slnx -c Release --no-restore --warnaserror --disable-build-servers` は終了0・警告0・エラー0。標準runtimeコマンドにfilter `/*/*/WasmModule_ValidateTests/Globalのスカラー定数が宣言型と一致*`、出力先 `TestResults/host-linking-6.2-red-scalars` を指定し、フラグOFFで終了1、passed 0 / failed 4 / skipped 0。結果数・型不正のfilter `/*/*/WasmModule_ValidateTests/Global式の結果の個数や型が不一致*`、`host-linking-6.2-red-global-shape` は終了1、0/3/0（いずれも旧入口のUnsupported）。ON・実装後のfilter `/*/*/WasmModule_ValidateTests/Global*`、`host-linking-6.2-green-scalars` は終了0、7/0/0。
+- global.getのRED: filter `/*/*/WasmModule_ValidateTests/(Imported*)|(Global取得*)`、`host-linking-6.2-red-global-get` は終了1、5/10/0（有効な取得を拒否、型不一致も命令位置での拒否）。取得の型解決実装後のfilter `/*/*/WasmModule_ValidateTests/(Global*)|(Imported*)`、`host-linking-6.2-green-globals` は終了0、22/0/0。mutable、定義globalの先行参照・自己参照、範囲外、数値/v128/参照の型不一致を含む。
+- startのRED: filter `/*/*/WasmModule_ValidateTests/(Importのstart*)|(Startが*)|(定義start*)`、`host-linking-6.2-red-start` は終了1、0/12/0（旧start拒否）。型と添字検証・公開接続後の `host-linking-6.2-green-start` は終了0、12/0/0。byte列/非seek Streamで混在importの関数添字と型添字を区別し、Validate/re-Validateでcallbackが0回、Instantiateの未対応拒否でも0回であることを確認した。
+- 一時フラグを除去・対象6 CSを整形後のReleaseビルドは終了0・警告0・エラー0。`dotnet run --project tests/WasmSharp.Tests/WasmSharp.Tests.csproj -c Release --no-build -- --treenode-filter '/*/*/(ModuleValidator_ValidateTests)|(WasmModule_ValidateTests)|(WasmModule_DecodeTests)/*' --report-trx --results-directory TestResults/host-linking-6.2-final` は終了0、passed 199 / failed 0 / skipped 0。git差分空白検査も終了0。
+- 未実施範囲: global実評価、リンク・資源割当、start/callback実行、公式suite、feature全体の検証。結果0個の定義startの公開Validate成功は計画どおり9.2へ残し、今回も既存のfunction.results未対応を確認した。独立レビューと完了判定はこの記録後に実施する。ステージング・コミットは行っていない。
+- 履歴を引き継がない別の独立レビュアーの `kiro-review`: TASK 6.2およびタスク6全体統合はAPPROVED、必須修正なし。上記Releaseビルドは終了0・警告0・エラー0。`dotnet run --project tests/WasmSharp.Tests/WasmSharp.Tests.csproj -c Release --no-build -- --report-trx --results-directory TestResults/host-linking-6.2-review-runtime` は終了0、passed 736 / failed 0 / skipped 0。
+- `dotnet run --project tests/WasmSharp.Generators.Tests/WasmSharp.Generators.Tests.csproj -c Release --no-build -- --report-trx --results-directory TestResults/host-linking-6.2-review-generators` は終了0、passed 36 / failed 0 / skipped 0。合計772件成功。libraryのsmokeとしてbyte列・非seek Streamの公開Decode→Validate→Instantiate→GetFunction→Invokeを通す既存定数テスト16件も最新runtime TRXで成功を確認した。
+- 対象11 CSの `dotnet csharpier check`、通常/cachedの `git -c core.excludesFile= diff --check` は終了0。主担当が両最新TRX、構造化APPROVED判定、6.2の主要4 CSのSHA-256がレビュー前後で一致することを確認した。`kiro-verify-completion`: TASK 6.2および選択タスク6 VERIFIED。各サブタスクの独立承認後に完了チェックを更新し、タスク6全体も完了とした。
+- ステージング・コミット・承認metadata変更は行っていない。手動モードのため `kiro-validate-impl host-linking` は自動実行せず、タスク7以降とfeature全体の検証は別途実施する。
+- 命名補足（2026-09-19）: ValidateFunctionの `index` を `definitionIndex`（定義配列の添字）、`functionIndex` を `moduleFunctionIndex`（importを含むmodule全体の関数添字）へ変更し、呼出し側のループ変数も揃えた。名前だけの変更で、処理・テストは変更していない。対象CSのCSharpier formatと `dotnet build WasmSharp2.slnx -c Release --no-restore --warnaserror --disable-build-servers` は終了0、警告0・エラー0。テストは再実行していない。
+
+### タスク6 Claude Codeレビューと指摘対応（2026-09-19）
+
+- 対象: 開始時のステージ済み12ファイル（タスク6.1/6.2、本体2ファイル、テスト9ファイル、本記録）。未ステージ・未追跡はなし。明示指定された`claude-code-review`に従い、Anthropicへ対象差分と関連コード・仕様を読み取り専用で送信した。Claude Code 2.1.278を`--safe-mode --tools Read,Glob,Grep --allowedTools Read,Glob,Grep --disallowedTools mcp__* --permission-mode dontAsk --strict-mcp-config --no-session-persistence`で実行し、CLI終了0、最終resultはsuccess、is_error=false、権限拒否なし。全12ファイルの確認を含む元回答と依頼文はリポジトリ外の一時フォルダに保存した。
+- 所見1（Claude: Medium、採用はコメント補足のみ）: `FunctionExportIndices`がimportを含むmodule全体の関数添字である一方、コメントから定義添字との違いが読めない。現行の公開Instantiateはimportを拒否するため、指摘された誤った関数取得・範囲外アクセスは現在到達不能。内部契約の明確化としてWasmModuleのコメントに添字空間を明記した。消費側のリンク対応は計画どおり後続タスクに残した。
+- 所見2（Low、採用）: Instantiateへ移したimport未対応の診断名`section.import`を既存テストが検査していない。`WasmModule_ValidateExternalsTests.cs`の既存正例へFeatureのassertionを追加し、byte列・非seek Streamの両経路で段階・診断名・未確認範囲を確認する。新規テストケースや本体の分岐は追加していない。
+- 所見3（Low・情報、修正不要）: `RequireSupportedInstantiation`のstart分岐は、importがあればimport拒否が先行し、定義startは結果0個の実行形がValidateで未対応となるため、現時点では到達不能。6.2の記録と9.2の予定に一致するため変更しない。
+- 所見4（Low、不採用）: 空の`GlobalDefinition.Initializer`では長さ検査前の末尾参照が例外になるとの指摘。公開Decodeは終端を読んだ場合だけ命令列を返し、終端欠落はWasmDecodeExceptionで拒否する。内部のコピー用コンストラクターへ不正な列を直接渡すケースはデコード済み定義の不変条件に反し、公開APIの検証契約ではない。防御的検査は追加せず、実際の不正な式に対する既存の終端位置診断も維持した。
+- 所見5（Low・情報、修正不要）: 初期化式の使用不能命令を拒否するelse分岐は現行Decoderから到達不能。未対応命令はDecodeで停止し、対応済み命令は定数またはglobal.getとして検証することを確認した。指摘自身も防御として妥当としており変更しない。番号外のlimits定数抽出案も任意の可読性提案であり、今回は採用しない。
+- 並行変更: レビュー中に別操作でインデックスが更新され、ModuleValidatorの改行が統一され、FunctionImport.cs/GlobalImport.csの改行変更が追加された。開始時blobとの正規化比較および`--ignore-space-at-eol`の差分で、いずれも処理変更がないことを主担当が確認して保持した。最初の対象11 CSのCSharpier checkはModuleValidatorの改行混在で終了1だったが、別操作後の単独checkは終了0であり、主担当による整形修正は不要だった。追加2ファイルはClaudeの初回差分対象外で、主担当が改行のみと確認した。
+- 修正後の`dotnet build WasmSharp2.slnx -c Release --no-restore --warnaserror --disable-build-servers`: 終了0、警告0、エラー0。
+- ビルド成功後の`dotnet run --project tests/WasmSharp.Tests/WasmSharp.Tests.csproj -c Release --no-build -- --report-trx --results-directory TestResults/claude-review-host-linking-6-final-runtime`: 終了0、passed 736 / failed 0 / skipped 0。所見2のassertionを含む既存2経路も成功した。
+- 同ビルド後の`dotnet run --project tests/WasmSharp.Generators.Tests/WasmSharp.Generators.Tests.csproj -c Release --no-build -- --report-trx --results-directory TestResults/claude-review-host-linking-6-final-generators`: 終了0、passed 36 / failed 0 / skipped 0。主担当が両最新TRXの計772件成功を直接確認した。
+- 現在の対象13 CSに対する`dotnet csharpier check`、通常/cachedの`git -c core.excludesFile= diff --check`: 各終了0。並行変更確認後・修正直前のインデックスSHA-256と最終値は一致し、HEADも開始時から不変。主担当はステージング・コミット・Git状態変更を実行せず、コメント・assertion・本記録だけを未ステージの作業ツリーに残した。
+- 未実施範囲: Claude自身によるビルド・テスト・整形実行、公式WASTケースとの個別突合と公式suite実行、タスク7以降、feature全体の受入。一次仕様は固定Core 2.0のvalid/types.rst・modules.rst・instructions.rstの関連規則を照合した。修正はコメントと既存assertionだけで疑義が残らないためClaudeへの再送は行っていない。
+- `kiro-verify-completion`: TASK VERIFIED。今回の外部レビュー、全5所見の採否、採用2件の対応、最新ビルド・両suite・整形確認を完了した。feature全体のGOや後続タスクの完了は主張しない。

@@ -3,7 +3,7 @@ using WasmSharp.Tests.Fixtures;
 
 namespace WasmSharp.Tests;
 
-internal class WasmModule_ValidateTests
+internal partial class WasmModule_ValidateTests
 {
     [Test]
     [Arguments("0105016000017E030201000A0601040041010B")]
