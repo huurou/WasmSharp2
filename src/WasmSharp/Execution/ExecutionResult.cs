@@ -9,7 +9,7 @@ namespace WasmSharp.Execution;
 internal readonly struct ExecutionResult
 {
     /// <summary>
-    /// 正常終了時の戻り値。未指定の場合はdefaultを保持する
+    /// 正常終了時の戻り値
     /// </summary>
     private readonly ImmutableArray<WasmValue> values_;
 
@@ -19,7 +19,7 @@ internal readonly struct ExecutionResult
     internal ExecutionStatus Status { get; }
 
     /// <summary>
-    /// 正常終了時の戻り値。未指定または失敗時は空配列を返す
+    /// 正常終了時の戻り値。defaultの実行結果または失敗時は空配列を返す
     /// </summary>
     internal ImmutableArray<WasmValue> Values => values_.IsDefault ? [] : values_;
 
@@ -60,12 +60,12 @@ internal readonly struct ExecutionResult
     /// <param name="byteOffset">失敗が発生した入力バイナリ上のバイト位置</param>
     private ExecutionResult(
         ExecutionStatus status,
-        ImmutableArray<WasmValue> values = default,
-        WasmTrapReason? trapReason = null,
-        WasmExhaustionReason? exhaustionReason = null,
-        int? limit = null,
-        uint? functionIndex = null,
-        long? byteOffset = null
+        ImmutableArray<WasmValue> values,
+        WasmTrapReason? trapReason,
+        WasmExhaustionReason? exhaustionReason,
+        int? limit,
+        uint? functionIndex,
+        long? byteOffset
     )
     {
         Status = status;
@@ -80,11 +80,11 @@ internal readonly struct ExecutionResult
     /// <summary>
     /// 正常終了の結果を構築する
     /// </summary>
-    /// <param name="values">戻り値。未指定の場合は空の結果として扱う</param>
+    /// <param name="values">戻り値</param>
     /// <returns>指定した戻り値を保持する正常結果</returns>
-    internal static ExecutionResult Success(ImmutableArray<WasmValue> values = default)
+    internal static ExecutionResult Success(ImmutableArray<WasmValue> values)
     {
-        return new ExecutionResult(ExecutionStatus.Success, values);
+        return new ExecutionResult(ExecutionStatus.Success, values, null, null, null, null, null);
     }
 
     /// <summary>
@@ -98,7 +98,10 @@ internal readonly struct ExecutionResult
     {
         return new ExecutionResult(
             ExecutionStatus.Trap,
+            values: [],
             trapReason: reason,
+            exhaustionReason: null,
+            limit: null,
             functionIndex: functionIndex,
             byteOffset: byteOffset
         );
@@ -123,6 +126,8 @@ internal readonly struct ExecutionResult
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(limit);
         return new ExecutionResult(
             ExecutionStatus.Exhaustion,
+            values: [],
+            trapReason: null,
             exhaustionReason: reason,
             limit: limit,
             functionIndex: functionIndex,

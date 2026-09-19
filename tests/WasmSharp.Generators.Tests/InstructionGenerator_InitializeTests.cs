@@ -67,8 +67,6 @@ internal class InstructionGenerator_InitializeTests
                 decoded.Immediate, decoded.ByteOffset, decoded.Index);
             var context = new WasmSharp.Execution.WasmExecutionContext(1) { Instructions = [instruction] };
             var result = WasmSharp.Execution.Interpreter.TestRun(context);
-            var oldDecoded = new WasmSharp.Modules.DecodedInstruction(new(0, 0x41), new(42), 100);
-            var oldInstruction = new WasmSharp.Execution.Instruction(descriptor.ExecutionOpcode.Value, new(42), 100);
             return found && descriptor.Name == "{{name}}"
                 && descriptor.Immediate == WasmSharp.Instructions.ImmediateKind.{{immediate}}
                 && descriptor.StackEffect == WasmSharp.Instructions.StackEffectKind.{{rule}}
@@ -77,8 +75,6 @@ internal class InstructionGenerator_InitializeTests
                 && decoded.Index == uint.MaxValue && instruction.Index == uint.MaxValue
                 && decoded.Immediate.Bits == 42 && instruction.Immediate.Bits == 42
                 && instruction.ByteOffset == 12345678901L
-                && oldDecoded.Index == 0 && oldInstruction.Index == 0
-                && oldDecoded.Immediate.Bits == 42 && oldInstruction.Immediate.Bits == 42
                 && result.Status == WasmSharp.Execution.ExecutionStatus.Success
                 && context.Value.Bits == 4294967337L;
             """
@@ -166,7 +162,7 @@ internal class InstructionGenerator_InitializeTests
             WasmSharp.Instructions.InstructionSet.TryGet(new(0, 0x41), out var descriptor);
             var context = new WasmSharp.Execution.WasmExecutionContext(1)
             {
-                Instructions = [new(descriptor.ExecutionOpcode!.Value, new(41), 100)]
+                Instructions = [new(descriptor.ExecutionOpcode!.Value, new(41), 100, 0)]
             };
             var result = WasmSharp.Execution.Interpreter.TestRun(context);
             return result.Status == WasmSharp.Execution.ExecutionStatus.Success && context.Value.Bits == 41;
@@ -178,7 +174,7 @@ internal class InstructionGenerator_InitializeTests
             var found = WasmSharp.Instructions.InstructionSet.TryGet(new(0, {{code}}), out var descriptor);
             var context = new WasmSharp.Execution.WasmExecutionContext(1)
             {
-                Instructions = [new(descriptor.ExecutionOpcode!.Value, new(41), 100)]
+                Instructions = [new(descriptor.ExecutionOpcode!.Value, new(41), 100, 0)]
             };
             var result = WasmSharp.Execution.Interpreter.TestRun(context);
             return found && descriptor.Name == "{{name}}"
@@ -402,7 +398,7 @@ internal class InstructionGenerator_InitializeTests
             WasmSharp.Instructions.InstructionSet.TryGet(new(0, 0x41), out var descriptor);
             var context = new WasmSharp.Execution.WasmExecutionContext(2)
             {
-                Instructions = [new(descriptor.ExecutionOpcode!.Value, default, 12345678901L)]
+                Instructions = [new(descriptor.ExecutionOpcode!.Value, default, 12345678901L, 0)]
             };
             var result = WasmSharp.Execution.Interpreter.TestRun(context);
             return result.Status == WasmSharp.Execution.ExecutionStatus.{{status}}
@@ -533,8 +529,8 @@ internal class InstructionGenerator_InitializeTests
             WasmSharp.Instructions.InstructionSet.TryGet(new(0, 0x0B), out var end);
             var context = new WasmSharp.Execution.WasmExecutionContext({{entryFrameCount + 1}})
             {
-                Instructions = [new(constant.ExecutionOpcode!.Value, new(42), 100),
-                    new(end.ExecutionOpcode!.Value, default, 102)]
+                Instructions = [new(constant.ExecutionOpcode!.Value, new(42), 100, 0),
+                    new(end.ExecutionOpcode!.Value, default, 102, 0)]
             };
             var result = WasmSharp.Execution.Interpreter.TestRun(context, {{entryFrameCount}});
             return result.Status == WasmSharp.Execution.ExecutionStatus.Success

@@ -14,7 +14,12 @@ internal class WasmDefinedFunction_TypeTests
             [firstType, secondType],
             [new(1, 30, [], []), new(0, 40, [], [])],
             [],
-            48
+            48,
+            [],
+            [],
+            [],
+            [],
+            null
         );
         var options = new WasmExecutionOptions(10);
 

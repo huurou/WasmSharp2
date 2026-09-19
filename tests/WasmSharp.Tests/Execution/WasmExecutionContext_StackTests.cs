@@ -146,7 +146,12 @@ internal class WasmExecutionContext_RestoreTests
                 new(1, 80, [new(1, WasmValueKind.I32)], []),
             ],
             [],
-            90
+            90,
+            [],
+            [],
+            [],
+            [],
+            null
         );
         var instance = new WasmInstance(module, WasmExecutionOptions.Default);
         var function = (WasmDefinedFunction)instance.Functions[0];

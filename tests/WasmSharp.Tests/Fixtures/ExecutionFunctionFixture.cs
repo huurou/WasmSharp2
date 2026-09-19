@@ -15,7 +15,12 @@ internal static class ExecutionFunctionFixture
             [new([], [resultKind])],
             [new(0, 30, [], []), new(0, 12345678900, [], [])],
             [],
-            12345678910
+            12345678910,
+            [],
+            [],
+            [],
+            [],
+            null
         )
         {
             FunctionCodes = [new([], 0), new(instructions, maxOperandStack)],

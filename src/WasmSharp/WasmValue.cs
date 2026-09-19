@@ -30,12 +30,7 @@ public readonly struct WasmValue
     /// </summary>
     public WasmValueKind Kind => kind_;
 
-    private WasmValue(
-        WasmValueKind kind,
-        ulong low64 = 0,
-        ulong high64 = 0,
-        object? reference = null
-    )
+    private WasmValue(WasmValueKind kind, ulong low64, ulong high64, object? reference)
     {
         kind_ = kind;
         low64_ = low64;
@@ -48,7 +43,7 @@ public readonly struct WasmValue
     /// </summary>
     public static WasmValue FromI32(int value)
     {
-        return new WasmValue(WasmValueKind.I32, unchecked((uint)value));
+        return new WasmValue(WasmValueKind.I32, unchecked((uint)value), 0, null);
     }
 
     /// <summary>
@@ -65,7 +60,7 @@ public readonly struct WasmValue
     /// </summary>
     public static WasmValue FromI64(long value)
     {
-        return new WasmValue(WasmValueKind.I64, unchecked((ulong)value));
+        return new WasmValue(WasmValueKind.I64, unchecked((ulong)value), 0, null);
     }
 
     /// <summary>
@@ -90,7 +85,7 @@ public readonly struct WasmValue
     /// </summary>
     public static WasmValue FromF32Bits(uint bits)
     {
-        return new WasmValue(WasmValueKind.F32, bits);
+        return new WasmValue(WasmValueKind.F32, bits, 0, null);
     }
 
     /// <summary>
@@ -123,7 +118,7 @@ public readonly struct WasmValue
     /// </summary>
     public static WasmValue FromF64Bits(ulong bits)
     {
-        return new WasmValue(WasmValueKind.F64, bits);
+        return new WasmValue(WasmValueKind.F64, bits, 0, null);
     }
 
     /// <summary>
@@ -148,7 +143,7 @@ public readonly struct WasmValue
     /// </summary>
     public static WasmValue FromV128(ulong low64, ulong high64)
     {
-        return new WasmValue(WasmValueKind.V128, low64, high64);
+        return new WasmValue(WasmValueKind.V128, low64, high64, null);
     }
 
     /// <summary>
@@ -165,7 +160,7 @@ public readonly struct WasmValue
     /// </summary>
     public static WasmValue FromFuncRef(WasmFunction? value)
     {
-        return new WasmValue(WasmValueKind.FuncRef, reference: value);
+        return new WasmValue(WasmValueKind.FuncRef, 0, 0, value);
     }
 
     /// <summary>
@@ -182,7 +177,7 @@ public readonly struct WasmValue
     /// </summary>
     public static WasmValue FromExternRef(object? value)
     {
-        return new WasmValue(WasmValueKind.ExternRef, reference: value);
+        return new WasmValue(WasmValueKind.ExternRef, 0, 0, value);
     }
 
     /// <summary>

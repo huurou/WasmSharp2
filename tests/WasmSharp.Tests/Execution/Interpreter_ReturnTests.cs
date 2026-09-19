@@ -16,13 +16,18 @@ internal class Interpreter_ReturnTests
             [new([WasmValueKind.I32], [WasmValueKind.ExternRef, WasmValueKind.I64])],
             [new(0, 80, [new(1, WasmValueKind.I32)], [])],
             [],
-            90
+            90,
+            [],
+            [],
+            [],
+            [],
+            null
         );
         var function = (WasmDefinedFunction)
             new WasmInstance(module, WasmExecutionOptions.Default).Functions[0];
         var reference = new object();
         var found = InstructionSet.TryGet(new(0, 0x0B), out var descriptor);
-        var instruction = new Instruction(descriptor.ExecutionOpcode!.Value, default, 88);
+        var instruction = new Instruction(descriptor.ExecutionOpcode!.Value, default, 88, 0);
         var context = WasmExecutionContext.Enter(new(10), out var isOutermost);
         ExecutionResult result;
         ExecutionFrame outerFrame;

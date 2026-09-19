@@ -179,7 +179,12 @@ internal class WasmFunction_InvokeTests
             [new([WasmValueKind.I32, WasmValueKind.F64], [WasmValueKind.I32])],
             [new(0, 30, [], [])],
             [],
-            36
+            36,
+            [],
+            [],
+            [],
+            [],
+            null
         );
         var function = new WasmInstance(module, WasmExecutionOptions.Default).Functions[0];
 

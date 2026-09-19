@@ -72,12 +72,12 @@ internal class Interpreter_RunTests
     {
         // Arrange
         var function = ExecutionFunctionFixture.Create([
-            new(ExecutionOpcode.Op41, WasmValue.FromExternRef(new object()), 81),
-            new((ExecutionOpcode)int.MaxValue, default, 83),
+            new(ExecutionOpcode.Op41, WasmValue.FromExternRef(new object()), 81, 0),
+            new((ExecutionOpcode)int.MaxValue, default, 83, 0),
         ]);
         var next = ExecutionFunctionFixture.Create([
-            new(ExecutionOpcode.Op41, WasmValue.FromI32(42), 81),
-            new(ExecutionOpcode.Op0B, default, 83),
+            new(ExecutionOpcode.Op41, WasmValue.FromI32(42), 81, 0),
+            new(ExecutionOpcode.Op0B, default, 83, 0),
         ]);
         var frame = new ExecutionFrame(FunctionFixture.Create(), 0, 0) { Pc = 17 };
         ExecutionFrame actualFrame = default;
@@ -134,8 +134,8 @@ internal class Interpreter_RunTests
     {
         // Arrange
         var function = ExecutionFunctionFixture.Create([
-            new(ExecutionOpcode.Op41, WasmValue.FromI32(73), 81),
-            new(ExecutionOpcode.Op0B, default, 83),
+            new(ExecutionOpcode.Op41, WasmValue.FromI32(73), 81, 0),
+            new(ExecutionOpcode.Op0B, default, 83, 0),
         ]);
         var frame = new ExecutionFrame(FunctionFixture.Create(), 0, 0) { Pc = 17 };
         var value = WasmValue.FromExternRef(new object());
@@ -234,7 +234,10 @@ internal class Interpreter_RunTests
             _ => WasmValue.FromF64Bits(0xFFF8123456789ABC),
         };
         var function = ExecutionFunctionFixture.Create(
-            [new(opcode, value, 12345678901), new(ExecutionOpcode.Op0B, default, 12345678909)],
+            [
+                new(opcode, value, 12345678901, 0),
+                new(ExecutionOpcode.Op0B, default, 12345678909, 0),
+            ],
             value.Kind
         );
         var context = WasmExecutionContext.Enter(new(10), out var isOutermost);

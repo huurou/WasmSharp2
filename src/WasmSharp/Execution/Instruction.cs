@@ -14,7 +14,7 @@ internal readonly struct Instruction(
     ExecutionOpcode opcode,
     WasmValue immediate,
     long byteOffset,
-    uint index = 0
+    uint index
 )
 {
     /// <summary>

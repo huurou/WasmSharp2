@@ -108,8 +108,8 @@
 
 ## 静的定義
 
-- [ ] 4. 外部要素とstartを実行せずに読み取る
-- [ ] 4.1 バイナリ共通読取を既存Decodeへ統合する
+- [x] 4. 外部要素とstartを実行せずに読み取る
+- [x] 4.1 バイナリ共通読取を既存Decodeへ統合する
   - ヘッダー、sectionの外枠・順序、型、import記述を共有reader上へまとめ、既存Decodeから使う。
   - 構文と意味論を分け、生の添字・limits・元位置を保持する。第二のバイナリパーサーを作らない。
   - 既存の符号化・UTF-8・Stream・失敗位置のテストが同じ分類で成功する。
@@ -117,14 +117,14 @@
   - _Depends: 1.2, 1.3_
   - _Requirements: 1.4, 1.6, 11.1_
 
-- [ ] 4.2 4種のimport/exportとmemory/table定義を読み取る
+- [x] 4.2 4種のimport/exportとmemory/table定義を読み取る
   - 関数・global・memory・tableのimport、全種類のexport、memory/table定義を静的moduleへ保持する。
   - import宣言順、各種類の生の添字、limits、元位置を保持し、対応済みsectionの旧Unsupported期待を更新する。
   - バイト列とStreamの正負入力で静的情報を保持し、破損をDecode失敗にできる。callbackも資源割当も行わない。
   - _Boundary: ModuleDecoder, WasmModule_
   - _Requirements: 1.1, 1.4, 7.7_
 
-- [ ] 4.3 global初期化式とstartを読み取り未対応segmentを区別する
+- [x] 4.3 global初期化式とstartを読み取り未対応segmentを区別する
   - globalの型・初期化式とstartの関数添字を保持し、スカラー定数とglobal取得の式を構文として読む。
   - data/element/data_countを無視せず、未対応機能・位置・未確認範囲を返す。既知の構文違反を未対応へ置き換えない。
   - 対象sectionの正例と破損例、未対応segmentを持つ入力で、実行を伴わない段階別失敗を確認する。
@@ -559,3 +559,75 @@
 - `dotnet run --project tests/WasmSharp.Generators.Tests/WasmSharp.Generators.Tests.csproj -c Release --no-build -- --report-trx --results-directory TestResults/host-linking-3.3-review-generators`: 終了0、passed 36 / failed 0 / skipped 0。両suite合計595件成功、skipを成功へ加算していない。
 - 変更CS17ファイルのCSharpier check、`git diff --check`、`git diff --cached --check`は各終了0。主担当も両TRXの件数と現行差分を直接確認し、`kiro-verify-completion`: TASK 3.3 VERIFIED。検証後の追加編集は本完了記録だけで、CS内容は同一。ステージング・コミットは行わず、開始時のインデックスとHEADを維持した。
 - 未実施範囲: host callback実行・instance付きInvoke・import/reexport接続・start・公式suite・feature全体の完了検証。既存のホストInvoke未対応拒否はExecutionBoundaryへ移し、callbackを実行せずcontextも開始しない。タスク10の実行接続を今回の型分離へ混ぜない。
+
+### 4.1 バイナリ共通読取（2026-09-19）
+
+- Task Brief: 既存WasmBinaryReader上のヘッダー、sectionの外枠・順序、型、import記述をModuleBinaryFormatへ集約する。生のuint型添字・limits・入力位置を保ち、構文違反だけをDecode失敗とする（1.4、1.6、11.1）。完全Decodeへのimport保持の接続は4.2、公開import調査は5で行う。
+- 変更: ModuleDecoderの既存共通読取を移動し、4種のimportを型別のModuleImportとして読む。TableDefinition/MemoryDefinitionは共通import型記述として整備した。既存のWasmBinaryReader、符号化・UTF-8・Stream契約を再利用する。
+- RED_PHASE_OUTPUT: `dotnet build WasmSharp2.slnx -c Release --no-restore --warnaserror`終了0・警告0・エラー0後、`dotnet run --project tests/WasmSharp.Tests/WasmSharp.Tests.csproj -c Release --no-build -- --treenode-filter '/*/*/ModuleBinaryFormat_ReadImportsTests/*' --report-trx --results-directory TestResults/host-linking-4.1-red`は終了1、passed 0 / failed 11 / skipped 0。importフラグOFFのNotSupportedExceptionにより、正例と構文破損診断が未成立であることを確認。
+- GREEN: フラグONと実装後、同ビルド成功を確認し、同filter・出力先`TestResults/host-linking-4.1-green`は終了0、11/0/0。一時フラグ除去・対象CS6ファイルのCSharpier format後もReleaseビルド終了0・警告0・エラー0。
+- 独立レビュー: `kiro-review` APPROVED。上記Releaseビルド終了0・警告0・エラー0後、標準の両suiteを`--report-trx --results-directory TestResults/host-linking-4.1-review-runtime`（generator側は`host-linking-4.1-review-generators`）で実行。runtime終了0、passed 570 / failed 0 / skipped 0、generator終了0、36/0/0。
+- 対象CS6ファイルのCSharpier check、`git -c core.excludesFile= diff --check`は終了0。主担当が最新TRXとレビュー判定を確認し、`kiro-verify-completion`: TASK 4.1 VERIFIED。意味論検証・import接続・実行・公開調査・公式suiteは未実施。
+
+### 4.2 外部要素とmemory/table定義のDecode（2026-09-19）
+
+- Task Brief: 4種import/exportとtable/memory定義を、宣言順・種類・生のuint添字・limits・元位置とともに不変な静的moduleへ保持する。バイト列/非seek・short-read Streamで同じ構文判定を行い、callbackもリソース割当も行わない（1.1、1.4、7.7）。
+- 変更: ModuleDecoderから共通import型読取を接続し、WasmModuleへ定義配列をコピー保持。FunctionExportをModuleExportへ置き換え、既存Validatorとテストの添字参照だけを機械的に移行した。関数本体の診断はimport関数数を加えたmodule全体の添字を用いる。
+- 段階境界: 新しい定義が旧Validatorで無視されて検証成功しないよう、WasmModule.Validate入口で未対応の定義をValidate段階のUnsupportedとして拒否する。意味論検証・資源割当・リンクは実装せず、タスク6でこの制限を対応する検証へ置き換える。
+- RED_PHASE_OUTPUT: 初回ビルドのnullable診断1件を解消後、`dotnet build WasmSharp2.slnx -c Release --no-restore --warnaserror`終了0・警告0・エラー0。`dotnet run --project tests/WasmSharp.Tests/WasmSharp.Tests.csproj -c Release --no-build -- --treenode-filter '/*/*/WasmModule_DecodeTests/*外部要素*|/*/*/WasmModule_DecodeTests/Import関数*|/*/*/WasmModule_DecodeTests/読取対応済み*' --report-trx --results-directory TestResults/host-linking-4.2-red`は終了1、passed 41 / failed 20 / skipped 0。filterはクラス全体61件へ展開され、新規20件がフラグOFF・旧Unsupportedで失敗した。
+- GREEN: フラグONと読取・保持・段階拒否の実装後、上記Releaseビルド成功後にfilter `/*/*/(WasmModule_*Tests)|(ModuleDecoder_*Tests)/*`、出力先`TestResults/host-linking-4.2-green`で終了0、165/0/0。一時フラグ除去、定義配列のコピー保持と空section後の破損確認を追加した最終同filter（`TestResults/host-linking-4.2-final`）は終了0、168/0/0。各テスト前のReleaseビルドは終了0・警告0・エラー0。
+
+- 独立レビュー: `kiro-review` APPROVED。Releaseビルド終了0・警告0・エラー0後、標準両suiteを`TestResults/host-linking-4.2-review-runtime`/`host-linking-4.2-review-generators`へ実行。runtime終了0、passed 590 / failed 0 / skipped 0、generator終了0、36/0/0。
+- 変更CS14ファイルのCSharpier check、差分の空白検査は終了0。主担当が最新TRXとレビュー判定を確認し、`kiro-verify-completion`: TASK 4.2 VERIFIED。global初期化式/startは4.3、意味論検証・import調査・リンク・実行・公式suiteは後続タスクの範囲。
+
+### 4.3 global初期化式・startと未対応segment（2026-09-19）
+
+- Task Brief: 承認済みの公開WasmModule.Decode（byte列/Stream）を検証境界とする。global型とスカラー定数/global.getを含む初期化式、startの生の関数添字を元位置付きで保持する（1.1、1.4、1.5、4.2、9.1）。初期化式は実行せず、型整合・global参照制約・startの型検証はタスク6へ分離する。data/element/data_countは従来のUnsupportedと未確認範囲を維持し、先に確定したsection長・順序等の破損をDecode失敗として扱う。
+- 実装: GlobalDefinitionは型・位置・所有済み命令列、StartDefinitionは生のuint関数添字・位置を保持する。既存の命令読取を式終端で戻る形に共用し、関数本体の余剰バイト検査は呼出元へ移した。global.getの添字読取は初期化式だけに限定し、関数本体のhandler・命令宣言は後続タスクまで変更しない。
+- RED_PHASE_OUTPUT（global）: Release `--no-restore --warnaserror`ビルド終了0・警告0・エラー0後、標準runtimeコマンドへfilter `/*/*/WasmModule_DecodeTests/Global初期化式の定数とglobal取得*`と出力先`TestResults/host-linking-4.3-red-globals`を指定。フラグOFFで終了1、passed 0 / failed 2 / skipped 0（section.global未対応）。ON・実装後、ビルド成功と同filterの`host-linking-4.3-green-globals`で終了0、2/0/0。
+- RED_PHASE_OUTPUT（start）: 同Releaseビルド成功後、filter `/*/*/WasmModule_DecodeTests/Startの生の関数添字*`、出力先`TestResults/host-linking-4.3-red-start`はフラグOFFで終了1、0/2/0（section.start未対応）。ON・実装後、ビルド成功と同filterの`host-linking-4.3-green-start`で終了0、2/0/0。
+- 境界・負例: 型と結果数の意味検証をDecodeへ混ぜず、式の欠落終端・不正LEB・不正値型/可変性・未割当opcode・平坦elseをDecode失敗とする。startの重複・順序・長さと後続segment外枠の破損、参照/SIMD初期化命令と3種segmentのUnsupported/未確認範囲を確認した。global/startは後続の意味検証が揃うまでValidateで拒否し、Instantiate可能にしない。
+- フラグ除去後: 変更CS18ファイルのCSharpier format終了0。同Releaseビルド終了0・警告0・エラー0後、filter `/*/*/(WasmModule_*Tests)|(ModuleDecoder_*Tests)/*`、出力先`TestResults/host-linking-4.3-final`は終了0、passed 199 / failed 0 / skipped 0。その後のCS変更はswitchのcase順整理のみで、独立レビュー時に再ビルド・全suiteを実行する。
+- 独立レビュー: 履歴を引き継がないレビュアーによる`kiro-review`はAPPROVED。修正必須の指摘なし。下記の最新ビルド・両suiteは4.1〜4.3全体の同じコード状態に対して実行した。
+- `dotnet build WasmSharp2.slnx -c Release --no-restore --warnaserror`: 終了0、警告0、エラー0。
+- `dotnet run --project tests/WasmSharp.Tests/WasmSharp.Tests.csproj -c Release --no-build -- --report-trx --results-directory TestResults/host-linking-4.3-review-runtime`: 終了0、passed 621 / failed 0 / skipped 0。
+- `dotnet run --project tests/WasmSharp.Generators.Tests/WasmSharp.Generators.Tests.csproj -c Release --no-build -- --report-trx --results-directory TestResults/host-linking-4.3-review-generators`: 終了0、passed 36 / failed 0 / skipped 0。合計657件成功。skipを成功へ加算していない。
+- libraryのsmokeに相当する既存の公開`Decode → Validate → Instantiate → GetFunction → Invoke`定数経路は、上記runtime suite内のWasmFunction_InvokeTestsで確認。変更CS18ファイルのCSharpier checkと通常/cachedの`git diff --check`は終了0。
+- 主担当も両最新TRX、構造化レビュー判定、変更CS18ファイルが検証時点から不変であることを確認し、`kiro-verify-completion`: TASK 4.3および選択タスク4 VERIFIED。4.1〜4.3の各レビュー完了後にチェックを更新した。開始時の作業ツリーはクリーン。ステージング・コミットは行っていない。
+- 未実施範囲: タスク5以降の公開import調査、型・添字・初期化式・startの意味検証、リンク・資源割当、guest命令の実行接続、callback/start実行、公式suite、feature全体の完了検証。手動モードのため`kiro-validate-impl host-linking`は自動実行しない。新しい定義を含むmoduleのValidate未対応拒否は、タスク6の対応する検証へ置き換える。
+
+### Definition型のフォルダ整理（2026-09-19）
+
+- ユーザーの依頼によりGlobalDefinition・MemoryDefinition・TableDefinition・StartDefinitionを`src/WasmSharp/Modules/Definitions/`へ移動し、名前空間と参照側のusing、design.mdの対応パスを更新した。処理の変更はなく、ユーザーが分離した`Modules/Imports/`とステージ済み変更を維持した。
+- 最終`dotnet build WasmSharp2.slnx -c Release --no-restore --warnaserror`: 終了0、警告0、エラー0。
+- ビルド成功後の`dotnet run --project tests/WasmSharp.Tests/WasmSharp.Tests.csproj -c Release --no-build -- --report-trx --results-directory TestResults/host-linking-definitions-folder-final`: 終了0、passed 621 / failed 0 / skipped 0。
+- 対象CS10ファイルの`dotnet csharpier check`は終了0。初回に検出したimport型2ファイルの改行差分と、ModuleBinaryFormatの長いエラー行の整形を解消した。テストの追加・挙動変更、生成器suiteの再実行、ステージング・コミットは行っていない。
+
+### デフォルト引数の監査と必須化（2026-09-19）
+
+- ユーザーの依頼により本体コードのデフォルト引数と呼出箇所を確認し、8箇所19引数のデフォルト値を削除した。対象はModuleExportのkind、WasmModule内部コンストラクターのimports/tables/memories/globals/start、DecodedInstructionとInstructionのindex、ReadInstructionsのisInitializer、WasmValue私有コンストラクターの3引数、ExecutionResult私有コンストラクターの6引数とSuccessのvalues。
+- ModuleExport・WasmModule・命令型・読取モードは、追加情報の指定漏れをデフォルト値で隠さず呼出側で明示する。ModuleValidatorでInstructionへ変換する際も、暗黙の0にせずDecodedInstruction.Indexを引き継ぐ。WasmValueとExecutionResultの生成メソッドは、保持する値と使用しない欄を全て指定する。
+- 残した省略には意味がある。WasmLimits.Maximumは最大値なし、Instantiate.optionsは既定の実行設定、WasmBinaryReaderは入力先頭・現在の文脈/位置、診断情報と原因例外は該当情報なしを表す。default(ExecutionResult)が空結果の成功を表す契約、ImmutableArrayのdefault正規化、値即値を持たない命令のdefaultも維持した。テストfixtureの省略値は通常のテスト条件や不正バイナリ用の上書きに使われているため維持した。
+- 既存テストと生成器の動的コンパイル用コードで呼出引数を明示し、旧3引数コンストラクターの互換性だけを確認する不要なassertionを除去した。新しい挙動やテストは追加していないため、REDは対象外。
+- `dotnet build WasmSharp2.slnx -c Release --no-restore --warnaserror`: 終了0、警告0、エラー0。ビルド成功後に下記両suiteを実行した。
+- `dotnet run --project tests/WasmSharp.Tests/WasmSharp.Tests.csproj -c Release --no-build -- --report-trx --results-directory TestResults/default-arguments-audit-runtime`: 終了0、passed 621 / failed 0 / skipped 0。
+- `dotnet run --project tests/WasmSharp.Generators.Tests/WasmSharp.Generators.Tests.csproj -c Release --no-build -- --report-trx --results-directory TestResults/default-arguments-audit-generators`: 終了0、passed 36 / failed 0 / skipped 0。両suite合計657件成功。
+- 変更CS20ファイルの`dotnet csharpier check`: 終了0。未実施範囲は後続タスクの実装・公式suite・feature全体の完了検証。ユーザーのステージ済み変更とフォルダ分割を維持し、ステージング・コミットは行っていない。
+- 独立レビューはAPPROVED、修正必須の指摘なし。8箇所19引数と関連テスト12ファイル、残した省略の根拠、最新TRXの621件/36件成功を直接確認した。通常/cachedの`git diff --check`は各終了0。主担当の`kiro-verify-completion`: 今回のデフォルト引数削除と既存動作の維持はVERIFIED。ビルド・テスト後の追加編集は本記録のみ。
+
+### Claude Codeによる未コミット変更レビュー（2026-09-19）
+
+- 対象は開始時点のステージ済み41ファイル（タスク4.1〜4.3、型のフォルダ分割、デフォルト引数削除）。未ステージ・未追跡ファイルは0。Claude Code 2.1.274を既存設定のモデルで、safe-mode・Read/Glob/Grepのみ・dontAsk・strict-mcp-config・no-session-persistenceにより実行。Anthropicへの送信対象と読み取り専用の範囲を事前に通知した。CLI終了0、最終resultは成功、41ファイル全件確認済みとの回答。レビュー中の対象ファイルとインデックスのSHA-256は開始時点から不変だった。
+- 所見1（Medium、採用）: 初期化式限定のglobal.get読取が関数本体へ漏れても検知できるテストがなかった。既存の未対応命令テストに`2380`を追加し、関数本体では不完全な添字を読まずglobal.getのUnsupported・位置・未確認範囲を返すことを確認した。現在の実装は正しく、境界の回帰検知を補う修正。
+- 所見2（Low、今回の修正としては不採用）: import解禁後にDecodeとValidateの診断用関数indexがずれる可能性。現在はValidate入口でimportを拒否するため到達不能。添字空間の統合はタスク6の範囲であり、今回その処理を先行実装しない。タスク6で拒否を外す際は診断位置のFunctionIndexもimportを含むmodule全体の添字に揃える。
+- 所見3（Low、採用）: memory/table importの宣言位置とは別に保持する型記述位置のテストがなかった。既存入力を数えてmemory型35・table型49バイトを確定し、既存テストにassertionを追加した。
+- 所見4（Low、採用）: ReadValueTypesは同じクラスのReadTypesからしか呼ばれず、移動時にprivateからinternalへ不要に拡大していた。privateへ戻した。
+- 所見5（Low、不採用）: WasmSharp.csprojのProjectReferenceを複数行に戻す提案。属性値もビルド動作も変わらず、ユーザーによる既存の整形変更なので維持した。
+- 所見6（Low、採用）: design.mdに移動前のModuleImport.csパスが残っていた。Imports配下へ修正し、分離した4つのimport型の配置と責務を追記した。
+- 所見7（Low、採用）: 新規record型8個の引数説明が近接する既存型と揃っておらず、import宣言位置と型記述位置の区別も説明されていなかった。8型にparamコメントを追加した。ModuleBinaryFormatの全メソッドへのコメント追加は要求されておらず行っていない。
+- 初回CSharpier checkでFunctionImport/GlobalImportの混在改行を検出し、当該2ファイルのformatで解消。最終の変更CS11ファイルの`dotnet csharpier check`は終了0。
+- 最終`dotnet build WasmSharp2.slnx -c Release --no-restore --warnaserror`: 終了0、警告0、エラー0。ビルド成功後に両suiteを実行した。
+- `dotnet run --project tests/WasmSharp.Tests/WasmSharp.Tests.csproj -c Release --no-build -- --report-trx --results-directory TestResults/claude-review-host-linking-4-runtime`: 終了0、passed 622 / failed 0 / skipped 0。
+- `dotnet run --project tests/WasmSharp.Generators.Tests/WasmSharp.Generators.Tests.csproj -c Release --no-build -- --report-trx --results-directory TestResults/claude-review-host-linking-4-generators`: 終了0、passed 36 / failed 0 / skipped 0。合計658件成功、skipを成功へ加算していない。
+- 未実施範囲: Claude自身によるビルド・テスト、Core 2.0一次資料との網羅照合、公式suite、タスク5以降の実装・feature全体の完了検証。修正は局所的なテスト・可視性・文書補完で疑義が残らないためClaudeへの再送は行わず、Codexが差分と上記検証結果を確認した。レビュー依頼文・元回答はリポジトリ外の一時フォルダに保存した。
+- 最終の通常/cachedの`git diff --check`は各終了0。開始時と最終のインデックスSHA-256も一致し、ステージ済み内容・ブランチ・履歴は変更していない。採用5件の修正は未ステージの作業ツリーに残した。

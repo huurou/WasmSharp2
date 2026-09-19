@@ -84,7 +84,8 @@ internal static class ModuleValidator
                 new Instruction(
                     descriptor.ExecutionOpcode!.Value,
                     instruction.Immediate,
-                    instruction.ByteOffset
+                    instruction.ByteOffset,
+                    instruction.Index
                 )
             );
         }
@@ -160,10 +161,10 @@ internal static class ModuleValidator
             var location = new WasmFailureLocation(
                 WasmProcessingStage.Validate,
                 export.ByteOffset,
-                export.FunctionIndex,
+                export.Index,
                 7
             );
-            if (export.FunctionIndex >= (uint)module.Functions.Length)
+            if (export.Index >= (uint)module.Functions.Length)
             {
                 throw new WasmValidateException(
                     "exportが参照する関数が存在しません。",

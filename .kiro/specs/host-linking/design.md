@@ -109,11 +109,15 @@ graph TD
 | `src/WasmSharp/Execution/WasmInstanceHostFunction.cs` | 明示型とinstance必須のcallbackを保持する関数実体 |
 | `src/WasmSharp/Modules/ImportInspector.cs` | 実行に依存しないimport情報取得 |
 | `src/WasmSharp/Modules/ModuleBinaryFormat.cs` | ヘッダー、section順序、型・import記述の共有読み取り |
-| `src/WasmSharp/Modules/ModuleImport.cs` | 生の型添字を含むimport宣言と元位置 |
+| `src/WasmSharp/Modules/Imports/ModuleImport.cs` | import名・種類・宣言の元位置の基底 |
+| `src/WasmSharp/Modules/Imports/FunctionImport.cs` | 関数importの生の型添字 |
+| `src/WasmSharp/Modules/Imports/GlobalImport.cs` | global importの要求型 |
+| `src/WasmSharp/Modules/Imports/MemoryImport.cs` | memory importのlimitsと型記述の元位置 |
+| `src/WasmSharp/Modules/Imports/TableImport.cs` | table importの参照型・limitsと型記述の元位置 |
 | `src/WasmSharp/Modules/ModuleExport.cs` | 4種のexport名・添字・元位置 |
-| `src/WasmSharp/Modules/GlobalDefinition.cs` | global型と初期化式の静的定義 |
-| `src/WasmSharp/Modules/TableDefinition.cs` | table参照型・limits・元位置 |
-| `src/WasmSharp/Modules/MemoryDefinition.cs` | memory limits・元位置 |
+| `src/WasmSharp/Modules/Definitions/GlobalDefinition.cs` | global型と初期化式の静的定義 |
+| `src/WasmSharp/Modules/Definitions/TableDefinition.cs` | table参照型・limits・元位置 |
+| `src/WasmSharp/Modules/Definitions/MemoryDefinition.cs` | memory limits・元位置 |
 | `src/WasmSharp/Modules/ModuleInstantiator.cs` | import照合、実体構築、初期化、startの順序 |
 | `src/WasmSharp/Exceptions/WasmImportInspectionException.cs` | 取得全体の失敗理由・未確認範囲。理由enumも同居 |
 

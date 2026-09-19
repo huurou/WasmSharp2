@@ -3,7 +3,7 @@ using WasmSharp.Tests.Fixtures;
 
 namespace WasmSharp.Tests;
 
-internal class WasmModule_DecodeTests
+internal partial class WasmModule_DecodeTests
 {
     [Test]
     [Arguments("006173", 3L, null, null)]
@@ -22,6 +22,11 @@ internal class WasmModule_DecodeTests
     [Arguments("0061736D01000000030201000A0C010A02FFFFFFFF0F7F017E0B", 23L, 0u, (byte)10)]
     [Arguments("0061736D010000000202FF", 10L, null, (byte)2)]
     [Arguments("0061736D010000000A01000C0100", 11L, null, (byte)12)]
+    [Arguments("0061736D010000000201000D00", 11L, null, (byte)13)]
+    [Arguments("0061736D010000000401000D00", 11L, null, (byte)13)]
+    [Arguments("0061736D010000000501000D00", 11L, null, (byte)13)]
+    [Arguments("0061736D010000000601000D00", 11L, null, (byte)13)]
+    [Arguments("0061736D010000000801000D00", 11L, null, (byte)13)]
     public async Task 両入力で構文違反が確定する_未実装に置き換えずDecodeの位置を通知する(
         string hex,
         long offset,
@@ -90,7 +95,7 @@ internal class WasmModule_DecodeTests
     )
     {
         // Arrange
-        var bytes = Convert.FromHexString("0061736D010000000201000D00");
+        var bytes = Convert.FromHexString("0061736D010000000901000D00");
         using var stream = new MemoryStream(bytes);
 
         // Act & Assert
@@ -99,10 +104,10 @@ internal class WasmModule_DecodeTests
             .ThrowsExactly<WasmUnsupportedFeatureException>();
         using (Assert.Multiple())
         {
-            await Assert.That(exception!.Feature).IsEqualTo("section.import");
+            await Assert.That(exception!.Feature).IsEqualTo("section.element");
             await Assert
                 .That(exception.Location)
-                .IsEqualTo(new(WasmProcessingStage.Decode, 8, null, 2));
+                .IsEqualTo(new(WasmProcessingStage.Decode, 8, null, 9));
             await Assert.That(exception.UnverifiedRanges.Length).IsEqualTo(2);
             await Assert
                 .That(exception.UnverifiedRanges[0].Stage)

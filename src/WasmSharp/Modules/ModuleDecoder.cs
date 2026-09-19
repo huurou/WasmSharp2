@@ -1,6 +1,8 @@
 using System.Runtime.InteropServices;
 using WasmSharp.Exceptions;
 using WasmSharp.Instructions;
+using WasmSharp.Modules.Definitions;
+using WasmSharp.Modules.Imports;
 
 namespace WasmSharp.Modules;
 
@@ -12,50 +14,23 @@ internal static class ModuleDecoder
     internal static WasmModule Decode(ReadOnlySpan<byte> bytes)
     {
         var reader = new WasmBinaryReader(bytes);
-        ReadOnlySpan<byte> header = [0x00, 0x61, 0x73, 0x6D, 0x01, 0x00, 0x00, 0x00];
-        foreach (var expected in header)
-        {
-            var offset = reader.Position;
-            if (reader.ReadByte() != expected)
-            {
-                throw reader.Error("magicまたはバイナリversionが不正です。", offset);
-            }
-        }
+        ModuleBinaryFormat.ReadHeader(ref reader);
 
         List<WasmFunctionType> types = [];
-        List<FunctionExport> exports = [];
+        List<ModuleExport> exports = [];
+        List<ModuleImport> imports = [];
+        List<TableDefinition> tables = [];
+        List<MemoryDefinition> memories = [];
+        List<GlobalDefinition> globals = [];
+        StartDefinition? start = null;
         List<uint> functionTypes = [];
         List<DecodedFunction> functions = [];
         var previousRank = 0;
         while (reader.Remaining != 0)
         {
             var offset = reader.Position;
-            var id = reader.ReadByte();
-            reader.SectionId = id;
-            if (id > 12)
-            {
-                throw reader.Error("Core 2.0に存在しないsection IDです。", offset);
-            }
-
-            var length = reader.ReadU32();
-            var section = reader.ReadRange(length);
-            if (id != 0)
-            {
-                // data countはID順と異なり、elementとcodeの間に置かれる。
-                var rank = id switch
-                {
-                    12 => 10,
-                    10 => 11,
-                    11 => 12,
-                    _ => id,
-                };
-                if (rank <= previousRank)
-                {
-                    throw reader.Error("sectionの順序または重複が不正です。", offset);
-                }
-
-                previousRank = rank;
-            }
+            var section = ModuleBinaryFormat.ReadSection(ref reader, ref previousRank);
+            var id = section.SectionId!.Value;
 
             if (id == 11 && functions.Count != functionTypes.Count)
             {
@@ -71,29 +46,50 @@ internal static class ModuleDecoder
                     break;
 
                 case 1:
-                    types = ReadTypes(ref section);
+                    types = ModuleBinaryFormat.ReadTypes(ref section);
                     break;
 
-                case 7:
-                    exports = ReadExports(ref section, bytes.Length);
+                case 2:
+                    imports = ModuleBinaryFormat.ReadImports(ref section);
                     break;
 
                 case 3:
                     functionTypes = ReadFunctionTypes(ref section);
                     break;
 
+                case 4:
+                    tables = ReadTables(ref section);
+                    break;
+
+                case 5:
+                    memories = ReadMemories(ref section);
+                    break;
+
+                case 6:
+                    globals = ReadGlobals(ref section, bytes.Length);
+                    break;
+
+                case 7:
+                    exports = ReadExports(ref section);
+                    break;
+
+                case 8:
+                    var startOffset = section.Position;
+                    start = new StartDefinition(section.ReadU32(), startOffset);
+                    break;
+
                 case 10:
-                    functions = ReadCode(ref section, functionTypes, bytes.Length);
+                    functions = ReadCode(
+                        ref section,
+                        functionTypes,
+                        (uint)imports.Count(x => x.Kind == WasmExternalKind.Function),
+                        bytes.Length
+                    );
                     break;
 
                 default:
                     var feature = id switch
                     {
-                        2 => "section.import",
-                        4 => "section.table",
-                        5 => "section.memory",
-                        6 => "section.global",
-                        8 => "section.start",
                         9 => "section.element",
                         11 => "section.data",
                         12 => "section.data_count",
@@ -102,7 +98,7 @@ internal static class ModuleDecoder
                     throw Unsupported(ref section, feature, bytes.Length, offset);
             }
 
-            RequireEnd(ref section);
+            ModuleBinaryFormat.RequireEnd(ref section);
         }
 
         if (functions.Count != functionTypes.Count)
@@ -114,13 +110,54 @@ internal static class ModuleDecoder
             CollectionsMarshal.AsSpan(types),
             CollectionsMarshal.AsSpan(functions),
             CollectionsMarshal.AsSpan(exports),
-            bytes.Length
+            bytes.Length,
+            CollectionsMarshal.AsSpan(imports),
+            CollectionsMarshal.AsSpan(tables),
+            CollectionsMarshal.AsSpan(memories),
+            CollectionsMarshal.AsSpan(globals),
+            start
         );
+    }
+
+    private static List<GlobalDefinition> ReadGlobals(ref WasmBinaryReader reader, int inputLength)
+    {
+        var count = ModuleBinaryFormat.ReadCount(ref reader);
+        List<GlobalDefinition> globals = [];
+        for (uint index = 0; index < count; index++)
+        {
+            var offset = reader.Position;
+            var type = ModuleBinaryFormat.ReadGlobalType(ref reader);
+            var initializer = ReadInstructions(ref reader, inputLength, isInitializer: true);
+            globals.Add(new GlobalDefinition(type, CollectionsMarshal.AsSpan(initializer), offset));
+        }
+        return globals;
+    }
+
+    private static List<TableDefinition> ReadTables(ref WasmBinaryReader reader)
+    {
+        var count = ModuleBinaryFormat.ReadCount(ref reader);
+        List<TableDefinition> tables = [];
+        for (uint index = 0; index < count; index++)
+        {
+            tables.Add(ModuleBinaryFormat.ReadTableType(ref reader));
+        }
+        return tables;
+    }
+
+    private static List<MemoryDefinition> ReadMemories(ref WasmBinaryReader reader)
+    {
+        var count = ModuleBinaryFormat.ReadCount(ref reader);
+        List<MemoryDefinition> memories = [];
+        for (uint index = 0; index < count; index++)
+        {
+            memories.Add(ModuleBinaryFormat.ReadMemoryType(ref reader));
+        }
+        return memories;
     }
 
     private static List<uint> ReadFunctionTypes(ref WasmBinaryReader reader)
     {
-        var count = ReadCount(ref reader);
+        var count = ModuleBinaryFormat.ReadCount(ref reader);
         List<uint> types = [];
         for (uint index = 0; index < count; index++)
         {
@@ -133,11 +170,12 @@ internal static class ModuleDecoder
     private static List<DecodedFunction> ReadCode(
         ref WasmBinaryReader reader,
         List<uint> functionTypes,
+        uint importedFunctionCount,
         int inputLength
     )
     {
         var countOffset = reader.Position;
-        var count = ReadCount(ref reader);
+        var count = ModuleBinaryFormat.ReadCount(ref reader);
         if (count != functionTypes.Count)
         {
             throw reader.Error("functionとcodeの件数が一致しません。", countOffset);
@@ -147,10 +185,11 @@ internal static class ModuleDecoder
         for (uint index = 0; index < count; index++)
         {
             var length = reader.ReadU32();
-            var body = reader.ReadRange(length, index);
+            var body = reader.ReadRange(length, importedFunctionCount + index);
             var offset = body.Position;
             var locals = ReadLocals(ref body);
-            var instructions = ReadInstructions(ref body, inputLength);
+            var instructions = ReadInstructions(ref body, inputLength, isInitializer: false);
+            ModuleBinaryFormat.RequireEnd(ref body);
             functions.Add(
                 new DecodedFunction(
                     functionTypes[(int)index],
@@ -166,14 +205,14 @@ internal static class ModuleDecoder
 
     private static List<LocalDeclaration> ReadLocals(ref WasmBinaryReader reader)
     {
-        var count = ReadCount(ref reader);
+        var count = ModuleBinaryFormat.ReadCount(ref reader);
         List<LocalDeclaration> locals = [];
         ulong total = 0;
         for (uint index = 0; index < count; index++)
         {
             var offset = reader.Position;
             var localCount = reader.ReadU32();
-            var type = ReadValueType(ref reader);
+            var type = ModuleBinaryFormat.ReadValueType(ref reader);
             total += localCount;
             if (total > uint.MaxValue)
             {
@@ -188,7 +227,8 @@ internal static class ModuleDecoder
 
     private static List<DecodedInstruction> ReadInstructions(
         ref WasmBinaryReader reader,
-        int inputLength
+        int inputLength,
+        bool isInitializer
     )
     {
         List<DecodedInstruction> instructions = [];
@@ -209,14 +249,20 @@ internal static class ModuleDecoder
                 throw reader.Error("Core 2.0に割り当てられていないopcodeです。", offset);
             }
 
-            if (descriptor.Immediate == ImmediateKind.Unsupported)
+            // global初期化式の読取は、関数本体の実行handler登録に先行する。
+            var immediateKind =
+                isInitializer && opcode == new OpcodeKey(0, 0x23)
+                    ? ImmediateKind.Index
+                    : descriptor.Immediate;
+            if (immediateKind == ImmediateKind.Unsupported)
             {
                 throw Unsupported(ref reader, descriptor.Name, inputLength, offset);
             }
 
-            var immediate = descriptor.Immediate switch
+            var index = immediateKind == ImmediateKind.Index ? reader.ReadU32() : 0;
+            var immediate = immediateKind switch
             {
-                ImmediateKind.None => default,
+                ImmediateKind.None or ImmediateKind.Index => default,
                 ImmediateKind.I32 => WasmValue.FromI32(reader.ReadS32()),
                 ImmediateKind.I64 => WasmValue.FromI64(reader.ReadS64()),
                 ImmediateKind.F32Bits => WasmValue.FromF32Bits(reader.ReadF32Bits()),
@@ -233,131 +279,29 @@ internal static class ModuleDecoder
                 );
             }
 
-            instructions.Add(new DecodedInstruction(opcode, immediate, offset));
+            instructions.Add(new DecodedInstruction(opcode, immediate, offset, index));
             if (descriptor.Validation == ValidationRule.FunctionEnd)
             {
-                RequireEnd(ref reader);
                 return instructions;
             }
         }
 
-        throw reader.Error("関数本体のendがありません。");
+        throw reader.Error("式のendがありません。");
     }
 
-    private static List<WasmFunctionType> ReadTypes(ref WasmBinaryReader reader)
+    private static List<ModuleExport> ReadExports(ref WasmBinaryReader reader)
     {
-        var count = ReadCount(ref reader);
-        List<WasmFunctionType> types = [];
-        for (uint index = 0; index < count; index++)
-        {
-            var offset = reader.Position;
-            if (reader.ReadByte() != 0x60)
-            {
-                throw reader.Error("関数型の形式が不正です。", offset);
-            }
-
-            var parameters = ReadValueTypes(ref reader);
-            var results = ReadValueTypes(ref reader);
-            types.Add(
-                new WasmFunctionType(
-                    CollectionsMarshal.AsSpan(parameters),
-                    CollectionsMarshal.AsSpan(results)
-                )
-            );
-        }
-
-        return types;
-    }
-
-    private static List<WasmValueKind> ReadValueTypes(ref WasmBinaryReader reader)
-    {
-        var count = ReadCount(ref reader);
-        List<WasmValueKind> types = [];
-        for (uint index = 0; index < count; index++)
-        {
-            types.Add(ReadValueType(ref reader));
-        }
-
-        return types;
-    }
-
-    private static WasmValueKind ReadValueType(ref WasmBinaryReader reader)
-    {
-        var offset = reader.Position;
-        return reader.ReadByte() switch
-        {
-            0x7F => WasmValueKind.I32,
-            0x7E => WasmValueKind.I64,
-            0x7D => WasmValueKind.F32,
-            0x7C => WasmValueKind.F64,
-            0x7B => WasmValueKind.V128,
-            0x70 => WasmValueKind.FuncRef,
-            0x6F => WasmValueKind.ExternRef,
-            _ => throw reader.Error("Core 2.0に存在しない値型です。", offset),
-        };
-    }
-
-    private static List<FunctionExport> ReadExports(ref WasmBinaryReader reader, int inputLength)
-    {
-        var count = ReadCount(ref reader);
-        List<FunctionExport> exports = [];
+        var count = ModuleBinaryFormat.ReadCount(ref reader);
+        List<ModuleExport> exports = [];
         for (uint index = 0; index < count; index++)
         {
             var offset = reader.Position;
             var name = reader.ReadName();
-            var kindOffset = reader.Position;
-            var kind = reader.ReadByte();
-            if (kind > 3)
-            {
-                throw reader.Error("Core 2.0に存在しないexternal kindです。", kindOffset);
-            }
-
-            if (kind != 0)
-            {
-                var feature = kind switch
-                {
-                    1 => "export.table",
-                    2 => "export.memory",
-                    _ => "export.global",
-                };
-                throw Unsupported(ref reader, feature, inputLength, kindOffset);
-            }
-
-            exports.Add(new FunctionExport(name, reader.ReadU32(), offset));
+            var kind = ModuleBinaryFormat.ReadExternalKind(ref reader);
+            exports.Add(new ModuleExport(name, reader.ReadU32(), offset, kind));
         }
 
         return exports;
-    }
-
-    private static uint ReadCount(ref WasmBinaryReader reader)
-    {
-        var offset = reader.Position;
-        var count = reader.ReadU32();
-        // どの要素にも最低1バイト必要。宣言件数から先に巨大配列を確保しない。
-        if (count > (uint)reader.Remaining)
-        {
-            throw reader.Error("要素数が入力の残量を超えています。", offset);
-        }
-
-        if (count > Array.MaxLength)
-        {
-            throw new WasmImplementationLimitException(
-                "要素数が配列の保持上限を超えています。",
-                WasmImplementationLimitReason.CollectionSize,
-                Array.MaxLength,
-                reader.Location(offset)
-            );
-        }
-
-        return count;
-    }
-
-    private static void RequireEnd(ref WasmBinaryReader reader)
-    {
-        if (reader.Remaining != 0)
-        {
-            throw reader.Error("宣言された範囲に余剰のバイトがあります。");
-        }
     }
 
     private static WasmUnsupportedFeatureException Unsupported(

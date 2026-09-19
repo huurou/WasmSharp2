@@ -27,10 +27,20 @@ internal class Interpreter_PushConstantTests
         };
         var found = InstructionSet.TryGet(new(0, (uint)opcode), out var descriptor);
         var code = new FunctionCode(
-            [new(descriptor.ExecutionOpcode!.Value, value, 12345678901)],
+            [new(descriptor.ExecutionOpcode!.Value, value, 12345678901, 0)],
             1
         );
-        var module = new WasmModule([new([], [value.Kind])], [new(0, 30, [], [])], [], 40)
+        var module = new WasmModule(
+            [new([], [value.Kind])],
+            [new(0, 30, [], [])],
+            [],
+            40,
+            [],
+            [],
+            [],
+            [],
+            null
+        )
         {
             FunctionCodes = [code],
         };

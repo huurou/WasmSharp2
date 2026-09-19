@@ -7,11 +7,6 @@ namespace WasmSharp.Tests.Modules;
 internal partial class ModuleDecoder_DecodeTests
 {
     [Test]
-    [Arguments("020100", (byte)2, "section.import")]
-    [Arguments("040100", (byte)4, "section.table")]
-    [Arguments("050100", (byte)5, "section.memory")]
-    [Arguments("060100", (byte)6, "section.global")]
-    [Arguments("080100", (byte)8, "section.start")]
     [Arguments("090100", (byte)9, "section.element")]
     [Arguments("0B0100", (byte)11, "section.data")]
     [Arguments("0C0100", (byte)12, "section.data_count")]
@@ -56,6 +51,7 @@ internal partial class ModuleDecoder_DecodeTests
     [Arguments("6AFF05", "i32.add")]
     [Arguments("02", "block")]
     [Arguments("1080", "call")]
+    [Arguments("2380", "global.get")]
     [Arguments("FC00", "i32.trunc_sat_f32_s")]
     [Arguments("FC8000", "i32.trunc_sat_f32_s")]
     [Arguments("FC0A", "memory.copy")]
@@ -129,10 +125,10 @@ internal partial class ModuleDecoder_DecodeTests
     }
 
     [Test]
-    [Arguments((byte)1, "export.table")]
-    [Arguments((byte)2, "export.memory")]
-    [Arguments((byte)3, "export.global")]
-    public async Task 関数以外の既知export_種類を機能名にして中断する(byte kind, string feature)
+    [Arguments((byte)1)]
+    [Arguments((byte)2)]
+    [Arguments((byte)3)]
+    public async Task 関数以外の既知exportの添字が欠落_破損として拒否する(byte kind)
     {
         // Arrange
         var bytes = Convert.FromHexString("0061736D0100000007030100" + kind.ToString("X2"));
@@ -140,16 +136,10 @@ internal partial class ModuleDecoder_DecodeTests
         // Act & Assert
         var exception = await Assert
             .That(() => ModuleDecoder.Decode(bytes))
-            .ThrowsExactly<WasmUnsupportedFeatureException>();
-        using (Assert.Multiple())
-        {
-            await Assert.That(exception!.Feature).IsEqualTo(feature);
-            await Assert
-                .That(exception.Location)
-                .IsEqualTo(new(WasmProcessingStage.Decode, 12, null, 7));
-            await Assert.That(exception.UnverifiedRanges[0].StartOffset).IsEqualTo(12L);
-            await Assert.That(exception.UnverifiedRanges[0].EndOffset).IsEqualTo(13L);
-        }
+            .ThrowsExactly<WasmDecodeException>();
+        await Assert
+            .That(exception!.Location)
+            .IsEqualTo(new(WasmProcessingStage.Decode, 13, null, 7));
     }
 
     [Test]

@@ -70,8 +70,8 @@ internal partial class ModuleDecoder_DecodeTests
             await Assert.That(module.Exports.Length).IsEqualTo(2);
             await Assert.That(module.Exports[0].Name).IsEqualTo("");
             await Assert.That(module.Exports[1].Name).IsEqualTo("");
-            await Assert.That(module.Exports[0].FunctionIndex).IsEqualTo(uint.MaxValue);
-            await Assert.That(module.Exports[1].FunctionIndex).IsEqualTo(0u);
+            await Assert.That(module.Exports[0].Index).IsEqualTo(uint.MaxValue);
+            await Assert.That(module.Exports[1].Index).IsEqualTo(0u);
             await Assert.That(module.Exports[0].ByteOffset).IsEqualTo(firstExportOffset);
             await Assert.That(module.InputLength).IsEqualTo((long)bytes.Length);
         }

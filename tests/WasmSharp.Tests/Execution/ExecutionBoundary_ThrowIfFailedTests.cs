@@ -12,7 +12,7 @@ internal class ExecutionBoundary_ThrowIfFailedTests
         ExecutionResult[] results =
         [
             default,
-            ExecutionResult.Success(),
+            ExecutionResult.Success([]),
             ExecutionResult.Success([WasmValue.FromI32(42)]),
         ];
 

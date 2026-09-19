@@ -2,6 +2,8 @@ using System.Collections.Immutable;
 using WasmSharp.Exceptions;
 using WasmSharp.Execution;
 using WasmSharp.Modules;
+using WasmSharp.Modules.Definitions;
+using WasmSharp.Modules.Imports;
 
 namespace WasmSharp;
 
@@ -29,14 +31,39 @@ public sealed class WasmModule
     internal ImmutableArray<WasmFunctionType> Types { get; }
 
     /// <summary>
-    /// 関数index順のデコード済み関数定義を保持する不変配列
+    /// importを含まない定義順のデコード済み関数を保持する不変配列
     /// </summary>
     internal ImmutableArray<DecodedFunction> Functions { get; }
 
     /// <summary>
-    /// 関数exportの宣言を保持する不変配列
+    /// 4種のexportの宣言を保持する不変配列
     /// </summary>
-    internal ImmutableArray<FunctionExport> Exports { get; }
+    internal ImmutableArray<ModuleExport> Exports { get; }
+
+    /// <summary>
+    /// 宣言順のimportを保持する不変配列
+    /// </summary>
+    internal ImmutableArray<ModuleImport> Imports { get; }
+
+    /// <summary>
+    /// 定義順のtable型を保持する不変配列
+    /// </summary>
+    internal ImmutableArray<TableDefinition> Tables { get; }
+
+    /// <summary>
+    /// 定義順のmemory型を保持する不変配列
+    /// </summary>
+    internal ImmutableArray<MemoryDefinition> Memories { get; }
+
+    /// <summary>
+    /// 定義順のglobal型と未評価の初期化式を保持する不変配列
+    /// </summary>
+    internal ImmutableArray<GlobalDefinition> Globals { get; }
+
+    /// <summary>
+    /// 省略可能なstart宣言
+    /// </summary>
+    internal StartDefinition? Start { get; }
 
     /// <summary>
     /// デコード元の入力バイナリのバイト数
@@ -44,22 +71,37 @@ public sealed class WasmModule
     internal long InputLength { get; }
 
     /// <summary>
-    /// デコードした型、関数とexportをコピーしてmodule定義を構築する
+    /// デコードした各定義をコピーしてmodule定義を構築する
     /// </summary>
     /// <param name="types">型index順の関数型</param>
-    /// <param name="functions">関数index順の関数定義</param>
-    /// <param name="exports">関数exportの宣言</param>
+    /// <param name="functions">importを含まない定義順の関数</param>
+    /// <param name="exports">4種のexportの宣言</param>
     /// <param name="inputLength">入力バイナリのバイト数</param>
+    /// <param name="imports">宣言順のimport</param>
+    /// <param name="tables">定義順のtable型</param>
+    /// <param name="memories">定義順のmemory型</param>
+    /// <param name="globals">定義順のglobal型と初期化式</param>
+    /// <param name="start">省略可能なstart宣言</param>
     internal WasmModule(
         ReadOnlySpan<WasmFunctionType> types,
         ReadOnlySpan<DecodedFunction> functions,
-        ReadOnlySpan<FunctionExport> exports,
-        long inputLength
+        ReadOnlySpan<ModuleExport> exports,
+        long inputLength,
+        ReadOnlySpan<ModuleImport> imports,
+        ReadOnlySpan<TableDefinition> tables,
+        ReadOnlySpan<MemoryDefinition> memories,
+        ReadOnlySpan<GlobalDefinition> globals,
+        StartDefinition? start
     )
     {
         Types = [.. types];
         Functions = [.. functions];
         Exports = [.. exports];
+        Imports = [.. imports];
+        Tables = [.. tables];
+        Memories = [.. memories];
+        Globals = [.. globals];
+        Start = start;
         InputLength = inputLength;
     }
 
@@ -123,10 +165,11 @@ public sealed class WasmModule
             return this;
         }
 
+        RequireSupportedDefinitions();
         var functionCodes = ModuleValidator.Validate(this);
         var functionExportIndices = Exports.ToImmutableDictionary(
             x => x.Name,
-            x => (int)x.FunctionIndex,
+            x => (int)x.Index,
             StringComparer.Ordinal
         );
         // 全成果が揃ってから反映し、最後に検証成功状態にする。
@@ -135,6 +178,63 @@ public sealed class WasmModule
         isValidated_ = true;
 
         return this;
+    }
+
+    private void RequireSupportedDefinitions()
+    {
+        // 対応する意味検証が揃うまでは、静的定義を旧検証経路で無視しない。
+        if (!Imports.IsEmpty)
+        {
+            throw UnsupportedDefinition("section.import", Imports[0].ByteOffset, 2);
+        }
+        if (!Tables.IsEmpty)
+        {
+            throw UnsupportedDefinition("section.table", Tables[0].ByteOffset, 4);
+        }
+        if (!Memories.IsEmpty)
+        {
+            throw UnsupportedDefinition("section.memory", Memories[0].ByteOffset, 5);
+        }
+        if (!Globals.IsEmpty)
+        {
+            throw UnsupportedDefinition("section.global", Globals[0].ByteOffset, 6);
+        }
+        foreach (var export in Exports)
+        {
+            if (export.Kind != WasmExternalKind.Function)
+            {
+                throw UnsupportedDefinition(
+                    $"export.{export.Kind.ToString().ToLowerInvariant()}",
+                    export.ByteOffset,
+                    7
+                );
+            }
+        }
+        if (Start is { } start)
+        {
+            throw UnsupportedDefinition("section.start", start.ByteOffset, 8);
+        }
+    }
+
+    private WasmUnsupportedFeatureException UnsupportedDefinition(
+        string feature,
+        long offset,
+        byte sectionId
+    )
+    {
+        return new WasmUnsupportedFeatureException(
+            "この定義の検証は未実装です。",
+            feature,
+            new WasmFailureLocation(WasmProcessingStage.Validate, offset, null, sectionId),
+            [
+                new WasmUnverifiedRange(
+                    WasmProcessingStage.Validate,
+                    0,
+                    InputLength,
+                    "入力全体の検証が未完了です。"
+                ),
+            ]
+        );
     }
 
     /// <summary>
