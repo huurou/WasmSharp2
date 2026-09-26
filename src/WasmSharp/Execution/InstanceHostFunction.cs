@@ -5,10 +5,8 @@ namespace WasmSharp.Execution;
 /// </summary>
 /// <param name="type">instanceを含めないWasmの引数と結果の型</param>
 /// <param name="callback">所有済みの結果を返す処理</param>
-internal sealed class WasmInstanceHostFunction(
-    WasmFunctionType type,
-    WasmHostInstanceCallback callback
-) : WasmFunction
+internal sealed class InstanceHostFunction(WasmFunctionType type, WasmHostInstanceCallback callback)
+    : WasmFunction
 {
     /// <inheritdoc />
     public override WasmFunctionType Type { get; } = type;

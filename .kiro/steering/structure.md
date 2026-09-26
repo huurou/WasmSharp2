@@ -1,5 +1,5 @@
 ---
-updated_at: 2026-09-17
+updated_at: 2026-09-26
 ---
 
 # プロジェクト構成
@@ -34,6 +34,7 @@ updated_at: 2026-09-17
 
 - 名前空間はプロジェクト名とフォルダ階層に合わせる。例: `WasmSharp.Modules`、`WasmSharp.Tests.Modules`。手書きソースはfile-scoped namespaceを使い、`using`を先頭に置く。
 - 型名と通常のメンバー名はPascalCase、非公開フィールドはcamelCaseに末尾`_`、`const`はUPPER_SNAKE_CASEとする。識別子は英語、説明コメントは日本語で記述する。
+- 公開型の名前には`Wasm`接頭辞を付け、`internal`以下の型には付けない。例: 公開の`WasmFunction`と内部の派生型`DefinedFunction`。内部型がBCLの型と同名になる場合も接頭辞では避けず、責務を表す別の名前にする。例: `System.Threading.ExecutionContext`と重なる`ExecutionContext`ではなく`InterpreterContext`。
 - テストクラスは`対象クラス_対象メソッドTests`、テストメソッドは日本語の`条件_期待される挙動や出力`とする。テストコードにドキュメントコメントを付けない。
 
 ## 文書の配置

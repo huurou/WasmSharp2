@@ -21,12 +21,13 @@ internal static class GeneratorTestSource
         }
         namespace WasmSharp.Execution
         {
-            internal sealed class WasmExecutionContext(int frameCount)
+            internal sealed class InterpreterContext(int frameCount)
             {
                 public Instruction[] Instructions { get; init; } = [];
                 internal int FrameCount { get; private set; } = frameCount;
                 public int Pc { get; private set; }
                 public WasmValue Value { get; set; }
+                public System.Collections.Generic.List<string> Log { get; } = [];
                 public uint FunctionIndex => 7;
                 public Instruction ReadNextInstruction() => Instructions[Pc++];
                 internal void CompleteFrame() => FrameCount--;
@@ -77,7 +78,7 @@ internal static class GeneratorTestSource
                             namespace WasmSharp.Execution
                             {
                                 internal readonly struct ExecutionResult;
-                                internal sealed class WasmExecutionContext;
+                                internal sealed class InterpreterContext;
                                 internal readonly struct Instruction;
                             }
                             """

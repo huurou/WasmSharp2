@@ -4,7 +4,7 @@ namespace WasmSharp.Tests.Fixtures;
 
 internal static class FunctionFixture
 {
-    public static WasmDefinedFunction Create()
+    public static DefinedFunction Create()
     {
         var module = new WasmModule(
             [new([], [WasmValueKind.I32])],
@@ -17,7 +17,6 @@ internal static class FunctionFixture
             [],
             null
         );
-        return (WasmDefinedFunction)
-            new WasmInstance(module, WasmExecutionOptions.Default).Functions[0];
+        return (DefinedFunction)new WasmInstance(module, WasmExecutionOptions.Default).Functions[0];
     }
 }

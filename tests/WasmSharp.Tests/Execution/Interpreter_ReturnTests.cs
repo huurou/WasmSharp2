@@ -23,12 +23,12 @@ internal class Interpreter_ReturnTests
             [],
             null
         );
-        var function = (WasmDefinedFunction)
+        var function = (DefinedFunction)
             new WasmInstance(module, WasmExecutionOptions.Default).Functions[0];
         var reference = new object();
         var found = InstructionSet.TryGet(new(0, 0x0B), out var descriptor);
         var instruction = new Instruction(descriptor.ExecutionOpcode!.Value, default, 88, 0);
-        var context = WasmExecutionContext.Enter(new(10), out var isOutermost);
+        var context = InterpreterContext.Enter(new(10), out var isOutermost);
         ExecutionResult result;
         ExecutionFrame outerFrame;
         ExecutionFrame removedFrame;
@@ -69,7 +69,7 @@ internal class Interpreter_ReturnTests
         finally
         {
             context.Restore(0, 0, 0);
-            WasmExecutionContext.Exit(isOutermost);
+            InterpreterContext.Exit(isOutermost);
         }
 
         // Assert
@@ -91,6 +91,76 @@ internal class Interpreter_ReturnTests
             await Assert.That(frameCount).IsEqualTo(1);
             await Assert.That(valueCount).IsEqualTo(3);
             await Assert.That(depth).IsEqualTo(1);
+        }
+    }
+
+    [Test]
+    public async Task 呼出し先の途中でreturnする_宣言結果だけを呼出し元へ返し後続命令を実行しない()
+    {
+        // Arrange
+        var found = InstructionSet.TryGet(new(0, 0x0F), out var descriptor);
+        var instance = ExecutionInstanceFixture.Create(
+            [new([], [WasmValueKind.I64]), new([], [WasmValueKind.I32, WasmValueKind.I64])],
+            [
+                (
+                    0,
+                    [new(1, WasmValueKind.F32)],
+                    [
+                        InstructionFixture.Create(0x42, 1001, immediate: WasmValue.FromI64(1)),
+                        InstructionFixture.Create(0x42, 1003, immediate: WasmValue.FromI64(2)),
+                        InstructionFixture.Create(0x0F, 1005),
+                        new((ExecutionOpcode)int.MaxValue, default, 1006, 0),
+                        InstructionFixture.Create(0x0B, 1007),
+                    ],
+                    2
+                ),
+                (
+                    1,
+                    [],
+                    [
+                        InstructionFixture.Create(0x41, 2001, immediate: WasmValue.FromI32(7)),
+                        InstructionFixture.Create(0x10, 2003, 0),
+                        InstructionFixture.Create(0x0B, 2005),
+                    ],
+                    2
+                ),
+            ],
+            [],
+            []
+        );
+        var context = InterpreterContext.Enter(new(10), out var isOutermost);
+        ExecutionResult result;
+        (int Frames, int Values, int Depth) state;
+
+        // Act
+        try
+        {
+            result = Interpreter.Run(
+                context,
+                (DefinedFunction)instance.Functions[1],
+                [],
+                WasmProcessingStage.Invoke
+            );
+            state = (context.FrameCount, context.ValueCount, context.CallDepth);
+        }
+        finally
+        {
+            context.Restore(0, 0, 0);
+            InterpreterContext.Exit(isOutermost);
+        }
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(found).IsTrue();
+            await Assert.That(descriptor.Immediate).IsEqualTo(ImmediateKind.None);
+            await Assert.That(descriptor.StackEffect).IsEqualTo(StackEffectKind.Return);
+            await Assert.That(descriptor.Validation).IsEqualTo(ValidationRule.Return);
+            await Assert.That(result.Status).IsEqualTo(ExecutionStatus.Success);
+            await Assert.That(result.Values.Length).IsEqualTo(2);
+            await Assert.That(result.Values[0].AsI32()).IsEqualTo(7);
+            await Assert.That(result.Values[1].AsI64()).IsEqualTo(2L);
+            await Assert.That(state).IsEqualTo((0, 0, 0));
         }
     }
 }

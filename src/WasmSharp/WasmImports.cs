@@ -8,8 +8,8 @@ namespace WasmSharp;
 /// </summary>
 public sealed class WasmImports
 {
-    private ImmutableDictionary<string, ImmutableDictionary<string, WasmExternalValue>> modules_ =
-        ImmutableDictionary.Create<string, ImmutableDictionary<string, WasmExternalValue>>(
+    private ImmutableDictionary<string, ImmutableDictionary<string, ExternalValue>> modules_ =
+        ImmutableDictionary.Create<string, ImmutableDictionary<string, ExternalValue>>(
             StringComparer.Ordinal
         );
 
@@ -23,9 +23,7 @@ public sealed class WasmImports
         var items = module.Snapshot;
         if (!modules_.TryGetValue(module.Name, out var existing))
         {
-            existing = ImmutableDictionary.Create<string, WasmExternalValue>(
-                StringComparer.Ordinal
-            );
+            existing = ImmutableDictionary.Create<string, ExternalValue>(StringComparer.Ordinal);
         }
         foreach (var name in items.Keys)
         {
@@ -44,7 +42,7 @@ public sealed class WasmImports
     /// <summary>
     /// 後続の提供登録に影響されない名前の対応表を取得する
     /// </summary>
-    internal ImmutableDictionary<string, ImmutableDictionary<string, WasmExternalValue>> Snapshot()
+    internal ImmutableDictionary<string, ImmutableDictionary<string, ExternalValue>> Snapshot()
     {
         return modules_;
     }

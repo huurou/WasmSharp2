@@ -83,9 +83,7 @@ public sealed class WasmInstance
         functions.AddRange(importedFunctions);
         for (var i = 0; i < module.Functions.Length; i++)
         {
-            functions.Add(
-                new WasmDefinedFunction(this, (uint)(importedFunctions.Length + i), (uint)i)
-            );
+            functions.Add(new DefinedFunction(this, (uint)(importedFunctions.Length + i), (uint)i));
         }
         Functions = functions.MoveToImmutable();
     }

@@ -10,7 +10,7 @@ namespace WasmSharp.Modules;
 /// </summary>
 internal static class ModuleBinaryFormat
 {
-    internal static List<ModuleImport> ReadImports(ref WasmBinaryReader reader)
+    internal static List<ModuleImport> ReadImports(ref ModuleBinaryReader reader)
     {
         var count = ReadCount(ref reader);
         List<ModuleImport> imports = [];
@@ -54,7 +54,7 @@ internal static class ModuleBinaryFormat
         return imports;
     }
 
-    internal static WasmExternalKind ReadExternalKind(ref WasmBinaryReader reader)
+    internal static WasmExternalKind ReadExternalKind(ref ModuleBinaryReader reader)
     {
         var offset = reader.Position;
         return reader.ReadByte() switch
@@ -67,7 +67,7 @@ internal static class ModuleBinaryFormat
         };
     }
 
-    internal static TableDefinition ReadTableType(ref WasmBinaryReader reader)
+    internal static TableDefinition ReadTableType(ref ModuleBinaryReader reader)
     {
         var offset = reader.Position;
         var elementKind = ReadValueType(ref reader);
@@ -78,13 +78,13 @@ internal static class ModuleBinaryFormat
         return new TableDefinition(elementKind, ReadLimits(ref reader), offset);
     }
 
-    internal static MemoryDefinition ReadMemoryType(ref WasmBinaryReader reader)
+    internal static MemoryDefinition ReadMemoryType(ref ModuleBinaryReader reader)
     {
         var offset = reader.Position;
         return new MemoryDefinition(ReadLimits(ref reader), offset);
     }
 
-    internal static WasmGlobalType ReadGlobalType(ref WasmBinaryReader reader)
+    internal static WasmGlobalType ReadGlobalType(ref ModuleBinaryReader reader)
     {
         var valueKind = ReadValueType(ref reader);
         var offset = reader.Position;
@@ -97,7 +97,7 @@ internal static class ModuleBinaryFormat
         return new WasmGlobalType(valueKind, isMutable);
     }
 
-    private static WasmLimits ReadLimits(ref WasmBinaryReader reader)
+    private static WasmLimits ReadLimits(ref ModuleBinaryReader reader)
     {
         var offset = reader.Position;
         var flags = reader.ReadByte();
@@ -112,7 +112,7 @@ internal static class ModuleBinaryFormat
         return new WasmLimits(minimum, flags == 1 ? reader.ReadU32() : null);
     }
 
-    internal static void ReadHeader(ref WasmBinaryReader reader)
+    internal static void ReadHeader(ref ModuleBinaryReader reader)
     {
         ReadOnlySpan<byte> header = [0x00, 0x61, 0x73, 0x6D, 0x01, 0x00, 0x00, 0x00];
         foreach (var expected in header)
@@ -125,7 +125,10 @@ internal static class ModuleBinaryFormat
         }
     }
 
-    internal static WasmBinaryReader ReadSection(ref WasmBinaryReader reader, ref int previousRank)
+    internal static ModuleBinaryReader ReadSection(
+        ref ModuleBinaryReader reader,
+        ref int previousRank
+    )
     {
         var offset = reader.Position;
         var id = reader.ReadByte();
@@ -157,7 +160,7 @@ internal static class ModuleBinaryFormat
         return section;
     }
 
-    internal static List<WasmFunctionType> ReadTypes(ref WasmBinaryReader reader)
+    internal static List<WasmFunctionType> ReadTypes(ref ModuleBinaryReader reader)
     {
         var count = ReadCount(ref reader);
         List<WasmFunctionType> types = [];
@@ -182,7 +185,7 @@ internal static class ModuleBinaryFormat
         return types;
     }
 
-    private static List<WasmValueKind> ReadValueTypes(ref WasmBinaryReader reader)
+    private static List<WasmValueKind> ReadValueTypes(ref ModuleBinaryReader reader)
     {
         var count = ReadCount(ref reader);
         List<WasmValueKind> types = [];
@@ -194,7 +197,7 @@ internal static class ModuleBinaryFormat
         return types;
     }
 
-    internal static WasmValueKind ReadValueType(ref WasmBinaryReader reader)
+    internal static WasmValueKind ReadValueType(ref ModuleBinaryReader reader)
     {
         var offset = reader.Position;
         return reader.ReadByte() switch
@@ -210,7 +213,7 @@ internal static class ModuleBinaryFormat
         };
     }
 
-    internal static uint ReadCount(ref WasmBinaryReader reader)
+    internal static uint ReadCount(ref ModuleBinaryReader reader)
     {
         var offset = reader.Position;
         var count = reader.ReadU32();
@@ -233,7 +236,7 @@ internal static class ModuleBinaryFormat
         return count;
     }
 
-    internal static void RequireEnd(ref WasmBinaryReader reader)
+    internal static void RequireEnd(ref ModuleBinaryReader reader)
     {
         if (reader.Remaining != 0)
         {

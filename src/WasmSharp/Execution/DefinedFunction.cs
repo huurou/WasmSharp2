@@ -8,7 +8,7 @@ namespace WasmSharp.Execution;
 /// <param name="instance">この定義関数が所属するinstance</param>
 /// <param name="functionIndex">importを含むmodule全体の関数index</param>
 /// <param name="definitionIndex">module内の定義配列の添字</param>
-internal sealed class WasmDefinedFunction(
+internal sealed class DefinedFunction(
     WasmInstance instance,
     uint functionIndex,
     uint definitionIndex

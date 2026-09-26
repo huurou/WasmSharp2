@@ -26,9 +26,9 @@ public delegate WasmResults WasmHostInstanceCallback(
 /// </summary>
 public sealed class WasmHostModule
 {
-    private ImmutableDictionary<string, WasmExternalValue> items_ = ImmutableDictionary.Create<
+    private ImmutableDictionary<string, ExternalValue> items_ = ImmutableDictionary.Create<
         string,
-        WasmExternalValue
+        ExternalValue
     >(StringComparer.Ordinal);
 
     /// <summary>
@@ -39,7 +39,7 @@ public sealed class WasmHostModule
     /// <summary>
     /// 現在の名前と実体の対応を、後続の定義変更に影響されない形で取得する
     /// </summary>
-    internal ImmutableDictionary<string, WasmExternalValue> Snapshot => items_;
+    internal ImmutableDictionary<string, ExternalValue> Snapshot => items_;
 
     /// <summary>
     /// 空のmodule名を持つ提供元を構築する
@@ -101,7 +101,7 @@ public sealed class WasmHostModule
         Define(name, new TableExternalValue(table));
     }
 
-    private void Define(string name, WasmExternalValue value)
+    private void Define(string name, ExternalValue value)
     {
         ArgumentNullException.ThrowIfNull(name);
         items_ = items_.Add(name, value);

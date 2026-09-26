@@ -13,7 +13,7 @@ internal static class ModuleDecoder
 {
     internal static WasmModule Decode(ReadOnlySpan<byte> bytes)
     {
-        var reader = new WasmBinaryReader(bytes);
+        var reader = new ModuleBinaryReader(bytes);
         ModuleBinaryFormat.ReadHeader(ref reader);
 
         List<WasmFunctionType> types = [];
@@ -119,7 +119,10 @@ internal static class ModuleDecoder
         );
     }
 
-    private static List<GlobalDefinition> ReadGlobals(ref WasmBinaryReader reader, int inputLength)
+    private static List<GlobalDefinition> ReadGlobals(
+        ref ModuleBinaryReader reader,
+        int inputLength
+    )
     {
         var count = ModuleBinaryFormat.ReadCount(ref reader);
         List<GlobalDefinition> globals = [];
@@ -133,7 +136,7 @@ internal static class ModuleDecoder
         return globals;
     }
 
-    private static List<TableDefinition> ReadTables(ref WasmBinaryReader reader)
+    private static List<TableDefinition> ReadTables(ref ModuleBinaryReader reader)
     {
         var count = ModuleBinaryFormat.ReadCount(ref reader);
         List<TableDefinition> tables = [];
@@ -144,7 +147,7 @@ internal static class ModuleDecoder
         return tables;
     }
 
-    private static List<MemoryDefinition> ReadMemories(ref WasmBinaryReader reader)
+    private static List<MemoryDefinition> ReadMemories(ref ModuleBinaryReader reader)
     {
         var count = ModuleBinaryFormat.ReadCount(ref reader);
         List<MemoryDefinition> memories = [];
@@ -155,7 +158,7 @@ internal static class ModuleDecoder
         return memories;
     }
 
-    private static List<uint> ReadFunctionTypes(ref WasmBinaryReader reader)
+    private static List<uint> ReadFunctionTypes(ref ModuleBinaryReader reader)
     {
         var count = ModuleBinaryFormat.ReadCount(ref reader);
         List<uint> types = [];
@@ -168,7 +171,7 @@ internal static class ModuleDecoder
     }
 
     private static List<DecodedFunction> ReadCode(
-        ref WasmBinaryReader reader,
+        ref ModuleBinaryReader reader,
         List<uint> functionTypes,
         uint importedFunctionCount,
         int inputLength
@@ -203,7 +206,7 @@ internal static class ModuleDecoder
         return functions;
     }
 
-    private static List<LocalDeclaration> ReadLocals(ref WasmBinaryReader reader)
+    private static List<LocalDeclaration> ReadLocals(ref ModuleBinaryReader reader)
     {
         var count = ModuleBinaryFormat.ReadCount(ref reader);
         List<LocalDeclaration> locals = [];
@@ -226,7 +229,7 @@ internal static class ModuleDecoder
     }
 
     private static List<DecodedInstruction> ReadInstructions(
-        ref WasmBinaryReader reader,
+        ref ModuleBinaryReader reader,
         int inputLength,
         bool isInitializer
     )
@@ -289,7 +292,7 @@ internal static class ModuleDecoder
         throw reader.Error("式のendがありません。");
     }
 
-    private static List<ModuleExport> ReadExports(ref WasmBinaryReader reader)
+    private static List<ModuleExport> ReadExports(ref ModuleBinaryReader reader)
     {
         var count = ModuleBinaryFormat.ReadCount(ref reader);
         List<ModuleExport> exports = [];
@@ -305,7 +308,7 @@ internal static class ModuleDecoder
     }
 
     private static WasmUnsupportedFeatureException Unsupported(
-        ref WasmBinaryReader reader,
+        ref ModuleBinaryReader reader,
         string feature,
         int inputLength,
         long offset

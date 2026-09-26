@@ -28,6 +28,7 @@ internal class Interpreter_PushConstantTests
         var found = InstructionSet.TryGet(new(0, (uint)opcode), out var descriptor);
         var code = new FunctionCode(
             [new(descriptor.ExecutionOpcode!.Value, value, 12345678901, 0)],
+            [],
             1
         );
         var module = new WasmModule(
@@ -44,9 +45,9 @@ internal class Interpreter_PushConstantTests
         {
             FunctionCodes = [code],
         };
-        var function = (WasmDefinedFunction)
+        var function = (DefinedFunction)
             new WasmInstance(module, WasmExecutionOptions.Default).Functions[0];
-        var context = WasmExecutionContext.Enter(WasmExecutionOptions.Default, out var isOutermost);
+        var context = InterpreterContext.Enter(WasmExecutionOptions.Default, out var isOutermost);
         Instruction instruction;
         ExecutionResult result;
         WasmValue actual;
@@ -69,7 +70,7 @@ internal class Interpreter_PushConstantTests
         finally
         {
             context.Restore(0, 0, 0);
-            WasmExecutionContext.Exit(isOutermost);
+            InterpreterContext.Exit(isOutermost);
         }
 
         // Assert

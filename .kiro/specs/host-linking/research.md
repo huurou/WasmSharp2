@@ -59,7 +59,7 @@
 
 ### import情報取得の検査範囲
 
-**出典:** 要件11、[固定版binary module](https://github.com/WebAssembly/spec/blob/05ca4182176763112561ae20153975c12bd689e4/document/core/binary/modules.rst#L52)、現行WasmBinaryReader/ModuleDecoder。
+**出典:** 要件11、[固定版binary module](https://github.com/WebAssembly/spec/blob/05ca4182176763112561ae20153975c12bd689e4/document/core/binary/modules.rst#L52)、現行ModuleBinaryReader/ModuleDecoder。
 
 **確認事項:**
 
@@ -118,8 +118,8 @@
 ### 判断: 関数実体・instance・contextを分離する
 
 - 一般化: import/export/start/C#呼出しは同じ関数実体に対する入口の違いである。
-- 型の分離: WasmFunctionは公開操作を集約するabstract classとし、Execution配下のWasmDefinedFunction・WasmHostFunction・WasmInstanceHostFunctionをinternal sealedの具体型とする。基底のprivate protectedコンストラクターで外部継承を閉じる。所属instanceと定義コード、各形式のcallbackを種類ごとに保持し、nullableメンバーの組合せで種類を表さない。
-- 実行との接続: ExecutionBoundaryで共通型から具体型へ分岐する。ExecutionFrameとInterpreter.RunはWasmDefinedFunctionを受け取り、hostをWasmコードとして実行する経路を型で制約する。定義関数は両添字を明示して構築する。公開GetFunction・CreateHost・funcref・登録表は同じWasmFunction参照を使い続ける。
+- 型の分離: WasmFunctionは公開操作を集約するabstract classとし、Execution配下のDefinedFunction・HostFunction・InstanceHostFunctionをinternal sealedの具体型とする。基底のprivate protectedコンストラクターで外部継承を閉じる。所属instanceと定義コード、各形式のcallbackを種類ごとに保持し、nullableメンバーの組合せで種類を表さない。
+- 実行との接続: ExecutionBoundaryで共通型から具体型へ分岐する。ExecutionFrameとInterpreter.RunはDefinedFunctionを受け取り、hostをWasmコードとして実行する経路を型で制約する。定義関数は両添字を明示して構築する。公開GetFunction・CreateHost・funcref・登録表は同じWasmFunction参照を使い続ける。
 - 代案との比較: 種類enumとnullable群の併用は不正な組合せを残す。公開sealed型が別の実体を包む案は同じ関数に2つのobjectを要し、現在の呼出し側に必要な能力を増やさない。具体型を公開する必要もない。通常のclass継承だけで表現でき、追加ライブラリや仮想Invokeの拡張点は不要とする。
 - 移行と検証: 型保持のタスク3.3で既存関数と実行fixtureを移行し、生成時null拒否・型/参照同一性・別添字・定数Invoke・引数拒否・実行状態復元を確認する。callback実行とinstance付きInvokeは既存のタスク10で接続し、タスク3.3では既存の未対応拒否を維持する。
 - 選択: hostは型とcallback形式だけを保持し、instanceは呼出し時情報とする。startの入口ポリシーはstart所有instanceから選ぶ。
@@ -206,11 +206,11 @@
 | 根拠 | 現行資産 | 確認した状態と拡張点 |
 | --- | --- | --- |
 | E1 | [WasmModule](../../../src/WasmSharp/WasmModule.cs) 18–39、71–156 | 静的情報は型・定義関数・関数export。Validate全体成功後だけコード・export索引・成功フラグを反映する。Instantiateは検証前を拒否するが、`hostModules`を参照せずinstanceを生成する。import解決は未実装 |
-| E2 | [WasmBinaryReader](../../../src/WasmSharp/Modules/WasmBinaryReader.cs)、[ModuleDecoder](../../../src/WasmSharp/Modules/ModuleDecoder.cs) 12–117、167–190、247–329 | 長さ制限、LEB、UTF-8、位置診断、section順位、型列と圧縮localsを再利用できる。import/table/memory/global/startはUnsupported、exportは関数のみ。InspectImportsの独立入口はない |
+| E2 | [ModuleBinaryReader](../../../src/WasmSharp/Modules/ModuleBinaryReader.cs)、[ModuleDecoder](../../../src/WasmSharp/Modules/ModuleDecoder.cs) 12–117、167–190、247–329 | 長さ制限、LEB、UTF-8、位置診断、section順位、型列と圧縮localsを再利用できる。import/table/memory/global/startはUnsupported、exportは関数のみ。InspectImportsの独立入口はない |
 | E3 | [ModuleValidator](../../../src/WasmSharp/Modules/ModuleValidator.cs) 19–176 | 関数型index・関数export名/添字を先に検証し、定数とendの型検査・線形化を同時に行う。引数、非0のlocals、結果0個/複数はUnsupported。型多相性、call、local/global、limits、startの検証はない |
 | E4 | [InstructionSet](../../../src/WasmSharp/Instructions/InstructionSet.cs) 8–72、[InstructionAttribute](../../../src/WasmSharp/Instructions/InstructionAttribute.cs)、[命令生成器](../../../src/WasmSharp.Generators/InstructionGenerator.cs) 312以降 | 定数4種とendにhandlerがある。call/return/drop/unreachable/local/globalは名前とopcodeのみの未対応宣言。生成RunLoopとhandler署名は再利用し、uint添字の即値・検証規則・handlerを追加する |
 | E5 | [WasmFunction](../../../src/WasmSharp/WasmFunction.cs)、[WasmInstance](../../../src/WasmSharp/WasmInstance.cs) | 関数は所属instanceとFunctionIndexを保持し、定義/コード配列へ直接添字アクセスする。関数の名前取得は実装済み、global/memory/tableの取得は常にArgumentException。4種のimport先行表と定義indexの変換が必要 |
-| E6 | [ExecutionBoundary](../../../src/WasmSharp/Execution/ExecutionBoundary.cs)、[Interpreter](../../../src/WasmSharp/Execution/Interpreter.cs)、[WasmExecutionContext](../../../src/WasmSharp/Execution/WasmExecutionContext.cs)、[ExecutionFrame](../../../src/WasmSharp/Execution/ExecutionFrame.cs) | ThreadStatic、固定上限、frame/value/depthの保存復元、結果コピーがある。Interpreter.Runは引数を配置せずlocals数0で入場し、定数/endのみを実行する。host/start入口と直接callは未実装 |
+| E6 | [ExecutionBoundary](../../../src/WasmSharp/Execution/ExecutionBoundary.cs)、[Interpreter](../../../src/WasmSharp/Execution/Interpreter.cs)、[InterpreterContext](../../../src/WasmSharp/Execution/InterpreterContext.cs)、[ExecutionFrame](../../../src/WasmSharp/Execution/ExecutionFrame.cs) | ThreadStatic、固定上限、frame/value/depthの保存復元、結果コピーがある。Interpreter.Runは引数を配置せずlocals数0で入場し、定数/endのみを実行する。host/start入口と直接callは未実装 |
 | E7 | [WasmHostModule](../../../src/WasmSharp/WasmHostModule.cs)、[WasmMemory](../../../src/WasmSharp/WasmMemory.cs)、[WasmTable](../../../src/WasmSharp/WasmTable.cs) | 3型とも空のクラスで、ホストmoduleの名前・Define、memory/tableの状態・操作がない。WasmGlobal、WasmLimits、WasmImportsは新規資産となる |
 | E8 | [WasmValue](../../../src/WasmSharp/WasmValue.cs)、[WasmFunctionType](../../../src/WasmSharp/WasmFunctionType.cs)、[WasmResults](../../../src/WasmSharp/WasmResults.cs)、[公開例外](../../../src/WasmSharp/Exceptions/) | 7種の値、ビット列と参照同一性、型列と結果の所有コピーを再利用する。リンク診断、import調査失敗、HostStackLimitの表現は追加が必要 |
 | E9 | [ランタイムテスト](../../../tests/WasmSharp.Tests/)、[生成器テスト](../../../tests/WasmSharp.Generators.Tests/) | 公開定数経路、破損/未対応、失敗境界、内部contextの保存復元を持つ。ホスト連携の公開統合経路を受入済みとは扱えない。生成器テストは実際の命令/実行契約ソースをEmbeddedResourceとして取り込む |

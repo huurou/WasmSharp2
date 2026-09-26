@@ -49,6 +49,47 @@ internal partial class ModuleValidator_ValidateTests
     }
 
     [Test]
+    [Arguments("000041010B", 0, "unreachable")]
+    [Arguments("0041011A41010B", 1, "drop")]
+    [Arguments("0020000B", 0, "local.get")]
+    [Arguments("004101210041010B", 1, "local.set")]
+    [Arguments("00410122000B", 1, "local.tee")]
+    [Arguments("0010000B", 0, "call")]
+    [Arguments("0041010F0B", 1, "return")]
+    [Arguments("0023000B", 0, "global.get")]
+    [Arguments("004101240041010B", 1, "global.set")]
+    public async Task 型検査が未実装の命令を含む_命令名と位置を持つ検証段階の未実装になる(
+        string body,
+        int instructionIndex,
+        string feature
+    )
+    {
+        // Arrange
+        var module = DecodeFunction("6000017F", body);
+        var offset = module.Functions[0].Instructions[instructionIndex].ByteOffset;
+
+        // Act & Assert
+        var exception = await Assert
+            .That(() => ModuleValidator.Validate(module))
+            .ThrowsExactly<WasmUnsupportedFeatureException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.Feature).IsEqualTo(feature);
+            await Assert
+                .That(exception.Location)
+                .IsEqualTo(new(WasmProcessingStage.Validate, offset, 0, 10));
+            await Assert.That(exception.UnverifiedRanges.Length).IsEqualTo(1);
+            await Assert
+                .That(exception.UnverifiedRanges[0].Stage)
+                .IsEqualTo(WasmProcessingStage.Validate);
+            await Assert.That(exception.UnverifiedRanges[0].StartOffset).IsEqualTo(offset);
+            await Assert
+                .That(exception.UnverifiedRanges[0].EndOffset)
+                .IsEqualTo(module.InputLength);
+        }
+    }
+
+    [Test]
     public async Task 個数0のlocals宣言がある_実際のlocalsがない定数関数として受理する()
     {
         // Arrange

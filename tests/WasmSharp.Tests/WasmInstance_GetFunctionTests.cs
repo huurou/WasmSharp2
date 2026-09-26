@@ -54,7 +54,7 @@ internal class WasmInstance_GetFunctionTests
             await Assert
                 .That(ReferenceEquals(first.GetFunction("own"), second.GetFunction("own")))
                 .IsFalse();
-            var defined = (WasmSharp.Execution.WasmDefinedFunction)reexported;
+            var defined = (WasmSharp.Execution.DefinedFunction)reexported;
             await Assert.That(defined.Instance).IsSameReferenceAs(source);
             await Assert.That(defined.FunctionIndex).IsEqualTo(1u);
         }

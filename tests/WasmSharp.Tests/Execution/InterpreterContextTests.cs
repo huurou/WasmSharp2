@@ -2,13 +2,13 @@ using WasmSharp.Execution;
 
 namespace WasmSharp.Tests.Execution;
 
-internal class WasmExecutionContext_TryEnterCallTests
+internal class InterpreterContext_TryEnterCallTests
 {
     [Test]
     public async Task 上限1で2段目へ入る_深さを変えずに拒否し退出後は再入場できる()
     {
         // Arrange
-        var context = WasmExecutionContext.Enter(new(1), out var isOutermost);
+        var context = InterpreterContext.Enter(new(1), out var isOutermost);
         bool first;
         bool second;
         bool retry;
@@ -28,7 +28,7 @@ internal class WasmExecutionContext_TryEnterCallTests
         }
         finally
         {
-            WasmExecutionContext.Exit(isOutermost);
+            InterpreterContext.Exit(isOutermost);
         }
 
         // Assert
@@ -43,14 +43,14 @@ internal class WasmExecutionContext_TryEnterCallTests
     }
 }
 
-internal class WasmExecutionContext_EnterTests
+internal class InterpreterContext_EnterTests
 {
     [Test]
     public async Task 上限100の深さ50から上限10へ入る_同じコンテキストで51段目へ入る()
     {
         // Arrange
-        var outer = WasmExecutionContext.Enter(new(100), out var isOutermost);
-        WasmExecutionContext inner;
+        var outer = InterpreterContext.Enter(new(100), out var isOutermost);
+        InterpreterContext inner;
         bool isInnerOutermost;
         bool entered;
         int depth;
@@ -64,7 +64,7 @@ internal class WasmExecutionContext_EnterTests
             {
                 outer.TryEnterCall();
             }
-            inner = WasmExecutionContext.Enter(new(10), out isInnerOutermost);
+            inner = InterpreterContext.Enter(new(10), out isInnerOutermost);
             try
             {
                 entered = inner.TryEnterCall();
@@ -74,10 +74,10 @@ internal class WasmExecutionContext_EnterTests
             }
             finally
             {
-                WasmExecutionContext.Exit(isInnerOutermost);
+                InterpreterContext.Exit(isInnerOutermost);
             }
             outerRemains =
-                ReferenceEquals(WasmExecutionContext.Current, outer) && outer.CallDepth == 50;
+                ReferenceEquals(InterpreterContext.Current, outer) && outer.CallDepth == 50;
         }
         finally
         {
@@ -85,12 +85,12 @@ internal class WasmExecutionContext_EnterTests
             {
                 outer.ExitCall();
             }
-            WasmExecutionContext.Exit(isOutermost);
+            InterpreterContext.Exit(isOutermost);
         }
-        var cleared = WasmExecutionContext.Current is null;
-        var next = WasmExecutionContext.Enter(new(10), out var isNextOutermost);
+        var cleared = InterpreterContext.Current is null;
+        var next = InterpreterContext.Enter(new(10), out var isNextOutermost);
         var nextDepth = next.CallDepth;
-        WasmExecutionContext.Exit(isNextOutermost);
+        InterpreterContext.Exit(isNextOutermost);
 
         // Assert
         using (Assert.Multiple())
@@ -111,14 +111,14 @@ internal class WasmExecutionContext_EnterTests
     }
 }
 
-internal class WasmExecutionContext_ExitTests
+internal class InterpreterContext_ExitTests
 {
     [Test]
     public async Task 同期区間で例外が発生する_finallyで深さと現在の参照を戻し元の例外を保つ()
     {
         // Arrange
         var expected = new InvalidOperationException("内部入退出の検証");
-        WasmExecutionContext? outer = null;
+        InterpreterContext? outer = null;
         var innerDepth = -1;
         var outerRemains = false;
         var cleared = false;
@@ -128,11 +128,11 @@ internal class WasmExecutionContext_ExitTests
         var actual = await Assert
             .That(() =>
             {
-                outer = WasmExecutionContext.Enter(new(100), out var isOutermost);
+                outer = InterpreterContext.Enter(new(100), out var isOutermost);
                 try
                 {
                     outer.TryEnterCall();
-                    var inner = WasmExecutionContext.Enter(new(10), out var isInnerOutermost);
+                    var inner = InterpreterContext.Enter(new(10), out var isInnerOutermost);
                     try
                     {
                         inner.TryEnterCall();
@@ -143,20 +143,20 @@ internal class WasmExecutionContext_ExitTests
                         finally
                         {
                             inner.ExitCall();
-                            WasmExecutionContext.Exit(isInnerOutermost);
+                            InterpreterContext.Exit(isInnerOutermost);
                         }
                     }
                     finally
                     {
                         innerDepth = outer.CallDepth;
-                        outerRemains = ReferenceEquals(WasmExecutionContext.Current, outer);
+                        outerRemains = ReferenceEquals(InterpreterContext.Current, outer);
                     }
                 }
                 finally
                 {
                     outer.ExitCall();
-                    WasmExecutionContext.Exit(isOutermost);
-                    cleared = WasmExecutionContext.Current is null;
+                    InterpreterContext.Exit(isOutermost);
+                    cleared = InterpreterContext.Current is null;
                     exitedDepth = outer.CallDepth;
                 }
             })

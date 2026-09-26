@@ -7,12 +7,12 @@ namespace WasmSharp.Execution;
 /// <param name="function">実行する定義関数</param>
 /// <param name="stackBase">共有値スタック上の引数とlocalsの開始位置</param>
 /// <param name="operandBase">共有値スタック上のoperand領域の開始位置</param>
-internal struct ExecutionFrame(WasmDefinedFunction function, int stackBase, int operandBase)
+internal struct ExecutionFrame(DefinedFunction function, int stackBase, int operandBase)
 {
     /// <summary>
     /// このフレームで実行する定義関数
     /// </summary>
-    internal WasmDefinedFunction Function { get; } = function;
+    internal DefinedFunction Function { get; } = function;
 
     /// <summary>
     /// 関数内で次に実行する命令の位置

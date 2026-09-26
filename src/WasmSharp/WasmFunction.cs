@@ -28,7 +28,7 @@ public abstract class WasmFunction
     {
         ArgumentNullException.ThrowIfNull(type);
         ArgumentNullException.ThrowIfNull(callback);
-        return new WasmHostFunction(type, callback);
+        return new HostFunction(type, callback);
     }
 
     /// <summary>
@@ -41,7 +41,7 @@ public abstract class WasmFunction
     {
         ArgumentNullException.ThrowIfNull(type);
         ArgumentNullException.ThrowIfNull(callback);
-        return new WasmInstanceHostFunction(type, callback);
+        return new InstanceHostFunction(type, callback);
     }
 
     /// <summary>

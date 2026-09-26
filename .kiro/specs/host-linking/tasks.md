@@ -195,8 +195,8 @@
 
 ## 関数実行
 
-- [ ] 8. 引数・locals・結果をフレームで管理して実行する
-- [ ] 8.1 フレームの引数・localsと複数結果の受渡しを拡張する
+- [x] 8. 引数・locals・結果をフレームで管理して実行する
+- [x] 8.1 フレームの引数・localsと複数結果の受渡しを拡張する
   - 引数先頭とoperand先頭を分け、追加localsを型別ゼロ/nullで初期化する。
   - 終了時は宣言結果だけを順序どおり返し、localsと一時値を除く。必要量の加算・保持上限を区別する。
   - 内部実行テストで0/複数引数結果、7種の初期値、呼出し間の分離を確認し、既存定数経路も維持する。
@@ -204,7 +204,7 @@
   - _Depends: 7.3_
   - _Requirements: 2.1, 2.3, 2.8, 2.9_
 
-- [ ] 8.2 locals操作・値の破棄・unreachableを命令宣言と実行へ統合する
+- [x] 8.2 locals操作・値の破棄・unreachableを命令宣言と実行へ統合する
   - local取得・設定・値を残す設定、最上位valueの破棄を実装する。
   - unreachableは元関数添字と位置を持つ内部trap結果とし、後続命令を実行しない。
   - 各handlerと対応する命令宣言を同時に有効化し、生成器テスト入力も追随させる。内部実行ループのテストで値の順序と同一性、設定結果、後続未実行を確認する。
@@ -212,14 +212,14 @@
   - _Depends: 1.4, 8.1_
   - _Requirements: 2.4, 2.7, 2.9, 10.1_
 
-- [ ] 8.3 直接callとreturnの命令宣言と単一実行ループを統合する
+- [x] 8.3 直接callとreturnの命令宣言と単一実行ループを統合する
   - 定義関数の直接callでcalleeフレームを追加し、引数・戻り先・結果を同じ実行ループで管理する。
   - importした定義関数の元instanceを使い、return後の命令を実行しない。guest再帰にCLR再帰や公開Invokeを使わない。
   - 各handlerと対応する命令宣言・生成器テスト入力を同時に接続する。内部実行ループのテストで入れ子locals・結果順序・元instance、小さい深さ上限と終了後の深さ解放を確認する。
   - _Boundary: InstructionSet, Interpreter, WasmExecutionContext, WasmSharp.Generators.Tests_
   - _Requirements: 2.5, 2.6, 2.8, 2.10, 10.3, 10.5, 10.6_
 
-- [ ] 8.4 global命令の宣言と所属instanceの共有実体操作を統合する
+- [x] 8.4 global命令の宣言と所属instanceの共有実体操作を統合する
   - 実行中の定義関数の所属instanceからglobalを解決し、現在値の取得とmutable値の更新を行う。
   - 検証済み命令へ重複した型検査を追加せず、型・ビット列・参照同一性を維持する。
   - 各handlerと対応する命令宣言・生成器テスト入力を同時に接続し、内部実行ループのテストでホストとの相互更新とimport定義関数の元globalを確認する。
@@ -797,3 +797,55 @@
 - レビュー中の`dotnet run --project tests/WasmSharp.Generators.Tests/WasmSharp.Generators.Tests.csproj -c Release --no-build -- --report-trx --results-directory TestResults/host-linking-claude-review-resumed-generators`: 終了0、passed 36 / failed 0 / skipped 0。以後は生成器・そのテスト・埋め込み対象ソースを変更していないため再実行していない。
 - `dotnet csharpier check src/WasmSharp/Exceptions/WasmInstantiateException.cs src/WasmSharp/WasmInstance.cs tests/WasmSharp.Tests/WasmModule_InstantiateLinkingTests.cs`: 終了0、3ファイル成功。レビュー開始後の全25 C#ファイルの整形チェックも終了0。通常・cachedの`git -c core.excludesFile= diff --check`は終了0で、開始時のcached差分との一致を確認した。
 - `kiro-verify-completion`: 今回の外部レビュー、全所見の判定、採用3件の修正と関連検証はVERIFIED。動作変更を伴わないコメントと既存テストのassertion追加のため、追加の外部再レビューは不要と判断した。タスク8〜12の実行機能、実OOM、4GiB memory実割当、公式suite、Core仕様一次条文・全ADRの全面照合、feature全体のGOは確認対象外。
+
+### タスク8の実行前提（2026-09-25）
+
+- 開始時の作業ツリーはクリーン、HEADは`5778cdc6c`。仕様の承認状態と前提2.1・7.3の完了を確認し、手動モードで8.1〜8.4を順に実装する。サブタスクごとに独立レビューと完了検証を行う。
+- BUILD: `dotnet build WasmSharp2.slnx -c Release --no-restore --warnaserror --disable-build-servers`。TEST: 両TUnitプロジェクトを`dotnet run --project <csproj> -c Release --no-build -- --report-trx --results-directory <出力先>`で実行する（TUnitはテスト失敗時に終了2）。開始時の基準は`TestResults/host-linking-8-baseline-runtime`で終了0、passed 791 / failed 0 / skipped 0。
+
+### 8.1 フレームの引数・localsと複数結果（2026-09-25）
+
+- Task Brief: FunctionCodeは追加localsを展開せず、個数と型別ゼロ/nullの圧縮配列（新規`Execution/LocalInitializer.cs`）とulongの合計数で保持する。`WasmExecutionContext.EnterFrame`は積み済み引数の直後へ追加localsを積み、StackBaseを引数先頭、OperandBaseを追加locals直後とする。Runは引数・追加locals・operandの合計をulongで加算して保持上限と比べ、超過時は割当前に位置付きWasmImplementationLimitExceptionとする。終了時は既存のCompleteFrameで宣言結果だけを順序どおり返す（2.1、2.3、2.8、2.9）。
+- 境界補足: FunctionCodeのコンストラクター変更に伴い、ModuleValidatorの生成呼出しへ`function.Locals`を渡す1箇所だけを更新した。Validatorはlocalsを持つ関数を従来どおり`function.locals`未対応で拒否するため、公開経路の挙動は変わらない。
+- RED_PHASE_OUTPUT: 一時フラグOFF（引数・locals未積載、StackBase=OperandBase）でビルド0警告0エラー後、`dotnet run --project tests/WasmSharp.Tests/WasmSharp.Tests.csproj -c Release --no-build -- --treenode-filter '/*/*/(WasmExecutionContext_EnterFrameTests)|(Interpreter_RunTests)/*' --report-trx --results-directory TestResults/host-linking-8.1-red`は終了2、passed 11 / failed 4 / skipped 0（7種の初期値とOperandBase、入れ子の配置、0結果時の値領域、uint.MaxValue個のlocalsで例外なし）。フラグON後の`host-linking-8.1-green`は終了0、15/0/0。
+- 独立レビュー: `kiro-review` APPROVED、ブロッキング指摘なし。任意指摘2件を採用し、EnterFrameから既存PushFrameを使うよう整理、保持上限テストの重複行を「各宣言は上限内だが合計で超える2宣言」へ置き換えた。
+- 採用後の最終確認: Releaseビルドは終了0・警告0・エラー0。`dotnet run --project tests/WasmSharp.Tests/WasmSharp.Tests.csproj -c Release --no-build -- --report-trx --results-directory TestResults/host-linking-8.1-verify-runtime`は終了0、passed 797 / failed 0 / skipped 0。生成器の同形式コマンド（出力先`TestResults/host-linking-8.1-verify-generators`）は終了0、36/0/0。変更CS9ファイルのCSharpier checkと`git diff --check`は終了0。`kiro-verify-completion`: TASK 8.1 VERIFIED。
+- 未実施範囲: Run経由での引数値の直接観測はlocal.get（8.2）以降で補完する。公開Validateはlocals・引数を持つ関数を9.2まで未対応とする。
+
+### 8.2 locals操作・drop・unreachable（2026-09-25）
+
+- Task Brief: local.get/set/teeは実行中フレームのStackBase（引数先頭）を基準に引数と追加localsを読み書きし、teeは値をoperandに残す。dropは最上位1個を除いて参照を解除する。unreachableは実行中の定義関数のmodule全体の関数indexと命令位置を持つtrap結果を返し、生成ループは後続命令を実行しない（2.4、2.7、2.9、10.1）。5命令の宣言とhandlerを同時に有効化し、生成器テストへ同じ宣言行を持つ分岐テストを追加した（8.3・8.4で行を追随させる）。
+- 境界補足: 共有stack操作（CurrentFunction、PopValue、PeekValue、GetLocal、SetLocal）をWasmExecutionContextへ追加した。宣言の有効化で公開Decodeが対象命令を読めるようになり、旧Validatorの`default`分岐が公開Validateから`InvalidOperationException`を漏らすため、ModuleValidatorへ暫定のcase群を追加した。Unreachable/Call/Return/Drop/LocalGet/LocalSet/LocalTee/GlobalGet/GlobalSetの規則は、型検査の実装まで検証段階の`WasmUnsupportedFeatureException`（命令名、命令位置、命令以降の未確認範囲）とする。8.3・8.4で有効化する命令も同じ経路に乗り、9.2の型検査と線形化で除去する。
+- 分類の変化: global初期化式に含まれるlocal.get・drop・unreachable等は、Decode段階のUnsupportedからValidate段階のWasmValidateException（使用できない命令）に変わる。Core 2.0の定数式制約は検証規則のため、正しい分類への変化として扱う。
+- RED_PHASE_OUTPUT: 宣言なし・handlerとテスト追加後、Releaseビルドは終了0・警告0・エラー0。`dotnet run --project tests/WasmSharp.Tests/WasmSharp.Tests.csproj -c Release --no-build -- --treenode-filter '/*/*/(Interpreter_LocalGetTests)|(Interpreter_LocalSetTests)|(Interpreter_LocalTeeTests)|(Interpreter_DropTests)|(Interpreter_UnreachableTests)|(ModuleValidator_ValidateTests)|(InstructionSet_TryGetTests)/*' --report-trx --results-directory TestResults/host-linking-8.2-red`は終了2、passed 50 / failed 11 / skipped 0。宣言有効化・Validator変更前の同filter（出力先`host-linking-8.2-red-validator`）は終了2、56/5/0で、暫定Validator 5行が`InvalidOperationException`となった。暫定分類後の`host-linking-8.2-green`は終了0、61/0/0。
+- 独立レビュー初回はREJECTED: local.teeをpopへ変えるミューテーション（M1）と、local添字でStackBaseを無視するミューテーション（M2）を全suiteが検出できなかった。teeテストへ番兵のi32定数を加え、local系3テストで外側のフレームと値を積んでStackBase=1で実行し外側の不変も確認するよう補強した。内部Validateでは常に真となるassertionも除去した。主担当の確認でM1は1件、M2は3件のテスト失敗として検出され、ソースは元と同一に復元した。
+- 補強後の最終確認: 対象14 CSの整形後、Releaseビルドは終了0・警告0・エラー0。`dotnet run --project tests/WasmSharp.Tests/WasmSharp.Tests.csproj -c Release --no-build -- --report-trx --results-directory TestResults/host-linking-8.2-fix-runtime`は終了0、passed 807 / failed 0 / skipped 0。生成器の同形式コマンド（出力先`TestResults/host-linking-8.2-fix-generators`）は終了0、37/0/0。CSharpier check（14ファイル）と`git diff --check`は終了0。
+- 独立再レビュー: `kiro-review` APPROVED。レビュアーが同じビルドと両suite（出力先`host-linking-8.2-rereview-runtime`/`-generators`、807/0/0と37/0/0）を再実行し、M1・M2の検出も独立に確認した。`kiro-verify-completion`: TASK 8.2 VERIFIED。
+- 未実施範囲: 公開経路でのlocals・drop・unreachableの実行は9.2の型検査後に成立する。dropで除いた位置の参照解除と、global初期化式の使用不能命令分岐の専用テストは任意指摘として残した。
+
+### 8.3 直接callとreturn（2026-09-26）
+
+- Task Brief: callは実行中の定義関数の所属instanceの関数表から呼出し先を解決し、呼出し元operand末尾の引数をそのまま呼出し先の引数領域として同じ生成ループへフレームを追加する。importした定義関数は元instanceに所属したまま関数表へ置かれるため、呼出し先の環境は元instanceになる。returnはendと同じ`Interpreter.Return`で宣言結果だけを返してフレームを終了し、後続命令を実行しない。handlerから公開Invokeや再帰Runを呼ばない（2.5の定義関数部分、2.6、2.8、2.10、10.3、10.5、10.6）。
+- 実装: WasmExecutionContextへ入口の公開処理段階`Stage`を追加し、Runがframe・value・depthと同じくfinallyで保存・復元する。call入口の保持上限診断はこの段階と呼出し先の位置を使う。深さ超過は入場しようとした呼出し先の関数indexと本体位置で返す。
+- 暫定措置: 呼出し先がホスト関数の場合は、callbackを実行せず位置情報なしの`WasmUnsupportedFeatureException`で拒否する（ExecutionBoundaryのホストInvoke拒否と同じ方針）。10.1・10.3でホスト呼出しへ置き換える。9.2でcallの検証が有効になると、それまでの間は公開Invokeからこの例外が見える。
+- Decode負例: callの添字即値を読むようになったため、`1080`（未終端LEB）を未対応命令のテストから構文失敗のテスト（位置35）へ移した。有効なcall即値の後に続く未対応命令との区別は9.1で扱う。
+- RED_PHASE_OUTPUT: Call handler・Stage・テスト追加後、return/call宣言は未接続のままReleaseビルド終了0・警告0・エラー0。`dotnet run --project tests/WasmSharp.Tests/WasmSharp.Tests.csproj -c Release --no-build -- --treenode-filter '/*/*/(Interpreter_CallTests)|(Interpreter_ReturnTests)|(ModuleValidator_ValidateTests)|(ModuleDecoder_DecodeTests)|(InstructionSet_TryGetTests)|(Interpreter_RunTests)/*' --report-trx --results-directory TestResults/host-linking-8.3-red`は終了2、passed 150 / failed 12 / skipped 0。宣言有効化後の`host-linking-8.3-green`は終了0、162/0/0。深さ上限100,000の自己再帰もCLR再帰なしで成立した。
+- 独立レビュー: `kiro-review` APPROVED、ブロッキング指摘なし。レビュアーは複製ツリーで10件の変異（引数を無視したstackBase、入口instanceでの解決、returnのno-op化、深さ未解放、Stageの未復元・未設定、呼出し元位置のexhaustion、容量確保の欠落、ホスト判定の除去、CLR再帰）を全suiteに適用し、すべて検出されることを確認した。任意指摘のうち、Runのfinallyで常に真となる深さのassertionを削除した。
+- 最終確認: Releaseビルドは終了0・警告0・エラー0。`dotnet run --project tests/WasmSharp.Tests/WasmSharp.Tests.csproj -c Release --no-build -- --report-trx --results-directory TestResults/host-linking-8.3-verify-runtime`は終了0、passed 817 / failed 0 / skipped 0。生成器の同形式コマンド（出力先`TestResults/host-linking-8.3-verify-generators`）は終了0、37/0/0。CSharpier checkと`git diff --check`は終了0。`kiro-verify-completion`: TASK 8.3 VERIFIED。
+- 未実施範囲: guestからのホスト呼出しと同期再入（10.1・10.3）、CLR stack余裕の確認（10.4）、公開経路での実行（9.2以降）。深さ100,000のテストはCLR再帰への退行をプロセスの異常終了でしか示せないため、実CLR stackの境界確認とは区別する。
+
+### 8.4 global命令（2026-09-26）
+
+- Task Brief: global.get/setは実行中の定義関数の所属instanceのglobal表（importが先頭）から実体を解決し、現在値を型・ビット列・参照同一性を保って読み書きする。importした定義関数は元instanceのglobalを使う。global.setは最上位1個を取り除き、検証済み命令に可変性・型の検査を重ねない（2.10、4.4、4.5）。2命令の宣言とhandlerを同時に有効化し、生成器テストの宣言行と実行手順へ追随させた。
+- 境界補足: 可変状態の所有者はWasmGlobalだけのため、検査を重ねない更新入口`internal SetValidatedValue`をWasmGlobalへ追加した。公開`Value`のsetterの契約（要件4.6）は変えていない。安全性は9.2・9.3のglobal.set検証（可変性と型）と、リンク時のglobal型の完全一致に依存する。宣言の有効化に伴い、Validatorの暫定未実装行、命令表テストの実行対象、Decode負例を追随させた。関数本体のglobal.get即値を読むようになったため、`2380`（未終端LEB）を未対応命令のテストから構文失敗のテスト（位置35）へ移した（要件1.4）。global初期化式に含まれるglobal.setは、8.2のlocal.get等と同じくValidate段階のWasmValidateExceptionへ分類が変わる。
+- 9.1への引継ぎ: `ModuleDecoder.ReadInstructions`の`isInitializer && opcode == global.get ? ImmediateKind.Index : descriptor.Immediate`と、そのコメント「global初期化式の読取は、関数本体の実行handler登録に先行する」は、宣言自体がIndexになったため冗長で事実とも合わない。挙動は同じ。ModuleDecoderを境界に持つ9.1で除去する。
+- RED_PHASE_OUTPUT: WasmGlobalの更新入口・handler・テスト追加後、global宣言は未接続のままReleaseビルド終了0・警告0・エラー0。`dotnet run --project tests/WasmSharp.Tests/WasmSharp.Tests.csproj -c Release --no-build -- --treenode-filter '/*/*/(Interpreter_GlobalGetTests)|(Interpreter_GlobalSetTests)|(ModuleValidator_ValidateTests)|(ModuleDecoder_DecodeTests)|(InstructionSet_TryGetTests)/*' --report-trx --results-directory TestResults/host-linking-8.4-red`は終了2、passed 138 / failed 8 / skipped 0。宣言有効化後の`host-linking-8.4-green`は終了0、146/0/0。
+- 最終確認: 対象9 CSの整形後、Releaseビルドは終了0・警告0・エラー0。`dotnet run --project tests/WasmSharp.Tests/WasmSharp.Tests.csproj -c Release --no-build -- --report-trx --results-directory TestResults/host-linking-8.4-full-runtime`は終了0、passed 823 / failed 0 / skipped 0。生成器の同形式コマンド（出力先`TestResults/host-linking-8.4-full-generators`）は終了0、37/0/0。CSharpier checkと`git diff --check`は終了0。
+- 独立レビュー: `kiro-review` APPROVED、ブロッキング指摘なし。レビュアーが同じビルドと両suite（出力先`host-linking-8.4-review-runtime`/`-generators`、823/0/0と37/0/0）を再実行し、RED状態も複製ツリーで再現した。変異9件（入口instanceでの解決2件、popせずpeek、添字固定2件、何もしない更新、値の破棄、default値の取得、検査付き公開setterの使用）のうち、有効入力で挙動が変わらない公開setterの使用以外はすべて検出された。検証後のコード変更はない。`kiro-verify-completion`: TASK 8.4 VERIFIED。
+- 未実施範囲: 公開経路でのglobal命令の実行と、複数instance間でのglobal共有の公開受入は9.2以降・12.2で扱う。global初期化式の使用不能命令分岐の専用テストは8.2と同じく任意指摘として残した。
+
+### タスク8の完了範囲（2026-09-26）
+
+- 8.1〜8.4はそれぞれ独立レビューAPPROVED、完了検証VERIFIED。フレームの引数・locals・複数結果、local.get/set/tee・drop・unreachable、直接call・return、global.get/setの宣言・handler・内部実行ループを実装した。9命令の宣言、生成器テストの宣言行、命令表テストの実行対象14件、Validatorの暫定case群（9規則）は互いに一致する。TDD用の一時フラグは除去済み。
+- 最新状態のReleaseビルドは終了0・警告0・エラー0、ランタイム823件と生成器37件が成功（合計860、failed 0、skipped 0）。開始時の基準791件からランタイムは32件増えた。
+- 公開Decode→Validate→Instantiate→Invokeで新命令・引数・localsを実行する経路は、9.2の型検査と線形化まで検証段階の未実装とする。ホスト呼出し・同期再入・CLR stack余裕（10.x）、start（11.x）、公開受入（12.x）、公式suite、feature全体のGOは今回の完了範囲に含めない。手動モードのため`kiro-validate-impl host-linking`は自動実行せず、ステージング・コミットも行っていない。

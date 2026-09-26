@@ -108,7 +108,7 @@ internal static class ImportInspector
         ImmutableArray<WasmUnverifiedRange>.Builder ranges
     )
     {
-        var reader = new WasmBinaryReader(bytes);
+        var reader = new ModuleBinaryReader(bytes);
         ModuleBinaryFormat.ReadHeader(ref reader);
         List<WasmFunctionType> types = [];
         var imports = ImmutableArray.CreateBuilder<WasmImportInfo>();
@@ -227,7 +227,7 @@ internal static class ImportInspector
     /// <param name="section">読み飛ばすpayloadの現在位置を持つreader</param>
     /// <param name="ranges">構文未確認範囲を追加する先</param>
     private static void SkipPayload(
-        ref WasmBinaryReader section,
+        ref ModuleBinaryReader section,
         ImmutableArray<WasmUnverifiedRange>.Builder ranges
     )
     {

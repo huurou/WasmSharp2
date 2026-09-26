@@ -4,7 +4,7 @@ using WasmSharp.Tests.Fixtures;
 
 namespace WasmSharp.Tests.Execution;
 
-internal class WasmExecutionContext_CalculateCapacityTests
+internal class InterpreterContext_CalculateCapacityTests
 {
     [Test]
     [Arguments(0, 0UL, 0)]
@@ -22,7 +22,7 @@ internal class WasmExecutionContext_CalculateCapacityTests
         var location = new WasmFailureLocation(WasmProcessingStage.Invoke, 30, 0);
 
         // Act
-        var actual = WasmExecutionContext.CalculateCapacity(capacity, requiredCount, location);
+        var actual = InterpreterContext.CalculateCapacity(capacity, requiredCount, location);
 
         // Assert
         await Assert.That(actual).IsEqualTo(expected);
@@ -35,7 +35,7 @@ internal class WasmExecutionContext_CalculateCapacityTests
         var location = new WasmFailureLocation(WasmProcessingStage.Invoke, 30, 0);
 
         // Act
-        var capacity = WasmExecutionContext.CalculateCapacity(
+        var capacity = InterpreterContext.CalculateCapacity(
             Array.MaxLength - 1,
             (ulong)Array.MaxLength,
             location
@@ -55,7 +55,7 @@ internal class WasmExecutionContext_CalculateCapacityTests
 
         // Act & Assert
         var exception = await Assert
-            .That(() => WasmExecutionContext.CalculateCapacity(8, requiredCount, location))
+            .That(() => InterpreterContext.CalculateCapacity(8, requiredCount, location))
             .ThrowsExactly<WasmImplementationLimitException>();
         using (Assert.Multiple())
         {
@@ -68,7 +68,7 @@ internal class WasmExecutionContext_CalculateCapacityTests
     }
 }
 
-internal class WasmExecutionContext_EnsureCapacityTests
+internal class InterpreterContext_EnsureCapacityTests
 {
     [Test]
     public async Task 必要数の加算がintの上限を超える_位置付き保持上限を伝播して外側の状態を保つ()
@@ -85,7 +85,7 @@ internal class WasmExecutionContext_EnsureCapacityTests
         var exception = await Assert
             .That(() =>
             {
-                var context = WasmExecutionContext.Enter(new(10), out var isOutermost);
+                var context = InterpreterContext.Enter(new(10), out var isOutermost);
                 try
                 {
                     context.EnsureCapacity(0, 1, location);
@@ -106,12 +106,12 @@ internal class WasmExecutionContext_EnsureCapacityTests
                 finally
                 {
                     context.Restore(0, 0, 0);
-                    WasmExecutionContext.Exit(isOutermost);
+                    InterpreterContext.Exit(isOutermost);
                     restored =
                         context.FrameCount == 0
                         && context.ValueCount == 0
                         && context.CallDepth == 0
-                        && WasmExecutionContext.Current is null;
+                        && InterpreterContext.Current is null;
                 }
             })
             .ThrowsExactly<WasmImplementationLimitException>();
@@ -130,7 +130,7 @@ internal class WasmExecutionContext_EnsureCapacityTests
     }
 }
 
-internal class WasmExecutionContext_RestoreTests
+internal class InterpreterContext_RestoreTests
 {
     [Test]
     public async Task 内側で領域を拡張して復元する_外側の値とフレームを保ち除いた参照を解除する()
@@ -154,10 +154,10 @@ internal class WasmExecutionContext_RestoreTests
             null
         );
         var instance = new WasmInstance(module, WasmExecutionOptions.Default);
-        var function = (WasmDefinedFunction)instance.Functions[0];
-        var innerFunction = (WasmDefinedFunction)instance.Functions[1];
+        var function = (DefinedFunction)instance.Functions[0];
+        var innerFunction = (DefinedFunction)instance.Functions[1];
         var reference = new object();
-        var context = WasmExecutionContext.Enter(new(10), out var isOutermost);
+        var context = InterpreterContext.Enter(new(10), out var isOutermost);
         var location = new WasmFailureLocation(WasmProcessingStage.Invoke, 30, 0);
         ExecutionFrame outerFrame;
         ExecutionFrame innerFrame;
@@ -211,7 +211,7 @@ internal class WasmExecutionContext_RestoreTests
             context.Restore(0, 0, 0);
             fullyRestored =
                 context.FrameCount == 0 && context.ValueCount == 0 && context.CallDepth == 0;
-            WasmExecutionContext.Exit(isOutermost);
+            InterpreterContext.Exit(isOutermost);
         }
 
         // Assert
@@ -237,6 +237,131 @@ internal class WasmExecutionContext_RestoreTests
             await Assert.That(removedFrame.Function).IsNull();
             await Assert.That(removedValue.AsI32()).IsEqualTo(0);
             await Assert.That(fullyRestored).IsTrue();
+        }
+    }
+}
+
+internal class InterpreterContext_EnterFrameTests
+{
+    [Test]
+    public async Task 七種の追加localsを持つ関数へ入る_引数に続けて型別のゼロとnullを積みoperand開始位置を設定する()
+    {
+        // Arrange
+        var function = ExecutionFunctionFixture.Create(
+            [],
+            new([WasmValueKind.ExternRef], []),
+            [
+                new(1, WasmValueKind.I32),
+                new(2, WasmValueKind.I64),
+                new(0, WasmValueKind.F64),
+                new(1, WasmValueKind.F32),
+                new(1, WasmValueKind.F64),
+                new(1, WasmValueKind.V128),
+                new(1, WasmValueKind.FuncRef),
+                new(1, WasmValueKind.ExternRef),
+            ],
+            0
+        );
+        var reference = new object();
+        var location = new WasmFailureLocation(WasmProcessingStage.Invoke, 30, 0);
+        var context = InterpreterContext.Enter(new(10), out var isOutermost);
+        ExecutionFrame frame;
+        WasmValue[] values;
+
+        // Act
+        try
+        {
+            context.EnsureCapacity(1, 0, location);
+            context.PushFrame(new(FunctionFixture.Create(), 0, 0));
+            context.PushValue(WasmValue.FromI32(42));
+            context.EnsureCapacity(10, 0, location);
+            context.PushValue(WasmValue.FromExternRef(reference));
+            context.EnterFrame(function, 1);
+            frame = context.GetFrame(1);
+            values = [.. Enumerable.Range(0, context.ValueCount).Select(context.GetValue)];
+        }
+        finally
+        {
+            context.Restore(0, 0, 0);
+            InterpreterContext.Exit(isOutermost);
+        }
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(frame.Function).IsSameReferenceAs(function);
+            await Assert.That(frame.Pc).IsEqualTo(0);
+            await Assert.That(frame.StackBase).IsEqualTo(1);
+            await Assert.That(frame.OperandBase).IsEqualTo(10);
+            await Assert.That(values.Length).IsEqualTo(10);
+            await Assert.That(values[0].AsI32()).IsEqualTo(42);
+            await Assert.That(values[1].AsExternRef()).IsSameReferenceAs(reference);
+            await Assert.That(values[2]).IsEqualTo(WasmValue.FromI32(0));
+            await Assert.That(values[3]).IsEqualTo(WasmValue.FromI64(0));
+            await Assert.That(values[4]).IsEqualTo(WasmValue.FromI64(0));
+            await Assert.That(values[5]).IsEqualTo(WasmValue.FromF32Bits(0));
+            await Assert.That(values[6]).IsEqualTo(WasmValue.FromF64Bits(0));
+            await Assert.That(values[7]).IsEqualTo(WasmValue.FromV128(0, 0));
+            await Assert.That(values[8]).IsEqualTo(WasmValue.FromFuncRef(null));
+            await Assert.That(values[9]).IsEqualTo(WasmValue.FromExternRef(null));
+        }
+    }
+
+    [Test]
+    public async Task 同じ関数へ入れ子で入り結果を返す_内側を外側のoperandの後に置き外側の引数とlocalsを保つ()
+    {
+        // Arrange
+        var function = ExecutionFunctionFixture.Create(
+            [],
+            new([WasmValueKind.I64], [WasmValueKind.F32]),
+            [new(1, WasmValueKind.F32)],
+            1
+        );
+        var location = new WasmFailureLocation(WasmProcessingStage.Invoke, 30, 0);
+        var context = InterpreterContext.Enter(new(10), out var isOutermost);
+        ExecutionFrame outerFrame;
+        ExecutionFrame innerFrame;
+        WasmValue innerLocal;
+        WasmValue[] values;
+        int frameCount;
+
+        // Act
+        try
+        {
+            context.EnsureCapacity(3, 1, location);
+            context.PushValue(WasmValue.FromI64(7));
+            context.EnterFrame(function, 0);
+            context.PushValue(WasmValue.FromI64(9));
+            context.EnsureCapacity(4, 1, location);
+            context.TryEnterCall();
+            context.EnterFrame(function, 2);
+            innerFrame = context.GetFrame(1);
+            innerLocal = context.GetValue(3);
+            context.PushValue(WasmValue.FromF32Bits(0x7FC00001));
+            context.CompleteFrame();
+            outerFrame = context.GetFrame(0);
+            frameCount = context.FrameCount;
+            values = [.. Enumerable.Range(0, context.ValueCount).Select(context.GetValue)];
+        }
+        finally
+        {
+            context.Restore(0, 0, 0);
+            InterpreterContext.Exit(isOutermost);
+        }
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(outerFrame.StackBase).IsEqualTo(0);
+            await Assert.That(outerFrame.OperandBase).IsEqualTo(2);
+            await Assert.That(innerFrame.StackBase).IsEqualTo(2);
+            await Assert.That(innerFrame.OperandBase).IsEqualTo(4);
+            await Assert.That(innerLocal).IsEqualTo(WasmValue.FromF32Bits(0));
+            await Assert.That(frameCount).IsEqualTo(1);
+            await Assert.That(values.Length).IsEqualTo(3);
+            await Assert.That(values[0].AsI64()).IsEqualTo(7L);
+            await Assert.That(values[1]).IsEqualTo(WasmValue.FromF32Bits(0));
+            await Assert.That(values[2].AsF32Bits()).IsEqualTo(0x7FC00001U);
         }
     }
 }

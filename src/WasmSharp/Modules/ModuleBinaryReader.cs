@@ -7,7 +7,7 @@ namespace WasmSharp.Modules;
 /// <summary>
 /// 入力上の位置を保持して限定されたバイト範囲を読む
 /// </summary>
-internal ref struct WasmBinaryReader
+internal ref struct ModuleBinaryReader
 {
     private static readonly UTF8Encoding utf8_ = new(false, true);
     private readonly ReadOnlySpan<byte> bytes_;
@@ -19,7 +19,7 @@ internal ref struct WasmBinaryReader
     internal byte? SectionId { get; set; }
     internal uint? FunctionIndex { get; }
 
-    internal WasmBinaryReader(
+    internal ModuleBinaryReader(
         ReadOnlySpan<byte> bytes,
         long startOffset = 0,
         byte? sectionId = null,
@@ -50,10 +50,10 @@ internal ref struct WasmBinaryReader
         return result;
     }
 
-    internal WasmBinaryReader ReadRange(uint length, uint? functionIndex = null)
+    internal ModuleBinaryReader ReadRange(uint length, uint? functionIndex = null)
     {
         var start = Position;
-        return new WasmBinaryReader(
+        return new ModuleBinaryReader(
             ReadBytes(length),
             start,
             SectionId,

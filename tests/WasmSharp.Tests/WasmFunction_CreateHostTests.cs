@@ -53,7 +53,7 @@ internal class WasmFunction_CreateHostTests
             {
                 await Assert
                     .That(
-                        function is WasmInstanceHostFunction host
+                        function is InstanceHostFunction host
                             && ReferenceEquals(host.Callback, instanceCallback)
                     )
                     .IsTrue();
@@ -61,10 +61,7 @@ internal class WasmFunction_CreateHostTests
             else
             {
                 await Assert
-                    .That(
-                        function is WasmHostFunction host
-                            && ReferenceEquals(host.Callback, callback)
-                    )
+                    .That(function is HostFunction host && ReferenceEquals(host.Callback, callback))
                     .IsTrue();
             }
         }

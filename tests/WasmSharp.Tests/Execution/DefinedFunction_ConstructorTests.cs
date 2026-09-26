@@ -3,7 +3,7 @@ using WasmSharp.Tests.Fixtures;
 
 namespace WasmSharp.Tests.Execution;
 
-internal class WasmDefinedFunction_ConstructorTests
+internal class DefinedFunction_ConstructorTests
 {
     [Test]
     public async Task 関数添字と定義添字が異なる_元instanceの定義と実行コードを使う()
@@ -20,7 +20,7 @@ internal class WasmDefinedFunction_ConstructorTests
             .Instantiate([]);
 
         // Act
-        var function = new WasmDefinedFunction(instance, uint.MaxValue, 1);
+        var function = new DefinedFunction(instance, uint.MaxValue, 1);
         var result = function.Invoke([]);
 
         // Assert

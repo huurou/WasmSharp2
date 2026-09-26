@@ -9,7 +9,7 @@ internal class InstructionSet_TryGetTests
     [Arguments((byte)0, 183)]
     [Arguments((byte)0xFC, 18)]
     [Arguments((byte)0xFD, 236)]
-    public async Task 保存版の命令割当を照合する_番号と名前と欠番が一致し定数と終端だけを実行対象にする(
+    public async Task 保存版の命令割当を照合する_番号と名前と欠番が一致し対応済み命令だけを実行対象にする(
         byte prefix,
         int expectedCount
     )
@@ -50,7 +50,27 @@ internal class InstructionSet_TryGetTests
             await Assert.That(inconsistent).IsEmpty();
             await Assert
                 .That(executable)
-                .IsEquivalentTo(prefix == 0 ? new uint[] { 0x0B, 0x41, 0x42, 0x43, 0x44 } : []);
+                .IsEquivalentTo(
+                    prefix == 0
+                        ? new uint[]
+                        {
+                            0x00,
+                            0x0B,
+                            0x0F,
+                            0x10,
+                            0x1A,
+                            0x20,
+                            0x21,
+                            0x22,
+                            0x23,
+                            0x24,
+                            0x41,
+                            0x42,
+                            0x43,
+                            0x44,
+                        }
+                        : []
+                );
             await Assert.That(InstructionSet.TryGet(new(prefix, 256), out _)).IsFalse();
             await Assert.That(InstructionSet.TryGet(new(prefix, uint.MaxValue), out _)).IsFalse();
         }

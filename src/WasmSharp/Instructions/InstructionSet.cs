@@ -50,7 +50,87 @@ namespace WasmSharp.Instructions;
     ValidationRule.Constant,
     nameof(Interpreter.PushConstant)
 )]
-[Instruction(0, 0x00, "unreachable")]
+[Instruction(
+    0,
+    0x00,
+    "unreachable",
+    ImmediateKind.None,
+    StackEffectKind.Unreachable,
+    ValidationRule.Unreachable,
+    nameof(Interpreter.Unreachable)
+)]
+[Instruction(
+    0,
+    0x0F,
+    "return",
+    ImmediateKind.None,
+    StackEffectKind.Return,
+    ValidationRule.Return,
+    nameof(Interpreter.Return)
+)]
+[Instruction(
+    0,
+    0x10,
+    "call",
+    ImmediateKind.Index,
+    StackEffectKind.Call,
+    ValidationRule.Call,
+    nameof(Interpreter.Call)
+)]
+[Instruction(
+    0,
+    0x1A,
+    "drop",
+    ImmediateKind.None,
+    StackEffectKind.Drop,
+    ValidationRule.Drop,
+    nameof(Interpreter.Drop)
+)]
+[Instruction(
+    0,
+    0x20,
+    "local.get",
+    ImmediateKind.Index,
+    StackEffectKind.LocalGet,
+    ValidationRule.LocalGet,
+    nameof(Interpreter.LocalGet)
+)]
+[Instruction(
+    0,
+    0x21,
+    "local.set",
+    ImmediateKind.Index,
+    StackEffectKind.LocalSet,
+    ValidationRule.LocalSet,
+    nameof(Interpreter.LocalSet)
+)]
+[Instruction(
+    0,
+    0x22,
+    "local.tee",
+    ImmediateKind.Index,
+    StackEffectKind.LocalTee,
+    ValidationRule.LocalTee,
+    nameof(Interpreter.LocalTee)
+)]
+[Instruction(
+    0,
+    0x23,
+    "global.get",
+    ImmediateKind.Index,
+    StackEffectKind.GlobalGet,
+    ValidationRule.GlobalGet,
+    nameof(Interpreter.GlobalGet)
+)]
+[Instruction(
+    0,
+    0x24,
+    "global.set",
+    ImmediateKind.Index,
+    StackEffectKind.GlobalSet,
+    ValidationRule.GlobalSet,
+    nameof(Interpreter.GlobalSet)
+)]
 [Instruction(0, 0x01, "nop")]
 [Instruction(0, 0x02, "block")]
 [Instruction(0, 0x03, "loop")]
@@ -59,17 +139,9 @@ namespace WasmSharp.Instructions;
 [Instruction(0, 0x0C, "br")]
 [Instruction(0, 0x0D, "br_if")]
 [Instruction(0, 0x0E, "br_table")]
-[Instruction(0, 0x0F, "return")]
-[Instruction(0, 0x10, "call")]
 [Instruction(0, 0x11, "call_indirect")]
-[Instruction(0, 0x1A, "drop")]
 [Instruction(0, 0x1B, "select")]
 [Instruction(0, 0x1C, "select")]
-[Instruction(0, 0x20, "local.get")]
-[Instruction(0, 0x21, "local.set")]
-[Instruction(0, 0x22, "local.tee")]
-[Instruction(0, 0x23, "global.get")]
-[Instruction(0, 0x24, "global.set")]
 [Instruction(0, 0x25, "table.get")]
 [Instruction(0, 0x26, "table.set")]
 [Instruction(0, 0x28, "i32.load")]

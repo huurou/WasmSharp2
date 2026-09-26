@@ -208,6 +208,35 @@ internal static class ModuleValidator
                     }
                     break;
 
+                // 実行handlerを先に接続した命令は、型検査を実装するまで検証段階の未実装として止める。
+                case ValidationRule.Unreachable:
+                case ValidationRule.Call:
+                case ValidationRule.Return:
+                case ValidationRule.Drop:
+                case ValidationRule.LocalGet:
+                case ValidationRule.LocalSet:
+                case ValidationRule.LocalTee:
+                case ValidationRule.GlobalGet:
+                case ValidationRule.GlobalSet:
+                    throw new WasmUnsupportedFeatureException(
+                        "未実装の命令検証に遭遇しました。",
+                        descriptor.Name,
+                        new WasmFailureLocation(
+                            WasmProcessingStage.Validate,
+                            instruction.ByteOffset,
+                            moduleFunctionIndex,
+                            10
+                        ),
+                        [
+                            new WasmUnverifiedRange(
+                                WasmProcessingStage.Validate,
+                                instruction.ByteOffset,
+                                module.InputLength,
+                                "この命令以降の検証が未完了です。"
+                            ),
+                        ]
+                    );
+
                 default:
                     throw new InvalidOperationException("デコード済み命令の検証規則が不正です。");
             }
@@ -259,7 +288,11 @@ internal static class ModuleValidator
             );
         }
 
-        return new FunctionCode(instructions.MoveToImmutable(), maxOperandStack);
+        return new FunctionCode(
+            instructions.MoveToImmutable(),
+            function.Locals.AsSpan(),
+            maxOperandStack
+        );
     }
 
     /// <summary>

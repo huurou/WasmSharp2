@@ -10,7 +10,7 @@ internal class ExecutionBoundary_InvokeTests
     public async Task 外側の呼び出し深さが上限に達している_外側の上限で拒否し状態と参照を保つ()
     {
         // Arrange
-        var function = (WasmDefinedFunction)
+        var function = (DefinedFunction)
             WasmModule
                 .Decode(ConstantModuleBinary.Create(0x7F, 0x41, 0x2A, 0x0B))
                 .Validate()
@@ -23,7 +23,7 @@ internal class ExecutionBoundary_InvokeTests
         var exception = await Assert
             .That(() =>
             {
-                var outer = WasmExecutionContext.Enter(new(1), out var isOutermost);
+                var outer = InterpreterContext.Enter(new(1), out var isOutermost);
                 try
                 {
                     outer.TryEnterCall();
@@ -33,14 +33,14 @@ internal class ExecutionBoundary_InvokeTests
                     }
                     finally
                     {
-                        outerRemains = ReferenceEquals(WasmExecutionContext.Current, outer);
+                        outerRemains = ReferenceEquals(InterpreterContext.Current, outer);
                         state = (outer.FrameCount, outer.ValueCount, outer.CallDepth);
                     }
                 }
                 finally
                 {
                     outer.Restore(0, 0, 0);
-                    WasmExecutionContext.Exit(isOutermost);
+                    InterpreterContext.Exit(isOutermost);
                 }
             })
             .ThrowsExactly<WasmExhaustionException>();
@@ -79,8 +79,8 @@ internal class ExecutionBoundary_InvokeTests
                 }
                 finally
                 {
-                    cleared = WasmExecutionContext.Current is null;
-                    WasmExecutionContext.Exit(true);
+                    cleared = InterpreterContext.Current is null;
+                    InterpreterContext.Exit(true);
                 }
             })
             .ThrowsExactly<WasmImplementationLimitException>();
@@ -109,7 +109,7 @@ internal class ExecutionBoundary_InvokeTests
 
         // Act
         var result = ExecutionBoundary.Invoke(function, [], WasmProcessingStage.Invoke);
-        var cleared = WasmExecutionContext.Current is null;
+        var cleared = InterpreterContext.Current is null;
 
         // Assert
         using (Assert.Multiple())

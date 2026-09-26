@@ -41,7 +41,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
     private static readonly DiagnosticDescriptor invalidHandler_ = new(
         "WSIG004",
         "命令handlerの契約不一致",
-        "命令 '{0}' のhandlerは static ExecutionResult Handler(WasmExecutionContext context, in Instruction instruction) にしてください。",
+        "命令 '{0}' のhandlerは static ExecutionResult Handler(InterpreterContext context, in Instruction instruction) にしてください。",
         "InstructionGeneration",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true
@@ -192,7 +192,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
             && method.Parameters.Length == 2
             && method.Parameters[0].RefKind == RefKind.None
             && method.Parameters[0].Type.ToDisplayString()
-                == "WasmSharp.Execution.WasmExecutionContext"
+                == "WasmSharp.Execution.InterpreterContext"
             && method.Parameters[1].RefKind == RefKind.In
             && method.Parameters[1].Type.ToDisplayString() == "WasmSharp.Execution.Instruction";
     }
@@ -309,7 +309,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
                 /// <summary>
                 /// 今回の入口フレームが終了するまで命令を実行し、失敗結果はそのまま返す
                 /// </summary>
-                private static ExecutionResult RunLoop(WasmExecutionContext context, int entryFrameCount)
+                private static ExecutionResult RunLoop(InterpreterContext context, int entryFrameCount)
                 {
                     while (context.FrameCount > entryFrameCount)
                     {

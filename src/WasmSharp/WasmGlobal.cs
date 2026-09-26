@@ -74,4 +74,13 @@ public sealed class WasmGlobal
         // 不変globalへの更新は禁止するが、生成時の初期値は直接設定する。
         value_ = initialValue;
     }
+
+    /// <summary>
+    /// 検証済みのglobal.setから、可変性と型を再検査せずに現在値を更新する
+    /// </summary>
+    /// <param name="value">検証で型とglobalの可変性を確認済みの値</param>
+    internal void SetValidatedValue(WasmValue value)
+    {
+        value_ = value;
+    }
 }

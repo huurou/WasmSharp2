@@ -6,13 +6,13 @@ namespace WasmSharp.Execution;
 /// <summary>
 /// 同じスレッドの同期呼び出しで共有する実行状態
 /// </summary>
-internal sealed class WasmExecutionContext
+internal sealed class InterpreterContext
 {
     /// <summary>
     /// 現在のスレッドで同期呼び出しが共有する実行コンテキスト
     /// </summary>
     [ThreadStatic]
-    private static WasmExecutionContext? current_;
+    private static InterpreterContext? current_;
 
     /// <summary>
     /// 関数呼び出しのフレームを保持する配列
@@ -27,7 +27,12 @@ internal sealed class WasmExecutionContext
     /// <summary>
     /// 現在のスレッドの実行コンテキスト。実行中でなければnull
     /// </summary>
-    internal static WasmExecutionContext? Current => current_;
+    internal static InterpreterContext? Current => current_;
+
+    /// <summary>
+    /// 実行中のフレームの定義関数
+    /// </summary>
+    internal DefinedFunction CurrentFunction => frames_[FrameCount - 1].Function;
 
     /// <summary>
     /// 最外側の呼び出しで固定した呼び出し深さの上限
@@ -38,6 +43,11 @@ internal sealed class WasmExecutionContext
     /// 同じ実行コンテキストで共有する現在の呼び出し深さ
     /// </summary>
     internal int CallDepth { get; private set; }
+
+    /// <summary>
+    /// 実行中の関数入口が属する公開処理段階
+    /// </summary>
+    internal WasmProcessingStage Stage { get; set; }
 
     /// <summary>
     /// フレーム配列内の使用中の要素数
@@ -53,7 +63,7 @@ internal sealed class WasmExecutionContext
     /// 実行ポリシーの呼び出し深さ上限を固定してコンテキストを構築する
     /// </summary>
     /// <param name="options">最外側の呼び出しに適用する実行ポリシー</param>
-    private WasmExecutionContext(WasmExecutionOptions options)
+    private InterpreterContext(WasmExecutionOptions options)
     {
         MaxCallDepth = options.MaxCallDepth;
     }
@@ -64,10 +74,10 @@ internal sealed class WasmExecutionContext
     /// <param name="options">新しく開く場合にだけ適用する実行ポリシー</param>
     /// <param name="isOutermost">この呼び出しで新しく開いた場合はtrue</param>
     /// <returns>同期呼び出しの間で共有する実行コンテキスト</returns>
-    internal static WasmExecutionContext Enter(WasmExecutionOptions options, out bool isOutermost)
+    internal static InterpreterContext Enter(WasmExecutionOptions options, out bool isOutermost)
     {
         isOutermost = current_ is null;
-        return current_ ??= new WasmExecutionContext(options);
+        return current_ ??= new InterpreterContext(options);
     }
 
     /// <summary>
@@ -111,13 +121,17 @@ internal sealed class WasmExecutionContext
     /// <param name="maxOperandStack">関数の検証で求めたoperandの最大要素数</param>
     /// <param name="location">保持上限を超えた場合に報告する処理段階と入力上の位置</param>
     /// <exception cref="WasmImplementationLimitException">必要数が配列の保持上限を超える場合</exception>
-    internal void EnsureCapacity(int operandBase, int maxOperandStack, WasmFailureLocation location)
+    internal void EnsureCapacity(
+        ulong operandBase,
+        int maxOperandStack,
+        WasmFailureLocation location
+    )
     {
         // 加算前に広げ、両方の必要数を検査してから配列を拡張する。
         var frameCapacity = CalculateCapacity(frames_.Length, (ulong)FrameCount + 1, location);
         var valueCapacity = CalculateCapacity(
             values_.Length,
-            (ulong)operandBase + (ulong)maxOperandStack,
+            operandBase + (ulong)maxOperandStack,
             location
         );
         if (frameCapacity != frames_.Length)
@@ -171,12 +185,70 @@ internal sealed class WasmExecutionContext
     }
 
     /// <summary>
+    /// 積み済みの引数に続けて追加localsを型別の初期値で積み、定義関数のフレームを追加する
+    /// </summary>
+    /// <remarks>引数・追加locals・operandの容量を確保し、引数を積んだ後に呼び出す</remarks>
+    /// <param name="function">開始する定義関数</param>
+    /// <param name="stackBase">共有値スタック上の引数の開始位置</param>
+    internal void EnterFrame(DefinedFunction function, int stackBase)
+    {
+        // 容量確保済みのため、圧縮宣言ごとの個数はintに収まる。
+        foreach (var local in function.Code.Locals)
+        {
+            var count = (int)local.Count;
+            values_.AsSpan(ValueCount, count).Fill(local.Value);
+            ValueCount += count;
+        }
+        PushFrame(new ExecutionFrame(function, stackBase, ValueCount));
+    }
+
+    /// <summary>
     /// 確保済みの値スタックへ値を積み、使用中の要素数を増やす
     /// </summary>
     /// <param name="value">値スタックへ積む値</param>
     internal void PushValue(WasmValue value)
     {
         values_[ValueCount++] = value;
+    }
+
+    /// <summary>
+    /// 値スタックの最上位の値を取り除いて返し、除いた位置の参照を解除する
+    /// </summary>
+    /// <returns>取り除いた値</returns>
+    internal WasmValue PopValue()
+    {
+        var value = values_[--ValueCount];
+        values_[ValueCount] = default;
+        return value;
+    }
+
+    /// <summary>
+    /// 値スタックの最上位の値を取り除かずに取得する
+    /// </summary>
+    /// <returns>最上位の値</returns>
+    internal WasmValue PeekValue()
+    {
+        return values_[ValueCount - 1];
+    }
+
+    /// <summary>
+    /// 実行中の関数の引数とlocalsから、指定したlocalの値を取得する
+    /// </summary>
+    /// <param name="index">引数を先頭とする関数内のlocal添字</param>
+    /// <returns>localの現在値</returns>
+    internal WasmValue GetLocal(uint index)
+    {
+        return values_[frames_[FrameCount - 1].StackBase + (int)index];
+    }
+
+    /// <summary>
+    /// 実行中の関数の引数とlocalsのうち、指定したlocalを更新する
+    /// </summary>
+    /// <param name="index">引数を先頭とする関数内のlocal添字</param>
+    /// <param name="value">設定する値</param>
+    internal void SetLocal(uint index, WasmValue value)
+    {
+        values_[frames_[FrameCount - 1].StackBase + (int)index] = value;
     }
 
     /// <summary>

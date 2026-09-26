@@ -116,10 +116,10 @@ internal static class ModuleInstantiator
     /// <summary>
     /// importを解決する
     /// </summary>
-    internal static ImmutableArray<WasmExternalValue> Link(WasmModule module, WasmImports imports)
+    internal static ImmutableArray<ExternalValue> Link(WasmModule module, WasmImports imports)
     {
         var providers = imports.Snapshot();
-        var linked = ImmutableArray.CreateBuilder<WasmExternalValue>(module.Imports.Length);
+        var linked = ImmutableArray.CreateBuilder<ExternalValue>(module.Imports.Length);
         for (var ordinal = 0; ordinal < module.Imports.Length; ordinal++)
         {
             var import = module.Imports[ordinal];
@@ -202,7 +202,7 @@ internal static class ModuleInstantiator
         };
     }
 
-    private static string DescribeValue(WasmExternalValue value)
+    private static string DescribeValue(ExternalValue value)
     {
         return value switch
         {

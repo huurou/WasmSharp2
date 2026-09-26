@@ -16,12 +16,12 @@ internal static class ExecutionBoundary
         WasmProcessingStage stage
     )
     {
-        if (function is not WasmDefinedFunction definedFunction)
+        if (function is not DefinedFunction definedFunction)
         {
             throw new WasmUnsupportedFeatureException("ホスト関数の呼び出しは未対応です。");
         }
 
-        var context = WasmExecutionContext.Enter(
+        var context = InterpreterContext.Enter(
             definedFunction.Instance.ExecutionOptions,
             out var isOutermost
         );
@@ -33,7 +33,7 @@ internal static class ExecutionBoundary
         }
         finally
         {
-            WasmExecutionContext.Exit(isOutermost);
+            InterpreterContext.Exit(isOutermost);
         }
     }
 

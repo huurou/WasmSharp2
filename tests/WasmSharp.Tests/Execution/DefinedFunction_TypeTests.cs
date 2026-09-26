@@ -2,7 +2,7 @@ using WasmSharp.Execution;
 
 namespace WasmSharp.Tests.Execution;
 
-internal class WasmDefinedFunction_TypeTests
+internal class DefinedFunction_TypeTests
 {
     [Test]
     public async Task 複数の定義から関数実体を作る_所有モジュールの同じ添字から型を取得する()
@@ -26,7 +26,7 @@ internal class WasmDefinedFunction_TypeTests
         // Act
         var instance = new WasmInstance(module, options);
         var other = new WasmInstance(module, WasmExecutionOptions.Default);
-        var function = (WasmDefinedFunction)instance.Functions[1];
+        var function = (DefinedFunction)instance.Functions[1];
         var type = function.Type;
 
         // Assert
