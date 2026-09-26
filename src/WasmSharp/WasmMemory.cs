@@ -1,8 +1,9 @@
 namespace WasmSharp;
 
 /// <summary>
-/// memoryを表現するクラス
+/// バイト領域とページ数を保持する共有memory
 /// </summary>
+/// <remarks>同じ実体をimportしたinstanceとホストは、更新後の内容と増大後のサイズを共有する</remarks>
 public sealed class WasmMemory
 {
     /// <summary>
@@ -38,6 +39,10 @@ public sealed class WasmMemory
     /// <summary>
     /// limitsに従ってゼロ初期化されたmemoryを生成する
     /// </summary>
+    /// <param name="limits">1ページを65,536バイトとする初期ページ数と任意の最大ページ数</param>
+    /// <exception cref="ArgumentNullException">limitsがnullの場合</exception>
+    /// <exception cref="ArgumentException">最小値が最大値を超えるか、いずれかが65,536ページを超える場合</exception>
+    /// <exception cref="OutOfMemoryException">初期領域を割り当てられない場合</exception>
     public WasmMemory(WasmLimits limits)
     {
         ArgumentNullException.ThrowIfNull(limits);
@@ -64,6 +69,9 @@ public sealed class WasmMemory
     /// <summary>
     /// 指定範囲へホスト側バッファの内容をコピーする
     /// </summary>
+    /// <param name="offset">書き込み先の先頭バイト位置</param>
+    /// <param name="source">全体をコピーするホスト側バッファ</param>
+    /// <exception cref="ArgumentOutOfRangeException">書き込み範囲が現在のmemoryの外にある場合。内容は変更しない</exception>
     public void Write(ulong offset, ReadOnlySpan<byte> source)
     {
         ValidateRange(offset, source.Length);
@@ -80,6 +88,10 @@ public sealed class WasmMemory
     /// <summary>
     /// 指定範囲をホスト側バッファへコピーする
     /// </summary>
+    /// <remarks>コピーしたバイトは、その後のmemoryの更新や増大に追従しない</remarks>
+    /// <param name="offset">読み出し元の先頭バイト位置</param>
+    /// <param name="destination">その長さだけ読み出したバイトを受け取るホスト側バッファ</param>
+    /// <exception cref="ArgumentOutOfRangeException">読み出し範囲が現在のmemoryの外にある場合。destinationは変更しない</exception>
     public void Read(ulong offset, Span<byte> destination)
     {
         ValidateRange(offset, destination.Length);
@@ -96,7 +108,10 @@ public sealed class WasmMemory
     /// <summary>
     /// 既存内容を保持して増大し、追加ページをゼロ初期化する
     /// </summary>
-    /// <remarks>予測可能な上限超過はfalseを返す。実割当例外は伝播し、既存状態を維持する</remarks>
+    /// <param name="deltaPages">追加するページ数。0の場合も成功する</param>
+    /// <param name="previousPageCount">成功・失敗にかかわらず、増大前のページ数</param>
+    /// <returns>増大に成功した場合はtrue。宣言された最大値または65,536ページを超える場合は、サイズと内容を変更せずfalse</returns>
+    /// <exception cref="OutOfMemoryException">追加領域を割り当てられない場合。サイズと内容は変更しない</exception>
     public bool TryGrow(uint deltaPages, out uint previousPageCount)
     {
         previousPageCount = PageCount;
@@ -123,6 +138,12 @@ public sealed class WasmMemory
         return true;
     }
 
+    /// <summary>
+    /// コピー対象の全範囲が現在のmemoryに収まることを確認する
+    /// </summary>
+    /// <param name="offset">範囲の先頭バイト位置</param>
+    /// <param name="length">バッファから取得した非負のバイト数</param>
+    /// <exception cref="ArgumentOutOfRangeException">範囲が現在のmemoryの外にある場合</exception>
     private void ValidateRange(ulong offset, int length)
     {
         // 加算のオーバーフローを避け、コピー前に全範囲を検査する。

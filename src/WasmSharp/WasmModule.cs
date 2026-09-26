@@ -12,6 +12,9 @@ namespace WasmSharp;
 /// </summary>
 public sealed class WasmModule
 {
+    /// <summary>
+    /// 静的検証が成功し、実行コードとexport索引が確定しているかどうか
+    /// </summary>
     private bool isValidated_;
 
     /// <summary>
@@ -204,11 +207,22 @@ public sealed class WasmModule
     }
 
     /// <summary>
-    /// moduleをインスタンス化する
+    /// ホストモジュールの提供登録を使い、startの実行を完了したinstanceを生成する
     /// </summary>
-    /// <param name="hostModules">ホストモジュールのリスト</param>
-    /// <param name="options">実行時のオプション設定</param>
-    /// <returns>instance</returns>
+    /// <param name="hostModules">importに対応する名前、関数、リソースを提供するホストモジュール</param>
+    /// <param name="options">生成するinstanceの実行ポリシー。nullの場合は<see cref="WasmExecutionOptions.Default"/></param>
+    /// <returns>startがあればその実行も正常に終了したinstance</returns>
+    /// <remarks>
+    /// <see cref="Validate"/>の成功後に呼び出す。提供登録は呼び出し時点の名前対応を使い、関数とリソースの実体は共有する。
+    /// startの実行、実行ポリシー、失敗時の参照と変更の扱いは<see cref="Instantiate(WasmImports, WasmExecutionOptions)"/>と同じ
+    /// </remarks>
+    /// <exception cref="ArgumentNullException">ホストモジュールの要素がnullの場合</exception>
+    /// <exception cref="ArgumentException">同じmodule名とitem名の提供登録が重複する場合</exception>
+    /// <exception cref="InvalidOperationException">静的検証に成功していないか、ホスト関数の結果がnullまたは宣言型と一致しない場合</exception>
+    /// <exception cref="WasmInstantiateException">importの名前・種類・型が提供登録と一致しない場合</exception>
+    /// <exception cref="WasmImplementationLimitException">リソースの構築またはstartの実行に必要な保持数が実装上限を超える場合</exception>
+    /// <exception cref="WasmTrapException">startの実行結果がtrapの場合</exception>
+    /// <exception cref="WasmExhaustionException">startの実行結果が資源枯渇の場合</exception>
     public WasmInstance Instantiate(
         ReadOnlySpan<WasmHostModule> hostModules,
         WasmExecutionOptions? options = default
@@ -224,11 +238,30 @@ public sealed class WasmModule
     }
 
     /// <summary>
-    /// moduleをインスタンス化する
+    /// importを結び付け、startの実行を完了したinstanceを生成する
     /// </summary>
-    /// <param name="imports">提供登録集合</param>
-    /// <param name="options">実行時のオプション設定</param>
-    /// <returns>構築済みinstance</returns>
+    /// <param name="imports">importに対応する名前、関数、リソースの提供登録</param>
+    /// <param name="options">生成するinstanceの実行ポリシー。nullの場合は<see cref="WasmExecutionOptions.Default"/></param>
+    /// <returns>startがあればその実行も正常に終了したinstance</returns>
+    /// <remarks>
+    /// <para>
+    /// <see cref="Validate"/>の成功後に呼び出す。importの実体は共有し、module内のリソース定義には毎回新しい実体を割り当てる。
+    /// startはこの呼び出しにつき1回実行し、構築済みのリソースとexportへアクセスできる。
+    /// importの照合やリソースの構築に失敗した場合はstartを実行しない
+    /// </para>
+    /// <para>
+    /// startは進行中の実行コンテキストがあればその上限を共有し、なければこのinstanceのポリシーで実行する。
+    /// startが失敗しても、ホストへ保存されたinstanceやリソースの参照は有効で、実行済みの変更は取り消さない。
+    /// 実行結果から生成するtrapと資源枯渇の例外は処理段階をInstantiateとする。
+    /// ホスト処理の例外と実際のメモリ割当例外は変換せず、そのまま伝播する
+    /// </para>
+    /// </remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="imports"/>がnullの場合</exception>
+    /// <exception cref="InvalidOperationException">静的検証に成功していないか、ホスト関数の結果がnullまたは宣言型と一致しない場合</exception>
+    /// <exception cref="WasmInstantiateException">importの名前・種類・型が提供登録と一致しない場合</exception>
+    /// <exception cref="WasmImplementationLimitException">リソースの構築またはstartの実行に必要な保持数が実装上限を超える場合</exception>
+    /// <exception cref="WasmTrapException">startの実行結果がtrapの場合</exception>
+    /// <exception cref="WasmExhaustionException">startの実行結果が資源枯渇の場合</exception>
     public WasmInstance Instantiate(WasmImports imports, WasmExecutionOptions? options = null)
     {
         RequireValidated();
@@ -240,6 +273,10 @@ public sealed class WasmModule
         );
     }
 
+    /// <summary>
+    /// インスタンス化に必要な静的検証が成功していることを確認する
+    /// </summary>
+    /// <exception cref="InvalidOperationException">静的検証が完了していない場合</exception>
     private void RequireValidated()
     {
         if (!isValidated_)

@@ -39,12 +39,12 @@ internal readonly struct ExecutionResult
     internal int? Limit { get; }
 
     /// <summary>
-    /// 失敗が発生した関数のindex 正常終了時はnull
+    /// 失敗の診断に用いる関数index 正常終了時と位置を特定できない場合はnull
     /// </summary>
     internal uint? FunctionIndex { get; }
 
     /// <summary>
-    /// 失敗が発生した入力バイナリ上のバイト位置 正常終了時はnull
+    /// 失敗の診断に用いる入力バイナリ上のバイト位置 正常終了時と位置を特定できない場合はnull
     /// </summary>
     internal long? ByteOffset { get; }
 
@@ -112,7 +112,7 @@ internal readonly struct ExecutionResult
     /// </summary>
     /// <param name="reason">上限に達した実行資源の原因</param>
     /// <param name="limit">この実行に適用された正の上限。CLRスタックの未計測上限はnull</param>
-    /// <param name="functionIndex">上限に達した関数のindex。Wasm上の呼び出し元がなければnull</param>
+    /// <param name="functionIndex">上限に達した定義関数、またはホスト呼び出し元の関数index。特定できない場合はnull</param>
     /// <param name="byteOffset">上限に達した入力バイナリ上のバイト位置。該当位置がなければnull</param>
     /// <returns>実行資源の上限到達を表す実行結果</returns>
     /// <exception cref="ArgumentOutOfRangeException">上限が0以下の場合</exception>

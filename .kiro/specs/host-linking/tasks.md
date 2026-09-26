@@ -288,8 +288,8 @@
 
 ## start統合
 
-- [ ] 11. 構築済みinstanceでstartを実行する
-- [ ] 11.1 start専用入口を共通実行境界へ統合する
+- [x] 11. 構築済みinstanceでstartを実行する
+- [x] 11.1 start専用入口を共通実行境界へ統合する
   - 新規contextはstart所有instanceの上限とし、既存contextがあれば共有する。start自体の余分な深さを加えない。
   - 定義/import定義/hostのstartを同じ関数呼出しへ接続し、hostにはstart所有instance、import定義には元の資源環境を使う。
   - 内部境界テストでInstantiate段階のtrap/exhaustionと、再入で既に例外化したホスト例外の元実体維持を確認する。
@@ -297,7 +297,7 @@
   - _Depends: 10.4_
   - _Requirements: 9.3, 9.5, 10.2, 10.3, 10.4, 10.10_
 
-- [ ] 11.2 構築・export公開・start実行をInstantiateへ統合する
+- [x] 11.2 構築・export公開・start実行をInstantiateへ統合する
   - 全リンク・割当・初期化とexport取得可能化の後にstartを毎回1回実行し、成功した場合だけinstanceを返す。
   - リンク/割当失敗時はstartを実行せず、start中断時は完了済み副作用や保存済み参照を戻したり無効化したりしない。
   - start中callbackから定義memoryと関数を取得でき、startなし・各start形式・再Instantiateの公開正負テストを通す。
@@ -942,3 +942,37 @@
 - 修正後TEST: `dotnet run --project tests/WasmSharp.Tests/WasmSharp.Tests.csproj -c Release --no-build -- --report-trx --results-directory TestResults/host-linking-10-claude-review-runtime`は終了0、passed927 / failed0 / skipped0。`dotnet run --project tests/WasmSharp.Generators.Tests/WasmSharp.Generators.Tests.csproj -c Release --no-build -- --report-trx --results-directory TestResults/host-linking-10-claude-review-generators`は終了0、passed37 / failed0 / skipped0。合計964件成功。実行主体はCodexであり、Claudeのレビュー成功とは区別する。
 - 静的確認: 変更CS18ファイルの`dotnet csharpier check`と、通常・cachedの`git -c core.excludesFile= diff --check`は終了0。今回の変更はテストとコメント・記録に限定し、本体の処理は変えていない。未解決の疑義を伴う複雑な修正ではないため、修正後のClaude再レビューは行っていない。
 - 全3所見の判定と採用分の対応は完了。今回の修正は未ステージで、Codexはステージング・コミット・ブランチ変更を行っていない。タスク11・12、実CLRスタック枯渇を狙う子プロセス試験、実OOM、公式suite、feature全体のGOは引き続き対象外。
+
+### タスク11.1のstart実行入口（2026-09-26）
+
+- Task Brief: start所有instanceの上限で新規contextを開始し、既存contextは共有する。定義関数は元instanceの資源を使い、hostへはstart所有instanceを渡す。対象関数だけを深さに数え、runtimeのtrap/exhaustionはInstantiate段階、callback中のInvokeで例外化済みの失敗は元の段階と実体を維持する（9.3、9.5、10.2、10.3、10.4、10.10）。
+- 変更: `ExecutionBoundary.RunStart`を既存の`Interpreter.Run`/`RunHost`と共通例外変換へ接続した。入口の処理段階を保存復元し、新規作成したcontextだけを解除する。既存の実行処理がフレーム・値・深さを復元する。
+- RED_PHASE_OUTPUT: 機能フラグOFFで新規9件が失敗（終了1、0/9/0、`TestResults/host-linking-11-1-red`）。ONと実装後は9/0/0（終了0、`-green`）。フラグを削除した最終状態でも両suiteが成功した。
+- BUILD: `dotnet build WasmSharp2.slnx -c Release --no-restore --warnaserror --disable-build-servers`終了0、警告0・エラー0。
+- TEST: `dotnet run --project tests/WasmSharp.Tests/WasmSharp.Tests.csproj -c Release --no-build -- --report-trx --results-directory TestResults/host-linking-11-1-runtime`終了0、passed936/failed0/skipped0。生成器プロジェクトの同形式コマンド（出力先`TestResults/host-linking-11-1-generators`）は終了0、37/0/0。
+- 独立した新規コンテキストのレビュアーが同ビルドと両suiteを再実行し、936/0/0と37/0/0を確認（出力先`TestResults/host-linking-11-1-review-{runtime,generators}`）。変更CS2ファイルのCSharpier checkと`git diff --check`も終了0。kiro-review: APPROVED。kiro-verify-completion: TASK 11.1 VERIFIED。
+- この時点では11.2の公開Instantiateへの接続は未実施。実OOM・実CLRスタック枯渇・公式suite・feature全体のGOは対象外。手動モードのためステージング・コミットなし。
+
+### タスク11.2のInstantiate接続とタスク11の完了範囲（2026-09-26）
+
+- Task Brief: 全importの照合、資源の割当・初期化、instanceとexport取得の準備完了後にstartを毎回1回実行し、正常終了時だけinstanceを返す。リンク・割当失敗ではstartへ進まず、start中断後も完了済み副作用と保存参照を維持する（8.8、9.2〜9.8）。
+- 変更: `ModuleInstantiator.Instantiate`のstart未対応拒否を除き、構築済みinstanceの関数表から`ExecutionBoundary.RunStart`へ接続した。既存のWasmInstance構築でexportを利用可能にできるため、その実装変更は不要。
+- 公開テスト: 両形式のhost start、定義start、import定義start、再Instantiate、start中のmemory/table/globalと定義関数取得・再入、元instanceの資源とstart所有instanceの上限の分離、ネストしたInstantiate後の外側継続を確認。trap/ホスト例外後はinstanceを返さず、共有global・memory・tableの更新と保存したinstance・関数・資源の継続操作を確認した。再帰startのexhaustionもInstantiate段階で通知する。
+- RED_PHASE_OUTPUT: 機能フラグOFFのInstantiateTestsは25件中16成功・9失敗、終了1（`TestResults/host-linking-11-2-red`）。ONと実装後は25/0/0、終了0（`-green`）。フラグ削除後の全suiteでValidateStartの旧未対応期待2件が失敗したため、Validate時はcallback0回、Instantiate後は1回の期待へ更新した。初回の941/2/0は最終成功の根拠には含めない。
+- 最終BUILD: `dotnet build WasmSharp2.slnx -c Release --no-restore --warnaserror --disable-build-servers`終了0、警告0・エラー0。
+- 最終TEST: `dotnet run --project tests/WasmSharp.Tests/WasmSharp.Tests.csproj -c Release --no-build -- --report-trx --results-directory TestResults/host-linking-11-2-final-runtime`終了0、passed943/failed0/skipped0。生成器プロジェクトの同形式コマンド（出力先`TestResults/host-linking-11-2-final-generators`）は終了0、37/0/0。合計980件成功。ライブラリsmokeは公開Decode→Validate→Instantiate→Invokeの既存・追加テストに含む。
+- 独立した新規コンテキストのレビュアーが実差分と未追跡テストを読み、同ビルドと両suiteを再実行して943/0/0と37/0/0を確認（出力先`TestResults/host-linking-11-2-review-{runtime,generators}`）。変更CS6ファイルのCSharpier check、通常・cachedの`git diff --check`も終了0。kiro-review: APPROVED、必須指摘なし。kiro-verify-completion: TASK 11.2およびタスク11はVERIFIED。
+- 巨大tableの負例は割当前の保持上限拒否であり、実割当のOOM試験ではない。タスク12の残る公開統合受入、実OOM、実CLRスタック枯渇、公式suite、Core 2.0全体への準拠、feature全体のGOは未実施・対象外。手動モードのため`kiro-validate-impl host-linking`は自動実行していない。ステージング・コミット・ブランチ変更なし。
+
+### タスク11のClaude Codeレビュー対応（2026-09-26）
+
+- Claude Code CLI 2.1.282へ、タスク11の未コミット変更7ファイル（未ステージ5、未追跡2）と関連仕様をAnthropic経由で渡した。Read/Glob/Grepだけを許可し、編集・シェル・ビルド・テスト・Git操作は禁止した。CLI終了0、最終resultのsuccess・is_error=falseを確認。Critical/High/Mediumなし、Low3件。変更差分と新規テストは確認済みだが、生成済みInterpreter.g.cs、バイナリfixtureの実装、RED記録の独立実行検証はレビューに含まない。
+- 所見1（Low・推測、説明の明確化を採用）: 既存contextからhost startへ入れず深さ上限になる場合、Instantiate段階の診断に外側moduleのcall位置が付くため解釈が曖昧との指摘。RunHostのExhaustHostと共通例外変換を確認し、段階は中断した公開操作、位置は進行中のWasmのcall命令という既存動作であり、機能不具合とは判定しなかった。ExhaustHostのremarksへhost startも対象であることを明記し、動作は変更しない。補足のRunStart要約コメントも、既存contextは共有し、新規時だけstart所有instanceのポリシーを使う説明へ改めた。
+- 所見2（Low、テスト補強を採用）: リンク失敗ケースはstart関数自体を未登録にしていたため、callback未実行の確認が実装に依存しなかった。要件9.4とLinkの先行実行を確認し、本体は正しいが確認不足と判断した。既存2ケースを、start関数は常に登録し、別のglobal importだけを条件付きで登録する構成へ変更。欠落globalのMissingImport・ImportName=g・callback0回と、全リンク成功後のtable保持上限・callback0回を区別して確認する。テスト件数は増やしていない。
+- 所見3（Low、規約修正を採用）: ValidateStart、リンク失敗、start失敗後の保存参照テストで関連assertionがAssert.Multipleの外にあり、失敗検査後の追加操作にAAAの区切りがなかった。関連assertionをまとめ、保存参照の操作前後へAct/Assertの区切りを追加した。savedInstanceのnull確認は後続操作の前提確認として独立させた。
+- 補足所見: RunStartとInterpreter.Runの段階保存・復元は既存責務に沿って維持した。startのframe保持上限に特化した追加テストは、既存の共通処理を利用する低リスク経路であり、今回の指摘解消に必要な範囲を超えるため追加していない。実装の処理変更はなく、修正はテスト・コメント・記録だけ。
+- レビュー中にCodexの操作外で新規テスト2ファイルの先頭英字の大文字化とローカル変数のvar化が行われた。依頼文との相違を確認し、Claudeが読んだ現行ファイルを基準に採否を判断した。これらの変更は保持した。
+- 修正後BUILD: `dotnet build WasmSharp2.slnx -c Release --no-restore --warnaserror --disable-build-servers`終了0、警告0・エラー0。
+- 修正後TEST: `dotnet run --project tests/WasmSharp.Tests/WasmSharp.Tests.csproj -c Release --no-build -- --report-trx --results-directory TestResults/host-linking-11-claude-review-runtime`終了0、passed943/failed0/skipped0。生成器プロジェクトの同形式コマンド（出力先`TestResults/host-linking-11-claude-review-generators`）は終了0、37/0/0。合計980件成功。実行主体はCodexであり、Claudeによる実行検証ではない。
+- 静的確認: 変更CS7ファイルのCSharpier check、通常・cachedの`git diff --check`は終了0。Gitインデックスはレビュー開始時と一致。単純なテスト補強・規約修正・コメント明確化で未解決の疑義はないため、修正後のClaude再レビューは実施していない。
+- 全3所見の判断と採用分の修正・検証は完了。ステージング・コミット・ブランチ変更なし。タスク12、公式suite、実OOM、実CLRスタック枯渇、feature全体GOは未実施・対象外。

@@ -8,8 +8,8 @@ internal partial class WasmModule_InstantiateTests
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task 巨大table定義とimportを持つ_全リンク成功後だけ位置付き保持上限を返す(
-        bool provide
+    public async Task 巨大table定義とstartを持つ_全リンク成功後だけ保持上限を返してstartを実行しない(
+        bool provideGlobal
     )
     {
         // Arrange
@@ -17,44 +17,69 @@ internal partial class WasmModule_InstantiateTests
             .Decode(
                 HostLinkingModuleBinary.Create(
                     HostLinkingModuleBinary.Types(([], [])),
-                    HostLinkingModuleBinary.Imports(("env", "f", 0, [0])),
-                    HostLinkingModuleBinary.Tables((0x70, uint.MaxValue, null))
+                    HostLinkingModuleBinary.Imports(
+                        ("env", "f", 0, [0]),
+                        ("env", "g", 3, [0x7F, 0])
+                    ),
+                    HostLinkingModuleBinary.Tables((0x70, uint.MaxValue, null)),
+                    HostLinkingModuleBinary.Start(0)
                 )
             )
             .Validate();
         var host = new WasmHostModule("env");
-        if (provide)
+        var calls = 0;
+        host.Define(
+            "f",
+            WasmFunction.CreateHost(
+                new([], []),
+                _ =>
+                {
+                    calls++;
+                    return new([]);
+                }
+            )
+        );
+        if (provideGlobal)
         {
-            host.Define("f", WasmFunction.CreateHost(new([], []), _ => throw new Exception()));
+            host.Define("g", new WasmGlobal(new(WasmValueKind.I32, false), WasmValue.FromI32(0)));
         }
 
         // Act & Assert
-        if (provide)
+        if (provideGlobal)
         {
             var exception = await Assert
                 .That(() => module.Instantiate([host]))
                 .ThrowsExactly<WasmImplementationLimitException>();
-            await Assert
-                .That(exception!.Reason)
-                .IsEqualTo(WasmImplementationLimitReason.CollectionSize);
-            await Assert.That(exception.Limit).IsEqualTo(Array.MaxLength);
-            await Assert
-                .That(exception.Location)
-                .IsEqualTo(
-                    new(WasmProcessingStage.Instantiate, module.Tables[0].ByteOffset, null, 4)
-                );
+            using (Assert.Multiple())
+            {
+                await Assert
+                    .That(exception!.Reason)
+                    .IsEqualTo(WasmImplementationLimitReason.CollectionSize);
+                await Assert.That(exception.Limit).IsEqualTo(Array.MaxLength);
+                await Assert
+                    .That(exception.Location)
+                    .IsEqualTo(
+                        new(WasmProcessingStage.Instantiate, module.Tables[0].ByteOffset, null, 4)
+                    );
+                await Assert.That(calls).IsEqualTo(0);
+            }
         }
         else
         {
             var exception = await Assert
                 .That(() => module.Instantiate([host]))
                 .ThrowsExactly<WasmInstantiateException>();
-            await Assert.That(exception!.Reason).IsEqualTo(WasmInstantiateReason.MissingImport);
+            using (Assert.Multiple())
+            {
+                await Assert.That(exception!.Reason).IsEqualTo(WasmInstantiateReason.MissingImport);
+                await Assert.That(exception.ImportName).IsEqualTo("g");
+                await Assert.That(calls).IsEqualTo(0);
+            }
         }
     }
 
     [Test]
-    public async Task Startを持つ_リンク成功後も未対応を明示してcallbackを実行しない()
+    public async Task ホストstartを持つ_Instantiateごとに一回実行して別のinstanceを返す()
     {
         // Arrange
         var calls = 0;
@@ -80,17 +105,18 @@ internal partial class WasmModule_InstantiateTests
             )
         );
 
-        // Act & Assert
-        var exception = await Assert
-            .That(() => module.Instantiate([host]))
-            .ThrowsExactly<WasmUnsupportedFeatureException>();
-        await Assert.That(exception!.Feature).IsEqualTo("section.start");
-        await Assert
-            .That(exception.Location)
-            .IsEqualTo(
-                new(WasmProcessingStage.Instantiate, module.Start!.Value.ByteOffset, null, 8)
-            );
-        await Assert.That(calls).IsEqualTo(0);
+        // Act
+        var first = module.Instantiate([host], new(1));
+        var firstCalls = calls;
+        var second = module.Instantiate([host], new(1));
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(firstCalls).IsEqualTo(1);
+            await Assert.That(calls).IsEqualTo(2);
+            await Assert.That(ReferenceEquals(first, second)).IsFalse();
+        }
     }
 
     [Test]

@@ -297,6 +297,9 @@ internal sealed class InterpreterContext
     /// <summary>
     /// 指定範囲を作業スタックから独立した戻り値の配列へコピーする
     /// </summary>
+    /// <param name="start">共有値スタック上のコピー開始位置</param>
+    /// <param name="count">コピーする値の数</param>
+    /// <returns>後続の実行やスタック復元に影響されない値の不変配列</returns>
     internal ImmutableArray<WasmValue> CopyValues(int start, int count)
     {
         return ImmutableArray.Create(values_.AsSpan(start, count));
@@ -305,6 +308,9 @@ internal sealed class InterpreterContext
     /// <summary>
     /// ホスト呼び出し専用コピーの入力として、共有値スタックの指定範囲を参照する
     /// </summary>
+    /// <param name="start">共有値スタック上の参照開始位置</param>
+    /// <param name="count">参照する値の数</param>
+    /// <returns>共有値スタックの参照。保持する場合はスタックの更新前にコピーする</returns>
     internal ReadOnlySpan<WasmValue> GetValues(int start, int count)
     {
         return values_.AsSpan(start, count);

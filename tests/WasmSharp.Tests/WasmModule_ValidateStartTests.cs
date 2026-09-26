@@ -8,7 +8,7 @@ internal partial class WasmModule_ValidateTests
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task Importのstartが引数結果0個_提供元なしで検証できcallbackを実行しない(
+    public async Task Importのstartが引数結果0個_提供元なしで検証しInstantiateまでcallbackを実行しない(
         bool useStream
     )
     {
@@ -52,19 +52,18 @@ internal partial class WasmModule_ValidateTests
         // Act
         var validated = module.Validate();
         var repeated = module.Validate();
+        var callsAfterValidation = calls;
+        module.Instantiate([host]);
 
         // Assert
-        await Assert.That(validated).IsSameReferenceAs(module);
-        await Assert.That(repeated).IsSameReferenceAs(module);
-        await Assert.That(calls).IsEqualTo(0);
-        await Assert.That(module.FunctionExportIndices["run"]).IsEqualTo(2);
-        // Act & Assert
-        var exception = await Assert
-            .That(() => module.Instantiate([host]))
-            .ThrowsExactly<WasmUnsupportedFeatureException>();
-        await Assert.That(exception!.Feature).IsEqualTo("section.start");
-        await Assert.That(exception.Location!.Stage).IsEqualTo(WasmProcessingStage.Instantiate);
-        await Assert.That(calls).IsEqualTo(0);
+        using (Assert.Multiple())
+        {
+            await Assert.That(validated).IsSameReferenceAs(module);
+            await Assert.That(repeated).IsSameReferenceAs(module);
+            await Assert.That(callsAfterValidation).IsEqualTo(0);
+            await Assert.That(module.FunctionExportIndices["run"]).IsEqualTo(2);
+            await Assert.That(calls).IsEqualTo(1);
+        }
     }
 
     [Test]

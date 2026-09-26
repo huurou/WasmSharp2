@@ -20,6 +20,9 @@ public sealed class WasmFunctionType
     /// <summary>
     /// 引数と戻り値の型をコピーして構築する
     /// </summary>
+    /// <param name="parameters">宣言順に並べた引数の型</param>
+    /// <param name="results">宣言順に並べた戻り値の型</param>
+    /// <exception cref="ArgumentOutOfRangeException">Core 2.0で定義されていない値型を含む場合</exception>
     public WasmFunctionType(
         ReadOnlySpan<WasmValueKind> parameters,
         ReadOnlySpan<WasmValueKind> results
@@ -31,6 +34,12 @@ public sealed class WasmFunctionType
         Results = ImmutableArray.Create(results);
     }
 
+    /// <summary>
+    /// 関数型に含まれる値型がCore 2.0で定義されていることを確認する
+    /// </summary>
+    /// <param name="kinds">検査する値型の並び</param>
+    /// <param name="paramName">不正な値型がある場合の例外に設定する引数名</param>
+    /// <exception cref="ArgumentOutOfRangeException">Core 2.0で定義されていない値型を含む場合</exception>
     private static void ValidateKinds(ReadOnlySpan<WasmValueKind> kinds, string paramName)
     {
         foreach (var kind in kinds)

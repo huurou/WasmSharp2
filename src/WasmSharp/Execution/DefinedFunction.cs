@@ -14,6 +14,9 @@ internal sealed class DefinedFunction(
     uint definitionIndex
 ) : WasmFunction
 {
+    /// <summary>
+    /// importを含まないmodule内の定義配列の添字
+    /// </summary>
     private readonly uint definitionIndex_ = definitionIndex;
 
     /// <summary>
