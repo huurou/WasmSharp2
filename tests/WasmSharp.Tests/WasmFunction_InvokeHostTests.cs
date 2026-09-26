@@ -1,4 +1,3 @@
-using WasmSharp.Exceptions;
 using WasmSharp.Execution;
 using WasmSharp.Tests.Fixtures;
 
@@ -6,6 +5,51 @@ namespace WasmSharp.Tests;
 
 internal partial class WasmFunction_InvokeTests
 {
+    [Test]
+    [Arguments(false, false)]
+    [Arguments(false, true)]
+    [Arguments(true, false)]
+    [Arguments(true, true)]
+    public async Task 単独hostから別instanceを直接またはネストして呼ぶ_最初のWasm入口の上限を使う(
+        bool withInstance,
+        bool nested
+    )
+    {
+        // Arrange
+        var b = CreateTwoCallInstance(2).GetFunction("run");
+        var provider = new WasmHostModule("b");
+        provider.Define("run", b);
+        var a = WasmModule
+            .Decode(
+                HostLinkingModuleBinary.Create(
+                    HostLinkingModuleBinary.Types(([], [0x7F])),
+                    HostLinkingModuleBinary.Imports(("b", "run", 0, [0])),
+                    HostLinkingModuleBinary.Functions(0),
+                    HostLinkingModuleBinary.Exports(("run", 0, 1)),
+                    HostLinkingModuleBinary.Code(([], [0x10, 0, 0x0B]))
+                )
+            )
+            .Validate()
+            .Instantiate([provider], new(3))
+            .GetFunction("run");
+        WasmResults Callback(ReadOnlySpan<WasmValue> arguments)
+        {
+            return (nested ? a : b).Invoke([]);
+        }
+
+        var type = new WasmFunctionType([], [WasmValueKind.I32]);
+        var host = withInstance
+            ? WasmFunction.CreateHost(type, (_, arguments) => Callback(arguments))
+            : WasmFunction.CreateHost(type, Callback);
+        var access = CreateHostAccessInstance();
+
+        // Act
+        var result = withInstance ? host.Invoke(access, []) : host.Invoke([]);
+
+        // Assert
+        await Assert.That(result.Values[0].AsI32()).IsEqualTo(42);
+    }
+
     [Test]
     [Arguments(false)]
     [Arguments(true)]

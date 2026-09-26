@@ -1,4 +1,6 @@
+using WasmSharp.Exceptions;
 using WasmSharp.Modules.ExternalValues;
+using WasmSharp.Tests.Fixtures;
 
 namespace WasmSharp.Tests;
 
@@ -114,17 +116,41 @@ internal class WasmImports_AddTests
 
         // Act & Assert
         await Assert.That(() => imports.Add(candidate)).ThrowsExactly<ArgumentException>();
-        var items = imports.Snapshot()["env"];
-        using (Assert.Multiple())
-        {
-            await Assert.That(items.Count).IsEqualTo(1);
-            await Assert.That(items.ContainsKey("new-first")).IsFalse();
-            await Assert.That(items.ContainsKey("new-last")).IsFalse();
-            await Assert
-                .That(
-                    items["same"] is FunctionExternalValue f && ReferenceEquals(f.Value, function)
+        var instance = WasmModule
+            .Decode(
+                HostLinkingModuleBinary.Create(
+                    HostLinkingModuleBinary.Types(([], [])),
+                    HostLinkingModuleBinary.Imports(("env", "same", 0, [0])),
+                    HostLinkingModuleBinary.Exports(("same", 0, 0))
                 )
-                .IsTrue();
+            )
+            .Validate()
+            .Instantiate(imports);
+        await Assert.That(instance.GetFunction("same")).IsSameReferenceAs(function);
+        foreach (
+            var (name, kind, type) in new (string, byte, byte[])[]
+            {
+                ("new-first", 0, [0]),
+                ("new-last", 2, [0, 0]),
+            }
+        )
+        {
+            var module = WasmModule
+                .Decode(
+                    HostLinkingModuleBinary.Create(
+                        HostLinkingModuleBinary.Types(([], [])),
+                        HostLinkingModuleBinary.Imports(("env", name, kind, type))
+                    )
+                )
+                .Validate();
+            var exception = await Assert
+                .That(() => module.Instantiate(imports))
+                .ThrowsExactly<WasmInstantiateException>();
+            using (Assert.Multiple())
+            {
+                await Assert.That(exception!.Reason).IsEqualTo(WasmInstantiateReason.MissingImport);
+                await Assert.That(exception.ImportName).IsEqualTo(name);
+            }
         }
     }
 

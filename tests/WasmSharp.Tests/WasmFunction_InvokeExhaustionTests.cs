@@ -7,10 +7,13 @@ namespace WasmSharp.Tests;
 internal partial class WasmFunction_InvokeTests
 {
     [Test]
-    [Arguments(false)]
-    [Arguments(true)]
+    [Arguments(false, false)]
+    [Arguments(false, true)]
+    [Arguments(true, false)]
+    [Arguments(true, true)]
     public async Task Hostから再帰的に再入する_深さ上限で中断し独立して再実行できる(
-        bool withInstance
+        bool withInstance,
+        bool differentInstance
     )
     {
         // Arrange
@@ -25,6 +28,11 @@ internal partial class WasmFunction_InvokeTests
             ? WasmFunction.CreateHost(new([], []), (_, values) => Callback(values))
             : WasmFunction.CreateHost(new([], []), Callback);
         function = CreateHostCallingInstance(host, 4).GetFunction("run");
+        var entry = function;
+        if (differentInstance)
+        {
+            function = CreateHostCallingInstance(host, 20).GetFunction("run");
+        }
         var cleared = false;
 
         // Act & Assert
@@ -33,7 +41,7 @@ internal partial class WasmFunction_InvokeTests
             {
                 try
                 {
-                    function.Invoke([]);
+                    entry.Invoke([]);
                 }
                 finally
                 {

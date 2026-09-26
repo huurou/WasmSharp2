@@ -167,25 +167,29 @@ internal partial class WasmFunction_InvokeTests
     public async Task 引数の個数は合うが後続の型が異なる_実行前に引数不正として拒否する()
     {
         // Arrange
-        // 引数を使う関数の実行は未対応なので、引数検査に必要な定義だけを内部構築する。
-        var module = new WasmModule(
-            [new([WasmValueKind.I32, WasmValueKind.F64], [WasmValueKind.I32])],
-            [new(0, 30, [], [])],
-            [],
-            36,
-            [],
-            [],
-            [],
-            [],
-            null
-        );
-        var function = new WasmInstance(module, WasmExecutionOptions.Default).Functions[0];
+        var instance = WasmModule
+            .Decode(
+                HostLinkingModuleBinary.Create(
+                    HostLinkingModuleBinary.Types(([0x7F, 0x7C], [0x7F])),
+                    HostLinkingModuleBinary.Functions(0),
+                    HostLinkingModuleBinary.Globals((0x7F, true, [0x41, 0, 0x0B])),
+                    HostLinkingModuleBinary.Exports(("run", 0, 0), ("g", 3, 0)),
+                    HostLinkingModuleBinary.Code(([], [0x20, 0, 0x24, 0, 0x23, 0, 0x0B]))
+                )
+            )
+            .Validate()
+            .Instantiate([]);
+        var function = instance.GetFunction("run");
 
         // Act & Assert
         var exception = await Assert
             .That(() => function.Invoke([WasmValue.FromI32(7), WasmValue.FromF32(1)]))
             .ThrowsExactly<ArgumentException>();
-        await Assert.That(exception!.ParamName).IsEqualTo("arguments");
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.ParamName).IsEqualTo("arguments");
+            await Assert.That(instance.GetGlobal("g").AsI32()).IsEqualTo(0);
+        }
     }
 
     [Test]

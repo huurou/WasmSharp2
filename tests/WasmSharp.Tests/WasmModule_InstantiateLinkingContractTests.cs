@@ -1,11 +1,9 @@
 using WasmSharp.Exceptions;
-using WasmSharp.Modules;
-using WasmSharp.Modules.ExternalValues;
 using WasmSharp.Tests.Fixtures;
 
-namespace WasmSharp.Tests.Modules;
+namespace WasmSharp.Tests;
 
-internal class ModuleInstantiator_LinkTests
+internal partial class WasmModule_InstantiateTests
 {
     [Test]
     [Arguments(false, 0, false)]
@@ -50,7 +48,8 @@ internal class ModuleInstantiator_LinkTests
                 HostLinkingModuleBinary.Create(
                     HostLinkingModuleBinary.Imports(
                         ("", "", table ? (byte)1 : (byte)2, table ? [0x70, .. limits] : limits)
-                    )
+                    ),
+                    HostLinkingModuleBinary.Exports(("resource", table ? (byte)1 : (byte)2, 0))
                 )
             )
             .Validate();
@@ -69,24 +68,27 @@ internal class ModuleInstantiator_LinkTests
         if (accepted)
         {
             // Act
-            var linked = ModuleInstantiator.Link(module, imports);
+            var instance = module.Instantiate(imports);
 
             // Assert
             var identical = table
-                ? ReferenceEquals(((TableExternalValue)linked[0]).Value, resource)
-                : ReferenceEquals(((MemoryExternalValue)linked[0]).Value, memory);
+                ? ReferenceEquals(instance.GetTable("resource"), resource)
+                : ReferenceEquals(instance.GetMemory("resource"), memory);
             await Assert.That(identical).IsTrue();
         }
         else
         {
             // Act & Assert
             var exception = await Assert
-                .That(() => ModuleInstantiator.Link(module, imports))
+                .That(() => module.Instantiate(imports))
                 .ThrowsExactly<WasmInstantiateException>();
             await Assert.That(exception!.Reason).IsEqualTo(WasmInstantiateReason.TypeMismatch);
         }
-        await Assert.That(memory.PageCount).IsEqualTo(scenario == 0 ? 0u : 2u);
-        await Assert.That(resource.Count).IsEqualTo(scenario == 0 ? 0u : 2u);
+        using (Assert.Multiple())
+        {
+            await Assert.That(memory.PageCount).IsEqualTo(scenario == 0 ? 0u : 2u);
+            await Assert.That(resource.Count).IsEqualTo(scenario == 0 ? 0u : 2u);
+        }
     }
 
     [Test]
@@ -102,6 +104,12 @@ internal class ModuleInstantiator_LinkTests
                         ("", "f", 0, [0]),
                         ("", "f", 0, [0]),
                         ("", "g", 3, [0x7F, 1])
+                    ),
+                    HostLinkingModuleBinary.Exports(
+                        ("f", 0, 0),
+                        ("f2", 0, 1),
+                        ("g", 3, 0),
+                        ("g2", 3, 1)
                     )
                 )
             )
@@ -125,22 +133,17 @@ internal class ModuleInstantiator_LinkTests
         imports.Add(new WasmHostModule("unused"));
 
         // Act
-        var linked = ModuleInstantiator.Link(module, imports);
+        var instance = module.Instantiate(imports);
         host.Define("later", new WasmMemory(new(0)));
         imports.Add(new WasmHostModule("later"));
 
         // Assert
         using (Assert.Multiple())
         {
-            await Assert.That(linked.Length).IsEqualTo(4);
-            await Assert
-                .That(ReferenceEquals(((FunctionExternalValue)linked[1]).Value, function))
-                .IsTrue();
-            await Assert.That(ReferenceEquals(linked[1], linked[2])).IsTrue();
-            await Assert
-                .That(ReferenceEquals(((GlobalExternalValue)linked[0]).Value, global))
-                .IsTrue();
-            await Assert.That(ReferenceEquals(linked[0], linked[3])).IsTrue();
+            await Assert.That(instance.GetFunction("f")).IsSameReferenceAs(function);
+            await Assert.That(instance.GetFunction("f2")).IsSameReferenceAs(function);
+            await Assert.That(instance.GetGlobalResource("g")).IsSameReferenceAs(global);
+            await Assert.That(instance.GetGlobalResource("g2")).IsSameReferenceAs(global);
             await Assert.That(calls).IsEqualTo(0);
         }
     }
@@ -184,7 +187,7 @@ internal class ModuleInstantiator_LinkTests
 
         // Act & Assert
         var exception = await Assert
-            .That(() => ModuleInstantiator.Link(module, imports))
+            .That(() => module.Instantiate(imports))
             .ThrowsExactly<WasmInstantiateException>();
         using (Assert.Multiple())
         {
@@ -223,10 +226,13 @@ internal class ModuleInstantiator_LinkTests
 
         // Act & Assert
         var exception = await Assert
-            .That(() => ModuleInstantiator.Link(module, imports))
+            .That(() => module.Instantiate(imports))
             .ThrowsExactly<WasmInstantiateException>();
-        await Assert.That(exception!.Reason).IsEqualTo(WasmInstantiateReason.TypeMismatch);
-        await Assert.That(global.Value.AsI32()).IsEqualTo(42);
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.Reason).IsEqualTo(WasmInstantiateReason.TypeMismatch);
+            await Assert.That(global.Value.AsI32()).IsEqualTo(42);
+        }
     }
 
     [Test]
@@ -269,13 +275,18 @@ internal class ModuleInstantiator_LinkTests
 
         // Act & Assert
         var exception = await Assert
-            .That(() => ModuleInstantiator.Link(module, imports))
+            .That(() => module.Instantiate(imports))
             .ThrowsExactly<WasmInstantiateException>();
-        await Assert.That(exception!.Reason).IsEqualTo(WasmInstantiateReason.KindMismatch);
-        await Assert.That(exception.ExpectedKind).IsEqualTo(expected);
-        await Assert
-            .That(exception.Location)
-            .IsEqualTo(new(WasmProcessingStage.Instantiate, module.Imports[0].ByteOffset, null, 2));
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.Reason).IsEqualTo(WasmInstantiateReason.KindMismatch);
+            await Assert.That(exception.ExpectedKind).IsEqualTo(expected);
+            await Assert
+                .That(exception.Location)
+                .IsEqualTo(
+                    new(WasmProcessingStage.Instantiate, module.Imports[0].ByteOffset, null, 2)
+                );
+        }
     }
 
     [Test]
@@ -304,7 +315,7 @@ internal class ModuleInstantiator_LinkTests
 
         // Act & Assert
         var exception = await Assert
-            .That(() => ModuleInstantiator.Link(module, imports))
+            .That(() => module.Instantiate(imports))
             .ThrowsExactly<WasmInstantiateException>();
         using (Assert.Multiple())
         {

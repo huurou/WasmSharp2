@@ -299,22 +299,41 @@ internal class WasmModule_InspectImportsTests
             : WasmModule.InspectImports(bytes);
 
         // Assert
-        await Assert.That(result.Imports.Length).IsEqualTo(4);
-        await Assert
-            .That(((WasmImportInfo.Function)result.Imports[0]).Type.Parameters.IsEmpty)
-            .IsTrue();
-        await Assert
-            .That(((WasmImportInfo.Global)result.Imports[1]).Type)
-            .IsEqualTo(new WasmGlobalType(WasmValueKind.V128, true));
-        await Assert
-            .That(((WasmImportInfo.Memory)result.Imports[2]).Limits.Minimum)
-            .IsEqualTo(uint.MaxValue);
-        await Assert
-            .That(((WasmImportInfo.Table)result.Imports[3]).ElementType)
-            .IsEqualTo(WasmValueKind.FuncRef);
-        await Assert
-            .That(result.UnverifiedRanges[^1].Stage)
-            .IsEqualTo(WasmProcessingStage.Validate);
+        using (Assert.Multiple())
+        {
+            await Assert.That(result.Imports.Length).IsEqualTo(4);
+            await Assert
+                .That(
+                    result
+                        .Imports.Select(x => (x.ModuleName, x.Name, x.Kind))
+                        .SequenceEqual([
+                            ("env", "f", WasmExternalKind.Function),
+                            ("env", "g", WasmExternalKind.Global),
+                            ("env", "m", WasmExternalKind.Memory),
+                            ("env", "t", WasmExternalKind.Table),
+                        ])
+                )
+                .IsTrue();
+            await Assert
+                .That(((WasmImportInfo.Function)result.Imports[0]).Type.Parameters.IsEmpty)
+                .IsTrue();
+            await Assert.That(((WasmImportInfo.Function)result.Imports[0]).Type.Results).IsEmpty();
+            await Assert
+                .That(((WasmImportInfo.Global)result.Imports[1]).Type)
+                .IsEqualTo(new WasmGlobalType(WasmValueKind.V128, true));
+            await Assert
+                .That(((WasmImportInfo.Memory)result.Imports[2]).Limits)
+                .IsEqualTo(new WasmLimits(uint.MaxValue));
+            await Assert
+                .That(((WasmImportInfo.Table)result.Imports[3]).ElementType)
+                .IsEqualTo(WasmValueKind.FuncRef);
+            await Assert
+                .That(((WasmImportInfo.Table)result.Imports[3]).Limits)
+                .IsEqualTo(new WasmLimits(uint.MaxValue));
+            await Assert
+                .That(result.UnverifiedRanges[^1].Stage)
+                .IsEqualTo(WasmProcessingStage.Validate);
+        }
 
         // Act & Assert
         var exception = await Assert

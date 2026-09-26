@@ -7,13 +7,91 @@ namespace WasmSharp.Tests;
 internal partial class WasmFunction_InvokeTests
 {
     [Test]
-    [Arguments(false, false)]
-    [Arguments(false, true)]
-    [Arguments(true, false)]
-    [Arguments(true, true)]
+    [Arguments(false)]
+    [Arguments(true)]
+    public async Task Host経由で同じ関数へ一度だけ再入する_異なる引数とlocalsを内側と外側で分離する(
+        bool withInstance
+    )
+    {
+        // Arrange
+        WasmFunction function = null!;
+        WasmResults? inner = null;
+        var calls = 0;
+        WasmResults Callback(ReadOnlySpan<WasmValue> arguments)
+        {
+            calls++;
+            if (calls == 1)
+            {
+                inner = function.Invoke([WasmValue.FromI32(99)]);
+            }
+            return new(arguments);
+        }
+        var type = new WasmFunctionType([WasmValueKind.I32], [WasmValueKind.I32]);
+        var provider = new WasmHostModule("env");
+        provider.Define(
+            "host",
+            withInstance
+                ? WasmFunction.CreateHost(type, (_, arguments) => Callback(arguments))
+                : WasmFunction.CreateHost(type, Callback)
+        );
+        function = WasmModule
+            .Decode(
+                HostLinkingModuleBinary.Create(
+                    HostLinkingModuleBinary.Types(([0x7F], [0x7F]), ([0x7F], [0x7F, 0x7F, 0x7F])),
+                    HostLinkingModuleBinary.Imports(("env", "host", 0, [0])),
+                    HostLinkingModuleBinary.Functions(1),
+                    HostLinkingModuleBinary.Exports(("run", 0, 1)),
+                    HostLinkingModuleBinary.Code(
+                        ([(1, 0x7F)], [0x20, 0, 0x21, 1, 0x20, 0, 0x10, 0, 0x20, 0, 0x20, 1, 0x0B])
+                    )
+                )
+            )
+            .Validate()
+            .Instantiate([provider], new(4))
+            .GetFunction("run");
+
+        // Act
+        var outer = function.Invoke([WasmValue.FromI32(42)]);
+
+        // Assert
+        await Assert.That(inner).IsNotNull();
+        using (Assert.Multiple())
+        {
+            await Assert.That(calls).IsEqualTo(2);
+            await Assert
+                .That(
+                    outer.Values.SequenceEqual([
+                        WasmValue.FromI32(42),
+                        WasmValue.FromI32(42),
+                        WasmValue.FromI32(42),
+                    ])
+                )
+                .IsTrue();
+            await Assert
+                .That(
+                    inner!.Values.SequenceEqual([
+                        WasmValue.FromI32(99),
+                        WasmValue.FromI32(99),
+                        WasmValue.FromI32(99),
+                    ])
+                )
+                .IsTrue();
+        }
+    }
+
+    [Test]
+    [Arguments(false, false, false)]
+    [Arguments(false, false, true)]
+    [Arguments(false, true, false)]
+    [Arguments(false, true, true)]
+    [Arguments(true, false, false)]
+    [Arguments(true, false, true)]
+    [Arguments(true, true, false)]
+    [Arguments(true, true, true)]
     public async Task Hostから同期再入してstackを拡張する_正常終了と捕捉したtrapの後も引数と外側localsを保つ(
         bool sameInstance,
-        bool trap
+        bool trap,
+        bool withInstance
     )
     {
         // Arrange
@@ -23,28 +101,35 @@ internal partial class WasmFunction_InvokeTests
         WasmTrapException? caught = null;
         (int Frames, int Values, int Depth) afterReentry = default;
         var contextPreserved = false;
-        var host = WasmFunction.CreateHost(
-            new(
-                [WasmValueKind.I32, WasmValueKind.ExternRef],
-                [WasmValueKind.I32, WasmValueKind.ExternRef]
-            ),
-            (instance, values) =>
-            {
-                target = instance;
-                var context = InterpreterContext.Current!;
-                try
-                {
-                    inner.Invoke([]);
-                }
-                catch (WasmTrapException exception)
-                {
-                    caught = exception;
-                }
-                afterReentry = (context.FrameCount, context.ValueCount, context.CallDepth);
-                contextPreserved = ReferenceEquals(context, InterpreterContext.Current);
-                return new(values);
-            }
+        var type = new WasmFunctionType(
+            [WasmValueKind.I32, WasmValueKind.ExternRef],
+            [WasmValueKind.I32, WasmValueKind.ExternRef]
         );
+        WasmResults Callback(ReadOnlySpan<WasmValue> values)
+        {
+            var context = InterpreterContext.Current!;
+            try
+            {
+                inner.Invoke([]);
+            }
+            catch (WasmTrapException exception)
+            {
+                caught = exception;
+            }
+            afterReentry = (context.FrameCount, context.ValueCount, context.CallDepth);
+            contextPreserved = ReferenceEquals(context, InterpreterContext.Current);
+            return new(values);
+        }
+        var host = withInstance
+            ? WasmFunction.CreateHost(
+                type,
+                (instance, values) =>
+                {
+                    target = instance;
+                    return Callback(values);
+                }
+            )
+            : WasmFunction.CreateHost(type, Callback);
         var provider = new WasmHostModule("env");
         provider.Define("host", host);
         var instance = WasmModule
@@ -94,7 +179,7 @@ internal partial class WasmFunction_InvokeTests
         // Assert
         using (Assert.Multiple())
         {
-            await Assert.That(target).IsSameReferenceAs(instance);
+            await Assert.That(target).IsSameReferenceAs(withInstance ? instance : null);
             await Assert.That(caught is not null).IsEqualTo(trap);
             await Assert.That(afterReentry).IsEqualTo((1, 5, 2));
             await Assert.That(contextPreserved).IsTrue();

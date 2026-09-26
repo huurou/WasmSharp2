@@ -307,8 +307,8 @@
 
 ## 公開操作の受入
 
-- [ ] 12. 公開経路の統合受入と基盤回帰を完了する
-- [ ] 12.1 関数の値受渡しと命令の組合せを公開操作で確認する
+- [x] 12. 公開経路の統合受入と基盤回帰を完了する
+- [x] 12.1 関数の値受渡しと命令の組合せを公開操作で確認する
   - 0/1/複数引数結果と7種の値を往復し、NaN/v128ビット列と参照同一性を確認する。
   - local/call/return/drop/globalを組み合わせ、呼出しごとのlocals分離、元instanceの資源、return/unreachable後の未実行を確認する。
   - 公開4段階を通る正負入力が期待結果・型拒否・実trapを示し、既存の最小定数経路も成功する。
@@ -316,35 +316,35 @@
   - _Depends: 9.3, 10.4, 11.2_
   - _Requirements: 1.6, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 2.10, 4.4, 10.1, 12.1_
 
-- [ ] 12.2 複数instanceの共有・再exportとリンク失敗を確認する
+- [x] 12.2 複数instanceの共有・再exportとリンク失敗を確認する
   - 4種の別名/再exportの同一性、定義の独立性、ホストとguestのglobal相互更新、memory/tableの共有更新・増大を確認する。
   - 増大後の現在サイズを使う型照合、同名importの個別照合、提供重複の全件拒否、不在・種類・型不一致を公開操作で区別する。
   - 読み出しコピーの保持と再入後の現在memoryへの書込みを確認し、取得元に関係なく共有先で更新を観測できる。
   - _Boundary: WasmSharp.Tests_
   - _Requirements: 4.5, 4.7, 5.6, 6.7, 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.9, 7.10, 7.11, 7.12, 7.13, 12.2_
 
-- [ ] 12.3 callbackのinstance選択・寿命・例外を公開操作で確認する
+- [x] 12.3 callbackのinstance選択・寿命・例外を公開操作で確認する
   - 両形式の登録/実行、省略/null拒否、異なる明示instanceで同じhost実体を呼ぶ経路を確認する。
   - 別instanceの定義関数経由・再export host直接・host start・C#直接の4経路で渡すinstanceを確認する。
   - 再入によるstack拡張後も引数が安定し、返却元再利用後も結果が安定し、不正結果でguestを再開せず元例外実体を伝播する。
   - _Boundary: WasmSharp.Tests_
   - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5, 8.6, 8.7, 8.8, 8.9, 8.10, 8.11, 12.2, 12.6_
 
-- [ ] 12.4 contextの上限選択と中断回復を公開操作で確認する
+- [x] 12.4 contextの上限選択と中断回復を公開操作で確認する
   - 単独hostからの資源操作だけ・B直接・AからBネスト・A終了後Bを、両callback形式で確認する。
   - 異なる上限を持つinstance間の再帰/再入、host startとimport定義startで、入口上限と資源環境を分離して確認する。
   - Invoke/startの実trap、両形式のhost再入exhaustion、内側例外捕捉後の継続、中断後の独立Invoke/Instantiateが成立する。
   - _Boundary: WasmSharp.Tests_
   - _Requirements: 10.1, 10.2, 10.3, 10.4, 10.5, 10.6, 10.7, 10.9, 10.10, 10.11, 12.3, 12.7_
 
-- [ ] 12.5 start失敗後の保存参照と副作用を公開操作で確認する
+- [x] 12.5 start失敗後の保存参照と副作用を公開操作で確認する
   - start前の構築/接続/初期化済み状態から、callbackがinstance・関数・リソースを保存する。
   - trapとホスト例外による中断後に共有状態と保存参照を操作し、start完了や再実行を暗黙に要求しないことを確認する。
   - 失敗したInstantiateがinstanceを返さず、保存参照による後続呼出しと完了済み副作用が残るテストを通す。
   - _Boundary: WasmSharp.Tests_
   - _Requirements: 9.2, 9.4, 9.5, 9.6, 9.7, 9.8, 12.8_
 
-- [ ] 12.6 import情報と未対応segmentの境界を公開操作で確認する
+- [x] 12.6 import情報と未対応segmentの境界を公開操作で確認する
   - 完全取得、空一覧、未対応本体/segmentの読み飛ばしと未確認範囲、未解決型、途中/後続破損を区別する。
   - 同じ入力で情報取得成功とDecode未対応が両立し、調査成功を実行可能性へ昇格させない。
   - data/element/data_countは完全処理で未対応となりstartを一度も実行せず、調査失敗は部分一覧を返さない。
@@ -352,7 +352,7 @@
   - _Depends: 5.2, 11.2_
   - _Requirements: 1.5, 11.1, 11.2, 11.3, 11.4, 11.5, 11.6, 12.1, 12.4_
 
-- [ ] 12.7 全体ビルドと両テストsuiteで最終受入を確認する
+- [x] 12.7 全体ビルドと両テストsuiteで最終受入を確認する
   - Releaseビルドの警告・エラー0後、ランタイムと生成器の全suiteをコマンド実行し、変更した公開経路と基盤回帰を確認する。
   - 対象、コマンド、終了コード、passed/failed/skipped、未実施範囲を実装記録に残し、skipを成功へ加算しない。
   - 直接テストの成功を公式全件適合と表現せず、後続命令/segment、公式ランナー、実OOM・実CLR stack確認の実施有無を区別して受入結果を確定する。
@@ -976,3 +976,34 @@
 - 修正後TEST: `dotnet run --project tests/WasmSharp.Tests/WasmSharp.Tests.csproj -c Release --no-build -- --report-trx --results-directory TestResults/host-linking-11-claude-review-runtime`終了0、passed943/failed0/skipped0。生成器プロジェクトの同形式コマンド（出力先`TestResults/host-linking-11-claude-review-generators`）は終了0、37/0/0。合計980件成功。実行主体はCodexであり、Claudeによる実行検証ではない。
 - 静的確認: 変更CS7ファイルのCSharpier check、通常・cachedの`git diff --check`は終了0。Gitインデックスはレビュー開始時と一致。単純なテスト補強・規約修正・コメント明確化で未解決の疑義はないため、修正後のClaude再レビューは実施していない。
 - 全3所見の判断と採用分の修正・検証は完了。ステージング・コミット・ブランチ変更なし。タスク12、公式suite、実OOM、実CLRスタック枯渇、feature全体GOは未実施・対象外。
+
+### タスク12の公開統合受入（2026-09-27）
+
+- Task Brief: 12.1〜12.6の受入条件を公開Decode→Validate→Instantiate→名前取得→Invoke、および公開登録・資源操作・InspectImportsで確認する。既存の公開テストを再利用し、内部入口でしか確認していなかった契約と不足する組合せを補う。12.7ではReleaseビルド、両suite、整形・差分検査と実施範囲の記録を行う。本体の新しい挙動は追加しないため、REDと機能フラグは適用対象外。
+- 12.1（1.6、2.1〜2.10、4.4、10.1、12.1）: 既存の全7型のlocals初期値・値受渡し、call/return/local.get/set/tee/drop、最小定数のビット列、型検証の正負入力に加え、内部構築だった引数型拒否を公開4段階へ移した。`WasmFunction_InvokeAcceptanceTests.cs`で別instanceの定義関数をcallし、元の共有global、local.tee/drop、return/unreachable後の未実行、Invoke段階の実trapを確認する。
+- 12.2（4.5、4.7、5.6、6.7、7.1〜7.6、7.9〜7.13、12.2）: `ModuleInstantiator_LinkTests.cs`の既存ケースを`WasmModule_InstantiateLinkingContractTests.cs`へ移し、全て公開Instantiateで実行する。増大後の現在サイズ、最大値・参照型、同名importの個別照合、不在・種類・型不一致の診断を維持する。`WasmImports_AddTests`の重複拒否後を公開Instantiateで確認し、既存登録の同一性と新規itemの全件未追加を確かめる。4種の別名・再export、定義の独立性は既存Get/Instantiateテストを使う。追加の`WasmFunction_InvokeSharedResourceTests`では共有memoryの読出しコピーを再入中の更新・増大後も保持し、現在領域への書込み、共有tableの増大と双方向更新を確認する。
+- 12.3（8.1〜8.11、12.2、12.6）: 公開guest→両callback形式で0/1/7引数結果を往復し、返却元配列の再利用と後続Invoke後の結果、NaN/v128のビット列・参照同一性を確認する。不正なnull・個数・型の結果では後続global.setが実行されず、正常結果へ戻すと同じ関数を実行できる。既存のstack拡張を伴う同一/別instance再入と内側trap捕捉を両callback形式へ拡張した。instance指定の4経路、省略/null拒否、例外の実体保持は既存の公開テストを併用する。
+- 12.4（10.1〜10.7、10.9〜10.11、12.3、12.7）: 単独hostからB直接とA経由Bを呼ぶケースを両形式で追加した。B直接の深さ2での成功からアクセス用instanceの上限1が適用されないことを、A経由Bの深さ3での成功からBの上限2へ途中で切り替わらないことを確認する。上限値そのものは別のexhaustionテストで確認する。既存の単独host資源操作・A終了後Bと併せて4経路を確認する。再帰的なhost再入を上限4→別instance上限20にも拡張し、入口上限4のexhaustionを確認する。`WasmModule_InstantiateAcceptanceTests`ではhost startの所有上限2で中断し、独立した上限3のInstantiateと後続Invokeが成功する。import定義startの資源環境と入口上限の分離、直接再帰、各中断と復元は既存の公開テストを使う。
+- 12.5（9.2、9.4〜9.8、12.8）: `WasmModule_InstantiateStartTests`の既存テストを受入根拠とする。start前の構築・初期化済みexport、trap/ホスト例外後の返却instanceなし、共有globalの副作用、保存instance・関数・memory・table・globalの後続操作、startの暗黙再実行なしを確認する。重複するテストは追加しない。
+- 12.6（1.5、11.1〜11.6、12.1、12.4）: `WasmModule_InspectImportsTests`で4種の名前・宣言順・要求型・limitsを全て公開結果から確認する。既存の空一覧、未対応本体、未解決型、途中/後続破損、部分結果なしを併用する。`WasmModule_DecodeStartTests`を実在するhost start付き入力に変更し、data/element/data_countのそれぞれで両入力の調査成功、完全処理のDecode未対応、callback0回を確認する。同じ入力からsegmentだけを除く対照ではstartが1回実行される。
+- 12.7のBUILD: `dotnet build WasmSharp2.slnx -c Release --no-restore --warnaserror --disable-build-servers`は終了0、警告0・エラー0。
+- 12.7のTEST: `dotnet run --project tests/WasmSharp.Tests/WasmSharp.Tests.csproj -c Release --no-build -- --report-trx --results-directory TestResults/host-linking-12-runtime`は終了0、passed970/failed0/skipped0。`dotnet run --project tests/WasmSharp.Generators.Tests/WasmSharp.Generators.Tests.csproj -c Release --no-build -- --report-trx --results-directory TestResults/host-linking-12-generators`は終了0、passed37/failed0/skipped0。合計1007件成功。ライブラリのsmokeは、今回実行した公開4段階の統合テストに含む。
+- 検証範囲: 公開APIの直接受入とruntime-foundationの回帰を実行した。公式ランナー・公式suite全件、後続の数値/制御・memory/table・SIMD命令とsegment初期化、実割当のOOM、実CLR stack枯渇を狙う子プロセス試験は実施していない。既存の内部stackガード検査の成功を実CLR stack枯渇試験へ拡大しない。
+- 独立レビュー: 新規コンテキストのレビュアーが12.1〜12.7の実差分・新規ファイル・既存の公開テストと仕様を照合した。初回はテストが全件成功したものの、整形2件でREJECTED。再整形後の現行内容でReleaseビルドと両suiteを再実行し、警告0・エラー0、runtime970/0/0、generator37/0/0、全て終了0を確認した（`TestResults/host-linking-12-review2-runtime`、`TestResults/host-linking-12-review2-generators`）。変更CS11ファイルのCSharpier check、通常・cachedのdiff --checkも終了0。最終kiro-reviewはAPPROVED、未解決指摘なし。
+- kiro-verify-completion: CLAIM_TYPE=TASK、CLAIM=12.1〜12.7の公開統合受入と基盤回帰、STATUS=VERIFIED。現行内容のビルド・TRX・公開操作の対応・独立レビューを根拠として、12.1〜12.7とタスク12を完了へ更新した。これは手動選択したタスクの完了判定であり、feature全体のGO判定ではない。
+- 手動モードのため`kiro-validate-impl host-linking`は自動実行していない。次の仕様全体の最終検証として同コマンドを推奨する。ステージング・コミット・ブランチ変更は行っていない。
+
+### タスク12のClaude Codeレビュー対応（2026-09-27）
+
+- Claude Code CLI 2.1.282へ、未コミット変更13パス（未ステージ9、未追跡4。内部リンクテストの移動元削除を含む）の差分・新規ファイルと関連仕様をAnthropic経由で渡した。safe-modeでRead/Glob/Grepだけを許可し、編集・シェル・ビルド・テスト・Git操作を禁止した。CLI終了0、最終result success・is_error=falseを確認。Critical/High/Mediumなし、Low5件。
+- 確認範囲は対象差分・新規ファイル、要件、関連設計、タスク12と実装記録、関連する公開テスト・fixture・CI。ClaudeはGetMemory/GetTable/GetGlobalResource/GetFunctionの各テストを存在確認までにとどめ、本体実装の全読、生成器テスト、ビルド・テスト・整形・差分検査の実行はしていない。以下の機械検証はCodexの実行結果である。
+- 所見1（Low・不採用）: host startの負例では所有instanceと呼出先の上限がともに2なので、前半のLimit=2だけでは上限の出所を識別できないとの指摘。前半と後半を合わせたテストでは、所有上限3・呼出先上限2で深さ3の成功を要求しており、呼出先上限へ切り替える退行を検出できる。実装のRunStart/Invokeも既存contextを共有することを確認した。呼出先を5へ変える必要はなく、既存の失敗・成功の対比を維持した。
+- 所見2（Low・記録訂正を採用）: 単独hostからB直接・A経由Bの成功だけでは上限値そのものの証明にならず、「上限1・2・3を区別する」は過大との指摘。深さ2/3での成功が示すのは、アクセス用上限1や内側Bの上限2が適用されないことであるため、12.4の記録をその意味へ明確化した。具体的な上限値は別の公開exhaustionテストが確認済みなので、重複する負例は追加しない。
+- 所見3（Low・テスト補強を採用）: 同じ値で2回Invokeしていたため、返却元配列の共有は検出できても、後続Invokeによる内部領域の再利用を検出できないとの指摘。2回目を異なる整数・NaN/v128ビット列・関数/外部参照に変更し、返却元配列の変更後も両方の結果がそれぞれの入力を保持することを確認する。WasmResultsとExecutionBoundaryの所有コピーは実装済みで、本体変更は不要。
+- 所見4（Low・テスト補強を採用）: 公開再入テストの対象が別関数であり、同じ関数を同期的にネストした場合のlocals分離は内部テストだけではないかとの指摘。既存ケースと要件2.8を確認し、同じ関数へ異なる引数で一度だけ再入する公開テストを両callback形式で追加した。内側の引数・追加locals・callback結果は99、外側は42を保持し、callbackは合計2回であることを確認する。追加は2ケース。
+- 所見5（Low・規約修正を採用）: segment境界テストのInspectImports呼出しがArrange区画に含まれていたため、入力とdecoderの準備後にAct区画を設けて移動した。テストの挙動は変更しない。
+- 付随対応: Claudeの指摘とは別に、レビュー開始時点の`WasmFunction_InvokeHostTests.cs`に改行混在があったためCSharpierで整形した。開始時点に存在したローカル関数のブロック形式と未使用using削除はそのまま保持した。レビュー中の対象ファイルは開始時のhashと一致しており、レビュー中には編集していない。
+- 修正後BUILD: `dotnet build WasmSharp2.slnx -c Release --no-restore --warnaserror --disable-build-servers`は終了0、警告0・エラー0。
+- 修正後TEST: `dotnet run --project tests/WasmSharp.Tests/WasmSharp.Tests.csproj -c Release --no-build -- --report-trx --results-directory TestResults/host-linking-12-claude-review-runtime`は終了0、passed972/failed0/skipped0。`dotnet run --project tests/WasmSharp.Generators.Tests/WasmSharp.Generators.Tests.csproj -c Release --no-build -- --report-trx --results-directory TestResults/host-linking-12-claude-review-generators`は終了0、passed37/failed0/skipped0。合計1009件成功。
+- 静的確認: 変更CS11ファイルの`dotnet csharpier check`、通常・cachedの`git -c core.excludesFile= diff --check`は終了0。Gitインデックスはレビュー開始時と一致する。全5所見の判断と採用分の修正・検証が完了し、保留なし。単純なテスト・記録・区画の修正で未解決の疑義がないため、修正後のClaude再レビューは実施していない。
+- 本体の挙動、承認済み仕様、タスク12の完了状態は変更しない。公式suite、後続命令・segment初期化、実OOM、実CLR stack枯渇、feature全体GOは引き続き未実施・対象外。ステージング・コミット・ブランチ変更は行っていない。
