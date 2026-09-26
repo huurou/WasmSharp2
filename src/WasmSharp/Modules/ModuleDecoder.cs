@@ -130,7 +130,7 @@ internal static class ModuleDecoder
         {
             var offset = reader.Position;
             var type = ModuleBinaryFormat.ReadGlobalType(ref reader);
-            var initializer = ReadInstructions(ref reader, inputLength, isInitializer: true);
+            var initializer = ReadInstructions(ref reader, inputLength);
             globals.Add(new GlobalDefinition(type, CollectionsMarshal.AsSpan(initializer), offset));
         }
         return globals;
@@ -191,7 +191,7 @@ internal static class ModuleDecoder
             var body = reader.ReadRange(length, importedFunctionCount + index);
             var offset = body.Position;
             var locals = ReadLocals(ref body);
-            var instructions = ReadInstructions(ref body, inputLength, isInitializer: false);
+            var instructions = ReadInstructions(ref body, inputLength);
             ModuleBinaryFormat.RequireEnd(ref body);
             functions.Add(
                 new DecodedFunction(
@@ -230,8 +230,7 @@ internal static class ModuleDecoder
 
     private static List<DecodedInstruction> ReadInstructions(
         ref ModuleBinaryReader reader,
-        int inputLength,
-        bool isInitializer
+        int inputLength
     )
     {
         List<DecodedInstruction> instructions = [];
@@ -252,11 +251,7 @@ internal static class ModuleDecoder
                 throw reader.Error("Core 2.0に割り当てられていないopcodeです。", offset);
             }
 
-            // global初期化式の読取は、関数本体の実行handler登録に先行する。
-            var immediateKind =
-                isInitializer && opcode == new OpcodeKey(0, 0x23)
-                    ? ImmediateKind.Index
-                    : descriptor.Immediate;
+            var immediateKind = descriptor.Immediate;
             if (immediateKind == ImmediateKind.Unsupported)
             {
                 throw Unsupported(ref reader, descriptor.Name, inputLength, offset);

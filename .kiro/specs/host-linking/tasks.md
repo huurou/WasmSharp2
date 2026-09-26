@@ -229,8 +229,8 @@
 
 ## 命令宣言と検証の統合
 
-- [ ] 9. 新命令をDecode・型検証・生成実行へ統合する
-- [ ] 9.1 添字即値のDecodeと生成経路全体を統合確認する
+- [x] 9. 新命令をDecode・型検証・生成実行へ統合する
+- [x] 9.1 添字即値のDecodeと生成経路全体を統合確認する
   - 先行整備した命令宣言と添字表現を使って即値を読み取り、元位置とuint添字をデコード済み命令へ保持する。
   - handler署名と通常ビルド生成を維持し、8.2〜8.4で追加した宣言・handler・生成器テスト入力の組合せを確認する。共有ファイルは直列編集する。
   - 対象命令のDecodeと生成コードのコンパイルを確認し、旧Unsupported負例を本来の構文失敗へ更新する。未終端call即値と後続命令の未対応を区別する。
@@ -238,7 +238,7 @@
   - _Depends: 1.4, 4.3, 8.2, 8.3, 8.4_
   - _Requirements: 1.1, 1.4, 1.5, 3.1_
 
-- [ ] 9.2 引数・locals・call・globalの型検査と線形化を拡張する
+- [x] 9.2 引数・locals・call・globalの型検査と線形化を拡張する
   - 0/1/複数引数結果と追加locals、local/globalの添字・可変性、callの入出力とreturn/endの宣言結果を検証する。
   - 検証と線形化を同一パスで行い、圧縮localsを早期に巨大展開せず、合計と保持上限を区別する。
   - 型・個数・添字の正負テストを通し、旧Unsupported期待を更新する。引数・結果0個の定義startがValidateに成功する正例もここで確認し、全体失敗時に一部関数を実行可能にしない。
@@ -246,7 +246,7 @@
   - _Depends: 8.1, 9.1_
   - _Requirements: 1.2, 2.1, 2.3, 3.1, 3.2, 3.3, 3.6, 9.1_
 
-- [ ] 9.3 到達不能部分の型多相性を検証する
+- [x] 9.3 到達不能部分の型多相性を検証する
   - return/unreachable後は関数底でのpopだけにunknownを与え、明示的に積まれた具体型を維持する。
   - 到達不能でも添字・global可変性・既知型不一致・end余剰値を検査する。
   - 多相性で成立する正例を受理し、不正local、immutable更新、具体型不一致を含む負例を拒否する。
@@ -849,3 +849,66 @@
 - 8.1〜8.4はそれぞれ独立レビューAPPROVED、完了検証VERIFIED。フレームの引数・locals・複数結果、local.get/set/tee・drop・unreachable、直接call・return、global.get/setの宣言・handler・内部実行ループを実装した。9命令の宣言、生成器テストの宣言行、命令表テストの実行対象14件、Validatorの暫定case群（9規則）は互いに一致する。TDD用の一時フラグは除去済み。
 - 最新状態のReleaseビルドは終了0・警告0・エラー0、ランタイム823件と生成器37件が成功（合計860、failed 0、skipped 0）。開始時の基準791件からランタイムは32件増えた。
 - 公開Decode→Validate→Instantiate→Invokeで新命令・引数・localsを実行する経路は、9.2の型検査と線形化まで検証段階の未実装とする。ホスト呼出し・同期再入・CLR stack余裕（10.x）、start（11.x）、公開受入（12.x）、公式suite、feature全体のGOは今回の完了範囲に含めない。手動モードのため`kiro-validate-impl host-linking`は自動実行せず、ステージング・コミットも行っていない。
+
+### 9.1 添字付き命令のDecodeと生成経路（2026-09-26）
+
+- Task Brief: 6種類の添字付き命令についてuint全域の添字と元位置を保持し、未終端・範囲外LEBをDecode失敗、有効なcallの後の未対応命令を位置・未確認範囲付きUnsupportedとして区別する。命令宣言とhandler・生成器テストの接続を確認する（1.1、1.4、1.5、3.1）。
+- 先行タスクで読取・生成は実装済み。新しい14ケースで補完し、ModuleDecoderの冗長なglobal初期化式専用分岐と引数を除去した。挙動変更のない整理のためREDはN/A。整理前のDecodeテストは96/0/0で成功。
+- 独立kiro-review: APPROVED、必須指摘なし。標準Releaseビルドは終了0、警告0・エラー0。両TUnitの標準コマンドは終了0、runtime837/0/0、generator37/0/0（TestResults/host-linking-9.1-review-runtime、host-linking-9.1-review-generators）。CSharpier checkとgit diff --checkも終了0。
+- kiro-verify-completion: TASK 9.1 VERIFIED。Validate拡張、ホストcallbackとstartの実行は後続タスクの範囲。
+
+### 9.2 関数本体の型検査と線形化（2026-09-26）
+
+- Task Brief: 引数と圧縮localsから型を解決し、local操作・drop、import先行の関数/global表、callの入出力、globalの可変性、return/endの結果を検証する。命令の線形化を同一パスで行い、全体失敗時は実行コードとexport索引を公開しない（1.2、2.1、2.3、3.1、3.2、3.3、3.6、9.1）。
+- タスク8から持ち越した9規則の暫定Unsupportedと、引数・locals・0/複数結果の実行形拒否を除去した。追加localsはuint最大値でも圧縮したまま型検証し、実行時の保持上限はInvoke段階のImplementationLimitとして区別する。引数・結果0個の定義startも実行せずValidateに成功する。
+- RED_PHASE_OUTPUT: 一時フラグOFFの旧拒否状態で公開locals/複数結果テストは、Releaseビルド終了0・警告0・エラー0後に終了1、0/1/0（TestResults/host-linking-9.2-locals-red-fixed）。ONと型検査実装後は終了0、1/0/0（-locals-green）。次の直接call/global更新/returnテストも未実装状態で終了1、0/1/0（-call-red）、接続後は終了0、1/0/0（-call-green）。フラグと旧拒否コードは除去済み。
+- 独立kiro-review: APPROVED、必須指摘なし。標準Releaseビルドは終了0、警告0・エラー0。両TUnitの標準コマンドは終了0、runtime856/0/0、generator37/0/0（TestResults/host-linking-9.2-review-runtime、host-linking-9.2-review-generators）。対象CS7件のCSharpier checkとgit diff --checkは終了0。7型の値/localsの公開経路、型・添字・可変性の負例、検証失敗時の一括非公開を確認した。
+- kiro-verify-completion: TASK 9.2 VERIFIED。到達不能後の一般的な多相popは9.3、ホストcallbackとstart実行は10・11の範囲。
+
+### 9.3 到達不能部分の型多相性（2026-09-26）
+
+- Task Brief: return/unreachable後は関数底のpopだけをunknown相当として許可し、明示的に積まれた具体型を保持する。添字・global可変性・既知型不一致・end余剰値は引き続き拒否する（3.1、3.3、3.4、3.5）。固定Core 2.0のappendix/algorithm.rstのpop_val・unreachable・pop_ctrlとvalid/instructions.rstを照合した。
+- Popへ多相性を集約し、9.2のend専用分岐を除去した。unknownを実値として積む命令は今回の対象にないため、底での型照合を満たした扱いにし、local.teeとcallの出力は宣言された具体型を積む。
+- RED_PHASE_OUTPUT: 一時フラグOFF、Releaseビルド終了0・警告0・エラー0後の`dotnet run --project tests/WasmSharp.Tests/WasmSharp.Tests.csproj -c Release --no-build -- --treenode-filter '/*/*/ModuleValidator_ValidateTests/到達不能部分*' --report-trx --results-directory TestResults/host-linking-9.3-red`は終了1、19/8/0。多相drop・local.set/tee・call・return・global.setとlocal.tee後の具体型検査位置が失敗した。ONの同filter（-9.3-green）は終了0、27/0/0。フラグ除去後も全suiteが成功した。
+- 独立kiro-review: TASK 9.3およびタスク9全体統合APPROVED、必須指摘なし。`dotnet build WasmSharp2.slnx -c Release --no-restore --warnaserror --disable-build-servers`は終了0、警告0・エラー0。
+- `dotnet run --project tests/WasmSharp.Tests/WasmSharp.Tests.csproj -c Release --no-build -- --report-trx --results-directory TestResults/host-linking-9.3-review-runtime`は終了0、passed883 / failed0 / skipped0。
+- `dotnet run --project tests/WasmSharp.Generators.Tests/WasmSharp.Generators.Tests.csproj -c Release --no-build -- --report-trx --results-directory TestResults/host-linking-9.3-review-generators`は終了0、passed37 / failed0 / skipped0。対象CS10件のCSharpier checkと`git -c core.excludesFile= diff --check`は終了0。
+- kiro-verify-completion: TASK 9.3およびタスク9 VERIFIED。9.3完了判定時点のコードで独立ビルド・全920件の成功と承認を確認した。その後の整理と再検証は以下のClaude Codeレビュー対応に記録する。
+
+### タスク9の完了範囲（2026-09-26）
+
+- 9.1〜9.3はそれぞれ独立レビューAPPROVED、完了検証VERIFIED。タスク8から持ち越した型検証・線形化と公開実行経路を接続し、引数・locals・複数結果、定義関数のcall、local/global操作、returnと到達不能部分を扱えるようにした。
+- 定義startのValidate成功は確認済み。ホストcallback・同期再入とCLR stack余裕（10）、start実行（11）、残る公開統合受入（12）、公式suite、feature全体のGOは今回の完了範囲に含めない。
+- 手動モードのため`kiro-validate-impl host-linking`は自動実行していない。この実装作業ではCodexによるステージング・コミットは行っていない。
+
+### タスク9のClaude Codeレビュー対応（2026-09-26）
+
+- 対象は9.1〜9.3の未コミット変更。レビュー開始時は11ファイルがステージ済みで、未ステージ・未追跡ファイルは0件。Claude Code 2.1.282を既存のAnthropic認証で起動し、Read/Glob/Grepだけを許可して差分と関連仕様をレビューした。CLIは終了0、最終resultはsuccess。生成物、生成器テストの詳細、公式suite全体、ホストcallback・同期再入（10）、start実行（11）、公開統合受入（12）はレビュー範囲外。Core 2.0の照合は主にappendix/algorithm.rstで、valid/instructions.rst全文は未確認。
+- 初回所見1（Medium、採用）: local型解決が命令ごとに圧縮宣言を線形走査するため、宣言数Dとlocal命令数Lの積に比例する。宣言ごとのulong累積終端を一度作り、添字より大きい最初の終端を二分探索する形へ修正した。準備O(D)、各参照O(log D)、追加領域O(D)で、localsの実個数に比例する配列は作らない。個数0の宣言が続く境界と末尾の範囲外を2テストで補完した。所要時間の推測は採用せず、実時間の性能計測は行っていない。
+- 初回所見2（Low、採用）: 成功する命令にもWasmFailureLocationを1個ずつ生成していた。関数本体の検証ではbyteOffsetを渡し、失敗時のCreateExceptionだけで位置を生成する形へ修正した。stage・関数添字・section・byteOffsetは既存負例で確認した。
+- 初回所見3（Low、記録の明確化を採用）: 9.3の920件成功後にConcatを等価なコレクション式へ整理した履歴と、ステージ操作の主体が不明瞭だった。完了記録を時点付きに改めた。レビュー中、修正前の現コードでReleaseビルド（終了0、警告0・エラー0）とruntime883/0/0・generator37/0/0を再確認済み（TestResults/host-linking-9-claude-review-runtime、-generators）。今回の修正後の結果は下記のとおり。
+- 初回所見4（Low、テスト補強を採用）: Decodeを通るlocal.get・call・global.set・unreachableをglobal初期化式に置いた4ケースを追加し、Validateが命令位置・section6・FunctionIndexなしで拒否することを確認した。実装は既に正しく拒否していたため、本体変更は不要。
+- 初回所見5（Low、テスト補強を採用）: 定義startが空の本体ではValidate中の誤実行を観測できなかった。既存正例をunreachableを含む本体に変更し、実行せず検証だけが成功することを確認した。
+- 初回所見6（Low、テスト補強を採用）: global.getと、引数より結果が多いcallによる最大operand数の増加が未確認だった。定数命令を含まない2正例を追加し、MaxOperandStackがそれぞれ1・2になることを確認した。
+- Codexによる付随修正: レビュー開始時のModuleDecoder_DecodeInstructionTests.csにCSharpier不一致が1件あったため、コレクション式を整形した。Claudeの初回6所見には含めない。9.3時点の整形チェック成功とレビュー開始時の不一致の差を生んだ編集経緯は未確認であり、特定の作業者や変更を原因とは断定しない。
+- 追加テストによる機能の基準確認: 本体修正前にReleaseビルド終了0・警告0・エラー0を確認し、`dotnet run --project tests/WasmSharp.Tests/WasmSharp.Tests.csproj -c Release --no-build -- --treenode-filter '/*/*/*ValidateTests/*' --report-trx --results-directory TestResults/host-linking-9-claude-review-regression-baseline`は終了0、passed163 / failed0 / skipped0。既存の振る舞いを保つ性能上の整理とテスト補強のためREDはN/A。
+- 修正後BUILD: `dotnet build WasmSharp2.slnx -c Release --no-restore --warnaserror --disable-build-servers`は終了0、警告0・エラー0。
+- 修正後TEST: `dotnet run --project tests/WasmSharp.Tests/WasmSharp.Tests.csproj -c Release --no-build -- --report-trx --results-directory TestResults/host-linking-9-claude-review-fixed-runtime`は終了0、passed891 / failed0 / skipped0。`dotnet run --project tests/WasmSharp.Generators.Tests/WasmSharp.Generators.Tests.csproj -c Release --no-build -- --report-trx --results-directory TestResults/host-linking-9-claude-review-fixed-generators`は終了0、passed37 / failed0 / skipped0。合計928件成功。
+- 修正後の再レビュー: 同じ読み取り専用CLI設定で初回所見の修正差分と検証結果を渡し、終了0・最終result successを確認した。初回1〜6はすべて解消、コードとテストに退行なしとの判定。追加所見7（Low）は9.3時点の整形成功と今回の不一致の経緯が記録から分からない点で、編集経緯が未確認であることを上記へ追記した。記録の明確化だけなので再々レビューは不要と判断した。
+- 最終確認: 現在の変更全CS11ファイルのCSharpier checkと通常・cachedの`git -c core.excludesFile= diff --check`は終了0。再レビュー中の12対象ファイルのSHA256一致と、初回開始時からのcached差分完全一致を確認した。今回の修正は未ステージのままで、Codexはステージング・コミットを行っていない。
+- kiro-verify-completion: FIXおよびTEST_OR_BUILD VERIFIED。全7所見の判定と採用分の修正・テスト補強・記録の明確化は完了。修正後ビルドと928件の成功、対象を絞ったClaude再レビュー、整形と差分検査を根拠とする。実時間の性能計測、公式suite、タスク10〜12、feature全体のGOはこの判定に含めない。
+
+### タスク9の一時領域のstackalloc化（2026-09-26）
+
+- ユーザー依頼によるClaude再レビュー後の追加変更。ValidateFunction内の累積終端localEndsは、圧縮宣言が128件以下なら最大1KiBのstackallocを使い、超過時だけulong配列を確保する。関数呼び出しごとに寿命が終了し、命令ループ内でのstackallocやlocalsの実個数に比例した確保は行わない。ReadOnlySpanを型解決関数の引数に渡し、二分探索を維持する。
+- 既存テストで宣言0件・個数0を含む境界・uint最大値を確認し、1024宣言で配列へ切り替えた場合の末尾の型解決を1件追加した。振る舞いを変えない一時領域の変更のためREDはN/A。Codexが初期化範囲・寿命・二分探索の同一性をinline確認した。
+- `dotnet build WasmSharp2.slnx -c Release --no-restore --warnaserror --disable-build-servers`は終了0、警告0・エラー0。`dotnet run --project tests/WasmSharp.Tests/WasmSharp.Tests.csproj -c Release --no-build -- --report-trx --results-directory TestResults/host-linking-9-stackalloc-runtime`は終了0、passed892 / failed0 / skipped0。`dotnet run --project tests/WasmSharp.Generators.Tests/WasmSharp.Generators.Tests.csproj -c Release --no-build -- --report-trx --results-directory TestResults/host-linking-9-stackalloc-generators`は終了0、passed37 / failed0 / skipped0。合計929件成功。
+- 変更CS2ファイルのCSharpier checkと通常・cachedのgit diff --checkは終了0。この追加変更の開始時からインデックスは不変。kiro-verify-completionはこの変更と上記検証についてVERIFIED。実時間・割り当て量の測定や追加のClaudeレビューは実施していない。
+
+### stackalloc化のClaude Codeレビュー（2026-09-26）
+
+- ユーザー依頼により、上記stackalloc化・追加テスト・対応記録をClaude Code 2.1.282へ読み取り専用でレビュー依頼した。前回のレビューはno-session-persistenceで起動していたため再開できず、前回最終結果と追加差分を渡して新規に実行した。CLI終了0・最終result success、新しい指摘はCritical〜Lowすべて0件。
+- 最大1KiBの確保上限、関数呼び出し内の寿命、全要素の書き込み、空Span、ReadOnlySpanの引数渡し、配列への切替、圧縮localsと二分探索の意味の維持を確認した。1024宣言の追加テストと既存の空・個数0・uint最大値ケースで今回の変更に必要な範囲を満たすとの判定。128/129件専用テストや性能計測の追加要求はない。差分に含まれた改行正規化も欠陥ではないとの補足で、コード修正は不要と判断した。
+- レビュー中と続行確認中の全12対象ファイルはSHA256が開始時と一致。コードを変えていないためビルド・テストは再実行せず、直前のReleaseビルド（警告0・エラー0）とruntime892/0/0・generator37/0/0、合計929件の結果を根拠として維持する。通常・cachedのgit diff --checkは終了0、インデックスもレビュー開始時から不変。
+- セッション継続: 今回のレビュー実行は保存を無効にせず起動したが、サンドボックス内では履歴が見つからずresumeは終了1となった。履歴フォルダーへの書き込み権限付きで、レビュー依頼と最終結果を引き継ぐ保存セッション`c8363b7a-5ae9-4883-a263-f8dedf7a916b`を作成した。履歴ファイルの存在と、同じIDへのresume終了0・最終result successを確認済み。この保存セッションは結果の引き継ぎと続行確認のみで、独立した再レビューではない。
+- kiro-verify-completion: この追加レビューはVERIFIED。実時間・割り当て量、JITの実際の生成コード、ホストcallback中の再入時スタック余裕、公式suite、タスク10〜12は未確認・対象外。

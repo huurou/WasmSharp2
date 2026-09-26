@@ -175,7 +175,7 @@ internal partial class WasmModule_ValidateTests
     }
 
     [Test]
-    public async Task 定義startの型は有効だが実行形が未対応_検証未完了として拒否する()
+    public async Task 引数と結果が0個の定義startがある_実行せず検証に成功する()
     {
         // Arrange
         var module = WasmModule.Decode(
@@ -184,19 +184,15 @@ internal partial class WasmModule_ValidateTests
                 HostLinkingModuleBinary.Imports(("", "", 0, [0])),
                 HostLinkingModuleBinary.Functions(0),
                 HostLinkingModuleBinary.Start(1),
-                HostLinkingModuleBinary.Code(([], [0x0B]))
+                HostLinkingModuleBinary.Code(([], [0x00, 0x0B]))
             )
         );
 
-        // Act & Assert
-        var exception = await Assert
-            .That(() => module.Validate())
-            .ThrowsExactly<WasmUnsupportedFeatureException>();
-        await Assert.That(exception!.Feature).IsEqualTo("function.results");
-        await Assert
-            .That(exception.Location)
-            .IsEqualTo(new(WasmProcessingStage.Validate, module.Functions[0].BodyOffset, 1, 10));
-        await Assert.That(exception.UnverifiedRanges.Length).IsEqualTo(1);
-        await Assert.That(() => module.Instantiate([])).ThrowsExactly<InvalidOperationException>();
+        // Act
+        var result = module.Validate();
+
+        // Assert
+        await Assert.That(result).IsSameReferenceAs(module);
+        await Assert.That(module.FunctionCodes.Length).IsEqualTo(1);
     }
 }

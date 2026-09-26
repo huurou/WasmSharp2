@@ -3,7 +3,7 @@ using WasmSharp.Tests.Fixtures;
 
 namespace WasmSharp.Tests;
 
-internal class WasmFunction_InvokeTests
+internal partial class WasmFunction_InvokeTests
 {
     [Test]
     [Arguments(false)]

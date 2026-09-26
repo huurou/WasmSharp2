@@ -8,88 +8,6 @@ namespace WasmSharp.Tests.Modules;
 internal partial class ModuleValidator_ValidateTests
 {
     [Test]
-    [Arguments("60017F017F", "0041010B", "function.parameters")]
-    [Arguments("6000017F", "01017F41010B", "function.locals")]
-    [Arguments("6000017F", "01FFFFFFFF0F7F41010B", "function.locals")]
-    [Arguments("600000", "000B", "function.results")]
-    [Arguments("6000027F7E", "00410142020B", "function.results")]
-    public async Task 型は一致するが実行形が範囲外_機能名と未完了検証範囲を持つ未実装になる(
-        string signature,
-        string body,
-        string feature
-    )
-    {
-        // Arrange
-        var module = DecodeFunction(signature, body);
-
-        // Act & Assert
-        var exception = await Assert
-            .That(() => ModuleValidator.Validate(module))
-            .ThrowsExactly<WasmUnsupportedFeatureException>();
-        using (Assert.Multiple())
-        {
-            await Assert.That(exception!.Feature).IsEqualTo(feature);
-            await Assert
-                .That(exception.Location)
-                .IsEqualTo(
-                    new(WasmProcessingStage.Validate, module.Functions[0].BodyOffset, 0, 10)
-                );
-            await Assert.That(exception.UnverifiedRanges.Length).IsEqualTo(1);
-            await Assert
-                .That(exception.UnverifiedRanges[0].Stage)
-                .IsEqualTo(WasmProcessingStage.Validate);
-            await Assert
-                .That(exception.UnverifiedRanges[0].StartOffset)
-                .IsEqualTo(module.Functions[0].BodyOffset);
-            await Assert
-                .That(exception.UnverifiedRanges[0].EndOffset)
-                .IsEqualTo(module.InputLength);
-            await Assert.That(module.FunctionCodes.IsEmpty).IsTrue();
-        }
-    }
-
-    [Test]
-    [Arguments("000041010B", 0, "unreachable")]
-    [Arguments("0041011A41010B", 1, "drop")]
-    [Arguments("0020000B", 0, "local.get")]
-    [Arguments("004101210041010B", 1, "local.set")]
-    [Arguments("00410122000B", 1, "local.tee")]
-    [Arguments("0010000B", 0, "call")]
-    [Arguments("0041010F0B", 1, "return")]
-    [Arguments("0023000B", 0, "global.get")]
-    [Arguments("004101240041010B", 1, "global.set")]
-    public async Task 型検査が未実装の命令を含む_命令名と位置を持つ検証段階の未実装になる(
-        string body,
-        int instructionIndex,
-        string feature
-    )
-    {
-        // Arrange
-        var module = DecodeFunction("6000017F", body);
-        var offset = module.Functions[0].Instructions[instructionIndex].ByteOffset;
-
-        // Act & Assert
-        var exception = await Assert
-            .That(() => ModuleValidator.Validate(module))
-            .ThrowsExactly<WasmUnsupportedFeatureException>();
-        using (Assert.Multiple())
-        {
-            await Assert.That(exception!.Feature).IsEqualTo(feature);
-            await Assert
-                .That(exception.Location)
-                .IsEqualTo(new(WasmProcessingStage.Validate, offset, 0, 10));
-            await Assert.That(exception.UnverifiedRanges.Length).IsEqualTo(1);
-            await Assert
-                .That(exception.UnverifiedRanges[0].Stage)
-                .IsEqualTo(WasmProcessingStage.Validate);
-            await Assert.That(exception.UnverifiedRanges[0].StartOffset).IsEqualTo(offset);
-            await Assert
-                .That(exception.UnverifiedRanges[0].EndOffset)
-                .IsEqualTo(module.InputLength);
-        }
-    }
-
-    [Test]
     public async Task 個数0のlocals宣言がある_実際のlocalsがない定数関数として受理する()
     {
         // Arrange
@@ -121,7 +39,7 @@ internal partial class ModuleValidator_ValidateTests
     [Arguments("0303020001", "", 1u, (byte)10)]
     [Arguments("0303020000", "0707010372756E0002", 2u, (byte)7)]
     [Arguments("0303020000", "070D020372756E00000372756E0000", 0u, (byte)7)]
-    public async Task 先頭関数が範囲外で全体の参照が不正_本体の未対応判定より先に検証失敗になる(
+    public async Task 引数付き関数があり全体の参照が不正_参照位置付き検証失敗になる(
         string functions,
         string exports,
         uint index,
@@ -155,7 +73,7 @@ internal partial class ModuleValidator_ValidateTests
     [Arguments("6000027E7F", "00410142020B")]
     [Arguments("60017F017E", "0041010B")]
     [Arguments("6000017E", "01017F41010B")]
-    public async Task 結果の型や個数や順序が不一致_実行形の未対応より先に終端位置付き検証失敗になる(
+    public async Task 結果の型や個数や順序が不一致_終端位置付き検証失敗になる(
         string signature,
         string body
     )

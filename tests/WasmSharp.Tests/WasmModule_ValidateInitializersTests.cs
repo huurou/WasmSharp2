@@ -38,6 +38,38 @@ internal partial class WasmModule_ValidateTests
     }
 
     [Test]
+    [Arguments("20000B")]
+    [Arguments("10000B")]
+    [Arguments("24000B")]
+    [Arguments("000B")]
+    public async Task Global初期化式で許可されない命令がある_デコード後に命令位置で検証を拒否する(
+        string initializer
+    )
+    {
+        // Arrange
+        var module = WasmModule.Decode(
+            HostLinkingModuleBinary.Create(
+                HostLinkingModuleBinary.Globals((0x7F, false, Convert.FromHexString(initializer)))
+            )
+        );
+
+        // Act & Assert
+        var exception = await Assert
+            .That(() => module.Validate())
+            .ThrowsExactly<WasmValidateException>();
+        await Assert
+            .That(exception!.Location)
+            .IsEqualTo(
+                new(
+                    WasmProcessingStage.Validate,
+                    module.Globals[0].Initializer[0].ByteOffset,
+                    null,
+                    6
+                )
+            );
+    }
+
+    [Test]
     [Arguments("0B")]
     [Arguments("410041010B")]
     [Arguments("42000B")]
