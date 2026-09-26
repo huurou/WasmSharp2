@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using WasmSharp.Exceptions;
 
 namespace WasmSharp.Execution;
@@ -7,6 +8,87 @@ namespace WasmSharp.Execution;
 /// </summary>
 internal static partial class Interpreter
 {
+    /// <summary>
+    /// ホスト呼び出しを進行中の実行の深さへ数え、終了時にその1段を解放する
+    /// </summary>
+    internal static ExecutionResult RunHost(
+        InterpreterContext? context,
+        WasmFunction function,
+        WasmInstance? instance,
+        ReadOnlySpan<WasmValue> arguments
+    )
+    {
+        if (context is not null && !context.TryEnterCall())
+        {
+            return ExhaustHost(context, WasmExhaustionReason.CallDepthLimit, context.MaxCallDepth);
+        }
+        try
+        {
+            if (!RuntimeHelpers.TryEnsureSufficientExecutionStack())
+            {
+                return ExhaustHost(context, WasmExhaustionReason.HostStackLimit, null);
+            }
+            return ExecutionResult.Success(InvokeHost(function, instance, arguments).Values);
+        }
+        finally
+        {
+            context?.ExitCall();
+        }
+    }
+
+    /// <summary>
+    /// ホストへの入場失敗に、進行中のWasmのcall命令の位置を付ける
+    /// </summary>
+    /// <remarks>
+    /// ホストから別ホストへの公開Invokeでも、外側のWasmのcall命令を使う。Wasmフレームがなければ位置はnull
+    /// </remarks>
+    private static ExecutionResult ExhaustHost(
+        InterpreterContext? context,
+        WasmExhaustionReason reason,
+        int? limit
+    )
+    {
+        uint? functionIndex = null;
+        long? byteOffset = null;
+        if (context is { FrameCount: > 0 })
+        {
+            var frame = context.GetFrame(context.FrameCount - 1);
+            functionIndex = frame.Function.FunctionIndex;
+            byteOffset = frame.Function.Code.Instructions[frame.Pc - 1].ByteOffset;
+        }
+        return ExecutionResult.Exhaustion(reason, limit, functionIndex, byteOffset);
+    }
+
+    /// <summary>
+    /// 呼び出し専用の引数でホスト処理を実行し、宣言型に一致する所有済みの結果を返す
+    /// </summary>
+    internal static WasmResults InvokeHost(
+        WasmFunction function,
+        WasmInstance? instance,
+        ReadOnlySpan<WasmValue> arguments
+    )
+    {
+        var copiedArguments = arguments.ToArray();
+        var result = function switch
+        {
+            HostFunction host => host.Callback(copiedArguments),
+            InstanceHostFunction host => host.Callback(instance!, copiedArguments),
+            _ => throw new InvalidOperationException("ホスト関数ではありません。"),
+        };
+        if (result is null || result.Values.Length != function.Type.Results.Length)
+        {
+            throw new InvalidOperationException("ホスト関数の結果の個数が関数型と一致しません。");
+        }
+        for (var i = 0; i < result.Values.Length; i++)
+        {
+            if (result.Values[i].Kind != function.Type.Results[i])
+            {
+                throw new InvalidOperationException("ホスト関数の結果の型が関数型と一致しません。");
+            }
+        }
+        return result;
+    }
+
     /// <summary>
     /// 今回の関数入口から実行し、終了時に呼び出し前のスタック・深さ・処理段階へ戻す
     /// </summary>
@@ -24,6 +106,15 @@ internal static partial class Interpreter
         try
         {
             context.Stage = stage;
+            if (!RuntimeHelpers.TryEnsureSufficientExecutionStack())
+            {
+                return ExecutionResult.Exhaustion(
+                    WasmExhaustionReason.HostStackLimit,
+                    null,
+                    function.FunctionIndex,
+                    function.Definition.BodyOffset
+                );
+            }
             if (!context.TryEnterCall())
             {
                 return ExhaustCallDepth(context, function);
@@ -103,8 +194,20 @@ internal static partial class Interpreter
         var callee = context.CurrentFunction.Instance.Functions[(int)instruction.Index];
         if (callee is not DefinedFunction function)
         {
-            // ホスト関数の呼び出しはホスト境界の統合まで接続しない。
-            throw new WasmUnsupportedFeatureException("ホスト関数の呼び出しは未対応です。");
+            var argumentBase = context.ValueCount - callee.Type.Parameters.Length;
+            var arguments = context.GetValues(argumentBase, callee.Type.Parameters.Length);
+            var results = RunHost(context, callee, context.CurrentFunction.Instance, arguments);
+            if (results.Status != ExecutionStatus.Success)
+            {
+                return results;
+            }
+
+            context.Restore(context.FrameCount, argumentBase, context.CallDepth);
+            foreach (var value in results.Values)
+            {
+                context.PushValue(value);
+            }
+            return default;
         }
         if (!context.TryEnterCall())
         {

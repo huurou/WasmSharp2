@@ -17,7 +17,7 @@ internal static class GeneratorTestSource
         namespace WasmSharp.Exceptions
         {
             public enum WasmTrapReason { Unreachable, IntegerDivideByZero }
-            public enum WasmExhaustionReason { CallDepthLimit }
+            public enum WasmExhaustionReason { CallDepthLimit, HostStackLimit }
         }
         namespace WasmSharp.Execution
         {

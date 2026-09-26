@@ -29,7 +29,7 @@ internal class ExecutionBoundary_InvokeTests
                     outer.TryEnterCall();
                     try
                     {
-                        ExecutionBoundary.Invoke(function, [], WasmProcessingStage.Instantiate);
+                        ExecutionBoundary.Invoke(function, null, []);
                     }
                     finally
                     {
@@ -52,7 +52,7 @@ internal class ExecutionBoundary_InvokeTests
                 .That(exception.Location)
                 .IsEqualTo(
                     new WasmFailureLocation(
-                        WasmProcessingStage.Instantiate,
+                        WasmProcessingStage.Invoke,
                         function.Definition.BodyOffset,
                         0
                     )
@@ -75,7 +75,7 @@ internal class ExecutionBoundary_InvokeTests
             {
                 try
                 {
-                    ExecutionBoundary.Invoke(function, [], WasmProcessingStage.Invoke);
+                    ExecutionBoundary.Invoke(function, null, []);
                 }
                 finally
                 {
@@ -108,7 +108,7 @@ internal class ExecutionBoundary_InvokeTests
             .GetFunction("run");
 
         // Act
-        var result = ExecutionBoundary.Invoke(function, [], WasmProcessingStage.Invoke);
+        var result = ExecutionBoundary.Invoke(function, null, []);
         var cleared = InterpreterContext.Current is null;
 
         // Assert

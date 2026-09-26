@@ -51,6 +51,17 @@ public abstract class WasmFunction
     /// <returns>関数が返すvalueのコレクション</returns>
     public WasmResults Invoke(ReadOnlySpan<WasmValue> arguments)
     {
+        return Invoke(null!, arguments);
+    }
+
+    /// <summary>
+    /// ホスト処理のアクセス先instanceと値引数を指定して関数を呼び出す
+    /// </summary>
+    /// <param name="instance">instance必須のホスト処理へ渡す対象。他の形式では無視する</param>
+    /// <param name="arguments">関数に渡すvalueのコレクション</param>
+    /// <returns>関数が返すvalueのコレクション</returns>
+    public WasmResults Invoke(WasmInstance instance, ReadOnlySpan<WasmValue> arguments)
+    {
         var parameters = Type.Parameters;
         if (arguments.Length != parameters.Length)
         {
@@ -65,6 +76,10 @@ public abstract class WasmFunction
             }
         }
 
-        return ExecutionBoundary.Invoke(this, arguments, WasmProcessingStage.Invoke);
+        if (this is InstanceHostFunction)
+        {
+            ArgumentNullException.ThrowIfNull(instance);
+        }
+        return ExecutionBoundary.Invoke(this, instance, arguments);
     }
 }

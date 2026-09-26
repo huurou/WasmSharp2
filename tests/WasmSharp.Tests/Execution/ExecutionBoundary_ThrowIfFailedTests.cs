@@ -6,6 +6,26 @@ namespace WasmSharp.Tests.Execution;
 internal class ExecutionBoundary_ThrowIfFailedTests
 {
     [Test]
+    public async Task CLRスタック上限の結果を受け取る_未計測上限をnullのまま例外にする()
+    {
+        // Arrange
+        var result = ExecutionResult.Exhaustion(WasmExhaustionReason.HostStackLimit, null, 3, 42);
+
+        // Act & Assert
+        var exception = await Assert
+            .That(() => ExecutionBoundary.ThrowIfFailed(result, WasmProcessingStage.Invoke))
+            .ThrowsExactly<WasmExhaustionException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.Reason).IsEqualTo(WasmExhaustionReason.HostStackLimit);
+            await Assert.That(exception.Limit).IsNull();
+            await Assert
+                .That(exception.Location)
+                .IsEqualTo(new WasmFailureLocation(WasmProcessingStage.Invoke, 42, 3));
+        }
+    }
+
+    [Test]
     public async Task 正常の結果を受け取る_値の有無によらず例外を投げない()
     {
         // Arrange

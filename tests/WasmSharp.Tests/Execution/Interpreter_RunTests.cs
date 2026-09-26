@@ -8,6 +8,59 @@ namespace WasmSharp.Tests.Execution;
 internal class Interpreter_RunTests
 {
     [Test]
+    public async Task 再入入口でCLRスタックの余裕がない_元関数位置の結果を返し外側の深さと段階を復元する()
+    {
+        // Arrange
+        var function = ExecutionFunctionFixture.Create(
+            [InstructionFixture.Create(0x0B, 1001)],
+            new([], []),
+            [],
+            0
+        );
+
+        // Act
+        var observed = ExecutionStackFixture.RunAtLimit(() =>
+        {
+            var context = InterpreterContext.Enter(new(10), out var outermost);
+            try
+            {
+                context.TryEnterCall();
+                context.Stage = WasmProcessingStage.Instantiate;
+                var result = Interpreter.Run(context, function, [], WasmProcessingStage.Invoke);
+                return (
+                    Result: result,
+                    context.FrameCount,
+                    context.ValueCount,
+                    context.CallDepth,
+                    context.Stage
+                );
+            }
+            finally
+            {
+                context.Restore(0, 0, 0);
+                InterpreterContext.Exit(outermost);
+            }
+        });
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(observed.Result.Status).IsEqualTo(ExecutionStatus.Exhaustion);
+            await Assert
+                .That(observed.Result.ExhaustionReason)
+                .IsEqualTo(WasmExhaustionReason.HostStackLimit);
+            await Assert.That(observed.Result.Limit).IsNull();
+            await Assert.That(observed.Result.FunctionIndex).IsEqualTo(1U);
+            await Assert.That(observed.Result.ByteOffset).IsEqualTo(12345678900L);
+            await Assert
+                .That(
+                    (observed.FrameCount, observed.ValueCount, observed.CallDepth, observed.Stage)
+                )
+                .IsEqualTo((0, 0, 1, WasmProcessingStage.Instantiate));
+        }
+    }
+
+    [Test]
     [Arguments(WasmProcessingStage.Invoke)]
     [Arguments(WasmProcessingStage.Instantiate)]
     public async Task 入口の必要容量が保持上限を超える_段階と関数位置を付けて伝播し外側を復元する(

@@ -19,32 +19,32 @@ internal readonly struct ExecutionResult
     internal ExecutionStatus Status { get; }
 
     /// <summary>
-    /// 正常終了時の戻り値。defaultの実行結果または失敗時は空配列を返す
+    /// 正常終了時の戻り値 defaultの実行結果または失敗時は空配列を返す
     /// </summary>
     internal ImmutableArray<WasmValue> Values => values_.IsDefault ? [] : values_;
 
     /// <summary>
-    /// trapの原因。trap以外ではnull
+    /// trapの原因 trap以外ではnull
     /// </summary>
     internal WasmTrapReason? TrapReason { get; }
 
     /// <summary>
-    /// 上限に達した実行資源の原因。exhaustion以外ではnull
+    /// 上限に達した実行資源の原因 exhaustion以外ではnull
     /// </summary>
     internal WasmExhaustionReason? ExhaustionReason { get; }
 
     /// <summary>
-    /// 到達した実行資源の上限。exhaustion以外ではnull
+    /// 到達した実行資源の上限 未計測のCLRスタック上限またはexhaustion以外ではnull
     /// </summary>
     internal int? Limit { get; }
 
     /// <summary>
-    /// 失敗が発生した関数のindex。正常終了時はnull
+    /// 失敗が発生した関数のindex 正常終了時はnull
     /// </summary>
     internal uint? FunctionIndex { get; }
 
     /// <summary>
-    /// 失敗が発生した入力バイナリ上のバイト位置。正常終了時はnull
+    /// 失敗が発生した入力バイナリ上のバイト位置 正常終了時はnull
     /// </summary>
     internal long? ByteOffset { get; }
 
@@ -111,19 +111,22 @@ internal readonly struct ExecutionResult
     /// 実行資源の上限到達の原因、適用上限と発生位置を保持する失敗結果を構築する
     /// </summary>
     /// <param name="reason">上限に達した実行資源の原因</param>
-    /// <param name="limit">この実行に適用された正の上限</param>
-    /// <param name="functionIndex">上限に達した関数のindex</param>
-    /// <param name="byteOffset">上限に達した入力バイナリ上のバイト位置</param>
+    /// <param name="limit">この実行に適用された正の上限。CLRスタックの未計測上限はnull</param>
+    /// <param name="functionIndex">上限に達した関数のindex。Wasm上の呼び出し元がなければnull</param>
+    /// <param name="byteOffset">上限に達した入力バイナリ上のバイト位置。該当位置がなければnull</param>
     /// <returns>実行資源の上限到達を表す実行結果</returns>
     /// <exception cref="ArgumentOutOfRangeException">上限が0以下の場合</exception>
     internal static ExecutionResult Exhaustion(
         WasmExhaustionReason reason,
-        int limit,
-        uint functionIndex,
-        long byteOffset
+        int? limit,
+        uint? functionIndex,
+        long? byteOffset
     )
     {
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(limit);
+        if (limit is { } measuredLimit)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(measuredLimit);
+        }
         return new ExecutionResult(
             ExecutionStatus.Exhaustion,
             values: [],

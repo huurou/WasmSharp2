@@ -8,17 +8,26 @@ namespace WasmSharp.Execution;
 internal static class ExecutionBoundary
 {
     /// <summary>
-    /// 所属instanceのポリシーで同期実行に入り、最外側の終了時にコンテキストを解除する
+    /// 定義関数の入口だけでコンテキストを開き、ホスト処理へのアクセス先と実行ポリシーを分ける
     /// </summary>
     internal static WasmResults Invoke(
         WasmFunction function,
-        ReadOnlySpan<WasmValue> arguments,
-        WasmProcessingStage stage
+        WasmInstance? explicitInstance,
+        ReadOnlySpan<WasmValue> arguments
     )
     {
         if (function is not DefinedFunction definedFunction)
         {
-            throw new WasmUnsupportedFeatureException("ホスト関数の呼び出しは未対応です。");
+            var hostResult = Interpreter.RunHost(
+                InterpreterContext.Current,
+                function,
+                explicitInstance,
+                arguments
+            );
+
+            ThrowIfFailed(hostResult, WasmProcessingStage.Invoke);
+
+            return new WasmResults(hostResult.Values.AsSpan());
         }
 
         var context = InterpreterContext.Enter(
@@ -27,8 +36,15 @@ internal static class ExecutionBoundary
         );
         try
         {
-            var result = Interpreter.Run(context, definedFunction, arguments, stage);
-            ThrowIfFailed(result, stage);
+            var result = Interpreter.Run(
+                context,
+                definedFunction,
+                arguments,
+                WasmProcessingStage.Invoke
+            );
+
+            ThrowIfFailed(result, WasmProcessingStage.Invoke);
+
             return new WasmResults(result.Values.AsSpan());
         }
         finally
@@ -53,9 +69,9 @@ internal static class ExecutionBoundary
         if (result.Status == ExecutionStatus.Exhaustion)
         {
             throw new WasmExhaustionException(
-                "Wasmの呼び出し深さが上限に達しました。",
+                "Wasmの実行資源が上限に達しました。",
                 result.ExhaustionReason!.Value,
-                result.Limit!.Value,
+                result.Limit,
                 new WasmFailureLocation(stage, result.ByteOffset, result.FunctionIndex)
             );
         }

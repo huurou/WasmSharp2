@@ -255,8 +255,8 @@
 
 ## ホスト呼出しと同期再入
 
-- [ ] 10. ホスト境界と実行コンテキストを完成する
-- [ ] 10.1 両形式のcallbackへ値を渡し結果を検査する
+- [x] 10. ホスト境界と実行コンテキストを完成する
+- [x] 10.1 両形式のcallbackへ値を渡し結果を検査する
   - 共通の内部ホスト呼出しで、callback引数を呼出し専用コピーへ移し、指定形式だけにinstanceを渡す。
   - 結果のnull・型・個数を確認してからguestを継続し、結果の所有と元のホスト例外実体を維持する。
   - 内部呼出しの正負テストで引数順序・不正結果による後続未実行・例外同一性を確認する。
@@ -264,7 +264,7 @@
   - _Depends: 3.3, 8.3, 9.3_
   - _Requirements: 8.2, 8.3, 8.4, 8.5, 8.6_
 
-- [ ] 10.2 公開呼出しへ関数種別・instance指定・context選択を統合する
+- [x] 10.2 公開呼出しへ関数種別・instance指定・context選択を統合する
   - 値引数の不一致を実行前に拒否し、instance必須hostの省略/nullを拒否する。instanceなしhostと定義関数は追加instanceを無視する。
   - 単独host呼出しではcontextを作らず、定義関数入口では元instanceの上限を選ぶ。既存contextがあれば継承し、作った入口だけが解除する。
   - 両公開呼出し形式、定義関数へのnull/別instance、単独hostからの資源操作とWasm入口を公開テストで確認する。
@@ -272,14 +272,14 @@
   - _Depends: 10.1_
   - _Requirements: 2.2, 2.10, 8.9, 8.10, 8.11, 10.4, 10.9, 10.10, 10.11_
 
-- [ ] 10.3 Wasmからのhost呼出しと同期再入の保存復元を統合する
+- [x] 10.3 Wasmからのhost呼出しと同期再入の保存復元を統合する
   - guestからのhost callは直前の定義関数のinstanceを渡し、frameを追加せず深さ1段を消費してfinallyで戻す。
   - 同一/別instanceへの再入は外側contextを共有し、入口frame/value/depthまで復元して内側ループを終了する。
   - 再入中のstack拡張でもcallback引数と外側localsが変わらず、内側trapをホストが捕捉した後に外側を継続できる公開テストを通す。
   - _Boundary: Interpreter, WasmExecutionContext, ExecutionBoundary_
   - _Requirements: 2.8, 8.4, 8.7, 8.8, 10.3, 10.6, 10.7_
 
-- [ ] 10.4 ホスト往復のstack余裕と失敗診断を統合する
+- [x] 10.4 ホスト往復のstack余裕と失敗診断を統合する
   - 再入入口とcallback直前でCLR stack余裕を確認し、深さ上限とは別のexhaustion理由と未計測上限を返す。
   - runtime結果だけを共通境界で例外化し、Invokeの段階・元位置を保持する。ホストからの同型例外を再分類しない。
   - 内部結果境界でHostStackLimit・Limit=null・復元を確認し、公開の直接再帰/host再入でexhaustionと独立再実行を確認する。
@@ -912,3 +912,33 @@
 - レビュー中と続行確認中の全12対象ファイルはSHA256が開始時と一致。コードを変えていないためビルド・テストは再実行せず、直前のReleaseビルド（警告0・エラー0）とruntime892/0/0・generator37/0/0、合計929件の結果を根拠として維持する。通常・cachedのgit diff --checkは終了0、インデックスもレビュー開始時から不変。
 - セッション継続: 今回のレビュー実行は保存を無効にせず起動したが、サンドボックス内では履歴が見つからずresumeは終了1となった。履歴フォルダーへの書き込み権限付きで、レビュー依頼と最終結果を引き継ぐ保存セッション`c8363b7a-5ae9-4883-a263-f8dedf7a916b`を作成した。履歴ファイルの存在と、同じIDへのresume終了0・最終result successを確認済み。この保存セッションは結果の引き継ぎと続行確認のみで、独立した再レビューではない。
 - kiro-verify-completion: この追加レビューはVERIFIED。実時間・割り当て量、JITの実際の生成コード、ホストcallback中の再入時スタック余裕、公式suite、タスク10〜12は未確認・対象外。
+
+### タスク10.1〜10.3の実装と検証（2026-09-26）
+
+- 10.1: 共通のホスト呼び出しへ両callback形式、呼び出し専用の引数コピー、結果のnull・個数・型検査を実装し、正常な結果だけをguestの後続命令へ渡すようにした。ホスト例外は捕捉・変換せず同じ実体を伝播する。REDは機能フラグOFFで2件、不正結果の未検査で3件、guest呼び出し未接続で2件の失敗を確認。フラグONで成功後に削除した。最終runtime899/0/0、generator37/0/0。独立レビューAPPROVED、kiro-verify-completionはTASK VERIFIED。
+- 10.2: `Invoke(WasmInstance, ReadOnlySpan<WasmValue>)`を追加し、共通の値引数検査、instance必須hostの省略/null拒否、定義関数とinstance不要hostでの追加instance無視を接続した。単独hostはcontextを作らず、Wasm入口だけが元instanceの上限で開始・解除する。公開hostの未接続でRED2件を確認。資源操作、別instance指定、A終了後Bの入口上限を公開操作で確認し、runtime909/0/0、generator37/0/0。独立レビューAPPROVED、TASK VERIFIED。
+- 10.3: guest callと既存context内の公開host Invokeを`RunHost`へ接続し、frameを追加せず深さを1段消費してfinallyで解放する。共有値スタックから専用コピーへの二重コピーを避ける参照取得を追加し、callback前の所有コピーを維持した。既存のRun/RunLoopの保存復元を利用し、同一/別instanceへの再入、stack拡張、内側trapの捕捉後の継続、引数・外側locals・contextの保持とcallbackへ渡すinstanceを確認。深さ上限が効かないRED2件から修正し、runtime918/0/0、generator37/0/0。独立レビューで整形漏れ1件を修正後APPROVED、TASK VERIFIED。
+- 各段階で`dotnet build WasmSharp2.slnx -c Release --no-restore --warnaserror --disable-build-servers`は終了0、警告0・エラー0。テストは`dotnet run --project tests/WasmSharp.Tests/WasmSharp.Tests.csproj -c Release --no-build -- --report-trx --results-directory TestResults/host-linking-10-N-runtime`と生成器プロジェクトの対応する`-generators`へ出力した（N=1〜3、表記はpassed/failed/skipped）。両suiteの終了コードは0。独立レビュアーもビルド・両suite・変更CSのCSharpier・差分検査を再実行した。
+
+### タスク10.4の実装とタスク10の完了範囲（2026-09-26）
+
+- callback直前とWasm関数の入口へ`RuntimeHelpers.TryEnsureSufficientExecutionStack()`を追加し、余裕不足を`HostStackLimit`の内部結果として返す。内部結果と`WasmExhaustionException`の上限は`int?`とし、未計測のCLRスタック上限をnullのまま共通境界で例外へ変換する。呼び出し深さの上限は設定値を維持し、ホストが投げた同型例外の実体・段階・位置を変更しない。
+- CLRの予約領域を残す専用スレッド上で、callback前とRun入口の単発呼び出しを検証した。ガード未実装で各1件がSuccessになったRED記録は`TestResults/host-linking-10-4-red`と`-entry-red`。修正後はHostStackLimit・Limit=null・callback未実行・外側の深さと段階の復元を確認した。公開経路では直接再帰、両callback形式からの同期再入、深さ上限と中断後の独立再実行、ホスト由来のtrap/exhaustion例外の同一性を確認した。
+- 初回独立レビューは、高上限の公開再入負荷テストが子プロセスで隔離されていないためREJECTED。上限1,000,000の2ケースと高上限ケース用の専用スレッド処理を削除し、公開再入は上限4の両形式に限定した。CLRスタック診断は独立した検査で先に停止する内部2境界テストと例外変換テストで確認する。初回のruntime928件は最終件数ではなく、削除した負荷テストを完了根拠に含めない。
+- 修正後BUILD: `dotnet build WasmSharp2.slnx -c Release --no-restore --warnaserror --disable-build-servers`は終了0、警告0・エラー0。
+- 修正後TEST: `dotnet run --project tests/WasmSharp.Tests/WasmSharp.Tests.csproj -c Release --no-build -- --report-trx --results-directory TestResults/host-linking-10-4-fixed-runtime`は終了0、passed926 / failed0 / skipped0。生成器は`dotnet run --project tests/WasmSharp.Generators.Tests/WasmSharp.Generators.Tests.csproj -c Release --no-build -- --report-trx --results-directory TestResults/host-linking-10-4-fixed-generators`で終了0、passed37 / failed0 / skipped0。合計963件成功。
+- 再レビューでも同じビルド・両suiteの成功を確認した。テスト2ファイルの改行混在をCSharpierで正規化し、変更CS18ファイルの整形検査と`git diff --check`が成功した後、APPROVED。最終の改行修正は挙動を変えないためテストを繰り返していない。
+- kiro-verify-completion: 10.4とタスク10全体のTASK判定はVERIFIED。10.1〜10.4を完了扱いとする。タスク11のstart実行、タスク12の残る公開統合受入、実CLRスタック枯渇を狙う子プロセス試験、実OOM、公式suite、Core 2.0全体への準拠、feature全体のGOは含めない。
+- 手動モードのため`kiro-validate-impl host-linking`は自動実行していない。ステージング・コミット・ブランチ変更は行っていない。
+
+### タスク10のClaude Codeレビュー対応（2026-09-26）
+
+- Claude Code CLI 2.1.282へ、タスク10の未コミット変更19ファイルの差分と関連仕様をAnthropic経由で渡した。Read/Glob/Grepだけを許可し、編集・シェル・ビルド・テスト・Git操作は禁止した。CLI終了0・最終result successを確認。Critical/Highなし、Medium1件・Low2件。全変更差分のレビューは完了したが、変更のない部分の全読、生成済みInterpreter.g.cs、RED記録の検証は含まない。
+- 所見1（Medium、テスト補強を採用）: 正常なホスト呼び出し後の深さ解放が欠落しても、外側のRunのfinallyによる復元や、Invokeごとの新しいcontextで既存テストを通過できた。RunHostのfinallyは正しく実装されていたため本体変更は不要。既存の公開テストを、上限2の同じcontext内でhostを2回呼び、両callback形式で毎回frame数1・深さ2になる確認へ変更した。上限1ではcallbackを実行しない確認も維持した。
+- 所見2（Low、テスト補強とコメントの明確化を採用）: ExhaustHostの位置情報が未検証だった。上限1のguestからhostへ入れないケースを追加し、FunctionIndex=1・ByteOffset=1001（call命令）・callback未実行を確認した。ホストから別ホストへの公開Invokeで失敗した場合も、進行中の外側のWasmのcall位置を使い、Wasmフレームがなければnullになる既存挙動をコメントに明記した。
+- 所見3（Low、状態説明の訂正を採用）: 依頼文の「未ステージなし」と、添付したExecutionResult.csのMM状態・未ステージコメント差分が食い違っていた。資料準備中にステージ状態が変わっており、実際の差分は両方とも添付していた。レビュー中にもExecutionResult.csのコメントとInterpreter.csの空行、およびインデックスがCodexの操作外で変化した。ステージまたは破棄する案は採らず、現在の内容を保持して再確認した。今回の修正直前のcached差分を基準に、Codexの修正後もインデックスが完全一致することを確認した。
+- 補足所見への対応: 「専用スレッド処理を削除」は「高上限ケース用の専用スレッド処理を削除」へ限定し、安全な単発検査用fixtureが残っていることを明確にした。fixtureの停止地点で初回JITが起きる可能性は未確認の推測であり、具体的な不具合とは判定せず変更していない。
+- 修正後BUILD: `dotnet build WasmSharp2.slnx -c Release --no-restore --warnaserror --disable-build-servers`は終了0、警告0・エラー0。
+- 修正後TEST: `dotnet run --project tests/WasmSharp.Tests/WasmSharp.Tests.csproj -c Release --no-build -- --report-trx --results-directory TestResults/host-linking-10-claude-review-runtime`は終了0、passed927 / failed0 / skipped0。`dotnet run --project tests/WasmSharp.Generators.Tests/WasmSharp.Generators.Tests.csproj -c Release --no-build -- --report-trx --results-directory TestResults/host-linking-10-claude-review-generators`は終了0、passed37 / failed0 / skipped0。合計964件成功。実行主体はCodexであり、Claudeのレビュー成功とは区別する。
+- 静的確認: 変更CS18ファイルの`dotnet csharpier check`と、通常・cachedの`git -c core.excludesFile= diff --check`は終了0。今回の変更はテストとコメント・記録に限定し、本体の処理は変えていない。未解決の疑義を伴う複雑な修正ではないため、修正後のClaude再レビューは行っていない。
+- 全3所見の判定と採用分の対応は完了。今回の修正は未ステージで、Codexはステージング・コミット・ブランチ変更を行っていない。タスク11・12、実CLRスタック枯渇を狙う子プロセス試験、実OOM、公式suite、feature全体のGOは引き続き対象外。

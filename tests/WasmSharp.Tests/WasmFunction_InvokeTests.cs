@@ -8,31 +8,24 @@ internal partial class WasmFunction_InvokeTests
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task ホスト関数を実行接続前に呼ぶ_callbackを実行せず未対応として拒否する(
-        bool withInstance
+    public async Task Instance必須hostへ省略またはnullを渡す_callbackの実行前に拒否する(
+        bool explicitNull
     )
     {
         // Arrange
         var called = false;
         var type = new WasmFunctionType([], []);
-        WasmHostCallback callback = _ =>
-        {
-            called = true;
-            return new([]);
-        };
         WasmHostInstanceCallback instanceCallback = (_, _) =>
         {
             called = true;
             return new([]);
         };
-        var function = withInstance
-            ? WasmFunction.CreateHost(type, instanceCallback)
-            : WasmFunction.CreateHost(type, callback);
+        var function = WasmFunction.CreateHost(type, instanceCallback);
 
         // Act & Assert
         await Assert
-            .That(() => function.Invoke([]))
-            .ThrowsExactly<WasmUnsupportedFeatureException>();
+            .That(() => explicitNull ? function.Invoke(null!, []) : function.Invoke([]))
+            .ThrowsExactly<ArgumentNullException>();
         await Assert.That(called).IsFalse();
     }
 

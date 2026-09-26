@@ -303,6 +303,14 @@ internal sealed class InterpreterContext
     }
 
     /// <summary>
+    /// ホスト呼び出し専用コピーの入力として、共有値スタックの指定範囲を参照する
+    /// </summary>
+    internal ReadOnlySpan<WasmValue> GetValues(int start, int count)
+    {
+        return values_.AsSpan(start, count);
+    }
+
+    /// <summary>
     /// 呼び出し前の要素数と深さに戻し、除いたフレームと値が保持する参照を解除する
     /// </summary>
     /// <param name="frameCount">復元する呼び出し前のフレーム数</param>
