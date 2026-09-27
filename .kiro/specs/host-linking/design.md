@@ -4,7 +4,7 @@
 
 C#の埋め込み利用者が、引数・複数結果を持つWasm関数、明示型のホストcallback、共有global・memory・tableを通常の公開操作で接続できる実行・リンク基盤を提供する。既存の `Decode → Validate → Instantiate → Invoke` と単一の線形実行ループを拡張する。
 
-本書は設計であり、実装済みの範囲を示さない。受入は公開APIの正負バイナリテストで行い、公式ランナーの初回統合確認は後続のconformance-runnerが担当する。
+本書は設計であり、実装済みの範囲を示さない。受入は公開APIの正負バイナリテストで行い、公式ランナーの初回統合確認は後続のtest-suite-runnerが担当する。
 
 ### 目標
 
@@ -30,7 +30,7 @@ C#の埋め込み利用者が、引数・複数結果を持つWasm関数、明�
 
 - runtime-foundationの完成済み受入範囲・承認状態を変更しない。コードは拡張するが基盤仕様の完了を取り消さない。
 - numeric-controlは構造化制御と演算、linear-memoryとtables-referencesはguest命令・segmentを同じ実体・Instantiate経路へ追加する。
-- conformance-runnerの入力形式、結果分類、固定素材・baselineをランタイムへ持ち込まない。
+- test-suite-runnerの入力形式、結果分類、固定素材・baselineをランタイムへ持ち込まない。
 - 後続用の未使用plugin、初期化hook、汎用resolverインターフェースを追加しない。
 
 ### 許可する依存関係（Allowed Dependencies）
@@ -41,7 +41,7 @@ C#の埋め込み利用者が、引数・複数結果を持つWasm関数、明�
 
 ### 再検証の契機（Revalidation Triggers）
 
-- Invoke/callbackの署名、import情報形式、失敗分類、名前解決を変えた場合はconformance-runnerと公開APIの受入を再検証する。
+- Invoke/callbackの署名、import情報形式、失敗分類、名前解決を変えた場合はtest-suite-runnerと公開APIの受入を再検証する。
 - フレームのスタック基準・即値・結果受渡しを変えた場合はnumeric-controlと命令生成の統合を再検証する。
 - リソース同一性、limits、増大、Instantiate順序を変えた場合はlinear-memory・tables-referencesを再検証する。
 - context寿命・start失敗後参照の扱いを変えた場合は全呼出し経路を再検証する。

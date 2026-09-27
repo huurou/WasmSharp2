@@ -1,0 +1,305 @@
+# 実装タスク
+
+各実行タスクは1〜3時間を目安とする。テストを追加・変更するタスクではReleaseビルドの警告・エラー0を確認してから該当TUnitテストをコマンドで実行する。公開APIと既存のC#規約を使用し、完了済み仕様の受入記録と公式入力は変更しない。
+
+(P)は明示した前提完了後、直前の独立した作業と並行できるものを示す。共有設定の変更は基盤タスクで済ませ、並行作業では自身の境界と対応テストだけを変更する。
+
+公式受入で追加修正が判明した場合は、原因と既存責務ごとに、修正と対応テストを含む1〜3時間程度の実行タスクへ分割して本計画へ追加する。必要な修正を完了し、修正後の公式全体結果で必須経路と全commandの記録を確認するまで受入は完了扱いにしない。14.7は必要な追加修正の完了後に行い、14.8はその最新結果を使用する。
+
+- [ ] 1. CLIと検証用プロジェクトを準備する
+- [ ] 1.1 独立CLIとTUnitのビルド構成を追加する
+  - .NET 10の実行可能ツールとテストをsolutionへ組み込み、既存と同じNullable・TUnit・整形設定を使う。
+  - ツールは公開ランタイムだけを参照し、ツール内部のテスト公開先を限定する。別ライブラリやDI、ランタイムからツールへの依存を増やさない。
+  - 最小の起動確認がビルド済み成果物で通り、追加テストをコマンドで検出・実行できる。
+  - _Boundary: ProjectConfiguration_
+  - _Requirements: 1.1, 1.7_
+- [ ] 1.2 外部変換とファイル障害を再現する検証基盤を用意する
+  - 成功・失敗・部分生成を返す.NET製変換器fixtureと、小さなJSON・binary・結果fixtureを用意する。
+  - fixtureはテスト専用のビルド依存とし、製品から参照せず、ソースの二重コンパイルを避ける。実行OSのapphostと依存ファイルをテスト出力へ配置する。
+  - 固定commitを持つ一時Git素材と独立した出力領域で、WABTなしに実プロセスの終了値・標準出力・標準エラーを検証できる。
+  - _Boundary: ConverterFixture_
+  - _Requirements: 2.7, 3.4, 3.5, 10.7_
+
+- [ ] 2. 固定profileと素材の保存契約を整える
+- [ ] 2.1 全公式入力と変換条件を固定する
+  - 固定spec/WABTの取得元・commit、全147入力の相対pathとGit blobの生バイトSHA-256、全21featureの既定値・実効値を埋込みprofileへ収める。
+  - Core 2.0の7機能ON・14機能OFFと変換optionを固定し、改行正規化、進捗依存のfeature変更、禁止引数を導入しない。
+  - 固定ソースとの照合でSIMD57件を含む全入力と全機能の過不足がなく、小さなテスト用profileも同じ契約で扱える。
+  - _Boundary: Core2Profile_
+  - _Depends: 1.1_
+  - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5_
+- [ ] 2.2 manifestに入力・生成物・完了状態を保持する
+  - 全入力集合、相対path/hash、素材の所有入力、JSONのcommand一覧と参照先、変換成功・runner_error・未処理を表現する。
+  - 変換に影響する条件と、exe hash・日時・配置rootなどの出典を区別し、部分生成でも本来の対象集合を保持する。
+  - 保存モデルが入力別診断・生成物・集計を欠落なく表現でき、後続の実行結果へ素材のスナップショットを渡せる。
+  - _Boundary: CorpusManifest_
+  - _Requirements: 2.2, 2.3, 3.2, 3.3, 3.5, 3.7, 11.4_
+
+- [ ] 3. 結果の記録・保存・完了判定を実装する
+- [ ] 3.1 ケース結果と比較結果の保存契約を統合する
+  - 入力相対pathと0始まりcommand indexを識別に使い、行・種類・category・6分類・期待/実際・段階・診断・print・原因参照を保存用モデルへ対応付ける。
+  - 入力異常、列挙済み数、件数未確定、未処理を分け、実行ID・版・実行上限・素材スナップショットと比較前後の詳細を保持する。
+  - schema_version=1、kindとsnake_caseを揃え、保存DTOと内部モデルのコレクションをコピーする。素材・実行・比較の契約を接続する基盤統合として扱う。
+  - 同一行の複数ケースや種類未確定commandも別々に表現でき、未処理を第7の結果分類として扱わない。
+  - _Boundary: RunReport, ComparisonReport_
+  - _Depends: 2.2_
+  - _Requirements: 10.1, 10.6, 11.1, 11.2, 11.3, 11.4, 11.5, 11.6, 11.8, 12.10_
+- [ ] 3.2 保存済みJSONの構造と記録の完全性を検証する
+  - 未知schema/kind、構文破損、重複キー、読めないケース識別を拒否し、構造を読める結果の欠落・重複・未処理・集計不整合は診断付きで残す。
+  - 結果内のprofileと素材が持つcommand一覧に照らして完全性を検証し、保存された完了flagだけを信用しない。
+  - 不完全な結果も対応可能なケースを比較へ渡せ、破損結果や未確定件数を空の正常結果に変えないことをテストで確認する。
+  - _Boundary: ReportStore_
+  - _Requirements: 4.5, 10.7, 11.5, 11.6, 11.8, 12.2, 12.9_
+- [ ] 3.3 結果を確定保存し既存ファイルを保護する
+  - 同一ディレクトリの一時ファイルへUTF-8 JSONを書き切ってから確定し、通常出力は競合が起きても既存ファイルを上書きしない。
+  - baseline保存だけが明示的な置換を行えるようにし、部分一時ファイルを保存済み結果として受け付けない。
+  - 保存失敗・中断を実ファイルで確認し、既存結果の保持と保存先・理由の診断が観測できる。
+  - _Boundary: ReportStore_
+  - _Requirements: 10.7, 11.8, 12.1, 12.3, 12.9_
+- [ ] 3.4 操作ごとの完了条件と終了値を判定する
+  - generate・run・2種類の比較・baseline-save・verifyの条件を分け、用途不合格は1、操作未完了は2、複数理由では2を優先する。
+  - 全件記録と全件合格を区別し、failed/runner_errorを含む完了結果のbaseline保存、runの未対応とそのblocked、比較の既知failedを設計どおり扱う。
+  - verifyは単一runの固定全入力と全commandを要求する。欠落・未確定・入力異常・未対応が残る結果と、対象外以外が全passedの結果をテストで区別できる。
+  - _Boundary: CompletionPolicy_
+  - _Requirements: 12.2, 13.1, 13.2, 13.3, 13.4, 13.5, 13.6, 13.7, 14.7_
+
+- [ ] 4. (P) instanceのexport名と種類を公開する
+  - 全exportの名前と種類を宣言順の不変一覧で取得可能にし、空一覧・別名・繰返し取得でも内容と順序を保つ。
+  - 内部indexや実体コピーを公開せず、4種の実体取得は既存の名前取得APIを使用する。追加契約と関係する説明を同期する。
+  - 公開APIのテストで4種・別名・再export・共有実体を確認し、既存の名前取得と同じ関数・リソースへ到達できる。
+  - _Boundary: WasmInstance, WasmExportInfo_
+  - _Depends: 1.1_
+  - _Requirements: 1.7, 5.4_
+
+- [ ] 5. 全素材の変換と照合を実装する
+- [ ] 5.1 (P) JSONのcommand境界と素材参照を列挙する
+  - 元バイト列を所有し、各commandの範囲・順序・取得可能な行/種類/module_type/filenameを保持する。
+  - 全体の必須項目を確認し、構文破損時は確定済みprefixだけを残して総数を未確定にする。実行意味や期待値は解釈しない。
+  - 同じdocumentを生成時の参照収集と実行時の型変換に使え、破損位置と確定済みcommandをテストで確認できる。
+  - _Boundary: ScriptDocument_
+  - _Depends: 2.2_
+  - _Requirements: 3.3, 4.4, 4.5, 11.1, 11.2_
+- [ ] 5.2 相対path・hash・素材所有を照合する
+  - 生成時だけ元入力を照合し、実行時はmanifestと保存素材の一覧/hash/JSON参照を照合する。
+  - 絶対path、root外参照、リンク経由の逸脱、重複・所有衝突、欠落・余剰を検出し、入力別と素材別の理由を保持する。
+  - wat異常を入力異常へ残し、wasm異常の影響を利用commandへ限定する。JSONのhash不一致は実行せず件数未確定とする。
+  - 素材移動・欠落・改変のテストで、元WASTや生成時rootなしに同じ照合ができる。
+  - _Boundary: CorpusVerifier_
+  - _Depends: 2.1, 5.1_
+  - _Requirements: 3.3, 4.1, 4.2, 4.3, 4.6, 4.7_
+- [ ] 5.3 生成前提と変換器起動を実装する
+  - 固定入力一覧/生バイトhashと必要なGit HEADを確認し、specの管理外コピー、無関係な親Git、実originと正本URLの違いを設計どおり扱う。
+  - 相対入力とCLIで解決済みの絶対出力を渡して変換器を直接起動し、作業基準・論理引数・option・exe hashを保存する。
+  - stdout/stderrを両方回収し、前提失敗では未処理を残して変換を開始しない。変換器fixtureで引数と終了状態を確認できる。
+  - _Boundary: CorpusGenerator_
+  - _Depends: 1.2, 2.1, 5.2_
+  - _Requirements: 2.2, 2.3, 2.4, 2.7, 3.1, 3.4, 3.6_
+- [ ] 5.4 全入力の変換結果をmanifestへ確定する
+  - Ordinal順で全入力を処理し、終了成功・JSON読取・全参照素材の照合が揃った入力だけを成功にする。
+  - 失敗した入力と部分生成物を診断付きで保持し、独立入力を継続する。変換完了とランタイム適合を混同しない。
+  - 生成・照合・保存の統合テストで成功/失敗/未処理と集計が一致し、一部素材だけの成功扱いがなく、元ソースを変更しない。
+  - _Boundary: CorpusGenerator, CorpusVerifier, ReportStore_
+  - _Depends: 3.3, 3.4, 5.3_
+  - _Requirements: 1.2, 2.7, 3.1, 3.2, 3.4, 3.5, 3.7, 11.8, 13.1_
+
+- [ ] 6. commandの型変換と入力内状態を実装する
+- [ ] 6.1 全10commandとactionの値表現を読み取る
+  - 通常module・register・action・7種のassertionを型付きで読み、invoke/get、binary既定、否定moduleのtextを保持する。
+  - 引数と期待値を分け、型だけのexpectedと値付き期待値を区別する。未知形式や必須値不足は位置と元内容を持つrunner_errorにする。
+  - 境界が確定した不正要素を1件として残して後続へ進め、全固定形式の読取と部分破損の継続をテストで確認できる。
+  - _Boundary: ScriptReader, ScriptCommand_
+  - _Depends: 3.1, 5.1_
+  - _Requirements: 4.4, 4.5, 8.11, 10.4, 10.6_
+- [ ] 6.2 module識別子・登録名・失敗原因を管理する
+  - 直近通常module、module識別子、登録名を別々に管理し、成功実体または原因付き利用不能状態を保持する。
+  - 通常module/registerの失敗後は古い成功へ戻さず、未存在参照と既知失敗を区別する。不正commandで取得できない名前は推定しない。
+  - 入力ごとのexternref番号・参照token・現在commandを管理し、否定moduleやactionで名前状態を更新しない。
+  - 再登録、名前衝突、直接/元の原因追跡、入力間初期化をテストで観測できる。
+  - _Boundary: ScriptState_
+  - _Requirements: 5.1, 5.3, 5.5, 5.6, 5.7, 6.4, 8.5, 11.3_
+
+- [ ] 7. 全値型の引数構築と比較を実装する
+- [ ] 7.1 scalarと参照のビット・同一性を保持する
+  - i32/i64とf32/f64の文字列を同幅の生ビットとして構築し、範囲外は切り詰めない。
+  - 型付きnullと番号ごとに同一objectのexternrefを構築し、固定形式外の非nullfuncref番号を推測しない。
+  - 実値を固定幅hexと入力内tokenで記録し、±0・NaN payload・幅境界・参照再利用をテストで確認できる。
+  - _Boundary: ValueCodec_
+  - _Depends: 6.1, 6.2_
+  - _Requirements: 8.3, 8.5, 10.4, 11.3, 14.8_
+- [ ] 7.2 v128の6lane型をビットを保って構築する
+  - lane型ごとの個数・幅を確認し、lane0を下位に置いて128bitを構築する。
+  - 整数laneと浮動小数点laneの生ビットを保持し、CPUのendianに依存しない保存表現へ対応付ける。
+  - 6lane型の順序・幅境界・不正lane数をテストで検証し、SIMD命令の実装に依存せず使用できる。
+  - _Boundary: ValueCodec_
+  - _Requirements: 8.4, 10.4, 11.3, 14.8_
+- [ ] 7.3 結果の個数・型・scalar・参照を比較する
+  - 結果0個/1個/複数の個数・順序・型を先に比較し、不一致でも実値を全て保持する。
+  - 整数・具体浮動小数点は全ビット、参照は型付きnullまたは同一objectで比較する。
+  - ±0、具体NaN payload、externrefの同番号/異番号、型・個数・順序不一致をテストで判別できる。
+  - _Boundary: ValueMatcher_
+  - _Depends: 6.2, 7.2_
+  - _Requirements: 8.6, 8.7, 8.10, 14.8_
+- [ ] 7.4 scalarとv128のNaN patternを比較する
+  - scalarとlaneに共通のcanonical/arithmetic条件を用い、符号を除くcanonicalビットとquiet bitを含む条件を区別する。
+  - v128を期待lane型で分割し、具体値とNaN patternを各laneで比較して相違位置を残す。
+  - 両符号・quiet/signaling・payload・全6lane型の成立/不成立をテストで確認できる。
+  - _Boundary: ValueMatcher_
+  - _Requirements: 8.7, 8.8, 8.9, 14.8_
+
+- [ ] 8. 入力ごとの固定spectestを提供する
+  - 公開APIで固定型の7関数・4global・table・memoryを生成し、入力内では同じ実体、別入力では初期状態を提供する。
+  - printは結果0個で復帰し、関数名・引数ビット・順序を現在commandへ記録する。callback例外は実体を記録して再throwする。
+  - 共有状態・初期化・stdout非出力・固定limitsを検証し、要求に応じた環境変更や独自import型照合を行わない。
+  - _Boundary: SpectestFactory_
+  - _Depends: 6.2, 7.2_
+  - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5, 10.5_
+
+- [ ] 9. 段階別assertionと6分類を実装する
+- [ ] 9.1 公開段階と例外の観測から結果を分類する
+  - setup/action/returnと否定assertionを分け、Decode・Validate・リンク不成立・Instantiate中trap・action trap・exhaustionの期待段階を照合する。
+  - 観測事実を保持し、未実装、実装上限、捕捉可能OOM、API誤用、公開契約外例外を区別する。callback由来はWasm例外型でも先にrunner_errorとする。
+  - 正しい/誤った段階、期待失敗の未発生、値不一致と異常分類をテストで確認できる。
+  - _Boundary: AssertionJudge_
+  - _Depends: 3.1, 6.1, 7.4, 8_
+  - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 9.7, 9.9, 10.1, 10.2, 10.3, 10.5, 10.6_
+- [ ] 9.2 公式期待診断の前方一致を一律に要求する
+  - 全否定assertionで期待textと公開MessageのOrdinal前方一致を段階・型・Reason条件に追加する。
+  - 加工・正規化・Reasonだけの代替・ケース別除外を行わず、期待/実際/例外型/段階/取得可能なReasonとLocationを残す。
+  - 一致・不一致・後置の補助説明をテストで確認し、不一致を必ずfailedとして保存できる。
+  - _Boundary: AssertionJudge_
+  - _Requirements: 9.7, 9.8, 9.10, 9.11, 14.9_
+
+- [ ] 10. 公開APIによるスクリプト実行を統合する
+- [ ] 10.1 module・register・登録依存を順序どおり接続する
+  - Decode/Validateを先に行い、Instantiateする場合だけ同じbinaryから公開import情報を取得し、実際の既知失敗登録だけをblockedにする。
+  - 未登録名はInstantiateへ渡す。import情報のUnsupportedFeature・ImplementationLimit・段階間不整合を診断付きで分類し、期待malformed/invalidの代用にしない。
+  - export一覧と名前取得で同じ実体を登録し、Instantiateごとに成功登録から提供表を作り直す。全instanceでMaxCallDepth=1024を明示する。
+  - 小さなbinary/JSONによる統合テストで、再register・複数失敗原因・古い成功への逆戻り防止・否定moduleの状態非更新と共有副作用を確認できる。
+  - _Boundary: ScriptExecutor, ScriptState, WasmInstance_
+  - _Depends: 4, 5.2, 6.2, 8, 9.2_
+  - _Requirements: 1.7, 5.2, 5.4, 5.6, 5.7, 6.1, 6.2, 6.3, 6.4, 6.6, 6.7, 6.8_
+- [ ] 10.2 actionとassertionを状態・値・診断の判定へ接続する
+  - invoke/getを公開APIで実行し、順序付き引数、現在global値、結果0/1/複数を既存の値処理と判定へ渡す。
+  - 単独actionの型だけexpectedを追加assertionへ読み替えず、正常完了をpassedとする。失敗しても実行済み副作用を保持する。
+  - textは実行用watを開かずout_of_scopeにし、素材の入力異常とは別に残す。独立した後続commandを継続する。
+  - 公開経路の統合テストで値・段階・診断・print・原因参照が対応するcommandへ記録される。
+  - _Boundary: ScriptExecutor, ValueCodec, ValueMatcher, AssertionJudge_
+  - _Depends: 7.4, 9.2, 10.1_
+  - _Requirements: 4.6, 6.5, 8.1, 8.2, 8.6, 8.11, 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 9.8_
+- [ ] 10.3 全入力の実行と結果保存を統合する
+  - 照合済みdocumentを使って全入力・全commandを順次処理し、入力開始時に状態とspectestを初期化する。元WAST/WABTを参照しない。
+  - 入力異常と実command結果、種類未確定category、未処理・件数未確定を分けて集計し、素材と実行条件を含むRunReportを保存する。
+  - 制御が戻る独立処理は続行し、検知できた中断は保存可能な部分をincompleteにする。プロセス隔離や強制タイムアウトは追加しない。
+  - 複数入力の統合テストで一度ずつの記録、入力間分離、部分結果・保存失敗と終了条件を確認できる。
+  - _Boundary: SuiteExecutor, CorpusVerifier, ScriptExecutor, ReportStore, CompletionPolicy_
+  - _Depends: 3.2, 3.3, 3.4, 10.2_
+  - _Requirements: 1.3, 4.2, 4.3, 4.4, 4.5, 5.1, 6.5, 7.4, 10.7, 11.1, 11.2, 11.3, 11.4, 11.5, 11.6, 11.8, 13.2_
+
+- [ ] 11. 保存済み結果のbaseline操作を実装する
+- [ ] 11.1 完了した結果だけを明示保存する
+  - manifestまたはRunReportの構造・完全性を検証し、完了した記録は分類を変えず同形式・同内容でコピーする。
+  - failedやrunner_errorが残っても全件記録済みなら受け付け、未処理・未確定・出力失敗は拒否する。指定baselineの上書きを許可する。
+  - 保存前後の内容一致、完了/不完了、既存baseline保持と明示置換を実ファイルで確認できる。
+  - _Boundary: BaselineStore_
+  - _Depends: 3.2, 3.3, 3.4_
+  - _Requirements: 1.4, 12.1, 12.2, 13.7_
+- [ ] 11.2 変換結果の再現性と条件差を比較する
+  - 入力・生成物の一覧/hash、変換状態、commit、profile、全feature、論理引数・変換影響条件を比較する。
+  - exe hashだけの違いは出典差異とし、配置root・日時を同一性に含めない。異なるprofileも差分として扱う。
+  - 欠落・状態差・未比較・条件変更を保存モデルへ返し、未完了を再現性一致としないことをテストで確認できる。
+  - _Boundary: BaselineComparer_
+  - _Depends: 2.2, 3.1, 3.2, 3.4_
+  - _Requirements: 1.5, 2.6, 12.3, 12.4, 12.5, 13.3_
+- [ ] 11.3 ケース単位の差分と回帰を比較する
+  - 両結果のprofile・入力/生成物一覧/hashを比較成立条件とし、exe hash差だけなら比較を継続する。
+  - 識別子で対応付け、分類・期待・実際・診断の前後差、追加ケース、passedからの変化/欠落を報告する。
+  - passed欠落は回帰と未完了を併記し、重複で対応不能な箇所や条件不一致を未比較理由として残す。
+  - 回帰0でも既知failedがあれば非0となり、baselineを変更せず詳細差分を得られることをテストで確認できる。
+  - _Boundary: BaselineComparer_
+  - _Requirements: 1.5, 12.3, 12.6, 12.7, 12.8, 12.9, 12.10, 13.4, 14.6, 14.9_
+
+- [ ] 12. 個別CLIコマンドと入出力保護を統合する
+- [ ] 12.1 6操作の引数とprofileを接続する
+  - generate/run/baseline-save/compare-conversion/compare-run/verifyを個別に解析し、未知・重複・不足引数とhelpを扱う。
+  - pathは起動時の作業ディレクトリで絶対化し、製品は埋込みprofileだけを使う。generate/run/verifyでは固定全入力との一致を要求する。
+  - 各操作を対応する処理へ接続し、一括工程、再生成/再実行の暗黙呼出し、選択実行や合格条件緩和を導入しない。
+  - 小さなprofileによるCLI統合テストで各コマンドが指定された保存済み入力だけを使うことを確認できる。
+  - _Boundary: RunnerCli, Core2Profile, CorpusGenerator, SuiteExecutor, BaselineStore, BaselineComparer_
+  - _Depends: 5.4, 10.3, 11.1, 11.3_
+  - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 2.5, 14.7_
+- [ ] 12.2 出力先保護と操作別終了値を接続する
+  - 生成先は未作成/空の専用領域に限り、固定ソース配下/祖先を拒否する。入力自身への出力やbaseline-save以外の既存出力も拒否する。
+  - 相対出力が変換器の作業位置へずれないこと、別の入力に使っていないbaselineも保護されることを実ファイルで確認する。
+  - 全コマンドの0/1/2、保存競合、未完了・診断不一致・回帰・明示baseline置換を統合テストで確認できる。
+  - _Boundary: RunnerCli, ReportStore, CompletionPolicy_
+  - _Depends: 3.3, 3.4, 12.1_
+  - _Requirements: 2.7, 10.7, 12.1, 12.3, 13.1, 13.2, 13.3, 13.4, 13.5, 13.6, 13.7, 14.9_
+- [ ] 12.3 進捗・集計と最終判定理由を表示する
+  - 入力単位の進捗、対象/処理済み/未処理/未確定、category別6分類、種類未確定command、入力異常、保存先を日本語で表示する。
+  - 操作/保存失敗はstderr、spectest printは詳細JSONに分け、verifyは単一結果の判定と残る理由だけを表示する。
+  - 表示とJSONの件数・終了理由が一致し、初回と後続の個別操作をhelpと操作例で再現できる。
+  - _Boundary: RunnerCli_
+  - _Requirements: 1.6, 3.7, 11.7, 13.6, 14.6, 14.7_
+
+- [ ] 13. 通常CIへランナーテストを統合する
+  - Releaseビルド後に既存2プロジェクトとランナーのTUnitを実行し、結果を収集する。
+  - 変換器fixtureを.NETビルドだけで用意し、通常CIにWABTビルド・全公式実行・ローカルbaseline更新を要求しない。
+  - ビルド警告・エラー0、3テストプロジェクトのコマンド実行、整形と差分確認で通常検証が成立する。
+  - _Boundary: ProjectConfiguration, CI_
+  - _Depends: 1.2, 4, 12.3_
+  - _Requirements: 14.8, 14.9_
+
+- [ ] 14. 固定公式スイートで初回受入を統合確認する
+- [ ] 14.1 固定変換器と公式受入用の配置を用意する
+  - 固定spec/WABTと生バイト入力、.NET 10、Git、変換器実行ファイルを確認する。変換器の再ビルドが必要なら既存のCMake/C++手順と固定依存を使い、出力を外部ソースと分離する。
+  - 通常配置と、相対配置を保った別rootの入力/出力を用意し、baselineと各結果を別の明示pathにする。
+  - 実CLIから固定変換器を起動できる環境が揃い、元ソース・LICENSE/NOTICEを変更せず受入を開始できる。
+  - _Boundary: OfficialAcceptanceEnvironment_
+  - _Depends: 13_
+  - _Requirements: 2.1, 2.7, 14.1_
+- [ ] 14.2 全入力生成と配置に依存しない再現性を確認する
+  - 全147入力をgenerateで処理し、同条件再生成と入力/出力rootだけを変更した再生成を行う。
+  - 変換baselineを明示保存し、compare-conversionで一覧/hash・参照・条件の一致を確認する。
+  - 実CLIのmanifestと比較結果で全入力の照合・記録が完了し、変換と比較の終了0を確認できる。
+  - _Boundary: RunnerCli, CorpusGenerator, CorpusVerifier, BaselineStore, BaselineComparer_
+  - _Depends: 14.1_
+  - _Requirements: 3.6, 4.7, 12.4, 13.1, 13.3, 14.1, 14.4_
+- [ ] 14.3 全commandを実行しホスト関数経路を確認する
+  - 全素材をrunで処理し、固定条件の53,907commandを入力・種類・結果へ対応付け、欠落と未確定を検出する。
+  - imports.wast#6/#7とstart.wast#15〜#17でinvoke/startからprintへの呼出しと結果0個の記録を確認する。
+  - 実結果からホスト関数経路の成立状況と阻害ケースを識別できる。修正が必要な場合は原因別の追加タスクへ分け、最終的な成立は14.7で確認する。
+  - _Boundary: SuiteExecutor, ScriptExecutor, SpectestFactory, RuntimeIntegration_
+  - _Depends: 14.2_
+  - _Requirements: 7.1, 7.2, 14.2, 14.3_
+- [ ] 14.4 関数registerと共有globalの公式経路を確認する
+  - linking.wast#0〜#6で関数export・register・別moduleからのimport/呼出しを確認する。
+  - linking.wast#11〜#28とimports.wast#41〜#45で共有mutable globalとspectest数値globalを確認する。
+  - 全体結果から同一実体・更新値の観測と各判定を確認し、必須経路の阻害ケースを特定できる。必要な修正は原因別の追加タスクへ分ける。
+  - _Boundary: ScriptExecutor, ScriptState, WasmInstance, RuntimeIntegration_
+  - _Requirements: 5.4, 7.1, 7.3, 14.2, 14.3_
+- [ ] 14.5 table・memoryの公式import経路を確認する
+  - imports.wast#0/#1/#82〜#101でtableのexport/register/importとspectestの型・limitsを確認する。
+  - imports.wast#0/#1/#127〜#135でmemoryのexport/register/importとspectest接続を確認する。
+  - 全体結果から接続と判定の状況を確認し、初期必須経路の不足を特定できる。必要な修正は原因別の追加タスクへ分け、後続guest命令やsegment全体を前倒ししない。
+  - _Boundary: ScriptExecutor, SpectestFactory, WasmInstance, RuntimeIntegration_
+  - _Requirements: 5.4, 7.1, 7.3, 7.5, 14.2, 14.3_
+- [ ] 14.6 初回結果から異常原因と修正対象を確定する
+  - 入力/command runner_errorと必須経路の阻害を発生操作別に確認し、ケース・期待・実際・原因を対応付ける。
+  - ランナー・素材由来と必須経路を妨げるランタイム問題について、修正対象の既存責務と再現テストを原因ごとに確定し、追加実行タスクへ分ける。
+  - 判定済みfailedと、必須経路を妨げず原因をランタイム側と確認できたrunner_errorは後続へ引き継ぐ対象として識別できる。分類と非0終了、未実装機能とblocked原因を保持する。
+  - _Boundary: SuiteExecutor, AssertionJudge, RunReport, RuntimeIntegration_
+  - _Requirements: 9.9, 9.11, 10.3, 10.6, 11.3, 14.2, 14.5, 14.9_
+- [ ] 14.7 必要な修正後の公式全体結果で初回受入を確認する
+  - 14.6で特定した必要な追加修正と対応テストの完了を前提に、変更があれば固定スイート全体を再実行する。結果は同一の最新revisionで揃える。
+  - 全commandが漏れなく記録され、ランナー・素材由来runner_errorが0であり、14.3〜14.5の必須経路を公式ケースで実行・判定できることを確認する。
+  - 残るfailedと許容されるランタイム由来runner_errorは原因付きの実結果へ残し、未対応とblockedを含めた初回受入条件を満たす。独自fixtureによる代替や分類の緩和をしない。
+  - _Boundary: SuiteExecutor, ScriptExecutor, SpectestFactory, RunReport, RuntimeIntegration_
+  - _Depends: 14.6_
+  - _Requirements: 5.4, 7.1, 7.2, 7.3, 7.5, 11.5, 11.6, 14.2, 14.3, 14.5, 14.9_
+- [ ] 14.8 baseline保存・移動後再実行・回帰比較を確認する
+  - 14.7の全command結果を実行baselineへ保存し、元WAST/WABTと元配置を参照せず移動済み素材だけで再実行する。
+  - compare-runの成立・完了、ケース詳細と回帰、診断不一致が残るときの非0を確認する。保存・比較・判定が暗黙に別工程を実行しないことも確認する。
+  - 実CLIでbaselineの明示更新と単一runのverifyを行い、初回未対応が残る最終判定は非0になる。全8仕様統合後の全件合格はこの初回受入では要求しない。
+  - _Boundary: RunnerCli, SuiteExecutor, BaselineStore, BaselineComparer, CompletionPolicy_
+  - _Depends: 14.7_
+  - _Requirements: 1.3, 1.4, 1.5, 1.6, 4.7, 12.1, 12.8, 13.2, 13.4, 13.5, 13.6, 13.7, 14.4, 14.6, 14.7, 14.9_

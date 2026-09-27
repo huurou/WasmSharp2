@@ -73,7 +73,7 @@ foreach ($inputFile in $inputs) {
 
 この確認は固定commitの選定と取得・変換の確認に限る。
 JSONの`module_type=text`に対応する`.wat`も変換器の出力として残すが、ランタイムの対象外とし、合格件数に含めない。
-正式なcorpus manifest、入力・生成物のhash一覧、spectest・registerを含む実行・リンク基盤の公式評価と初回baselineは、`host-linking`に続く`conformance-runner`で整備する。後続機能に必要な判定は各機能仕様で同じツールへ追加する。
+正式なcorpus manifest、入力・生成物のhash一覧、spectest・registerを含む実行・リンク基盤の公式評価と初回baselineは、`host-linking`に続く`test-suite-runner`で整備する。固定スイートに現れる全値型の比較も同じツールが初期から扱う。
 
 ## 移行時の確認結果
 
@@ -84,6 +84,7 @@ JSONの`module_type=text`に対応する`.wat`も変換器の出力として残�
 - 147入力すべての変換が成功した。出力はJSON147件、`.wasm`4,597件、`.wat`1,077件。JSON内の参照先ファイルもすべて存在した。
 - `module_type=text`の1,077コマンドは対象外として識別した。WasmSharpによる実行・assertionの成否判定は行っていない。
 
-この環境で生成した`wast2json.exe`のSHA-256は
-`615121655C9240CF354F5AF7D6E7DB036A4FE6C1F6417EA7E2670E0166238B4E`。
+2026-09-27に同じCMake設定、MSVC 19.51.36252.0で再ビルドした`wast2json.exe`のSHA-256は
+`B0E1D0316A265F659566A0E3B6F1A00FEA9E315E3D25F2C3E0853E414D0BE245`。
+同じ147入力の変換件数は上記と一致した。
 この値は実測値であり、別のビルド環境で同一バイナリになることを保証するものではない。

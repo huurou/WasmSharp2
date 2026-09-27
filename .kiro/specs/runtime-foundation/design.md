@@ -32,7 +32,7 @@
 | numeric-control | 命令表、検証/線形化、フレームと分岐基準、exhaustion | 完全な型/制御スタック、分岐解決、call、数値演算、globals |
 | linear-memory / tables-references / simd | 値表現、添字規約、命令追加経路 | リソースの意味論、初期化、各命令 |
 | host-linking | 空import経路、インスタンスの関数同一性、共通実行境界 | import照合、callback登録/結果の寿命、start、共有リソース |
-| conformance-runner | 通常の公開操作と例外 | corpus固定、WABT実行、JSON/spectest、集計 |
+| test-suite-runner | 通常の公開操作と例外 | corpus固定、WABT実行、JSON/spectest、集計 |
 
 後続で使う共通の内部契約を定めることと、後続の命令を実装することを分ける。テスト専用の公開操作は追加しない。
 
@@ -48,7 +48,7 @@
 
 ### 再検証の契機（Revalidation Triggers）
 
-値/関数型/戻り値のコレクションの形、失敗型・reason・未確認範囲、検証成功の所有、opcode表と生成契約、pc/スタック基準、実行上限や同期コンテキストを変更した場合は全ランタイム下流を再検証する。公開操作と失敗分類の変更はconformance-runner、関数同一性とホスト境界の変更はhost-linkingへ通知する。SDK/Roslynの変更は通常ビルドでの生成、対象Core版の変更は否定入力の分類を再検証する。
+値/関数型/戻り値のコレクションの形、失敗型・reason・未確認範囲、検証成功の所有、opcode表と生成契約、pc/スタック基準、実行上限や同期コンテキストを変更した場合は全ランタイム下流を再検証する。公開操作と失敗分類の変更はtest-suite-runner、関数同一性とホスト境界の変更はhost-linkingへ通知する。SDK/Roslynの変更は通常ビルドでの生成、対象Core版の変更は否定入力の分類を再検証する。
 
 特にnumeric-controlでは、`end`の文脈に応じた線形化と、バイナリopcodeから実行opcodeへの対応を見直す。分岐情報、br_tableのラベルの配列、メモリのmemargを追加する仕様では、DecodedInstruction/Instructionの即値表現と生成契約を変更する。現在の1属性行から1実行opcodeを生成する形やWasmValue単一の即値を、後続でも無変更で使える契約とはしない。単一定義元と単一実行ループの方針は維持する。
 

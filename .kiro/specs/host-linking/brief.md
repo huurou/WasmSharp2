@@ -6,7 +6,7 @@
 
 ## 現状
 
-runtime-foundationの最小定数返却経路と共通の値・型・例外・実行機構がある。import、引数・localsを使う実行、ホストcallback、global・memory・tableの具体的な生成・共有は未実装。本仕様の着手・完了にconformance-runnerの完成を要求しない。
+runtime-foundationの最小定数返却経路と共通の値・型・例外・実行機構がある。import、引数・localsを使う実行、ホストcallback、global・memory・tableの具体的な生成・共有は未実装。本仕様の着手・完了にtest-suite-runnerの完成を要求しない。
 
 ## 望む結果
 
@@ -14,7 +14,7 @@ runtime-foundationの最小定数返却経路と共通の値・型・例外・�
 
 ## 方針
 
-本仕様を最小基盤の次に実装する実行・リンク基盤とする。関数フレーム、global・memory・tableの実体、外部要素の型照合を一度だけ実装し、後続の数値・制御とリソース命令が同じ機構を拡張する。公開APIの直接テストで成立させ、公式スイートでの統合受入はconformance-runnerの初回完了時に行う。
+本仕様を最小基盤の次に実装する実行・リンク基盤とする。関数フレーム、global・memory・tableの実体、外部要素の型照合を一度だけ実装し、後続の数値・制御とリソース命令が同じ機構を拡張する。公開APIの直接テストで成立させ、公式スイートでの統合受入はtest-suite-runnerの初回完了時に行う。
 
 ## 範囲
 
@@ -26,7 +26,7 @@ runtime-foundationの最小定数返却経路と共通の値・型・例外・�
 - **対象**: 通常利用に必要なimportのmodule名・item名・外部要素の種類と型の取得。instance生成や無関係な未実装命令のDecode成功を前提とせず依存を把握でき、取得情報と未確認範囲を区別する公開契約。
 - **対象**: Instantiateの共通の順序、startの型検証と実行、リンク不成立・startのtrap・exhaustion・ホスト例外の区別。start前に構築・接続・リソース初期化を完了し、start失敗後も保存済みのinstance・関数・リソースを無効化しない。
 - **対象外**: スカラー数値演算と構造化制御の網羅、guestのmemory/table命令、data/element初期化、call_indirect・参照命令・SIMD命令、WASI。
-- **対象外**: WAST/JSONの解釈、spectestの具体的な定義、registerコマンドとbaseline。これらはconformance-runnerが所有する。
+- **対象外**: WAST/JSONの解釈、spectestの具体的な定義、registerコマンドとbaseline。これらはtest-suite-runnerが所有する。
 
 ## 責務の接点
 
@@ -46,12 +46,12 @@ runtime-foundationの最小定数返却経路と共通の値・型・例外・�
 ## 上流・下流
 
 - **上流**: runtime-foundation。
-- **下流**: conformance-runner、numeric-control。linear-memory・tables-references・simdも同じ呼出し・リソース・リンク契約を利用する。
+- **下流**: test-suite-runner、numeric-control。linear-memory・tables-references・simdも同じ呼出し・リソース・リンク契約を利用する。
 
 ## 既存仕様との関係
 
 - **拡張する既存仕様**: runtime-foundationの実装を拡張するが、完成済み仕様の受入範囲と承認状態は変更しない。
-- **隣接**: numeric-controlは演算・構造化制御、linear-memoryとtables-referencesはguest命令・segmentを追加する。spectest・registerはconformance-runnerの初期範囲とする。
+- **隣接**: numeric-controlは演算・構造化制御、linear-memoryとtables-referencesはguest命令・segmentを追加する。spectest・registerはtest-suite-runnerの初期範囲とする。
 
 ## 制約と確認事項
 
