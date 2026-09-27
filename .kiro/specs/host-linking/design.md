@@ -112,6 +112,7 @@ graph TD
 | `src/WasmSharp/Execution/DefinedFunction.cs` | 元instanceと両添字を保持し、定義・実行コードへ到達する関数実体 |
 | `src/WasmSharp/Execution/HostFunction.cs` | 明示型とinstance不要のcallbackを保持する関数実体 |
 | `src/WasmSharp/Execution/InstanceHostFunction.cs` | 明示型とinstance必須のcallbackを保持する関数実体 |
+| `src/WasmSharp/Execution/LocalInitializer.cs` | 同じ型で連続する追加localsの個数と型別の初期値 |
 | `src/WasmSharp/Modules/ImportInspector.cs` | 実行に依存しないimport情報取得 |
 | `src/WasmSharp/Modules/ModuleBinaryFormat.cs` | ヘッダー、section順序、型・import記述の共有読み取り |
 | `src/WasmSharp/Modules/Imports/ModuleImport.cs` | import名・種類・宣言の元位置の基底 |
@@ -123,6 +124,7 @@ graph TD
 | `src/WasmSharp/Modules/Definitions/GlobalDefinition.cs` | global型と初期化式の静的定義 |
 | `src/WasmSharp/Modules/Definitions/TableDefinition.cs` | table参照型・limits・元位置 |
 | `src/WasmSharp/Modules/Definitions/MemoryDefinition.cs` | memory limits・元位置 |
+| `src/WasmSharp/Modules/Definitions/StartDefinition.cs` | startの未検証の関数添字と入力位置 |
 | `src/WasmSharp/Modules/ModuleInstantiator.cs` | import照合、実体構築、初期化、startの順序 |
 | `src/WasmSharp/Exceptions/WasmImportInspectionException.cs` | 取得全体の失敗理由・未確認範囲。理由enumも同居 |
 

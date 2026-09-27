@@ -115,7 +115,7 @@ Decode・Validate・Instantiate・Invokeを別々の機能仕様にせず、機�
 ## Specs (dependency order)
 
 - [x] runtime-foundation -- 明示的な4段階APIと値・型・失敗分類、最小の線形実行基盤。 Dependencies: none
-- [ ] host-linking -- 関数実行、global・memory・tableの生成と共有、import/export、ホストcallbackとstartを公開APIで扱う実行・リンク基盤。 Dependencies: runtime-foundation
+- [x] host-linking -- 関数実行、global・memory・tableの生成と共有、import/export、ホストcallbackとstartを公開APIで扱う実行・リンク基盤。 Dependencies: runtime-foundation
 - [ ] conformance-runner -- 固定公式素材の生成、spectest・register、公開API実行・判定、全commandの結果記録・回帰比較と初回baseline。 Dependencies: host-linking
 - [ ] numeric-control -- スカラー数値命令と構造化制御を共通実行機構へ追加し、数値trap・再帰・複数値制御を公式検証する。 Dependencies: host-linking, conformance-runner
 - [ ] linear-memory -- スカラーload/store、data segment、bulk memoryと初期化・実行のtrapを公式検証する。 Dependencies: numeric-control

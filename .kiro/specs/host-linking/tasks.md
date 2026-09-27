@@ -99,10 +99,10 @@
 
 - [x] 3.3 関数実体を種類別の型へ分離する
   - WasmFunctionを外部継承できない公開抽象型とし、定義関数と2形式のホスト関数をinternal sealedの具体型へ分ける。種類固有の情報を基底型から除き、各callbackを非nullableで保持する。
-  - ExecutionBoundaryは具体型で分岐し、Interpreter.RunとExecutionFrameはWasmDefinedFunctionだけを受け取る。WasmInstanceの生成時にはmodule全体添字と定義添字を明示する。
+  - ExecutionBoundaryは具体型で分岐し、Interpreter.RunとExecutionFrameはDefinedFunctionだけを受け取る。WasmInstanceの生成時にはmodule全体添字と定義添字を明示する。
   - 既存の型取得・生成時null拒否・関数参照の同一性・定数Invoke・引数不一致・実行状態復元を維持する。ホストcallback実行とinstance指定Invokeはタスク10で接続し、今回も既存の未対応拒否を維持する。
   - 内部契約テストとfixtureを新しい型へ移し、警告・エラー0のReleaseビルド後にruntimeとgeneratorの両suiteを確認する。挙動変更のないリファクタリングとして機能フラグ・作為的なREDは追加しない。
-  - _Boundary: WasmFunction, Execution/WasmDefinedFunction, Execution/WasmHostFunction, Execution/WasmInstanceHostFunction, WasmInstance, ExecutionBoundary, Interpreter, ExecutionFrame, WasmSharp.Testsの関連テストとfixture_
+  - _Boundary: WasmFunction, Execution/DefinedFunction, Execution/HostFunction, Execution/InstanceHostFunction, WasmInstance, ExecutionBoundary, Interpreter, ExecutionFrame, WasmSharp.Testsの関連テストとfixture_
   - _Depends: 3.1, 3.2_
   - _Requirements: 2.2, 2.10, 7.9, 8.1_
 
@@ -200,7 +200,7 @@
   - 引数先頭とoperand先頭を分け、追加localsを型別ゼロ/nullで初期化する。
   - 終了時は宣言結果だけを順序どおり返し、localsと一時値を除く。必要量の加算・保持上限を区別する。
   - 内部実行テストで0/複数引数結果、7種の初期値、呼出し間の分離を確認し、既存定数経路も維持する。
-  - _Boundary: Interpreter, WasmExecutionContext, ExecutionFrame, FunctionCode_
+  - _Boundary: Interpreter, InterpreterContext, ExecutionFrame, FunctionCode_
   - _Depends: 7.3_
   - _Requirements: 2.1, 2.3, 2.8, 2.9_
 
@@ -216,7 +216,7 @@
   - 定義関数の直接callでcalleeフレームを追加し、引数・戻り先・結果を同じ実行ループで管理する。
   - importした定義関数の元instanceを使い、return後の命令を実行しない。guest再帰にCLR再帰や公開Invokeを使わない。
   - 各handlerと対応する命令宣言・生成器テスト入力を同時に接続する。内部実行ループのテストで入れ子locals・結果順序・元instance、小さい深さ上限と終了後の深さ解放を確認する。
-  - _Boundary: InstructionSet, Interpreter, WasmExecutionContext, WasmSharp.Generators.Tests_
+  - _Boundary: InstructionSet, Interpreter, InterpreterContext, WasmSharp.Generators.Tests_
   - _Requirements: 2.5, 2.6, 2.8, 2.10, 10.3, 10.5, 10.6_
 
 - [x] 8.4 global命令の宣言と所属instanceの共有実体操作を統合する
@@ -276,7 +276,7 @@
   - guestからのhost callは直前の定義関数のinstanceを渡し、frameを追加せず深さ1段を消費してfinallyで戻す。
   - 同一/別instanceへの再入は外側contextを共有し、入口frame/value/depthまで復元して内側ループを終了する。
   - 再入中のstack拡張でもcallback引数と外側localsが変わらず、内側trapをホストが捕捉した後に外側を継続できる公開テストを通す。
-  - _Boundary: Interpreter, WasmExecutionContext, ExecutionBoundary_
+  - _Boundary: Interpreter, InterpreterContext, ExecutionBoundary_
   - _Requirements: 2.8, 8.4, 8.7, 8.8, 10.3, 10.6, 10.7_
 
 - [x] 10.4 ホスト往復のstack余裕と失敗診断を統合する
@@ -361,7 +361,7 @@
 
 ## 実装記録（Implementation Notes）
 
-タスク計画の確認: 12大タスク・41小タスク、受入基準99/99件の対応、依存関係・責務境界・実行前提を確認済み。Task Plan Review Gateと独立したTask-Graph Sanity ReviewはPASS。
+タスク計画の確認: 12大タスク・42小タスク、受入基準99/99件の対応、依存関係・責務境界・実行前提を確認済み。Task Plan Review Gateと独立したTask-Graph Sanity ReviewはPASS。
 
 実CLR stackの境界確認を行う場合は独立プロセスで実施し、通常suiteに巨大割当や実OOMを強制しない。
 
@@ -1007,3 +1007,18 @@
 - 修正後TEST: `dotnet run --project tests/WasmSharp.Tests/WasmSharp.Tests.csproj -c Release --no-build -- --report-trx --results-directory TestResults/host-linking-12-claude-review-runtime`は終了0、passed972/failed0/skipped0。`dotnet run --project tests/WasmSharp.Generators.Tests/WasmSharp.Generators.Tests.csproj -c Release --no-build -- --report-trx --results-directory TestResults/host-linking-12-claude-review-generators`は終了0、passed37/failed0/skipped0。合計1009件成功。
 - 静的確認: 変更CS11ファイルの`dotnet csharpier check`、通常・cachedの`git -c core.excludesFile= diff --check`は終了0。Gitインデックスはレビュー開始時と一致する。全5所見の判断と採用分の修正・検証が完了し、保留なし。単純なテスト・記録・区画の修正で未解決の疑義がないため、修正後のClaude再レビューは実施していない。
 - 本体の挙動、承認済み仕様、タスク12の完了状態は変更しない。公式suite、後続命令・segment初期化、実OOM、実CLR stack枯渇、feature全体GOは引き続き未実施・対象外。ステージング・コミット・ブランチ変更は行っていない。
+
+### host-linking全体のClaude Code実装統合検証（2026-09-27）
+
+- 対象: `kiro-validate-impl host-linking`による機能全体の統合検証。12大タスク・42小タスクはすべて完了、未完了・Blockedは0件。要件12節・受入基準99件のタスクへの対応に欠落はない。
+- Claude Code CLI 2.1.282へ、ユーザー承認のもとで関連仕様・実装・テストと今回の機械検証結果をAnthropic経由で渡した。safe-modeでRead/Glob/Grepだけを許可し、編集・シェル・ビルド・テスト・Git操作を禁止した。CLI終了0、最終resultはsuccess・is_error=false、判定はGO、kiro-verify-completionはFEATURE_GO / VERIFIED。Low1件・Info2件で、機能上の必須修正はない。
+- 所見1（Low・文書修正を採用）: タスク定義の旧型名と「41小タスク」が現行実装に一致しない。内部型を確認し、タスク定義5行をDefinedFunction・HostFunction・InstanceHostFunction・InterpreterContextへ同期し、小タスク数を42へ訂正した。過去の実装記録にあるWasmDefinedFunction・WasmHostFunction・WasmInstanceHostFunction・WasmExecutionContextは、それぞれ現在の4型に対応する。過去の実行コマンドや当時の記録は維持した。
+- 所見2（Info・文書修正を採用）: `design.md`の新規ファイル一覧にStartDefinitionとLocalInitializerがない。実ファイルとタスク4.3・8.1を確認し、「startの未検証の関数添字と入力位置」「同じ型で連続する追加localsの個数と型別の初期値」を保持する2ファイルを追記した。既存の責務境界内の配置であり、設計の動作・公開契約は変更していない。
+- 所見3（Info・不採用）: `Decode((Stream)null!)`はCanReadの参照でNullReferenceExceptionとなり、InspectImportsのArgumentNullExceptionと異なる。ユーザーの「妥当なら修正」の指示を受けて上流設計を再確認したところ、`runtime-foundation/design.md`の「インスタンスと関数」節には、2026-09-07のユーザー指示により非nullableな参照型引数へ明示的なnullチェックを追加せず、DecodeのStreamもnull入力時の例外の種類を検証対象にしないと明記されている。Claudeの「要件・設計に定めがない」という説明はこの記載の見落としである。一方、InspectImportsのnull拒否は本仕様の「import情報取得」節の明示契約である。現行動作はそれぞれの設計に従っており、上流の既存不具合とは判定せず、挙動とテストを維持した。
+- BUILD（Codex実行）: `dotnet build WasmSharp2.slnx -c Release --warnaserror --disable-build-servers`は終了0、警告0・エラー0。初回のサンドボックス内ではNuGet脆弱性データ取得がNU1900となったが、通常の実行環境で同じコマンドを再実行して解消した。
+- TEST（Codex実行）: `dotnet run --project tests/WasmSharp.Tests/WasmSharp.Tests.csproj -c Release --no-build -- --report-trx --results-directory <一時ディレクトリ>/runtime-trx`は終了0、passed972/failed0/skipped0。`dotnet run --project tests/WasmSharp.Generators.Tests/WasmSharp.Generators.Tests.csproj -c Release --no-build -- --report-trx --results-directory <一時ディレクトリ>/generators-trx`は終了0、37/0/0。TRXの全1009件実行・成功をCodexが確認した。Claude自身によるテスト実行ではない。
+- SMOKE（Codex実行）: `dotnet tests/WasmSharp.Tests/bin/Release/net10.0/WasmSharp.Tests.dll --treenode-filter '/*/*/WasmFunction_InvokeTests/Guestから両形式のhostと値を往復する*' --report-trx --results-directory <一時ディレクトリ>/smoke-trx`は終了0、6/0/0。ビルド済みDLLの公開Decode→Validate→Instantiate→Invokeで、両callback形式と0/1/7値の受渡しを確認した。テストホスト上のライブラリ実行であり、別の利用アプリの受入ではない。
+- 機械検証のログ・TRX・Claudeの依頼と最終結果は`%TEMP%/wasmsharp-host-linking-claude-20260927-01a0e03e/`へ保存した。`dotnet csharpier check .`は187ファイル、終了0。src/testsのTBD・TODO・FIXME・HACK・XXXおよび秘密値代入パターン検索は該当なし（rg終了1）。
+- 統合と境界: 提供登録からリンク、import先行の添字、関数の定義元と実行上限の分離、operand容量、start/Invokeの共通境界、深さ・処理段階の復元、共有リソースの同一性を照合し、具体的な不整合・境界違反はなかった。今回は文書の同期だけで、再検証を要する動作・署名・依存関係の変更はない。
+- 確認の限界: Claudeは主要な統合実装と代表的な公開テストを精読し、残るテストは名前と既存記録も用いて対応を評価した。reader、生成器・生成ソース、一部の型定義・テスト・ADRは精読しておらず、全ファイルの逐行レビューではない。公式suite、後続命令・segment初期化、実OOM、実CLR stack枯渇、並行・非同期利用は未検証で、Core 2.0全体への準拠を示すものではない。
+- 修正後はタスク定義の旧型名0件、実在する追加2パス、12大タスク・42小タスク、要件99件の対応維持と通常・cachedのdiff検査の成功を確認した。本体・テストを変更していないため再ビルド・再テストは実施していない。既存のroadmapのステージ済み変更を維持し、HEADとGitインデックスは開始時から変更していない。
