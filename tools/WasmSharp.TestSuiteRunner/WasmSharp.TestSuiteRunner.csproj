@@ -10,5 +10,6 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\WasmSharp\WasmSharp.csproj" />
     <InternalsVisibleTo Include="WasmSharp.TestSuiteRunner.Tests" />
+    <EmbeddedResource Include="Corpus\core2-profile.json" LogicalName="Core2.Profile" />
   </ItemGroup>
 </Project>

@@ -20,15 +20,15 @@
   - _Boundary: ConverterFixture_
   - _Requirements: 2.7, 3.4, 3.5, 10.7_
 
-- [ ] 2. 固定profileと素材の保存契約を整える
-- [ ] 2.1 全公式入力と変換条件を固定する
+- [x] 2. 固定profileと素材の保存契約を整える
+- [x] 2.1 全公式入力と変換条件を固定する
   - 固定spec/WABTの取得元・commit、全147入力の相対pathとGit blobの生バイトSHA-256、全21featureの既定値・実効値を埋込みprofileへ収める。
   - Core 2.0の7機能ON・14機能OFFと変換optionを固定し、改行正規化、進捗依存のfeature変更、禁止引数を導入しない。
   - 固定ソースとの照合でSIMD57件を含む全入力と全機能の過不足がなく、小さなテスト用profileも同じ契約で扱える。
   - _Boundary: Core2Profile_
   - _Depends: 1.1_
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5_
-- [ ] 2.2 manifestに入力・生成物・完了状態を保持する
+- [x] 2.2 manifestに入力・生成物・完了状態を保持する
   - 全入力集合、相対path/hash、素材の所有入力、JSONのcommand一覧と参照先、変換成功・runner_error・未処理を表現する。
   - 変換に影響する条件と、exe hash・日時・配置rootなどの出典を区別し、部分生成でも本来の対象集合を保持する。
   - 保存モデルが入力別診断・生成物・集計を欠落なく表現でき、後続の実行結果へ素材のスナップショットを渡せる。

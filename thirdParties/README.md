@@ -20,10 +20,14 @@ WABT内の`third_party/testsuite`はWABT自身の検証用であり、本プロ�
 リポジトリルートで実行する。以下は親リポジトリが記録したcommitを取得する。
 
 ```powershell
-git submodule update --init --checkout -- thirdParties/WebAssembly-spec thirdParties/wabt
+git -c core.autocrlf=false submodule update --init --checkout -- thirdParties/WebAssembly-spec thirdParties/wabt
 git -C thirdParties/wabt submodule update --init --checkout -- third_party/picosha2
 git submodule status
 ```
+
+公式入力のSHA-256は固定commitのGit blobの生バイト列で確定するため、取得時に改行変換を無効にする。
+既に改行変換された作業コピーは上記コマンドだけでは元に戻らない。新しい配置先で改行変換を無効にして取得する。
+生成時は入力を正規化せず、改行を含むバイト列の相違を不一致として扱う。
 
 下記の`wast2json`専用ビルドに必要なnested submoduleはPicoSHA2のみで、WABTが
 `27fcf6979298949e8a462e16d09a0351c18fcaf2`に固定している。
