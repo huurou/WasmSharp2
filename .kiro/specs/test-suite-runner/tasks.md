@@ -88,7 +88,7 @@
   - _Depends: 2.1, 5.1_
   - _Requirements: 3.3, 4.1, 4.2, 4.3, 4.6, 4.7_
 - [ ] 5.3 生成前提と変換器起動を実装する
-  - 固定入力一覧/生バイトhashと必要なGit HEADを確認し、specの管理外コピー、無関係な親Git、実originと正本URLの違いを設計どおり扱う。
+  - 固定入力一覧/生バイトhashと必要なGit HEADを確認し、specの管理外コピー、無関係な親Git、実際のoriginとprofileに記録した上流URLの違いを設計どおり扱う。
   - 相対入力とCLIで解決済みの絶対出力を渡して変換器を直接起動し、作業基準・論理引数・option・exe hashを保存する。
   - stdout/stderrを両方回収し、前提失敗では未処理を残して変換を開始しない。変換器fixtureで引数と終了状態を確認できる。
   - _Boundary: CorpusGenerator_

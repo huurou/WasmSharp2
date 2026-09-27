@@ -316,7 +316,7 @@ localsは個数/型の圧縮宣言を読み、各u32個数をulongに累算し�
 
 Validateは最初に全型index・関数indexとexport名を確認する。その後各関数で命令を1度走査し、型スタックと線形コードを同時に作る。constを0個/複数含む場合も、end時にスタック上の値の型・個数・順序を、宣言された戻り値型のコレクションと先に比較し、不一致ならWasmValidateExceptionとする。一致した本体に対して、引数0・locals総数0・結果1・const1の実行形を確認し、範囲外ならWasmUnsupportedFeatureExceptionとする。定義関数が0個のモジュールも、対応した構文と検証規則を満たす限り個数だけで拒否しない。
 
-### 命令の正本と生成契約
+### 命令定義とコード生成の契約
 
 **入方向**: Decoder/Validator/Interpreter（P0）。**外部**: Roslynのビルドホスト（P0）。意味論は本体の定数と終端だけを実装する。
 
@@ -522,7 +522,7 @@ WasmUnverifiedRangeは`Stage`、`long StartOffset`、`long EndOffset`（排他�
 
 ### 生成と検証の順序
 
-生成器のテストは、最小の宣言からlookupとコンパイル可能なswitchが生成されること、表の変更が両者に反映されること、重複opcode/handler不整合が診断になることに絞る。生成文字列全体の巨大snapshotを正本にしない。ランタイムの4段階テストが実際に生成ループを通ることを統合確認とする。
+生成器のテストは、最小の宣言からlookupとコンパイル可能なswitchが生成されること、表の変更が両者に反映されること、重複opcode/handler不整合が診断になることに絞る。生成結果の正しさを、生成されたコード全体のスナップショットだけで判断しない。ランタイムの4段階テストが実際に生成ループを通ることを統合確認とする。
 
 命令宣言用の型とExecutionResult・Instructionは実ソースを使用し、factoryと結果配列の正規化を手書きで複製しない。WasmExecutionContextと値・reasonのスタブは生成ループの単体検証に必要な範囲に限定する。実コンテキスト・実handlerとの統合は、通常ビルドとランタイムの4段階テストで確認する。
 

@@ -59,7 +59,7 @@ dotnet tests/WasmSharp.Tests/bin/Release/net10.0/WasmSharp.Tests.dll --treenode-
 
 - Cross-task contracts: PASS。公開操作 → ModuleDecoder/ModuleValidator → 不変の定義・実行コード、Invoke → ExecutionBoundary → Interpreter → Contextの接続が整合する。
 - Shared state consistency: PASS。検証結果とordinalの名前辞書は全成功後にmoduleへ反映。各instanceが固有の関数実体と実行ポリシーを持ち、戻り値は作業スタックから独立する。
-- Boundary audit: PASS。命令情報はInstructionSetの宣言を正本にlookupと単一while/switchを生成し、DecodeとValidateも同じdescriptorを使用。ホスト処理・リソース意味論・公式ランナーの責務を取り込んでいない。
+- Boundary audit: PASS。InstructionSetの命令宣言からlookupと単一のwhile/switchを生成し、DecodeとValidateも同じdescriptorを使用。ホスト処理・リソース意味論・公式ランナーの責務を取り込んでいない。
 - Architecture drift: なし。「構成と接点」「処理フロー」「モジュールの公開契約と所有」「実行表現と同期コンテキスト」に整合する。
 - Dependency direction: 違反なし。実行からDecode/Validateへの逆呼び出しなし。生成器はランタイムを参照せず、ランタイムの実行依存にRoslyn・生成器・WABTを含まない。
 - File Structure Plan vs actual: 一致。追加のテスト・fixtureも定められた境界内にあり、生成物はobj配下に置かれる。
