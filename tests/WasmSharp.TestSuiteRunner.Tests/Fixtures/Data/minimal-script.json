@@ -1,0 +1,6 @@
+{
+  "source_filename": "success.wast",
+  "commands": [
+    { "type": "module", "line": 1, "filename": "module.wasm" }
+  ]
+}

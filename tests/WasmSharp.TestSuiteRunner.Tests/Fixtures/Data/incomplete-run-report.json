@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "kind": "run_report",
+  "complete": false,
+  "inputs": [
+    {
+      "input_path": "success.wast",
+      "command_count": null,
+      "cases": []
+    }
+  ]
+}

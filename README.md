@@ -27,6 +27,7 @@ git hook run pre-commit
 dotnet build WasmSharp2.slnx -c Release
 dotnet run --project tests/WasmSharp.Tests/WasmSharp.Tests.csproj -c Release --no-build
 dotnet run --project tests/WasmSharp.Generators.Tests/WasmSharp.Generators.Tests.csproj -c Release --no-build
+dotnet run --project tests/WasmSharp.TestSuiteRunner.Tests/WasmSharp.TestSuiteRunner.Tests.csproj -c Release --no-build
 dotnet csharpier check .
 ```
 
