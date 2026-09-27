@@ -13,9 +13,11 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\tools\WasmSharp.TestSuiteRunner\WasmSharp.TestSuiteRunner.csproj" />
+    <!-- Linuxのapphostと同名の配置先ディレクトリが衝突しないよう、コピーはCopyConverterFixtureで行う。 -->
     <ProjectReference
       Include="Fixtures\ConverterFixture\ConverterFixture.csproj"
       ReferenceOutputAssembly="false"
+      Private="false"
     />
     <Compile Remove="Fixtures\ConverterFixture\**\*.cs" />
     <None Remove="Fixtures\ConverterFixture\**\*" />
