@@ -1,5 +1,5 @@
 ---
-updated_at: 2026-09-17
+updated_at: 2026-09-27
 ---
 
 # WasmSharp2ロードマップ
@@ -10,7 +10,7 @@ C#でWebAssemblyバイナリをデコード・検証・インスタンス化・�
 
 下記7仕様を機能ごとに4段階を通して実装する。公式テスト素材の固定・生成から実行・回帰比較までは、`conformance-runner`で一つの仕様・ツールとして扱う。Core 3.0は将来の別計画とする。この分割方針の承認と、各仕様のrequirements・design・tasks・実装の承認は区別する。文書の言語は日本語とし、`spec.json.language`は`ja`とする。
 
-完成済みの`runtime-foundation`に続き、`host-linking`で関数呼出し・リソース生成・import/exportの実行・リンク基盤を整備する。その公開能力を使って`conformance-runner`のspectest・registerと初回baselineを成立させ、その後に各命令・初期化機能を追加する。基盤の承認済み要件・設計・タスクと完成状態は維持する。後続機能では同じ公式スイートによる回帰確認も完了条件に含める。
+`runtime-foundation`と`host-linking`は完了し、関数呼出し・リソース生成・import/exportの実行・リンク基盤まで整備済み。次に、その公開能力を使って`conformance-runner`のspectest・registerと初回baselineを成立させ、その後に各命令・初期化機能を追加する。両基盤の承認済み要件・設計・タスクと完成状態は維持する。後続機能では同じ公式スイートによる回帰確認も完了条件に含める。
 
 ## discovery時点の現状（2026-09-06）
 
@@ -85,7 +85,7 @@ C#でWebAssemblyバイナリをデコード・検証・インスタンス化・�
 
 素材生成では、入力と出力先の配置ディレクトリだけが変わっても生成物の内容とhashを維持する。変換baseline比較は、全対象の比較と結果の記録・出力が完了し、入力・生成物の一覧とhash、変換結果、生成条件が一致して`runner_error`が0件の場合だけ終了コード0とし、差異や比較未完了を含むそれ以外は非0とする。
 
-`runtime-foundation`の完成状態を維持し、次に`host-linking`を公開APIの直接テストで検証する。この段階では完成済みランナーを前提にしない。`conformance-runner`の初期完了で、全入力の素材生成と再現性、spectestとregisterを使う実行・リンク経路、全commandの記録と初回baselineをまとめて公式検証する。
+`runtime-foundation`と`host-linking`は公開APIの直接テストによる受入まで完了している。この完了は公式スイートの受入とは区別する。`conformance-runner`の初期完了で、全入力の素材生成と再現性、spectestとregisterを使う実行・リンク経路、全commandの記録と初回baselineをまとめて公式検証する。
 
 初回公式受入では、全体の`failed`と入力単位・command単位の`runner_error`を0件とし、最小基盤と実行・リンク基盤の対応範囲で前提が揃うケースを合格させる。import・register・ホスト関数・共有リソースを、ランナーや公開APIの不足を理由に未対応へ残さない。後続のguest命令・segment・参照/SIMD比較を必要とするケースは、理由・必要機能・所管を記録した未対応と、それに依存する`blocked`を残せる。Core 2.0全件合格はこの段階では要求しない。
 

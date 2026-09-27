@@ -1,5 +1,5 @@
 ---
-updated_at: 2026-09-26
+updated_at: 2026-09-27
 ---
 
 # プロジェクト構成
@@ -13,7 +13,7 @@ updated_at: 2026-09-26
 | 配置 | 責務と例 |
 | --- | --- |
 | `src/WasmSharp/` | 利用者向けの値・型・操作。例: `WasmModule`、`WasmValue`。公開例外は`Exceptions/`にまとめる。 |
-| `src/WasmSharp/Modules/` | 静的定義、バイナリ解析、型検査と線形化。例: `ModuleDecoder`、`ModuleValidator`。 |
+| `src/WasmSharp/Modules/` | 静的定義、バイナリ解析、import情報取得、型検査と線形化、リンクとインスタンス化。例: `ModuleDecoder`、`ModuleValidator`、`ModuleInstantiator`。 |
 | `src/WasmSharp/Instructions/` | 命令宣言と識別情報。例: `InstructionSet`。 |
 | `src/WasmSharp/Execution/` | 線形コード、フレームと値スタック、実行ループ、公開呼び出しの境界。例: `Interpreter`、`ExecutionBoundary`。 |
 | `src/WasmSharp.Generators/` | ランタイムの命令宣言を処理するビルド時生成器。 |
@@ -25,7 +25,7 @@ updated_at: 2026-09-26
 ## 公開境界と依存関係
 
 - 利用者向けの契約を`public`とし、内部実装は`internal`以下に保つ。テストによる内部参照には対象テストプロジェクトへの`InternalsVisibleTo`を用いる。
-- `WasmModule`は静的定義と実行コード、`WasmInstance`は実行時の実体を所有する。定義関数は所属instanceと関数indexで定義・実行コードへ到達する。ホスト関数は取得元instanceへ固定せず、同一実体を共有し、必要なinstanceは呼び出し時に渡す。
+- `WasmModule`は静的定義と実行コードを所有する。`WasmInstance`は定義から生成した関数・リソースとimportした共有実体を保持する。module内の定義にはinstanceごとの実体を割り当て、importでは提供元と同じ実体を共有する。定義関数は所属instanceと関数indexで定義・実行コードへ到達する。ホスト関数は取得元instanceへ固定せず、同一実体を共有し、必要なinstanceは呼び出し時に渡す。
 - instanceの公開取得操作は`GetFunction`などの名前による操作とする。`WasmInstance`に`Exports`コレクションを追加しない。
 - 命令宣言とhandlerからの生成方式、生成器のビルド時参照は[技術方針](tech.md)に従う。ランタイムをテスト・公式ランナー・WABTへ依存させない。
 - 通常ビルドの生成ソースは`obj/`、外部ツールのビルドや変換成果物は`artifacts/`等の出力先に置き、手書きの正本と分ける。

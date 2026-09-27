@@ -1,5 +1,5 @@
 ---
-updated_at: 2026-09-16
+updated_at: 2026-09-27
 ---
 
 # プロダクト概要
@@ -11,6 +11,7 @@ WasmSharp2は、WasmバイナリをC#から扱うランタイム。初期の完�
 - `Decode → Validate → Instantiate → Invoke`を独立した公開操作として提供する。静的なmodule定義、検証成功状態、instance、functionの実体を区別する。
 - 値は`WasmValue`、function typeは`WasmFunctionType`で明示する。数値のビット列と参照の同一性を保ち、CLR型からの暗黙変換やdelegateからの型推論を導入しない。
 - 破損、検証不成立、リンク不成立、trap、exhaustion、実装上限、APIの誤用、未実装を区別する。未実装で中断した場合は未確認範囲を示し、入力全体が有効であるとは扱わない。
+- `InspectImports`では、module全体のDecode・Validateやinstance生成を前提にせず外部依存を取得する。完全なimport情報と未確認範囲を返し、取得成功をmodule全体の有効性の証明にはしない。
 - 公式適合検証のランナーも通常の利用者として公開APIを使う。APIの追加は通常の埋め込み利用に意味のある能力を根拠とする。
 
 ## 主な利用場面
@@ -21,9 +22,9 @@ C#の呼び出し元が、バイト列またはStreamからmoduleをデコード
 
 ## 実装範囲と完成目標
 
-2026-09-07時点の最小基盤には、import・引数・localsを必要とせず、`i32`・`i64`・`f32`・`f64`の定数のいずれかを1個返すfunctionの公開4段階が実装されている。対応範囲と進捗の詳細は[基盤タスク](../specs/runtime-foundation/tasks.md)と[ロードマップ](roadmap.md)を参照する。
+実装済みの`runtime-foundation`と`host-linking`では、公開4段階に加え、引数・複数結果・localsを含む関数実行、import/export、ホストcallback、start、global・memory・tableの生成と共有を扱う。対応範囲と受入の詳細は[基盤タスク](../specs/runtime-foundation/tasks.md)、[ホスト連携タスク](../specs/host-linking/tasks.md)、[ロードマップ](roadmap.md)を参照する。
 
-後続は、`host-linking`の実行・リンク基盤、spectest・registerを含む公式ランナー、数値・制御と各リソース命令、SIMDの順に整備する。リソースの生成・共有は命令実装に先行させる。これは実装計画であり、公開型やopcodeの登録、値の保持ができることと、その機能を実行できることを区別する。
+後続は、spectest・registerを含む公式ランナー、数値・制御と各リソース命令、SIMDの順に整備する。リソースの生成・共有とホストからの操作は実装済みだが、memory/tableのguest命令やdata/element初期化は後続仕様が同じ実体へ追加する。公開型やopcodeの登録、値の保持ができることと、その機能を実行できることを区別する。
 
 Core 2.0全体の完成は、固定した公式テスト集合による検証と仕様規則との対応で判断する。最小経路の成功、素材の変換成功、個別テストの成功だけで全体への準拠を宣言しない。
 

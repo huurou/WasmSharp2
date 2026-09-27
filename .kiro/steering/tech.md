@@ -1,5 +1,5 @@
 ---
-updated_at: 2026-09-17
+updated_at: 2026-09-27
 ---
 
 # 技術方針
@@ -19,8 +19,8 @@ updated_at: 2026-09-17
 
 - `WasmModule`が静的定義と検証成功後の実行コードを所有する。`Validate()`は全体成功時だけ状態を確定し、成功済みの再呼び出しは同じmoduleを返す。判断の根拠は[ADR 0005](../../docs/adr/0005-module-owned-validation-state.md)。
 - 型検査と線形化を同一パスで行い、フラットな実行コードを単一の`switch`ループで実行する。制御命令の拡張も[ADR 0002](../../docs/adr/0002-single-pass-linear-interpreter.md)の分岐表現に従う。
-- 内部のtrapとexhaustionは`ExecutionResult`で返し、`ExecutionBoundary`で公開例外へ変換する。コンテキストとスタックの復元は`finally`で行う。[ADR 0004](../../docs/adr/0004-trap-result-propagation.md)に従い、startの追加時も共通境界を使う。
-- ホスト処理の例外は型と実体を保って伝播する設計契約とする。実ホストcallbackとの統合は後続のホスト連携が所有する（[ADR 0007](../../docs/adr/0007-propagate-host-exceptions.md)）。
+- 内部のtrapとexhaustionは`ExecutionResult`で返し、`ExecutionBoundary`で公開例外へ変換する。コンテキストとスタックの復元は`finally`で行う。[ADR 0004](../../docs/adr/0004-trap-result-propagation.md)に従い、InvokeとInstantiate中のstartは処理段階を区別しながら共通境界を使う。
+- ホストcallbackの例外は型と実体を保って伝播し、Wasmのtrapやリンク不成立へ包み直さない（[ADR 0007](../../docs/adr/0007-propagate-host-exceptions.md)）。
 
 ## 命令定義とコード生成
 
@@ -31,6 +31,8 @@ updated_at: 2026-09-17
 ## 値の所有と同期実行
 
 バイト列や値・型のコレクション入力には`ReadOnlySpan<T>`を使い、保持する定義・型・結果はコピーして`ImmutableArray<T>`等で所有する。後続の呼び出しや元バッファの変更で、返却済みの結果が変わらない契約を保つ。数値の取得・構築ではWasmのビット列を保持する。
+
+importした関数とリソースは同じ実体を共有し、module内で定義したリソースにはinstanceごとに新しい実体を割り当てる。ホストからmemoryへは範囲を指定して読み書きし、内部領域を直接参照する借用ビューを公開しない。読み出したバイトはホスト側のコピーとして扱い、同期再入やmemoryの増大をまたぐビューの寿命管理を利用者へ要求しない（[ADR 0009](../../docs/adr/0009-range-based-host-memory-access.md)）。
 
 実行ポリシーはinstanceが保持し、Wasm実行への入口が開いたコンテキストの上限を固定する。既存コンテキストのない単独ホスト呼び出しは、instance指定の有無やリソース操作だけでは開始せず、Wasm定義関数またはstartへ入った時点で開始する。そのWasm実行が終了してホストへ戻った後の別のWasm呼び出しは、新しい入口のinstanceの上限を使う。Instance引数はアクセス情報として深さ管理と分け、同一スレッドの同期的なネスト呼び出しは`[ThreadStatic]`のコンテキストを共有する。保証範囲は単一スレッドでの同期実行であり、並行利用・非同期フローへの伝播は対象外とする（[ADR 0008](../../docs/adr/0008-instance-options-and-execution-context.md)）。
 
