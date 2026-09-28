@@ -183,6 +183,20 @@ public sealed class WasmModule
     }
 
     /// <summary>
+    /// 全exportの名前と種類を宣言順で取得する
+    /// </summary>
+    /// <remarks>
+    /// 別名exportはそれぞれ別の項目とし、このmoduleから生成した全instanceに共通の一覧とする。
+    /// 実体は含まない。各項目のKindに応じたWasmInstanceのGetFunction・GetGlobalResource・GetMemory・GetTableへNameを渡して取得する。
+    /// 検証前は宣言をそのまま返し、名前の重複や添字の妥当性は保証しない
+    /// </remarks>
+    /// <returns>exportの名前と種類の不変一覧 exportがない場合は空</returns>
+    public ImmutableArray<WasmExportInfo> GetExports()
+    {
+        return [.. Exports.Select(x => new WasmExportInfo(x.Name, x.Kind))];
+    }
+
+    /// <summary>
     /// moduleがWasmの型規則と構造規則を満たすか検証する
     /// </summary>
     /// <returns>検証済みのmodulle</returns>

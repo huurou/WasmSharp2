@@ -8,7 +8,7 @@ namespace WasmSharp;
 /// <summary>
 /// moduleの定義から構築した関数・リソースと、importした共有実体を保持するinstance
 /// </summary>
-/// <remarks>exportは名前で取得する。同じ対象の別名export・繰り返し取得・再exportは、同じ関数またはリソース実体を返す</remarks>
+/// <remarks>Exportsは持たせない。exportは名前で取得し、名前と種類の一覧は<see cref="WasmModule.GetExports"/>で取得する。同じ対象の別名export・繰り返し取得・再exportは、同じ関数またはリソース実体を返す</remarks>
 public sealed class WasmInstance
 {
     /// <summary>

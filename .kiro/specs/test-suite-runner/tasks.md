@@ -63,11 +63,11 @@
   - _Boundary: CompletionPolicy_
   - _Requirements: 12.2, 13.1, 13.2, 13.3, 13.4, 13.5, 13.6, 13.7, 14.7_
 
-- [ ] 4. (P) instanceのexport名と種類を公開する
+- [x] 4. (P) moduleのexport名と種類を公開する
   - 全exportの名前と種類を宣言順の不変一覧で取得可能にし、空一覧・別名・繰返し取得でも内容と順序を保つ。
   - 内部indexや実体コピーを公開せず、4種の実体取得は既存の名前取得APIを使用する。追加契約と関係する説明を同期する。
   - 公開APIのテストで4種・別名・再export・共有実体を確認し、既存の名前取得と同じ関数・リソースへ到達できる。
-  - _Boundary: WasmInstance, WasmExportInfo_
+  - _Boundary: WasmModule, WasmInstance, WasmExportInfo_
   - _Depends: 1.1_
   - _Requirements: 1.7, 5.4_
 

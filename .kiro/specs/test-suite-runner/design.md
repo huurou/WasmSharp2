@@ -22,7 +22,7 @@ WAST/WAT解析、別エンジン、Wasm演算・import型照合の再実装、Co
 
 - CLI、固定profile、素材変換・照合、manifest、JSON commandの読取と入力ごとの状態、spectest、引数構築と期待値判定。
 - 6分類、ケース識別と原因追跡、永続結果、baseline保存・比較、用途別終了コード。
-- 通常利用にも有用なinstanceのexport名・種類の一覧取得APIと、初期必須の公式ケースを実行・判定するために必要なランタイム修正。
+- 通常利用にも有用な、moduleが宣言しinstanceが公開するexport名・種類の一覧取得APIと、初期必須の公式ケースを実行・判定するために必要なランタイム修正。
 
 ### 境界外（Out of Boundary）
 
@@ -122,15 +122,16 @@ graph TD
 | `tests/WasmSharp.TestSuiteRunner.Tests/RunnerCli_RunTests.cs` | 個別コマンド・終了条件・既存baseline保護のCLI統合。 |
 | `tests/WasmSharp.TestSuiteRunner.Tests/Fixtures/` | 小さなJSON・バイナリ・結果のfixture。公式全体受入の代用品にはしない。 |
 | `tests/WasmSharp.TestSuiteRunner.Tests/Fixtures/ConverterFixture/{ConverterFixture.csproj,Program.cs}` | net10.0の小さなテスト専用実行ファイル。入力名に応じた成功・失敗・部分出力と終了値を返す。製品コードは参照しない。 |
-| `tests/WasmSharp.Tests/WasmInstance_GetExportsTests.cs` | 一覧の順序・名前・種類とGet系APIの実体同一性。 |
+| `tests/WasmSharp.Tests/WasmModule_GetExportsTests.cs` | 一覧の順序・名前・種類とGet系APIの実体同一性。 |
 
 ### 変更する既存ファイル
 
-- `src/WasmSharp/WasmInstance.cs`: `GetExports()`を追加する。
+- `src/WasmSharp/WasmModule.cs`: `GetExports()`を追加する。
+- `src/WasmSharp/WasmInstance.cs`: 「Exportsは持たせない」契約とexport一覧の取得先をコメントに明記する。
 - `WasmSharp2.slnx`: CLIとテストを追加する。
 - `.github/workflows/unit-tests.yml`: ビルド後のランナーテストを追加する。通常CIでローカルbaselineを更新しない。
 - `README.md`: ツールのREADMEへの案内と3つ目のテストプロジェクトの実行方法を追加する。
-- `.kiro/steering/structure.md`、`.kiro/steering/roadmap.md`: 名前による実体取得を維持しつつ、名前・種類の列挙を認める契約を追記する。実装時に公開APIと同期する。完了済みhost-linkingの「Exportsコレクションを追加しない」という要件は変更しない。
+- `.kiro/steering/structure.md`、`.kiro/steering/roadmap.md`: 名前による実体取得を維持しつつ、moduleでの名前・種類の列挙を認める契約を追記する。実装時に公開APIと同期する。完了済みhost-linkingの「Exportsコレクションを追加しない」という要件は変更しない。
 
 初期公式受入で特定したランタイム問題は、現象に対応する`src/WasmSharp/Modules/`、`Execution/`、`Instructions/`等の既存責務と対応テストへ限定して修正する。未特定の問題のために新しい汎用層や広範な改編を予定しない。設計生成時点では実装ファイルやsteeringを変更しない。
 
@@ -187,7 +188,7 @@ flowchart TD
 | 4.1, 4.2, 4.3, 4.7 | path/hash/参照照合 | CorpusVerifier | 照合モード | generate/run |
 | 4.4, 4.5 | JSON異常と件数未確定 | ScriptDocument、ScriptReader、RunReport | 列挙完了状態と型変換 | run |
 | 4.6 | textと素材異常を分離 | ScriptExecutor、CorpusVerifier | 対象外の記録 | module処理 |
-| 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7 | 順序とmodule/register状態 | ScriptState、ScriptExecutor、WasmInstance | 状態遷移、GetExports | run |
+| 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7 | 順序とmodule/register状態 | ScriptState、ScriptExecutor、WasmModule、WasmInstance | 状態遷移、GetExports | run |
 | 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.7, 6.8 | 段階と実際の依存 | ScriptExecutor、ScriptState | InspectImportsと原因参照 | module処理 |
 | 7.1, 7.2, 7.3, 7.4, 7.5 | spectest | SpectestFactory | 固定提供内容、print記録 | 入力開始/呼出し |
 | 8.1, 8.2, 8.11 | invoke/getと単独action | ScriptExecutor | action実行 | run |
@@ -219,7 +220,7 @@ flowchart TD
 | SuiteExecutor / ScriptExecutor / ScriptState | 入力とcommandの順次実行 | 公開ランタイム・照合結果（P0） | Service、State |
 | SpectestFactory | 固定ホスト提供 | 公開ホストAPI（P0） | Service、State |
 | ValueCodec / ValueMatcher / AssertionJudge | 引数・観測値・期待値・分類 | 公開値と例外（P0） | Service |
-| WasmInstance.GetExports / WasmExportInfo | export名と種類の公開 | instanceの静的export（P0） | API |
+| WasmModule.GetExports / WasmExportInfo | export名と種類の公開 | moduleの静的export（P0） | API |
 | RunReport / ReportStore / CompletionPolicy | 完了・記録・集計 | BCLファイル/JSON（P0） | Service、State |
 | BaselineStore / BaselineComparer / ComparisonReport | 保存済み結果の保存・比較 | ReportStore（P0） | Batch |
 
@@ -281,7 +282,7 @@ ScriptDocumentで境界と位置を確定できた要素は、構造不正でも
 
 `SuiteExecutor.Execute(CorpusManifest manifest, string manifestPath)`は`RunReport`を返す。`ScriptExecutor.Execute(ScriptReadResult script, ScriptState state)`が1入力を順に処理する。実行は単一プロセス・単一スレッドの同期呼出しとし、各入力の開始時に新しいScriptStateとspectestを作る。
 
-ScriptStateは`LastModule`、module識別子表、登録名表、externref番号表、現在のcommand識別子を所有する。名前比較はOrdinal。module識別子表と登録名表は別々の辞書である。module参照と登録の値は、成功実体か、失敗原因を持つ利用不能状態のいずれかとする。
+ScriptStateは`LastModule`、module識別子表、登録名表、externref番号表、現在のcommand識別子を所有する。名前比較はOrdinal。module識別子表と登録名表は別々の辞書である。module参照と登録の値は、成功実体か、失敗原因を持つ利用不能状態のいずれかとする。module参照の成功実体は、registerでexport一覧を取得するため、instanceと生成元のmoduleを組で保持する。
 
 | 操作 | 成功時 | 不成立時 |
 | --- | --- | --- |
@@ -296,7 +297,7 @@ Decode/Validate成功後、Instantiateを行うcommandだけ同じバイト列�
 
 InspectImportsの`UnsupportedFeature`は未確認範囲付き`runtime_unsupported`、`ImplementationLimit`は`runner_error`とする。Decode/Validate成功後の`MalformedBinary`/`UnresolvedType`は段階間の不整合として`runner_error`にし、元例外・Reason・未確認範囲を残す。InspectImports成功をmodule全体の有効性の証明に使わず、その失敗を期待malformed/invalidの成功にも使わない。
 
-registerはGetExportsの名前・種類に従い、`GetFunction/GetGlobalResource/GetMemory/GetTable → WasmHostModule.Define`で同じ実体を提供する。Instantiate直前に現在の成功登録（初期spectestを含む）から`WasmImports`を再構成し、同じ登録名の再登録でも古いexportを混ぜない。start失敗後に共有リソースへ生じた変更は巻き戻さない。
+registerは対象instanceの生成元moduleの`GetExports`が返す名前・種類に従い、`GetFunction/GetGlobalResource/GetMemory/GetTable → WasmHostModule.Define`で同じ実体を提供する。Instantiate直前に現在の成功登録（初期spectestを含む）から`WasmImports`を再構成し、同じ登録名の再登録でも古いexportを混ぜない。start失敗後に共有リソースへ生じた変更は巻き戻さない。
 
 ### 公開export一覧
 
@@ -305,11 +306,11 @@ registerはGetExportsの名前・種類に従い、`GetFunction/GetGlobalResourc
 ```csharp
 public sealed record WasmExportInfo(string Name, WasmExternalKind Kind);
 
-// WasmInstanceへ追加する操作
+// WasmModuleへ追加する操作
 public ImmutableArray<WasmExportInfo> GetExports();
 ```
 
-全exportをmoduleの宣言順で返す。exportなしは空配列、別名exportはそれぞれ別項目、名前は加工しない。返却一覧は不変で、同じinstanceでは内容と順序が安定する。実体の取得には既存の名前Get系APIを使い、一覧へ実体のコピー・index・値を入れない。`Exports`propertyは追加しない。
+全exportをmoduleの宣言順で返す。exportなしは空配列、別名exportはそれぞれ別項目、名前は加工しない。返却一覧は不変で、同じmoduleでは検証の前後を通じて内容と順序が安定し、生成した全instanceに共通とする。検証前は宣言をそのまま返し、名前の重複や添字の妥当性を保証しない。実体の取得にはinstanceの既存の名前Get系APIを使い、一覧へ実体のコピー・index・値を入れない。`WasmInstance`には`Exports`propertyもexport一覧の操作も追加しない。
 
 ### spectest
 
@@ -450,7 +451,7 @@ verifyの条件不成立は、残る分類・未確定・未処理・欠落を�
 
 ### 統合テスト
 
-- `WasmInstance.GetExports`と既存Get系APIで、4種・別名・再export・空一覧・宣言順・共有実体を確認する（5.4）。
+- `WasmModule.GetExports`とinstanceの既存Get系APIで、4種・別名・再export・空一覧・宣言順・共有実体を確認する（5.4）。
 - 小さなbinary/JSON fixtureでDecode/Validateをblockedより先に観測し、未登録名はInstantiateへ渡し、失敗依存だけに原因を付ける。否定moduleで直近状態を更新せず、共有副作用を保持する（5.6、6.1～6.8）。
 - 入力内のspectest共有・入力間の初期化、printのcommand記録、stdout非出力、型/limits不一致をランタイムが判定することを確認する（7.1～7.5）。
 - 実ファイルでmanifest移動、hash不一致、欠落参照、wat異常とout_of_scopeの併記、JSON列挙不能、保存先障害、完了結果の明示上書きを確認する（3.3、4.1～4.7、10.7、12.1～12.3）。全CLIが複数工程を暗黙実行しないことと終了値も検証する（1.1～1.6、13.1～13.7）。
