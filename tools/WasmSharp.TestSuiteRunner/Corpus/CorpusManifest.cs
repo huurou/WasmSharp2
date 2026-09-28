@@ -53,6 +53,20 @@ internal sealed record CorpusManifest(ProfileSnapshot Profile, ConversionProvena
     }
 
     /// <summary>
+    /// 記録内容から、本来の対象入力数と変換状態・生成物数の集計を求める。
+    /// </summary>
+    internal ConversionSummary Summarize()
+    {
+        return new(
+            Profile.Inputs.Count,
+            Inputs.Count(x => x.Status == ConversionStatus.Succeeded),
+            Inputs.Count(x => x.Status == ConversionStatus.RunnerError),
+            Inputs.Count(x => x.Status == ConversionStatus.Unprocessed),
+            Inputs.Sum(x => x.Artifacts.Count)
+        );
+    }
+
+    /// <summary>
     /// 実行結果へ渡すため、入れ子を含むすべての可変一覧をコピーする。
     /// </summary>
     internal CorpusManifest CreateSnapshot()
@@ -155,6 +169,21 @@ internal sealed record ProfileSnapshot(
             [.. LogicalArguments],
             Conversion
         );
+    }
+
+    /// <summary>
+    /// 保存された条件が、指定したprofileの識別・版・全feature・全入力・変換条件と一致するかを判定する。
+    /// </summary>
+    internal bool Matches(Core2Profile profile)
+    {
+        return Id == profile.Id
+            && Spec == profile.Spec
+            && Wabt == profile.Wabt
+            && WorkingDirectory == profile.WorkingDirectory
+            && Conversion == profile.Conversion
+            && Features.SequenceEqual(profile.Features)
+            && Inputs.SequenceEqual(profile.Inputs)
+            && LogicalArguments.SequenceEqual(profile.LogicalArguments);
     }
 
     /// <summary>

@@ -35,8 +35,8 @@
   - _Boundary: CorpusManifest_
   - _Requirements: 2.2, 2.3, 3.2, 3.3, 3.5, 3.7, 11.4_
 
-- [ ] 3. 結果の記録・保存・完了判定を実装する
-- [ ] 3.1 ケース結果と比較結果の保存契約を統合する
+- [x] 3. 結果の記録・保存・完了判定を実装する
+- [x] 3.1 ケース結果と比較結果の保存契約を統合する
   - 入力相対pathと0始まりcommand indexを識別に使い、行・種類・category・6分類・期待/実際・段階・診断・print・原因参照を保存用モデルへ対応付ける。
   - 入力異常、列挙済み数、件数未確定、未処理を分け、実行ID・版・実行上限・素材スナップショットと比較前後の詳細を保持する。
   - schema_version=1、kindとsnake_caseを揃え、保存DTOと内部モデルのコレクションをコピーする。素材・実行・比較の契約を接続する基盤統合として扱う。
@@ -44,19 +44,19 @@
   - _Boundary: RunReport, ComparisonReport_
   - _Depends: 2.2_
   - _Requirements: 10.1, 10.6, 11.1, 11.2, 11.3, 11.4, 11.5, 11.6, 11.8, 12.10_
-- [ ] 3.2 保存済みJSONの構造と記録の完全性を検証する
+- [x] 3.2 保存済みJSONの構造と記録の完全性を検証する
   - 未知schema/kind、構文破損、重複キー、読めないケース識別を拒否し、構造を読める結果の欠落・重複・未処理・集計不整合は診断付きで残す。
   - 結果内のprofileと素材が持つcommand一覧に照らして完全性を検証し、保存された完了flagだけを信用しない。
   - 不完全な結果も対応可能なケースを比較へ渡せ、破損結果や未確定件数を空の正常結果に変えないことをテストで確認する。
   - _Boundary: ReportStore_
   - _Requirements: 4.5, 10.7, 11.5, 11.6, 11.8, 12.2, 12.9_
-- [ ] 3.3 結果を確定保存し既存ファイルを保護する
+- [x] 3.3 結果を確定保存し既存ファイルを保護する
   - 同一ディレクトリの一時ファイルへUTF-8 JSONを書き切ってから確定し、通常出力は競合が起きても既存ファイルを上書きしない。
   - baseline保存だけが明示的な置換を行えるようにし、部分一時ファイルを保存済み結果として受け付けない。
   - 保存失敗・中断を実ファイルで確認し、既存結果の保持と保存先・理由の診断が観測できる。
   - _Boundary: ReportStore_
   - _Requirements: 10.7, 11.8, 12.1, 12.3, 12.9_
-- [ ] 3.4 操作ごとの完了条件と終了値を判定する
+- [x] 3.4 操作ごとの完了条件と終了値を判定する
   - generate・run・2種類の比較・baseline-save・verifyの条件を分け、用途不合格は1、操作未完了は2、複数理由では2を優先する。
   - 全件記録と全件合格を区別し、failed/runner_errorを含む完了結果のbaseline保存、runの未対応とそのblocked、比較の既知failedを設計どおり扱う。
   - verifyは単一runの固定全入力と全commandを要求する。欠落・未確定・入力異常・未対応が残る結果と、対象外以外が全passedの結果をテストで区別できる。
@@ -303,3 +303,14 @@
   - _Boundary: RunnerCli, SuiteExecutor, BaselineStore, BaselineComparer, CompletionPolicy_
   - _Depends: 14.7_
   - _Requirements: 1.3, 1.4, 1.5, 1.6, 4.7, 12.1, 12.8, 13.2, 13.4, 13.5, 13.6, 13.7, 14.4, 14.6, 14.7, 14.9_
+
+## Implementation Notes
+
+- 型は補助DTO・enumも含め1型1ファイルに置く（ユーザー指定。design.mdの従属型の同居より優先）。英字で始まるテストメソッド名は先頭を大文字にする。
+- `RunReport`の入力は`unprocessed`/`incomplete`/`processed`の3状態で、未処理commandは列挙済みの末尾に置く。`ReportStore.Validate`はこの前提で欠落・範囲外を判定する。保存する内容では`Completion.OutputComplete=true`とし、falseのままでは`OutputFailed`となる。
+- runでは、入力異常による件数未確定を1とし、中断や記録の欠落を2とする。baseline-saveでは両方を2とし、verifyでは読み取れた結果の不成立をすべて1とする。
+- 10.3: `CompletionPolicy.Run`/`Verify`が入力単位のrunner_errorとして数えるのは`InputRunResult.Issues`だけである。manifestで変換に失敗した入力は、必ず`Issues`へ引き継ぐ。
+- 11.2/11.3: `CompletionPolicy.Compare*`は`Established`・`Complete`・`Summary`だけで判定する。比較器は次の状態のとき`Complete=false`とするか`Uncompared`へ計上し、`Summary`（現結果のfailed・runner_error数を含む）を必ず埋める。
+  - 入力結果に未処理・件数未確定の記録問題がある
+  - baselineでpassedだったケースが欠落している
+- 診断の段階表記は2種類ある。`CaseDiagnostic.Stage`はツールのsnake_case、`location.stage`と`unverified_ranges[].stage`はランタイムの列挙名をそのまま保存する。比較・表示で両者を混同しない。
