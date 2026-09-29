@@ -1,6 +1,6 @@
 # 検証用fixture
 
-`SuiteWorkspace.CreateAsync()`は固定内容・著者・日時の一時Gitリポジトリと、その外側に独立した出力ディレクトリを作ります。取得した`Commit`を小さなテスト用profileの固定commitに使用できます。Gitのユーザー設定を引き継がず、実リポジトリや公式入力は変更しません。
+`SuiteWorkspace.CreateAsync()`は固定内容・著者・日時の一時Gitリポジトリと、その外側に独立した出力ディレクトリを作ります。取得した`Commit`を小さなテスト用profileの固定commitに使用できます。Gitのユーザー設定を引き継がず、実リポジトリや公式入力は変更しません。`CreateProfile()`は一時リポジトリの全入力と`Commit`をspec/WABTの固定値に持つprofileを作り、`CreateRequest()`は同じリポジトリをspec-rootとWABT-rootに使う生成要求を作ります。
 
 `ConverterFixture`は.NETビルドで用意するテスト専用実行ファイルです。`SuiteWorkspace.ConverterPath`はテスト出力へ配置した実行OS用apphostの絶対pathを返します。引数は`<input.wast> -o <output.json>`です。出力先の親ディレクトリは呼び出し側で事前に作成します。WASTの内容は解析せず、入力名で動作を選びます。
 

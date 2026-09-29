@@ -71,15 +71,15 @@
   - _Depends: 1.1_
   - _Requirements: 1.7, 5.4_
 
-- [ ] 5. 全素材の変換と照合を実装する
-- [ ] 5.1 (P) JSONのcommand境界と素材参照を列挙する
+- [x] 5. 全素材の変換と照合を実装する
+- [x] 5.1 (P) JSONのcommand境界と素材参照を列挙する
   - 元バイト列を所有し、各commandの範囲・順序・取得可能な行/種類/module_type/filenameを保持する。
   - 全体の必須項目を確認し、構文破損時は確定済みprefixだけを残して総数を未確定にする。実行意味や期待値は解釈しない。
   - 同じdocumentを生成時の参照収集と実行時の型変換に使え、破損位置と確定済みcommandをテストで確認できる。
   - _Boundary: ScriptDocument_
   - _Depends: 2.2_
   - _Requirements: 3.3, 4.4, 4.5, 11.1, 11.2_
-- [ ] 5.2 相対path・hash・素材所有を照合する
+- [x] 5.2 相対path・hash・素材所有を照合する
   - 生成時だけ元入力を照合し、実行時はmanifestと保存素材の一覧/hash/JSON参照を照合する。
   - 絶対path、root外参照、リンク経由の逸脱、重複・所有衝突、欠落・余剰を検出し、入力別と素材別の理由を保持する。
   - wat異常を入力異常へ残し、wasm異常の影響を利用commandへ限定する。JSONのhash不一致は実行せず件数未確定とする。
@@ -87,14 +87,14 @@
   - _Boundary: CorpusVerifier_
   - _Depends: 2.1, 5.1_
   - _Requirements: 3.3, 4.1, 4.2, 4.3, 4.6, 4.7_
-- [ ] 5.3 生成前提と変換器起動を実装する
+- [x] 5.3 生成前提と変換器起動を実装する
   - 固定入力一覧/生バイトhashと必要なGit HEADを確認し、specの管理外コピー、無関係な親Git、実際のoriginとprofileに記録した上流URLの違いを設計どおり扱う。
   - 相対入力とCLIで解決済みの絶対出力を渡して変換器を直接起動し、作業基準・論理引数・option・exe hashを保存する。
   - stdout/stderrを両方回収し、前提失敗では未処理を残して変換を開始しない。変換器fixtureで引数と終了状態を確認できる。
   - _Boundary: CorpusGenerator_
   - _Depends: 1.2, 2.1, 5.2_
   - _Requirements: 2.2, 2.3, 2.4, 2.7, 3.1, 3.4, 3.6_
-- [ ] 5.4 全入力の変換結果をmanifestへ確定する
+- [x] 5.4 全入力の変換結果をmanifestへ確定する
   - Ordinal順で全入力を処理し、終了成功・JSON読取・全参照素材の照合が揃った入力だけを成功にする。
   - 失敗した入力と部分生成物を診断付きで保持し、独立入力を継続する。変換完了とランタイム適合を混同しない。
   - 生成・照合・保存の統合テストで成功/失敗/未処理と集計が一致し、一部素材だけの成功扱いがなく、元ソースを変更しない。
@@ -314,3 +314,5 @@
   - 入力結果に未処理・件数未確定の記録問題がある
   - baselineでpassedだったケースが欠落している
 - 診断の段階表記は2種類ある。`CaseDiagnostic.Stage`はツールのsnake_case、`location.stage`と`unverified_ranges[].stage`はランタイムの列挙名をそのまま保存する。比較・表示で両者を混同しない。
+- 5.2: `CorpusVerifier.Verify`で`InputVerification.Document`がnullの入力は、実行せずcommand件数を未確定にする。module_typeがtextではないcommandは、`Modules`（照合済みbinary）か`ModuleIssues`のどちらかに必ず入る。`ModuleIssues`の異常は、そのcommandのrunner_errorとして1回だけ数える。`Issues`は入力単位のrunner_errorであり、manifestで変換に成功していない入力の状態も含む。
+- 5.4: `CorpusGenerator.Generate`は`GenerateResult`を返す。CLIは`SaveFailure is null`を`CompletionPolicy.Generate`の`saved`へ渡し、保存に失敗した場合は`SaveFailure`の保存先と理由を標準エラーへ出す。

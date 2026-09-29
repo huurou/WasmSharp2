@@ -1,4 +1,6 @@
 using System.Diagnostics;
+using System.Security.Cryptography;
+using WasmSharp.TestSuiteRunner.Corpus;
 
 namespace WasmSharp.TestSuiteRunner.Tests.Fixtures;
 
@@ -100,6 +102,34 @@ internal sealed class SuiteWorkspace : IDisposable
         }
 
         return result.Output;
+    }
+
+    internal Core2Profile CreateProfile()
+    {
+        return Core2Profile.Load() with
+        {
+            Id = "fixture",
+            Spec = new("https://github.com/WebAssembly/spec.git", Commit),
+            Wabt = new("https://github.com/WebAssembly/wabt.git", Commit),
+            Inputs =
+            [
+                .. Directory
+                    .GetFiles(InputRoot, "*.wast")
+                    .Select(Path.GetFileName)
+                    .Order(StringComparer.Ordinal)
+                    .Select(x => new SourceInput(
+                        x!,
+                        Convert.ToHexStringLower(
+                            SHA256.HashData(File.ReadAllBytes(Path.Combine(InputRoot, x!)))
+                        )
+                    )),
+            ],
+        };
+    }
+
+    internal GenerateRequest CreateRequest(Core2Profile profile)
+    {
+        return new(profile, SourceRoot, SourceRoot, ConverterPath, OutputRoot);
     }
 
     internal Task<ProcessResult> ConvertAsync(string inputName, string outputPath)
