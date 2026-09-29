@@ -322,7 +322,7 @@ callbackは現在のcommandへ、関数名・引数の型とビット列を呼�
 
 ### 引数構築と値比較
 
-`ValueCodec.CreateArguments(ImmutableArray<ArgumentValue> values, ScriptState state)`は所有されたWasmValue列を返す。`ValueMatcher.Match(ImmutableArray<ExpectedValue> expected, WasmResults actual, ScriptState state)`は一致の有無と相違箇所を返す。getの現在値は結果1個として同じ比較へ渡す。
+`ValueCodec.CreateArguments(ImmutableArray<ArgumentValue> values, ScriptState state)`は所有されたWasmValue列を返す。期待値の比較は2段階で行う。`ValueMatcher.Parse(ImmutableArray<ExpectedValue> expected)`は期待値の文字列を検査し、比較用の`ValuePattern`列へ変換する。`ValueMatcher.Match(ImmutableArray<ValuePattern> expected, WasmResults actual, ScriptState state)`は相違箇所（`ValueMismatch`）の列を返し、空なら一致とする。CreateArgumentsとParseは不正な値の文字列をJSON上の位置付きの`ScriptFormatException`で拒否する。ScriptExecutorはactionを実行する前に両方を呼び、不正な値でactionの副作用を先に起こさない。getの現在値は結果1個として同じ比較へ渡す。
 
 | 値 | 引数・記録 | 比較 |
 | --- | --- | --- |

@@ -118,28 +118,28 @@
   - _Boundary: ScriptState_
   - _Requirements: 5.1, 5.3, 5.5, 5.6, 5.7, 6.4, 8.5, 11.3_
 
-- [ ] 7. 全値型の引数構築と比較を実装する
-- [ ] 7.1 scalarと参照のビット・同一性を保持する
+- [x] 7. 全値型の引数構築と比較を実装する
+- [x] 7.1 scalarと参照のビット・同一性を保持する
   - i32/i64とf32/f64の文字列を同幅の生ビットとして構築し、範囲外は切り詰めない。
   - 型付きnullと番号ごとに同一objectのexternrefを構築し、固定形式外の非nullfuncref番号を推測しない。
   - 実値を固定幅hexと入力内tokenで記録し、±0・NaN payload・幅境界・参照再利用をテストで確認できる。
   - _Boundary: ValueCodec_
   - _Depends: 6.1, 6.2_
   - _Requirements: 8.3, 8.5, 10.4, 11.3, 14.8_
-- [ ] 7.2 v128の6lane型をビットを保って構築する
+- [x] 7.2 v128の6lane型をビットを保って構築する
   - lane型ごとの個数・幅を確認し、lane0を下位に置いて128bitを構築する。
   - 整数laneと浮動小数点laneの生ビットを保持し、CPUのendianに依存しない保存表現へ対応付ける。
   - 6lane型の順序・幅境界・不正lane数をテストで検証し、SIMD命令の実装に依存せず使用できる。
   - _Boundary: ValueCodec_
   - _Requirements: 8.4, 10.4, 11.3, 14.8_
-- [ ] 7.3 結果の個数・型・scalar・参照を比較する
+- [x] 7.3 結果の個数・型・scalar・参照を比較する
   - 結果0個/1個/複数の個数・順序・型を先に比較し、不一致でも実値を全て保持する。
   - 整数・具体浮動小数点は全ビット、参照は型付きnullまたは同一objectで比較する。
   - ±0、具体NaN payload、externrefの同番号/異番号、型・個数・順序不一致をテストで判別できる。
   - _Boundary: ValueMatcher_
   - _Depends: 6.2, 7.2_
   - _Requirements: 8.6, 8.7, 8.10, 14.8_
-- [ ] 7.4 scalarとv128のNaN patternを比較する
+- [x] 7.4 scalarとv128のNaN patternを比較する
   - scalarとlaneに共通のcanonical/arithmetic条件を用い、符号を除くcanonicalビットとquiet bitを含む条件を区別する。
   - v128を期待lane型で分割し、具体値とNaN patternを各laneで比較して相違位置を残す。
   - 両符号・quiet/signaling・payload・全6lane型の成立/不成立をテストで確認できる。
@@ -318,3 +318,5 @@
 - 5.4: `CorpusGenerator.Generate`は`GenerateResult`を返す。CLIは`SaveFailure is null`を`CompletionPolicy.Generate`の`saved`へ渡し、保存に失敗した場合は`SaveFailure`の保存先と理由を標準エラーへ出す。
 - 6.1: `ScriptReader`は種類・値型・lane型・module形式の名前と項目の過不足・重複だけを確認し、値の文字列（10進数・範囲・lane数・NaN patternの位置）は検査しない。ValueCodec/ValueMatcherは引数と期待値の両方の文字列を検査し、ScriptExecutorはinvokeの前に期待値を解析して、不正な期待値でactionの副作用を先に起こさない。
 - 6.2: `ScriptState`の名前は、成功実体か`UnavailableCause`付きの利用不能状態を指す`ScriptBinding`で保持する。未定義の名前はnullを返し、既知の失敗と区別する。blockedになったcommandは、その`CaseCause`を`Fail`へ渡して元の失敗を引き継ぐ。成功した登録を列挙するAPIはまだないため、10.1で`WasmImports`を再構成するときに追加する。spectestは`WasmHostModule.Name`（`spectest`）を登録名として`Register`する。
+- 7: `ValueCodec.CreateArguments`と`ValueMatcher.Parse`は、不正な値の文字列をJSON上の位置（`action.args[i].value[j]`、`expected[i].value[j]`）付きの`ScriptFormatException`で拒否する。ScriptExecutorはactionを実行する前に両方を呼び、この例外をrunner_errorとして記録する。
+- 7: `ValueMatcher.Match`は相違箇所だけを返し、空なら一致とする。個数が違えば`Count`だけ、型が違えば`Type`だけを返し、値を比較しない。実値は相違の種類に関係なく、`ValueCodec.Record`で全件記録する。
