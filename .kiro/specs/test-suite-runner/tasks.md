@@ -102,15 +102,15 @@
   - _Depends: 3.3, 3.4, 5.3_
   - _Requirements: 1.2, 2.7, 3.1, 3.2, 3.4, 3.5, 3.7, 11.8, 13.1_
 
-- [ ] 6. commandの型変換と入力内状態を実装する
-- [ ] 6.1 全10commandとactionの値表現を読み取る
+- [x] 6. commandの型変換と入力内状態を実装する
+- [x] 6.1 全10commandとactionの値表現を読み取る
   - 通常module・register・action・7種のassertionを型付きで読み、invoke/get、binary既定、否定moduleのtextを保持する。
   - 引数と期待値を分け、型だけのexpectedと値付き期待値を区別する。未知形式や必須値不足は位置と元内容を持つrunner_errorにする。
   - 境界が確定した不正要素を1件として残して後続へ進め、全固定形式の読取と部分破損の継続をテストで確認できる。
   - _Boundary: ScriptReader, ScriptCommand_
   - _Depends: 3.1, 5.1_
   - _Requirements: 4.4, 4.5, 8.11, 10.4, 10.6_
-- [ ] 6.2 module識別子・登録名・失敗原因を管理する
+- [x] 6.2 module識別子・登録名・失敗原因を管理する
   - 直近通常module、module識別子、登録名を別々に管理し、成功実体または原因付き利用不能状態を保持する。
   - 通常module/registerの失敗後は古い成功へ戻さず、未存在参照と既知失敗を区別する。不正commandで取得できない名前は推定しない。
   - 入力ごとのexternref番号・参照token・現在commandを管理し、否定moduleやactionで名前状態を更新しない。
@@ -316,3 +316,5 @@
 - 診断の段階表記は2種類ある。`CaseDiagnostic.Stage`はツールのsnake_case、`location.stage`と`unverified_ranges[].stage`はランタイムの列挙名をそのまま保存する。比較・表示で両者を混同しない。
 - 5.2: `CorpusVerifier.Verify`で`InputVerification.Document`がnullの入力は、実行せずcommand件数を未確定にする。module_typeがtextではないcommandは、`Modules`（照合済みbinary）か`ModuleIssues`のどちらかに必ず入る。`ModuleIssues`の異常は、そのcommandのrunner_errorとして1回だけ数える。`Issues`は入力単位のrunner_errorであり、manifestで変換に成功していない入力の状態も含む。
 - 5.4: `CorpusGenerator.Generate`は`GenerateResult`を返す。CLIは`SaveFailure is null`を`CompletionPolicy.Generate`の`saved`へ渡し、保存に失敗した場合は`SaveFailure`の保存先と理由を標準エラーへ出す。
+- 6.1: `ScriptReader`は種類・値型・lane型・module形式の名前と項目の過不足・重複だけを確認し、値の文字列（10進数・範囲・lane数・NaN patternの位置）は検査しない。ValueCodec/ValueMatcherは引数と期待値の両方の文字列を検査し、ScriptExecutorはinvokeの前に期待値を解析して、不正な期待値でactionの副作用を先に起こさない。
+- 6.2: `ScriptState`の名前は、成功実体か`UnavailableCause`付きの利用不能状態を指す`ScriptBinding`で保持する。未定義の名前はnullを返し、既知の失敗と区別する。blockedになったcommandは、その`CaseCause`を`Fail`へ渡して元の失敗を引き継ぐ。成功した登録を列挙するAPIはまだないため、10.1で`WasmImports`を再構成するときに追加する。spectestは`WasmHostModule.Name`（`spectest`）を登録名として`Register`する。

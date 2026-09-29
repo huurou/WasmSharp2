@@ -175,13 +175,7 @@ internal static class CorpusVerifier
                     .Select(x => x.Issue)
                     .OfType<CorpusDiagnostic>()
             );
-            return new(
-                input.Input,
-                null,
-                issues.ToImmutable(),
-                ImmutableDictionary<int, ImmutableArray<byte>>.Empty,
-                ImmutableDictionary<int, CorpusDiagnostic>.Empty
-            );
+            return new(input.Input, null, issues.ToImmutable(), [], []);
         }
 
         var jsonPath = GetScriptPath(input.Input.Path);
