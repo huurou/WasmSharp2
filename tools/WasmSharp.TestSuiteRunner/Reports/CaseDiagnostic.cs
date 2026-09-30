@@ -10,6 +10,11 @@ namespace WasmSharp.TestSuiteRunner.Reports;
 internal sealed record CaseDiagnostic(string Operation, string Message)
 {
     /// <summary>
+    /// 異常のある素材のpath。素材照合以外や取得できない場合はnull
+    /// </summary>
+    public string? Path { get; init; }
+
+    /// <summary>
     /// 失敗を観測した段階。公開処理の外で失敗した場合はnull
     /// </summary>
     public CaseStage? Stage { get; init; }

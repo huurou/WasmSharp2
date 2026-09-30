@@ -146,7 +146,7 @@
   - _Boundary: ValueMatcher_
   - _Requirements: 8.7, 8.8, 8.9, 14.8_
 
-- [ ] 8. 入力ごとの固定spectestを提供する
+- [x] 8. 入力ごとの固定spectestを提供する
   - 公開APIで固定型の7関数・4global・table・memoryを生成し、入力内では同じ実体、別入力では初期状態を提供する。
   - printは結果0個で復帰し、関数名・引数ビット・順序を現在commandへ記録する。callback例外は実体を記録して再throwする。
   - 共有状態・初期化・stdout非出力・固定limitsを検証し、要求に応じた環境変更や独自import型照合を行わない。
@@ -154,23 +154,23 @@
   - _Depends: 6.2, 7.2_
   - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5, 10.5_
 
-- [ ] 9. 段階別assertionと6分類を実装する
-- [ ] 9.1 公開段階と例外の観測から結果を分類する
+- [x] 9. 段階別assertionと6分類を実装する
+- [x] 9.1 公開段階と例外の観測から結果を分類する
   - setup/action/returnと否定assertionを分け、Decode・Validate・リンク不成立・Instantiate中trap・action trap・exhaustionの期待段階を照合する。
   - 観測事実を保持し、未実装、実装上限、捕捉可能OOM、API誤用、公開契約外例外を区別する。callback由来はWasm例外型でも先にrunner_errorとする。
   - 正しい/誤った段階、期待失敗の未発生、値不一致と異常分類をテストで確認できる。
   - _Boundary: AssertionJudge_
   - _Depends: 3.1, 6.1, 7.4, 8_
   - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 9.7, 9.9, 10.1, 10.2, 10.3, 10.5, 10.6_
-- [ ] 9.2 公式期待診断の前方一致を一律に要求する
+- [x] 9.2 公式期待診断の前方一致を一律に要求する
   - 全否定assertionで期待textと公開MessageのOrdinal前方一致を段階・型・Reason条件に追加する。
   - 加工・正規化・Reasonだけの代替・ケース別除外を行わず、期待/実際/例外型/段階/取得可能なReasonとLocationを残す。
   - 一致・不一致・後置の補助説明をテストで確認し、不一致を必ずfailedとして保存できる。
   - _Boundary: AssertionJudge_
   - _Requirements: 9.7, 9.8, 9.10, 9.11, 14.9_
 
-- [ ] 10. 公開APIによるスクリプト実行を統合する
-- [ ] 10.1 module・register・登録依存を順序どおり接続する
+- [x] 10. 公開APIによるスクリプト実行を統合する
+- [x] 10.1 module・register・登録依存を順序どおり接続する
   - Decode/Validateを先に行い、Instantiateする場合だけ同じbinaryから公開import情報を取得し、実際の既知失敗登録だけをblockedにする。
   - 未登録名はInstantiateへ渡す。import情報のUnsupportedFeature・ImplementationLimit・段階間不整合を診断付きで分類し、期待malformed/invalidの代用にしない。
   - export一覧と名前取得で同じ実体を登録し、Instantiateごとに成功登録から提供表を作り直す。全instanceでMaxCallDepth=1024を明示する。
@@ -178,7 +178,7 @@
   - _Boundary: ScriptExecutor, ScriptState, WasmInstance_
   - _Depends: 4, 5.2, 6.2, 8, 9.2_
   - _Requirements: 1.7, 5.2, 5.4, 5.6, 5.7, 6.1, 6.2, 6.3, 6.4, 6.6, 6.7, 6.8_
-- [ ] 10.2 actionとassertionを状態・値・診断の判定へ接続する
+- [x] 10.2 actionとassertionを状態・値・診断の判定へ接続する
   - invoke/getを公開APIで実行し、順序付き引数、現在global値、結果0/1/複数を既存の値処理と判定へ渡す。
   - 単独actionの型だけexpectedを追加assertionへ読み替えず、正常完了をpassedとする。失敗しても実行済み副作用を保持する。
   - textは実行用watを開かずout_of_scopeにし、素材の入力異常とは別に残す。独立した後続commandを継続する。
@@ -186,7 +186,7 @@
   - _Boundary: ScriptExecutor, ValueCodec, ValueMatcher, AssertionJudge_
   - _Depends: 7.4, 9.2, 10.1_
   - _Requirements: 4.6, 6.5, 8.1, 8.2, 8.6, 8.11, 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 9.8_
-- [ ] 10.3 全入力の実行と結果保存を統合する
+- [x] 10.3 全入力の実行と結果保存を統合する
   - 照合済みdocumentを使って全入力・全commandを順次処理し、入力開始時に状態とspectestを初期化する。元WAST/WABTを参照しない。
   - 入力異常と実command結果、種類未確定category、未処理・件数未確定を分けて集計し、素材と実行条件を含むRunReportを保存する。
   - 制御が戻る独立処理は続行し、検知できた中断は保存可能な部分をincompleteにする。プロセス隔離や強制タイムアウトは追加しない。
@@ -306,6 +306,8 @@
 
 ## Implementation Notes
 
+- 9: `AssertionJudge.Judge(command, observation)`は観測から`CaseResult`を作る。Executorは`CommandObservation.Values`へ`ValueCodec.Record`の全実値、`Mismatches`へ`ValueMatcher.Match`の結果を設定し、`Prints`とcallback例外の実体も渡す。判定側は公開APIや値比較を再実行せず、保存用のリストをコピーする。
+- 8: `SpectestFactory.Create(state)`で入力ごとに一度だけ提供元を生成する。`ScriptState.BeginCommand`はprintとcallback例外の記録を初期化するため、Executorは次のcommand開始前に`Prints`と`CallbackException`を観測へ取り込む。callback由来かどうかは例外実体の同一性で確認する。
 - 型は補助DTO・enumも含め1型1ファイルに置く（ユーザー指定。design.mdの従属型の同居より優先）。英字で始まるテストメソッド名は先頭を大文字にする。
 - `RunReport`の入力は`unprocessed`/`incomplete`/`processed`の3状態で、未処理commandは列挙済みの末尾に置く。`ReportStore.Validate`はこの前提で欠落・範囲外を判定する。保存する内容では`Completion.OutputComplete=true`とし、falseのままでは`OutputFailed`となる。
 - runでは、入力異常による件数未確定を1とし、中断や記録の欠落を2とする。baseline-saveでは両方を2とし、verifyでは読み取れた結果の不成立をすべて1とする。
@@ -317,6 +319,6 @@
 - 5.2: `CorpusVerifier.Verify`で`InputVerification.Document`がnullの入力は、実行せずcommand件数を未確定にする。module_typeがtextではないcommandは、`Modules`（照合済みbinary）か`ModuleIssues`のどちらかに必ず入る。`ModuleIssues`の異常は、そのcommandのrunner_errorとして1回だけ数える。`Issues`は入力単位のrunner_errorであり、manifestで変換に成功していない入力の状態も含む。
 - 5.4: `CorpusGenerator.Generate`は`GenerateResult`を返す。CLIは`SaveFailure is null`を`CompletionPolicy.Generate`の`saved`へ渡し、保存に失敗した場合は`SaveFailure`の保存先と理由を標準エラーへ出す。
 - 6.1: `ScriptReader`は種類・値型・lane型・module形式の名前と項目の過不足・重複だけを確認し、値の文字列（10進数・範囲・lane数・NaN patternの位置）は検査しない。ValueCodec/ValueMatcherは引数と期待値の両方の文字列を検査し、ScriptExecutorはinvokeの前に期待値を解析して、不正な期待値でactionの副作用を先に起こさない。
-- 6.2: `ScriptState`の名前は、成功実体か`UnavailableCause`付きの利用不能状態を指す`ScriptBinding`で保持する。未定義の名前はnullを返し、既知の失敗と区別する。blockedになったcommandは、その`CaseCause`を`Fail`へ渡して元の失敗を引き継ぐ。成功した登録を列挙するAPIはまだないため、10.1で`WasmImports`を再構成するときに追加する。spectestは`WasmHostModule.Name`（`spectest`）を登録名として`Register`する。
+- 6.2: `ScriptState`の名前は、成功実体か`UnavailableCause`付きの利用不能状態を指す`ScriptBinding`で保持する。未定義の名前はnullを返し、既知の失敗と区別する。blockedになったcommandは、その`CaseCause`を`Fail`へ渡して元の失敗を引き継ぐ。`CreateImports`は現在の成功登録から`WasmImports`を再構成する。spectestは`WasmHostModule.Name`（`spectest`）を登録名として`Register`する。
 - 7: `ValueCodec.CreateArguments`と`ValueMatcher.Parse`は、不正な値の文字列をJSON上の位置（`action.args[i].value[j]`、`expected[i].value[j]`）付きの`ScriptFormatException`で拒否する。ScriptExecutorはactionを実行する前に両方を呼び、この例外をrunner_errorとして記録する。
 - 7: `ValueMatcher.Match`は相違箇所だけを返し、空なら一致とする。個数が違えば`Count`だけ、型が違えば`Type`だけを返し、値を比較しない。実値は相違の種類に関係なく、`ValueCodec.Record`で全件記録する。

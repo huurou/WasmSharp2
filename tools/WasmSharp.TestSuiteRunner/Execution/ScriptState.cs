@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using WasmSharp.TestSuiteRunner.Reports;
 
 namespace WasmSharp.TestSuiteRunner.Execution;
@@ -27,6 +28,11 @@ internal sealed class ScriptState(string inputPath)
     );
 
     /// <summary>
+    /// 現在のcommandのprint呼出順の記録
+    /// </summary>
+    private readonly List<PrintRecord> prints_ = [];
+
+    /// <summary>
     /// ケース識別に使うtest/core基準の入力相対path
     /// </summary>
     internal string InputPath { get; } = inputPath;
@@ -42,7 +48,17 @@ internal sealed class ScriptState(string inputPath)
     internal CaseId? CurrentCommand { get; private set; }
 
     /// <summary>
-    /// 指定したcommandを処理中のcommandにする。
+    /// 現在のcommandのprint記録を取得し、次のcommand開始後も取得済みの並びを保持する
+    /// </summary>
+    internal ImmutableArray<PrintRecord> Prints => [.. prints_];
+
+    /// <summary>
+    /// 現在のcommandでspectestのcallbackが投げた例外実体で、失敗していなければnull
+    /// </summary>
+    internal Exception? CallbackException { get; set; }
+
+    /// <summary>
+    /// 指定したcommandを処理中のcommandにし、printとcallback失敗の記録を初期化する。
     /// </summary>
     /// <param name="commandIndex">入力内の0始まりcommand index</param>
     /// <returns>処理中のcommandのケース識別</returns>
@@ -50,7 +66,23 @@ internal sealed class ScriptState(string inputPath)
     {
         var id = new CaseId(InputPath, commandIndex);
         CurrentCommand = id;
+        prints_.Clear();
+        CallbackException = null;
         return id;
+    }
+
+    /// <summary>
+    /// 現在のcommandへprintの1回の呼出しを追加する。
+    /// </summary>
+    /// <param name="print">関数名と引数の型・ビット列の記録</param>
+    /// <exception cref="InvalidOperationException">まだcommandを開始していない場合</exception>
+    internal void RecordPrint(PrintRecord print)
+    {
+        if (CurrentCommand is null)
+        {
+            throw new InvalidOperationException("printの記録には処理中のcommandが必要です。");
+        }
+        prints_.Add(print);
     }
 
     /// <summary>
@@ -71,6 +103,22 @@ internal sealed class ScriptState(string inputPath)
     internal ScriptBinding<WasmHostModule>? GetRegistration(string name)
     {
         return registrations_.GetValueOrDefault(name);
+    }
+
+    /// <summary>
+    /// 現在の成功登録から提供表を作り直す。再登録前のexportや失敗した提供元は含めない。
+    /// </summary>
+    internal WasmImports CreateImports()
+    {
+        var imports = new WasmImports();
+        foreach (var registration in registrations_.Values)
+        {
+            if (registration.Value is { } host)
+            {
+                imports.Add(host);
+            }
+        }
+        return imports;
     }
 
     /// <summary>
