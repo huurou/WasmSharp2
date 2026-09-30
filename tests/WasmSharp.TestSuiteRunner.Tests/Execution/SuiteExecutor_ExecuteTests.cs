@@ -213,7 +213,7 @@ public class SuiteExecutor_ExecuteTests
         var report = SuiteExecutor.Execute(
             Complete(fixture.Manifest),
             fixture.ManifestPath,
-            cancellation.Token
+            cancellationToken: cancellation.Token
         );
 
         // Assert

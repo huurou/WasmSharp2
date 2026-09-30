@@ -93,7 +93,7 @@ public class SuiteExecutor_ExecuteAndSaveTests
             SuiteExecutor_ExecuteTests.Complete(fixture.Manifest),
             fixture.ManifestPath,
             output,
-            cancellation.Token
+            cancellationToken: cancellation.Token
         );
 
         // Assert

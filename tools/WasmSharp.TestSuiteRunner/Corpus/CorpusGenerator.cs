@@ -45,8 +45,12 @@ internal static class CorpusGenerator
     /// 生成前提が成立しない場合は変換を開始せず、全入力を未処理として保存する。
     /// </remarks>
     /// <param name="request">CLIで解決済みの配置を持つ要求</param>
+    /// <param name="progress">入力ごとの変換・記録後に相対pathを通知する処理 最終照合で成功を確定する前に通知する</param>
     /// <returns>全対象入力の状態を保持するmanifestと保存結果 保存失敗時は出力未完了のmanifestと失敗理由</returns>
-    internal static GenerateResult Generate(GenerateRequest request)
+    internal static GenerateResult Generate(
+        GenerateRequest request,
+        Action<string>? progress = null
+    )
     {
         var manifestPath = Path.Combine(request.OutputRoot, MANIFEST_FILE_NAME);
         var preconditions = CheckPreconditions(request);
@@ -75,6 +79,7 @@ internal static class CorpusGenerator
                 Convert(request, manifest.Inputs[index]),
                 seen
             );
+            progress?.Invoke(manifest.Inputs[index].Input.Path);
         }
 
         // 後続の入力による上書きや素材領域の余剰も検出するよう、全入力の変換後にまとめて照合する。

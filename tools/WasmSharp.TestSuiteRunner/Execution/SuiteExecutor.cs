@@ -14,6 +14,7 @@ internal static class SuiteExecutor
     /// </summary>
     /// <param name="manifest">全対象入力と変換済み素材の記録</param>
     /// <param name="manifestPath">相対配置の基準となるmanifestのpath</param>
+    /// <param name="progress">入力の処理後に相対pathを通知する処理 中断した入力も通知する</param>
     /// <param name="cancellationToken">command間で通知を確認する中断要求 実行中のWasmを強制停止しない</param>
     /// <returns>素材・実行条件と入力別の結果を持つ記録 中断時も確定済みの結果を残し、出力完了はfalse</returns>
     /// <exception cref="ArgumentException">manifestPathを絶対pathに変換できない場合</exception>
@@ -21,6 +22,7 @@ internal static class SuiteExecutor
     internal static RunReport Execute(
         CorpusManifest manifest,
         string manifestPath,
+        Action<string>? progress = null,
         CancellationToken cancellationToken = default
     )
     {
@@ -68,6 +70,7 @@ internal static class SuiteExecutor
                         Status = InputRunStatus.Processed,
                         Issues = [new("verify", "manifestに対象入力の記録がありません。", path)],
                     };
+                    progress?.Invoke(path);
                     continue;
                 }
                 input = input with
@@ -78,6 +81,7 @@ internal static class SuiteExecutor
                 state.Register(SpectestFactory.Create(state));
                 var (result, interruption) = ExecuteInput(input, state, cancellationToken);
                 report.Inputs[i] = result;
+                progress?.Invoke(path);
                 if (interruption is not null)
                 {
                     report.Diagnostics.Add(interruption);
@@ -107,6 +111,7 @@ internal static class SuiteExecutor
     /// <param name="manifest">全対象入力と素材の記録</param>
     /// <param name="manifestPath">素材の相対配置の基準</param>
     /// <param name="outputPath">既存ファイルを上書きしない詳細結果の保存先</param>
+    /// <param name="progress">入力の処理後に相対pathを通知する処理</param>
     /// <param name="cancellationToken">command間で確認する中断要求</param>
     /// <returns>実行記録と保存先の絶対path 保存に成功した場合だけ出力完了をtrueにし、保存失敗はSaveFailureに保持する</returns>
     /// <exception cref="ArgumentException">manifestPathまたはoutputPathを絶対pathに変換できない場合</exception>
@@ -115,11 +120,12 @@ internal static class SuiteExecutor
         CorpusManifest manifest,
         string manifestPath,
         string outputPath,
+        Action<string>? progress = null,
         CancellationToken cancellationToken = default
     )
     {
         var absoluteOutput = Path.GetFullPath(outputPath);
-        var report = Execute(manifest, manifestPath, cancellationToken);
+        var report = Execute(manifest, manifestPath, progress, cancellationToken);
         var stored = report with { Completion = report.Completion with { OutputComplete = true } };
         try
         {

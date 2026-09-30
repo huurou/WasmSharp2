@@ -218,8 +218,8 @@
   - _Boundary: BaselineComparer_
   - _Requirements: 1.5, 12.3, 12.6, 12.7, 12.8, 12.9, 12.10, 13.4, 14.6, 14.9_
 
-- [ ] 12. 個別CLIコマンドと入出力保護を統合する
-- [ ] 12.1 6操作の引数とprofileを接続する
+- [x] 12. 個別CLIコマンドと入出力保護を統合する
+- [x] 12.1 6操作の引数とprofileを接続する
   - generate/run/baseline-save/compare-conversion/compare-run/verifyを個別に解析し、未知・重複・不足引数とhelpを扱う。
   - pathは起動時の作業ディレクトリで絶対化し、製品は埋込みprofileだけを使う。generate/run/verifyでは固定全入力との一致を要求する。
   - 各操作を対応する処理へ接続し、一括工程、再生成/再実行の暗黙呼出し、選択実行や合格条件緩和を導入しない。
@@ -227,14 +227,14 @@
   - _Boundary: RunnerCli, Core2Profile, CorpusGenerator, SuiteExecutor, BaselineStore, BaselineComparer_
   - _Depends: 5.4, 10.3, 11.1, 11.3_
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 2.5, 14.7_
-- [ ] 12.2 出力先保護と操作別終了値を接続する
+- [x] 12.2 出力先保護と操作別終了値を接続する
   - 生成先は未作成/空の専用領域に限り、固定ソース配下/祖先を拒否する。入力自身への出力やbaseline-save以外の既存出力も拒否する。
   - 相対出力が変換器の作業位置へずれないこと、別の入力に使っていないbaselineも保護されることを実ファイルで確認する。
   - 全コマンドの0/1/2、保存競合、未完了・診断不一致・回帰・明示baseline置換を統合テストで確認できる。
   - _Boundary: RunnerCli, ReportStore, CompletionPolicy_
   - _Depends: 3.3, 3.4, 12.1_
   - _Requirements: 2.7, 10.7, 12.1, 12.3, 13.1, 13.2, 13.3, 13.4, 13.5, 13.6, 13.7, 14.9_
-- [ ] 12.3 進捗・集計と最終判定理由を表示する
+- [x] 12.3 進捗・集計と最終判定理由を表示する
   - 入力単位の進捗、対象/処理済み/未処理/未確定、category別6分類、種類未確定command、入力異常、保存先を日本語で表示する。
   - 操作/保存失敗はstderr、spectest printは詳細JSONに分け、verifyは単一結果の判定と残る理由だけを表示する。
   - 表示とJSONの件数・終了理由が一致し、初回と後続の個別操作をhelpと操作例で再現できる。
