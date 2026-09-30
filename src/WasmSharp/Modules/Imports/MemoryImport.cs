@@ -16,5 +16,6 @@ internal sealed record MemoryImport(
     long ByteOffset
 ) : ModuleImport(ModuleName, Name, ByteOffset)
 {
+    /// <inheritdoc />
     internal override WasmExternalKind Kind => WasmExternalKind.Memory;
 }

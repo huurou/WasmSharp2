@@ -1,7 +1,7 @@
 namespace WasmSharp.TestSuiteRunner.Reports;
 
 /// <summary>
-/// 操作の終了状態。値はプロセスの終了値と一致する
+/// 操作の終了状態 値はプロセスの終了値と一致する
 /// </summary>
 internal enum CompletionStatus
 {

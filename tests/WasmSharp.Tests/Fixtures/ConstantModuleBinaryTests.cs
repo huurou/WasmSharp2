@@ -137,7 +137,7 @@ internal class ConstantModuleBinary_CreateTests
         // Assert
         using (Assert.Multiple())
         {
-            // exportのpayload長137、名前長128、関数添字u32最大値。
+            // exportのpayload長137、名前長128、関数添字u32最大値
             await Assert
                 .That(actual[19..25])
                 .IsEquivalentTo([
@@ -171,7 +171,7 @@ internal class ConstantModuleBinary_CreateTests
         var invalidInstruction = ConstantModuleBinary.Create(0x7F, [0xFF, 0x0B]);
 
         // Act
-        invalidLength[29] = 0x07; // code sectionの実際のpayload長は6。
+        invalidLength[29] = 0x07; // code sectionの実際のpayload長は6
         invalidIndex[18] = 0x01; // 型は1個なので型添字1は存在しない。
 
         // Assert

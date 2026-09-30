@@ -24,14 +24,14 @@ public sealed class WasmTable
     public uint Count => (uint)elements_.Length;
 
     /// <summary>
-    /// 宣言された最大要素数。指定がなければnull
+    /// 宣言された最大要素数 指定がなければnull
     /// </summary>
     public uint? MaximumElements { get; }
 
     /// <summary>
     /// limitsに従って型別nullで初期化されたtableを生成する
     /// </summary>
-    /// <param name="elementType">要素の参照型。FuncRefまたはExternRef</param>
+    /// <param name="elementType">要素の参照型 FuncRefまたはExternRef</param>
     /// <param name="limits">初期要素数と任意の最大要素数</param>
     /// <exception cref="ArgumentNullException">limitsがnullの場合</exception>
     /// <exception cref="ArgumentOutOfRangeException">elementTypeが参照型ではない場合</exception>
@@ -79,7 +79,7 @@ public sealed class WasmTable
     /// 指定位置の参照を取得する
     /// </summary>
     /// <param name="index">0からCount未満の要素位置</param>
-    /// <returns>要素型と参照先の同一性を保持した現在値。型別のnullを含む</returns>
+    /// <returns>要素型と参照先の同一性を保持した現在値 型別のnullを含む</returns>
     /// <exception cref="ArgumentOutOfRangeException">indexが現在のtableの範囲外の場合</exception>
     public WasmValue Get(uint index)
     {
@@ -92,8 +92,8 @@ public sealed class WasmTable
     /// </summary>
     /// <param name="index">0からCount未満の要素位置</param>
     /// <param name="value">要素型が一致するnullまたは非null参照</param>
-    /// <exception cref="ArgumentOutOfRangeException">indexが範囲外の場合。要素は変更しない</exception>
-    /// <exception cref="ArgumentException">valueの型が要素型と一致しない場合。要素は変更しない</exception>
+    /// <exception cref="ArgumentOutOfRangeException">indexが範囲外の場合 要素は変更しない</exception>
+    /// <exception cref="ArgumentException">valueの型が要素型と一致しない場合 要素は変更しない</exception>
     public void Set(uint index, WasmValue value)
     {
         ValidateIndex(index);
@@ -108,12 +108,12 @@ public sealed class WasmTable
     /// <summary>
     /// 既存要素を保持して増大し、追加要素を指定参照で初期化する
     /// </summary>
-    /// <param name="delta">追加する要素数。0の場合も初期値の型を検査する</param>
+    /// <param name="delta">追加する要素数 0の場合も初期値の型を検査する</param>
     /// <param name="initialValue">追加要素へ設定する、要素型が一致するnullまたは非null参照</param>
     /// <param name="previousCount">成功・失敗にかかわらず、増大前の要素数</param>
-    /// <returns>増大に成功した場合はtrue。宣言された最大値または保持上限を超える場合は、要素数と内容を変更せずfalse</returns>
-    /// <exception cref="ArgumentException">initialValueの型が要素型と一致しない場合。要素数と内容は変更しない</exception>
-    /// <exception cref="OutOfMemoryException">追加領域を割り当てられない場合。要素数と内容は変更しない</exception>
+    /// <returns>増大に成功した場合はtrue 宣言された最大値または保持上限を超える場合は、要素数と内容を変更せずfalse</returns>
+    /// <exception cref="ArgumentException">initialValueの型が要素型と一致しない場合 要素数と内容は変更しない</exception>
+    /// <exception cref="OutOfMemoryException">追加領域を割り当てられない場合 要素数と内容は変更しない</exception>
     public bool TryGrow(uint delta, WasmValue initialValue, out uint previousCount)
     {
         previousCount = Count;

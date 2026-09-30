@@ -18,8 +18,8 @@ internal static class ExecutionBoundary
     /// 終了時は成功・失敗にかかわらず呼び出し前の実行状態へ戻すが、リソースの変更は取り消さない。
     /// ホスト処理が投げた例外は変換せず、そのまま伝播する
     /// </remarks>
-    /// <exception cref="WasmTrapException">startの実行結果がtrapの場合。処理段階はInstantiate</exception>
-    /// <exception cref="WasmExhaustionException">startの実行結果が資源枯渇の場合。処理段階はInstantiate</exception>
+    /// <exception cref="WasmTrapException">startの実行結果がtrapの場合 処理段階はInstantiate</exception>
+    /// <exception cref="WasmExhaustionException">startの実行結果が資源枯渇の場合 処理段階はInstantiate</exception>
     /// <exception cref="WasmImplementationLimitException">実行に必要なフレーム数または値の数が保持上限を超える場合</exception>
     /// <exception cref="InvalidOperationException">ホスト関数の結果がnull、または宣言型と個数・型が異なる場合</exception>
     internal static void RunStart(WasmInstance startInstance, WasmFunction function)
@@ -46,7 +46,7 @@ internal static class ExecutionBoundary
     /// 公開APIから関数を実行し、実行失敗を呼び出し時の例外へ変換する
     /// </summary>
     /// <param name="function">呼び出す関数</param>
-    /// <param name="explicitInstance">ホスト関数へ明示的に渡すinstance。instance必須のホスト関数以外では未使用</param>
+    /// <param name="explicitInstance">ホスト関数へ明示的に渡すinstance instance必須のホスト関数以外では未使用</param>
     /// <param name="arguments">呼び出し元で個数と型の照合を済ませた引数</param>
     /// <returns>実行スタックから独立して保持できる結果</returns>
     /// <remarks>
@@ -54,8 +54,8 @@ internal static class ExecutionBoundary
     /// 既存のコンテキストがあれば上限を共有する。ホスト関数だけの呼び出しでは新しいコンテキストを作らない。
     /// 終了時は呼び出し前の実行状態へ戻す。ホスト処理が投げた例外は変換せず、そのまま伝播する
     /// </remarks>
-    /// <exception cref="WasmTrapException">実行結果がtrapの場合。処理段階はInvoke</exception>
-    /// <exception cref="WasmExhaustionException">実行結果が資源枯渇の場合。処理段階はInvoke</exception>
+    /// <exception cref="WasmTrapException">実行結果がtrapの場合 処理段階はInvoke</exception>
+    /// <exception cref="WasmExhaustionException">実行結果が資源枯渇の場合 処理段階はInvoke</exception>
     /// <exception cref="WasmImplementationLimitException">実行に必要なフレーム数または値の数が保持上限を超える場合</exception>
     /// <exception cref="InvalidOperationException">ホスト関数の結果がnull、または宣言型と個数・型が異なる場合</exception>
     internal static WasmResults Invoke(

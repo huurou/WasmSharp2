@@ -174,7 +174,7 @@ internal partial class WasmModule_DecodeTests
         var constant = ConstantModuleBinary.Create(0x7F, 0x41, 0x2A, 0x0B);
         var data = new byte[20_000];
         Array.Fill(data, (byte)0xFF);
-        // payload長20001はA1 9C 01。名前は空、その後に任意バイトを置く。
+        // payload長20001はA1 9C 01 名前は空、その後に任意バイトを置く。
         byte[] bytes = [.. constant[..8], 0, 0xA1, 0x9C, 0x01, 0, .. data, .. constant[8..]];
         using var input = new ChunkedReadStream(new MemoryStream(bytes), 3000);
 

@@ -14,6 +14,7 @@ internal sealed record UnavailableCause(CaseId Command, ImmutableArray<CaseId> O
     /// 実行に必要だった利用不能状態から、blockedの直接原因と元の失敗を重複なくindex順に並べる。
     /// </summary>
     /// <param name="causes">依存した名前の利用不能の原因</param>
+    /// <returns>直接原因と元の失敗を別々に重複排除し、command index順にコピーした原因記録</returns>
     internal static CaseCause CreateCaseCause(IEnumerable<UnavailableCause> causes)
     {
         var values = causes.ToArray();

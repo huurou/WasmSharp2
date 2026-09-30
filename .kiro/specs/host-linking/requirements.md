@@ -8,15 +8,15 @@ WasmSharp2の埋め込み利用者が、引数と結果を持つ関数を呼び�
 
 | 区分 | 範囲 |
 | --- | --- |
-| 関数実行 | Core 2.0の関数型、引数、結果0個・1個・複数、locals、local.get/set/tee、直接call、return、drop、unreachable。既存のスカラー定数とendを組み合わせる。unreachableはInvokeとstartで実際のWasm trapを確認するため本仕様に含める。 |
+| 関数実行 | Core 2.0の関数型、引数、結果0個・1個・複数、locals、local.get/set/tee、直接call、return、drop、unreachable 既存のスカラー定数とendを組み合わせる。unreachableはInvokeとstartで実際のWasm trapを確認するため本仕様に含める。 |
 | 値の受渡し | i32・i64・f32・f64・v128・funcref・externrefを引数、locals、結果、ホストとの受渡しに使う。値を運べることと、参照命令・SIMD命令の実行対応を区別する。 |
-| global | 型・可変性・実体、ホストでの生成と取得・更新、スカラー定数とimported immutable global.getによる定義globalの初期化、global.get/set、共有。参照・v128固有の初期化命令は後続仕様で扱う。 |
-| memory/table | 型・limits、生成・割当・公開取得・ホストからの内容アクセスと増大、import/exportによる同一実体の共有。guest命令やsegment初期化は含めない。 |
-| 接続と初期化 | 4種の外部要素のimport/exportと再export、import情報の取得、instanceを受け取る形式と受け取らない形式のホストcallback、呼び出し時のinstance指定と同期再入、startの型検証・実行。 |
+| global | 型・可変性・実体、ホストでの生成と取得・更新、スカラー定数とimported immutable global.getによる定義globalの初期化、global.get/set、共有 参照・v128固有の初期化命令は後続仕様で扱う。 |
+| memory/table | 型・limits、生成・割当・公開取得・ホストからの内容アクセスと増大、import/exportによる同一実体の共有 guest命令やsegment初期化は含めない。 |
+| 接続と初期化 | 4種の外部要素のimport/exportと再export、import情報の取得、instanceを受け取る形式と受け取らない形式のホストcallback、呼び出し時のinstance指定と同期再入、startの型検証・実行 |
 | 隣接仕様 | numeric-controlは数値演算・構造化制御と先行命令の組合せ、linear-memoryとtables-referencesはguest命令・data/element初期化、simdはSIMD命令を追加する。call_indirect・ref.*命令・宣言済み関数参照の検証はtables-referencesで扱う。 |
 | 公式適合検証 | 本仕様は公開APIの直接テストで受け入れる。WAST/JSONの解釈、spectestの具体値、registerコマンド、baselineはtest-suite-runnerが扱い、その初回受入で本仕様の公式統合確認を行う。完成済みランナーを本仕様の完了前提にしない。 |
-| 保証範囲 | 単一スレッドでの同期実行。検証済みmoduleの共有や独立instanceの利用を含む並行利用、別スレッド・非同期フローへの実行コンテキストの伝播は保証しない。 |
-| 全体の対象外 | WAT/WASTの自作解析、WASI、Component Model、JavaScript/Web API、JIT/AOT、既存エンジンへの実行委譲、Core 2.0外の機能。性能数値目標や配布形態は追加しない。 |
+| 保証範囲 | 単一スレッドでの同期実行 検証済みmoduleの共有や独立instanceの利用を含む並行利用、別スレッド・非同期フローへの実行コンテキストの伝播は保証しない。 |
+| 全体の対象外 | WAT/WASTの自作解析、WASI、Component Model、JavaScript/Web API、JIT/AOT、既存エンジンへの実行委譲、Core 2.0外の機能 性能数値目標や配布形態は追加しない。 |
 
 完成済みruntime-foundationの受入範囲と承認状態を維持する。今回扱う機能と後続機能の分担は[ブリーフ](brief.md)と[ロードマップ](../../steering/roadmap.md)に従う。新しい公開操作のシグネチャ、型の構成、内部の実行方式、例外のreasonや診断情報の具体形式は設計で定める。
 
@@ -159,7 +159,7 @@ instanceを受け取る形式には対象のWasmInstance自体を渡す。この
 | B → Aで定義したWasm関数F → H | A |
 | BのWasmコード → Aから再exportされたH | B |
 | AのstartとしてHを実行 | A |
-| C#からHをInvoke | C#側が呼び出し時に明示したinstance。省略・nullは要件8.10に従って拒否 |
+| C#からHをInvoke | C#側が呼び出し時に明示したinstance 省略・nullは要件8.10に従って拒否 |
 
 Instance引数は対象instanceへのアクセス情報であり、Instantiateの成功を証明せず、実行ポリシーの選択にも使わない。callbackの形式と呼び出し深さの管理は要件10に従って分離する。判断の根拠は[ADR 0010](../../../docs/adr/0010-host-function-instance-context.md)に従う。
 
@@ -245,6 +245,6 @@ data/element初期化そのものと、それらを含むstart失敗時の複合
 
 ## 仕様上の根拠
 
-- [WebAssembly Core 2.0保存版](https://webassembly.github.io/spec/versions/core/WebAssembly-2.0.pdf): 関数と変数命令、unreachable、型とlimitsの検証、外部型の照合、インスタンス化、ホスト関数、リソースの生成・増大。
+- [WebAssembly Core 2.0保存版](https://webassembly.github.io/spec/versions/core/WebAssembly-2.0.pdf): 関数と変数命令、unreachable、型とlimitsの検証、外部型の照合、インスタンス化、ホスト関数、リソースの生成・増大
 - [固定した公式仕様の取得元と版](../../../thirdParties/README.md): 本仕様の規則はCore 2.0を基準とし、後の仕様版のGC・型付き参照・memory64等を混在させない。
 - [用語集](../../../CONTEXT.md)、[明示的な4段階API](../../../docs/adr/0001-explicit-staged-runtime-api.md)、[ホスト例外の伝播](../../../docs/adr/0007-propagate-host-exceptions.md)、[実行ポリシーとコンテキスト](../../../docs/adr/0008-instance-options-and-execution-context.md): 既存の公開契約を引き継ぐ。

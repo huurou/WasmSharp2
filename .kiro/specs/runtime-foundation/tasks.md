@@ -310,9 +310,9 @@
 
 - 8.1〜8.3: 全体の添字・ordinalのexport名検証を先行し、命令表の検証規則・スタック効果を使った同一パスの型検査と線形化を公開Validateへ接続した。全成功時だけ実行コードと`FunctionExportIndices`を反映し、再Validateは同じモジュールを返す。未検証・後半失敗・再試行後のInstantiate拒否を公開操作で確認した。Releaseビルドは警告・エラー0、ランタイム360件・生成器27件が成功し、各小タスクの独立レビューとCSharpier検査も通過した。Instantiateの成功経路と名前辞書による関数取得は9.1、公開Invokeは9.3で接続する。
 
-- 7.1〜7.5: バイト列・Streamの公開Decodeを接続し、Releaseビルドの警告・エラー0、ランタイム328件・生成器27件の成功と各小タスクの独立レビューを確認した。data section到達時はcodeを後置できないため、未対応内容より先にfunction/codeの件数不一致を通知する。入力保持上限は書き込み前の比較をレビューし、約2GBの実入力は未検証。4段階を通した入力変更からの独立・両入力の内容一致は10.1で確認する。
+- 7.1〜7.5: バイト列・Streamの公開Decodeを接続し、Releaseビルドの警告・エラー0、ランタイム328件・生成器27件の成功と各小タスクの独立レビューを確認した。data section到達時はcodeを後置できないため、未対応内容より先にfunction/codeの件数不一致を通知する。入力保持上限は書き込み前の比較をレビューし、約2GBの実入力は未検証 4段階を通した入力変更からの独立・両入力の内容一致は10.1で確認する。
 
 - 4.2: 生成する`Interpreter.RunLoop(WasmExecutionContext context, int entryFrameCount)`は`FrameCount`と、pcを進めて`Instruction`を値で返す`ReadNextInstruction()`を使用する。handlerは`static ExecutionResult Handler(WasmExecutionContext context, in Instruction instruction)`で、非Successをそのまま返す。6.1では`GeneratorTestSource.EXECUTION_CONTRACTS`と実型を照合し、入口の準備・正常結果の取り出し・finallyでの復元は6.2の`Run`で接続する。
 - 5.4: `EnsureCapacity(operandBase, maxOperandStack, location)`で関数入口の領域を確保してから`PushFrame`・`PushValue`を使う。`GetFrame`は値を返し、`Restore(frameCount, valueCount, callDepth)`は除いた参照を解除して入場前の使用数・深さへ戻す。生成命令を読む`ReadNextInstruction()`と関数終了処理は6.1で接続する。
-- 6.1〜6.2: 生成器テストと実型のhandler・命令取得契約を照合済み。`Interpreter.Run`は検証済みの引数・localsが0の経路を実行し、結果をコピーしてからfinallyで復元する。生成ループのtrap/exhaustion伝達は生成器テスト、入口exhaustion・保持上限・途中例外の復元は内部Runで確認した。実trap命令・実ホストcallbackの例外同一性は後続仕様の検証範囲。
-- 6.3〜6.5: 割当照合は固定した公式付録`index-instructions.py`と`macros.def`をテストへ埋め込み、`Core2InstructionFixture`で番号・名前を抽出する。通常183件・FC18件・FD236件と欠番を照合し、分類用の第二の手管理一覧は持たない。拡張opcodeの付録表記はLEBバイト列で、通常の0x1Bと0x1Cはどちらも`select`。
+- 6.1〜6.2: 生成器テストと実型のhandler・命令取得契約を照合済み `Interpreter.Run`は検証済みの引数・localsが0の経路を実行し、結果をコピーしてからfinallyで復元する。生成ループのtrap/exhaustion伝達は生成器テスト、入口exhaustion・保持上限・途中例外の復元は内部Runで確認した。実trap命令・実ホストcallbackの例外同一性は後続仕様の検証範囲
+- 6.3〜6.5: 割当照合は固定した公式付録`index-instructions.py`と`macros.def`をテストへ埋め込み、`Core2InstructionFixture`で番号・名前を抽出する。通常183件・FC18件・FD236件と欠番を照合し、分類用の第二の手管理一覧は持たない。拡張opcodeの付録表記はLEBバイト列で、通常の0x1Bと0x1Cはどちらも`select`

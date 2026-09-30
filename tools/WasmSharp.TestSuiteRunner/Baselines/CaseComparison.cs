@@ -11,12 +11,12 @@ namespace WasmSharp.TestSuiteRunner.Baselines;
 internal sealed record CaseComparison(CaseId Id, CaseChange Change, bool Regression)
 {
     /// <summary>
-    /// 比較元の結果。追加されたケースではnull
+    /// 比較元の結果 追加されたケースではnull
     /// </summary>
     public CaseResult? Baseline { get; init; }
 
     /// <summary>
-    /// 現結果。欠落したケースではnull
+    /// 現結果 欠落したケースではnull
     /// </summary>
     public CaseResult? Current { get; init; }
 }

@@ -15,6 +15,10 @@ internal static class CompletionPolicy
     /// <summary>
     /// 全対象の変換・照合・記録・保存が完了し、runner_errorと未処理がない場合だけ成功とする。
     /// </summary>
+    /// <param name="manifest">判定する変換結果</param>
+    /// <param name="issues">変換結果の記録内容に対する完全性検証の問題一覧</param>
+    /// <param name="saved">結果の保存を完了できたかどうか</param>
+    /// <returns>終了状態と、成功しない場合の理由</returns>
     internal static CompletionDecision Generate(
         CorpusManifest manifest,
         ImmutableArray<RecordIssue> issues,
@@ -37,6 +41,10 @@ internal static class CompletionPolicy
     /// 全対象の記録・保存が完了し、failedと入力単位・command単位のrunner_errorがない場合だけ成功とする。
     /// runtime_unsupported、out_of_scope、runtime_unsupportedだけを原因とするblockedは許容する。
     /// </summary>
+    /// <param name="report">判定する実行結果</param>
+    /// <param name="issues">実行結果の記録内容に対する完全性検証の問題一覧</param>
+    /// <param name="saved">結果の保存を完了できたかどうか</param>
+    /// <returns>終了状態と理由 command件数未確定は不合格、それ以外の記録不備は未完了とする</returns>
     internal static CompletionDecision Run(
         RunReport report,
         ImmutableArray<RecordIssue> issues,
@@ -77,6 +85,9 @@ internal static class CompletionPolicy
     /// <summary>
     /// 記録を完了した結果だけの保存を成功とする。failedやrunner_errorの有無は問わない。
     /// </summary>
+    /// <param name="issues">保存元の記録内容に対する完全性検証の問題一覧</param>
+    /// <param name="saved">baselineの保存を完了できたかどうか</param>
+    /// <returns>記録と保存の完了状態、および完了できなかった理由</returns>
     internal static CompletionDecision BaselineSave(ImmutableArray<RecordIssue> issues, bool saved)
     {
         List<DecisionReason> reasons = [];
@@ -89,6 +100,9 @@ internal static class CompletionPolicy
     /// 全比較・記録・保存が完了し、比較対象が一致し、現結果のrunner_errorがない場合だけ成功とする。
     /// 変換器実行ファイルのhashなどの出典差異は許容する。
     /// </summary>
+    /// <param name="report">変換manifestの比較結果</param>
+    /// <param name="saved">比較結果の保存を完了できたかどうか</param>
+    /// <returns>終了状態と、条件差・素材差・runner_errorまたは未完了の理由</returns>
     internal static CompletionDecision CompareConversion(ComparisonReport report, bool saved)
     {
         List<DecisionReason> reasons = [];
@@ -104,6 +118,9 @@ internal static class CompletionPolicy
     /// 比較が成立して全比較・記録・保存が完了し、回帰と現結果のfailed・runner_errorがない場合だけ成功とする。
     /// 回帰がなくても既知のfailedが残る場合は成功としない。
     /// </summary>
+    /// <param name="report">実行結果の比較結果</param>
+    /// <param name="saved">比較結果の保存を完了できたかどうか</param>
+    /// <returns>終了状態と、回帰・failed・runner_errorまたは未完了の理由</returns>
     internal static CompletionDecision CompareRun(ComparisonReport report, bool saved)
     {
         List<DecisionReason> reasons = [];
@@ -123,6 +140,10 @@ internal static class CompletionPolicy
     /// 単一の実行結果が固定profileの全入力・全commandを記録し、out_of_scope以外が全てpassedの場合だけ成功とする。
     /// 読み取れた結果の不成立は、未完了の記録も含めて用途の不合格として理由を返す。
     /// </summary>
+    /// <param name="report">公式ケースの受入判定に使用する実行結果</param>
+    /// <param name="issues">実行結果の記録内容に対する完全性検証の問題一覧</param>
+    /// <param name="profile">受入対象となる固定Core2.0の条件と入力集合</param>
+    /// <returns>合格または不合格の終了状態と、条件不一致・記録不備・不合格ケースの理由</returns>
     internal static CompletionDecision Verify(
         RunReport report,
         ImmutableArray<RecordIssue> issues,
@@ -160,6 +181,12 @@ internal static class CompletionPolicy
         return Decide(reasons);
     }
 
+    /// <summary>
+    /// blockedの起点がすべて記録済みのruntime_unsupportedであるかを判定する。
+    /// </summary>
+    /// <param name="item">依存原因を調べるケース結果</param>
+    /// <param name="casesById">起点の識別から結果を参照する全ケースの対応表</param>
+    /// <returns>起点が1件以上あり、全起点の全記録がruntime_unsupportedの場合はtrue</returns>
     private static bool IsBlockedByUnsupported(
         CaseResult item,
         ILookup<CaseId, CaseResult> casesById
@@ -172,6 +199,11 @@ internal static class CompletionPolicy
             );
     }
 
+    /// <summary>
+    /// 保存に失敗した場合に、操作未完了の理由を追加する。
+    /// </summary>
+    /// <param name="reasons">判定理由の追加先</param>
+    /// <param name="saved">保存を完了できたかどうか</param>
     private static void AddSaveFailure(List<DecisionReason> reasons, bool saved)
     {
         if (!saved)
@@ -180,6 +212,12 @@ internal static class CompletionPolicy
         }
     }
 
+    /// <summary>
+    /// 記録の問題を種類ごとの代表例と件数にまとめ、用途に応じた終了状態の理由を追加する。
+    /// </summary>
+    /// <param name="reasons">判定理由の追加先</param>
+    /// <param name="issues">記録内容の問題一覧</param>
+    /// <param name="getStatus">問題の種類から、この用途での終了状態を決める処理</param>
     private static void AddIssues(
         List<DecisionReason> reasons,
         ImmutableArray<RecordIssue> issues,
@@ -197,6 +235,11 @@ internal static class CompletionPolicy
         }
     }
 
+    /// <summary>
+    /// 比較条件の不成立、比較の未完了、未比較対象を操作未完了の理由として追加する。
+    /// </summary>
+    /// <param name="reasons">判定理由の追加先</param>
+    /// <param name="report">完了状態を調べる比較結果</param>
     private static void AddComparisonCompletion(
         List<DecisionReason> reasons,
         ComparisonReport report
@@ -223,6 +266,12 @@ internal static class CompletionPolicy
         }
     }
 
+    /// <summary>
+    /// 不合格の対象が1件以上ある場合に、件数を伴う理由を追加する。
+    /// </summary>
+    /// <param name="reasons">判定理由の追加先</param>
+    /// <param name="count">不合格の対象件数</param>
+    /// <param name="name">対象の種類を表す表示名</param>
     private static void AddCount(List<DecisionReason> reasons, int count, string name)
     {
         if (count > 0)
@@ -231,6 +280,11 @@ internal static class CompletionPolicy
         }
     }
 
+    /// <summary>
+    /// 理由がない場合は成功、理由がある場合は未完了を優先した終了状態を返す。
+    /// </summary>
+    /// <param name="reasons">終了状態に寄与する理由一覧</param>
+    /// <returns>最も優先度が高い終了状態と、入力順の理由メッセージ</returns>
     private static CompletionDecision Decide(List<DecisionReason> reasons)
     {
         return new(

@@ -12,9 +12,12 @@ internal static class SpectestFactory
     /// </summary>
     /// <remarks>
     /// 1入力につき一度作り、全moduleへ同じ提供元を登録する。別入力では新しく作り、変更されたリソースを持ち込まない。
+    /// 不変のglobalはi32・i64の666とf32・f64の666.6、funcref tableは最小10・最大20要素、memoryは最小1・最大2ページとする。
+    /// tableの初期値はすべてnull、memoryの初期値はすべて0とする。
     /// printは現在のcommandへ記録し、callback内の例外は実体を状態へ残してそのまま再throwする。
     /// </remarks>
     /// <param name="state">printとcallback失敗を記録する入力の状態</param>
+    /// <returns>新しい関数・global・table・memoryの実体を持つspectestの提供元</returns>
     internal static WasmHostModule Create(ScriptState state)
     {
         var host = new WasmHostModule("spectest");

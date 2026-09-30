@@ -25,7 +25,7 @@ public sealed class WasmImports
     /// </remarks>
     /// <param name="module">登録する関数やリソースの提供元</param>
     /// <exception cref="ArgumentNullException">moduleがnullの場合</exception>
-    /// <exception cref="ArgumentException">同じmodule名とitem名の組が登録済みの場合。登録集合は変更しない</exception>
+    /// <exception cref="ArgumentException">同じmodule名とitem名の組が登録済みの場合 登録集合は変更しない</exception>
     public void Add(WasmHostModule module)
     {
         ArgumentNullException.ThrowIfNull(module);
@@ -51,7 +51,7 @@ public sealed class WasmImports
     /// <summary>
     /// 後続の提供登録に影響されない名前の対応表を取得する
     /// </summary>
-    /// <returns>現在の対応表。表が参照する関数とリソースは共有する</returns>
+    /// <returns>現在の対応表 表が参照する関数とリソースは共有する</returns>
     internal ImmutableDictionary<string, ImmutableDictionary<string, ExternalValue>> Snapshot()
     {
         return modules_;

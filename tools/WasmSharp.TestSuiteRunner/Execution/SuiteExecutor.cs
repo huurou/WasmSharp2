@@ -14,7 +14,10 @@ internal static class SuiteExecutor
     /// </summary>
     /// <param name="manifest">全対象入力と変換済み素材の記録</param>
     /// <param name="manifestPath">相対配置の基準となるmanifestのpath</param>
-    /// <param name="cancellationToken">command間で通知を確認する中断要求。実行中のWasmを強制停止しない</param>
+    /// <param name="cancellationToken">command間で通知を確認する中断要求 実行中のWasmを強制停止しない</param>
+    /// <returns>素材・実行条件と入力別の結果を持つ記録 中断時も確定済みの結果を残し、出力完了はfalse</returns>
+    /// <exception cref="ArgumentException">manifestPathを絶対pathに変換できない場合</exception>
+    /// <exception cref="NotSupportedException">manifestPathが未対応の形式の場合</exception>
     internal static RunReport Execute(
         CorpusManifest manifest,
         string manifestPath,
@@ -105,6 +108,9 @@ internal static class SuiteExecutor
     /// <param name="manifestPath">素材の相対配置の基準</param>
     /// <param name="outputPath">既存ファイルを上書きしない詳細結果の保存先</param>
     /// <param name="cancellationToken">command間で確認する中断要求</param>
+    /// <returns>実行記録と保存先の絶対path 保存に成功した場合だけ出力完了をtrueにし、保存失敗はSaveFailureに保持する</returns>
+    /// <exception cref="ArgumentException">manifestPathまたはoutputPathを絶対pathに変換できない場合</exception>
+    /// <exception cref="NotSupportedException">manifestPathまたはoutputPathが未対応の形式の場合</exception>
     internal static RunResult ExecuteAndSave(
         CorpusManifest manifest,
         string manifestPath,
@@ -129,10 +135,13 @@ internal static class SuiteExecutor
     /// <summary>
     /// 一つの入力を処理し、検知できた中断では処理済みケースと未処理の末尾を保持する。
     /// </summary>
+    /// <remarks>
+    /// 個々のcommandの不一致やランタイム未対応は処理済みとして残し、後続commandを続行する。Processedは全ケースの成立を示さない。
+    /// </remarks>
     /// <param name="input">照合済みdocumentとbinary、入力異常</param>
     /// <param name="state">この入力のために初期化した状態</param>
     /// <param name="cancellationToken">command間で確認する中断要求</param>
-    /// <returns>入力の記録と、途中中断した場合の操作診断</returns>
+    /// <returns>処理済みケースを持つ入力の記録と、中断した場合の操作診断 中断時は列挙済みの未処理件数も記録する</returns>
     internal static (InputRunResult Result, CorpusDiagnostic? Interruption) ExecuteInput(
         InputVerification input,
         ScriptState state,

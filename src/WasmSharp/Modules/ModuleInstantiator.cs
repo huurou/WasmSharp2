@@ -240,7 +240,7 @@ internal static class ModuleInstantiator
     /// 提供された実体の型を診断用の文字列へ変換する
     /// </summary>
     /// <param name="value">型を表示する提供実体</param>
-    /// <returns>提供する型。memoryとtableの最小値には現在サイズを使用する</returns>
+    /// <returns>提供する型 memoryとtableの最小値には現在サイズを使用する</returns>
     private static string DescribeValue(ExternalValue value)
     {
         return value switch
@@ -272,7 +272,7 @@ internal static class ModuleInstantiator
     /// </summary>
     /// <param name="required">importが要求するlimits</param>
     /// <param name="current">提供リソースの現在サイズ</param>
-    /// <param name="maximum">提供リソースの宣言上限。指定がなければnull</param>
+    /// <param name="maximum">提供リソースの宣言上限 指定がなければnull</param>
     /// <returns>現在サイズが要求最小値以上で、要求上限があれば宣言上限も存在してその値以下である場合はtrue</returns>
     private static bool MatchesLimits(WasmLimits required, uint current, uint? maximum)
     {
@@ -284,7 +284,7 @@ internal static class ModuleInstantiator
     /// importの宣言位置と識別情報を含む照合失敗の例外を作る
     /// </summary>
     /// <param name="import">照合に失敗したimport宣言</param>
-    /// <param name="ordinal">importセクション内での宣言順。0始まり</param>
+    /// <param name="ordinal">importセクション内での宣言順 0始まり</param>
     /// <param name="reason">名前・種類・型のいずれの照合に失敗したかを示す理由</param>
     /// <param name="message">要求と提供の違いを説明するメッセージ</param>
     /// <returns>処理段階をInstantiateとした照合失敗の例外</returns>

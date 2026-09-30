@@ -25,7 +25,7 @@ internal sealed class InterpreterContext
     private WasmValue[] values_ = [];
 
     /// <summary>
-    /// 現在のスレッドの実行コンテキスト。実行中でなければnull
+    /// 現在のスレッドの実行コンテキスト 実行中でなければnull
     /// </summary>
     internal static InterpreterContext? Current => current_;
 
@@ -83,7 +83,7 @@ internal sealed class InterpreterContext
     /// <summary>
     /// 呼び出し深さが上限未満の場合にだけ1段増やす
     /// </summary>
-    /// <returns>呼び出しに入れた場合はtrue。上限に達している場合は深さを変えずfalse</returns>
+    /// <returns>呼び出しに入れた場合はtrue 上限に達している場合は深さを変えずfalse</returns>
     internal bool TryEnterCall()
     {
         if (CallDepth == MaxCallDepth)
@@ -150,7 +150,7 @@ internal sealed class InterpreterContext
     /// <param name="capacity">現在の配列容量</param>
     /// <param name="requiredCount">必要な要素数</param>
     /// <param name="location">保持上限を超えた場合に報告する処理段階と入力上の位置</param>
-    /// <returns>必要数を満たす容量。現在の容量が十分ならその値</returns>
+    /// <returns>必要数を満たす容量 現在の容量が十分ならその値</returns>
     /// <exception cref="WasmImplementationLimitException">必要数が配列の保持上限を超える場合</exception>
     internal static int CalculateCapacity(
         int capacity,
@@ -264,6 +264,7 @@ internal sealed class InterpreterContext
     /// <summary>
     /// 現在の関数の次命令を値で取得し、関数内のpcを1つ進める
     /// </summary>
+    /// <returns>現在のフレームが次に実行する線形命令</returns>
     internal Instruction ReadNextInstruction()
     {
         var frameIndex = FrameCount - 1;
@@ -310,7 +311,7 @@ internal sealed class InterpreterContext
     /// </summary>
     /// <param name="start">共有値スタック上の参照開始位置</param>
     /// <param name="count">参照する値の数</param>
-    /// <returns>共有値スタックの参照。保持する場合はスタックの更新前にコピーする</returns>
+    /// <returns>共有値スタックの参照 保持する場合はスタックの更新前にコピーする</returns>
     internal ReadOnlySpan<WasmValue> GetValues(int start, int count)
     {
         return values_.AsSpan(start, count);

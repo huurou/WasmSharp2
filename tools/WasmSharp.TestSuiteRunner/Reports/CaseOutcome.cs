@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 namespace WasmSharp.TestSuiteRunner.Reports;
 
 /// <summary>
-/// 処理したcommandへ割り当てる6分類。未処理は分類に含めない
+/// 処理したcommandへ割り当てる6分類 未処理は分類に含めない
 /// </summary>
 [JsonConverter(typeof(JsonStringEnumConverter<CaseOutcome>))]
 internal enum CaseOutcome

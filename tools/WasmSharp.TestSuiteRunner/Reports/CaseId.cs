@@ -10,6 +10,7 @@ internal sealed record CaseId(string InputPath, int CommandIndex)
     /// <summary>
     /// 表示用の<c>imports.wast#7</c>形式の文字列を返す。
     /// </summary>
+    /// <returns>入力pathと0始まりcommand indexを#で結んだ表示用の識別</returns>
     public override string ToString()
     {
         return $"{InputPath}#{CommandIndex}";

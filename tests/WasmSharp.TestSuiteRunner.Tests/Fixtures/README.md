@@ -8,8 +8,8 @@
 | --- | --- | --- |
 | `success.wast` | 0 | JSONと空moduleの有効なbinary |
 | `failure.wast` | 1 | なし |
-| `partial.wast` | 0 | JSONのみ。参照先binaryは欠落 |
-| `partial-failure.wast` | 1 | JSONのみ。参照先binaryは欠落 |
+| `partial.wast` | 0 | JSONのみ 参照先binaryは欠落 |
+| `partial-failure.wast` | 1 | JSONのみ 参照先binaryは欠落 |
 
 標準出力は受け取った引数と作業ディレクトリのJSON、標準エラーは失敗・部分生成の診断です。入出力障害ではpathと理由を標準エラーへ出し、終了2を返します。出力先の親に既存ファイルを置くことで、OSの権限設定に依存せず保存失敗を再現できます。
 

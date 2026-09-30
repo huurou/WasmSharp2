@@ -7,7 +7,7 @@ namespace WasmSharp.TestSuiteRunner.Baselines;
 internal sealed record ComparedReport(string Path)
 {
     /// <summary>
-    /// 実行結果の実行ID。manifestではnull
+    /// 実行結果の実行ID manifestではnull
     /// </summary>
     public string? RunId { get; init; }
 }

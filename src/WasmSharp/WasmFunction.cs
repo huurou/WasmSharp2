@@ -75,7 +75,7 @@ public abstract class WasmFunction
     /// ホスト関数へのinstance指定だけでは実行コンテキストを開始せず、進行中のWasm実行への同期再入では既存の深さと上限を共有する。
     /// ホスト処理が投げた例外は、型と実体を変えずに伝播する。
     /// </remarks>
-    /// <param name="instance">instance必須のホスト処理へ渡す対象。定義関数とinstanceを受け取らないホスト関数では、nullを含め無視する</param>
+    /// <param name="instance">instance必須のホスト処理へ渡す対象 定義関数とinstanceを受け取らないホスト関数では、nullを含め無視する</param>
     /// <param name="arguments">関数型の引数列と個数・型・順序が一致する値</param>
     /// <returns>後続の呼び出しに影響されない、宣言された順序の結果</returns>
     /// <exception cref="ArgumentException">引数の個数または型が関数型と一致しない場合</exception>

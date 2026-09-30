@@ -12,32 +12,32 @@ namespace WasmSharp.TestSuiteRunner.Execution;
 internal sealed record CommandObservation(CaseId Id, string Operation, CaseStage? LastStage)
 {
     /// <summary>
-    /// 操作が投げた例外の実体。正常完了または未実行ではnull
+    /// 操作が投げた例外の実体 正常完了または未実行ではnull
     /// </summary>
     internal Exception? Exception { get; init; }
 
     /// <summary>
-    /// 現在のcommandでcallbackが投げた例外の実体。Exceptionとの同一性で発生元を判別する
+    /// 現在のcommandでcallbackが投げた例外の実体 Exceptionとの同一性で発生元を判別する
     /// </summary>
     internal Exception? CallbackException { get; init; }
 
     /// <summary>
-    /// ValueCodecで記録した実値。個数・型が期待と異なる場合も全て保持する
+    /// ValueCodecで記録した実値 個数・型が期待と異なる場合も全て保持する
     /// </summary>
     internal ImmutableArray<ValueRecord> Values { get; init; } = [];
 
     /// <summary>
-    /// ValueMatcherで比較したassert_returnの相違箇所。一致した場合は空
+    /// ValueMatcherで比較したassert_returnの相違箇所 一致した場合は空
     /// </summary>
     internal ImmutableArray<ValueMismatch> Mismatches { get; init; } = [];
 
     /// <summary>
-    /// 素材・JSONなどの異常。例外を伴わない場合も操作と原因を保持する
+    /// 素材・JSONなどの異常 例外を伴わない場合も操作と原因を保持する
     /// </summary>
     internal ImmutableArray<CaseDiagnostic> Diagnostics { get; init; } = [];
 
     /// <summary>
-    /// 実行に必要だった既知の利用不能状態。空の場合は既知の失敗に依存しない
+    /// 実行に必要だった既知の利用不能状態 空の場合は既知の失敗に依存しない
     /// </summary>
     internal ImmutableArray<UnavailableCause> BlockedBy { get; init; } = [];
 

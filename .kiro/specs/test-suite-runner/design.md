@@ -20,9 +20,9 @@ WAST/WAT解析、別エンジン、Wasm演算・import型照合の再実装、Co
 
 ### 本仕様が所有するもの（This Spec Owns）
 
-- CLI、固定profile、素材変換・照合、manifest、JSON commandの読取と入力ごとの状態、spectest、引数構築と期待値判定。
-- 6分類、ケース識別と原因追跡、永続結果、baseline保存・比較、用途別終了コード。
-- 通常利用にも有用な、moduleが宣言しinstanceが公開するexport名・種類の一覧取得APIと、初期必須の公式ケースを実行・判定するために必要なランタイム修正。
+- CLI、固定profile、素材変換・照合、manifest、JSON commandの読取と入力ごとの状態、spectest、引数構築と期待値判定
+- 6分類、ケース識別と原因追跡、永続結果、baseline保存・比較、用途別終了コード
+- 通常利用にも有用な、moduleが宣言しinstanceが公開するexport名・種類の一覧取得APIと、初期必須の公式ケースを実行・判定するために必要なランタイム修正
 
 ### 境界外（Out of Boundary）
 
@@ -78,8 +78,8 @@ graph TD
 | hash・path・起動 | 標準`SHA256`、`Path`、`ProcessStartInfo.ArgumentList` | シェル文字列を組み立てず変換器を直接起動する。 |
 | ランタイム | 既存`src/WasmSharp`へのProjectReference | 公開契約だけを使用する。 |
 | 変換 | WABT`03a00a1334e6121fb0cce4fccbd6bb109b68acaa` | 外部プロセスはgenerateだけで使用する。 |
-| 公式入力 | spec`05ca4182176763112561ae20153975c12bd689e4` | `test/core`の全147WAST。SIMD57件を含む。 |
-| テスト | TUnit、net10.0 | 版は既存テストプロジェクトに合わせる。現行は1.66.16。 |
+| 公式入力 | spec`05ca4182176763112561ae20153975c12bd689e4` | `test/core`の全147WAST SIMD57件を含む。 |
+| テスト | TUnit、net10.0 | 版は既存テストプロジェクトに合わせる。現行は1.66.16 |
 
 標準JSON読取とプロセスAPIの採用は[MicrosoftのJSON文書](https://learn.microsoft.com/dotnet/standard/serialization/system-text-json/use-dom)と[ArgumentListの契約](https://learn.microsoft.com/dotnet/api/system.diagnostics.processstartinfo.argumentlist?view=net-10.0)に基づく。Wasm/JSONの意味は最新上流ではなく固定ソースを基準とする。
 
@@ -91,38 +91,38 @@ graph TD
 
 | path | 責務 |
 | --- | --- |
-| `tools/WasmSharp.TestSuiteRunner/WasmSharp.TestSuiteRunner.csproj` | net10.0の実行可能プロジェクト、公開ランタイム参照、固定profile埋込み。 |
-| `tools/WasmSharp.TestSuiteRunner/Program.cs` | CLIの起動と終了値。 |
-| `tools/WasmSharp.TestSuiteRunner/RunnerCli.cs` | 引数・コマンドの解析、処理の選択、日本語の進捗と集計表示。 |
-| `tools/WasmSharp.TestSuiteRunner/Corpus/Core2Profile.cs` | 固定profileと入力集合の読取・識別。 |
+| `tools/WasmSharp.TestSuiteRunner/WasmSharp.TestSuiteRunner.csproj` | net10.0の実行可能プロジェクト、公開ランタイム参照、固定profile埋込み |
+| `tools/WasmSharp.TestSuiteRunner/Program.cs` | CLIの起動と終了値 |
+| `tools/WasmSharp.TestSuiteRunner/RunnerCli.cs` | 引数・コマンドの解析、処理の選択、日本語の進捗と集計表示 |
+| `tools/WasmSharp.TestSuiteRunner/Corpus/Core2Profile.cs` | 固定profileと入力集合の読取・識別 |
 | `tools/WasmSharp.TestSuiteRunner/Corpus/core2-profile.json` | 取得元・commit・全21機能の設定・変換引数・147入力の相対path/hashを記録する。 |
-| `tools/WasmSharp.TestSuiteRunner/Corpus/CorpusGenerator.cs` | 全入力列挙、変換器起動、入力別完了、manifest生成。 |
-| `tools/WasmSharp.TestSuiteRunner/Corpus/CorpusVerifier.cs` | 生成時と実行時のpath/hash/参照照合。 |
-| `tools/WasmSharp.TestSuiteRunner/Corpus/ScriptDocument.cs` | JSONのcommand境界・元バイト列・位置・素材参照・列挙完了状態。生成時の一覧取得と実行時の型変換に共用する。 |
-| `tools/WasmSharp.TestSuiteRunner/Corpus/CorpusManifest.cs` | 素材・出典・入力別変換結果のDTO。 |
-| `tools/WasmSharp.TestSuiteRunner/Execution/ScriptReader.cs` | JSONから順序付きcommand・action・期待値の型への変換。 |
-| `tools/WasmSharp.TestSuiteRunner/Execution/ScriptCommand.cs` | 10command種別、action、入力値、期待値の型付きモデル。 |
-| `tools/WasmSharp.TestSuiteRunner/Execution/SuiteExecutor.cs` | 素材照合、入力ごとの環境、全件実行と結果の統合。 |
-| `tools/WasmSharp.TestSuiteRunner/Execution/ScriptExecutor.cs` | 1入力のcommand順序、公開段階呼出し、期待値判定。 |
-| `tools/WasmSharp.TestSuiteRunner/Execution/ScriptState.cs` | 直近module・識別子・登録名の成功/失敗状態、参照値の対応。 |
-| `tools/WasmSharp.TestSuiteRunner/Execution/SpectestFactory.cs` | 固定ホスト環境、commandに紐付くprint記録。 |
-| `tools/WasmSharp.TestSuiteRunner/Execution/ValueCodec.cs` | ビット保持の引数構築と永続結果用の値表現。 |
-| `tools/WasmSharp.TestSuiteRunner/Execution/ValueMatcher.cs` | 個数・順序・型・ビット・NaN・参照の期待値比較。 |
-| `tools/WasmSharp.TestSuiteRunner/Execution/AssertionJudge.cs` | 公開段階・例外分類・診断前方一致と6分類の決定。 |
-| `tools/WasmSharp.TestSuiteRunner/Reports/RunReport.cs` | ケース・入力状態・出典・診断・集計のDTOと識別子。 |
-| `tools/WasmSharp.TestSuiteRunner/Reports/ReportStore.cs` | schemaと整合性の検証、JSON保存、既存結果の読取。 |
-| `tools/WasmSharp.TestSuiteRunner/Reports/CompletionPolicy.cs` | 完了・最終判定・各終了条件の純粋な判定。 |
-| `tools/WasmSharp.TestSuiteRunner/Baselines/BaselineStore.cs` | 完了した保存済みJSONの明示コピー/上書き。 |
-| `tools/WasmSharp.TestSuiteRunner/Baselines/BaselineComparer.cs` | 変換条件差分と、実行ケースの差分・回帰。 |
-| `tools/WasmSharp.TestSuiteRunner/Baselines/ComparisonReport.cs` | 比較成立・完了、対象差分、出典差異と回帰のDTO。 |
-| `tools/WasmSharp.TestSuiteRunner/README.md` | 個別コマンド、結果、baseline更新、初回/後続/最終受入の操作例。 |
-| `src/WasmSharp/WasmExportInfo.cs` | 公開するexportの名前・種類の不変記述。 |
-| `tests/WasmSharp.TestSuiteRunner.Tests/WasmSharp.TestSuiteRunner.Tests.csproj` | ツールのTUnitテストとfixtureの組込み。ConverterFixtureをテスト用のビルド依存として参照する。 |
-| `tests/WasmSharp.TestSuiteRunner.Tests/{Corpus,Execution,Reports,Baselines}/` | 対象フォルダに対応した`対象クラス_対象メソッドTests.cs`。 |
-| `tests/WasmSharp.TestSuiteRunner.Tests/RunnerCli_RunTests.cs` | 個別コマンド・終了条件・既存baseline保護のCLI統合。 |
-| `tests/WasmSharp.TestSuiteRunner.Tests/Fixtures/` | 小さなJSON・バイナリ・結果のfixture。公式全体受入の代用品にはしない。 |
-| `tests/WasmSharp.TestSuiteRunner.Tests/Fixtures/ConverterFixture/{ConverterFixture.csproj,Program.cs}` | net10.0の小さなテスト専用実行ファイル。入力名に応じた成功・失敗・部分出力と終了値を返す。製品コードは参照しない。 |
-| `tests/WasmSharp.Tests/WasmModule_GetExportsTests.cs` | 一覧の順序・名前・種類とGet系APIの実体同一性。 |
+| `tools/WasmSharp.TestSuiteRunner/Corpus/CorpusGenerator.cs` | 全入力列挙、変換器起動、入力別完了、manifest生成 |
+| `tools/WasmSharp.TestSuiteRunner/Corpus/CorpusVerifier.cs` | 生成時と実行時のpath/hash/参照照合 |
+| `tools/WasmSharp.TestSuiteRunner/Corpus/ScriptDocument.cs` | JSONのcommand境界・元バイト列・位置・素材参照・列挙完了状態 生成時の一覧取得と実行時の型変換に共用する。 |
+| `tools/WasmSharp.TestSuiteRunner/Corpus/CorpusManifest.cs` | 素材・出典・入力別変換結果のDTO |
+| `tools/WasmSharp.TestSuiteRunner/Execution/ScriptReader.cs` | JSONから順序付きcommand・action・期待値の型への変換 |
+| `tools/WasmSharp.TestSuiteRunner/Execution/ScriptCommand.cs` | 10command種別、action、入力値、期待値の型付きモデル |
+| `tools/WasmSharp.TestSuiteRunner/Execution/SuiteExecutor.cs` | 素材照合、入力ごとの環境、全件実行と結果の統合 |
+| `tools/WasmSharp.TestSuiteRunner/Execution/ScriptExecutor.cs` | 1入力のcommand順序、公開段階呼出し、期待値判定 |
+| `tools/WasmSharp.TestSuiteRunner/Execution/ScriptState.cs` | 直近module・識別子・登録名の成功/失敗状態、参照値の対応 |
+| `tools/WasmSharp.TestSuiteRunner/Execution/SpectestFactory.cs` | 固定ホスト環境、commandに紐付くprint記録 |
+| `tools/WasmSharp.TestSuiteRunner/Execution/ValueCodec.cs` | ビット保持の引数構築と永続結果用の値表現 |
+| `tools/WasmSharp.TestSuiteRunner/Execution/ValueMatcher.cs` | 個数・順序・型・ビット・NaN・参照の期待値比較 |
+| `tools/WasmSharp.TestSuiteRunner/Execution/AssertionJudge.cs` | 公開段階・例外分類・診断前方一致と6分類の決定 |
+| `tools/WasmSharp.TestSuiteRunner/Reports/RunReport.cs` | ケース・入力状態・出典・診断・集計のDTOと識別子 |
+| `tools/WasmSharp.TestSuiteRunner/Reports/ReportStore.cs` | schemaと整合性の検証、JSON保存、既存結果の読取 |
+| `tools/WasmSharp.TestSuiteRunner/Reports/CompletionPolicy.cs` | 完了・最終判定・各終了条件の純粋な判定 |
+| `tools/WasmSharp.TestSuiteRunner/Baselines/BaselineStore.cs` | 完了した保存済みJSONの明示コピー/上書き |
+| `tools/WasmSharp.TestSuiteRunner/Baselines/BaselineComparer.cs` | 変換条件差分と、実行ケースの差分・回帰 |
+| `tools/WasmSharp.TestSuiteRunner/Baselines/ComparisonReport.cs` | 比較成立・完了、対象差分、出典差異と回帰のDTO |
+| `tools/WasmSharp.TestSuiteRunner/README.md` | 個別コマンド、結果、baseline更新、初回/後続/最終受入の操作例 |
+| `src/WasmSharp/WasmExportInfo.cs` | 公開するexportの名前・種類の不変記述 |
+| `tests/WasmSharp.TestSuiteRunner.Tests/WasmSharp.TestSuiteRunner.Tests.csproj` | ツールのTUnitテストとfixtureの組込み ConverterFixtureをテスト用のビルド依存として参照する。 |
+| `tests/WasmSharp.TestSuiteRunner.Tests/{Corpus,Execution,Reports,Baselines}/` | 対象フォルダに対応した`対象クラス_対象メソッドTests.cs` |
+| `tests/WasmSharp.TestSuiteRunner.Tests/RunnerCli_RunTests.cs` | 個別コマンド・終了条件・既存baseline保護のCLI統合 |
+| `tests/WasmSharp.TestSuiteRunner.Tests/Fixtures/` | 小さなJSON・バイナリ・結果のfixture 公式全体受入の代用品にはしない。 |
+| `tests/WasmSharp.TestSuiteRunner.Tests/Fixtures/ConverterFixture/{ConverterFixture.csproj,Program.cs}` | net10.0の小さなテスト専用実行ファイル 入力名に応じた成功・失敗・部分出力と終了値を返す。製品コードは参照しない。 |
+| `tests/WasmSharp.Tests/WasmModule_GetExportsTests.cs` | 一覧の順序・名前・種類とGet系APIの実体同一性 |
 
 ### 変更する既存ファイル
 
@@ -247,12 +247,12 @@ stdoutには入力単位の進捗、対象/処理済み/未処理/件数未確�
 
 ### 固定profileと素材生成
 
-`CorpusGenerator.Generate(GenerateRequest request)`は`CorpusManifest`を返す。InboundはCLI（P0）、OutboundはCore2Profile・CorpusVerifier・ReportStore（P0）、ExternalはGitの読取操作と固定wast2json（P0）。固定ソースのclone/build/updateはコマンドの責務に含めない。
+`CorpusGenerator.Generate(GenerateRequest request)`は`CorpusManifest`を返す。InboundはCLI（P0）、OutboundはCore2Profile・CorpusVerifier・ReportStore（P0）、ExternalはGitの読取操作と固定wast2json（P0） 固定ソースのclone/build/updateはコマンドの責務に含めない。
 
 - `core2-profile.json`へ取得元、上記2commit、全147入力の相対pathとSHA-256、全21機能の既定値/実効値を記録する。入力hashは固定specのGit blobの生バイト列から確定し、改行・文字コードを正規化しない。生成時も同じ生バイト列を変換器へ渡す。改行変換を無効にした取得方法をREADMEへ示し、異なる改行の作業コピーは不一致として理由を報告する。設定内容は固定したspecとWABTから取得し、実装時に元のソースと一致することを確認する。これによりrun/verifyは元WASTなしで対象入力の欠落を検出する。
-- ONは`mutable-globals, saturating-float-to-int, sign-extension, simd, multi-value, bulk-memory, reference-types`。OFFは`exceptions, threads, function-references, tail-call, annotations, code-metadata, gc, memory64, multi-memory, extended-const, relaxed-simd, custom-page-sizes, compact-imports, wide-arithmetic`。既定値と実効値はこの固定版では一致する。
+- ONは`mutable-globals, saturating-float-to-int, sign-extension, simd, multi-value, bulk-memory, reference-types` OFFは`exceptions, threads, function-references, tail-call, annotations, code-metadata, gc, memory64, multi-memory, extended-const, relaxed-simd, custom-page-sizes, compact-imports, wide-arithmetic` 既定値と実効値はこの固定版では一致する。
 - generate開始時に入力一覧/生バイトhashをprofileと照合する。spec-root自体がGitチェックアウトならHEADも照合し、Git管理外へ同じ入力をコピーした配置は全147入力の一覧/hashの一致で受け付ける。コピー先の親に無関係なGitリポジトリがあっても、そのHEADをspecの版と扱わない。WABT-rootは固定HEADを確認できるGitチェックアウトを要求する。取得元を示すURLにはprofileに記録した上流URLを使い、ミラー等の実際のoriginは参考出典として分け、URLの違いだけで拒否しない。HEAD/hash不一致や必要なGit情報の取得失敗は生成前提のrunner_errorとして記録し、変換は開始せず未処理と非0終了を明示する。ソースツリー全体のhashを取らず、変換器のビルド条件はexeのSHA-256で代表させる。実行ファイルのhash差だけで別ビルドを拒否しない。
-- WABTは`WorkingDirectory=<spec-root>/test/core`、引数は`<relative.wast> -o <absolute-output>/modules/<relative.json>`。CLIで解決済みの絶対出力pathを渡し、出力がspec配下へずれないようにする。path区切りは`/`に固定する。feature変更引数、`--enable-all`、`--no-check`、`--debug-names`は渡さない。検証有効、canonical LEB有効、relocatable無効、debug names無効を変換条件に記録する。JSONを書き換えて再現性を作らない。
+- WABTは`WorkingDirectory=<spec-root>/test/core`、引数は`<relative.wast> -o <absolute-output>/modules/<relative.json>` CLIで解決済みの絶対出力pathを渡し、出力がspec配下へずれないようにする。path区切りは`/`に固定する。feature変更引数、`--enable-all`、`--no-check`、`--debug-names`は渡さない。検証有効、canonical LEB有効、relocatable無効、debug names無効を変換条件に記録する。JSONを書き換えて再現性を作らない。
 - manifestには配置rootを除いた論理引数、作業ディレクトリの基準、feature、出力に影響する固定option、変換器hashを記録する。OS/アーキテクチャ、実際の絶対path、日時は参考出典として分離し、素材同一性の条件へ含めない。
 - 入力をOrdinal順に列挙し、各入力のプロセス終了とJSON・全参照素材の照合まで成功したときだけ`succeeded`にする。失敗は診断・終了値を持つ`runner_error`、未開始は`unprocessed`とする。独立した残りの変換を継続する。
 - stdout/stderrは両方を回収してデッドロックを避ける。素材の余剰・欠落も専用`modules/`領域で検出する。入力ごとの部分生成物は失敗としてmanifestへ残し、成功へ格上げしない。
@@ -270,11 +270,11 @@ watはこの照合段階でhash計算する。実行処理は`module_type=text`�
 
 ### JSON読取と型付きcommand
 
-`ScriptReader.Read(ScriptDocument document, string inputPath)`は列挙済みcommandの元JSONを型付きモデルへ変換し、順序付きの読取結果を返す。10種のcommandは通常module、register、action、assert_return、assert_trap、assert_exhaustion、assert_malformed、assert_invalid、assert_unlinkable、assert_uninstantiable。actionはinvoke/getの2種とする。
+`ScriptReader.Read(ScriptDocument document, string inputPath)`は列挙済みcommandの元JSONを型付きモデルへ変換し、順序付きの読取結果を返す。10種のcommandは通常module、register、action、assert_return、assert_trap、assert_exhaustion、assert_malformed、assert_invalid、assert_unlinkable、assert_uninstantiable actionはinvoke/getの2種とする。
 
 `ScriptCommand`は種類別のsealed recordで表現し、通常module/否定module/assertion actionの必要項目を分ける。入力値`ArgumentValue`と期待値`ExpectedValue`を分離し、期待値だけが持つNaN patternを引数へ混入させない。値の構造を`object`や`dynamic`で流さない。
 
-JSON全体の必須項目は`source_filename`と`commands`。通常moduleの`module_type`省略はbinaryとする。否定moduleは`module_type`と`text`を保持する。`action/assert_trap/assert_exhaustion`の`expected`は型だけの結果宣言であり、assert_returnの値付き期待値と分ける。単独actionのpassedは正常完了で決め、その宣言を追加assertionへ読み替えない。
+JSON全体の必須項目は`source_filename`と`commands` 通常moduleの`module_type`省略はbinaryとする。否定moduleは`module_type`と`text`を保持する。`action/assert_trap/assert_exhaustion`の`expected`は型だけの結果宣言であり、assert_returnの値付き期待値と分ける。単独actionのpassedは正常完了で決め、その宣言を追加assertionへ読み替えない。
 
 ScriptDocumentで境界と位置を確定できた要素は、構造不正でも1件の`runner_error`を割り当てて続行する。JSON構文破損で残りを列挙できない場合は、それまで確定したcommandだけを保持して件数を未確定にする。残りを0や架空のblockedで埋めない。未知type、固定形式外の値、必須値欠落は位置・元の内容を記録する。
 
@@ -282,7 +282,7 @@ ScriptDocumentで境界と位置を確定できた要素は、構造不正でも
 
 `SuiteExecutor.Execute(CorpusManifest manifest, string manifestPath)`は`RunReport`を返す。`ScriptExecutor.Execute(ScriptReadResult script, ScriptState state)`が1入力を順に処理する。実行は単一プロセス・単一スレッドの同期呼出しとし、各入力の開始時に新しいScriptStateとspectestを作る。
 
-ScriptStateは`LastModule`、module識別子表、登録名表、externref番号表、現在のcommand識別子を所有する。名前比較はOrdinal。module識別子表と登録名表は別々の辞書である。module参照と登録の値は、成功実体か、失敗原因を持つ利用不能状態のいずれかとする。module参照の成功実体は、registerでexport一覧を取得するため、instanceと生成元のmoduleを組で保持する。
+ScriptStateは`LastModule`、module識別子表、登録名表、externref番号表、現在のcommand識別子を所有する。名前比較はOrdinal module識別子表と登録名表は別々の辞書である。module参照と登録の値は、成功実体か、失敗原因を持つ利用不能状態のいずれかとする。module参照の成功実体は、registerでexport一覧を取得するため、instanceと生成元のmoduleを組で保持する。
 
 | 操作 | 成功時 | 不成立時 |
 | --- | --- | --- |
@@ -291,7 +291,7 @@ ScriptStateは`LastModule`、module識別子表、登録名表、externref番号
 | 否定module assertion | 名前状態を変更しない | 同じく変更しない。 |
 | action/assertion action | 名前状態を変更しない | 同じく変更しない。実行済みの副作用を保持する。 |
 
-識別子省略は直近の通常moduleを使い、指定時はその識別子だけを解決する。存在しない識別子やmodule未指定のまま直近moduleがない場合は不正なスクリプトとして`runner_error`。既知の利用不能状態だけを`blocked`とする。構造不正のcommandでは読み取れた種類・更新対象だけに失敗状態を残し、未取得の識別子や登録名を推定しない。
+識別子省略は直近の通常moduleを使い、指定時はその識別子だけを解決する。存在しない識別子やmodule未指定のまま直近moduleがない場合は不正なスクリプトとして`runner_error` 既知の利用不能状態だけを`blocked`とする。構造不正のcommandでは読み取れた種類・更新対象だけに失敗状態を残し、未取得の識別子や登録名を推定しない。
 
 Decode/Validate成功後、Instantiateを行うcommandだけ同じバイト列へ`InspectImports`を実行する。実際にimportされたmodule名が登録表の利用不能状態に一致した場合だけblockedとする。登録名が単に存在しない場合は`WasmImports`に含めず、Instantiate自身にリンク不成立を判定させる。複数の失敗依存は直接原因の一覧として保持し、それぞれの元の失敗まで追跡できるようにする。
 
@@ -301,7 +301,7 @@ registerは対象instanceの生成元moduleの`GetExports`が返す名前・種�
 
 ### 公開export一覧
 
-以下をランタイムへ追加する。Inboundは通常の埋込み利用者（ランナーを含む、P0）、Outboundは既存の静的export定義（P0）。内部indexや外部値wrapperは公開しない。
+以下をランタイムへ追加する。Inboundは通常の埋込み利用者（ランナーを含む、P0）、Outboundは既存の静的export定義（P0） 内部indexや外部値wrapperは公開しない。
 
 ```csharp
 public sealed record WasmExportInfo(string Name, WasmExternalKind Kind);
@@ -314,9 +314,9 @@ public ImmutableArray<WasmExportInfo> GetExports();
 
 ### spectest
 
-`SpectestFactory.Create(ScriptState state)`は1入力で共有する`WasmHostModule`を作る。7関数は`print:()->()`、`print_i32:(i32)->()`、`print_i64:(i64)->()`、`print_f32:(f32)->()`、`print_f64:(f64)->()`、`print_i32_f32:(i32,f32)->()`、`print_f64_f64:(f64,f64)->()`。全て結果0個で復帰する。
+`SpectestFactory.Create(ScriptState state)`は1入力で共有する`WasmHostModule`を作る。7関数は`print:()->()`、`print_i32:(i32)->()`、`print_i64:(i64)->()`、`print_f32:(f32)->()`、`print_f64:(f64)->()`、`print_i32_f32:(i32,f32)->()`、`print_f64_f64:(f64,f64)->()` 全て結果0個で復帰する。
 
-immutable globalはi32/i64の666、f32の`666.6f`、f64の`666.6d`。funcref tableは10/20で全null、memoryは1/2ページで全0とする。各型とlimitsを公開APIで指定し、importの要求に応じて構成を変えない。同一入力の全moduleへ同じ実体を提供する。
+immutable globalはi32/i64の666、f32の`666.6f`、f64の`666.6d` funcref tableは10/20で全null、memoryは1/2ページで全0とする。各型とlimitsを公開APIで指定し、importの要求に応じて構成を変えない。同一入力の全moduleへ同じ実体を提供する。
 
 callbackは現在のcommandへ、関数名・引数の型とビット列を呼出し順に記録する。callback内で例外が生じた場合はその例外実体を実行中の観測へ記録して再throwする。公開境界に伝播した例外がcallback由来と分かる場合は、Wasm例外型であっても先に`runner_error`と判定する。ランタイムの例外伝播契約を変更しない。
 
@@ -326,15 +326,15 @@ callbackは現在のcommandへ、関数名・引数の型とビット列を呼�
 
 | 値 | 引数・記録 | 比較 |
 | --- | --- | --- |
-| i32/i64 | WABTの符号なし10進文字列をuint/ulongとして読み、同じ幅のビット列でFromI32/FromI64へ渡す | 型と全ビット。範囲外の数を切り詰めない。 |
-| f32/f64 | 文字列は数値ではなく生ビット。FromF32Bits/FromF64Bitsを使う | AsF32Bits/AsF64Bitsで比較し、±0と明示NaN payloadを区別する。 |
-| v128 | lane_typeはi8/i16/i32/i64/f32/f64、lane数は16/8/4/2/4/2。lane0を下位へ、順に128bitへ配置してFromV128を使う | 期待lane型で実ビットを分割し、各laneの具体値またはNaN patternを照合する。CPUのendianに依存させない。 |
-| funcref | 固定スイートの引数・値付き期待値はnullのみ。FromFuncRef(null)を使う | 型とnullを確認する。固定集合にない非null引数や番号から関数indexを推測しない。 |
-| externref | nullまたはuint番号。入力ごとに番号→専用ホストobjectを1つ割り当てる | 同じ型のnull、または同番号に割り当てたobjectとのReferenceEquals。内容比較をしない。 |
+| i32/i64 | WABTの符号なし10進文字列をuint/ulongとして読み、同じ幅のビット列でFromI32/FromI64へ渡す | 型と全ビット 範囲外の数を切り詰めない。 |
+| f32/f64 | 文字列は数値ではなく生ビット FromF32Bits/FromF64Bitsを使う | AsF32Bits/AsF64Bitsで比較し、±0と明示NaN payloadを区別する。 |
+| v128 | lane_typeはi8/i16/i32/i64/f32/f64、lane数は16/8/4/2/4/2 lane0を下位へ、順に128bitへ配置してFromV128を使う | 期待lane型で実ビットを分割し、各laneの具体値またはNaN patternを照合する。CPUのendianに依存させない。 |
+| funcref | 固定スイートの引数・値付き期待値はnullのみ FromFuncRef(null)を使う | 型とnullを確認する。固定集合にない非null引数や番号から関数indexを推測しない。 |
+| externref | nullまたはuint番号 入力ごとに番号→専用ホストobjectを1つ割り当てる | 同じ型のnull、または同番号に割り当てたobjectとのReferenceEquals 内容比較をしない。 |
 
 `nan:canonical`は符号を除いたビットがf32=`0x7fc00000`、f64=`0x7ff8000000000000`に等しい場合だけ一致する。`nan:arithmetic`は指数部が全1で仮数部の最上位bitが1の場合に一致する。scalarと浮動小数点laneは同じ規則を使う。結果の個数・順序・型の比較を先に行い、不一致時も得られた値を全て保存する。
 
-固定スイートには非nullfuncref期待値と型だけの複数expectedは出現しないことを全JSONで確認済み。型だけのexpectedは結果宣言として読める。固定形式外の非nullfuncref番号を公開indexへ変換する機能は追加しない。対応命令が未実装でもv128/参照の上記値処理は初期に完成させる。
+固定スイートには非nullfuncref期待値と型だけの複数expectedは出現しないことを全JSONで確認済み 型だけのexpectedは結果宣言として読める。固定形式外の非nullfuncref番号を公開indexへ変換する機能は追加しない。対応命令が未実装でもv128/参照の上記値処理は初期に完成させる。
 
 ### assertion判定
 
@@ -344,12 +344,12 @@ callbackは現在のcommandへ、関数名・引数の型とビット列を呼�
 | --- | --- |
 | module/register/action | 必要な公開操作が正常完了する。単独actionは結果を記録する。 |
 | assert_return | invoke/getが正常完了し、ValueMatcherが一致する。 |
-| assert_malformed | binaryに対するDecodeでWasmDecodeException。 |
-| assert_invalid | Decode成功後、ValidateでWasmValidateException。 |
-| assert_unlinkable | Decode/Validate成功後、InstantiateでWasmInstantiateException、ReasonはMissingImport/KindMismatch/TypeMismatch。 |
-| assert_uninstantiable | Decode/Validate成功後、Instantiate中の初期化/startでWasmTrapException。リンク不成立は含めない。 |
-| assert_trap | 対象actionの呼出しでWasmTrapException。 |
-| assert_exhaustion | 対象actionの呼出しでWasmExhaustionException。trap/OOMは含めない。 |
+| assert_malformed | binaryに対するDecodeでWasmDecodeException |
+| assert_invalid | Decode成功後、ValidateでWasmValidateException |
+| assert_unlinkable | Decode/Validate成功後、InstantiateでWasmInstantiateException、ReasonはMissingImport/KindMismatch/TypeMismatch |
+| assert_uninstantiable | Decode/Validate成功後、Instantiate中の初期化/startでWasmTrapException リンク不成立は含めない。 |
+| assert_trap | 対象actionの呼出しでWasmTrapException |
+| assert_exhaustion | 対象actionの呼出しでWasmExhaustionException trap/OOMは含めない。 |
 
 全否定assertionは上表に加えて`actualException.Message.StartsWith(expectedText, StringComparison.Ordinal)`を要求する。expectedTextはJSONのtextをそのまま使い、実際のMessageも加工しない。正規化・別名変換・Reasonのみの合格・例外ケース・照合無効化を設けない。成功すべき段階で別のWasm失敗が起きた場合や、期待失敗の段階まで正常完了した場合はfailedとする。未実装・資源上限・公開契約外例外は次のエラー方針を優先する。
 
@@ -361,17 +361,17 @@ callbackは現在のcommandへ、関数名・引数の型とビット列を呼�
 
 | データ | 必須内容と不変条件 |
 | --- | --- |
-| ProfileSnapshot | profile識別、spec/WABT取得元とcommit、全featureの既定値/実効値、論理引数、固定入力一覧/hash。生成物が部分集合でも本来の対象集合を失わない。 |
-| SourceInput | `path`はtest/core基準の`/`区切り相対path、SHA-256は固定Git blobと同一の生バイト列に対する小文字hex64桁。Ordinal順。 |
-| Artifact | manifest基準のpath、kind=json/wasm/wat、SHA-256、所有入力。JSONにはsource_filenameと参照先一覧、列挙できたcommandのindex/line/type/module_typeを対応付ける。 |
-| CorpusManifest | ProfileSnapshot、変換器hash、参考出典、全入力の変換状態・生成物・診断、集計、完了情報。manifest自身は自分のhash対象にしない。 |
-| CaseId | `(input_path, command_index)`の組。indexは0始まり、lineは1始まりの補助位置。表示は`imports.wast#7`等とし、lineをキーにしない。 |
-| CaseResult | CaseId、line、command_type、category=setup/action/assertion、6分類の1つ、期待・実際・最後の段階、診断、print一覧、原因参照。不正commandで取得できないline/typeはnullとし、種類不明ならcategoryもnullとする。位置と取得可能な元JSONを診断へ残す。 |
-| InputRunResult | 入力照合の異常一覧、列挙状態、command_count（未確定はnull）、列挙済み数、未処理数、CaseResult列。変換失敗した入力も消さない。 |
-| RunReport | ProfileSnapshotと素材一覧/hashを含むmanifest内容のスナップショット、実行ID、ランナー/ランタイム版・実行ポリシー、全InputRunResult、集計、完了情報。比較時に別ファイルのmanifestを要求しない。 |
-| Diagnostic | 発生操作、呼出し段階、期待text、実際のMessage、例外の完全型名、取得可能なReason/Location/import識別/Feature/未確認範囲、callback由来の有無。元診断を加工しない。 |
-| Cause | 直接原因CaseIdの一覧と元の非blocked分類に至る参照。必ず同入力の先行commandを指す。単なる未登録から生成しない。 |
-| ComparisonReport | 種別、比較元/現結果の識別、比較成立と完了、条件差・出典差、入力/素材差分、ケースの前後結果と回帰、未比較理由、集計。 |
+| ProfileSnapshot | profile識別、spec/WABT取得元とcommit、全featureの既定値/実効値、論理引数、固定入力一覧/hash 生成物が部分集合でも本来の対象集合を失わない。 |
+| SourceInput | `path`はtest/core基準の`/`区切り相対path、SHA-256は固定Git blobと同一の生バイト列に対する小文字hex64桁 Ordinal順 |
+| Artifact | manifest基準のpath、kind=json/wasm/wat、SHA-256、所有入力 JSONにはsource_filenameと参照先一覧、列挙できたcommandのindex/line/type/module_typeを対応付ける。 |
+| CorpusManifest | ProfileSnapshot、変換器hash、参考出典、全入力の変換状態・生成物・診断、集計、完了情報 manifest自身は自分のhash対象にしない。 |
+| CaseId | `(input_path, command_index)`の組 indexは0始まり、lineは1始まりの補助位置 表示は`imports.wast#7`等とし、lineをキーにしない。 |
+| CaseResult | CaseId、line、command_type、category=setup/action/assertion、6分類の1つ、期待・実際・最後の段階、診断、print一覧、原因参照 不正commandで取得できないline/typeはnullとし、種類不明ならcategoryもnullとする。位置と取得可能な元JSONを診断へ残す。 |
+| InputRunResult | 入力照合の異常一覧、列挙状態、command_count（未確定はnull）、列挙済み数、未処理数、CaseResult列 変換失敗した入力も消さない。 |
+| RunReport | ProfileSnapshotと素材一覧/hashを含むmanifest内容のスナップショット、実行ID、ランナー/ランタイム版・実行ポリシー、全InputRunResult、集計、完了情報 比較時に別ファイルのmanifestを要求しない。 |
+| Diagnostic | 発生操作、呼出し段階、期待text、実際のMessage、例外の完全型名、取得可能なReason/Location/import識別/Feature/未確認範囲、callback由来の有無 元診断を加工しない。 |
+| Cause | 直接原因CaseIdの一覧と元の非blocked分類に至る参照 必ず同入力の先行commandを指す。単なる未登録から生成しない。 |
+| ComparisonReport | 種別、比較元/現結果の識別、比較成立と完了、条件差・出典差、入力/素材差分、ケースの前後結果と回帰、未比較理由、集計 |
 
 実行時の`WasmExecutionOptions`は全instanceで明示的に`MaxCallDepth=1024`とする。結果に保存し、既定値の将来変更で黙って条件が変わることを避ける。実行ID・日時・OS・実際の配置path・版は参考出典で、ケース同一性を変えない。
 
@@ -413,10 +413,10 @@ ReportStoreの構造・完了検査では、その結果内のProfileSnapshotを
 | --- | --- |
 | 正常セットアップ/単独action、期待一致 | passed |
 | 評価済みの値・段階・Wasm失敗・診断が期待と違う | failed |
-| WasmUnsupportedFeatureException、import取得のUnsupportedFeature | runtime_unsupported。Feature・段階・未確認範囲を保存する。 |
-| 既知の失敗module/registerが必要 | blocked。直接と元の原因を保存する。 |
-| module_type=text | out_of_scope。実行用のファイルを開かない。 |
-| 素材/JSON異常、未知command、実装上限、捕捉可能なOOM、platform能力不足、callback例外、API誤用、公開契約外例外 | runner_error。発生操作・実際の例外・原因を保存する。 |
+| WasmUnsupportedFeatureException、import取得のUnsupportedFeature | runtime_unsupported Feature・段階・未確認範囲を保存する。 |
+| 既知の失敗module/registerが必要 | blocked 直接と元の原因を保存する。 |
+| module_type=text | out_of_scope 実行用のファイルを開かない。 |
+| 素材/JSON異常、未知command、実装上限、捕捉可能なOOM、platform能力不足、callback例外、API誤用、公開契約外例外 | runner_error 発生操作・実際の例外・原因を保存する。 |
 
 `WasmInvokeException`等の引数/呼出し契約違反をtrapとして扱わない。callback由来を先に区別したうえで公開段階のWasm例外を評価する。failedやcommand単位runner_errorの後も、公開呼出しから制御が戻り処理可能な独立commandは続行する。正常終了しないプロセスを監視して復旧する仕組みは含めない。
 
@@ -426,14 +426,14 @@ ReportStoreの構造・完了検査では、その結果内のProfileSnapshotを
 
 | 操作 | 0の条件 |
 | --- | --- |
-| generate | 全対象の変換・照合・記録・保存完了、runner_error/未処理が0。 |
-| run | 全対象の記録・保存完了、failedと入力/command runner_errorが0。runtime_unsupported、out_of_scope、その未実装を原因とするblockedは許容する。 |
-| compare-conversion | 全比較・記録・保存完了、比較対象一致、runner_errorが0。 |
-| compare-run | 比較成立・全比較/記録/保存完了、currentのfailed・入力/command runner_error・回帰が0。既知failedが残れば回帰0でも1。 |
-| verify | 固定全入力と全commandの処理・記録・保存が完了し、未処理/欠落/件数未確定/入力異常がなく、out_of_scope以外が全てpassed。 |
-| baseline-save | 適格な既存結果からbaseline保存が完了。保存成功はスイート合格を意味しない。 |
+| generate | 全対象の変換・照合・記録・保存完了、runner_error/未処理が0 |
+| run | 全対象の記録・保存完了、failedと入力/command runner_errorが0 runtime_unsupported、out_of_scope、その未実装を原因とするblockedは許容する。 |
+| compare-conversion | 全比較・記録・保存完了、比較対象一致、runner_errorが0 |
+| compare-run | 比較成立・全比較/記録/保存完了、currentのfailed・入力/command runner_error・回帰が0 既知failedが残れば回帰0でも1 |
+| verify | 固定全入力と全commandの処理・記録・保存が完了し、未処理/欠落/件数未確定/入力異常がなく、out_of_scope以外が全てpassed |
+| baseline-save | 適格な既存結果からbaseline保存が完了 保存成功はスイート合格を意味しない。 |
 
-verifyの条件不成立は、残る分類・未確定・未処理・欠落を表示する。baseline-saveが未完了結果を拒否した場合は2。最終判定は実行IDが1つの結果だけを受け付け、異なる実行のケースをマージする機能を設けない。
+verifyの条件不成立は、残る分類・未確定・未処理・欠落を表示する。baseline-saveが未完了結果を拒否した場合は2 最終判定は実行IDが1つの結果だけを受け付け、異なる実行のケースをマージする機能を設けない。
 
 ## テスト戦略（Testing Strategy）
 
@@ -466,9 +466,9 @@ ConverterFixtureはテストプロジェクトの`ProjectReference`（`Reference
 | 初期経路 | 公式ケース | 確認する内容 |
 | --- | --- | --- |
 | spectestホスト呼出し | `imports.wast#6, #7`、`start.wast#15, #16, #17` | 通常invoke/startからprintへ入り、引数と結果0個を記録する。 |
-| 関数registerと別module利用 | `linking.wast#0`～`#6` | export列挙、登録、import、元の定義関数の呼出し。 |
+| 関数registerと別module利用 | `linking.wast#0`～`#6` | export列挙、登録、import、元の定義関数の呼出し |
 | 共有mutable global | `linking.wast#11`～`#28` | 別moduleから共有globalを読み書きし、両instanceから更新後の値を観測する。 |
-| spectestの数値global | `imports.wast#41`～`#45` | 全数値globalのimportとi32読出し。 |
+| spectestの数値global | `imports.wast#41`～`#45` | 全数値globalのimportとi32読出し |
 | tableのexport/register/import | `imports.wast#0, #1, #82`～`#93` | 登録済みtableを別moduleへ接続し、型/limitsの判定を通す。 |
 | memoryのexport/register/import | `imports.wast#0, #1, #127`～`#129` | 登録済みmemoryを別moduleへ接続する。 |
 | spectestのtable/memory | `imports.wast#94`～`#101`、`#130`～`#135` | 固定サイズ・上限でimportを処理する。 |
@@ -482,6 +482,6 @@ ConverterFixtureはテストプロジェクトの`ProjectReference`（`Reference
 
 ## 根拠と実装時の注意
 
-- 固定JSON形式・feature・spectestの根拠は`thirdParties/wabt/docs/wast2json.md`、`src/binary-writer-spec.cc`、`include/wabt/feature.def`と`thirdParties/WebAssembly-spec/interpreter/host/spectest.ml`。出力の意味は固定ソースで確認した。
+- 固定JSON形式・feature・spectestの根拠は`thirdParties/wabt/docs/wast2json.md`、`src/binary-writer-spec.cc`、`include/wabt/feature.def`と`thirdParties/WebAssembly-spec/interpreter/host/spectest.ml` 出力の意味は固定ソースで確認した。
 - 診断前方一致と後続修正の責務は[ADR0012](../../../docs/adr/0012-reference-diagnostic-compatibility.md)に従う。実装時に公式ケースの診断をランタイムへハードコードしない。
 - 調査では147入力の2配置での変換、全JSONの読取、全5,821生成物のhash一致を確認した。WasmSharpによる公式実行、CLI実装、初回baseline、Core 2.0全件合格はまだ確認していない。詳細は[research.md](research.md)に記録する。

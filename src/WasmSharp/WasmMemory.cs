@@ -27,7 +27,7 @@ public sealed class WasmMemory
     public uint PageCount => (uint)pages_.Length;
 
     /// <summary>
-    /// 宣言された最大ページ数。指定がなければnull
+    /// 宣言された最大ページ数 指定がなければnull
     /// </summary>
     public uint? MaximumPages { get; }
 
@@ -71,7 +71,7 @@ public sealed class WasmMemory
     /// </summary>
     /// <param name="offset">書き込み先の先頭バイト位置</param>
     /// <param name="source">全体をコピーするホスト側バッファ</param>
-    /// <exception cref="ArgumentOutOfRangeException">書き込み範囲が現在のmemoryの外にある場合。内容は変更しない</exception>
+    /// <exception cref="ArgumentOutOfRangeException">書き込み範囲が現在のmemoryの外にある場合 内容は変更しない</exception>
     public void Write(ulong offset, ReadOnlySpan<byte> source)
     {
         ValidateRange(offset, source.Length);
@@ -91,7 +91,7 @@ public sealed class WasmMemory
     /// <remarks>コピーしたバイトは、その後のmemoryの更新や増大に追従しない</remarks>
     /// <param name="offset">読み出し元の先頭バイト位置</param>
     /// <param name="destination">その長さだけ読み出したバイトを受け取るホスト側バッファ</param>
-    /// <exception cref="ArgumentOutOfRangeException">読み出し範囲が現在のmemoryの外にある場合。destinationは変更しない</exception>
+    /// <exception cref="ArgumentOutOfRangeException">読み出し範囲が現在のmemoryの外にある場合 destinationは変更しない</exception>
     public void Read(ulong offset, Span<byte> destination)
     {
         ValidateRange(offset, destination.Length);
@@ -108,10 +108,10 @@ public sealed class WasmMemory
     /// <summary>
     /// 既存内容を保持して増大し、追加ページをゼロ初期化する
     /// </summary>
-    /// <param name="deltaPages">追加するページ数。0の場合も成功する</param>
+    /// <param name="deltaPages">追加するページ数 0の場合も成功する</param>
     /// <param name="previousPageCount">成功・失敗にかかわらず、増大前のページ数</param>
-    /// <returns>増大に成功した場合はtrue。宣言された最大値または65,536ページを超える場合は、サイズと内容を変更せずfalse</returns>
-    /// <exception cref="OutOfMemoryException">追加領域を割り当てられない場合。サイズと内容は変更しない</exception>
+    /// <returns>増大に成功した場合はtrue 宣言された最大値または65,536ページを超える場合は、サイズと内容を変更せずfalse</returns>
+    /// <exception cref="OutOfMemoryException">追加領域を割り当てられない場合 サイズと内容は変更しない</exception>
     public bool TryGrow(uint deltaPages, out uint previousPageCount)
     {
         previousPageCount = PageCount;

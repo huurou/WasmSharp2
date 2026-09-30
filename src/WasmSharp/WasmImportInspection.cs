@@ -4,12 +4,12 @@ using WasmSharp.Exceptions;
 namespace WasmSharp;
 
 /// <summary>
-/// 完全取得したimport一覧。module全体の有効性や実行可能性は保証しない
+/// 完全取得したimport一覧 module全体の有効性や実行可能性は保証しない
 /// </summary>
 public sealed class WasmImportInspection
 {
     /// <summary>
-    /// 宣言順のimport情報。空の場合はimportなしを確認済み
+    /// 宣言順のimport情報 空の場合はimportなしを確認済み
     /// </summary>
     public ImmutableArray<WasmImportInfo> Imports { get; }
 

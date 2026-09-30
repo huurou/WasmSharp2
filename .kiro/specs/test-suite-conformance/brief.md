@@ -29,13 +29,13 @@
 
 ## 範囲
 
-- **対象**: テストスイートで判明した先行機能のDecode・Validate・Instantiate・Invokeにおける実装不具合。バイナリ解析、型検証、関数実行、リンク、リソースの状態・共有、start、trap・exhaustionなどを含み、具体的な修正項目は実行結果から定める。
-- **対象**: 公式期待診断と参照実装の診断選択への互換性。バイナリの`assert_malformed`・`assert_invalid`、`assert_unlinkable`、`assert_uninstantiable`、`assert_trap`、`assert_exhaustion`が観測する診断を含む。
-- **対象**: 既存ランナーでの固定スイート全体の実行と回帰確認、および初回baselineと再実行で判明した実装上の不一致の解消。
-- **対象外**: ランナーの判定機能。前方一致、記録、分類、終了コード、baseline比較は`test-suite-runner`が初期実装から所有する。
-- **対象外**: WAT・WASTの構文解析。`module_type=text`は従来どおり`out_of_scope`とする。
-- **対象外**: 後続仕様が所有する数値・構造化制御、memory/table命令、data/element初期化、参照、SIMDの先行実装。これらの診断は各機能の実装時に同じ契約へ合わせる。
-- **対象外**: Core 3.0や別版の診断互換性、補助説明を含む全文一致、一般的なホスト例外やAPI誤用のメッセージ統一。
+- **対象**: テストスイートで判明した先行機能のDecode・Validate・Instantiate・Invokeにおける実装不具合 バイナリ解析、型検証、関数実行、リンク、リソースの状態・共有、start、trap・exhaustionなどを含み、具体的な修正項目は実行結果から定める。
+- **対象**: 公式期待診断と参照実装の診断選択への互換性 バイナリの`assert_malformed`・`assert_invalid`、`assert_unlinkable`、`assert_uninstantiable`、`assert_trap`、`assert_exhaustion`が観測する診断を含む。
+- **対象**: 既存ランナーでの固定スイート全体の実行と回帰確認、および初回baselineと再実行で判明した実装上の不一致の解消
+- **対象外**: ランナーの判定機能 前方一致、記録、分類、終了コード、baseline比較は`test-suite-runner`が初期実装から所有する。
+- **対象外**: WAT・WASTの構文解析 `module_type=text`は従来どおり`out_of_scope`とする。
+- **対象外**: 後続仕様が所有する数値・構造化制御、memory/table命令、data/element初期化、参照、SIMDの先行実装 これらの診断は各機能の実装時に同じ契約へ合わせる。
+- **対象外**: Core 3.0や別版の診断互換性、補助説明を含む全文一致、一般的なホスト例外やAPI誤用のメッセージ統一
 
 ## 責務の接点
 
@@ -49,21 +49,21 @@
 
 ## 上流・下流
 
-- **上流**: `test-suite-runner`。`runtime-foundation`と`host-linking`の公開API・実行基盤を引き継ぐ。
-- **下流**: `numeric-control`、続いて`linear-memory`・`tables-references`・`simd`。
-- **順序**: `test-suite-runner → test-suite-conformance → numeric-control`。以後は[ロードマップ](../../steering/roadmap.md)に従う。
+- **上流**: `test-suite-runner` `runtime-foundation`と`host-linking`の公開API・実行基盤を引き継ぐ。
+- **下流**: `numeric-control`、続いて`linear-memory`・`tables-references`・`simd`
+- **順序**: `test-suite-runner → test-suite-conformance → numeric-control` 以後は[ロードマップ](../../steering/roadmap.md)に従う。
 
 ## 既存仕様との関係
 
 - **先行ランタイムの修正**: 完了済みの`runtime-foundation`と`host-linking`の実装で判明した不具合も、初期必須の公式実行経路を成立させるために`test-suite-runner`内で修正するものを除いて本仕様へ集約する。過去の要件・設計・タスク・受入記録は維持し、今回必要な修正とその根拠を本仕様で管理する。
 - **ランナー側の判定**: 未実装の`test-suite-runner`の要件として定める。本仕様から判定機能を後付けしない。
-- **診断互換性の根拠**: [参照診断互換性のADR](../../../docs/adr/0012-reference-diagnostic-compatibility.md)。これはCore 2.0への準拠に加える互換性要求であり、本仕様が扱う修正項目の一部とする。
+- **診断互換性の根拠**: [参照診断互換性のADR](../../../docs/adr/0012-reference-diagnostic-compatibility.md) これはCore 2.0への準拠に加える互換性要求であり、本仕様が扱う修正項目の一部とする。
 
 ## 制約と確認事項
 
 - [固定したCore 2.0公式素材](../../../thirdParties/README.md)と同じspec commitの参照実装を根拠とする。mainや別版の診断を混在させない。
 - バージョン不正の公式期待診断は`unknown binary version`であり、説明用の`bad wasm file version`へ置き換えない。`unknown local 2`のような数値も一致対象とする。
-- 関数終端がないバイナリで、後続バイトにより`END opcode expected`、`unexpected end of section or function`、`section size mismatch`などの選択が変わる場合も合わせる。根拠は固定版の[`binary.wast`](../../../thirdParties/WebAssembly-spec/test/core/binary.wast)と[参照decoder](../../../thirdParties/WebAssembly-spec/interpreter/binary/decode.ml)。
+- 関数終端がないバイナリで、後続バイトにより`END opcode expected`、`unexpected end of section or function`、`section size mismatch`などの選択が変わる場合も合わせる。根拠は固定版の[`binary.wast`](../../../thirdParties/WebAssembly-spec/test/core/binary.wast)と[参照decoder](../../../thirdParties/WebAssembly-spec/interpreter/binary/decode.ml)
 - 完了時には固定スイート全体を実行・記録し、先行機能で前提が揃うケースを診断照合込みで合格させ、`failed`と入力単位・command単位の`runner_error`を0件にする。後続機能を必要とする`runtime_unsupported`と、それに依存する`blocked`だけを、ランタイムが報告した未実装機能と原因commandを付けて残せる。
 - 初回から同じ判定基準のbaselineを使い、以前の`passed`の退行・欠落を認めない。問題があれば修正・再実行・現baselineとの比較を繰り返し、問題が解消した結果JSONを保存コマンドで現baselineへ上書きする。問題が残る結果による上書きや、実装上の不一致を未対応へ分類し直すことで解消扱いにしない。
-- 文書は日本語（ja）。本ブリーフは採用方針と境界を記録し、requirements・design・tasks・実装の各段階の承認とは区別する。
+- 文書は日本語（ja） 本ブリーフは採用方針と境界を記録し、requirements・design・tasks・実装の各段階の承認とは区別する。

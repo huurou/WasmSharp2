@@ -23,7 +23,7 @@ internal readonly struct Instruction(
     internal ExecutionOpcode Opcode { get; } = opcode;
 
     /// <summary>
-    /// 命令の即値。関数終端では参照しない
+    /// 命令の即値 関数終端では参照しない
     /// </summary>
     internal WasmValue Immediate { get; } = immediate;
 

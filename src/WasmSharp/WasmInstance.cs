@@ -183,7 +183,7 @@ public sealed class WasmInstance
     }
 
     /// <summary>
-    /// tagの取得操作。現在は未実装
+    /// tagの取得操作 現在は未実装
     /// </summary>
     /// <param name="name">tagのexport名</param>
     /// <returns>現在は値を返さず、常に例外を送出する</returns>

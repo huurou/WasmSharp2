@@ -8,16 +8,16 @@ updated_at: 2026-09-27
 
 | 対象 | 技術と役割 |
 | --- | --- |
-| ランタイム | C# / .NET 10（`net10.0`）。NullableとImplicitUsingsを有効にする。 |
-| 命令生成器 | `netstandard2.0` / C# 13.0 / Roslynの`IIncrementalGenerator`。通常ビルドで命令情報と実行分岐を生成する。 |
-| テスト | .NET 10 / TUnit。ランタイムと生成器を別の実行可能テストプロジェクトで検証する。 |
-| 整形 | CSharpierとHusky.Net。.NETローカルツールとして固定し、コミット時にステージ済みの対象ファイルを整形する。 |
+| ランタイム | C# / .NET 10（`net10.0`） NullableとImplicitUsingsを有効にする。 |
+| 命令生成器 | `netstandard2.0` / C# 13.0 / Roslynの`IIncrementalGenerator` 通常ビルドで命令情報と実行分岐を生成する。 |
+| テスト | .NET 10 / TUnit ランタイムと生成器を別の実行可能テストプロジェクトで検証する。 |
+| 整形 | CSharpierとHusky.Net .NETローカルツールとして固定し、コミット時にステージ済みの対象ファイルを整形する。 |
 
 パッケージの版は各`.csproj`、ローカルツールの版は[ツールマニフェスト](../../.config/dotnet-tools.json)を正とする。生成器はコンパイラが読み込むため、ランタイムとはTFMを分け、拡張Analyzerルールを有効にする。
 
 ## 検証と実行
 
-- `WasmModule`が静的定義と検証成功後の実行コードを所有する。`Validate()`は全体成功時だけ状態を確定し、成功済みの再呼び出しは同じmoduleを返す。判断の根拠は[ADR 0005](../../docs/adr/0005-module-owned-validation-state.md)。
+- `WasmModule`が静的定義と検証成功後の実行コードを所有する。`Validate()`は全体成功時だけ状態を確定し、成功済みの再呼び出しは同じmoduleを返す。判断の根拠は[ADR 0005](../../docs/adr/0005-module-owned-validation-state.md)
 - 型検査と線形化を同一パスで行い、フラットな実行コードを単一の`switch`ループで実行する。制御命令の拡張も[ADR 0002](../../docs/adr/0002-single-pass-linear-interpreter.md)の分岐表現に従う。
 - 内部のtrapとexhaustionは`ExecutionResult`で返し、`ExecutionBoundary`で公開例外へ変換する。コンテキストとスタックの復元は`finally`で行う。[ADR 0004](../../docs/adr/0004-trap-result-propagation.md)に従い、InvokeとInstantiate中のstartは処理段階を区別しながら共通境界を使う。
 - ホストcallbackの例外は型と実体を保って伝播し、Wasmのtrapやリンク不成立へ包み直さない（[ADR 0007](../../docs/adr/0007-propagate-host-exceptions.md)）。
@@ -44,6 +44,6 @@ importした関数とリソースは同じ実体を共有し、module内で定�
 
 TUnitはAAA、日本語の条件・期待結果名、`await Assert.That(...)`を使う。絞り込みには`--treenode-filter`を使う。生成器テストは実際のランタイム契約ソースを埋め込むため、対象ファイルの移動・改名ではテストプロジェクトの`EmbeddedResource`も更新する。
 
-ランタイムテストは固定Core 2.0仕様の命令付録をビルド時に埋め込む。基盤テストにはspec submoduleが必要で、WABTのビルドは不要。外部ソースの取得・固定・変換手順は[thirdParties/README.md](../../thirdParties/README.md)に保持する。
+ランタイムテストは固定Core 2.0仕様の命令付録をビルド時に埋め込む。基盤テストにはspec submoduleが必要で、WABTのビルドは不要 外部ソースの取得・固定・変換手順は[thirdParties/README.md](../../thirdParties/README.md)に保持する。
 
 公式適合検証では、`host-linking`の実行・リンク基盤を先に公開APIの直接テストで確認する。`test-suite-runner`はその能力でspectest・registerを構成し、固定Core 2.0 profileでの素材生成から実行・回帰比較までを扱う。初回公式受入には先行基盤の統合確認も含める。WABTの`wast2json`からJSONとモジュール素材を得て、自作ツールの実行処理の入力はJSONと`.wasm`に限定する。素材同定のためのWAST/WATのhash計算は行うが、構文解析・意味解釈は行わない。実装進捗で対象集合やfeature flagを減らさず、全体の回帰確認と結果分類は[ロードマップ](roadmap.md)に従う。

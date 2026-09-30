@@ -61,6 +61,10 @@ internal static class AssertionJudge
     /// <summary>
     /// 判定不能の原因を先に区別し、評価できた期待だけを成立または不一致にする。
     /// </summary>
+    /// <param name="command">期待する操作・値・失敗を持つcommand</param>
+    /// <param name="observation">公開段階、例外、値の相違、依存先の失敗を記録した観測</param>
+    /// <param name="fromCallback">観測した例外がspectestのcallbackで発生した同じ例外実体かどうか</param>
+    /// <returns>観測と期待から決めた結果分類 callbackの例外や素材・JSONの異常はrunner_error</returns>
     private static CaseOutcome Classify(
         ScriptCommand command,
         CommandObservation observation,
@@ -135,6 +139,10 @@ internal static class AssertionJudge
     /// <summary>
     /// 否定assertionが要求する公開段階・例外型・リンク不成立のReasonを照合する。
     /// </summary>
+    /// <param name="command">処理段階での失敗を期待する否定assertion</param>
+    /// <param name="stage">例外が発生した公開段階 公開操作前はnull</param>
+    /// <param name="exception">観測した例外の実体</param>
+    /// <returns>期待する段階と失敗の種類が一致する場合はtrue 診断メッセージの一致は含まない</returns>
     private static bool MatchesFailure(ScriptCommand command, CaseStage? stage, Exception exception)
     {
         return command switch
@@ -167,6 +175,9 @@ internal static class AssertionJudge
     /// <summary>
     /// actionの種類が要求する公開呼び出しを観測したか確認する。
     /// </summary>
+    /// <param name="action">invokeまたはgetの操作</param>
+    /// <param name="stage">最後に呼び出した公開段階 公開操作前はnull</param>
+    /// <returns>invokeでInvoke、getでGetを観測した場合はtrue</returns>
     private static bool MatchesAction(ScriptAction action, CaseStage? stage)
     {
         return action switch
@@ -180,6 +191,8 @@ internal static class AssertionJudge
     /// <summary>
     /// 否定assertionのtextを加工せず取得する。
     /// </summary>
+    /// <param name="command">期待診断の取得対象</param>
+    /// <returns>否定assertionの期待診断 診断を期待しないcommandではnull</returns>
     private static string? ExpectedText(ScriptCommand command)
     {
         return command switch
@@ -194,6 +207,8 @@ internal static class AssertionJudge
     /// <summary>
     /// 値付き期待値または型だけの宣言を、JSONの記載順を保って保存用の記録へ写す。
     /// </summary>
+    /// <param name="command">値付き期待値または型だけの結果宣言を持つcommand</param>
+    /// <returns>新しい保存用リスト 値の文字列は加工せず、laneのリストもコピーし、宣言がなければ空</returns>
     private static List<ExpectedValueRecord> ExpectedValues(ScriptCommand command)
     {
         if (command is AssertReturnCommand assertion)
@@ -223,6 +238,8 @@ internal static class AssertionJudge
     /// <summary>
     /// 元診断の可変リストを共有せずに保存用のコピーを作る。
     /// </summary>
+    /// <param name="diagnostic">観測に含まれる元診断</param>
+    /// <returns>未確認範囲のリストを独立させた同じ内容の診断</returns>
     private static CaseDiagnostic CopyDiagnostic(CaseDiagnostic diagnostic)
     {
         return diagnostic with { UnverifiedRanges = [.. diagnostic.UnverifiedRanges] };

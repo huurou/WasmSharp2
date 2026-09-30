@@ -25,7 +25,7 @@ internal static partial class Core2InstructionFixture
             uint code = bytes[0];
             if (prefix != 0)
             {
-                // 付録の拡張opcodeはsubopcode値ではなくLEBのバイト列。
+                // 付録の拡張opcodeはsubopcode値ではなくLEBのバイト列
                 code = 0;
                 for (var i = 1; i < bytes.Length; i++)
                 {

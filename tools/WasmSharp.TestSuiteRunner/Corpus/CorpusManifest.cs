@@ -43,6 +43,9 @@ internal sealed record CorpusManifest(ProfileSnapshot Profile, ConversionProvena
     /// <summary>
     /// 生成開始前に全入力を未処理として記録し、本来の対象集合を確定する。
     /// </summary>
+    /// <param name="profile">公式入力の全対象と変換条件を固定するprofile</param>
+    /// <param name="provenance">生成前提の確認で観測した環境と取得元</param>
+    /// <returns>profileの一覧をコピーし、全入力を未処理、処理と出力を未完了とした生成記録</returns>
     internal static CorpusManifest Create(Core2Profile profile, ConversionProvenance provenance)
     {
         return new(ProfileSnapshot.FromProfile(profile), provenance)
@@ -55,6 +58,7 @@ internal sealed record CorpusManifest(ProfileSnapshot Profile, ConversionProvena
     /// <summary>
     /// 記録内容から、本来の対象入力数と変換状態・生成物数の集計を求める。
     /// </summary>
+    /// <returns>固定した対象入力数と、現在の入力記録に含まれる各状態および部分生成物の件数</returns>
     internal ConversionSummary Summarize()
     {
         return new(
@@ -69,6 +73,7 @@ internal sealed record CorpusManifest(ProfileSnapshot Profile, ConversionProvena
     /// <summary>
     /// 実行結果へ渡すため、入れ子を含むすべての可変一覧をコピーする。
     /// </summary>
+    /// <returns>内容を維持し、元のmanifestとの間で可変一覧を共有しない生成記録</returns>
     internal CorpusManifest CreateSnapshot()
     {
         return this with
@@ -138,6 +143,8 @@ internal sealed record ProfileSnapshot(
     /// <summary>
     /// 不変モデルの全条件を、独立した一覧を持つ保存用DTOへコピーする。
     /// </summary>
+    /// <param name="profile">保存する公式入力の全対象と変換条件</param>
+    /// <returns>feature、入力、論理引数をそれぞれ新しい一覧へコピーした保存用profile</returns>
     internal static ProfileSnapshot FromProfile(Core2Profile profile)
     {
         return new(
@@ -157,6 +164,7 @@ internal sealed record ProfileSnapshot(
     /// <summary>
     /// 保存用DTOの一覧をコピーし、不変のprofileを復元する。
     /// </summary>
+    /// <returns>可変一覧の内容を不変配列へコピーしたprofile</returns>
     internal Core2Profile ToProfile()
     {
         return new(
@@ -174,6 +182,8 @@ internal sealed record ProfileSnapshot(
     /// <summary>
     /// 保存された条件が、指定したprofileの識別・版・全feature・全入力・変換条件と一致するかを判定する。
     /// </summary>
+    /// <param name="profile">比較する固定profile</param>
+    /// <returns>feature、入力、論理引数の順序を含め、すべての条件が一致する場合はtrue</returns>
     internal bool Matches(Core2Profile profile)
     {
         return Id == profile.Id
@@ -189,6 +199,7 @@ internal sealed record ProfileSnapshot(
     /// <summary>
     /// 保存内容を維持したまま、可変一覧を独立させる。
     /// </summary>
+    /// <returns>feature、入力、論理引数をそれぞれ新しい一覧へコピーした保存用profile</returns>
     internal ProfileSnapshot CreateSnapshot()
     {
         return this with
@@ -206,7 +217,7 @@ internal sealed record ProfileSnapshot(
 internal sealed record ConversionProvenance
 {
     /// <summary>
-    /// 変換器のビルド条件を代表する実行ファイルのSHA-256。取得前の失敗時はnull
+    /// 変換器のビルド条件を代表する実行ファイルのSHA-256 実行ファイルを読み取れない場合はnull
     /// </summary>
     public string? ExecutableSha256 { get; init; }
 
@@ -246,22 +257,22 @@ internal sealed record ConversionProvenance
     public string? OutputRoot { get; init; }
 
     /// <summary>
-    /// 公式入力の実際のorigin。管理外コピーや取得できない場合はnull
+    /// 公式入力の実際のorigin 管理外コピーや取得できない場合はnull
     /// </summary>
     public string? SpecOrigin { get; init; }
 
     /// <summary>
-    /// 変換器ソースの実際のorigin。取得できない場合はnull
+    /// 変換器ソースの実際のorigin 取得できない場合はnull
     /// </summary>
     public string? WabtOrigin { get; init; }
 
     /// <summary>
-    /// 公式入力の配置自体がGit checkoutの場合に観測したHEAD
+    /// 公式入力の配置自体がGit checkoutの場合に観測したHEAD 管理外コピーや取得できない場合はnull
     /// </summary>
     public string? SpecHead { get; init; }
 
     /// <summary>
-    /// 変換器ソースのcheckoutで観測したHEAD
+    /// 変換器ソースのcheckoutで観測したHEAD 取得できない場合はnull
     /// </summary>
     public string? WabtHead { get; init; }
 }
@@ -273,12 +284,12 @@ internal sealed record ConversionProvenance
 internal sealed record InputConversionResult(SourceInput Input)
 {
     /// <summary>
-    /// 変換・JSON読取・参照素材照合の結果。開始前は未処理
+    /// 変換・JSON読取・参照素材照合の結果 開始前は未処理
     /// </summary>
     public ConversionStatus Status { get; init; } = ConversionStatus.Unprocessed;
 
     /// <summary>
-    /// 変換器の終了値。未開始・起動失敗など観測できなかった場合はnull
+    /// 変換器の終了値 未開始・起動失敗など観測できなかった場合はnull
     /// </summary>
     public int? ExitCode { get; init; }
 
@@ -293,12 +304,12 @@ internal sealed record InputConversionResult(SourceInput Input)
     public string StandardError { get; init; } = string.Empty;
 
     /// <summary>
-    /// 実際の起動引数。配置rootを含む参考出典であり、論理引数と区別する
+    /// 実際の起動引数 配置rootを含む参考出典であり、論理引数と区別する
     /// </summary>
     public List<string> Arguments { get; init; } = [];
 
     /// <summary>
-    /// この入力が所有する生成物。変換失敗時の部分生成物も保持する
+    /// この入力が所有する生成物 変換失敗時の部分生成物も保持する
     /// </summary>
     public List<Artifact> Artifacts { get; init; } = [];
 
@@ -318,7 +329,7 @@ internal sealed record InputConversionResult(SourceInput Input)
 internal sealed record Artifact(string Path, ArtifactKind Kind, string Sha256, string InputPath)
 {
     /// <summary>
-    /// JSONから取得できたcommand一覧と参照先。JSON以外または未読取ではnull
+    /// JSONから取得できたcommand一覧と参照先 JSON以外または未読取ではnull
     /// </summary>
     public ScriptArtifact? Script { get; init; }
 }
@@ -329,7 +340,7 @@ internal sealed record Artifact(string Path, ArtifactKind Kind, string Sha256, s
 internal sealed record ScriptArtifact
 {
     /// <summary>
-    /// JSONに記録されたsource_filename。取得できなかった場合はnull
+    /// JSONに記録されたsource_filename 取得できなかった場合はnull
     /// </summary>
     public string? SourceFilename { get; init; }
 
@@ -339,7 +350,7 @@ internal sealed record ScriptArtifact
     public bool EnumerationComplete { get; init; }
 
     /// <summary>
-    /// 確定したcommand総数。構文破損などで総数が未確定の場合はnull
+    /// 確定したcommand総数 構文破損などで総数が未確定の場合はnull
     /// </summary>
     public int? CommandCount { get; init; }
 
@@ -358,10 +369,10 @@ internal sealed record ScriptArtifact
 /// 生成JSON内で境界を確定できた一つのcommand
 /// </summary>
 /// <param name="Index">入力内の0始まりcommand index</param>
-/// <param name="Line">元入力の1始まり行番号。取得できない場合はnull</param>
-/// <param name="Type">元JSONのcommand種別。取得できない場合はnull</param>
-/// <param name="ModuleType">元JSONのmodule_type。未指定または取得できない場合はnull</param>
-/// <param name="Filename">元JSONのfilename。未指定または取得できない場合はnull</param>
+/// <param name="Line">元入力の1始まり行番号 取得できない場合はnull</param>
+/// <param name="Type">元JSONのcommand種別 取得できない場合はnull</param>
+/// <param name="ModuleType">元JSONのmodule_type 未指定または取得できない場合はnull</param>
+/// <param name="Filename">元JSONのfilename 未指定または取得できない場合はnull</param>
 internal sealed record ArtifactCommand(
     int Index,
     int? Line,
@@ -383,8 +394,8 @@ internal sealed record ArtifactReference(int CommandIndex, string Filename, stri
 /// </summary>
 /// <param name="Operation">失敗した操作</param>
 /// <param name="Message">加工しない診断内容</param>
-/// <param name="Path">対象の入力または素材の相対path。操作全体の診断ではnull</param>
-/// <param name="ExceptionType">観測した例外の完全型名。例外以外の失敗ではnull</param>
+/// <param name="Path">対象の入力または素材の相対path 操作全体の診断ではnull</param>
+/// <param name="ExceptionType">観測した例外の完全型名 例外以外の失敗ではnull</param>
 internal sealed record CorpusDiagnostic(
     string Operation,
     string Message,
@@ -459,7 +470,7 @@ internal sealed record ConversionSummary(
 );
 
 /// <summary>
-/// 合格判定と区別する処理・出力の完了情報。保存時の値は読取側で再検証する
+/// 合格判定と区別する処理・出力の完了情報 保存時の値は読取側で再検証する
 /// </summary>
 /// <param name="ProcessingComplete">失敗を含めて全入力の処理と記録を完了したかどうか</param>
 /// <param name="OutputComplete">出力を最後まで書き切り確定したかどうか</param>

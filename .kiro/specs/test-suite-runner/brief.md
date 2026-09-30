@@ -6,7 +6,7 @@
 
 ## 現状
 
-最小基盤と、公式spec・WABTの固定版および取得・ビルド手順がある。正式manifestと公式ランナーは未実装。本仕様の実行・判定は、先行するhost-linkingが提供する関数実行・リソース生成・import/export・start・依存情報の公開契約を利用する。素材生成とJSON処理の作業は先行できる。
+最小基盤と、公式spec・WABTの固定版および取得・ビルド手順がある。正式manifestと公式ランナーは未実装 本仕様の実行・判定は、先行するhost-linkingが提供する関数実行・リソース生成・import/export・start・依存情報の公開契約を利用する。素材生成とJSON処理の作業は先行できる。
 
 ## 望む結果
 
@@ -18,16 +18,16 @@
 
 ## 範囲
 
-- **対象**: SIMDを含む固定Core 2.0のtest/core全WAST入力、採用spec/WABTの取得元・commit、入力WASTのhash、ビルド条件を代表する変換器実行ファイルhash、全featureの既定値と実効ON/OFF、変換引数。
-- **対象**: 全件変換、入力とJSON/wasm/watの対応・path・hashを保持し変換結果を兼ねるmanifest、照合、変換失敗・未処理・未確定の報告、再生成と変換baselineの比較。
-- **対象**: JSON全commandの列挙、通常module・module識別子付きmodule・直近module、spectest、register、invoke/get、前提commandへの依存と共有状態。
-- **対象**: spectestの固定Core 2.0環境。明示型のホスト関数7個、immutable数値global4個、funcref tableとmemoryを、先行仕様の公開APIで生成する。print系の呼び出しは標準出力へ出さず、該当commandの詳細結果に記録する。
-- **対象**: i32・i64・f32・f64・v128・funcref・externrefの引数構築と結果比較、結果0個・1個・複数、global取得。型・個数・ビット列・符号付き0・NaN pattern（v128はlaneごと）、参照のnullとexternrefの同一性を比較する。
-- **対象**: binaryのassert_malformed/assert_invalid、assert_return、assert_unlinkable、assert_trap/assert_exhaustion、assert_uninstantiableの段階別判定。否定assertionは公式期待診断との前方一致も必須とする。実行自体が後続命令やsegmentを必要とするケースは、その前提が揃った段階で成立させる。
-- **対象**: 6分類による全結果の保存、セットアップ・単独action・assertion別の集計、実行結果baseline、ケース単位の回帰比較、用途別終了コード。
-- **対象**: registerに必要な、instanceのexport一覧を取得する公開APIのランタイムへの追加。
+- **対象**: SIMDを含む固定Core 2.0のtest/core全WAST入力、採用spec/WABTの取得元・commit、入力WASTのhash、ビルド条件を代表する変換器実行ファイルhash、全featureの既定値と実効ON/OFF、変換引数
+- **対象**: 全件変換、入力とJSON/wasm/watの対応・path・hashを保持し変換結果を兼ねるmanifest、照合、変換失敗・未処理・未確定の報告、再生成と変換baselineの比較
+- **対象**: JSON全commandの列挙、通常module・module識別子付きmodule・直近module、spectest、register、invoke/get、前提commandへの依存と共有状態
+- **対象**: spectestの固定Core 2.0環境 明示型のホスト関数7個、immutable数値global4個、funcref tableとmemoryを、先行仕様の公開APIで生成する。print系の呼び出しは標準出力へ出さず、該当commandの詳細結果に記録する。
+- **対象**: i32・i64・f32・f64・v128・funcref・externrefの引数構築と結果比較、結果0個・1個・複数、global取得 型・個数・ビット列・符号付き0・NaN pattern（v128はlaneごと）、参照のnullとexternrefの同一性を比較する。
+- **対象**: binaryのassert_malformed/assert_invalid、assert_return、assert_unlinkable、assert_trap/assert_exhaustion、assert_uninstantiableの段階別判定 否定assertionは公式期待診断との前方一致も必須とする。実行自体が後続命令やsegmentを必要とするケースは、その前提が揃った段階で成立させる。
+- **対象**: 6分類による全結果の保存、セットアップ・単独action・assertion別の集計、実行結果baseline、ケース単位の回帰比較、用途別終了コード
+- **対象**: registerに必要な、instanceのexport一覧を取得する公開APIのランタイムへの追加
 - **後続仕様の扱い**: 各命令やsegmentの追加に伴う公式ケースは、既存の値比較と段階別判定で実行する。ランナーの値処理や比較能力を後続仕様へ残さない。
-- **対象外**: WAST/WATの自作解析、Wasm演算・import型照合の再実装、ランタイム内部アクセス、専用hook、所管仕様の記録、Core 3.0/proposal profile、baseline共有サービス。
+- **対象外**: WAST/WATの自作解析、Wasm演算・import型照合の再実装、ランタイム内部アクセス、専用hook、所管仕様の記録、Core 3.0/proposal profile、baseline共有サービス
 
 ## 責務の接点
 
@@ -62,12 +62,12 @@ baselineの保存とbaselineとの比較は別々の明示的なコマンドと�
 
 ## 上流・下流
 
-- **上流**: host-linking。runtime-foundationの公開契約と、[外部ソースの固定](../../../thirdParties/README.md)を引き継ぐ。
-- **下流**: test-suite-conformanceによるランタイムの実装修正、numeric-control、linear-memory、tables-references、simdの公式検証と全体の最終判定。
+- **上流**: host-linking runtime-foundationの公開契約と、[外部ソースの固定](../../../thirdParties/README.md)を引き継ぐ。
+- **下流**: test-suite-conformanceによるランタイムの実装修正、numeric-control、linear-memory、tables-references、simdの公式検証と全体の最終判定
 
 ## 既存仕様との関係
 
-- **拡張する既存仕様**: なし。初期必須の公式実行経路を成立させるためのランタイム修正（instanceのexport一覧を取得する公開APIの追加を含む）は本仕様で行い、判定で得たfailedの解消はtest-suite-conformanceへ引き継ぐ。完了済み仕様の過去の受入記録を変更せず、ツール側で期待値や失敗分類を変更して補わない。
+- **拡張する既存仕様**: なし 初期必須の公式実行経路を成立させるためのランタイム修正（instanceのexport一覧を取得する公開APIの追加を含む）は本仕様で行い、判定で得たfailedの解消はtest-suite-conformanceへ引き継ぐ。完了済み仕様の過去の受入記録を変更せず、ツール側で期待値や失敗分類を変更して補わない。
 - **隣接**: 数値・制御と各リソース・参照・SIMD仕様は命令・初期化の意味論と公式統合確認を所有する。spectest・registerとランナーの値処理は本仕様の初期範囲で完成させる。
 - **実装修正の責務**: 公式期待値との比較と診断の前方一致判定、初期必須の公式ケースを実行・判定できるまでの修正は本仕様に含める。判定で得た動作・値・状態・失敗分類・診断の不一致と、初期必須の実行経路を妨げず原因をランタイム側と確認できたrunner_errorはtest-suite-conformanceで扱う。
 
@@ -81,4 +81,4 @@ baselineの保存とbaselineとの比較は別々の明示的なコマンドと�
 
 ランナーの受入とランタイムの全件合格を区別し、failedやrunner_errorが残る実行・回帰比較は非0のまま記録する。初回baselineも最初から前方一致を含む同じ基準で保存し、後から判定を強化する段階や既知不一致を合格にする特例は設けない。前方一致・不一致・補助説明付きの診断判定と、不一致の記録・非0終了をランナーのテストで確認する。
 
-後続の命令・segmentに依存する未成立ケースは、ランタイムが報告した未実装機能と原因commandを残す。v128と参照の値処理は、対応する命令が実装されるまでランナーのテストで確認する。この段階でCore 2.0全件合格は要求しない。機能追加後の全体実行・回帰比較と最終完了は[ロードマップ](../../steering/roadmap.md)に従う。コマンド名、JSONファイルの構造、内部構造、hash方式と0以外の終了値は後続の設計で定める。文書は日本語（ja）。
+後続の命令・segmentに依存する未成立ケースは、ランタイムが報告した未実装機能と原因commandを残す。v128と参照の値処理は、対応する命令が実装されるまでランナーのテストで確認する。この段階でCore 2.0全件合格は要求しない。機能追加後の全体実行・回帰比較と最終完了は[ロードマップ](../../steering/roadmap.md)に従う。コマンド名、JSONファイルの構造、内部構造、hash方式と0以外の終了値は後続の設計で定める。文書は日本語（ja）

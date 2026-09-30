@@ -9,12 +9,12 @@ namespace WasmSharp.TestSuiteRunner.Reports;
 internal sealed record InputRunResult(string InputPath)
 {
     /// <summary>
-    /// 入力の処理状態。開始前は未処理
+    /// 入力の処理状態 開始前は未処理
     /// </summary>
     public InputRunStatus Status { get; init; } = InputRunStatus.Unprocessed;
 
     /// <summary>
-    /// 確定したcommand総数。列挙できない、または実行前の照合で信用できない場合はnull
+    /// 確定したcommand総数 列挙できない、または実行前の照合で信用できない場合はnull
     /// </summary>
     public int? CommandCount { get; init; }
 
@@ -34,7 +34,7 @@ internal sealed record InputRunResult(string InputPath)
     public List<CorpusDiagnostic> Issues { get; init; } = [];
 
     /// <summary>
-    /// 処理したcommandの結果。未処理のcommandは含めない
+    /// 処理したcommandの結果 未処理のcommandは含めない
     /// </summary>
     public List<CaseResult> Cases { get; init; } = [];
 }

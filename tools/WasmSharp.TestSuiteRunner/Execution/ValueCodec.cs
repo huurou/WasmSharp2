@@ -21,8 +21,12 @@ internal static class ValueCodec
     /// <summary>
     /// invokeの引数を、JSONの順序・型・ビット列を保ったvalueの列へ変換する。
     /// </summary>
+    /// <remarks>
+    /// 途中の引数が不正な場合は部分配列を返さない。それまでに状態へ割り当てたexternrefの対応は保持する。
+    /// </remarks>
     /// <param name="values">JSONの記載順の引数</param>
     /// <param name="state">externrefの番号にホスト値を割り当てる入力の状態</param>
+    /// <returns>順序とビット列を保持する新しいvalueの配列 参照値は入力内の同じ番号の実体を共有する</returns>
     /// <exception cref="ScriptFormatException">値の文字列が固定形式にない場合</exception>
     internal static ImmutableArray<WasmValue> CreateArguments(
         ImmutableArray<ArgumentValue> values,
@@ -35,8 +39,12 @@ internal static class ValueCodec
     /// <summary>
     /// 実値を、型と幅を固定したhexと入力内の参照tokenで記録する。
     /// </summary>
+    /// <remarks>
+    /// Core 2.0の数値・v128・参照の記録を作る。参照先の取得APIがないexnrefでは型名だけを記録する。
+    /// </remarks>
     /// <param name="value">記録するvalue</param>
     /// <param name="state">参照tokenとexternrefの番号を管理する入力の状態</param>
+    /// <returns>数値の全ビット、v128の上下64ビット、参照のnull・token・元番号を型とともに保持する記録</returns>
     internal static ValueRecord Record(WasmValue value, ScriptState state)
     {
         var record = new ValueRecord(GetTypeName(value.Kind));
@@ -66,6 +74,8 @@ internal static class ValueCodec
     /// 整数・浮動小数点数のvalueのビット列を、型の幅のまま下位に置いて返す。
     /// </summary>
     /// <param name="value">i32・i64・f32・f64のvalue</param>
+    /// <returns>valueのビット列 32ビット型では上位32ビットを0にする</returns>
+    /// <exception cref="InvalidOperationException">valueがi32・i64・f32・f64のいずれでもない場合</exception>
     internal static ulong GetBits(WasmValue value)
     {
         return value.Kind switch
@@ -80,6 +90,8 @@ internal static class ValueCodec
     /// <summary>
     /// WABTの値型名を返す。
     /// </summary>
+    /// <param name="kind">記録するWasmの値型</param>
+    /// <returns>JSONへ記録する小文字の型名 Core 2.0の7値型以外はexnref</returns>
     internal static string GetTypeName(WasmValueKind kind)
     {
         return kind switch
@@ -101,6 +113,7 @@ internal static class ValueCodec
     /// <param name="laneType">lane型</param>
     /// <param name="count">JSONに記録されたlaneの個数</param>
     /// <param name="path">異常の報告に使うJSON上の位置</param>
+    /// <returns>lane型に応じた8・16・32・64のいずれかのビット幅</returns>
     /// <exception cref="ScriptFormatException">lane数がlane型の個数と一致しない場合</exception>
     internal static int GetLaneWidth(LaneType laneType, int count, string path)
     {
@@ -122,8 +135,10 @@ internal static class ValueCodec
     /// v128から指定したlaneのビット列を取り出す。lane0を下位ビットとする。
     /// </summary>
     /// <param name="value">v128のvalue</param>
-    /// <param name="width">1laneのビット幅。8・16・32・64のいずれか</param>
-    /// <param name="lane">0始まりのlane位置</param>
+    /// <param name="width">1laneのビット幅 8・16・32・64のいずれか</param>
+    /// <param name="lane">0始まりのlane位置 0以上、128をwidthで割った個数未満</param>
+    /// <returns>指定laneのビット列 上位の未使用ビットは0</returns>
+    /// <exception cref="InvalidOperationException">valueがv128ではない場合</exception>
     internal static ulong GetLane(WasmValue value, int width, int lane)
     {
         // lane幅は64の約数のため、1つのlaneが下位と上位の64ビットにまたがらない。
@@ -136,9 +151,10 @@ internal static class ValueCodec
     /// 指定した幅の符号なし10進数を、切り詰めずにビット列として読む。
     /// </summary>
     /// <param name="text">WABTが記録した値の文字列</param>
-    /// <param name="width">ビット幅。8・16・32・64のいずれか</param>
+    /// <param name="width">ビット幅 8・16・32・64のいずれか</param>
     /// <param name="path">異常の報告に使うJSON上の位置</param>
-    /// <exception cref="ScriptFormatException">ASCII数字以外や0以外の先頭の0を含むか、幅に収まらない場合</exception>
+    /// <returns>指定幅に収まる符号なし整数として解釈したビット列</returns>
+    /// <exception cref="ScriptFormatException">null・空文字列、ASCII数字以外や0以外の先頭の0を含む文字列、または幅に収まらない場合</exception>
     internal static ulong ParseBits(string? text, int width, string path)
     {
         // 標準の解析は先頭の0や末尾のNULも受け付けるため、WABTの%u形式の文字だけに限定する。
@@ -154,15 +170,24 @@ internal static class ValueCodec
     }
 
     /// <summary>
-    /// ビット列を幅に応じた桁数の小文字hexで表す。
+    /// ビット列を幅に応じた最小桁数の小文字hexで表す。
     /// </summary>
-    /// <param name="bits">下位から幅の分だけを使うビット列</param>
-    /// <param name="width">ビット幅。8・16・32・64のいずれか</param>
+    /// <param name="bits">表記するビット列 指定幅に収まる値を渡す</param>
+    /// <param name="width">ビット幅 8・16・32・64のいずれか</param>
+    /// <returns>0xを付けず、widthを4で割った桁数まで0を補った文字列 幅を超えるビットは切り詰めない</returns>
     internal static string ToHex(ulong bits, int width)
     {
         return bits.ToString($"x{width / 4}", CultureInfo.InvariantCulture);
     }
 
+    /// <summary>
+    /// 1個の引数の文字列を検査し、数値の全ビットまたは参照の同一性を保ったvalueを作る。
+    /// </summary>
+    /// <param name="value">WABT形式の引数 NaN patternは受け付けない</param>
+    /// <param name="path">不正な値を報告するJSON上の位置</param>
+    /// <param name="state">非nullのexternrefを番号ごとに割り当てる入力の状態</param>
+    /// <returns>型とビット列を保持する引数のvalue externrefは同じ番号のホスト値を参照する</returns>
+    /// <exception cref="ScriptFormatException">値の文字列やlane数が不正、または非nullのfuncrefなど固定形式外の引数の場合</exception>
     private static WasmValue CreateArgument(ArgumentValue value, string path, ScriptState state)
     {
         return value switch
@@ -193,6 +218,14 @@ internal static class ValueCodec
         };
     }
 
+    /// <summary>
+    /// lane0を下位ビットとし、laneの文字列からCPUのendianに依存せずv128を作る。
+    /// </summary>
+    /// <param name="laneType">各laneの型と幅</param>
+    /// <param name="lanes">lane0から順の符号なし10進数によるビット列</param>
+    /// <param name="path">lane数やlane値の異常を報告するJSON上の位置</param>
+    /// <returns>すべてのlaneのビット列を順序どおりに配置したv128のvalue</returns>
+    /// <exception cref="ScriptFormatException">lane数が型と合わないか、lane値が固定形式外または幅に収まらない場合</exception>
     private static WasmValue CreateV128(
         LaneType laneType,
         ImmutableArray<string> lanes,
@@ -220,6 +253,13 @@ internal static class ValueCodec
         return WasmValue.FromV128(low64, high64);
     }
 
+    /// <summary>
+    /// 型の記録へ参照のnullと入力内の同一性を加えた新しい記録を作る。
+    /// </summary>
+    /// <param name="record">参照型の名前を持つ元の記録</param>
+    /// <param name="reference">funcrefまたはexternrefの参照先 nullも許容する</param>
+    /// <param name="state">参照tokenと、割り当てたexternrefの元番号を管理する入力の状態</param>
+    /// <returns>nullならIsNullだけを設定し、非nullならtokenと取得できたexternref番号を追加した記録</returns>
     private static ValueRecord RecordReference(
         ValueRecord record,
         object? reference,
@@ -240,6 +280,11 @@ internal static class ValueCodec
             };
     }
 
+    /// <summary>
+    /// 指定幅の下位ビットだけを残すマスクを返す。
+    /// </summary>
+    /// <param name="width">ビット幅 8・16・32・64のいずれか</param>
+    /// <returns>下位widthビットが1、残りが0の64ビット値</returns>
     private static ulong GetMask(int width)
     {
         return width == 64 ? ulong.MaxValue : (1UL << width) - 1;

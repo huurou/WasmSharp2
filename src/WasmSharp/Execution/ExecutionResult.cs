@@ -111,9 +111,9 @@ internal readonly struct ExecutionResult
     /// 実行資源の上限到達の原因、適用上限と発生位置を保持する失敗結果を構築する
     /// </summary>
     /// <param name="reason">上限に達した実行資源の原因</param>
-    /// <param name="limit">この実行に適用された正の上限。CLRスタックの未計測上限はnull</param>
-    /// <param name="functionIndex">上限に達した定義関数、またはホスト呼び出し元の関数index。特定できない場合はnull</param>
-    /// <param name="byteOffset">上限に達した入力バイナリ上のバイト位置。該当位置がなければnull</param>
+    /// <param name="limit">この実行に適用された正の上限 CLRスタックの未計測上限はnull</param>
+    /// <param name="functionIndex">上限に達した定義関数、またはホスト呼び出し元の関数index 特定できない場合はnull</param>
+    /// <param name="byteOffset">上限に達した入力バイナリ上のバイト位置 該当位置がなければnull</param>
     /// <returns>実行資源の上限到達を表す実行結果</returns>
     /// <exception cref="ArgumentOutOfRangeException">上限が0以下の場合</exception>
     internal static ExecutionResult Exhaustion(

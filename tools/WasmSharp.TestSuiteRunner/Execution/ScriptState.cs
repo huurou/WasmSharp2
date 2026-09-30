@@ -13,16 +13,35 @@ namespace WasmSharp.TestSuiteRunner.Execution;
 /// <param name="inputPath">ケース識別に使うtest/core基準の入力相対path</param>
 internal sealed class ScriptState(string inputPath)
 {
+    /// <summary>
+    /// module識別子に対応する成功実体または利用不能状態
+    /// </summary>
     private readonly Dictionary<string, ScriptBinding<InstantiatedModule>> modules_ = new(
         StringComparer.Ordinal
     );
+
+    /// <summary>
+    /// importの登録名に対応する最新の提供元または利用不能状態
+    /// </summary>
     private readonly Dictionary<string, ScriptBinding<WasmHostModule>> registrations_ = new(
         StringComparer.Ordinal
     );
+
+    /// <summary>
+    /// 入力内のexternref番号ごとに割り当てたホスト値
+    /// </summary>
     private readonly Dictionary<uint, object> externrefs_ = [];
+
+    /// <summary>
+    /// 割り当てたホスト値から参照の同一性で引く元のexternref番号
+    /// </summary>
     private readonly Dictionary<object, uint> externrefNumbers_ = new(
         ReferenceEqualityComparer.Instance
     );
+
+    /// <summary>
+    /// 保存用の非null参照token 内容の等値性を使わず初出順に割り当てる対応
+    /// </summary>
     private readonly Dictionary<object, int> referenceTokens_ = new(
         ReferenceEqualityComparer.Instance
     );
@@ -38,12 +57,12 @@ internal sealed class ScriptState(string inputPath)
     internal string InputPath { get; } = inputPath;
 
     /// <summary>
-    /// 直近の通常module。まだ通常moduleを処理していない場合はnull
+    /// 直近の通常module まだ通常moduleを処理していない場合はnull
     /// </summary>
     internal ScriptBinding<InstantiatedModule>? LastModule { get; private set; }
 
     /// <summary>
-    /// 処理中のcommand。まだ開始していない場合はnull
+    /// 処理中のcommand まだ開始していない場合はnull
     /// </summary>
     internal CaseId? CurrentCommand { get; private set; }
 
@@ -88,8 +107,8 @@ internal sealed class ScriptState(string inputPath)
     /// <summary>
     /// actionやregisterの対象moduleを解決する。
     /// </summary>
-    /// <param name="name">module識別子。省略時は直近の通常moduleを示すnull</param>
-    /// <returns>成功実体か利用不能状態。存在しない識別子や、通常moduleを処理する前の省略ではnull</returns>
+    /// <param name="name">module識別子 省略時は直近の通常moduleを示すnull</param>
+    /// <returns>成功実体か利用不能状態 存在しない識別子や、通常moduleを処理する前の省略ではnull</returns>
     internal ScriptBinding<InstantiatedModule>? ResolveModule(string? name)
     {
         return name is null ? LastModule : modules_.GetValueOrDefault(name);
@@ -99,7 +118,7 @@ internal sealed class ScriptState(string inputPath)
     /// 登録名が指す提供元を取得する。
     /// </summary>
     /// <param name="name">importのmodule名として使う登録名</param>
-    /// <returns>成功した提供元か利用不能状態。一度も登録していない名前ではnull</returns>
+    /// <returns>成功した提供元か利用不能状態 一度も登録していない名前ではnull</returns>
     internal ScriptBinding<WasmHostModule>? GetRegistration(string name)
     {
         return registrations_.GetValueOrDefault(name);
@@ -108,6 +127,7 @@ internal sealed class ScriptState(string inputPath)
     /// <summary>
     /// 現在の成功登録から提供表を作り直す。再登録前のexportや失敗した提供元は含めない。
     /// </summary>
+    /// <returns>成功した最新の提供元だけを持つ新しい提供表 関数とリソースは同じ実体を共有する</returns>
     internal WasmImports CreateImports()
     {
         var imports = new WasmImports();
@@ -147,7 +167,7 @@ internal sealed class ScriptState(string inputPath)
     /// 通常moduleは直近moduleと識別子、registerは登録名を更新する。否定module・action・assertionと、更新対象を取得できない名前は変更しない。
     /// </remarks>
     /// <param name="command">成立しなかったcommand</param>
-    /// <param name="cause">commandがblockedの場合の原因。それ以外はnull</param>
+    /// <param name="cause">commandがblockedの場合の原因 それ以外はnull</param>
     internal void Fail(ScriptCommand command, CaseCause? cause)
     {
         var id = new CaseId(InputPath, command.Index);
@@ -174,6 +194,7 @@ internal sealed class ScriptState(string inputPath)
     /// externrefの番号に対応するホスト値を返す。同じ番号には入力内で同じobjectを割り当てる。
     /// </summary>
     /// <param name="number">JSONに記録された非nullのexternref番号</param>
+    /// <returns>指定番号に割り当てたホスト値 同じ入力の同じ番号では同じobjectを返す</returns>
     internal object GetExternref(uint number)
     {
         if (!externrefs_.TryGetValue(number, out var externref))
@@ -191,7 +212,7 @@ internal sealed class ScriptState(string inputPath)
     /// この入力で割り当てたexternrefの元番号を返す。
     /// </summary>
     /// <param name="reference">非nullの参照</param>
-    /// <returns>割り当てた番号。この入力で割り当てていない参照ではnull</returns>
+    /// <returns>割り当てた番号 この入力で割り当てていない参照ではnull</returns>
     internal uint? GetExternrefNumber(object reference)
     {
         return externrefNumbers_.TryGetValue(reference, out var number) ? number : null;
@@ -200,7 +221,8 @@ internal sealed class ScriptState(string inputPath)
     /// <summary>
     /// 非null参照の記録に使う、入力内で初出順のtokenを返す。
     /// </summary>
-    /// <param name="reference">非nullの参照。内容の等値性ではなく参照の同一性で識別する</param>
+    /// <param name="reference">非nullの参照 内容の等値性ではなく参照の同一性で識別する</param>
+    /// <returns>0始まりで初出順に割り当てたtoken 同じ参照の再取得では同じ値</returns>
     internal int GetReferenceToken(object reference)
     {
         if (!referenceTokens_.TryGetValue(reference, out var token))
@@ -212,6 +234,11 @@ internal sealed class ScriptState(string inputPath)
         return token;
     }
 
+    /// <summary>
+    /// 直近moduleを置き換え、識別子がある場合はその対応も同じ状態へ置き換える。
+    /// </summary>
+    /// <param name="name">更新するmodule識別子 指定されていない場合はnull</param>
+    /// <param name="binding">新しい成功実体または利用不能状態</param>
     private void UpdateModule(string? name, ScriptBinding<InstantiatedModule> binding)
     {
         LastModule = binding;

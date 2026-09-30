@@ -12,8 +12,19 @@ namespace WasmSharp.TestSuiteRunner.Reports;
 /// </summary>
 internal static class ReportStore
 {
+    /// <summary>
+    /// 読取りを受け付ける保存形式の版
+    /// </summary>
     private const int SCHEMA_VERSION = 1;
+
+    /// <summary>
+    /// 変換manifestを識別する保存形式の種類
+    /// </summary>
     private const string MANIFEST_KIND = "corpus_manifest";
+
+    /// <summary>
+    /// 実行結果を識別する保存形式の種類
+    /// </summary>
     private const string RUN_REPORT_KIND = "run_report";
 
     /// <summary>
@@ -50,6 +61,8 @@ internal static class ReportStore
     /// <summary>
     /// manifestを確定保存する。既存ファイルは上書きしない。
     /// </summary>
+    /// <param name="manifest">保存する変換結果 保存前の完全性検証は呼出側で行う</param>
+    /// <param name="path">新規作成するJSONファイルの保存先 親ディレクトリは作成済みであること</param>
     /// <exception cref="ReportStoreException">保存を確定できない場合</exception>
     internal static void Save(CorpusManifest manifest, string path)
     {
@@ -63,6 +76,8 @@ internal static class ReportStore
     /// <summary>
     /// 実行結果を確定保存する。既存ファイルは上書きしない。
     /// </summary>
+    /// <param name="report">保存する実行結果 保存前の完全性検証は呼出側で行う</param>
+    /// <param name="path">新規作成するJSONファイルの保存先 親ディレクトリは作成済みであること</param>
     /// <exception cref="ReportStoreException">保存を確定できない場合</exception>
     internal static void Save(RunReport report, string path)
     {
@@ -76,6 +91,8 @@ internal static class ReportStore
     /// <summary>
     /// 比較結果を確定保存する。既存ファイルは上書きしない。
     /// </summary>
+    /// <param name="report">保存する比較結果</param>
+    /// <param name="path">新規作成するJSONファイルの保存先 親ディレクトリは作成済みであること</param>
     /// <exception cref="ReportStoreException">保存を確定できない場合</exception>
     internal static void Save(ComparisonReport report, string path)
     {
@@ -89,7 +106,9 @@ internal static class ReportStore
     /// <summary>
     /// 検証済みの保存JSONを同じ内容のbaselineとして確定保存し、既存baselineを明示的に置換する。
     /// </summary>
-    /// <exception cref="ReportStoreException">保存を確定できない場合。既存baselineは変更しない</exception>
+    /// <param name="content">呼出側で検証済みのJSONバイト列 内容の再検証や整形は行わない</param>
+    /// <param name="path">baselineの保存先 親ディレクトリは作成済みであること</param>
+    /// <exception cref="ReportStoreException">保存を確定できない場合 既存baselineは変更しない</exception>
     internal static void SaveBaseline(byte[] content, string path)
     {
         Write(path, replaceExisting: true, x => x.Write(content));
@@ -99,8 +118,12 @@ internal static class ReportStore
     /// 保存先と同じディレクトリの一時ファイルへ書き切ってから確定する。
     /// 置換しない場合は、確定の直前に作られたファイルも上書きしない。
     /// </summary>
+    /// <param name="path">保存先ファイル 親ディレクトリは作成済みであること</param>
+    /// <param name="replaceExisting">既存の保存先ファイルを置換する場合はtrue</param>
+    /// <param name="write">一時ファイルへ内容を書き込む処理 渡されたStreamの破棄はこのメソッドが行う</param>
     /// <remarks>
-    /// 書込みの失敗や中断では一時ファイルを削除し、既存の保存先を変更しない。
+    /// 書込みの失敗や中断では既存の保存先を変更せず、一時ファイルの削除を試みる。
+    /// 削除に失敗しても元の例外を優先し、書込処理が投げたファイル操作以外の例外はそのまま伝える。
     /// </remarks>
     /// <exception cref="ReportStoreException">書込みまたは確定のファイル操作に失敗した場合</exception>
     internal static void Write(string path, bool replaceExisting, Action<Stream> write)
@@ -144,6 +167,8 @@ internal static class ReportStore
     /// <summary>
     /// 保存済みのmanifestまたは実行結果を読み取り、記録の問題とともに返す。
     /// </summary>
+    /// <param name="path">読み取る保存済みJSONファイル</param>
+    /// <returns>型付きの結果、元のバイト列、記録の完全性に関する問題を保持する記録 問題があっても読取可能なら返す</returns>
     /// <exception cref="ReportStoreException">ファイル・schema・kind・JSON構造・ケース識別を読み取れない場合</exception>
     internal static StoredReport Read(string path)
     {
@@ -189,6 +214,8 @@ internal static class ReportStore
     /// <summary>
     /// 保存済みのmanifestだけを読み取る。
     /// </summary>
+    /// <param name="path">読み取る変換manifestのJSONファイル</param>
+    /// <returns>manifest、元のバイト列、記録の完全性に関する問題を保持する記録</returns>
     /// <exception cref="ReportStoreException">読み取れない場合、またはmanifest以外の場合</exception>
     internal static StoredManifest ReadManifest(string path)
     {
@@ -202,6 +229,8 @@ internal static class ReportStore
     /// <summary>
     /// 保存済みの実行結果だけを読み取る。
     /// </summary>
+    /// <param name="path">読み取る実行結果のJSONファイル</param>
+    /// <returns>実行結果、元のバイト列、記録の完全性に関する問題を保持する記録</returns>
     /// <exception cref="ReportStoreException">読み取れない場合、または実行結果以外の場合</exception>
     internal static StoredRunReport ReadRunReport(string path)
     {
@@ -215,6 +244,8 @@ internal static class ReportStore
     /// <summary>
     /// 保存された完了flagだけを信用せず、profileの全入力・未処理・集計に照らしてmanifestを検証する。
     /// </summary>
+    /// <param name="manifest">記録内容の完全性を検証する変換結果</param>
+    /// <returns>入力集合、未処理、完了状態、集計に関する問題一覧 問題がない場合は空</returns>
     internal static ImmutableArray<RecordIssue> Validate(CorpusManifest manifest)
     {
         var issues = ImmutableArray.CreateBuilder<RecordIssue>();
@@ -245,6 +276,8 @@ internal static class ReportStore
     /// <summary>
     /// 保存された完了flagだけを信用せず、profileの全入力と素材のcommand一覧に照らして実行結果を検証する。
     /// </summary>
+    /// <param name="report">記録内容の完全性を検証する実行結果</param>
+    /// <returns>素材・実行結果の入力集合、commandの記録、完了状態、集計に関する問題一覧 問題がない場合は空</returns>
     internal static ImmutableArray<RecordIssue> Validate(RunReport report)
     {
         var issues = ImmutableArray.CreateBuilder<RecordIssue>();
@@ -287,6 +320,10 @@ internal static class ReportStore
         return issues.ToImmutable();
     }
 
+    /// <summary>
+    /// 一時ファイルの削除を試み、保存処理の結果を削除失敗で置き換えない。
+    /// </summary>
+    /// <param name="path">削除する一時ファイルのpath 存在しない場合も受け付ける</param>
     private static void DeleteTemporaryFile(string path)
     {
         try
@@ -299,6 +336,13 @@ internal static class ReportStore
         }
     }
 
+    /// <summary>
+    /// 対応するschemaの保存結果から、manifestまたは実行結果の種類を読み取る。
+    /// </summary>
+    /// <param name="root">保存JSONのルート要素</param>
+    /// <param name="path">読取失敗の診断に含めるファイルのpath</param>
+    /// <returns>corpus_manifestまたはrun_report</returns>
+    /// <exception cref="ReportStoreException">ルートがobjectでない場合、schemaの版が対応しない場合、またはkindが受け付けられない場合</exception>
     private static string ReadKind(JsonElement root, string path)
     {
         if (
@@ -330,12 +374,24 @@ internal static class ReportStore
         return kind.GetString()!;
     }
 
+    /// <summary>
+    /// 未知の項目、必須項目の欠落、不正な分類、一覧内のnullを拒否して保存記録を復元する。
+    /// </summary>
+    /// <typeparam name="T">保存記録のDTO型</typeparam>
+    /// <param name="root">復元する保存JSONのルート要素</param>
+    /// <returns>保存内容から復元したnullでない記録</returns>
+    /// <exception cref="JsonException">JSONが記録の保存形式に従わない場合、または復元結果がnullの場合</exception>
     private static T Deserialize<T>(JsonElement root)
     {
         EnsureNoNullElements(root);
         return root.Deserialize<T>(readOptions_) ?? throw new JsonException("結果がnullです。");
     }
 
+    /// <summary>
+    /// 入れ子を含むJSONの全配列に、nullの要素がないことを確認する。
+    /// </summary>
+    /// <param name="element">確認するJSON要素 objectのnull値は許容する</param>
+    /// <exception cref="JsonException">配列にnullの要素がある場合</exception>
     private static void EnsureNoNullElements(JsonElement element)
     {
         // null許容注釈では一覧の要素を検査できない。保存形式の一覧は要素にnullを持たないため、構造不正として拒否する。
@@ -360,6 +416,12 @@ internal static class ReportStore
         }
     }
 
+    /// <summary>
+    /// ケースの入力pathが所属入力と一致し、command indexが負でないことを確認する。
+    /// </summary>
+    /// <param name="report">ケース識別を確認する実行結果</param>
+    /// <param name="path">読取失敗の診断に含めるJSONファイルのpath</param>
+    /// <exception cref="ReportStoreException">ケース識別の入力pathが異なる場合、またはcommand indexが負の場合</exception>
     private static void EnsureCaseIds(RunReport report, string path)
     {
         foreach (var input in report.Inputs)
@@ -378,6 +440,11 @@ internal static class ReportStore
         }
     }
 
+    /// <summary>
+    /// JSON素材の列挙が完了し、保存された一覧と一致するcommand件数だけを取得する。
+    /// </summary>
+    /// <param name="input">基準となるJSON素材を含む入力の変換結果</param>
+    /// <returns>JSON素材がちょうど1件あり、列挙完了と件数の一致を確認できる場合は件数、それ以外はnull</returns>
     private static int? GetCommandCount(InputConversionResult input)
     {
         // 件数だけを信用せず、列挙を完了して保存されたcommand一覧と件数が一致する素材だけを基準にする。
@@ -389,6 +456,13 @@ internal static class ReportStore
             : null;
     }
 
+    /// <summary>
+    /// profileの対象入力に対する欠落、重複、対象外の記録を問題一覧へ追加する。
+    /// </summary>
+    /// <param name="expected">profileの対象入力一覧</param>
+    /// <param name="actual">記録された入力pathの一覧 大文字と小文字を区別して照合する</param>
+    /// <param name="issues">問題の追加先</param>
+    /// <param name="prefix">診断メッセージでpathの前に付ける対象の説明</param>
     private static void AddInputSetIssues(
         IEnumerable<SourceInput> expected,
         IEnumerable<string> actual,
@@ -426,6 +500,12 @@ internal static class ReportStore
         }
     }
 
+    /// <summary>
+    /// 入力の処理状態、command件数、ケースの欠落・重複・範囲、分類の整合性を問題一覧へ追加する。
+    /// </summary>
+    /// <param name="input">検証する一つの入力の実行記録</param>
+    /// <param name="materialCommandCount">素材から確定できたcommand件数 確定できない場合はnull</param>
+    /// <param name="issues">問題の追加先</param>
     private static void AddInputIssues(
         InputRunResult input,
         int? materialCommandCount,
@@ -526,6 +606,13 @@ internal static class ReportStore
         }
     }
 
+    /// <summary>
+    /// 処理・出力の未完了、または処理完了の記録と未処理対象の矛盾を問題一覧へ追加する。
+    /// </summary>
+    /// <param name="processingComplete">記録された処理完了の状態</param>
+    /// <param name="outputComplete">記録された出力完了の状態</param>
+    /// <param name="hasUnprocessed">記録内容に未処理の対象があるかどうか</param>
+    /// <param name="issues">問題の追加先</param>
     private static void AddCompletionIssues(
         bool processingComplete,
         bool outputComplete,

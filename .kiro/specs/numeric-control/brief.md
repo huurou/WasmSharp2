@@ -18,11 +18,11 @@ Core 2.0のスカラー数値演算と構造化制御を4段階で扱い、正�
 
 ## 範囲
 
-- **対象**: i32/i64/f32/f64の数値演算、sign-extension、non-trapping conversions、再解釈、比較、スカラーselect。
-- **対象**: block/loop/if、br/br_if/br_table、複数値blockとloop引数。host-linkingのreturn・unreachableに必要な型検証を引き継ぎ、構造化制御に伴う型スタックの多相性へ拡張する。
-- **対象**: 先行するcall/return・locals・global・ホストcallbackと構造化制御の統合、数値trap、制御構文を使う再帰と深さ制限の公式検証。
-- **対象**: 固定公式スイートの全体実行と回帰比較。既存のscalar入出力・NaN比較・assert_trap/assert_exhaustionを使う。
-- **対象外**: 関数の基本呼出し・引数と結果・locals・drop・unreachableの再実装、globalの生成/get/set・import解決・startの再実装、memory/table命令、参照命令、SIMD。
+- **対象**: i32/i64/f32/f64の数値演算、sign-extension、non-trapping conversions、再解釈、比較、スカラーselect
+- **対象**: block/loop/if、br/br_if/br_table、複数値blockとloop引数 host-linkingのreturn・unreachableに必要な型検証を引き継ぎ、構造化制御に伴う型スタックの多相性へ拡張する。
+- **対象**: 先行するcall/return・locals・global・ホストcallbackと構造化制御の統合、数値trap、制御構文を使う再帰と深さ制限の公式検証
+- **対象**: 固定公式スイートの全体実行と回帰比較 既存のscalar入出力・NaN比較・assert_trap/assert_exhaustionを使う。
+- **対象外**: 関数の基本呼出し・引数と結果・locals・drop・unreachableの再実装、globalの生成/get/set・import解決・startの再実装、memory/table命令、参照命令、SIMD
 
 ## 責務の接点
 
@@ -37,8 +37,8 @@ Core 2.0のスカラー数値演算と構造化制御を4段階で扱い、正�
 
 ## 上流・下流
 
-- **上流**: host-linking、test-suite-runner。
-- **下流**: linear-memoryとtables-references。simdも同じ制御・実行機構を使う。
+- **上流**: host-linking、test-suite-runner
+- **下流**: linear-memoryとtables-references simdも同じ制御・実行機構を使う。
 
 ## 既存仕様との関係
 
@@ -47,4 +47,4 @@ Core 2.0のスカラー数値演算と構造化制御を4段階で扱い、正�
 
 ## 制約と確認事項
 
-機能の追加ごとに固定公式スイートを実行し、[ロードマップの公式検証方針](../../steering/roadmap.md#公式検証の方針と完了条件)に従って追加対象の合格と既存passedの退行がないことを確認する。後続のmemory/table命令・segment・参照/SIMD命令に依存するケースは、ランタイムが報告した未実装機能と原因を残す。floatのbits・NaN・符号付き0・丸め・整数境界を守り、CLRのStackOverflowでプロセスを落とさない。文書は日本語（ja）。
+機能の追加ごとに固定公式スイートを実行し、[ロードマップの公式検証方針](../../steering/roadmap.md#公式検証の方針と完了条件)に従って追加対象の合格と既存passedの退行がないことを確認する。後続のmemory/table命令・segment・参照/SIMD命令に依存するケースは、ランタイムが報告した未実装機能と原因を残す。floatのbits・NaN・符号付き0・丸め・整数境界を守り、CLRのStackOverflowでプロセスを落とさない。文書は日本語（ja）

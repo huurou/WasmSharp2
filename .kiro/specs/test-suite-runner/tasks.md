@@ -195,22 +195,22 @@
   - _Depends: 3.2, 3.3, 3.4, 10.2_
   - _Requirements: 1.3, 4.2, 4.3, 4.4, 4.5, 5.1, 6.5, 7.4, 10.7, 11.1, 11.2, 11.3, 11.4, 11.5, 11.6, 11.8, 13.2_
 
-- [ ] 11. 保存済み結果のbaseline操作を実装する
-- [ ] 11.1 完了した結果だけを明示保存する
+- [x] 11. 保存済み結果のbaseline操作を実装する
+- [x] 11.1 完了した結果だけを明示保存する
   - manifestまたはRunReportの構造・完全性を検証し、完了した記録は分類を変えず同形式・同内容でコピーする。
   - failedやrunner_errorが残っても全件記録済みなら受け付け、未処理・未確定・出力失敗は拒否する。指定baselineの上書きを許可する。
   - 保存前後の内容一致、完了/不完了、既存baseline保持と明示置換を実ファイルで確認できる。
   - _Boundary: BaselineStore_
   - _Depends: 3.2, 3.3, 3.4_
   - _Requirements: 1.4, 12.1, 12.2, 13.7_
-- [ ] 11.2 変換結果の再現性と条件差を比較する
+- [x] 11.2 変換結果の再現性と条件差を比較する
   - 入力・生成物の一覧/hash、変換状態、commit、profile、全feature、論理引数・変換影響条件を比較する。
   - exe hashだけの違いは出典差異とし、配置root・日時を同一性に含めない。異なるprofileも差分として扱う。
   - 欠落・状態差・未比較・条件変更を保存モデルへ返し、未完了を再現性一致としないことをテストで確認できる。
   - _Boundary: BaselineComparer_
   - _Depends: 2.2, 3.1, 3.2, 3.4_
   - _Requirements: 1.5, 2.6, 12.3, 12.4, 12.5, 13.3_
-- [ ] 11.3 ケース単位の差分と回帰を比較する
+- [x] 11.3 ケース単位の差分と回帰を比較する
   - 両結果のprofile・入力/生成物一覧/hashを比較成立条件とし、exe hash差だけなら比較を継続する。
   - 識別子で対応付け、分類・期待・実際・診断の前後差、追加ケース、passedからの変化/欠落を報告する。
   - passed欠落は回帰と未完了を併記し、重複で対応不能な箇所や条件不一致を未比較理由として残す。
@@ -308,7 +308,7 @@
 
 - 9: `AssertionJudge.Judge(command, observation)`は観測から`CaseResult`を作る。Executorは`CommandObservation.Values`へ`ValueCodec.Record`の全実値、`Mismatches`へ`ValueMatcher.Match`の結果を設定し、`Prints`とcallback例外の実体も渡す。判定側は公開APIや値比較を再実行せず、保存用のリストをコピーする。
 - 8: `SpectestFactory.Create(state)`で入力ごとに一度だけ提供元を生成する。`ScriptState.BeginCommand`はprintとcallback例外の記録を初期化するため、Executorは次のcommand開始前に`Prints`と`CallbackException`を観測へ取り込む。callback由来かどうかは例外実体の同一性で確認する。
-- 型は補助DTO・enumも含め1型1ファイルに置く（ユーザー指定。design.mdの従属型の同居より優先）。英字で始まるテストメソッド名は先頭を大文字にする。
+- 型は補助DTO・enumも含め1型1ファイルに置く（ユーザー指定 design.mdの従属型の同居より優先） 英字で始まるテストメソッド名は先頭を大文字にする。
 - `RunReport`の入力は`unprocessed`/`incomplete`/`processed`の3状態で、未処理commandは列挙済みの末尾に置く。`ReportStore.Validate`はこの前提で欠落・範囲外を判定する。保存する内容では`Completion.OutputComplete=true`とし、falseのままでは`OutputFailed`となる。
 - runでは、入力異常による件数未確定を1とし、中断や記録の欠落を2とする。baseline-saveでは両方を2とし、verifyでは読み取れた結果の不成立をすべて1とする。
 - 10.3: `CompletionPolicy.Run`/`Verify`が入力単位のrunner_errorとして数えるのは`InputRunResult.Issues`だけである。manifestで変換に失敗した入力は、必ず`Issues`へ引き継ぐ。

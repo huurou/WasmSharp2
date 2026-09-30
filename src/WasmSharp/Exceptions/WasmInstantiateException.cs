@@ -6,7 +6,7 @@ namespace WasmSharp.Exceptions;
 public class WasmInstantiateException : WasmException
 {
     /// <summary>
-    /// リンク不成立の理由。従来のコンストラクターではnull
+    /// リンク不成立の理由 従来のコンストラクターではnull
     /// </summary>
     public WasmInstantiateReason? Reason { get; }
 

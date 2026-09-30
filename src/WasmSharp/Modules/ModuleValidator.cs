@@ -167,6 +167,17 @@ internal static class ModuleValidator
         }
     }
 
+    /// <summary>
+    /// 定義関数の参照と値スタックの型を検証し、対応する線形実行コードを作成する
+    /// </summary>
+    /// <param name="module">全体の参照、リソース宣言、global初期化式とstartの検証を終えたmodule</param>
+    /// <param name="definitionIndex">importを含まない定義順の関数index</param>
+    /// <param name="moduleFunctionIndex">診断に使用する、importを含むmodule全体の関数index</param>
+    /// <param name="functionTypes">importを先頭とする関数index順の型</param>
+    /// <param name="globalTypes">importを先頭とするglobal index順の型</param>
+    /// <returns>実行命令、追加localsとoperandの最大要素数を持つ、この定義関数の実行コード</returns>
+    /// <exception cref="WasmValidateException">命令の参照先、globalの可変性、入力型または結果の型・個数・順序が不正な場合</exception>
+    /// <exception cref="InvalidOperationException">デコード済み命令の記述子や検証規則が実装内で一致しない場合</exception>
     private static FunctionCode ValidateFunction(
         WasmModule module,
         int definitionIndex,
@@ -537,7 +548,7 @@ internal static class ModuleValidator
     }
 
     /// <summary>
-    /// 実割当や実装保持上限とは分けてlimitsの仕様上の制約を検証する
+    /// リソースの割り当てや実装の保持上限とは区別して、limitsの仕様上の制約を検証する
     /// </summary>
     /// <param name="limits">未検証の範囲</param>
     /// <param name="maximum">仕様上の最大値</param>

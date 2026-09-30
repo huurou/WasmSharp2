@@ -10,14 +10,14 @@ WasmSharp2の実装者が、固定したWebAssembly Core 2.0の公式スイー�
 
 | 区分 | 範囲 |
 | --- | --- |
-| 提供形態 | ランタイムから独立して起動するCLI。ソースを`tools/`配下に配置する。素材生成・実行・baseline保存・baseline比較・最終判定を個別のコマンドで提供する。 |
-| 公式素材 | 固定specの`test/core`配下の全WAST。SIMDを含む。固定WABTによるJSON・wasm・wat生成、出典・生成条件の記録、変換結果を兼ねるmanifest、照合、再現性確認。 |
-| 初期の実行・判定 | module、register、spectest、invoke/get、固定スイートに現れる全値型（i32・i64・f32・f64・v128・funcref・externref）の引数構築と結果比較、結果0個/1個/複数・global取得、段階別assertionと公式期待診断の前方一致、全commandの結果分類と回帰比較。 |
-| ランタイム修正 | 初期必須の公式ケースを実行・判定するために必要な修正。registerに必要な、moduleが宣言しinstanceが公開するexport一覧を取得する公開APIの追加を含む。 |
+| 提供形態 | ランタイムから独立して起動するCLI ソースを`tools/`配下に配置する。素材生成・実行・baseline保存・baseline比較・最終判定を個別のコマンドで提供する。 |
+| 公式素材 | 固定specの`test/core`配下の全WAST SIMDを含む。固定WABTによるJSON・wasm・wat生成、出典・生成条件の記録、変換結果を兼ねるmanifest、照合、再現性確認 |
+| 初期の実行・判定 | module、register、spectest、invoke/get、固定スイートに現れる全値型（i32・i64・f32・f64・v128・funcref・externref）の引数構築と結果比較、結果0個/1個/複数・global取得、段階別assertionと公式期待診断の前方一致、全commandの結果分類と回帰比較 |
+| ランタイム修正 | 初期必須の公式ケースを実行・判定するために必要な修正 registerに必要な、moduleが宣言しinstanceが公開するexport一覧を取得する公開APIの追加を含む。 |
 | 後続仕様 | test-suite-conformanceはスイートで判明したランタイムの動作・値・状態・失敗分類・診断の不一致をまとめて修正し、実行結果に応じて修正項目を追記・見直す。numeric-controlは数値・構造化制御、linear-memoryはmemory命令・data初期化、tables-referencesはtable・element・参照命令、simdはSIMD命令をランタイムへ追加し、同じツールの既存の値比較と段階別判定で公式統合確認を行う。 |
 | 隣接する公開契約 | 関数・global・memory・tableの生成と共有、import/export、start、import情報取得、Wasmの各処理段階と失敗分類は先行ランタイムの公開契約を使う。spectestの提供内容とJSON commandの状態・期待値判定は本ツールで扱う。 |
-| 実行対象外 | `module_type=text`のmodule。生成されたwatは出典・素材照合の対象だが、実行処理では開かず、解析・実行しない。 |
-| 全体の対象外 | WAST/WATの自作解析、Wasm演算・import型照合の再実装、ランタイム内部へのアクセス・専用hook、別エンジンへの実行委譲、所管仕様の記録、Core 3.0/proposal用profile、baseline共有サービス。 |
+| 実行対象外 | `module_type=text`のmodule 生成されたwatは出典・素材照合の対象だが、実行処理では開かず、解析・実行しない。 |
+| 全体の対象外 | WAST/WATの自作解析、Wasm演算・import型照合の再実装、ランタイム内部へのアクセス・専用hook、別エンジンへの実行委譲、所管仕様の記録、Core 3.0/proposal用profile、baseline共有サービス |
 
 本書ではツールを「Test Suite Runner」と呼ぶ。要件と受入基準は「要件番号.項番」で参照する。公式ケースは変換済みJSONの1commandを指し、その他の用語は[用語集](../../../CONTEXT.md)に従う。詳細なコマンド名、JSONファイルの構造、内部構造、hash方式、非0の終了値は設計で定める。新たな性能目標や並行実行の保証は追加しない。公式ケースの公開APIによる実行は単一プロセス内で順に行い、入力ごとのプロセス隔離、タイムアウトによる強制終了、自動再起動、途中再開は設けない。ハングやプロセス異常終了からの継続は保証せず、中断を検知して記録可能な場合は要件10.7に従う。
 

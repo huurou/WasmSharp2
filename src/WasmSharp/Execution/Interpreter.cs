@@ -11,9 +11,9 @@ internal static partial class Interpreter
     /// <summary>
     /// 呼び出し深さとCLRスタックの余裕を確認してホスト関数を実行する
     /// </summary>
-    /// <param name="context">深さを共有する実行コンテキスト。Wasmの実行外からの呼び出しではnull</param>
+    /// <param name="context">深さを共有する実行コンテキスト Wasmの実行外からの呼び出しではnull</param>
     /// <param name="function">呼び出すホスト関数</param>
-    /// <param name="instance">instance必須のホスト関数へ渡すinstance。それ以外では未使用</param>
+    /// <param name="instance">instance必須のホスト関数へ渡すinstance それ以外では未使用</param>
     /// <param name="arguments">個数と型を照合済みの引数</param>
     /// <returns>ホスト処理の結果、または呼び出し前に検出した資源枯渇</returns>
     /// <remarks>
@@ -49,9 +49,9 @@ internal static partial class Interpreter
     /// <summary>
     /// ホスト呼び出しの資源枯渇に、進行中のWasmのcall命令の位置を付ける
     /// </summary>
-    /// <param name="context">呼び出し元のWasmフレームを持つ実行コンテキスト。実行外ではnull</param>
+    /// <param name="context">呼び出し元のWasmフレームを持つ実行コンテキスト 実行外ではnull</param>
     /// <param name="reason">呼び出し深さまたはCLRスタックによる資源枯渇の理由</param>
-    /// <param name="limit">到達した上限値。CLRスタックの上限はnull</param>
+    /// <param name="limit">到達した上限値 CLRスタックの上限はnull</param>
     /// <returns>呼び出し元の位置情報を持つ資源枯渇の結果</returns>
     /// <remarks>
     /// ホストから別ホストへの公開Invokeや、ホスト関数をstartとして実行する場合も、外側のWasmのcall命令の位置を使う。
@@ -78,8 +78,8 @@ internal static partial class Interpreter
     /// 呼び出し専用の引数でホスト処理を実行し、宣言型に一致する所有済みの結果を返す
     /// </summary>
     /// <param name="function">呼び出すホスト関数とその宣言型</param>
-    /// <param name="instance">instance必須のホスト関数へ渡すinstance。それ以外では未使用</param>
-    /// <param name="arguments">個数と型を照合済みの引数。ホスト処理へ渡す前にコピーする</param>
+    /// <param name="instance">instance必須のホスト関数へ渡すinstance それ以外では未使用</param>
+    /// <param name="arguments">個数と型を照合済みの引数 ホスト処理へ渡す前にコピーする</param>
     /// <returns>ホスト処理が返した、宣言型との一致を確認済みの結果</returns>
     /// <remarks>深さの管理は呼び出し元が行う。ホスト処理が投げた例外は変換せず、そのまま伝播する</remarks>
     /// <exception cref="InvalidOperationException">対象がホスト関数でないか、結果がnull、または結果の個数・型が宣言型と異なる場合</exception>

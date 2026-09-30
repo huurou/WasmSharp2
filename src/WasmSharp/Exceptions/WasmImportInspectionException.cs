@@ -3,11 +3,11 @@ using System.Collections.Immutable;
 namespace WasmSharp.Exceptions;
 
 /// <summary>
-/// import情報を完全には取得できなかったことを示す例外。部分一覧は保持しない
+/// import情報を完全には取得できなかったことを示す例外 部分一覧は保持しない
 /// </summary>
 /// <param name="message">取得失敗の原因を説明するメッセージ</param>
 /// <param name="reason">取得失敗の分類</param>
-/// <param name="feature">未対応の機能。該当しない場合はnull</param>
+/// <param name="feature">未対応の機能 該当しない場合はnull</param>
 /// <param name="location">処理を中断した入力上の位置</param>
 /// <param name="unverifiedRanges">構文や検証が未確認の範囲</param>
 /// <param name="innerException">原因となった元の診断</param>
@@ -26,7 +26,7 @@ public class WasmImportInspectionException(
     public WasmImportInspectionReason Reason { get; } = reason;
 
     /// <summary>
-    /// 未対応の機能。該当しない場合はnull
+    /// 未対応の機能 該当しない場合はnull
     /// </summary>
     public string? Feature { get; } = feature;
 

@@ -37,7 +37,7 @@ internal partial class WasmFunction_InvokeTests
     )
     {
         // Arrange
-        // section長・型index・i32即値は合法な非最短LEB。customの名前以降は任意バイト。
+        // section長・型index・i32即値は合法な非最短LEB customの名前以降は任意バイト
         var bytes = Convert.FromHexString(
             "0061736D01000000"
                 + custom

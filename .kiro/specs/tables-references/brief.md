@@ -18,13 +18,13 @@
 
 ## 範囲
 
-- **対象**: ref.null/ref.func/ref.is_null、参照を使うlocals・globals・引数・結果・typed selectの固有規則、宣言済み関数参照の検証。
-- **対象**: table.get/set/size/grow/copy/fill/init、elem.drop、複数tableの命令処理。
-- **対象**: active/passive/declarative element、参照の初期化式・添字・mode、初期化trap。
-- **対象**: call_indirectの要素・関数型照合とtrap、既存の直接callと共通の結果受渡し。
-- **対象**: imported table・共有参照への命令とelement初期化、startとの順序と失敗時の観測可能な副作用。
-- **対象**: element初期化を含む公式検証と回帰比較。参照の引数・結果、null・同一性の比較はtest-suite-runnerの既存判定を使う。
-- **対象外**: tableの基本型・limits・生成・リンク・公開ホスト操作の再実装、型付き関数参照、call_ref、GC、再帰型、exnref、64bit table。
+- **対象**: ref.null/ref.func/ref.is_null、参照を使うlocals・globals・引数・結果・typed selectの固有規則、宣言済み関数参照の検証
+- **対象**: table.get/set/size/grow/copy/fill/init、elem.drop、複数tableの命令処理
+- **対象**: active/passive/declarative element、参照の初期化式・添字・mode、初期化trap
+- **対象**: call_indirectの要素・関数型照合とtrap、既存の直接callと共通の結果受渡し
+- **対象**: imported table・共有参照への命令とelement初期化、startとの順序と失敗時の観測可能な副作用
+- **対象**: element初期化を含む公式検証と回帰比較 参照の引数・結果、null・同一性の比較はtest-suite-runnerの既存判定を使う。
+- **対象外**: tableの基本型・limits・生成・リンク・公開ホスト操作の再実装、型付き関数参照、call_ref、GC、再帰型、exnref、64bit table
 
 ## 責務の接点
 
@@ -39,14 +39,14 @@
 
 ## 上流・下流
 
-- **上流**: numeric-control。host-linkingとtest-suite-runnerの能力を引き継ぐ。
-- **下流**: 全体のCore 2.0統合確認。linear-memoryとは並行できる。
+- **上流**: numeric-control host-linkingとtest-suite-runnerの能力を引き継ぐ。
+- **下流**: 全体のCore 2.0統合確認 linear-memoryとは並行できる。
 
 ## 既存仕様との関係
 
 - **拡張する既存仕様**: host-linkingの参照・table・Instantiate、numeric-controlの制御を拡張する。公式検証はtest-suite-runnerの既存能力を使う。
-- **隣接**: globalの共通実体はhost-linking、参照固有の初期化と検証は本仕様、data初期化はlinear-memory。
+- **隣接**: globalの共通実体はhost-linking、参照固有の初期化と検証は本仕様、data初期化はlinear-memory
 
 ## 制約と確認事項
 
-機能追加ごとに固定公式スイートを実行し、[ロードマップの公式検証方針](../../steering/roadmap.md#公式検証の方針と完了条件)に従って対象ケースの合格と回帰がないことを確認する。null・同一参照・型不一致・table境界・element mode・間接callを公開APIから検証する。後続機能待ちのケースは、ランタイムが報告した未実装機能と原因を残す。文書は日本語（ja）。
+機能追加ごとに固定公式スイートを実行し、[ロードマップの公式検証方針](../../steering/roadmap.md#公式検証の方針と完了条件)に従って対象ケースの合格と回帰がないことを確認する。null・同一参照・型不一致・table境界・element mode・間接callを公開APIから検証する。後続機能待ちのケースは、ランタイムが報告した未実装機能と原因を残す。文書は日本語（ja）

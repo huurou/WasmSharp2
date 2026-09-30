@@ -14,5 +14,6 @@ internal sealed record GlobalImport(
     long ByteOffset
 ) : ModuleImport(ModuleName, Name, ByteOffset)
 {
+    /// <inheritdoc />
     internal override WasmExternalKind Kind => WasmExternalKind.Global;
 }

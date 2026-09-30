@@ -4,7 +4,7 @@ updated_at: 2026-09-27
 
 # プロダクト概要
 
-WasmSharp2は、WasmバイナリをC#から扱うランタイム。初期の完成目標はWebAssembly Core 2.0のバイナリ・検証・実行への準拠とし、利用者が処理段階、値の型、失敗原因を明示的に扱えることを重視する。
+WasmSharp2は、WasmバイナリをC#から扱うランタイム 初期の完成目標はWebAssembly Core 2.0のバイナリ・検証・実行への準拠とし、利用者が処理段階、値の型、失敗原因を明示的に扱えることを重視する。
 
 ## 中核となる方針
 
@@ -30,9 +30,9 @@ Core 2.0全体の完成は、固定した公式テスト集合による検証と
 
 ## 対象外と未決定事項
 
-- ランタイムと自作ツールによるWAT・WASTの解析、WASI、Component Model、JavaScript/Web API、JIT/AOT、既存エンジンへの実行委譲は対象外。
+- ランタイムと自作ツールによるWAT・WASTの解析、WASI、Component Model、JavaScript/Web API、JIT/AOT、既存エンジンへの実行委譲は対象外
 - Core 3.0とCore 2.0外の機能は将来の別計画とする。
-- 性能の数値目標、NuGet公開、追加TFM・OSへの対応は未決定。
+- 性能の数値目標、NuGet公開、追加TFM・OSへの対応は未決定
 
 ## 方針の根拠
 

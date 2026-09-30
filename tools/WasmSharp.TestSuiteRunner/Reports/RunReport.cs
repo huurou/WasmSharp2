@@ -5,7 +5,7 @@ namespace WasmSharp.TestSuiteRunner.Reports;
 /// <summary>
 /// 全対象入力の実行結果と、比較成立の条件となる素材・実行条件の保存用記録
 /// </summary>
-/// <param name="Corpus">実行に使用したmanifestのスナップショット。profileと素材一覧/hashを含む</param>
+/// <param name="Corpus">実行に使用したmanifestのスナップショット profileと素材一覧/hashを含む</param>
 /// <param name="Provenance">ケース同一性に含めない実行時の参考出典</param>
 /// <param name="ExecutionPolicy">全instanceへ明示した実行ポリシー</param>
 internal sealed record RunReport(
@@ -40,13 +40,17 @@ internal sealed record RunReport(
     public RunSummary Summary { get; init; } = RunSummary.Empty;
 
     /// <summary>
-    /// 合格判定と区別する処理・出力の完了情報。保存時の値は読取側で再検証する
+    /// 合格判定と区別する処理・出力の完了情報 保存時の値は読取側で再検証する
     /// </summary>
     public RunCompletion Completion { get; init; } = new(false, false);
 
     /// <summary>
     /// 実行開始前に全入力を未処理として記録し、素材のスナップショットと本来の対象集合を確定する。
     /// </summary>
+    /// <param name="manifest">実行に使用する変換manifest 可変一覧を複製したスナップショットを保持する</param>
+    /// <param name="provenance">実行時の参考出典</param>
+    /// <param name="executionPolicy">全instanceへ適用する実行ポリシーの記録</param>
+    /// <returns>profileの全入力が未処理で、初期集計を持つ実行結果</returns>
     internal static RunReport Create(
         CorpusManifest manifest,
         RunProvenance provenance,
@@ -63,6 +67,7 @@ internal sealed record RunReport(
     /// <summary>
     /// 記録内容から集計を求める。未処理のcommandは6分類に含めない。
     /// </summary>
+    /// <returns>入力・commandの処理状況と、setup・action・assertionごとの6分類別件数</returns>
     internal RunSummary Summarize()
     {
         var cases = Inputs.SelectMany(x => x.Cases).ToArray();

@@ -10,38 +10,38 @@ C#でWebAssemblyバイナリをデコード・検証・インスタンス化・�
 
 下記8仕様を機能ごとに4段階を通して実装する。公式テスト素材の固定・生成から実行・回帰比較までは、`test-suite-runner`で一つの仕様・ツールとして扱い、初期実装から公式期待診断を前方一致で判定する。その後の`test-suite-conformance`で、テストスイートで判明したランタイムの実装上の問題をまとめて修正する。診断互換性はその一部とし、実行結果に応じて修正項目を追記・見直す。Core 3.0は将来の別計画とする。この分割方針の承認と、各仕様のrequirements・design・tasks・実装の承認は区別する。文書の言語は日本語とし、`spec.json.language`は`ja`とする。
 
-`runtime-foundation`と`host-linking`は完了し、関数呼出し・リソース生成・import/exportの実行・リンク基盤まで整備済み。次に、その公開能力を使って`test-suite-runner`のspectest・registerと初回baselineを成立させ、観測した実装上の不一致を`test-suite-conformance`で解消してから各命令・初期化機能へ進む。両基盤の承認済み要件・設計・タスクと完成状態は維持する。後続機能では同じ公式スイートによる診断照合と回帰確認も完了条件に含める。
+`runtime-foundation`と`host-linking`は完了し、関数呼出し・リソース生成・import/exportの実行・リンク基盤まで整備済み 次に、その公開能力を使って`test-suite-runner`のspectest・registerと初回baselineを成立させ、観測した実装上の不一致を`test-suite-conformance`で解消してから各命令・初期化機能へ進む。両基盤の承認済み要件・設計・タスクと完成状態は維持する。後続機能では同じ公式スイートによる診断照合と回帰確認も完了条件に含める。
 
 ## discovery時点の現状（2026-09-06）
 
-- `src/WasmSharp`は.NET 10の公開型とメソッドシグネチャの骨組み。`Decode`・`Validate`・`Instantiate`・`Invoke`は未実装。
-- `tests/WasmSharp.Tests`は.NET 10・TUnit 1.66.10のプロジェクト定義のみで、テスト本体はない。`tools`は空。
+- `src/WasmSharp`は.NET 10の公開型とメソッドシグネチャの骨組み `Decode`・`Validate`・`Instantiate`・`Invoke`は未実装
+- `tests/WasmSharp.Tests`は.NET 10・TUnit 1.66.10のプロジェクト定義のみで、テスト本体はない。`tools`は空
 - `thirdParties`には公式specとWABTのソースがある。specは3.0系で、初期Core 2.0のテスト集合としてそのまま扱えない。
 - 同梱WABTの宣言版は1.0.41だが、公式の同名タグとfeature既定値が異なる。上流commitは未特定であり、版名だけでは固定済みとは言えない。
 - 既存の正式specとsteeringはない。既存コメントと公開型の意図を確認し、メソッドシグネチャの骨組みを完成済み契約とは扱わない。
 
 ## 進め方の選択
 
-- **採用**: 最小基盤に実行・リンク基盤を加えてから、素材生成・spectest・register・実行・回帰比較を一つの公式ツールで整備する。数値・制御、メモリ命令、テーブル・参照命令、SIMDはその後に追加する。規模は大。
+- **採用**: 最小基盤に実行・リンク基盤を加えてから、素材生成・spectest・register・実行・回帰比較を一つの公式ツールで整備する。数値・制御、メモリ命令、テーブル・参照命令、SIMDはその後に追加する。規模は大
 - **理由**: 公式スイートのimportやmodule間共有を初期から利用し、各機能の実装時に仕様解釈と実行結果を確認できる。リソースの生成・共有とguest命令の意味論を分け、未実装と不具合を同じ固定集合で追跡する。
 - **順序の別案**: ホスト連携を全命令・segment初期化の後まで遅らせると、importを使う公式ケースの検証も遅れる。共通の実行・リンク能力を先行し、data/element固有の処理は各機能へ置く。
-- **検討した別案**: Core 2.0全体のDecode・Validateを先行し、その後Instantiate・Invokeを完成させる。段階内の作業はまとまるが実行結果による確認が遅くなるため採用しない。こちらも規模は大。
+- **検討した別案**: Core 2.0全体のDecode・Validateを先行し、その後Instantiate・Invokeを完成させる。段階内の作業はまとまるが実行結果による確認が遅くなるため採用しない。こちらも規模は大
 - **範囲の別案**: Core 1.0限定ではSIMD等が完了目標に入らず、Core 3.0から開始するとGC等の追加設計とWABTの変換対応不足を同時に扱う必要がある。今回はCore 2.0を選択した。
 
 ## 対象範囲
 
-- **対象**: Core 2.0のバイナリ形式、型検証、インスタンス化、実行。スカラー数値、関数、構造化制御、複数値、globals、import/export、start、線形メモリ、data、テーブル、element、間接呼び出し、`funcref/externref`、bulk memory/table、sign-extension、non-trapping conversions、`v128`とSIMD。
-- **対象**: 明示的なホスト関数・共有リソースの連携、および公開APIだけを利用する公式テスト用の`spectest`とランナー。
-- **追加対象（2026-09-27）**: 公式期待診断への前方一致と、参照実装特有の診断選択への互換性。ランナーの判定は未実装の`test-suite-runner`に含め、ランタイムへの対応は、スイートで判明した実装上の問題全般を扱う`test-suite-conformance`に含める。
-- **対象外**: ランタイムと自作ツールによるWAT・WASTの解析、WASI、Component Model、JavaScript/Web API、JIT/AOT、既存エンジンへの実行委譲。
-- **初期対象外**: GC、型付き関数参照、Wasm例外処理、tail-call、memory64、multi-memory、extended-const、relaxed-SIMD、threads等、Core 2.0の外にある機能。3.0のdeterministic profileも初期の追加要件にしない。
+- **対象**: Core 2.0のバイナリ形式、型検証、インスタンス化、実行 スカラー数値、関数、構造化制御、複数値、globals、import/export、start、線形メモリ、data、テーブル、element、間接呼び出し、`funcref/externref`、bulk memory/table、sign-extension、non-trapping conversions、`v128`とSIMD
+- **対象**: 明示的なホスト関数・共有リソースの連携、および公開APIだけを利用する公式テスト用の`spectest`とランナー
+- **追加対象（2026-09-27）**: 公式期待診断への前方一致と、参照実装特有の診断選択への互換性 ランナーの判定は未実装の`test-suite-runner`に含め、ランタイムへの対応は、スイートで判明した実装上の問題全般を扱う`test-suite-conformance`に含める。
+- **対象外**: ランタイムと自作ツールによるWAT・WASTの解析、WASI、Component Model、JavaScript/Web API、JIT/AOT、既存エンジンへの実行委譲
+- **初期対象外**: GC、型付き関数参照、Wasm例外処理、tail-call、memory64、multi-memory、extended-const、relaxed-SIMD、threads等、Core 2.0の外にある機能 3.0のdeterministic profileも初期の追加要件にしない。
 - 性能の数値目標、NuGet公開、追加TFM・OSへの対応は今回決めていない。将来のためだけの抽象化や拡張口は設けない。
 
 ## 維持する10項目
 
 1. **4段階を分離する**: `Decode → Validate → Instantiate → Invoke`を明示する。段階ごとの例外型で、入力の破損・検証不成立・リンク不成立・実行中のtrapを説明できるようにする。
 2. **未実装を検証失敗にしない**: 対象仕様の機能が未実装の場合は`WasmUnsupportedFeatureException`で区別する。仕様違反の判定と実装状況を混同しない。
-3. **明示APIのみ**: 値の受け渡しは`WasmValue`。`object`・`dynamic`を受ける汎用引数、CLR型からの暗黙変換、4段階を畳むローダー、delegateからの関数型推論を導入しない。ホスト関数型は明示宣言する。
+3. **明示APIのみ**: 値の受け渡しは`WasmValue` `object`・`dynamic`を受ける汎用引数、CLR型からの暗黙変換、4段階を畳むローダー、delegateからの関数型推論を導入しない。ホスト関数型は明示宣言する。
 4. **線形バイトコードで実行する**: フラットな配列と単一の`switch`実行ループを使う。分岐は線形化時に`(targetPc, stackHeight, keepCount)`へ落とし、入れ子オブジェクトの走査や外側フレームへの完了値の伝播で実行しない。
 5. **検証と線形化を同一パスにする**: 型検査しながら実行コードを生成し、型スタックを分岐情報にも使う。検証済みモデルと実行モデルを別々に二重保持しない。Decodeの入力表現と検証後の実行表現の違いまで禁止するものではない。
 6. **内部のtrapに.NET例外を使わない**: 実行ループは列挙型の結果を返し、ホスト境界にある共通の1箇所で`WasmTrapException`へ変換する。Instantiateからのstart実行にも同じ境界処理を適用する。
@@ -74,11 +74,11 @@ C#でWebAssemblyバイナリをデコード・検証・インスタンス化・�
 
 対象の否定assertionは初期ランナーから、期待する段階・例外型・失敗分類に加えて`actualException.Message.StartsWith(expectedText, StringComparison.Ordinal)`を必須とする。JSONの期待診断と実際のMessageを加工せず、大文字小文字・空白・数値を保持する。別名への置換、Reasonによる代替、ケース別除外、照合を無効にする合格モードを設けない。診断不一致は`failed`として記録する。
 
-- `passed`: 該当assertionが期待どおり成立、または必要なセットアップ・単独actionが正常に完了。
-- `failed`: 判定した結果が期待と不一致。
-- `runtime_unsupported`: ランタイムの未実装を観測。
+- `passed`: 該当assertionが期待どおり成立、または必要なセットアップ・単独actionが正常に完了
+- `failed`: 判定した結果が期待と不一致
+- `runtime_unsupported`: ランタイムの未実装を観測
 - `runner_error`: 素材・JSON・ランナー自身の異常、実行環境の資源限界、またはランタイムの公開契約にない例外で、期待値の判定が成立しない。
-- `out_of_scope`: テキスト形式など明示された対象外。
+- `out_of_scope`: テキスト形式など明示された対象外
 - `blocked`: 前提が成立せず、依存するcommandを実行できない。
 
 前のmodule/register失敗で実行できない後続commandは`blocked`とし、依存先の失敗を理由付きで記録して合格扱いにしない。集計ではセットアップ・単独action・assertionの件数を区別する。
@@ -124,26 +124,26 @@ Decode・Validate・Instantiate・Invokeを別々の機能仕様にせず、機�
 
 ## Specs (dependency order)
 
-- [x] runtime-foundation -- 明示的な4段階APIと値・型・失敗分類、最小の線形実行基盤。 Dependencies: none
-- [x] host-linking -- 関数実行、global・memory・tableの生成と共有、import/export、ホストcallbackとstartを公開APIで扱う実行・リンク基盤。 Dependencies: runtime-foundation
-- [ ] test-suite-runner -- 固定公式素材の生成、spectest・register、公開API実行・判定、全commandの結果記録・回帰比較と初回baseline。 Dependencies: host-linking
+- [x] runtime-foundation -- 明示的な4段階APIと値・型・失敗分類、最小の線形実行基盤 Dependencies: none
+- [x] host-linking -- 関数実行、global・memory・tableの生成と共有、import/export、ホストcallbackとstartを公開APIで扱う実行・リンク基盤 Dependencies: runtime-foundation
+- [ ] test-suite-runner -- 固定公式素材の生成、spectest・register、公開API実行・判定、全commandの結果記録・回帰比較と初回baseline Dependencies: host-linking
 - [ ] test-suite-conformance -- テストスイートで判明したランタイムの実装上の問題を集約して修正する。診断互換性も含め、実行結果に応じて修正項目を追記・見直す。 Dependencies: test-suite-runner
 - [ ] numeric-control -- スカラー数値命令と構造化制御を共通実行機構へ追加し、数値trap・再帰・複数値制御を公式検証する。 Dependencies: host-linking, test-suite-runner, test-suite-conformance
 - [ ] linear-memory -- スカラーload/store、data segment、bulk memoryと初期化・実行のtrapを公式検証する。 Dependencies: numeric-control
 - [ ] tables-references -- 参照命令、table操作、element segment、間接呼出しと初期化・実行のtrapを公式検証する。 Dependencies: numeric-control
 - [ ] simd -- v128とCore 2.0 SIMDを共通命令テーブル・実行ループに実装し、公式SIMDケースで検証する。 Dependencies: linear-memory
 
-作業順は、①完成済みの最小基盤、②実行・リンク基盤、③公式適合検証ツールと初回baseline、④テストスイートで判明したランタイムの実装修正、⑤数値・制御、⑥メモリとテーブル・参照、⑦SIMD。⑥の2仕様は並行可能で、SIMDはメモリが揃えば着手できる。②は③を完了前提にせず、③で②の公式結果と残る実装上の問題を確認する。④以降も初回から同じ判定基準のスイートで回帰確認する。
+作業順は、①完成済みの最小基盤、②実行・リンク基盤、③公式適合検証ツールと初回baseline、④テストスイートで判明したランタイムの実装修正、⑤数値・制御、⑥メモリとテーブル・参照、⑦SIMD ⑥の2仕様は並行可能で、SIMDはメモリが揃えば着手できる。②は③を完了前提にせず、③で②の公式結果と残る実装上の問題を確認する。④以降も初回から同じ判定基準のスイートで回帰確認する。
 
 初期ランナーはspectest・register、固定スイートに現れる全値型の入出力、global取得、段階別の否定assertionを扱う。以後の統合確認は次の機能仕様で行う。
 
 | 機能仕様 | 統合確認 |
 | --- | --- |
 | `test-suite-conformance` | 公式スイートで判明したランタイムの動作・結果・失敗分類・診断の不一致を修正し、同じ判定基準で全体実行と回帰確認を行う |
-| `numeric-control` | 数値演算・構造化制御・再帰の公式ケース。初期のscalar比較と段階別判定を再利用 |
-| `linear-memory` | data初期化とstart・共有memoryの複合ケース。初期のassert_uninstantiable判定を再利用 |
-| `tables-references` | 参照命令、element初期化とstart・共有tableの複合ケース。初期の参照比較を再利用 |
-| `simd` | SIMD命令の公式ケース。初期のv128・lane比較を再利用 |
+| `numeric-control` | 数値演算・構造化制御・再帰の公式ケース 初期のscalar比較と段階別判定を再利用 |
+| `linear-memory` | data初期化とstart・共有memoryの複合ケース 初期のassert_uninstantiable判定を再利用 |
+| `tables-references` | 参照命令、element初期化とstart・共有tableの複合ケース 初期の参照比較を再利用 |
+| `simd` | SIMD命令の公式ケース 初期のv128・lane比較を再利用 |
 
 ## 将来のCore 3.0
 
@@ -153,8 +153,8 @@ GC・再帰型・型付き参照、例外処理、64bitアドレス等では型�
 
 ## 根拠
 
-- ユーザー提示の10項目と2026-09-06のdiscovery回答。
-- 2026-09-27に採用した追加要求と、[参照診断互換性](../../docs/adr/0012-reference-diagnostic-compatibility.md)のADR。
-- [用語集](../../CONTEXT.md)と、[明示的な4段階API](../../docs/adr/0001-explicit-staged-runtime-api.md)、[同一パスの線形インタープリタ](../../docs/adr/0002-single-pass-linear-interpreter.md)、[Core 2.0の固定適合検証](../../docs/adr/0003-core2-fixed-conformance-profile.md)、[trapの伝播方式](../../docs/adr/0004-trap-result-propagation.md)のADR。
-- [調査ノート](../../docs/research/wasm-runtime-discovery.md)。公式仕様とWABTの出典、固定時の注意点を含む。
-- [Core 2.0保存版](https://webassembly.github.io/spec/versions/core/WebAssembly-2.0.pdf)、[Core 2.0公式テスト候補](https://github.com/WebAssembly/spec/tree/v2.0.0/test/core)、[wast2jsonのJSON仕様](https://github.com/WebAssembly/wabt/blob/main/docs/wast2json.md)。
+- ユーザー提示の10項目と2026-09-06のdiscovery回答
+- 2026-09-27に採用した追加要求と、[参照診断互換性](../../docs/adr/0012-reference-diagnostic-compatibility.md)のADR
+- [用語集](../../CONTEXT.md)と、[明示的な4段階API](../../docs/adr/0001-explicit-staged-runtime-api.md)、[同一パスの線形インタープリタ](../../docs/adr/0002-single-pass-linear-interpreter.md)、[Core 2.0の固定適合検証](../../docs/adr/0003-core2-fixed-conformance-profile.md)、[trapの伝播方式](../../docs/adr/0004-trap-result-propagation.md)のADR
+- [調査ノート](../../docs/research/wasm-runtime-discovery.md) 公式仕様とWABTの出典、固定時の注意点を含む。
+- [Core 2.0保存版](https://webassembly.github.io/spec/versions/core/WebAssembly-2.0.pdf)、[Core 2.0公式テスト候補](https://github.com/WebAssembly/spec/tree/v2.0.0/test/core)、[wast2jsonのJSON仕様](https://github.com/WebAssembly/wabt/blob/main/docs/wast2json.md)

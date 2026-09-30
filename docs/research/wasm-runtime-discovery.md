@@ -1,6 +1,6 @@
 # C#製Wasmランタイムのdiscovery調査
 
-調査日: 2026-09-06。公式仕様、WebAssembly公式リポジトリ、手元の同梱ソースを参照した。ビルド、`wast2json`の実行、公式テストの実行は行っていない。
+調査日: 2026-09-06 公式仕様、WebAssembly公式リポジトリ、手元の同梱ソースを参照した。ビルド、`wast2json`の実行、公式テストの実行は行っていない。
 
 同梱ソースや候補CLIの記述は調査時点の状態を示す。現在の採用版と取得・変換手順は[外部ソースの固定](../../thirdParties/README.md)、素材生成から実行・回帰比較までの範囲は[test-suite-runner](../../.kiro/specs/test-suite-runner/brief.md)を参照する。
 
@@ -10,11 +10,11 @@
 
 | 版 | 含まれる機能と位置付け |
 | --- | --- |
-| Core 1.0 | 数値型`i32/i64/f32/f64`、構造化制御、関数、間接呼び出し、グローバル、線形メモリ、テーブル、import/export、start、data/element segmentを持つ基礎仕様。保存版はRelease 1.0（2019-07-20）。[公式保存版](https://webassembly.github.io/spec/versions/core/WebAssembly-1.0.pdf) |
-| Core 2.0 | 1.0にsign-extension、non-trapping float-to-int、multi-value、reference-types（`funcref/externref`、table操作、複数tableを含む）、bulk-memory、SIMDを追加。[公式変更履歴](https://webassembly.github.io/spec/core/appendix/changes.html#release-2-0)。保存版の表示はRelease 2.0（2025-09-16）。[公式保存版](https://webassembly.github.io/spec/versions/core/WebAssembly-2.0.pdf) |
-| Core 3.0 | 2.0にextended-const、tail-call、exception-handling、multi-memory、memory64（tableの64bit indexも含む）、function-references、GC、relaxed-SIMDを追加。さらにdeterministic profileとテキスト形式のannotationsを定義。[公式変更履歴](https://webassembly.github.io/spec/core/appendix/changes.html#release-3-0) |
+| Core 1.0 | 数値型`i32/i64/f32/f64`、構造化制御、関数、間接呼び出し、グローバル、線形メモリ、テーブル、import/export、start、data/element segmentを持つ基礎仕様 保存版はRelease 1.0（2019-07-20） [公式保存版](https://webassembly.github.io/spec/versions/core/WebAssembly-1.0.pdf) |
+| Core 2.0 | 1.0にsign-extension、non-trapping float-to-int、multi-value、reference-types（`funcref/externref`、table操作、複数tableを含む）、bulk-memory、SIMDを追加 [公式変更履歴](https://webassembly.github.io/spec/core/appendix/changes.html#release-2-0) 保存版の表示はRelease 2.0（2025-09-16） [公式保存版](https://webassembly.github.io/spec/versions/core/WebAssembly-2.0.pdf) |
+| Core 3.0 | 2.0にextended-const、tail-call、exception-handling、multi-memory、memory64（tableの64bit indexも含む）、function-references、GC、relaxed-SIMDを追加 さらにdeterministic profileとテキスト形式のannotationsを定義 [公式変更履歴](https://webassembly.github.io/spec/core/appendix/changes.html#release-3-0) |
 
-Core 3.0は2025-09-17に新しいlive standardとして発表された。今回取得したlive仕様本文は「3.0（2026-09-03）」と表示されており、単なる未確定の3.0 draftとして扱わない。[公式発表](https://webassembly.org/news/2025-09-17-wasm-3.0/)、[live仕様の版表示](https://webassembly.github.io/spec/core/intro/introduction.html)。W3C TRの公開段階とlive standardの版は別に記録する。
+Core 3.0は2025-09-17に新しいlive standardとして発表された。今回取得したlive仕様本文は「3.0（2026-09-03）」と表示されており、単なる未確定の3.0 draftとして扱わない。[公式発表](https://webassembly.org/news/2025-09-17-wasm-3.0/)、[live仕様の版表示](https://webassembly.github.io/spec/core/intro/introduction.html) W3C TRの公開段階とlive standardの版は別に記録する。
 
 Core 3.0のGCはstruct/array/i31の命令追加だけでなく、再帰型、宣言されたサブタイプ、heap type、cast、外部参照との変換を含む。型付き関数参照は非null参照、`call_ref`、非defaultable localの初期化検査、table初期化式に影響する。例外処理はtag、`throw`、`throw_ref`、`try_table`を含み、旧proposalの`try/catch/rethrow/delegate`をそのまま最終仕様と見なせない。[Core 3.0変更履歴](https://webassembly.github.io/spec/core/appendix/changes.html#release-3-0)
 
@@ -32,7 +32,7 @@ Core仕様はISA、バイナリ、検証、実行、テキスト表現を定義�
 
 ## 手元WABTとCore 3.0の問題
 
-同梱WABTの[CMakeLists.txt](/D:/source/repos/WasmSharp2/thirdParties/wabt/CMakeLists.txt:18)の宣言版は`1.0.41`。ディレクトリ内で`git rev-parse --show-toplevel`するとWasmSharp2のルートを返すため、その`HEAD`をWABT上流commitと解釈できない。上流commitは今回特定できていない。
+同梱WABTの[CMakeLists.txt](/D:/source/repos/WasmSharp2/thirdParties/wabt/CMakeLists.txt:18)の宣言版は`1.0.41` ディレクトリ内で`git rev-parse --show-toplevel`するとWasmSharp2のルートを返すため、その`HEAD`をWABT上流commitと解釈できない。上流commitは今回特定できていない。
 
 公式の`1.0.41`タグではtail-call、memory64、multi-memory、extended-const、relaxed-SIMDが既定OFFで、同梱実体の既定ONとは一致しない。したがって版文字列だけでは同じソースと見なせない。採用時は取得元commitまたは特定可能なソース集合のhash、ビルド条件、実行ファイルhashも固定する。[公式1.0.41のfeature.def](https://github.com/WebAssembly/wabt/blob/1.0.41/include/wabt/feature.def)
 
@@ -68,14 +68,14 @@ Core仕様はISA、バイナリ、検証、実行、テキスト表現を定義�
 | `assert_malformed`（binary） | Decodeでバイナリ構文不成立 |
 | `assert_invalid`（binary） | Decode成功後、Validateで仕様上の不成立 |
 | `assert_unlinkable` | import不足や型不一致によるリンク不成立 |
-| `assert_uninstantiable` | module形式の`assert_trap`。Instantiate中のtrap |
+| `assert_uninstantiable` | module形式の`assert_trap` Instantiate中のtrap |
 | `assert_trap` | invoke/get actionでtrap |
-| `assert_exhaustion` | actionでスタック枯渇。通常の仕様trapと識別が必要 |
+| `assert_exhaustion` | actionでスタック枯渇 通常の仕様trapと識別が必要 |
 | `assert_return` | 値のコレクション・型・個数・期待値patternの一致 |
 
-上表の根拠は[公式JSON仕様](https://github.com/WebAssembly/wabt/blob/main/docs/wast2json.md)。`text`は参照interpreterの期待診断であり、その英文をライブラリの公開例外メッセージ契約として採用する必要はない。Instantiate中のtrapとlink errorは同一段階でも違う原因なので、例外型または型付きreasonで区別する必要がある。
+上表の根拠は[公式JSON仕様](https://github.com/WebAssembly/wabt/blob/main/docs/wast2json.md) `text`は参照interpreterの期待診断であり、その英文をライブラリの公開例外メッセージ契約として採用する必要はない。Instantiate中のtrapとlink errorは同一段階でも違う原因なので、例外型または型付きreasonで区別する必要がある。
 
-整数は精度保持のため10進文字列、floatは値そのものではなくIEEEビット列の10進文字列。floatとSIMD laneには`nan:canonical`/`nan:arithmetic`patternがあり、数値の単純な等値比較では不足する。[公式JSON値仕様](https://github.com/WebAssembly/wabt/blob/main/docs/wast2json.md#const)
+整数は精度保持のため10進文字列、floatは値そのものではなくIEEEビット列の10進文字列 floatとSIMD laneには`nan:canonical`/`nan:arithmetic`patternがあり、数値の単純な等値比較では不足する。[公式JSON値仕様](https://github.com/WebAssembly/wabt/blob/main/docs/wast2json.md#const)
 
 同梱[JSON writer](/D:/source/repos/WasmSharp2/thirdParties/wabt/src/binary-writer-spec.cc:584)は`assert_return`の`expected`に加えて`either`を出力し、[同ファイル](/D:/source/repos/WasmSharp2/thirdParties/wabt/src/binary-writer-spec.cc:633)は`assert_exception`も出力する。Core 3.0ではWasm例外とtrapを別に扱い、relaxed-SIMDの許容結果集合を表現できるrunnerが必要になる。JSONドキュメントだけでなく固定版writerと生成例を契約根拠にする。
 

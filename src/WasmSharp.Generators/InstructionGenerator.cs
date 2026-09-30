@@ -14,6 +14,9 @@ namespace WasmSharp.Generators;
 [Generator(LanguageNames.CSharp)]
 internal sealed class InstructionGenerator : IIncrementalGenerator
 {
+    /// <summary>
+    /// prefixと命令番号が重複する命令宣言の診断
+    /// </summary>
     private static readonly DiagnosticDescriptor duplicateOpcode_ = new(
         "WSIG001",
         "命令番号の重複",
@@ -22,6 +25,10 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
         DiagnosticSeverity.Error,
         isEnabledByDefault: true
     );
+
+    /// <summary>
+    /// 命令の名前または実行に必要な宣言情報が不足する場合の診断
+    /// </summary>
     private static readonly DiagnosticDescriptor incompleteDeclaration_ = new(
         "WSIG002",
         "命令宣言の不足",
@@ -30,6 +37,10 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
         DiagnosticSeverity.Error,
         isEnabledByDefault: true
     );
+
+    /// <summary>
+    /// 宣言で指定したhandlerがInterpreterに存在しない場合の診断
+    /// </summary>
     private static readonly DiagnosticDescriptor missingHandler_ = new(
         "WSIG003",
         "命令handlerの不在",
@@ -38,6 +49,10 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
         DiagnosticSeverity.Error,
         isEnabledByDefault: true
     );
+
+    /// <summary>
+    /// 指定したhandlerが生成する呼び出しの契約を満たさない場合の診断
+    /// </summary>
     private static readonly DiagnosticDescriptor invalidHandler_ = new(
         "WSIG004",
         "命令handlerの契約不一致",
@@ -48,7 +63,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
     );
 
     /// <summary>
-    /// ソース生成の処理を初期化する
+    /// 命令属性の収集と診断を登録し、宣言が有効な場合に命令情報と実行分岐を生成する
     /// </summary>
     /// <param name="context">ソース生成の初期化コンテキスト</param>
     public void Initialize(IncrementalGeneratorInitializationContext context)
@@ -115,6 +130,13 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
         );
     }
 
+    /// <summary>
+    /// 命令属性を生成用の宣言へ変換し、必要情報とhandler契約の診断を付ける
+    /// </summary>
+    /// <remarks>3引数の属性は未対応命令として保持し、7引数の属性は実行に必要な情報を検査する</remarks>
+    /// <param name="attribute">ソース上のInstructionAttributeの属性情報</param>
+    /// <param name="compilation">Interpreterとhandlerの宣言を照合するコンパイル情報</param>
+    /// <returns>生成用の命令宣言 不完全な宣言やhandler契約違反はErrorに診断を保持する</returns>
     private static InstructionDeclaration ParseDeclaration(
         AttributeData attribute,
         Compilation compilation
@@ -182,6 +204,11 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
         return methods.Any(IsHandler) ? declaration : declaration with { Error = invalidHandler_ };
     }
 
+    /// <summary>
+    /// メソッドが生成する命令handlerの呼び出し契約を満たすか判定する
+    /// </summary>
+    /// <param name="method">指定されたhandler名に一致する候補メソッド</param>
+    /// <returns>非ジェネリックのstaticメソッドで、値で返すExecutionResultとInterpreterContext・in Instructionの引数を持つ場合はtrue</returns>
     private static bool IsHandler(IMethodSymbol method)
     {
         return method.IsStatic
@@ -197,6 +224,11 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
             && method.Parameters[1].Type.ToDisplayString() == "WasmSharp.Execution.Instruction";
     }
 
+    /// <summary>
+    /// 命令属性の列挙定数に対応する宣言名を取得する
+    /// </summary>
+    /// <param name="value">即値、スタック効果または検証規則を表す列挙定数</param>
+    /// <returns>定数値に一致する列挙子名 一致する宣言がない場合はUnsupported</returns>
     private static string GetEnumName(TypedConstant value)
     {
         return value
@@ -207,6 +239,11 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
             ?? "Unsupported";
     }
 
+    /// <summary>
+    /// 命令情報の検索表と、対応済み命令の実行opcodeを宣言するソースを生成する
+    /// </summary>
+    /// <param name="instructions">診断がなく、prefixと命令番号が重複しない命令宣言の一覧</param>
+    /// <returns>全宣言の記述子と、handlerを持つ宣言の実行opcodeを含むC#ソース</returns>
     private static string GenerateInstructionSet(
         ImmutableArray<InstructionDeclaration> instructions
     )
@@ -249,7 +286,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
             /// <param name="Immediate">即値の符号化</param>
             /// <param name="StackEffect">スタック効果</param>
             /// <param name="Validation">検証規則</param>
-            /// <param name="ExecutionOpcode">対応済み命令の実行opcode。未対応の場合はnull</param>
+            /// <param name="ExecutionOpcode">対応済み命令の実行opcode 未対応の場合はnull</param>
             internal readonly record struct InstructionDescriptor(
                 OpcodeKey Opcode,
                 string Name,
@@ -263,6 +300,9 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
             /// </summary>
             internal static partial class InstructionSet
             {
+                /// <summary>
+                /// Core 2.0の命令識別子に対応する記述子の検索表
+                /// </summary>
                 private static readonly global::System.Collections.Generic.Dictionary<OpcodeKey, InstructionDescriptor> descriptors_ = new()
                 {
             """
@@ -285,6 +325,9 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
                 /// <summary>
                 /// 命令識別子に対応する命令情報を取得する
                 /// </summary>
+                /// <param name="opcode">バイナリ上の命令識別子</param>
+                /// <param name="descriptor">見つかった場合の命令情報 見つからない場合は既定値</param>
+                /// <returns>命令宣言が見つかった場合はtrue 実行handlerの有無とは独立する</returns>
                 internal static bool TryGet(OpcodeKey opcode, out InstructionDescriptor descriptor) =>
                     descriptors_.TryGetValue(opcode, out descriptor);
             }
@@ -293,6 +336,11 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
         return source.ToString();
     }
 
+    /// <summary>
+    /// 実行opcodeと宣言済みhandlerを結び付けるInterpreterの実行ループを生成する
+    /// </summary>
+    /// <param name="instructions">handler契約の検査を通過した命令宣言を含む一覧</param>
+    /// <returns>handlerを持つ宣言の実行分岐と、失敗結果を保持する実行ループのC#ソース</returns>
     private static string GenerateInterpreter(ImmutableArray<InstructionDeclaration> instructions)
     {
         var source = new StringBuilder(
@@ -309,6 +357,10 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
                 /// <summary>
                 /// 今回の入口フレームが終了するまで命令を実行し、失敗結果はそのまま返す
                 /// </summary>
+                /// <param name="context">今回の入口フレームを積んだ共有実行コンテキスト</param>
+                /// <param name="entryFrameCount">今回の入口フレームを積む前のフレーム数</param>
+                /// <returns>入口フレームが正常終了した場合は値を持たない成功結果 handlerが失敗した場合はその結果</returns>
+                /// <exception cref="global::System.InvalidOperationException">命令に対応する実行分岐がない場合</exception>
                 private static ExecutionResult RunLoop(InterpreterContext context, int entryFrameCount)
                 {
                     while (context.FrameCount > entryFrameCount)
@@ -348,6 +400,18 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
         return source.ToString();
     }
 
+    /// <summary>
+    /// 命令情報と実行分岐の生成に必要な属性値および宣言の診断
+    /// </summary>
+    /// <param name="Prefix">通常命令では0、拡張命令ではprefix</param>
+    /// <param name="Code">prefix内の命令番号</param>
+    /// <param name="Name">仕様上の命令名</param>
+    /// <param name="Immediate">即値の符号化を表す列挙子名</param>
+    /// <param name="StackEffect">スタック効果を表す列挙子名</param>
+    /// <param name="Validation">検証規則を表す列挙子名</param>
+    /// <param name="Handler">対応するInterpreterの静的handler名 未対応の宣言ではnull</param>
+    /// <param name="Location">属性宣言のソース上の位置</param>
+    /// <param name="Error">宣言の不備を報告する診断 宣言が有効な場合はnull</param>
     private sealed record InstructionDeclaration(
         byte Prefix,
         uint Code,
@@ -360,6 +424,9 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
         DiagnosticDescriptor? Error
     )
     {
+        /// <summary>
+        /// prefixと命令番号から得られる、生成する実行opcodeの列挙子名
+        /// </summary>
         public string ExecutionOpcode => Prefix == 0 ? $"Op{Code:X2}" : $"Op{Prefix:X2}_{Code:X2}";
     }
 }

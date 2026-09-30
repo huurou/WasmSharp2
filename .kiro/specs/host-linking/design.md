@@ -21,10 +21,10 @@ C#の埋め込み利用者が、引数・複数結果を持つWasm関数、明�
 
 ### 本仕様の所有範囲（This Spec Owns）
 
-- 関数引数・locals・結果、local.get/set/tee、call、return、drop、unreachable、global.get/setのdecode・型検証・実行。
-- globalの生成・初期化、memory/tableのlimits・生成・ホスト操作、外部要素の型照合・名前解決・実体共有。
-- callbackの両形式、呼び出し時instance、値の寿命、同期再入、startを含む実行コンテキストの入口と復元。
-- import情報取得の検査範囲・成功データ・失敗診断と、公開操作による受入確認。
+- 関数引数・locals・結果、local.get/set/tee、call、return、drop、unreachable、global.get/setのdecode・型検証・実行
+- globalの生成・初期化、memory/tableのlimits・生成・ホスト操作、外部要素の型照合・名前解決・実体共有
+- callbackの両形式、呼び出し時instance、値の寿命、同期再入、startを含む実行コンテキストの入口と復元
+- import情報取得の検査範囲・成功データ・失敗診断と、公開操作による受入確認
 
 ### 境界外（Out of Boundary）
 
@@ -81,7 +81,7 @@ graph TD
 
 | 対象 | 技術・版 | 用途 |
 | --- | --- | --- |
-| ランタイム | C# / net10.0 | 既存プロジェクトを拡張。追加NuGet依存なし |
+| ランタイム | C# / net10.0 | 既存プロジェクトを拡張 追加NuGet依存なし |
 | 所有する値 | ReadOnlySpan、ImmutableArray、通常の配列 | 入力・callback内の参照と、保持する値のコピーを分離 |
 | 命令生成 | netstandard2.0 / C# 13.0 / Microsoft.CodeAnalysis.CSharp 5.9.0 | 既存InstructionSetとhandlerから通常ビルドで生成 |
 | テスト | net10.0 / TUnit 1.66.16 | 公開経路と内部の型スタック・生成契約を検証 |
@@ -91,7 +91,7 @@ graph TD
 
 ## ファイル構成計画（File Structure Plan）
 
-パスはリポジトリルートからの相対パス。公開型は`WasmSharp`、内部型は既存のModules/Execution/Instructionsへ配置する。新たな技術レイヤーフォルダは作らない。
+パスはリポジトリルートからの相対パス 公開型は`WasmSharp`、内部型は既存のModules/Execution/Instructionsへ配置する。新たな技術レイヤーフォルダは作らない。
 
 ### 新規ファイル
 
@@ -126,7 +126,7 @@ graph TD
 | `src/WasmSharp/Modules/Definitions/MemoryDefinition.cs` | memory limits・元位置 |
 | `src/WasmSharp/Modules/Definitions/StartDefinition.cs` | startの未検証の関数添字と入力位置 |
 | `src/WasmSharp/Modules/ModuleInstantiator.cs` | import照合、実体構築、初期化、startの順序 |
-| `src/WasmSharp/Exceptions/WasmImportInspectionException.cs` | 取得全体の失敗理由・未確認範囲。理由enumも同居 |
+| `src/WasmSharp/Exceptions/WasmImportInspectionException.cs` | 取得全体の失敗理由・未確認範囲 理由enumも同居 |
 
 ### 変更するファイル
 
@@ -155,7 +155,7 @@ graph TD
 | `src/WasmSharp/Exceptions/WasmExhaustionException.cs` | CallDepthLimitとHostStackLimit、上限未計測の表現 |
 | `src/WasmSharp/Exceptions/WasmImplementationLimitException.cs`、`src/WasmSharp/Exceptions/WasmException.cs` | 処理段階外のホスト資源生成ではLocation=nullを許容 |
 
-既存の`src/WasmSharp/WasmValue.cs`、`src/WasmSharp/WasmFunctionType.cs`、`src/WasmSharp/WasmResults.cs`、`src/WasmSharp/WasmExecutionOptions.cs`、`src/WasmSharp/Modules/ModuleBinaryReader.cs`、`src/WasmSharp/Exceptions/WasmUnverifiedRange.cs`の成立済み契約を再利用する。生成器のhandler署名は維持し、生成器本体の変更は現時点では不要。生成ソースを直接編集しない。
+既存の`src/WasmSharp/WasmValue.cs`、`src/WasmSharp/WasmFunctionType.cs`、`src/WasmSharp/WasmResults.cs`、`src/WasmSharp/WasmExecutionOptions.cs`、`src/WasmSharp/Modules/ModuleBinaryReader.cs`、`src/WasmSharp/Exceptions/WasmUnverifiedRange.cs`の成立済み契約を再利用する。生成器のhandler署名は維持し、生成器本体の変更は現時点では不要 生成ソースを直接編集しない。
 
 ### テスト配置と実装の依存順
 
@@ -345,7 +345,7 @@ public bool TryGrow(uint delta, WasmValue initialValue, out uint previousCount);
 上記は各クラスの署名一覧であり、同じクラスへ配置するコードではない。
 
 - globalはCore 2.0の7種の値型を許可し、初期値と更新値の型を完全一致させる。型違いはArgumentException、immutableへの設定はInvalidOperationExceptionとし、失敗時に値を変えない。`GetGlobal(name)`は従来どおり現在値のコピーを返す。
-- memoryの1ページは65,536バイト。内部はページ単位の`byte[]`を束ね、Core 2.0の65,536ページと4GiBのアドレス範囲をint長の単一配列へ切り詰めない。Read/Writeは全範囲を先に検査し、ページ境界をまたいでコピーする。長さ0では末尾offsetを許す。内部配列や借用Spanは返さない。
+- memoryの1ページは65,536バイト 内部はページ単位の`byte[]`を束ね、Core 2.0の65,536ページと4GiBのアドレス範囲をint長の単一配列へ切り詰めない。Read/Writeは全範囲を先に検査し、ページ境界をまたいでコピーする。長さ0では末尾offsetを許す。内部配列や借用Spanは返さない。
 - tableはFuncRef/ExternRefに限り、型別nullで初期化する。内部は`WasmValue[]`とし、`Array.MaxLength`を超える初期要素数は実装上限として拒否する。仕様上のuint上限と実装上限を区別する。
 - TryGrowは加算をulongで検査する。成功時は増大前サイズをoutへ返し、追加領域をゼロ／指定参照で初期化する。delta=0も成功し現在サイズを返す。falseを返す場合はoutに現在サイズを返し、内容・サイズを維持する。例外終了時のout値は契約に含めない。
 - 宣言最大値・仕様最大値・Array.MaxLength等の実装上限による増大不能は、割当前に検出してfalseを返す。tableの型違いはdelta=0でもArgumentExceptionとする。実際の割当時のOutOfMemoryExceptionは捕捉・変換せず伝播し、trapやリンク不成立と区別する。新領域を別に準備し、必要な割当・コピー・初期化がすべて成功した後、追加割当を伴わない確定処理で参照表とサイズを更新する。割当失敗時も既存内容・サイズを維持する。
@@ -385,7 +385,7 @@ public WasmInstance Instantiate(
 | --- | --- |
 | 関数 | Parameters/Resultsが順序を含め完全一致 |
 | global | ValueKind/IsMutableが完全一致 |
-| memory | current PageCount >= required min。required maxありならprovided maxもあり、provided max <= required max |
+| memory | current PageCount >= required min required maxありならprovided maxもあり、provided max <= required max |
 | table | ElementType一致と、current Count/MaximumElementsによるmemoryと同じlimits照合 |
 
 生成時のminを増大後のimport照合へ使わない。不一致を変換・複製・自動増大で補わない。同名import宣言が複数あればそれぞれを照合し、適合したものは同じ実体をindex表の複数位置へ置く。
@@ -397,14 +397,14 @@ ModuleBinaryFormatへ既存reader上のヘッダー、section順序、型、impo
 - Decodeはtype/import/function/table/memory/global/export/start/codeを処理する。data/element/data_countは本仕様では従来どおりUnsupportedとし、feature、位置、Decode未完了範囲と全体Validate未実施を返す。既に判明した構文違反をUnsupportedへ置き換えない。
 - 4種のindex空間はimportを先頭に置き、その後へ定義を並べる。関数の定義配列添字は`functionIndex - importedFunctionCount`であり、外部の関数添字と同一視しない。
 - Decodeでは生のuint添字・limitsと位置を保持する。Validateは添字範囲、全種類をまたぐexport名重複、memory合計 <= 1、limits min <= max、memory <= 65,536ページを検証する。tableの複数定義・importは許す。
-- global初期化式はスカラー定数またはimported immutable global.getとendに限定する。結果1個が宣言型に一致することを検証し、importしたv128・参照値もglobal.getでコピーできる。定義global・mutable globalの参照はValidate失敗。ref.*とv128.const自体は後続対象。
+- global初期化式はスカラー定数またはimported immutable global.getとendに限定する。結果1個が宣言型に一致することを検証し、importしたv128・参照値もglobal.getでコピーできる。定義global・mutable globalの参照はValidate失敗 ref.*とv128.const自体は後続対象
 - startは関数index範囲内かつ[] → []であることを検証する。importした関数も対象に含む。
 - local型列は引数型列に追加localsを連結する。型別ゼロ/nullをFunctionCodeの初期値情報に持ち、`default(WasmValue)`を全型へ流用しない。
 - 型スタックは関数底・到達不能フラグ・unknown型を扱う。returnは宣言結果をpopした後に関数底へ戻して到達不能にし、unreachableも関数底へ戻す。到達不能かつ底でのpopだけがunknownを供給する。
 - 到達不能でも添字・global可変性は検査する。明示的にpushされた値は具体型を保ち、既知型の不一致やendの余剰値は拒否する。endは結果をpopして関数底と一致させる。
-- 型検査と線形化は同一パス。全部の検証・コード・export索引が揃ったときだけmoduleへ反映する。
+- 型検査と線形化は同一パス 全部の検証・コード・export索引が揃ったときだけmoduleへ反映する。
 
-InstructionSetの対象命令は定数/endに加え、unreachable、call、return、drop、local.get/set/tee、global.get/set。添字即値は新しい`ImmediateKind.Index`と`uint Index`で表し、WasmValueへ詰めない。生成handler契約`ExecutionResult Handler(InterpreterContext, in Instruction)`を維持する。
+InstructionSetの対象命令は定数/endに加え、unreachable、call、return、drop、local.get/set/tee、global.get/set 添字即値は新しい`ImmediateKind.Index`と`uint Index`で表し、WasmValueへ詰めない。生成handler契約`ExecutionResult Handler(InterpreterContext, in Instruction)`を維持する。
 
 ### インスタンス化とexport取得
 
@@ -418,7 +418,7 @@ public WasmTable GetTable(string name);
 
 ModuleInstantiatorは全import照合後、instanceを構築してimport表を接続し、定義関数・memory/table・globalを各instanceへ割り当てる。定義globalの式を評価し、4種の参照表を完成してからstartへ進む。内部の構築途中instanceはcallbackへ渡さない。
 
-GetGlobalResourceはglobalの同一性を取得する操作であり、既存GetGlobalの戻り型を変更しない。名前不在・種類違いはArgumentException。別名export、繰返し取得、再exportは同じ関数／リソース参照を返す。定義実体だけをinstanceごとに新しく作る。`WasmInstance.Exports`は追加しない。
+GetGlobalResourceはglobalの同一性を取得する操作であり、既存GetGlobalの戻り型を変更しない。名前不在・種類違いはArgumentException 別名export、繰返し取得、再exportは同じ関数／リソース参照を返す。定義実体だけをinstanceごとに新しく作る。`WasmInstance.Exports`は追加しない。
 
 startはInstantiateごとに1回だけ実行する。成功時だけinstanceを返すが、失敗しても保存済み参照を無効化せず、共有状態の更新を戻さない。保存された関数のInvokeや資源操作は可能であり、startの完了・再実行を暗黙に要求しない。
 
@@ -446,26 +446,26 @@ instanceを明示するoverloadの第1引数は非nullableとする。instance�
 - 基底型にInstance・FunctionIndex・Definition・Code・callback・IsHostを置かず、nullの組合せや別の種類フラグで判別しない。名前取得・提供登録・funcref・import/reexportは同じWasmFunction参照を共有し、取得元ごとのラッパーを生成しない。
 - 全Invokeは引数個数・型を実行前に確認する。instance必須hostへの省略/nullはArgumentNullExceptionでcallback前に拒否する。instanceなしhostは指定の有無にかかわらずinstanceをcallbackへ渡さない。
 - 定義関数への`Invoke(instance, arguments)`は、instanceがnull・定義元・別instanceのいずれでも、instance引数を検証せず無視する。値引数の個数・型は通常どおり検証し、実行環境と新しいcontextの上限は定義元instanceから選ぶ。既存contextがあればその上限を維持する。
-- WasmからHをcallする場合は直前の定義frame所属instanceを渡す。B → AのF → HはA、B → Aから再exportしたHはB、Aのstart=HはA。C#のInvokeは指定instanceだけを使う。
+- WasmからHをcallする場合は直前の定義frame所属instanceを渡す。B → AのF → HはA、B → Aから再exportしたHはB、Aのstart=HはA C#のInvokeは指定instanceだけを使う。
 - callback引数は呼出しごとの専用配列へコピーし、同期callbackの間だけReadOnlySpanとして渡す。再入時の共有stack拡張や書換えに影響されない。callback外へ保持する利用者はToArray等でコピーする。
-- callback結果はWasmResultsを要求し、null・個数・型を確認してから呼出し元を続行する。不正な結果はInvalidOperationException。WasmResults自身が入力をコピーするため、返却元配列や後続Invokeで結果は変わらない。
+- callback結果はWasmResultsを要求し、null・個数・型を確認してから呼出し元を続行する。不正な結果はInvalidOperationException WasmResults自身が入力をコピーするため、返却元配列や後続Invokeで結果は変わらない。
 - callbackの例外は捕捉して再分類しない。ランタイムと同じ例外型でも元の実体をそのまま伝播する。
 
 ### フレーム・実行コンテキスト・失敗境界
 
 `ExecutionFrame.Function`と定義関数を実行する`Interpreter.Run`のfunction引数はDefinedFunctionとする。ExecutionBoundaryは共通のWasmFunctionを受けて具体型で呼出し先を選び、定義関数だけをInterpreter.Runへ渡す。guestのcallも具体型で分岐し、hostをWasmコードのframeへ入れない。公開Invokeの引数検証は基底型へ集約し、具体型ごとの仮想Invokeや公開Invokeへの内部再入を増やさない。
 
-`StackBase`は引数先頭、`OperandBase`は引数と追加locals直後。定義関数への直接callはcallerの引数領域をcalleeの引数として使い、戻り先pcを保持したframeを追加する。同じRunLoopを続け、handlerから公開Invokeや再帰Interpreter.Runを呼ばない。end/returnは末尾の宣言結果を順序どおりStackBaseへ移し、localsと他の一時値を除いてframeを終了する。
+`StackBase`は引数先頭、`OperandBase`は引数と追加locals直後 定義関数への直接callはcallerの引数領域をcalleeの引数として使い、戻り先pcを保持したframeを追加する。同じRunLoopを続け、handlerから公開Invokeや再帰Interpreter.Runを呼ばない。end/returnは末尾の宣言結果を順序どおりStackBaseへ移し、localsと他の一時値を除いてframeを終了する。
 
 host callはframeを追加せずcontextの深さを1段消費し、finallyで解放する。C#へ出る前に引数を所有コピーし、callbackが再入する場合は既存context上で新たな入口snapshotを設ける。内側のRunLoopは入口frame数まで戻った時点で終了し、外側を勝手に再開しない。
 
 ExecutionBoundaryの内部入口を`Invoke(function, explicitInstance, arguments)`と`RunStart(startInstance, function)`に分ける。contextの開始・共有・解除は「処理フロー」の2〜5で示す呼び出し方に従う。各入口はframe/value/depthをfinallyで復元し、contextを新規作成した入口だけがThreadStaticを解除する。
 
-- 初回の関数深さは1。上限到達後の次の入場をCallDepthLimitで拒否する。定義、host、別instance、同期再入のいずれも既存contextの上限を使う。
+- 初回の関数深さは1 上限到達後の次の入場をCallDepthLimitで拒否する。定義、host、別instance、同期再入のいずれも既存contextの上限を使う。
 - hostとの同期往復ではCLR stackが増えるため、再入入口とcallback直前で`RuntimeHelpers.TryEnsureSufficientExecutionStack()`を確認する。falseはHostStackLimitのExecutionResultとして返す。ホスト自身の任意再帰はこの保証に含めない。
 - `WasmExhaustionException.Limit`と内部結果の上限を`int?`とし、CallDepthLimitは設定値、HostStackLimitはnullとする。未計測のCLR容量を設定MaxCallDepthとして偽って返さない。
 - unreachableは`ExecutionResult.Trap(Unreachable, 元関数index, byte位置)`を返す。通常のguest間呼出しはこの結果を公開境界まで伝播し、後続命令を実行しない。
-- ExecutionBoundaryの共通変換だけがruntime結果を公開例外化する。直接InvokeはStage.Invoke、start実行はStage.Instantiate。host callback中の公開Invokeが既に例外化したものを外へ投げた場合は、Stage.Invokeを含め元の例外を維持する。
+- ExecutionBoundaryの共通変換だけがruntime結果を公開例外化する。直接InvokeはStage.Invoke、start実行はStage.Instantiate host callback中の公開Invokeが既に例外化したものを外へ投げた場合は、Stage.Invokeを含め元の例外を維持する。
 - 再入先の例外をホストが捕捉して処理を続ける場合も、内側snapshotまでの復元が済んでおり、外側の引数・locals・pc・深さは維持される。
 
 ### import情報取得
@@ -482,7 +482,7 @@ WasmImportInfoはModuleName、Name、Kindを持つ閉じた型階層とし、同
 検査範囲を次のとおり固定する。
 
 1. magic/version、全sectionのID・順序・重複・長さと入力終端までの到達可能性を確認する。custom sectionの名前はUTF-8検査する。
-2. type/import sectionのpayloadを末尾まで読み、全importの名前・種類・要求型を得る。関数型indexを解決できなければ取得失敗。limitsの意味論やmodule全体の型検証は行わない。
+2. type/import sectionのpayloadを末尾まで読み、全importの名前・種類・要求型を得る。関数型indexを解決できなければ取得失敗 limitsの意味論やmodule全体の型検証は行わない。
 3. 他のsectionは外枠を確認してpayloadをスキップする。関数本体のopcodeやlocal、global初期化式、export、start、data/elementの内容は解釈しない。無関係な未実装命令・segmentは情報取得を妨げない。
 4. import sectionより後も最後まで走査し、重複importや壊れた長さを見逃さない。全走査成功まで内部builderの一覧を公開しない。
 5. 成功時もスキップしたpayloadのDecode未確認範囲と入力全体のValidate未実施範囲を返す。成功はmoduleを生成せず、検証済み状態も作らない。
@@ -498,7 +498,7 @@ Streamは現在位置から最後まで読み、seek/Lengthを要求せず、閉
 | 所有者 | 保持情報 | 不変条件 |
 | --- | --- | --- |
 | WasmModule | types、imports、定義関数、global/memory/table定義、exports、optional start、検証後FunctionCode | 外部から変更不可、検証全体成功時だけコードを公開 |
-| WasmInstance | module、ExecutionOptions、4種のimport先行index表 | index表の参照先は構築後固定。実体の可変状態は共有 |
+| WasmInstance | module、ExecutionOptions、4種のimport先行index表 | index表の参照先は構築後固定 実体の可変状態は共有 |
 | DefinedFunction | 所属instance、module全体のfunction index、定義配列index | Type・Definition・Codeは元instanceから取得し、import/reexportで所属を変更しない |
 | HostFunction / InstanceHostFunction | 型、それぞれの非nullable callback | instanceに所属せず、同じ実体を共有 |
 | WasmGlobal/Memory/Table | 型・最大値・現在値または現在領域 | mutable状態の所有者はこの実体だけ |
@@ -572,7 +572,7 @@ WasmInstantiateExceptionの`Reason`はMissingImport / KindMismatch / TypeMismatc
 
 ## 参照
 
-- [要件](requirements.md)、[調査と設計判断](research.md)、[型・実行方針](../../steering/tech.md)。
-- [Core 2.0保存版](https://webassembly.github.io/spec/versions/core/WebAssembly-2.0.pdf): 型・検証・実体照合・host・start。
-- [TryEnsureSufficientExecutionStack](https://learn.microsoft.com/en-us/dotnet/api/system.runtime.compilerservices.runtimehelpers.tryensuresufficientexecutionstack?view=net-10.0): CLR境界のstack余裕確認。
-- [ADR 0008](../../../docs/adr/0008-instance-options-and-execution-context.md)、[ADR 0009](../../../docs/adr/0009-range-based-host-memory-access.md)、[ADR 0010](../../../docs/adr/0010-host-function-instance-context.md)、[ADR 0011](../../../docs/adr/0011-retain-references-after-start-failure.md)。
+- [要件](requirements.md)、[調査と設計判断](research.md)、[型・実行方針](../../steering/tech.md)
+- [Core 2.0保存版](https://webassembly.github.io/spec/versions/core/WebAssembly-2.0.pdf): 型・検証・実体照合・host・start
+- [TryEnsureSufficientExecutionStack](https://learn.microsoft.com/en-us/dotnet/api/system.runtime.compilerservices.runtimehelpers.tryensuresufficientexecutionstack?view=net-10.0): CLR境界のstack余裕確認
+- [ADR 0008](../../../docs/adr/0008-instance-options-and-execution-context.md)、[ADR 0009](../../../docs/adr/0009-range-based-host-memory-access.md)、[ADR 0010](../../../docs/adr/0010-host-function-instance-context.md)、[ADR 0011](../../../docs/adr/0011-retain-references-after-start-failure.md)

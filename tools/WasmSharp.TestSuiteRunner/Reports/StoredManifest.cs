@@ -8,7 +8,7 @@ namespace WasmSharp.TestSuiteRunner.Reports;
 /// </summary>
 /// <param name="Manifest">読み取ったmanifest</param>
 /// <param name="Content">読み取った生バイト列</param>
-/// <param name="Issues">記録の問題。問題がなければ空</param>
+/// <param name="Issues">記録の問題 問題がなければ空</param>
 internal sealed record StoredManifest(
     CorpusManifest Manifest,
     byte[] Content,

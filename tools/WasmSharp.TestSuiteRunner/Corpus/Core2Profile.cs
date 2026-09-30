@@ -36,6 +36,9 @@ internal sealed record Core2Profile(
     /// <summary>
     /// 配置先やランタイムの実装状況に依存しない埋込みprofileを読み取る。
     /// </summary>
+    /// <returns>埋込みJSONに記録された固定の入力集合と変換条件</returns>
+    /// <exception cref="InvalidOperationException">埋込みprofileが見つからない場合</exception>
+    /// <exception cref="JsonException">埋込みJSONをprofileとして読み取れない、または読み取った値がnullの場合</exception>
     internal static Core2Profile Load()
     {
         using var stream =
@@ -45,8 +48,11 @@ internal sealed record Core2Profile(
     }
 
     /// <summary>
-    /// 同じ形式のprofileを読み取る。入力streamの所有権は呼び出し元に残る。
+    /// 指定したstreamからprofileを読み取り、streamの所有権を呼び出し元に残す。
     /// </summary>
+    /// <param name="stream">埋込みprofileと同じ形式のUTF-8のJSONを読み取るstream</param>
+    /// <returns>JSONに記録された入力集合と変換条件</returns>
+    /// <exception cref="JsonException">JSONをprofileとして読み取れない、または読み取った値がnullの場合</exception>
     internal static Core2Profile Load(Stream stream)
     {
         return JsonSerializer.Deserialize<Core2Profile>(stream, jsonOptions_)

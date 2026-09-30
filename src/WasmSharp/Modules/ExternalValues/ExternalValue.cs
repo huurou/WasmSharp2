@@ -5,5 +5,8 @@ namespace WasmSharp.Modules.ExternalValues;
 /// </summary>
 internal abstract class ExternalValue
 {
+    /// <summary>
+    /// 同一アセンブリ内の派生型に限定して、提供する外部要素を構築する
+    /// </summary>
     private protected ExternalValue() { }
 }

@@ -2,26 +2,26 @@
 
 ## 概要
 
-- **対象機能:** test-suite-runner。
+- **対象機能:** test-suite-runner
 - **設計調査の種類:** CLIを新設し、既存ランタイムと固定WABTへ接続するため、詳細な設計調査（full discovery）を行った。
 - **主要な知見:** 公開APIへの追加はexport名・種類の一覧取得に絞れる。相対入力pathで固定WABTを起動すればJSONの書換えなしに配置rootを変えられる。全147生成JSONは10種・53,907commandで、初期必須の公式経路を具体的なcommand番号へ対応付けられる。
 - 以下の「調査の前提」から「設計へ持ち越す調査・決定事項」までは設計前のギャップ分析を保持する。そこにある未承認状態・未実測事項・候補は当時の記録であり、今回の決定と確認結果は末尾の「設計調査」と「設計判断」に記録する。
 
 ## 調査の前提
 
-- 調査日: 2026-09-27。
-- 対象: [requirements.md](requirements.md)の全14要件・111受入基準と、現在のワークツリーにある実装・固定依存。
-- [spec.json](spec.json)は`requirements-generated`、要件は未承認、文書言語は`ja`。本分析は要件承認や設計決定を代行しない。
+- 調査日: 2026-09-27
+- 対象: [requirements.md](requirements.md)の全14要件・111受入基準と、現在のワークツリーにある実装・固定依存
+- [spec.json](spec.json)は`requirements-generated`、要件は未承認、文書言語は`ja` 本分析は要件承認や設計決定を代行しない。
 - 要件・steering、ランタイム、固定外部依存を並行して読み取り専用で調査した。既存の未コミット変更を前提に分析し、本作業の成果物はこの文書とする。
 - コード・既存テスト・固定上流ソースを静的に確認し、固定commit、入力件数、現存する変換器のhashを読み取った。今回、ビルド、テスト、素材の再生成、公式スイートの実行は行っていない。過去の受入記録を今回の実行結果として扱わない。
 
 ## 分析の要約
 
 - `Decode → Validate → Instantiate → Invoke`、import情報取得、4種の共有実体、全7値型の保持は再利用できる。ランタイム全体を作り直す必要はない。
-- 独立CLI、manifest、JSON commandの状態管理、期待値比較、結果保存、baseline比較は新設が必要。registerにはinstanceのexport一覧を取得する公開APIも必要である。
+- 独立CLI、manifest、JSON commandの状態管理、期待値比較、結果保存、baseline比較は新設が必要 registerにはinstanceのexport一覧を取得する公開APIも必要である。
 - 固定WABTの入力pathはJSONの`source_filename`へ入る。既存READMEの絶対pathによる変換例をそのまま正式生成処理へ移すと、配置root変更時の再現性を満たせない。
 - 初期から6分類、全値型比較、公式診断の前方一致を扱う。既存ランタイムの日本語診断との不一致は観測して`failed`へ残し、判定基準を緩めない。
-- 新しいCLIと必要な公開API拡張を組み合わせる案が有力。主な不確定要素は、初期必須の公式実行経路を成立させるためのランタイム修正量である。
+- 新しいCLIと必要な公開API拡張を組み合わせる案が有力 主な不確定要素は、初期必須の公式実行経路を成立させるためのランタイム修正量である。
 
 ## 現在の資産と責務
 
@@ -44,9 +44,9 @@
 
 | 対象 | 今回確認した状態 |
 | --- | --- |
-| WebAssembly spec | HEADは`05ca4182176763112561ae20153975c12bd689e4`。`test/core`の入力は147WAST、うちSIMD57件。 |
-| WABT | HEADは`03a00a1334e6121fb0cce4fccbd6bb109b68acaa`。固定版の[feature定義](../../../thirdParties/wabt/include/wabt/feature.def)は全21件、ON7件・OFF14件。 |
-| 変換器 | `artifacts/wabt-core2/Release/wast2json.exe`が存在し、SHA-256は`B0E1D0316A265F659566A0E3B6F1A00FEA9E315E3D25F2C3E0853E414D0BE245`。[READMEの記録](../../../thirdParties/README.md)と一致する。 |
+| WebAssembly spec | HEADは`05ca4182176763112561ae20153975c12bd689e4` `test/core`の入力は147WAST、うちSIMD57件 |
+| WABT | HEADは`03a00a1334e6121fb0cce4fccbd6bb109b68acaa` 固定版の[feature定義](../../../thirdParties/wabt/include/wabt/feature.def)は全21件、ON7件・OFF14件 |
+| 変換器 | `artifacts/wabt-core2/Release/wast2json.exe`が存在し、SHA-256は`B0E1D0316A265F659566A0E3B6F1A00FEA9E315E3D25F2C3E0853E414D0BE245` [READMEの記録](../../../thirdParties/README.md)と一致する。 |
 | 変換手順・既存素材 | READMEに全入力変換例があり、`artifacts/wast2json-official-examples`に形式確認用の素材がある。正式manifestやbaselineの代わりにはならない。 |
 
 変換器の存在とhash一致は、今回のビルド成功・全件変換成功・配置rootを変えた再現性の証拠ではない。固定版の一次資料をローカルで読めるため、別版のWeb資料や最新の依存へ置き換える調査は行っていない。
@@ -57,20 +57,20 @@
 
 | 受入基準 | 既存資産 | ギャップ |
 | --- | --- | --- |
-| 1.1～1.7 | .NET10の開発基盤、公開4段階API | **Missing:**生成・実行・baseline保存・比較・最終判定の独立コマンド。**Constraint:**複数工程をまとめない。実行は保存済み素材のみ、保存・比較・最終判定は保存済みJSONのみを入力にする。 |
-| 2.1～2.7 | 固定gitlink、README、WABTのfeature定義 | **Missing:**出典・全featureの既定値/実効値・実行ファイルhash・生成条件の記録。**Constraint:**全147入力を維持し、Core 2.0外はOFF、`--enable-all`/`--no-check`は禁止。公式入力・外部ソースを変更しない。 |
-| 3.1～3.7 | READMEのPowerShell変換例 | **Missing:**正式manifest、相対path/hash/参照対応、失敗・未処理記録と独立入力の継続。既存例は初回失敗でthrowする。**Unknown:**同条件と配置root変更時の全生成物一致。 |
-| 4.1～4.7 | 固定WABTのJSONと素材形式 | **Missing:**生成時/実行時で対象を分ける照合、入力異常と件数未確定の記録。**Constraint:**実行時に元WASTを要求しない。watは照合でhashを取り、実行では開かず`out_of_scope`にする。 |
-| 5.1～5.7 | 名前によるexport取得、4種の提供登録、実体共有 | **Missing:**公開export一覧、入力ごとの直近module・module識別子・登録名・失敗原因の管理。**Constraint:**否定assertionは名前対応を更新せず、実行済みの共有リソースの副作用は保持する。 |
-| 6.1～6.8 | `InspectImports`、import名・種類・要求型と未確認範囲 | **Missing:**依存元commandと元の失敗の追跡、独立した後続処理の継続。**Constraint:**Decode/Validateを先行し、登録依存による`blocked`はInstantiate直前に判定する。未登録だけで`blocked`にしない。 |
-| 7.1～7.5 | 明示型のhost関数、global/memory/table生成API | **Missing:**spectestの固定構成、入力ごとの初期化、commandに結び付くprint記録。**Constraint:**同じ入力では同じ実体を提供し、型・limits照合をInstantiateへ委ねる。 |
-| 8.1～8.11 | `WasmValue`の全値型、Invoke、global現在値、複数結果 | **Missing:**WABT値の読取、ビット保持の引数構築、v128のlane処理、NaN pattern、参照同一性、個数・型・順序の比較。**Constraint:**値処理を後続命令仕様へ延期しない。 |
-| 9.1～9.11 | 段階別公開例外、Reason/Location | **Missing:**assertion別の期待段階・失敗種類・診断比較。**Constraint:**`Message.StartsWith(expectedText, StringComparison.Ordinal)`を無加工で適用し、不一致を`failed`とする。 |
-| 10.1～10.7 | 未実装・実装上限・Wasm失敗等の公開分類 | **Missing:**6分類、発生操作/原因、保存失敗・未処理の記録。**Constraint:**不明なJSON、ランナーcallback例外、公開契約外例外等は`runner_error`。`runner_unsupported`は作らない。 |
-| 11.1～11.8 | 一般のテスト結果保存はTRXのみ | **Missing:**相対入力path＋command順序の識別、期待/実際/段階/原因のJSON、出典との対応、重複のない集計。**Constraint:**入力単位エラーを架空のcommand件数へ加えない。 |
-| 12.1～12.10 | baseline方針のみ | **Missing:**同形式での明示保存、完了確認、変換比較、実行比較、ケース単位の回帰と欠落の検出。**Constraint:**比較でbaselineを更新せず、実行ファイルhashだけの差は両比較とも出典差異にする。 |
-| 13.1～13.7 | 既存build/testの終了コード | **Missing:**用途別の終了判定。**Constraint:**保存成功・実行成功・回帰なし・最終合格を区別する。診断不一致を含む`failed`や`runner_error`があれば実行と回帰比較は非0。 |
-| 14.1～14.9 | 先行基盤の公開API直接テスト、過去の変換記録 | **Missing:**実CLIによる全件処理、再現性、公式の初期必須経路、全command記録、初回baseline、再実行・比較。**Unknown:**初期必須経路を妨げるランタイム修正範囲。**Constraint:**初回ランナー受入と全8仕様統合後の最終合格を区別する。 |
+| 1.1～1.7 | .NET10の開発基盤、公開4段階API | **Missing:**生成・実行・baseline保存・比較・最終判定の独立コマンド **Constraint:**複数工程をまとめない。実行は保存済み素材のみ、保存・比較・最終判定は保存済みJSONのみを入力にする。 |
+| 2.1～2.7 | 固定gitlink、README、WABTのfeature定義 | **Missing:**出典・全featureの既定値/実効値・実行ファイルhash・生成条件の記録 **Constraint:**全147入力を維持し、Core 2.0外はOFF、`--enable-all`/`--no-check`は禁止 公式入力・外部ソースを変更しない。 |
+| 3.1～3.7 | READMEのPowerShell変換例 | **Missing:**正式manifest、相対path/hash/参照対応、失敗・未処理記録と独立入力の継続 既存例は初回失敗でthrowする。**Unknown:**同条件と配置root変更時の全生成物一致 |
+| 4.1～4.7 | 固定WABTのJSONと素材形式 | **Missing:**生成時/実行時で対象を分ける照合、入力異常と件数未確定の記録 **Constraint:**実行時に元WASTを要求しない。watは照合でhashを取り、実行では開かず`out_of_scope`にする。 |
+| 5.1～5.7 | 名前によるexport取得、4種の提供登録、実体共有 | **Missing:**公開export一覧、入力ごとの直近module・module識別子・登録名・失敗原因の管理 **Constraint:**否定assertionは名前対応を更新せず、実行済みの共有リソースの副作用は保持する。 |
+| 6.1～6.8 | `InspectImports`、import名・種類・要求型と未確認範囲 | **Missing:**依存元commandと元の失敗の追跡、独立した後続処理の継続 **Constraint:**Decode/Validateを先行し、登録依存による`blocked`はInstantiate直前に判定する。未登録だけで`blocked`にしない。 |
+| 7.1～7.5 | 明示型のhost関数、global/memory/table生成API | **Missing:**spectestの固定構成、入力ごとの初期化、commandに結び付くprint記録 **Constraint:**同じ入力では同じ実体を提供し、型・limits照合をInstantiateへ委ねる。 |
+| 8.1～8.11 | `WasmValue`の全値型、Invoke、global現在値、複数結果 | **Missing:**WABT値の読取、ビット保持の引数構築、v128のlane処理、NaN pattern、参照同一性、個数・型・順序の比較 **Constraint:**値処理を後続命令仕様へ延期しない。 |
+| 9.1～9.11 | 段階別公開例外、Reason/Location | **Missing:**assertion別の期待段階・失敗種類・診断比較 **Constraint:**`Message.StartsWith(expectedText, StringComparison.Ordinal)`を無加工で適用し、不一致を`failed`とする。 |
+| 10.1～10.7 | 未実装・実装上限・Wasm失敗等の公開分類 | **Missing:**6分類、発生操作/原因、保存失敗・未処理の記録 **Constraint:**不明なJSON、ランナーcallback例外、公開契約外例外等は`runner_error` `runner_unsupported`は作らない。 |
+| 11.1～11.8 | 一般のテスト結果保存はTRXのみ | **Missing:**相対入力path＋command順序の識別、期待/実際/段階/原因のJSON、出典との対応、重複のない集計 **Constraint:**入力単位エラーを架空のcommand件数へ加えない。 |
+| 12.1～12.10 | baseline方針のみ | **Missing:**同形式での明示保存、完了確認、変換比較、実行比較、ケース単位の回帰と欠落の検出 **Constraint:**比較でbaselineを更新せず、実行ファイルhashだけの差は両比較とも出典差異にする。 |
+| 13.1～13.7 | 既存build/testの終了コード | **Missing:**用途別の終了判定 **Constraint:**保存成功・実行成功・回帰なし・最終合格を区別する。診断不一致を含む`failed`や`runner_error`があれば実行と回帰比較は非0 |
+| 14.1～14.9 | 先行基盤の公開API直接テスト、過去の変換記録 | **Missing:**実CLIによる全件処理、再現性、公式の初期必須経路、全command記録、初回baseline、再実行・比較 **Unknown:**初期必須経路を妨げるランタイム修正範囲 **Constraint:**初回ランナー受入と全8仕様統合後の最終合格を区別する。 |
 
 ## 重要な統合上の差分
 
@@ -99,7 +99,7 @@ WABTはJSONを書いた後に個別moduleを書き出すため、途中失敗で
 根拠は固定版の[wast2json形式](../../../thirdParties/wabt/docs/wast2json.md)と[binary-writer-spec.cc](../../../thirdParties/wabt/src/binary-writer-spec.cc)の168～324、367～390、418～449、508～618行目である。
 
 - i32/i64とf32/f64の具体値は符号なし10進の文字列である。f32/f64は数値ではなく生ビットを表す。整数は幅を保って解釈し、浮動小数点数への数値変換を介さず`FromF32Bits`/`FromF64Bits`を使える。
-- v128は`lane_type`と文字列配列で表される。i8/i16/i32/i64/f32/f64のlane数は16/8/4/2/4/2。上下64ビットへの配置と、期待lane型による実値の切り出しはツール側の新規処理になる。
+- v128は`lane_type`と文字列配列で表される。i8/i16/i32/i64/f32/f64のlane数は16/8/4/2/4/2 上下64ビットへの配置と、期待lane型による実値の切り出しはツール側の新規処理になる。
 - canonical/arithmetic NaNは期待値のパターンであり、具体ビットの引数と分ける。符号を無視した判定、quiet bit、正負の0、明示NaN payloadは要件8のまま扱う。
 - externrefは入力ごとに番号→同じホストobjectの対応を持つ。参照の判定には参照同一性を使う。funcref/externrefのnullは型も照合する。
 - 単独action、assert_trap、assert_exhaustionの`expected`には`value`がなく型だけの要素も出力される。assert_returnの値付き期待値と同じ必須項目にはできない。
@@ -145,14 +145,14 @@ WABTはJSONを書いた後に個別moduleを書き出すため、途中失敗で
 | 案 | 内容と利点 | 制約・評価 |
 | --- | --- | --- |
 | A:既存処理の拡張 | READMEの変換例と既存TUnitを拡張する。既存の検証習慣を再利用しやすい。 | 既存ランナーがないため、純粋な拡張だけでは独立CLI・正式manifest・保存済みJSON操作を満たせない。ランタイムに素材管理を組み込むと責務が混ざる。単独の完成案にはならない。 |
-| B:新設のみ | `tools/`にツールを新設し、現行公開APIだけへ依存する。ランタイムへの影響を抑えられる。 | ランタイム無変更では全exportの取得ができず、register要件を満たせない。独自バイナリ解析や内部アクセスによる補完は対象外。公開API追加と組み合わせる必要がある。 |
-| C:新設と既存拡張の組合せ | CLIの素材生成・照合、スクリプト実行・比較、結果・baseline処理を新設し、ランタイムの既存能力を再利用する。export一覧と初期必須経路の修正だけをランタイムへ追加する。 | 要件と依存方向に最も合う。公開API変更とツールの受入を対応付ける計画が必要。設計上の有力候補とし、ここでは確定しない。 |
+| B:新設のみ | `tools/`にツールを新設し、現行公開APIだけへ依存する。ランタイムへの影響を抑えられる。 | ランタイム無変更では全exportの取得ができず、register要件を満たせない。独自バイナリ解析や内部アクセスによる補完は対象外 公開API追加と組み合わせる必要がある。 |
+| C:新設と既存拡張の組合せ | CLIの素材生成・照合、スクリプト実行・比較、結果・baseline処理を新設し、ランタイムの既存能力を再利用する。export一覧と初期必須経路の修正だけをランタイムへ追加する。 | 要件と依存方向に最も合う。公開API変更とツールの受入を対応付ける計画が必要 設計上の有力候補とし、ここでは確定しない。 |
 
 案Cでは次の2構成が実現可能である。
 
 | 構成 | 利点 | 負担 |
 | --- | --- | --- |
-| 単一CLIプロジェクト内で責務を分ける | プロジェクト数が少なく、現在の単一入口に合う。処理は内部型に分けて直接テストできる。 | コマンド入口に変換・状態管理・比較処理を集中させない構成が必要。 |
+| 単一CLIプロジェクト内で責務を分ける | プロジェクト数が少なく、現在の単一入口に合う。処理は内部型に分けて直接テストできる。 | コマンド入口に変換・状態管理・比較処理を集中させない構成が必要 |
 | 処理ライブラリと薄いCLIを分ける | 処理の公開契約とCLI入出力をプロジェクト単位で分離できる。 | 別アセンブリの契約と参照管理が増える。現要件は複数の呼び出し元を要求せず、テスト容易性だけで必須にはならない。 |
 
 現時点では単一CLIを第一候補とし、素材、スクリプト、比較等の責務ごとに処理と関連データを同居させる。汎用plugin機構、別エンジン用の交換口、独自Wasm演算、入力ごとのプロセス隔離は追加しない。生成時だけWABTと公式入力を必要とし、実行・保存・比較・最終判定をそれらへ依存させない。
@@ -161,8 +161,8 @@ WABTはJSONを書いた後に個別moduleを書き出すため、途中失敗で
 
 ## 工数とリスク
 
-- **工数:XL（2週間以上の規模区分）**。新CLIだけでなく、再現可能な素材管理、状態と依存の処理、全値型比較、永続結果、用途別判定、実コマンドでの公式受入を整備するため。暫定的な相対見積りであり、日程の確約ではない。
-- **リスク:High**。固定形式と既存公開APIは確認できるが、初期必須の公式ケースで必要になるランタイム修正量と全JSONの形式分布は未確定。誤分類や不完全な結果をbaselineとして保存すると、後続機能の回帰判定へ影響する。
+- **工数:XL（2週間以上の規模区分）** 新CLIだけでなく、再現可能な素材管理、状態と依存の処理、全値型比較、永続結果、用途別判定、実コマンドでの公式受入を整備するため 暫定的な相対見積りであり、日程の確約ではない。
+- **リスク:High** 固定形式と既存公開APIは確認できるが、初期必須の公式ケースで必要になるランタイム修正量と全JSONの形式分布は未確定 誤分類や不完全な結果をbaselineとして保存すると、後続機能の回帰判定へ影響する。
 - 診断の全件互換修正と後続命令の追加は、それぞれの仕様へ分ける。本見積りへCore 2.0全体の完成を含めない。
 
 ## 設計へ持ち越す調査・決定事項
@@ -190,30 +190,30 @@ WABTはJSONを書いた後に個別moduleを書き出すため、途中失敗で
 
 ### 公開APIとregisterの接点
 
-**根拠:** [WasmInstance](../../../src/WasmSharp/WasmInstance.cs)、[WasmImportInfo](../../../src/WasmSharp/WasmImportInfo.cs)、[WasmHostModule](../../../src/WasmSharp/WasmHostModule.cs)、[WasmImports](../../../src/WasmSharp/WasmImports.cs)、[WasmValue](../../../src/WasmSharp/WasmValue.cs)。
+**根拠:** [WasmInstance](../../../src/WasmSharp/WasmInstance.cs)、[WasmImportInfo](../../../src/WasmSharp/WasmImportInfo.cs)、[WasmHostModule](../../../src/WasmSharp/WasmHostModule.cs)、[WasmImports](../../../src/WasmSharp/WasmImports.cs)、[WasmValue](../../../src/WasmSharp/WasmValue.cs)
 
 - exportの内部一覧はあるが公開列挙はない。追加は`ImmutableArray<WasmExportInfo> GetExports()`と名前・Kindを持つrecordに限定する。実体は既存Get系APIを使う。
 - 現行の外部値wrapperはinternalであり、公開`WasmExternalValue`型は存在しない。wrapperを公開する必要はない。globalのregisterには値を返すGetGlobalではなくGetGlobalResourceを使う。
 - WasmImportsは重複を拒否するため、登録名→現在の提供元をツールが保持し、Instantiateごとに再構成する。再registerは登録名全体の置換とする。
 - InspectImportsの失敗とWasmの4段階は別の観測である。操作名を`InspectImports`として保存し、Location.Stageを上書きしない。UnsupportedFeature以外の取得失敗もそのReasonを残す。
-- 値の全7型とv128の上下64bit、f32/f64のBits、参照の構築/取得は既存公開APIで足りる。ランナー専用hookは不要。
+- 値の全7型とv128の上下64bit、f32/f64のBits、参照の構築/取得は既存公開APIで足りる。ランナー専用hookは不要
 
 **設計への反映:** GetExportsの追加と既存の名前による実体取得を組み合わせる。structure.mdは実装時に同期する。ランタイムの実体/型照合は再実装しない。
 
 ### 固定JSONの全形式と生成実験
 
-**根拠:** 固定WABTの[JSON writer](../../../thirdParties/wabt/src/binary-writer-spec.cc)、[wast2json入口](../../../thirdParties/wabt/src/tools/wast2json.cc)、[feature.def](../../../thirdParties/wabt/include/wabt/feature.def)、[binary writer option](../../../thirdParties/wabt/include/wabt/binary-writer.h)。
+**根拠:** 固定WABTの[JSON writer](../../../thirdParties/wabt/src/binary-writer-spec.cc)、[wast2json入口](../../../thirdParties/wabt/src/tools/wast2json.cc)、[feature.def](../../../thirdParties/wabt/include/wabt/feature.def)、[binary writer option](../../../thirdParties/wabt/include/wabt/binary-writer.h)
 
 設計の不確定事項を解消するため、既存の固定exeを使い全147入力を2回変換した。2回目は入力WASTを相対配置を保って一時ディレクトリへコピーし、出力rootも変更した。入力をcore rootからの`/`区切り相対pathで渡し、作業ディレクトリをcore rootとした。上流ソースは変更していない。
 
 | 確認項目 | 今回の実測 |
 | --- | --- |
-| spec/WABT | 固定HEADはそれぞれ`05ca4182176763112561ae20153975c12bd689e4`、`03a00a1334e6121fb0cce4fccbd6bb109b68acaa`。 |
-| 使用exe | 既存`artifacts/wabt-core2/Release/wast2json.exe`。SHA-256=`b0e1d0316a265f659566a0e3b6f1a00fea9e315e3d25f2c3e0853e414d0be245`。今回は再ビルドしていない。 |
-| 変換 | 両配置とも147/147成功。JSON147、wasm4,597、wat1,077の計5,821生成物。 |
-| 配置変更 | 生成物の相対一覧と全SHA-256が一致。source_filenameとmodule参照を含めJSON内容の書換えなし。 |
-| JSON読取 | 147/147成功、合計53,907command。 |
-| 懸念していた複数型のみexpected | 出現0件。writerのカンマ出力に関する静的懸念は、現在の固定スイートの阻害要因ではない。 |
+| spec/WABT | 固定HEADはそれぞれ`05ca4182176763112561ae20153975c12bd689e4`、`03a00a1334e6121fb0cce4fccbd6bb109b68acaa` |
+| 使用exe | 既存`artifacts/wabt-core2/Release/wast2json.exe` SHA-256=`b0e1d0316a265f659566a0e3b6f1a00fea9e315e3d25f2c3e0853e414d0be245` 今回は再ビルドしていない。 |
+| 変換 | 両配置とも147/147成功 JSON147、wasm4,597、wat1,077の計5,821生成物 |
+| 配置変更 | 生成物の相対一覧と全SHA-256が一致 source_filenameとmodule参照を含めJSON内容の書換えなし |
+| JSON読取 | 147/147成功、合計53,907command |
+| 懸念していた複数型のみexpected | 出現0件 writerのカンマ出力に関する静的懸念は、現在の固定スイートの阻害要因ではない。 |
 | 固定集合外の形式 | 非nullfuncref値、either、assert_exception、exnrefは出現しない。 |
 
 | command種別 | 件数 |
@@ -229,9 +229,9 @@ WABTはJSONを書いた後に個別moduleを書き出すため、途中失敗で
 | assert_unlinkable | 83 |
 | assert_uninstantiable | 34 |
 
-`module_type=text`はassert_malformed内の1,077件。通常moduleにはmodule_typeがなく、binaryとして扱う。action/assert_trap/assert_exhaustionのexpectedは型だけの配列で、v128もlane_typeを持たない。assert_returnの値付き期待値と別モデルにする。
+`module_type=text`はassert_malformed内の1,077件 通常moduleにはmodule_typeがなく、binaryとして扱う。action/assert_trap/assert_exhaustionのexpectedは型だけの配列で、v128もlane_typeを持たない。assert_returnの値付き期待値と別モデルにする。
 
-v128はi8/i16/i32/i64/f32/f64の全lane形式が現れる。funcrefは引数null6件、期待null7件、型だけexpected2件。externrefはnullまたは番号と型だけexpectedが現れる。WABTの一般形式の非nullfuncref数値は関数indexではなく非nullパターンの符号化であるが、今回の固定集合にはなく実装を追加しない。
+v128はi8/i16/i32/i64/f32/f64の全lane形式が現れる。funcrefは引数null6件、期待null7件、型だけexpected2件 externrefはnullまたは番号と型だけexpectedが現れる。WABTの一般形式の非nullfuncref数値は関数indexではなく非nullパターンの符号化であるが、今回の固定集合にはなく実装を追加しない。
 
 試験出力と集計は一時領域`C:/Users/taihe/AppData/Local/Temp/wasmsharp-runner-design-20260927-142230/`の`summary.json`、`inventory.json`、`a/`、`b/`に保存した。正式manifest、公式run結果、永続baselineではない。一時出力が失われても再調査できるよう条件と件数を本節へ記録する。素材の変換・JSON読取はWasmSharpによる実行成功を意味しない。
 
@@ -243,13 +243,13 @@ v128はi8/i16/i32/i64/f32/f64の全lane形式が現れる。funcrefは引数null
 
 | 観点 | ケース |
 | --- | --- |
-| spectest関数呼出し | `imports.wast#6～7`、`start.wast#15,#16,#17`。後続の数値演算・segmentが不要な呼出しを含む。 |
-| 関数register・再export | `linking.wast#0～6`。 |
-| 共有mutable global | `linking.wast#11～28`。#24の更新後に両instanceから値を確認する。 |
-| spectest数値global | `imports.wast#41～45`。 |
-| tableのregister/import | `imports.wast#0,#1`から`#82～93`。 |
-| memoryのregister/import | `imports.wast#0,#1`から`#127～129`。 |
-| spectest table/memory | `imports.wast#94～101,#130～135`。 |
+| spectest関数呼出し | `imports.wast#6～7`、`start.wast#15,#16,#17` 後続の数値演算・segmentが不要な呼出しを含む。 |
+| 関数register・再export | `linking.wast#0～6` |
+| 共有mutable global | `linking.wast#11～28` #24の更新後に両instanceから値を確認する。 |
+| spectest数値global | `imports.wast#41～45` |
+| tableのregister/import | `imports.wast#0,#1`から`#82～93` |
+| memoryのregister/import | `imports.wast#0,#1`から`#127～129` |
+| spectest table/memory | `imports.wast#94～101,#130～135` |
 
 固定参照[run.ml](../../../thirdParties/WebAssembly-spec/interpreter/script/run.ml)ではregisterは登録名全体を置換する。通常module成功時は識別子と直近moduleを更新し、否定moduleは更新しない。失敗後に古い成功へ戻さず原因を保持する点は、要件5.7の継続実行用の契約である。
 
@@ -276,14 +276,14 @@ v128はi8/i16/i32/i64/f32/f64の全lane形式が現れる。funcrefは引数null
 - **課題:** 同じ値・段階を複数のcommandで判定する。
 - **採用:** invoke/getの値処理をValueCodec/ValueMatcherへ、公開操作の観測をCommandObservationへ、判定をAssertionJudgeへ集める。引数と期待値、観測と結果分類を別の型にする。
 - **理由:** scalarとv128 laneでNaN判定を共通化でき、診断の厳密さを一箇所で維持できる。
-- **棄却:** commandごとの独立した値比較、ランタイムの演算の再実装、将来engine向け汎用interface。
+- **棄却:** commandごとの独立した値比較、ランタイムの演算の再実装、将来engine向け汎用interface
 
 ### 一覧は記述情報、実体は名前で取得
 
-- **課題:** registerに全exportが必要だが、既存方針は名前による実体取得。
+- **課題:** registerに全exportが必要だが、既存方針は名前による実体取得
 - **採用:** GetExportsは名前とKindだけを宣言順で返す。既存Get系で実体を取得する。
 - **理由:** 内部indexや型別wrapperの公開なしに通常利用へ意味のある機能を追加できる。
-- **影響:** 実装時にstructure.mdと公開APIのテストを同期する。新しいExports propertyは不要。
+- **影響:** 実装時にstructure.mdと公開APIのテストを同期する。新しいExports propertyは不要
 
 ### 固定profileと、保存済みJSONだけで比較できる結果
 
@@ -297,11 +297,11 @@ v128はi8/i16/i32/i64/f32/f64の全lane形式が現れる。funcrefは引数null
 - **課題:** 初回はfailedを記録しつつbaselineを保存する必要がある。
 - **採用:** 入力処理、command列挙、未処理、件数未確定、出力成功を分類と別に持つ。比較元がpassedだったケースの分類変更/欠落を回帰にする。
 - **理由:** 完了した失敗結果を保存できる一方、未確定・部分出力をbaselineや最終合格へ混入させない。
-- **影響:** 既知failedが残るrun/compare-runは非0のまま。初回受入に合格することとコマンド終了0を同一視しない。
+- **影響:** 既知failedが残るrun/compare-runは非0のまま 初回受入に合格することとコマンド終了0を同一視しない。
 
 ### 単純化と実装順序
 
-- 標準BCL、1CLIプロジェクト、機能別のinternal具象型を使う。処理用別ライブラリ、DIコンテナ、汎用plugin、外部DB、常駐監視は不要。
+- 標準BCL、1CLIプロジェクト、機能別のinternal具象型を使う。処理用別ライブラリ、DIコンテナ、汎用plugin、外部DB、常駐監視は不要
 - 保存契約とCLI境界、固定素材と照合、export公開契約、command状態と値/診断判定、baseline/完了判定、全体公式受入の順に実装可能な境界を設ける。
 - 公開export追加と素材処理は独立して着手できる。統合前にReportStoreのschemaとScriptCommandの型を共有契約として確定する。
 
@@ -315,7 +315,7 @@ v128はi8/i16/i32/i64/f32/f64の全lane形式が現れる。funcrefは引数null
 
 ## 設計レビューゲート
 
-- 機械確認: 全111受入基準をtraceabilityへ111件対応付け、欠落・余分・重複は0。責務境界、境界外、許可依存、再検証の契機、具体的ファイル計画を確認した。主要モジュールのファイル漏れ、プレースホルダー、文書内のローカルリンク切れも0。
+- 機械確認: 全111受入基準をtraceabilityへ111件対応付け、欠落・余分・重複は0 責務境界、境界外、許可依存、再検証の契機、具体的ファイル計画を確認した。主要モジュールのファイル漏れ、プレースホルダー、文書内のローカルリンク切れも0
 - 独立したレビューで、未知commandの集計先と、JSONを読めることと全件の記録が完了していることを分ける必要が指摘された。前者はcategory=nullの「種類未確定command」としてrunner_error件数を全体へ加える。後者は読取可能な不完全結果をCompareRunへ渡し、以前passedだったケースの欠落を回帰と未完了の両方で記録するよう修正した。
 - 1回の修正後、同じレビュー担当が変更箇所とその影響を再確認し、最終GOと判定した。要件の見直しや追加修正が必要な指摘は残っていない。機械確認も再実行し成功した。
 - このGOは設計のゲートである。CLI実装、.NETビルド/TUnit、WasmSharpによる公式実行、正式baselineの保存・比較、Core 2.0全件合格の証拠ではない。

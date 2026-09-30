@@ -10,8 +10,8 @@ namespace WasmSharp;
 /// 引数は呼び出し専用のコピーで、同期再入による作業スタックの変化に影響されない。callback終了後も値を保持する場合はコピーする。
 /// 結果のnull・個数・型の不一致はランタイムがInvalidOperationExceptionで拒否する。callbackが投げた例外は型と実体を変えずに伝播する。
 /// </remarks>
-/// <param name="arguments">宣言された引数型と順序に従う値。利用を保証する期間は同期callbackの実行中</param>
-/// <returns>宣言された結果の個数・型・順序に一致する所有済みの値。nullは不可</returns>
+/// <param name="arguments">宣言された引数型と順序に従う値 利用を保証する期間は同期callbackの実行中</param>
+/// <returns>宣言された結果の個数・型・順序に一致する所有済みの値 nullは不可</returns>
 public delegate WasmResults WasmHostCallback(ReadOnlySpan<WasmValue> arguments);
 
 /// <summary>
@@ -23,8 +23,8 @@ public delegate WasmResults WasmHostCallback(ReadOnlySpan<WasmValue> arguments);
 /// 結果のnull・個数・型の不一致はランタイムがInvalidOperationExceptionで拒否する。callbackが投げた例外は型と実体を変えずに伝播する。
 /// </remarks>
 /// <param name="instance">Wasmからは呼び出し中の定義関数の所属instance、host startではstartを持つinstance、C#からは明示指定したinstance</param>
-/// <param name="arguments">宣言された引数型と順序に従う値。利用を保証する期間は同期callbackの実行中</param>
-/// <returns>宣言された結果の個数・型・順序に一致する所有済みの値。nullは不可</returns>
+/// <param name="arguments">宣言された引数型と順序に従う値 利用を保証する期間は同期callbackの実行中</param>
+/// <returns>宣言された結果の個数・型・順序に一致する所有済みの値 nullは不可</returns>
 public delegate WasmResults WasmHostInstanceCallback(
     WasmInstance instance,
     ReadOnlySpan<WasmValue> arguments
@@ -77,7 +77,7 @@ public sealed class WasmHostModule
     /// <param name="name">空文字列を含むitem名</param>
     /// <param name="function">共有する関数実体</param>
     /// <exception cref="ArgumentNullException">nameまたはfunctionがnullの場合</exception>
-    /// <exception cref="ArgumentException">同じitem名が既に定義されている場合。既存の定義は変更しない</exception>
+    /// <exception cref="ArgumentException">同じitem名が既に定義されている場合 既存の定義は変更しない</exception>
     public void Define(string name, WasmFunction function)
     {
         ArgumentNullException.ThrowIfNull(function);
@@ -90,7 +90,7 @@ public sealed class WasmHostModule
     /// <param name="name">空文字列を含むitem名</param>
     /// <param name="global">共有するglobal実体</param>
     /// <exception cref="ArgumentNullException">nameまたはglobalがnullの場合</exception>
-    /// <exception cref="ArgumentException">同じitem名が既に定義されている場合。既存の定義は変更しない</exception>
+    /// <exception cref="ArgumentException">同じitem名が既に定義されている場合 既存の定義は変更しない</exception>
     public void Define(string name, WasmGlobal global)
     {
         ArgumentNullException.ThrowIfNull(global);
@@ -103,7 +103,7 @@ public sealed class WasmHostModule
     /// <param name="name">空文字列を含むitem名</param>
     /// <param name="memory">共有するmemory実体</param>
     /// <exception cref="ArgumentNullException">nameまたはmemoryがnullの場合</exception>
-    /// <exception cref="ArgumentException">同じitem名が既に定義されている場合。既存の定義は変更しない</exception>
+    /// <exception cref="ArgumentException">同じitem名が既に定義されている場合 既存の定義は変更しない</exception>
     public void Define(string name, WasmMemory memory)
     {
         ArgumentNullException.ThrowIfNull(memory);
@@ -116,7 +116,7 @@ public sealed class WasmHostModule
     /// <param name="name">空文字列を含むitem名</param>
     /// <param name="table">共有するtable実体</param>
     /// <exception cref="ArgumentNullException">nameまたはtableがnullの場合</exception>
-    /// <exception cref="ArgumentException">同じitem名が既に定義されている場合。既存の定義は変更しない</exception>
+    /// <exception cref="ArgumentException">同じitem名が既に定義されている場合 既存の定義は変更しない</exception>
     public void Define(string name, WasmTable table)
     {
         ArgumentNullException.ThrowIfNull(table);
@@ -129,7 +129,7 @@ public sealed class WasmHostModule
     /// <param name="name">空文字列を含むitem名</param>
     /// <param name="value">共有する関数またはリソースを包んだ外部要素</param>
     /// <exception cref="ArgumentNullException">nameがnullの場合</exception>
-    /// <exception cref="ArgumentException">同じitem名が既に定義されている場合。既存の対応は変更しない</exception>
+    /// <exception cref="ArgumentException">同じitem名が既に定義されている場合 既存の対応は変更しない</exception>
     private void Define(string name, ExternalValue value)
     {
         ArgumentNullException.ThrowIfNull(name);

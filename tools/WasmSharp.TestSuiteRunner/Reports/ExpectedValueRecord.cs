@@ -7,12 +7,12 @@ namespace WasmSharp.TestSuiteRunner.Reports;
 internal sealed record ExpectedValueRecord(string Type)
 {
     /// <summary>
-    /// scalar・参照の値、またはNaN pattern。v128と型だけの結果宣言ではnull
+    /// scalar・参照の値、またはNaN pattern v128と型だけの結果宣言ではnull
     /// </summary>
     public string? Value { get; init; }
 
     /// <summary>
-    /// v128のlane型。v128以外ではnull
+    /// v128のlane型 v128以外ではnull
     /// </summary>
     public string? LaneType { get; init; }
 

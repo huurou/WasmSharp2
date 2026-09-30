@@ -8,5 +8,8 @@ namespace WasmSharp.Modules.Imports;
 /// <param name="ByteOffset">入力バイナリ上のimport宣言のバイト位置</param>
 internal abstract record ModuleImport(string ModuleName, string Name, long ByteOffset)
 {
+    /// <summary>
+    /// import宣言が要求する外部要素の種類
+    /// </summary>
     internal abstract WasmExternalKind Kind { get; }
 }

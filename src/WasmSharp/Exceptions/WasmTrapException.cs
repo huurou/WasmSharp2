@@ -6,7 +6,7 @@ namespace WasmSharp.Exceptions;
 public class WasmTrapException : WasmException
 {
     /// <summary>
-    /// Wasmの実行規則で定められたtrapの原因。診断情報がない場合はnull
+    /// Wasmの実行規則で定められたtrapの原因 診断情報がない場合はnull
     /// </summary>
     public WasmTrapReason? Reason { get; }
 

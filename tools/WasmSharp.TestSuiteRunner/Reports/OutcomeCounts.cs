@@ -21,6 +21,8 @@ internal sealed record OutcomeCounts(
     /// <summary>
     /// ケースを6分類ごとに数える。
     /// </summary>
+    /// <param name="cases">同じ区分に属するケース結果の一覧</param>
+    /// <returns>passed・failed・runtime_unsupported・runner_error・out_of_scope・blockedの件数</returns>
     internal static OutcomeCounts Count(IEnumerable<CaseResult> cases)
     {
         var counts = cases.CountBy(x => x.Outcome).ToDictionary();

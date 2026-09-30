@@ -111,8 +111,12 @@ public sealed class WasmModule
     /// <summary>
     /// 入力バイト列をmoduleにデコードする
     /// </summary>
-    /// <param name="bytes">入力バイト列</param>
-    /// <returns>デコードされたモジュール</returns>
+    /// <remarks>静的定義は入力から独立して保持する。型や参照の検証、インスタンス化と実行は行わない</remarks>
+    /// <param name="bytes">ヘッダーから始まる入力バイナリ全体</param>
+    /// <returns>入力上の診断位置を保持する、未検証のmodule</returns>
+    /// <exception cref="WasmDecodeException">対応する構文の符号化またはsectionの構成が不正な場合</exception>
+    /// <exception cref="WasmUnsupportedFeatureException">未実装のsectionまたは命令に遭遇した場合 入力全体の有効性は保証しない</exception>
+    /// <exception cref="WasmImplementationLimitException">宣言件数または命令数がコレクションの保持上限を超える場合</exception>
     public static WasmModule Decode(ReadOnlySpan<byte> bytes)
     {
         return ModuleDecoder.Decode(bytes);
@@ -121,8 +125,17 @@ public sealed class WasmModule
     /// <summary>
     /// 入力ストリームをmoduleにデコードする
     /// </summary>
-    /// <param name="stream">入力ストリーム</param>
-    /// <returns>デコードされたmodule</returns>
+    /// <remarks>
+    /// 現在位置から入力終端まで読み、入力ストリームは閉じず、seekを要求しない。
+    /// 静的定義は入力から独立して保持し、型や参照の検証は行わない。
+    /// ストリームが送出する例外は変換せず、そのまま伝播する
+    /// </remarks>
+    /// <param name="stream">現在位置からmoduleのバイナリを読み取れる入力ストリーム</param>
+    /// <returns>入力上の診断位置を保持する、未検証のmodule</returns>
+    /// <exception cref="ArgumentException">ストリームが読み取り可能ではない場合</exception>
+    /// <exception cref="WasmDecodeException">対応する構文の符号化またはsectionの構成が不正な場合</exception>
+    /// <exception cref="WasmUnsupportedFeatureException">未実装のsectionまたは命令に遭遇した場合 入力全体の有効性は保証しない</exception>
+    /// <exception cref="WasmImplementationLimitException">入力バイト数、宣言件数または命令数が保持上限を超える場合</exception>
     public static WasmModule Decode(Stream stream)
     {
         if (!stream.CanRead)
@@ -160,8 +173,13 @@ public sealed class WasmModule
     /// <summary>
     /// 入力バイト列から完全なimport情報と未確認範囲を取得する。moduleの有効性は保証しない
     /// </summary>
-    /// <param name="bytes">入力バイト列</param>
-    /// <returns>完全取得したimport情報と未確認範囲</returns>
+    /// <remarks>
+    /// 全sectionの外枠とtype・importの構文を調査し、取得失敗時は部分一覧を返さない。
+    /// moduleの生成、module全体の型や参照の検証とホストへの接続は行わない
+    /// </remarks>
+    /// <param name="bytes">ヘッダーから始まる入力バイナリ全体</param>
+    /// <returns>入力から独立して保持する、宣言順のimport情報と構文・検証の未確認範囲</returns>
+    /// <exception cref="WasmImportInspectionException">必要な構文の読み取り、要求する関数型の解決または保持上限の制約により完全な情報を取得できない場合</exception>
     public static WasmImportInspection InspectImports(ReadOnlySpan<byte> bytes)
     {
         return ImportInspector.Inspect(bytes);
@@ -170,8 +188,15 @@ public sealed class WasmModule
     /// <summary>
     /// ストリームの現在位置からimport情報を取得する。入力は閉じず、seekを要求しない
     /// </summary>
+    /// <remarks>
+    /// 入力終端まで読み、取得失敗時は部分一覧を返さない。取得成功はmoduleの有効性を保証しない。
+    /// ストリームが送出する例外は変換せず、そのまま伝播する
+    /// </remarks>
     /// <param name="stream">読み取り可能な入力ストリーム</param>
-    /// <returns>完全取得したimport情報と未確認範囲</returns>
+    /// <returns>入力から独立して保持する、宣言順のimport情報と構文・検証の未確認範囲</returns>
+    /// <exception cref="ArgumentNullException">streamがnullの場合</exception>
+    /// <exception cref="ArgumentException">ストリームが読み取り可能ではない場合</exception>
+    /// <exception cref="WasmImportInspectionException">必要な構文の読み取り、要求する関数型の解決または保持上限の制約により完全な情報を取得できない場合</exception>
     public static WasmImportInspection InspectImports(Stream stream)
     {
         ArgumentNullException.ThrowIfNull(stream);
@@ -199,7 +224,13 @@ public sealed class WasmModule
     /// <summary>
     /// moduleがWasmの型規則と構造規則を満たすか検証する
     /// </summary>
-    /// <returns>検証済みのmodulle</returns>
+    /// <remarks>
+    /// 全体の検証に成功した場合だけ、実行コードと検証済み状態を反映する。
+    /// 成功後は同じmoduleと成果を再利用し、失敗時は検証前の状態を保持する。
+    /// リソースの割り当て、importの接続とstartの実行は行わない
+    /// </remarks>
+    /// <returns>検証に成功した、このmodule自身</returns>
+    /// <exception cref="WasmValidateException">参照、リソース宣言、初期化式、startまたは関数の型・構造の規則に違反する場合</exception>
     public WasmModule Validate()
     {
         if (isValidated_)
@@ -224,7 +255,7 @@ public sealed class WasmModule
     /// ホストモジュールの提供登録を使い、startの実行を完了したinstanceを生成する
     /// </summary>
     /// <param name="hostModules">importに対応する名前、関数、リソースを提供するホストモジュール</param>
-    /// <param name="options">生成するinstanceの実行ポリシー。nullの場合は<see cref="WasmExecutionOptions.Default"/></param>
+    /// <param name="options">生成するinstanceの実行ポリシー nullの場合は<see cref="WasmExecutionOptions.Default"/></param>
     /// <returns>startがあればその実行も正常に終了したinstance</returns>
     /// <remarks>
     /// <see cref="Validate"/>の成功後に呼び出す。提供登録は呼び出し時点の名前対応を使い、関数とリソースの実体は共有する。
@@ -255,7 +286,7 @@ public sealed class WasmModule
     /// importを結び付け、startの実行を完了したinstanceを生成する
     /// </summary>
     /// <param name="imports">importに対応する名前、関数、リソースの提供登録</param>
-    /// <param name="options">生成するinstanceの実行ポリシー。nullの場合は<see cref="WasmExecutionOptions.Default"/></param>
+    /// <param name="options">生成するinstanceの実行ポリシー nullの場合は<see cref="WasmExecutionOptions.Default"/></param>
     /// <returns>startがあればその実行も正常に終了したinstance</returns>
     /// <remarks>
     /// <para>

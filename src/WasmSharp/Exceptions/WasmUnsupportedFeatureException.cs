@@ -8,12 +8,12 @@ namespace WasmSharp.Exceptions;
 public class WasmUnsupportedFeatureException : WasmException
 {
     /// <summary>
-    /// 未実装の機能を識別する安定した名前。診断情報がない場合はnull
+    /// 未実装の機能を識別する安定した名前 診断情報がない場合はnull
     /// </summary>
     public string? Feature { get; }
 
     /// <summary>
-    /// 構文検査または検証が完了していない入力範囲。空であることは検査済みの証明ではない
+    /// 構文検査または検証が完了していない入力範囲 空であることは検査済みの証明ではない
     /// </summary>
     public ImmutableArray<WasmUnverifiedRange> UnverifiedRanges { get; } = [];
 

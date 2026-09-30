@@ -21,8 +21,19 @@ internal static class CorpusGenerator
     /// </summary>
     internal const string MANIFEST_FILE_NAME = "manifest.json";
 
+    /// <summary>
+    /// 生成前提の不成立を診断で識別する操作名
+    /// </summary>
     private const string PREPARE = "prepare";
+
+    /// <summary>
+    /// 出力先の準備や変換器の起動・終了の失敗を診断で識別する操作名
+    /// </summary>
     private const string CONVERT = "convert";
+
+    /// <summary>
+    /// 生成物の列挙・読取・記録の失敗を診断で識別する操作名
+    /// </summary>
     private const string RECORD = "record";
 
     /// <summary>
@@ -31,8 +42,10 @@ internal static class CorpusGenerator
     /// <remarks>
     /// 変換器の終了成功、JSONの全command列挙、全参照素材の照合がそろった入力だけを変換成功とする。
     /// 変換成功はランタイムの適合結果ではない。
+    /// 生成前提が成立しない場合は変換を開始せず、全入力を未処理として保存する。
     /// </remarks>
     /// <param name="request">CLIで解決済みの配置を持つ要求</param>
+    /// <returns>全対象入力の状態を保持するmanifestと保存結果 保存失敗時は出力未完了のmanifestと失敗理由</returns>
     internal static GenerateResult Generate(GenerateRequest request)
     {
         var manifestPath = Path.Combine(request.OutputRoot, MANIFEST_FILE_NAME);
@@ -80,13 +93,14 @@ internal static class CorpusGenerator
     }
 
     /// <summary>
-    /// 固定入力の一覧と生バイトhash、必要なGit HEAD、変換器の実行ファイルを確認する。
+    /// 固定入力の一覧と生バイト列のSHA-256、必要なGitのHEAD、変換器の実行ファイルを確認する。
     /// </summary>
     /// <remarks>
     /// spec-root自体がcheckoutの場合だけHEADを照合し、管理外のコピーは全入力の一覧とhashの一致で受け付ける。
     /// 実際のoriginは参考出典として記録し、profileに記録した上流URLとの違いだけでは拒否しない。
     /// </remarks>
     /// <param name="request">CLIで解決済みの配置を持つ要求</param>
+    /// <returns>観測した環境・取得元と、生成前提が成立しない理由 すべて成立する場合は診断が空</returns>
     internal static GenerationPreconditions CheckPreconditions(GenerateRequest request)
     {
         var profile = request.Profile;
@@ -143,9 +157,11 @@ internal static class CorpusGenerator
     /// <remarks>
     /// 作業ディレクトリをtest/coreの配置とし、入力は/区切りの相対path、出力はCLIで解決済みの絶対pathで渡す。
     /// シェルを介さず起動し、feature変更などの追加引数を渡さない。
+    /// 終了値0では仮にSucceededを記録し、JSONと参照素材の照合後に変換成功を確定する。
     /// </remarks>
     /// <param name="request">CLIで解決済みの配置を持つ要求</param>
     /// <param name="input">変換する入力の記録</param>
+    /// <returns>起動引数と観測できた終了値・出力を追加した記録 出力先作成失敗・起動失敗・終了値0以外はRunnerError</returns>
     internal static InputConversionResult Convert(
         GenerateRequest request,
         InputConversionResult input
@@ -200,6 +216,13 @@ internal static class CorpusGenerator
             : Fail(result, $"変換器が終了値{run.ExitCode}で終了しました。", null);
     }
 
+    /// <summary>
+    /// 起動結果や部分生成物を保持し、変換の失敗理由を追加してRunnerErrorにする。
+    /// </summary>
+    /// <param name="input">失敗を反映する入力の記録</param>
+    /// <param name="message">変換に失敗した理由</param>
+    /// <param name="exception">失敗時に観測した例外 変換器の終了値による失敗ではnull</param>
+    /// <returns>既存の診断に変換失敗の診断を追加した入力記録</returns>
     private static InputConversionResult Fail(
         InputConversionResult input,
         string message,
@@ -217,6 +240,13 @@ internal static class CorpusGenerator
         };
     }
 
+    /// <summary>
+    /// 変換先で初めて見つかった生成物を、その入力の所有物としてhashとJSONの列挙記録を追加する。
+    /// </summary>
+    /// <param name="outputRoot">manifestと素材を保存する出力先</param>
+    /// <param name="input">生成物を関連付ける入力の記録 変換失敗時の部分生成物も収集する</param>
+    /// <param name="seen">全入力で共有する既出pathの集合 今回列挙したpathを追加する</param>
+    /// <returns>収集できた生成物と、未対応の拡張子や列挙・読取の失敗理由を追加した入力記録</returns>
     private static InputConversionResult Record(
         string outputRoot,
         InputConversionResult input,
@@ -286,6 +316,12 @@ internal static class CorpusGenerator
         };
     }
 
+    /// <summary>
+    /// 変換器の終了成功、JSONの全command列挙、素材照合がそろった場合だけ変換成功を維持する。
+    /// </summary>
+    /// <param name="input">起動結果と部分生成物を持つ変換記録</param>
+    /// <param name="verification">全入力の変換後に得た、この入力のJSON・素材の照合結果</param>
+    /// <returns>変換と照合に成功した入力記録 いずれかが不成立の場合は素材と照合理由を保持したRunnerErrorの記録</returns>
     private static InputConversionResult Complete(
         InputConversionResult input,
         InputVerification verification
@@ -313,6 +349,12 @@ internal static class CorpusGenerator
         };
     }
 
+    /// <summary>
+    /// 現在の記録から集計と処理完了を更新し、manifestの保存が確定した場合だけ出力完了を記録する。
+    /// </summary>
+    /// <param name="manifest">保存する全対象入力の変換記録</param>
+    /// <param name="manifestPath">manifestの保存先 親ディレクトリがなければ作成する</param>
+    /// <returns>保存したmanifestと保存先 保存に失敗した場合は出力未完了のmanifestと失敗理由</returns>
     private static GenerateResult Save(CorpusManifest manifest, string manifestPath)
     {
         var recorded = manifest with
@@ -353,11 +395,24 @@ internal static class CorpusGenerator
         }
     }
 
+    /// <summary>
+    /// 指定した配置の直下に.gitがあるかどうかを判定する。
+    /// </summary>
+    /// <param name="root">Git情報の有無を確認する配置</param>
+    /// <returns>直下に.gitのファイルまたはディレクトリが存在する場合はtrue</returns>
     private static bool IsCheckout(string root)
     {
         return Path.Exists(Path.Combine(root, ".git"));
     }
 
+    /// <summary>
+    /// 指定したcheckoutのHEADを取得し、固定commitと一致しない場合は診断を追加する。
+    /// </summary>
+    /// <param name="root">HEADを取得するcheckoutの配置</param>
+    /// <param name="name">診断に表示するソースの名前</param>
+    /// <param name="revision">比較する固定commit</param>
+    /// <param name="diagnostics">取得失敗または固定commitとの不一致を追加する診断一覧</param>
+    /// <returns>観測したHEAD 固定commitと異なる場合も値を返し、取得できない場合はnull</returns>
     private static string? ReadHead(
         string root,
         string name,
@@ -391,6 +446,11 @@ internal static class CorpusGenerator
         return head;
     }
 
+    /// <summary>
+    /// 指定したcheckoutのoriginを参考出典として取得する。
+    /// </summary>
+    /// <param name="root">originを取得するcheckoutの配置</param>
+    /// <returns>前後の空白を除いたoriginのURL Gitを起動できないかコマンドが失敗した場合はnull</returns>
     private static string? ReadOrigin(string root)
     {
         return RunGit(root, "remote", "get-url", "origin") is (0, var output, _)
@@ -398,6 +458,12 @@ internal static class CorpusGenerator
             : null;
     }
 
+    /// <summary>
+    /// Gitの環境変数や親ディレクトリのリポジトリに依存せず、指定した配置でGitコマンドを実行する。
+    /// </summary>
+    /// <param name="root">Gitの-Cへ渡す配置</param>
+    /// <param name="arguments">-Cと配置に続けて渡すコマンドと引数</param>
+    /// <returns>終了値・標準出力・標準エラー Gitを起動できない場合は終了値がnull、標準出力が空、標準エラーが失敗理由</returns>
     private static (int? ExitCode, string Output, string Error) RunGit(
         string root,
         params string[] arguments
@@ -428,6 +494,12 @@ internal static class CorpusGenerator
         }
     }
 
+    /// <summary>
+    /// 変換器の実行ファイルを読み取り、生バイト列のSHA-256を求める。
+    /// </summary>
+    /// <param name="path">hashを記録する実行ファイルの配置</param>
+    /// <param name="diagnostics">読取に失敗した場合に理由と例外型を追加する診断一覧</param>
+    /// <returns>小文字hex64桁のSHA-256 読取に失敗した場合はnull</returns>
     private static string? HashExecutable(
         string path,
         ImmutableArray<CorpusDiagnostic>.Builder diagnostics
@@ -451,6 +523,12 @@ internal static class CorpusGenerator
         }
     }
 
+    /// <summary>
+    /// シェルを介さずプロセスを起動し、UTF-8の標準出力・標準エラーを回収して終了まで待つ。
+    /// </summary>
+    /// <param name="startInfo">起動する実行ファイルと引数 シェル・ウィンドウ・出力転送・文字コードの設定をこのメソッドで変更する</param>
+    /// <returns>終了値と、加工していない標準出力・標準エラー</returns>
+    /// <exception cref="Win32Exception">プロセスを起動できない場合</exception>
     private static (int ExitCode, string Output, string Error) RunProcess(
         ProcessStartInfo startInfo
     )

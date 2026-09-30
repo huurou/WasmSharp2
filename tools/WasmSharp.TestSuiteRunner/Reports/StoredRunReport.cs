@@ -7,7 +7,7 @@ namespace WasmSharp.TestSuiteRunner.Reports;
 /// </summary>
 /// <param name="Report">読み取った実行結果</param>
 /// <param name="Content">読み取った生バイト列</param>
-/// <param name="Issues">記録の問題。問題がなければ空</param>
+/// <param name="Issues">記録の問題 問題がなければ空</param>
 internal sealed record StoredRunReport(
     RunReport Report,
     byte[] Content,

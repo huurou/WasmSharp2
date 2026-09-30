@@ -6,7 +6,7 @@
 
 ## 現状
 
-runtime-foundationの最小定数返却経路と共通の値・型・例外・実行機構がある。import、引数・localsを使う実行、ホストcallback、global・memory・tableの具体的な生成・共有は未実装。本仕様の着手・完了にtest-suite-runnerの完成を要求しない。
+runtime-foundationの最小定数返却経路と共通の値・型・例外・実行機構がある。import、引数・localsを使う実行、ホストcallback、global・memory・tableの具体的な生成・共有は未実装 本仕様の着手・完了にtest-suite-runnerの完成を要求しない。
 
 ## 望む結果
 
@@ -18,15 +18,15 @@ runtime-foundationの最小定数返却経路と共通の値・型・例外・�
 
 ## 範囲
 
-- **対象**: 関数型、引数、結果0個・1個・複数、locals、local.get/set/tee、直接call、return、drop、unreachable。return・unreachable後の到達不能部分に必要な型スタックの多相性を含めて関数本体を検証し、定義関数・import関数・ホストcallbackを同じ呼出し契約で扱う。unreachableによる実際のWasm trapをInvokeとstartの公開経路で確認する。
-- **対象**: globalの型・可変性・実体、スカラー定数とimported immutable global.getによる初期化、global.get/set、公開取得・更新、同一実体の共有。参照・v128の初期化式の拡張はそれぞれの機能仕様が追加する。
-- **対象**: Core 2.0のmemory/tableの型・limits、定義・割当・export、通常のホスト利用に必要な生成・取得・内容アクセス。memoryは範囲指定の読み書きとし、内部領域の借用ビューは公開しない。memoryはゼロ、tableは型に対応したnullで初期化し、funcref/externrefの保持と同一性を保つ。
-- **対象**: 関数・global・memory・tableのimport/export、名前解決、関数型・可変性・limitsの照合、importと定義の添字空間、再export。リンク不成立を公開失敗分類で示す。
-- **対象**: 明示型ホストcallback、引数・結果の所有と寿命、ホスト例外の実体を保つ伝播、同期的な再入。登録時に第1引数にWasmInstanceを受け取る形式と受け取らない形式を区別し、前者はinstanceの省略・nullを実行前に拒否する。関数を取得元instanceへ固定せず、C#からは呼び出し時にinstanceを明示でき、Wasmからは呼び出し元instanceを渡す。Instance引数はWasmの関数型・値引数に含めず、start中も定義memory等のexportを取得可能にする。
-- **対象**: 通常利用に必要なimportのmodule名・item名・外部要素の種類と型の取得。instance生成や無関係な未実装命令のDecode成功を前提とせず依存を把握でき、取得情報と未確認範囲を区別する公開契約。
-- **対象**: Instantiateの共通の順序、startの型検証と実行、リンク不成立・startのtrap・exhaustion・ホスト例外の区別。start前に構築・接続・リソース初期化を完了し、start失敗後も保存済みのinstance・関数・リソースを無効化しない。
-- **対象外**: スカラー数値演算と構造化制御の網羅、guestのmemory/table命令、data/element初期化、call_indirect・参照命令・SIMD命令、WASI。
-- **対象外**: WAST/JSONの解釈、spectestの具体的な定義、registerコマンドとbaseline。これらはtest-suite-runnerが所有する。
+- **対象**: 関数型、引数、結果0個・1個・複数、locals、local.get/set/tee、直接call、return、drop、unreachable return・unreachable後の到達不能部分に必要な型スタックの多相性を含めて関数本体を検証し、定義関数・import関数・ホストcallbackを同じ呼出し契約で扱う。unreachableによる実際のWasm trapをInvokeとstartの公開経路で確認する。
+- **対象**: globalの型・可変性・実体、スカラー定数とimported immutable global.getによる初期化、global.get/set、公開取得・更新、同一実体の共有 参照・v128の初期化式の拡張はそれぞれの機能仕様が追加する。
+- **対象**: Core 2.0のmemory/tableの型・limits、定義・割当・export、通常のホスト利用に必要な生成・取得・内容アクセス memoryは範囲指定の読み書きとし、内部領域の借用ビューは公開しない。memoryはゼロ、tableは型に対応したnullで初期化し、funcref/externrefの保持と同一性を保つ。
+- **対象**: 関数・global・memory・tableのimport/export、名前解決、関数型・可変性・limitsの照合、importと定義の添字空間、再export リンク不成立を公開失敗分類で示す。
+- **対象**: 明示型ホストcallback、引数・結果の所有と寿命、ホスト例外の実体を保つ伝播、同期的な再入 登録時に第1引数にWasmInstanceを受け取る形式と受け取らない形式を区別し、前者はinstanceの省略・nullを実行前に拒否する。関数を取得元instanceへ固定せず、C#からは呼び出し時にinstanceを明示でき、Wasmからは呼び出し元instanceを渡す。Instance引数はWasmの関数型・値引数に含めず、start中も定義memory等のexportを取得可能にする。
+- **対象**: 通常利用に必要なimportのmodule名・item名・外部要素の種類と型の取得 instance生成や無関係な未実装命令のDecode成功を前提とせず依存を把握でき、取得情報と未確認範囲を区別する公開契約
+- **対象**: Instantiateの共通の順序、startの型検証と実行、リンク不成立・startのtrap・exhaustion・ホスト例外の区別 start前に構築・接続・リソース初期化を完了し、start失敗後も保存済みのinstance・関数・リソースを無効化しない。
+- **対象外**: スカラー数値演算と構造化制御の網羅、guestのmemory/table命令、data/element初期化、call_indirect・参照命令・SIMD命令、WASI
+- **対象外**: WAST/JSONの解釈、spectestの具体的な定義、registerコマンドとbaseline これらはtest-suite-runnerが所有する。
 
 ## 責務の接点
 
@@ -45,8 +45,8 @@ runtime-foundationの最小定数返却経路と共通の値・型・例外・�
 
 ## 上流・下流
 
-- **上流**: runtime-foundation。
-- **下流**: test-suite-runner、numeric-control。linear-memory・tables-references・simdも同じ呼出し・リソース・リンク契約を利用する。
+- **上流**: runtime-foundation
+- **下流**: test-suite-runner、numeric-control linear-memory・tables-references・simdも同じ呼出し・リソース・リンク契約を利用する。
 
 ## 既存仕様との関係
 
@@ -55,4 +55,4 @@ runtime-foundationの最小定数返却経路と共通の値・型・例外・�
 
 ## 制約と確認事項
 
-本仕様の受入は公開APIを使う正負のTUnitテストで行い、関数と4種の外部要素、型不一致、同一性、callbackの所有・例外、start・呼出し深さ制限を確認する。ランナーの初回受入で同じ能力を公式ケースにも通す。Wasmのtrapに.NET例外を内部伝播として使わず、ホスト境界で変換する。本文書は分担を定めるbriefであり、requirements・design・tasksと実装の承認は別に行う。文書は日本語（ja）。
+本仕様の受入は公開APIを使う正負のTUnitテストで行い、関数と4種の外部要素、型不一致、同一性、callbackの所有・例外、start・呼出し深さ制限を確認する。ランナーの初回受入で同じ能力を公式ケースにも通す。Wasmのtrapに.NET例外を内部伝播として使わず、ホスト境界で変換する。本文書は分担を定めるbriefであり、requirements・design・tasksと実装の承認は別に行う。文書は日本語（ja）

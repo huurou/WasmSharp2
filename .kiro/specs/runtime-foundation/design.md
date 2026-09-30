@@ -20,10 +20,10 @@
 
 ### 本仕様が所有するもの（This Spec Owns）
 
-- 4段階の公開契約、同じモジュール上の検証成功フラグと実行表現の所有。
-- Core 2.0の7種類の値、関数型、戻り値のコレクション、および原因別の例外契約。
-- boundedなバイナリ読み取り、sectionの枠組み、type/function/export/codeの構文と定数関数の検証・実行。
-- 命令の唯一の定義元と通常ビルドでの生成、共通ホスト境界、実行コンテキスト・フレーム・分岐のスタック基準。
+- 4段階の公開契約、同じモジュール上の検証成功フラグと実行表現の所有
+- Core 2.0の7種類の値、関数型、戻り値のコレクション、および原因別の例外契約
+- boundedなバイナリ読み取り、sectionの枠組み、type/function/export/codeの構文と定数関数の検証・実行
+- 命令の唯一の定義元と通常ビルドでの生成、共通ホスト境界、実行コンテキスト・フレーム・分岐のスタック基準
 
 ### 境界外（Out of Boundary）
 
@@ -38,7 +38,7 @@
 
 ### 許可する依存（Allowed Dependencies）
 
-- 仕様上の上流はCore 2.0保存版、ロードマップ、CONTEXT.md、ADR 0001〜0008。基盤の完了は他specの実装完了に依存しない。
+- 仕様上の上流はCore 2.0保存版、ロードマップ、CONTEXT.md、ADR 0001〜0008 基盤の完了は他specの実装完了に依存しない。
 - ランタイムは.NET 10 BCLを使う。生成器はビルド時だけRoslynに依存し、ランタイムの実行依存へ持ち込まない。
 - 利用者→公開操作→デコード/検証または実行処理→値・命令情報という呼び出し方向とする。実行処理からDecode/Validateを呼ばない。生成器はランタイムのアセンブリを参照しない。
 - モジュール、インスタンス、関数、値は同じランタイム内のドメインモデルである。関数参照が実体の同一性を保持する参照関係は、逆方向の段階実行や循環したプロジェクト参照を許す根拠にはしない。
@@ -97,10 +97,10 @@ flowchart LR
 
 | 対象 | 選択 | 用途・制約 |
 | --- | --- | --- |
-| ランタイム | net10.0 / nullable有効 | 既存を維持。確認したSDKは10.0.400 |
+| ランタイム | net10.0 / nullable有効 | 既存を維持 確認したSDKは10.0.400 |
 | 値と入力 | ImmutableArray、BinaryPrimitives、BitConverter、UTF8Encoding | 不変配列、little-endian、ビット保持、厳格な名前検査 |
 | 命令生成 | netstandard2.0 / C# 13.0 / Microsoft.CodeAnalysis.CSharp 5.9.0 | IIncrementalGenerator、ビルド時Analyzer参照のみ |
-| テスト | net10.0 / TUnit 1.66.16 | 既存プロジェクトを拡張。generatorテストも同じ版 |
+| テスト | net10.0 / TUnit 1.66.16 | 既存プロジェクトを拡張 generatorテストも同じ版 |
 
 Roslynは必要な既存APIを備えた固定版を選ぶ。最新版を必要条件にしない。生成器以外へ新しい外部パッケージを追加しない。[Roslyn公式資料](https://github.com/dotnet/roslyn/blob/main/docs/features/incremental-generators.cookbook.md)に従いC#宣言からソースを追加し、実行時reflectionや独自DSLを使わない。
 
@@ -108,7 +108,7 @@ Roslynは必要な既存APIを備えた固定版を選ぶ。最新版を必要�
 
 ## ファイル構成計画（File Structure Plan）
 
-パスはリポジトリルートからの相対パス。公開型は現在の`WasmSharp`名前空間を維持し、新しい補助処理は扱う機能ごとに配置する。型は利用者向けの公開APIに必要なものだけpublicとし、Modules・Execution・Instructionsの内部型、命令情報と実行分岐の生成型、source generator本体はinternalとする。型内に閉じる補助型はprivateとする。命名はC#規則に従い、段階を迂回する構築・変更操作はinternal以下とする。
+パスはリポジトリルートからの相対パス 公開型は現在の`WasmSharp`名前空間を維持し、新しい補助処理は扱う機能ごとに配置する。型は利用者向けの公開APIに必要なものだけpublicとし、Modules・Execution・Instructionsの内部型、命令情報と実行分岐の生成型、source generator本体はinternalとする。型内に閉じる補助型はprivateとする。命名はC#規則に従い、段階を迂回する構築・変更操作はinternal以下とする。
 
 ### 新規ファイル
 
@@ -132,19 +132,19 @@ Roslynは必要な既存APIを備えた固定版を選ぶ。最新版を必要�
 | `src/WasmSharp/Execution/Interpreter.cs` | 生成ループのpartial宣言と定数/終了handler |
 | `src/WasmSharp/Execution/ExecutionFrame.cs` | 実行中関数、pc、値スタックの基準 |
 | `src/WasmSharp/Execution/WasmExecutionContext.cs` | 現在の同期コンテキスト、フレーム/値スタック、共有深さ |
-| `src/WasmSharp/Execution/ExecutionResult.cs` | 正常/trap/exhaustionと付加情報。ExecutionStatusも同居 |
+| `src/WasmSharp/Execution/ExecutionResult.cs` | 正常/trap/exhaustionと付加情報 ExecutionStatusも同居 |
 | `src/WasmSharp/Execution/ExecutionBoundary.cs` | 公開呼び出しの入口、コンテキスト寿命、失敗の例外化 |
 | `src/WasmSharp/Exceptions/WasmProcessingStage.cs` | Decode/Validate/Instantiate/Invokeの識別 |
 | `src/WasmSharp/Exceptions/WasmFailureLocation.cs` | 段階・入力位置・関数/sectionの診断情報 |
 | `src/WasmSharp/Exceptions/WasmUnverifiedRange.cs` | 未検査の段階と入力範囲 |
-| `src/WasmSharp/Exceptions/WasmExhaustionException.cs` | 管理した実行上限の到達。WasmExhaustionReasonも同居 |
-| `src/WasmSharp/Exceptions/WasmImplementationLimitException.cs` | 入力/コレクション保持上限。WasmImplementationLimitReasonも同居 |
+| `src/WasmSharp/Exceptions/WasmExhaustionException.cs` | 管理した実行上限の到達 WasmExhaustionReasonも同居 |
+| `src/WasmSharp/Exceptions/WasmImplementationLimitException.cs` | 入力/コレクション保持上限 WasmImplementationLimitReasonも同居 |
 | `src/WasmSharp/Exceptions/WasmTrapReason.cs` | Wasm仕様のtrap原因の識別 |
 | `src/WasmSharp.Generators/WasmSharp.Generators.csproj` | ランタイム参照を持たない生成器のビルド定義 |
-| `src/WasmSharp.Generators/InstructionGenerator.cs` | 属性抽出、検査、命令情報とループ生成。生成用の小さなデータ型は同居 |
+| `src/WasmSharp.Generators/InstructionGenerator.cs` | 属性抽出、検査、命令情報とループ生成 生成用の小さなデータ型は同居 |
 | `src/WasmSharp.Generators/IsExternalInit.cs` | netstandard2.0でinit/recordを使うための内部ポリフィル |
-| `src/WasmSharp.Generators/AnalyzerReleases.Shipped.md`、`src/WasmSharp.Generators/AnalyzerReleases.Unshipped.md` | Analyzer診断のリリース履歴。AdditionalFilesで登録し、RS2008の診断管理を満たす |
-| `tests/WasmSharp.Tests/Fixtures/ConstantModuleBinary.cs` | 最小バイナリと負例の生成。WATは解析しない |
+| `src/WasmSharp.Generators/AnalyzerReleases.Shipped.md`、`src/WasmSharp.Generators/AnalyzerReleases.Unshipped.md` | Analyzer診断のリリース履歴 AdditionalFilesで登録し、RS2008の診断管理を満たす |
+| `tests/WasmSharp.Tests/Fixtures/ConstantModuleBinary.cs` | 最小バイナリと負例の生成 WATは解析しない |
 | `tests/WasmSharp.Tests/Fixtures/ChunkedReadStream.cs` | short readと非seek入力の試験 |
 | `tests/WasmSharp.Tests/WasmModule_DecodeTests.cs` | バイナリ境界と未対応分類 |
 | `tests/WasmSharp.Tests/WasmModule_ValidateTests.cs` | 型、名前、検証成功状態 |
@@ -169,7 +169,7 @@ Roslynは必要な既存APIを備えた固定版を選ぶ。最新版を必要�
 | パス | 変更 |
 | --- | --- |
 | `src/WasmSharp/WasmModule.cs` | 静的定義と成功フラグの所有、4段階の接続 |
-| `src/WasmSharp/WasmInstance.cs` | 関数実体、実行ポリシー、GetFunctionの実装とGetGlobal/GetMemory/GetTableの名前不在時の分類。既存コメントを保持 |
+| `src/WasmSharp/WasmInstance.cs` | 関数実体、実行ポリシー、GetFunctionの実装とGetGlobal/GetMemory/GetTableの名前不在時の分類 既存コメントを保持 |
 | `src/WasmSharp/WasmFunction.cs` | 実体と型、optionsなしのInvoke |
 | `src/WasmSharp/WasmExecutionOptions.cs` | 正の上限と既定値1024の契約 |
 | `src/WasmSharp/WasmValue.cs` | 既存格納領域による型付き構築/取得 |
@@ -252,7 +252,7 @@ Wasm実行コンテキストを開始した入口だけが終了時に現在の�
 
 ### 値・型・結果の契約
 
-**入方向**: 利用者、デコード、実行処理（P0）。**出方向**: BCL、funcrefのWasmFunction実体（P0）。暗黙変換演算子、汎用object引数のInvoke、delegate推論を設けない。
+**入方向**: 利用者、デコード、実行処理（P0） **出方向**: BCL、funcrefのWasmFunction実体（P0） 暗黙変換演算子、汎用object引数のInvoke、delegate推論を設けない。
 
 | 型 | 公開メンバー |
 | --- | --- |
@@ -271,11 +271,11 @@ Wasm実行コンテキストを開始した入口だけが終了時に現在の�
 
 入力のコレクションは構築時にコピーする。型のコレクションの各要素はCore 2.0の7種類だけを受理し、未定義enum値と既存ExnRefは`ArgumentOutOfRangeException`とする。空のコレクションと複数結果を表現できることは、その関数の実行対応を保証しない。
 
-WasmValueのコンストラクターは非公開とする。kindを確認した取得のみ許し、誤取得は`InvalidOperationException`。既存enumのI32=0を維持するため`default(WasmValue)`はi32の0と定義する。整数は2の補数、floatはビット再解釈だけで格納し、演算やNaN正規化をしない。v128のlow64はバイト0〜7、high64は8〜15をlittle-endianで表す。参照の取得で内容をコピーせず、func/externのnullもKindで区別する。externref専用object操作は汎用変換の禁止の例外である。
+WasmValueのコンストラクターは非公開とする。kindを確認した取得のみ許し、誤取得は`InvalidOperationException` 既存enumのI32=0を維持するため`default(WasmValue)`はi32の0と定義する。整数は2の補数、floatはビット再解釈だけで格納し、演算やNaN正規化をしない。v128のlow64はバイト0〜7、high64は8〜15をlittle-endianで表す。参照の取得で内容をコピーせず、func/externのnullもKindで区別する。externref専用object操作は汎用変換の禁止の例外である。
 
 ### モジュールの公開契約と所有
 
-**入方向**: 利用者（P0）。**出方向**: ModuleDecoder、ModuleValidator、WasmInstance（P0）。構築と内部データへのアクセスはinternal以下。
+**入方向**: 利用者（P0） **出方向**: ModuleDecoder、ModuleValidator、WasmInstance（P0） 構築と内部データへのアクセスはinternal以下
 
 ```csharp
 public static WasmModule Decode(ReadOnlySpan<byte> bytes);
@@ -289,13 +289,13 @@ public WasmInstance Instantiate(
 
 - Decodeは入力から独立した不変の型・関数・export定義を所有するモジュールを返す。バイト列やStreamの保持・後の再読み取りに依存しない。実行・インスタンス生成をしない。
 - Streamは読み取り不可を`ArgumentException`とし、呼び出し元の現在位置からEOFまで同期で読む。seek/Lengthを要求せず、short readを扱い、Disposeしない。I/O例外は元のまま伝播する。
-- `isValidated_`は初期false。Validateは一時領域で全関数の検証/線形化とexport名辞書を作り、全成功時のみフィールドへ反映して最後にtrueにする。失敗時のモジュールは未検証のまま。同じ入力を再Validateできるが、失敗成果を再利用しない。
+- `isValidated_`は初期false Validateは一時領域で全関数の検証/線形化とexport名辞書を作り、全成功時のみフィールドへ反映して最後にtrueにする。失敗時のモジュールは未検証のまま 同じ入力を再Validateできるが、失敗成果を再利用しない。
 - 成功済みValidateは直ちにthisを返し、再検証/再生成しない。定義・関数コード・名前辞書を外部へ変更可能な形で渡さない。
-- Instantiateはfalseなら`InvalidOperationException`。成功済みなら関数index順に別インスタンスの関数実体を作る。importは存在しないため空hostModulesで成立する。余分なhostModulesは参照せず、ホストの実行やリンク照合を追加しない。
+- Instantiateはfalseなら`InvalidOperationException` 成功済みなら関数index順に別インスタンスの関数実体を作る。importは存在しないため空hostModulesで成立する。余分なhostModulesは参照せず、ホストの実行やリンク照合を追加しない。
 
 ### デコードと検証の分担
 
-**ModuleDecoderの内部操作**: `WasmModule Decode(ReadOnlySpan<byte> bytes)`。**ModuleValidatorの内部操作**: モジュール所有の不変な型・関数・exportを受け取り、`ImmutableArray<FunctionCode>`を返す。モジュールへの途中書き込みは行わない。
+**ModuleDecoderの内部操作**: `WasmModule Decode(ReadOnlySpan<byte> bytes)` **ModuleValidatorの内部操作**: モジュール所有の不変な型・関数・exportを受け取り、`ImmutableArray<FunctionCode>`を返す。モジュールへの途中書き込みは行わない。
 
 | 入力要素 | Decodeの責務 | Validateの責務 |
 | --- | --- | --- |
@@ -303,14 +303,14 @@ public WasmInstance Instantiate(
 | section | ID、u32長、境界、重複、順序 | 対応済み内容の整合 |
 | type | `0x60`とCore 2.0 valtypeによる引数/結果vec | 関数からの型index参照 |
 | function/code | 型index、件数一致、body長、locals vec、const即値、end | indexの存在、型スタック、最小実行形 |
-| export | UTF-8名、external kind、index。kind 0の関数を対応 | 名の一意性、関数indexの存在 |
-| custom | UTF-8名を含む形式と長さ。残る任意bytesを読み飛ばす | 実行内容へ影響しない |
+| export | UTF-8名、external kind、index kind 0の関数を対応 | 名の一意性、関数indexの存在 |
+| custom | UTF-8名を含む形式と長さ 残る任意bytesを読み飛ばす | 実行内容へ影響しない |
 
 WasmBinaryReaderは位置と終了位置を持つ`ref struct`とし、section/bodyごとの限定範囲を読む。`ReadByte`、`ReadU32`、`ReadS32`、`ReadS64`、`ReadName`、固定幅bits、長さ指定の部分範囲を提供する。長さは残量との比較後に扱い、加算のoverflowで境界確認を迂回させない。
 
-u32/s32は最大5バイト、s64は10バイト。最終バイトの未使用ビットと終端bitを確認する。u32の第5バイトは0x00〜0x0F、s32は0x00〜0x07または0x78〜0x7F、s64の第10バイトは0x00または0x7Fである。合法な非最短LEBを受理する。floatはlittle-endianの4/8バイトをそのままbitsで取得する。名前は`UTF8Encoding(false, true)`で検査し、そのデコード失敗を位置付きWasmDecodeExceptionにする。
+u32/s32は最大5バイト、s64は10バイト 最終バイトの未使用ビットと終端bitを確認する。u32の第5バイトは0x00〜0x0F、s32は0x00〜0x07または0x78〜0x7F、s64の第10バイトは0x00または0x7Fである。合法な非最短LEBを受理する。floatはlittle-endianの4/8バイトをそのままbitsで取得する。名前は`UTF8Encoding(false, true)`で検査し、そのデコード失敗を位置付きWasmDecodeExceptionにする。
 
-非custom sectionの許可順序は`1,2,3,4,5,6,7,8,9,12,10,11`。customは順位に含めない。ID 13以上は破損。対応外sectionでも、読めたID・長さ・順序・重複の違反は先に通知する。それ以上の内容はunsupportedとして中断し、後続sectionまで検査したとは扱わない。
+非custom sectionの許可順序は`1,2,3,4,5,6,7,8,9,12,10,11` customは順位に含めない。ID 13以上は破損 対応外sectionでも、読めたID・長さ・順序・重複の違反は先に通知する。それ以上の内容はunsupportedとして中断し、後続sectionまで検査したとは扱わない。
 
 localsは個数/型の圧縮宣言を読み、各u32個数をulongに累算し、加算のたびに合計が2^32以上ならDecode失敗とする。直前の合計は2^32未満なので、この累算自体もoverflowしない。引数/locals/結果が最小形の範囲外でも、対応済み構文の解析を途中で打ち切らない。平坦な本体でのelse、end欠落、end後のbody余剰は構文違反である。
 
@@ -318,18 +318,18 @@ Validateは最初に全型index・関数indexとexport名を確認する。そ�
 
 ### 命令定義とコード生成の契約
 
-**入方向**: Decoder/Validator/Interpreter（P0）。**外部**: Roslynのビルドホスト（P0）。意味論は本体の定数と終端だけを実装する。
+**入方向**: Decoder/Validator/Interpreter（P0） **外部**: Roslynのビルドホスト（P0） 意味論は本体の定数と終端だけを実装する。
 
 `InstructionSet.cs`のpartialクラスに複数の`InstructionAttribute`を付け、各行を命令表として扱う。属性の情報は以下で固定する。handler参照は`nameof`を用い、生成器は対応するstaticメソッドの存在と引数/戻り値を検査する。
 
 | フィールド | 型・意味 |
 | --- | --- |
-| Prefix / Code | byte / uint。通常命令はPrefix=0と1バイトopcode、拡張命令はPrefix=0xFC/0xFDとsubopcode |
-| Name | string。仕様上の命令名 |
-| Immediate | ImmediateKind。None/I32/I64/F32Bits/F64Bits/Unsupported。I32はReadS32によるs32 LEB、I64はReadS64によるs64 LEB。index用のu32とは区別する |
-| StackEffect | StackEffectKind。PushI32/PushI64/PushF32/PushF64/FunctionEnd/Unsupported |
-| Validation | ValidationRule。Constant/FunctionEnd/Unsupported |
-| ExecutionHandler | string?。対応済み行はnameofによるhandler、未対応行はnull |
+| Prefix / Code | byte / uint 通常命令はPrefix=0と1バイトopcode、拡張命令はPrefix=0xFC/0xFDとsubopcode |
+| Name | string 仕様上の命令名 |
+| Immediate | ImmediateKind None/I32/I64/F32Bits/F64Bits/Unsupported I32はReadS32によるs32 LEB、I64はReadS64によるs64 LEB index用のu32とは区別する |
+| StackEffect | StackEffectKind PushI32/PushI64/PushF32/PushF64/FunctionEnd/Unsupported |
+| Validation | ValidationRule Constant/FunctionEnd/Unsupported |
+| ExecutionHandler | string? 対応済み行はnameofによるhandler、未対応行はnull |
 
 | opcode | 名前 | 即値 | スタック効果 | 検証 | 実行handler |
 | --- | --- | --- | --- | --- | --- |
@@ -352,14 +352,14 @@ Decoderは通常opcodeまたはprefix後のu32を読んで表を引く。未割�
 - `InstructionGenerator : IIncrementalGenerator`をAnalyzerとしてProjectReferenceする（OutputItemType=Analyzer、ReferenceOutputAssembly=false）。Roslyn PackageReferenceはPrivateAssets=allとする。
 - `ForAttributeWithMetadataName`で表を抽出し、軽量の生成用データへ変換する。コンパイル対象をロード・実行しない。
 - `InstructionSet.g.cs`はlookup情報と対応済み実行opcodeを生成する。`Interpreter.g.cs`は単一のwhile/switch本体を生成し、caseからhandlerを直接呼ぶ。Decode/Validateに必要な即値/規則の分類も同じdescriptorから読む。
-- handler共通シグネチャは`ExecutionResult Handler(WasmExecutionContext context, in Instruction instruction)`。`PushConstant`は即値を積み、`Return`は結果を保持して現在のフレームを取り除く。正常な命令処理は空の戻り値コレクションを持つSuccessを返す。Runは今回の入口より後のフレームが残る間だけループし、入口フレームの終了後に関数全体の戻り値コレクションを取り出す。
+- handler共通シグネチャは`ExecutionResult Handler(WasmExecutionContext context, in Instruction instruction)` `PushConstant`は即値を積み、`Return`は結果を保持して現在のフレームを取り除く。正常な命令処理は空の戻り値コレクションを持つSuccessを返す。Runは今回の入口より後のフレームが残る間だけループし、入口フレームの終了後に関数全体の戻り値コレクションを取り出す。
 - handlerのTrap/ExhaustionはReason、関数index、byte offsetと、上限到達ならLimitを含む同じExecutionResultで伝える。Runは失敗結果を変更せず直ちに返す。例外へ変換するまでに原因を失うstatusだけの経路や、コンテキストに別の可変失敗スロットを設けない。
 - opcode重複、不完全な対応済み行、handler不在/シグネチャ不一致をビルドエラーにする。生成が欠けたとき手書きの代替switchを使わない。
 - `EmitCompilerGeneratedFiles`とobj配下の出力先を設定する。通常のdotnet buildで生成し、生成物をソースglobへ再追加しない。生成コマンドの手動実行を要求しない。
 
 ### インスタンスと関数
 
-**入方向**: WasmModule、利用者（P0）。**出方向**: 静的な関数情報、ExecutionBoundary（P0）。
+**入方向**: WasmModule、利用者（P0） **出方向**: 静的な関数情報、ExecutionBoundary（P0）
 
 | 型 | 公開契約 |
 | --- | --- |
@@ -369,7 +369,7 @@ Decoderは通常opcodeまたはprefix後のu32を読んで表を引く。未割�
 
 このInvoke契約は基盤の定義関数を対象とする。host-linkingでは関数の同一性を保ってホスト関数を追加し、C#から呼び出し時にinstanceを明示する操作と、instanceを受け取る・受け取らない両callback形式を設計する。ホスト関数を取得元instanceへ固定せず、Instance引数をWasmの関数型や値引数へ加えない。
 
-MaxCallDepthは1以上、Defaultは1024。options省略時はDefaultを用いる。不正値はArgumentOutOfRangeException。インスタンスに渡した後も変更できないrecordとし、withによる不正値への変更を許すinit setterを公開しない。1024は設定の既定値であり、任意のホストコードのCLRスタック安全性の保証ではない。
+MaxCallDepthは1以上、Defaultは1024 options省略時はDefaultを用いる。不正値はArgumentOutOfRangeException インスタンスに渡した後も変更できないrecordとし、withによる不正値への変更を許すinit setterを公開しない。1024は設定の既定値であり、任意のホストコードのCLRスタック安全性の保証ではない。
 
 モジュールは検証時に作ったordinal比較のexport名→関数index辞書を非公開で保持し、インスタンスはindex→WasmFunction配列を保持する。GetFunctionは名前の不在をArgumentExceptionとする。同じ関数を指す複数export名や繰り返し取得は同じWasmFunction実体を返す。別インスタンスの定義関数は別実体である。公開Exportsコレクションを追加しない。
 
@@ -379,18 +379,18 @@ GetGlobal/GetMemory/GetTableも指定した種類のexport名が存在しなけ�
 
 host-linkingのinstance必須callbackは、呼び出し時のinstance省略・nullをcallback実行前に拒否する機能契約を持つ。これは一般的な非nullable引数への防御的null検査とは区別し、同仕様で実装・受入確認する。
 
-Invokeは引数個数と型を実行前に検査し、不一致はArgumentException。本基盤の対象関数は空引数だけを受理する。結果は呼び出しの作業スタックから独立したWasmResultsへコピーし、次のInvokeで変わらない。
+Invokeは引数個数と型を実行前に検査し、不一致はArgumentException 本基盤の対象関数は空引数だけを受理する。結果は呼び出しの作業スタックから独立したWasmResultsへコピーし、次のInvokeで変わらない。
 
 ### 実行表現と同期コンテキスト
 
-**入方向**: WasmFunction、後続のstart（P0）。**出方向**: 不変FunctionCode、WasmValue、例外群（P0）。内部処理はサービスinterfaceを追加せず、次の操作を持つ具体型とする。
+**入方向**: WasmFunction、後続のstart（P0） **出方向**: 不変FunctionCode、WasmValue、例外群（P0） 内部処理はサービスinterfaceを追加せず、次の操作を持つ具体型とする。
 
 | 操作 | 内部契約 |
 | --- | --- |
 | `ExecutionBoundary.Invoke(WasmFunction function, ReadOnlySpan<WasmValue> arguments, WasmProcessingStage stage)` | WasmResultsを返す。共通の入退出と結果例外化を所有 |
 | `ExecutionBoundary.ThrowIfFailed(ExecutionResult result, WasmProcessingStage stage)` | 正常なら戻る。失敗の元位置にstageを付けてWasmFailureLocationを作り、trap/exhaustionの公開例外化を行う唯一の場所 |
 | `WasmExecutionContext.Enter(WasmExecutionOptions options, out bool isOutermost)` | 現在のコンテキストを返す。nullならoptionsの上限を固定して作る |
-| `WasmExecutionContext.TryEnterCall()` / `ExitCall()` | 上限以内なら深さを増やすbool操作と、深さだけを戻す内部操作。フレームの通常終了はCompleteFrame、Run終了時の復元はRestoreが担当 |
+| `WasmExecutionContext.TryEnterCall()` / `ExitCall()` | 上限以内なら深さを増やすbool操作と、深さだけを戻す内部操作 フレームの通常終了はCompleteFrame、Run終了時の復元はRestoreが担当 |
 | `WasmExecutionContext.Exit(bool isOutermost)` | 最外側なら現在の参照を解除する。内側は解除しない |
 | `Interpreter.Run(WasmExecutionContext context, WasmFunction function, ReadOnlySpan<WasmValue> arguments, WasmProcessingStage stage)` | ExecutionResultを返す。今回追加したフレーム/値/深さを終了時に戻す。stageは入口の実装上限の診断に用いる |
 
@@ -410,9 +410,9 @@ Interpreter.Runは呼び出し前のフレーム数、値スタック位置、�
 
 **後続と共有するスタック基準**:
 
-- pcは関数ごとのInstruction配列の0始まりindex。入力のbyte offsetとは区別する。
-- ExecutionFrameのStackBaseは、その関数の引数が置かれる最初の値位置。OperandBaseは`StackBase + 引数数 + locals数`。本基盤は両数が0なので両基準は一致する。
-- 分岐の`stackHeight`はOperandBaseからの相対的なoperand数。`keepCount`個の先頭順を保った末尾値を`OperandBase + stackHeight`へ移し、その後ろを除く。`targetPc`は同じ関数内の命令index。
+- pcは関数ごとのInstruction配列の0始まりindex 入力のbyte offsetとは区別する。
+- ExecutionFrameのStackBaseは、その関数の引数が置かれる最初の値位置 OperandBaseは`StackBase + 引数数 + locals数` 本基盤は両数が0なので両基準は一致する。
+- 分岐の`stackHeight`はOperandBaseからの相対的なoperand数 `keepCount`個の先頭順を保った末尾値を`OperandBase + stackHeight`へ移し、その後ろを除く。`targetPc`は同じ関数内の命令index
 - block/ifのラベルは結果数、loopのラベルは引数数をkeepCountとする。前方のtargetPc解決、制御スタック、分岐情報の具体型はnumeric-controlが実装する。
 - 関数終了は結果数分をStackBaseへ保持して引数/locals/一時値を除き、呼び出し元の次pcへ戻す。最外側またはネストした公開Invokeの入口が終了したら、その結果を呼び出し元の.NET側へ返す。
 - 本基盤でWasmValueの可変スタックとExecutionFrameの明示スタックを用意するが、分岐/callの未使用handlerや制御フレームは作らない。
@@ -424,10 +424,10 @@ Interpreter.Runは呼び出し前のフレーム数、値スタック位置、�
 | 所有者 | データ | 不変条件 |
 | --- | --- | --- |
 | WasmModule | ImmutableArrayの型/DecodedFunction/FunctionExport、入力長 | 入力から独立し、公開setterを持たない |
-| WasmModule | isValidated_、ImmutableArrayのFunctionCode、名前辞書 | 全成功時のみ設定。falseの状態で実行コードを使わない |
-| DecodedFunction | uint TypeIndex、long BodyOffset、ImmutableArrayのLocalDeclaration/DecodedInstruction | 型indexはDecodeでは未検証。localsを巨大配列へ先に展開しない |
+| WasmModule | isValidated_、ImmutableArrayのFunctionCode、名前辞書 | 全成功時のみ設定 falseの状態で実行コードを使わない |
+| DecodedFunction | uint TypeIndex、long BodyOffset、ImmutableArrayのLocalDeclaration/DecodedInstruction | 型indexはDecodeでは未検証 localsを巨大配列へ先に展開しない |
 | DecodedInstruction | OpcodeKey、WasmValue Immediate、long ByteOffset | Immediateの解釈はdescriptorが決める。endのImmediateは参照しない |
-| FunctionCode | ImmutableArrayのInstruction、int MaxOperandStack | internal sealed class。型検証と同じパスで完成した非defaultの配列からプライマリコンストラクターで構築し、get-onlyで保持する。モジュールに属する |
+| FunctionCode | ImmutableArrayのInstruction、int MaxOperandStack | internal sealed class 型検証と同じパスで完成した非defaultの配列からプライマリコンストラクターで構築し、get-onlyで保持する。モジュールに属する |
 | Instruction | 生成された実行opcode、WasmValue Immediate、long ByteOffset | 実行可能な命令だけを含む |
 | WasmInstance | モジュール参照、関数配列、ExecutionOptions | 同じ定義から作る別instanceで定義関数の実体を共有しない。host-linkingでimportする関数は元の同一実体を共有する |
 | WasmFunction（基盤の定義関数） | 所有WasmInstance、uint関数index | 型・FunctionCode・入口位置を所有moduleの同じindexから取得する。host-linkingのホスト関数にこの所有関係を要求しない |
@@ -445,12 +445,12 @@ ExecutionResultは次のget-only情報を持つreadonly structとする。`Execu
 | 情報 | 型と不変条件 |
 | --- | --- |
 | Status | ExecutionStatus |
-| Values | ImmutableArray<WasmValue>。getterで未初期化の格納値をEmptyへ正規化し、失敗時とdefaultの結果は空のコレクション |
-| TrapReason | WasmTrapReason?。Trapのときだけ必須 |
-| ExhaustionReason | WasmExhaustionReason?。Exhaustionのときだけ必須 |
-| Limit | int?。CallDepthLimitのとき適用した正の上限 |
-| FunctionIndex | uint?。失敗時の関数index |
-| ByteOffset | long?。失敗時の命令位置、入口での失敗なら関数本体の先頭位置 |
+| Values | ImmutableArray<WasmValue> getterで未初期化の格納値をEmptyへ正規化し、失敗時とdefaultの結果は空のコレクション |
+| TrapReason | WasmTrapReason? Trapのときだけ必須 |
+| ExhaustionReason | WasmExhaustionReason? Exhaustionのときだけ必須 |
+| Limit | int? CallDepthLimitのとき適用した正の上限 |
+| FunctionIndex | uint? 失敗時の関数index |
+| ByteOffset | long? 失敗時の命令位置、入口での失敗なら関数本体の先頭位置 |
 
 非公開コンストラクターと`Success(values)`、`Trap(reason, functionIndex, byteOffset)`、`Exhaustion(reason, limit, functionIndex, byteOffset)`の構築操作で組み合わせを限定する。命令handlerはcontextの現在の関数とinstructionの元位置を使い、関数入口での深さ超過はその入口の位置とコンテキストの上限を使う。内部結果の位置は入力上の情報とし、公開操作のStageはThrowIfFailedで付ける。Success=0とし、default値も空の結果を持つSuccessとして扱う。WasmTrapReasonとWasmExhaustionReasonを別enumとし、内部trapを.NET例外で表現しない。
 
@@ -468,10 +468,10 @@ WasmTrapReasonはUnreachable、IntegerDivideByZero、IntegerOverflow、InvalidCo
 | --- | --- | --- |
 | 入力の構文違反 | WasmDecodeException | DecodeのLocation |
 | 型/参照関係の違反 | WasmValidateException | ValidateのLocation |
-| importの不在/型不一致 | WasmInstantiateException | 後続linkingが通知。trapを含めない |
+| importの不在/型不一致 | WasmInstantiateException | 後続linkingが通知 trapを含めない |
 | Wasm仕様のtrap | WasmTrapException | ReasonとInstantiate/InvokeのLocation |
 | Core 2.0内の未実装 | WasmUnsupportedFeatureException | Feature、Location、UnverifiedRanges |
-| 不正な引数/名前 | ArgumentException系 | 引数名。Wasmの失敗に変換しない |
+| 不正な引数/名前 | ArgumentException系 | 引数名 Wasmの失敗に変換しない |
 | 未検証Instantiate/値の誤取得 | InvalidOperationException | 状態/型の契約違反 |
 | 管理した深さ上限 | WasmExhaustionException | CallDepthLimit、適用Limit、Location |
 | .NETでの入力/コレクションの保持上限 | WasmImplementationLimitException | InputSize/CollectionSize、Location |
@@ -510,7 +510,7 @@ WasmUnverifiedRangeは`Stage`、`long StartOffset`、`long EndOffset`（排他�
 - 両Decode入力で同じバイナリを処理し、短い読み取り、非seek、入力バッファの後変更、Streamを閉じないこと、読取不可とI/O例外を区別する（1.2, 1.5, 3.1, 3.7）。
 - header、途中終了、長さの過不足、LEB最大幅と未使用bit、合法な非最短表現、customの配置/重複/内容、section順序/重複/ID、function/code件数、厳格なUTF-8を小バイナリで確認する。locals宣言のu32個数を加えた結果がちょうど2^32になる負例も含め、巡回して受理されないことを確認する（3.2, 3.3, 3.4, 3.5, 3.6）。
 - 型/関数index不在、export名重複、結果型/個数不一致、平坦else、end欠落/余剰をDecode/Validateの該当型へ分類する（4.1, 4.2, 4.3, 6.4）。
-- Core 2.0の既知未対応命令、未対応section、未知opcode、FC/FDの不正LEB・欠番・範囲外を区別する。constだけの有効な複数結果形はValidateでunsupported、結果数不一致はinvalid。未確認のStage/範囲も検証する（4.4, 6.2, 6.3, 6.4, 6.5）。
+- Core 2.0の既知未対応命令、未対応section、未知opcode、FC/FDの不正LEB・欠番・範囲外を区別する。constだけの有効な複数結果形はValidateでunsupported、結果数不一致はinvalid 未確認のStage/範囲も検証する（4.4, 6.2, 6.3, 6.4, 6.5）。
 - 複数関数の後半でValidateが失敗した後にInstantiateを拒否する。成功時/再成功時のValidateが同じ参照を返すこと、未検証Instantiateの拒否を公開操作で確認し、非公開フラグのreflection検査をしない（1.3, 1.4, 1.6, 4.5）。
 
 ### 4段階の受入経路
@@ -541,5 +541,5 @@ WasmUnverifiedRangeは`Stage`、`long StartOffset`、`long EndOffset`（排他�
 ## 参照
 
 - [要件](requirements.md)、[discovery調査](../../../docs/research/wasm-runtime-discovery.md)、[設計判断](../../../docs/adr/)、[ロードマップ](../../steering/roadmap.md)
-- [Core 2.0保存版](https://webassembly.github.io/spec/versions/core/WebAssembly-2.0.pdf): 値と型§2.3/4.2.1、定数§4.4.1、符号化§5.2、命令§5.4、module§5.5、検証§3.4。
-- [ADR 0002](../../../docs/adr/0002-single-pass-linear-interpreter.md)、[0004](../../../docs/adr/0004-trap-result-propagation.md)、[0005](../../../docs/adr/0005-module-owned-validation-state.md)、[0006](../../../docs/adr/0006-generated-instruction-dispatch.md)、[0007](../../../docs/adr/0007-propagate-host-exceptions.md)、[0008](../../../docs/adr/0008-instance-options-and-execution-context.md)。
+- [Core 2.0保存版](https://webassembly.github.io/spec/versions/core/WebAssembly-2.0.pdf): 値と型§2.3/4.2.1、定数§4.4.1、符号化§5.2、命令§5.4、module§5.5、検証§3.4
+- [ADR 0002](../../../docs/adr/0002-single-pass-linear-interpreter.md)、[0004](../../../docs/adr/0004-trap-result-propagation.md)、[0005](../../../docs/adr/0005-module-owned-validation-state.md)、[0006](../../../docs/adr/0006-generated-instruction-dispatch.md)、[0007](../../../docs/adr/0007-propagate-host-exceptions.md)、[0008](../../../docs/adr/0008-instance-options-and-execution-context.md)

@@ -11,16 +11,25 @@ namespace WasmSharp.TestSuiteRunner.Corpus;
 /// </remarks>
 internal static class CorpusVerifier
 {
+    /// <summary>
+    /// 入力・素材・参照の照合失敗を診断で識別する操作名
+    /// </summary>
     private const string OPERATION = "verify";
+
+    /// <summary>
+    /// manifestの親を基準に生成物を配置する素材領域の名前
+    /// </summary>
     private const string MATERIAL_ROOT = "modules";
 
     /// <summary>
     /// manifestに記録した素材を、manifestの親を基準にした相対配置で照合する。
     /// </summary>
     /// <param name="manifest">照合するmanifest</param>
-    /// <param name="manifestPath">manifestの配置先。親ディレクトリを素材の基準にする</param>
+    /// <param name="manifestPath">manifestの配置先 親ディレクトリを素材の基準にする</param>
     /// <param name="mode">元入力も照合するかどうかを決める工程</param>
-    /// <param name="sourceRoot">生成工程で照合する公式入力のspec-root。実行工程では使用しない</param>
+    /// <param name="sourceRoot">生成工程で照合する公式入力のspec-root 実行工程では使用しない</param>
+    /// <returns>manifestの記録順の入力別照合結果と、どの入力にも属さない余剰素材・元入力の診断</returns>
+    /// <exception cref="ArgumentNullException">生成工程でsourceRootがnullの場合</exception>
     internal static CorpusVerification Verify(
         CorpusManifest manifest,
         string manifestPath,
@@ -63,6 +72,7 @@ internal static class CorpusVerifier
     /// </summary>
     /// <param name="inputs">固定した全入力</param>
     /// <param name="inputRoot">入力の相対pathの基準となるtest/coreの配置</param>
+    /// <returns>入力の欠落・読取失敗・hash不一致と、固定集合にない入力や列挙失敗の診断 問題がなければ空</returns>
     internal static ImmutableArray<CorpusDiagnostic> VerifySources(
         IEnumerable<SourceInput> inputs,
         string inputRoot
@@ -80,6 +90,7 @@ internal static class CorpusVerifier
     /// </summary>
     /// <param name="document">列挙済みのJSON</param>
     /// <param name="jsonPath">JSONのmanifest基準の相対path</param>
+    /// <returns>command一覧をコピーした保存用記録 素材領域内へ解決できない参照名は参照一覧へ含めない</returns>
     internal static ScriptArtifact CreateScript(ScriptDocument document, string jsonPath)
     {
         return new ScriptArtifact
@@ -116,6 +127,7 @@ internal static class CorpusVerifier
     /// 入力の相対pathから、素材領域内で同じ相対配置になるJSONのmanifest基準の相対pathを返す。
     /// </summary>
     /// <param name="inputPath">test/core基準の/区切り相対path</param>
+    /// <returns>modules/配下で入力と同じ相対配置にあり、拡張子を.jsonにしたpath</returns>
     internal static string GetScriptPath(string inputPath)
     {
         return $"{MATERIAL_ROOT}/{Path.ChangeExtension(inputPath, ".json")}";
@@ -125,6 +137,7 @@ internal static class CorpusVerifier
     /// 生成物の拡張子から素材の種類を決める。対応しない拡張子ではnullを返す。
     /// </summary>
     /// <param name="path">/区切りの相対path</param>
+    /// <returns>.json・.wasm・.watに対応する素材の種類 大文字を含む拡張子や未対応の拡張子ではnull</returns>
     internal static ArtifactKind? GetKind(string path)
     {
         return Path.GetExtension(path) switch
@@ -136,6 +149,16 @@ internal static class CorpusVerifier
         };
     }
 
+    /// <summary>
+    /// 一つの入力のJSONと参照素材を照合し、入力全体の異常とbinaryを使うcommandごとの異常を分ける。
+    /// </summary>
+    /// <param name="input">照合する元入力と生成物の記録</param>
+    /// <param name="root">manifestの親である素材配置の基準</param>
+    /// <param name="mode">変換成功の記録を実行前提として要求するかどうかを決める工程</param>
+    /// <param name="inputRoot">元入力を照合するtest/coreの配置 元入力を照合しない場合はnull</param>
+    /// <param name="recordCounts">素材pathごとの全入力を通じた記録数</param>
+    /// <param name="owners">各素材pathを記録している入力の相対path</param>
+    /// <returns>照合できたJSON・binaryのバイト列と、入力全体または参照元commandに対応する失敗理由</returns>
     private static InputVerification VerifyInput(
         InputConversionResult input,
         string root,
@@ -264,6 +287,16 @@ internal static class CorpusVerifier
         );
     }
 
+    /// <summary>
+    /// 唯一のJSON生成物の配置・hash・manifestの列挙記録を照合し、信頼できる内容だけを返す。
+    /// </summary>
+    /// <remarks>
+    /// source_filenameの不一致やJSONの列挙・全体構造の異常は診断へ残し、manifestの記録と一致する場合は内容を返す。
+    /// </remarks>
+    /// <param name="input">JSONに対応する元入力</param>
+    /// <param name="checks">この入力に属する全生成物の照合結果</param>
+    /// <param name="issues">JSONの配置・内容・記録に異常がある場合に理由を追加する診断一覧</param>
+    /// <returns>hashと列挙記録が一致するJSON JSONを一意に特定できないか、配置・hash・記録が不正な場合はnull</returns>
     private static ScriptDocument? ReadDocument(
         SourceInput input,
         ArtifactCheck[] checks,
@@ -334,6 +367,14 @@ internal static class CorpusVerifier
         return document;
     }
 
+    /// <summary>
+    /// 素材領域内の配置・拡張子・記録の一意性・所有元・リンク経由の有無・hashを照合する。
+    /// </summary>
+    /// <param name="artifact">照合する生成物の記録</param>
+    /// <param name="inputPath">この素材を所有するはずの元入力の相対path</param>
+    /// <param name="root">manifestの親である素材配置の基準</param>
+    /// <param name="recordCounts">素材pathごとの全入力を通じた記録数</param>
+    /// <returns>成功時は読み取ったバイト列、失敗時は空のバイト列と最初に判明した理由を持つ照合結果</returns>
     private static ArtifactCheck CheckArtifact(
         Artifact artifact,
         string inputPath,
@@ -433,6 +474,12 @@ internal static class CorpusVerifier
             );
     }
 
+    /// <summary>
+    /// 元入力の生バイト列を読み取り、固定profileのSHA-256と照合する。
+    /// </summary>
+    /// <param name="input">元入力の相対pathと固定SHA-256</param>
+    /// <param name="inputRoot">元入力を配置したtest/coreのディレクトリ</param>
+    /// <returns>欠落・読取失敗・hash不一致の診断 一致する場合はnull</returns>
     private static CorpusDiagnostic? CheckSource(SourceInput input, string inputRoot)
     {
         var fullPath = Path.Combine(inputRoot, input.Path);
@@ -466,6 +513,12 @@ internal static class CorpusVerifier
             );
     }
 
+    /// <summary>
+    /// test/core以下の.wastを再帰的に列挙し、固定profileにない元入力を検出する。
+    /// </summary>
+    /// <param name="inputs">固定profileに含まれる全入力</param>
+    /// <param name="inputRoot">列挙するtest/coreの配置</param>
+    /// <returns>余剰入力を相対pathのOrdinal順に並べた診断、または列挙失敗の診断 ディレクトリが存在しない場合は空</returns>
     private static List<CorpusDiagnostic> FindExtraSources(
         IEnumerable<SourceInput> inputs,
         string inputRoot
@@ -511,6 +564,12 @@ internal static class CorpusVerifier
         }
     }
 
+    /// <summary>
+    /// 素材領域をリンク先へ進まずに列挙し、manifestにない素材とリンクを検出する。
+    /// </summary>
+    /// <param name="root">manifestの親である素材配置の基準</param>
+    /// <param name="paths">manifestに記録された全生成物の相対path</param>
+    /// <returns>余剰素材・未記録リンク・列挙失敗の診断を相対pathのOrdinal順に並べた一覧</returns>
     private static List<CorpusDiagnostic> FindExtraMaterials(string root, IEnumerable<string> paths)
     {
         var known = paths.Where(IsMaterialPath).ToHashSet(StringComparer.Ordinal);
@@ -577,6 +636,11 @@ internal static class CorpusVerifier
         }
     }
 
+    /// <summary>
+    /// /区切りの素材pathから、途中にある親ディレクトリの相対pathを列挙する。
+    /// </summary>
+    /// <param name="path">素材のmanifest基準の相対path</param>
+    /// <returns>最上位から順に並べた親ディレクトリの相対path 素材自身は含めない</returns>
     private static IEnumerable<string> GetParentPaths(string path)
     {
         for (var i = path.IndexOf('/'); i >= 0; i = path.IndexOf('/', i + 1))
@@ -585,6 +649,12 @@ internal static class CorpusVerifier
         }
     }
 
+    /// <summary>
+    /// 素材までの各path要素を確認し、リンクを経由する最初の箇所を探す。
+    /// </summary>
+    /// <param name="root">manifestの親である素材配置の基準</param>
+    /// <param name="path">確認する素材の/区切り相対path</param>
+    /// <returns>最初に見つかったリンクの相対path リンクを経由しない場合はnull</returns>
     private static string? FindLink(string root, string path)
     {
         var segments = path.Split('/');
@@ -603,6 +673,12 @@ internal static class CorpusVerifier
         return null;
     }
 
+    /// <summary>
+    /// commandの参照名をJSONの親ディレクトリに対して解決し、素材領域内の相対pathに限定する。
+    /// </summary>
+    /// <param name="jsonPath">JSONのmanifest基準の相対path</param>
+    /// <param name="filename">commandに記録された参照名</param>
+    /// <returns>解決した素材の相対path 参照名が不正か、素材領域内に収まらない場合はnull</returns>
     private static string? ResolveReference(string jsonPath, string filename)
     {
         if (!IsRelativePath(filename))
@@ -614,12 +690,22 @@ internal static class CorpusVerifier
         return IsMaterialPath(path) ? path : null;
     }
 
+    /// <summary>
+    /// pathがmodules/配下を表す/区切り相対pathであるかを判定する。
+    /// </summary>
+    /// <param name="path">manifestに記録された素材pathまたは解決した参照先</param>
+    /// <returns>modules/で始まり、空・.・..の要素や禁止文字を含まない相対pathの場合はtrue</returns>
     private static bool IsMaterialPath(string path)
     {
         return path.StartsWith($"{MATERIAL_ROOT}/", StringComparison.Ordinal)
             && IsRelativePath(path);
     }
 
+    /// <summary>
+    /// /区切り相対pathとして、領域外への移動や曖昧な解釈を生む要素がないかを判定する。
+    /// </summary>
+    /// <param name="path">確認する相対path</param>
+    /// <returns>空・.・..の要素、バックスラッシュ、コロン、制御文字を含まない空でないpathの場合はtrue</returns>
     private static bool IsRelativePath(string path)
     {
         // 区切りを/に固定し、絶対path・ドライブ指定・root外への移動・空の要素を受け付けない。
@@ -628,6 +714,12 @@ internal static class CorpusVerifier
             && path.Split('/').All(x => x is not ("" or "." or ".."));
     }
 
+    /// <summary>
+    /// manifestのJSON列挙記録と、実際のJSONから読み取った一覧・素材参照を順序も含めて比較する。
+    /// </summary>
+    /// <param name="recorded">manifestに保存したJSONの列挙記録 記録がない場合はnull</param>
+    /// <param name="actual">照合済みのJSONから作成した列挙記録</param>
+    /// <returns>元入力名、列挙完了状態、command総数、command一覧、素材参照がすべて一致する場合はtrue</returns>
     private static bool Matches(ScriptArtifact? recorded, ScriptArtifact actual)
     {
         return recorded is not null
@@ -638,6 +730,11 @@ internal static class CorpusVerifier
             && recorded.References.SequenceEqual(actual.References);
     }
 
+    /// <summary>
+    /// 入力の変換状態を保存JSONと同じ表記の診断用文字列にする。
+    /// </summary>
+    /// <param name="status">診断に表示する変換状態</param>
+    /// <returns>Unprocessedはunprocessed、Succeededはsucceeded、それ以外はrunner_error</returns>
     private static string FormatStatus(ConversionStatus status)
     {
         return status switch
@@ -648,6 +745,11 @@ internal static class CorpusVerifier
         };
     }
 
+    /// <summary>
+    /// 生成物の種類を保存JSONと同じ表記の診断用文字列にする。
+    /// </summary>
+    /// <param name="kind">診断に表示する生成物の種類</param>
+    /// <returns>Jsonはjson、Wasmはwasm、それ以外はwat</returns>
     private static string FormatKind(ArtifactKind kind)
     {
         return kind switch
@@ -658,6 +760,11 @@ internal static class CorpusVerifier
         };
     }
 
+    /// <summary>
+    /// 生バイト列を正規化せずSHA-256を求める。
+    /// </summary>
+    /// <param name="content">hashを求める元入力または素材のバイト列</param>
+    /// <returns>小文字hex64桁のSHA-256</returns>
     private static string Sha256(byte[] content)
     {
         return Convert.ToHexStringLower(SHA256.HashData(content));
@@ -667,8 +774,8 @@ internal static class CorpusVerifier
     /// 一つの記録済み素材の照合結果
     /// </summary>
     /// <param name="Artifact">照合した記録</param>
-    /// <param name="Content">照合に成功した生バイト列。失敗時は空</param>
-    /// <param name="Issue">照合に失敗した理由。成功時はnull</param>
+    /// <param name="Content">照合に成功した生バイト列 失敗時は空</param>
+    /// <param name="Issue">照合に失敗した理由 成功時はnull</param>
     private sealed record ArtifactCheck(
         Artifact Artifact,
         ImmutableArray<byte> Content,

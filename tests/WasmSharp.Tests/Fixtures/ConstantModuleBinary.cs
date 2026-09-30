@@ -28,7 +28,7 @@ internal static class ConstantModuleBinary
             types.AddRange([0x60, 0x00, 0x01, function.ResultType]);
             AppendUnsigned(functionIndices, (uint)index);
             AppendUnsigned(code, (uint)function.Instructions.Length + 1);
-            code.Add(0x00); // locals宣言は0個。
+            code.Add(0x00); // locals宣言は0個
             // endも入力に含める。負例の不正命令や終端欠落を補正しない。
             code.AddRange(function.Instructions);
         }
@@ -40,7 +40,7 @@ internal static class ConstantModuleBinary
             var name = Encoding.UTF8.GetBytes(export.Name);
             AppendUnsigned(exportEntries, (uint)name.Length);
             exportEntries.AddRange(name);
-            exportEntries.Add(0x00); // exportの種類は関数。
+            exportEntries.Add(0x00); // exportの種類は関数
             AppendUnsigned(exportEntries, export.FunctionIndex);
         }
 
