@@ -40,6 +40,21 @@ internal ref struct ModuleBinaryReader
     internal readonly int Remaining => bytes_.Length - position_;
 
     /// <summary>
+    /// 原入力の物理終端
+    /// </summary>
+    internal long InputEnd { get; }
+
+    /// <summary>
+    /// この読取り範囲の宣言終端
+    /// </summary>
+    internal long DeclaredEnd { get; }
+
+    /// <summary>
+    /// 現在位置から宣言終端までの残量
+    /// </summary>
+    internal readonly long DeclaredRemaining => DeclaredEnd - Position;
+
+    /// <summary>
     /// 診断に使用するsection ID section外ではnull
     /// </summary>
     internal byte? SectionId { get; set; }
@@ -63,9 +78,28 @@ internal ref struct ModuleBinaryReader
         byte? sectionId = null,
         uint? functionIndex = null
     )
+        : this(bytes, startOffset, startOffset + bytes.Length, sectionId, functionIndex) { }
+
+    /// <summary>
+    /// 限定された入力参照と、原入力の物理終端を保持する
+    /// </summary>
+    /// <param name="bytes">この読取り範囲の入力バイト列</param>
+    /// <param name="startOffset">Decode開始位置を0とした、この範囲の先頭位置</param>
+    /// <param name="inputEnd">原入力の物理終端</param>
+    /// <param name="sectionId">診断に使用するsection ID</param>
+    /// <param name="functionIndex">診断に使用するmodule全体の関数index</param>
+    private ModuleBinaryReader(
+        ReadOnlySpan<byte> bytes,
+        long startOffset,
+        long inputEnd,
+        byte? sectionId,
+        uint? functionIndex
+    )
     {
         bytes_ = bytes;
         startOffset_ = startOffset;
+        InputEnd = inputEnd;
+        DeclaredEnd = startOffset + bytes.Length;
         position_ = 0;
         SectionId = sectionId;
         FunctionIndex = functionIndex;
@@ -75,7 +109,7 @@ internal ref struct ModuleBinaryReader
     /// 現在位置の1バイトを読み取り、位置を進める
     /// </summary>
     /// <returns>現在位置にあったバイト</returns>
-    /// <exception cref="WasmDecodeException">読み取り範囲の終端に達している場合</exception>
+    /// <exception cref="ModuleReadBoundaryException">読み取り範囲の終端に達している場合</exception>
     internal byte ReadByte()
     {
         return ReadBytes(1)[0];
@@ -86,12 +120,12 @@ internal ref struct ModuleBinaryReader
     /// </summary>
     /// <param name="length">読み取るバイト数</param>
     /// <returns>元の入力バイト列を参照する範囲 コピーは作成しない</returns>
-    /// <exception cref="WasmDecodeException">指定長がこの範囲の残量を超える場合</exception>
+    /// <exception cref="ModuleReadBoundaryException">指定長がこの範囲の残量を超える場合</exception>
     internal ReadOnlySpan<byte> ReadBytes(uint length)
     {
-        if (length > (uint)Remaining)
+        if ((long)length > DeclaredRemaining || (long)length > InputEnd - Position)
         {
-            throw Error("宣言された長さが入力の残量を超えています。");
+            throw BoundaryError("宣言された長さが入力の残量を超えています。");
         }
 
         var result = bytes_.Slice(position_, (int)length);
@@ -105,13 +139,14 @@ internal ref struct ModuleBinaryReader
     /// <param name="length">部分範囲のバイト数</param>
     /// <param name="functionIndex">部分範囲の関数index nullの場合は現在の関数indexを引き継ぐ</param>
     /// <returns>入力の参照、入力上の先頭位置とsection IDを引き継ぐ部分範囲の読み取り状態</returns>
-    /// <exception cref="WasmDecodeException">指定長がこの範囲の残量を超える場合</exception>
+    /// <exception cref="ModuleReadBoundaryException">指定長がこの範囲の残量を超える場合</exception>
     internal ModuleBinaryReader ReadRange(uint length, uint? functionIndex = null)
     {
         var start = Position;
         return new ModuleBinaryReader(
             ReadBytes(length),
             start,
+            InputEnd,
             SectionId,
             functionIndex ?? FunctionIndex
         );
@@ -121,7 +156,8 @@ internal ref struct ModuleBinaryReader
     /// u32のLEB128符号化を読み取る
     /// </summary>
     /// <returns>符号なし32ビット整数</returns>
-    /// <exception cref="WasmDecodeException">終端、最大幅または未使用ビットの符号化が不正な場合</exception>
+    /// <exception cref="WasmDecodeException">最大幅または未使用ビットの符号化が不正な場合</exception>
+    /// <exception cref="ModuleReadBoundaryException">読み取り範囲の終端で整数が未完了の場合</exception>
     internal uint ReadU32()
     {
         return (uint)ReadInteger(32, false);
@@ -131,7 +167,8 @@ internal ref struct ModuleBinaryReader
     /// s32のLEB128符号化を読み取る
     /// </summary>
     /// <returns>符号付き32ビット整数</returns>
-    /// <exception cref="WasmDecodeException">終端、最大幅または符号拡張の符号化が不正な場合</exception>
+    /// <exception cref="WasmDecodeException">最大幅または符号拡張の符号化が不正な場合</exception>
+    /// <exception cref="ModuleReadBoundaryException">読み取り範囲の終端で整数が未完了の場合</exception>
     internal int ReadS32()
     {
         return unchecked((int)ReadInteger(32, true));
@@ -141,7 +178,8 @@ internal ref struct ModuleBinaryReader
     /// s64のLEB128符号化を読み取る
     /// </summary>
     /// <returns>符号付き64ビット整数</returns>
-    /// <exception cref="WasmDecodeException">終端、最大幅または符号拡張の符号化が不正な場合</exception>
+    /// <exception cref="WasmDecodeException">最大幅または符号拡張の符号化が不正な場合</exception>
+    /// <exception cref="ModuleReadBoundaryException">読み取り範囲の終端で整数が未完了の場合</exception>
     internal long ReadS64()
     {
         return unchecked((long)ReadInteger(64, true));
@@ -151,7 +189,7 @@ internal ref struct ModuleBinaryReader
     /// f32のリトルエンディアン符号化を、浮動小数点演算を行わずに読み取る
     /// </summary>
     /// <returns>NaNや符号付きゼロも区別する32ビット列</returns>
-    /// <exception cref="WasmDecodeException">読み取り範囲に4バイト残っていない場合</exception>
+    /// <exception cref="ModuleReadBoundaryException">読み取り範囲に4バイト残っていない場合</exception>
     internal uint ReadF32Bits()
     {
         return BinaryPrimitives.ReadUInt32LittleEndian(ReadBytes(4));
@@ -161,7 +199,7 @@ internal ref struct ModuleBinaryReader
     /// f64のリトルエンディアン符号化を、浮動小数点演算を行わずに読み取る
     /// </summary>
     /// <returns>NaNや符号付きゼロも区別する64ビット列</returns>
-    /// <exception cref="WasmDecodeException">読み取り範囲に8バイト残っていない場合</exception>
+    /// <exception cref="ModuleReadBoundaryException">読み取り範囲に8バイト残っていない場合</exception>
     internal ulong ReadF64Bits()
     {
         return BinaryPrimitives.ReadUInt64LittleEndian(ReadBytes(8));
@@ -171,7 +209,8 @@ internal ref struct ModuleBinaryReader
     /// バイト数付きのnameを読み取り、UTF-8として正しい文字列であることを確認する
     /// </summary>
     /// <returns>デコードした名前 空文字列も許容する</returns>
-    /// <exception cref="WasmDecodeException">長さの符号化、入力範囲またはUTF-8が不正な場合</exception>
+    /// <exception cref="WasmDecodeException">長さの符号化またはUTF-8が不正な場合</exception>
+    /// <exception cref="ModuleReadBoundaryException">名前の長さまたはbyte列を限定範囲内で取得できない場合</exception>
     internal string ReadName()
     {
         var length = ReadU32();
@@ -193,7 +232,8 @@ internal ref struct ModuleBinaryReader
     /// <param name="width">整数のビット幅 32または64</param>
     /// <param name="signed">符号付きとして符号拡張を行う場合はtrue</param>
     /// <returns>整数のビット列 符号付きの場合は64ビットまで符号拡張する</returns>
-    /// <exception cref="WasmDecodeException">入力が不足するか、終端、最大幅または未使用ビットが不正な場合</exception>
+    /// <exception cref="WasmDecodeException">最大幅または未使用ビットが不正な場合</exception>
+    /// <exception cref="ModuleReadBoundaryException">読み取り範囲の終端で整数が未完了の場合</exception>
     private ulong ReadInteger(int width, bool signed)
     {
         ulong result = 0;
@@ -254,5 +294,16 @@ internal ref struct ModuleBinaryReader
     internal readonly WasmDecodeException Error(string message, long? offset = null)
     {
         return new WasmDecodeException(message, Location(offset), null);
+    }
+
+    /// <summary>
+    /// 確定した範囲不正の診断を保持する内部通知を作成する
+    /// </summary>
+    /// <param name="message">範囲不正の内容</param>
+    /// <param name="offset">Decode開始位置を0とした診断位置 nullの場合は現在の読み取り位置</param>
+    /// <returns>既存のDecode診断を保持する内部通知 このメソッドでは送出しない</returns>
+    internal readonly ModuleReadBoundaryException BoundaryError(string message, long? offset = null)
+    {
+        return new ModuleReadBoundaryException(Error(message, offset));
     }
 }

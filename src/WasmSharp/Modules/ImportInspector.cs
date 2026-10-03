@@ -72,6 +72,10 @@ internal static class ImportInspector
         {
             return InspectCore(bytes, ranges);
         }
+        catch (ModuleReadBoundaryException exception)
+        {
+            throw InspectionFailure(exception.Fallback, ranges, bytes.Length);
+        }
         catch (WasmException exception)
             when (exception
                     is WasmDecodeException
@@ -79,22 +83,38 @@ internal static class ImportInspector
                         or WasmImplementationLimitException
             )
         {
-            var reason = exception switch
-            {
-                WasmDecodeException => WasmImportInspectionReason.MalformedBinary,
-                WasmUnsupportedFeatureException => WasmImportInspectionReason.UnsupportedFeature,
-                _ => WasmImportInspectionReason.ImplementationLimit,
-            };
-            var location = exception.Location!;
-            throw new WasmImportInspectionException(
-                exception.Message,
-                reason,
-                (exception as WasmUnsupportedFeatureException)?.Feature,
-                location,
-                FailureRanges(ranges, location.ByteOffset!.Value, bytes.Length),
-                exception
-            );
+            throw InspectionFailure(exception, ranges, bytes.Length);
         }
+    }
+
+    /// <summary>
+    /// 構文・未対応・保持上限の診断から、元の例外と未確認範囲を保つ取得失敗を作成する
+    /// </summary>
+    /// <param name="exception">公開情報として保持する元の診断</param>
+    /// <param name="ranges">失敗前に読み飛ばしたpayloadの範囲</param>
+    /// <param name="inputLength">入力全体のバイト数</param>
+    /// <returns>部分的なimport一覧を含まない取得失敗</returns>
+    private static WasmImportInspectionException InspectionFailure(
+        WasmException exception,
+        ImmutableArray<WasmUnverifiedRange>.Builder ranges,
+        int inputLength
+    )
+    {
+        var reason = exception switch
+        {
+            WasmDecodeException => WasmImportInspectionReason.MalformedBinary,
+            WasmUnsupportedFeatureException => WasmImportInspectionReason.UnsupportedFeature,
+            _ => WasmImportInspectionReason.ImplementationLimit,
+        };
+        var location = exception.Location!;
+        return new WasmImportInspectionException(
+            exception.Message,
+            reason,
+            (exception as WasmUnsupportedFeatureException)?.Feature,
+            location,
+            FailureRanges(ranges, location.ByteOffset!.Value, inputLength),
+            exception
+        );
     }
 
     /// <summary>

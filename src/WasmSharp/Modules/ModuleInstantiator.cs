@@ -151,71 +151,105 @@ internal static class ModuleInstantiator
         for (var ordinal = 0; ordinal < module.Imports.Length; ordinal++)
         {
             var import = module.Imports[ordinal];
-            if (
-                !providers.TryGetValue(import.ModuleName, out var items)
-                || !items.TryGetValue(import.Name, out var value)
-            )
-            {
-                throw LinkFailure(
-                    import,
-                    ordinal,
-                    WasmInstantiateReason.MissingImport,
-                    "名前に一致する提供登録がありません。"
-                );
-            }
-            var actualKind = value switch
-            {
-                FunctionExternalValue => WasmExternalKind.Function,
-                GlobalExternalValue => WasmExternalKind.Global,
-                MemoryExternalValue => WasmExternalKind.Memory,
-                TableExternalValue => WasmExternalKind.Table,
-                _ => throw new InvalidOperationException("外部要素の種類が不明です。"),
-            };
-            if (actualKind != import.Kind)
-            {
-                throw LinkFailure(
-                    import,
-                    ordinal,
-                    WasmInstantiateReason.KindMismatch,
-                    $"要求種類 {import.Kind} に対して提供種類は {actualKind} です。"
-                );
-            }
-            var matches = (import, value) switch
-            {
-                (FunctionImport required, FunctionExternalValue provided) => module
-                    .Types[(int)required.TypeIndex]
-                    .Parameters.SequenceEqual(provided.Value.Type.Parameters)
-                    && module
-                        .Types[(int)required.TypeIndex]
-                        .Results.SequenceEqual(provided.Value.Type.Results),
-                (GlobalImport required, GlobalExternalValue provided) => required.Type
-                    == provided.Value.Type,
-                (MemoryImport required, MemoryExternalValue provided) => MatchesLimits(
-                    required.Type.Limits,
-                    provided.Value.PageCount,
-                    provided.Value.MaximumPages
-                ),
-                (TableImport required, TableExternalValue provided) => required.Type.ElementKind
-                    == provided.Value.ElementType
-                    && MatchesLimits(
-                        required.Type.Limits,
-                        provided.Value.Count,
-                        provided.Value.MaximumElements
-                    ),
-                _ => throw new InvalidOperationException("外部要素の種類が一致しません。"),
-            };
-            if (!matches)
-            {
-                throw LinkFailure(
-                    import,
-                    ordinal,
-                    WasmInstantiateReason.TypeMismatch,
-                    $"要求型 {DescribeImport(module, import)} に対して提供型は {DescribeValue(value)} です。"
-                );
-            }
+            var value = ResolveImport(providers, import, ordinal);
+            ValidateImport(module, import, value, ordinal);
             linked.Add(value);
         }
         return linked.MoveToImmutable();
+    }
+
+    /// <summary>
+    /// import宣言の名前に一致する提供実体を解決する
+    /// </summary>
+    /// <param name="providers">処理開始時の提供登録の対応表</param>
+    /// <param name="import">名前を解決するimport宣言</param>
+    /// <param name="ordinal">import section内の宣言順 0始まり</param>
+    /// <returns>提供登録に保持された同じ実体</returns>
+    private static ExternalValue ResolveImport(
+        ImmutableDictionary<string, ImmutableDictionary<string, ExternalValue>> providers,
+        ModuleImport import,
+        int ordinal
+    )
+    {
+        if (
+            !providers.TryGetValue(import.ModuleName, out var items)
+            || !items.TryGetValue(import.Name, out var value)
+        )
+        {
+            throw LinkFailure(
+                import,
+                ordinal,
+                WasmInstantiateReason.MissingImport,
+                "名前に一致する提供登録がありません。"
+            );
+        }
+        return value;
+    }
+
+    /// <summary>
+    /// 解決済みの提供実体をimportの要求種類と型へ照合する
+    /// </summary>
+    /// <param name="module">関数型を解決する検証済みmodule</param>
+    /// <param name="import">照合するimport宣言</param>
+    /// <param name="value">名前で解決した提供実体</param>
+    /// <param name="ordinal">import section内の宣言順 0始まり</param>
+    private static void ValidateImport(
+        WasmModule module,
+        ModuleImport import,
+        ExternalValue value,
+        int ordinal
+    )
+    {
+        var actualKind = value switch
+        {
+            FunctionExternalValue => WasmExternalKind.Function,
+            GlobalExternalValue => WasmExternalKind.Global,
+            MemoryExternalValue => WasmExternalKind.Memory,
+            TableExternalValue => WasmExternalKind.Table,
+            _ => throw new InvalidOperationException("外部要素の種類が不明です。"),
+        };
+        if (actualKind != import.Kind)
+        {
+            throw LinkFailure(
+                import,
+                ordinal,
+                WasmInstantiateReason.KindMismatch,
+                $"要求種類 {import.Kind} に対して提供種類は {actualKind} です。"
+            );
+        }
+        var matches = (import, value) switch
+        {
+            (FunctionImport required, FunctionExternalValue provided) => module
+                .Types[(int)required.TypeIndex]
+                .Parameters.SequenceEqual(provided.Value.Type.Parameters)
+                && module
+                    .Types[(int)required.TypeIndex]
+                    .Results.SequenceEqual(provided.Value.Type.Results),
+            (GlobalImport required, GlobalExternalValue provided) => required.Type
+                == provided.Value.Type,
+            (MemoryImport required, MemoryExternalValue provided) => MatchesLimits(
+                required.Type.Limits,
+                provided.Value.PageCount,
+                provided.Value.MaximumPages
+            ),
+            (TableImport required, TableExternalValue provided) => required.Type.ElementKind
+                == provided.Value.ElementType
+                && MatchesLimits(
+                    required.Type.Limits,
+                    provided.Value.Count,
+                    provided.Value.MaximumElements
+                ),
+            _ => throw new InvalidOperationException("外部要素の種類が一致しません。"),
+        };
+        if (!matches)
+        {
+            throw LinkFailure(
+                import,
+                ordinal,
+                WasmInstantiateReason.TypeMismatch,
+                $"要求型 {DescribeImport(module, import)} に対して提供型は {DescribeValue(value)} です。"
+            );
+        }
     }
 
     /// <summary>

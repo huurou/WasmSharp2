@@ -18,9 +18,30 @@ internal static class ModuleValidator
     /// <returns>importを含まない定義順の線形実行コード</returns>
     internal static ImmutableArray<FunctionCode> Validate(WasmModule module)
     {
-        ValidateReferences(module);
+        var (functionCount, tableCount, memoryCount, globalCount) = ValidateImportReferences(
+            module
+        );
+        ValidateFunctionReferences(module, functionCount);
+        ValidateResources(module, memoryCount);
+        ValidateExports(
+            module,
+            functionCount + (uint)module.Functions.Length,
+            tableCount + (uint)module.Tables.Length,
+            memoryCount + (uint)module.Memories.Length,
+            globalCount + (uint)module.Globals.Length
+        );
         ValidateInitializers(module);
         ValidateStart(module);
+        return ValidateFunctions(module);
+    }
+
+    /// <summary>
+    /// 各定義関数を1回の型検査と線形化で処理し、全成功時だけコードを返す
+    /// </summary>
+    /// <param name="module">参照・リソース・初期化式・startの検証を終えたmodule</param>
+    /// <returns>ローカルに保持した定義順の線形実行コード</returns>
+    private static ImmutableArray<FunctionCode> ValidateFunctions(WasmModule module)
+    {
         var importedFunctionCount = (uint)module.Imports.Count(x => x is FunctionImport);
         WasmFunctionType[] functionTypes =
         [
@@ -405,10 +426,16 @@ internal static class ModuleValidator
     }
 
     /// <summary>
-    /// importを先頭とする種類別の添字空間とリソース宣言を検証する
+    /// importの型参照とリソース制約を宣言順に検証し、種類別の個数を返す
     /// </summary>
     /// <param name="module">デコード済みの静的定義</param>
-    private static void ValidateReferences(WasmModule module)
+    /// <returns>importした関数・table・memory・globalの個数</returns>
+    private static (
+        uint FunctionCount,
+        uint TableCount,
+        uint MemoryCount,
+        uint GlobalCount
+    ) ValidateImportReferences(WasmModule module)
     {
         uint functionCount = 0;
         uint tableCount = 0;
@@ -451,6 +478,16 @@ internal static class ModuleValidator
             }
         }
 
+        return (functionCount, tableCount, memoryCount, globalCount);
+    }
+
+    /// <summary>
+    /// 定義関数の型参照を宣言順に検証する
+    /// </summary>
+    /// <param name="module">デコード済みの静的定義</param>
+    /// <param name="functionCount">importした関数の個数</param>
+    private static void ValidateFunctionReferences(WasmModule module, uint functionCount)
+    {
         foreach (var function in module.Functions)
         {
             ValidateTypeIndex(
@@ -459,6 +496,15 @@ internal static class ModuleValidator
                 new(WasmProcessingStage.Validate, function.BodyOffset, functionCount++, 10)
             );
         }
+    }
+
+    /// <summary>
+    /// 定義tableのlimitsと、定義memoryの個数・limitsを宣言順に検証する
+    /// </summary>
+    /// <param name="module">デコード済みの静的定義</param>
+    /// <param name="memoryCount">importしたmemoryの個数</param>
+    private static void ValidateResources(WasmModule module, uint memoryCount)
+    {
         foreach (var table in module.Tables)
         {
             ValidateLimits(
@@ -466,7 +512,6 @@ internal static class ModuleValidator
                 uint.MaxValue,
                 new(WasmProcessingStage.Validate, table.ByteOffset, null, 4)
             );
-            tableCount++;
         }
         foreach (var memory in module.Memories)
         {
@@ -476,8 +521,24 @@ internal static class ModuleValidator
                 new(WasmProcessingStage.Validate, memory.ByteOffset, null, 5)
             );
         }
-        globalCount += (uint)module.Globals.Length;
+    }
 
+    /// <summary>
+    /// exportの参照先と名前の一意性を宣言順に検証する
+    /// </summary>
+    /// <param name="module">デコード済みの静的定義</param>
+    /// <param name="functionCount">importと定義を合わせた関数の個数</param>
+    /// <param name="tableCount">importと定義を合わせたtableの個数</param>
+    /// <param name="memoryCount">importと定義を合わせたmemoryの個数</param>
+    /// <param name="globalCount">importと定義を合わせたglobalの個数</param>
+    private static void ValidateExports(
+        WasmModule module,
+        uint functionCount,
+        uint tableCount,
+        uint memoryCount,
+        uint globalCount
+    )
+    {
         var names = new HashSet<string>(StringComparer.Ordinal);
         foreach (var export in module.Exports)
         {

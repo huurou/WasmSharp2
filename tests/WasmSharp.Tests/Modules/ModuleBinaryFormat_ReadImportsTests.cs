@@ -55,11 +55,8 @@ internal class ModuleBinaryFormat_ReadImportsTests
     [Arguments("0101FF000000", 12L)]
     [Arguments("010001FF0000", 13L)]
     [Arguments("01000004", 13L)]
-    [Arguments("0100000080", 15L)]
-    [Arguments("010000000080", 15L)]
     [Arguments("010000017F0000", 14L)]
     [Arguments("010000027F", 14L)]
-    [Arguments("010000020100", 16L)]
     [Arguments("010000037F02", 15L)]
     [Arguments("010000036E00", 14L)]
     public async Task Import記述が破損_元位置を持つDecode失敗になる(string hex, long offset)
@@ -73,6 +70,27 @@ internal class ModuleBinaryFormat_ReadImportsTests
             .ThrowsExactly<WasmDecodeException>();
         await Assert
             .That(exception!.Location)
+            .IsEqualTo(new(WasmProcessingStage.Decode, offset, null, 2));
+    }
+
+    [Test]
+    [Arguments("0100000080", 15L)]
+    [Arguments("010000000080", 15L)]
+    [Arguments("010000020100", 16L)]
+    public async Task Import記述の範囲が不一致_元位置の診断を持つ境界通知になる(
+        string hex,
+        long offset
+    )
+    {
+        // Arrange
+        var payload = Convert.FromHexString(hex);
+
+        // Act & Assert
+        var exception = await Assert
+            .That(() => ReadImports(payload))
+            .ThrowsExactly<ModuleReadBoundaryException>();
+        await Assert
+            .That(exception!.Fallback.Location)
             .IsEqualTo(new(WasmProcessingStage.Decode, offset, null, 2));
     }
 

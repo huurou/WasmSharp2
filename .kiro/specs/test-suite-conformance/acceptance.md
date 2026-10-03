@@ -129,3 +129,69 @@ Claude Codeの初回読み取り専用レビューではMedium2件・Low6件が�
 今回の監査スクリプト2本は`claude-review/audit-script-hashes.json`に元path・SHA-256と版の保存先を記録する。最終監査より前の`remediation-audit.json`は初回補正時、`remediation-audit-final-round2.*`は再レビュー前の結果として保持し、現在の修正記録は`remediation-audit-final.*`で確認する。
 
 独立監査のJSONには使用スクリプトと修正記録のSHA-256も保存した。147WAST・5,821生成物のhashは上記source監査で確認済みのため重複監査せず、23候補の参照規則・最小入力案の意味論と過去承認の本人性は独立監査スクリプトの対象外とする。
+
+## タスク2: 既存の挙動を保つ責務分離
+
+2026-10-03、タスク2.1〜2.4の責務整理を行った。解析・検証・リンクの診断と検査順を維持する段階であり、診断再走査、参照診断の適用、原因選択の変更はタスク3以降で扱う。修正記録の944件と23候補を解消済みへ変更していない。
+
+今回の検証はrevision `18fb4bb939f00c8f9efd9a374ddbc2ca9d4ace17`に未コミット変更を加えた状態で行った。証跡は[`artifacts/test-suite-conformance/task-2-20261003/`](../../../artifacts/test-suite-conformance/task-2-20261003/)へ保存した。`code-state.json`には新規内部通知を含むコード・テスト9ファイルと通常ビルドのランタイムDLLのSHA-256を記録し、最終確認でも一致した。`code-final.patch`のSHA-256は`56b4e2cc5a335ae3ea90a2fcf58573883952247f9d124e4eb9db58054632e000`で、新規ファイルは同JSONのsource一覧で別途識別する。
+
+| タスク | 変更と維持した契約 | 独立レビュー原文 |
+| --- | --- | --- |
+| 2.1 | DecodeからprivateなDecodeCoreへ1回委譲し、既存の構文処理を共有する。正常入力の二重解析や別parserを追加しない。 | [review-2-1.md](../../../artifacts/test-suite-conformance/task-2-20261003/review-2-1.md): APPROVED |
+| 2.2 | 物理終端・宣言終端・現在位置・宣言残量を区別し、縮小前に範囲を確認する。境界不正を元のWasmDecodeException付き内部通知へ分け、Decodeとimport調査の入口で従来の公開例外へ変換する。 | [review-2-2.md](../../../artifacts/test-suite-conformance/task-2-20261003/review-2-2.md): APPROVED |
+| 2.3 | importと定義関数の参照、リソース、export、関数の型検査・線形化を用途別のprivate検査へ分ける。初期化式・startとともに従来順で呼び、全成功時だけコードを返す。 | [review-2-3.md](../../../artifacts/test-suite-conformance/task-2-20261003/review-2-3.md): APPROVED |
+| 2.4 | importの名前解決と種類・型照合をprivate処理へ分け、宣言ごとの解決・照合・接続順、同一実体と個別照合を維持する。 | [review-2-4.md](../../../artifacts/test-suite-conformance/task-2-20261003/review-2-4.md): APPROVED |
+
+各レビューは履歴を渡さない別エージェントが実際の差分と仕様を読み、ランタイム全975件、対象の整形と差分検査を独立に実行した。判定原文とランタイムテストのログ・終了値・TRXを保存し、親も確認した。2.1の整形・差分検査は判定原文の終了0という記載のみで、専用ログ・終了値ファイルは保存されていない。2.2〜2.4では整形・差分検査のログ・終了値ファイルも保存した。`verification-2-1.md`〜`verification-2-4.md`にkiro-verify-completionのタスク単位のVERIFIEDを記録した。
+
+2.2では内部通知と物理終端の引継ぎを先にテストへ反映した。警告・エラー0のReleaseビルド後、`--treenode-filter '/*/*/ModuleBinary*/*'`で64件を実行し、旧公開例外が返ることと子のInputEndの不一致による16失敗をREDとして記録した。実装後は全975件が成功した。境界不正と符号化不正を直接テストで区別し、既存の公開Decodeの正確な例外型・位置、import調査のMalformedBinary・位置・未確認範囲・内部例外・部分一覧非公開を維持した。他の3タスクは既存処理の抽出で、公開挙動の変更とfeature flagはない。
+
+### タスク2の通常検証
+
+各変更後に`dotnet build WasmSharp2.slnx -c Release --warnaserror --nologo`を実行し、終了0・警告0・エラー0を確認してからテストを実行した。`build-2-1.log/.exit`〜`build-2-4.log/.exit`に保存した。以下は最後のコード変更後の結果で、3プロジェクトを直列実行した。
+
+| コマンド | 結果と証跡 |
+| --- | --- |
+| `dotnet run --project tests/WasmSharp.Tests/WasmSharp.Tests.csproj -c Release --no-build -- --report-trx --results-directory artifacts/test-suite-conformance/task-2-20261003/review-2-4/runtime` | 終了0、975成功、失敗・スキップ0。`review-2-4/runtime.log/.exit`とTRX |
+| `dotnet run --project tests/WasmSharp.Generators.Tests/WasmSharp.Generators.Tests.csproj -c Release --no-build -- --report-trx --results-directory artifacts/test-suite-conformance/task-2-20261003/final/generator` | 終了0、37成功、失敗・スキップ0。`generator-final.log/.exit`とTRX |
+| `dotnet run --project tests/WasmSharp.TestSuiteRunner.Tests/WasmSharp.TestSuiteRunner.Tests.csproj -c Release --no-build -- --report-trx --results-directory artifacts/test-suite-conformance/task-2-20261003/final/runner` | 終了0、701成功、失敗・スキップ0。`runner-final.log/.exit`とTRX |
+| `dotnet csharpier check .` | 終了0、379ファイル。`format-final.log/.exit` |
+| `tools/WasmSharp.TestSuiteRunner/bin/Release/net10.0/WasmSharp.TestSuiteRunner.exe --help` | 終了0、6操作を表示。`smoke-final.log/.exit` |
+| `git -c core.excludesFile= diff --check` | 終了0。`diff-check-final.exit`のみ保存し、出力ログは保存していない。 |
+
+TRXの合計・成功・失敗・未実行を親でも読み、`final-test-counters.json`へ保存した。合計1,713件が成功し、失敗・未実行は0だった。GitHub Actionsそのものは実行していない。
+
+### タスク2の公式結果維持の確認
+
+上記の通常検証後、通常ビルドのランナーで`run --manifest artifacts/test-suite-runner-acceptance-20261001/portable/corpus/manifest.json --output artifacts/test-suite-conformance/task-2-20261003/run-after.json`を実行した。Windows x64、MaxCallDepth=1024、run IDは`da076f62-e02b-477f-9a9a-d7f14700d8be`で、全147入力・53,907commandの処理・出力が完了した。入力異常・中断・未処理・件数未確定・runner_errorは0だった。
+
+同じcurrent JSONへ`compare-run --baseline artifacts/test-suite-runner-acceptance-20261001/run-baseline.json --current artifacts/test-suite-conformance/task-2-20261003/run-after.json --output artifacts/test-suite-conformance/task-2-20261003/compare-run.json`を実行した。比較成立・完了、条件差・出典差・素材差・変化・追加・欠落・回帰・未比較はすべて0だった。全ケースの観測結果が比較元と同じで、passed=1,547、failed=944、runtime_unsupported=2,987、out_of_scope=1,077、blocked=47,352を維持した。
+
+`run-after.log/.exit`と`compare-run.log/.exit`の終了値はともに1で、既知failed944件が残る既存の判定条件によるもの。責務整理による結果維持の確認であり、診断修正後の公式受入やCore 2.0全体の合格ではない。baseline-saveは実行しておらず、baselineのSHA-256は確認前後で`032cc64b6c088e920331b420490617da6094454ab08a52381ab7c35b1be3c057`のままだった。
+
+タスク2.1〜2.4の独立レビューAPPROVEDとタスク単位の完了確認VERIFIEDを確認し、タスク2を完了へ更新した。本仕様全体のkiro-validate-implは未実施で、タスク3以降の完了後に行う。
+
+### タスク2のClaude Codeレビューによる補正と確認
+
+2026-10-03、未コミットのコード・テスト・受入記録11ファイルをClaude Codeで読み取り専用レビューした。初回は終了0・最終resultのsuccessを確認し、[判定原文](../../../artifacts/test-suite-conformance/task-2-20261003/claude-review-current/initial-review.md)と[セッション確認結果](../../../artifacts/test-suite-conformance/task-2-20261003/claude-review-current/initial-review-status.json)を保存した。動作上の不具合・仕様退行の指摘はなく、次のLow2件をコードと保存資料へ照合して採用した。
+
+1. ModuleDecoderの内部処理で、範囲不足・end欠落をWasmDecodeExceptionと記載したコメントを補正した。DecodeCoreと各読取り処理のXMLコメントへModuleReadBoundaryExceptionの条件を追加し、符号化不正との区別を明記した。ReadLocalsも同じ経路で内部通知を受けるため補正した。処理本体とテストは変更していない。
+2. 保存済みログについての記載を補正した。`diff-check-final.log`は存在せず、終了0を示す`diff-check-final.exit`のみ保存されている。2.1の整形・差分検査も判定原文の記載のみで、専用ログ・終了値ファイルは保存されていないことを上の記録へ明記した。過去のログを再作成して当時の証跡として扱っていない。
+
+レビュー開始時点で`code-state.json`のソース9ファイル、`code-final.patch`、ランタイムDLL、baselineのSHA-256が保存値と一致することを確認した。[照合時に受領した出力](../../../artifacts/test-suite-conformance/task-2-20261003/claude-review-current/initial-hash-check-output.txt)は再レビュー後に保存し、過去の検査を再実行したログとして扱っていない。上のcode-stateとpatchはタスク2の検証完了時点の資料であり、今回のコメント補正後のソースを表すものではない。補正後の11ファイルのSHA-256は[reviewed-file-hashes.json](../../../artifacts/test-suite-conformance/task-2-20261003/claude-review-current/reviewed-file-hashes.json)に別途保存する。履歴を渡さない別エージェントによる静的確認でも、Decode・import調査の例外変換、検査順、未確認範囲、部分一覧非公開に退行は見つからなかった。[判定原文](../../../artifacts/test-suite-conformance/task-2-20261003/claude-review-current/independent-boundary-audit.md)も再レビュー後に保存した。
+
+初回再レビューは同じセッションで終了0・最終resultのsuccessを確認し、初回2件の解消を確認した。追加のLow2件も採用し、上の照合出力・独立確認原文の保存先を追記し、ReadCodeのXMLコメントへ関数本体長の符号化不正を明記した。[再レビュー原文](../../../artifacts/test-suite-conformance/task-2-20261003/claude-review-current/re-review-2.md)と[セッション確認結果](../../../artifacts/test-suite-conformance/task-2-20261003/claude-review-current/re-review-2-status.json)に記録する。
+
+今回の検証は[`claude-review-current/`](../../../artifacts/test-suite-conformance/task-2-20261003/claude-review-current/)へ保存した。テストはコメント補正前に実行し、補正後はRelease再ビルドとModuleDecoderの整形検査を実行した。テストコードと処理本体の追加変更がないため、テストの重複実行は行っていない。
+
+| コマンド | 結果と保存資料 |
+| --- | --- |
+| `dotnet build WasmSharp2.slnx -c Release --warnaserror --nologo` | 補正前・初回補正後・再レビュー追補後とも終了0・警告0・エラー0。`build.log/.exit`、`build-after-comments.log/.exit`、`build-after-r2.log/.exit` |
+| `dotnet run --project tests/WasmSharp.Tests/WasmSharp.Tests.csproj -c Release --no-build -- --report-trx --results-directory artifacts/test-suite-conformance/task-2-20261003/claude-review-current/runtime` | 終了0・975成功・失敗0・スキップ0。`runtime.log/.exit`とTRX |
+| `dotnet run --project tests/WasmSharp.Generators.Tests/WasmSharp.Generators.Tests.csproj -c Release --no-build -- --report-trx --results-directory artifacts/test-suite-conformance/task-2-20261003/claude-review-current/generator` | 終了0・37成功・失敗0・スキップ0。`generator.log/.exit`とTRX |
+| `dotnet run --project tests/WasmSharp.TestSuiteRunner.Tests/WasmSharp.TestSuiteRunner.Tests.csproj -c Release --no-build -- --report-trx --results-directory artifacts/test-suite-conformance/task-2-20261003/claude-review-current/runner` | 終了0・701成功・失敗0・スキップ0。`runner.log/.exit`とTRX |
+| `dotnet csharpier check <対象9ファイル>` | 終了0・9ファイル。`format.log/.exit` |
+| `dotnet csharpier check src/WasmSharp/Modules/ModuleDecoder.cs` | 初回補正後・再レビュー追補後とも終了0。`format-after-comments.log/.exit`、`format-after-r2.log/.exit` |
+
+TRXの集計も確認し、1,713成功・失敗0・スキップ0を`test-counters.json`へ保存した。公式スイート全体のrun・compare-runは今回再実行せず、保存済みJSONの集計と比較結果を照合した。baseline-save、GitHub Actions、仕様全体のkiro-validate-implは今回実施していない。

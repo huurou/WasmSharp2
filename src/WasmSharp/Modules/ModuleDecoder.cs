@@ -22,6 +22,27 @@ internal static class ModuleDecoder
     /// <exception cref="WasmImplementationLimitException">宣言件数または命令数がコレクションの保持上限を超える場合</exception>
     internal static WasmModule Decode(ReadOnlySpan<byte> bytes)
     {
+        try
+        {
+            return DecodeCore(bytes);
+        }
+        catch (ModuleReadBoundaryException exception)
+        {
+            throw exception.Fallback;
+        }
+    }
+
+    /// <summary>
+    /// 共通の構文処理でヘッダーと各sectionを読み、静的module定義を構築する
+    /// </summary>
+    /// <param name="bytes">ヘッダーから始まる入力バイナリ全体</param>
+    /// <returns>入力上の診断位置を保持する、未検証のmodule定義</returns>
+    /// <exception cref="WasmDecodeException">対応する構文の符号化、sectionの構成またはfunctionとcodeの件数が不正な場合</exception>
+    /// <exception cref="ModuleReadBoundaryException">限定された範囲内で構文を読み終えられない場合</exception>
+    /// <exception cref="WasmUnsupportedFeatureException">仕様に存在する、未実装のsectionまたは命令に遭遇した場合 入力全体の有効性は保証しない</exception>
+    /// <exception cref="WasmImplementationLimitException">宣言件数または命令数がコレクションの保持上限を超える場合</exception>
+    private static WasmModule DecodeCore(ReadOnlySpan<byte> bytes)
+    {
         var reader = new ModuleBinaryReader(bytes);
         ModuleBinaryFormat.ReadHeader(ref reader);
 
@@ -134,7 +155,8 @@ internal static class ModuleDecoder
     /// <param name="reader">global sectionの読み取り状態 宣言の終端まで進める</param>
     /// <param name="inputLength">未確認範囲の終端に使用する入力全体のバイト数</param>
     /// <returns>定義順のglobal宣言 初期化式の型や使用できる命令は検証しない</returns>
-    /// <exception cref="WasmDecodeException">件数、global型、初期化式または入力範囲の構文が不正な場合</exception>
+    /// <exception cref="WasmDecodeException">件数、global型または初期化式の符号化が不正な場合</exception>
+    /// <exception cref="ModuleReadBoundaryException">限定された範囲内で構文を読み終えられない場合</exception>
     /// <exception cref="WasmUnsupportedFeatureException">初期化式で未実装の命令に遭遇した場合</exception>
     /// <exception cref="WasmImplementationLimitException">宣言件数または命令数がコレクションの保持上限を超える場合</exception>
     private static List<GlobalDefinition> ReadGlobals(
@@ -159,7 +181,8 @@ internal static class ModuleDecoder
     /// </summary>
     /// <param name="reader">table sectionの読み取り状態 宣言の終端まで進める</param>
     /// <returns>定義順のtable型 limitsの仕様上の制約は検証しない</returns>
-    /// <exception cref="WasmDecodeException">件数、table型または入力範囲の構文が不正な場合</exception>
+    /// <exception cref="WasmDecodeException">件数またはtable型の符号化が不正な場合</exception>
+    /// <exception cref="ModuleReadBoundaryException">限定された範囲内で構文を読み終えられない場合</exception>
     /// <exception cref="WasmImplementationLimitException">宣言件数がコレクションの保持上限を超える場合</exception>
     private static List<TableDefinition> ReadTables(ref ModuleBinaryReader reader)
     {
@@ -177,7 +200,8 @@ internal static class ModuleDecoder
     /// </summary>
     /// <param name="reader">memory sectionの読み取り状態 宣言の終端まで進める</param>
     /// <returns>定義順のmemory型 limitsやmemoryの個数制約は検証しない</returns>
-    /// <exception cref="WasmDecodeException">件数、memory型または入力範囲の構文が不正な場合</exception>
+    /// <exception cref="WasmDecodeException">件数またはmemory型の符号化が不正な場合</exception>
+    /// <exception cref="ModuleReadBoundaryException">限定された範囲内で構文を読み終えられない場合</exception>
     /// <exception cref="WasmImplementationLimitException">宣言件数がコレクションの保持上限を超える場合</exception>
     private static List<MemoryDefinition> ReadMemories(ref ModuleBinaryReader reader)
     {
@@ -195,7 +219,8 @@ internal static class ModuleDecoder
     /// </summary>
     /// <param name="reader">function sectionの読み取り状態 宣言の終端まで進める</param>
     /// <returns>定義関数の宣言順に並ぶ型index 参照先の存在は検証しない</returns>
-    /// <exception cref="WasmDecodeException">件数、型indexまたは入力範囲の構文が不正な場合</exception>
+    /// <exception cref="WasmDecodeException">件数または型indexの符号化が不正な場合</exception>
+    /// <exception cref="ModuleReadBoundaryException">限定された範囲内で構文を読み終えられない場合</exception>
     /// <exception cref="WasmImplementationLimitException">宣言件数がコレクションの保持上限を超える場合</exception>
     private static List<uint> ReadFunctionTypes(ref ModuleBinaryReader reader)
     {
@@ -217,7 +242,8 @@ internal static class ModuleDecoder
     /// <param name="importedFunctionCount">診断に使用するmodule全体の関数indexの先頭となるimport関数数</param>
     /// <param name="inputLength">未確認範囲の終端に使用する入力全体のバイト数</param>
     /// <returns>型index、関数本体の位置、圧縮local宣言と入力命令を保持する定義順の関数</returns>
-    /// <exception cref="WasmDecodeException">件数が一致しないか、関数本体の構文または長さが不正な場合</exception>
+    /// <exception cref="WasmDecodeException">件数が一致しないか、関数本体の長さまたは内容の符号化が不正な場合</exception>
+    /// <exception cref="ModuleReadBoundaryException">限定された範囲内で構文を読み終えられない場合</exception>
     /// <exception cref="WasmUnsupportedFeatureException">関数本体で未実装の命令に遭遇した場合</exception>
     /// <exception cref="WasmImplementationLimitException">宣言件数または命令数がコレクションの保持上限を超える場合</exception>
     private static List<DecodedFunction> ReadCode(
@@ -261,7 +287,8 @@ internal static class ModuleDecoder
     /// </summary>
     /// <param name="reader">関数本体のlocal宣言の先頭にある読み取り状態 宣言の終端まで進める</param>
     /// <returns>入力順の個数と値型の組 個々のlocalへの展開は行わない</returns>
-    /// <exception cref="WasmDecodeException">宣言の構文が不正か、追加localsの合計がu32の範囲を超える場合</exception>
+    /// <exception cref="WasmDecodeException">宣言の符号化が不正か、追加localsの合計がu32の範囲を超える場合</exception>
+    /// <exception cref="ModuleReadBoundaryException">限定された範囲内で構文を読み終えられない場合</exception>
     /// <exception cref="WasmImplementationLimitException">圧縮宣言の件数がコレクションの保持上限を超える場合</exception>
     private static List<LocalDeclaration> ReadLocals(ref ModuleBinaryReader reader)
     {
@@ -292,7 +319,8 @@ internal static class ModuleDecoder
     /// <param name="reader">式の先頭にある読み取り状態 endの直後まで進める</param>
     /// <param name="inputLength">未確認範囲の終端に使用する入力全体のバイト数</param>
     /// <returns>即値、indexと入力上の位置を持つ、endまでの対応済み命令列</returns>
-    /// <exception cref="WasmDecodeException">命令や即値の符号化が不正か、対応するifのないelseまたはendの欠落がある場合</exception>
+    /// <exception cref="WasmDecodeException">命令や即値の符号化が不正か、対応するifのないelseがある場合</exception>
+    /// <exception cref="ModuleReadBoundaryException">限定された範囲内で構文を読み終えられないか、endが欠落している場合</exception>
     /// <exception cref="WasmUnsupportedFeatureException">割り当て済みの未実装命令に遭遇した場合</exception>
     /// <exception cref="WasmImplementationLimitException">命令数がコレクションの保持上限を超える場合</exception>
     private static List<DecodedInstruction> ReadInstructions(
@@ -351,7 +379,7 @@ internal static class ModuleDecoder
             }
         }
 
-        throw reader.Error("式のendがありません。");
+        throw reader.BoundaryError("式のendがありません。");
     }
 
     /// <summary>
@@ -359,7 +387,8 @@ internal static class ModuleDecoder
     /// </summary>
     /// <param name="reader">export sectionの読み取り状態 宣言の終端まで進める</param>
     /// <returns>宣言順のexport定義 名前の重複と参照先の存在は検証しない</returns>
-    /// <exception cref="WasmDecodeException">件数、名前、種類、indexまたは入力範囲の構文が不正な場合</exception>
+    /// <exception cref="WasmDecodeException">件数、名前、種類またはindexの符号化が不正な場合</exception>
+    /// <exception cref="ModuleReadBoundaryException">限定された範囲内で構文を読み終えられない場合</exception>
     /// <exception cref="WasmImplementationLimitException">宣言件数がコレクションの保持上限を超える場合</exception>
     private static List<ModuleExport> ReadExports(ref ModuleBinaryReader reader)
     {
