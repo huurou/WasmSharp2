@@ -1,5 +1,5 @@
 ---
-updated_at: 2026-09-28
+updated_at: 2026-10-03
 ---
 
 # WasmSharp2ロードマップ
@@ -10,7 +10,7 @@ C#でWebAssemblyバイナリをデコード・検証・インスタンス化・�
 
 下記8仕様を機能ごとに4段階を通して実装する。公式テスト素材の固定・生成から実行・回帰比較までは、`test-suite-runner`で一つの仕様・ツールとして扱い、初期実装から公式期待診断を前方一致で判定する。その後の`test-suite-conformance`で、テストスイートで判明したランタイムの実装上の問題をまとめて修正する。診断互換性はその一部とし、実行結果に応じて修正項目を追記・見直す。Core 3.0は将来の別計画とする。この分割方針の承認と、各仕様のrequirements・design・tasks・実装の承認は区別する。文書の言語は日本語とし、`spec.json.language`は`ja`とする。
 
-`runtime-foundation`と`host-linking`は完了し、関数呼出し・リソース生成・import/exportの実行・リンク基盤まで整備済み 次に、その公開能力を使って`test-suite-runner`のspectest・registerと初回baselineを成立させ、観測した実装上の不一致を`test-suite-conformance`で解消してから各命令・初期化機能へ進む。両基盤の承認済み要件・設計・タスクと完成状態は維持する。後続機能では同じ公式スイートによる診断照合と回帰確認も完了条件に含める。
+`runtime-foundation`と`host-linking`は完了し、関数呼出し・リソース生成・import/exportの実行・リンク基盤まで整備済み `test-suite-runner`も、その公開能力を使うspectest・register、全体実行・回帰比較の実装と初回公式受入・baseline保存まで記録済み `test-suite-runner`の仕様全体の最終実装検証を完了した後、観測した実装上の不一致を`test-suite-conformance`で解消してから各命令・初期化機能へ進む。両基盤の承認済み要件・設計・タスクと完成状態は維持する。後続機能では同じ公式スイートによる診断照合と回帰確認も完了条件に含める。
 
 ## discovery時点の現状（2026-09-06）
 
@@ -32,7 +32,7 @@ C#でWebAssemblyバイナリをデコード・検証・インスタンス化・�
 
 - **対象**: Core 2.0のバイナリ形式、型検証、インスタンス化、実行 スカラー数値、関数、構造化制御、複数値、globals、import/export、start、線形メモリ、data、テーブル、element、間接呼び出し、`funcref/externref`、bulk memory/table、sign-extension、non-trapping conversions、`v128`とSIMD
 - **対象**: 明示的なホスト関数・共有リソースの連携、および公開APIだけを利用する公式テスト用の`spectest`とランナー
-- **追加対象（2026-09-27）**: 公式期待診断への前方一致と、参照実装特有の診断選択への互換性 ランナーの判定は未実装の`test-suite-runner`に含め、ランタイムへの対応は、スイートで判明した実装上の問題全般を扱う`test-suite-conformance`に含める。
+- **追加対象（2026-09-27）**: 公式期待診断への前方一致と、参照実装特有の診断選択への互換性 ランナーの判定は`test-suite-runner`の初期実装に含め、ランタイムへの対応は、スイートで判明した実装上の問題全般を扱う`test-suite-conformance`に含める。
 - **対象外**: ランタイムと自作ツールによるWAT・WASTの解析、WASI、Component Model、JavaScript/Web API、JIT/AOT、既存エンジンへの実行委譲
 - **初期対象外**: GC、型付き関数参照、Wasm例外処理、tail-call、memory64、multi-memory、extended-const、relaxed-SIMD、threads等、Core 2.0の外にある機能 3.0のdeterministic profileも初期の追加要件にしない。
 - 性能の数値目標、NuGet公開、追加TFM・OSへの対応は今回決めていない。将来のためだけの抽象化や拡張口は設けない。
@@ -89,7 +89,9 @@ baselineの保存と比較は別々のコマンドにし、保存済みの結果
 
 素材生成では、入力と出力先の配置ディレクトリだけが変わっても生成物の内容とhashを維持する。変換baseline比較は、全対象の比較と結果の記録・出力が完了し、入力・生成物の一覧とhash、変換結果、生成条件が一致して`runner_error`が0件の場合だけ終了コード0とし、差異や比較未完了を含むそれ以外は非0とする。変換器の実行ファイルhashだけの違いは出典差異として記録し、生成条件の不一致にしない。
 
-`runtime-foundation`と`host-linking`は公開APIの直接テストによる受入まで完了している。この完了は公式スイートの受入とは区別する。`test-suite-runner`の初期完了で、全入力の素材生成と再現性、spectestとregisterを使う実行・リンク経路、全commandの記録と初回baselineをまとめて公式検証する。
+`runtime-foundation`と`host-linking`は公開APIの直接テストによる受入まで完了している。この完了は公式スイートの受入とは区別する。`test-suite-runner`の初回公式受入では、全入力の素材生成と再現性、spectestとregisterを使う実行・リンク経路、全commandの記録と初回baselineをまとめて検証する。
+
+2026-10-01の初回公式受入と素材移動後の再実行・回帰比較は[ランナーのタスク記録](../specs/test-suite-runner/tasks.md)に保持する。残る診断不一致、未対応とそれに依存する前提不成立、baselineの所在と再開手順は[後続仕様への引継ぎ](../specs/test-suite-conformance/handoff.md)を参照する。タスク単位の公式受入、仕様全体の最終実装検証、Core 2.0全件合格はそれぞれ区別する。
 
 初回のランナー受入では、固定スイート全体を処理し、ランナー自体と素材に起因する入力単位・command単位の`runner_error`を0件にする。初期必須の公式ケースを実行・判定できない問題はランタイム側も含めて`test-suite-runner`で修正し、独自テストだけで受入を代替しない。判定で得た`failed`と、初期必須の実行経路を妨げず原因をランタイム側と確認できた`runner_error`は、ケース・期待・実際・原因を記録して`test-suite-conformance`へ引き継げる。必要な前提が成立しない後続commandは原因付きの`blocked`として残す。`failed`や`runner_error`が残る実行・回帰比較の終了コードは非0のままとし、ランナーの受入とランタイムの全件合格を区別する。
 
@@ -118,7 +120,7 @@ Decode・Validate・Instantiate・Invokeを別々の機能仕様にせず、機�
 
 `test-suite-runner`の初期仕様は`host-linking`を上流とし、spectest・register、固定スイートに現れる全値型の引数構築と結果比較、結果0個/複数、global取得、公開段階・失敗分類・診断の前方一致に基づくassertion判定を含める。素材生成とJSON処理は実行・リンク基盤と並行して作業できるが、初回公式受入は両方が揃ってから行う。後続機能はランタイムの命令・初期化を追加し、ランナーの値処理を後から追加しない。ランタイム内部への専用hookや別ランナーは作らない。
 
-`test-suite-conformance`は公式スイートで判明した先行ランタイムの不具合と、診断互換性などの追加要求をまとめて扱う。具体的な修正項目は実行後に追記・見直し、完了済み仕様の過去の受入記録とは分けて管理する。未実装のランナーには最初から必要な判定を入れる。本仕様で比較機能や判定基準を追加・切り替えることはしない。
+`test-suite-conformance`は公式スイートで判明した先行ランタイムの不具合と、診断互換性などの追加要求をまとめて扱う。具体的な修正項目は実行後に追記・見直し、完了済み仕様の過去の受入記録とは分けて管理する。ランナーの初期実装に含まれる判定をそのまま使い、本仕様で比較機能や判定基準を追加・切り替えることはしない。
 
 独立した仕様の並行作業は可能だが、共通の命令テーブル・モジュール解析・実行ループへの編集は衝突し得る。設計で共通契約を先に固め、実装時は同じファイルの並行編集を避けて統合する。依存関係は仕様作成・完了確認の前提を表し、不要な実装レイヤーや公開拡張口を要求するものではない。
 
@@ -126,7 +128,7 @@ Decode・Validate・Instantiate・Invokeを別々の機能仕様にせず、機�
 
 - [x] runtime-foundation -- 明示的な4段階APIと値・型・失敗分類、最小の線形実行基盤 Dependencies: none
 - [x] host-linking -- 関数実行、global・memory・tableの生成と共有、import/export、ホストcallbackとstartを公開APIで扱う実行・リンク基盤 Dependencies: runtime-foundation
-- [ ] test-suite-runner -- 固定公式素材の生成、spectest・register、公開API実行・判定、全commandの結果記録・回帰比較と初回baseline Dependencies: host-linking
+- [ ] test-suite-runner -- 固定公式素材の生成、spectest・register、公開API実行・判定、全commandの結果記録・回帰比較と初回baseline（初回公式受入済み、仕様全体の最終実装検証待ち） Dependencies: host-linking
 - [ ] test-suite-conformance -- テストスイートで判明したランタイムの実装上の問題を集約して修正する。診断互換性も含め、実行結果に応じて修正項目を追記・見直す。 Dependencies: test-suite-runner
 - [ ] numeric-control -- スカラー数値命令と構造化制御を共通実行機構へ追加し、数値trap・再帰・複数値制御を公式検証する。 Dependencies: host-linking, test-suite-runner, test-suite-conformance
 - [ ] linear-memory -- スカラーload/store、data segment、bulk memoryと初期化・実行のtrapを公式検証する。 Dependencies: numeric-control

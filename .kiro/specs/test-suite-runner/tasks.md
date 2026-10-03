@@ -249,54 +249,54 @@
   - _Depends: 1.2, 4, 12.3_
   - _Requirements: 14.8, 14.9_
 
-- [ ] 14. 固定公式スイートで初回受入を統合確認する
-- [ ] 14.1 固定変換器と公式受入用の配置を用意する
+- [x] 14. 固定公式スイートで初回受入を統合確認する
+- [x] 14.1 固定変換器と公式受入用の配置を用意する
   - 固定spec/WABTと生バイト入力、.NET 10、Git、変換器実行ファイルを確認する。変換器の再ビルドが必要なら既存のCMake/C++手順と固定依存を使い、出力を外部ソースと分離する。
   - 通常配置と、相対配置を保った別rootの入力/出力を用意し、baselineと各結果を別の明示pathにする。
   - 実CLIから固定変換器を起動できる環境が揃い、元ソース・LICENSE/NOTICEを変更せず受入を開始できる。
   - _Boundary: OfficialAcceptanceEnvironment_
   - _Depends: 13_
   - _Requirements: 2.1, 2.7, 14.1_
-- [ ] 14.2 全入力生成と配置に依存しない再現性を確認する
+- [x] 14.2 全入力生成と配置に依存しない再現性を確認する
   - 全147入力をgenerateで処理し、同条件再生成と入力/出力rootだけを変更した再生成を行う。
   - 変換baselineを明示保存し、compare-conversionで一覧/hash・参照・条件の一致を確認する。
   - 実CLIのmanifestと比較結果で全入力の照合・記録が完了し、変換と比較の終了0を確認できる。
   - _Boundary: RunnerCli, CorpusGenerator, CorpusVerifier, BaselineStore, BaselineComparer_
   - _Depends: 14.1_
   - _Requirements: 3.6, 4.7, 12.4, 13.1, 13.3, 14.1, 14.4_
-- [ ] 14.3 全commandを実行しホスト関数経路を確認する
+- [x] 14.3 全commandを実行しホスト関数経路を確認する
   - 全素材をrunで処理し、固定条件の53,907commandを入力・種類・結果へ対応付け、欠落と未確定を検出する。
   - imports.wast#6/#7とstart.wast#15〜#17でinvoke/startからprintへの呼出しと結果0個の記録を確認する。
   - 実結果からホスト関数経路の成立状況と阻害ケースを識別できる。修正が必要な場合は原因別の追加タスクへ分け、最終的な成立は14.7で確認する。
   - _Boundary: SuiteExecutor, ScriptExecutor, SpectestFactory, RuntimeIntegration_
   - _Depends: 14.2_
   - _Requirements: 7.1, 7.2, 14.2, 14.3_
-- [ ] 14.4 関数registerと共有globalの公式経路を確認する
+- [x] 14.4 関数registerと共有globalの公式経路を確認する
   - linking.wast#0〜#6で関数export・register・別moduleからのimport/呼出しを確認する。
   - linking.wast#11〜#28とimports.wast#41〜#45で共有mutable globalとspectest数値globalを確認する。
   - 全体結果から同一実体・更新値の観測と各判定を確認し、必須経路の阻害ケースを特定できる。必要な修正は原因別の追加タスクへ分ける。
   - _Boundary: ScriptExecutor, ScriptState, WasmInstance, RuntimeIntegration_
   - _Requirements: 5.4, 7.1, 7.3, 14.2, 14.3_
-- [ ] 14.5 table・memoryの公式import経路を確認する
+- [x] 14.5 table・memoryの公式import経路を確認する
   - imports.wast#0/#1/#82〜#101でtableのexport/register/importとspectestの型・limitsを確認する。
   - imports.wast#0/#1/#127〜#135でmemoryのexport/register/importとspectest接続を確認する。
   - 全体結果から接続と判定の状況を確認し、初期必須経路の不足を特定できる。必要な修正は原因別の追加タスクへ分け、後続guest命令やsegment全体を前倒ししない。
   - _Boundary: ScriptExecutor, SpectestFactory, WasmInstance, RuntimeIntegration_
   - _Requirements: 5.4, 7.1, 7.3, 7.5, 14.2, 14.3_
-- [ ] 14.6 初回結果から異常原因と修正対象を確定する
+- [x] 14.6 初回結果から異常原因と修正対象を確定する
   - 入力/command runner_errorと必須経路の阻害を発生操作別に確認し、ケース・期待・実際・原因を対応付ける。
   - ランナー・素材由来と必須経路を妨げるランタイム問題について、修正対象の既存責務と再現テストを原因ごとに確定し、追加実行タスクへ分ける。
   - 判定済みfailedと、必須経路を妨げず原因をランタイム側と確認できたrunner_errorは後続へ引き継ぐ対象として識別できる。分類と非0終了、未実装機能とblocked原因を保持する。
   - _Boundary: SuiteExecutor, AssertionJudge, RunReport, RuntimeIntegration_
   - _Requirements: 9.9, 9.11, 10.3, 10.6, 11.3, 14.2, 14.5, 14.9_
-- [ ] 14.7 必要な修正後の公式全体結果で初回受入を確認する
+- [x] 14.7 必要な修正後の公式全体結果で初回受入を確認する
   - 14.6で特定した必要な追加修正と対応テストの完了を前提に、変更があれば固定スイート全体を再実行する。結果は同一の最新revisionで揃える。
   - 全commandが漏れなく記録され、ランナー・素材由来runner_errorが0であり、14.3〜14.5の必須経路を公式ケースで実行・判定できることを確認する。
   - 残るfailedと許容されるランタイム由来runner_errorは原因付きの実結果へ残し、未対応とblockedを含めた初回受入条件を満たす。独自fixtureによる代替や分類の緩和をしない。
   - _Boundary: SuiteExecutor, ScriptExecutor, SpectestFactory, RunReport, RuntimeIntegration_
   - _Depends: 14.6_
   - _Requirements: 5.4, 7.1, 7.2, 7.3, 7.5, 11.5, 11.6, 14.2, 14.3, 14.5, 14.9_
-- [ ] 14.8 baseline保存・移動後再実行・回帰比較を確認する
+- [x] 14.8 baseline保存・移動後再実行・回帰比較を確認する
   - 14.7の全command結果を実行baselineへ保存し、元WAST/WABTと元配置を参照せず移動済み素材だけで再実行する。
   - compare-runの成立・完了、ケース詳細と回帰、診断不一致が残るときの非0を確認する。保存・比較・判定が暗黙に別工程を実行しないことも確認する。
   - 実CLIでbaselineの明示更新と単一runのverifyを行い、初回未対応が残る最終判定は非0になる。全8仕様統合後の全件合格はこの初回受入では要求しない。
@@ -306,6 +306,11 @@
 
 ## Implementation Notes
 
+- 2026-10-03の未コミット変更レビュー: 12個のcorpus型と`ProcessResult`の分割先は元の定義と一致した。`dotnet build WasmSharp2.slnx -c Release --warnaserror --nologo`は終了0、警告・エラー0。`dotnet run --project tests/WasmSharp.TestSuiteRunner.Tests/WasmSharp.TestSuiteRunner.Tests.csproj -c Release --no-build -- --results-directory artifacts/claude-review-20261003-517cdacf-elevated/tests --report-trx`は終了0、701成功・失敗0・スキップ0。初回のサンドボックス内実行は結果ディレクトリ作成の`UnauthorizedAccessException`でテスト開始前に終了1となり、上記は権限を調整した再実行の結果である。変更したC#15ファイルの`dotnet csharpier check`も終了0。保存済み受入資料との照合では診断944件、全53,907ケース、必須66ケース、生成物5,821件のhashに不一致はなかった。今回のコード変更は型の分割のみのため、ランタイム・生成器のテストと公式スイート全体は再実行していない。仕様全体の最終実装検証も未実施であり、roadmapには検証待ちを明記した。
+- 14: 2026-10-01、Windows x64/.NET 10.0.401、revision `1bda5b9368f04541676213ea90a9418e1f241751`で公式受入を確認した。製品コードの追加修正は不要だった。証拠はローカルの`artifacts/test-suite-runner-acceptance-20261001/`に保持し、固定版・成果物hash・必須ケース・不一致原因は`acceptance-audit.json`、全commandの初回結果は`run-initial.json`に記録している。
+- 14.1〜14.7: 147入力・5,821生成物の生成、同条件再生成、入力/出力rootを変更した再生成はすべて終了0、変換比較2件は差分0だった。全53,907commandを元JSONのID・順序・種類・行・期待診断と照合し、欠落・重複・未処理・件数未確定・入力異常・runner_errorは0、設計の必須66ケースは全passedだった。結果はpassed=1,547、failed=944、runtime_unsupported=2,987、out_of_scope=1,077、blocked=47,352。blockedの起点はすべて記録済みのruntime_unsupportedだった。
+- 14.6: failed944件はassert_malformed683件、assert_invalid183件、assert_unlinkable77件、assert_uninstantiable1件。全件で期待する段階・公開例外型（リンク不成立ではReasonも一致）を観測したが、公開Messageが公式期待textと前方一致しなかった。`acceptance-audit.json`の102診断グループに全ケースID・期待・実際を保持し、分類と非0終了を維持して`test-suite-conformance`へ引き継いだ。[引継ぎ文書](../test-suite-conformance/handoff.md)と[全944件の診断一覧](../test-suite-conformance/diagnostic-groups.json)を後続specに保持する。診断グループは根本原因や修正タスクの数を確定するものではない。必須経路の阻害がないため、追加修正タスクは発生しなかった。
+- 14.8: 初回結果を`run-baseline.json`へ保存後、素材を`portable/corpus/`へ移動し、コピーしたapphostを別cwd・空のPATHで直接起動した。`run-moved.json`は全53,907件を記録し、`run-diff.json`は比較成立・完了、変化・追加・欠落・回帰・未比較0だった。比較によるbaseline非変更と、その後の明示更新をhashで確認した。保存・比較・verifyは両runのmanifest配置を一時退避した状態でも完了した。`move-audit.json`と`baseline-audit.json`に配置・hash・終了値を保持している。baseline-saveは0、run・compare-run・verifyは既知不一致等を理由に1であり、Core 2.0全件合格は未達である。
 - 9: `AssertionJudge.Judge(command, observation)`は観測から`CaseResult`を作る。Executorは`CommandObservation.Values`へ`ValueCodec.Record`の全実値、`Mismatches`へ`ValueMatcher.Match`の結果を設定し、`Prints`とcallback例外の実体も渡す。判定側は公開APIや値比較を再実行せず、保存用のリストをコピーする。
 - 8: `SpectestFactory.Create(state)`で入力ごとに一度だけ提供元を生成する。`ScriptState.BeginCommand`はprintとcallback例外の記録を初期化するため、Executorは次のcommand開始前に`Prints`と`CallbackException`を観測へ取り込む。callback由来かどうかは例外実体の同一性で確認する。
 - 型は補助DTO・enumも含め1型1ファイルに置く（ユーザー指定 design.mdの従属型の同居より優先） 英字で始まるテストメソッド名は先頭を大文字にする。

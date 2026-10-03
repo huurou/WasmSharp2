@@ -33,6 +33,10 @@ dotnet csharpier check .
 
 生成器テストは、`src/WasmSharp/Instructions`の命令宣言用5ファイル、`src/WasmSharp/Execution`の`ExecutionResult.cs`・`Instruction.cs`、`src/WasmSharp/Modules/DecodedInstruction.cs`をソースとして埋め込み、テスト内のRoslynコンパイルに使用します。対象ファイルを移動・改名する場合は、`tests/WasmSharp.Generators.Tests/WasmSharp.Generators.Tests.csproj`の`EmbeddedResource`も更新してください。
 
+## 公式スイートの検証
+
+[Test Suite Runnerの操作ガイド](tools/WasmSharp.TestSuiteRunner/README.md)を参照してください。固定Core 2.0素材の生成、全commandの実行、baselineの保存・比較、最終判定を個別のコマンドで行えます。
+
 ## GitHub Actions
 
 [Unit tests](.github/workflows/unit-tests.yml)は、push・pull request・手動実行で起動します。Ubuntu上で.NET 10と固定したCore 2.0仕様を取得し、警告をエラーとして扱うReleaseビルド後に、ランタイム・生成器・公式適合検証ランナーの3つのテストプロジェクトを実行します。

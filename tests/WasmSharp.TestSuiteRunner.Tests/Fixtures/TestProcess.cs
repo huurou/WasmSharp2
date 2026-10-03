@@ -35,5 +35,3 @@ internal static class TestProcess
         return new ProcessResult(process.ExitCode, await output, await error);
     }
 }
-
-internal sealed record ProcessResult(int ExitCode, string Output, string Error);
