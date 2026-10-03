@@ -1,0 +1,22 @@
+{
+  "feature_name": "test-suite-conformance",
+  "created_at": "2026-10-03T03:12:13Z",
+  "updated_at": "2026-10-03T06:44:31Z",
+  "language": "ja",
+  "phase": "tasks-generated",
+  "approvals": {
+    "requirements": {
+      "generated": true,
+      "approved": true
+    },
+    "design": {
+      "generated": true,
+      "approved": true
+    },
+    "tasks": {
+      "generated": true,
+      "approved": true
+    }
+  },
+  "ready_for_implementation": true
+}
