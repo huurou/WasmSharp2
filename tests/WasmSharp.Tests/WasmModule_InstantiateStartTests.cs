@@ -135,10 +135,11 @@ internal partial class WasmModule_InstantiateTests
     }
 
     [Test]
-    [Arguments(false)]
-    [Arguments(true)]
+    [Arguments(0)]
+    [Arguments(1)]
+    [Arguments(2)]
     public async Task Startが副作用と参照保存の後に失敗する_instanceを返さず保存参照の操作と完了済み更新を維持する(
-        bool hostFailure
+        int failureKind
     )
     {
         // Arrange
@@ -168,7 +169,7 @@ internal partial class WasmModule_InstantiateTests
                     savedGlobal = instance.GetGlobalResource("value");
                     savedMemory.Write(0, [9]);
                     savedTable.Set(0, WasmValue.FromExternRef(element));
-                    if (hostFailure)
+                    if (failureKind == 1)
                     {
                         throw expected;
                     }
@@ -196,7 +197,12 @@ internal partial class WasmModule_InstantiateTests
                     ),
                     HostLinkingModuleBinary.Start(1),
                     HostLinkingModuleBinary.Code(
-                        ([], [0x41, 0x07, 0x24, 0x00, 0x10, 0x00, 0x00, 0x0B]),
+                        (
+                            [],
+                            failureKind == 2
+                                ? [0x41, 0x07, 0x24, 0x00, 0x10, 0x00, 0x10, 0x01, 0x0B]
+                                : [0x41, 0x07, 0x24, 0x00, 0x10, 0x00, 0x00, 0x0B]
+                        ),
                         ([], [0x23, 0x01, 0x0B])
                     )
                 )
@@ -222,9 +228,19 @@ internal partial class WasmModule_InstantiateTests
         // Assert
         using (Assert.Multiple())
         {
-            if (hostFailure)
+            if (failureKind == 1)
             {
                 await Assert.That(ReferenceEquals(exception, expected)).IsTrue();
+            }
+            else if (failureKind == 2)
+            {
+                await Assert.That(exception).IsTypeOf<WasmExhaustionException>();
+                var exhaustion = (WasmExhaustionException)exception!;
+                await Assert.That(exhaustion.Reason).IsEqualTo(WasmExhaustionReason.CallDepthLimit);
+                await Assert.That(exhaustion.Limit).IsEqualTo(2);
+                await Assert
+                    .That(exhaustion.Location!.Stage)
+                    .IsEqualTo(WasmProcessingStage.Instantiate);
             }
             else
             {

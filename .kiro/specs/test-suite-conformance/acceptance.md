@@ -379,3 +379,7 @@ ExecutionBoundaryの既存例外生成で、Unreachableを`unreachable executed`
 一時OFF旗では対象176件中prefix6件が失敗・終了2。ONと旗除去後は176件成功、各Releaseビルドは警告・エラー0。独立レビューでも176件・ビルド・変更2ファイルの整形が終了0となりAPPROVED。mainがログ・終了値・TRXと差分を照合しTASKとしてVERIFIEDとした。初回整形のアクセス拒否は権限付きの再実行で解消した。
 
 F023とexhaustionを区別した原因・最小入力・固定規則・直接テストは[実装報告](../../../artifacts/test-suite-conformance/task-5-20261004/5.2/status-report.md)、判定は[review.md](../../../artifacts/test-suite-conformance/task-5-20261004/5.2/review.md)と[verification.md](../../../artifacts/test-suite-conformance/task-5-20261004/5.2/verification.md)を参照する。HostStackLimitは直接結果で確認し、公式スイートの受入と区別する。
+
+### 5.3 公開APIの統合回帰
+
+既存のstart保存参照テストをtrap・host・exhaustionの3ケースへ拡張し、失敗後のinstance・関数・リソースの操作と完了済みの副作用を確認した。製品コードは変更していない。値・bits・参照同一性・共有状態・再入復元・例外伝播・constructor・InspectImportsを含む15クラス412件が成功し、独立レビューでも同じ412件が成功、ビルド警告・エラー0、整形・差分検査終了0となった。APPROVEDと現在の証跡をmainが照合し、TASKとしてVERIFIEDとした。要件ごとの確認は[対応表](../../../artifacts/test-suite-conformance/task-5-20261004/5.3/requirements-coverage.md)、実装と独立判定は[status-report.md](../../../artifacts/test-suite-conformance/task-5-20261004/5.3/status-report.md)・[review.md](../../../artifacts/test-suite-conformance/task-5-20261004/5.3/review.md)・[verification.md](../../../artifacts/test-suite-conformance/task-5-20261004/5.3/verification.md)を参照する。
