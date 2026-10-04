@@ -272,9 +272,9 @@ public partial class ScriptExecutor_ExecuteTests
             ScriptExecutionFixture.Module(0)
             + ","
             + """
-                {"type":"assert_trap","line":1,"action":{"type":"invoke","field":"f","args":[]},"text":"unreachable","expected":[]},
+                {"type":"assert_trap","line":1,"action":{"type":"invoke","field":"f","args":[]},"text":"unreachable EXECUTED","expected":[]},
                 {"type":"assert_return","line":1,"action":{"type":"get","field":"g"},"expected":[{"type":"i32","value":"9"}]},
-                {"type":"assert_trap","line":1,"action":{"type":"invoke","field":"f","args":[]},"text":"Wasmの実行中にtrap","expected":[]}
+                {"type":"assert_trap","line":1,"action":{"type":"invoke","field":"f","args":[]},"text":"unreachable","expected":[]}
                 """;
 
         // Act
@@ -284,7 +284,7 @@ public partial class ScriptExecutor_ExecuteTests
         using (Assert.Multiple())
         {
             await Assert.That(results[1].Outcome).IsEqualTo(CaseOutcome.Failed);
-            await Assert.That(results[1].ExpectedText).IsEqualTo("unreachable");
+            await Assert.That(results[1].ExpectedText).IsEqualTo("unreachable EXECUTED");
             await Assert.That(results[1].Diagnostics[0].Reason).IsEqualTo("Unreachable");
             await Assert.That(results[1].Diagnostics[0].Location!.Stage).IsEqualTo("Invoke");
             await Assert.That(results[2].ActualValues[0].Bits).IsEqualTo("00000009");
@@ -318,7 +318,7 @@ public partial class ScriptExecutor_ExecuteTests
             ScriptExecutionFixture.Module(0)
             + ","
             + """
-                {"type":"assert_exhaustion","line":1,"action":{"type":"invoke","field":"recursive","args":[]},"text":"Wasmの実行資源","expected":[]},
+                {"type":"assert_exhaustion","line":1,"action":{"type":"invoke","field":"recursive","args":[]},"text":"call stack exhausted","expected":[]},
                 {"type":"assert_return","line":1,"action":{"type":"invoke","field":"empty","args":[]},"expected":[]}
                 """;
 

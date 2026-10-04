@@ -383,3 +383,11 @@ F023とexhaustionを区別した原因・最小入力・固定規則・直接テ
 ### 5.3 公開APIの統合回帰
 
 既存のstart保存参照テストをtrap・host・exhaustionの3ケースへ拡張し、失敗後のinstance・関数・リソースの操作と完了済みの副作用を確認した。製品コードは変更していない。値・bits・参照同一性・共有状態・再入復元・例外伝播・constructor・InspectImportsを含む15クラス412件が成功し、独立レビューでも同じ412件が成功、ビルド警告・エラー0、整形・差分検査終了0となった。APPROVEDと現在の証跡をmainが照合し、TASKとしてVERIFIEDとした。要件ごとの確認は[対応表](../../../artifacts/test-suite-conformance/task-5-20261004/5.3/requirements-coverage.md)、実装と独立判定は[status-report.md](../../../artifacts/test-suite-conformance/task-5-20261004/5.3/status-report.md)・[review.md](../../../artifacts/test-suite-conformance/task-5-20261004/5.3/review.md)・[verification.md](../../../artifacts/test-suite-conformance/task-5-20261004/5.3/verification.md)を参照する。
+
+### 6.1 通常ビルドと全3プロジェクト
+
+初回のReleaseビルドは警告・エラー0、runtime1110件・generators37件は成功したが、runnerは701件中2件が失敗した。独立[原因調査](../../../artifacts/test-suite-conformance/final-20261004/6.1/debug-report.md)で、承認済みの診断変更に対して既存fixtureが旧文字列を期待していることを確認した。trapの否定照合には大小文字差のある`unreachable EXECUTED`、肯定照合には`unreachable`、exhaustionには`call stack exhausted`を使い、Reason・Invoke段階・global値9・上限1024・空結果・後続継続の確認を保った。製品・AssertionJudge・schema・公式素材は変更していない。
+
+修正後の`dotnet build WasmSharp2.slnx -c Release --warnaserror`は終了0、警告・エラー0。3つの通常テストは1110/37/701、合計1848件成功、失敗・スキップ0。全体整形は初回382ファイルで成功、修正後は変更1C#の整形が成功した。通常apphostの`--help`も終了0。初回smoke wrapperはstringのsplatにより引数が文字へ分割され終了2となり、string[]へ直した再実行で解消した。初回ログと終了値はそのまま保持する。
+
+最新の実コマンド・ログ・終了値・TRX・ソース84件・変更テスト17件・成果物12件のhashは[`6.1-retry/`](../../../artifacts/test-suite-conformance/final-20261004/6.1-retry/)へ保存した。独立レビューはビルド・対象21件・整形を再実行し、全3TRXと先行資料の現在hashも照合して[APPROVED](../../../artifacts/test-suite-conformance/final-20261004/6.1-retry/review.md)。mainも実際のログ・終了値・Counters・現在hashを照合し、TASKとして[VERIFIED](../../../artifacts/test-suite-conformance/final-20261004/6.1-retry/verification.md)とした。公式全体受入とbaseline更新はこの判定に含めない。
