@@ -8,6 +8,77 @@ namespace WasmSharp.Tests.Modules;
 internal partial class ModuleDecoder_DecodeTests
 {
     [Test]
+    [Arguments("030201000A0401020005", "END opcode expected", 17L, 0u, (byte)10)]
+    [Arguments(
+        "030201000A0E010C03FFFFFFFF0F7F017F006E0B",
+        "malformed reference type",
+        26L,
+        0u,
+        (byte)10
+    )]
+    [Arguments(
+        "030201000A0E010C03FFFFFFFF0F7F017F00FF0B",
+        "integer representation too long",
+        27L,
+        0u,
+        (byte)10
+    )]
+    [Arguments("030201000A0C010A02FFFFFFFF0F7F017E0B", "too many locals", 23L, 0u, (byte)10)]
+    [Arguments(
+        "03020100",
+        "function and code section have inconsistent lengths",
+        12L,
+        null,
+        (byte)3
+    )]
+    [Arguments(
+        "030201000A050003006A0B",
+        "function and code section have inconsistent lengths",
+        14L,
+        null,
+        (byte)10
+    )]
+    [Arguments(
+        "0A040102006A",
+        "function and code section have inconsistent lengths",
+        10L,
+        null,
+        (byte)10
+    )]
+    [Arguments(
+        "000200030201000A050103006A0B",
+        "function and code section have inconsistent lengths",
+        17L,
+        null,
+        (byte)10
+    )]
+    public async Task 式終端とlocalsと件数の複合不正_符号化確認と確定した構造不正を優先する(
+        string sections,
+        string prefix,
+        long offset,
+        uint? functionIndex,
+        byte sectionId
+    )
+    {
+        // Arrange
+        var bytes = Convert.FromHexString("0061736D01000000" + sections);
+
+        // Act & Assert
+        var exception = await Assert
+            .That(() => ModuleDecoder.Decode(bytes))
+            .ThrowsExactly<WasmDecodeException>();
+        using (Assert.Multiple())
+        {
+            await Assert
+                .That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal))
+                .IsTrue();
+            await Assert
+                .That(exception.Location)
+                .IsEqualTo(new(WasmProcessingStage.Decode, offset, functionIndex, sectionId));
+        }
+    }
+
+    [Test]
     [Arguments("FFFFFFFF0F", uint.MaxValue)]
     [Arguments("8000", 0u)]
     public async Task 型indexが未検証_非最短表現とu32全域を保持する(string typeIndex, uint expected)
@@ -75,7 +146,7 @@ internal partial class ModuleDecoder_DecodeTests
     [Test]
     [Arguments("030201000A0100", 14L, null)]
     [Arguments("0A040102000B", 10L, null)]
-    [Arguments("030201000A040103000B", 16L, null)]
+    [Arguments("030201000A040103000B", 18L, 0u)]
     [Arguments("030201000A03010100", 17L, 0u)]
     [Arguments("030201000A050103000B0B", 18L, 0u)]
     [Arguments("030201000A06010400050B00", 17L, 0u)]

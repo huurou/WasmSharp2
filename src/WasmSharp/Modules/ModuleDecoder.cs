@@ -12,6 +12,12 @@ namespace WasmSharp.Modules;
 internal static class ModuleDecoder
 {
     /// <summary>
+    /// functionとcodeの件数不一致を示す共通診断
+    /// </summary>
+    private const string FUNCTION_CODE_LENGTH_MESSAGE =
+        "function and code section have inconsistent lengths: functionとcodeの件数が一致しません。";
+
+    /// <summary>
     /// 対応するCore 2.0構文を、入力から独立した静的module定義へデコードする
     /// </summary>
     /// <remarks>型や参照の妥当性の検証と、インスタンス化は行わない</remarks>
@@ -24,26 +30,58 @@ internal static class ModuleDecoder
     {
         try
         {
-            return DecodeCore(bytes);
+            return DecodeCore(bytes, ModuleReadMode.Bounded);
         }
         catch (ModuleReadBoundaryException exception)
         {
-            throw exception.Fallback;
+            throw ResolveBoundaryFailure(bytes, exception);
         }
+    }
+
+    /// <summary>
+    /// 確定した境界失敗について、同じ構文処理を1回だけ使い原因を選択する
+    /// </summary>
+    /// <param name="bytes">通常解析に使用した入力バイナリ全体</param>
+    /// <param name="failure">通常解析で確定した境界失敗</param>
+    /// <returns>再走査の構文診断 未対応・実装上限・正常終了の場合は元の診断</returns>
+    private static WasmDecodeException ResolveBoundaryFailure(
+        ReadOnlySpan<byte> bytes,
+        ModuleReadBoundaryException failure
+    )
+    {
+        try
+        {
+            DecodeCore(bytes, ModuleReadMode.Diagnostic);
+        }
+        catch (WasmDecodeException exception)
+        {
+            return exception;
+        }
+        catch (WasmUnsupportedFeatureException)
+        {
+            // 未対応の後続構文で、通常解析が確定した境界不正を置き換えない。
+        }
+        catch (WasmImplementationLimitException)
+        {
+            // 診断用の追加走査が保持上限に達した場合も、元の不正を保持する。
+        }
+
+        return failure.Fallback;
     }
 
     /// <summary>
     /// 共通の構文処理でヘッダーと各sectionを読み、静的module定義を構築する
     /// </summary>
     /// <param name="bytes">ヘッダーから始まる入力バイナリ全体</param>
+    /// <param name="mode">通常解析または境界失敗後の診断用読取り</param>
     /// <returns>入力上の診断位置を保持する、未検証のmodule定義</returns>
     /// <exception cref="WasmDecodeException">対応する構文の符号化、sectionの構成またはfunctionとcodeの件数が不正な場合</exception>
     /// <exception cref="ModuleReadBoundaryException">限定された範囲内で構文を読み終えられない場合</exception>
     /// <exception cref="WasmUnsupportedFeatureException">仕様に存在する、未実装のsectionまたは命令に遭遇した場合 入力全体の有効性は保証しない</exception>
     /// <exception cref="WasmImplementationLimitException">宣言件数または命令数がコレクションの保持上限を超える場合</exception>
-    private static WasmModule DecodeCore(ReadOnlySpan<byte> bytes)
+    private static WasmModule DecodeCore(ReadOnlySpan<byte> bytes, ModuleReadMode mode)
     {
-        var reader = new ModuleBinaryReader(bytes);
+        var reader = new ModuleBinaryReader(bytes, mode: mode);
         ModuleBinaryFormat.ReadHeader(ref reader);
 
         List<WasmFunctionType> types = [];
@@ -65,14 +103,22 @@ internal static class ModuleDecoder
             if (id == 11 && functions.Count != functionTypes.Count)
             {
                 // data以降にcodeは置けないので、その内容が未対応でも件数不一致は確定している。
-                throw reader.Error("functionとcodeの件数が一致しません。", offset);
+                throw reader.Error(FUNCTION_CODE_LENGTH_MESSAGE, offset);
             }
 
             switch (id)
             {
                 case 0:
                     section.ReadName();
-                    section.ReadBytes((uint)section.Remaining);
+                    var remaining = section.DeclaredRemaining;
+                    if (remaining < 0)
+                    {
+                        throw section.Error(
+                            "unexpected end of section or function: custom名が宣言範囲を超えています。"
+                        );
+                    }
+
+                    section.ReadBytes((uint)remaining);
                     break;
 
                 case 1:
@@ -133,7 +179,7 @@ internal static class ModuleDecoder
 
         if (functions.Count != functionTypes.Count)
         {
-            throw reader.Error("functionとcodeの件数が一致しません。");
+            throw reader.Error(FUNCTION_CODE_LENGTH_MESSAGE);
         }
 
         return new WasmModule(
@@ -257,13 +303,13 @@ internal static class ModuleDecoder
         var count = ModuleBinaryFormat.ReadCount(ref reader);
         if (count != functionTypes.Count)
         {
-            throw reader.Error("functionとcodeの件数が一致しません。", countOffset);
+            throw reader.Error(FUNCTION_CODE_LENGTH_MESSAGE, countOffset);
         }
 
         List<DecodedFunction> functions = [];
         for (uint index = 0; index < count; index++)
         {
-            var length = reader.ReadU32();
+            var length = reader.ReadLength();
             var body = reader.ReadRange(length, importedFunctionCount + index);
             var offset = body.Position;
             var locals = ReadLocals(ref body);
@@ -295,6 +341,7 @@ internal static class ModuleDecoder
         var count = ModuleBinaryFormat.ReadCount(ref reader);
         List<LocalDeclaration> locals = [];
         ulong total = 0;
+        long? overflowOffset = null;
         for (uint index = 0; index < count; index++)
         {
             var offset = reader.Position;
@@ -303,10 +350,18 @@ internal static class ModuleDecoder
             total += localCount;
             if (total > uint.MaxValue)
             {
-                throw reader.Error("localsの合計がCore 2.0の上限を超えています。", offset);
+                overflowOffset ??= offset;
             }
 
             locals.Add(new LocalDeclaration(localCount, type));
+        }
+
+        if (overflowOffset is not null)
+        {
+            throw reader.Error(
+                "too many locals: localsの合計がCore 2.0の上限を超えています。",
+                overflowOffset
+            );
         }
 
         return locals;
@@ -329,14 +384,10 @@ internal static class ModuleDecoder
     )
     {
         List<DecodedInstruction> instructions = [];
-        while (reader.Remaining != 0)
+        while (reader.TryPeekByte(out var code) && code is not (0x05 or 0x0B))
         {
             var offset = reader.Position;
-            var code = reader.ReadByte();
-            if (code == 0x05)
-            {
-                throw reader.Error("対応するifのないelseです。", offset);
-            }
+            reader.ReadByte();
 
             var opcode = code is 0xFC or 0xFD
                 ? new OpcodeKey(code, reader.ReadU32())
@@ -362,24 +413,50 @@ internal static class ModuleDecoder
                 ImmediateKind.F64Bits => WasmValue.FromF64Bits(reader.ReadF64Bits()),
                 _ => throw new InvalidOperationException("対応済み命令の即値情報が不正です。"),
             };
-            if (instructions.Count == Array.MaxLength)
-            {
-                throw new WasmImplementationLimitException(
-                    "命令数が配列の保持上限を超えています。",
-                    WasmImplementationLimitReason.CollectionSize,
-                    Array.MaxLength,
-                    reader.Location(offset)
-                );
-            }
-
-            instructions.Add(new DecodedInstruction(opcode, immediate, offset, index));
-            if (descriptor.Validation == ValidationRule.FunctionEnd)
-            {
-                return instructions;
-            }
+            AddInstruction(
+                instructions,
+                new DecodedInstruction(opcode, immediate, offset, index),
+                ref reader
+            );
         }
 
-        throw reader.BoundaryError("式のendがありません。");
+        var endOffset = reader.Position;
+        if (reader.ReadByte() != 0x0B)
+        {
+            throw reader.Error("END opcode expected: 式の終端にENDが必要です。", endOffset);
+        }
+
+        AddInstruction(
+            instructions,
+            new DecodedInstruction(new OpcodeKey(0, 0x0B), default, endOffset, 0),
+            ref reader
+        );
+        return instructions;
+    }
+
+    /// <summary>
+    /// 保持上限を確認してデコード済み命令を追加する
+    /// </summary>
+    /// <param name="instructions">式の命令を保持する一覧</param>
+    /// <param name="instruction">追加する命令</param>
+    /// <param name="reader">診断位置に使用する読取り状態 位置は変更しない</param>
+    private static void AddInstruction(
+        List<DecodedInstruction> instructions,
+        DecodedInstruction instruction,
+        ref ModuleBinaryReader reader
+    )
+    {
+        if (instructions.Count == Array.MaxLength)
+        {
+            throw new WasmImplementationLimitException(
+                "命令数が配列の保持上限を超えています。",
+                WasmImplementationLimitReason.CollectionSize,
+                Array.MaxLength,
+                reader.Location(instruction.ByteOffset)
+            );
+        }
+
+        instructions.Add(instruction);
     }
 
     /// <summary>
@@ -398,7 +475,7 @@ internal static class ModuleDecoder
         {
             var offset = reader.Position;
             var name = reader.ReadName();
-            var kind = ModuleBinaryFormat.ReadExternalKind(ref reader);
+            var kind = ModuleBinaryFormat.ReadExternalKind(ref reader, false);
             exports.Add(new ModuleExport(name, reader.ReadU32(), offset, kind));
         }
 

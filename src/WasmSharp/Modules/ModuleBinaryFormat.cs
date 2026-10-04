@@ -27,7 +27,7 @@ internal static class ModuleBinaryFormat
             var offset = reader.Position;
             var moduleName = reader.ReadName();
             var name = reader.ReadName();
-            var kind = ReadExternalKind(ref reader);
+            var kind = ReadExternalKind(ref reader, true);
             imports.Add(
                 kind switch
                 {
@@ -66,10 +66,11 @@ internal static class ModuleBinaryFormat
     /// Core 2.0のexternal kindを1バイトの符号化から取得する
     /// </summary>
     /// <param name="reader">external kindの先頭にある読み取り状態 1バイト進める</param>
+    /// <param name="isImport">import宣言の診断を選ぶ場合はtrue、export宣言の場合はfalse</param>
     /// <returns>関数、table、memoryまたはglobalの種類</returns>
     /// <exception cref="WasmDecodeException">Core 2.0に存在しない種類の場合</exception>
     /// <exception cref="ModuleReadBoundaryException">限定された範囲内で構文を読み終えられない場合</exception>
-    internal static WasmExternalKind ReadExternalKind(ref ModuleBinaryReader reader)
+    internal static WasmExternalKind ReadExternalKind(ref ModuleBinaryReader reader, bool isImport)
     {
         var offset = reader.Position;
         return reader.ReadByte() switch
@@ -78,7 +79,12 @@ internal static class ModuleBinaryFormat
             1 => WasmExternalKind.Table,
             2 => WasmExternalKind.Memory,
             3 => WasmExternalKind.Global,
-            _ => throw reader.Error("Core 2.0に存在しないexternal kindです。", offset),
+            _ => throw reader.Error(
+                isImport
+                    ? "malformed import kind: importの種類が不正です。"
+                    : "malformed export kind: exportの種類が不正です。",
+                offset
+            ),
         };
     }
 
@@ -92,11 +98,7 @@ internal static class ModuleBinaryFormat
     internal static TableDefinition ReadTableType(ref ModuleBinaryReader reader)
     {
         var offset = reader.Position;
-        var elementKind = ReadValueType(ref reader);
-        if (elementKind is not (WasmValueKind.FuncRef or WasmValueKind.ExternRef))
-        {
-            throw reader.Error("tableの要素型が参照型ではありません。", offset);
-        }
+        var elementKind = ReadReferenceType(ref reader);
         return new TableDefinition(elementKind, ReadLimits(ref reader), offset);
     }
 
@@ -128,7 +130,10 @@ internal static class ModuleBinaryFormat
         {
             0 => false,
             1 => true,
-            _ => throw reader.Error("globalの可変性の符号化が不正です。", offset),
+            _ => throw reader.Error(
+                "malformed mutability: globalの可変性の符号化が不正です。",
+                offset
+            ),
         };
         return new WasmGlobalType(valueKind, isMutable);
     }
@@ -143,15 +148,7 @@ internal static class ModuleBinaryFormat
     /// <exception cref="ModuleReadBoundaryException">限定された範囲内で構文を読み終えられない場合</exception>
     private static WasmLimits ReadLimits(ref ModuleBinaryReader reader)
     {
-        var offset = reader.Position;
-        var flags = reader.ReadByte();
-        if (flags > 1)
-        {
-            throw reader.Error(
-                "最大値の有無を示すフラグが不正です。0x00または0x01が必要です。",
-                offset
-            );
-        }
+        var flags = reader.ReadU1();
         var minimum = reader.ReadU32();
         return new WasmLimits(minimum, flags == 1 ? reader.ReadU32() : null);
     }
@@ -164,14 +161,35 @@ internal static class ModuleBinaryFormat
     /// <exception cref="ModuleReadBoundaryException">限定された範囲内で構文を読み終えられない場合</exception>
     internal static void ReadHeader(ref ModuleBinaryReader reader)
     {
-        ReadOnlySpan<byte> header = [0x00, 0x61, 0x73, 0x6D, 0x01, 0x00, 0x00, 0x00];
-        foreach (var expected in header)
+        ReadHeaderWord(ref reader, [0x00, 0x61, 0x73, 0x6D], "magic header not detected");
+        ReadHeaderWord(ref reader, [0x01, 0x00, 0x00, 0x00], "unknown binary version");
+    }
+
+    /// <summary>
+    /// ヘッダーの4byteを逐次取得し、取得成功後に最初の相違位置を通知する
+    /// </summary>
+    /// <param name="reader">照合対象の先頭にある読取り状態 4byte進める</param>
+    /// <param name="expected">期待する4byte</param>
+    /// <param name="message">完全な不一致の診断先頭</param>
+    private static void ReadHeaderWord(
+        ref ModuleBinaryReader reader,
+        ReadOnlySpan<byte> expected,
+        string message
+    )
+    {
+        long? mismatch = null;
+        foreach (var value in expected)
         {
             var offset = reader.Position;
-            if (reader.ReadByte() != expected)
+            if (reader.ReadByte() != value)
             {
-                throw reader.Error("magicまたはバイナリversionが不正です。", offset);
+                mismatch ??= offset;
             }
+        }
+
+        if (mismatch is not null)
+        {
+            throw reader.Error(message, mismatch);
         }
     }
 
@@ -193,11 +211,12 @@ internal static class ModuleBinaryFormat
         reader.SectionId = id;
         if (id > 12)
         {
-            throw reader.Error("Core 2.0に存在しないsection IDです。", offset);
+            throw reader.Error(
+                "malformed section id: Core 2.0に存在しないsection IDです。",
+                offset
+            );
         }
 
-        var length = reader.ReadU32();
-        var section = reader.ReadRange(length);
         if (id != 0)
         {
             // data countはID順と異なり、elementとcodeの間に置かれる。
@@ -210,12 +229,16 @@ internal static class ModuleBinaryFormat
             };
             if (rank <= previousRank)
             {
-                throw reader.Error("sectionの順序または重複が不正です。", offset);
+                throw reader.Error(
+                    "unexpected content after last section: sectionの順序または重複が不正です。",
+                    offset
+                );
             }
 
             previousRank = rank;
         }
-        return section;
+        var length = reader.ReadLength();
+        return reader.ReadRange(length);
     }
 
     /// <summary>
@@ -233,9 +256,9 @@ internal static class ModuleBinaryFormat
         for (uint index = 0; index < count; index++)
         {
             var offset = reader.Position;
-            if (reader.ReadByte() != 0x60)
+            if (reader.ReadS7() != -0x20)
             {
-                throw reader.Error("関数型の形式が不正です。", offset);
+                throw reader.Error("malformed function type: 関数型の形式が不正です。", offset);
             }
 
             var parameters = ReadValueTypes(ref reader);
@@ -272,7 +295,7 @@ internal static class ModuleBinaryFormat
     }
 
     /// <summary>
-    /// Core 2.0の値型を1バイトの符号化から取得する
+    /// Core 2.0の値型をs7の符号化から取得する
     /// </summary>
     /// <param name="reader">値型の先頭にある読み取り状態 1バイト進める</param>
     /// <returns>数値型、v128、funcrefまたはexternrefの種類</returns>
@@ -281,37 +304,53 @@ internal static class ModuleBinaryFormat
     internal static WasmValueKind ReadValueType(ref ModuleBinaryReader reader)
     {
         var offset = reader.Position;
-        return reader.ReadByte() switch
+        return reader.ReadS7() switch
         {
-            0x7F => WasmValueKind.I32,
-            0x7E => WasmValueKind.I64,
-            0x7D => WasmValueKind.F32,
-            0x7C => WasmValueKind.F64,
-            0x7B => WasmValueKind.V128,
-            0x70 => WasmValueKind.FuncRef,
-            0x6F => WasmValueKind.ExternRef,
-            _ => throw reader.Error("Core 2.0に存在しない値型です。", offset),
+            -0x01 => WasmValueKind.I32,
+            -0x02 => WasmValueKind.I64,
+            -0x03 => WasmValueKind.F32,
+            -0x04 => WasmValueKind.F64,
+            -0x05 => WasmValueKind.V128,
+            -0x10 => WasmValueKind.FuncRef,
+            -0x11 => WasmValueKind.ExternRef,
+            _ => throw reader.Error(
+                "malformed reference type: Core 2.0に存在しない値型です。",
+                offset
+            ),
         };
     }
 
     /// <summary>
-    /// vectorの件数を取得し、入力の残量とコレクションの保持上限に収まることを確認する
+    /// tableの参照型をs7の符号化から取得する
+    /// </summary>
+    /// <param name="reader">参照型の先頭にある読取り状態 1byte進める</param>
+    /// <returns>funcrefまたはexternref</returns>
+    /// <exception cref="WasmDecodeException">参照型の符号化が不正か、診断用読取りで物理EOFへ達した場合</exception>
+    /// <exception cref="ModuleReadBoundaryException">通常解析で参照型を限定範囲内で取得できない場合</exception>
+    private static WasmValueKind ReadReferenceType(ref ModuleBinaryReader reader)
+    {
+        var offset = reader.Position;
+        return reader.ReadS7() switch
+        {
+            -0x10 => WasmValueKind.FuncRef,
+            -0x11 => WasmValueKind.ExternRef,
+            _ => throw reader.Error("malformed reference type: tableの参照型が不正です。", offset),
+        };
+    }
+
+    /// <summary>
+    /// vectorの件数を取得し、物理入力の上限とコレクションの保持上限を確認する
     /// </summary>
     /// <remarks>各要素に最低1バイト必要なvectorで使用する</remarks>
     /// <param name="reader">件数の先頭にある読み取り状態 件数の符号化の終端まで進める</param>
-    /// <returns>入力の残量と保持上限以内の件数</returns>
+    /// <returns>物理入力の上限と保持上限以内の件数</returns>
     /// <exception cref="WasmDecodeException">件数の符号化が不正な場合</exception>
-    /// <exception cref="ModuleReadBoundaryException">件数の符号化が未完了か、件数が宣言範囲の残量を超える場合</exception>
+    /// <exception cref="ModuleReadBoundaryException">件数の符号化が未完了の場合</exception>
     /// <exception cref="WasmImplementationLimitException">件数がコレクションの保持上限を超える場合</exception>
     internal static uint ReadCount(ref ModuleBinaryReader reader)
     {
         var offset = reader.Position;
-        var count = reader.ReadU32();
-        // どの要素にも最低1バイト必要 宣言件数から先に巨大配列を確保しない。
-        if ((long)count > reader.DeclaredRemaining)
-        {
-            throw reader.BoundaryError("要素数が入力の残量を超えています。", offset);
-        }
+        var count = reader.ReadLength();
 
         if (count > Array.MaxLength)
         {
@@ -331,11 +370,14 @@ internal static class ModuleBinaryFormat
     /// </summary>
     /// <param name="reader">宣言を読み終えた範囲の読み取り状態 位置は変更しない</param>
     /// <exception cref="ModuleReadBoundaryException">現在位置が宣言終端と一致しない場合</exception>
+    /// <exception cref="WasmDecodeException">診断用読取りで現在位置が宣言終端と一致しない場合</exception>
     internal static void RequireEnd(ref ModuleBinaryReader reader)
     {
         if (reader.Position != reader.DeclaredEnd)
         {
-            throw reader.BoundaryError("宣言された範囲に余剰のバイトがあります。");
+            throw reader.BoundaryError(
+                "section size mismatch: 読取り位置が宣言終端と一致しません。"
+            );
         }
     }
 }

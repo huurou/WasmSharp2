@@ -97,7 +97,7 @@ internal partial class ModuleDecoder_DecodeTests
     [Arguments("1080", 35L)]
     [Arguments("2380", 35L)]
     [Arguments("FCFFFFFFFF10", 38L)]
-    [Arguments("FD808080808000", 38L)]
+    [Arguments("FD808080808000", 39L)]
     [Arguments("056A", 33L)]
     public async Task 未割当opcodeか不正LEBか平坦else_未対応に置き換えず破損になる(
         string instructions,
@@ -135,7 +135,7 @@ internal partial class ModuleDecoder_DecodeTests
     }
 
     [Test]
-    [Arguments("0202FF", 10L, (byte)2)]
+    [Arguments("0202FF", 11L, (byte)2)]
     [Arguments("070100020100", 11L, (byte)2)]
     [Arguments("0A01000C0100", 11L, (byte)12)]
     [Arguments("030201000B0100", 12L, (byte)11)]

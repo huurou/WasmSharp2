@@ -48,7 +48,7 @@ internal class WasmModule_InspectImportsTests
     [Arguments("0061736D0100000002050101FF0000", 12L, (byte)2)]
     [Arguments("0061736D010000000208020000037F0001FF", 17L, (byte)2)]
     [Arguments("0061736D01000000020100020100", 11L, (byte)2)]
-    [Arguments("0061736D01000000010A00", 10L, (byte)1)]
+    [Arguments("0061736D01000000010A00", 9L, (byte)1)]
     public async Task 必要な構文が破損_両入力で元位置とDecode診断を保持する(
         string hex,
         long offset,

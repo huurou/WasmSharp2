@@ -6,13 +6,93 @@ namespace WasmSharp.Tests;
 internal partial class WasmModule_DecodeTests
 {
     [Test]
+    [Arguments("030201000A0301010005", "END opcode expected", 17L, 0u, (byte)10)]
+    [Arguments("030201000A03010100", "unexpected end of section or function", 17L, 0u, (byte)10)]
+    [Arguments("030201000A030101000B0100", "section size mismatch", 18L, 0u, (byte)10)]
+    [Arguments("0704020000000A0100", "length out of bounds", 14L, null, (byte)7)]
+    [Arguments("030301808080808000", "integer representation too long", 16L, null, (byte)3)]
+    [Arguments("0000000100", "unexpected end of section or function", 11L, null, (byte)0)]
+    [Arguments("0001000801808080808000", "integer representation too long", 18L, null, (byte)8)]
+    [Arguments("0605017F00410005", "END opcode expected", 15L, null, (byte)6)]
+    public async Task 宣言境界の後続byteで原因が分かれる_両入力で診断先頭と位置を選択する(
+        string sections,
+        string prefix,
+        long offset,
+        uint? functionIndex,
+        byte? sectionId
+    )
+    {
+        // Arrange
+        var bytes = Convert.FromHexString("0061736D01000000" + sections);
+        using var stream = new ChunkedReadStream(new MemoryStream(bytes));
+        Func<WasmModule>[] decoders =
+        [
+            () => WasmModule.Decode(bytes),
+            () => WasmModule.Decode(stream),
+        ];
+
+        // Act & Assert
+        foreach (var decode in decoders)
+        {
+            var exception = await Assert.That(decode).ThrowsExactly<WasmDecodeException>();
+            using (Assert.Multiple())
+            {
+                await Assert
+                    .That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal))
+                    .IsTrue();
+                await Assert
+                    .That(exception.Location)
+                    .IsEqualTo(new(WasmProcessingStage.Decode, offset, functionIndex, sectionId));
+            }
+        }
+    }
+
+    [Test]
+    [Arguments("6A")]
+    [Arguments("FC00")]
+    [Arguments("FD00")]
+    public async Task 診断再走査で未対応命令に到達する_両入力で元の境界不正を保持する(
+        string instruction
+    )
+    {
+        // Arrange
+        var bytes = Convert.FromHexString("0061736D01000000030201000A03010100" + instruction);
+        using var stream = new ChunkedReadStream(new MemoryStream(bytes));
+        Func<WasmModule>[] decoders =
+        [
+            () => WasmModule.Decode(bytes),
+            () => WasmModule.Decode(stream),
+        ];
+
+        // Act & Assert
+        foreach (var decode in decoders)
+        {
+            var exception = await Assert.That(decode).ThrowsExactly<WasmDecodeException>();
+            using (Assert.Multiple())
+            {
+                await Assert
+                    .That(
+                        exception!.Message.StartsWith(
+                            "unexpected end of section or function",
+                            StringComparison.Ordinal
+                        )
+                    )
+                    .IsTrue();
+                await Assert
+                    .That(exception.Location)
+                    .IsEqualTo(new(WasmProcessingStage.Decode, 17, 0, 10));
+            }
+        }
+    }
+
+    [Test]
     [Arguments("006173", 3L, null, null)]
     [Arguments("0062736D01000000", 1L, null, null)]
     [Arguments("0061736D02000000", 4L, null, null)]
     [Arguments("0061736D01000000010100010100", 11L, null, (byte)1)]
     [Arguments("0061736D01000000070100010100", 11L, null, (byte)1)]
     [Arguments("0061736D010000000D00", 8L, null, (byte)13)]
-    [Arguments("0061736D0100000001FFFFFFFF0F", 14L, null, (byte)1)]
+    [Arguments("0061736D0100000001FFFFFFFF0F", 9L, null, (byte)1)]
     [Arguments("0061736D0100000001020000", 11L, null, (byte)1)]
     [Arguments("0061736D01000000000201FF", 11L, null, (byte)0)]
     [Arguments("0061736D0100000007050101FF0000", 12L, null, (byte)7)]
@@ -20,7 +100,7 @@ internal partial class WasmModule_DecodeTests
     [Arguments("0061736D01000000030201000A03010100", 17L, 0u, (byte)10)]
     [Arguments("0061736D01000000030201000A050103000B0B", 18L, 0u, (byte)10)]
     [Arguments("0061736D01000000030201000A0C010A02FFFFFFFF0F7F017E0B", 23L, 0u, (byte)10)]
-    [Arguments("0061736D010000000202FF", 10L, null, (byte)2)]
+    [Arguments("0061736D010000000202FF", 11L, null, (byte)2)]
     [Arguments("0061736D010000000A01000C0100", 11L, null, (byte)12)]
     [Arguments("0061736D010000000201000D00", 11L, null, (byte)13)]
     [Arguments("0061736D010000000401000D00", 11L, null, (byte)13)]
@@ -60,7 +140,7 @@ internal partial class WasmModule_DecodeTests
     [Arguments("FD9A01", 33L)]
     [Arguments("FD8002", 33L)]
     [Arguments("FCFFFFFFFF10", 38L)]
-    [Arguments("FD808080808000", 38L)]
+    [Arguments("FD808080808000", 39L)]
     [Arguments("4180808080080B", 38L)]
     [Arguments("056A", 33L)]
     public async Task 両入力で未割当命令や不正LEBや平坦elseがある_命令位置付きの破損になる(

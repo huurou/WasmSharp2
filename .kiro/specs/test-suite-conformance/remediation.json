@@ -33,6 +33,23 @@
       "profile_id": "core2",
       "spec_commit": "05ca4182176763112561ae20153975c12bd689e4",
       "wabt_commit": "03a00a1334e6121fb0cce4fccbd6bb109b68acaa"
+    },
+    {
+      "id": "task3_after",
+      "role": "after",
+      "path": "artifacts/test-suite-conformance/task-3-20261003/run-after.json",
+      "sha256": "3d58ba48bcf28f0c73c3334668899378ed71c35591dcd35ae83b654535d67476",
+      "run_id": "44cf42af-8046-48b3-8216-3828950398c0",
+      "revision": "88b57cdf46e41dd1905e270a443f72a17d89b092",
+      "code_state": "artifacts/test-suite-conformance/task-3-20261003/code-state.json",
+      "code_patch_sha256": "75fbfe10326eb2cd6ecb6aa5d72281dd880c78b9e4511d69b6830eb904e08bd2",
+      "note": "タスク3の公式全体run時点の未コミットコード状態。後のレビュー補正前の証跡として保持する。"
+    },
+    {
+      "id": "task3_comparison",
+      "role": "comparison",
+      "path": "artifacts/test-suite-conformance/task-3-20261003/compare-run.json",
+      "sha256": "90846a9492933bffbd7164415c21d2757789b953aa1b95a776929c9bec990a46"
     }
   ],
   "findings": [
@@ -43,7 +60,7 @@
         "D034"
       ],
       "boundary": "ModuleBinaryReader",
-      "status": "uninvestigated",
+      "status": "verified",
       "owner_spec": "test-suite-conformance",
       "rule": "名前の長さとbyte列を取得してから厳格UTF-8検査を行う。",
       "confirmed_static_difference": "厳格UTF-8拒否は既存実装にあるが公開Messageの先頭が固定診断と異なる。",
@@ -78,16 +95,36 @@
         }
       ],
       "minimal_reproduction": {
-        "status": "not_executed",
-        "construction": "最小custom sectionの名前を1byteの単独継続byteにする。importのmodule名・item名でも同じ入力を使い、合法な空名と対にする。",
+        "status": "executed",
+        "construction": "ReadNameの直接入力01FF、02C0AF、03EDA080、04F4908080、02E697で厳格UTF-8失敗のprefixと位置を確認し、空・ヌル・多バイト・非最短長さの合法名と対にした。既存ReadImportsとInspectImportsの回帰も全ランタイムテストで確認した。",
         "basis_case": {
           "input_path": "utf8-custom-section-id.wast",
           "source_id": "baseline_before",
           "command_index": 0
         }
       },
-      "remaining_investigation": "既知D034はF001の調査対象である。長さ・宣言境界との複合選択を示すケースは未特定のため、F003の規則変更時にUTF-8との境界を回帰確認し、該当CaseIdを特定してから関連を追加する。",
-      "verification": [],
+      "remaining_investigation": "担当範囲の関連した既知ケースは全体比較でpassedを確認した。finding_idsは候補の関連付けを維持し、ケース別の因果確定を追加したものではない。",
+      "verification": [
+        {
+          "task": "3.1",
+          "scope": "direct_tests",
+          "red_log": "artifacts/test-suite-conformance/task-3-20261003/red-3.1.log",
+          "result": "REDは65件中17失敗、GREENは77成功、フラグ除去後のランタイム全999成功。署名・Assert.Multiple補正後の対象テストも成功。",
+          "build_log": "artifacts/test-suite-conformance/task-3-20261003/build-3.1-reviewfix.log",
+          "test_log": "artifacts/test-suite-conformance/task-3-20261003/final-3.1-rerun.log",
+          "review": "artifacts/test-suite-conformance/task-3-20261003/review-3.1.md",
+          "note": "公式全体受入は後続タスクで確認する。"
+        },
+        {
+          "task": "3",
+          "scope": "official_run",
+          "source_id": "task3_after",
+          "comparison_source_id": "task3_comparison",
+          "audit": "artifacts/test-suite-conformance/task-3-20261003/official-audit.json",
+          "result": "関連ケースはすべてpassed。Decode不一致683件がpassedへ変わり、他の53,224件の観測結果は同一。回帰・追加・欠落・未比較・条件差・出典差・素材差0。",
+          "note": "Validate183件とInstantiate78件はfailedのまま。Core 2.0全件合格または仕様全体のGOではない。"
+        }
+      ],
       "transfer": null,
       "requirements": [
         "1.2",
@@ -95,7 +132,7 @@
         "4.1"
       ],
       "design_ref": "バイナリ読取りと診断選択",
-      "cause": null
+      "cause": "厳格UTF-8の拒否は維持されていたが、公開診断が日本語説明から始まり固定prefixと一致しなかった。"
     },
     {
       "id": "F002",
@@ -106,7 +143,7 @@
         "D030"
       ],
       "boundary": "ModuleBinaryReader",
-      "status": "uninvestigated",
+      "status": "verified",
       "owner_spec": "test-suite-conformance",
       "rule": "最終payload不正を継続bitより先に検査し、合法payloadの継続は次反復の幅超過とする。",
       "confirmed_static_difference": "ReadIntegerが継続bitと不正payloadを共通診断へまとめている。",
@@ -137,16 +174,36 @@
         }
       ],
       "minimal_reproduction": {
-        "status": "not_executed",
-        "construction": "u32の80 80 80 80 80と80 80 80 80 1fを区別する。s32/s64も最終payload・継続bit・途中EOFを組み合わせる。",
+        "status": "executed",
+        "construction": "u32の8080808080/FFFFFFFF8F00とFFFFFFFF10/FFFFFFFF90を区別した。s32は8080808080/FFFFFFFFFF00とFFFFFFFF08/80808080F7、s64は10byteの継続/不正payloadを確認した。u1/s7の境界・継続と既存途中EOF・非最短の合法値も直接テストした。",
         "basis_case": {
           "input_path": "binary-leb128.wast",
           "source_id": "baseline_before",
           "command_index": 25
         }
       },
-      "remaining_investigation": "各CaseIdを整数幅と呼出し文脈へ割り当てる。",
-      "verification": [],
+      "remaining_investigation": "担当範囲の関連した既知ケースは全体比較でpassedを確認した。finding_idsは候補の関連付けを維持し、ケース別の因果確定を追加したものではない。",
+      "verification": [
+        {
+          "task": "3.1",
+          "scope": "direct_tests",
+          "red_log": "artifacts/test-suite-conformance/task-3-20261003/red-3.1.log",
+          "result": "REDは65件中17失敗、GREENは77成功、フラグ除去後のランタイム全999成功。署名・Assert.Multiple補正後の対象テストも成功。",
+          "build_log": "artifacts/test-suite-conformance/task-3-20261003/build-3.1-reviewfix.log",
+          "test_log": "artifacts/test-suite-conformance/task-3-20261003/final-3.1-rerun.log",
+          "review": "artifacts/test-suite-conformance/task-3-20261003/review-3.1.md",
+          "note": "公式全体受入は後続タスクで確認する。"
+        },
+        {
+          "task": "3",
+          "scope": "official_run",
+          "source_id": "task3_after",
+          "comparison_source_id": "task3_comparison",
+          "audit": "artifacts/test-suite-conformance/task-3-20261003/official-audit.json",
+          "result": "関連ケースはすべてpassed。Decode不一致683件がpassedへ変わり、他の53,224件の観測結果は同一。回帰・追加・欠落・未比較・条件差・出典差・素材差0。",
+          "note": "Validate183件とInstantiate78件はfailedのまま。Core 2.0全件合格または仕様全体のGOではない。"
+        }
+      ],
       "transfer": null,
       "requirements": [
         "1.2",
@@ -154,7 +211,7 @@
         "4.2"
       ],
       "design_ref": "バイナリ読取りと診断選択",
-      "cause": null
+      "cause": "継続bitと最終payload不正を同じ診断にまとめ、許容payloadの継続を次byte取得前の表現長超過として区別していなかった。"
     },
     {
       "id": "F003",
@@ -167,7 +224,7 @@
         "D046"
       ],
       "boundary": "ModuleBinaryReader, ModuleBinaryFormat, ModuleDecoder, ImportInspector",
-      "status": "uninvestigated",
+      "status": "verified",
       "owner_spec": "test-suite-conformance",
       "rule": "長さprefix前から物理EOFまでの上限と、取得時の宣言範囲を別に検査する。",
       "confirmed_static_difference": "ReadRangeは限定span、ReadName/ReadCountはprefix後の宣言残量を使い、参照len32/sizedと構造が異なる。",
@@ -214,16 +271,36 @@
         }
       ],
       "minimal_reproduction": {
-        "status": "not_executed",
-        "construction": "要素数1・要素なし、prefix前後の残量境界、binary-leb128.wast#36のsection越し整数、binary.wast#162の次sectionが名前長となる構造を最小化する。",
+        "status": "executed",
+        "construction": "01FFFFFFFF0F、0105FFFFFFFF0F、000103、030201000A020105の長さ超過と、010101、010200、00020261の要素・取得不足を対にした。ReadLengthの0261/8100/00と子readerの原入力終端も直接確認した。",
         "basis_case": {
           "input_path": "binary-leb128.wast",
           "source_id": "baseline_before",
           "command_index": 36
         }
       },
-      "remaining_investigation": "混在群を長さ上限・要素EOF・宣言境界に個別分割する。header由来はF004、custom由来はF007も調査する。",
-      "verification": [],
+      "remaining_investigation": "担当範囲の関連した既知ケースは全体比較でpassedを確認した。finding_idsは候補の関連付けを維持し、ケース別の因果確定を追加したものではない。",
+      "verification": [
+        {
+          "task": "3.2",
+          "scope": "direct_tests",
+          "red_log": "artifacts/test-suite-conformance/task-3-20261003/red-3.2.log",
+          "test_log": "artifacts/test-suite-conformance/task-3-20261003/final-3.2.log",
+          "build_log": "artifacts/test-suite-conformance/task-3-20261003/build-3.2-final.log",
+          "result": "新規診断テストはRED7失敗、GREEN7成功。一時フラグ除去後の全ランタイムテストでDecodeとInspectImportsを確認した。",
+          "note": "公式全体受入は後続タスクで確認する。",
+          "review": "artifacts/test-suite-conformance/task-3-20261003/review-3.2.md"
+        },
+        {
+          "task": "3",
+          "scope": "official_run",
+          "source_id": "task3_after",
+          "comparison_source_id": "task3_comparison",
+          "audit": "artifacts/test-suite-conformance/task-3-20261003/official-audit.json",
+          "result": "関連ケースはすべてpassed。Decode不一致683件がpassedへ変わり、他の53,224件の観測結果は同一。回帰・追加・欠落・未比較・条件差・出典差・素材差0。",
+          "note": "Validate183件とInstantiate78件はfailedのまま。Core 2.0全件合格または仕様全体のGOではない。"
+        }
+      ],
       "transfer": null,
       "requirements": [
         "1.2",
@@ -233,7 +310,7 @@
         "4.6"
       ],
       "design_ref": "バイナリ読取りと診断選択",
-      "cause": null
+      "cause": "ReadCountがprefix取得後の宣言残量を上限にし、名前・section・bodyの長さもu32取得と取得時の境界検査だけだった。物理EOFとprefix前位置による上限判定を共有していなかった。"
     },
     {
       "id": "F004",
@@ -245,7 +322,7 @@
         "D047"
       ],
       "boundary": "ModuleBinaryFormat",
-      "status": "uninvestigated",
+      "status": "verified",
       "owner_spec": "test-suite-conformance",
       "rule": "magicの4byte取得後に照合し、次にversionを同様に読む。途中EOFを完全な不一致と区別する。",
       "confirmed_static_difference": "現行は8byteの各byteを逐次比較し、完全なmagicとversionの不一致を共通診断にする。",
@@ -276,23 +353,43 @@
         }
       ],
       "minimal_reproduction": {
-        "status": "not_executed",
-        "construction": "ヘッダー長0〜8byteを変え、4byte未満の不一致と完全なmagic/version不一致を対にする。",
+        "status": "executed",
+        "construction": "0〜7byteの途中ヘッダー、FF/006200/0061736DFFの途中不一致、完全4byteのFFFFFFFF/0062736D、versionの最初の相違位置を直接確認した。",
         "basis_case": {
           "input_path": "binary.wast",
           "source_id": "baseline_before",
           "command_index": 7
         }
       },
-      "remaining_investigation": "D043をheader・customその他のCaseIdに分ける。",
-      "verification": [],
+      "remaining_investigation": "担当範囲の関連した既知ケースは全体比較でpassedを確認した。finding_idsは候補の関連付けを維持し、ケース別の因果確定を追加したものではない。",
+      "verification": [
+        {
+          "task": "3.3",
+          "scope": "direct_tests",
+          "red_log": "artifacts/test-suite-conformance/task-3-20261003/red-3.3.log",
+          "test_log": "artifacts/test-suite-conformance/task-3-20261003/final-3.3.log",
+          "build_log": "artifacts/test-suite-conformance/task-3-20261003/build-final-3.3.log",
+          "result": "REDは対象132件中21失敗、GREENは132成功、一時フラグ除去後はランタイム全1040成功・失敗/skip0。",
+          "note": "公式全体受入は後続タスクで確認する。",
+          "review": "artifacts/test-suite-conformance/task-3-20261003/review-3.3.md"
+        },
+        {
+          "task": "3",
+          "scope": "official_run",
+          "source_id": "task3_after",
+          "comparison_source_id": "task3_comparison",
+          "audit": "artifacts/test-suite-conformance/task-3-20261003/official-audit.json",
+          "result": "関連ケースはすべてpassed。Decode不一致683件がpassedへ変わり、他の53,224件の観測結果は同一。回帰・追加・欠落・未比較・条件差・出典差・素材差0。",
+          "note": "Validate183件とInstantiate78件はfailedのまま。Core 2.0全件合格または仕様全体のGOではない。"
+        }
+      ],
       "transfer": null,
       "requirements": [
         "1.2",
         "4.3"
       ],
       "design_ref": "バイナリ読取りと診断選択",
-      "cause": null
+      "cause": "ヘッダーを1byteごとに照合していたため、不一致byteを含む途中入力でEOFより先にmagic/version不一致を選び、診断も共通の日本語だった。"
     },
     {
       "id": "F005",
@@ -305,7 +402,7 @@
         "D036"
       ],
       "boundary": "ModuleBinaryReader, ModuleBinaryFormat, ModuleDecoder",
-      "status": "uninvestigated",
+      "status": "verified",
       "owner_spec": "test-suite-conformance",
       "rule": "limitsはu1、function/value/reference typeはs7。import/export kindは文脈別、mutabilityは生byteで検査する。",
       "confirmed_static_difference": "現行の生byte読取りと共通external kind診断が参照の整数幅・診断文脈と異なる。",
@@ -344,16 +441,36 @@
         }
       ],
       "minimal_reproduction": {
-        "status": "not_executed",
-        "construction": "limitsの80/81/02、継続bit付きfunction type、無効value/reference type、kind=4、mutability=2をそれぞれ最小sectionへ置く。",
+        "status": "executed",
+        "construction": "u1の02/80/82、function/value/reference typeの不正値・継続bit、import/export kind04、mutability02をDecodeの最小入力で確認した。",
         "basis_case": {
           "input_path": "binary.wast",
           "source_id": "baseline_before",
           "command_index": 151
         }
       },
-      "remaining_investigation": "既知群以外のexport/reference typeの境界も変更規則の回帰確認に含める。",
-      "verification": [],
+      "remaining_investigation": "担当範囲の関連した既知ケースは全体比較でpassedを確認した。finding_idsは候補の関連付けを維持し、ケース別の因果確定を追加したものではない。",
+      "verification": [
+        {
+          "task": "3.3",
+          "scope": "direct_tests",
+          "red_log": "artifacts/test-suite-conformance/task-3-20261003/red-3.3.log",
+          "test_log": "artifacts/test-suite-conformance/task-3-20261003/final-3.3.log",
+          "build_log": "artifacts/test-suite-conformance/task-3-20261003/build-final-3.3.log",
+          "result": "REDは対象132件中21失敗、GREENは132成功、一時フラグ除去後はランタイム全1040成功・失敗/skip0。",
+          "note": "公式全体受入は後続タスクで確認する。",
+          "review": "artifacts/test-suite-conformance/task-3-20261003/review-3.3.md"
+        },
+        {
+          "task": "3",
+          "scope": "official_run",
+          "source_id": "task3_after",
+          "comparison_source_id": "task3_comparison",
+          "audit": "artifacts/test-suite-conformance/task-3-20261003/official-audit.json",
+          "result": "関連ケースはすべてpassed。Decode不一致683件がpassedへ変わり、他の53,224件の観測結果は同一。回帰・追加・欠落・未比較・条件差・出典差・素材差0。",
+          "note": "Validate183件とInstantiate78件はfailedのまま。Core 2.0全件合格または仕様全体のGOではない。"
+        }
+      ],
       "transfer": null,
       "requirements": [
         "1.2",
@@ -361,7 +478,7 @@
         "4.4"
       ],
       "design_ref": "バイナリ読取りと診断選択",
-      "cause": null
+      "cause": "limits flagと型を生byteで読んで狭い整数幅の診断を選ばず、import/export kind・mutabilityを共通または日本語診断で通知していた。"
     },
     {
       "id": "F006",
@@ -371,7 +488,7 @@
         "D041"
       ],
       "boundary": "ModuleBinaryFormat",
-      "status": "uninvestigated",
+      "status": "verified",
       "owner_spec": "test-suite-conformance",
       "rule": "未知IDを区別し、既知sectionの逆順・重複は長さ/payload取得より先に拒否する。customはrankを進めない。",
       "confirmed_static_difference": "現行は長さとpayload範囲を取得した後でrankを検査する。",
@@ -402,16 +519,36 @@
         }
       ],
       "minimal_reproduction": {
-        "status": "not_executed",
-      "construction": "空type sectionを重複させ、二つ目の長さLEBを欠落・不正にする。未知IDとcustomを挟む場合も比較する。",
-      "basis_case": {
-        "input_path": "binary.wast",
-        "source_id": "baseline_before",
-        "command_index": 176
+        "status": "executed",
+        "construction": "未知ID0D、重複sectionの長さ欠落、逆順sectionの不正LEBが併存する最小入力で、IDと順序の原因・位置が先に選ばれることを確認した。",
+        "basis_case": {
+          "input_path": "binary.wast",
+          "source_id": "baseline_before",
+          "command_index": 176
         }
       },
-      "remaining_investigation": "既知ケース以外の複合不正を直接テストで確認する。",
-      "verification": [],
+      "remaining_investigation": "担当範囲の関連した既知ケースは全体比較でpassedを確認した。finding_idsは候補の関連付けを維持し、ケース別の因果確定を追加したものではない。",
+      "verification": [
+        {
+          "task": "3.3",
+          "scope": "direct_tests",
+          "red_log": "artifacts/test-suite-conformance/task-3-20261003/red-3.3.log",
+          "test_log": "artifacts/test-suite-conformance/task-3-20261003/final-3.3.log",
+          "build_log": "artifacts/test-suite-conformance/task-3-20261003/build-final-3.3.log",
+          "result": "REDは対象132件中21失敗、GREENは132成功、一時フラグ除去後はランタイム全1040成功・失敗/skip0。",
+          "note": "公式全体受入は後続タスクで確認する。",
+          "review": "artifacts/test-suite-conformance/task-3-20261003/review-3.3.md"
+        },
+        {
+          "task": "3",
+          "scope": "official_run",
+          "source_id": "task3_after",
+          "comparison_source_id": "task3_comparison",
+          "audit": "artifacts/test-suite-conformance/task-3-20261003/official-audit.json",
+          "result": "関連ケースはすべてpassed。Decode不一致683件がpassedへ変わり、他の53,224件の観測結果は同一。回帰・追加・欠落・未比較・条件差・出典差・素材差0。",
+          "note": "Validate183件とInstantiate78件はfailedのまま。Core 2.0全件合格または仕様全体のGOではない。"
+        }
+      ],
       "transfer": null,
       "requirements": [
         "1.2",
@@ -419,7 +556,7 @@
         "4.4"
       ],
       "design_ref": "バイナリ読取りと診断選択",
-      "cause": null
+      "cause": "section長とpayloadの取得を順序検査より先に行い、未知ID・逆順・重複の診断先頭を区別していなかった。"
     },
     {
       "id": "F007",
@@ -429,7 +566,7 @@
         "D043"
       ],
       "boundary": "ModuleBinaryReader, ModuleBinaryFormat, ModuleDecoder",
-      "status": "uninvestigated",
+      "status": "verified",
       "owner_spec": "test-suite-conformance",
       "rule": "正常構文後は現在位置と宣言終端の一致を要求する。custom名の宣言残量が負ならpayload取得時にEOF診断を選ぶ。",
       "confirmed_static_difference": "RequireEndの余剰診断とcustomの限定残量消費が参照sized/customと異なる。",
@@ -465,19 +602,61 @@
         {
           "path": "tests/WasmSharp.Tests/Modules/ModuleDecoder_DecodeFunctionTests.cs",
           "class": "ModuleDecoder_DecodeTests"
+        },
+        {
+          "path": "tests/WasmSharp.Tests/Modules/ModuleBinaryFormat_RequireEndTests.cs",
+          "class": "ModuleBinaryFormat_RequireEndTests"
+        },
+        {
+          "path": "tests/WasmSharp.Tests/Modules/ModuleBinaryReaderTests.cs",
+          "class": "ModuleBinaryReader_ReadRangeTests"
+        },
+        {
+          "path": "tests/WasmSharp.Tests/WasmModule_DecodeTests.cs",
+          "class": "WasmModule_DecodeTests"
         }
       ],
       "minimal_reproduction": {
-        "status": "not_executed",
-        "construction": "最小section/bodyに余剰1byteを加える。custom.wast#5の名前が宣言サイズを越える構造に後続sectionを付ける。",
+        "status": "executed",
+        "construction": "Diagnostic readerの宣言長1で物理2byteを参照し、LEB・nameが境界をまたぐこと、親は宣言長だけ進むこと、uint最大宣言長でも物理EOFで止まることを直接確認した。RequireEndは一致・不足・超過を区別。公開Decodeでheader+0000000100のcustom名超過はoffset11のunexpected end、宣言外ENDはsection size mismatchをspan/stream両入力で確認した。",
         "basis_case": {
           "input_path": "binary.wast",
           "source_id": "baseline_before",
           "command_index": 137
         }
       },
-      "remaining_investigation": "通常の余剰、負の宣言残量、header途中EOFの混在群を個別確認する。",
-      "verification": [],
+      "remaining_investigation": "担当範囲の関連した既知ケースは全体比較でpassedを確認した。finding_idsは候補の関連付けを維持し、ケース別の因果確定を追加したものではない。",
+      "verification": [
+        {
+          "task": "3.5",
+          "scope": "direct_tests",
+          "red_log": "artifacts/test-suite-conformance/task-3-20261003/red-3.5.log",
+          "test_log": "artifacts/test-suite-conformance/task-3-20261003/final-3.5.log",
+          "build_log": "artifacts/test-suite-conformance/task-3-20261003/build-final-3.5.log",
+          "review": "artifacts/test-suite-conformance/task-3-20261003/review-3.5.md",
+          "result": "RED93件中9失敗、GREEN93成功、フラグ除去後全1059成功。",
+          "note": "公開Decodeへの再走査は3.6で実施した。"
+        },
+        {
+          "task": "3.6",
+          "scope": "direct_tests",
+          "red_log": "artifacts/test-suite-conformance/task-3-20261003/red-3.6.log",
+          "test_log": "artifacts/test-suite-conformance/task-3-20261003/final-3.6-rerun.log",
+          "build_log": "artifacts/test-suite-conformance/task-3-20261003/build-final-3.6-rerun.log",
+          "review": "artifacts/test-suite-conformance/task-3-20261003/review-3.6.md",
+          "result": "RED6失敗、GREEN6成功、フラグ除去後に変更された5期待を補正し全1069成功。",
+          "note": "正確な公開例外型とLocationの検査を維持した。"
+        },
+        {
+          "task": "3",
+          "scope": "official_run",
+          "source_id": "task3_after",
+          "comparison_source_id": "task3_comparison",
+          "audit": "artifacts/test-suite-conformance/task-3-20261003/official-audit.json",
+          "result": "関連ケースはすべてpassed。Decode不一致683件がpassedへ変わり、他の53,224件の観測結果は同一。回帰・追加・欠落・未比較・条件差・出典差・素材差0。",
+          "note": "Validate183件とInstantiate78件はfailedのまま。Core 2.0全件合格または仕様全体のGOではない。"
+        }
+      ],
       "transfer": null,
       "requirements": [
         "1.2",
@@ -486,7 +665,7 @@
         "4.6"
       ],
       "design_ref": "バイナリ読取りと診断選択",
-      "cause": null
+      "cause": "宣言終端と物理終端を同じ限定spanで扱い、宣言長の取得失敗で構文解析が停止していた。custom名の超過後に負の宣言残量を明示確認せず、診断用モードでは物理残量の一括消費が後続構文を隠すため、独立した終端と宣言残量消費が必要だった。"
     },
     {
       "id": "F008",
@@ -497,7 +676,7 @@
         "D045"
       ],
       "boundary": "ModuleBinaryReader, ModuleBinaryFormat, ModuleDecoder",
-      "status": "uninvestigated",
+      "status": "verified",
       "owner_spec": "test-suite-conformance",
       "rule": "命令列をELSE/END/EOFで止めてENDを要求し、宣言外のENDは完了検査で区別する。",
       "confirmed_static_difference": "現行の限定bodyはEND欠落を共通診断にし、参照の後続byteによる原因選択と異なる。",
@@ -533,19 +712,53 @@
         {
           "path": "tests/WasmSharp.Tests/Modules/ModuleDecoder_DecodeTests.cs",
           "class": "ModuleDecoder_DecodeTests"
+        },
+        {
+          "path": "tests/WasmSharp.Tests/WasmModule_DecodeTests.cs",
+          "class": "WasmModule_DecodeTests"
         }
       ],
       "minimal_reproduction": {
-        "status": "not_executed",
-        "construction": "最小関数のENDを除き、直後を0x05・物理EOF・次data IDの0x0bへ変える。binary.wast#76/#77/#78を根拠にする。",
+        "status": "executed",
+        "construction": "header+030201000A03010100の後ろを05・EOF・0B0100とした入力でEND opcode expected・unexpected end of section or function・section size mismatchを位置付きで区別した。global初期化式でも宣言外ELSEを確認し、後続6A・FC00・FD00の未対応命令では最初の境界不正を保持した。",
         "basis_case": {
           "input_path": "binary.wast",
           "source_id": "baseline_before",
           "command_index": 76
         }
       },
-      "remaining_investigation": "再走査と未対応命令・実装上限の組合せを確認する。",
-      "verification": [],
+      "remaining_investigation": "担当範囲の関連した既知ケースは全体比較でpassedを確認した。finding_idsは候補の関連付けを維持し、ケース別の因果確定を追加したものではない。",
+      "verification": [
+        {
+          "task": "3.4",
+          "scope": "direct_tests",
+          "red_log": "artifacts/test-suite-conformance/task-3-20261003/red-3.4.log",
+          "test_log": "artifacts/test-suite-conformance/task-3-20261003/final-3.4.log",
+          "build_log": "artifacts/test-suite-conformance/task-3-20261003/build-final-3.4.log",
+          "result": "RED8失敗、GREEN8成功。一時フラグ除去後はランタイム全1050成功・失敗/skip0。",
+          "note": "END要求のために設計済みTryPeekByteをreaderへ追加した。宣言境界を越える診断は3.5/3.6で確認する。",
+          "review": "artifacts/test-suite-conformance/task-3-20261003/review-3.4.md"
+        },
+        {
+          "task": "3.6",
+          "scope": "direct_tests",
+          "red_log": "artifacts/test-suite-conformance/task-3-20261003/red-3.6.log",
+          "test_log": "artifacts/test-suite-conformance/task-3-20261003/final-3.6-rerun.log",
+          "build_log": "artifacts/test-suite-conformance/task-3-20261003/build-final-3.6-rerun.log",
+          "review": "artifacts/test-suite-conformance/task-3-20261003/review-3.6.md",
+          "result": "RED6失敗、GREEN6成功、フラグ除去後全1069成功。",
+          "note": "正常終了・未対応・実装上限から元Fallbackへ戻す分岐はprivateなResolveBoundaryFailureに限定。包括catch・再帰・診断moduleの公開なし。"
+        },
+        {
+          "task": "3",
+          "scope": "official_run",
+          "source_id": "task3_after",
+          "comparison_source_id": "task3_comparison",
+          "audit": "artifacts/test-suite-conformance/task-3-20261003/official-audit.json",
+          "result": "関連ケースはすべてpassed。Decode不一致683件がpassedへ変わり、他の53,224件の観測結果は同一。回帰・追加・欠落・未比較・条件差・出典差・素材差0。",
+          "note": "Validate183件とInstantiate78件はfailedのまま。Core 2.0全件合格または仕様全体のGOではない。"
+        }
+      ],
       "transfer": null,
       "requirements": [
         "1.2",
@@ -554,7 +767,7 @@
         "4.6"
       ],
       "design_ref": "バイナリ読取りと診断選択",
-      "cause": null
+      "cause": "式の命令列停止とEND要求を一体化し、ELSEを独自診断、範囲終端をEND欠落の共通診断にしていた。宣言範囲で読取りが止まる場合は、同じ構文処理を物理入力内で1回だけ再走査してEND要求と範囲完了を区別する必要があった。"
     },
     {
       "id": "F009",
@@ -563,7 +776,7 @@
         "D040"
       ],
       "boundary": "ModuleDecoder",
-      "status": "uninvestigated",
+      "status": "verified",
       "owner_spec": "test-suite-conformance",
       "rule": "圧縮local宣言を全件読んでからulong合計のu32上限を検査する。",
       "confirmed_static_difference": "現行は各宣言の直後に上限を検査し、後続宣言の符号化不正より先に拒否する。",
@@ -586,16 +799,36 @@
         }
       ],
       "minimal_reproduction": {
-        "status": "not_executed",
-        "construction": "圧縮local2宣言をu32最大個と1個にし、後続宣言のLEB・型を不正にした入力と対にする。",
+        "status": "executed",
+        "construction": "u32最大個数、追加1個、後続0個の不正値型6E/継続FFを組み合わせた3宣言と、合計超過だけの2宣言を直接確認した。",
         "basis_case": {
           "input_path": "binary.wast",
           "source_id": "baseline_before",
           "command_index": 118
         }
       },
-      "remaining_investigation": "巨大な個別local展開を行わず複合入力を確認する。",
-      "verification": [],
+      "remaining_investigation": "担当範囲の関連した既知ケースは全体比較でpassedを確認した。finding_idsは候補の関連付けを維持し、ケース別の因果確定を追加したものではない。",
+      "verification": [
+        {
+          "task": "3.4",
+          "scope": "direct_tests",
+          "red_log": "artifacts/test-suite-conformance/task-3-20261003/red-3.4.log",
+          "test_log": "artifacts/test-suite-conformance/task-3-20261003/final-3.4.log",
+          "build_log": "artifacts/test-suite-conformance/task-3-20261003/build-final-3.4.log",
+          "result": "RED8失敗、GREEN8成功。一時フラグ除去後はランタイム全1050成功・失敗/skip0。",
+          "note": "END要求のために設計済みTryPeekByteをreaderへ追加した。宣言境界を越える診断は3.5/3.6で確認する。",
+          "review": "artifacts/test-suite-conformance/task-3-20261003/review-3.4.md"
+        },
+        {
+          "task": "3",
+          "scope": "official_run",
+          "source_id": "task3_after",
+          "comparison_source_id": "task3_comparison",
+          "audit": "artifacts/test-suite-conformance/task-3-20261003/official-audit.json",
+          "result": "関連ケースはすべてpassed。Decode不一致683件がpassedへ変わり、他の53,224件の観測結果は同一。回帰・追加・欠落・未比較・条件差・出典差・素材差0。",
+          "note": "Validate183件とInstantiate78件はfailedのまま。Core 2.0全件合格または仕様全体のGOではない。"
+        }
+      ],
       "transfer": null,
       "requirements": [
         "1.2",
@@ -603,7 +836,7 @@
         "4.4"
       ],
       "design_ref": "バイナリ読取りと診断選択",
-      "cause": null
+      "cause": "圧縮local宣言の途中で合計超過を送出し、後続の型・LEB不正が隠れていた。"
     },
     {
       "id": "F010",
@@ -612,7 +845,7 @@
         "D025"
       ],
       "boundary": "ModuleDecoder",
-      "status": "uninvestigated",
+      "status": "verified",
       "owner_spec": "test-suite-conformance",
       "rule": "固定参照はcode・data・後続customを読み、末尾の余剰検査後にfunction/code件数不一致を診断する。",
       "design_decision": "承認済みdesign.mdのバイナリ読取りと診断選択に従い、確定済み件数不一致の早期検査を維持する。custom.wast#8を未対応i32.addへ変えないための判断であり、参照の検査順とは異なる。body内の構文不正との複合選択は本仕様の確認範囲で調査する。",
@@ -644,16 +877,36 @@
         }
       ],
       "minimal_reproduction": {
-        "status": "not_executed",
-        "construction": "functionだけ・codeだけ・宣言数不一致を作り、後続bodyに未対応i32.addを含むcustom.wast#8の構造を残す。",
+        "status": "executed",
+        "construction": "code省略、件数不一致と未対応i32.addの併存、customがfunction IDを取り込む最小入力で早期診断のprefixと位置を確認した。",
         "basis_case": {
           "input_path": "binary.wast",
           "source_id": "baseline_before",
           "command_index": 121
         }
       },
-      "remaining_investigation": "全5ケースを早期・module末尾の検出経路に割り当てる。",
-      "verification": [],
+      "remaining_investigation": "担当範囲の関連した既知ケースは全体比較でpassedを確認した。finding_idsは候補の関連付けを維持し、ケース別の因果確定を追加したものではない。",
+      "verification": [
+        {
+          "task": "3.4",
+          "scope": "direct_tests",
+          "red_log": "artifacts/test-suite-conformance/task-3-20261003/red-3.4.log",
+          "test_log": "artifacts/test-suite-conformance/task-3-20261003/final-3.4.log",
+          "build_log": "artifacts/test-suite-conformance/task-3-20261003/build-final-3.4.log",
+          "result": "RED8失敗、GREEN8成功。一時フラグ除去後はランタイム全1050成功・失敗/skip0。",
+          "note": "END要求のために設計済みTryPeekByteをreaderへ追加した。宣言境界を越える診断は3.5/3.6で確認する。",
+          "review": "artifacts/test-suite-conformance/task-3-20261003/review-3.4.md"
+        },
+        {
+          "task": "3",
+          "scope": "official_run",
+          "source_id": "task3_after",
+          "comparison_source_id": "task3_comparison",
+          "audit": "artifacts/test-suite-conformance/task-3-20261003/official-audit.json",
+          "result": "関連ケースはすべてpassed。Decode不一致683件がpassedへ変わり、他の53,224件の観測結果は同一。回帰・追加・欠落・未比較・条件差・出典差・素材差0。",
+          "note": "Validate183件とInstantiate78件はfailedのまま。Core 2.0全件合格または仕様全体のGOではない。"
+        }
+      ],
       "transfer": null,
       "requirements": [
         "1.2",
@@ -661,7 +914,7 @@
         "4.4"
       ],
       "design_ref": "バイナリ読取りと診断選択",
-      "cause": null
+      "cause": "function/codeの件数不一致は早期に検出していたが、日本語から始まる診断で固定prefixに一致しなかった。"
     },
     {
       "id": "F011",
@@ -3389,7 +3642,7 @@
       "finding_ids": [
         "F008"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -3399,7 +3652,7 @@
       "finding_ids": [
         "F010"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -3409,7 +3662,7 @@
       "finding_ids": [
         "F010"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -3419,7 +3672,7 @@
       "finding_ids": [
         "F010"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -3429,7 +3682,7 @@
       "finding_ids": [
         "F010"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "custom.wast",
@@ -3439,7 +3692,7 @@
       "finding_ids": [
         "F010"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary-leb128.wast",
@@ -3450,7 +3703,7 @@
         "F002",
         "F003"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary-leb128.wast",
@@ -3460,7 +3713,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary-leb128.wast",
@@ -3470,7 +3723,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary-leb128.wast",
@@ -3480,7 +3733,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary-leb128.wast",
@@ -3490,7 +3743,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary-leb128.wast",
@@ -3500,7 +3753,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary-leb128.wast",
@@ -3510,7 +3763,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary-leb128.wast",
@@ -3520,7 +3773,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary-leb128.wast",
@@ -3530,7 +3783,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary-leb128.wast",
@@ -3540,7 +3793,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary-leb128.wast",
@@ -3550,7 +3803,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary-leb128.wast",
@@ -3560,7 +3813,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary-leb128.wast",
@@ -3570,7 +3823,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary-leb128.wast",
@@ -3580,7 +3833,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary-leb128.wast",
@@ -3590,7 +3843,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary-leb128.wast",
@@ -3600,7 +3853,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary-leb128.wast",
@@ -3610,7 +3863,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary-leb128.wast",
@@ -3620,7 +3873,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -3630,7 +3883,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -3640,7 +3893,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -3650,7 +3903,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -3660,7 +3913,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -3670,7 +3923,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -3680,7 +3933,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -3690,7 +3943,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -3700,7 +3953,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -3710,7 +3963,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -3720,7 +3973,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -3730,7 +3983,7 @@
       "finding_ids": [
         "F005"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -3740,7 +3993,7 @@
       "finding_ids": [
         "F005"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -3750,7 +4003,7 @@
       "finding_ids": [
         "F005"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -3760,7 +4013,7 @@
       "finding_ids": [
         "F005"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary-leb128.wast",
@@ -3770,7 +4023,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary-leb128.wast",
@@ -3780,7 +4033,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary-leb128.wast",
@@ -3790,7 +4043,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary-leb128.wast",
@@ -3800,7 +4053,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary-leb128.wast",
@@ -3810,7 +4063,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary-leb128.wast",
@@ -3820,7 +4073,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary-leb128.wast",
@@ -3830,7 +4083,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary-leb128.wast",
@@ -3840,7 +4093,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary-leb128.wast",
@@ -3850,7 +4103,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary-leb128.wast",
@@ -3860,7 +4113,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary-leb128.wast",
@@ -3870,7 +4123,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary-leb128.wast",
@@ -3880,7 +4133,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary-leb128.wast",
@@ -3890,7 +4143,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary-leb128.wast",
@@ -3900,7 +4153,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary-leb128.wast",
@@ -3910,7 +4163,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary-leb128.wast",
@@ -3920,7 +4173,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary-leb128.wast",
@@ -3930,7 +4183,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary-leb128.wast",
@@ -3940,7 +4193,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary-leb128.wast",
@@ -3950,7 +4203,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary-leb128.wast",
@@ -3960,7 +4213,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary-leb128.wast",
@@ -3970,7 +4223,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary-leb128.wast",
@@ -3980,7 +4233,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary-leb128.wast",
@@ -3990,7 +4243,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -4000,7 +4253,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -4010,7 +4263,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -4020,7 +4273,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -4030,7 +4283,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -4040,7 +4293,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -4050,7 +4303,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -4060,7 +4313,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -4070,7 +4323,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -4080,7 +4333,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -4090,7 +4343,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -4100,7 +4353,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -4110,7 +4363,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -4120,7 +4373,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -4130,7 +4383,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -4140,7 +4393,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -4150,7 +4403,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -4160,7 +4413,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -4170,7 +4423,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -4180,7 +4433,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -4190,7 +4443,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -4200,7 +4453,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -4210,7 +4463,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -4220,7 +4473,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -4230,7 +4483,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -4240,7 +4493,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -4250,7 +4503,7 @@
       "finding_ids": [
         "F002"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -4260,7 +4513,7 @@
       "finding_ids": [
         "F005"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -4270,7 +4523,7 @@
       "finding_ids": [
         "F005"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -4280,7 +4533,7 @@
       "finding_ids": [
         "F005"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -4290,7 +4543,7 @@
       "finding_ids": [
         "F005"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -4300,7 +4553,7 @@
       "finding_ids": [
         "F003"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -4310,7 +4563,7 @@
       "finding_ids": [
         "F003"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "custom.wast",
@@ -4320,7 +4573,7 @@
       "finding_ids": [
         "F003"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "custom.wast",
@@ -4330,7 +4583,7 @@
       "finding_ids": [
         "F003"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -4340,7 +4593,7 @@
       "finding_ids": [
         "F004"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -4350,7 +4603,7 @@
       "finding_ids": [
         "F004"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -4360,7 +4613,7 @@
       "finding_ids": [
         "F004"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -4370,7 +4623,7 @@
       "finding_ids": [
         "F004"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -4380,7 +4633,7 @@
       "finding_ids": [
         "F004"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -4390,7 +4643,7 @@
       "finding_ids": [
         "F004"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -4400,7 +4653,7 @@
       "finding_ids": [
         "F004"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -4410,7 +4663,7 @@
       "finding_ids": [
         "F004"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -4420,7 +4673,7 @@
       "finding_ids": [
         "F004"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -4430,7 +4683,7 @@
       "finding_ids": [
         "F004"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -4440,7 +4693,7 @@
       "finding_ids": [
         "F004"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -4450,7 +4703,7 @@
       "finding_ids": [
         "F004"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -4460,7 +4713,7 @@
       "finding_ids": [
         "F004"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -4470,7 +4723,7 @@
       "finding_ids": [
         "F004"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -4480,7 +4733,7 @@
       "finding_ids": [
         "F004"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -4490,7 +4743,7 @@
       "finding_ids": [
         "F004"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -4500,7 +4753,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -4510,7 +4763,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -4520,7 +4773,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -4530,7 +4783,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -4540,7 +4793,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -4550,7 +4803,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -4560,7 +4813,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -4570,7 +4823,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -4580,7 +4833,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -4590,7 +4843,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -4600,7 +4853,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -4610,7 +4863,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -4620,7 +4873,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -4630,7 +4883,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -4640,7 +4893,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -4650,7 +4903,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -4660,7 +4913,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -4670,7 +4923,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -4680,7 +4933,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -4690,7 +4943,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -4700,7 +4953,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -4710,7 +4963,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -4720,7 +4973,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -4730,7 +4983,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -4740,7 +4993,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -4750,7 +5003,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -4760,7 +5013,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -4770,7 +5023,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -4780,7 +5033,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -4790,7 +5043,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -4800,7 +5053,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -4810,7 +5063,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -4820,7 +5073,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -4830,7 +5083,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -4840,7 +5093,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -4850,7 +5103,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -4860,7 +5113,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -4870,7 +5123,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -4880,7 +5133,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -4890,7 +5143,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -4900,7 +5153,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -4910,7 +5163,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -4920,7 +5173,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -4930,7 +5183,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -4940,7 +5193,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -4950,7 +5203,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -4960,7 +5213,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -4970,7 +5223,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -4980,7 +5233,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -4990,7 +5243,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5000,7 +5253,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5010,7 +5263,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5020,7 +5273,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5030,7 +5283,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5040,7 +5293,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5050,7 +5303,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5060,7 +5313,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5070,7 +5323,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5080,7 +5333,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5090,7 +5343,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5100,7 +5353,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5110,7 +5363,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5120,7 +5373,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5130,7 +5383,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5140,7 +5393,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5150,7 +5403,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5160,7 +5413,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5170,7 +5423,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5180,7 +5433,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5190,7 +5443,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5200,7 +5453,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5210,7 +5463,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5220,7 +5473,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5230,7 +5483,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5240,7 +5493,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5250,7 +5503,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5260,7 +5513,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5270,7 +5523,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5280,7 +5533,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5290,7 +5543,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5300,7 +5553,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5310,7 +5563,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5320,7 +5573,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5330,7 +5583,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5340,7 +5593,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5350,7 +5603,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5360,7 +5613,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5370,7 +5623,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5380,7 +5633,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5390,7 +5643,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5400,7 +5653,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5410,7 +5663,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5420,7 +5673,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5430,7 +5683,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5440,7 +5693,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5450,7 +5703,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5460,7 +5713,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5470,7 +5723,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5480,7 +5733,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5490,7 +5743,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5500,7 +5753,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5510,7 +5763,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5520,7 +5773,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5530,7 +5783,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5540,7 +5793,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5550,7 +5803,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5560,7 +5813,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5570,7 +5823,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5580,7 +5833,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5590,7 +5843,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5600,7 +5853,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5610,7 +5863,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5620,7 +5873,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5630,7 +5883,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5640,7 +5893,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5650,7 +5903,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5660,7 +5913,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5670,7 +5923,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5680,7 +5933,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5690,7 +5943,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5700,7 +5953,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5710,7 +5963,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5720,7 +5973,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5730,7 +5983,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5740,7 +5993,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5750,7 +6003,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5760,7 +6013,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5770,7 +6023,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5780,7 +6033,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5790,7 +6043,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5800,7 +6053,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5810,7 +6063,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5820,7 +6073,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5830,7 +6083,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5840,7 +6093,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5850,7 +6103,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5860,7 +6113,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5870,7 +6123,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5880,7 +6133,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5890,7 +6143,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5900,7 +6153,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5910,7 +6163,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5920,7 +6173,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5930,7 +6183,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5940,7 +6193,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5950,7 +6203,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5960,7 +6213,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5970,7 +6223,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5980,7 +6233,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -5990,7 +6243,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -6000,7 +6253,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -6010,7 +6263,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -6020,7 +6273,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -6030,7 +6283,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -6040,7 +6293,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -6050,7 +6303,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -6060,7 +6313,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -6070,7 +6323,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -6080,7 +6333,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -6090,7 +6343,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -6100,7 +6353,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -6110,7 +6363,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -6120,7 +6373,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -6130,7 +6383,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -6140,7 +6393,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -6150,7 +6403,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -6160,7 +6413,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -6170,7 +6423,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -6180,7 +6433,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -6190,7 +6443,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -6200,7 +6453,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -6210,7 +6463,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -6220,7 +6473,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -6230,7 +6483,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -6240,7 +6493,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-custom-section-id.wast",
@@ -6250,7 +6503,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6260,7 +6513,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6270,7 +6523,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6280,7 +6533,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6290,7 +6543,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6300,7 +6553,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6310,7 +6563,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6320,7 +6573,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6330,7 +6583,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6340,7 +6593,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6350,7 +6603,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6360,7 +6613,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6370,7 +6623,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6380,7 +6633,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6390,7 +6643,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6400,7 +6653,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6410,7 +6663,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6420,7 +6673,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6430,7 +6683,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6440,7 +6693,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6450,7 +6703,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6460,7 +6713,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6470,7 +6723,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6480,7 +6733,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6490,7 +6743,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6500,7 +6753,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6510,7 +6763,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6520,7 +6773,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6530,7 +6783,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6540,7 +6793,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6550,7 +6803,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6560,7 +6813,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6570,7 +6823,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6580,7 +6833,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6590,7 +6843,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6600,7 +6853,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6610,7 +6863,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6620,7 +6873,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6630,7 +6883,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6640,7 +6893,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6650,7 +6903,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6660,7 +6913,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6670,7 +6923,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6680,7 +6933,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6690,7 +6943,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6700,7 +6953,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6710,7 +6963,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6720,7 +6973,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6730,7 +6983,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6740,7 +6993,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6750,7 +7003,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6760,7 +7013,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6770,7 +7023,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6780,7 +7033,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6790,7 +7043,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6800,7 +7053,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6810,7 +7063,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6820,7 +7073,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6830,7 +7083,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6840,7 +7093,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6850,7 +7103,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6860,7 +7113,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6870,7 +7123,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6880,7 +7133,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6890,7 +7143,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6900,7 +7153,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6910,7 +7163,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6920,7 +7173,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6930,7 +7183,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6940,7 +7193,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6950,7 +7203,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6960,7 +7213,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6970,7 +7223,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6980,7 +7233,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -6990,7 +7243,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7000,7 +7253,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7010,7 +7263,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7020,7 +7273,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7030,7 +7283,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7040,7 +7293,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7050,7 +7303,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7060,7 +7313,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7070,7 +7323,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7080,7 +7333,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7090,7 +7343,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7100,7 +7353,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7110,7 +7363,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7120,7 +7373,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7130,7 +7383,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7140,7 +7393,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7150,7 +7403,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7160,7 +7413,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7170,7 +7423,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7180,7 +7433,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7190,7 +7443,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7200,7 +7453,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7210,7 +7463,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7220,7 +7473,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7230,7 +7483,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7240,7 +7493,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7250,7 +7503,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7260,7 +7513,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7270,7 +7523,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7280,7 +7533,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7290,7 +7543,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7300,7 +7553,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7310,7 +7563,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7320,7 +7573,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7330,7 +7583,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7340,7 +7593,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7350,7 +7603,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7360,7 +7613,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7370,7 +7623,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7380,7 +7633,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7390,7 +7643,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7400,7 +7653,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7410,7 +7663,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7420,7 +7673,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7430,7 +7683,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7440,7 +7693,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7450,7 +7703,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7460,7 +7713,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7470,7 +7723,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7480,7 +7733,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7490,7 +7743,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7500,7 +7753,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7510,7 +7763,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7520,7 +7773,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7530,7 +7783,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7540,7 +7793,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7550,7 +7803,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7560,7 +7813,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7570,7 +7823,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7580,7 +7833,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7590,7 +7843,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7600,7 +7853,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7610,7 +7863,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7620,7 +7873,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7630,7 +7883,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7640,7 +7893,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7650,7 +7903,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7660,7 +7913,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7670,7 +7923,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7680,7 +7933,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7690,7 +7943,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7700,7 +7953,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7710,7 +7963,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7720,7 +7973,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7730,7 +7983,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7740,7 +7993,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7750,7 +8003,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7760,7 +8013,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7770,7 +8023,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7780,7 +8033,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7790,7 +8043,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7800,7 +8053,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7810,7 +8063,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7820,7 +8073,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7830,7 +8083,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7840,7 +8093,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7850,7 +8103,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7860,7 +8113,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7870,7 +8123,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7880,7 +8133,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7890,7 +8143,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7900,7 +8153,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7910,7 +8163,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7920,7 +8173,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7930,7 +8183,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7940,7 +8193,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7950,7 +8203,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7960,7 +8213,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7970,7 +8223,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7980,7 +8233,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -7990,7 +8243,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -8000,7 +8253,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-field.wast",
@@ -8010,7 +8263,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8020,7 +8273,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8030,7 +8283,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8040,7 +8293,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8050,7 +8303,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8060,7 +8313,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8070,7 +8323,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8080,7 +8333,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8090,7 +8343,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8100,7 +8353,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8110,7 +8363,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8120,7 +8373,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8130,7 +8383,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8140,7 +8393,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8150,7 +8403,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8160,7 +8413,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8170,7 +8423,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8180,7 +8433,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8190,7 +8443,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8200,7 +8453,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8210,7 +8463,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8220,7 +8473,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8230,7 +8483,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8240,7 +8493,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8250,7 +8503,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8260,7 +8513,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8270,7 +8523,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8280,7 +8533,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8290,7 +8543,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8300,7 +8553,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8310,7 +8563,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8320,7 +8573,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8330,7 +8583,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8340,7 +8593,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8350,7 +8603,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8360,7 +8613,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8370,7 +8623,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8380,7 +8633,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8390,7 +8643,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8400,7 +8653,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8410,7 +8663,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8420,7 +8673,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8430,7 +8683,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8440,7 +8693,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8450,7 +8703,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8460,7 +8713,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8470,7 +8723,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8480,7 +8733,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8490,7 +8743,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8500,7 +8753,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8510,7 +8763,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8520,7 +8773,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8530,7 +8783,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8540,7 +8793,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8550,7 +8803,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8560,7 +8813,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8570,7 +8823,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8580,7 +8833,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8590,7 +8843,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8600,7 +8853,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8610,7 +8863,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8620,7 +8873,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8630,7 +8883,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8640,7 +8893,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8650,7 +8903,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8660,7 +8913,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8670,7 +8923,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8680,7 +8933,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8690,7 +8943,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8700,7 +8953,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8710,7 +8963,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8720,7 +8973,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8730,7 +8983,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8740,7 +8993,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8750,7 +9003,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8760,7 +9013,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8770,7 +9023,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8780,7 +9033,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8790,7 +9043,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8800,7 +9053,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8810,7 +9063,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8820,7 +9073,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8830,7 +9083,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8840,7 +9093,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8850,7 +9103,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8860,7 +9113,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8870,7 +9123,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8880,7 +9133,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8890,7 +9143,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8900,7 +9153,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8910,7 +9163,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8920,7 +9173,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8930,7 +9183,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8940,7 +9193,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8950,7 +9203,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8960,7 +9213,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8970,7 +9223,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8980,7 +9233,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -8990,7 +9243,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9000,7 +9253,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9010,7 +9263,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9020,7 +9273,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9030,7 +9283,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9040,7 +9293,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9050,7 +9303,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9060,7 +9313,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9070,7 +9323,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9080,7 +9333,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9090,7 +9343,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9100,7 +9353,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9110,7 +9363,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9120,7 +9373,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9130,7 +9383,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9140,7 +9393,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9150,7 +9403,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9160,7 +9413,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9170,7 +9423,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9180,7 +9433,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9190,7 +9443,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9200,7 +9453,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9210,7 +9463,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9220,7 +9473,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9230,7 +9483,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9240,7 +9493,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9250,7 +9503,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9260,7 +9513,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9270,7 +9523,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9280,7 +9533,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9290,7 +9543,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9300,7 +9553,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9310,7 +9563,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9320,7 +9573,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9330,7 +9583,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9340,7 +9593,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9350,7 +9603,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9360,7 +9613,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9370,7 +9623,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9380,7 +9633,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9390,7 +9643,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9400,7 +9653,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9410,7 +9663,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9420,7 +9673,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9430,7 +9683,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9440,7 +9693,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9450,7 +9703,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9460,7 +9713,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9470,7 +9723,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9480,7 +9733,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9490,7 +9743,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9500,7 +9753,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9510,7 +9763,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9520,7 +9773,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9530,7 +9783,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9540,7 +9793,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9550,7 +9803,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9560,7 +9813,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9570,7 +9823,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9580,7 +9833,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9590,7 +9843,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9600,7 +9853,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9610,7 +9863,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9620,7 +9873,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9630,7 +9883,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9640,7 +9893,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9650,7 +9903,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9660,7 +9913,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9670,7 +9923,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9680,7 +9933,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9690,7 +9943,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9700,7 +9953,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9710,7 +9963,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9720,7 +9973,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9730,7 +9983,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9740,7 +9993,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9750,7 +10003,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9760,7 +10013,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "utf8-import-module.wast",
@@ -9770,7 +10023,7 @@
       "finding_ids": [
         "F001"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -9780,7 +10033,7 @@
       "finding_ids": [
         "F005"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -9790,7 +10043,7 @@
       "finding_ids": [
         "F005"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -9800,7 +10053,7 @@
       "finding_ids": [
         "F005"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -9810,7 +10063,7 @@
       "finding_ids": [
         "F005"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -9820,7 +10073,7 @@
       "finding_ids": [
         "F005"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -9830,7 +10083,7 @@
       "finding_ids": [
         "F005"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "global.wast",
@@ -9840,7 +10093,7 @@
       "finding_ids": [
         "F005"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "global.wast",
@@ -9850,7 +10103,7 @@
       "finding_ids": [
         "F005"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "global.wast",
@@ -9860,7 +10113,7 @@
       "finding_ids": [
         "F005"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "global.wast",
@@ -9870,7 +10123,7 @@
       "finding_ids": [
         "F005"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -9880,7 +10133,7 @@
       "finding_ids": [
         "F006"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -9890,7 +10143,7 @@
       "finding_ids": [
         "F006"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -9900,7 +10153,7 @@
       "finding_ids": [
         "F006"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -9910,7 +10163,7 @@
       "finding_ids": [
         "F006"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -9920,7 +10173,7 @@
       "finding_ids": [
         "F006"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "custom.wast",
@@ -9930,7 +10183,7 @@
       "finding_ids": [
         "F006"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -9940,7 +10193,7 @@
       "finding_ids": [
         "F007"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -9950,7 +10203,7 @@
       "finding_ids": [
         "F007"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -9960,7 +10213,7 @@
       "finding_ids": [
         "F007"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -9970,7 +10223,7 @@
       "finding_ids": [
         "F007"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -9980,7 +10233,7 @@
       "finding_ids": [
         "F008"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -9990,7 +10243,7 @@
       "finding_ids": [
         "F009"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -10000,7 +10253,7 @@
       "finding_ids": [
         "F009"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -10010,7 +10263,7 @@
       "finding_ids": [
         "F006"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -10020,7 +10273,7 @@
       "finding_ids": [
         "F004"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -10032,7 +10285,7 @@
         "F004",
         "F007"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -10044,7 +10297,7 @@
         "F004",
         "F007"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -10056,7 +10309,7 @@
         "F004",
         "F007"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -10068,7 +10321,7 @@
         "F004",
         "F007"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -10080,7 +10333,7 @@
         "F004",
         "F007"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "custom.wast",
@@ -10092,7 +10345,7 @@
         "F004",
         "F007"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "custom.wast",
@@ -10104,7 +10357,7 @@
         "F004",
         "F007"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "custom.wast",
@@ -10116,7 +10369,7 @@
         "F004",
         "F007"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -10126,7 +10379,7 @@
       "finding_ids": [
         "F003"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -10136,7 +10389,7 @@
       "finding_ids": [
         "F003"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -10146,7 +10399,7 @@
       "finding_ids": [
         "F008"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -10156,7 +10409,7 @@
       "finding_ids": [
         "F003"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -10166,7 +10419,7 @@
       "finding_ids": [
         "F003"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -10176,7 +10429,7 @@
       "finding_ids": [
         "F004"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -10186,7 +10439,7 @@
       "finding_ids": [
         "F004"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -10196,7 +10449,7 @@
       "finding_ids": [
         "F004"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -10206,7 +10459,7 @@
       "finding_ids": [
         "F004"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -10216,7 +10469,7 @@
       "finding_ids": [
         "F004"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -10226,7 +10479,7 @@
       "finding_ids": [
         "F004"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "start.wast",
@@ -11078,6 +11331,47 @@
       },
       "tests": [],
       "note": "今回のテスト・公式run・比較の再実行はない。既存975/37/701成功のログ・TRXと全体結果を照合した。過去の独立レビュー原文・初回監査終了値は保存資料では再確認できない",
+      "run": null,
+      "comparison": null
+    },
+    {
+      "scope": "task_3_decode",
+      "revision": "88b57cdf46e41dd1905e270a443f72a17d89b092",
+      "code_state": "artifacts/test-suite-conformance/task-3-20261003/code-state.json",
+      "code_patch_sha256": "75fbfe10326eb2cd6ecb6aa5d72281dd880c78b9e4511d69b6830eb904e08bd2",
+      "tests": [
+        "artifacts/test-suite-conformance/task-3-20261003/review-3.6-formatted/WasmSharp.Tests_net10.0_x64.trx",
+        "artifacts/test-suite-conformance/task-3-20261003/final-generator/WasmSharp.Generators.Tests_net10.0_x64.trx",
+        "artifacts/test-suite-conformance/task-3-20261003/final-runner/WasmSharp.TestSuiteRunner.Tests_net10.0_x64.trx"
+      ],
+      "changes": "ModuleBinaryReader・ModuleBinaryFormat・ModuleDecoderの既存構文診断と境界失敗後の1回の再走査。ImportInspectorのBounded契約を維持。",
+      "audit": "artifacts/test-suite-conformance/task-3-20261003/official-audit.json",
+      "run": "artifacts/test-suite-conformance/task-3-20261003/run-after.json",
+      "run_exit_code": 1,
+      "comparison": "artifacts/test-suite-conformance/task-3-20261003/compare-run.json",
+      "comparison_exit_code": 1,
+      "record_selection": "baseline_beforeのlast_stage=decodeだった683ケースのみverified。残る261ケースとF011以降は従来状態を維持。",
+      "note": "run・比較は処理完了。終了1はValidate/Instantiateのfailed261件による。baseline更新・ランナー変更・判定緩和なし。コード状態と通常検証はcode_state・tests、およびacceptance.mdを参照。"
+    },
+    {
+      "scope": "task_3_claude_review_corrections",
+      "revision": "88b57cdf46e41dd1905e270a443f72a17d89b092",
+      "code_state": "artifacts/test-suite-conformance/claude-review-task3-20261004/code-state.json",
+      "code_patch_sha256": "d532b7e9aa6969cf24b522051a3eb7a4c7776055af66ef388c2193c54cd33831",
+      "changes": "テスト1ファイルをLFへ戻し、XMLコメントと検証記録を補正。公開Decodeの物理EOFに対する診断先頭テスト1件を追加。ランタイムの処理本体は変更していない。",
+      "build": {
+        "command": "dotnet build WasmSharp2.slnx -c Release --warnaserror",
+        "log": "artifacts/test-suite-conformance/claude-review-task3-20261004/build-final.log",
+        "exit_code": 0,
+        "warnings": 0,
+        "errors": 0
+      },
+      "tests": [
+        "artifacts/test-suite-conformance/claude-review-task3-20261004/runtime-final/WasmSharp.Tests_net10.0_x64.trx",
+        "artifacts/test-suite-conformance/claude-review-task3-20261004/generator-final/WasmSharp.Generators.Tests_net10.0_x64.trx",
+        "artifacts/test-suite-conformance/claude-review-task3-20261004/runner-final/WasmSharp.TestSuiteRunner.Tests_net10.0_x64.trx"
+      ],
+      "note": "通常テスト1808成功・失敗0・スキップ0。公式全体run・比較・baseline更新は再実行せず、task_3_decodeの証跡とverifiedの対象集合を保持した。",
       "run": null,
       "comparison": null
     }
