@@ -1,5 +1,5 @@
 ---
-updated_at: 2026-10-03
+updated_at: 2026-10-04
 ---
 
 # WasmSharp2ロードマップ
@@ -10,7 +10,7 @@ C#でWebAssemblyバイナリをデコード・検証・インスタンス化・�
 
 下記8仕様を機能ごとに4段階を通して実装する。公式テスト素材の固定・生成から実行・回帰比較までは、`test-suite-runner`で一つの仕様・ツールとして扱い、初期実装から公式期待診断を前方一致で判定する。その後の`test-suite-conformance`で、テストスイートで判明したランタイムの実装上の問題をまとめて修正する。診断互換性はその一部とし、実行結果に応じて修正項目を追記・見直す。Core 3.0は将来の別計画とする。この分割方針の承認と、各仕様のrequirements・design・tasks・実装の承認は区別する。文書の言語は日本語とし、`spec.json.language`は`ja`とする。
 
-`runtime-foundation`と`host-linking`は完了し、関数呼出し・リソース生成・import/exportの実行・リンク基盤まで整備済み `test-suite-runner`も、その公開能力を使うspectest・register、全体実行・回帰比較の実装と初回公式受入・baseline保存、仕様全体の最終実装検証GOまで記録済み 次に、観測した実装上の不一致を`test-suite-conformance`で解消してから各命令・初期化機能へ進む。両基盤の承認済み要件・設計・タスクと完成状態は維持する。後続機能では同じ公式スイートによる診断照合と回帰確認も完了条件に含める。
+`runtime-foundation`と`host-linking`は完了し、関数呼出し・リソース生成・import/exportの実行・リンク基盤まで整備済み。`test-suite-runner`も、その公開能力を使うspectest・register、全体実行・回帰比較の実装と初回公式受入・baseline保存、仕様全体の最終実装検証GOまで記録済み。`test-suite-conformance`は既知944件を解消し、failed・runner_error・回帰0、baseline明示更新と最終実装検証GOを確認した。次は`numeric-control`から各命令・初期化機能へ進む。先行仕様の承認済み要件・設計・タスクと完成状態は維持する。後続機能では同じ公式スイートによる診断照合と回帰確認も完了条件に含める。
 
 ## discovery時点の現状（2026-09-06）
 
@@ -129,7 +129,7 @@ Decode・Validate・Instantiate・Invokeを別々の機能仕様にせず、機�
 - [x] runtime-foundation -- 明示的な4段階APIと値・型・失敗分類、最小の線形実行基盤 Dependencies: none
 - [x] host-linking -- 関数実行、global・memory・tableの生成と共有、import/export、ホストcallbackとstartを公開APIで扱う実行・リンク基盤 Dependencies: runtime-foundation
 - [x] test-suite-runner -- 固定公式素材の生成、spectest・register、公開API実行・判定、全commandの結果記録・回帰比較と初回baseline（仕様全体の最終実装検証GO。記録は[test-suite-conformanceの準備記録](../specs/test-suite-conformance/acceptance.md#上流仕様の最終実装検証)） Dependencies: host-linking
-- [ ] test-suite-conformance -- テストスイートで判明したランタイムの実装上の問題を集約して修正する。診断互換性も含め、実行結果に応じて修正項目を追記・見直す。 Dependencies: test-suite-runner
+- [x] test-suite-conformance -- 既知944件の不一致を解消し、固定全体結果のfailed・runner_error・回帰0、baseline明示更新、48受入基準と最終実装検証GOを確認済み。後続4機能は未解消のまま引き継ぐ。記録は[最終受入記録](../specs/test-suite-conformance/acceptance.md#仕様全体の最終実装検証)。 Dependencies: test-suite-runner
 - [ ] numeric-control -- スカラー数値命令と構造化制御を共通実行機構へ追加し、数値trap・再帰・複数値制御を公式検証する。 Dependencies: host-linking, test-suite-runner, test-suite-conformance
 - [ ] linear-memory -- スカラーload/store、data segment、bulk memoryと初期化・実行のtrapを公式検証する。 Dependencies: numeric-control
 - [ ] tables-references -- 参照命令、table操作、element segment、間接呼出しと初期化・実行のtrapを公式検証する。 Dependencies: numeric-control

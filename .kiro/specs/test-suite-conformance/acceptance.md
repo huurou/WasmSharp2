@@ -451,3 +451,15 @@ HEAD`28907f2de5bca18a1f6c5080155c27c0edd2c177`、cleanな状態の通常Release 
 主[最終監査](../../../artifacts/test-suite-conformance/final-20261004/acceptance-audit.json)は7/final-acceptance-audit.jsonと完全一致し、SHA-256は`360a1daf59a33b809ba4b63e019f8295db1d2054a8c5ad59b1c8a6f6e00a684d`。全受入契約1〜6成立、不成立CaseIdなし。保存監査10確認と独立監査71確認はいずれも実終了0・不成立0で[APPROVED](../../../artifacts/test-suite-conformance/final-20261004/7/review.md)。mainも原ログ・終了値・現在のbyte列・hashを13確認で読戻し、[TASK VERIFIED](../../../artifacts/test-suite-conformance/final-20261004/7/verification.md)とした。保存前補助監査のKeyErrorと独立初回の引数誤認は原script・log・終了1を保持し、正式成功と区別する。
 
 [後続への引継ぎ](../../../artifacts/test-suite-conformance/final-20261004/7/handoff.md)に修正状態・原因・直接テスト・全体結果・比較・監査・固定条件と次回のrun→現baseline比較→修正→明示保存を揃えた。後続4仕様の未対応と依存は未解消のまま保持する。baseline保存終了0はCore2.0全体の合格を意味せず、同currentのverify終了1とcore2_complete=falseを維持する。仕様全体の最終実装検証は保存後に行う。
+
+### 仕様全体の最終実装検証
+
+全タスク完了後、revision`f457b30161a90869c83d241f1d1d1def6002fb3b`でkiro-validate-implを実施し、[最終判定GO](../../../artifacts/test-suite-conformance/final-20261004/validation/report.md)と[FEATURE_GOのVERIFIED](../../../artifacts/test-suite-conformance/final-20261004/validation/verification.md)を確認した。新鮮な独立担当が機械検証・要件・設計・統合を確認し、mainも原資料と現在のhashを読戻した。今回のタスク別の報告・判定・変更ファイル・コミットは[完了記録](../../../artifacts/test-suite-conformance/final-20261004/completion-summary.md)へまとめた。
+
+警告・エラー0で成功した6.1-retryのReleaseビルドと、現在のソース・テスト・成果物232項目が6.2受入時と同じhashであることを起動前に確認した。再ビルドは行わず、CIの3つのTUnitプロジェクトをRelease/--no-build・絞込みなし・新規TRX出力先で順次再実行した。runtime1110・generators37・runner701の計1848成功・失敗0・スキップ0、各実終了0、全TRXがCompleted。[機械報告と原証跡](../../../artifacts/test-suite-conformance/final-20261004/validation/mechanical/report.md)に実PID・引数・時刻・終了値・新TRXのhashを保存した。通常Release apphostの--helpもPID37248・実終了0で使用法を表示し、stderr空だった。
+
+[48受入基準の対応表](../../../artifacts/test-suite-conformance/final-20261004/validation/contracts/matrix.md)は原番号と現在の実装・直接テスト・完了タスク・固定公式証拠を過不足なく結び、coverage gap0。読取り診断とimport調査、全Validate成功時の確定、リンクの原因選択と実体順、start/Invoke・共有状態・ホスト例外の接合を確認し、設計境界・依存方向の阻害する逸脱なし。placeholder・具体的な秘密情報の追加なし。契約監査はPID41896・実終了0・185確認成功・不成立0、固定参照53件一致。mainも全新TRX・原終了値・現在232項目・baseline・原48IDと対応表を15確認で照合し、不成立0だった。tasks.mdは全[x]、未完了・_Blockedなし。
+
+公式受入は同じ固定147入力・53907commandの原結果と監査を使用する。944件を個別passedへ変更し、旧1547件と必須66件を維持、全体failed/runner_error/回帰/未比較0、run/比較終了0、現baselineとcurrentは完全byte一致。後続4機能の未対応2987件・blocked47352件は未解消のまま引き継ぎ、verify終了1とCore2.0全体未完了を保持する。
+
+画像で報告されたdotnet.exeの0xe0434352は、該当する詳細ログ・PID・発生コマンドが特定できず、原因未確認のままである。今回のテスト・CLI起動で再発を観測しなかったことと、元障害の原因特定・修正は区別する。補助確認・整形操作の失敗は各原証跡とinspection-notesへ保持する。この完了記録の変更はMarkdownだけで、C#・テスト・成果物・公式結果・baselineを変更しない。

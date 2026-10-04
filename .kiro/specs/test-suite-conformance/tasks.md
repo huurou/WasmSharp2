@@ -224,6 +224,8 @@
 
 ## Implementation Notes
 
+- 最終検証: 2026-10-04、全タスク[x]、48受入基準の対応・設計・境界接合を確認してGO、FEATURE_GOはVERIFIED。現在の232項目が受入時の警告・エラー0Releaseビルドと同一であることを確認して再利用し、全3プロジェクト1848件と通常CLI起動を新規証跡で再確認した。固定全体結果は944個別改善・failed/runner_error/回帰/未比較0。受入currentをbaselineへ明示保存済み。後続4仕様の未対応2987件・blocked47352件とverify終了1は保持する。[最終受入記録](acceptance.md#仕様全体の最終実装検証)を参照する。
+
 - 6.1: 2026-10-04、旧診断を期待するランナー2fixtureの失敗を独立debugで確認し、4文字列だけを保守した。Releaseビルド警告・エラー0、通常テスト1110/37/701成功、独立focused21件成功。APPROVEDと現在のhash・ログ・TRXをmainが照合しVERIFIED。初回2失敗とsmokeの引数splat誤りは履歴を保持する。公式全体受入は6.2以降。[確認記録](acceptance.md#61-通常ビルドと全3プロジェクト)を参照する。
 
 - 5: 2026-10-04、5.1〜5.3を自律モードで実装し、独立レビューはすべてAPPROVED、TASK完了確認はVERIFIED。importの全名前解決後の逆順照合と診断先頭、既存trap・exhaustionの診断を統合した。start保存参照テストをexhaustionへ拡張し、公開API関連412件を確認した。原因・直接テストと証跡はacceptance.mdのタスク5以降の記録を参照する。公式全体受入はタスク6で確認する。
