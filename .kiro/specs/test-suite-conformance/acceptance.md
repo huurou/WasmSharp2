@@ -431,3 +431,13 @@ HEAD`28907f2de5bca18a1f6c5080155c27c0edd2c177`、cleanな状態の通常Release 
 実装監査470218チェック・独立監査304838チェックはともに実終了0。不成立一覧は空。独立レビューで使用module2987件の現在hashとcatalog1331参照を確認し[APPROVED](../../../artifacts/test-suite-conformance/final-20261004/6.4/review.md)、mainも原ログ・終了値・現在hash・構造差分を確認して[TASK VERIFIED](../../../artifacts/test-suite-conformance/final-20261004/6.4/verification.md)とした。初回の固定個数条件と独立監査側の解釈誤りの原証跡は保持し、訂正後の正式実行と区別する。
 
 引継ぎは最初の未実装機能の所有先を示し、未解消のまま保持する。入力全体の有効性や後続追加後の合格を推定しない。select.wast#121はopcode0x1c・2i32の型vectorで長さ1の規則に反する情報を保持し、numeric-controlへ渡す。通常ソース/テスト/成果物は6.1〜6.3と同じhashで、再ビルド・通常テスト・公式runは再実行していない。verifyとbaseline保存は後続で確認する。
+
+### 6.5 同じcurrentによる保存前受入
+
+通常Release apphostで`verify --input artifacts/test-suite-conformance/final-20261004/6.2/run-after.json`を実行した。実終了1、stderr空で、原stdoutは「最終判定: 不合格」「runtime_unsupportedが2987件あります。」「blockedが47352件あります。」。run・compare-runの終了0と区別し、Core 2.0全体の未完了として記録する。
+
+既存の全件監査を固定hashで参照し、完全性・944件の改善・旧1547/必須66の維持・全体failed/runner_error/回帰/未比較0・原因別直接テスト・残存所有先/依存と同じ修正状態を[統合監査](../../../artifacts/test-suite-conformance/final-20261004/6.5/acceptance-audit.json)へまとめた。SHA-256は`2b3453f7691a6d05231e48824143bafec912f5a52c50e87cf7f434408163b0c8`。31チェックが成功・実終了0、全6要件条件true、仕様内の未解消原因・不成立CaseId一覧は空。feature_acceptance=true、core2_complete=false、baseline_save=pending_task7である。
+
+独立レビューでも同じverifyを実行し、同じ終了1と理由を確認した。独立統合監査は60チェック成功・実終了0で[APPROVED](../../../artifacts/test-suite-conformance/final-20261004/6.5/review.md)。mainも原ログ・終了値・現在hash・条件を確認して[TASK VERIFIED](../../../artifacts/test-suite-conformance/final-20261004/6.5/verification.md)とした。独立初回の3条件は不成立ID辞書の読み方の誤りを直した別finalで成立し、初回原script/JSON/log/終了1を保持している。
+
+現在のsource84/test17/build12/runner116/deployment3と379歴史参照は一致し、6.3の当時の可変record参照は固定after snapshotで照合する。原結果・比較・素材・record・成果物・現baselineはverify前後で不変。後続4機能は未解消のまま引き継ぎ、入力全体の有効性・将来passedを推定しない。保存前受入条件が成立したため、同じcurrentを明示保存するタスク7へ進む。
