@@ -180,7 +180,7 @@
   - _Depends: 5.3_
   - _Requirements: 2.1, 3.4, 7.8, 8.3_
 
-- [ ] 6.2 固定素材を全体実行し、修正前baselineと比較する
+- [x] 6.2 固定素材を全体実行し、修正前baselineと比較する
   - 修正した通常ビルドのランナーで固定manifestの全147入力・53,907commandを実行する。旧portableランナーを使わず、実行環境とMaxCallDepth=1024を記録する。
   - profile・入力・生成物と判定条件を維持し、同じcurrent JSONを確保済みの現baselineと比較する。全体結果・比較JSONを加工せず未使用の出力先へ保存する。
   - 比較が完了し、未比較・回帰がなく、runとcompare-runが終了0になることを受入条件とする。不成立ならbaselineを保持し、原因を該当する修正タスクへ戻す。

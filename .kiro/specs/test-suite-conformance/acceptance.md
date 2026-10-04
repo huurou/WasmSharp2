@@ -391,3 +391,18 @@ F023とexhaustionを区別した原因・最小入力・固定規則・直接テ
 修正後の`dotnet build WasmSharp2.slnx -c Release --warnaserror`は終了0、警告・エラー0。3つの通常テストは1110/37/701、合計1848件成功、失敗・スキップ0。全体整形は初回382ファイルで成功、修正後は変更1C#の整形が成功した。通常apphostの`--help`も終了0。初回smoke wrapperはstringのsplatにより引数が文字へ分割され終了2となり、string[]へ直した再実行で解消した。初回ログと終了値はそのまま保持する。
 
 最新の実コマンド・ログ・終了値・TRX・ソース84件・変更テスト17件・成果物12件のhashは[`6.1-retry/`](../../../artifacts/test-suite-conformance/final-20261004/6.1-retry/)へ保存した。独立レビューはビルド・対象21件・整形を再実行し、全3TRXと先行資料の現在hashも照合して[APPROVED](../../../artifacts/test-suite-conformance/final-20261004/6.1-retry/review.md)。mainも実際のログ・終了値・Counters・現在hashを照合し、TASKとして[VERIFIED](../../../artifacts/test-suite-conformance/final-20261004/6.1-retry/verification.md)とした。公式全体受入とbaseline更新はこの判定に含めない。
+
+### 6.2 固定素材の全体実行と比較
+
+HEAD`28907f2de5bca18a1f6c5080155c27c0edd2c177`、cleanな状態の通常Release apphostで、固定manifestの全147入力・53,907commandを実行した。環境はWindows10.0.26300/X64、SDK10.0.401・Host10.0.12、MaxCallDepth1024。profile、spec・WABTの固定commit、入力と生成物、判定条件を維持した。ソース84・変更テスト17・成果物12件のhashは6.1の全1848テスト成功時と一致し、再ビルドは行っていない。
+
+| 操作 | 結果と保存先 |
+| --- | --- |
+| 通常apphostの`run --manifest artifacts/test-suite-runner-acceptance-20261001/portable/corpus/manifest.json --output artifacts/test-suite-conformance/final-20261004/6.2/run-after.json` | 終了0、記録・出力完了。147入力・53907command、入力異常・中断・未処理・未確定・failed・runner_error0 |
+| 同apphostの`compare-run --baseline artifacts/test-suite-runner-acceptance-20261001/run-baseline.json --current artifacts/test-suite-conformance/final-20261004/6.2/run-after.json --output artifacts/test-suite-conformance/final-20261004/6.2/compare-run.json` | 終了0、比較成立・完了。変化944、回帰・未比較・追加・欠落・条件差・出典差・素材差0 |
+
+分類はpassed2491、failed0、runtime_unsupported2987、runner_error0、out_of_scope1077、blocked47352。current run IDは`4ab7103e-ab79-463b-8bfc-a75081e33592`、SHA-256は`2c6b3e3676cdf8db53747aaf65e1dc47fa94c61c04758edea7e9f94f4f0dce96`。比較JSONは`aabe931d87172cc3bb6d1a4e17b35e3364e1732b29de5e4f4b7b852e03bb5c72`。初回baselineと保存済みrun-movedは`032cc64b6c088e920331b420490617da6094454ab08a52381ab7c35b1be3c057`、manifestは`5ce710f306e91f380ff45797aafeb7a0fbfd66882ce45a6d4bc63f5c27de9b6e`のまま維持した。
+
+未加工JSON、PID・時刻・実引数・ログ・終了値、実行前後のhash、軽量監査は[`6.2/`](../../../artifacts/test-suite-conformance/final-20261004/6.2/)へ保存した。独立Python監査は48チェック成功・現在6275ファイルのhash一致・終了0となり[APPROVED](../../../artifacts/test-suite-conformance/final-20261004/6.2/review.md)。全5821生成物・147元入力も個別hashを照合した。mainが原JSON・実ログ・終了値・現在hashを確認し、TASKとして[VERIFIED](../../../artifacts/test-suite-conformance/final-20261004/6.2/verification.md)とした。ケース単位の改善は6.3、残存依存の所有先は6.4、verifyとbaseline保存は6.5以降へ継続する。
+
+ユーザーが報告したdotnet.exeの画面エラー0xe0434352は、担当のdotnet・apphost起動前に発生し、画面は既に閉じられていた。mainの単独`dotnet --info`は終了0、今回のapphost実行では再発しなかった。対応するWindowsイベント・WER・MSBuild障害ログは見つからず、原因未確定の[確認記録](../../../artifacts/test-suite-conformance/final-20261004/6.2/dotnet-incident.md)を保持する。元障害の修正確認とは扱わない。準備中断と補助読取り・表示の誤りはinspection-notes.mdに残し、製品run・比較の結果と区別する。
