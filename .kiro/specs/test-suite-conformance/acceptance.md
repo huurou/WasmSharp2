@@ -280,3 +280,82 @@ TRXの集計も確認し、1,713成功・失敗0・スキップ0を`test-counter
 TRXの集計は1808成功・失敗0・スキップ0。補正後の`code-state.json`にソース・成果物・TRXのSHA-256と件数を記録した。`code-final.patch`のSHA-256は`d532b7e9aa6969cf24b522051a3eb7a4c7776055af66ef388c2193c54cd33831`である。
 
 独立した記録監査では、補正前の全53,907CaseIdと比較JSONの前後データ、元944CaseIdと候補関連、683件の改善と他53,224件の観測一致、残261件、147元WASTと5821生成物のhash、最終TRX1807件と参照先を確認した。[初回監査原文](../../../artifacts/test-suite-conformance/claude-review-task3-20261004/independent-record-audit.md)と、補正後の1808件・新旧の証跡分離・ソース差分を再確認した[再監査原文](../../../artifacts/test-suite-conformance/claude-review-task3-20261004/independent-record-audit-2.md)を保存した。独立監査のツール出力・終了値は別ファイルには保存していない。今回の公式全体run・compare-run・baseline-save・GitHub Actionsは未実施。公式runのコード状態と今回のコメント・テスト補正後の状態を区別し、タスク4以降の完了やCore 2.0全件合格を意味しない。
+
+
+## タスク4: 型・添字・構造の検証診断
+
+2026-10-04、承認済みタスク4.1〜4.4を手動モードで実装した。既存の用途別検査と診断補助処理を使い、型不一致、種類別添字、limits、定数式、global変更、start、export、memory総数の診断と検査順を固定`valid.ml`へ合わせた。変更は`ModuleValidator.cs`と既存の関連テスト4ファイルに閉じる。公開例外型、Location、添字空間、WasmModuleの状態確定、正常時の型検査と線形化の1回のパスを維持した。
+
+証跡は[`artifacts/test-suite-conformance/task-4-20261004/`](../../../artifacts/test-suite-conformance/task-4-20261004/)に保存した。ランナー・判定・公式素材・baselineは変更していない。
+
+### タスク4の直接テストと独立レビュー
+
+| タスク | RED | GREEN | フラグ除去後のランタイム全テスト | 独立レビュー |
+| --- | --- | --- | --- | --- |
+| 4.1 | 164件中45失敗 | 164成功 | 1072成功 | `review-4.1.md`: APPROVED、独立1072成功 |
+| 4.2 | 174件中16失敗 | 174成功 | 1080成功 | 初回のassertion規約指摘を修正し`review-4.2-remediation.md`: APPROVED、独立118成功 |
+| 4.3 | 181件中17失敗 | 181成功 | 1087成功 | `review-4.3.md`: APPROVED、独立181成功 |
+| 4.4 | 187件中15失敗 | 187成功 | 1093成功 | `review-4.4.md`: APPROVED、独立187成功 |
+
+各変更後にReleaseビルドの警告・エラー0を確認してからテストを実行した。REDの失敗は新しい診断先頭または選択する原因位置の不一致によるもの。4.1のカルチャ2件はGREEN後に追加したためREDには含まれず、フラグ除去後と独立レビューで確認した。4.2は3テストの関連assertionを`Assert.Multiple`へまとめ、処理・期待値を変えずにビルドと全1080件を再確認した。初回REJECTEDと再承認の原文を別ファイルに保存した。
+
+4.1のビルド・テスト終了値はこのチャットのコマンド出力で確認し、RED/GREENと通常検証のTRX、独立レビュー原文を保存した。4.2以降は`validate.ps1`による`build-<検証名>.log/.exit`と`<検証名>.log/.exit`、新しいディレクトリのTRXも保存した。保存していない初期ログを後から再構成していない。
+
+直接テストで、importの逆順検査と元の関数添字、上限超過と大小逆転、global→table→memory、未知globalと禁止命令の両順序、余分な値を含む定数式、immutable global更新、関数→start→export→memory総数、export内の添字→重複を確認した。後段失敗時は再Validateも同じ原因で失敗し、実行コードとexport索引を公開せずInstantiateを拒否した。memory個数超過では元の2個目の宣言位置を保持する。診断はprivate補助処理で生成し、添字はInvariantCultureの10進表記、補助説明は診断の後ろに付ける。
+
+### タスク4の通常検証
+
+| コマンド | 結果と証跡 |
+| --- | --- |
+| `dotnet build WasmSharp2.slnx -c Release --warnaserror` | 終了0、警告・エラー0。`build-verify-4.4.log/.exit` |
+| `dotnet run --project tests/WasmSharp.Tests/WasmSharp.Tests.csproj -c Release --no-build -- --report-trx --results-directory artifacts/test-suite-conformance/task-4-20261004/verify-4.4` | 終了0、1093成功・失敗0・スキップ0。`verify-4.4.log/.exit`とTRX |
+| `dotnet run --project tests/WasmSharp.Generators.Tests/WasmSharp.Generators.Tests.csproj -c Release --no-build -- --report-trx --results-directory artifacts/test-suite-conformance/task-4-20261004/verify-4.4-WasmSharp.Generators.Tests` | 終了0、37成功・失敗0・スキップ0。同名ログ・終了値とTRX |
+| `dotnet run --project tests/WasmSharp.TestSuiteRunner.Tests/WasmSharp.TestSuiteRunner.Tests.csproj -c Release --no-build -- --report-trx --results-directory artifacts/test-suite-conformance/task-4-20261004/verify-4.4-WasmSharp.TestSuiteRunner.Tests` | 終了0、701成功・失敗0・スキップ0。同名ログ・終了値とTRX |
+| `dotnet csharpier check <変更C#5ファイル>` | 独立レビューで終了0。最終確認は`format-final.log/.exit` |
+| 通常ビルドの`WasmSharp.TestSuiteRunner.exe --help` | 終了0。`runner-help.log/.exit` |
+
+合計1831成功・失敗0・スキップ0。`code-state.json`に現在のソース5ファイル・通常ビルド成果物・最終TRXのhashと件数を保存した。公式run時点の`code-final.patch`のSHA-256は`5bab6d6f8e2463a4f4d08a400c3860d041299703e54c6ea6afaf31cccedb3be0`。初回の通常サンドボックスでのビルドはobjへの書込み拒否で失敗したため、同じ通常ビルドを昇格実行し、以後のビルドとテストも昇格実行した。
+
+### タスク4の公式全体run・比較と修正記録
+
+固定Core 2.0profile、spec`05ca4182176763112561ae20153975c12bd689e4`、既存manifestと生成物を使い、今回の通常ビルドのランナーで全147入力・53,907commandを実行した。MaxCallDepthは既存条件の1024。比較元baselineのSHA-256は`032cc64b6c088e920331b420490617da6094454ab08a52381ab7c35b1be3c057`、manifestは`5ce710f306e91f380ff45797aafeb7a0fbfd66882ce45a6d4bc63f5c27de9b6e`のまま。
+
+| コマンド | 結果と証跡 |
+| --- | --- |
+| 通常ランナー`run --manifest artifacts/test-suite-runner-acceptance-20261001/portable/corpus/manifest.json --output artifacts/test-suite-conformance/task-4-20261004/run-after.json` | 全入力・commandの処理と記録が完了。中断・未処理・件数未確定・入力異常・runner_error0。終了1。`run-after.json/.log/.exit` |
+| 同ランナー`compare-run --baseline artifacts/test-suite-runner-acceptance-20261001/run-baseline.json --current artifacts/test-suite-conformance/task-4-20261004/run-after.json --output artifacts/test-suite-conformance/task-4-20261004/compare-run.json` | 比較成立・完了。baselineから変化866、追加・欠落・回帰・未比較・条件差・出典差・素材差0。終了1。`compare-run.json/.log/.exit` |
+| `python -X utf8 artifacts/test-suite-conformance/task-4-20261004/audit-task4.py` | 終了0、issue_count=0。全CaseIdと比較JSONの前後観測、Validate183件のpassed、Decode683件の改善維持、他53,724件のtask3との観測一致、残Instantiate78件、944CaseIdと23候補を照合。`official-audit.json/.log/.exit` |
+
+結果はpassed=2413、failed=78、runtime_unsupported=2987、blocked=47352、out_of_scope=1077、runner_error=0。修正前のValidate183件がすべてpassedになり、初回1547passedと以前のDecode改善683件を維持した。残るfailed78件はInstantiate段階で、以前の観測結果と同一。run・compare-runの終了1はこの未解消の78件によるもので、仕様全体の受入やCore 2.0全件合格とは扱わない。
+
+`remediation.json`のF011〜F019へ固定参照規則・確認した原因・現在の修正先・最小入力・直接テスト・独立レビュー・今回の全体結果を対応付け、Validate183ケースをverifiedへ更新した。既存CaseIdと候補の関連付けを維持し、ケース別の因果確定を追加したものではない。F014の検査順は候補CaseIdを追加せず、直接の複合入力と全体回帰比較を根拠とする。F001〜F010、F020以降、残Instantiate78ケースの既存記録を維持する。
+
+mainが各APPROVED、最終ビルド・TRX・全体比較・監査と現在のコード状態を照合し、`kiro-verify-completion`のTASKとして4.1〜4.4とタスク4全体をVERIFIEDとした。判定は`verification-4.1.md`〜`verification-4.4.md`と`verification-task4.md`、tasks.mdの該当項目を完了へ更新した。タスク5以降、仕様全体のkiro-validate-impl、最終受入、baseline-save、GitHub Actionsは未実施。Gitのステージング・コミット・プッシュ・ブランチ変更は行っていない。
+
+
+履歴を引き継がない別エージェントの[独立記録監査](../../../artifacts/test-suite-conformance/task-4-20261004/independent-record-audit.md)でもissue_count=0を確認した。監査は保存済み全53,907CaseId・比較JSONの前後観測、944ケースと23候補の更新範囲・関連付け維持、hash・run ID・参照先、現在のソースと成果物、最終TRX1831件を独立に照合した。ビルド・テスト・公式runは再実行していない。
+
+## タスク4のClaude Codeレビューによる補正と確認
+
+2026-10-04、未コミット変更8ファイルをClaude Codeで読み取り専用レビューした。[初回原文](../../../artifacts/test-suite-conformance/claude-review-task4-20261004/review-initial.md)は終了0、最終resultはsuccess、セッションIDは`933c5089-1810-46b6-a00e-0760ae294142`。Critical・High・Mediumはなく、Low3件をコード・規約・証跡と照合して採用した。
+
+1. 診断先頭のassertion失敗でLocationや状態の確認結果が隠れるため、指摘された7テストの例外取得後の関連assertionを`Assert.Multiple`へまとめた。入力・期待値・テスト件数は変更していない。
+2. 原因から直接テストを追跡できるよう、F012へタスク4.3、F014へタスク4.2のRED・最終GREEN・独立レビューを追加した。F017・F019には複合入力を確認する`WasmModule_ValidateStartTests.cs`の参照を追加した。参照先の存在と、944ケース・23候補の他データが補正前と同じであることを照合した。任意提案のテスト配置変更は行っていない。
+3. `ValidateFunctions`と`ValidateFunction`のXMLコメントを、検査済みのimport・定義関数の型参照、global初期化式、リソース宣言へ限定した。start・exportまで検査済みと読める表現を補正した。ランタイムの処理は変更していない。
+
+今回の証跡は[`claude-review-task4-20261004/`](../../../artifacts/test-suite-conformance/claude-review-task4-20261004/)へ保存した。`task-4-20261004/code-state.json`と`code-final.patch`は公式run時点の記録として保持し、今回の補正後のソース・成果物・TRXは新しいディレクトリの`code-state.json`に記録する。同じセッションでの再レビュー原文は、完了後に同ディレクトリの`review-final.md`へ保存する。
+
+| コマンド | 結果と今回の証跡 |
+| --- | --- |
+| `dotnet build WasmSharp2.slnx -c Release --warnaserror` | 終了0、警告・エラー0。`build-final.log/.exit` |
+| `dotnet run --project tests/WasmSharp.Tests/WasmSharp.Tests.csproj -c Release --no-build -- --report-trx --results-directory artifacts/test-suite-conformance/claude-review-task4-20261004/WasmSharp.Tests` | 終了0、1093成功・失敗0・スキップ0。`WasmSharp.Tests.log/.exit`とTRX |
+| `dotnet run --project tests/WasmSharp.Generators.Tests/WasmSharp.Generators.Tests.csproj -c Release --no-build -- --report-trx --results-directory artifacts/test-suite-conformance/claude-review-task4-20261004/WasmSharp.Generators.Tests` | 終了0、37成功・失敗0・スキップ0。`WasmSharp.Generators.Tests.log/.exit`とTRX |
+| `dotnet run --project tests/WasmSharp.TestSuiteRunner.Tests/WasmSharp.TestSuiteRunner.Tests.csproj -c Release --no-build -- --report-trx --results-directory artifacts/test-suite-conformance/claude-review-task4-20261004/WasmSharp.TestSuiteRunner.Tests` | 終了0、701成功・失敗0・スキップ0。`WasmSharp.TestSuiteRunner.Tests.log/.exit`とTRX |
+
+通常テストは合計1831成功・失敗0・スキップ0。修正時のPython書込みは権限不足で拒否されたためパッチで適用し、CSharpierが指摘した2ファイルを整形した後に上記ビルド・テストを実行した。
+
+別エージェントによる今回の独立照合は、今回の3件補正前の状態（`task-4-20261004/code-state.json`と補正前の`remediation.json`）を対象とした。全53,907CaseIdと比較JSONの前後観測、Validate183件のpassed、Decode683件の改善維持、他53,724件のタスク3との観測一致、残Instantiate78件、944ケース・23候補の変更範囲、source参照hash・run ID・baseline・manifest、ソース・成果物・TRX20件・終了値27ファイルで不整合なし。補正後のソース・成果物は新しい`code-state.json`、`remediation.json`の補正はmainの構造比較で確認した。結果の[監査原文](../../../artifacts/test-suite-conformance/claude-review-task4-20261004/independent-record-audit.md)を保存した。監査スクリプト内のJSON構造の仮定違いによるKeyError2回は修正後に正常終了した。監査コマンドの出力・終了値は別ファイルへ保存していない。147元WASTと5821生成物の個別hash再計算は行っていない。
+
+同じセッションの[初回再レビュー原文](../../../artifacts/test-suite-conformance/claude-review-task4-20261004/review-rereview-2.md)は終了0で初回3件の解消を確認した。追加Low2件を採用し、パッチ適用でLFになったJSONの438行を元のCRLFへ戻し、上記の独立監査が補正前を対象としたことを明記した。JSONの解釈結果は補正前後で同一であり、既存F020の3行だけのLFを維持した。初回と初回再レビューの最終result・終了コード・セッションIDは、それぞれ`review-initial-status.json`と`review-rereview-2-status.json`に保存した。追加補正はJSONの改行と記録のみで、ビルド・テスト対象のC#は変更していない。
+
+公式run・compare-run・baseline-save・GitHub Actionsは今回未実施。残るfailed78件はタスク5の対象であり、今回の補正や通常テストの成功を仕様全体の受入・Core 2.0全件合格とは扱わない。

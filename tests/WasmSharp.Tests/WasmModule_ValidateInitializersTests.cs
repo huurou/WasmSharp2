@@ -6,6 +6,53 @@ namespace WasmSharp.Tests;
 internal partial class WasmModule_ValidateTests
 {
     [Test]
+    [Arguments("23011A0B", false, "unknown global 1", 0)]
+    [Arguments("1A23010B", false, "constant expression required", 0)]
+    [Arguments("41001A23010B", false, "constant expression required", 1)]
+    [Arguments("4100230141000B", false, "unknown global 1", 1)]
+    [Arguments("2300410023010B", false, "unknown global 1", 2)]
+    [Arguments("410023000B", true, "constant expression required", 1)]
+    [Arguments("23001A0B", true, "constant expression required", 0)]
+    public async Task 定数式に未知globalと禁止命令と余分な値がある_左から最初の適格性違反を選ぶ(
+        string initializer,
+        bool mutableImport,
+        string prefix,
+        int instructionIndex
+    )
+    {
+        // Arrange
+        var module = WasmModule.Decode(
+            HostLinkingModuleBinary.Create(
+                HostLinkingModuleBinary.Imports(
+                    ("env", "g", 3, [0x7F, mutableImport ? (byte)1 : (byte)0])
+                ),
+                HostLinkingModuleBinary.Globals((0x7F, false, Convert.FromHexString(initializer)))
+            )
+        );
+
+        // Act & Assert
+        var exception = await Assert
+            .That(() => module.Validate())
+            .ThrowsExactly<WasmValidateException>();
+        using (Assert.Multiple())
+        {
+            await Assert
+                .That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal))
+                .IsTrue();
+            await Assert
+                .That(exception.Location)
+                .IsEqualTo(
+                    new(
+                        WasmProcessingStage.Validate,
+                        module.Globals[0].Initializer[instructionIndex].ByteOffset,
+                        null,
+                        6
+                    )
+                );
+        }
+    }
+
+    [Test]
     [Arguments((byte)0x7F, "41000B")]
     [Arguments((byte)0x7E, "42000B")]
     [Arguments((byte)0x7D, "43000000000B")]
@@ -57,16 +104,27 @@ internal partial class WasmModule_ValidateTests
         var exception = await Assert
             .That(() => module.Validate())
             .ThrowsExactly<WasmValidateException>();
-        await Assert
-            .That(exception!.Location)
-            .IsEqualTo(
-                new(
-                    WasmProcessingStage.Validate,
-                    module.Globals[0].Initializer[0].ByteOffset,
-                    null,
-                    6
+        using (Assert.Multiple())
+        {
+            await Assert
+                .That(
+                    exception!.Message.StartsWith(
+                        "constant expression required",
+                        StringComparison.Ordinal
+                    )
                 )
-            );
+                .IsTrue();
+            await Assert
+                .That(exception!.Location)
+                .IsEqualTo(
+                    new(
+                        WasmProcessingStage.Validate,
+                        module.Globals[0].Initializer[0].ByteOffset,
+                        null,
+                        6
+                    )
+                );
+        }
     }
 
     [Test]
@@ -97,21 +155,27 @@ internal partial class WasmModule_ValidateTests
             var exception = await Assert
                 .That(() => module.Validate())
                 .ThrowsExactly<WasmValidateException>();
-            await Assert
-                .That(exception!.Location)
-                .IsEqualTo(
-                    new(
-                        WasmProcessingStage.Validate,
-                        module.Globals[1].Initializer[^1].ByteOffset,
-                        null,
-                        6
-                    )
-                );
-            await Assert.That(module.FunctionCodes.IsEmpty).IsTrue();
-            await Assert.That(module.FunctionExportIndices.IsEmpty).IsTrue();
-            await Assert
-                .That(() => module.Instantiate([]))
-                .ThrowsExactly<InvalidOperationException>();
+            using (Assert.Multiple())
+            {
+                await Assert
+                    .That(exception!.Message.StartsWith("type mismatch", StringComparison.Ordinal))
+                    .IsTrue();
+                await Assert
+                    .That(exception!.Location)
+                    .IsEqualTo(
+                        new(
+                            WasmProcessingStage.Validate,
+                            module.Globals[1].Initializer[^1].ByteOffset,
+                            null,
+                            6
+                        )
+                    );
+                await Assert.That(module.FunctionCodes.IsEmpty).IsTrue();
+                await Assert.That(module.FunctionExportIndices.IsEmpty).IsTrue();
+                await Assert
+                    .That(() => module.Instantiate([]))
+                    .ThrowsExactly<InvalidOperationException>();
+            }
         }
     }
 
@@ -179,17 +243,30 @@ internal partial class WasmModule_ValidateTests
         var exception = await Assert
             .That(() => module.Validate())
             .ThrowsExactly<WasmValidateException>();
-        await Assert
-            .That(exception!.Location)
-            .IsEqualTo(
-                new(
-                    WasmProcessingStage.Validate,
-                    module.Globals[1].Initializer[0].ByteOffset,
-                    null,
-                    6
+        using (Assert.Multiple())
+        {
+            await Assert
+                .That(
+                    exception!.Message.StartsWith(
+                        mutableImport ? "constant expression required" : $"unknown global {index}",
+                        StringComparison.Ordinal
+                    )
                 )
-            );
-        await Assert.That(() => module.Instantiate([])).ThrowsExactly<InvalidOperationException>();
+                .IsTrue();
+            await Assert
+                .That(exception!.Location)
+                .IsEqualTo(
+                    new(
+                        WasmProcessingStage.Validate,
+                        module.Globals[1].Initializer[0].ByteOffset,
+                        null,
+                        6
+                    )
+                );
+            await Assert
+                .That(() => module.Instantiate([]))
+                .ThrowsExactly<InvalidOperationException>();
+        }
     }
 
     [Test]
@@ -213,15 +290,21 @@ internal partial class WasmModule_ValidateTests
         var exception = await Assert
             .That(() => module.Validate())
             .ThrowsExactly<WasmValidateException>();
-        await Assert
-            .That(exception!.Location)
-            .IsEqualTo(
-                new(
-                    WasmProcessingStage.Validate,
-                    module.Globals[0].Initializer[^1].ByteOffset,
-                    null,
-                    6
-                )
-            );
+        using (Assert.Multiple())
+        {
+            await Assert
+                .That(exception!.Message.StartsWith("type mismatch", StringComparison.Ordinal))
+                .IsTrue();
+            await Assert
+                .That(exception!.Location)
+                .IsEqualTo(
+                    new(
+                        WasmProcessingStage.Validate,
+                        module.Globals[0].Initializer[^1].ByteOffset,
+                        null,
+                        6
+                    )
+                );
+        }
     }
 }

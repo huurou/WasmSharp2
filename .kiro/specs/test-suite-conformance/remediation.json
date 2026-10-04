@@ -50,6 +50,23 @@
       "role": "comparison",
       "path": "artifacts/test-suite-conformance/task-3-20261003/compare-run.json",
       "sha256": "90846a9492933bffbd7164415c21d2757789b953aa1b95a776929c9bec990a46"
+    },
+    {
+      "id": "task4_after",
+      "role": "after",
+      "path": "artifacts/test-suite-conformance/task-4-20261004/run-after.json",
+      "sha256": "f9c4f94234049dad3cf4a187ec9167f7b4371c7cdcc79bc2582f9cc9cb932cc7",
+      "run_id": "f2841d23-f618-41f8-916c-a876b2883df6",
+      "revision": "38154fd9de20a9f8e8600261cdf80296e10d1aec",
+      "code_state": "artifacts/test-suite-conformance/task-4-20261004/code-state.json",
+      "code_patch_sha256": "5bab6d6f8e2463a4f4d08a400c3860d041299703e54c6ea6afaf31cccedb3be0",
+      "note": "タスク4の公式全体run時点の未コミットコードと通常テストはcode-state.jsonを参照。"
+    },
+    {
+      "id": "task4_comparison",
+      "role": "comparison",
+      "path": "artifacts/test-suite-conformance/task-4-20261004/compare-run.json",
+      "sha256": "8092eebb5121b2b5ffcf8c3563884eea7987d6eb22b348653826022cd1019eb0"
     }
   ],
   "findings": [
@@ -927,7 +944,7 @@
         "D013"
       ],
       "boundary": "ModuleValidator",
-      "status": "uninvestigated",
+      "status": "verified",
       "owner_spec": "test-suite-conformance",
       "rule": "初期化式・命令入力・関数結果の型/個数不一致をtype mismatchから始める。",
       "confirmed_static_difference": "現行は不一致ごとに異なる日本語Messageを生成する。",
@@ -962,23 +979,41 @@
         }
       ],
       "minimal_reproduction": {
-        "status": "not_executed",
-        "construction": "入力なし/異型local.set、結果余剰/不足、初期化式0個/2個/異型を最小関数・globalで確認する。",
+        "status": "executed",
+        "construction": "入力なし・異型local.set/teeとcall/return、結果の不足・余剰、global初期化の0個・2個・異型を既存の最小入力で確認した。",
         "basis_case": {
           "input_path": "global.wast",
           "source_id": "baseline_before",
           "command_index": 70
         }
       },
-      "remaining_investigation": "到達不能部分の型多相性を維持し、複合選択はF014/F015でも調査する。",
-      "verification": [],
+      "remaining_investigation": "担当する直接規則と全体runを確認済み。関連CaseIdは既存候補を維持し、ケースごとの原因割当てを追加したものではない。F014の検査順は直接の複合入力で確認した。",
+      "verification": [
+        {
+          "task": "4.1",
+          "scope": "direct_tests",
+          "red_trx": "artifacts/test-suite-conformance/task-4-20261004/red-4.1/WasmSharp.Tests_net10.0_x64.trx",
+          "test_trx": "artifacts/test-suite-conformance/task-4-20261004/verify-4.1/WasmSharp.Tests_net10.0_x64.trx",
+          "review": "artifacts/test-suite-conformance/task-4-20261004/review-4.1.md",
+          "result": "REDで期待診断または選択位置の不一致を確認し、フラグ除去後のランタイム全テストが成功。独立レビューAPPROVED。"
+        },
+        {
+          "task": "4",
+          "scope": "official_run",
+          "source_id": "task4_after",
+          "comparison_source_id": "task4_comparison",
+          "audit": "artifacts/test-suite-conformance/task-4-20261004/official-audit.json",
+          "result": "Validate不一致183件がすべてpassed。Decode改善683件を維持し、他53,724件のtask3の観測結果は同一。回帰・追加・欠落・未比較0。",
+          "note": "F014は個別候補CaseIdを追加せず、直接の複合テストと全体回帰を根拠とする。残るInstantiate78件は未解消。"
+        }
+      ],
       "transfer": null,
       "requirements": [
         "1.2",
         "5.1"
       ],
       "design_ref": "ModuleValidator",
-      "cause": null
+      "cause": "型・入力不足・結果個数の不一致を別々の日本語診断で通知していた。型検査を維持してtype mismatchへ統一した。"
     },
     {
       "id": "F012",
@@ -996,7 +1031,7 @@
         "D023"
       ],
       "boundary": "ModuleValidator",
-      "status": "uninvestigated",
+      "status": "verified",
       "owner_spec": "test-suite-conformance",
       "rule": "unknownと種類名・実際のu32添字をInvariantCultureの10進数で通知する。",
       "confirmed_static_difference": "現行の共通存在確認診断に種類/indexを含まない箇所がある。",
@@ -1009,7 +1044,7 @@
       "change_targets": [
         {
           "path": "src/WasmSharp/Modules/ModuleValidator.cs",
-          "method": "ValidateInitializers / ValidateStart / ValidateFunction / GetLocalType / ValidateReferences / ValidateTypeIndex"
+          "method": "ValidateConstantInstruction / ValidateStart / ValidateFunction / GetLocalType / ValidateExports / ValidateTypeIndex / UnknownIndex"
         }
       ],
       "tests": [
@@ -1031,16 +1066,42 @@
         }
       ],
       "minimal_reproduction": {
-        "status": "not_executed",
-        "construction": "各空間のcount-1/count/uint最大添字をexport・call・global・local・function type・startへ置く。",
+        "status": "executed",
+        "construction": "export4種類、call/global/local/type/startの範囲外とuint最大を確認し、ar-SA/fr-FRでもunknown global 4294967295を確認した。",
         "basis_case": {
           "input_path": "exports.wast",
           "source_id": "baseline_before",
           "command_index": 21
         }
       },
-      "remaining_investigation": "D018の定数式制約はF015と合わせて個別確認する。",
-      "verification": [],
+      "remaining_investigation": "担当する直接規則と全体runを確認済み。関連CaseIdは既存候補を維持し、ケースごとの原因割当てを追加したものではない。F014の検査順は直接の複合入力で確認した。",
+      "verification": [
+        {
+          "task": "4.1",
+          "scope": "direct_tests",
+          "red_trx": "artifacts/test-suite-conformance/task-4-20261004/red-4.1/WasmSharp.Tests_net10.0_x64.trx",
+          "test_trx": "artifacts/test-suite-conformance/task-4-20261004/verify-4.1/WasmSharp.Tests_net10.0_x64.trx",
+          "review": "artifacts/test-suite-conformance/task-4-20261004/review-4.1.md",
+          "result": "REDで期待診断または選択位置の不一致を確認し、フラグ除去後のランタイム全テストが成功。独立レビューAPPROVED。"
+        },
+        {
+          "task": "4.3",
+          "scope": "direct_tests",
+          "red_trx": "artifacts/test-suite-conformance/task-4-20261004/red-4.3/WasmSharp.Tests_net10.0_x64.trx",
+          "test_trx": "artifacts/test-suite-conformance/task-4-20261004/verify-4.3/WasmSharp.Tests_net10.0_x64.trx",
+          "review": "artifacts/test-suite-conformance/task-4-20261004/review-4.3.md",
+          "result": "定数式内の未知globalと適格性の選択をREDで確認し、ランタイム全1087件が成功。独立レビューAPPROVED。"
+        },
+        {
+          "task": "4",
+          "scope": "official_run",
+          "source_id": "task4_after",
+          "comparison_source_id": "task4_comparison",
+          "audit": "artifacts/test-suite-conformance/task-4-20261004/official-audit.json",
+          "result": "Validate不一致183件がすべてpassed。Decode改善683件を維持し、他53,724件のtask3の観測結果は同一。回帰・追加・欠落・未比較0。",
+          "note": "F014は個別候補CaseIdを追加せず、直接の複合テストと全体回帰を根拠とする。残るInstantiate78件は未解消。"
+        }
+      ],
       "transfer": null,
       "requirements": [
         "1.2",
@@ -1048,7 +1109,7 @@
         "5.2"
       ],
       "design_ref": "ModuleValidator",
-      "cause": null
+      "cause": "存在確認で添字空間と値を公開診断に含めていなかった。種類別unknownとInvariantCultureのuint表記を導入した。定数式内は4.3で存在を確認する。"
     },
     {
       "id": "F013",
@@ -1058,7 +1119,7 @@
         "D007"
       ],
       "boundary": "ModuleValidator",
-      "status": "uninvestigated",
+      "status": "verified",
       "owner_spec": "test-suite-conformance",
       "rule": "min上限、max上限、min<=maxの順に原因を選ぶ。memory上限は65536pages。",
       "confirmed_static_difference": "ValidateLimitsが全違反を1条件・1診断にまとめる。",
@@ -1085,16 +1146,34 @@
         }
       ],
       "minimal_reproduction": {
-        "status": "not_executed",
-        "construction": "memoryの65536/65537、maxだけ超過、min>max、上限超過かつ大小逆転をimport/定義へ置く。tableの大小逆転も確認する。",
+        "status": "executed",
+        "construction": "import/定義のmemory65536/65537、maxだけの超過、上限超過かつ大小逆転、table大小逆転、uint最大の合法tableを直接確認した。",
         "basis_case": {
           "input_path": "memory.wast",
           "source_id": "baseline_before",
           "command_index": 24
         }
       },
-      "remaining_investigation": "複数宣言間の選択はF014で確認する。",
-      "verification": [],
+      "remaining_investigation": "担当する直接規則と全体runを確認済み。関連CaseIdは既存候補を維持し、ケースごとの原因割当てを追加したものではない。F014の検査順は直接の複合入力で確認した。",
+      "verification": [
+        {
+          "task": "4.2",
+          "scope": "direct_tests",
+          "red_trx": "artifacts/test-suite-conformance/task-4-20261004/red-4.2/WasmSharp.Tests_net10.0_x64.trx",
+          "test_trx": "artifacts/test-suite-conformance/task-4-20261004/verify-4.2-remediation/WasmSharp.Tests_net10.0_x64.trx",
+          "review": "artifacts/test-suite-conformance/task-4-20261004/review-4.2-remediation.md",
+          "result": "REDで期待診断または選択位置の不一致を確認し、フラグ除去後のランタイム全テストが成功。独立レビューAPPROVED。"
+        },
+        {
+          "task": "4",
+          "scope": "official_run",
+          "source_id": "task4_after",
+          "comparison_source_id": "task4_comparison",
+          "audit": "artifacts/test-suite-conformance/task-4-20261004/official-audit.json",
+          "result": "Validate不一致183件がすべてpassed。Decode改善683件を維持し、他53,724件のtask3の観測結果は同一。回帰・追加・欠落・未比較0。",
+          "note": "F014は個別候補CaseIdを追加せず、直接の複合テストと全体回帰を根拠とする。残るInstantiate78件は未解消。"
+        }
+      ],
       "transfer": null,
       "requirements": [
         "1.2",
@@ -1102,7 +1181,7 @@
         "5.5"
       ],
       "design_ref": "ModuleValidator",
-      "cause": null
+      "cause": "limitsの上限超過と大小逆転を単一条件・診断へまとめていた。min上限、max上限、min<=maxへ分離した。"
     },
     {
       "id": "F014",
@@ -1126,7 +1205,7 @@
         "D023"
       ],
       "boundary": "ModuleValidator",
-      "status": "uninvestigated",
+      "status": "verified",
       "owner_spec": "test-suite-conformance",
       "rule": "import逆順、定義function type、global、table、memory、function、start、export、memory総数の順に検査する。",
       "confirmed_static_difference": "現行ValidateReferencesがimport宣言順・resource・exportを先に確認し、その後initializers/start/functionsへ進む。",
@@ -1139,7 +1218,7 @@
       "change_targets": [
         {
           "path": "src/WasmSharp/Modules/ModuleValidator.cs",
-          "method": "Validate / ValidateReferences"
+          "method": "Validate / ValidateImportReferences / ValidateFunctionReferences / ValidateInitializers / ValidateResources / ValidateFunctions / ValidateStart / ValidateExports / ValidateMemoryCount"
         }
       ],
       "tests": [
@@ -1165,12 +1244,38 @@
         }
       ],
       "minimal_reproduction": {
-        "status": "not_executed",
-      "construction": "複数import違反、globalとresource違反、関数本体とstart/export違反を対にする。後段失敗後の再ValidateとInstantiate拒否を確認する。",
-      "basis_case": null
+        "status": "executed",
+        "construction": "複数import違反、global/table/memory違反、関数本体とstart/export、start/exportとmemory総数、同一exportの範囲外と重複を複合入力で確認した。",
+        "basis_case": null
       },
-      "remaining_investigation": "関連観測群は調査候補であり個別原因として割り当てていない。検査順の差を示す複合ケースは未観測のため、最小入力を構成してCaseId単位で確認する。",
-      "verification": [],
+      "remaining_investigation": "担当する直接規則と全体runを確認済み。関連CaseIdは既存候補を維持し、ケースごとの原因割当てを追加したものではない。F014の検査順は直接の複合入力で確認した。",
+      "verification": [
+        {
+          "task": "4.4",
+          "scope": "direct_tests",
+          "red_trx": "artifacts/test-suite-conformance/task-4-20261004/red-4.4/WasmSharp.Tests_net10.0_x64.trx",
+          "test_trx": "artifacts/test-suite-conformance/task-4-20261004/verify-4.4/WasmSharp.Tests_net10.0_x64.trx",
+          "review": "artifacts/test-suite-conformance/task-4-20261004/review-4.4.md",
+          "result": "REDで期待診断または選択位置の不一致を確認し、フラグ除去後のランタイム全テストが成功。独立レビューAPPROVED。"
+        },
+        {
+          "task": "4.2",
+          "scope": "direct_tests",
+          "red_trx": "artifacts/test-suite-conformance/task-4-20261004/red-4.2/WasmSharp.Tests_net10.0_x64.trx",
+          "test_trx": "artifacts/test-suite-conformance/task-4-20261004/verify-4.2-remediation/WasmSharp.Tests_net10.0_x64.trx",
+          "review": "artifacts/test-suite-conformance/task-4-20261004/review-4.2-remediation.md",
+          "result": "import逆順とglobal・table・memoryの検査順をREDで確認し、assertion補正後のランタイム全1080件が成功。独立レビューAPPROVED。"
+        },
+        {
+          "task": "4",
+          "scope": "official_run",
+          "source_id": "task4_after",
+          "comparison_source_id": "task4_comparison",
+          "audit": "artifacts/test-suite-conformance/task-4-20261004/official-audit.json",
+          "result": "Validate不一致183件がすべてpassed。Decode改善683件を維持し、他53,724件のtask3の観測結果は同一。回帰・追加・欠落・未比較0。",
+          "note": "F014は個別候補CaseIdを追加せず、直接の複合テストと全体回帰を根拠とする。残るInstantiate78件は未解消。"
+        }
+      ],
       "transfer": null,
       "requirements": [
         "1.2",
@@ -1181,7 +1286,7 @@
         "5.5"
       ],
       "design_ref": "ModuleValidator",
-      "cause": null
+      "cause": "importの宣言順検査とresource/export/startの先行検査が固定参照の原因選択と異なっていた。4.2で前段を整理し、4.4で関数→start→export→memory総数へ統合した。"
     },
     {
       "id": "F015",
@@ -1194,7 +1299,7 @@
         "D018"
       ],
       "boundary": "ModuleValidator",
-      "status": "uninvestigated",
+      "status": "verified",
       "owner_spec": "test-suite-conformance",
       "rule": "左から適格性を短絡検査してから結果型/個数を確認する。global.getはimport globalの存在と可変性を区別する。",
       "confirmed_static_difference": "現行は式長!=2を適格性より先に拒否し、1命令だけを調べる。",
@@ -1207,7 +1312,7 @@
       "change_targets": [
         {
           "path": "src/WasmSharp/Modules/ModuleValidator.cs",
-          "method": "ValidateInitializers"
+          "method": "ValidateInitializers / ValidateConstantInstruction"
         }
       ],
       "tests": [
@@ -1217,16 +1322,34 @@
         }
       ],
       "minimal_reproduction": {
-        "status": "not_executed",
-        "construction": "禁止dropと余分な定数、未知globalと禁止命令を両順序、mutable import global、定義global参照、合法定数2個を作る。",
+        "status": "executed",
+        "construction": "未知globalと禁止dropの両順序、余分な定数と禁止命令、mutable global、定義globalと範囲外、合法定数の結果個数と異型を確認した。",
         "basis_case": {
           "input_path": "global.wast",
           "source_id": "baseline_before",
           "command_index": 64
         }
       },
-      "remaining_investigation": "各公式入力の主因割当てを継続する。",
-      "verification": [],
+      "remaining_investigation": "担当する直接規則と全体runを確認済み。関連CaseIdは既存候補を維持し、ケースごとの原因割当てを追加したものではない。F014の検査順は直接の複合入力で確認した。",
+      "verification": [
+        {
+          "task": "4.3",
+          "scope": "direct_tests",
+          "red_trx": "artifacts/test-suite-conformance/task-4-20261004/red-4.3/WasmSharp.Tests_net10.0_x64.trx",
+          "test_trx": "artifacts/test-suite-conformance/task-4-20261004/verify-4.3/WasmSharp.Tests_net10.0_x64.trx",
+          "review": "artifacts/test-suite-conformance/task-4-20261004/review-4.3.md",
+          "result": "REDで期待診断または選択位置の不一致を確認し、フラグ除去後のランタイム全テストが成功。独立レビューAPPROVED。"
+        },
+        {
+          "task": "4",
+          "scope": "official_run",
+          "source_id": "task4_after",
+          "comparison_source_id": "task4_comparison",
+          "audit": "artifacts/test-suite-conformance/task-4-20261004/official-audit.json",
+          "result": "Validate不一致183件がすべてpassed。Decode改善683件を維持し、他53,724件のtask3の観測結果は同一。回帰・追加・欠落・未比較0。",
+          "note": "F014は個別候補CaseIdを追加せず、直接の複合テストと全体回帰を根拠とする。残るInstantiate78件は未解消。"
+        }
+      ],
       "transfer": null,
       "requirements": [
         "1.2",
@@ -1236,7 +1359,7 @@
         "5.4"
       ],
       "design_ref": "ModuleValidator",
-      "cause": null
+      "cause": "命令の適格性より式長を先に拒否し、最初の命令だけを調べていた。end以外を左から短絡検査し、import globalの存在と可変性を分けてから結果型・個数を確認する。"
     },
     {
       "id": "F016",
@@ -1246,7 +1369,7 @@
         "D015"
       ],
       "boundary": "ModuleValidator",
-      "status": "uninvestigated",
+      "status": "verified",
       "owner_spec": "test-suite-conformance",
       "rule": "startの存在確認後、引数/結果0個を要求する。関数本体検査より後に行う。",
       "confirmed_static_difference": "現行の不存在と型不一致のMessageが固定診断と異なる。",
@@ -1269,16 +1392,34 @@
         }
       ],
       "minimal_reproduction": {
-        "status": "not_executed",
-        "construction": "start index=count、import/定義startの引数あり・結果ありと合法[]->[]を対にする。",
+        "status": "executed",
+        "construction": "import/定義startの引数・結果、範囲外、合法型、関数本体との複合違反を位置付きで確認した。",
         "basis_case": {
           "input_path": "start.wast",
           "source_id": "baseline_before",
           "command_index": 1
         }
       },
-      "remaining_investigation": "関数本体との複合選択はF014で確認する。",
-      "verification": [],
+      "remaining_investigation": "担当する直接規則と全体runを確認済み。関連CaseIdは既存候補を維持し、ケースごとの原因割当てを追加したものではない。F014の検査順は直接の複合入力で確認した。",
+      "verification": [
+        {
+          "task": "4.4",
+          "scope": "direct_tests",
+          "red_trx": "artifacts/test-suite-conformance/task-4-20261004/red-4.4/WasmSharp.Tests_net10.0_x64.trx",
+          "test_trx": "artifacts/test-suite-conformance/task-4-20261004/verify-4.4/WasmSharp.Tests_net10.0_x64.trx",
+          "review": "artifacts/test-suite-conformance/task-4-20261004/review-4.4.md",
+          "result": "REDで期待診断または選択位置の不一致を確認し、フラグ除去後のランタイム全テストが成功。独立レビューAPPROVED。"
+        },
+        {
+          "task": "4",
+          "scope": "official_run",
+          "source_id": "task4_after",
+          "comparison_source_id": "task4_comparison",
+          "audit": "artifacts/test-suite-conformance/task-4-20261004/official-audit.json",
+          "result": "Validate不一致183件がすべてpassed。Decode改善683件を維持し、他53,724件のtask3の観測結果は同一。回帰・追加・欠落・未比較0。",
+          "note": "F014は個別候補CaseIdを追加せず、直接の複合テストと全体回帰を根拠とする。残るInstantiate78件は未解消。"
+        }
+      ],
       "transfer": null,
       "requirements": [
         "1.2",
@@ -1286,7 +1427,7 @@
         "5.4"
       ],
       "design_ref": "ModuleValidator",
-      "cause": null
+      "cause": "startの型診断が日本語のみで、関数本体より先に検査していた。存在確認を維持し、関数検査後にstart functionの型制約を確認する。"
     },
     {
       "id": "F017",
@@ -1299,7 +1440,7 @@
         "D022"
       ],
       "boundary": "ModuleValidator",
-      "status": "uninvestigated",
+      "status": "verified",
       "owner_spec": "test-suite-conformance",
       "rule": "export内は添字確認を重複名より先に行い、名前をOrdinalで区別する。",
       "confirmed_static_difference": "現行の添字/重複名Messageが固定診断と異なる。宣言内の検査順は既存と参照で整合する。",
@@ -1312,7 +1453,7 @@
       "change_targets": [
         {
           "path": "src/WasmSharp/Modules/ModuleValidator.cs",
-          "method": "ValidateReferencesのexport検査"
+          "method": "ValidateExports"
         }
       ],
       "tests": [
@@ -1327,19 +1468,41 @@
         {
           "path": "tests/WasmSharp.Tests/WasmModule_ValidateTests.cs",
           "class": "WasmModule_ValidateTests"
+        },
+        {
+          "path": "tests/WasmSharp.Tests/WasmModule_ValidateStartTests.cs",
+          "class": "WasmModule_ValidateTests"
         }
       ],
       "minimal_reproduction": {
-        "status": "not_executed",
-        "construction": "4種類の範囲外export、種類を跨ぐ同名、二つ目が範囲外かつ重複名の入力を確認する。",
+        "status": "executed",
+        "construction": "4種類の範囲外exportと種類を跨ぐ重複、2個目の範囲外かつ重複、後段失敗後の再ValidateとInstantiate拒否を確認した。",
         "basis_case": {
           "input_path": "exports.wast",
           "source_id": "baseline_before",
           "command_index": 24
         }
       },
-      "remaining_investigation": "他段階との複合選択はF014で確認する。",
-      "verification": [],
+      "remaining_investigation": "担当する直接規則と全体runを確認済み。関連CaseIdは既存候補を維持し、ケースごとの原因割当てを追加したものではない。F014の検査順は直接の複合入力で確認した。",
+      "verification": [
+        {
+          "task": "4.4",
+          "scope": "direct_tests",
+          "red_trx": "artifacts/test-suite-conformance/task-4-20261004/red-4.4/WasmSharp.Tests_net10.0_x64.trx",
+          "test_trx": "artifacts/test-suite-conformance/task-4-20261004/verify-4.4/WasmSharp.Tests_net10.0_x64.trx",
+          "review": "artifacts/test-suite-conformance/task-4-20261004/review-4.4.md",
+          "result": "REDで期待診断または選択位置の不一致を確認し、フラグ除去後のランタイム全テストが成功。独立レビューAPPROVED。"
+        },
+        {
+          "task": "4",
+          "scope": "official_run",
+          "source_id": "task4_after",
+          "comparison_source_id": "task4_comparison",
+          "audit": "artifacts/test-suite-conformance/task-4-20261004/official-audit.json",
+          "result": "Validate不一致183件がすべてpassed。Decode改善683件を維持し、他53,724件のtask3の観測結果は同一。回帰・追加・欠落・未比較0。",
+          "note": "F014は個別候補CaseIdを追加せず、直接の複合テストと全体回帰を根拠とする。残るInstantiate78件は未解消。"
+        }
+      ],
       "transfer": null,
       "requirements": [
         "1.2",
@@ -1348,7 +1511,7 @@
         "5.3"
       ],
       "design_ref": "ModuleValidator",
-      "cause": null
+      "cause": "exportの重複診断が日本語のみで、関数本体・startより先に検査していた。宣言内の添字→重複の順とOrdinalの名前比較を維持し、後段へ移した。"
     },
     {
       "id": "F018",
@@ -1357,7 +1520,7 @@
         "D004"
       ],
       "boundary": "ModuleValidator",
-      "status": "uninvestigated",
+      "status": "verified",
       "owner_spec": "test-suite-conformance",
       "rule": "globalの存在・可変性を確認してから入力値型を検査する。",
       "confirmed_static_difference": "GlobalSetのMessageが固定診断と異なる。検査順は参照と整合する。",
@@ -1370,7 +1533,7 @@
       "change_targets": [
         {
           "path": "src/WasmSharp/Modules/ModuleValidator.cs",
-          "method": "ValidateFunctionのGlobalSet"
+          "method": "ValidateFunction"
         }
       ],
       "tests": [
@@ -1384,23 +1547,41 @@
         }
       ],
       "minimal_reproduction": {
-        "status": "not_executed",
-        "construction": "immutable globalへのglobal.setを値あり/なしで比較し、未知globalも区別する。",
+        "status": "executed",
+        "construction": "import globalの更新禁止と未知global・入力型不一致を区別し、元関数・命令位置を直接確認した。定義globalはglobal.wast#59を含む公式全体runで確認した。",
         "basis_case": {
           "input_path": "global.wast",
           "source_id": "baseline_before",
           "command_index": 59
         }
       },
-      "remaining_investigation": "複合入力を直接確認する。",
-      "verification": [],
+      "remaining_investigation": "担当する直接規則と全体runを確認済み。関連CaseIdは既存候補を維持し、ケースごとの原因割当てを追加したものではない。F014の検査順は直接の複合入力で確認した。",
+      "verification": [
+        {
+          "task": "4.3",
+          "scope": "direct_tests",
+          "red_trx": "artifacts/test-suite-conformance/task-4-20261004/red-4.3/WasmSharp.Tests_net10.0_x64.trx",
+          "test_trx": "artifacts/test-suite-conformance/task-4-20261004/verify-4.3/WasmSharp.Tests_net10.0_x64.trx",
+          "review": "artifacts/test-suite-conformance/task-4-20261004/review-4.3.md",
+          "result": "REDで期待診断または選択位置の不一致を確認し、フラグ除去後のランタイム全テストが成功。独立レビューAPPROVED。"
+        },
+        {
+          "task": "4",
+          "scope": "official_run",
+          "source_id": "task4_after",
+          "comparison_source_id": "task4_comparison",
+          "audit": "artifacts/test-suite-conformance/task-4-20261004/official-audit.json",
+          "result": "Validate不一致183件がすべてpassed。Decode改善683件を維持し、他53,724件のtask3の観測結果は同一。回帰・追加・欠落・未比較0。",
+          "note": "F014は個別候補CaseIdを追加せず、直接の複合テストと全体回帰を根拠とする。残るInstantiate78件は未解消。"
+        }
+      ],
       "transfer": null,
       "requirements": [
         "1.2",
         "5.4"
       ],
       "design_ref": "ModuleValidator",
-      "cause": null
+      "cause": "immutable global更新の公開診断が日本語のみだった。存在確認後の可変性検査を維持してglobal is immutableへ揃えた。"
     },
     {
       "id": "F019",
@@ -1409,7 +1590,7 @@
         "D006"
       ],
       "boundary": "ModuleValidator",
-      "status": "uninvestigated",
+      "status": "verified",
       "owner_spec": "test-suite-conformance",
       "rule": "全後段検査の後でmemory総数を確認し、2個目のLocationを保持する。",
       "confirmed_static_difference": "現行は2個目のmemoryを数えた時点でlimitsより先に拒否する。",
@@ -1422,7 +1603,7 @@
       "change_targets": [
         {
           "path": "src/WasmSharp/Modules/ModuleValidator.cs",
-          "method": "ValidateReferences / ValidateMemory"
+          "method": "ValidateMemoryCount"
         }
       ],
       "tests": [
@@ -1433,19 +1614,41 @@
         {
           "path": "tests/WasmSharp.Tests/Modules/ModuleValidator_ValidateExternalsTests.cs",
           "class": "ModuleValidator_ValidateTests"
+        },
+        {
+          "path": "tests/WasmSharp.Tests/WasmModule_ValidateStartTests.cs",
+          "class": "WasmModule_ValidateTests"
         }
       ],
       "minimal_reproduction": {
-        "status": "not_executed",
-        "construction": "import2個・import1と定義1・定義2個にlimits/関数/start/export違反を組み合わせる。",
+        "status": "executed",
+        "construction": "import0/1/2個と定義の総数2個を確認し、2個目の元宣言位置を保持した。関数・start・exportの違反を先に選ぶ複合入力を確認した。limitsの先行検査は設計とコードで照合した。",
         "basis_case": {
           "input_path": "imports.wast",
           "source_id": "baseline_before",
           "command_index": 124
         }
       },
-      "remaining_investigation": "観測5ケースと複合入力の検出原因を確認する。",
-      "verification": [],
+      "remaining_investigation": "担当する直接規則と全体runを確認済み。関連CaseIdは既存候補を維持し、ケースごとの原因割当てを追加したものではない。F014の検査順は直接の複合入力で確認した。",
+      "verification": [
+        {
+          "task": "4.4",
+          "scope": "direct_tests",
+          "red_trx": "artifacts/test-suite-conformance/task-4-20261004/red-4.4/WasmSharp.Tests_net10.0_x64.trx",
+          "test_trx": "artifacts/test-suite-conformance/task-4-20261004/verify-4.4/WasmSharp.Tests_net10.0_x64.trx",
+          "review": "artifacts/test-suite-conformance/task-4-20261004/review-4.4.md",
+          "result": "REDで期待診断または選択位置の不一致を確認し、フラグ除去後のランタイム全テストが成功。独立レビューAPPROVED。"
+        },
+        {
+          "task": "4",
+          "scope": "official_run",
+          "source_id": "task4_after",
+          "comparison_source_id": "task4_comparison",
+          "audit": "artifacts/test-suite-conformance/task-4-20261004/official-audit.json",
+          "result": "Validate不一致183件がすべてpassed。Decode改善683件を維持し、他53,724件のtask3の観測結果は同一。回帰・追加・欠落・未比較0。",
+          "note": "F014は個別候補CaseIdを追加せず、直接の複合テストと全体回帰を根拠とする。残るInstantiate78件は未解消。"
+        }
+      ],
       "transfer": null,
       "requirements": [
         "1.2",
@@ -1453,7 +1656,7 @@
         "5.5"
       ],
       "design_ref": "ModuleValidator",
-      "cause": null
+      "cause": "memoryの個数を各宣言のlimitsより先に検査していた。limitsから分離した総数検査を最後へ移しmultiple memoriesを通知する。"
     },
     {
       "id": "F020",
@@ -1788,7 +1991,7 @@
       "finding_ids": [
         "F015"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "global.wast",
@@ -1798,7 +2001,7 @@
       "finding_ids": [
         "F015"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "exports.wast",
@@ -1808,7 +2011,7 @@
       "finding_ids": [
         "F017"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "exports.wast",
@@ -1818,7 +2021,7 @@
       "finding_ids": [
         "F017"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "exports.wast",
@@ -1828,7 +2031,7 @@
       "finding_ids": [
         "F017"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "exports.wast",
@@ -1838,7 +2041,7 @@
       "finding_ids": [
         "F017"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "exports.wast",
@@ -1848,7 +2051,7 @@
       "finding_ids": [
         "F017"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "exports.wast",
@@ -1858,7 +2061,7 @@
       "finding_ids": [
         "F017"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "exports.wast",
@@ -1868,7 +2071,7 @@
       "finding_ids": [
         "F017"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "exports.wast",
@@ -1878,7 +2081,7 @@
       "finding_ids": [
         "F017"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "exports.wast",
@@ -1888,7 +2091,7 @@
       "finding_ids": [
         "F017"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "exports.wast",
@@ -1898,7 +2101,7 @@
       "finding_ids": [
         "F017"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "exports.wast",
@@ -1908,7 +2111,7 @@
       "finding_ids": [
         "F017"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "exports.wast",
@@ -1918,7 +2121,7 @@
       "finding_ids": [
         "F017"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "exports.wast",
@@ -1928,7 +2131,7 @@
       "finding_ids": [
         "F017"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "exports.wast",
@@ -1938,7 +2141,7 @@
       "finding_ids": [
         "F017"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "exports.wast",
@@ -1948,7 +2151,7 @@
       "finding_ids": [
         "F017"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "exports.wast",
@@ -1958,7 +2161,7 @@
       "finding_ids": [
         "F017"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "exports.wast",
@@ -1968,7 +2171,7 @@
       "finding_ids": [
         "F017"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "exports.wast",
@@ -1978,7 +2181,7 @@
       "finding_ids": [
         "F017"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "exports.wast",
@@ -1988,7 +2191,7 @@
       "finding_ids": [
         "F017"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "global.wast",
@@ -1998,7 +2201,7 @@
       "finding_ids": [
         "F018"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "global.wast",
@@ -2008,7 +2211,7 @@
       "finding_ids": [
         "F018"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "memory.wast",
@@ -2018,7 +2221,7 @@
       "finding_ids": [
         "F013"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "memory.wast",
@@ -2028,7 +2231,7 @@
       "finding_ids": [
         "F013"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "memory.wast",
@@ -2038,7 +2241,7 @@
       "finding_ids": [
         "F013"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "memory.wast",
@@ -2048,7 +2251,7 @@
       "finding_ids": [
         "F013"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "memory.wast",
@@ -2058,7 +2261,7 @@
       "finding_ids": [
         "F013"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "memory.wast",
@@ -2068,7 +2271,7 @@
       "finding_ids": [
         "F013"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -2078,7 +2281,7 @@
       "finding_ids": [
         "F019"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -2088,7 +2291,7 @@
       "finding_ids": [
         "F019"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -2098,7 +2301,7 @@
       "finding_ids": [
         "F019"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "memory.wast",
@@ -2108,7 +2311,7 @@
       "finding_ids": [
         "F019"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "memory.wast",
@@ -2118,7 +2321,7 @@
       "finding_ids": [
         "F019"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "memory.wast",
@@ -2128,7 +2331,7 @@
       "finding_ids": [
         "F013"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "table.wast",
@@ -2138,7 +2341,7 @@
       "finding_ids": [
         "F013"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "table.wast",
@@ -2148,7 +2351,7 @@
       "finding_ids": [
         "F013"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "start.wast",
@@ -2158,7 +2361,7 @@
       "finding_ids": [
         "F016"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "start.wast",
@@ -2168,7 +2371,7 @@
       "finding_ids": [
         "F016"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "global.wast",
@@ -2179,7 +2382,7 @@
         "F011",
         "F015"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "global.wast",
@@ -2190,7 +2393,7 @@
         "F011",
         "F015"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "global.wast",
@@ -2201,7 +2404,7 @@
         "F011",
         "F015"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "global.wast",
@@ -2212,7 +2415,7 @@
         "F011",
         "F015"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "global.wast",
@@ -2223,7 +2426,7 @@
         "F011",
         "F015"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "global.wast",
@@ -2234,7 +2437,7 @@
         "F011",
         "F015"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "call.wast",
@@ -2244,7 +2447,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "call.wast",
@@ -2254,7 +2457,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "func.wast",
@@ -2264,7 +2467,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "func.wast",
@@ -2274,7 +2477,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "func.wast",
@@ -2284,7 +2487,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "func.wast",
@@ -2294,7 +2497,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "func.wast",
@@ -2304,7 +2507,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "func.wast",
@@ -2314,7 +2517,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "func.wast",
@@ -2324,7 +2527,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "func.wast",
@@ -2334,7 +2537,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "func.wast",
@@ -2344,7 +2547,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "func.wast",
@@ -2354,7 +2557,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "func.wast",
@@ -2364,7 +2567,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "func.wast",
@@ -2374,7 +2577,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "func.wast",
@@ -2384,7 +2587,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "global.wast",
@@ -2394,7 +2597,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "global.wast",
@@ -2404,7 +2607,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "global.wast",
@@ -2414,7 +2617,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "local_set.wast",
@@ -2424,7 +2627,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "local_set.wast",
@@ -2434,7 +2637,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "local_set.wast",
@@ -2444,7 +2647,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "local_set.wast",
@@ -2454,7 +2657,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "local_set.wast",
@@ -2464,7 +2667,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "local_set.wast",
@@ -2474,7 +2677,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "local_set.wast",
@@ -2484,7 +2687,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "local_tee.wast",
@@ -2494,7 +2697,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "local_tee.wast",
@@ -2504,7 +2707,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "local_tee.wast",
@@ -2514,7 +2717,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "local_tee.wast",
@@ -2524,7 +2727,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "local_tee.wast",
@@ -2534,7 +2737,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "local_tee.wast",
@@ -2544,7 +2747,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "return.wast",
@@ -2554,7 +2757,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "return.wast",
@@ -2564,7 +2767,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "return.wast",
@@ -2574,7 +2777,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "return.wast",
@@ -2584,7 +2787,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "return.wast",
@@ -2594,7 +2797,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "return.wast",
@@ -2604,7 +2807,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "call.wast",
@@ -2614,7 +2817,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "call.wast",
@@ -2624,7 +2827,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "func.wast",
@@ -2634,7 +2837,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "func.wast",
@@ -2644,7 +2847,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "func.wast",
@@ -2654,7 +2857,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "func.wast",
@@ -2664,7 +2867,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "func.wast",
@@ -2674,7 +2877,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "func.wast",
@@ -2684,7 +2887,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "func.wast",
@@ -2694,7 +2897,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "local_get.wast",
@@ -2704,7 +2907,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "local_get.wast",
@@ -2714,7 +2917,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "local_set.wast",
@@ -2724,7 +2927,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "local_set.wast",
@@ -2734,7 +2937,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "local_set.wast",
@@ -2744,7 +2947,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "local_set.wast",
@@ -2754,7 +2957,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "local_set.wast",
@@ -2764,7 +2967,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "local_set.wast",
@@ -2774,7 +2977,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "local_set.wast",
@@ -2784,7 +2987,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "local_set.wast",
@@ -2794,7 +2997,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "local_set.wast",
@@ -2804,7 +3007,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "local_tee.wast",
@@ -2814,7 +3017,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "local_tee.wast",
@@ -2824,7 +3027,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "local_tee.wast",
@@ -2834,7 +3037,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "local_tee.wast",
@@ -2844,7 +3047,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "local_tee.wast",
@@ -2854,7 +3057,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "local_tee.wast",
@@ -2864,7 +3067,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "local_tee.wast",
@@ -2874,7 +3077,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "local_tee.wast",
@@ -2884,7 +3087,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "local_tee.wast",
@@ -2894,7 +3097,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "local_tee.wast",
@@ -2904,7 +3107,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "local_tee.wast",
@@ -2914,7 +3117,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "return.wast",
@@ -2924,7 +3127,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "unreached-invalid.wast",
@@ -2934,7 +3137,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "unreached-invalid.wast",
@@ -2944,7 +3147,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "unreached-invalid.wast",
@@ -2954,7 +3157,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "call.wast",
@@ -2964,7 +3167,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "call.wast",
@@ -2974,7 +3177,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "func.wast",
@@ -2984,7 +3187,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "func.wast",
@@ -2994,7 +3197,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "func.wast",
@@ -3004,7 +3207,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "local_get.wast",
@@ -3014,7 +3217,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "local_get.wast",
@@ -3024,7 +3227,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "local_get.wast",
@@ -3034,7 +3237,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "local_get.wast",
@@ -3044,7 +3247,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "unreached-invalid.wast",
@@ -3054,7 +3257,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "unreached-invalid.wast",
@@ -3064,7 +3267,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "unreached-invalid.wast",
@@ -3074,7 +3277,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "unreached-invalid.wast",
@@ -3084,7 +3287,7 @@
       "finding_ids": [
         "F011"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "exports.wast",
@@ -3095,7 +3298,7 @@
         "F012",
         "F017"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "exports.wast",
@@ -3106,7 +3309,7 @@
         "F012",
         "F017"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "exports.wast",
@@ -3117,7 +3320,7 @@
         "F012",
         "F017"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "start.wast",
@@ -3128,7 +3331,7 @@
         "F012",
         "F016"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "call.wast",
@@ -3138,7 +3341,7 @@
       "finding_ids": [
         "F012"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "call.wast",
@@ -3148,7 +3351,7 @@
       "finding_ids": [
         "F012"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "unreached-invalid.wast",
@@ -3158,7 +3361,7 @@
       "finding_ids": [
         "F012"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "exports.wast",
@@ -3169,7 +3372,7 @@
         "F012",
         "F017"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "exports.wast",
@@ -3180,7 +3383,7 @@
         "F012",
         "F017"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "exports.wast",
@@ -3191,7 +3394,7 @@
         "F012",
         "F017"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "global.wast",
@@ -3202,7 +3405,7 @@
         "F012",
         "F015"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "global.wast",
@@ -3213,7 +3416,7 @@
         "F012",
         "F015"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "global.wast",
@@ -3224,7 +3427,7 @@
         "F012",
         "F015"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "global.wast",
@@ -3235,7 +3438,7 @@
         "F012",
         "F015"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "global.wast",
@@ -3246,7 +3449,7 @@
         "F012",
         "F015"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "global.wast",
@@ -3256,7 +3459,7 @@
       "finding_ids": [
         "F012"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "global.wast",
@@ -3266,7 +3469,7 @@
       "finding_ids": [
         "F012"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "global.wast",
@@ -3276,7 +3479,7 @@
       "finding_ids": [
         "F012"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "global.wast",
@@ -3286,7 +3489,7 @@
       "finding_ids": [
         "F012"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "global.wast",
@@ -3296,7 +3499,7 @@
       "finding_ids": [
         "F012"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "global.wast",
@@ -3306,7 +3509,7 @@
       "finding_ids": [
         "F012"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "global.wast",
@@ -3316,7 +3519,7 @@
       "finding_ids": [
         "F012"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "global.wast",
@@ -3326,7 +3529,7 @@
       "finding_ids": [
         "F012"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "unreached-invalid.wast",
@@ -3336,7 +3539,7 @@
       "finding_ids": [
         "F012"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "local_get.wast",
@@ -3346,7 +3549,7 @@
       "finding_ids": [
         "F012"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "local_get.wast",
@@ -3356,7 +3559,7 @@
       "finding_ids": [
         "F012"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "local_get.wast",
@@ -3366,7 +3569,7 @@
       "finding_ids": [
         "F012"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "local_get.wast",
@@ -3376,7 +3579,7 @@
       "finding_ids": [
         "F012"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "local_get.wast",
@@ -3386,7 +3589,7 @@
       "finding_ids": [
         "F012"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "local_get.wast",
@@ -3396,7 +3599,7 @@
       "finding_ids": [
         "F012"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "local_set.wast",
@@ -3406,7 +3609,7 @@
       "finding_ids": [
         "F012"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "local_set.wast",
@@ -3416,7 +3619,7 @@
       "finding_ids": [
         "F012"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "local_set.wast",
@@ -3426,7 +3629,7 @@
       "finding_ids": [
         "F012"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "local_set.wast",
@@ -3436,7 +3639,7 @@
       "finding_ids": [
         "F012"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "local_set.wast",
@@ -3446,7 +3649,7 @@
       "finding_ids": [
         "F012"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "local_set.wast",
@@ -3456,7 +3659,7 @@
       "finding_ids": [
         "F012"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "local_tee.wast",
@@ -3466,7 +3669,7 @@
       "finding_ids": [
         "F012"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "local_tee.wast",
@@ -3476,7 +3679,7 @@
       "finding_ids": [
         "F012"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "local_tee.wast",
@@ -3486,7 +3689,7 @@
       "finding_ids": [
         "F012"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "local_tee.wast",
@@ -3496,7 +3699,7 @@
       "finding_ids": [
         "F012"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "local_tee.wast",
@@ -3506,7 +3709,7 @@
       "finding_ids": [
         "F012"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "local_tee.wast",
@@ -3516,7 +3719,7 @@
       "finding_ids": [
         "F012"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "unreached-invalid.wast",
@@ -3526,7 +3729,7 @@
       "finding_ids": [
         "F012"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "exports.wast",
@@ -3537,7 +3740,7 @@
         "F012",
         "F017"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "exports.wast",
@@ -3548,7 +3751,7 @@
         "F012",
         "F017"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "exports.wast",
@@ -3559,7 +3762,7 @@
         "F012",
         "F017"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "exports.wast",
@@ -3570,7 +3773,7 @@
         "F012",
         "F017"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "exports.wast",
@@ -3581,7 +3784,7 @@
         "F012",
         "F017"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "exports.wast",
@@ -3592,7 +3795,7 @@
         "F012",
         "F017"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "func.wast",
@@ -3602,7 +3805,7 @@
       "finding_ids": [
         "F012"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "func_ptrs.wast",
@@ -3612,7 +3815,7 @@
       "finding_ids": [
         "F012"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "func_ptrs.wast",
@@ -3622,7 +3825,7 @@
       "finding_ids": [
         "F012"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -3632,7 +3835,7 @@
       "finding_ids": [
         "F012"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "binary.wast",
@@ -11374,6 +11577,19 @@
       "note": "通常テスト1808成功・失敗0・スキップ0。公式全体run・比較・baseline更新は再実行せず、task_3_decodeの証跡とverifiedの対象集合を保持した。",
       "run": null,
       "comparison": null
+    },
+    {
+      "scope": "task_4_validate",
+      "revision": "38154fd9de20a9f8e8600261cdf80296e10d1aec",
+      "code_state": "artifacts/test-suite-conformance/task-4-20261004/code-state.json",
+      "code_patch_sha256": "5bab6d6f8e2463a4f4d08a400c3860d041299703e54c6ea6afaf31cccedb3be0",
+      "audit": "artifacts/test-suite-conformance/task-4-20261004/official-audit.json",
+      "run": "artifacts/test-suite-conformance/task-4-20261004/run-after.json",
+      "run_exit_code": 1,
+      "comparison": "artifacts/test-suite-conformance/task-4-20261004/compare-run.json",
+      "comparison_exit_code": 1,
+      "record_selection": "baseline_beforeのlast_stage=validateだった183ケースをverifiedへ更新。Decode683ケース、残Instantiate78ケース、F001-F010とF020以降の記録を保持。",
+      "note": "終了1は残るInstantiate78件による。仕様全体のGO・baseline-saveは未実施。"
     }
   ],
   "transfer": []

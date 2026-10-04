@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Globalization;
 using WasmSharp.Exceptions;
 using WasmSharp.Execution;
 using WasmSharp.Instructions;
@@ -22,7 +23,10 @@ internal static class ModuleValidator
             module
         );
         ValidateFunctionReferences(module, functionCount);
-        ValidateResources(module, memoryCount);
+        ValidateInitializers(module);
+        ValidateResources(module);
+        var codes = ValidateFunctions(module);
+        ValidateStart(module);
         ValidateExports(
             module,
             functionCount + (uint)module.Functions.Length,
@@ -30,15 +34,14 @@ internal static class ModuleValidator
             memoryCount + (uint)module.Memories.Length,
             globalCount + (uint)module.Globals.Length
         );
-        ValidateInitializers(module);
-        ValidateStart(module);
-        return ValidateFunctions(module);
+        ValidateMemoryCount(module, memoryCount);
+        return codes;
     }
 
     /// <summary>
     /// 各定義関数を1回の型検査と線形化で処理し、全成功時だけコードを返す
     /// </summary>
-    /// <param name="module">参照・リソース・初期化式・startの検証を終えたmodule</param>
+    /// <param name="module">importと定義関数の型参照、global初期化式、リソース宣言の検証を終えたmodule</param>
     /// <returns>ローカルに保持した定義順の線形実行コード</returns>
     private static ImmutableArray<FunctionCode> ValidateFunctions(WasmModule module)
     {
@@ -79,75 +82,92 @@ internal static class ModuleValidator
         var importedGlobals = module.Imports.OfType<GlobalImport>().ToArray();
         foreach (var global in module.Globals)
         {
+            WasmValueKind? resultKind = null;
+            // 結果の型・個数より先に、左から最初の適格性違反を選ぶ。
+            for (var index = 0; index < global.Initializer.Length - 1; index++)
+            {
+                resultKind = ValidateConstantInstruction(
+                    global.Initializer[index],
+                    importedGlobals
+                );
+            }
+
             var endLocation = new WasmFailureLocation(
                 WasmProcessingStage.Validate,
                 global.Initializer[^1].ByteOffset,
                 null,
                 6
             );
-            // 対応する初期化命令はいずれも値を1個積むため、命令1個とendだけを許す。
             if (global.Initializer.Length != 2)
             {
-                throw new WasmValidateException(
+                throw ValidationFailure(
+                    "type mismatch",
                     "global初期化式の結果が1個ではありません。",
-                    endLocation,
-                    null
-                );
-            }
-
-            var instruction = global.Initializer[0];
-            var location = new WasmFailureLocation(
-                WasmProcessingStage.Validate,
-                instruction.ByteOffset,
-                null,
-                6
-            );
-            WasmValueKind resultKind;
-            if (instruction.Opcode == new OpcodeKey(0, 0x23))
-            {
-                if (instruction.Index >= (uint)importedGlobals.Length)
-                {
-                    throw new WasmValidateException(
-                        "global初期化式はimportしたglobalだけを参照できます。",
-                        location,
-                        null
-                    );
-                }
-                var type = importedGlobals[(int)instruction.Index].Type;
-                if (type.IsMutable)
-                {
-                    throw new WasmValidateException(
-                        "global初期化式はimmutable globalだけを参照できます。",
-                        location,
-                        null
-                    );
-                }
-                resultKind = type.ValueKind;
-            }
-            else if (
-                InstructionSet.TryGet(instruction.Opcode, out var descriptor)
-                && descriptor.Validation == ValidationRule.Constant
-            )
-            {
-                resultKind = instruction.Immediate.Kind;
-            }
-            else
-            {
-                throw new WasmValidateException(
-                    "global初期化式に使用できない命令です。",
-                    location,
-                    null
+                    endLocation
                 );
             }
             if (resultKind != global.Type.ValueKind)
             {
-                throw new WasmValidateException(
+                throw ValidationFailure(
+                    "type mismatch",
                     "global初期化式の結果型が宣言と一致しません。",
-                    endLocation,
-                    null
+                    endLocation
                 );
             }
         }
+    }
+
+    /// <summary>
+    /// 定数式の命令の適格性を確認し、生成する値の型を返す
+    /// </summary>
+    /// <param name="instruction">end以外の初期化命令</param>
+    /// <param name="importedGlobals">定数式から参照できるimportしたglobal</param>
+    /// <returns>命令が生成する値の型</returns>
+    private static WasmValueKind ValidateConstantInstruction(
+        DecodedInstruction instruction,
+        ReadOnlySpan<GlobalImport> importedGlobals
+    )
+    {
+        var location = new WasmFailureLocation(
+            WasmProcessingStage.Validate,
+            instruction.ByteOffset,
+            null,
+            6
+        );
+        if (instruction.Opcode == new OpcodeKey(0, 0x23))
+        {
+            if (instruction.Index >= (uint)importedGlobals.Length)
+            {
+                throw UnknownIndex(
+                    "global",
+                    instruction.Index,
+                    "global初期化式が参照するimport globalが存在しません。",
+                    location
+                );
+            }
+            var type = importedGlobals[(int)instruction.Index].Type;
+            if (type.IsMutable)
+            {
+                throw ValidationFailure(
+                    "constant expression required",
+                    "global初期化式はimmutable globalだけを参照できます。",
+                    location
+                );
+            }
+            return type.ValueKind;
+        }
+        if (
+            InstructionSet.TryGet(instruction.Opcode, out var descriptor)
+            && descriptor.Validation == ValidationRule.Constant
+        )
+        {
+            return instruction.Immediate.Kind;
+        }
+        throw ValidationFailure(
+            "constant expression required",
+            "global初期化式に使用できない命令です。",
+            location
+        );
     }
 
     /// <summary>
@@ -170,7 +190,12 @@ internal static class ModuleValidator
         );
         if (start.FunctionIndex >= (ulong)imports.Length + (uint)module.Functions.Length)
         {
-            throw new WasmValidateException("startが参照する関数が存在しません。", location, null);
+            throw UnknownIndex(
+                "function",
+                start.FunctionIndex,
+                "startが参照する関数が存在しません。",
+                location
+            );
         }
 
         var typeIndex =
@@ -180,10 +205,10 @@ internal static class ModuleValidator
         var type = module.Types[(int)typeIndex];
         if (!type.Parameters.IsEmpty || !type.Results.IsEmpty)
         {
-            throw new WasmValidateException(
+            throw ValidationFailure(
+                "start function must not have parameters or results",
                 "startの関数型は引数・結果とも0個である必要があります。",
-                location,
-                null
+                location
             );
         }
     }
@@ -191,7 +216,7 @@ internal static class ModuleValidator
     /// <summary>
     /// 定義関数の参照と値スタックの型を検証し、対応する線形実行コードを作成する
     /// </summary>
-    /// <param name="module">全体の参照、リソース宣言、global初期化式とstartの検証を終えたmodule</param>
+    /// <param name="module">importと定義関数の型参照、global初期化式、リソース宣言の検証を終えたmodule</param>
     /// <param name="definitionIndex">importを含まない定義順の関数index</param>
     /// <param name="moduleFunctionIndex">診断に使用する、importを含むmodule全体の関数index</param>
     /// <param name="functionTypes">importを先頭とする関数index順の型</param>
@@ -264,7 +289,9 @@ internal static class ModuleValidator
                 case ValidationRule.Call:
                     if (instruction.Index >= (uint)functionTypes.Length)
                     {
-                        throw CreateException(
+                        throw CreateUnknownIndex(
+                            "function",
+                            instruction.Index,
                             "参照する関数が存在しません。",
                             instruction.ByteOffset
                         );
@@ -289,7 +316,9 @@ internal static class ModuleValidator
                 case ValidationRule.GlobalSet:
                     if (instruction.Index >= (uint)globalTypes.Length)
                     {
-                        throw CreateException(
+                        throw CreateUnknownIndex(
+                            "global",
+                            instruction.Index,
                             "参照するglobalが存在しません。",
                             instruction.ByteOffset
                         );
@@ -303,9 +332,15 @@ internal static class ModuleValidator
                     {
                         if (!globalType.IsMutable)
                         {
-                            throw CreateException(
+                            throw ValidationFailure(
+                                "global is immutable",
                                 "immutable globalは更新できません。",
-                                instruction.ByteOffset
+                                new(
+                                    WasmProcessingStage.Validate,
+                                    instruction.ByteOffset,
+                                    moduleFunctionIndex,
+                                    10
+                                )
                             );
                         }
                         Pop(globalType.ValueKind, instruction.ByteOffset);
@@ -383,7 +418,7 @@ internal static class ModuleValidator
                 return function.Locals[lower].Type;
             }
 
-            throw CreateException("参照するlocalが存在しません。", byteOffset);
+            throw CreateUnknownIndex("local", index, "参照するlocalが存在しません。", byteOffset);
         }
 
         void Pop(WasmValueKind? expected, long byteOffset)
@@ -417,16 +452,31 @@ internal static class ModuleValidator
 
         WasmValidateException CreateException(string message, long byteOffset)
         {
-            return new WasmValidateException(
+            return ValidationFailure(
+                "type mismatch",
                 message,
-                new(WasmProcessingStage.Validate, byteOffset, moduleFunctionIndex, 10),
-                null
+                new(WasmProcessingStage.Validate, byteOffset, moduleFunctionIndex, 10)
+            );
+        }
+
+        WasmValidateException CreateUnknownIndex(
+            string category,
+            uint index,
+            string message,
+            long byteOffset
+        )
+        {
+            return UnknownIndex(
+                category,
+                index,
+                message,
+                new(WasmProcessingStage.Validate, byteOffset, moduleFunctionIndex, 10)
             );
         }
     }
 
     /// <summary>
-    /// importの型参照とリソース制約を宣言順に検証し、種類別の個数を返す
+    /// 元の添字空間を保ってimportの型参照とリソース制約を逆順に検証する
     /// </summary>
     /// <param name="module">デコード済みの静的定義</param>
     /// <returns>importした関数・table・memory・globalの個数</returns>
@@ -443,6 +493,27 @@ internal static class ModuleValidator
         uint globalCount = 0;
         foreach (var import in module.Imports)
         {
+            switch (import)
+            {
+                case FunctionImport:
+                    functionCount++;
+                    break;
+                case TableImport:
+                    tableCount++;
+                    break;
+                case MemoryImport:
+                    memoryCount++;
+                    break;
+                case GlobalImport:
+                    globalCount++;
+                    break;
+            }
+        }
+
+        var functionIndex = functionCount;
+        for (var index = module.Imports.Length - 1; index >= 0; index--)
+        {
+            var import = module.Imports[index];
             var location = new WasmFailureLocation(
                 WasmProcessingStage.Validate,
                 import.ByteOffset,
@@ -457,23 +528,22 @@ internal static class ModuleValidator
                         function.TypeIndex,
                         location with
                         {
-                            FunctionIndex = functionCount,
+                            FunctionIndex = --functionIndex,
                         }
                     );
-                    functionCount++;
                     break;
 
                 case TableImport table:
-                    ValidateLimits(table.Type.Limits, uint.MaxValue, location);
-                    tableCount++;
+                    ValidateLimits(
+                        table.Type.Limits,
+                        uint.MaxValue,
+                        "table size must be at most 2^32-1",
+                        location
+                    );
                     break;
 
                 case MemoryImport memory:
-                    ValidateMemory(memory.Type.Limits, ++memoryCount, location);
-                    break;
-
-                case GlobalImport:
-                    globalCount++;
+                    ValidateMemory(memory.Type.Limits, location);
                     break;
             }
         }
@@ -499,17 +569,17 @@ internal static class ModuleValidator
     }
 
     /// <summary>
-    /// 定義tableのlimitsと、定義memoryの個数・limitsを宣言順に検証する
+    /// 定義tableと定義memoryのlimitsを宣言順に検証する
     /// </summary>
     /// <param name="module">デコード済みの静的定義</param>
-    /// <param name="memoryCount">importしたmemoryの個数</param>
-    private static void ValidateResources(WasmModule module, uint memoryCount)
+    private static void ValidateResources(WasmModule module)
     {
         foreach (var table in module.Tables)
         {
             ValidateLimits(
                 table.Limits,
                 uint.MaxValue,
+                "table size must be at most 2^32-1",
                 new(WasmProcessingStage.Validate, table.ByteOffset, null, 4)
             );
         }
@@ -517,7 +587,6 @@ internal static class ModuleValidator
         {
             ValidateMemory(
                 memory.Limits,
-                ++memoryCount,
                 new(WasmProcessingStage.Validate, memory.ByteOffset, null, 5)
             );
         }
@@ -558,15 +627,30 @@ internal static class ModuleValidator
             );
             if (export.Index >= count)
             {
-                throw new WasmValidateException(
+                var category = export.Kind switch
+                {
+                    WasmExternalKind.Function => "function",
+                    WasmExternalKind.Table => "table",
+                    WasmExternalKind.Memory => "memory",
+                    WasmExternalKind.Global => "global",
+                    _ => throw new InvalidOperationException(
+                        "デコード済みexportの種類が不正です。"
+                    ),
+                };
+                throw UnknownIndex(
+                    category,
+                    export.Index,
                     "exportが参照する外部要素が存在しません。",
-                    location,
-                    null
+                    location
                 );
             }
             if (!names.Add(export.Name))
             {
-                throw new WasmValidateException("export名が重複しています。", location, null);
+                throw ValidationFailure(
+                    "duplicate export name",
+                    "export名が重複しています。",
+                    location
+                );
             }
         }
     }
@@ -585,27 +669,43 @@ internal static class ModuleValidator
     {
         if (typeIndex >= (uint)module.Types.Length)
         {
-            throw new WasmValidateException("参照する関数型が存在しません。", location, null);
+            throw UnknownIndex("type", typeIndex, "参照する関数型が存在しません。", location);
         }
     }
 
     /// <summary>
-    /// memoryの個数制約とページ数のlimitsを検証する
+    /// memoryのページ数のlimitsを検証する
     /// </summary>
     /// <param name="limits">未検証のページ数の範囲</param>
-    /// <param name="count">importと定義の累計</param>
     /// <param name="location">宣言の位置</param>
-    private static void ValidateMemory(WasmLimits limits, uint count, WasmFailureLocation location)
+    private static void ValidateMemory(WasmLimits limits, WasmFailureLocation location)
     {
-        if (count > 1)
+        ValidateLimits(limits, 65536, "memory size must be at most 65536 pages (4GiB)", location);
+    }
+
+    /// <summary>
+    /// memoryの総数を確認し、超過時は元の2個目の宣言位置を保持する
+    /// </summary>
+    /// <param name="module">デコード済みの静的定義</param>
+    /// <param name="importCount">importしたmemoryの個数</param>
+    private static void ValidateMemoryCount(WasmModule module, uint importCount)
+    {
+        if (importCount + (uint)module.Memories.Length > 1)
         {
-            throw new WasmValidateException(
+            var secondImport = module.Imports.OfType<MemoryImport>().Skip(1).FirstOrDefault();
+            var offset =
+                secondImport?.ByteOffset ?? module.Memories[importCount == 0 ? 1 : 0].ByteOffset;
+            throw ValidationFailure(
+                "multiple memories",
                 "memoryのimportと定義の合計が1個を超えています。",
-                location,
-                null
+                new(
+                    WasmProcessingStage.Validate,
+                    offset,
+                    null,
+                    secondImport is null ? (byte)5 : (byte)2
+                )
             );
         }
-        ValidateLimits(limits, 65536, location);
     }
 
     /// <summary>
@@ -613,23 +713,79 @@ internal static class ModuleValidator
     /// </summary>
     /// <param name="limits">未検証の範囲</param>
     /// <param name="maximum">仕様上の最大値</param>
+    /// <param name="maximumPrefix">仕様上限を超えた場合の診断先頭</param>
     /// <param name="location">宣言の位置</param>
     private static void ValidateLimits(
         WasmLimits limits,
         uint maximum,
+        string maximumPrefix,
         WasmFailureLocation location
     )
     {
-        if (
-            limits.Minimum > maximum
-            || limits.Maximum is { } max && (max > maximum || limits.Minimum > max)
-        )
+        if (limits.Minimum > maximum)
         {
-            throw new WasmValidateException(
-                "limitsが仕様上の範囲を満たしていません。",
-                location,
-                null
+            throw ValidationFailure(
+                maximumPrefix,
+                "limitsの最小値が仕様上限を超えています。",
+                location
             );
         }
+        if (limits.Maximum is { } max)
+        {
+            if (max > maximum)
+            {
+                throw ValidationFailure(
+                    maximumPrefix,
+                    "limitsの最大値が仕様上限を超えています。",
+                    location
+                );
+            }
+            if (limits.Minimum > max)
+            {
+                throw ValidationFailure(
+                    "size minimum must not be greater than maximum",
+                    "limitsの最小値が最大値を超えています。",
+                    location
+                );
+            }
+        }
+    }
+
+    /// <summary>
+    /// 存在しない添字の種類と10進表記を原因に対応する診断へ含める
+    /// </summary>
+    /// <param name="category">添字空間の種類</param>
+    /// <param name="index">存在しない添字</param>
+    /// <param name="message">原因の補助説明</param>
+    /// <param name="location">原因の位置</param>
+    /// <returns>添字と位置を保持する検証例外</returns>
+    private static WasmValidateException UnknownIndex(
+        string category,
+        uint index,
+        string message,
+        WasmFailureLocation location
+    )
+    {
+        return ValidationFailure(
+            $"unknown {category} {index.ToString(CultureInfo.InvariantCulture)}",
+            message,
+            location
+        );
+    }
+
+    /// <summary>
+    /// 選択した原因の診断先頭に補助説明と位置を付ける
+    /// </summary>
+    /// <param name="prefix">原因を表す診断先頭</param>
+    /// <param name="message">原因の補助説明</param>
+    /// <param name="location">原因の位置</param>
+    /// <returns>原因と位置が一致する検証例外</returns>
+    private static WasmValidateException ValidationFailure(
+        string prefix,
+        string message,
+        WasmFailureLocation location
+    )
+    {
+        return new WasmValidateException($"{prefix}: {message}", location, null);
     }
 }

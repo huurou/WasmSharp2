@@ -37,28 +37,29 @@ internal partial class ModuleValidator_ValidateTests
     }
 
     [Test]
-    [Arguments("600000", "001A0B", 0)]
-    [Arguments("60017F017F", "0020010B", 0)]
-    [Arguments("60017F017F", "0020FFFFFFFF0F0B", 0)]
-    [Arguments("60017F017F", "004201210041000B", 1)]
-    [Arguments("60017F017F", "00420122000B", 1)]
-    [Arguments("60017F017F", "00210041000B", 0)]
-    [Arguments("60017F017F", "0022000B", 0)]
-    [Arguments("60017F017F", "00410021010B", 1)]
-    [Arguments("60017F017F", "00410022FFFFFFFF0F0B", 1)]
-    [Arguments("60017F017F", "0010000B", 0)]
-    [Arguments("60017F017F", "00420110000B", 1)]
-    [Arguments("6000017F", "0010010B", 0)]
-    [Arguments("6000017F", "0010FFFFFFFF0F0B", 0)]
-    [Arguments("60027F7E017F", "004101410210000B", 2)]
-    [Arguments("6000017F", "000F0B", 0)]
-    [Arguments("6000017F", "0042010F0B", 1)]
-    [Arguments("6000027F7E", "0041010F0B", 1)]
-    [Arguments("6000027F7E", "00420141010F0B", 2)]
+    [Arguments("600000", "001A0B", 0, "type mismatch")]
+    [Arguments("60017F017F", "0020010B", 0, "unknown local 1")]
+    [Arguments("60017F017F", "0020FFFFFFFF0F0B", 0, "unknown local 4294967295")]
+    [Arguments("60017F017F", "004201210041000B", 1, "type mismatch")]
+    [Arguments("60017F017F", "00420122000B", 1, "type mismatch")]
+    [Arguments("60017F017F", "00210041000B", 0, "type mismatch")]
+    [Arguments("60017F017F", "0022000B", 0, "type mismatch")]
+    [Arguments("60017F017F", "00410021010B", 1, "unknown local 1")]
+    [Arguments("60017F017F", "00410022FFFFFFFF0F0B", 1, "unknown local 4294967295")]
+    [Arguments("60017F017F", "0010000B", 0, "type mismatch")]
+    [Arguments("60017F017F", "00420110000B", 1, "type mismatch")]
+    [Arguments("6000017F", "0010010B", 0, "unknown function 1")]
+    [Arguments("6000017F", "0010FFFFFFFF0F0B", 0, "unknown function 4294967295")]
+    [Arguments("60027F7E017F", "004101410210000B", 2, "type mismatch")]
+    [Arguments("6000017F", "000F0B", 0, "type mismatch")]
+    [Arguments("6000017F", "0042010F0B", 1, "type mismatch")]
+    [Arguments("6000027F7E", "0041010F0B", 1, "type mismatch")]
+    [Arguments("6000027F7E", "00420141010F0B", 2, "type mismatch")]
     public async Task 命令の添字や入力型や個数が不正_命令位置付き検証失敗になる(
         string signature,
         string body,
-        int instructionIndex
+        int instructionIndex,
+        string prefix
     )
     {
         // Arrange
@@ -69,24 +70,33 @@ internal partial class ModuleValidator_ValidateTests
         var exception = await Assert
             .That(() => module.Validate())
             .ThrowsExactly<WasmValidateException>();
-        await Assert
-            .That(exception!.Location)
-            .IsEqualTo(new(WasmProcessingStage.Validate, offset, 0, 10));
-        await Assert.That(module.FunctionCodes.IsEmpty).IsTrue();
-        await Assert.That(() => module.Instantiate([])).ThrowsExactly<InvalidOperationException>();
+        using (Assert.Multiple())
+        {
+            await Assert
+                .That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal))
+                .IsTrue();
+            await Assert
+                .That(exception!.Location)
+                .IsEqualTo(new(WasmProcessingStage.Validate, offset, 0, 10));
+            await Assert.That(module.FunctionCodes.IsEmpty).IsTrue();
+            await Assert
+                .That(() => module.Instantiate([]))
+                .ThrowsExactly<InvalidOperationException>();
+        }
     }
 
     [Test]
-    [Arguments("23020B", 0)]
-    [Arguments("23FFFFFFFF0F0B", 0)]
-    [Arguments("410024020B", 1)]
-    [Arguments("410024FFFFFFFF0F0B", 1)]
-    [Arguments("410024000B", 1)]
-    [Arguments("4200240141000B", 1)]
-    [Arguments("240141000B", 0)]
+    [Arguments("23020B", 0, "unknown global 2")]
+    [Arguments("23FFFFFFFF0F0B", 0, "unknown global 4294967295")]
+    [Arguments("410024020B", 1, "unknown global 2")]
+    [Arguments("410024FFFFFFFF0F0B", 1, "unknown global 4294967295")]
+    [Arguments("410024000B", 1, "global is immutable")]
+    [Arguments("4200240141000B", 1, "type mismatch")]
+    [Arguments("240141000B", 0, "type mismatch")]
     public async Task Globalの添字や可変性や入力型が不正_元関数と命令位置付き検証失敗になる(
         string body,
-        int instructionIndex
+        int instructionIndex,
+        string prefix
     )
     {
         // Arrange
@@ -104,16 +114,22 @@ internal partial class ModuleValidator_ValidateTests
         var exception = await Assert
             .That(() => module.Validate())
             .ThrowsExactly<WasmValidateException>();
-        await Assert
-            .That(exception!.Location)
-            .IsEqualTo(
-                new(
-                    WasmProcessingStage.Validate,
-                    module.Functions[0].Instructions[instructionIndex].ByteOffset,
-                    1,
-                    10
-                )
-            );
+        using (Assert.Multiple())
+        {
+            await Assert
+                .That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal))
+                .IsTrue();
+            await Assert
+                .That(exception!.Location)
+                .IsEqualTo(
+                    new(
+                        WasmProcessingStage.Validate,
+                        module.Functions[0].Instructions[instructionIndex].ByteOffset,
+                        1,
+                        10
+                    )
+                );
+        }
     }
 
     [Test]
