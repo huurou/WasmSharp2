@@ -371,3 +371,11 @@ mainが各APPROVED、最終ビルド・TRX・全体比較・監査と現在の�
 一時OFF旗のREDは65件中33失敗・終了2、ONと旗除去後は65件成功。最終Releaseビルドは警告・エラー0、整形3ファイル成功。独立レビューでも同じ65件・ビルド・整形を再実行してすべて終了0、APPROVEDとなった。mainは現在のソースhashとログ・終了値・TRXを照合し、TASKとしてVERIFIEDとした。
 
 F020〜F022の原因、固定参照、最小入力、直接テスト、コマンドとhashは[実装報告](../../../artifacts/test-suite-conformance/task-5-20261004/5.1/status-report.md)、独立判定は[review.md](../../../artifacts/test-suite-conformance/task-5-20261004/5.1/review.md)、完了確認は[verification.md](../../../artifacts/test-suite-conformance/task-5-20261004/5.1/verification.md)を参照する。初回の整形・証跡保存先作成はアクセス拒否となったが、権限付きの再実行で解消した。公式ケース単位の解消とbaseline更新はこのタスクでは行っていない。
+
+### 5.2 既存trap・exhaustionの診断
+
+ExecutionBoundaryの既存例外生成で、Unreachableを`unreachable executed`、CallDepthLimitとHostStackLimitを`call stack exhausted`へ合わせた。両段階のReason・Limit・元位置、他Reason・ホスト例外・公開constructorの契約は保持する。
+
+一時OFF旗では対象176件中prefix6件が失敗・終了2。ONと旗除去後は176件成功、各Releaseビルドは警告・エラー0。独立レビューでも176件・ビルド・変更2ファイルの整形が終了0となりAPPROVED。mainがログ・終了値・TRXと差分を照合しTASKとしてVERIFIEDとした。初回整形のアクセス拒否は権限付きの再実行で解消した。
+
+F023とexhaustionを区別した原因・最小入力・固定規則・直接テストは[実装報告](../../../artifacts/test-suite-conformance/task-5-20261004/5.2/status-report.md)、判定は[review.md](../../../artifacts/test-suite-conformance/task-5-20261004/5.2/review.md)と[verification.md](../../../artifacts/test-suite-conformance/task-5-20261004/5.2/verification.md)を参照する。HostStackLimitは直接結果で確認し、公式スイートの受入と区別する。

@@ -114,7 +114,7 @@ internal static class ExecutionBoundary
         if (result.Status == ExecutionStatus.Trap)
         {
             throw new WasmTrapException(
-                "Wasmの実行中にtrapが発生しました。",
+                GetTrapMessage(result.TrapReason!.Value),
                 result.TrapReason!.Value,
                 new WasmFailureLocation(stage, result.ByteOffset, result.FunctionIndex)
             );
@@ -122,11 +122,35 @@ internal static class ExecutionBoundary
         if (result.Status == ExecutionStatus.Exhaustion)
         {
             throw new WasmExhaustionException(
-                "Wasmの実行資源が上限に達しました。",
+                GetExhaustionMessage(result.ExhaustionReason!.Value),
                 result.ExhaustionReason!.Value,
                 result.Limit,
                 new WasmFailureLocation(stage, result.ByteOffset, result.FunctionIndex)
             );
         }
+    }
+
+    /// <summary>
+    /// 実行中のtrapの原因から公開診断を選ぶ
+    /// </summary>
+    /// <param name="reason">実行中に検出されたtrapの原因</param>
+    /// <returns>原因に対応する公開診断</returns>
+    private static string GetTrapMessage(WasmTrapReason reason)
+    {
+        return reason == WasmTrapReason.Unreachable
+            ? "unreachable executed"
+            : "Wasmの実行中にtrapが発生しました。";
+    }
+
+    /// <summary>
+    /// 実行資源の上限到達の原因から公開診断を選ぶ
+    /// </summary>
+    /// <param name="reason">上限に達した実行資源の原因</param>
+    /// <returns>原因に対応する公開診断</returns>
+    private static string GetExhaustionMessage(WasmExhaustionReason reason)
+    {
+        return reason is WasmExhaustionReason.CallDepthLimit or WasmExhaustionReason.HostStackLimit
+            ? "call stack exhausted"
+            : "Wasmの実行資源が上限に達しました。";
     }
 }
