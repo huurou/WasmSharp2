@@ -82,7 +82,18 @@ internal partial class WasmModule_InstantiateTests
             var exception = await Assert
                 .That(() => module.Instantiate(imports))
                 .ThrowsExactly<WasmInstantiateException>();
-            await Assert.That(exception!.Reason).IsEqualTo(WasmInstantiateReason.TypeMismatch);
+            using (Assert.Multiple())
+            {
+                await Assert.That(exception!.Reason).IsEqualTo(WasmInstantiateReason.TypeMismatch);
+                await Assert
+                    .That(
+                        exception.Message.StartsWith(
+                            "incompatible import type",
+                            StringComparison.Ordinal
+                        )
+                    )
+                    .IsTrue();
+            }
         }
         using (Assert.Multiple())
         {
@@ -103,11 +114,13 @@ internal partial class WasmModule_InstantiateTests
                         ("", "g", 3, [0x7F, 1]),
                         ("", "f", 0, [0]),
                         ("", "f", 0, [0]),
+                        ("", "other", 0, [0]),
                         ("", "g", 3, [0x7F, 1])
                     ),
                     HostLinkingModuleBinary.Exports(
                         ("f", 0, 0),
                         ("f2", 0, 1),
+                        ("other", 0, 2),
                         ("g", 3, 0),
                         ("g2", 3, 1)
                     )
@@ -124,8 +137,13 @@ internal partial class WasmModule_InstantiateTests
             }
         );
         var global = new WasmGlobal(new(WasmValueKind.I32, true), WasmValue.FromI32(7));
+        var other = WasmFunction.CreateHost(
+            new([WasmValueKind.I32], [WasmValueKind.I64]),
+            _ => new([])
+        );
         var host = new WasmHostModule();
         host.Define("f", function);
+        host.Define("other", other);
         host.Define("g", global);
         host.Define("unused", WasmFunction.CreateHost(new([], []), _ => throw new Exception()));
         var imports = new WasmImports();
@@ -141,6 +159,7 @@ internal partial class WasmModule_InstantiateTests
         using (Assert.Multiple())
         {
             await Assert.That(instance.GetFunction("f")).IsSameReferenceAs(function);
+            await Assert.That(instance.GetFunction("other")).IsSameReferenceAs(other);
             await Assert.That(instance.GetFunction("f2")).IsSameReferenceAs(function);
             await Assert.That(instance.GetGlobalResource("g")).IsSameReferenceAs(global);
             await Assert.That(instance.GetGlobalResource("g2")).IsSameReferenceAs(global);
@@ -149,12 +168,14 @@ internal partial class WasmModule_InstantiateTests
     }
 
     [Test]
-    [Arguments(false, false)]
-    [Arguments(true, false)]
-    [Arguments(false, true)]
-    public async Task 同名関数importの型列が異なる_後続宣言を個別照合して拒否する(
+    [Arguments(false, false, false)]
+    [Arguments(true, false, false)]
+    [Arguments(false, true, false)]
+    [Arguments(false, false, true)]
+    public async Task 同名関数importの型列が異なる_各宣言を個別照合して不適合を拒否する(
         bool results,
-        bool count
+        bool count,
+        bool matchLast
     )
     {
         // Arrange
@@ -172,13 +193,13 @@ internal partial class WasmModule_InstantiateTests
             )
             .Validate();
         var host = new WasmHostModule("env");
+        WasmValueKind[] provided = matchLast
+            ? [WasmValueKind.I64, WasmValueKind.I32]
+            : [WasmValueKind.I32, WasmValueKind.I64];
         host.Define(
             "f",
             WasmFunction.CreateHost(
-                new(
-                    results ? [] : [WasmValueKind.I32, WasmValueKind.I64],
-                    results ? [WasmValueKind.I32, WasmValueKind.I64] : []
-                ),
+                new(results ? [] : provided, results ? provided : []),
                 _ => new([])
             )
         );
@@ -192,13 +213,27 @@ internal partial class WasmModule_InstantiateTests
         using (Assert.Multiple())
         {
             await Assert.That(exception!.Reason).IsEqualTo(WasmInstantiateReason.TypeMismatch);
-            await Assert.That(exception.ImportOrdinal).IsEqualTo(1);
+            await Assert
+                .That(
+                    exception.Message.StartsWith(
+                        "incompatible import type",
+                        StringComparison.Ordinal
+                    )
+                )
+                .IsTrue();
+            await Assert.That(exception.ImportOrdinal).IsEqualTo(matchLast ? 0 : 1);
             await Assert.That(exception.ModuleName).IsEqualTo("env");
             await Assert.That(exception.ImportName).IsEqualTo("f");
+            await Assert.That(exception.ExpectedKind).IsEqualTo(WasmExternalKind.Function);
             await Assert
                 .That(exception.Location)
                 .IsEqualTo(
-                    new(WasmProcessingStage.Instantiate, module.Imports[1].ByteOffset, null, 2)
+                    new(
+                        WasmProcessingStage.Instantiate,
+                        module.Imports[matchLast ? 0 : 1].ByteOffset,
+                        null,
+                        2
+                    )
                 );
         }
     }
@@ -231,6 +266,14 @@ internal partial class WasmModule_InstantiateTests
         using (Assert.Multiple())
         {
             await Assert.That(exception!.Reason).IsEqualTo(WasmInstantiateReason.TypeMismatch);
+            await Assert
+                .That(
+                    exception.Message.StartsWith(
+                        "incompatible import type",
+                        StringComparison.Ordinal
+                    )
+                )
+                .IsTrue();
             await Assert.That(global.Value.AsI32()).IsEqualTo(42);
         }
     }
@@ -280,6 +323,17 @@ internal partial class WasmModule_InstantiateTests
         using (Assert.Multiple())
         {
             await Assert.That(exception!.Reason).IsEqualTo(WasmInstantiateReason.KindMismatch);
+            await Assert
+                .That(
+                    exception.Message.StartsWith(
+                        "incompatible import type",
+                        StringComparison.Ordinal
+                    )
+                )
+                .IsTrue();
+            await Assert.That(exception.ImportOrdinal).IsEqualTo(0);
+            await Assert.That(exception.ModuleName).IsEqualTo("");
+            await Assert.That(exception.ImportName).IsEqualTo("");
             await Assert.That(exception.ExpectedKind).IsEqualTo(expected);
             await Assert
                 .That(exception.Location)
@@ -294,6 +348,9 @@ internal partial class WasmModule_InstantiateTests
     [Arguments("env", "missing")]
     [Arguments("ENV", "f")]
     [Arguments("env", "F")]
+    [Arguments("", "f")]
+    [Arguments("env", "")]
+    [Arguments("env", "e\u0301")]
     public async Task 提供名が完全一致しない_宣言の識別情報付きで拒否する(
         string moduleName,
         string name
@@ -310,6 +367,7 @@ internal partial class WasmModule_InstantiateTests
             .Validate();
         var host = new WasmHostModule("env");
         host.Define("f", WasmFunction.CreateHost(new([], []), _ => new([])));
+        host.Define("é", WasmFunction.CreateHost(new([], []), _ => new([])));
         var imports = new WasmImports();
         imports.Add(host);
 
@@ -320,6 +378,9 @@ internal partial class WasmModule_InstantiateTests
         using (Assert.Multiple())
         {
             await Assert.That(exception!.Reason).IsEqualTo(WasmInstantiateReason.MissingImport);
+            await Assert
+                .That(exception.Message.StartsWith("unknown import", StringComparison.Ordinal))
+                .IsTrue();
             await Assert.That(exception.ImportOrdinal).IsEqualTo(0);
             await Assert.That(exception.ModuleName).IsEqualTo(moduleName);
             await Assert.That(exception.ImportName).IsEqualTo(name);

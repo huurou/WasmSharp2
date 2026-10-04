@@ -359,3 +359,15 @@ mainが各APPROVED、最終ビルド・TRX・全体比較・監査と現在の�
 同じセッションの[初回再レビュー原文](../../../artifacts/test-suite-conformance/claude-review-task4-20261004/review-rereview-2.md)は終了0で初回3件の解消を確認した。追加Low2件を採用し、パッチ適用でLFになったJSONの438行を元のCRLFへ戻し、上記の独立監査が補正前を対象としたことを明記した。JSONの解釈結果は補正前後で同一であり、既存F020の3行だけのLFを維持した。初回と初回再レビューの最終result・終了コード・セッションIDは、それぞれ`review-initial-status.json`と`review-rereview-2-status.json`に保存した。追加補正はJSONの改行と記録のみで、ビルド・テスト対象のC#は変更していない。
 
 公式run・compare-run・baseline-save・GitHub Actionsは今回未実施。残るfailed78件はタスク5の対象であり、今回の補正や通常テストの成功を仕様全体の受入・Core 2.0全件合格とは扱わない。
+
+## タスク5以降の実装と受入
+
+2026-10-04、revision`7c8955a`のcleanな作業ツリーから未完了タスクを自律モードで再開した。タスク単位に実装・独立レビュー・完了検証・選択的コミットを行う。証跡は[`task-5-20261004/`](../../../artifacts/test-suite-conformance/task-5-20261004/)へ保存する。
+
+### 5.1 importの原因選択と公開情報
+
+既存の名前解決と型照合を使い、全名前の宣言順解決後に種類・型を逆順照合する。接続配列は宣言順の同じ実体を保持し、Reasonから`unknown import`または`incompatible import type`の診断先頭を生成する。
+
+一時OFF旗のREDは65件中33失敗・終了2、ONと旗除去後は65件成功。最終Releaseビルドは警告・エラー0、整形3ファイル成功。独立レビューでも同じ65件・ビルド・整形を再実行してすべて終了0、APPROVEDとなった。mainは現在のソースhashとログ・終了値・TRXを照合し、TASKとしてVERIFIEDとした。
+
+F020〜F022の原因、固定参照、最小入力、直接テスト、コマンドとhashは[実装報告](../../../artifacts/test-suite-conformance/task-5-20261004/5.1/status-report.md)、独立判定は[review.md](../../../artifacts/test-suite-conformance/task-5-20261004/5.1/review.md)、完了確認は[verification.md](../../../artifacts/test-suite-conformance/task-5-20261004/5.1/verification.md)を参照する。初回の整形・証跡保存先作成はアクセス拒否となったが、権限付きの再実行で解消した。公式ケース単位の解消とbaseline更新はこのタスクでは行っていない。

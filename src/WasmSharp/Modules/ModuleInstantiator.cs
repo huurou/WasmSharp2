@@ -141,6 +141,7 @@ internal static class ModuleInstantiator
     /// <returns>moduleのimport宣言順に並んだ外部実体</returns>
     /// <remarks>
     /// 提供登録の対応表を固定して照合する。memoryとtableは現在サイズと宣言上限で型を照合する。
+    /// 全宣言の名前を宣言順に解決した後、末尾から種類・型を照合する。
     /// リソースの新規生成、内容の変更、ホスト処理の呼び出しは行わない
     /// </remarks>
     /// <exception cref="WasmInstantiateException">対応する名前がないか、種類または型が一致しない場合</exception>
@@ -152,8 +153,11 @@ internal static class ModuleInstantiator
         {
             var import = module.Imports[ordinal];
             var value = ResolveImport(providers, import, ordinal);
-            ValidateImport(module, import, value, ordinal);
             linked.Add(value);
+        }
+        for (var ordinal = module.Imports.Length - 1; ordinal >= 0; ordinal--)
+        {
+            ValidateImport(module, module.Imports[ordinal], linked[ordinal], ordinal);
         }
         return linked.MoveToImmutable();
     }
@@ -329,8 +333,15 @@ internal static class ModuleInstantiator
         string message
     )
     {
+        var prefix = reason switch
+        {
+            WasmInstantiateReason.MissingImport => "unknown import",
+            WasmInstantiateReason.KindMismatch or WasmInstantiateReason.TypeMismatch =>
+                "incompatible import type",
+            _ => throw new InvalidOperationException("import照合の失敗理由が不明です。"),
+        };
         return new WasmInstantiateException(
-            message,
+            $"{prefix}: {message}",
             reason,
             ordinal,
             import.ModuleName,
