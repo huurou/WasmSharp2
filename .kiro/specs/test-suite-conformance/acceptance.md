@@ -406,3 +406,11 @@ HEAD`28907f2de5bca18a1f6c5080155c27c0edd2c177`、cleanな状態の通常Release 
 未加工JSON、PID・時刻・実引数・ログ・終了値、実行前後のhash、軽量監査は[`6.2/`](../../../artifacts/test-suite-conformance/final-20261004/6.2/)へ保存した。独立Python監査は48チェック成功・現在6275ファイルのhash一致・終了0となり[APPROVED](../../../artifacts/test-suite-conformance/final-20261004/6.2/review.md)。全5821生成物・147元入力も個別hashを照合した。mainが原JSON・実ログ・終了値・現在hashを確認し、TASKとして[VERIFIED](../../../artifacts/test-suite-conformance/final-20261004/6.2/verification.md)とした。ケース単位の改善は6.3、残存依存の所有先は6.4、verifyとbaseline保存は6.5以降へ継続する。
 
 ユーザーが報告したdotnet.exeの画面エラー0xe0434352は、担当のdotnet・apphost起動前に発生し、画面は既に閉じられていた。mainの単独`dotnet --info`は終了0、今回のapphost実行では再発しなかった。対応するWindowsイベント・WER・MSBuild障害ログは見つからず、原因未確定の[確認記録](../../../artifacts/test-suite-conformance/final-20261004/6.2/dotnet-incident.md)を保持する。元障害の修正確認とは扱わない。準備中断と補助読取り・表示の誤りはinspection-notes.mdに残し、製品run・比較の結果と区別する。
+
+### 6.3 全ケースの完全性と改善
+
+保存済み原JSONのCaseIdと観測を照合し、全147入力・53907commandの欠落・重複・未処理・未確定0を確認した。既知944件はすべて診断照合込みのpassedとなり、初回1547passedと必須66件も個別に維持する。変化944件以外の52963件は観測が同一で、failed・入力/commandのrunner_error・回帰・未比較0。
+
+原因F020〜F023と最後のInstantiate78件を修正記録へ反映し、944件すべてがverifiedとなった。F022は複合不正の直接テストで確認した規則であり、公式ケースの原因を追加割当てしていない。F023の公式1件はUnreachableで、exhaustionの直接証跡と区別する。既存の関連付け・原因・866件の確認を保持した。
+
+実装監査は567チェック成功・終了0、独立監査は430チェック成功・終了0。原JSON・比較オブジェクト・現在ソース/成果物・379参照hash・直接テストのRED/GREEN/旗除去と既存通常TRXを確認し、独立[APPROVED](../../../artifacts/test-suite-conformance/final-20261004/6.3/review.md)とmainの[TASK VERIFIED](../../../artifacts/test-suite-conformance/final-20261004/6.3/verification.md)が成立した。[監査JSON](../../../artifacts/test-suite-conformance/final-20261004/6.3/acceptance-audit.json)はSHA-256 `4f8d01966a243dba96ff8a588a416fcf11958eb507ba4992b2d3c6cf71ac7091`、確認時の[修正記録スナップショット](../../../artifacts/test-suite-conformance/final-20261004/6.3/remediation-after.json)は`acaf35d478eab098b35597059689fff647e8308012a6c80639f8e5f6b5a4dd30`。初回補助監査の不成立と訂正履歴はinspection-notes.mdに保持する。C#・公式結果・baselineは変更していない。

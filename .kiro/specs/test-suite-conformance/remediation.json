@@ -67,6 +67,26 @@
       "role": "comparison",
       "path": "artifacts/test-suite-conformance/task-4-20261004/compare-run.json",
       "sha256": "8092eebb5121b2b5ffcf8c3563884eea7987d6eb22b348653826022cd1019eb0"
+    },
+    {
+      "id": "final_after",
+      "role": "after",
+      "path": "artifacts/test-suite-conformance/final-20261004/6.2/run-after.json",
+      "sha256": "2c6b3e3676cdf8db53747aaf65e1dc47fa94c61c04758edea7e9f94f4f0dce96",
+      "run_id": "4ab7103e-ab79-463b-8bfc-a75081e33592",
+      "revision": "28907f2de5bca18a1f6c5080155c27c0edd2c177",
+      "git_status": [],
+      "code_state": "artifacts/test-suite-conformance/final-20261004/6.2/code-state.json",
+      "note": "通常Releaseビルドによるタスク6.2の全体run。実行時の作業ツリーはclean、source84・変更test17・成果物12の現在hash一致を6.3の受入監査に記録した。"
+    },
+    {
+      "id": "final_comparison",
+      "role": "comparison",
+      "path": "artifacts/test-suite-conformance/final-20261004/6.2/compare-run.json",
+      "sha256": "aabe931d87172cc3bb6d1a4e17b35e3364e1732b29de5e4f4b7b852e03bb5c72",
+      "run_id": "4ab7103e-ab79-463b-8bfc-a75081e33592",
+      "baseline_run_id": "c8ebac70-d9fe-4f68-808b-a6791e63171e",
+      "note": "初回保存済み結果と同じrun ID・byte列のbaselineを用いた比較。今後の初回観測の監査参照はbaseline_beforeのrun-moved.jsonを使用する。"
     }
   ],
   "findings": [
@@ -1665,7 +1685,7 @@
         "D102"
       ],
       "boundary": "ModuleInstantiator",
-      "status": "uninvestigated",
+      "status": "verified",
       "owner_spec": "test-suite-conformance",
       "rule": "module/item名不足をunknown importで通知し、同じ原因からReasonと識別情報を作る。",
       "confirmed_static_difference": "現行MissingImportのMessageが固定診断と異なる。",
@@ -1688,16 +1708,44 @@
         }
       ],
       "minimal_reproduction": {
-        "status": "not_executed",
-        "construction": "module名不足とitem名不足を分け、空名・大小文字・Unicode表現を含める。",
+        "status": "executed",
+        "construction": "単一の[]->[]関数importとenv.fだけの提供登録から、module名不足・item名不足・大小文字差・空名・env.éに対するenv.e\\u0301の別名を構成した。提供名が完全一致しない_宣言の識別情報付きで拒否するでprefix・Reason・ordinal・名前・ExpectedKind・Locationを確認した。",
         "basis_case": {
           "input_path": "imports.wast",
           "source_id": "baseline_before",
           "command_index": 17
         }
       },
-      "remaining_investigation": "別宣言の種類/型不一致との選択はF022で確認する。",
-      "verification": [],
+      "remaining_investigation": "タスク5.1の直接テストと最終公式runでassigned9ケースのpassedを確認した。ケースのfinding_idsは以前の候補対応を維持する。複合不正の選択規則はF022の直接テストで確認した。",
+      "verification": [
+        {
+          "task": "5.1",
+          "scope": "direct_tests",
+          "red_log": "artifacts/test-suite-conformance/task-5-20261004/5.1/red-20261004-01/test.log",
+          "red_trx": "artifacts/test-suite-conformance/task-5-20261004/5.1/red-20261004-01/trx/WasmSharp.Tests_net10.0_x64.trx",
+          "red_exit_code": 2,
+          "green_trx": "artifacts/test-suite-conformance/task-5-20261004/5.1/green-20261004-01/trx/WasmSharp.Tests_net10.0_x64.trx",
+          "flag_removed_trx": "artifacts/test-suite-conformance/task-5-20261004/5.1/final-20261004-01/trx/WasmSharp.Tests_net10.0_x64.trx",
+          "final_trx": "artifacts/test-suite-conformance/task-5-20261004/5.1/final-20261004-02/trx/WasmSharp.Tests_net10.0_x64.trx",
+          "build_log": "artifacts/test-suite-conformance/task-5-20261004/5.1/review-20261004-01/build.log",
+          "test_log": "artifacts/test-suite-conformance/task-5-20261004/5.1/review-20261004-01/test.log",
+          "test_trx": "artifacts/test-suite-conformance/task-5-20261004/5.1/review-20261004-01/trx/WasmSharp.Tests_net10.0_x64.trx",
+          "review": "artifacts/test-suite-conformance/task-5-20261004/5.1/review.md",
+          "verification_report": "artifacts/test-suite-conformance/task-5-20261004/5.1/verification.md",
+          "status_report": "artifacts/test-suite-conformance/task-5-20261004/5.1/status-report.md",
+          "result": "REDは65件中33失敗・終了2、GREEN・旗除去・最終補強・独立レビューは各65成功・終了0。Releaseビルド警告・エラー0、APPROVED・VERIFIED。名前不足・kind/type・複合原因のprefixと識別情報を確認。",
+          "note": "固定参照import.mlのList.mapとeval.mlのList.fold_right2、原因と最小直接入力はstatus_reportを参照。成功時の宣言順・共有・定義実体独立性も同じfocused runに含む。"
+        },
+        {
+          "task": "6.3",
+          "scope": "official_run",
+          "source_id": "final_after",
+          "comparison_source_id": "final_comparison",
+          "audit": "artifacts/test-suite-conformance/final-20261004/6.3/final-accepted/acceptance-audit.json",
+          "result": "assigned9ケースがすべてpassed。全944既知不一致が個別passedへ変わり、他52,963ケースの観測結果は同一。初回1,547passedと必須66件を維持、failed・runner_error・回帰・未比較0。runと比較は終了0。",
+          "note": "タスク6.2のAPPROVED・VERIFIEDと原結果を使用。未対応と依存の所有先確認・verify・baseline保存は後続タスクの範囲。"
+        }
+      ],
       "transfer": null,
       "requirements": [
         "1.2",
@@ -1705,7 +1753,7 @@
         "6.1"
       ],
       "design_ref": "ModuleInstantiator",
-      "cause": null
+      "cause": "ResolveImportによる名前不足の判定は存在していたが、LinkFailureが日本語の補助説明からMessageを開始し、固定参照のunknown importと一致しなかった。"
     },
     {
       "id": "F021",
@@ -1766,7 +1814,7 @@
         "D101"
       ],
       "boundary": "ModuleInstantiator",
-      "status": "uninvestigated",
+      "status": "verified",
       "owner_spec": "test-suite-conformance",
       "rule": "種類を型より先に確認し、不一致をincompatible import typeで通知する。成功時は共有実体と宣言順を維持する。",
       "confirmed_static_difference": "現行KindMismatch/TypeMismatchは補助説明から始まる。",
@@ -1797,16 +1845,44 @@
         }
       ],
       "minimal_reproduction": {
-        "status": "not_executed",
-        "construction": "4種類のkind違反、関数parameter/result、global型/可変性、table参照型、現在サイズ不足・提供maxなし/超過を代表入力にする。",
+        "status": "executed",
+        "construction": "4種類のkind不適合、同名関数importの引数型列・結果型列・個数、globalの型と可変性、table参照型、memory/tableの現在サイズ不足・提供最大値なし・超過を直接入力にした。既存契約テストでprefix・Reason・識別情報と適合時の同一実体を確認した。",
         "basis_case": {
           "input_path": "imports.wast",
           "source_id": "baseline_before",
           "command_index": 35
         }
       },
-      "remaining_investigation": "複数宣言の選択はF022で調査し、53群を53原因と数えない。",
-      "verification": [],
+      "remaining_investigation": "タスク5.1の直接テストと最終公式runでassigned68ケースのpassedを確認した。53観測群を53個別原因として増やさず、以前の候補対応を維持する。",
+      "verification": [
+        {
+          "task": "5.1",
+          "scope": "direct_tests",
+          "red_log": "artifacts/test-suite-conformance/task-5-20261004/5.1/red-20261004-01/test.log",
+          "red_trx": "artifacts/test-suite-conformance/task-5-20261004/5.1/red-20261004-01/trx/WasmSharp.Tests_net10.0_x64.trx",
+          "red_exit_code": 2,
+          "green_trx": "artifacts/test-suite-conformance/task-5-20261004/5.1/green-20261004-01/trx/WasmSharp.Tests_net10.0_x64.trx",
+          "flag_removed_trx": "artifacts/test-suite-conformance/task-5-20261004/5.1/final-20261004-01/trx/WasmSharp.Tests_net10.0_x64.trx",
+          "final_trx": "artifacts/test-suite-conformance/task-5-20261004/5.1/final-20261004-02/trx/WasmSharp.Tests_net10.0_x64.trx",
+          "build_log": "artifacts/test-suite-conformance/task-5-20261004/5.1/review-20261004-01/build.log",
+          "test_log": "artifacts/test-suite-conformance/task-5-20261004/5.1/review-20261004-01/test.log",
+          "test_trx": "artifacts/test-suite-conformance/task-5-20261004/5.1/review-20261004-01/trx/WasmSharp.Tests_net10.0_x64.trx",
+          "review": "artifacts/test-suite-conformance/task-5-20261004/5.1/review.md",
+          "verification_report": "artifacts/test-suite-conformance/task-5-20261004/5.1/verification.md",
+          "status_report": "artifacts/test-suite-conformance/task-5-20261004/5.1/status-report.md",
+          "result": "REDは65件中33失敗・終了2、GREEN・旗除去・最終補強・独立レビューは各65成功・終了0。Releaseビルド警告・エラー0、APPROVED・VERIFIED。名前不足・kind/type・複合原因のprefixと識別情報を確認。",
+          "note": "固定参照import.mlのList.mapとeval.mlのList.fold_right2、原因と最小直接入力はstatus_reportを参照。成功時の宣言順・共有・定義実体独立性も同じfocused runに含む。"
+        },
+        {
+          "task": "6.3",
+          "scope": "official_run",
+          "source_id": "final_after",
+          "comparison_source_id": "final_comparison",
+          "audit": "artifacts/test-suite-conformance/final-20261004/6.3/final-accepted/acceptance-audit.json",
+          "result": "assigned68ケースがすべてpassed。全944既知不一致が個別passedへ変わり、他52,963ケースの観測結果は同一。初回1,547passedと必須66件を維持、failed・runner_error・回帰・未比較0。runと比較は終了0。",
+          "note": "タスク6.2のAPPROVED・VERIFIEDと原結果を使用。未対応と依存の所有先確認・verify・baseline保存は後続タスクの範囲。"
+        }
+      ],
       "transfer": null,
       "requirements": [
         "1.2",
@@ -1814,7 +1890,7 @@
         "6.2"
       ],
       "design_ref": "ModuleInstantiator",
-      "cause": null
+      "cause": "種類・型の適合性判定と共有契約は存在していたが、KindMismatch/TypeMismatchのMessageが補助説明から始まり、固定参照のincompatible import typeと一致しなかった。"
     },
     {
       "id": "F022",
@@ -1876,7 +1952,7 @@
         "D102"
       ],
       "boundary": "ModuleInstantiator",
-      "status": "uninvestigated",
+      "status": "verified",
       "owner_spec": "test-suite-conformance",
       "rule": "全名前を宣言順で解決し、全成功後に種類/型を逆順照合する。同名宣言も個別に照合する。",
       "confirmed_static_difference": "現行Linkは宣言順に名前・種類・型を一括で確認する。",
@@ -1904,15 +1980,47 @@
         {
           "path": "tests/WasmSharp.Tests/WasmModule_InstantiateLinkingContractTests.cs",
           "class": "WasmModule_InstantiateTests"
+        },
+        {
+          "path": "tests/WasmSharp.Tests/WasmModule_InstantiateLinkingDiagnosticTests.cs",
+          "class": "WasmModule_InstantiateTests"
         }
       ],
       "minimal_reproduction": {
-        "status": "not_executed",
-      "construction": "前の型不適合と後の名前不足を両順序、全名前ありで複数型不適合、同名で異なる要求型を作る。",
+        "status": "executed",
+      "construction": "env.fの型または種類不一致とmissing.gの名前不足を両宣言順で作り、常に名前不足を選ぶことを確認した。複数名前不足は先頭、種類/型不一致の4組合せは末尾を選び、同名の異なる要求型は個別に照合した。通常APIへの複合不正入力であり、basis_caseと公式CaseIdの候補関係は追加していない。",
       "basis_case": null
       },
-      "remaining_investigation": "全関連群を原因確定として各ケースへ割り当てない。名前解決・照合順の差を示す複合ケースは未観測のため、最小入力を構成してCaseIdを確認してから関連を追加する。",
-      "verification": [],
+      "remaining_investigation": "assignedケースは0を維持する。全関連診断群を個別原因として割り当てず、通常APIの複合不正直接テストと最終公式runの回帰0を確認根拠にする。未観測の公式CaseIdを作成していない。",
+      "verification": [
+        {
+          "task": "5.1",
+          "scope": "direct_tests",
+          "red_log": "artifacts/test-suite-conformance/task-5-20261004/5.1/red-20261004-01/test.log",
+          "red_trx": "artifacts/test-suite-conformance/task-5-20261004/5.1/red-20261004-01/trx/WasmSharp.Tests_net10.0_x64.trx",
+          "red_exit_code": 2,
+          "green_trx": "artifacts/test-suite-conformance/task-5-20261004/5.1/green-20261004-01/trx/WasmSharp.Tests_net10.0_x64.trx",
+          "flag_removed_trx": "artifacts/test-suite-conformance/task-5-20261004/5.1/final-20261004-01/trx/WasmSharp.Tests_net10.0_x64.trx",
+          "final_trx": "artifacts/test-suite-conformance/task-5-20261004/5.1/final-20261004-02/trx/WasmSharp.Tests_net10.0_x64.trx",
+          "build_log": "artifacts/test-suite-conformance/task-5-20261004/5.1/review-20261004-01/build.log",
+          "test_log": "artifacts/test-suite-conformance/task-5-20261004/5.1/review-20261004-01/test.log",
+          "test_trx": "artifacts/test-suite-conformance/task-5-20261004/5.1/review-20261004-01/trx/WasmSharp.Tests_net10.0_x64.trx",
+          "review": "artifacts/test-suite-conformance/task-5-20261004/5.1/review.md",
+          "verification_report": "artifacts/test-suite-conformance/task-5-20261004/5.1/verification.md",
+          "status_report": "artifacts/test-suite-conformance/task-5-20261004/5.1/status-report.md",
+          "result": "REDは65件中33失敗・終了2、GREEN・旗除去・最終補強・独立レビューは各65成功・終了0。Releaseビルド警告・エラー0、APPROVED・VERIFIED。名前不足・kind/type・複合原因のprefixと識別情報を確認。",
+          "note": "固定参照import.mlのList.mapとeval.mlのList.fold_right2、原因と最小直接入力はstatus_reportを参照。成功時の宣言順・共有・定義実体独立性も同じfocused runに含む。"
+        },
+        {
+          "task": "6.3",
+          "scope": "official_run",
+          "source_id": "final_after",
+          "comparison_source_id": "final_comparison",
+          "audit": "artifacts/test-suite-conformance/final-20261004/6.3/final-accepted/acceptance-audit.json",
+          "result": "assigned0を維持し、通常APIの複合不正確認と公式全体の回帰0を照合した。関連群の個別ケース原因を追加確定する記録ではない。全944既知不一致が個別passedへ変わり、他52,963ケースの観測結果は同一。初回1,547passedと必須66件を維持、failed・runner_error・回帰・未比較0。runと比較は終了0。",
+          "note": "タスク6.2のAPPROVED・VERIFIEDと原結果を使用。未対応と依存の所有先確認・verify・baseline保存は後続タスクの範囲。"
+        }
+      ],
       "transfer": null,
       "requirements": [
         "1.2",
@@ -1921,7 +2029,7 @@
         "6.2"
       ],
       "design_ref": "ModuleInstantiator",
-      "cause": null
+      "cause": "Linkが各宣言で名前解決と種類・型照合を完了してから次へ進み、先行する不適合が後続の名前不足を隠していた。複数の不適合では先頭を選択しており、固定参照の全名前解決後の逆順照合と異なった。"
     },
     {
       "id": "F023",
@@ -1930,7 +2038,7 @@
         "D048"
       ],
       "boundary": "ExecutionBoundary",
-      "status": "uninvestigated",
+      "status": "verified",
       "owner_spec": "test-suite-conformance",
       "rule": "unreachableから始まる診断とUnreachableのReason、Instantiate段階、原因位置を保持する。",
       "confirmed_static_difference": "ThrowIfFailedがtrapを共通日本語Messageへまとめる。",
@@ -1961,16 +2069,43 @@
         }
       ],
       "minimal_reproduction": {
-        "status": "not_executed",
-        "construction": "[]->[]の定義startをunreachable/endだけにする。保存参照・副作用・ホスト例外の既存テストも維持する。",
+        "status": "executed",
+        "construction": "ExecutionResult.Trap(Unreachable, uint.MaxValue, 12345678900)の直接結果と、元位置77のunreachableだけを持つ定義startを確認した。Invoke/Instantiateのprefix・Reason・64bit位置・InnerExceptionを直接テストし、公開APIのstart失敗後の保存参照・副作用・ホスト例外伝播を維持した。",
         "basis_case": {
           "input_path": "start.wast",
           "source_id": "baseline_before",
           "command_index": 18
         }
       },
-      "remaining_investigation": "exhaustion等の新しい観測をD048の原因へ混在させない。",
-      "verification": [],
+      "remaining_investigation": "公式観測との対応はD048のstart.wast#18 Unreachable1件だけを保持する。両exhaustion Reasonの境界直接テストは別の設計上の確認であり、D048や同じCaseIdの原因・公式合格へ追加していない。HostStackLimitは直接結果による確認である。",
+      "verification": [
+        {
+          "task": "5.2",
+          "scope": "direct_tests",
+          "red_log": "artifacts/test-suite-conformance/task-5-20261004/5.2/red/tests.log",
+          "red_trx": "artifacts/test-suite-conformance/task-5-20261004/5.2/red/trx/WasmSharp.Tests_net10.0_x64.trx",
+          "red_exit_code": 2,
+          "green_trx": "artifacts/test-suite-conformance/task-5-20261004/5.2/green/trx/WasmSharp.Tests_net10.0_x64.trx",
+          "flag_removed_trx": "artifacts/test-suite-conformance/task-5-20261004/5.2/final/trx/WasmSharp.Tests_net10.0_x64.trx",
+          "build_log": "artifacts/test-suite-conformance/task-5-20261004/5.2/review/build.log",
+          "test_log": "artifacts/test-suite-conformance/task-5-20261004/5.2/review/tests.log",
+          "test_trx": "artifacts/test-suite-conformance/task-5-20261004/5.2/review/trx/WasmSharp.Tests_net10.0_x64.trx",
+          "review": "artifacts/test-suite-conformance/task-5-20261004/5.2/review.md",
+          "verification_report": "artifacts/test-suite-conformance/task-5-20261004/5.2/verification.md",
+          "status_report": "artifacts/test-suite-conformance/task-5-20261004/5.2/status-report.md",
+          "result": "REDは176件中診断prefix6件失敗・終了2、GREEN・旗除去・独立レビューは各176成功・終了0。各Releaseビルド警告・エラー0、APPROVED・VERIFIED。F023のUnreachable確認は両段階2件。",
+          "note": "CallDepthLimit/HostStackLimitの両段階4件は別の設計上の境界確認である。F023の公式観測へ割り当てない。固定規則と最小直接入力の詳細はstatus_reportを参照。"
+        },
+        {
+          "task": "6.3",
+          "scope": "official_run",
+          "source_id": "final_after",
+          "comparison_source_id": "final_comparison",
+          "audit": "artifacts/test-suite-conformance/final-20261004/6.3/final-accepted/acceptance-audit.json",
+          "result": "assigned1ケースstart.wast#18がpassed。公式観測はUnreachableだけであり、exhaustionの公式合格を示さない。全944既知不一致が個別passedへ変わり、他52,963ケースの観測結果は同一。初回1,547passedと必須66件を維持、failed・runner_error・回帰・未比較0。runと比較は終了0。",
+          "note": "タスク6.2のAPPROVED・VERIFIEDと原結果を使用。未対応と依存の所有先確認・verify・baseline保存は後続タスクの範囲。"
+        }
+      ],
       "transfer": null,
       "requirements": [
         "1.2",
@@ -1979,7 +2114,7 @@
         "6.5"
       ],
       "design_ref": "ExecutionBoundary",
-      "cause": null
+      "cause": "ThrowIfFailedがUnreachableを他のtrapと同じ日本語Messageへまとめ、start.wast#18で期待されるunreachableとの診断前方一致が成立しなかった。"
     }
   ],
   "cases": [
@@ -10692,7 +10827,7 @@
       "finding_ids": [
         "F023"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -10702,7 +10837,7 @@
       "finding_ids": [
         "F021"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -10712,7 +10847,7 @@
       "finding_ids": [
         "F021"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -10722,7 +10857,7 @@
       "finding_ids": [
         "F021"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -10732,7 +10867,7 @@
       "finding_ids": [
         "F021"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -10742,7 +10877,7 @@
       "finding_ids": [
         "F021"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -10752,7 +10887,7 @@
       "finding_ids": [
         "F021"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -10762,7 +10897,7 @@
       "finding_ids": [
         "F021"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -10772,7 +10907,7 @@
       "finding_ids": [
         "F021"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -10782,7 +10917,7 @@
       "finding_ids": [
         "F021"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -10792,7 +10927,7 @@
       "finding_ids": [
         "F021"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -10802,7 +10937,7 @@
       "finding_ids": [
         "F021"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -10812,7 +10947,7 @@
       "finding_ids": [
         "F021"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -10822,7 +10957,7 @@
       "finding_ids": [
         "F021"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -10832,7 +10967,7 @@
       "finding_ids": [
         "F021"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -10842,7 +10977,7 @@
       "finding_ids": [
         "F021"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -10852,7 +10987,7 @@
       "finding_ids": [
         "F021"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -10862,7 +10997,7 @@
       "finding_ids": [
         "F021"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -10872,7 +11007,7 @@
       "finding_ids": [
         "F021"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -10882,7 +11017,7 @@
       "finding_ids": [
         "F021"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -10892,7 +11027,7 @@
       "finding_ids": [
         "F021"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -10902,7 +11037,7 @@
       "finding_ids": [
         "F021"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -10912,7 +11047,7 @@
       "finding_ids": [
         "F021"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "linking.wast",
@@ -10922,7 +11057,7 @@
       "finding_ids": [
         "F021"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "linking.wast",
@@ -10932,7 +11067,7 @@
       "finding_ids": [
         "F021"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -10942,7 +11077,7 @@
       "finding_ids": [
         "F021"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -10952,7 +11087,7 @@
       "finding_ids": [
         "F021"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -10962,7 +11097,7 @@
       "finding_ids": [
         "F021"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -10972,7 +11107,7 @@
       "finding_ids": [
         "F021"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -10982,7 +11117,7 @@
       "finding_ids": [
         "F021"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -10992,7 +11127,7 @@
       "finding_ids": [
         "F021"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -11002,7 +11137,7 @@
       "finding_ids": [
         "F021"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -11012,7 +11147,7 @@
       "finding_ids": [
         "F021"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -11022,7 +11157,7 @@
       "finding_ids": [
         "F021"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -11032,7 +11167,7 @@
       "finding_ids": [
         "F021"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -11042,7 +11177,7 @@
       "finding_ids": [
         "F021"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -11052,7 +11187,7 @@
       "finding_ids": [
         "F021"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -11062,7 +11197,7 @@
       "finding_ids": [
         "F021"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "linking.wast",
@@ -11072,7 +11207,7 @@
       "finding_ids": [
         "F021"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -11082,7 +11217,7 @@
       "finding_ids": [
         "F021"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "linking.wast",
@@ -11092,7 +11227,7 @@
       "finding_ids": [
         "F021"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -11102,7 +11237,7 @@
       "finding_ids": [
         "F021"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -11112,7 +11247,7 @@
       "finding_ids": [
         "F021"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -11122,7 +11257,7 @@
       "finding_ids": [
         "F021"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -11132,7 +11267,7 @@
       "finding_ids": [
         "F021"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -11142,7 +11277,7 @@
       "finding_ids": [
         "F021"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -11152,7 +11287,7 @@
       "finding_ids": [
         "F021"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -11162,7 +11297,7 @@
       "finding_ids": [
         "F021"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -11172,7 +11307,7 @@
       "finding_ids": [
         "F021"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -11182,7 +11317,7 @@
       "finding_ids": [
         "F021"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -11192,7 +11327,7 @@
       "finding_ids": [
         "F021"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -11202,7 +11337,7 @@
       "finding_ids": [
         "F021"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -11212,7 +11347,7 @@
       "finding_ids": [
         "F021"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "linking.wast",
@@ -11222,7 +11357,7 @@
       "finding_ids": [
         "F021"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -11232,7 +11367,7 @@
       "finding_ids": [
         "F021"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -11242,7 +11377,7 @@
       "finding_ids": [
         "F021"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -11252,7 +11387,7 @@
       "finding_ids": [
         "F021"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -11262,7 +11397,7 @@
       "finding_ids": [
         "F021"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -11272,7 +11407,7 @@
       "finding_ids": [
         "F021"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -11282,7 +11417,7 @@
       "finding_ids": [
         "F021"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "linking.wast",
@@ -11292,7 +11427,7 @@
       "finding_ids": [
         "F021"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -11302,7 +11437,7 @@
       "finding_ids": [
         "F021"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -11312,7 +11447,7 @@
       "finding_ids": [
         "F021"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -11322,7 +11457,7 @@
       "finding_ids": [
         "F021"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -11332,7 +11467,7 @@
       "finding_ids": [
         "F021"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -11342,7 +11477,7 @@
       "finding_ids": [
         "F021"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -11352,7 +11487,7 @@
       "finding_ids": [
         "F021"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -11362,7 +11497,7 @@
       "finding_ids": [
         "F021"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -11372,7 +11507,7 @@
       "finding_ids": [
         "F021"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -11382,7 +11517,7 @@
       "finding_ids": [
         "F020"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -11392,7 +11527,7 @@
       "finding_ids": [
         "F020"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -11402,7 +11537,7 @@
       "finding_ids": [
         "F020"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -11412,7 +11547,7 @@
       "finding_ids": [
         "F020"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -11422,7 +11557,7 @@
       "finding_ids": [
         "F020"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -11432,7 +11567,7 @@
       "finding_ids": [
         "F020"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -11442,7 +11577,7 @@
       "finding_ids": [
         "F020"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -11452,7 +11587,7 @@
       "finding_ids": [
         "F020"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     },
     {
       "input_path": "imports.wast",
@@ -11462,7 +11597,7 @@
       "finding_ids": [
         "F020"
       ],
-      "status": "uninvestigated"
+      "status": "verified"
     }
   ],
   "verification": [
@@ -11590,6 +11725,57 @@
       "comparison_exit_code": 1,
       "record_selection": "baseline_beforeのlast_stage=validateだった183ケースをverifiedへ更新。Decode683ケース、残Instantiate78ケース、F001-F010とF020以降の記録を保持。",
       "note": "終了1は残るInstantiate78件による。仕様全体のGO・baseline-saveは未実施。"
+    },
+    {
+      "scope": "final_case_acceptance",
+      "task": "6.3",
+      "revision": "28907f2de5bca18a1f6c5080155c27c0edd2c177",
+      "git_status": [],
+      "code_state": "artifacts/test-suite-conformance/final-20261004/6.2/code-state.json",
+      "audit_revision": "ccf75e17ae425b9dadd998fd91182faddaf2832b",
+      "build": {
+        "command": "dotnet build WasmSharp2.slnx -c Release --warnaserror",
+        "log": "artifacts/test-suite-conformance/final-20261004/6.1-retry/logs/build.log",
+        "exit_code": 0,
+        "warnings": 0,
+        "errors": 0
+      },
+      "tests": [
+        "artifacts/test-suite-conformance/final-20261004/6.1-retry/trx/runtime/WasmSharp.Tests_net10.0_x64.trx",
+        "artifacts/test-suite-conformance/final-20261004/6.1-retry/trx/generators/WasmSharp.Generators.Tests_net10.0_x64.trx",
+        "artifacts/test-suite-conformance/final-20261004/6.1-retry/trx/runner/WasmSharp.TestSuiteRunner.Tests_net10.0_x64.trx"
+      ],
+      "normal_test_result": "6.1-retryの全3TRXは1110/37/701成功・失敗/スキップ0。通常ビルド・7コマンド終了0、APPROVED・VERIFIED。現在source84・変更test17・成果物12のhashが6.2/code-stateと一致。",
+      "direct_verification": [
+        {
+          "task": "5.1",
+          "status_report": "artifacts/test-suite-conformance/task-5-20261004/5.1/status-report.md",
+          "review": "artifacts/test-suite-conformance/task-5-20261004/5.1/review.md",
+          "verification_report": "artifacts/test-suite-conformance/task-5-20261004/5.1/verification.md"
+        },
+        {
+          "task": "5.2",
+          "status_report": "artifacts/test-suite-conformance/task-5-20261004/5.2/status-report.md",
+          "review": "artifacts/test-suite-conformance/task-5-20261004/5.2/review.md",
+          "verification_report": "artifacts/test-suite-conformance/task-5-20261004/5.2/verification.md"
+        },
+        {
+          "task": "5.3",
+          "status_report": "artifacts/test-suite-conformance/task-5-20261004/5.3/status-report.md",
+          "review": "artifacts/test-suite-conformance/task-5-20261004/5.3/review.md",
+          "verification_report": "artifacts/test-suite-conformance/task-5-20261004/5.3/verification.md"
+        }
+      ],
+      "run": "artifacts/test-suite-conformance/final-20261004/6.2/run-after.json",
+      "run_exit_code": 0,
+      "comparison": "artifacts/test-suite-conformance/final-20261004/6.2/compare-run.json",
+      "comparison_exit_code": 0,
+      "audit": "artifacts/test-suite-conformance/final-20261004/6.3/final-accepted/acceptance-audit.json",
+      "audit_command": "artifacts/test-suite-conformance/final-20261004/6.3/final-accepted.command.json",
+      "audit_exit": "artifacts/test-suite-conformance/final-20261004/6.3/final-accepted.exit.txt",
+      "record_selection": "残るInstantiate78ケースのstatusだけをverifiedへ更新。既存866verified、F001〜F019、sourcesとverificationの過去記録、casesのfinding_ids・observation_group_idとbasis_caseの候補関係を保持。F020〜F023の直接確認と全体runを関連付けた。",
+      "result": "全147入力・53,907commandを固定manifestのindex/typeと照合。欠落・重複・未処理・未確定・入力異常0、既知944一意IDが診断一覧・修正記録・初回failedと1対1一致して全passed。初回1,547passed・必須66件も個別維持。failed・runner_error・回帰・未比較0、変化944だけで他52,963件は同一。",
+      "note": "既存結果noteと状態は当時の記録として保持した。監査は期待値の再判定・分類変更を含まない。F022のassigned0、F014のassigned0、F023のstart.wast#18 Unreachable限定を維持。残存未対応・依存の所有先は6.4、verifyは6.5、baseline-saveは7で確認する。"
     }
   ],
   "transfer": []
