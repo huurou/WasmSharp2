@@ -87,6 +87,23 @@
       "run_id": "4ab7103e-ab79-463b-8bfc-a75081e33592",
       "baseline_run_id": "c8ebac70-d9fe-4f68-808b-a6791e63171e",
       "note": "初回保存済み結果と同じrun ID・byte列のbaselineを用いた比較。今後の初回観測の監査参照はbaseline_beforeのrun-moved.jsonを使用する。"
+    },
+    {
+      "id": "residual_ownership_audit",
+      "role": "ownership_audit",
+      "path": "artifacts/test-suite-conformance/final-20261004/6.4/final/ownership-audit.json",
+      "sha256": "612ba86cfdea625cd9890bdea416441a3d5969a240c8a28f3197a474368ae388",
+      "run_id": "4ab7103e-ab79-463b-8bfc-a75081e33592",
+      "revision": "28907f2de5bca18a1f6c5080155c27c0edd2c177",
+      "note": "6.4の全未対応・全依存のCaseId台帳。未対応のFeature/Location/未確認範囲と生成moduleのopcode/section、依存のDirect/Origins/根元/所有先を保持する。入力全体の有効性や将来のpassedは示さない。"
+    },
+    {
+      "id": "residual_ownership_rules",
+      "role": "fixed_rule_catalog",
+      "path": "artifacts/test-suite-conformance/final-20261004/6.4/final/ownership-catalog.json",
+      "sha256": "aeca0d489e0dfac545b23b8ada784b7d3be6cbe4bd9143cd9a2638b6ad2777df",
+      "spec_commit": "05ca4182176763112561ae20153975c12bd689e4",
+      "note": "固定規則、opcode付録、参照decode、現Unsupported宣言と4所有仕様briefを行番号・原文・hashで関連付ける。Featureの文字列prefix allowlistではない。"
     }
   ],
   "findings": [
@@ -11776,7 +11793,264 @@
       "record_selection": "残るInstantiate78ケースのstatusだけをverifiedへ更新。既存866verified、F001〜F019、sourcesとverificationの過去記録、casesのfinding_ids・observation_group_idとbasis_caseの候補関係を保持。F020〜F023の直接確認と全体runを関連付けた。",
       "result": "全147入力・53,907commandを固定manifestのindex/typeと照合。欠落・重複・未処理・未確定・入力異常0、既知944一意IDが診断一覧・修正記録・初回failedと1対1一致して全passed。初回1,547passed・必須66件も個別維持。failed・runner_error・回帰・未比較0、変化944だけで他52,963件は同一。",
       "note": "既存結果noteと状態は当時の記録として保持した。監査は期待値の再判定・分類変更を含まない。F022のassigned0、F014のassigned0、F023のstart.wast#18 Unreachable限定を維持。残存未対応・依存の所有先は6.4、verifyは6.5、baseline-saveは7で確認する。"
+    },
+    {
+      "scope": "residual_feature_ownership",
+      "task": "6.4",
+      "revision": "28907f2de5bca18a1f6c5080155c27c0edd2c177",
+      "git_status": [],
+      "audit_revision": "e89d51a4b4b10d5df64c24af81205fb7d412f002",
+      "code_state": "artifacts/test-suite-conformance/final-20261004/6.2/code-state.json",
+      "run": "artifacts/test-suite-conformance/final-20261004/6.2/run-after.json",
+      "run_id": "4ab7103e-ab79-463b-8bfc-a75081e33592",
+      "run_exit_code": 0,
+      "comparison_exit_code": 0,
+      "audit": "artifacts/test-suite-conformance/final-20261004/6.4/final/ownership-audit.json",
+      "audit_sha256": "612ba86cfdea625cd9890bdea416441a3d5969a240c8a28f3197a474368ae388",
+      "rules": "artifacts/test-suite-conformance/final-20261004/6.4/final/ownership-catalog.json",
+      "rules_sha256": "aeca0d489e0dfac545b23b8ada784b7d3be6cbe4bd9143cd9a2638b6ad2777df",
+      "audit_command": "artifacts/test-suite-conformance/final-20261004/6.4/final.command.json",
+      "audit_log": "artifacts/test-suite-conformance/final-20261004/6.4/final.log",
+      "audit_exit": "artifacts/test-suite-conformance/final-20261004/6.4/final.exit.txt",
+      "audit_exit_code": 0,
+      "audit_check_count": 470218,
+      "result": {
+        "command_count": 53907,
+        "unsupported_count": 2987,
+        "blocked_count": 47352,
+        "dependency_root_count": 641,
+        "multiple_owner_blocked_count": 0,
+        "max_dependency_depth": 2,
+        "typed_select_count": 1,
+        "unknown_owner_count": 0,
+        "prior_function_defect_count": 0,
+        "invalid_edge_count": 0,
+        "unresolved_count": 0,
+        "origins_mismatch_count": 0,
+        "duplicate_dependency_count": 0
+      },
+      "record_selection": "sources2・transfer4・verification1を追記。既存944 cases、23 findings、状態、finding_ids・observation_group_id・basis_case、過去sources/verificationを保持する。全CaseIdは参照auditに保持する。",
+      "normal_test_result": "source84・変更test17・build12・runner116・deployment3の現在hashを6.2 code-stateと照合し一致。6.1-retryのbuild警告/エラー0とTRX1110/37/701成功、6.3の567チェックAPPROVED/VERIFIEDを再利用。製品・テスト変更なしのため再実行なし。",
+      "failure_history": "primaryは全件所有先・依存照合成立後、対応済み命令数13への補助固定条件だけが不成立で終了1。end込み14件の現宣言形式へ訂正し、finalで470218チェック成立・実終了0。primaryの原JSON/log/exit1を保持する。",
+      "note": "未対応2987件とblocked47352件の分類を保持する。verifyとbaseline-saveは後続タスク。所有先監査はCore 2.0全体の完成や後続実装後の合格を示さない。"
     }
   ],
-  "transfer": []
+  "transfer": [
+    {
+      "id": "T001",
+      "status": "transferred",
+      "target_spec": "numeric-control",
+      "requirements": [
+        "1.2",
+        "1.3",
+        "1.4",
+        "2.4",
+        "7.4",
+        "7.6",
+        "8.4"
+      ],
+      "cause": "スカラー数値・構造化制御・selectの未実装descriptorでDecodeが中断した。typed select1件は型注釈2i32を確認し、固定規則の長さ1違反も保持する。制御・演算の追加と型規則の確認は後続仕様の新規実装に属する。",
+      "required_features": [
+        "スカラー数値の演算・比較・変換とnon-trapping conversions",
+        "nop・構造化制御・分岐と型スタックの多相性",
+        "selectとscalar typed selectのデコード・型規則・実行"
+      ],
+      "feature_evidence": {
+        "source": "residual_ownership_audit",
+        "sha256": "612ba86cfdea625cd9890bdea416441a3d5969a240c8a28f3197a474368ae388",
+        "selector": "$.owners[?(@.owner == 'numeric-control')].features",
+        "feature_count": 132
+      },
+      "owner_brief": {
+        "source": "residual_ownership_rules",
+        "reference": "R0891"
+      },
+      "basis_cases": {
+        "source": "residual_ownership_audit",
+        "sha256": "612ba86cfdea625cd9890bdea416441a3d5969a240c8a28f3197a474368ae388",
+        "selector": "$.unsupported_cases[?(@.owner == 'numeric-control')]",
+        "count": 965,
+        "example": {
+          "input_path": "align.wast",
+          "command_index": 106
+        }
+      },
+      "dependent_cases": {
+        "source": "residual_ownership_audit",
+        "sha256": "612ba86cfdea625cd9890bdea416441a3d5969a240c8a28f3197a474368ae388",
+        "selector": "$.blocked_cases[?('numeric-control' in @.owners)]",
+        "count": 13854,
+        "dependency_root_count": 168
+      },
+      "rule_evidence": {
+        "source": "residual_ownership_rules",
+        "sha256": "aeca0d489e0dfac545b23b8ada784b7d3be6cbe4bd9143cd9a2638b6ad2777df",
+        "selector": "$.owner_briefs['numeric-control']; 各basis_casesのfixed_rule_refs"
+      },
+      "verification_scope": "最初の未実装機能とその依存停止の所有先が確認済み。引継ぎは未解消のままであり、入力全体のvalid性・未確認領域の機能網羅・後続実装後のpassedは未確認。",
+      "revalidation": "所有仕様で機能追加後に固定公式素材をrunし、現baselineと比較する。新たな先行機能の不一致が判明すれば本仕様の修正記録へ追加し、必要な修正後に全体run/比較を繰り返す。"
+    },
+    {
+      "id": "T002",
+      "status": "transferred",
+      "target_spec": "linear-memory",
+      "requirements": [
+        "1.2",
+        "1.3",
+        "1.4",
+        "2.4",
+        "7.4",
+        "7.6",
+        "8.4"
+      ],
+      "cause": "scalar memory/bulk memory命令、dataまたはdata_countの最初の未実装構文でDecodeが中断した。guest命令とdata固有のデコード・検証・初期化を後続仕様へ引き継ぐ。",
+      "required_features": [
+        "scalar load/store・memory.size/grow",
+        "bulk memory命令とdata.drop",
+        "data/data_countのデコード・型検証・初期化"
+      ],
+      "feature_evidence": {
+        "source": "residual_ownership_audit",
+        "sha256": "612ba86cfdea625cd9890bdea416441a3d5969a240c8a28f3197a474368ae388",
+        "selector": "$.owners[?(@.owner == 'linear-memory')].features",
+        "feature_count": 31
+      },
+      "owner_brief": {
+        "source": "residual_ownership_rules",
+        "reference": "R0892"
+      },
+      "basis_cases": {
+        "source": "residual_ownership_audit",
+        "sha256": "612ba86cfdea625cd9890bdea416441a3d5969a240c8a28f3197a474368ae388",
+        "selector": "$.unsupported_cases[?(@.owner == 'linear-memory')]",
+        "count": 588,
+        "example": {
+          "input_path": "address.wast",
+          "command_index": 0
+        }
+      },
+      "dependent_cases": {
+        "source": "residual_ownership_audit",
+        "sha256": "612ba86cfdea625cd9890bdea416441a3d5969a240c8a28f3197a474368ae388",
+        "selector": "$.blocked_cases[?('linear-memory' in @.owners)]",
+        "count": 5330,
+        "dependency_root_count": 103
+      },
+      "rule_evidence": {
+        "source": "residual_ownership_rules",
+        "sha256": "aeca0d489e0dfac545b23b8ada784b7d3be6cbe4bd9143cd9a2638b6ad2777df",
+        "selector": "$.owner_briefs['linear-memory']; 各basis_casesのfixed_rule_refs"
+      },
+      "verification_scope": "最初の未実装機能とその依存停止の所有先が確認済み。引継ぎは未解消のままであり、入力全体のvalid性・未確認領域の機能網羅・後続実装後のpassedは未確認。",
+      "revalidation": "所有仕様で機能追加後に固定公式素材をrunし、現baselineと比較する。新たな先行機能の不一致が判明すれば本仕様の修正記録へ追加し、必要な修正後に全体run/比較を繰り返す。"
+    },
+    {
+      "id": "T003",
+      "status": "transferred",
+      "target_spec": "tables-references",
+      "requirements": [
+        "1.2",
+        "1.3",
+        "1.4",
+        "2.4",
+        "7.4",
+        "7.6",
+        "8.4"
+      ],
+      "cause": "table/参照/call_indirect命令またはelement sectionの最初の未実装構文でDecodeが中断した。先行するリソース生成・共有とは区別し、guest命令と参照・element固有の処理を後続仕様へ引き継ぐ。",
+      "required_features": [
+        "参照命令とtableのguest命令",
+        "call_indirectの型検証・実行・trap",
+        "elementのデコード・型検証・初期化"
+      ],
+      "feature_evidence": {
+        "source": "residual_ownership_audit",
+        "sha256": "612ba86cfdea625cd9890bdea416441a3d5969a240c8a28f3197a474368ae388",
+        "selector": "$.owners[?(@.owner == 'tables-references')].features",
+        "feature_count": 13
+      },
+      "owner_brief": {
+        "source": "residual_ownership_rules",
+        "reference": "R0893"
+      },
+      "basis_cases": {
+        "source": "residual_ownership_audit",
+        "sha256": "612ba86cfdea625cd9890bdea416441a3d5969a240c8a28f3197a474368ae388",
+        "selector": "$.unsupported_cases[?(@.owner == 'tables-references')]",
+        "count": 370,
+        "example": {
+          "input_path": "binary-leb128.wast",
+          "command_index": 5
+        }
+      },
+      "dependent_cases": {
+        "source": "residual_ownership_audit",
+        "sha256": "612ba86cfdea625cd9890bdea416441a3d5969a240c8a28f3197a474368ae388",
+        "selector": "$.blocked_cases[?('tables-references' in @.owners)]",
+        "count": 4067,
+        "dependency_root_count": 136
+      },
+      "rule_evidence": {
+        "source": "residual_ownership_rules",
+        "sha256": "aeca0d489e0dfac545b23b8ada784b7d3be6cbe4bd9143cd9a2638b6ad2777df",
+        "selector": "$.owner_briefs['tables-references']; 各basis_casesのfixed_rule_refs"
+      },
+      "verification_scope": "最初の未実装機能とその依存停止の所有先が確認済み。引継ぎは未解消のままであり、入力全体のvalid性・未確認領域の機能網羅・後続実装後のpassedは未確認。",
+      "revalidation": "所有仕様で機能追加後に固定公式素材をrunし、現baselineと比較する。新たな先行機能の不一致が判明すれば本仕様の修正記録へ追加し、必要な修正後に全体run/比較を繰り返す。"
+    },
+    {
+      "id": "T004",
+      "status": "transferred",
+      "target_spec": "simd",
+      "requirements": [
+        "1.2",
+        "1.3",
+        "1.4",
+        "2.4",
+        "7.4",
+        "7.6",
+        "8.4"
+      ],
+      "cause": "0xFD prefixed opcodeの未実装descriptorでDecodeが中断した。SIMDのメモリ命令もvector機能として所有し、共通メモリ機構との統合は後続仕様で扱う。",
+      "required_features": [
+        "0xFD prefixed SIMD命令の即値・型検証・実行",
+        "vectorメモリ命令と既存メモリ境界処理の統合",
+        "v128値の共通経路と初期化式への統合"
+      ],
+      "feature_evidence": {
+        "source": "residual_ownership_audit",
+        "sha256": "612ba86cfdea625cd9890bdea416441a3d5969a240c8a28f3197a474368ae388",
+        "selector": "$.owners[?(@.owner == 'simd')].features",
+        "feature_count": 224
+      },
+      "owner_brief": {
+        "source": "residual_ownership_rules",
+        "reference": "R0894"
+      },
+      "basis_cases": {
+        "source": "residual_ownership_audit",
+        "sha256": "612ba86cfdea625cd9890bdea416441a3d5969a240c8a28f3197a474368ae388",
+        "selector": "$.unsupported_cases[?(@.owner == 'simd')]",
+        "count": 1064,
+        "example": {
+          "input_path": "simd/simd_address.wast",
+          "command_index": 0
+        }
+      },
+      "dependent_cases": {
+        "source": "residual_ownership_audit",
+        "sha256": "612ba86cfdea625cd9890bdea416441a3d5969a240c8a28f3197a474368ae388",
+        "selector": "$.blocked_cases[?('simd' in @.owners)]",
+        "count": 24101,
+        "dependency_root_count": 234
+      },
+      "rule_evidence": {
+        "source": "residual_ownership_rules",
+        "sha256": "aeca0d489e0dfac545b23b8ada784b7d3be6cbe4bd9143cd9a2638b6ad2777df",
+        "selector": "$.owner_briefs['simd']; 各basis_casesのfixed_rule_refs"
+      },
+      "verification_scope": "最初の未実装機能とその依存停止の所有先が確認済み。引継ぎは未解消のままであり、入力全体のvalid性・未確認領域の機能網羅・後続実装後のpassedは未確認。",
+      "revalidation": "所有仕様で機能追加後に固定公式素材をrunし、現baselineと比較する。新たな先行機能の不一致が判明すれば本仕様の修正記録へ追加し、必要な修正後に全体run/比較を繰り返す。"
+    }
+  ]
 }

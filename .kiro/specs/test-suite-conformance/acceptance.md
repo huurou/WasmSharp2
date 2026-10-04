@@ -414,3 +414,20 @@ HEAD`28907f2de5bca18a1f6c5080155c27c0edd2c177`、cleanな状態の通常Release 
 原因F020〜F023と最後のInstantiate78件を修正記録へ反映し、944件すべてがverifiedとなった。F022は複合不正の直接テストで確認した規則であり、公式ケースの原因を追加割当てしていない。F023の公式1件はUnreachableで、exhaustionの直接証跡と区別する。既存の関連付け・原因・866件の確認を保持した。
 
 実装監査は567チェック成功・終了0、独立監査は430チェック成功・終了0。原JSON・比較オブジェクト・現在ソース/成果物・379参照hash・直接テストのRED/GREEN/旗除去と既存通常TRXを確認し、独立[APPROVED](../../../artifacts/test-suite-conformance/final-20261004/6.3/review.md)とmainの[TASK VERIFIED](../../../artifacts/test-suite-conformance/final-20261004/6.3/verification.md)が成立した。[監査JSON](../../../artifacts/test-suite-conformance/final-20261004/6.3/acceptance-audit.json)はSHA-256 `4f8d01966a243dba96ff8a588a416fcf11958eb507ba4992b2d3c6cf71ac7091`、確認時の[修正記録スナップショット](../../../artifacts/test-suite-conformance/final-20261004/6.3/remediation-after.json)は`acaf35d478eab098b35597059689fff647e8308012a6c80639f8e5f6b5a4dd30`。初回補助監査の不成立と訂正履歴はinspection-notes.mdに保持する。C#・公式結果・baselineは変更していない。
+
+### 6.4 残存未対応と依存の所有先
+
+原結果の全2987runtime_unsupportedについて、Feature・Location・未確認範囲・CaseIdを保持し、生成moduleの停止位置のopcode/section、現在のUnsupported宣言、固定Core 2.0規則と後続briefから所有先を確認した。全47352blockedのDirectは同入力の先行未対応またはblockedへ到達し、導出した根元集合はreported Originsと一致する。根元641件、最大深さ2、複数所有先0。所有先不明・先行機能の不具合・不正辺・未解決依存・重複・Origins不一致は0件。
+
+| 所有仕様 | 未対応 | blocked | 依存根元 |
+| --- | ---: | ---: | ---: |
+| numeric-control | 965 | 13854 | 168 |
+| linear-memory | 588 | 5330 | 103 |
+| tables-references | 370 | 4067 | 136 |
+| simd | 1064 | 24101 | 234 |
+
+全ケースの根拠は[ownership-audit.json](../../../artifacts/test-suite-conformance/final-20261004/6.4/final/ownership-audit.json)、共通規則は[ownership-catalog.json](../../../artifacts/test-suite-conformance/final-20261004/6.4/final/ownership-catalog.json)へ保存した。SHA-256はそれぞれ`612ba86cfdea625cd9890bdea416441a3d5969a240c8a28f3197a474368ae388`と`aeca0d489e0dfac545b23b8ada784b7d3be6cbe4bd9143cd9a2638b6ad2777df`。修正記録はsources2・transfer4・verification1の追記のみで、既存944ケース・23原因・状態・関連付けを保持する。確認時の[after snapshot](../../../artifacts/test-suite-conformance/final-20261004/6.4/remediation-after.json)は`c0980bddd0b331d2db247ed401f29f1b9226c22cfbfc7eafce89954f3494f6dd`。
+
+実装監査470218チェック・独立監査304838チェックはともに実終了0。不成立一覧は空。独立レビューで使用module2987件の現在hashとcatalog1331参照を確認し[APPROVED](../../../artifacts/test-suite-conformance/final-20261004/6.4/review.md)、mainも原ログ・終了値・現在hash・構造差分を確認して[TASK VERIFIED](../../../artifacts/test-suite-conformance/final-20261004/6.4/verification.md)とした。初回の固定個数条件と独立監査側の解釈誤りの原証跡は保持し、訂正後の正式実行と区別する。
+
+引継ぎは最初の未実装機能の所有先を示し、未解消のまま保持する。入力全体の有効性や後続追加後の合格を推定しない。select.wast#121はopcode0x1c・2i32の型vectorで長さ1の規則に反する情報を保持し、numeric-controlへ渡す。通常ソース/テスト/成果物は6.1〜6.3と同じhashで、再ビルド・通常テスト・公式runは再実行していない。verifyとbaseline保存は後続で確認する。
