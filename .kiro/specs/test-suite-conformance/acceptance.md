@@ -441,3 +441,13 @@ HEAD`28907f2de5bca18a1f6c5080155c27c0edd2c177`、cleanな状態の通常Release 
 独立レビューでも同じverifyを実行し、同じ終了1と理由を確認した。独立統合監査は60チェック成功・実終了0で[APPROVED](../../../artifacts/test-suite-conformance/final-20261004/6.5/review.md)。mainも原ログ・終了値・現在hash・条件を確認して[TASK VERIFIED](../../../artifacts/test-suite-conformance/final-20261004/6.5/verification.md)とした。独立初回の3条件は不成立ID辞書の読み方の誤りを直した別finalで成立し、初回原script/JSON/log/終了1を保持している。
 
 現在のsource84/test17/build12/runner116/deployment3と379歴史参照は一致し、6.3の当時の可変record参照は固定after snapshotで照合する。原結果・比較・素材・record・成果物・現baselineはverify前後で不変。後続4機能は未解消のまま引き継ぎ、入力全体の有効性・将来passedを推定しない。保存前受入条件が成立したため、同じcurrentを明示保存するタスク7へ進む。
+
+### 7 受入済みcurrentの明示保存と引継ぎ
+
+保存前受入の成立後、通常Release apphostの`baseline-save --input artifacts/test-suite-conformance/final-20261004/6.2/run-after.json --output artifacts/test-suite-runner-acceptance-20261001/run-baseline.json`を別操作として1回実行した。実PID38208、2026-10-04T06:13:11〜06:13:14UTC、終了0、stdout「baseline保存: 完了」、stderr空。原コマンド・終了値と前後照合は[保存証跡](../../../artifacts/test-suite-conformance/final-20261004/7/baseline-save-proof.json)を参照する。
+
+保存前SHA-256は`032cc64b6c088e920331b420490617da6094454ab08a52381ab7c35b1be3c057`、保存後は`2c6b3e3676cdf8db53747aaf65e1dc47fa94c61c04758edea7e9f94f4f0dce96`。保存後の70814129bytesは受入currentと完全一致し、修正前のrun-moved.jsonは旧hashのまま保持する。再生成・公式run・比較・ビルドは行わず、保護293ファイルと受入ソース・成果物のhashは前後同一だった。
+
+主[最終監査](../../../artifacts/test-suite-conformance/final-20261004/acceptance-audit.json)は7/final-acceptance-audit.jsonと完全一致し、SHA-256は`360a1daf59a33b809ba4b63e019f8295db1d2054a8c5ad59b1c8a6f6e00a684d`。全受入契約1〜6成立、不成立CaseIdなし。保存監査10確認と独立監査71確認はいずれも実終了0・不成立0で[APPROVED](../../../artifacts/test-suite-conformance/final-20261004/7/review.md)。mainも原ログ・終了値・現在のbyte列・hashを13確認で読戻し、[TASK VERIFIED](../../../artifacts/test-suite-conformance/final-20261004/7/verification.md)とした。保存前補助監査のKeyErrorと独立初回の引数誤認は原script・log・終了1を保持し、正式成功と区別する。
+
+[後続への引継ぎ](../../../artifacts/test-suite-conformance/final-20261004/7/handoff.md)に修正状態・原因・直接テスト・全体結果・比較・監査・固定条件と次回のrun→現baseline比較→修正→明示保存を揃えた。後続4仕様の未対応と依存は未解消のまま保持する。baseline保存終了0はCore2.0全体の合格を意味せず、同currentのverify終了1とcore2_complete=falseを維持する。仕様全体の最終実装検証は保存後に行う。
