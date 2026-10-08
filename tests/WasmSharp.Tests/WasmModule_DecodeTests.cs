@@ -14,6 +14,10 @@ internal partial class WasmModule_DecodeTests
     [Arguments("0000000100", "unexpected end of section or function", 11L, null, (byte)0)]
     [Arguments("0001000801808080808000", "integer representation too long", 18L, null, (byte)8)]
     [Arguments("0605017F00410005", "END opcode expected", 15L, null, (byte)6)]
+    [Arguments("030201000A0301010006", "illegal opcode 06", 17L, 0u, (byte)10)]
+    [Arguments("030201000A03010100FC12", "illegal opcode fc 12", 17L, 0u, (byte)10)]
+    [Arguments("030201000A03010100FD8002", "illegal opcode 100", 17L, 0u, (byte)10)]
+    [Arguments("0605017F00410006", "illegal opcode 06", 15L, null, (byte)6)]
     public async Task 宣言境界の後続byteで原因が分かれる_両入力で診断先頭と位置を選択する(
         string sections,
         string prefix,
@@ -134,18 +138,19 @@ internal partial class WasmModule_DecodeTests
     }
 
     [Test]
-    [Arguments("FF", 33L)]
-    [Arguments("D3", 33L)]
-    [Arguments("FC12", 33L)]
-    [Arguments("FD9A01", 33L)]
-    [Arguments("FD8002", 33L)]
-    [Arguments("FCFFFFFFFF10", 38L)]
-    [Arguments("FD808080808000", 39L)]
-    [Arguments("4180808080080B", 38L)]
-    [Arguments("056A", 33L)]
+    [Arguments("FF", 33L, "illegal opcode ff")]
+    [Arguments("D3", 33L, "illegal opcode d3")]
+    [Arguments("FC12", 33L, "illegal opcode fc 12")]
+    [Arguments("FD9A01", 33L, "illegal opcode 9a")]
+    [Arguments("FD8002", 33L, "illegal opcode 100")]
+    [Arguments("FCFFFFFFFF10", 38L, "integer too large")]
+    [Arguments("FD808080808000", 39L, "integer representation too long")]
+    [Arguments("4180808080080B", 38L, "integer too large")]
+    [Arguments("056A", 33L, "END opcode expected")]
     public async Task 両入力で未割当命令や不正LEBや平坦elseがある_命令位置付きの破損になる(
         string instructions,
-        long offset
+        long offset,
+        string prefix
     )
     {
         // Arrange
@@ -161,9 +166,15 @@ internal partial class WasmModule_DecodeTests
         foreach (var decode in decoders)
         {
             var exception = await Assert.That(decode).ThrowsExactly<WasmDecodeException>();
-            await Assert
-                .That(exception!.Location)
-                .IsEqualTo(new(WasmProcessingStage.Decode, offset, 0, 10));
+            using (Assert.Multiple())
+            {
+                await Assert
+                    .That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal))
+                    .IsTrue();
+                await Assert
+                    .That(exception.Location)
+                    .IsEqualTo(new(WasmProcessingStage.Decode, offset, 0, 10));
+            }
         }
     }
 

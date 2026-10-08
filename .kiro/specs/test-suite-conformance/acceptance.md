@@ -463,3 +463,31 @@ HEAD`28907f2de5bca18a1f6c5080155c27c0edd2c177`、cleanな状態の通常Release 
 公式受入は同じ固定147入力・53907commandの原結果と監査を使用する。944件を個別passedへ変更し、旧1547件と必須66件を維持、全体failed/runner_error/回帰/未比較0、run/比較終了0、現baselineとcurrentは完全byte一致。後続4機能の未対応2987件・blocked47352件は未解消のまま引き継ぎ、verify終了1とCore2.0全体未完了を保持する。
 
 画像で報告されたdotnet.exeの0xe0434352は、該当する詳細ログ・PID・発生コマンドが特定できず、原因未確認のままである。今回のテスト・CLI起動で再発を観測しなかったことと、元障害の原因特定・修正は区別する。補助確認・整形操作の失敗は各原証跡とinspection-notesへ保持する。この完了記録の変更はMarkdownだけで、C#・テスト・成果物・公式結果・baselineを変更しない。
+
+### 仕様全体のClaude Code検証
+
+2026-10-04、HEAD`604cfbcd5047b9f29d5f961c7e0393d77c3d0518`の未コミット変更がない状態から、Claude Codeに`kiro-validate-impl test-suite-conformance`の読み取り専用検証を依頼した。Claudeの送信先はAnthropic、使用ツールはRead・Glob・Grepに限定し、編集・シェル・ビルド・テスト・Git操作は許可していない。初回起動は自動承認レビューに2回拒否され、ユーザーから対象資料のAnthropicへの送信承認を得た後に実行した。
+
+[初回所見](../../../artifacts/test-suite-conformance/claude-validation-20261004/initial-review.md)は終了0・success、セッションIDは`42b00ace-405a-4345-9237-0846e40e4a33`。Critical・High・Mediumはなく、8要件・48基準の対応、設計と統合境界に阻害する問題はなかった。初回のMANUAL_VERIFY_REQUIREDは、新しい機械証跡の追送待ちによる暫定判定である。初回の確認・未確認範囲は所見原文に保持し、同じセッションの最終回答は[最終レビュー](../../../artifacts/test-suite-conformance/claude-validation-20261004/final-review.md)、終了値・セッション同一性と採否は[検証結果](../../../artifacts/test-suite-conformance/claude-validation-20261004/review-summary.md)を参照する。
+
+V1-1（Low）は後続仕様への注記として採用した。`ModuleDecoder.ReadInstructions`は未割当opcodeに対して日本語だけのWasmDecodeExceptionを生成し、境界失敗後の診断再走査もこの例外を採用し得る。一方、固定参照`interpreter/binary/decode.ml`の`illegal`・`illegal2`は`illegal opcode`から始まる。固定`binary.wast#131`はelement内の0xF3に同診断を期待するが、今回の全体結果でも`section.element`のruntime_unsupportedで停止している。このコード・固定参照・保存結果をCodexが照合した。現仕様の診断選択規則の要件違反とはせず、tables-referencesでelementのデコードを実装する際には、共有する未割当opcodeの診断先頭を固定参照へ合わせ、#131を診断照合込みで再検証する必要があると記録する。通常入力と境界再走査の両経路を確認し、未割当opcodeと割当済み未対応命令の分類を混同しない。今回は後続機能や診断の先行実装は行わず、固定hashで参照する既存のremediation.json・引継ぎ資料も保持する。
+
+新しい[機械検証](../../../artifacts/test-suite-conformance/claude-validation-20261004/mechanical/report.md)では、Releaseビルドが終了0・警告0・エラー0、続く全3プロジェクトが1110/37/701件成功・失敗0・スキップ0となった。通常apphostの`--help`とCSharpierも終了0。通常ビルドのランナーで固定147入力・53907commandを新規出力先へ実行し、runと現baselineとのcompare-runは終了0、変化・追加・欠落・回帰・未比較・条件差・出典差・素材差はすべて0だった。既知944件の診断照合込みpassed、旧1547passedと必須66ケースの維持を個別に確認した。verifyは未対応2987件とblocked47352件を理由に終了1であり、Core2.0全体の完成とは区別する。
+
+[今回の監査](../../../artifacts/test-suite-conformance/claude-validation-20261004/mechanical/audit.json)は51確認成功・不成立0。所有先の判断は既存監査を再利用し、今回の全CaseId・Feature・Location・未確認範囲・依存・対応素材hashとの一致を確認した。ソースとテストの残存マーカー・秘密値候補は0。機械検証の開始から終了までは追跡762ファイル・HEAD・index・現baseline・旧run・manifestが不変で、その後の変更はこの記録とtasks.mdの注記だけである。新しい公式結果でbaselineを上書きする操作は行っていない。
+
+証跡出力先のAccess deniedと補助PowerShellの引数束縛失敗は製品コマンド開始前に発生し、権限と呼び出し形式を直して解消した。初回出力は機械検証のログに保持する。Claudeへの証拠追送はCodexが実行したコマンド・終了値・ログ・TRXを使い、Claude自身がコマンドを実行したとは扱わない。過去に報告されたdotnet.exeの0xe0434352の原因特定・修正は今回の検証範囲に含めない。
+
+### 未割当opcode診断の追加修正
+
+2026-10-04、ユーザーの修正依頼により、前節のV1-1で後続仕様への注記に留めた共通デコーダの診断を修正した。`ModuleDecoder.ReadInstructions`の未割当判定で、通常命令には`illegal opcode ff`、0xFC拡張命令には`illegal opcode fc 12`、0xFD拡張命令には`illegal opcode 100`のように、固定`decode.ml`と同じ小文字16進表記を付ける。参照は0xFCに`illegal2`、0xFDに`illegal`を使用するため、0xFDのprefixは表示しない。桁数は最低2桁とし、拡張命令番号をbyteへ縮小しない。日本語説明を後置し、WasmDecodeException、Decode段階、opcode先頭のLocationを維持した。未割当判定と診断生成の責務は既存の共通処理に収まるため、新しい型や別の解析処理は追加していない。
+
+既存の公開Decodeテスト9件にOrdinalの診断前方一致を追加し、通常命令・FC/FD拡張命令と、不正LEB・平坦ELSEの区別を確認した。境界再走査には通常命令・FC/FD拡張命令・global初期化式の4ケースを追加した。byte列とStreamの両入力で例外型と原因位置も確認し、割当済み未対応命令で元の境界不正を保持する既存テストも維持する。修正前のビルドは終了0・警告/エラー0、対象テスト110件中9件が診断前方一致で失敗した（TUnit実終了2、外側PowerShell終了1）。原ログ・TRXを保持する。
+
+修正後のReleaseビルドは終了0・警告/エラー0、全3プロジェクトは1114/37/701件、合計1852件成功・失敗0・スキップ0。CSharpierの初回は式の改行で失敗し、対象ファイルを整形した後の検査は終了0となった。通常ビルドによる固定147入力・53907commandのrunは終了0、passed2491・failed0・runner_error0で、現baselineとの比較も終了0、変化・追加・欠落・回帰・未比較・条件差・出典差・素材差0だった。初回の比較はrunの保存完了を待たず起動したため読取失敗・終了2になり、run終了0を確認後、同じ保存済み結果で比較し直して解消した。初回ログは保持し、製品の不一致とは区別する。
+
+verifyは未対応2987件・blocked47352件を理由に終了1であり、Core2.0全体は未完了。binary.wast#131は引き続きsection.elementの未対応で停止するため、この公式ケースのpassed化は今回の成果に含めない。共通の診断生成は修正済みで、tables-referencesへ残すのはelement対応後の同ケースの診断照合込みの確認である。過去の固定hash付き受入資料は当時の証拠として保持し、今回のコード・テスト・新しいrunとの対応は別の証跡に記録する。
+
+初回修正後の再レビューでV3-1（Low）が追加された。0xFDにもprefixを表示していたコードと期待値、参照と同じだと記した説明が不正確という指摘であり、固定`decode.ml:510`・`:775`の呼び出しを確認して採用した。0xFDは命令番号だけを表示するよう修正し、通常解析2ケースと境界再走査1ケースの期待値、上記の説明を訂正した。初回の修正と検証は履歴として保持し、最終コードのReleaseビルドは警告・エラー0、全3テスト1852件は成功・失敗/スキップ0、CSharpierは終了0となった。新しい公式runと現baseline比較も終了0・全差分0で、verify終了1の理由は同じ未対応/blockedだけである。
+
+初回修正のコマンド・原ログ・TRX・比較は[初回の機械検証](../../../artifacts/test-suite-conformance/illegal-opcode-20261004/report.md)、V3-1修正後の検証、同じClaudeセッションでの最終レビューと受入後のbaseline保存は[追加修正の検証結果](../../../artifacts/test-suite-conformance/illegal-opcode-20261004/review-summary.md)を参照する。Gitのインデックス・ブランチ・履歴は変更しない。

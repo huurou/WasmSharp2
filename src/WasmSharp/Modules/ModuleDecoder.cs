@@ -394,7 +394,15 @@ internal static class ModuleDecoder
                 : new OpcodeKey(0, code);
             if (!InstructionSet.TryGet(opcode, out var descriptor))
             {
-                throw reader.Error("Core 2.0に割り当てられていないopcodeです。", offset);
+                // 固定参照は0xFCだけprefixを表示し、0xFDは命令番号だけを表示する。
+                var opcodeText =
+                    opcode.Prefix == 0xFC
+                        ? $"{opcode.Prefix:x2} {opcode.Code:x2}"
+                        : $"{opcode.Code:x2}";
+                throw reader.Error(
+                    $"illegal opcode {opcodeText}: Core 2.0に割り当てられていないopcodeです。",
+                    offset
+                );
             }
 
             var immediateKind = descriptor.Immediate;
