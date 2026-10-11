@@ -21,6 +21,7 @@ internal static class FunctionValidator
     /// <param name="globalTypes">importを先頭とするglobal index順の解決済みの型</param>
     /// <returns>実行命令と確定済み分岐情報、追加localsとoperandの最大要素数を持つ、この定義関数の実行コード</returns>
     /// <exception cref="WasmValidateException">命令の参照先、globalの可変性、入力型または結果の型・個数・順序が不正な場合</exception>
+    /// <exception cref="WasmUnsupportedFeatureException">その場の型検証が成立したselectの候補型が後続機能に属する場合</exception>
     /// <exception cref="InvalidOperationException">デコード済み命令の記述子や検証規則が実装内で一致しない場合</exception>
     internal static FunctionCode Validate(
         WasmModule module,
@@ -217,9 +218,7 @@ internal static class FunctionValidator
                     for (var index = 0; index < branchTypes.Length; index++)
                     {
                         // selectorを除く同じ列を参照する。不足は最後のPopで検査する。
-                        var operandIndex = stack.Count - branchTypes.Length - 1 + index;
-                        branchTypes[index] =
-                            operandIndex >= frames[^1].Height ? stack[operandIndex] : null;
+                        branchTypes[index] = Peek(branchTypes.Length - index);
                     }
                     CheckLabelTypes(branchTypes, defaultLabel.LabelTypes, instruction.ByteOffset);
                     outputIndex = (uint)branchTargets.Count;
@@ -288,6 +287,14 @@ internal static class FunctionValidator
 
                 case ValidationRule.Drop:
                     Pop(null, instruction.ByteOffset);
+                    break;
+
+                case ValidationRule.Select:
+                case ValidationRule.TypedSelect:
+                    ValidateSelect(
+                        instruction,
+                        descriptor.Validation == ValidationRule.TypedSelect
+                    );
                     break;
 
                 case ValidationRule.LocalGet:
@@ -360,6 +367,63 @@ internal static class FunctionValidator
                 default:
                     throw new InvalidOperationException("制御の型指定が不正です。");
             }
+        }
+
+        void ValidateSelect(DecodedInstruction instruction, bool typed)
+        {
+            WasmValueKind? candidateType;
+            if (typed)
+            {
+                // 型vector長は、候補の型やoperand不足より先に検査する。
+                if (instruction.SelectTypes.Length != 1)
+                {
+                    throw ValidationDiagnostics.ValidationFailure(
+                        "invalid result arity",
+                        "型注釈付きselectの結果型は1個である必要があります。",
+                        new(
+                            WasmProcessingStage.Validate,
+                            instruction.ByteOffset,
+                            moduleFunctionIndex,
+                            10
+                        )
+                    );
+                }
+                candidateType = instruction.SelectTypes[0];
+            }
+            else
+            {
+                var secondType = Peek(1);
+                var firstType = Peek(2);
+                if (
+                    secondType is WasmValueKind.FuncRef or WasmValueKind.ExternRef
+                    || firstType is WasmValueKind.FuncRef or WasmValueKind.ExternRef
+                )
+                {
+                    throw CreateException(
+                        "型注釈のないselectの候補には参照型を使えません。",
+                        instruction.ByteOffset
+                    );
+                }
+                // 具体候補に適合させ、両方Unknownの場合だけ結果もUnknownにする。
+                candidateType = secondType ?? firstType;
+            }
+
+            Pop(WasmValueKind.I32, instruction.ByteOffset);
+            Pop(candidateType, instruction.ByteOffset);
+            Pop(candidateType, instruction.ByteOffset);
+
+            var feature = candidateType switch
+            {
+                WasmValueKind.V128 => typed ? "select.typed.v128" : "select.v128",
+                WasmValueKind.FuncRef => "select.typed.funcref",
+                WasmValueKind.ExternRef => "select.typed.externref",
+                _ => null,
+            };
+            if (feature is not null)
+            {
+                throw CreateUnsupported(feature, instruction.ByteOffset);
+            }
+            stack.Add(candidateType);
         }
 
         void CheckEnd(ControlFrame frame, long byteOffset)
@@ -445,6 +509,12 @@ internal static class FunctionValidator
             throw CreateUnknownIndex("local", index, "参照するlocalが存在しません。", byteOffset);
         }
 
+        WasmValueKind? Peek(int depth)
+        {
+            var index = stack.Count - 1 - depth;
+            return index >= frames[^1].Height ? stack[index] : null;
+        }
+
         WasmValueKind? Pop(WasmValueKind? expected, long byteOffset)
         {
             var frame = frames[^1];
@@ -518,6 +588,29 @@ internal static class FunctionValidator
                 "type mismatch",
                 message,
                 new(WasmProcessingStage.Validate, byteOffset, moduleFunctionIndex, 10)
+            );
+        }
+
+        WasmUnsupportedFeatureException CreateUnsupported(string feature, long byteOffset)
+        {
+            return new WasmUnsupportedFeatureException(
+                "selectの候補型に対する処理が未実装です。",
+                feature,
+                new(WasmProcessingStage.Validate, byteOffset, moduleFunctionIndex, 10),
+                [
+                    new WasmUnverifiedRange(
+                        WasmProcessingStage.Validate,
+                        byteOffset,
+                        module.InputLength,
+                        "この命令以降の検証が未完了です。"
+                    ),
+                    new WasmUnverifiedRange(
+                        WasmProcessingStage.Validate,
+                        0,
+                        module.InputLength,
+                        "module全体の検証が未完了です。"
+                    ),
+                ]
             );
         }
 

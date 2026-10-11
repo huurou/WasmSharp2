@@ -365,3 +365,15 @@ FunctionValidatorでbr_tableを検証し、selectorを除く同じnullable opera
 - 実装記録:`artifacts/numeric-control/task-9.4-20261012T174500/self-review.md`。独立レビュー:`artifacts/numeric-control/task-9.4-review-20261012T012956-7ea2/review.md`。各出力先にコマンド・rawlog・native終了値を保持した。
 
 親エージェントが全差分・新規テスト、RED/GREENと最終/独立ビルド・3suiteのrawlogとnative終了値、独立レビュー、最終3ファイルの現在hash一致を確認し、`kiro-verify-completion`は`TASK: VERIFIED`。selectの型検証と包括的な公開統合・公式全体runは後続タスクの範囲である。
+
+## タスク9.5:selectの型検証と後続機能の未対応
+
+FunctionValidatorのframe内参照をPeekへ整理してから、スカラー4型のselect、typed selectの型列長1、候補・条件・Unknownを検証する処理を追加した。その場の型・個数不成立を先に拒否し、有効な対象外型だけを設計の4Featureで通知する。UnsupportedにはValidateの命令位置・module全体の関数index・section10と、当該命令以降およびmodule検証未完了の2範囲を保持する。変更は本体1ファイルと新規テスト2ファイル。要件1.6・2.3・2.4・2.5・3.8・9.1・9.6・9.7の本タスクの範囲である。
+
+- 実装者:`READY_FOR_REVIEW`。成功ビルド後の既定OFFは285件中追加42件失敗・既存243件成功、スキップ0、native終了2。ONで同じ285件成功後、一時flagを除去した。
+- 最終Releaseビルド:終了0、警告・エラー0。3suiteは2,779件・76件・701件成功、失敗・スキップ0、各終了0。CSharpier3ファイルと既存/新規空白確認も成功し、最終検証前後のhash一致・LFを確認した。
+- スカラー8組、型列長0/複数のarity優先、候補不一致・条件不一致・不足・参照候補の拒否、到達不能でも具体型を検査すること、現在frameの底、両Unknownの保持と具体候補への適合を確認した。4Feature、明示注釈のあるUnknown、元位置と未完了範囲、先に検査した関数も部分公開しないことを確認した。
+- 履歴なしの独立レビュー:`APPROVED`。実際の差分・新規全文・仕様・固定valid.mlとRED/ONのraw/native・同一テストhashを照合。独立ビルドと同じ3suite、整形・静的確認・空白確認が成功し、最終3ファイルと保護文書・Git状態はレビュー前後で不変だった。
+- 実装記録:`artifacts/numeric-control/task-9.5-20261012T013903-a60094/self-review.md`。独立レビュー:`artifacts/numeric-control/task-9.5-review-20261012-independent/review.md`。各出力先にコマンド・rawlog・native終了値を保持した。
+
+親エージェントが最終本体差分・新規テスト全文、RED/GREENと最終/独立ビルド・3suiteのrawlogとnative終了値、独立レビュー、最終3ファイルの現在hash一致を確認し、`kiro-verify-completion`は`TASK: VERIFIED`。包括的な公開4段階統合と固定公式全体runは9.6の範囲である。

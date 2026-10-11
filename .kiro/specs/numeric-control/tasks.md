@@ -221,7 +221,7 @@
   - _Boundary: FunctionValidator_
   - _Requirements: 3.6, 3.8, 7.7, 9.1, 9.6, 9.7_
 
-- [ ] 9.5 selectの型検証と後続機能の未対応を区別する
+- [x] 9.5 selectの型検証と後続機能の未対応を区別する
   - 型なしselectの候補型一致・条件i32・Unknownを検査し、参照候補を拒否する。
   - typed selectは型ベクトル長1を先に要求し、両候補と条件を検査する。長さ0/複数はDecode成功後のValidate不成立にする。
   - v128と参照typed selectは、その場の型・個数不成立を先に拒否し、有効な対象外型だけを設計で定めたFeatureと未確認範囲を持つUnsupportedにする。
@@ -323,3 +323,4 @@
 - 9.2:型stackはnullable、Unknownは現在の底かつ到達不能時だけ供給する。frameの入力・結果と底を管理し、ifのelse入口Pcも保存して全前方参照をendでpatchする。builderはToImmutableで確定する。
 - 9.3:ラベル型はloopの引数、それ以外の結果から求める。ラベルを条件・分岐値より先に解決し、br_ifの非分岐側へ宣言型列を戻す。loopは入口Pc、他は既存endの前方patchを使う。
 - 9.4:br_tableはselectorを除く同じnullable型列を既定・候補入力順へ照合してから消費する。不足の拒否はPopが担い、Unknownを具体化しない。出力は候補の後に既定を置き、TargetCountは候補数だけ。
+- 9.5:selectの候補参照は現在frame内のPeek、消費は既存Popを使う。typedの型列長1を先に要求し、局所型検証後に4Featureを通知する。Validateの未確認範囲の終端はInputLengthで、Decode範囲を追加しない。
