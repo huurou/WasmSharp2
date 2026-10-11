@@ -224,3 +224,14 @@
 - 実装記録:`artifacts/numeric-control/task-5.3-20261011T211400/verification.md`。独立レビュー:`artifacts/numeric-control/task-5.3-review-20261011T221200/review.md`。各出力先にコマンド・rawlog・native終了値を保持した。
 
 親エージェントが16handlerの最終差分、代表境界テスト、RED/GREENと現在のビルド・3suiteのrawlog・終了値、独立レビューを確認し、`kiro-verify-completion`は`TASK: VERIFIED`。浮動小数点40handlerの直接確認を終えた。公開命令の接続は7.1、公開統合と公式全体の次回確認は7.2で行う。
+
+## タスク6.1:整数幅変換・符号拡張・再解釈
+
+新規Conversionのpartialにwrap・signed/unsigned extend・指定下位幅の符号拡張8handlerと同幅の再解釈4handlerを追加した。指定幅のunchecked castと生ビットAPIを使い、再解釈は浮動小数点演算とNaN補正を通さない。変更は本体1ファイルと直接テスト12クラス。要件6.1・6.2・6.7の内部handlerの範囲である。
+
+- 実装者:`READY_FOR_REVIEW`。既定OFFのREDはビルド成功後69件中55件失敗・14件成功、dotnet終了2。全12クラスで値の失敗を確認し、0出力と一致する入力だけが自然に成功した。ONで同じ69件成功後、一時flagを除去した。
+- 最終Releaseビルド:終了0、警告・エラー0。3suiteは2,020件・76件・701件成功、失敗・スキップ0、各終了0。CSharpier13ファイルと差分確認も成功した。
+- 履歴なしの独立レビュー:`APPROVED`。新規13ファイル全文、上位bit・幅と符号境界、±0・正負sNaN/qNaNの4方向と往復、生ビットAPIと既存処理の保持、RED/GREENを確認。独立ビルドと同じ3suiteも成功した。
+- 実装記録:`artifacts/numeric-control/task-6.1-20261011T231500/verification.md`。独立レビュー:`artifacts/numeric-control/task-6.1-review-20261011T233930/review.md`。各出力先のcommandsにコマンド・rawlog・native終了値を保持した。
+
+親エージェントが12handlerの最終全文、代表境界・往復テスト、RED/GREENと現在のビルド・3suiteのrawlog・終了値、独立レビューを確認し、`kiro-verify-completion`は`TASK: VERIFIED`。公開命令の接続は7.1、公開統合と公式全体の次回確認は7.2で行う。
