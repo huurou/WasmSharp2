@@ -19,7 +19,8 @@ internal static class ExecutionFunctionFixture
         ImmutableArray<Instruction> instructions,
         WasmFunctionType type,
         ImmutableArray<LocalDeclaration> locals,
-        int maxOperandStack
+        int maxOperandStack,
+        ImmutableArray<BranchTarget> branchTargets = default
     )
     {
         var module = new WasmModule(
@@ -34,7 +35,11 @@ internal static class ExecutionFunctionFixture
             null
         )
         {
-            FunctionCodes = [new([], [], 0), new(instructions, locals.AsSpan(), maxOperandStack)],
+            FunctionCodes =
+            [
+                new([], [], 0),
+                new(instructions, locals.AsSpan(), maxOperandStack, branchTargets),
+            ],
         };
         return (DefinedFunction)new WasmInstance(module, new(1)).Functions[1];
     }

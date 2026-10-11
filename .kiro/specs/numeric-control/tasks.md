@@ -170,7 +170,7 @@
   - _Requirements: 4.3, 6.4, 9.2, 9.3, 9.6, 10.1, 10.3, 10.5, 10.7_
 
 - [ ] 8. 分岐と選択に必要な実行処理を追加する
-- [ ] 8.1 現在の関数内で分岐値を移動できるようにする
+- [x] 8.1 現在の関数内で分岐値を移動できるようにする
   - operand基準の相対高さへ末尾の保持値を移し、重なりがあっても順序・全値型のbit列・参照の同一性を保つ。
   - 破棄範囲の参照を解除して値数と実行位置だけを更新し、locals・外側operand・呼出し元・深さ・frame数を変更しない。
   - 保持値0/1/複数、重なる移動、非null参照の破棄と保持を内部テストで確認する。
@@ -317,3 +317,4 @@
 - 6.2:位置付きtrap補助は`Interpreter.cs`の`NumericTrap`へ移した。truncはNaNを先に分け、`Math.Truncate`後の半開区間を検査してからcastする。飽和変換ではtrap生成を呼び出さない。
 - 6.3:truncとsatの境界は目的幅・符号ごとの4つのprivate上限定数から求める。satは目的幅別の補助に閉じ、NaNを0、区間外を整数の端へ返してから範囲内だけcastする。
 - 6.4:整数convertは符号解釈した目的幅への直接cast、demote/promoteは既存の幅別NaN補助を使う。二重丸めの公式8値は`conversions.wast`471〜474行・520〜523行のhexfloatから期待bitを求める。
+- 8.1:`InterpreterContext.Branch`はOperandBase相対の高さへ末尾値を移し、破棄スロットをclearして値数とPcだけを更新する。既存`ExecutionFunctionFixture.Create`の末尾optional引数で分岐表を渡せる。

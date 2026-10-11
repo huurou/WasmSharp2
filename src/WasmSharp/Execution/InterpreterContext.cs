@@ -275,6 +275,31 @@ internal sealed class InterpreterContext
     }
 
     /// <summary>
+    /// 現在の関数が所有する検証済みの分岐情報を取得する
+    /// </summary>
+    /// <param name="index">現在の関数内の分岐情報の添字</param>
+    /// <returns>分岐先とoperandの配置</returns>
+    internal BranchTarget GetBranchTarget(uint index)
+    {
+        return CurrentFunction.Code.BranchTargets[(int)index];
+    }
+
+    /// <summary>
+    /// 末尾の保持値をoperand基準の高さへ移し、現在の関数内で分岐する
+    /// </summary>
+    /// <param name="target">検証で確定した分岐先とoperandの配置</param>
+    internal void Branch(in BranchTarget target)
+    {
+        var frameIndex = FrameCount - 1;
+        var destination = frames_[frameIndex].OperandBase + target.StackHeight;
+        var newEnd = destination + target.KeepCount;
+        Array.Copy(values_, ValueCount - target.KeepCount, values_, destination, target.KeepCount);
+        Array.Clear(values_, newEnd, ValueCount - newEnd);
+        ValueCount = newEnd;
+        frames_[frameIndex].Pc = target.TargetPc;
+    }
+
+    /// <summary>
     /// 末尾の結果を引数開始位置へ順序を保って移し、現在の関数を終了する
     /// </summary>
     internal void CompleteFrame()

@@ -292,3 +292,15 @@ ExecutionBoundaryで0除算・整数overflow・不正整数変換をReason別の
 - 実装記録:`artifacts/numeric-control/task-7.2-20261011T190000/verification.md`。公式結果と比較は同ディレクトリのrun.json/comparison.json。独立レビュー:`artifacts/numeric-control/task-7.2-review-20261011-independent-a1/review.md`。各出力先にコマンド・rawlog・native終了値を保持した。
 
 親エージェントが公開境界の最終差分と関連テスト、RED/GREEN・最終/独立ビルドと3suiteのrawlog・終了値、公式結果と比較、独立全件監査、検証後の4ファイルのhash一致を確認し、`kiro-verify-completion`は`TASK: VERIFIED`。この判定は7.2の範囲に限定する。制御/select等の後続タスクと残存未対応があり、numeric-control全体とCore 2.0全体の完成は未判定である。
+
+## タスク8.1:現在関数の分岐情報と保持値の移動
+
+InterpreterContextにGetBranchTargetとBranchを追加した。末尾の保持値をOperandBase相対の高さへ順序を保って移し、不要範囲をclearし、ValueCountと現在frameのPcだけを更新する。既存fixtureへ分岐表を渡す末尾optional引数を追加した。変更は本体1ファイル、既存fixture1ファイル、新規内部テスト1ファイル。要件7.8・7.9と9.5の内部状態維持・復元の範囲である。
+
+- 実装者:`READY_FOR_REVIEW`。修正後ビルドの警告・エラー0を確認してから既定OFFのREDを実行し、6件中分岐4件失敗・lookup2件成功、native終了2。ONで同じ6件成功後、一時flagを除去した。初回ビルドのusing不足4エラーと修正後の出力も保持した。
+- 最終Releaseビルド:終了0、警告・エラー0。3suiteは2,526件・76件・701件成功、失敗・スキップ0、各終了0。CSharpier3ファイルと差分確認も成功し、LFを維持した。
+- 新規6ケースは現在関数の分岐表、保持0/1/11、重なる移動・重ならない移動を確認する。全7値型の生NaN・負の0・v128の上下bit・null/非null参照を含め、値と参照の同一性、破棄スロットの解除、locals・外側operand・caller・frame数・深さの維持を確認した。Actとfinally復元はawait前の同期区間で行う。
+- 履歴なしの独立レビュー:`APPROVED`。本体とfixtureの差分、新規テスト全文、仕様、RED/GREEN snapshotを確認した。独立ビルドと同じ3suite、整形、静的確認、差分確認も成功し、最終3ファイルがレビュー前・実装者保存・final snapshotのhashと一致した。
+- 実装記録:`artifacts/numeric-control/task-8.1-20261011T195705-branch-7bfa/verification.md`。独立レビュー:`artifacts/numeric-control/task-8.1-review-20261011-independent/review.md`。各出力先にコマンド・rawlog・native終了値を保持した。
+
+親エージェントが本体とfixtureの最終差分、新規テスト全文、RED/GREENと最終/独立ビルド・3suiteのrawlogとnative終了値、独立レビュー、最終hash一致を確認し、`kiro-verify-completion`は`TASK: VERIFIED`。公開branchの接続、失敗後の新しい独立呼出し経路、公式全体runは後続タスクの範囲である。
