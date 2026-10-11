@@ -304,3 +304,15 @@ InterpreterContextにGetBranchTargetとBranchを追加した。末尾の保持�
 - 実装記録:`artifacts/numeric-control/task-8.1-20261011T195705-branch-7bfa/verification.md`。独立レビュー:`artifacts/numeric-control/task-8.1-review-20261011-independent/review.md`。各出力先にコマンド・rawlog・native終了値を保持した。
 
 親エージェントが本体とfixtureの最終差分、新規テスト全文、RED/GREENと最終/独立ビルド・3suiteのrawlogとnative終了値、独立レビュー、最終hash一致を確認し、`kiro-verify-completion`は`TASK: VERIFIED`。公開branchの接続、失敗後の新しい独立呼出し経路、公式全体runは後続タスクの範囲である。
+
+## タスク8.2:条件分岐・分岐表・nop・selectの内部handler
+
+Interpreter.ControlにNoOp、Branch、BranchIfZero、BranchIf、BranchTable、Selectを追加した。分岐値の移動は既存Contextへ接続し、条件と選択値を消費して確定済み分岐先を選ぶ。Selectは選択したWasmValueをそのまま積む。変更は本体1ファイル、同期実行用fixture1ファイル、メソッド別の直接テスト6ファイル。要件7.1・7.3・7.4・7.5・7.6・7.7・8.1の内部handlerの範囲である。
+
+- 実装者:`READY_FOR_REVIEW`。既定OFFのREDはビルド警告・エラー0後、32件中31件失敗・状態不変のNoOp1件成功、native終了2。ONで同じ32件成功後、一時flagを除去した。
+- 最終Releaseビルド:終了0、警告・エラー0。3suiteは2,558件・76件・701件成功、失敗・スキップ0、各終了0。CSharpier8ファイルと既存/新規差分の空白確認も成功し、LFを維持した。
+- 直接テストは前方/後方分岐の32回反復、条件0/1/−1と非分岐の値保持、分岐表の候補順・開始添字・境界/負値/空候補の既定分岐を確認した。Selectは4スカラーの16ケースで生NaN payloadと±0のbitを保持し、NoOpは値・Pc・観測状態を維持する。全handlerで下位値・local・frame数・深さ・処理段階を確認した。
+- 履歴なしの独立レビュー:`APPROVED`。全8未追跡ファイルの差分と全文、既存契約、要件・設計、RED/GREEN snapshotを確認した。独立ビルドと同じ3suite、整形・静的確認・差分確認も成功し、最終8ファイルのhashが実装者保存と一致し、レビュー前後で不変だった。
+- 実装記録:`artifacts/numeric-control/task-8.2-20261011T082000/verification.md`。独立レビュー:`artifacts/numeric-control/task-8.2-review-20261011T090100/review.md`。各出力先にコマンド・rawlog・native終了値を保持した。
+
+親エージェントが6handler・fixture・全6テストの全文、RED/GREENと最終/独立ビルド・3suiteのrawlogとnative終了値、独立レビュー、最終8ファイルのhash一致を確認し、`kiro-verify-completion`は`TASK: VERIFIED`。命令宣言・Decode・Validate・公開実行への接続、参照/v128 selectの未対応判定、公式全体runは後続9系タスクの範囲である。
