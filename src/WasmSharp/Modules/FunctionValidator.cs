@@ -19,7 +19,7 @@ internal static class FunctionValidator
     /// <param name="moduleFunctionIndex">型の参照と診断に使用する、importを含むmodule全体の関数index</param>
     /// <param name="functionTypes">importを先頭とする関数index順の解決済みの型</param>
     /// <param name="globalTypes">importを先頭とするglobal index順の解決済みの型</param>
-    /// <returns>実行命令、追加localsとoperandの最大要素数を持つ、この定義関数の実行コード</returns>
+    /// <returns>実行命令と確定済み分岐情報、追加localsとoperandの最大要素数を持つ、この定義関数の実行コード</returns>
     /// <exception cref="WasmValidateException">命令の参照先、globalの可変性、入力型または結果の型・個数・順序が不正な場合</exception>
     /// <exception cref="InvalidOperationException">デコード済み命令の記述子や検証規則が実装内で一致しない場合</exception>
     internal static FunctionCode Validate(
@@ -46,8 +46,9 @@ internal static class FunctionValidator
             localEnds[index] = localCount;
         }
         var instructions = ImmutableArray.CreateBuilder<Instruction>(function.Instructions.Length);
-        List<WasmValueKind> stack = [];
-        var unreachable = false;
+        var branchTargets = ImmutableArray.CreateBuilder<BranchTarget>();
+        List<WasmValueKind?> stack = [];
+        List<ControlFrame> frames = [new(ValidationRule.FunctionEnd, [], type.Results, 0, 0)];
         var maxOperandStack = 0;
         foreach (var instruction in function.Instructions)
         {
@@ -56,8 +57,58 @@ internal static class FunctionValidator
                 throw new InvalidOperationException("デコード済み命令の情報がありません。");
             }
 
+            var emitInstruction = true;
+            var outputIndex = instruction.Index;
+
             switch (descriptor.Validation)
             {
+                case ValidationRule.None:
+                    break;
+
+                case ValidationRule.Block:
+                case ValidationRule.Loop:
+                case ValidationRule.If:
+                    var (parameters, results) = ResolveBlockType(
+                        instruction.BlockType,
+                        instruction.ByteOffset
+                    );
+                    if (descriptor.Validation == ValidationRule.If)
+                    {
+                        Pop(WasmValueKind.I32, instruction.ByteOffset);
+                    }
+                    PopTypes(parameters.AsSpan(), instruction.ByteOffset);
+                    var enteredFrame = new ControlFrame(
+                        descriptor.Validation,
+                        parameters,
+                        results,
+                        stack.Count,
+                        instructions.Count
+                    );
+                    frames.Add(enteredFrame);
+                    PushTypes(parameters);
+                    if (descriptor.Validation == ValidationRule.If)
+                    {
+                        enteredFrame.IfFalseTarget = AddTarget(enteredFrame, parameters.Length);
+                        outputIndex = (uint)enteredFrame.IfFalseTarget;
+                    }
+                    else
+                    {
+                        emitInstruction = false;
+                    }
+                    break;
+
+                case ValidationRule.Else:
+                    var ifFrame = frames[^1];
+                    CheckEnd(ifFrame, instruction.ByteOffset);
+                    ifFrame.HasElse = true;
+                    ifFrame.Unreachable = false;
+                    PushTypes(ifFrame.Parameters);
+                    outputIndex = (uint)AddTarget(ifFrame, ifFrame.Results.Length);
+                    ifFrame.ForwardTargets.Add((int)outputIndex);
+                    // elseの跳躍命令の次が、条件0で進むelse本体の入口
+                    ifFrame.ElsePc = instructions.Count + 1;
+                    break;
+
                 case ValidationRule.Constant:
                     stack.Add(
                         descriptor.StackEffect switch
@@ -85,13 +136,37 @@ internal static class FunctionValidator
                     break;
 
                 case ValidationRule.FunctionEnd:
-                    PopTypes(type.Results.AsSpan(), instruction.ByteOffset);
-                    if (stack.Count != 0)
+                    var endedFrame = frames[^1];
+                    CheckEnd(endedFrame, instruction.ByteOffset);
+                    if (endedFrame.Kind == ValidationRule.If)
                     {
-                        throw CreateException(
-                            "関数の結果の型・個数・順序が宣言と一致しません。",
-                            instruction.ByteOffset
+                        if (
+                            !endedFrame.HasElse
+                            && !endedFrame
+                                .Parameters.AsSpan()
+                                .SequenceEqual(endedFrame.Results.AsSpan())
+                        )
+                        {
+                            throw CreateException(
+                                "elseを省略したifの引数型と結果型が一致しません。",
+                                instruction.ByteOffset
+                            );
+                        }
+                        PatchTarget(
+                            endedFrame.IfFalseTarget,
+                            endedFrame.HasElse ? endedFrame.ElsePc : instructions.Count
                         );
+                    }
+                    // 関数frameの前方参照も、配列末尾ではなく末尾ReturnのPcへ接続する。
+                    foreach (var targetIndex in endedFrame.ForwardTargets)
+                    {
+                        PatchTarget(targetIndex, instructions.Count);
+                    }
+                    frames.RemoveAt(frames.Count - 1);
+                    if (endedFrame.Kind != ValidationRule.FunctionEnd)
+                    {
+                        PushTypes(endedFrame.Results);
+                        emitInstruction = false;
                     }
                     break;
 
@@ -107,18 +182,16 @@ internal static class FunctionValidator
                     }
                     var calleeType = functionTypes[(int)instruction.Index];
                     PopTypes(calleeType.Parameters.AsSpan(), instruction.ByteOffset);
-                    stack.AddRange(calleeType.Results);
+                    PushTypes(calleeType.Results);
                     break;
 
                 case ValidationRule.Return:
                     PopTypes(type.Results.AsSpan(), instruction.ByteOffset);
-                    stack.Clear();
-                    unreachable = true;
+                    MarkUnreachable();
                     break;
 
                 case ValidationRule.Unreachable:
-                    stack.Clear();
-                    unreachable = true;
+                    MarkUnreachable();
                     break;
 
                 case ValidationRule.GlobalGet:
@@ -183,21 +256,77 @@ internal static class FunctionValidator
             }
 
             maxOperandStack = Math.Max(maxOperandStack, stack.Count);
-            instructions.Add(
-                new Instruction(
-                    descriptor.ExecutionOpcode!.Value,
-                    instruction.Immediate,
-                    instruction.ByteOffset,
-                    instruction.Index
-                )
-            );
+            if (emitInstruction)
+            {
+                instructions.Add(
+                    new Instruction(
+                        descriptor.ExecutionOpcode!.Value,
+                        instruction.Immediate,
+                        instruction.ByteOffset,
+                        outputIndex
+                    )
+                );
+            }
         }
 
         return new FunctionCode(
-            instructions.MoveToImmutable(),
+            instructions.ToImmutable(),
             function.Locals.AsSpan(),
-            maxOperandStack
+            maxOperandStack,
+            branchTargets.ToImmutable()
         );
+
+        (
+            ImmutableArray<WasmValueKind> Parameters,
+            ImmutableArray<WasmValueKind> Results
+        ) ResolveBlockType(BlockType blockType, long byteOffset)
+        {
+            switch (blockType.Kind)
+            {
+                case BlockTypeKind.Empty:
+                    return ([], []);
+                case BlockTypeKind.Value:
+                    return ([], [blockType.ValueType]);
+                case BlockTypeKind.TypeIndex:
+                    if (blockType.TypeIndex >= (uint)module.Types.Length)
+                    {
+                        throw CreateUnknownIndex(
+                            "type",
+                            blockType.TypeIndex,
+                            "参照する型が存在しません。",
+                            byteOffset
+                        );
+                    }
+                    var blockSignature = module.Types[(int)blockType.TypeIndex];
+                    return (blockSignature.Parameters, blockSignature.Results);
+                default:
+                    throw new InvalidOperationException("制御の型指定が不正です。");
+            }
+        }
+
+        void CheckEnd(ControlFrame frame, long byteOffset)
+        {
+            PopTypes(frame.Results.AsSpan(), byteOffset);
+            if (stack.Count != frame.Height)
+            {
+                throw CreateException(
+                    "制御の結果の型・個数・順序が宣言と一致しません。",
+                    byteOffset
+                );
+            }
+        }
+
+        int AddTarget(ControlFrame frame, int keepCount)
+        {
+            var index = branchTargets.Count;
+            branchTargets.Add(new(0, frame.Height, keepCount));
+            return index;
+        }
+
+        void PatchTarget(int index, int targetPc)
+        {
+            branchTargets[index] = branchTargets[index] with { TargetPc = targetPc };
+        }
 
         WasmValueKind GetLocalType(uint index, long byteOffset, ReadOnlySpan<ulong> ends)
         {
@@ -230,24 +359,41 @@ internal static class FunctionValidator
             throw CreateUnknownIndex("local", index, "参照するlocalが存在しません。", byteOffset);
         }
 
-        void Pop(WasmValueKind? expected, long byteOffset)
+        WasmValueKind? Pop(WasmValueKind? expected, long byteOffset)
         {
-            if (stack.Count == 0)
+            var frame = frames[^1];
+            if (stack.Count == frame.Height)
             {
-                // 到達不能な関数底だけがunknownを供給する。積まれた具体型は通常どおり検査する。
-                if (unreachable)
+                // 現在frameの底だけがUnknownを供給する。具体型は到達不能中も検査する。
+                if (frame.Unreachable)
                 {
-                    return;
+                    return null;
                 }
 
                 throw CreateException("命令の入力値が不足しています。", byteOffset);
             }
             var actual = stack[^1];
             stack.RemoveAt(stack.Count - 1);
-            if (expected is { } kind && actual != kind)
+            if (expected is { } kind && actual is { } actualKind && actualKind != kind)
             {
                 throw CreateException("命令の入力型が一致しません。", byteOffset);
             }
+            return actual;
+        }
+
+        void PushTypes(ImmutableArray<WasmValueKind> kinds)
+        {
+            foreach (var kind in kinds)
+            {
+                stack.Add(kind);
+            }
+        }
+
+        void MarkUnreachable()
+        {
+            var frame = frames[^1];
+            stack.RemoveRange(frame.Height, stack.Count - frame.Height);
+            frame.Unreachable = true;
         }
 
         // 引数と結果は宣言順に積まれるため、末尾から型を照合する。
@@ -282,5 +428,72 @@ internal static class FunctionValidator
                 new(WasmProcessingStage.Validate, byteOffset, moduleFunctionIndex, 10)
             );
         }
+    }
+
+    /// <summary>
+    /// 現在の制御で検査できるoperand範囲と結果型を保持する
+    /// </summary>
+    /// <param name="kind">関数または構造化制御の検証種別</param>
+    /// <param name="parameters">宣言順の入口引数型</param>
+    /// <param name="results">宣言順の結果型</param>
+    /// <param name="height">制御が消費できるoperand範囲の底</param>
+    /// <param name="loopPc">loop入口の出力Pc</param>
+    private sealed class ControlFrame(
+        ValidationRule kind,
+        ImmutableArray<WasmValueKind> parameters,
+        ImmutableArray<WasmValueKind> results,
+        int height,
+        int loopPc
+    )
+    {
+        /// <summary>
+        /// 関数または構造化制御の検証種別
+        /// </summary>
+        internal ValidationRule Kind { get; } = kind;
+
+        /// <summary>
+        /// 宣言順の入口引数型
+        /// </summary>
+        internal ImmutableArray<WasmValueKind> Parameters { get; } = parameters;
+
+        /// <summary>
+        /// 宣言順の結果型
+        /// </summary>
+        internal ImmutableArray<WasmValueKind> Results { get; } = results;
+
+        /// <summary>
+        /// 制御が消費できるoperand範囲の底
+        /// </summary>
+        internal int Height { get; } = height;
+
+        /// <summary>
+        /// loop入口の出力Pc
+        /// </summary>
+        internal int LoopPc { get; } = loopPc;
+
+        /// <summary>
+        /// 現在の制御内での到達不能状態
+        /// </summary>
+        internal bool Unreachable { get; set; }
+
+        /// <summary>
+        /// ifのelseを検査しているかどうか
+        /// </summary>
+        internal bool HasElse { get; set; }
+
+        /// <summary>
+        /// 条件0で分岐する入口の分岐情報添字
+        /// </summary>
+        internal int IfFalseTarget { get; set; }
+
+        /// <summary>
+        /// 制御終了時に条件0の分岐先へ設定するelse本体の入口Pc
+        /// </summary>
+        internal int ElsePc { get; set; }
+
+        /// <summary>
+        /// この制御の終了時にPcを確定する分岐情報添字
+        /// </summary>
+        internal List<int> ForwardTargets { get; } = [];
     }
 }

@@ -5,7 +5,7 @@ using WasmSharp.Tests.Fixtures;
 
 namespace WasmSharp.Tests.Modules;
 
-internal class FunctionValidator_ValidateTests
+internal partial class FunctionValidator_ValidateTests
 {
     [Test]
     public async Task 解決済みの型でcallとlocalsとglobalとreturnを検査_入力とmodule状態を変えず線形化する()

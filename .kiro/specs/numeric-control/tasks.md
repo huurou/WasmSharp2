@@ -196,7 +196,7 @@
   - _Depends: 2.1, 3.1, 3.3, 8.2_
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.6, 2.5, 9.6, 9.7_
 
-- [ ] 9.2 制御ごとの型検査と通常経路の線形化を追加する
+- [x] 9.2 制御ごとの型検査と通常経路の線形化を追加する
   - 暗黙の関数ラベルと各制御の引数・結果・operand底・局所的到達不能を管理し、全7値型を共通に運ぶ。
   - block/loop/ifの0/1/複数値、if条件i32、両側の検証、省略elseの引数型列と結果型列の一致を検査する。
   - block/loopと内側endのmarkerを出力せず、if/elseの前方分岐を制御終了時に解決する。関数endだけを既存の関数終了へ接続し、入力数と出力数が異なる場合も命令列を確定できるようにする。
@@ -320,3 +320,4 @@
 - 8.1:`InterpreterContext.Branch`はOperandBase相対の高さへ末尾値を移し、破棄スロットをclearして値数とPcだけを更新する。既存`ExecutionFunctionFixture.Create`の末尾optional引数で分岐表を渡せる。
 - 8.2:制御handlerは`Interpreter.Control.cs`に置く。marker用の`NoOp`も用意し、分岐表はIndexから候補列と末尾の既定を参照する。typed/untyped selectは同じ`Select`を共有できる。
 - 9.1:式読取りは非再帰の構文stackで最外endまで進む。型添字存在・select型列長の判定はValidateへ残す。endのFunctionEnd/Return接続は維持し、内側markerの除去は9.2で行う。
+- 9.2:型stackはnullable、Unknownは現在の底かつ到達不能時だけ供給する。frameの入力・結果と底を管理し、ifのelse入口Pcも保存して全前方参照をendでpatchする。builderはToImmutableで確定する。

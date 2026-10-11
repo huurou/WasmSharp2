@@ -328,3 +328,15 @@ ExpressionDecoderを非再帰の構文stackへ変更し、内側endと最外end�
 - 実装記録:`artifacts/numeric-control/task-9.1-20261011T-control-decode/verification.md`。独立レビュー:`artifacts/numeric-control/task-9.1-review-20261012T-independent/review.md`。各出力先にコマンド・rawlog・native終了値を保持した。
 
 親エージェントが本体2ファイルとテスト4ファイルの全差分、RED/GREENと最終/独立ビルド・3suiteのrawlogとnative終了値、独立レビュー、最終6ファイルのhash一致を確認し、`kiro-verify-completion`は`TASK: VERIFIED`。制御の型検証・線形化・公開実行・公式全体runは後続9系タスクの範囲である。
+
+## タスク9.2:制御ごとの型検査と通常経路の線形化
+
+FunctionValidatorの型stackをnullableにし、暗黙の関数frameと制御frameへ引数・結果・operand底・局所的到達不能・前方参照をまとめた。block/loopと内側endを除去し、if/elseの分岐先はendで確定する。関数endだけをReturnへ接続し、builderは容量一致不要のToImmutableで確定する。変更は本体1ファイル、既存テストのpartial化1ファイル、新規テスト2ファイル。要件1.5・3.1・3.2・3.3・3.7・3.8・3.9・7.2・7.3・9.1の本タスクの範囲である。
+
+- 実装者:`READY_FOR_REVIEW`。責務整理後の既存123件成功を確認。ビルド警告・エラー0後のOFFは初回38失敗・123成功、増補後51失敗・123成功、native終了2。ONで174件成功後、一時flagを除去した。増補時のnullableテストのビルドエラーは修正して成功ビルド後にテストを実行した。
+- 最終Releaseビルド:終了0、警告・エラー0。3suiteは2,668件・76件・701件成功、失敗・スキップ0、各終了0。CSharpier4ファイルと既存/新規空白確認も成功し、LFを維持した。if falseのpatchをendへ揃えた後の最新記録はend-patch-final-*である。
+- 全7値型、0/1/複数の引数と結果、入口と結果の異なる型、定数条件でも両側を検査すること、else省略の型列一致、内側不足/余剰・外側operand消費の拒否、具体型矛盾と局所Unknown、不正型添字を確認した。非0底の入れ子ifの各分岐先、4,096段の非再帰線形化、入口と両側を含む最大operand数とlocals除外を確認した。公開通常経路でもbit列・参照の同一性・結果順を保持した。
+- 履歴なしの独立レビュー:`APPROVED`。全差分と新規テスト、仕様・設計・RED/ON保存コードを確認。独立ビルドと同じ3suite、整形・静的確認・既存/新規空白確認が成功した。最終4ファイルのhashは実装者保存とend-patch-final snapshotに一致し、レビュー前後で不変だった。
+- 実装記録:`artifacts/numeric-control/task-9.2-20261012Tworker/self-review.md`。独立レビュー:`artifacts/numeric-control/task-9.2-review-20261012Tindependent-b6b921/review.md`。各出力先にコマンド・rawlog・native終了値を保持した。
+
+親エージェントが本体と既存テストの全差分、新規テスト全文と増補箇所、RED/GREENと最新の最終/独立ビルド・3suiteのrawlogとnative終了値、独立レビュー、最終4ファイルのhash一致を確認し、`kiro-verify-completion`は`TASK: VERIFIED`。br/br_if・分岐表・selectの新しい検証、包括的な公開制御統合と公式全体runは後続タスクの範囲である。
