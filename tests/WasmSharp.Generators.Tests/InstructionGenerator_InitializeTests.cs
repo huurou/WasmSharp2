@@ -38,7 +38,7 @@ internal class InstructionGenerator_InitializeTests
                     internal static ExecutionResult TestRun(InterpreterContext context) => RunLoop(context, 0);
                     internal static ExecutionResult Handler(InterpreterContext context, in Instruction instruction)
                     {
-                        context.Value = new(instruction.Immediate.Bits + instruction.Index);
+                        context.Value = WasmValue.FromI64(instruction.Immediate.AsI64() + instruction.Index);
                         context.CompleteFrame();
                         return default;
                     }
@@ -62,9 +62,10 @@ internal class InstructionGenerator_InitializeTests
             output,
             $$"""
             var found = WasmSharp.Instructions.InstructionSet.TryGet(new(0, {{code}}), out var descriptor);
-            var decoded = new WasmSharp.Modules.DecodedInstruction(new(0, {{code}}), new(42), 12345678901L, uint.MaxValue);
+            var decoded = WasmSharp.Modules.DecodedInstruction.WithImmediate(new(0, {{code}}), WasmSharp.WasmValue.FromI64(42), 12345678901L);
+            var indexed = WasmSharp.Modules.DecodedInstruction.WithIndex(new(0, {{code}}), uint.MaxValue, decoded.ByteOffset);
             var instruction = new WasmSharp.Execution.Instruction(descriptor.ExecutionOpcode!.Value,
-                decoded.Immediate, decoded.ByteOffset, decoded.Index);
+                decoded.Immediate, decoded.ByteOffset, indexed.Index);
             var context = new WasmSharp.Execution.InterpreterContext(1) { Instructions = [instruction] };
             var result = WasmSharp.Execution.Interpreter.TestRun(context);
             return found && descriptor.Name == "{{name}}"
@@ -72,11 +73,11 @@ internal class InstructionGenerator_InitializeTests
                 && descriptor.StackEffect == WasmSharp.Instructions.StackEffectKind.{{rule}}
                 && descriptor.Validation == WasmSharp.Instructions.ValidationRule.{{rule}}
                 && decoded.Opcode == new WasmSharp.Instructions.OpcodeKey(0, {{code}})
-                && decoded.Index == uint.MaxValue && instruction.Index == uint.MaxValue
-                && decoded.Immediate.Bits == 42 && instruction.Immediate.Bits == 42
+                && decoded.Index == 0 && indexed.Index == uint.MaxValue && instruction.Index == uint.MaxValue
+                && decoded.Immediate.AsI64() == 42 && instruction.Immediate.AsI64() == 42
                 && instruction.ByteOffset == 12345678901L
                 && result.Status == WasmSharp.Execution.ExecutionStatus.Success
-                && context.Value.Bits == 4294967337L;
+                && context.Value.AsI64() == 4294967337L;
             """
         );
     }
@@ -225,7 +226,7 @@ internal class InstructionGenerator_InitializeTests
                     }
                     internal static ExecutionResult Second(InterpreterContext context, in Instruction instruction)
                     {
-                        context.Value = new(instruction.Immediate.Bits + 1);
+                        context.Value = WasmValue.FromI64(instruction.Immediate.AsI64() + 1);
                         context.CompleteFrame();
                         return default;
                     }
@@ -274,10 +275,10 @@ internal class InstructionGenerator_InitializeTests
             WasmSharp.Instructions.InstructionSet.TryGet(new(0, 0x41), out var descriptor);
             var context = new WasmSharp.Execution.InterpreterContext(1)
             {
-                Instructions = [new(descriptor.ExecutionOpcode!.Value, new(41), 100, 0)]
+                Instructions = [new(descriptor.ExecutionOpcode!.Value, WasmSharp.WasmValue.FromI64(41), 100, 0)]
             };
             var result = WasmSharp.Execution.Interpreter.TestRun(context);
-            return result.Status == WasmSharp.Execution.ExecutionStatus.Success && context.Value.Bits == 41;
+            return result.Status == WasmSharp.Execution.ExecutionStatus.Success && context.Value.AsI64() == 41;
             """
         );
         await GeneratorTestSource.AssertCompilesAndRuns(
@@ -286,14 +287,14 @@ internal class InstructionGenerator_InitializeTests
             var found = WasmSharp.Instructions.InstructionSet.TryGet(new(0, {{code}}), out var descriptor);
             var context = new WasmSharp.Execution.InterpreterContext(1)
             {
-                Instructions = [new(descriptor.ExecutionOpcode!.Value, new(41), 100, 0)]
+                Instructions = [new(descriptor.ExecutionOpcode!.Value, WasmSharp.WasmValue.FromI64(41), 100, 0)]
             };
             var result = WasmSharp.Execution.Interpreter.TestRun(context);
             return found && descriptor.Name == "{{name}}"
                 && descriptor.Immediate == WasmSharp.Instructions.ImmediateKind.{{immediate}}
                 && descriptor.StackEffect == WasmSharp.Instructions.StackEffectKind.{{stackEffect}}
                 && !WasmSharp.Instructions.InstructionSet.TryGet(new(0, 0x41), out _)
-                && result.Status == WasmSharp.Execution.ExecutionStatus.Success && context.Value.Bits == 42;
+                && result.Status == WasmSharp.Execution.ExecutionStatus.Success && context.Value.AsI64() == 42;
             """
         );
     }
@@ -641,13 +642,13 @@ internal class InstructionGenerator_InitializeTests
             WasmSharp.Instructions.InstructionSet.TryGet(new(0, 0x0B), out var end);
             var context = new WasmSharp.Execution.InterpreterContext({{entryFrameCount + 1}})
             {
-                Instructions = [new(constant.ExecutionOpcode!.Value, new(42), 100, 0),
+                Instructions = [new(constant.ExecutionOpcode!.Value, WasmSharp.WasmValue.FromI64(42), 100, 0),
                     new(end.ExecutionOpcode!.Value, default, 102, 0)]
             };
             var result = WasmSharp.Execution.Interpreter.TestRun(context, {{entryFrameCount}});
             return result.Status == WasmSharp.Execution.ExecutionStatus.Success
                 && result.Values.IsEmpty && !result.Values.IsDefault
-                && context.Value.Bits == 42 && context.Pc == 2 && context.FrameCount == {{entryFrameCount}};
+                && context.Value.AsI64() == 42 && context.Pc == 2 && context.FrameCount == {{entryFrameCount}};
             """
         );
     }

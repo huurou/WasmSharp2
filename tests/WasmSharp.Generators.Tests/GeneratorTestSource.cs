@@ -12,7 +12,7 @@ internal static class GeneratorTestSource
         global using System;
         namespace WasmSharp
         {
-            public readonly record struct WasmValue(long Bits);
+            public sealed class WasmFunction;
         }
         namespace WasmSharp.Exceptions
         {

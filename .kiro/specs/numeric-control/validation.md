@@ -124,3 +124,15 @@
 - 実装記録:`artifacts/numeric-control/task-2.3-20261011T174124/verification.md`。独立レビュー:`artifacts/numeric-control/task-2.3-review-20261011T174930/review.md`。各出力先にコマンド・ログ・終了値・集計監査を保持した。
 
 親エージェントも現在のビルド・3suiteと公式実行・比較の出力と終了値、保存JSONの完了・集計、独立監査を確認し、`kiro-verify-completion`は`TASK: VERIFIED`。比較元は更新していない。承認は責務分離後の統合範囲に限り、後続の数値・制御追加と最終受入は未実施である。
+
+## タスク3.1:s33と複合即値の入力契約
+
+既存LEB128処理を再利用する`ReadS33`、空型・単一値型・型添字を区別する`BlockType`、即値別factoryで構築する`DecodedInstruction`を追加した。ラベル列とselect型列は入力をコピーし、不変配列として保持する。既存の式読取りとfixtureの生成をfactoryへ揃え、生成器fixtureも本体の値・型契約へ移行した。変更は本体4ファイル、生成器fixture3ファイル、ランタイムテスト5ファイル。要件1.2・1.3・1.4の入力契約を整える範囲である。
+
+- 実装者:`READY_FOR_REVIEW`。既定OFFのREDはビルド成功後に新規39件を実行し、17件失敗・22件成功、終了2。ONで39件成功し、一時flagを除去した。
+- 最終Releaseビルド:終了0、警告・エラー0。入力focused147件、生成器37件、ランタイム全1,199件成功、失敗・スキップ0。CSharpier11ファイルと差分確認も終了0。
+- 履歴なしの独立レビュー:`APPROVED`。現ソースのビルドと3suiteを確認し、1,199件・37件・701件成功、各終了0、失敗・スキップ0。s33の境界・診断、タグの区別、配列の不変所有、不要即値の統一と既存生成APIの移行を確認した。
+- RED終了値は記録の転記ミスを実ファイルの2へ訂正した。コード変更はない。
+- 実装記録:`artifacts/numeric-control/task-3.1-20261011T1900/verification.md`。独立レビュー:`artifacts/numeric-control/task-3.1-review-20261011T2011/review.md`。各出力先にコマンド・ログ・終了値を保持した。
+
+親エージェントが差分、現在のビルド・3suiteとREDのログ・終了値、記録訂正を確認し、`kiro-verify-completion`は`TASK: VERIFIED`。新opcode・入れ子構文・Validateの接続と公式全体の次回比較は後続タスクで行う。

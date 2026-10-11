@@ -49,21 +49,37 @@ internal static class ExpressionDecoder
                 throw reader.Unsupported(descriptor.Name, inputLength, offset);
             }
 
-            var index = immediateKind == ImmediateKind.Index ? reader.ReadU32() : 0;
-            var immediate = immediateKind switch
+            var instruction = immediateKind switch
             {
-                ImmediateKind.None or ImmediateKind.Index => default,
-                ImmediateKind.I32 => WasmValue.FromI32(reader.ReadS32()),
-                ImmediateKind.I64 => WasmValue.FromI64(reader.ReadS64()),
-                ImmediateKind.F32Bits => WasmValue.FromF32Bits(reader.ReadF32Bits()),
-                ImmediateKind.F64Bits => WasmValue.FromF64Bits(reader.ReadF64Bits()),
+                ImmediateKind.None => DecodedInstruction.WithoutImmediate(opcode, offset),
+                ImmediateKind.Index => DecodedInstruction.WithIndex(
+                    opcode,
+                    reader.ReadU32(),
+                    offset
+                ),
+                ImmediateKind.I32 => DecodedInstruction.WithImmediate(
+                    opcode,
+                    WasmValue.FromI32(reader.ReadS32()),
+                    offset
+                ),
+                ImmediateKind.I64 => DecodedInstruction.WithImmediate(
+                    opcode,
+                    WasmValue.FromI64(reader.ReadS64()),
+                    offset
+                ),
+                ImmediateKind.F32Bits => DecodedInstruction.WithImmediate(
+                    opcode,
+                    WasmValue.FromF32Bits(reader.ReadF32Bits()),
+                    offset
+                ),
+                ImmediateKind.F64Bits => DecodedInstruction.WithImmediate(
+                    opcode,
+                    WasmValue.FromF64Bits(reader.ReadF64Bits()),
+                    offset
+                ),
                 _ => throw new InvalidOperationException("対応済み命令の即値情報が不正です。"),
             };
-            AddInstruction(
-                instructions,
-                new DecodedInstruction(opcode, immediate, offset, index),
-                ref reader
-            );
+            AddInstruction(instructions, instruction, ref reader);
         }
 
         var endOffset = reader.Position;
@@ -74,7 +90,7 @@ internal static class ExpressionDecoder
 
         AddInstruction(
             instructions,
-            new DecodedInstruction(new OpcodeKey(0, 0x0B), default, endOffset, 0),
+            DecodedInstruction.WithoutImmediate(new OpcodeKey(0, 0x0B), endOffset),
             ref reader
         );
         return instructions;

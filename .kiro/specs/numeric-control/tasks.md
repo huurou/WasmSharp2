@@ -50,7 +50,7 @@
   - _Requirements: 1.1, 1.5, 9.6, 9.7, 10.1, 10.5, 10.7_
 
 - [ ] 3. 後続実装が共有する入力・実行・命令生成の契約を整える
-- [ ] 3.1 s33読取りと複合即値の所有契約を統合する
+- [x] 3.1 s33読取りと複合即値の所有契約を統合する
   - 空型・単一値型・型添字を混同しないblocktypeと、ラベル列・select型列を不変に所有する入力表現を用意する。
   - 既存LEB128処理を利用し、s33の有効な非最短符号化、幅超過、切断を扱う。負の多byte整数を値型へ読み替えない。
   - 即値を持たない命令の値を統一し、入力バッファの変更が保持済み即値へ波及しないこととs33の境界結果を確認する。
@@ -305,3 +305,4 @@
 - 1.2:TUnitの今回のbyte[]比較では`IsEqualTo`が参照一致を調べた。順序に意味がある符号化は、既知hex等でバイト列の内容を比較する。
 - 2.1:関数本体と定数式の式読取りは`ExpressionDecoder.Read`、sectionと式の共通Unsupported診断は`ModuleBinaryReader.Unsupported`が担う。Bounded/Diagnosticの入口と範囲管理は`ModuleDecoder`に残した。
 - 2.2:1関数の検証は`FunctionValidator.Validate`、module全体と共有する診断2メソッドは`ValidationDiagnostics`が担う。TUnitのfilterにはファイル名ではなく実際のクラス名を指定する。
+- 3.1:入力命令は`DecodedInstruction`の即値別factoryで構築する。生成器fixtureはBlockType・WasmValue・WasmValueKindの本体ソースを取り込み、WasmFunction参照型だけを最小stubに残した。

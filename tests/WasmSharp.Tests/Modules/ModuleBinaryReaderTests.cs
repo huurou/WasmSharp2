@@ -409,6 +409,164 @@ internal class ModuleBinaryReader_ReadS32Tests
     }
 }
 
+internal class ModuleBinaryReader_ReadS33Tests
+{
+    [Test]
+    [Arguments("00", 0L)]
+    [Arguments("C000", 64L)]
+    [Arguments("FFFFFFFF0F", 4294967295L)]
+    [Arguments("8080808008", 2147483648L)]
+    [Arguments("8080808070", -4294967296L)]
+    [Arguments("8080808000", 0L)]
+    [Arguments("8180808000", 1L)]
+    [Arguments("FFFFFFFF7F", -1L)]
+    [Arguments("FF7F", -1L)]
+    [Arguments("C07F", -64L)]
+    public async Task 合法なs33表現_境界と非最短と負の多byte値を整数のまま読み取る(
+        string hex,
+        long expected
+    )
+    {
+        // Arrange
+        var reader = new ModuleBinaryReader(Convert.FromHexString(hex), 20);
+
+        // Act
+        var actual = reader.ReadS33();
+        var remaining = reader.Remaining;
+        var position = reader.Position;
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(actual).IsEqualTo(expected);
+            await Assert.That(remaining).IsEqualTo(0);
+            await Assert.That(position).IsEqualTo(20L + hex.Length / 2);
+        }
+    }
+
+    [Test]
+    [Arguments("808080808000", "integer representation too long", 25L)]
+    [Arguments("FFFFFFFFFF00", "integer representation too long", 25L)]
+    [Arguments("FFFFFFFF10", "integer too large", 24L)]
+    [Arguments("FFFFFFFF90", "integer too large", 24L)]
+    [Arguments("808080806F", "integer too large", 24L)]
+    public async Task 幅や符号拡張が不正_既存の原因選択と位置を保持する(
+        string hex,
+        string prefix,
+        long offset
+    )
+    {
+        // Arrange
+        var bytes = Convert.FromHexString(hex);
+
+        // Act & Assert
+        var exception = await Assert
+            .That(() =>
+            {
+                var reader = new ModuleBinaryReader(bytes, 20, 10, 2);
+                reader.ReadS33();
+            })
+            .ThrowsExactly<WasmDecodeException>();
+        using (Assert.Multiple())
+        {
+            await Assert
+                .That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal))
+                .IsTrue();
+            await Assert
+                .That(exception.Location)
+                .IsEqualTo(new(WasmProcessingStage.Decode, offset, 2, 10));
+        }
+    }
+
+    [Test]
+    [Arguments("", 20L)]
+    [Arguments("80", 21L)]
+    [Arguments("80808080", 24L)]
+    public async Task 整数が途中で終わる_位置付きの境界通知を返す(string hex, long offset)
+    {
+        // Arrange
+        var bytes = Convert.FromHexString(hex);
+
+        // Act & Assert
+        var exception = await Assert
+            .That(() =>
+            {
+                var reader = new ModuleBinaryReader(bytes, 20, 10, 2);
+                reader.ReadS33();
+            })
+            .ThrowsExactly<ModuleReadBoundaryException>();
+        using (Assert.Multiple())
+        {
+            await Assert
+                .That(exception!.Fallback.Location)
+                .IsEqualTo(new(WasmProcessingStage.Decode, offset, 2, 10));
+            await Assert
+                .That(
+                    exception.Fallback.Message.StartsWith(
+                        "unexpected end of section or function",
+                        StringComparison.Ordinal
+                    )
+                )
+                .IsTrue();
+        }
+    }
+
+    [Test]
+    public async Task 子の宣言境界で整数が切れる_親の後続byteを使わず境界位置を保持する()
+    {
+        // Arrange
+        byte[] bytes = [0x80, 0x00];
+
+        // Act & Assert
+        var exception = await Assert
+            .That(() =>
+            {
+                var parent = new ModuleBinaryReader(bytes, 20, 10, 2);
+                var child = parent.ReadRange(1);
+                child.ReadS33();
+            })
+            .ThrowsExactly<ModuleReadBoundaryException>();
+        await Assert
+            .That(exception!.Fallback.Location)
+            .IsEqualTo(new(WasmProcessingStage.Decode, 21, 2, 10));
+    }
+
+    [Test]
+    [Arguments("", 20L)]
+    [Arguments("80", 21L)]
+    public async Task 診断用モードの物理EOF_内部境界通知を出さずDecode失敗にする(
+        string hex,
+        long offset
+    )
+    {
+        // Arrange
+        var bytes = Convert.FromHexString(hex);
+
+        // Act & Assert
+        var exception = await Assert
+            .That(() =>
+            {
+                var reader = new ModuleBinaryReader(bytes, 20, 10, 2, ModuleReadMode.Diagnostic);
+                reader.ReadS33();
+            })
+            .ThrowsExactly<WasmDecodeException>();
+        using (Assert.Multiple())
+        {
+            await Assert
+                .That(
+                    exception!.Message.StartsWith(
+                        "unexpected end of section or function",
+                        StringComparison.Ordinal
+                    )
+                )
+                .IsTrue();
+            await Assert
+                .That(exception.Location)
+                .IsEqualTo(new(WasmProcessingStage.Decode, offset, 2, 10));
+        }
+    }
+}
+
 internal class ModuleBinaryReader_ReadS64Tests
 {
     [Test]

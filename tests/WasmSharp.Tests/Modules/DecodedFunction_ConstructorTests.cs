@@ -12,8 +12,12 @@ internal class DecodedFunction_ConstructorTests
         LocalDeclaration[] locals = [new(uint.MaxValue, WasmValueKind.I64)];
         DecodedInstruction[] instructions =
         [
-            new(new(0, 0x44), WasmValue.FromF64Bits(0xFFF8123456789ABCUL), 37, 0),
-            new(new(0, 0x0B), default, 46, 0),
+            DecodedInstruction.WithImmediate(
+                new(0, 0x44),
+                WasmValue.FromF64Bits(0xFFF8123456789ABCUL),
+                37
+            ),
+            DecodedInstruction.WithoutImmediate(new(0, 0x0B), 46),
         ];
 
         // Act

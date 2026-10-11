@@ -273,6 +273,17 @@ internal ref struct ModuleBinaryReader
     }
 
     /// <summary>
+    /// s33のLEB128符号化を読み取る
+    /// </summary>
+    /// <returns>符号付き33ビット整数 値型への読み替えは行わない</returns>
+    /// <exception cref="WasmDecodeException">最大幅・符号拡張の符号化が不正か、診断用読取りで整数の途中に物理EOFへ達した場合</exception>
+    /// <exception cref="ModuleReadBoundaryException">通常解析で読み取り範囲の終端に整数が未完了の場合</exception>
+    internal long ReadS33()
+    {
+        return unchecked((long)ReadInteger(33, true));
+    }
+
+    /// <summary>
     /// s64のLEB128符号化を読み取る
     /// </summary>
     /// <returns>符号付き64ビット整数</returns>

@@ -18,7 +18,10 @@ internal class WasmModule_ConstructorTests
         ModuleImport[] imports = [new FunctionImport("env", "f", uint.MaxValue, 12)];
         TableDefinition[] tables = [new(WasmValueKind.FuncRef, new WasmLimits(1), 15)];
         MemoryDefinition[] memories = [new(new WasmLimits(uint.MaxValue), 18)];
-        DecodedInstruction[] initializer = [new(new(0, 0x41), WasmValue.FromI32(42), 22, 0)];
+        DecodedInstruction[] initializer =
+        [
+            DecodedInstruction.WithImmediate(new(0, 0x41), WasmValue.FromI32(42), 22),
+        ];
         GlobalDefinition[] globals = [new(new(WasmValueKind.I32, true), initializer, 20)];
 
         // Act

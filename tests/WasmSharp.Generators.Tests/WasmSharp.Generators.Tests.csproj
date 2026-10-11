@@ -19,11 +19,11 @@
       LogicalName="InstructionContracts.%(Filename)%(Extension)"
     />
     <EmbeddedResource
-      Include="..\..\src\WasmSharp\Execution\ExecutionResult.cs;..\..\src\WasmSharp\Execution\Instruction.cs"
+      Include="..\..\src\WasmSharp\Execution\ExecutionResult.cs;..\..\src\WasmSharp\Execution\Instruction.cs;..\..\src\WasmSharp\WasmValue.cs;..\..\src\WasmSharp\WasmValueKind.cs"
       LogicalName="ExecutionContracts.%(Filename)%(Extension)"
     />
     <EmbeddedResource
-      Include="..\..\src\WasmSharp\Modules\DecodedInstruction.cs"
+      Include="..\..\src\WasmSharp\Modules\DecodedInstruction.cs;..\..\src\WasmSharp\Modules\BlockType.cs"
       LogicalName="ModuleContracts.%(Filename)%(Extension)"
     />
   </ItemGroup>
