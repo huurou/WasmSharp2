@@ -191,3 +191,14 @@
 - 実装記録:`artifacts/numeric-control/task-4.3-20261011-21ac6d/verification.md`。独立レビュー:`artifacts/numeric-control/task-4.3-review-20261011-8d24a1/review.md`。各出力先にコマンド・rawlog・終了値を保持した。
 
 親エージェントが22handlerの差分、代表境界テスト、RED/GREENと現在のビルド・3suiteのrawlog・終了値、独立レビューを確認し、`kiro-verify-completion`は`TASK: VERIFIED`。整数58handlerの直接確認を終えた。公開opcodeの宣言・型検証・生成dispatchの接続は7.1、公開統合と公式全体の次回確認は7.2で行う。
+
+## タスク5.1:浮動小数点算術と目的幅の丸め
+
+新規の浮動小数点partialに両幅のadd/sub/mul/div/sqrtの10handlerを追加した。f32はfloat/MathF、f64はdouble/Mathで計算し、命令ごとに同幅の生ビットへ保存する。NaN結果だけを幅別private補助で正のcanonicalへ揃え、符号付き0・subnormal・無限大を保つ。変更は本体1ファイルと直接テスト10クラス。要件5.1・5.2・5.6・5.7の内部handlerの範囲である。
+
+- 実装者:`READY_FOR_REVIEW`。既定OFFのREDはビルド成功後90件中74件失敗・16件成功、dotnet終了2。入力と結果が同じ特殊値はOFFでも一致するが、10クラスすべてで算術結果が失敗した。ONで同じ90件成功後、一時flagを除去した。
+- 最終Releaseビルド:終了0、警告・エラー0。3suiteは1,583件・76件・701件成功、失敗・スキップ0、各終了0。CSharpier11ファイルと差分確認も成功した。
+- 履歴なしの独立レビュー:`APPROVED`。新規11ファイル全文、対象幅・operand順序・丸め・特殊値・同contextの連続演算、NaN補正の境界とRED/GREENを確認。独立ビルドと同じ3suiteも成功した。
+- 実装記録:`artifacts/numeric-control/task-5.1-20261011T195103/verification.md`。独立レビュー:`artifacts/numeric-control/task-5.1-review-20261011T200600/review.md`。各出力先にコマンド・rawlog・終了値を保持した。
+
+親エージェントが10handlerと幅別補助の全文、代表境界テスト、RED/GREENと現在のビルド・3suiteのrawlog・終了値、独立レビューを確認し、`kiro-verify-completion`は`TASK: VERIFIED`。opcode・型検証・生成dispatchの接続は7.1、公開統合と公式全体の次回確認は7.2で行う。

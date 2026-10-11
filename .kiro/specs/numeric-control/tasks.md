@@ -98,7 +98,7 @@
   - _Requirements: 4.5, 4.6_
 
 - [ ] 5. 浮動小数点演算の実行処理を追加する
-- [ ] 5.1 (P) 対象幅で丸める浮動小数点算術とNaN結果を実装する
+- [x] 5.1 (P) 対象幅で丸める浮動小数点算術とNaN結果を実装する
   - f32/f64のadd・sub・mul・div・sqrtを対象幅で計算し、各命令で丸めた結果を保存する。
   - 算術NaN結果を設計で定めたcanonical NaNへ揃え、0除算・不定形・桁あふれを整数trapにしない。
   - 非正規化数、underflow、無限大、連続演算の丸めを直接テストで確認する。共有命令宣言には触れず、4.1〜4.3から独立した浮動小数点処理だけを変更する。
@@ -311,3 +311,4 @@
 - 4.1:整数handlerは`Interpreter.Integer.cs`へ配置する。直接テストのcontext準備と後片付けは`NumericHandlerFixture`で共有し、期待値とassertionは対象メソッドごとのテストへ残した。数値opcodeの接続は7.1で行う。
 - 4.2:位置付きの整数trapは`IntegerTrap`で構築する。signed剰余のMIN/-1はCLRの`%`でも例外になるため、演算前に0を返す。REDのdotnet終了値は保存したresult.jsonの2で、exec応答の1と区別する。
 - 4.3:シフト・回転量は31/63でmaskし、計数と回転には対象幅の`BitOperations`を使う。テストメソッド名は数字から始めず「入力」などを先頭に置く。
+- 5.1:浮動小数点handlerは`Interpreter.Float.cs`に置く。算術NaNの補正と目的幅の保存はprivateの`F32ArithmeticResult`/`F64ArithmeticResult`で共有し、符号bit操作と値運搬はこの補正を通さない。

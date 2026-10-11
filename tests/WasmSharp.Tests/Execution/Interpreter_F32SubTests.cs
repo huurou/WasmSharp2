@@ -1,0 +1,37 @@
+using WasmSharp.Execution;
+using WasmSharp.Tests.Fixtures;
+
+namespace WasmSharp.Tests.Execution;
+
+internal class Interpreter_F32SubTests
+{
+    [Test]
+    [Arguments(0x40E00000u, 0x40000000u, 0x40A00000u)]
+    [Arguments(0x3F800000u, 0x3F800001u, 0xB4000000u)]
+    [Arguments(0x80000000u, 0x00000000u, 0x80000000u)]
+    [Arguments(0x00800000u, 0x007FFFFFu, 0x00000001u)]
+    [Arguments(0x7F800000u, 0x7F800000u, 0x7FC00000u)]
+    [Arguments(0xFFC12345u, 0x3F800000u, 0x7FC00000u)]
+    public async Task 通常値と境界値とNaN_32bitの減算結果を返す(
+        uint leftBits,
+        uint rightBits,
+        uint expectedBits
+    )
+    {
+        // Arrange
+        WasmValue[] operands = [WasmValue.FromF32Bits(leftBits), WasmValue.FromF32Bits(rightBits)];
+
+        // Act
+        var actual = NumericHandlerFixture.Execute(Interpreter.F32Sub, operands);
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(actual.Result.Status).IsEqualTo(ExecutionStatus.Success);
+            await Assert.That(actual.Value.Kind).IsEqualTo(WasmValueKind.F32);
+            await Assert.That(actual.Value.AsF32Bits()).IsEqualTo(expectedBits);
+            await Assert.That(actual.Sentinel).IsEqualTo(NumericHandlerFixture.Sentinel);
+            await Assert.That(actual.ValueCount).IsEqualTo(2);
+        }
+    }
+}
