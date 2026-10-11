@@ -205,7 +205,7 @@
   - _Depends: 2.2, 3.2, 9.1_
   - _Requirements: 1.5, 3.1, 3.2, 3.3, 3.7, 3.8, 3.9, 7.2, 7.3, 9.1_
 
-- [ ] 9.3 単一ラベルへの分岐と局所的多相性を追加する
+- [x] 9.3 単一ラベルへの分岐と局所的多相性を追加する
   - block/ifには結果型、loopには引数型、関数には結果型を適用し、ラベル存在と分岐値を検査する。
   - br_ifは条件0でもラベルと値を検査して非分岐側へ値を残し、br・return・unreachableの後では現在の制御だけにUnknownを適用する。
   - loop入口への後方分岐、制御終了と関数末尾の終了命令への前方分岐を確定し、未解決の分岐先を公開しない。
@@ -321,3 +321,4 @@
 - 8.2:制御handlerは`Interpreter.Control.cs`に置く。marker用の`NoOp`も用意し、分岐表はIndexから候補列と末尾の既定を参照する。typed/untyped selectは同じ`Select`を共有できる。
 - 9.1:式読取りは非再帰の構文stackで最外endまで進む。型添字存在・select型列長の判定はValidateへ残す。endのFunctionEnd/Return接続は維持し、内側markerの除去は9.2で行う。
 - 9.2:型stackはnullable、Unknownは現在の底かつ到達不能時だけ供給する。frameの入力・結果と底を管理し、ifのelse入口Pcも保存して全前方参照をendでpatchする。builderはToImmutableで確定する。
+- 9.3:ラベル型はloopの引数、それ以外の結果から求める。ラベルを条件・分岐値より先に解決し、br_ifの非分岐側へ宣言型列を戻す。loopは入口Pc、他は既存endの前方patchを使う。

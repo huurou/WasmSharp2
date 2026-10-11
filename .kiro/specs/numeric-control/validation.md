@@ -340,3 +340,16 @@ FunctionValidatorの型stackをnullableにし、暗黙の関数frameと制御fra
 - 実装記録:`artifacts/numeric-control/task-9.2-20261012Tworker/self-review.md`。独立レビュー:`artifacts/numeric-control/task-9.2-review-20261012Tindependent-b6b921/review.md`。各出力先にコマンド・rawlog・native終了値を保持した。
 
 親エージェントが本体と既存テストの全差分、新規テスト全文と増補箇所、RED/GREENと最新の最終/独立ビルド・3suiteのrawlogとnative終了値、独立レビュー、最終4ファイルのhash一致を確認し、`kiro-verify-completion`は`TASK: VERIFIED`。br/br_if・分岐表・selectの新しい検証、包括的な公開制御統合と公式全体runは後続タスクの範囲である。
+
+## タスク9.3:単一ラベルへの分岐と局所的多相性
+
+FunctionValidatorでラベル型をloopの引数、それ以外の結果から求め、br/br_ifのラベル解決・型検査と分岐先登録を追加した。br_ifは条件と分岐値を検査して宣言型列を非分岐側へ戻し、brは現在frameだけを到達不能にする。loopの後方Pcと、それ以外のendによる前方patchは既存処理へ接続した。変更は本体1ファイルと新規テスト2ファイル。要件3.4・3.5・3.7・3.8・7.4・7.5・7.6・7.8・9.7の本タスクの範囲である。
+
+- 実装者:`READY_FOR_REVIEW`。ラベル型の構造整理を先に保存。成功ビルド後の初回OFFは210件中34失敗・176成功、増補後の最新OFFは213件中37失敗・176成功、native終了2。最新ONで213件成功後、一時flagを除去した。初回のusing不足と、内側deadを外側へ伝播させないためroot側にもunreachableを必要とするfixtureの修正を記録した。
+- 最終Releaseビルド:終了0、警告・エラー0。3suiteは2,707件・76件・701件成功、失敗・スキップ0、各終了0。CSharpier3ファイルと既存/新規空白確認も成功し、LFを維持した。
+- block/if/暗黙関数の結果型とloopの引数型、0/1/複数値、条件0でも行うbr_if検査と非分岐保持、局所Unknown・具体型矛盾・内側不足/余剰・外側値消費・dead非伝播を確認した。固定valid.mlに従いラベルを条件や値より先に解決し、複合不正の診断先頭と元位置を保持する。
+- 確定済み前後方Pc、関数ラベルが最終Returnを指すこと、入れ子越えの複数結果と外側operand、10,000回のloopを深さ上限1で実行すること、call内のbr/returnが一度だけ関数を終了しframe・値数・深さが0へ戻ることを確認した。
+- 履歴なしの独立レビュー:`APPROVED`。全差分・新規テスト全文・仕様・設計・固定参照と最新OFF/ON snapshotを照合した。独立ビルドと同じ3suite、整形・静的確認・空白確認が成功した。最終3ファイルのhashは実装者保存とfinal snapshotに一致し、コード・保護文書・Git状態はレビュー前後で不変だった。
+- 実装記録:`artifacts/numeric-control/task-9.3-20261012T043000-worker/protocol-and-review.md`。独立レビュー:`artifacts/numeric-control/task-9.3-review-20261012Tindependent-8d8e59/review.md`。各出力先にコマンド・rawlog・native終了値を保持した。
+
+親エージェントが本体の最終差分、新規テスト全文と増補箇所、最新RED/GREENと最終/独立ビルド・3suiteのrawlogとnative終了値、独立レビュー、最終3ファイルの保存・snapshot・現在のhash一致を確認し、`kiro-verify-completion`は`TASK: VERIFIED`。br_table・selectの検証、包括的な公開制御統合と公式全体runは後続タスクの範囲である。

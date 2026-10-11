@@ -190,6 +190,26 @@ internal static class FunctionValidator
                     MarkUnreachable();
                     break;
 
+                case ValidationRule.Branch:
+                case ValidationRule.BranchIf:
+                    // ラベル参照の不成立は、条件や分岐値の不成立より先に通知する。
+                    var labelFrame = GetLabel(instruction.Index, instruction.ByteOffset);
+                    if (descriptor.Validation == ValidationRule.BranchIf)
+                    {
+                        Pop(WasmValueKind.I32, instruction.ByteOffset);
+                    }
+                    PopTypes(labelFrame.LabelTypes.AsSpan(), instruction.ByteOffset);
+                    outputIndex = (uint)AddLabelTarget(labelFrame);
+                    if (descriptor.Validation == ValidationRule.BranchIf)
+                    {
+                        PushTypes(labelFrame.LabelTypes);
+                    }
+                    else
+                    {
+                        MarkUnreachable();
+                    }
+                    break;
+
                 case ValidationRule.Unreachable:
                     MarkUnreachable();
                     break;
@@ -320,6 +340,34 @@ internal static class FunctionValidator
         {
             var index = branchTargets.Count;
             branchTargets.Add(new(0, frame.Height, keepCount));
+            return index;
+        }
+
+        ControlFrame GetLabel(uint depth, long byteOffset)
+        {
+            if (depth >= (uint)frames.Count)
+            {
+                throw CreateUnknownIndex(
+                    "label",
+                    depth,
+                    "参照するラベルが存在しません。",
+                    byteOffset
+                );
+            }
+            return frames[frames.Count - 1 - (int)depth];
+        }
+
+        int AddLabelTarget(ControlFrame frame)
+        {
+            var index = AddTarget(frame, frame.LabelTypes.Length);
+            if (frame.Kind == ValidationRule.Loop)
+            {
+                PatchTarget(index, frame.LoopPc);
+            }
+            else
+            {
+                frame.ForwardTargets.Add(index);
+            }
             return index;
         }
 
@@ -460,6 +508,12 @@ internal static class FunctionValidator
         /// 宣言順の結果型
         /// </summary>
         internal ImmutableArray<WasmValueKind> Results { get; } = results;
+
+        /// <summary>
+        /// loopは入口引数、それ以外は結果を分岐値の型として扱う
+        /// </summary>
+        internal ImmutableArray<WasmValueKind> LabelTypes =>
+            Kind == ValidationRule.Loop ? Parameters : Results;
 
         /// <summary>
         /// 制御が消費できるoperand範囲の底
