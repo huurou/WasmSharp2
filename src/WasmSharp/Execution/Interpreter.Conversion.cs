@@ -4,6 +4,11 @@ namespace WasmSharp.Execution;
 
 internal static partial class Interpreter
 {
+    private const double I32_SIGNED_UPPER_BOUND = 2147483648D;
+    private const double I32_UNSIGNED_UPPER_BOUND = 4294967296D;
+    private const double I64_SIGNED_UPPER_BOUND = 9223372036854775808D;
+    private const double I64_UNSIGNED_UPPER_BOUND = 18446744073709551616D;
+
     /// <summary>
     /// f32を0方向へ切り捨てて符号付きi32へ変換する
     /// </summary>
@@ -125,6 +130,190 @@ internal static partial class Interpreter
     }
 
     /// <summary>
+    /// f32を0方向へ切り捨てて符号付きi32へ飽和変換する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI32TruncSatF32S命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I32TruncSatF32S(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        var operand = context.PopValue().AsF32();
+        context.PushValue(WasmValue.FromI32(TruncateSaturatingI32(operand, true)));
+        return default;
+    }
+
+    /// <summary>
+    /// f32を0方向へ切り捨てて符号なしi32へ飽和変換する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI32TruncSatF32U命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I32TruncSatF32U(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        var operand = context.PopValue().AsF32();
+        context.PushValue(WasmValue.FromI32(TruncateSaturatingI32(operand, false)));
+        return default;
+    }
+
+    /// <summary>
+    /// f64を0方向へ切り捨てて符号付きi32へ飽和変換する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI32TruncSatF64S命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I32TruncSatF64S(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        var operand = context.PopValue().AsF64();
+        context.PushValue(WasmValue.FromI32(TruncateSaturatingI32(operand, true)));
+        return default;
+    }
+
+    /// <summary>
+    /// f64を0方向へ切り捨てて符号なしi32へ飽和変換する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI32TruncSatF64U命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I32TruncSatF64U(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        var operand = context.PopValue().AsF64();
+        context.PushValue(WasmValue.FromI32(TruncateSaturatingI32(operand, false)));
+        return default;
+    }
+
+    /// <summary>
+    /// f32を0方向へ切り捨てて符号付きi64へ飽和変換する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI64TruncSatF32S命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I64TruncSatF32S(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        var operand = context.PopValue().AsF32();
+        context.PushValue(WasmValue.FromI64(TruncateSaturatingI64(operand, true)));
+        return default;
+    }
+
+    /// <summary>
+    /// f32を0方向へ切り捨てて符号なしi64へ飽和変換する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI64TruncSatF32U命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I64TruncSatF32U(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        var operand = context.PopValue().AsF32();
+        context.PushValue(WasmValue.FromI64(TruncateSaturatingI64(operand, false)));
+        return default;
+    }
+
+    /// <summary>
+    /// f64を0方向へ切り捨てて符号付きi64へ飽和変換する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI64TruncSatF64S命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I64TruncSatF64S(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        var operand = context.PopValue().AsF64();
+        context.PushValue(WasmValue.FromI64(TruncateSaturatingI64(operand, true)));
+        return default;
+    }
+
+    /// <summary>
+    /// f64を0方向へ切り捨てて符号なしi64へ飽和変換する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI64TruncSatF64U命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I64TruncSatF64U(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        var operand = context.PopValue().AsF64();
+        context.PushValue(WasmValue.FromI64(TruncateSaturatingI64(operand, false)));
+        return default;
+    }
+
+    /// <summary>
+    /// 浮動小数点値を0方向へ切り捨ててi32の範囲へ飽和させる
+    /// </summary>
+    /// <param name="operand">doubleで正確に表した変換元の値</param>
+    /// <param name="signed">符号付き整数として変換する場合はtrue</param>
+    /// <returns>NaNは0、それ以外は変換先の範囲へ飽和した整数のbit列</returns>
+    private static int TruncateSaturatingI32(double operand, bool signed)
+    {
+        if (double.IsNaN(operand))
+        {
+            return 0;
+        }
+
+        var truncated = Math.Truncate(operand);
+        var lowerBound = signed ? -I32_SIGNED_UPPER_BOUND : 0D;
+        var upperBound = signed ? I32_SIGNED_UPPER_BOUND : I32_UNSIGNED_UPPER_BOUND;
+        if (truncated < lowerBound)
+        {
+            return signed ? int.MinValue : 0;
+        }
+        if (truncated >= upperBound)
+        {
+            return signed ? int.MaxValue : -1;
+        }
+
+        return signed ? (int)truncated : unchecked((int)(uint)truncated);
+    }
+
+    /// <summary>
+    /// 浮動小数点値を0方向へ切り捨ててi64の範囲へ飽和させる
+    /// </summary>
+    /// <param name="operand">doubleで正確に表した変換元の値</param>
+    /// <param name="signed">符号付き整数として変換する場合はtrue</param>
+    /// <returns>NaNは0、それ以外は変換先の範囲へ飽和した整数のbit列</returns>
+    private static long TruncateSaturatingI64(double operand, bool signed)
+    {
+        if (double.IsNaN(operand))
+        {
+            return 0;
+        }
+
+        var truncated = Math.Truncate(operand);
+        var lowerBound = signed ? -I64_SIGNED_UPPER_BOUND : 0D;
+        var upperBound = signed ? I64_SIGNED_UPPER_BOUND : I64_UNSIGNED_UPPER_BOUND;
+        if (truncated < lowerBound)
+        {
+            return signed ? long.MinValue : 0;
+        }
+        if (truncated >= upperBound)
+        {
+            return signed ? long.MaxValue : -1;
+        }
+
+        return signed ? (long)truncated : unchecked((long)(ulong)truncated);
+    }
+
+    /// <summary>
     /// 浮動小数点値を0方向へ切り捨ててi32へ変換する
     /// </summary>
     /// <param name="operand">doubleで正確に表した変換元の値</param>
@@ -141,8 +330,8 @@ internal static partial class Interpreter
     {
         var result = TruncateInteger(
             operand,
-            signed ? -2147483648D : 0D,
-            signed ? 2147483648D : 4294967296D,
+            signed ? -I32_SIGNED_UPPER_BOUND : 0D,
+            signed ? I32_SIGNED_UPPER_BOUND : I32_UNSIGNED_UPPER_BOUND,
             context,
             in instruction,
             out var truncated
@@ -175,8 +364,8 @@ internal static partial class Interpreter
     {
         var result = TruncateInteger(
             operand,
-            signed ? -9223372036854775808D : 0D,
-            signed ? 9223372036854775808D : 18446744073709551616D,
+            signed ? -I64_SIGNED_UPPER_BOUND : 0D,
+            signed ? I64_SIGNED_UPPER_BOUND : I64_UNSIGNED_UPPER_BOUND,
             context,
             in instruction,
             out var truncated

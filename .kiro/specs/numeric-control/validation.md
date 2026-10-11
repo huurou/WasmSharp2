@@ -246,3 +246,14 @@
 - 実装記録:`artifacts/numeric-control/task-6.2-20261012T0015/verification.md`。独立レビュー:`artifacts/numeric-control/task-6.2-review-20261011T211823/review.md`。各出力先にコマンド・rawlog・native終了値を保持した。
 
 親エージェントが最終実装と代表境界テスト、責務整理後76件・RED/GREEN・最終ビルドと3suiteのrawlog・終了値、独立レビューと期待値照合結果、検証後の12ファイルのhash一致を確認し、`kiro-verify-completion`は`TASK: VERIFIED`。公開命令の接続は7.1、公開診断・Invoke/startと公式全体の次回確認は7.2で行う。
+
+## タスク6.3:飽和する浮動小数点から整数への変換
+
+全8組合せのtrunc_sat_s/uを追加した。NaNは0、0方向への切捨て後の区間外は変換先の端を返し、範囲内でだけcastする。共通境界を4つのprivate上限定数へ先に整理して既存truncの154件を確認した。変更は本体1ファイルと直接テスト8クラス。要件6.5の内部handlerの範囲である。
+
+- 実装者:`READY_FOR_REVIEW`。既定OFFのREDはビルド成功後154件中72件失敗・82件成功、dotnet終了2。全8クラスでNaN・範囲外・無限大が成功せずtrapになることを検出し、正常な共通入力は自然に成功した。ONで同じ154件成功後、一時flagを除去した。
+- 最終Releaseビルド:終了0、警告・エラー0。3suiteは2,328件・76件・701件成功、失敗・スキップ0、各終了0。CSharpier9ファイルと差分確認も成功した。整形後は既存のLFを維持し、その最終状態で確認した。
+- 履歴なしの独立レビュー:`APPROVED`。全8テスト全文、本体差分、NaN・切捨て後の半開区間・上下限飽和・trapなし・下位値の保持を確認。全154期待値をIEEEのビット列から有理数へ独立に展開して照合した。既存truncは定数抽出以外に変更がない。独立ビルドと同じ3suiteも成功した。
+- 実装記録:`artifacts/numeric-control/task-6.3-20261011T212800/verification.md`。独立レビュー:`artifacts/numeric-control/task-6.3-review-20261011T213928/review.md`。各出力先にコマンド・rawlog・native終了値を保持した。
+
+親エージェントが8handlerと目的幅別補助の全文、代表境界テスト、先行整理154件・RED/GREEN・最終ビルドと3suiteのrawlog・終了値、独立レビューと期待値照合結果、検証後の9ファイルのhash一致を確認し、`kiro-verify-completion`は`TASK: VERIFIED`。公開接続は7.1、公開診断と公式全体の次回確認は7.2で行う。

@@ -136,7 +136,7 @@
   - _Boundary: Interpreter.Conversion_
   - _Requirements: 6.3, 6.4, 9.2_
 
-- [ ] 6.3 飽和する浮動小数点から整数への変換を実装する
+- [x] 6.3 飽和する浮動小数点から整数への変換を実装する
   - 全8組合せの飽和変換に切捨てと範囲判定を適用し、NaNを0へ変換する。
   - 無限大と範囲外を変換先の上下限へ飽和させ、cast固有の範囲外動作に依存しない。
   - 非飽和変換と同じ境界入力に対し、正常値・上下限・0を返して数値trapを発生させないことを確認する。
@@ -313,3 +313,4 @@
 - 4.3:シフト・回転量は31/63でmaskし、計数と回転には対象幅の`BitOperations`を使う。テストメソッド名は数字から始めず「入力」などを先頭に置く。
 - 5.1:浮動小数点handlerは`Interpreter.Float.cs`に置く。算術NaNの補正と目的幅の保存はprivateの`F32ArithmeticResult`/`F64ArithmeticResult`で共有し、符号bit操作と値運搬はこの補正を通さない。
 - 6.2:位置付きtrap補助は`Interpreter.cs`の`NumericTrap`へ移した。truncはNaNを先に分け、`Math.Truncate`後の半開区間を検査してからcastする。飽和変換ではtrap生成を呼び出さない。
+- 6.3:truncとsatの境界は目的幅・符号ごとの4つのprivate上限定数から求める。satは目的幅別の補助に閉じ、NaNを0、区間外を整数の端へ返してから範囲内だけcastする。
