@@ -1,7 +1,195 @@
+using WasmSharp.Exceptions;
+
 namespace WasmSharp.Execution;
 
 internal static partial class Interpreter
 {
+    /// <summary>
+    /// 整数演算のtrapを現在関数と命令位置を保持して返す
+    /// </summary>
+    /// <param name="reason">整数演算のtrapの原因</param>
+    /// <param name="context">現在関数を保持する実行コンテキスト</param>
+    /// <param name="instruction">trapが発生する整数命令</param>
+    /// <returns>原因と発生位置を持つtrap</returns>
+    private static ExecutionResult IntegerTrap(
+        WasmTrapReason reason,
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        return ExecutionResult.Trap(
+            reason,
+            context.CurrentFunction.FunctionIndex,
+            instruction.ByteOffset
+        );
+    }
+
+    /// <summary>
+    /// i32の符号付き整数商を計算する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI32DivS命令</param>
+    /// <returns>実行の成功または整数演算のtrap</returns>
+    internal static ExecutionResult I32DivS(InterpreterContext context, in Instruction instruction)
+    {
+        var right = context.PopValue().AsI32();
+        var left = context.PopValue().AsI32();
+        if (right == 0)
+        {
+            return IntegerTrap(WasmTrapReason.IntegerDivideByZero, context, in instruction);
+        }
+
+        if (left == int.MinValue && right == -1)
+        {
+            return IntegerTrap(WasmTrapReason.IntegerOverflow, context, in instruction);
+        }
+
+        context.PushValue(WasmValue.FromI32(left / right));
+        return default;
+    }
+
+    /// <summary>
+    /// i32の符号なし整数商を計算する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI32DivU命令</param>
+    /// <returns>実行の成功または整数演算のtrap</returns>
+    internal static ExecutionResult I32DivU(InterpreterContext context, in Instruction instruction)
+    {
+        var right = unchecked((uint)context.PopValue().AsI32());
+        var left = unchecked((uint)context.PopValue().AsI32());
+        if (right == 0)
+        {
+            return IntegerTrap(WasmTrapReason.IntegerDivideByZero, context, in instruction);
+        }
+
+        context.PushValue(WasmValue.FromI32(unchecked((int)(left / right))));
+        return default;
+    }
+
+    /// <summary>
+    /// i32の符号付き剰余を計算する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI32RemS命令</param>
+    /// <returns>実行の成功または整数演算のtrap</returns>
+    internal static ExecutionResult I32RemS(InterpreterContext context, in Instruction instruction)
+    {
+        var right = context.PopValue().AsI32();
+        var left = context.PopValue().AsI32();
+        if (right == 0)
+        {
+            return IntegerTrap(WasmTrapReason.IntegerDivideByZero, context, in instruction);
+        }
+
+        // CLRの剰余演算もMIN/-1で例外になるため先に0へ揃える
+        var remainder = left == int.MinValue && right == -1 ? 0 : left % right;
+        context.PushValue(WasmValue.FromI32(remainder));
+        return default;
+    }
+
+    /// <summary>
+    /// i32の符号なし剰余を計算する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI32RemU命令</param>
+    /// <returns>実行の成功または整数演算のtrap</returns>
+    internal static ExecutionResult I32RemU(InterpreterContext context, in Instruction instruction)
+    {
+        var right = unchecked((uint)context.PopValue().AsI32());
+        var left = unchecked((uint)context.PopValue().AsI32());
+        if (right == 0)
+        {
+            return IntegerTrap(WasmTrapReason.IntegerDivideByZero, context, in instruction);
+        }
+
+        context.PushValue(WasmValue.FromI32(unchecked((int)(left % right))));
+        return default;
+    }
+
+    /// <summary>
+    /// i64の符号付き整数商を計算する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI64DivS命令</param>
+    /// <returns>実行の成功または整数演算のtrap</returns>
+    internal static ExecutionResult I64DivS(InterpreterContext context, in Instruction instruction)
+    {
+        var right = context.PopValue().AsI64();
+        var left = context.PopValue().AsI64();
+        if (right == 0)
+        {
+            return IntegerTrap(WasmTrapReason.IntegerDivideByZero, context, in instruction);
+        }
+
+        if (left == long.MinValue && right == -1)
+        {
+            return IntegerTrap(WasmTrapReason.IntegerOverflow, context, in instruction);
+        }
+
+        context.PushValue(WasmValue.FromI64(left / right));
+        return default;
+    }
+
+    /// <summary>
+    /// i64の符号なし整数商を計算する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI64DivU命令</param>
+    /// <returns>実行の成功または整数演算のtrap</returns>
+    internal static ExecutionResult I64DivU(InterpreterContext context, in Instruction instruction)
+    {
+        var right = unchecked((ulong)context.PopValue().AsI64());
+        var left = unchecked((ulong)context.PopValue().AsI64());
+        if (right == 0)
+        {
+            return IntegerTrap(WasmTrapReason.IntegerDivideByZero, context, in instruction);
+        }
+
+        context.PushValue(WasmValue.FromI64(unchecked((long)(left / right))));
+        return default;
+    }
+
+    /// <summary>
+    /// i64の符号付き剰余を計算する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI64RemS命令</param>
+    /// <returns>実行の成功または整数演算のtrap</returns>
+    internal static ExecutionResult I64RemS(InterpreterContext context, in Instruction instruction)
+    {
+        var right = context.PopValue().AsI64();
+        var left = context.PopValue().AsI64();
+        if (right == 0)
+        {
+            return IntegerTrap(WasmTrapReason.IntegerDivideByZero, context, in instruction);
+        }
+
+        // CLRの剰余演算もMIN/-1で例外になるため先に0へ揃える
+        var remainder = left == long.MinValue && right == -1 ? 0 : left % right;
+        context.PushValue(WasmValue.FromI64(remainder));
+        return default;
+    }
+
+    /// <summary>
+    /// i64の符号なし剰余を計算する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI64RemU命令</param>
+    /// <returns>実行の成功または整数演算のtrap</returns>
+    internal static ExecutionResult I64RemU(InterpreterContext context, in Instruction instruction)
+    {
+        var right = unchecked((ulong)context.PopValue().AsI64());
+        var left = unchecked((ulong)context.PopValue().AsI64());
+        if (right == 0)
+        {
+            return IntegerTrap(WasmTrapReason.IntegerDivideByZero, context, in instruction);
+        }
+
+        context.PushValue(WasmValue.FromI64(unchecked((long)(left % right))));
+        return default;
+    }
+
     /// <summary>
     /// i32の加算を対象幅の剰余として計算する
     /// </summary>

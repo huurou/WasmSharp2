@@ -169,3 +169,14 @@
 - 実装記録:`artifacts/numeric-control/task-4.1-20261011T184000/verification.md`。独立レビュー:`artifacts/numeric-control/task-4.1-review-20261011T190000/review.md`。各出力先に変更ファイル一覧・コマンド・ログ・終了値を保持した。
 
 親エージェントがhandler全体、代表テスト・fixture、現在のビルド・3suiteとRED/GREENの出力・終了値、独立レビューを確認し、`kiro-verify-completion`は`TASK: VERIFIED`。数値opcodeの宣言・型検証・公開実行への接続は7.1、公式全体の次回確認は7.2で行う。
+
+## タスク4.2:整数除算・剰余と位置付きtrap
+
+既存整数partialにsigned/unsignedのdiv/remを両幅8handler追加した。0除数とsigned除算MIN/-1を演算前に判定し、Reasonと関数index・バイト位置を持つtrapを返す。同じ入力のsigned剰余は0で正常終了する。共有するtrap構築はprivateの`IntegerTrap`へ閉じた。変更は本体1ファイルと直接テスト8クラス。要件4.2・4.3・4.4・9.2の内部handlerの範囲である。
+
+- 実装者:`READY_FOR_REVIEW`。既定OFFのREDはビルド成功後76件すべて失敗、dotnet終了2。ONで同じ76件成功後、一時flagを除去した。exec応答の終了1はdotnetの終了値と区別して記録した。
+- 最終Releaseビルド:終了0、警告・エラー0。3suiteは1,375件・76件・701件成功、失敗・スキップ0、各dotnet終了0。CSharpier9ファイルと差分確認も終了0。
+- 履歴なしの独立レビュー:`APPROVED`。差分と新規8テストの全文、演算順・符号解釈・trap条件・位置・残る値、RED/GREENを確認。既存4.1handlerの不変と独立ビルド・同じ3suiteの成功も確認した。
+- 実装記録:`artifacts/numeric-control/task-4.2-20261011T205000/verification.md`。独立レビュー:`artifacts/numeric-control/task-4.2-review-20261011T212745/review.md`。各出力先にコマンド・rawlog・dotnet終了値を保持した。
+
+親エージェントが8handlerと共有trapの差分、代表境界テスト、RED/GREENと現在のビルド・3suiteのrawlog・終了値、独立レビューを確認し、`kiro-verify-completion`は`TASK: VERIFIED`。公開診断・Invoke/start・生成dispatchと公式全体の統合確認は7.1・7.2で行う。

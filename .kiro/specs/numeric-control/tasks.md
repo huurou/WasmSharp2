@@ -83,7 +83,7 @@
   - _Depends: 3.3_
   - _Requirements: 4.1, 4.7_
 
-- [ ] 4.2 整数除算と剰余の部分演算を実装する
+- [x] 4.2 整数除算と剰余の部分演算を実装する
   - 符号付き・符号なしのdiv/remを実装し、商の0方向切捨てと剰余の符号を保つ。
   - 0除算とsigned最小値÷−1を演算前に判定し、対応するtrap結果に関数と入力位置を付ける。
   - signed最小値の−1による剰余は0になり、CLR算術例外を利用せず正常値と2種類のtrapを区別できることを確認する。
@@ -309,3 +309,4 @@
 - 3.2:`FunctionCode`の末尾引数で不変の`BranchTargets`を渡す。`Instruction.TargetCount`は既定を除く候補数で、省略時は0。既存の3引数・4引数構築を維持した。
 - 3.3:数値宣言は10引数属性で`NumericSignature`を指定し、StackEffectとValidationの両方をNumericにする。生成器fixtureのWasmValueKindは常時InstructionContractsから取り込み、実行契約側には重複させない。
 - 4.1:整数handlerは`Interpreter.Integer.cs`へ配置する。直接テストのcontext準備と後片付けは`NumericHandlerFixture`で共有し、期待値とassertionは対象メソッドごとのテストへ残した。数値opcodeの接続は7.1で行う。
+- 4.2:位置付きの整数trapは`IntegerTrap`で構築する。signed剰余のMIN/-1はCLRの`%`でも例外になるため、演算前に0を返す。REDのdotnet終了値は保存したresult.jsonの2で、exec応答の1と区別する。
