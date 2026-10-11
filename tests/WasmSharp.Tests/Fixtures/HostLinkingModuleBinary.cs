@@ -15,22 +15,23 @@ internal static class HostLinkingModuleBinary
     {
         return VectorSection(
             1,
-            types.Select(x =>
-                (byte[])
-                    [
-                        0x60,
-                        .. Unsigned((uint)x.Parameters.Length),
-                        .. x.Parameters,
-                        .. Unsigned((uint)x.Results.Length),
-                        .. x.Results,
-                    ]
-            )
+            types.Select(x => (byte[])[0x60, .. TypeVector(x.Parameters), .. TypeVector(x.Results)])
         );
     }
 
     public static byte[] Functions(params uint[] typeIndices)
     {
         return VectorSection(3, typeIndices.Select(x => Unsigned(x)));
+    }
+
+    public static byte[] LabelVector(params uint[] labels)
+    {
+        return [.. Unsigned((uint)labels.Length), .. labels.SelectMany(x => Unsigned(x))];
+    }
+
+    public static byte[] TypeVector(params byte[] types)
+    {
+        return [.. Unsigned((uint)types.Length), .. types];
     }
 
     public static byte[] Imports(
@@ -129,6 +130,20 @@ internal static class HostLinkingModuleBinary
 
             bytes.Add(next);
         } while (value != 0);
+        return [.. bytes];
+    }
+
+    public static byte[] Signed(long value)
+    {
+        List<byte> bytes = [];
+        bool complete;
+        do
+        {
+            var next = (byte)(value & 0x7F);
+            value >>= 7;
+            complete = (value == 0 && (next & 0x40) == 0) || (value == -1 && (next & 0x40) != 0);
+            bytes.Add(complete ? next : (byte)(next | 0x80));
+        } while (!complete);
         return [.. bytes];
     }
 

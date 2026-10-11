@@ -77,3 +77,14 @@
 履歴を引き継がない別エージェントの`kiro-review`は`APPROVED`だった。3つのTUnitを直列実行し、WasmSharp.Tests1,114件、WasmSharp.Generators.Tests37件、WasmSharp.TestSuiteRunner.Tests701件が成功した。各終了0、失敗・スキップ0。固定147入力・5,821生成物のhashも独立に再計算し、不一致0だった。レビューのログと結果は`artifacts/numeric-control/task-1.1-review-20261011T074751Z/`に保存した。
 
 親エージェントも現在のビルド・テストログと終了値、差分、保存元と保存先の再計算hashを確認した。`kiro-verify-completion`の判定は`TASK: VERIFIED`。この判定はタスク1.1の準備範囲である。
+
+## タスク1.2:バイナリfixtureの拡充
+
+`HostLinkingModuleBinary`に`Signed`、`LabelVector`、`TypeVector`を追加し、既存`Types`から型列の符号化を再利用した。入れ子制御・複合即値・不正な生バイト列は既存の組立方法で明示的に構築する。変更は同fixtureと関連テストの5ファイルで、ランタイムの振る舞いは変更していない。要件1.1・1.3・3.9・7.9に対する入力構築の準備範囲である。
+
+- 実装者:`READY_FOR_REVIEW`。REDは符号付き整数11件失敗、ベクトル5件失敗を終了2で確認した。
+- 最終Releaseビルド:終了0、警告・エラー0。fixtureのfocused32件成功、ランタイム全1,139件成功、失敗・スキップ0。変更5ファイルのCSharpierと差分確認も終了0。
+- 履歴なしの独立レビュー:`APPROVED`。現在の3suiteは1,139件・37件・701件成功、各終了0、失敗・スキップ0。仕様・差分・RED・境界・レビュー前後のsource hash一致を確認した。
+- 実装ログ:`artifacts/numeric-control/task-1.2-20261011-fixture-6f329b/`。レビュー記録:`artifacts/numeric-control/task-1.2-review-20261011-a83e/validation.md`。
+
+親エージェントが差分、最終ビルド・テストの結果と終了値を確認し、`kiro-verify-completion`は`TASK: VERIFIED`。公式全体実行と数値・制御の機能受入は後続タスクで行う。
