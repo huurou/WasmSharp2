@@ -59,6 +59,7 @@ internal static class FunctionValidator
 
             var emitInstruction = true;
             var outputIndex = instruction.Index;
+            var outputTargetCount = 0;
 
             switch (descriptor.Validation)
             {
@@ -210,6 +211,42 @@ internal static class FunctionValidator
                     }
                     break;
 
+                case ValidationRule.BranchTable:
+                    var defaultLabel = GetLabel(instruction.Labels[^1], instruction.ByteOffset);
+                    var branchTypes = new WasmValueKind?[defaultLabel.LabelTypes.Length];
+                    for (var index = 0; index < branchTypes.Length; index++)
+                    {
+                        // selectorを除く同じ列を参照する。不足は最後のPopで検査する。
+                        var operandIndex = stack.Count - branchTypes.Length - 1 + index;
+                        branchTypes[index] =
+                            operandIndex >= frames[^1].Height ? stack[operandIndex] : null;
+                    }
+                    CheckLabelTypes(branchTypes, defaultLabel.LabelTypes, instruction.ByteOffset);
+                    outputIndex = (uint)branchTargets.Count;
+                    outputTargetCount = instruction.Labels.Length - 1;
+                    for (var index = 0; index < outputTargetCount; index++)
+                    {
+                        // 候補は入力順に解決し、型適合を確認してから次のラベルへ進む。
+                        var candidateLabel = GetLabel(
+                            instruction.Labels[index],
+                            instruction.ByteOffset
+                        );
+                        CheckLabelTypes(
+                            branchTypes,
+                            candidateLabel.LabelTypes,
+                            instruction.ByteOffset
+                        );
+                        AddLabelTarget(candidateLabel);
+                    }
+                    AddLabelTarget(defaultLabel);
+                    Pop(WasmValueKind.I32, instruction.ByteOffset);
+                    for (var index = branchTypes.Length - 1; index >= 0; index--)
+                    {
+                        Pop(branchTypes[index], instruction.ByteOffset);
+                    }
+                    MarkUnreachable();
+                    break;
+
                 case ValidationRule.Unreachable:
                     MarkUnreachable();
                     break;
@@ -283,7 +320,8 @@ internal static class FunctionValidator
                         descriptor.ExecutionOpcode!.Value,
                         instruction.Immediate,
                         instruction.ByteOffset,
-                        outputIndex
+                        outputIndex,
+                        outputTargetCount
                     )
                 );
             }
@@ -422,11 +460,32 @@ internal static class FunctionValidator
             }
             var actual = stack[^1];
             stack.RemoveAt(stack.Count - 1);
+            CheckType(actual, expected, byteOffset);
+            return actual;
+        }
+
+        void CheckType(WasmValueKind? actual, WasmValueKind? expected, long byteOffset)
+        {
             if (expected is { } kind && actual is { } actualKind && actualKind != kind)
             {
                 throw CreateException("命令の入力型が一致しません。", byteOffset);
             }
-            return actual;
+        }
+
+        void CheckLabelTypes(
+            WasmValueKind?[] actual,
+            ImmutableArray<WasmValueKind> expected,
+            long byteOffset
+        )
+        {
+            if (actual.Length != expected.Length)
+            {
+                throw CreateException("分岐先の引数個数が一致しません。", byteOffset);
+            }
+            for (var index = 0; index < actual.Length; index++)
+            {
+                CheckType(actual[index], expected[index], byteOffset);
+            }
         }
 
         void PushTypes(ImmutableArray<WasmValueKind> kinds)

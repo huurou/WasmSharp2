@@ -353,3 +353,15 @@ FunctionValidatorでラベル型をloopの引数、それ以外の結果から�
 - 実装記録:`artifacts/numeric-control/task-9.3-20261012T043000-worker/protocol-and-review.md`。独立レビュー:`artifacts/numeric-control/task-9.3-review-20261012Tindependent-8d8e59/review.md`。各出力先にコマンド・rawlog・native終了値を保持した。
 
 親エージェントが本体の最終差分、新規テスト全文と増補箇所、最新RED/GREENと最終/独立ビルド・3suiteのrawlogとnative終了値、独立レビュー、最終3ファイルの保存・snapshot・現在のhash一致を確認し、`kiro-verify-completion`は`TASK: VERIFIED`。br_table・selectの検証、包括的な公開制御統合と公式全体runは後続タスクの範囲である。
+
+## タスク9.4:分岐表の型適合と診断選択
+
+FunctionValidatorでbr_tableを検証し、selectorを除く同じnullable operand型列を既定と各候補へ照合する。既定・分岐値・候補入力順・selectorの順を固定valid.mlに合わせ、Unknownを具体型へ置換しない。候補の後に既定のBranchTargetを保存し、TargetCountには候補数だけを設定する。変更は本体1ファイルと新規テスト2ファイル。要件3.6・3.8・7.7・9.1・9.6・9.7の本タスクの範囲である。
+
+- 実装者:`READY_FOR_REVIEW`。型照合の抽出を先に行い、成功ビルド後の実装前REDと既定OFFはいずれも追加30件失敗・既存213件成功、スキップ0、native終了2。ONで243件成功後、一時flagを除去した。
+- 最終Releaseビルド:終了0、警告・エラー0。3suiteは2,737件・76件・701件成功、失敗・スキップ0、各終了0。CSharpier3ファイルと既存/新規差分の空白確認も成功し、LFを維持した。
+- meet-bottom、異なる具体ラベル型へのUnknownの適合、具体型矛盾、候補0、引数個数、現在frameの底、複合不正の診断先頭・元位置、確定Pc・高さ・保持数を確認した。公開経路では候補順、空候補・負値・範囲外の既定分岐、外側operandと複数結果の順序を確認した。
+- 履歴なしの独立レビュー:`APPROVED`。実際の差分・テスト・仕様・固定参照とRED/OFF/ON記録を照合。新規の独立ビルドと同じ3suite、整形・静的確認・空白確認が成功した。保存snapshotと最終3ファイルのhashが一致し、コード・保護文書・Git状態はレビュー前後で不変だった。
+- 実装記録:`artifacts/numeric-control/task-9.4-20261012T174500/self-review.md`。独立レビュー:`artifacts/numeric-control/task-9.4-review-20261012T012956-7ea2/review.md`。各出力先にコマンド・rawlog・native終了値を保持した。
+
+親エージェントが全差分・新規テスト、RED/GREENと最終/独立ビルド・3suiteのrawlogとnative終了値、独立レビュー、最終3ファイルの現在hash一致を確認し、`kiro-verify-completion`は`TASK: VERIFIED`。selectの型検証と包括的な公開統合・公式全体runは後続タスクの範囲である。

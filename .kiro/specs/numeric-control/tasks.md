@@ -213,7 +213,7 @@
   - _Boundary: FunctionValidator_
   - _Requirements: 3.4, 3.5, 3.7, 3.8, 7.4, 7.5, 7.6, 7.8, 9.7_
 
-- [ ] 9.4 分岐表の型適合と診断選択を追加する
+- [x] 9.4 分岐表の型適合と診断選択を追加する
   - 既定を含む全ラベルの存在と同じ引数個数を検査し、同じoperand型列を各ラベルへ照合する。
   - Unknownを最初の候補型へ具体化せず、有効な到達不能列と具体型が衝突する列を区別する。
   - 既定候補・分岐値・候補順・selectorの検査順を固定参照に合わせ、候補と既定の確定済み分岐先を保存する。
@@ -322,3 +322,4 @@
 - 9.1:式読取りは非再帰の構文stackで最外endまで進む。型添字存在・select型列長の判定はValidateへ残す。endのFunctionEnd/Return接続は維持し、内側markerの除去は9.2で行う。
 - 9.2:型stackはnullable、Unknownは現在の底かつ到達不能時だけ供給する。frameの入力・結果と底を管理し、ifのelse入口Pcも保存して全前方参照をendでpatchする。builderはToImmutableで確定する。
 - 9.3:ラベル型はloopの引数、それ以外の結果から求める。ラベルを条件・分岐値より先に解決し、br_ifの非分岐側へ宣言型列を戻す。loopは入口Pc、他は既存endの前方patchを使う。
+- 9.4:br_tableはselectorを除く同じnullable型列を既定・候補入力順へ照合してから消費する。不足の拒否はPopが担い、Unknownを具体化しない。出力は候補の後に既定を置き、TargetCountは候補数だけ。
