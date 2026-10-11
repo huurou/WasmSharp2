@@ -34,7 +34,7 @@
   - _Boundary: ExpressionDecoder_
   - _Requirements: 1.1, 1.4, 1.6, 9.1, 9.6, 9.7_
 
-- [ ] 2.2 関数の型検査と線形化を独立した責務へ抽出する
+- [x] 2.2 関数の型検査と線形化を独立した責務へ抽出する
   - 1関数の型スタック・出力・到達不能状態を抽出し、module全体の検査と定数式の適格性判定を呼出し元に残す。
   - 関数型・global型の解決済み情報を利用し、入力やmoduleの検証成功状態を関数単位で変更しない。
   - 既存call・locals・global・return・到達不能列のテストが成功し、後続検査失敗時にmoduleが検証済みにならないことを確認する。
@@ -304,3 +304,4 @@
 
 - 1.2:TUnitの今回のbyte[]比較では`IsEqualTo`が参照一致を調べた。順序に意味がある符号化は、既知hex等でバイト列の内容を比較する。
 - 2.1:関数本体と定数式の式読取りは`ExpressionDecoder.Read`、sectionと式の共通Unsupported診断は`ModuleBinaryReader.Unsupported`が担う。Bounded/Diagnosticの入口と範囲管理は`ModuleDecoder`に残した。
+- 2.2:1関数の検証は`FunctionValidator.Validate`、module全体と共有する診断2メソッドは`ValidationDiagnostics`が担う。TUnitのfilterにはファイル名ではなく実際のクラス名を指定する。

@@ -135,6 +135,50 @@ internal partial class ModuleValidator_ValidateTests
         }
     }
 
+    [Test]
+    [Arguments("05050200000000", (byte)5, "multiple memories")]
+    [Arguments("0707010372756E0001", (byte)7, "unknown function 1")]
+    [Arguments("080101", (byte)8, "unknown function 1")]
+    public async Task 関数検査成功後にmodule全体の検査が失敗_再検証でも成果と検証成功状態を反映しない(
+        string section,
+        byte sectionId,
+        string prefix
+    )
+    {
+        // Arrange
+        var module = WasmModule.Decode(
+            HostLinkingModuleBinary.Create(
+                HostLinkingModuleBinary.Types(([], [])),
+                HostLinkingModuleBinary.Functions(0),
+                Convert.FromHexString(section),
+                HostLinkingModuleBinary.Code(([], [0x0B]))
+            )
+        );
+
+        // Act & Assert
+        for (var attempt = 0; attempt < 2; attempt++)
+        {
+            var exception = await Assert
+                .That(() => module.Validate())
+                .ThrowsExactly<WasmValidateException>();
+            using (Assert.Multiple())
+            {
+                await Assert
+                    .That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal))
+                    .IsTrue();
+                await Assert
+                    .That(exception.Location!.Stage)
+                    .IsEqualTo(WasmProcessingStage.Validate);
+                await Assert.That(exception.Location.SectionId).IsEqualTo(sectionId);
+                await Assert.That(module.FunctionCodes.IsEmpty).IsTrue();
+                await Assert.That(module.FunctionExportIndices.IsEmpty).IsTrue();
+                await Assert
+                    .That(() => module.Instantiate([]))
+                    .ThrowsExactly<InvalidOperationException>();
+            }
+        }
+    }
+
     private static WasmModule DecodeFunction(string signature, string body)
     {
         var type = Convert.FromHexString(signature);

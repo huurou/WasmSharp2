@@ -99,3 +99,15 @@
 - 実装記録:`artifacts/numeric-control/task-2.1-20261011T180500/verification.md`。レビューのログ・終了値・処理比較・source hash:`artifacts/numeric-control/task-2.1-review-20261011T191500/`。
 
 親エージェントも差分、現在のビルド・3suiteのログと終了値を確認し、`kiro-verify-completion`は`TASK: VERIFIED`。固定公式全体の実行と回帰比較はタスク2.3で行う。
+
+## タスク2.2:関数検証の責務分離
+
+1関数の型検査と線形化を`FunctionValidator.Validate`へ抽出した。解決済みの関数型・global型を利用し、入力配列やmoduleの検証状態を変更しない。module全体の検査・定数式の適格性は`ModuleValidator`に残し、共有する既存診断2メソッドだけを`ValidationDiagnostics`へ移した。変更はこの3ファイルと直接境界・後続失敗のテスト2ファイル。要件1.5・2.6・3.8・8.3・9.1の既存振る舞いを維持する範囲である。
+
+- 実装者:`READY_FOR_REVIEW`。非behavioralの抽出として、追加したcharacterizationを含む同じfocused123件が抽出前後で成功。一時入口は除去済み。
+- 最終Releaseビルド:終了0、警告・エラー0。ランタイム全1,160件成功、失敗・スキップ0。CSharpier5ファイルと差分確認も終了0。
+- 履歴なしの独立レビュー:`APPROVED`。現ソースのReleaseビルドと3suiteを確認し、1,160件・37件・701件成功、各終了0、失敗・スキップ0。移動前後の本体・診断・検査順と全体成功時だけの状態確定を確認した。
+- focusedの初期化式filterはファイル名を指定していたため選択されていなかった。初期化式は抽出後と独立レビューのランタイム全suiteで成功を確認した。実装者の記録も訂正した。
+- 実装記録:`artifacts/numeric-control/task-2.2-20261011T172542/verification.md`。独立レビュー:`artifacts/numeric-control/task-2.2-review-20261011T180100/review.md`。各出力先にコマンド・ログ・終了値を保持した。
+
+親エージェントが差分、現在のビルド・3suiteのログと終了値、レビューの非阻害指摘への記録訂正を確認し、`kiro-verify-completion`は`TASK: VERIFIED`。固定公式全体の実行と回帰比較はタスク2.3で行う。
