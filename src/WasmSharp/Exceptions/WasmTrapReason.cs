@@ -16,7 +16,7 @@ public enum WasmTrapReason
     IntegerDivideByZero,
 
     /// <summary>
-    /// 符号付き整数除算のオーバーフロー
+    /// 符号付き整数除算のオーバーフロー、または整数変換の範囲外
     /// </summary>
     IntegerOverflow,
 

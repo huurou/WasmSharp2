@@ -129,7 +129,7 @@
   - _Depends: 3.3_
   - _Requirements: 6.1, 6.2, 6.7_
 
-- [ ] 6.2 trapを伴う浮動小数点から整数への変換を実装する
+- [x] 6.2 trapを伴う浮動小数点から整数への変換を実装する
   - 全変換元・変換先・符号解釈について、NaNの判定後、0方向への切捨て結果を半開区間で判定する。
   - 範囲内でだけ整数へ変換し、NaNと無限大・範囲外を別Reasonのtrap結果にする。
   - 表現可能な隣接値、signed下限付近の小数、−1より大きい負値のunsigned変換、2の31/32/63/64乗の境界を確認する。
@@ -312,3 +312,4 @@
 - 4.2:位置付きの整数trapは`IntegerTrap`で構築する。signed剰余のMIN/-1はCLRの`%`でも例外になるため、演算前に0を返す。REDのdotnet終了値は保存したresult.jsonの2で、exec応答の1と区別する。
 - 4.3:シフト・回転量は31/63でmaskし、計数と回転には対象幅の`BitOperations`を使う。テストメソッド名は数字から始めず「入力」などを先頭に置く。
 - 5.1:浮動小数点handlerは`Interpreter.Float.cs`に置く。算術NaNの補正と目的幅の保存はprivateの`F32ArithmeticResult`/`F64ArithmeticResult`で共有し、符号bit操作と値運搬はこの補正を通さない。
+- 6.2:位置付きtrap補助は`Interpreter.cs`の`NumericTrap`へ移した。truncはNaNを先に分け、`Math.Truncate`後の半開区間を検査してからcastする。飽和変換ではtrap生成を呼び出さない。

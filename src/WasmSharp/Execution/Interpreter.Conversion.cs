@@ -1,7 +1,232 @@
+using WasmSharp.Exceptions;
+
 namespace WasmSharp.Execution;
 
 internal static partial class Interpreter
 {
+    /// <summary>
+    /// f32を0方向へ切り捨てて符号付きi32へ変換する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI32TruncF32S命令</param>
+    /// <returns>実行の成功または整数変換のtrap</returns>
+    internal static ExecutionResult I32TruncF32S(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        var operand = context.PopValue().AsF32();
+        return TruncateI32(operand, true, context, in instruction);
+    }
+
+    /// <summary>
+    /// f32を0方向へ切り捨てて符号なしi32へ変換する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI32TruncF32U命令</param>
+    /// <returns>実行の成功または整数変換のtrap</returns>
+    internal static ExecutionResult I32TruncF32U(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        var operand = context.PopValue().AsF32();
+        return TruncateI32(operand, false, context, in instruction);
+    }
+
+    /// <summary>
+    /// f64を0方向へ切り捨てて符号付きi32へ変換する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI32TruncF64S命令</param>
+    /// <returns>実行の成功または整数変換のtrap</returns>
+    internal static ExecutionResult I32TruncF64S(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        var operand = context.PopValue().AsF64();
+        return TruncateI32(operand, true, context, in instruction);
+    }
+
+    /// <summary>
+    /// f64を0方向へ切り捨てて符号なしi32へ変換する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI32TruncF64U命令</param>
+    /// <returns>実行の成功または整数変換のtrap</returns>
+    internal static ExecutionResult I32TruncF64U(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        var operand = context.PopValue().AsF64();
+        return TruncateI32(operand, false, context, in instruction);
+    }
+
+    /// <summary>
+    /// f32を0方向へ切り捨てて符号付きi64へ変換する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI64TruncF32S命令</param>
+    /// <returns>実行の成功または整数変換のtrap</returns>
+    internal static ExecutionResult I64TruncF32S(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        var operand = context.PopValue().AsF32();
+        return TruncateI64(operand, true, context, in instruction);
+    }
+
+    /// <summary>
+    /// f32を0方向へ切り捨てて符号なしi64へ変換する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI64TruncF32U命令</param>
+    /// <returns>実行の成功または整数変換のtrap</returns>
+    internal static ExecutionResult I64TruncF32U(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        var operand = context.PopValue().AsF32();
+        return TruncateI64(operand, false, context, in instruction);
+    }
+
+    /// <summary>
+    /// f64を0方向へ切り捨てて符号付きi64へ変換する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI64TruncF64S命令</param>
+    /// <returns>実行の成功または整数変換のtrap</returns>
+    internal static ExecutionResult I64TruncF64S(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        var operand = context.PopValue().AsF64();
+        return TruncateI64(operand, true, context, in instruction);
+    }
+
+    /// <summary>
+    /// f64を0方向へ切り捨てて符号なしi64へ変換する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI64TruncF64U命令</param>
+    /// <returns>実行の成功または整数変換のtrap</returns>
+    internal static ExecutionResult I64TruncF64U(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        var operand = context.PopValue().AsF64();
+        return TruncateI64(operand, false, context, in instruction);
+    }
+
+    /// <summary>
+    /// 浮動小数点値を0方向へ切り捨ててi32へ変換する
+    /// </summary>
+    /// <param name="operand">doubleで正確に表した変換元の値</param>
+    /// <param name="signed">符号付き整数として変換する場合はtrue</param>
+    /// <param name="context">結果を積む実行コンテキスト</param>
+    /// <param name="instruction">trapの位置を持つ検証済みの変換命令</param>
+    /// <returns>実行の成功または整数変換のtrap</returns>
+    private static ExecutionResult TruncateI32(
+        double operand,
+        bool signed,
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        var result = TruncateInteger(
+            operand,
+            signed ? -2147483648D : 0D,
+            signed ? 2147483648D : 4294967296D,
+            context,
+            in instruction,
+            out var truncated
+        );
+        if (result.Status != ExecutionStatus.Success)
+        {
+            return result;
+        }
+
+        context.PushValue(
+            WasmValue.FromI32(signed ? (int)truncated : unchecked((int)(uint)truncated))
+        );
+        return default;
+    }
+
+    /// <summary>
+    /// 浮動小数点値を0方向へ切り捨ててi64へ変換する
+    /// </summary>
+    /// <param name="operand">doubleで正確に表した変換元の値</param>
+    /// <param name="signed">符号付き整数として変換する場合はtrue</param>
+    /// <param name="context">結果を積む実行コンテキスト</param>
+    /// <param name="instruction">trapの位置を持つ検証済みの変換命令</param>
+    /// <returns>実行の成功または整数変換のtrap</returns>
+    private static ExecutionResult TruncateI64(
+        double operand,
+        bool signed,
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        var result = TruncateInteger(
+            operand,
+            signed ? -9223372036854775808D : 0D,
+            signed ? 9223372036854775808D : 18446744073709551616D,
+            context,
+            in instruction,
+            out var truncated
+        );
+        if (result.Status != ExecutionStatus.Success)
+        {
+            return result;
+        }
+
+        context.PushValue(
+            WasmValue.FromI64(signed ? (long)truncated : unchecked((long)(ulong)truncated))
+        );
+        return default;
+    }
+
+    /// <summary>
+    /// NaNを区別し、0方向への切捨て結果を半開区間で判定する
+    /// </summary>
+    /// <param name="operand">doubleで正確に表した変換元の値</param>
+    /// <param name="lowerBound">cast可能な区間に含む下限</param>
+    /// <param name="upperBound">cast可能な区間に含まない正確な2冪の上限</param>
+    /// <param name="context">現在関数を保持する実行コンテキスト</param>
+    /// <param name="instruction">trapの位置を持つ検証済みの変換命令</param>
+    /// <param name="truncated">成功時にcast可能な切捨て結果</param>
+    /// <returns>区間内の成功、または原因を区別した整数変換のtrap</returns>
+    private static ExecutionResult TruncateInteger(
+        double operand,
+        double lowerBound,
+        double upperBound,
+        InterpreterContext context,
+        in Instruction instruction,
+        out double truncated
+    )
+    {
+        truncated = 0;
+        if (double.IsNaN(operand))
+        {
+            return NumericTrap(WasmTrapReason.InvalidConversionToInteger, context, in instruction);
+        }
+
+        // 入力ではなく切捨て後に判定し、下限付近の小数とunsignedの負の小数を許容する。
+        truncated = Math.Truncate(operand);
+        if (truncated < lowerBound || truncated >= upperBound)
+        {
+            return NumericTrap(WasmTrapReason.IntegerOverflow, context, in instruction);
+        }
+
+        return default;
+    }
+
     /// <summary>
     /// i64の下位32bitをi32として返す
     /// </summary>

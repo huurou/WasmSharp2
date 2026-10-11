@@ -235,3 +235,14 @@
 - 実装記録:`artifacts/numeric-control/task-6.1-20261011T231500/verification.md`。独立レビュー:`artifacts/numeric-control/task-6.1-review-20261011T233930/review.md`。各出力先のcommandsにコマンド・rawlog・native終了値を保持した。
 
 親エージェントが12handlerの最終全文、代表境界・往復テスト、RED/GREENと現在のビルド・3suiteのrawlog・終了値、独立レビューを確認し、`kiro-verify-completion`は`TASK: VERIFIED`。公開命令の接続は7.1、公開統合と公式全体の次回確認は7.2で行う。
+
+## タスク6.2:trapを伴う浮動小数点から整数への変換
+
+全8組合せのtrunc_s/uを追加した。NaNを先に区別し、0方向への切捨て後の値を正確な2の冪による半開区間で検査してからcastする。共通trap補助を同じInterpreter型の`NumericTrap`へ先に移し、既存Div/Remの76件を確認した。変更は本体4ファイルと直接テスト8クラス。要件6.3・6.4と9.2の内部trap生成の範囲である。
+
+- 実装者:`READY_FOR_REVIEW`。既定OFFのREDはビルド成功後154件すべて失敗、dotnet終了2（tool終了1とは区別）。ONで同じ154件成功後、一時flagを除去した。
+- 最終Releaseビルド:終了0、警告・エラー0。3suiteは2,174件・76件・701件成功、失敗・スキップ0、各終了0。CSharpier12ファイルと差分確認も成功した。
+- 履歴なしの独立レビュー:`APPROVED`。全8テスト全文と本体差分、NaN優先・signed下限の小数・unsignedの負の小数・上下限の隣接値・trap理由と位置・下位値の保持を確認。全154期待値を製品castやMath.Truncateを使わずIEEEのビット列から独立に照合した。独立ビルドと同じ3suiteも成功した。
+- 実装記録:`artifacts/numeric-control/task-6.2-20261012T0015/verification.md`。独立レビュー:`artifacts/numeric-control/task-6.2-review-20261011T211823/review.md`。各出力先にコマンド・rawlog・native終了値を保持した。
+
+親エージェントが最終実装と代表境界テスト、責務整理後76件・RED/GREEN・最終ビルドと3suiteのrawlog・終了値、独立レビューと期待値照合結果、検証後の12ファイルのhash一致を確認し、`kiro-verify-completion`は`TASK: VERIFIED`。公開命令の接続は7.1、公開診断・Invoke/startと公式全体の次回確認は7.2で行う。

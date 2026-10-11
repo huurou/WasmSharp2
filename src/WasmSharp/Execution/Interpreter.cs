@@ -9,6 +9,26 @@ namespace WasmSharp.Execution;
 internal static partial class Interpreter
 {
     /// <summary>
+    /// 数値命令のtrapを現在関数と命令位置を保持して返す
+    /// </summary>
+    /// <param name="reason">数値命令のtrapの原因</param>
+    /// <param name="context">現在関数を保持する実行コンテキスト</param>
+    /// <param name="instruction">trapが発生する数値命令</param>
+    /// <returns>原因と発生位置を持つtrap</returns>
+    private static ExecutionResult NumericTrap(
+        WasmTrapReason reason,
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        return ExecutionResult.Trap(
+            reason,
+            context.CurrentFunction.FunctionIndex,
+            instruction.ByteOffset
+        );
+    }
+
+    /// <summary>
     /// 呼び出し深さとCLRスタックの余裕を確認してホスト関数を実行する
     /// </summary>
     /// <param name="context">深さを共有する実行コンテキスト Wasmの実行外からの呼び出しではnull</param>

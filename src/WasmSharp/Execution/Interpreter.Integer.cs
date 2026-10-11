@@ -6,26 +6,6 @@ namespace WasmSharp.Execution;
 internal static partial class Interpreter
 {
     /// <summary>
-    /// 整数演算のtrapを現在関数と命令位置を保持して返す
-    /// </summary>
-    /// <param name="reason">整数演算のtrapの原因</param>
-    /// <param name="context">現在関数を保持する実行コンテキスト</param>
-    /// <param name="instruction">trapが発生する整数命令</param>
-    /// <returns>原因と発生位置を持つtrap</returns>
-    private static ExecutionResult IntegerTrap(
-        WasmTrapReason reason,
-        InterpreterContext context,
-        in Instruction instruction
-    )
-    {
-        return ExecutionResult.Trap(
-            reason,
-            context.CurrentFunction.FunctionIndex,
-            instruction.ByteOffset
-        );
-    }
-
-    /// <summary>
     /// i32の符号付き整数商を計算する
     /// </summary>
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
@@ -37,12 +17,12 @@ internal static partial class Interpreter
         var left = context.PopValue().AsI32();
         if (right == 0)
         {
-            return IntegerTrap(WasmTrapReason.IntegerDivideByZero, context, in instruction);
+            return NumericTrap(WasmTrapReason.IntegerDivideByZero, context, in instruction);
         }
 
         if (left == int.MinValue && right == -1)
         {
-            return IntegerTrap(WasmTrapReason.IntegerOverflow, context, in instruction);
+            return NumericTrap(WasmTrapReason.IntegerOverflow, context, in instruction);
         }
 
         context.PushValue(WasmValue.FromI32(left / right));
@@ -61,7 +41,7 @@ internal static partial class Interpreter
         var left = unchecked((uint)context.PopValue().AsI32());
         if (right == 0)
         {
-            return IntegerTrap(WasmTrapReason.IntegerDivideByZero, context, in instruction);
+            return NumericTrap(WasmTrapReason.IntegerDivideByZero, context, in instruction);
         }
 
         context.PushValue(WasmValue.FromI32(unchecked((int)(left / right))));
@@ -80,7 +60,7 @@ internal static partial class Interpreter
         var left = context.PopValue().AsI32();
         if (right == 0)
         {
-            return IntegerTrap(WasmTrapReason.IntegerDivideByZero, context, in instruction);
+            return NumericTrap(WasmTrapReason.IntegerDivideByZero, context, in instruction);
         }
 
         // CLRの剰余演算もMIN/-1で例外になるため先に0へ揃える
@@ -101,7 +81,7 @@ internal static partial class Interpreter
         var left = unchecked((uint)context.PopValue().AsI32());
         if (right == 0)
         {
-            return IntegerTrap(WasmTrapReason.IntegerDivideByZero, context, in instruction);
+            return NumericTrap(WasmTrapReason.IntegerDivideByZero, context, in instruction);
         }
 
         context.PushValue(WasmValue.FromI32(unchecked((int)(left % right))));
@@ -120,12 +100,12 @@ internal static partial class Interpreter
         var left = context.PopValue().AsI64();
         if (right == 0)
         {
-            return IntegerTrap(WasmTrapReason.IntegerDivideByZero, context, in instruction);
+            return NumericTrap(WasmTrapReason.IntegerDivideByZero, context, in instruction);
         }
 
         if (left == long.MinValue && right == -1)
         {
-            return IntegerTrap(WasmTrapReason.IntegerOverflow, context, in instruction);
+            return NumericTrap(WasmTrapReason.IntegerOverflow, context, in instruction);
         }
 
         context.PushValue(WasmValue.FromI64(left / right));
@@ -144,7 +124,7 @@ internal static partial class Interpreter
         var left = unchecked((ulong)context.PopValue().AsI64());
         if (right == 0)
         {
-            return IntegerTrap(WasmTrapReason.IntegerDivideByZero, context, in instruction);
+            return NumericTrap(WasmTrapReason.IntegerDivideByZero, context, in instruction);
         }
 
         context.PushValue(WasmValue.FromI64(unchecked((long)(left / right))));
@@ -163,7 +143,7 @@ internal static partial class Interpreter
         var left = context.PopValue().AsI64();
         if (right == 0)
         {
-            return IntegerTrap(WasmTrapReason.IntegerDivideByZero, context, in instruction);
+            return NumericTrap(WasmTrapReason.IntegerDivideByZero, context, in instruction);
         }
 
         // CLRの剰余演算もMIN/-1で例外になるため先に0へ揃える
@@ -184,7 +164,7 @@ internal static partial class Interpreter
         var left = unchecked((ulong)context.PopValue().AsI64());
         if (right == 0)
         {
-            return IntegerTrap(WasmTrapReason.IntegerDivideByZero, context, in instruction);
+            return NumericTrap(WasmTrapReason.IntegerDivideByZero, context, in instruction);
         }
 
         context.PushValue(WasmValue.FromI64(unchecked((long)(left % right))));
