@@ -1,0 +1,22 @@
+{
+  "feature_name": "numeric-control",
+  "created_at": "2026-10-08T14:19:42Z",
+  "updated_at": "2026-10-11T07:33:23Z",
+  "language": "ja",
+  "phase": "tasks-generated",
+  "approvals": {
+    "requirements": {
+      "generated": true,
+      "approved": true
+    },
+    "design": {
+      "generated": true,
+      "approved": true
+    },
+    "tasks": {
+      "generated": true,
+      "approved": true
+    }
+  },
+  "ready_for_implementation": true
+}
