@@ -106,7 +106,7 @@
   - _Depends: 3.3_
   - _Requirements: 5.1, 5.2, 5.6, 5.7_
 
-- [ ] 5.2 整数値化と符号bit操作を実装する
+- [x] 5.2 整数値化と符号bit操作を実装する
   - ceil・floor・trunc・nearestの丸め方向を区別し、nearestの同距離を偶数へ丸める。
   - 丸め後の0の符号と無限大を保ち、算術NaNの補正を適用する。
   - abs・neg・copysignは符号bitだけを変更し、sNaN/qNaNのpayloadを保持することと、正負の0を直接テストで確認する。

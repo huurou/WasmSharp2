@@ -202,3 +202,14 @@
 - 実装記録:`artifacts/numeric-control/task-5.1-20261011T195103/verification.md`。独立レビュー:`artifacts/numeric-control/task-5.1-review-20261011T200600/review.md`。各出力先にコマンド・rawlog・終了値を保持した。
 
 親エージェントが10handlerと幅別補助の全文、代表境界テスト、RED/GREENと現在のビルド・3suiteのrawlog・終了値、独立レビューを確認し、`kiro-verify-completion`は`TASK: VERIFIED`。opcode・型検証・生成dispatchの接続は7.1、公開統合と公式全体の次回確認は7.2で行う。
+
+## タスク5.2:整数値化と符号bit操作
+
+浮動小数点partialに両幅のceil/floor/trunc/nearest・abs/neg/copysignの14handlerを追加した。丸めはMathF/MathとToEvenを用い、幅別private補助で0の入力符号と既存NaN補正を適用する。符号操作は生ビットだけを変更してpayloadを保つ。変更は本体1ファイルと直接テスト14クラス。要件5.3・5.4・5.7の内部handlerの範囲である。
+
+- 実装者:`READY_FOR_REVIEW`。既定OFFのREDはビルド成功後168件中122件失敗・46件成功、dotnet終了2。全14クラスで値不一致を確認し、保持系の入力はOFFでも自然に一致した。ONで同じ168件成功後、一時flagを除去した。
+- 最終Releaseビルド:終了0、警告・エラー0。3suiteは1,751件・76件・701件成功、失敗・スキップ0、各終了0。CSharpier15ファイルと差分確認も成功した。
+- 履歴なしの独立レビュー:`APPROVED`。新規14テスト全文と本体差分、方向・同距離・隣接値・0の符号・特殊値・payload・copysignの順序、既存契約、RED/GREENを確認。独立ビルドと同じ3suiteも成功した。
+- 実装記録:`artifacts/numeric-control/task-5.2-20261011T210205/verification.md`。独立レビュー:`artifacts/numeric-control/task-5.2-review-20261011T211700/review.md`。各出力先のcommandsにrawlog・コマンド・native終了値を保持した。
+
+親エージェントが14handlerと幅別補助の最終差分、代表境界テスト、RED/GREENと現在のビルド・3suiteのrawlog・終了値、独立レビューを確認し、`kiro-verify-completion`は`TASK: VERIFIED`。公開命令の接続は7.1、公開統合と公式全体の次回確認は7.2で行う。
