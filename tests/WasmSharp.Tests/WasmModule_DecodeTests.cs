@@ -1,10 +1,148 @@
 using WasmSharp.Exceptions;
+using WasmSharp.Instructions;
+using WasmSharp.Modules;
 using WasmSharp.Tests.Fixtures;
 
 namespace WasmSharp.Tests;
 
 internal partial class WasmModule_DecodeTests
 {
+    [Test]
+    public async Task 制御と複合即値を公開Decodeする_両入力で同じ未検証の命令列と即値を得る()
+    {
+        // Arrange
+        var body = Convert.FromHexString(
+            "024003FFFFFFFF0F04800001051B1C001C027F7E0CFFFFFFFF0F0D80000E008000FC8080000B0B0B0B"
+        );
+        var bytes = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Types(([], [])),
+            HostLinkingModuleBinary.Functions(0),
+            HostLinkingModuleBinary.Start(0),
+            HostLinkingModuleBinary.Code(([], body))
+        );
+        using var stream = new ChunkedReadStream(new MemoryStream(bytes), 1);
+        Func<WasmModule>[] decoders =
+        [
+            () => WasmModule.Decode(bytes),
+            () => WasmModule.Decode(stream),
+        ];
+
+        // Act & Assert
+        foreach (var decode in decoders)
+        {
+            var module = decode();
+            var instructions = module.Functions[0].Instructions;
+            using (Assert.Multiple())
+            {
+                await Assert.That(module.FunctionCodes.IsEmpty).IsTrue();
+                await Assert.That(instructions.Length).IsEqualTo(16);
+                await Assert.That(instructions[0].BlockType.Kind).IsEqualTo(BlockTypeKind.Empty);
+                await Assert.That(instructions[1].BlockType.TypeIndex).IsEqualTo(uint.MaxValue);
+                await Assert
+                    .That(instructions[2].BlockType.Kind)
+                    .IsEqualTo(BlockTypeKind.TypeIndex);
+                await Assert.That(instructions[2].BlockType.TypeIndex).IsEqualTo(0u);
+                await Assert.That(instructions[6].SelectTypes.IsEmpty).IsTrue();
+                await Assert
+                    .That(
+                        instructions[7]
+                            .SelectTypes.SequenceEqual(
+                                new[] { WasmValueKind.I32, WasmValueKind.I64 }
+                            )
+                    )
+                    .IsTrue();
+                await Assert.That(instructions[8].Index).IsEqualTo(uint.MaxValue);
+                await Assert.That(instructions[9].Index).IsEqualTo(0u);
+                await Assert.That(instructions[10].Labels.Length).IsEqualTo(1);
+                await Assert.That(instructions[10].Labels[0]).IsEqualTo(0u);
+                await Assert.That(instructions[11].Opcode).IsEqualTo(new OpcodeKey(0xFC, 0));
+                await Assert.That(instructions[0].ByteOffset).IsEqualTo(26L);
+                await Assert.That(instructions[^1].ByteOffset).IsEqualTo(bytes.Length - 1L);
+            }
+        }
+    }
+
+    [Test]
+    [Arguments("024003400B", "unexpected end of section or function", 5L)]
+    [Arguments("044005", "unexpected end of section or function", 3L)]
+    [Arguments("02400528", "END opcode expected", 2L)]
+    [Arguments("0440050528", "END opcode expected", 3L)]
+    [Arguments("02400B0B0B", "section size mismatch", 4L)]
+    [Arguments("1C016E0B", "malformed reference type", 2L)]
+    public async Task 制御終端やelseや型即値が不正_両入力で診断先頭と元の関数位置を通知する(
+        string body,
+        string prefix,
+        long relativeOffset
+    )
+    {
+        // Arrange
+        var bytes = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Types(([], [])),
+            HostLinkingModuleBinary.Functions(0),
+            HostLinkingModuleBinary.Code(([], Convert.FromHexString(body)))
+        );
+        using var stream = new ChunkedReadStream(new MemoryStream(bytes));
+        Func<WasmModule>[] decoders =
+        [
+            () => WasmModule.Decode(bytes),
+            () => WasmModule.Decode(stream),
+        ];
+
+        // Act & Assert
+        foreach (var decode in decoders)
+        {
+            var exception = await Assert.That(decode).ThrowsExactly<WasmDecodeException>();
+            using (Assert.Multiple())
+            {
+                await Assert
+                    .That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal))
+                    .IsTrue();
+                await Assert
+                    .That(exception.Location)
+                    .IsEqualTo(new(WasmProcessingStage.Decode, 23 + relativeOffset, 0, 10));
+            }
+        }
+    }
+
+    [Test]
+    [Arguments("28", "unexpected end of section or function", 26L)]
+    [Arguments("0B", "section size mismatch", 27L)]
+    [Arguments("0528", "END opcode expected", 26L)]
+    public async Task 入れ子endの後に宣言境界を越える_診断再走査も両入力で同じ構文規則を使う(
+        string following,
+        string prefix,
+        long offset
+    )
+    {
+        // Arrange
+        var bytes = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Types(([], [])),
+            HostLinkingModuleBinary.Functions(0),
+            HostLinkingModuleBinary.Section(10, Convert.FromHexString("01040002400B" + following))
+        );
+        using var stream = new ChunkedReadStream(new MemoryStream(bytes));
+        Func<WasmModule>[] decoders =
+        [
+            () => WasmModule.Decode(bytes),
+            () => WasmModule.Decode(stream),
+        ];
+
+        // Act & Assert
+        foreach (var decode in decoders)
+        {
+            var exception = await Assert.That(decode).ThrowsExactly<WasmDecodeException>();
+            using (Assert.Multiple())
+            {
+                await Assert
+                    .That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal))
+                    .IsTrue();
+                await Assert
+                    .That(exception.Location)
+                    .IsEqualTo(new(WasmProcessingStage.Decode, offset, 0, 10));
+            }
+        }
+    }
+
     [Test]
     [Arguments("030201000A0301010005", "END opcode expected", 17L, 0u, (byte)10)]
     [Arguments("030201000A03010100", "unexpected end of section or function", 17L, 0u, (byte)10)]

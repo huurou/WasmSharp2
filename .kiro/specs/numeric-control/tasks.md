@@ -187,7 +187,7 @@
   - _Requirements: 7.1, 7.3, 7.4, 7.5, 7.6, 7.7, 8.1_
 
 - [ ] 9. 構造化制御の読取り・型検証・実行を接続する
-- [ ] 9.1 制御とselectの命令宣言を式読取りへ統合する
+- [x] 9.1 制御とselectの命令宣言を式読取りへ統合する
   - 用意したhandlerと複合即値の契約を命令宣言へ接続し、block/loop/ifの型、br_tableの候補と既定、select型ベクトルを読み取る。
   - CLR再帰を増やさず入れ子とelse有無を管理し、最外end・内側end・不正else・重複else・終端欠落を区別する。型添字の存在や型ベクトル長の適格性はValidateへ残す。
   - 通常解析と診断再走査に同じ処理を用い、巨大な宣言長の先行確保を避け、元の境界診断・位置・未確認範囲を保持する。
@@ -319,3 +319,4 @@
 - 6.4:整数convertは符号解釈した目的幅への直接cast、demote/promoteは既存の幅別NaN補助を使う。二重丸めの公式8値は`conversions.wast`471〜474行・520〜523行のhexfloatから期待bitを求める。
 - 8.1:`InterpreterContext.Branch`はOperandBase相対の高さへ末尾値を移し、破棄スロットをclearして値数とPcだけを更新する。既存`ExecutionFunctionFixture.Create`の末尾optional引数で分岐表を渡せる。
 - 8.2:制御handlerは`Interpreter.Control.cs`に置く。marker用の`NoOp`も用意し、分岐表はIndexから候補列と末尾の既定を参照する。typed/untyped selectは同じ`Select`を共有できる。
+- 9.1:式読取りは非再帰の構文stackで最外endまで進む。型添字存在・select型列長の判定はValidateへ残す。endのFunctionEnd/Return接続は維持し、内側markerの除去は9.2で行う。

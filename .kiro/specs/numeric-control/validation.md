@@ -316,3 +316,15 @@ Interpreter.ControlにNoOp、Branch、BranchIfZero、BranchIf、BranchTable、Se
 - 実装記録:`artifacts/numeric-control/task-8.2-20261011T082000/verification.md`。独立レビュー:`artifacts/numeric-control/task-8.2-review-20261011T090100/review.md`。各出力先にコマンド・rawlog・native終了値を保持した。
 
 親エージェントが6handler・fixture・全6テストの全文、RED/GREENと最終/独立ビルド・3suiteのrawlogとnative終了値、独立レビュー、最終8ファイルのhash一致を確認し、`kiro-verify-completion`は`TASK: VERIFIED`。命令宣言・Decode・Validate・公開実行への接続、参照/v128 selectの未対応判定、公式全体runは後続9系タスクの範囲である。
+
+## タスク9.1:制御構文と複合即値の読取り
+
+ExpressionDecoderを非再帰の構文stackへ変更し、内側endと最外end、else有無と重複を区別した。制御型・分岐表・typed select型列は既存読取りと即値factoryを再利用し、宣言長による先行確保を避ける。InstructionSetの10命令を既存handlerへ接続し、endのFunctionEnd/Returnは維持した。変更は本体2ファイルと関連テスト4ファイル。要件1.1・1.2・1.3・1.4・1.6・2.5・9.6・9.7の本タスクの範囲である。
+
+- 実装者:`READY_FOR_REVIEW`。修正後ビルドの警告・エラー0を確認してから既定OFFのREDを実行し、331件中59失敗・272成功、native終了2。ONで331件成功後、一時flagを除去した。初回ビルドのテスト内5エラーと修正後の出力も保持した。
+- 最終Releaseビルド:終了0、警告・エラー0。3suiteは2,617件・76件・701件成功、失敗・スキップ0、各終了0。CSharpier6ファイルと差分確認も成功し、LFを維持した。
+- bytesとStream、全7値型・非負/非最短s33・uint最大型添字、非最短u32と0xFC、空分岐表、select型列長0/複数、20,000段の入れ子、切断・不正else・重複else・余分なend、診断再走査の元位置を確認した。型添字存在と型列長の適格性はDecodeで判定しない。旧block未対応fixtureは目的を保ってcall_indirectへ置換した。
+- 履歴なしの独立レビュー:`APPROVED`。全差分・仕様・固定decode.ml・RED/ON保存コードを確認し、独立ビルドと同じ3suite、整形・静的確認・差分確認が成功した。6ファイルのhashは実装者保存とfinal snapshotに一致し、レビュー前後で不変だった。ReadS33の幅・終端失敗は既存診断を維持し、任意の不正組合せ全体の参照診断互換性は未確認である。
+- 実装記録:`artifacts/numeric-control/task-9.1-20261011T-control-decode/verification.md`。独立レビュー:`artifacts/numeric-control/task-9.1-review-20261012T-independent/review.md`。各出力先にコマンド・rawlog・native終了値を保持した。
+
+親エージェントが本体2ファイルとテスト4ファイルの全差分、RED/GREENと最終/独立ビルド・3suiteのrawlogとnative終了値、独立レビュー、最終6ファイルのhash一致を確認し、`kiro-verify-completion`は`TASK: VERIFIED`。制御の型検証・線形化・公開実行・公式全体runは後続9系タスクの範囲である。

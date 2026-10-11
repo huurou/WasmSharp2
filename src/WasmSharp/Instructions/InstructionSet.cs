@@ -131,17 +131,97 @@ namespace WasmSharp.Instructions;
     ValidationRule.GlobalSet,
     nameof(Interpreter.GlobalSet)
 )]
-[Instruction(0, 0x01, "nop")]
-[Instruction(0, 0x02, "block")]
-[Instruction(0, 0x03, "loop")]
-[Instruction(0, 0x04, "if")]
-[Instruction(0, 0x05, "else")]
-[Instruction(0, 0x0C, "br")]
-[Instruction(0, 0x0D, "br_if")]
-[Instruction(0, 0x0E, "br_table")]
+[Instruction(
+    0,
+    0x01,
+    "nop",
+    ImmediateKind.None,
+    StackEffectKind.None,
+    ValidationRule.None,
+    nameof(Interpreter.NoOp)
+)]
+[Instruction(
+    0,
+    0x02,
+    "block",
+    ImmediateKind.BlockType,
+    StackEffectKind.Block,
+    ValidationRule.Block,
+    nameof(Interpreter.NoOp)
+)]
+[Instruction(
+    0,
+    0x03,
+    "loop",
+    ImmediateKind.BlockType,
+    StackEffectKind.Loop,
+    ValidationRule.Loop,
+    nameof(Interpreter.NoOp)
+)]
+[Instruction(
+    0,
+    0x04,
+    "if",
+    ImmediateKind.BlockType,
+    StackEffectKind.If,
+    ValidationRule.If,
+    nameof(Interpreter.BranchIfZero)
+)]
+[Instruction(
+    0,
+    0x05,
+    "else",
+    ImmediateKind.None,
+    StackEffectKind.Else,
+    ValidationRule.Else,
+    nameof(Interpreter.Branch)
+)]
+[Instruction(
+    0,
+    0x0C,
+    "br",
+    ImmediateKind.Index,
+    StackEffectKind.Branch,
+    ValidationRule.Branch,
+    nameof(Interpreter.Branch)
+)]
+[Instruction(
+    0,
+    0x0D,
+    "br_if",
+    ImmediateKind.Index,
+    StackEffectKind.BranchIf,
+    ValidationRule.BranchIf,
+    nameof(Interpreter.BranchIf)
+)]
+[Instruction(
+    0,
+    0x0E,
+    "br_table",
+    ImmediateKind.BranchTable,
+    StackEffectKind.BranchTable,
+    ValidationRule.BranchTable,
+    nameof(Interpreter.BranchTable)
+)]
 [Instruction(0, 0x11, "call_indirect")]
-[Instruction(0, 0x1B, "select")]
-[Instruction(0, 0x1C, "select")]
+[Instruction(
+    0,
+    0x1B,
+    "select",
+    ImmediateKind.None,
+    StackEffectKind.Select,
+    ValidationRule.Select,
+    nameof(Interpreter.Select)
+)]
+[Instruction(
+    0,
+    0x1C,
+    "select",
+    ImmediateKind.TypeVector,
+    StackEffectKind.TypedSelect,
+    ValidationRule.TypedSelect,
+    nameof(Interpreter.Select)
+)]
 [Instruction(0, 0x25, "table.get")]
 [Instruction(0, 0x26, "table.set")]
 [Instruction(0, 0x28, "i32.load")]

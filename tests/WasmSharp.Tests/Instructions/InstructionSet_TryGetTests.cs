@@ -56,10 +56,20 @@ internal class InstructionSet_TryGetTests
                         ? new uint[]
                         {
                             0x00,
+                            0x01,
+                            0x02,
+                            0x03,
+                            0x04,
+                            0x05,
                             0x0B,
+                            0x0C,
+                            0x0D,
+                            0x0E,
                             0x0F,
                             0x10,
                             0x1A,
+                            0x1B,
+                            0x1C,
                             0x20,
                             0x21,
                             0x22,
@@ -75,6 +85,79 @@ internal class InstructionSet_TryGetTests
                 );
             await Assert.That(InstructionSet.TryGet(new(prefix, 256), out _)).IsFalse();
             await Assert.That(InstructionSet.TryGet(new(prefix, uint.MaxValue), out _)).IsFalse();
+        }
+    }
+
+    [Test]
+    [Arguments(0x01, ImmediateKind.None, StackEffectKind.None, ValidationRule.None, "NoOp")]
+    [Arguments(0x02, ImmediateKind.BlockType, StackEffectKind.Block, ValidationRule.Block, "NoOp")]
+    [Arguments(0x03, ImmediateKind.BlockType, StackEffectKind.Loop, ValidationRule.Loop, "NoOp")]
+    [Arguments(
+        0x04,
+        ImmediateKind.BlockType,
+        StackEffectKind.If,
+        ValidationRule.If,
+        "BranchIfZero"
+    )]
+    [Arguments(0x05, ImmediateKind.None, StackEffectKind.Else, ValidationRule.Else, "Branch")]
+    [Arguments(
+        0x0B,
+        ImmediateKind.None,
+        StackEffectKind.FunctionEnd,
+        ValidationRule.FunctionEnd,
+        "Return"
+    )]
+    [Arguments(0x0C, ImmediateKind.Index, StackEffectKind.Branch, ValidationRule.Branch, "Branch")]
+    [Arguments(
+        0x0D,
+        ImmediateKind.Index,
+        StackEffectKind.BranchIf,
+        ValidationRule.BranchIf,
+        "BranchIf"
+    )]
+    [Arguments(
+        0x0E,
+        ImmediateKind.BranchTable,
+        StackEffectKind.BranchTable,
+        ValidationRule.BranchTable,
+        "BranchTable"
+    )]
+    [Arguments(0x1B, ImmediateKind.None, StackEffectKind.Select, ValidationRule.Select, "Select")]
+    [Arguments(
+        0x1C,
+        ImmediateKind.TypeVector,
+        StackEffectKind.TypedSelect,
+        ValidationRule.TypedSelect,
+        "Select"
+    )]
+    public async Task 制御とselectの宣言を確認する_即値と型効果と規則と共有handlerが一致する(
+        uint code,
+        ImmediateKind immediate,
+        StackEffectKind stackEffect,
+        ValidationRule validation,
+        string handler
+    )
+    {
+        // Arrange
+        var names = Core2InstructionFixture.Read(0);
+        var declaration = typeof(InstructionSet)
+            .GetCustomAttributes<InstructionAttribute>()
+            .Single(x => x.Prefix == 0 && x.Code == code);
+
+        // Act
+        var found = InstructionSet.TryGet(new(0, code), out var descriptor);
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(found).IsTrue();
+            await Assert.That(descriptor.Name).IsEqualTo(names[code]);
+            await Assert.That(descriptor.Immediate).IsEqualTo(immediate);
+            await Assert.That(descriptor.StackEffect).IsEqualTo(stackEffect);
+            await Assert.That(descriptor.Validation).IsEqualTo(validation);
+            await Assert.That(descriptor.ExecutionOpcode).IsNotNull();
+            await Assert.That(descriptor.NumericSignature).IsNull();
+            await Assert.That(declaration.ExecutionHandler).IsEqualTo(handler);
         }
     }
 

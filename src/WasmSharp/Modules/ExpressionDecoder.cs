@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using WasmSharp.Exceptions;
 using WasmSharp.Instructions;
 
@@ -9,7 +10,7 @@ namespace WasmSharp.Modules;
 internal static class ExpressionDecoder
 {
     /// <summary>
-    /// 式の入力命令をデコードし、最初のendを含む命令列を取得する
+    /// 式の入力命令をデコードし、最外のendを含む命令列を取得する
     /// </summary>
     /// <remarks>命令の型検証と線形実行コードの生成は行わない</remarks>
     /// <param name="reader">式の先頭にある読み取り状態 endの直後まで進める</param>
@@ -22,10 +23,12 @@ internal static class ExpressionDecoder
     internal static List<DecodedInstruction> Read(ref ModuleBinaryReader reader, int inputLength)
     {
         List<DecodedInstruction> instructions = [];
-        while (reader.TryPeekByte(out var code) && code is not (0x05 or 0x0B))
+        // ifのthenを読み終えたframeはelseのopcodeで保持し、重複elseを区別する。
+        List<byte> controls = [];
+        while (true)
         {
             var offset = reader.Position;
-            reader.ReadByte();
+            var code = reader.ReadByte();
 
             var opcode = code is 0xFC or 0xFD
                 ? new OpcodeKey(code, reader.ReadU32())
@@ -77,23 +80,139 @@ internal static class ExpressionDecoder
                     WasmValue.FromF64Bits(reader.ReadF64Bits()),
                     offset
                 ),
+                ImmediateKind.BlockType => DecodedInstruction.WithBlockType(
+                    opcode,
+                    ReadBlockType(ref reader),
+                    offset
+                ),
+                ImmediateKind.BranchTable => ReadBranchTable(opcode, offset, ref reader),
+                ImmediateKind.TypeVector => ReadSelectTypes(opcode, offset, ref reader),
                 _ => throw new InvalidOperationException("対応済み命令の即値情報が不正です。"),
             };
+
+            if (code == 0x05)
+            {
+                if (controls.Count == 0 || controls[^1] != 0x04)
+                {
+                    throw reader.Error("END opcode expected: 式の終端にENDが必要です。", offset);
+                }
+
+                controls[^1] = 0x05;
+            }
+
             AddInstruction(instructions, instruction, ref reader);
-        }
+            if (code is 0x02 or 0x03 or 0x04)
+            {
+                controls.Add(code);
+            }
+            else if (code == 0x0B)
+            {
+                if (controls.Count == 0)
+                {
+                    return instructions;
+                }
 
-        var endOffset = reader.Position;
-        if (reader.ReadByte() != 0x0B)
+                controls.RemoveAt(controls.Count - 1);
+            }
+        }
+    }
+
+    /// <summary>
+    /// 単一byteの空型・値型と、非負s33の型添字を区別して取得する
+    /// </summary>
+    /// <param name="reader">制御型の先頭にある読取り状態 即値の終端まで進める</param>
+    /// <returns>存在や引数・結果の適合を未検証の制御型</returns>
+    private static BlockType ReadBlockType(ref ModuleBinaryReader reader)
+    {
+        var offset = reader.Position;
+        if (reader.TryPeekByte(out var code))
         {
-            throw reader.Error("END opcode expected: 式の終端にENDが必要です。", endOffset);
+            if (code == 0x40)
+            {
+                reader.ReadByte();
+                return BlockType.Empty;
+            }
+
+            if (code is >= 0x40 and < 0x80)
+            {
+                return BlockType.FromValue(ModuleBinaryFormat.ReadValueType(ref reader));
+            }
         }
 
-        AddInstruction(
-            instructions,
-            DecodedInstruction.WithoutImmediate(new OpcodeKey(0, 0x0B), endOffset),
-            ref reader
+        var typeIndex = reader.ReadS33();
+        if (typeIndex < 0)
+        {
+            // 固定参照が負のs33を拒否した後、s7として先頭byteを読む場合と同じ診断位置
+            throw reader.Error(
+                "integer representation too long: 制御型の値型は単一byteで符号化します。",
+                offset + 1
+            );
+        }
+
+        return BlockType.FromTypeIndex((uint)typeIndex);
+    }
+
+    /// <summary>
+    /// 分岐表の候補を読み、末尾の既定ラベルとともに不変の即値へ保存する
+    /// </summary>
+    /// <param name="opcode">分岐表命令の識別子</param>
+    /// <param name="offset">命令の入力位置</param>
+    /// <param name="reader">候補vectorの先頭にある読取り状態 既定ラベルの終端まで進める</param>
+    /// <returns>候補と既定ラベルを保持する入力命令</returns>
+    private static DecodedInstruction ReadBranchTable(
+        OpcodeKey opcode,
+        long offset,
+        ref ModuleBinaryReader reader
+    )
+    {
+        var countOffset = reader.Position;
+        var count = ModuleBinaryFormat.ReadCount(ref reader);
+        if (count == Array.MaxLength)
+        {
+            throw new WasmImplementationLimitException(
+                "既定を含むラベル数が配列の保持上限を超えています。",
+                WasmImplementationLimitReason.CollectionSize,
+                Array.MaxLength,
+                reader.Location(countOffset)
+            );
+        }
+
+        List<uint> labels = [];
+        for (uint index = 0; index < count; index++)
+        {
+            labels.Add(reader.ReadU32());
+        }
+
+        var defaultLabel = reader.ReadU32();
+        return DecodedInstruction.WithBranchTable(
+            opcode,
+            CollectionsMarshal.AsSpan(labels),
+            defaultLabel,
+            offset
         );
-        return instructions;
+    }
+
+    /// <summary>
+    /// typed selectの型列を読み、長さの適格性を判定せず不変の即値へ保存する
+    /// </summary>
+    /// <param name="opcode">typed select命令の識別子</param>
+    /// <param name="offset">命令の入力位置</param>
+    /// <param name="reader">型vectorの先頭にある読取り状態 即値の終端まで進める</param>
+    /// <returns>宣言順の値型を保持する入力命令</returns>
+    private static DecodedInstruction ReadSelectTypes(
+        OpcodeKey opcode,
+        long offset,
+        ref ModuleBinaryReader reader
+    )
+    {
+        var count = ModuleBinaryFormat.ReadCount(ref reader);
+        List<WasmValueKind> types = [];
+        for (uint index = 0; index < count; index++)
+        {
+            types.Add(ModuleBinaryFormat.ReadValueType(ref reader));
+        }
+
+        return DecodedInstruction.WithSelectTypes(opcode, CollectionsMarshal.AsSpan(types), offset);
     }
 
     /// <summary>

@@ -7,6 +7,276 @@ namespace WasmSharp.Tests.Modules;
 internal class ExpressionDecoder_ReadTests
 {
     [Test]
+    [Arguments("40", BlockTypeKind.Empty, WasmValueKind.I32, 0u)]
+    [Arguments("7F", BlockTypeKind.Value, WasmValueKind.I32, 0u)]
+    [Arguments("7E", BlockTypeKind.Value, WasmValueKind.I64, 0u)]
+    [Arguments("7D", BlockTypeKind.Value, WasmValueKind.F32, 0u)]
+    [Arguments("7C", BlockTypeKind.Value, WasmValueKind.F64, 0u)]
+    [Arguments("7B", BlockTypeKind.Value, WasmValueKind.V128, 0u)]
+    [Arguments("70", BlockTypeKind.Value, WasmValueKind.FuncRef, 0u)]
+    [Arguments("6F", BlockTypeKind.Value, WasmValueKind.ExternRef, 0u)]
+    [Arguments("00", BlockTypeKind.TypeIndex, WasmValueKind.I32, 0u)]
+    [Arguments("8000", BlockTypeKind.TypeIndex, WasmValueKind.I32, 0u)]
+    [Arguments("8100", BlockTypeKind.TypeIndex, WasmValueKind.I32, 1u)]
+    [Arguments("FFFFFFFF0F", BlockTypeKind.TypeIndex, WasmValueKind.I32, uint.MaxValue)]
+    public async Task 制御型が空か値型か非負s33である_形式と値を保持して型添字を検証しない(
+        string type,
+        BlockTypeKind kind,
+        WasmValueKind valueType,
+        uint typeIndex
+    )
+    {
+        // Arrange
+        foreach (var mode in new[] { ModuleReadMode.Bounded, ModuleReadMode.Diagnostic })
+        {
+            foreach (var code in new byte[] { 0x02, 0x03, 0x04 })
+            {
+                var bytes = Convert.FromHexString(code.ToString("X2") + type + "0B0BFF");
+                var reader = new ModuleBinaryReader(bytes, 40, 10, 3, mode);
+
+                // Act
+                var instructions = ExpressionDecoder.Read(ref reader, 100);
+                var position = reader.Position;
+                var followingByte = reader.ReadByte();
+
+                // Assert
+                using (Assert.Multiple())
+                {
+                    await Assert.That(instructions.Count).IsEqualTo(3);
+                    await Assert.That(instructions[0].Opcode).IsEqualTo(new OpcodeKey(0, code));
+                    await Assert.That(instructions[0].BlockType.Kind).IsEqualTo(kind);
+                    await Assert.That(instructions[0].BlockType.ValueType).IsEqualTo(valueType);
+                    await Assert.That(instructions[0].BlockType.TypeIndex).IsEqualTo(typeIndex);
+                    await Assert.That(instructions[0].ByteOffset).IsEqualTo(40L);
+                    await Assert.That(position).IsEqualTo(40L + bytes.Length - 1);
+                    await Assert.That(followingByte).IsEqualTo((byte)0xFF);
+                }
+            }
+        }
+    }
+
+    [Test]
+    [Arguments("024003400440010502400B0B0B0B0B", "0203040105020B0B0B0B0B")]
+    [Arguments("044004400B0B0B", "04040B0B0B")]
+    public async Task 制御が入れ子になりelseを省略できる_内側endで止まらず最外endまで保持する(
+        string hex,
+        string expectedOpcodes
+    )
+    {
+        // Arrange
+        var bytes = Convert.FromHexString(hex + "FF");
+        foreach (var mode in new[] { ModuleReadMode.Bounded, ModuleReadMode.Diagnostic })
+        {
+            var reader = new ModuleBinaryReader(bytes, 40, 10, 3, mode);
+
+            // Act
+            var instructions = ExpressionDecoder.Read(ref reader, 100);
+            var position = reader.Position;
+            var remaining = reader.Remaining;
+
+            // Assert
+            using (Assert.Multiple())
+            {
+                await Assert
+                    .That(
+                        Convert.ToHexString(instructions.Select(x => (byte)x.Opcode.Code).ToArray())
+                    )
+                    .IsEqualTo(expectedOpcodes);
+                await Assert.That(instructions[^1].ByteOffset).IsEqualTo(position - 1);
+                await Assert.That(position).IsEqualTo(40L + bytes.Length - 1);
+                await Assert.That(remaining).IsEqualTo(1);
+            }
+        }
+    }
+
+    [Test]
+    public async Task 分岐添字と空を含む分岐表がある_非最短u32と候補順と末尾の既定を保持する()
+    {
+        // Arrange
+        var bytes = Convert.FromHexString(
+            "0CFFFFFFFF0F0D80000E038000FFFFFFFF0F02FFFFFFFF0F0E00FFFFFFFF0F0B"
+        );
+        foreach (var mode in new[] { ModuleReadMode.Bounded, ModuleReadMode.Diagnostic })
+        {
+            var reader = new ModuleBinaryReader(bytes, 40, 10, 3, mode);
+
+            // Act
+            var instructions = ExpressionDecoder.Read(ref reader, 100);
+            var remaining = reader.Remaining;
+
+            // Assert
+            using (Assert.Multiple())
+            {
+                await Assert.That(instructions.Count).IsEqualTo(5);
+                await Assert.That(instructions[0].Index).IsEqualTo(uint.MaxValue);
+                await Assert.That(instructions[1].Index).IsEqualTo(0u);
+                await Assert
+                    .That(
+                        instructions[2]
+                            .Labels.SequenceEqual(new uint[] { 0, uint.MaxValue, 2, uint.MaxValue })
+                    )
+                    .IsTrue();
+                await Assert.That(instructions[3].Labels.Length).IsEqualTo(1);
+                await Assert.That(instructions[3].Labels[0]).IsEqualTo(uint.MaxValue);
+                await Assert.That(instructions[2].ByteOffset).IsEqualTo(49L);
+                await Assert.That(remaining).IsEqualTo(0);
+            }
+        }
+    }
+
+    [Test]
+    [Arguments("00", "")]
+    [Arguments("017F", "I32")]
+    [Arguments("087F7E7D7C7B706F7F", "I32,I64,F32,F64,V128,FuncRef,ExternRef,I32")]
+    [Arguments("81007E", "I64")]
+    public async Task select型列が空か単一か複数である_値型を保持して長さを検証しない(
+        string vector,
+        string expectedTypes
+    )
+    {
+        // Arrange
+        var bytes = Convert.FromHexString("1B1C" + vector + "0B");
+        foreach (var mode in new[] { ModuleReadMode.Bounded, ModuleReadMode.Diagnostic })
+        {
+            var reader = new ModuleBinaryReader(bytes, 40, 10, 3, mode);
+
+            // Act
+            var instructions = ExpressionDecoder.Read(ref reader, 100);
+
+            // Assert
+            using (Assert.Multiple())
+            {
+                await Assert.That(instructions.Count).IsEqualTo(3);
+                await Assert.That(instructions[0].Opcode).IsEqualTo(new OpcodeKey(0, 0x1B));
+                await Assert.That(instructions[0].SelectTypes.IsEmpty).IsTrue();
+                await Assert.That(instructions[1].Opcode).IsEqualTo(new OpcodeKey(0, 0x1C));
+                await Assert
+                    .That(string.Join(',', instructions[1].SelectTypes))
+                    .IsEqualTo(expectedTypes);
+                await Assert.That(instructions[1].SelectTypes.IsDefault).IsFalse();
+            }
+        }
+    }
+
+    [Test]
+    [Arguments("02400528", 42L, "END opcode expected")]
+    [Arguments("03400528", 42L, "END opcode expected")]
+    [Arguments("0440050528", 43L, "END opcode expected")]
+    [Arguments("02400B0528", 43L, "END opcode expected")]
+    [Arguments("026E0B0B", 41L, "malformed reference type")]
+    [Arguments("02FF7F0B0B", 42L, "integer representation too long")]
+    [Arguments("02C07F0B0B", 42L, "integer representation too long")]
+    [Arguments("1C016E0B", 42L, "malformed reference type")]
+    [Arguments("1C01FF7F0B", 43L, "integer representation too long")]
+    [Arguments("0EFFFFFFFF0F00", 41L, "length out of bounds")]
+    [Arguments("1CFFFFFFFF0F7F", 41L, "length out of bounds")]
+    public async Task 制御配置か複合即値が不正である_後続未対応より構文診断と位置を優先する(
+        string hex,
+        long offset,
+        string prefix
+    )
+    {
+        // Arrange
+        var bytes = Convert.FromHexString(hex);
+        foreach (var mode in new[] { ModuleReadMode.Bounded, ModuleReadMode.Diagnostic })
+        {
+            // Act & Assert
+            var exception = await Assert
+                .That(() =>
+                {
+                    var reader = new ModuleBinaryReader(bytes, 40, 10, 3, mode);
+                    ExpressionDecoder.Read(ref reader, 100);
+                })
+                .ThrowsExactly<WasmDecodeException>();
+            using (Assert.Multiple())
+            {
+                await Assert
+                    .That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal))
+                    .IsTrue();
+                await Assert
+                    .That(exception.Location)
+                    .IsEqualTo(new(WasmProcessingStage.Decode, offset, 3, 10));
+            }
+        }
+    }
+
+    [Test]
+    [Arguments("024003400B", 45L)]
+    [Arguments("044005", 43L)]
+    [Arguments("0280", 42L)]
+    [Arguments("0E01", 42L)]
+    [Arguments("0E0100", 43L)]
+    [Arguments("1C01", 42L)]
+    [Arguments("1C027F", 43L)]
+    public async Task 制御終端か複合即値が切れる_通常解析と診断走査で元の境界位置を保持する(
+        string hex,
+        long offset
+    )
+    {
+        // Arrange
+        var bytes = Convert.FromHexString(hex);
+        foreach (var mode in new[] { ModuleReadMode.Bounded, ModuleReadMode.Diagnostic })
+        {
+            // Act & Assert
+            Action read = () =>
+            {
+                var reader = new ModuleBinaryReader(bytes, 40, 10, 3, mode);
+                ExpressionDecoder.Read(ref reader, 100);
+            };
+            WasmDecodeException failure;
+            if (mode == ModuleReadMode.Bounded)
+            {
+                var exception = await Assert
+                    .That(read)
+                    .ThrowsExactly<ModuleReadBoundaryException>();
+                failure = exception!.Fallback;
+            }
+            else
+            {
+                failure = (await Assert.That(read).ThrowsExactly<WasmDecodeException>())!;
+            }
+            using (Assert.Multiple())
+            {
+                await Assert
+                    .That(
+                        failure.Message.StartsWith(
+                            "unexpected end of section or function",
+                            StringComparison.Ordinal
+                        )
+                    )
+                    .IsTrue();
+                await Assert
+                    .That(failure.Location)
+                    .IsEqualTo(new(WasmProcessingStage.Decode, offset, 3, 10));
+            }
+        }
+    }
+
+    [Test]
+    public async Task 深いblockの入れ子がある_CLR再帰を増やさず最外endまで読む()
+    {
+        // Arrange
+        const int DEPTH = 20_000;
+        var bytes = Enumerable
+            .Repeat(new byte[] { 0x02, 0x40 }, DEPTH)
+            .SelectMany(x => x)
+            .Concat(Enumerable.Repeat((byte)0x0B, DEPTH + 1))
+            .ToArray();
+        var reader = new ModuleBinaryReader(bytes);
+
+        // Act
+        var instructions = ExpressionDecoder.Read(ref reader, bytes.Length);
+        var remaining = reader.Remaining;
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(instructions.Count).IsEqualTo(DEPTH * 2 + 1);
+            await Assert.That(remaining).IsEqualTo(0);
+        }
+    }
+
+    [Test]
     [Arguments(ModuleReadMode.Bounded)]
     [Arguments(ModuleReadMode.Diagnostic)]
     public async Task 対応命令が続く_即値と入力順と位置を保持してend直後で止まる(
