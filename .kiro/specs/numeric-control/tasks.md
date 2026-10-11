@@ -58,7 +58,7 @@
   - _Boundary: ModuleBinaryReader, DecodedInstruction, BlockType, InstructionGenerator_
   - _Requirements: 1.2, 1.3, 1.4_
 
-- [ ] 3.2 関数が所有する不変の分岐情報を実行表現へ統合する
+- [x] 3.2 関数が所有する不変の分岐情報を実行表現へ統合する
   - 分岐先、operand相対高さ、保持個数を関数コードへ保持し、分岐表の候補と最後の既定候補を表現できるようにする。
   - 既定を除く候補数0を許し、既存の命令位置・圧縮locals・最大operand数の契約を維持する。
   - 既存の分岐を持たない関数が同じ結果を返し、複数instanceから共有しても実行状態を静的コードへ書き込まないことを確認する。
@@ -306,3 +306,4 @@
 - 2.1:関数本体と定数式の式読取りは`ExpressionDecoder.Read`、sectionと式の共通Unsupported診断は`ModuleBinaryReader.Unsupported`が担う。Bounded/Diagnosticの入口と範囲管理は`ModuleDecoder`に残した。
 - 2.2:1関数の検証は`FunctionValidator.Validate`、module全体と共有する診断2メソッドは`ValidationDiagnostics`が担う。TUnitのfilterにはファイル名ではなく実際のクラス名を指定する。
 - 3.1:入力命令は`DecodedInstruction`の即値別factoryで構築する。生成器fixtureはBlockType・WasmValue・WasmValueKindの本体ソースを取り込み、WasmFunction参照型だけを最小stubに残した。
+- 3.2:`FunctionCode`の末尾引数で不変の`BranchTargets`を渡す。`Instruction.TargetCount`は既定を除く候補数で、省略時は0。既存の3引数・4引数構築を維持した。

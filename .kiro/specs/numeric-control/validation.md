@@ -136,3 +136,14 @@
 - 実装記録:`artifacts/numeric-control/task-3.1-20261011T1900/verification.md`。独立レビュー:`artifacts/numeric-control/task-3.1-review-20261011T2011/review.md`。各出力先にコマンド・ログ・終了値を保持した。
 
 親エージェントが差分、現在のビルド・3suiteとREDのログ・終了値、記録訂正を確認し、`kiro-verify-completion`は`TASK: VERIFIED`。新opcode・入れ子構文・Validateの接続と公式全体の次回比較は後続タスクで行う。
+
+## タスク3.2:関数が所有する静的分岐情報
+
+設計の`BranchTarget`、`FunctionCode.BranchTargets`、`Instruction.TargetCount`を追加した。候補の後に既定を置き、既定を除く候補数0を表現できる。末尾の省略可能な引数により既存構築を維持し、共有する静的コードに実行状態を追加していない。変更は本体3ファイルと契約・2instance共有のテスト3ファイル。要件3.4・7.7・7.8・7.9の静的表現の範囲である。
+
+- 実装者:`READY_FOR_REVIEW`。先に契約テストを追加し、形状だけの足場でビルド成功後に6件中3件失敗・終了2を確認。格納実装後のfocused92件が成功した。
+- 最終Releaseビルド:終了0、警告・エラー0。3suiteは1,206件・37件・701件成功、失敗・スキップ0、各終了0。CSharpier6ファイルと差分確認も終了0。
+- 履歴なしの独立レビュー:`APPROVED`。現ソースのビルドと同じ3suiteの成功、RED/GREEN、指定データ契約と既存構築・結果の維持を確認した。
+- 実装記録:`artifacts/numeric-control/task-3.2-20261011T182008/verification.md`。独立レビュー:`artifacts/numeric-control/task-3.2-review-20261011T185500/review.md`。各出力先にコマンド・ログ・終了値を保持した。
+
+親エージェントが差分、現在のビルド・3suiteとRED/GREENの出力・終了値を確認し、`kiro-verify-completion`は`TASK: VERIFIED`。分岐操作・handler・制御のDecode/Validate接続と公式全体の確認は後続タスクで行う。
