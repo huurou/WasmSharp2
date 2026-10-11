@@ -158,3 +158,14 @@
 - 実装記録:`artifacts/numeric-control/task-3.3-20261011T183600/verification.md`。独立レビュー:`artifacts/numeric-control/task-3.3-review-20261011-independent-8cf463/review.md`。各出力先にコマンド・ログ・終了値を保持した。
 
 親エージェントが差分、新規signature、現在のビルド・3suiteとRED/GREENの出力・終了値、独立レビューを確認し、`kiro-verify-completion`は`TASK: VERIFIED`。対応済みopcodeへの切替、handler・FunctionValidator・公開経路と公式全体の確認は後続タスクで行う。
+
+## タスク4.1:整数算術と比較handler
+
+`Interpreter.Integer.cs`にi32/i64のadd・sub・mul、eqzとsigned/unsigned比較の28handlerを追加した。右operandから取り出し、算術はuncheckedで対象幅の剰余、unsigned比較は同幅のビット解釈、比較結果はi32の0/1とする。直接テスト28クラスとcontext準備だけを共有するfixtureを追加した。変更はこの30ファイル。要件4.1・4.7の実行handlerの範囲である。
+
+- 実装者:`READY_FOR_REVIEW`。既定OFFのREDはビルド成功後、28クラスの93件すべて失敗、終了2。ONで同じ93件成功後、一時flagを除去した。
+- 最終Releaseビルド:終了0、警告・エラー0。3suiteは1,299件・76件・701件成功、失敗・スキップ0、各終了0。CSharpier30ファイルと空白確認も成功した。
+- 履歴なしの独立レビュー:`APPROVED`。新規30ファイルの全文、仕様・設計、幅境界・左右・符号解釈・結果型・下位operand保持のテスト、RED/GREENを確認し、独立ビルドと同じ3suiteも成功した。
+- 実装記録:`artifacts/numeric-control/task-4.1-20261011T184000/verification.md`。独立レビュー:`artifacts/numeric-control/task-4.1-review-20261011T190000/review.md`。各出力先に変更ファイル一覧・コマンド・ログ・終了値を保持した。
+
+親エージェントがhandler全体、代表テスト・fixture、現在のビルド・3suiteとRED/GREENの出力・終了値、独立レビューを確認し、`kiro-verify-completion`は`TASK: VERIFIED`。数値opcodeの宣言・型検証・公開実行への接続は7.1、公式全体の次回確認は7.2で行う。

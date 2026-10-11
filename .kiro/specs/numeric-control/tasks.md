@@ -75,7 +75,7 @@
   - _Requirements: 1.2, 1.3, 2.1, 2.2, 4.6, 4.7, 9.2_
 
 - [ ] 4. 整数演算の実行処理を追加する
-- [ ] 4.1 幅を保つ整数算術と比較を実装する
+- [x] 4.1 幅を保つ整数算術と比較を実装する
   - i32/i64のadd・sub・mulを対象幅の剰余として計算し、operandの左右を保つ。
   - eqzと符号付き・符号なし比較を区別し、結果をi32の0/1で返す。
   - 幅境界、符号解釈の相違、通常の桁あふれでtrapにならない結果をhandlerの直接テストで確認する。
@@ -308,3 +308,4 @@
 - 3.1:入力命令は`DecodedInstruction`の即値別factoryで構築する。生成器fixtureはBlockType・WasmValue・WasmValueKindの本体ソースを取り込み、WasmFunction参照型だけを最小stubに残した。
 - 3.2:`FunctionCode`の末尾引数で不変の`BranchTargets`を渡す。`Instruction.TargetCount`は既定を除く候補数で、省略時は0。既存の3引数・4引数構築を維持した。
 - 3.3:数値宣言は10引数属性で`NumericSignature`を指定し、StackEffectとValidationの両方をNumericにする。生成器fixtureのWasmValueKindは常時InstructionContractsから取り込み、実行契約側には重複させない。
+- 4.1:整数handlerは`Interpreter.Integer.cs`へ配置する。直接テストのcontext準備と後片付けは`NumericHandlerFixture`で共有し、期待値とassertionは対象メソッドごとのテストへ残した。数値opcodeの接続は7.1で行う。
