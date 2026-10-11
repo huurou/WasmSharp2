@@ -491,3 +491,15 @@ verifyは未対応2987件・blocked47352件を理由に終了1であり、Core2.
 初回修正後の再レビューでV3-1（Low）が追加された。0xFDにもprefixを表示していたコードと期待値、参照と同じだと記した説明が不正確という指摘であり、固定`decode.ml:510`・`:775`の呼び出しを確認して採用した。0xFDは命令番号だけを表示するよう修正し、通常解析2ケースと境界再走査1ケースの期待値、上記の説明を訂正した。初回の修正と検証は履歴として保持し、最終コードのReleaseビルドは警告・エラー0、全3テスト1852件は成功・失敗/スキップ0、CSharpierは終了0となった。新しい公式runと現baseline比較も終了0・全差分0で、verify終了1の理由は同じ未対応/blockedだけである。
 
 初回修正のコマンド・原ログ・TRX・比較は[初回の機械検証](../../../artifacts/test-suite-conformance/illegal-opcode-20261004/report.md)、V3-1修正後の検証、同じClaudeセッションでの最終レビューと受入後のbaseline保存は[追加修正の検証結果](../../../artifacts/test-suite-conformance/illegal-opcode-20261004/review-summary.md)を参照する。Gitのインデックス・ブランチ・履歴は変更しない。
+
+## WABT1.0.42移行時の受入済み範囲の再確認
+
+2026-10-12、ユーザー承認に基づくtest-suite-runner15.1・15.2の更新に伴い、本仕様の受入済み範囲を新素材で再確認した。詳細は[WABT移行記録](../test-suite-runner/wabt-1.0.42-migration.md)を参照する。
+
+numeric-control着手直前の`2c7bd25551802583c0792db93496f510bfa763ce`を`git archive`で展開した。このrevisionは受入後修正`39a2748`とsrc・tools・testsに差がない。旧profile・旧素材でrunし、旧baselineとの比較が終了0・全差分0であることを確認した。埋込みprofile1ファイルだけを新profileへ更新して再ビルドした後、新素材で全147入力・53,907commandを実行した。
+
+新素材でも全件の分類は旧結果と一致し、passed2,491件を維持した。failed・runner_error・入力異常0、runtime_unsupported2,987、blocked47,352、out_of_scope1,077。全147公式JSONと期待値は同一で、5,821生成物の差は空typed selectを保持する`select.2.wasm`だけである。独立レビューは全Git blob・全素材hash・全caseを照合し、移行タスクをAPPROVEDと判定した。
+
+新しい実行baselineは`artifacts/numeric-control/wabt-1.0.42-20261012/run-baseline.json`へ別保存し、移行runとバイト一致する。旧baselineは既存pathに保持し、SHA-256`0f47b1fc0b648b8e539297a60a3ef5a36c7d78c79ef3f8550ef86b10a5814285`を維持した。現在のnumeric-control実装でも、この新比較元との比較は回帰・欠落・failed・runner_error0だった。
+
+この確認は変換器更新による受入済み範囲への影響を対象とする。未対応とその依存は引き続き残り、Core2.0全体の完成とは扱わない。独立ビルドと現在の3suiteは2,790件・76件・702件成功し、過去の本仕様のテストも含む。原ログと監査結果は[独立レビュー](../../../artifacts/numeric-control/wabt-1.0.42-review-20261012/review.md)から参照できる。

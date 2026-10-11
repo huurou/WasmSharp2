@@ -9,7 +9,7 @@ WebAssembly Core 2.0の仕様参照と公式テスト変換に使うソースを
 | パス | 取得元・タグ | 固定commit |
 | --- | --- | --- |
 | `WebAssembly-spec` | [WebAssembly/spec v2.0.0](https://github.com/WebAssembly/spec/tree/v2.0.0) | `05ca4182176763112561ae20153975c12bd689e4` |
-| `wabt` | [WebAssembly/wabt 1.0.41](https://github.com/WebAssembly/wabt/tree/1.0.41) | `03a00a1334e6121fb0cce4fccbd6bb109b68acaa` |
+| `wabt` | [WebAssembly/wabt 1.0.42](https://github.com/WebAssembly/wabt/tree/1.0.42) | `ff0ef7e0009402740c805a9744c09b05be063e48` |
 
 公式入力は`WebAssembly-spec/test/core/**/*.wast`の全147ファイルで、`simd`配下の57ファイルを含む。
 WABT内の`third_party/testsuite`はWABT自身の検証用であり、本プロジェクトのCore 2.0公式入力には使用しない。
@@ -37,8 +37,8 @@ specのKaTeXは仕様書の生成用であり、公式テストの変換には�
 
 ## WABTのCore 2.0設定
 
-採用commitの[`include/wabt/feature.def`](wabt/include/wabt/feature.def)は、全21機能が以下の既定値になる。
-`wast2json`にはfeature変更の引数を渡さず、この設定を使用する。
+採用commitの[`include/wabt/feature.def`](wabt/include/wabt/feature.def)は、全21機能の既定値を確認し、以下の実効値でCore2.0を維持する。
+1.0.42で既定ONの`exceptions`、`tail-call`、`annotations`、`memory64`、`multi-memory`、`extended-const`、`relaxed-simd`は、対応する`--disable-*`を渡してOFFにする。その他の機能は既定値と実効値が一致する。固定値と論理引数は[`core2-profile.json`](../tools/WasmSharp.TestSuiteRunner/Corpus/core2-profile.json)に保持する。
 
 | 状態 | 機能 |
 | --- | --- |
@@ -54,8 +54,8 @@ CMakeとVisual Studio 2026のC++ビルド環境を使用する。以下はPowerS
 WABT自身のテストとlibwasm・WASIを無効にし、SHA-256実装には固定済みPicoSHA2を使用する。
 
 ```powershell
-cmake -S thirdParties/wabt -B artifacts/wabt-core2 -G "Visual Studio 18 2026" -A x64 -DBUILD_TESTS=OFF -DBUILD_LIBWASM=OFF -DWITH_WASI=OFF -DUSE_INTERNAL_SHA256=ON -DWERROR=ON
-cmake --build artifacts/wabt-core2 --config Release --target wast2json --parallel 8
+cmake -S thirdParties/wabt -B artifacts/wabt-core2-1.0.42 -G "Visual Studio 18 2026" -A x64 -DBUILD_TESTS=OFF -DBUILD_LIBWASM=OFF -DWITH_WASI=OFF -DUSE_INTERNAL_SHA256=ON -DWERROR=ON
+cmake --build artifacts/wabt-core2-1.0.42 --config Release --target wast2json --parallel 8
 ```
 
 両コマンドが成功してから、リポジトリルートで全入力を変換する。
@@ -63,13 +63,13 @@ cmake --build artifacts/wabt-core2 --config Release --target wast2json --paralle
 ```powershell
 $ErrorActionPreference = 'Stop'
 $coreRoot = (Resolve-Path thirdParties/WebAssembly-spec/test/core).Path
-$wast2json = (Resolve-Path artifacts/wabt-core2/Release/wast2json.exe).Path
+$wast2json = (Resolve-Path artifacts/wabt-core2-1.0.42/Release/wast2json.exe).Path
 $inputs = @(Get-ChildItem -LiteralPath $coreRoot -Recurse -File -Filter '*.wast' | Sort-Object FullName)
 foreach ($inputFile in $inputs) {
     $relativePath = [IO.Path]::GetRelativePath($coreRoot, $inputFile.FullName)
     $outputPath = Join-Path 'artifacts/core2-conversion' ([IO.Path]::ChangeExtension($relativePath, '.json'))
     New-Item -ItemType Directory -Path (Split-Path $outputPath) -Force | Out-Null
-    & $wast2json $inputFile.FullName -o $outputPath
+    & $wast2json $inputFile.FullName --disable-exceptions --disable-tail-call --disable-annotations --disable-memory64 --disable-multi-memory --disable-extended-const --disable-relaxed-simd -o $outputPath
     if ($LASTEXITCODE -ne 0) { throw "変換失敗: $relativePath" }
 }
 "変換成功: $($inputs.Count)ファイル"
@@ -81,7 +81,7 @@ JSONの`module_type=text`に対応する`.wat`も変換器の出力として残�
 
 ## 移行時の確認結果
 
-2026-09-06に、上記commitと手順で次を確認した。
+2026-09-06に、当時のWABT1.0.41とCore2.0の既定設定で次を確認した。
 
 - 空の作業用リポジトリへ`.gitmodules`と2つのgitlinkを設定し、spec・WABT・PicoSHA2の固定commitを公式リモートから取得できた。
 - Windows x64、CMake 4.3.1-msvc1、MSVC 19.51.36256.0で、`WERROR=ON`のReleaseビルドが警告・エラーなしで成功した。
@@ -92,3 +92,7 @@ JSONの`module_type=text`に対応する`.wat`も変換器の出力として残�
 `B0E1D0316A265F659566A0E3B6F1A00FEA9E315E3D25F2C3E0853E414D0BE245`
 同じ147入力の変換件数は上記と一致した。
 この値は実測値であり、別のビルド環境で同一バイナリになることを保証するものではない。
+
+## WABT1.0.42への更新
+
+2026-10-12のユーザー承認に基づき、空typed selectの情報を保持する上流修正を含む1.0.42へ更新した。旧素材・旧baselineは保持し、全147入力の再生成・変換比較と、着手前revisionを用いた新比較元の作成を行う。手順と受入結果は[移行記録](../.kiro/specs/test-suite-runner/wabt-1.0.42-migration.md)に記録する。

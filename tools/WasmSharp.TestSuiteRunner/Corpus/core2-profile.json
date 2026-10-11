@@ -6,12 +6,12 @@
   },
   "wabt": {
     "url": "https://github.com/WebAssembly/wabt.git",
-    "commit": "03a00a1334e6121fb0cce4fccbd6bb109b68acaa"
+    "commit": "ff0ef7e0009402740c805a9744c09b05be063e48"
   },
   "features": [
     {
       "name": "exceptions",
-      "default_enabled": false,
+      "default_enabled": true,
       "enabled": false
     },
     {
@@ -51,7 +51,7 @@
     },
     {
       "name": "tail-call",
-      "default_enabled": false,
+      "default_enabled": true,
       "enabled": false
     },
     {
@@ -66,7 +66,7 @@
     },
     {
       "name": "annotations",
-      "default_enabled": false,
+      "default_enabled": true,
       "enabled": false
     },
     {
@@ -81,22 +81,22 @@
     },
     {
       "name": "memory64",
-      "default_enabled": false,
+      "default_enabled": true,
       "enabled": false
     },
     {
       "name": "multi-memory",
-      "default_enabled": false,
+      "default_enabled": true,
       "enabled": false
     },
     {
       "name": "extended-const",
-      "default_enabled": false,
+      "default_enabled": true,
       "enabled": false
     },
     {
       "name": "relaxed-simd",
-      "default_enabled": false,
+      "default_enabled": true,
       "enabled": false
     },
     {
@@ -708,6 +708,13 @@
   "working_directory": "test/core",
   "logical_arguments": [
     "<relative.wast>",
+    "--disable-exceptions",
+    "--disable-tail-call",
+    "--disable-annotations",
+    "--disable-memory64",
+    "--disable-multi-memory",
+    "--disable-extended-const",
+    "--disable-relaxed-simd",
     "-o",
     "<output-root>/modules/<relative.json>"
   ],

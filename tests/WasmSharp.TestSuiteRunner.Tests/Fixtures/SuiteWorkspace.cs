@@ -111,6 +111,7 @@ internal sealed class SuiteWorkspace : IDisposable
             Id = "fixture",
             Spec = new("https://github.com/WebAssembly/spec.git", Commit),
             Wabt = new("https://github.com/WebAssembly/wabt.git", Commit),
+            LogicalArguments = ["<relative.wast>", "-o", "<output-root>/modules/<relative.json>"],
             Inputs =
             [
                 .. Directory

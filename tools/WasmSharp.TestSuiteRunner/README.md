@@ -14,7 +14,7 @@ $runner = './tools/WasmSharp.TestSuiteRunner/bin/Release/net10.0/WasmSharp.TestS
 & $runner --help
 ```
 
-Linuxでは実行ファイル名を`WasmSharp.TestSuiteRunner`に読み替え、`--wast2json`にもLinux用にビルドした変換器のpathを指定します。CLIの例は`artifacts/wabt-core2/wast2json`ですが、実際のビルド出力先に合わせてください。リンク先の変換器ビルド手順はWindows向けです。各操作の説明は`<操作> --help`でも表示できます。相対pathは起動時の作業ディレクトリが基準です。
+Linuxでは実行ファイル名を`WasmSharp.TestSuiteRunner`に読み替え、`--wast2json`にもLinux用にビルドした変換器のpathを指定します。CLIの例は`artifacts/wabt-core2-1.0.42/wast2json`ですが、実際のビルド出力先に合わせてください。リンク先の変換器ビルド手順はWindows向けです。各操作の説明は`<操作> --help`でも表示できます。相対pathは起動時の作業ディレクトリが基準です。
 
 ## 操作
 
@@ -36,7 +36,7 @@ Linuxでは実行ファイル名を`WasmSharp.TestSuiteRunner`に読み替え、
 次の各行を個別に実行し、終了値と結果を確認します。`$runner`は上記の起動例で設定した実行ファイルです。
 
 ```powershell
-& $runner generate --spec-root thirdParties/WebAssembly-spec --wabt-root thirdParties/wabt --wast2json artifacts/wabt-core2/Release/wast2json.exe --output artifacts/corpus
+& $runner generate --spec-root thirdParties/WebAssembly-spec --wabt-root thirdParties/wabt --wast2json artifacts/wabt-core2-1.0.42/Release/wast2json.exe --output artifacts/corpus
 & $runner run --manifest artifacts/corpus/manifest.json --output artifacts/run-1.json
 & $runner baseline-save --input artifacts/corpus/manifest.json --output artifacts/conversion-baseline.json
 & $runner baseline-save --input artifacts/run-1.json --output artifacts/run-baseline.json
@@ -60,7 +60,7 @@ Linuxでは実行ファイル名を`WasmSharp.TestSuiteRunner`に読み替え、
 素材を再生成したときも、比較してから変換baselineを更新します。
 
 ```powershell
-& $runner generate --spec-root thirdParties/WebAssembly-spec --wabt-root thirdParties/wabt --wast2json artifacts/wabt-core2/Release/wast2json.exe --output artifacts/corpus-2
+& $runner generate --spec-root thirdParties/WebAssembly-spec --wabt-root thirdParties/wabt --wast2json artifacts/wabt-core2-1.0.42/Release/wast2json.exe --output artifacts/corpus-2
 & $runner compare-conversion --baseline artifacts/conversion-baseline.json --current artifacts/corpus-2/manifest.json --output artifacts/conversion-diff.json
 & $runner baseline-save --input artifacts/corpus-2/manifest.json --output artifacts/conversion-baseline.json
 ```

@@ -161,7 +161,7 @@ internal static class CorpusGenerator
     /// </summary>
     /// <remarks>
     /// 作業ディレクトリをtest/coreの配置とし、入力は/区切りの相対path、出力はCLIで解決済みの絶対pathで渡す。
-    /// シェルを介さず起動し、feature変更などの追加引数を渡さない。
+    /// シェルを介さず起動し、profileに記録した論理引数の入力・出力pathを解決して渡す。
     /// 終了値0では仮にSucceededを記録し、JSONと参照素材の照合後に変換成功を確定する。
     /// </remarks>
     /// <param name="request">CLIで解決済みの配置を持つ要求</param>
@@ -175,7 +175,16 @@ internal static class CorpusGenerator
         var outputPath = Path.GetFullPath(
             Path.Combine(request.OutputRoot, CorpusVerifier.GetScriptPath(input.Input.Path))
         );
-        string[] arguments = [input.Input.Path, "-o", outputPath];
+        string[] arguments = request
+            .Profile.LogicalArguments.Select(x =>
+                x switch
+                {
+                    "<relative.wast>" => input.Input.Path,
+                    "<output-root>/modules/<relative.json>" => outputPath,
+                    _ => x,
+                }
+            )
+            .ToArray();
         var startInfo = new ProcessStartInfo(request.ConverterPath)
         {
             WorkingDirectory = Path.Combine(request.SpecRoot, request.Profile.WorkingDirectory),

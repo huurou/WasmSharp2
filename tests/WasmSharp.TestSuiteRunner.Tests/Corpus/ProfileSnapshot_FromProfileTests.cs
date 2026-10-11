@@ -9,6 +9,7 @@ internal class ProfileSnapshot_FromProfileTests
     {
         // Arrange
         var profile = Core2Profile.Load();
+        var arguments = profile.LogicalArguments.ToArray();
         var snapshot = ProfileSnapshot.FromProfile(profile);
         var other = ProfileSnapshot.FromProfile(profile);
 
@@ -22,7 +23,7 @@ internal class ProfileSnapshot_FromProfileTests
         {
             await Assert.That(profile.Inputs.Length).IsEqualTo(147);
             await Assert.That(profile.Features.Length).IsEqualTo(21);
-            await Assert.That(profile.LogicalArguments.Length).IsEqualTo(3);
+            await Assert.That(profile.LogicalArguments.SequenceEqual(arguments)).IsTrue();
             await Assert.That(other.Inputs.SequenceEqual(profile.Inputs)).IsTrue();
             await Assert.That(other.Features.SequenceEqual(profile.Features)).IsTrue();
             await Assert

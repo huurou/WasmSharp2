@@ -304,8 +304,26 @@
   - _Depends: 14.7_
   - _Requirements: 1.3, 1.4, 1.5, 1.6, 4.7, 12.1, 12.8, 13.2, 13.4, 13.5, 13.6, 13.7, 14.4, 14.6, 14.7, 14.9_
 
+- [x] 15. WABT1.0.42へ固定条件を更新し比較元を移行する
+- [x] 15.1 固定版とCore2.0の変換引数を更新する
+  - 2026-10-12のユーザー承認に基づきWABT1.0.42のcommitへ固定する。公式spec・147入力・期待値・command集合は維持する。
+  - 全21機能の既定値を照合し、Core2.0外の7機能を明示的に無効化する。変換器の引数はprofileの論理引数から解決し、記録と実行を一致させる。
+  - 変換引数を観測する回帰テストとReleaseビルド・既存3suiteを成功させる。
+  - _Boundary: Core2Profile, CorpusGenerator, RunnerCliの起動例, thirdPartiesの固定版と手順_
+  - _Requirements: 2.2, 2.3, 2.4, 2.6, 2.7, 3.1_
+- [x] 15.2 素材再生成と旧受入revisionによる比較元移行を確認する
+  - 旧素材・旧baselineを保持して全147入力を新しい出力先へ生成し、compare-conversionで変更条件と素材差を記録する。
+  - 型なしselectと空typed selectの符号化、公式入力と期待値・command集合の維持を確認する。
+  - numeric-control着手前の受入済みrevisionを別領域へ展開し、旧素材で旧baselineとの一致を確認後、埋込みprofileだけ更新して新素材を実行する。
+  - 旧passed2,491件の保持と全件の分類差を監査し、新比較元を別pathへ保存する。旧baselineのprofileやhashは変更しない。
+  - test-suite-conformanceの受入契約を新素材で再確認し、numeric-control9.6の全体run・新比較元との比較・独立レビューへ接続する。
+  - _Boundary: 受入記録と既存ランナー_
+  - _Depends: 15.1_
+  - _Requirements: 1.3, 1.4, 1.5, 2.6, 12.6, 12.7, 12.8, 12.9_
+
 ## Implementation Notes
 
+- 15:2026-10-12、WABT1.0.42へ更新し、7機能の明示無効化でCore2.0の実効設定を保持した。変換器の引数はprofileから解決する。全147入力・5,821素材の差はselect.2.wasmだけで、旧受入revisionの新素材による結果から新baselineを別保存した。旧passed2,491件を維持し、numeric-control9.6の公式run・比較は終了0。独立レビューAPPROVEDと親のTASK: VERIFIEDを確認した。[移行記録](wabt-1.0.42-migration.md)に手順・保存先・検証範囲を保持する。
 - 2026-10-03の仕様全体の最終実装検証: revision `b7afecd75c7ab3f3f2336880841898c33181ce1e`の通常検証と公式全体run・比較を根拠とする上流検証レポートの判定はGO。全14要件・111受入基準、全51チェック項目、必須66ケースと既知不一致を含む全53,907ケースを確認した。[準備記録の上流検証](../test-suite-conformance/acceptance.md#上流仕様の最終実装検証)へ結果と確認範囲を保持する。以下の同日未コミット変更レビュー時点の「最終実装検証未実施」より後の判定であり、ロードマップにも完了を反映した。Core 2.0全件合格とtest-suite-conformanceの修正後受入はまだ成立していない。
 - 2026-10-03の未コミット変更レビュー: 12個のcorpus型と`ProcessResult`の分割先は元の定義と一致した。`dotnet build WasmSharp2.slnx -c Release --warnaserror --nologo`は終了0、警告・エラー0。`dotnet run --project tests/WasmSharp.TestSuiteRunner.Tests/WasmSharp.TestSuiteRunner.Tests.csproj -c Release --no-build -- --results-directory artifacts/claude-review-20261003-517cdacf-elevated/tests --report-trx`は終了0、701成功・失敗0・スキップ0。初回のサンドボックス内実行は結果ディレクトリ作成の`UnauthorizedAccessException`でテスト開始前に終了1となり、上記は権限を調整した再実行の結果である。変更したC#15ファイルの`dotnet csharpier check`も終了0。保存済み受入資料との照合では診断944件、全53,907ケース、必須66ケース、生成物5,821件のhashに不一致はなかった。今回のコード変更は型の分割のみのため、ランタイム・生成器のテストと公式スイート全体は再実行していない。仕様全体の最終実装検証も未実施であり、roadmapには検証待ちを明記した。
 - 14: 2026-10-01、Windows x64/.NET 10.0.401、revision `1bda5b9368f04541676213ea90a9418e1f241751`で公式受入を確認した。製品コードの追加修正は不要だった。証拠はローカルの`artifacts/test-suite-runner-acceptance-20261001/`に保持し、固定版・成果物hash・必須ケース・不一致原因は`acceptance-audit.json`、全commandの初回結果は`run-initial.json`に記録している。

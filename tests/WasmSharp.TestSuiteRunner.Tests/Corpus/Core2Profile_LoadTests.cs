@@ -10,7 +10,7 @@ internal class Core2Profile_LoadTests
     {
         // Arrange
         const string SPEC_COMMIT = "05ca4182176763112561ae20153975c12bd689e4";
-        const string WABT_COMMIT = "03a00a1334e6121fb0cce4fccbd6bb109b68acaa";
+        const string WABT_COMMIT = "ff0ef7e0009402740c805a9744c09b05be063e48";
 
         // Act
         var profile = Core2Profile.Load();
@@ -112,7 +112,18 @@ internal class Core2Profile_LoadTests
             await Assert
                 .That(profile.Features.Where(x => !x.Enabled).Select(x => x.Name))
                 .IsEquivalentTo(disabled);
-            await Assert.That(profile.Features.All(x => x.DefaultEnabled == x.Enabled)).IsTrue();
+            await Assert
+                .That(profile.Features.Where(x => x.DefaultEnabled).Select(x => x.Name))
+                .IsEquivalentTo([
+                    .. enabled,
+                    "exceptions",
+                    "tail-call",
+                    "annotations",
+                    "memory64",
+                    "multi-memory",
+                    "extended-const",
+                    "relaxed-simd",
+                ]);
             await Assert
                 .That(profile.Conversion)
                 .IsEqualTo(new ConversionOptions(true, true, false, false));
@@ -121,6 +132,13 @@ internal class Core2Profile_LoadTests
                 .That(
                     profile.LogicalArguments.SequenceEqual([
                         "<relative.wast>",
+                        "--disable-exceptions",
+                        "--disable-tail-call",
+                        "--disable-annotations",
+                        "--disable-memory64",
+                        "--disable-multi-memory",
+                        "--disable-extended-const",
+                        "--disable-relaxed-simd",
                         "-o",
                         "<output-root>/modules/<relative.json>",
                     ])

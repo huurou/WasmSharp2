@@ -44,7 +44,7 @@
 - 即値・NumericSignature・分岐表・handler契約の変更時は生成器、Decode、Validate、下流3仕様の命令接続を再確認する。
 - OperandBase、値移動、CompleteFrame、実行コンテキストの変更時はhost-linkingの複数結果・再入・失敗復元を再確認する。
 - 診断文・原因選択・Unsupportedの段階やFeatureの変更時はtest-suite-conformanceの否定assertionと残存未対応の所有先を再確認する。
-- .NET/JIT・CPU・固定spec/WABT/profile・baselineの変更時は数値境界と全体比較の前提を再確認する。固定素材の変更は本仕様の実装で行わない。
+- .NET/JIT・CPU・固定spec/WABT/profile・baselineの変更時は数値境界と全体比較の前提を再確認する。固定素材の変更は上流test-suite-runnerが所有する。2026-10-12に承認されたWABT1.0.42更新・比較元移行の範囲は同仕様のタスク15と移行記録に保持する。
 
 ## アーキテクチャ（Architecture）
 
@@ -87,7 +87,7 @@ graph LR
 | 生成器 | netstandard2.0、C# 13、既存Roslyn | 属性から数値signatureと直接handler呼出しを生成。 |
 | テスト | net10.0、TUnit 1.66.16 | 既存3プロジェクトと公式ランナーを利用。 |
 | 固定仕様 | WebAssembly/spec `05ca4182176763112561ae20153975c12bd689e4` | 本文・参照実装・公式ケースの根拠。 |
-| 公式素材 | WABT `03a00a1334e6121fb0cce4fccbd6bb109b68acaa` | 既存素材を再利用。再生成が必要な場合だけ同じ版・profileを使用。 |
+| 公式素材 | WABT `ff0ef7e0009402740c805a9744c09b05be063e48`（1.0.42） | 上流test-suite-runner15で承認済み移行を行った素材を利用し、その後は同じ版・profileを使用。 |
 
 ## ファイル構成計画（File Structure Plan）
 
@@ -398,8 +398,8 @@ DecodedInstructionでは既存4項目に`BlockType BlockType`、`ImmutableArray<
 
 実装の各完了単位で固定スイート全体を実行する。最終受入は警告・エラー0の`dotnet build WasmSharp2.slnx -c Release --warnaserror`後、ランタイム・生成器・ランナーのTUnitを`dotnet run --project <対象csproj> -c Release --no-build`で確認し、既存CLIで全147入力を実行する。テストの絞り込みはTUnitの`--treenode-filter`を使う。
 
-- 入力: 同一固定profileのmanifestと素材。調査時の素材は`artifacts/test-suite-runner-acceptance-20261001/portable/corpus/manifest.json`。
-- 比較元: `artifacts/test-suite-runner-acceptance-20261001/run-baseline.json`。調査時SHA-256は`0f47b1fc0b648b8e539297a60a3ef5a36c7d78c79ef3f8550ef86b10a5814285`。実装着手時に再確認し、その直前baselineを実行前に保存・同定する。
+- 入力: 同一固定profileのmanifestと素材。WABT1.0.42移行後は`artifacts/numeric-control/wabt-1.0.42-20261012/corpus/manifest.json`。旧素材は`artifacts/test-suite-runner-acceptance-20261001/portable/corpus/manifest.json`に保持する。
+- 比較元: 移行後は`artifacts/numeric-control/wabt-1.0.42-20261012/run-baseline.json`。旧比較元`artifacts/test-suite-runner-acceptance-20261001/run-baseline.json`は保持する。調査時SHA-256は`0f47b1fc0b648b8e539297a60a3ef5a36c7d78c79ef3f8550ef86b10a5814285`。実装着手時に再確認し、その直前baselineを実行前に保存・同定する。
 - 出力: 毎回新しい`artifacts/numeric-control/<run-id>/run.json`と`comparison.json`。実行条件・終了コード・規則対応・残存原因を`validation.md`から参照する。
 - 順序: `run --manifest ... --output ...`の記録完了・終了0を確認してから`compare-run --baseline ... --current ... --output ...`を行う。不一致修正後は新しい出力先で両方をやり直す。
 - 判定: 全入力・全commandを記録し、failed・runner_error・回帰0。本仕様と先行機能で前提が揃うケースはpassedを要求する。run終了0だけを本仕様の完成条件にしない。
@@ -407,7 +407,7 @@ DecodedInstructionでは既存4項目に`BlockType BlockType`、`ImmutableArray<
 - 規則対応: S1〜S8→73受入基準→対象opcode/型規則→実装ファイル→公式ケースまたは必要な直接テストを記録する。代表WAST名の一覧だけで網羅性を主張しない。
 - 更新: 受入後、比較済みの同じrun.jsonに`baseline-save --input ... --output ...`を明示実行する。Core 2.0全体のverifyは残存未対応・blockedも0を要求する別判定とする。
 
-公式素材・期待値・診断比較・feature flagは変更しない。入力としてWASTを独自解析しない。性能の数値目標や新しい負荷試験は設けず、深い構文でCLR再帰を増やさないことと、既存の呼出し資源上限を確認する。
+上流で承認済みの素材移行後は公式素材を固定し、期待値・診断比較・実効featureを変更しない。入力としてWASTを独自解析しない。性能の数値目標や新しい負荷試験は設けず、深い構文でCLR再帰を増やさないことと、既存の呼出し資源上限を確認する。
 
 ## 導入順序とリスク（Migration Strategy）
 

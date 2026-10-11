@@ -6,6 +6,52 @@ namespace WasmSharp.Tests;
 internal partial class WasmModule_ValidateTests
 {
     [Test]
+    [Arguments("4107410941001B0B", 3)]
+    [Arguments("4107410941001C017F0B", 3)]
+    [Arguments("027F41070B0B", 0)]
+    public async Task selectやblockをGlobal初期化式へ置く_関数内の対応によらずValidateで拒否する(
+        string initializer,
+        int instructionIndex
+    )
+    {
+        // Arrange
+        var module = WasmModule.Decode(
+            HostLinkingModuleBinary.Create(
+                HostLinkingModuleBinary.Globals((0x7F, false, Convert.FromHexString(initializer)))
+            )
+        );
+
+        // Act & Assert
+        var exception = await Assert
+            .That(() => module.Validate())
+            .ThrowsExactly<WasmValidateException>();
+        using (Assert.Multiple())
+        {
+            await Assert
+                .That(
+                    exception!.Message.StartsWith(
+                        "constant expression required",
+                        StringComparison.Ordinal
+                    )
+                )
+                .IsTrue();
+            await Assert
+                .That(exception.Location)
+                .IsEqualTo(
+                    new(
+                        WasmProcessingStage.Validate,
+                        module.Globals[0].Initializer[instructionIndex].ByteOffset,
+                        null,
+                        6
+                    )
+                );
+            await Assert
+                .That(() => module.Instantiate([]))
+                .ThrowsExactly<InvalidOperationException>();
+        }
+    }
+
+    [Test]
     [Arguments("23011A0B", false, "unknown global 1", 0)]
     [Arguments("1A23010B", false, "constant expression required", 0)]
     [Arguments("41001A23010B", false, "constant expression required", 1)]

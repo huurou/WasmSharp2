@@ -8,6 +8,54 @@ namespace WasmSharp.TestSuiteRunner.Tests.Corpus;
 internal class CorpusGenerator_ConvertTests
 {
     [Test]
+    public async Task 機能を無効化するprofileで変換する_指定した引数を変換器へ渡す()
+    {
+        // Arrange
+        using var workspace = await SuiteWorkspace.CreateAsync();
+        var profile = workspace.CreateProfile() with
+        {
+            LogicalArguments =
+            [
+                "<relative.wast>",
+                "--disable-exceptions",
+                "--disable-memory64",
+                "-o",
+                "<output-root>/modules/<relative.json>",
+            ],
+        };
+        var request = workspace.CreateRequest(profile);
+        var input = new InputConversionResult(profile.Inputs.Single(x => x.Path == "success.wast"));
+        string[] expected =
+        [
+            "success.wast",
+            "--disable-exceptions",
+            "--disable-memory64",
+            "-o",
+            Path.Combine(workspace.OutputRoot, "modules", "success.json"),
+        ];
+
+        // Act
+        var result = CorpusGenerator.Convert(request, input);
+
+        // Assert
+        using var output = JsonDocument.Parse(result.StandardOutput);
+        using (Assert.Multiple())
+        {
+            await Assert.That(result.ExitCode).IsEqualTo(0);
+            await Assert.That(result.Arguments.SequenceEqual(expected)).IsTrue();
+            await Assert
+                .That(
+                    output
+                        .RootElement.GetProperty("arguments")
+                        .EnumerateArray()
+                        .Select(x => x.GetString())
+                        .SequenceEqual(expected)
+                )
+                .IsTrue();
+        }
+    }
+
+    [Test]
     public async Task 成功する入力を変換する_相対入力と解決済みの絶対出力を渡し終了値と標準出力を記録する()
     {
         // Arrange

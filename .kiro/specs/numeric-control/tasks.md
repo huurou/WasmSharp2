@@ -186,7 +186,7 @@
   - _Boundary: Interpreter.Control_
   - _Requirements: 7.1, 7.3, 7.4, 7.5, 7.6, 7.7, 8.1_
 
-- [ ] 9. 構造化制御の読取り・型検証・実行を接続する
+- [x] 9. 構造化制御の読取り・型検証・実行を接続する
 - [x] 9.1 制御とselectの命令宣言を式読取りへ統合する
   - 用意したhandlerと複合即値の契約を命令宣言へ接続し、block/loop/ifの型、br_tableの候補と既定、select型ベクトルを読み取る。
   - CLR再帰を増やさず入れ子とelse有無を管理し、最外end・内側end・不正else・重複else・終端欠落を区別する。型添字の存在や型ベクトル長の適格性はValidateへ残す。
@@ -229,7 +229,7 @@
   - _Boundary: FunctionValidator_
   - _Requirements: 1.6, 2.3, 2.4, 2.5, 3.8, 9.1, 9.6, 9.7_
 
-- [ ] 9.6 制御・selectを公開4段階へ統合して公式結果を確認する
+- [x] 9.6 制御・selectを公開4段階へ統合して公式結果を確認する
   - 確定した分岐情報を生成dispatchと値移動へ接続し、全体検証成功前にInstantiateを許可しない。
   - 数値・select・構造化制御を定数式で拒否し、Decode・Validateにホストcallbackやstartの副作用がないことを確認する。
   - nop、通常終了、両if経路、loop引数、入れ子を越える分岐、空・負値・範囲外の分岐表を公開APIで確認し、loop反復で値や深さが蓄積しないことを確認する。
@@ -237,6 +237,7 @@
   - _Boundary: FunctionValidator, ModuleValidator, WasmModule, Interpreter.Control, InterpreterContext, 受入記録と既存ランナー_
   - _Depends: 1.1, 8.1, 8.2, 9.2, 9.3, 9.4, 9.5_
   - _Requirements: 1.1, 1.5, 2.6, 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7, 10.1, 10.3, 10.5, 10.7_
+  - 2026-10-12にWABT1.0.42への更新と比較元移行をユーザー承認済み。test-suite-runner15.1・15.2で旧素材とbaselineを保持して移行し、その新素材・新比較元で本タスクを再検証する。
 
 - [ ] 10. 先行機能との公開経路を統合検証する
 - [ ] 10.1 呼出しと制御を越える値の保持を確認する
@@ -324,3 +325,4 @@
 - 9.3:ラベル型はloopの引数、それ以外の結果から求める。ラベルを条件・分岐値より先に解決し、br_ifの非分岐側へ宣言型列を戻す。loopは入口Pc、他は既存endの前方patchを使う。
 - 9.4:br_tableはselectorを除く同じnullable型列を既定・候補入力順へ照合してから消費する。不足の拒否はPopが担い、Unknownを具体化しない。出力は候補の後に既定を置き、TargetCountは候補数だけ。
 - 9.5:selectの候補参照は現在frame内のPeek、消費は既存Popを使う。typedの型列長1を先に要求し、局所型検証後に4Featureを通知する。Validateの未確認範囲の終端はInputLengthで、Decode範囲を追加しない。
+- 9.6:WABT1.0.41の空typed select変換による不一致は、承認済みの上流test-suite-runner15でWABT1.0.42へ更新して解消した。旧素材・baselineを保持し、新比較元に旧受入revisionの新素材による結果を保存した。全147入力のrun・比較は終了0、failed・runner_error・回帰0。独立レビューAPPROVEDと親のTASK: VERIFIEDを確認した。新素材・比較元と確認範囲は[移行記録](../test-suite-runner/wabt-1.0.42-migration.md)を参照する。

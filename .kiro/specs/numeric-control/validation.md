@@ -377,3 +377,32 @@ FunctionValidatorのframe内参照をPeekへ整理してから、スカラー4�
 - 実装記録:`artifacts/numeric-control/task-9.5-20261012T013903-a60094/self-review.md`。独立レビュー:`artifacts/numeric-control/task-9.5-review-20261012-independent/review.md`。各出力先にコマンド・rawlog・native終了値を保持した。
 
 親エージェントが最終本体差分・新規テスト全文、RED/GREENと最終/独立ビルド・3suiteのrawlogとnative終了値、独立レビュー、最終3ファイルの現在hash一致を確認し、`kiro-verify-completion`は`TASK: VERIFIED`。包括的な公開4段階統合と固定公式全体runは9.6の範囲である。
+
+## タスク9.6:公開4段階統合と固定公式全体の停止理由
+
+実装者は`STATUS: BLOCKED`、独立debugは`NEXT_ACTION: STOP_FOR_HUMAN`。タスクは未完了で、task-localレビューは未実施、親の完了確認は`TASK: NOT_VERIFIED`。27/36タスクをコミット済みで、最終feature検証は未実施である。
+
+- 追加した統合テスト11ケースを含むReleaseビルドはnative終了0、警告・エラー0。3suiteは2,790件・76件・701件成功、失敗・スキップ0、各native終了0。既存動作の統合確認であり、本体変更や一時flagはない。3テストファイルの最終hashは保存記録と現在が一致し、未コミットのまま再開用に保持した。
+- 固定147入力・53,907commandの記録と出力は完了したが、公式runはnative終了1。結果はpassed16,923、failed1、runtime_unsupported2,100、blocked33,806、out_of_scope1,077、runner_error0。唯一のfailedは`select.wast/command120`で、期待先頭`invalid result arity`に対し、Validateの`WasmValidateException`は`type mismatch`を通知した。位置はoffset27・function0・section10である。
+- `command119`の型なしselectと`command120`の明示的な空typed selectは、保存素材も固定WABTによる独立再生成も全バイト一致した。両方のopcodeは`0x1B`で、SHA-256は`85b112cf098fb11c1aed4bec54599c214dd7adc37e662a3f5d7e057b30586556`。固定WABT1.0.41のparser/IRが型注釈の有無を区別せず、writerが空列を型なしselectへ変換する。現在のvalidatorは直接入力された`0x1C 0x00`を正しい優先順で拒否し、ランタイムから失われた注釈を復元できない。
+- 保存baselineのSHA-256は`0f47b1fc0b648b8e539297a60a3ef5a36c7d78c79ef3f8550ef86b10a5814285`を維持する。独立JSON確認では旧passed2,491件を保持しcorpusも一致したが、run終了0後に比較するBatch契約に従い`compare-run`は未実行である。これを回帰比較完了とは扱わない。未対応の所有先とblocked原因の監査は実装者・debug記録に保持したが、11.2の規則網羅監査は未実施である。
+
+独立調査は公式WABT修正[9dfd98d113408b7ad95336d1395f04fbd60f8997](https://github.com/WebAssembly/wabt/commit/9dfd98d113408b7ad95336d1395f04fbd60f8997)で型なしと空typedを区別する変更を確認した。新WABTの取得・ビルド、更新素材での受入は未実施である。承認済みdesignは固定素材の変更を本仕様内で禁止しており、上流`test-suite-runner`所有の固定条件更新として扱う必要がある。WABT commitと生成物hashの変更は既存`BaselineComparer`の比較条件を変えるため、旧baselineの条件を書き換えて比較を成立させることはできない。
+
+再開に必要な計画は、公式修正commitの採用、Core2の公式入力・期待値・command集合と実効feature状態を保った全147入力の再生成、`compare-conversion`による条件・素材差の記録、旧素材とbaselineを保持した新比較元の作成である。新比較元はnumeric-control着手前の受入済みrevisionを新素材で実行し、旧passed2,491件の保持と上流の受入条件を確認したうえで別pathへ保存する。完成済み`test-suite-conformance`も再検証し、その後9.6を同じ新素材・新比較元で全体run、終了0後の`compare-run`、独立レビューへ戻す。現在の自動queueは9.6で停止し、依存する10.1を進めない。
+
+実装記録:`artifacts/numeric-control/task-9.6-20261012T020351/verification.md`。独立debug:`artifacts/numeric-control/task-9.6-debug-20261012T024300/report.md`、詳細と再現:`investigation.md`・`reproduction.json`・`wast2json.result.json`。親が保存runの失敗ケース、raw出力とnative終了値、独立再現、最終テストhash、固定条件・比較契約、公式上流差分を確認した。
+
+## タスク9.6:WABT更新後の再検証
+
+2026-10-12、ユーザー承認に基づき上流test-suite-runner15.1・15.2でWABT1.0.42へ更新し、前節の停止理由を解消した。Core2.0の実効機能、固定147入力、公式JSONと期待値を維持し、旧素材・旧baselineを保持したまま比較元を移行した。手順と保存先は[WABT移行記録](../test-suite-runner/wabt-1.0.42-migration.md)を参照する。
+
+- 9.6の追加11ケースを含む3suiteは2,790件・76件・702件成功、失敗・スキップ0。独立エージェントもReleaseビルドの警告・エラー0後に同じ3suite、CSharpier9ファイル、diff-check、CLI helpを成功させた。
+- 新素材の全147入力・53,907commandは記録・出力完了、run終了0。passed16,924、failed0、runner_error0、runtime_unsupported2,100、blocked33,806、out_of_scope1,077。
+- `select.wast/command120`は`0x1C 0x00`を保持した素材となり、期待どおりValidateの`invalid result arity`でpassed。command119は従来どおり`type mismatch`でpassed。前回9.6との全case比較で変化したのはcommand120だけだった。
+- 新比較元は旧受入revisionの新素材による結果であり、旧passed2,491件を維持する。現在のrunとの比較は終了0、比較成立・完了、条件差・素材差・回帰・欠落・追加・未比較0。blockedの全起点はruntime_unsupportedで、残存未対応の所有先はlinear-memory・tables-references・simdである。
+- 履歴なしの独立レビューはAPPROVED。全差分・RED/GREEN・snapshotの全Git blob・新旧全素材・全caseの期待値と分類を確認した。指摘されたLINQ引数名を修正後、ビルドの警告・エラー0と関連5テストの成功を確認し、最終差分も承認された。
+
+親が独立レビュー・原ログ・native終了値・最終18ファイルのhash一致を確認し、`kiro-verify-completion`は`TASK: VERIFIED`。タスク9.6と親項目9を完了とした。タスク10・11、numeric-control全体の実装検証、Core2.0全体の完成判定は今回の対象外である。現在のrunを次のbaselineとして保存する11.4も未実施。
+
+実装・移行記録:`artifacts/numeric-control/wabt-1.0.42-20261012/`。独立レビュー:`artifacts/numeric-control/wabt-1.0.42-review-20261012/review.md`。親の完了確認:`artifacts/numeric-control/wabt-1.0.42-20261012/completion-verification.md`。
