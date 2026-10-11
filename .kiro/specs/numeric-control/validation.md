@@ -111,3 +111,16 @@
 - 実装記録:`artifacts/numeric-control/task-2.2-20261011T172542/verification.md`。独立レビュー:`artifacts/numeric-control/task-2.2-review-20261011T180100/review.md`。各出力先にコマンド・ログ・終了値を保持した。
 
 親エージェントが差分、現在のビルド・3suiteのログと終了値、レビューの非阻害指摘への記録訂正を確認し、`kiro-verify-completion`は`TASK: VERIFIED`。固定公式全体の実行と回帰比較はタスク2.3で行う。
+
+## タスク2.3:責務分離後の公開経路と公式結果
+
+既存の公開APIテストと接続コードで、Decode→Validate→Instantiate→Invoke、Decode・Validateのstart/callback非実行、全体検証成功後だけの状態確定を確認した。既存テストがこの範囲を覆うため、コード・テストの追加変更はない。要件1.1・1.5・9.6・9.7・10.1・10.5・10.7の責務分離後の統合確認である。
+
+- 実装者:`READY_FOR_REVIEW`。Releaseビルド警告・エラー0、3suiteは1,160件・37件・701件成功、失敗・スキップ0、各終了0。ReleaseのCLI`--help`も終了0。
+- 公式出力:`artifacts/numeric-control/task-2.3-20261011T174124/run.json`。固定147入力・53,907commandを処理し、`processing_complete`と`output_complete`が`true`、終了0。
+- 結果:passed2,491、failed0、runtime_unsupported2,987、blocked47,352、out_of_scope1,077、runner_error0。
+- 記録完了・終了0の確認後、タスク1.1で保存した比較元へ`compare-run`を実行。`artifacts/numeric-control/task-2.3-20261011T174124/comparison.json`は比較成立・完了、終了0。条件差・出典差・素材差・変化・追加・欠落・回帰・未比較、現在のfailed・runner_errorはすべて0。
+- 履歴なしの独立レビュー:`APPROVED`。現ソースのビルドと3suiteを独立実行し、同じ成功件数と各終了0を確認。全53,907件の保存記録一致、以前passedの2,491件の保持、公式run完了後の比較順序を直接照合した。
+- 実装記録:`artifacts/numeric-control/task-2.3-20261011T174124/verification.md`。独立レビュー:`artifacts/numeric-control/task-2.3-review-20261011T174930/review.md`。各出力先にコマンド・ログ・終了値・集計監査を保持した。
+
+親エージェントも現在のビルド・3suiteと公式実行・比較の出力と終了値、保存JSONの完了・集計、独立監査を確認し、`kiro-verify-completion`は`TASK: VERIFIED`。比較元は更新していない。承認は責務分離後の統合範囲に限り、後続の数値・制御追加と最終受入は未実施である。
