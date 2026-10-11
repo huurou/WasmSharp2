@@ -180,3 +180,14 @@
 - 実装記録:`artifacts/numeric-control/task-4.2-20261011T205000/verification.md`。独立レビュー:`artifacts/numeric-control/task-4.2-review-20261011T212745/review.md`。各出力先にコマンド・rawlog・dotnet終了値を保持した。
 
 親エージェントが8handlerと共有trapの差分、代表境界テスト、RED/GREENと現在のビルド・3suiteのrawlog・終了値、独立レビューを確認し、`kiro-verify-completion`は`TASK: VERIFIED`。公開診断・Invoke/start・生成dispatchと公式全体の統合確認は7.1・7.2で行う。
+
+## タスク4.3:整数のビット操作と計数
+
+両幅のand/or/xor・shift・rotate・clz/ctz/popcntの22handlerを追加した。移動量は31/63でmaskし、unsignedのビット解釈と対象幅の`BitOperations`を使う。計数も元の整数幅へ積む。変更は本体1ファイルと対象別テスト22クラス。要件4.5・4.6の内部handlerの範囲である。
+
+- 実装者:`READY_FOR_REVIEW`。既定OFFのREDはビルド成功後118件中116件失敗・2件成功、dotnet終了2。入力と結果が同じpopcnt(0)の2件はOFFでも一致するが、他入力とclz/ctz(0)は失敗した。ONで同じ118件成功後、一時flagを除去した。
+- 最終Releaseビルド:終了0、警告・エラー0。3suiteは1,493件・76件・701件成功、失敗・スキップ0、各終了0。CSharpier23ファイルと差分確認も終了0。
+- 履歴なしの独立レビュー:`APPROVED`。差分と新規22テスト全文、幅・移動量・符号・方向・計数・残る値、RED/GREENを確認。既存36handler・IntegerTrap・fixtureの不変と、独立ビルド・同じ3suiteの成功も確認した。
+- 実装記録:`artifacts/numeric-control/task-4.3-20261011-21ac6d/verification.md`。独立レビュー:`artifacts/numeric-control/task-4.3-review-20261011-8d24a1/review.md`。各出力先にコマンド・rawlog・終了値を保持した。
+
+親エージェントが22handlerの差分、代表境界テスト、RED/GREENと現在のビルド・3suiteのrawlog・終了値、独立レビューを確認し、`kiro-verify-completion`は`TASK: VERIFIED`。整数58handlerの直接確認を終えた。公開opcodeの宣言・型検証・生成dispatchの接続は7.1、公開統合と公式全体の次回確認は7.2で行う。

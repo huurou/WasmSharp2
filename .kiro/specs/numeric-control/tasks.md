@@ -74,7 +74,7 @@
   - _Depends: 3.1, 3.2_
   - _Requirements: 1.2, 1.3, 2.1, 2.2, 4.6, 4.7, 9.2_
 
-- [ ] 4. 整数演算の実行処理を追加する
+- [x] 4. 整数演算の実行処理を追加する
 - [x] 4.1 幅を保つ整数算術と比較を実装する
   - i32/i64のadd・sub・mulを対象幅の剰余として計算し、operandの左右を保つ。
   - eqzと符号付き・符号なし比較を区別し、結果をi32の0/1で返す。
@@ -90,7 +90,7 @@
   - _Boundary: Interpreter.Integer_
   - _Requirements: 4.2, 4.3, 4.4, 9.2_
 
-- [ ] 4.3 整数のビット操作とビット数計算を実装する
+- [x] 4.3 整数のビット操作とビット数計算を実装する
   - 論理演算、符号付き・符号なし右シフト、左シフト、左右回転を対象幅で扱う。
   - シフト・回転量を幅で剰余化し、clz・ctz・popcntの結果を元の整数幅で返す。
   - 入力0、最上位bit、幅以上の移動量で仕様どおりの値になり、i64のビット数計算もi64結果になることを確認する。
@@ -310,3 +310,4 @@
 - 3.3:数値宣言は10引数属性で`NumericSignature`を指定し、StackEffectとValidationの両方をNumericにする。生成器fixtureのWasmValueKindは常時InstructionContractsから取り込み、実行契約側には重複させない。
 - 4.1:整数handlerは`Interpreter.Integer.cs`へ配置する。直接テストのcontext準備と後片付けは`NumericHandlerFixture`で共有し、期待値とassertionは対象メソッドごとのテストへ残した。数値opcodeの接続は7.1で行う。
 - 4.2:位置付きの整数trapは`IntegerTrap`で構築する。signed剰余のMIN/-1はCLRの`%`でも例外になるため、演算前に0を返す。REDのdotnet終了値は保存したresult.jsonの2で、exec応答の1と区別する。
+- 4.3:シフト・回転量は31/63でmaskし、計数と回転には対象幅の`BitOperations`を使う。テストメソッド名は数字から始めず「入力」などを先頭に置く。

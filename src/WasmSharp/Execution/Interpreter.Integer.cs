@@ -1,3 +1,4 @@
+using System.Numerics;
 using WasmSharp.Exceptions;
 
 namespace WasmSharp.Execution;
@@ -577,6 +578,320 @@ internal static partial class Interpreter
         var right = unchecked((ulong)context.PopValue().AsI64());
         var left = unchecked((ulong)context.PopValue().AsI64());
         context.PushValue(WasmValue.FromI32(left >= right ? 1 : 0));
+        return default;
+    }
+
+    /// <summary>
+    /// i32のbitごとの論理積を計算する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI32And命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I32And(InterpreterContext context, in Instruction instruction)
+    {
+        var right = context.PopValue().AsI32();
+        var left = context.PopValue().AsI32();
+        context.PushValue(WasmValue.FromI32(left & right));
+        return default;
+    }
+
+    /// <summary>
+    /// i32のbitごとの論理和を計算する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI32Or命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I32Or(InterpreterContext context, in Instruction instruction)
+    {
+        var right = context.PopValue().AsI32();
+        var left = context.PopValue().AsI32();
+        context.PushValue(WasmValue.FromI32(left | right));
+        return default;
+    }
+
+    /// <summary>
+    /// i32のbitごとの排他的論理和を計算する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI32Xor命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I32Xor(InterpreterContext context, in Instruction instruction)
+    {
+        var right = context.PopValue().AsI32();
+        var left = context.PopValue().AsI32();
+        context.PushValue(WasmValue.FromI32(left ^ right));
+        return default;
+    }
+
+    /// <summary>
+    /// i32を対象幅で左シフトする
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI32Shl命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I32Shl(InterpreterContext context, in Instruction instruction)
+    {
+        var right = context.PopValue().AsI32() & 31;
+        var left = context.PopValue().AsI32();
+        context.PushValue(WasmValue.FromI32(unchecked(left << right)));
+        return default;
+    }
+
+    /// <summary>
+    /// i32を符号拡張して右シフトする
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI32ShrS命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I32ShrS(InterpreterContext context, in Instruction instruction)
+    {
+        var right = context.PopValue().AsI32() & 31;
+        var left = context.PopValue().AsI32();
+        context.PushValue(WasmValue.FromI32(left >> right));
+        return default;
+    }
+
+    /// <summary>
+    /// i32をゼロ拡張して右シフトする
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI32ShrU命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I32ShrU(InterpreterContext context, in Instruction instruction)
+    {
+        var right = context.PopValue().AsI32() & 31;
+        var left = unchecked((uint)context.PopValue().AsI32());
+        context.PushValue(WasmValue.FromI32(unchecked((int)(left >> right))));
+        return default;
+    }
+
+    /// <summary>
+    /// i32を対象幅で左回転する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI32Rotl命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I32Rotl(InterpreterContext context, in Instruction instruction)
+    {
+        var right = context.PopValue().AsI32() & 31;
+        var left = unchecked((uint)context.PopValue().AsI32());
+        context.PushValue(WasmValue.FromI32(unchecked((int)BitOperations.RotateLeft(left, right))));
+        return default;
+    }
+
+    /// <summary>
+    /// i32を対象幅で右回転する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI32Rotr命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I32Rotr(InterpreterContext context, in Instruction instruction)
+    {
+        var right = context.PopValue().AsI32() & 31;
+        var left = unchecked((uint)context.PopValue().AsI32());
+        context.PushValue(
+            WasmValue.FromI32(unchecked((int)BitOperations.RotateRight(left, right)))
+        );
+        return default;
+    }
+
+    /// <summary>
+    /// i32の先頭ゼロ数を元の整数幅で返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI32Clz命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I32Clz(InterpreterContext context, in Instruction instruction)
+    {
+        var operand = unchecked((uint)context.PopValue().AsI32());
+        context.PushValue(WasmValue.FromI32(BitOperations.LeadingZeroCount(operand)));
+        return default;
+    }
+
+    /// <summary>
+    /// i32の末尾ゼロ数を元の整数幅で返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI32Ctz命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I32Ctz(InterpreterContext context, in Instruction instruction)
+    {
+        var operand = unchecked((uint)context.PopValue().AsI32());
+        context.PushValue(WasmValue.FromI32(BitOperations.TrailingZeroCount(operand)));
+        return default;
+    }
+
+    /// <summary>
+    /// i32の1の個数を元の整数幅で返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI32Popcnt命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I32Popcnt(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        var operand = unchecked((uint)context.PopValue().AsI32());
+        context.PushValue(WasmValue.FromI32(BitOperations.PopCount(operand)));
+        return default;
+    }
+
+    /// <summary>
+    /// i64のbitごとの論理積を計算する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI64And命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I64And(InterpreterContext context, in Instruction instruction)
+    {
+        var right = context.PopValue().AsI64();
+        var left = context.PopValue().AsI64();
+        context.PushValue(WasmValue.FromI64(left & right));
+        return default;
+    }
+
+    /// <summary>
+    /// i64のbitごとの論理和を計算する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI64Or命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I64Or(InterpreterContext context, in Instruction instruction)
+    {
+        var right = context.PopValue().AsI64();
+        var left = context.PopValue().AsI64();
+        context.PushValue(WasmValue.FromI64(left | right));
+        return default;
+    }
+
+    /// <summary>
+    /// i64のbitごとの排他的論理和を計算する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI64Xor命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I64Xor(InterpreterContext context, in Instruction instruction)
+    {
+        var right = context.PopValue().AsI64();
+        var left = context.PopValue().AsI64();
+        context.PushValue(WasmValue.FromI64(left ^ right));
+        return default;
+    }
+
+    /// <summary>
+    /// i64を対象幅で左シフトする
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI64Shl命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I64Shl(InterpreterContext context, in Instruction instruction)
+    {
+        var right = (int)(context.PopValue().AsI64() & 63);
+        var left = context.PopValue().AsI64();
+        context.PushValue(WasmValue.FromI64(unchecked(left << right)));
+        return default;
+    }
+
+    /// <summary>
+    /// i64を符号拡張して右シフトする
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI64ShrS命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I64ShrS(InterpreterContext context, in Instruction instruction)
+    {
+        var right = (int)(context.PopValue().AsI64() & 63);
+        var left = context.PopValue().AsI64();
+        context.PushValue(WasmValue.FromI64(left >> right));
+        return default;
+    }
+
+    /// <summary>
+    /// i64をゼロ拡張して右シフトする
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI64ShrU命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I64ShrU(InterpreterContext context, in Instruction instruction)
+    {
+        var right = (int)(context.PopValue().AsI64() & 63);
+        var left = unchecked((ulong)context.PopValue().AsI64());
+        context.PushValue(WasmValue.FromI64(unchecked((long)(left >> right))));
+        return default;
+    }
+
+    /// <summary>
+    /// i64を対象幅で左回転する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI64Rotl命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I64Rotl(InterpreterContext context, in Instruction instruction)
+    {
+        var right = (int)(context.PopValue().AsI64() & 63);
+        var left = unchecked((ulong)context.PopValue().AsI64());
+        context.PushValue(
+            WasmValue.FromI64(unchecked((long)BitOperations.RotateLeft(left, right)))
+        );
+        return default;
+    }
+
+    /// <summary>
+    /// i64を対象幅で右回転する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI64Rotr命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I64Rotr(InterpreterContext context, in Instruction instruction)
+    {
+        var right = (int)(context.PopValue().AsI64() & 63);
+        var left = unchecked((ulong)context.PopValue().AsI64());
+        context.PushValue(
+            WasmValue.FromI64(unchecked((long)BitOperations.RotateRight(left, right)))
+        );
+        return default;
+    }
+
+    /// <summary>
+    /// i64の先頭ゼロ数を元の整数幅で返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI64Clz命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I64Clz(InterpreterContext context, in Instruction instruction)
+    {
+        var operand = unchecked((ulong)context.PopValue().AsI64());
+        context.PushValue(WasmValue.FromI64(BitOperations.LeadingZeroCount(operand)));
+        return default;
+    }
+
+    /// <summary>
+    /// i64の末尾ゼロ数を元の整数幅で返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI64Ctz命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I64Ctz(InterpreterContext context, in Instruction instruction)
+    {
+        var operand = unchecked((ulong)context.PopValue().AsI64());
+        context.PushValue(WasmValue.FromI64(BitOperations.TrailingZeroCount(operand)));
+        return default;
+    }
+
+    /// <summary>
+    /// i64の1の個数を元の整数幅で返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI64Popcnt命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I64Popcnt(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        var operand = unchecked((ulong)context.PopValue().AsI64());
+        context.PushValue(WasmValue.FromI64(BitOperations.PopCount(operand)));
         return default;
     }
 }
