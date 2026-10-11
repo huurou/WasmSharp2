@@ -279,3 +279,16 @@
 - 実装記録:`artifacts/numeric-control/task-7.1-20261012T0500/verification.md`。独立レビュー:`artifacts/numeric-control/task-7.1-review-20261012T0645/review.md`。各出力先にコマンド・rawlog・native終了値を保持した。実装者の最新ログはfinal2-*で、旧失敗ログも保持した。
 
 親エージェントが数値宣言の代表箇所、型検証の最終差分、公開正常・型不成立・定数式テスト、全既存fixture差分、RED/GREENと最終・独立ビルド/3suiteのrawlog・終了値、独立レビュー、検証後の10ファイルのhash一致を確認し、`kiro-verify-completion`は`TASK: VERIFIED`。公開数値trap・start・固定147入力の全体実行は7.2で行う。
+
+## タスク7.2:数値trapの公開診断と公式全体の確認
+
+ExecutionBoundaryで0除算・整数overflow・不正整数変換をReason別の固定診断へ変換した。Invokeとstartの元の段階・位置を保持し、trap後のglobal更新とホスト呼出しが実行されないことを3Reasonずつ確認した。変更は本体1ファイルと関連テスト3ファイル。要件4.3・6.4・9.2・9.3・9.6・10.1・10.3・10.5・10.7の本タスクの範囲である。
+
+- 実装者:`READY_FOR_REVIEW`。既定OFFのREDはビルド成功後6件すべて診断先頭の不一致で失敗、dotnet終了2。ONで同じ6件成功後、一時flagを除去した。
+- 最終Releaseビルド:終了0、警告・エラー0。3suiteは2,520件・76件・701件成功、失敗・スキップ0、各終了0。CSharpier4ファイル、CLI起動、差分確認も成功し、LFを維持した。
+- 固定147入力の公式run:53,907commandの記録完了、passed15,939、failed/runner_error0、runtime_unsupported2,703、blocked34,188、out_of_scope1,077、終了0。保存baselineとの比較は成立・完了、変化13,474、追加・欠落・回帰・未比較0、終了0。素材・profile・期待値・分類・baselineは変更していない。
+- 数値trap119件（0除算38・整数overflow41・不正整数変換40）はすべてpassedでReason・Invoke段階・固定診断先頭が一致した。conversions.wast全619件がpassed。数値136命令とconst4命令に対応する未対応Featureは0。blocked全34,188件のoriginがruntime_unsupportedである。
+- 履歴なしの独立レビュー:`APPROVED`。全差分、6公開ケース、RED/GREENを確認し、独立ビルドと3suiteも成功した。公式結果と比較の全53,907件を元manifest・baselineへ独立に照合し、初期passed2,491件の維持、数値trap119件、blockedの全origin、最終4ファイルのhash一致を確認した。監査側の初回不一致は製品を変更せず監査処理を修正し、最終native終了0・passed=true・errors=[]を確認した。
+- 実装記録:`artifacts/numeric-control/task-7.2-20261011T190000/verification.md`。公式結果と比較は同ディレクトリのrun.json/comparison.json。独立レビュー:`artifacts/numeric-control/task-7.2-review-20261011-independent-a1/review.md`。各出力先にコマンド・rawlog・native終了値を保持した。
+
+親エージェントが公開境界の最終差分と関連テスト、RED/GREEN・最終/独立ビルドと3suiteのrawlog・終了値、公式結果と比較、独立全件監査、検証後の4ファイルのhash一致を確認し、`kiro-verify-completion`は`TASK: VERIFIED`。この判定は7.2の範囲に限定する。制御/select等の後続タスクと残存未対応があり、numeric-control全体とCore 2.0全体の完成は未判定である。

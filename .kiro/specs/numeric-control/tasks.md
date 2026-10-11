@@ -151,7 +151,7 @@
   - _Depends: 5.1_
   - _Requirements: 5.7, 6.6_
 
-- [ ] 7. 数値命令を型検証と公開実行へ統合する
+- [x] 7. 数値命令を型検証と公開実行へ統合する
 - [x] 7.1 数値命令の宣言・型検証・生成dispatchを接続する
   - 完成した整数・浮動小数点・変換handlerを全対象命令へ宣言し、入力個数・型・結果型を宣言から検証する。
   - constは既存規則を維持し、比較のi32結果、i64ビット数のi64結果、0xFCの全飽和変換を固定opcodeと照合する。
@@ -161,7 +161,7 @@
   - _Depends: 4.3, 5.3, 6.4_
   - _Requirements: 1.3, 2.1, 2.2, 2.6, 4.6, 4.7, 9.1_
 
-- [ ] 7.2 数値trapの公開診断を統合し数値機能の公式結果を確認する
+- [x] 7.2 数値trapの公開診断を統合し数値機能の公式結果を確認する
   - 0除算・整数overflow・不正整数変換を既存公開境界でReason別の診断へ変換し、Invokeとstartの段階・位置を保つ。
   - 数値trap後の命令が実行されず、公開診断の先頭が固定期待値に一致することを確認する。
   - 3つのTUnitと固定147入力の全体実行を行い、終了0と記録完了後に保存したbaselineへ比較する。数値機能で前提が揃うケースの不一致を該当実装へ戻して解消し、再実行・再比較する。
@@ -302,6 +302,7 @@
 
 ## Implementation Notes
 
+- 7.2:数値trapの診断先頭は`integer divide by zero`、`integer overflow`、`invalid conversion to integer`。公式比較は1.1で保存したbaselineを維持し、残存blockedはoriginの未対応分類まで確認する。
 - 7.1:全136数値命令を10引数属性へ接続した。型検証は`NumericSignature`から入力をPopして結果を積む。旧未対応fixtureは位置と未確認範囲を保ってi32.load/memory.initへ置換した。
 - 1.2:TUnitの今回のbyte[]比較では`IsEqualTo`が参照一致を調べた。順序に意味がある符号化は、既知hex等でバイト列の内容を比較する。
 - 2.1:関数本体と定数式の式読取りは`ExpressionDecoder.Read`、sectionと式の共通Unsupported診断は`ModuleBinaryReader.Unsupported`が担う。Bounded/Diagnosticの入口と範囲管理は`ModuleDecoder`に残した。

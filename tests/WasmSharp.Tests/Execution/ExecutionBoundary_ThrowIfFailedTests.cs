@@ -127,9 +127,6 @@ internal class ExecutionBoundary_ThrowIfFailedTests
         // Arrange
         WasmTrapReason[] reasons =
         [
-            WasmTrapReason.IntegerDivideByZero,
-            WasmTrapReason.IntegerOverflow,
-            WasmTrapReason.InvalidConversionToInteger,
             WasmTrapReason.MemoryOutOfBounds,
             WasmTrapReason.TableOutOfBounds,
             WasmTrapReason.IndirectCallTypeMismatch,

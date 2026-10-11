@@ -137,9 +137,14 @@ internal static class ExecutionBoundary
     /// <returns>原因に対応する公開診断</returns>
     private static string GetTrapMessage(WasmTrapReason reason)
     {
-        return reason == WasmTrapReason.Unreachable
-            ? "unreachable executed"
-            : "Wasmの実行中にtrapが発生しました。";
+        return reason switch
+        {
+            WasmTrapReason.Unreachable => "unreachable executed",
+            WasmTrapReason.IntegerDivideByZero => "integer divide by zero",
+            WasmTrapReason.IntegerOverflow => "integer overflow",
+            WasmTrapReason.InvalidConversionToInteger => "invalid conversion to integer",
+            _ => "Wasmの実行中にtrapが発生しました。",
+        };
     }
 
     /// <summary>
