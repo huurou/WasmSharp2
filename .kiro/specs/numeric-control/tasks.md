@@ -27,7 +27,7 @@
   - _Requirements: 1.1, 1.3, 3.9, 7.9_
 
 - [ ] 2. 振る舞いを保って式読取りと関数検証を分離する
-- [ ] 2.1 式の構文読取りを独立した責務へ抽出する
+- [x] 2.1 式の構文読取りを独立した責務へ抽出する
   - 関数本体と定数式で共有する読取りを抽出し、moduleのsection処理と区別する。
   - 通常解析・診断再走査の入口、最外end直後の位置、境界例外、Unsupportedの未確認範囲を維持する。
   - 既存の正常入力・切断入力・複合不正について、抽出前と同じDecode結果と公開診断になることを確認する。
@@ -303,3 +303,4 @@
 ## Implementation Notes
 
 - 1.2:TUnitの今回のbyte[]比較では`IsEqualTo`が参照一致を調べた。順序に意味がある符号化は、既知hex等でバイト列の内容を比較する。
+- 2.1:関数本体と定数式の式読取りは`ExpressionDecoder.Read`、sectionと式の共通Unsupported診断は`ModuleBinaryReader.Unsupported`が担う。Bounded/Diagnosticの入口と範囲管理は`ModuleDecoder`に残した。

@@ -88,3 +88,14 @@
 - 実装ログ:`artifacts/numeric-control/task-1.2-20261011-fixture-6f329b/`。レビュー記録:`artifacts/numeric-control/task-1.2-review-20261011-a83e/validation.md`。
 
 親エージェントが差分、最終ビルド・テストの結果と終了値を確認し、`kiro-verify-completion`は`TASK: VERIFIED`。公式全体実行と数値・制御の機能受入は後続タスクで行う。
+
+## タスク2.1:式読取りの責務分離
+
+関数本体と定数式の読取りを`ExpressionDecoder.Read`へ抽出した。`ModuleDecoder`はsection処理とBounded/Diagnosticの入口を保持し、式読取りを委譲する。sectionと式が共有するUnsupported診断の生成は、既存readerの診断契約へ移して逆向き依存と重複を避けた。変更はModuleDecoder・ModuleBinaryReader・ExpressionDecoderと直接契約テストの4ファイル。要件1.1・1.4・1.6・9.1・9.6・9.7の既存振る舞いを保つ範囲である。
+
+- 実装者:`READY_FOR_REVIEW`。非behavioralの抽出として、直接16件を先に作成し、抽出前後の同じfocused266件成功を確認した。仮の委譲入口は除去した。
+- 最終Releaseビルド:終了0、警告・エラー0。ランタイム全1,155件成功、失敗・スキップ0。CSharpier4ファイルと差分確認も終了0。
+- 履歴なしの独立レビュー:`APPROVED`。現ソースのReleaseビルドと3suiteを確認し、1,155件・37件・701件成功、各終了0、失敗・スキップ0。移動前後の処理本体の等価性と境界を確認した。
+- 実装記録:`artifacts/numeric-control/task-2.1-20261011T180500/verification.md`。レビューのログ・終了値・処理比較・source hash:`artifacts/numeric-control/task-2.1-review-20261011T191500/`。
+
+親エージェントも差分、現在のビルド・3suiteのログと終了値を確認し、`kiro-verify-completion`は`TASK: VERIFIED`。固定公式全体の実行と回帰比較はタスク2.3で行う。

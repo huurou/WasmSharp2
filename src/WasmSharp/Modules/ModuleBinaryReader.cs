@@ -401,6 +401,40 @@ internal ref struct ModuleBinaryReader
     }
 
     /// <summary>
+    /// 未実装の構文と、残るデコード・検証の未確認範囲を持つ診断を作成する
+    /// </summary>
+    /// <param name="feature">未実装のsectionまたは命令を識別する名前</param>
+    /// <param name="inputLength">未確認範囲の終端となる入力全体のバイト数</param>
+    /// <param name="offset">未実装の構文が始まる、Decode開始位置を0としたバイト位置</param>
+    /// <returns>デコード未完了の後続範囲と、入力全体の検証未実施を保持する例外 このメソッドでは送出しない</returns>
+    internal readonly WasmUnsupportedFeatureException Unsupported(
+        string feature,
+        int inputLength,
+        long offset
+    )
+    {
+        return new WasmUnsupportedFeatureException(
+            "未実装の機能に遭遇しました。",
+            feature,
+            Location(offset),
+            [
+                new WasmUnverifiedRange(
+                    WasmProcessingStage.Decode,
+                    offset,
+                    inputLength,
+                    "この構文以降のデコードが未完了です。"
+                ),
+                new WasmUnverifiedRange(
+                    WasmProcessingStage.Validate,
+                    0,
+                    inputLength,
+                    "入力全体の検証が未実施です。"
+                ),
+            ]
+        );
+    }
+
+    /// <summary>
     /// 確定した範囲不正を、通常解析の内部通知または診断用の構文エラーにする
     /// </summary>
     /// <param name="message">範囲不正の内容</param>
