@@ -73,6 +73,17 @@ internal static class FunctionValidator
                     );
                     break;
 
+                case ValidationRule.Numeric:
+                    var numericSignature =
+                        descriptor.NumericSignature
+                        ?? throw new InvalidOperationException("数値命令の型情報がありません。");
+                    for (var index = 0; index < numericSignature.InputCount; index++)
+                    {
+                        Pop(numericSignature.InputType, instruction.ByteOffset);
+                    }
+                    stack.Add(numericSignature.ResultType);
+                    break;
+
                 case ValidationRule.FunctionEnd:
                     PopTypes(type.Results.AsSpan(), instruction.ByteOffset);
                     if (stack.Count != 0)

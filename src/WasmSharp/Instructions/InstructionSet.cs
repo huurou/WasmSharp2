@@ -169,145 +169,1641 @@ namespace WasmSharp.Instructions;
 [Instruction(0, 0x3E, "i64.store32")]
 [Instruction(0, 0x3F, "memory.size")]
 [Instruction(0, 0x40, "memory.grow")]
-[Instruction(0, 0x45, "i32.eqz")]
-[Instruction(0, 0x46, "i32.eq")]
-[Instruction(0, 0x47, "i32.ne")]
-[Instruction(0, 0x48, "i32.lt_s")]
-[Instruction(0, 0x49, "i32.lt_u")]
-[Instruction(0, 0x4A, "i32.gt_s")]
-[Instruction(0, 0x4B, "i32.gt_u")]
-[Instruction(0, 0x4C, "i32.le_s")]
-[Instruction(0, 0x4D, "i32.le_u")]
-[Instruction(0, 0x4E, "i32.ge_s")]
-[Instruction(0, 0x4F, "i32.ge_u")]
-[Instruction(0, 0x50, "i64.eqz")]
-[Instruction(0, 0x51, "i64.eq")]
-[Instruction(0, 0x52, "i64.ne")]
-[Instruction(0, 0x53, "i64.lt_s")]
-[Instruction(0, 0x54, "i64.lt_u")]
-[Instruction(0, 0x55, "i64.gt_s")]
-[Instruction(0, 0x56, "i64.gt_u")]
-[Instruction(0, 0x57, "i64.le_s")]
-[Instruction(0, 0x58, "i64.le_u")]
-[Instruction(0, 0x59, "i64.ge_s")]
-[Instruction(0, 0x5A, "i64.ge_u")]
-[Instruction(0, 0x5B, "f32.eq")]
-[Instruction(0, 0x5C, "f32.ne")]
-[Instruction(0, 0x5D, "f32.lt")]
-[Instruction(0, 0x5E, "f32.gt")]
-[Instruction(0, 0x5F, "f32.le")]
-[Instruction(0, 0x60, "f32.ge")]
-[Instruction(0, 0x61, "f64.eq")]
-[Instruction(0, 0x62, "f64.ne")]
-[Instruction(0, 0x63, "f64.lt")]
-[Instruction(0, 0x64, "f64.gt")]
-[Instruction(0, 0x65, "f64.le")]
-[Instruction(0, 0x66, "f64.ge")]
-[Instruction(0, 0x67, "i32.clz")]
-[Instruction(0, 0x68, "i32.ctz")]
-[Instruction(0, 0x69, "i32.popcnt")]
-[Instruction(0, 0x6A, "i32.add")]
-[Instruction(0, 0x6B, "i32.sub")]
-[Instruction(0, 0x6C, "i32.mul")]
-[Instruction(0, 0x6D, "i32.div_s")]
-[Instruction(0, 0x6E, "i32.div_u")]
-[Instruction(0, 0x6F, "i32.rem_s")]
-[Instruction(0, 0x70, "i32.rem_u")]
-[Instruction(0, 0x71, "i32.and")]
-[Instruction(0, 0x72, "i32.or")]
-[Instruction(0, 0x73, "i32.xor")]
-[Instruction(0, 0x74, "i32.shl")]
-[Instruction(0, 0x75, "i32.shr_s")]
-[Instruction(0, 0x76, "i32.shr_u")]
-[Instruction(0, 0x77, "i32.rotl")]
-[Instruction(0, 0x78, "i32.rotr")]
-[Instruction(0, 0x79, "i64.clz")]
-[Instruction(0, 0x7A, "i64.ctz")]
-[Instruction(0, 0x7B, "i64.popcnt")]
-[Instruction(0, 0x7C, "i64.add")]
-[Instruction(0, 0x7D, "i64.sub")]
-[Instruction(0, 0x7E, "i64.mul")]
-[Instruction(0, 0x7F, "i64.div_s")]
-[Instruction(0, 0x80, "i64.div_u")]
-[Instruction(0, 0x81, "i64.rem_s")]
-[Instruction(0, 0x82, "i64.rem_u")]
-[Instruction(0, 0x83, "i64.and")]
-[Instruction(0, 0x84, "i64.or")]
-[Instruction(0, 0x85, "i64.xor")]
-[Instruction(0, 0x86, "i64.shl")]
-[Instruction(0, 0x87, "i64.shr_s")]
-[Instruction(0, 0x88, "i64.shr_u")]
-[Instruction(0, 0x89, "i64.rotl")]
-[Instruction(0, 0x8A, "i64.rotr")]
-[Instruction(0, 0x8B, "f32.abs")]
-[Instruction(0, 0x8C, "f32.neg")]
-[Instruction(0, 0x8D, "f32.ceil")]
-[Instruction(0, 0x8E, "f32.floor")]
-[Instruction(0, 0x8F, "f32.trunc")]
-[Instruction(0, 0x90, "f32.nearest")]
-[Instruction(0, 0x91, "f32.sqrt")]
-[Instruction(0, 0x92, "f32.add")]
-[Instruction(0, 0x93, "f32.sub")]
-[Instruction(0, 0x94, "f32.mul")]
-[Instruction(0, 0x95, "f32.div")]
-[Instruction(0, 0x96, "f32.min")]
-[Instruction(0, 0x97, "f32.max")]
-[Instruction(0, 0x98, "f32.copysign")]
-[Instruction(0, 0x99, "f64.abs")]
-[Instruction(0, 0x9A, "f64.neg")]
-[Instruction(0, 0x9B, "f64.ceil")]
-[Instruction(0, 0x9C, "f64.floor")]
-[Instruction(0, 0x9D, "f64.trunc")]
-[Instruction(0, 0x9E, "f64.nearest")]
-[Instruction(0, 0x9F, "f64.sqrt")]
-[Instruction(0, 0xA0, "f64.add")]
-[Instruction(0, 0xA1, "f64.sub")]
-[Instruction(0, 0xA2, "f64.mul")]
-[Instruction(0, 0xA3, "f64.div")]
-[Instruction(0, 0xA4, "f64.min")]
-[Instruction(0, 0xA5, "f64.max")]
-[Instruction(0, 0xA6, "f64.copysign")]
-[Instruction(0, 0xA7, "i32.wrap_i64")]
-[Instruction(0, 0xA8, "i32.trunc_f32_s")]
-[Instruction(0, 0xA9, "i32.trunc_f32_u")]
-[Instruction(0, 0xAA, "i32.trunc_f64_s")]
-[Instruction(0, 0xAB, "i32.trunc_f64_u")]
-[Instruction(0, 0xAC, "i64.extend_i32_s")]
-[Instruction(0, 0xAD, "i64.extend_i32_u")]
-[Instruction(0, 0xAE, "i64.trunc_f32_s")]
-[Instruction(0, 0xAF, "i64.trunc_f32_u")]
-[Instruction(0, 0xB0, "i64.trunc_f64_s")]
-[Instruction(0, 0xB1, "i64.trunc_f64_u")]
-[Instruction(0, 0xB2, "f32.convert_i32_s")]
-[Instruction(0, 0xB3, "f32.convert_i32_u")]
-[Instruction(0, 0xB4, "f32.convert_i64_s")]
-[Instruction(0, 0xB5, "f32.convert_i64_u")]
-[Instruction(0, 0xB6, "f32.demote_f64")]
-[Instruction(0, 0xB7, "f64.convert_i32_s")]
-[Instruction(0, 0xB8, "f64.convert_i32_u")]
-[Instruction(0, 0xB9, "f64.convert_i64_s")]
-[Instruction(0, 0xBA, "f64.convert_i64_u")]
-[Instruction(0, 0xBB, "f64.promote_f32")]
-[Instruction(0, 0xBC, "i32.reinterpret_f32")]
-[Instruction(0, 0xBD, "i64.reinterpret_f64")]
-[Instruction(0, 0xBE, "f32.reinterpret_i32")]
-[Instruction(0, 0xBF, "f64.reinterpret_i64")]
-[Instruction(0, 0xC0, "i32.extend8_s")]
-[Instruction(0, 0xC1, "i32.extend16_s")]
-[Instruction(0, 0xC2, "i64.extend8_s")]
-[Instruction(0, 0xC3, "i64.extend16_s")]
-[Instruction(0, 0xC4, "i64.extend32_s")]
+[Instruction(
+    0,
+    0x45,
+    "i32.eqz",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32Eqz),
+    1,
+    WasmValueKind.I32,
+    WasmValueKind.I32
+)]
+[Instruction(
+    0,
+    0x46,
+    "i32.eq",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32Eq),
+    2,
+    WasmValueKind.I32,
+    WasmValueKind.I32
+)]
+[Instruction(
+    0,
+    0x47,
+    "i32.ne",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32Ne),
+    2,
+    WasmValueKind.I32,
+    WasmValueKind.I32
+)]
+[Instruction(
+    0,
+    0x48,
+    "i32.lt_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32LtS),
+    2,
+    WasmValueKind.I32,
+    WasmValueKind.I32
+)]
+[Instruction(
+    0,
+    0x49,
+    "i32.lt_u",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32LtU),
+    2,
+    WasmValueKind.I32,
+    WasmValueKind.I32
+)]
+[Instruction(
+    0,
+    0x4A,
+    "i32.gt_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32GtS),
+    2,
+    WasmValueKind.I32,
+    WasmValueKind.I32
+)]
+[Instruction(
+    0,
+    0x4B,
+    "i32.gt_u",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32GtU),
+    2,
+    WasmValueKind.I32,
+    WasmValueKind.I32
+)]
+[Instruction(
+    0,
+    0x4C,
+    "i32.le_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32LeS),
+    2,
+    WasmValueKind.I32,
+    WasmValueKind.I32
+)]
+[Instruction(
+    0,
+    0x4D,
+    "i32.le_u",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32LeU),
+    2,
+    WasmValueKind.I32,
+    WasmValueKind.I32
+)]
+[Instruction(
+    0,
+    0x4E,
+    "i32.ge_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32GeS),
+    2,
+    WasmValueKind.I32,
+    WasmValueKind.I32
+)]
+[Instruction(
+    0,
+    0x4F,
+    "i32.ge_u",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32GeU),
+    2,
+    WasmValueKind.I32,
+    WasmValueKind.I32
+)]
+[Instruction(
+    0,
+    0x50,
+    "i64.eqz",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I64Eqz),
+    1,
+    WasmValueKind.I64,
+    WasmValueKind.I32
+)]
+[Instruction(
+    0,
+    0x51,
+    "i64.eq",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I64Eq),
+    2,
+    WasmValueKind.I64,
+    WasmValueKind.I32
+)]
+[Instruction(
+    0,
+    0x52,
+    "i64.ne",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I64Ne),
+    2,
+    WasmValueKind.I64,
+    WasmValueKind.I32
+)]
+[Instruction(
+    0,
+    0x53,
+    "i64.lt_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I64LtS),
+    2,
+    WasmValueKind.I64,
+    WasmValueKind.I32
+)]
+[Instruction(
+    0,
+    0x54,
+    "i64.lt_u",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I64LtU),
+    2,
+    WasmValueKind.I64,
+    WasmValueKind.I32
+)]
+[Instruction(
+    0,
+    0x55,
+    "i64.gt_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I64GtS),
+    2,
+    WasmValueKind.I64,
+    WasmValueKind.I32
+)]
+[Instruction(
+    0,
+    0x56,
+    "i64.gt_u",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I64GtU),
+    2,
+    WasmValueKind.I64,
+    WasmValueKind.I32
+)]
+[Instruction(
+    0,
+    0x57,
+    "i64.le_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I64LeS),
+    2,
+    WasmValueKind.I64,
+    WasmValueKind.I32
+)]
+[Instruction(
+    0,
+    0x58,
+    "i64.le_u",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I64LeU),
+    2,
+    WasmValueKind.I64,
+    WasmValueKind.I32
+)]
+[Instruction(
+    0,
+    0x59,
+    "i64.ge_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I64GeS),
+    2,
+    WasmValueKind.I64,
+    WasmValueKind.I32
+)]
+[Instruction(
+    0,
+    0x5A,
+    "i64.ge_u",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I64GeU),
+    2,
+    WasmValueKind.I64,
+    WasmValueKind.I32
+)]
+[Instruction(
+    0,
+    0x5B,
+    "f32.eq",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.F32Eq),
+    2,
+    WasmValueKind.F32,
+    WasmValueKind.I32
+)]
+[Instruction(
+    0,
+    0x5C,
+    "f32.ne",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.F32Ne),
+    2,
+    WasmValueKind.F32,
+    WasmValueKind.I32
+)]
+[Instruction(
+    0,
+    0x5D,
+    "f32.lt",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.F32Lt),
+    2,
+    WasmValueKind.F32,
+    WasmValueKind.I32
+)]
+[Instruction(
+    0,
+    0x5E,
+    "f32.gt",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.F32Gt),
+    2,
+    WasmValueKind.F32,
+    WasmValueKind.I32
+)]
+[Instruction(
+    0,
+    0x5F,
+    "f32.le",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.F32Le),
+    2,
+    WasmValueKind.F32,
+    WasmValueKind.I32
+)]
+[Instruction(
+    0,
+    0x60,
+    "f32.ge",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.F32Ge),
+    2,
+    WasmValueKind.F32,
+    WasmValueKind.I32
+)]
+[Instruction(
+    0,
+    0x61,
+    "f64.eq",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.F64Eq),
+    2,
+    WasmValueKind.F64,
+    WasmValueKind.I32
+)]
+[Instruction(
+    0,
+    0x62,
+    "f64.ne",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.F64Ne),
+    2,
+    WasmValueKind.F64,
+    WasmValueKind.I32
+)]
+[Instruction(
+    0,
+    0x63,
+    "f64.lt",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.F64Lt),
+    2,
+    WasmValueKind.F64,
+    WasmValueKind.I32
+)]
+[Instruction(
+    0,
+    0x64,
+    "f64.gt",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.F64Gt),
+    2,
+    WasmValueKind.F64,
+    WasmValueKind.I32
+)]
+[Instruction(
+    0,
+    0x65,
+    "f64.le",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.F64Le),
+    2,
+    WasmValueKind.F64,
+    WasmValueKind.I32
+)]
+[Instruction(
+    0,
+    0x66,
+    "f64.ge",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.F64Ge),
+    2,
+    WasmValueKind.F64,
+    WasmValueKind.I32
+)]
+[Instruction(
+    0,
+    0x67,
+    "i32.clz",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32Clz),
+    1,
+    WasmValueKind.I32,
+    WasmValueKind.I32
+)]
+[Instruction(
+    0,
+    0x68,
+    "i32.ctz",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32Ctz),
+    1,
+    WasmValueKind.I32,
+    WasmValueKind.I32
+)]
+[Instruction(
+    0,
+    0x69,
+    "i32.popcnt",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32Popcnt),
+    1,
+    WasmValueKind.I32,
+    WasmValueKind.I32
+)]
+[Instruction(
+    0,
+    0x6A,
+    "i32.add",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32Add),
+    2,
+    WasmValueKind.I32,
+    WasmValueKind.I32
+)]
+[Instruction(
+    0,
+    0x6B,
+    "i32.sub",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32Sub),
+    2,
+    WasmValueKind.I32,
+    WasmValueKind.I32
+)]
+[Instruction(
+    0,
+    0x6C,
+    "i32.mul",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32Mul),
+    2,
+    WasmValueKind.I32,
+    WasmValueKind.I32
+)]
+[Instruction(
+    0,
+    0x6D,
+    "i32.div_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32DivS),
+    2,
+    WasmValueKind.I32,
+    WasmValueKind.I32
+)]
+[Instruction(
+    0,
+    0x6E,
+    "i32.div_u",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32DivU),
+    2,
+    WasmValueKind.I32,
+    WasmValueKind.I32
+)]
+[Instruction(
+    0,
+    0x6F,
+    "i32.rem_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32RemS),
+    2,
+    WasmValueKind.I32,
+    WasmValueKind.I32
+)]
+[Instruction(
+    0,
+    0x70,
+    "i32.rem_u",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32RemU),
+    2,
+    WasmValueKind.I32,
+    WasmValueKind.I32
+)]
+[Instruction(
+    0,
+    0x71,
+    "i32.and",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32And),
+    2,
+    WasmValueKind.I32,
+    WasmValueKind.I32
+)]
+[Instruction(
+    0,
+    0x72,
+    "i32.or",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32Or),
+    2,
+    WasmValueKind.I32,
+    WasmValueKind.I32
+)]
+[Instruction(
+    0,
+    0x73,
+    "i32.xor",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32Xor),
+    2,
+    WasmValueKind.I32,
+    WasmValueKind.I32
+)]
+[Instruction(
+    0,
+    0x74,
+    "i32.shl",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32Shl),
+    2,
+    WasmValueKind.I32,
+    WasmValueKind.I32
+)]
+[Instruction(
+    0,
+    0x75,
+    "i32.shr_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32ShrS),
+    2,
+    WasmValueKind.I32,
+    WasmValueKind.I32
+)]
+[Instruction(
+    0,
+    0x76,
+    "i32.shr_u",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32ShrU),
+    2,
+    WasmValueKind.I32,
+    WasmValueKind.I32
+)]
+[Instruction(
+    0,
+    0x77,
+    "i32.rotl",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32Rotl),
+    2,
+    WasmValueKind.I32,
+    WasmValueKind.I32
+)]
+[Instruction(
+    0,
+    0x78,
+    "i32.rotr",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32Rotr),
+    2,
+    WasmValueKind.I32,
+    WasmValueKind.I32
+)]
+[Instruction(
+    0,
+    0x79,
+    "i64.clz",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I64Clz),
+    1,
+    WasmValueKind.I64,
+    WasmValueKind.I64
+)]
+[Instruction(
+    0,
+    0x7A,
+    "i64.ctz",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I64Ctz),
+    1,
+    WasmValueKind.I64,
+    WasmValueKind.I64
+)]
+[Instruction(
+    0,
+    0x7B,
+    "i64.popcnt",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I64Popcnt),
+    1,
+    WasmValueKind.I64,
+    WasmValueKind.I64
+)]
+[Instruction(
+    0,
+    0x7C,
+    "i64.add",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I64Add),
+    2,
+    WasmValueKind.I64,
+    WasmValueKind.I64
+)]
+[Instruction(
+    0,
+    0x7D,
+    "i64.sub",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I64Sub),
+    2,
+    WasmValueKind.I64,
+    WasmValueKind.I64
+)]
+[Instruction(
+    0,
+    0x7E,
+    "i64.mul",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I64Mul),
+    2,
+    WasmValueKind.I64,
+    WasmValueKind.I64
+)]
+[Instruction(
+    0,
+    0x7F,
+    "i64.div_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I64DivS),
+    2,
+    WasmValueKind.I64,
+    WasmValueKind.I64
+)]
+[Instruction(
+    0,
+    0x80,
+    "i64.div_u",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I64DivU),
+    2,
+    WasmValueKind.I64,
+    WasmValueKind.I64
+)]
+[Instruction(
+    0,
+    0x81,
+    "i64.rem_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I64RemS),
+    2,
+    WasmValueKind.I64,
+    WasmValueKind.I64
+)]
+[Instruction(
+    0,
+    0x82,
+    "i64.rem_u",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I64RemU),
+    2,
+    WasmValueKind.I64,
+    WasmValueKind.I64
+)]
+[Instruction(
+    0,
+    0x83,
+    "i64.and",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I64And),
+    2,
+    WasmValueKind.I64,
+    WasmValueKind.I64
+)]
+[Instruction(
+    0,
+    0x84,
+    "i64.or",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I64Or),
+    2,
+    WasmValueKind.I64,
+    WasmValueKind.I64
+)]
+[Instruction(
+    0,
+    0x85,
+    "i64.xor",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I64Xor),
+    2,
+    WasmValueKind.I64,
+    WasmValueKind.I64
+)]
+[Instruction(
+    0,
+    0x86,
+    "i64.shl",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I64Shl),
+    2,
+    WasmValueKind.I64,
+    WasmValueKind.I64
+)]
+[Instruction(
+    0,
+    0x87,
+    "i64.shr_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I64ShrS),
+    2,
+    WasmValueKind.I64,
+    WasmValueKind.I64
+)]
+[Instruction(
+    0,
+    0x88,
+    "i64.shr_u",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I64ShrU),
+    2,
+    WasmValueKind.I64,
+    WasmValueKind.I64
+)]
+[Instruction(
+    0,
+    0x89,
+    "i64.rotl",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I64Rotl),
+    2,
+    WasmValueKind.I64,
+    WasmValueKind.I64
+)]
+[Instruction(
+    0,
+    0x8A,
+    "i64.rotr",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I64Rotr),
+    2,
+    WasmValueKind.I64,
+    WasmValueKind.I64
+)]
+[Instruction(
+    0,
+    0x8B,
+    "f32.abs",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.F32Abs),
+    1,
+    WasmValueKind.F32,
+    WasmValueKind.F32
+)]
+[Instruction(
+    0,
+    0x8C,
+    "f32.neg",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.F32Neg),
+    1,
+    WasmValueKind.F32,
+    WasmValueKind.F32
+)]
+[Instruction(
+    0,
+    0x8D,
+    "f32.ceil",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.F32Ceil),
+    1,
+    WasmValueKind.F32,
+    WasmValueKind.F32
+)]
+[Instruction(
+    0,
+    0x8E,
+    "f32.floor",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.F32Floor),
+    1,
+    WasmValueKind.F32,
+    WasmValueKind.F32
+)]
+[Instruction(
+    0,
+    0x8F,
+    "f32.trunc",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.F32Trunc),
+    1,
+    WasmValueKind.F32,
+    WasmValueKind.F32
+)]
+[Instruction(
+    0,
+    0x90,
+    "f32.nearest",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.F32Nearest),
+    1,
+    WasmValueKind.F32,
+    WasmValueKind.F32
+)]
+[Instruction(
+    0,
+    0x91,
+    "f32.sqrt",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.F32Sqrt),
+    1,
+    WasmValueKind.F32,
+    WasmValueKind.F32
+)]
+[Instruction(
+    0,
+    0x92,
+    "f32.add",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.F32Add),
+    2,
+    WasmValueKind.F32,
+    WasmValueKind.F32
+)]
+[Instruction(
+    0,
+    0x93,
+    "f32.sub",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.F32Sub),
+    2,
+    WasmValueKind.F32,
+    WasmValueKind.F32
+)]
+[Instruction(
+    0,
+    0x94,
+    "f32.mul",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.F32Mul),
+    2,
+    WasmValueKind.F32,
+    WasmValueKind.F32
+)]
+[Instruction(
+    0,
+    0x95,
+    "f32.div",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.F32Div),
+    2,
+    WasmValueKind.F32,
+    WasmValueKind.F32
+)]
+[Instruction(
+    0,
+    0x96,
+    "f32.min",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.F32Min),
+    2,
+    WasmValueKind.F32,
+    WasmValueKind.F32
+)]
+[Instruction(
+    0,
+    0x97,
+    "f32.max",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.F32Max),
+    2,
+    WasmValueKind.F32,
+    WasmValueKind.F32
+)]
+[Instruction(
+    0,
+    0x98,
+    "f32.copysign",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.F32Copysign),
+    2,
+    WasmValueKind.F32,
+    WasmValueKind.F32
+)]
+[Instruction(
+    0,
+    0x99,
+    "f64.abs",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.F64Abs),
+    1,
+    WasmValueKind.F64,
+    WasmValueKind.F64
+)]
+[Instruction(
+    0,
+    0x9A,
+    "f64.neg",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.F64Neg),
+    1,
+    WasmValueKind.F64,
+    WasmValueKind.F64
+)]
+[Instruction(
+    0,
+    0x9B,
+    "f64.ceil",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.F64Ceil),
+    1,
+    WasmValueKind.F64,
+    WasmValueKind.F64
+)]
+[Instruction(
+    0,
+    0x9C,
+    "f64.floor",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.F64Floor),
+    1,
+    WasmValueKind.F64,
+    WasmValueKind.F64
+)]
+[Instruction(
+    0,
+    0x9D,
+    "f64.trunc",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.F64Trunc),
+    1,
+    WasmValueKind.F64,
+    WasmValueKind.F64
+)]
+[Instruction(
+    0,
+    0x9E,
+    "f64.nearest",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.F64Nearest),
+    1,
+    WasmValueKind.F64,
+    WasmValueKind.F64
+)]
+[Instruction(
+    0,
+    0x9F,
+    "f64.sqrt",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.F64Sqrt),
+    1,
+    WasmValueKind.F64,
+    WasmValueKind.F64
+)]
+[Instruction(
+    0,
+    0xA0,
+    "f64.add",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.F64Add),
+    2,
+    WasmValueKind.F64,
+    WasmValueKind.F64
+)]
+[Instruction(
+    0,
+    0xA1,
+    "f64.sub",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.F64Sub),
+    2,
+    WasmValueKind.F64,
+    WasmValueKind.F64
+)]
+[Instruction(
+    0,
+    0xA2,
+    "f64.mul",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.F64Mul),
+    2,
+    WasmValueKind.F64,
+    WasmValueKind.F64
+)]
+[Instruction(
+    0,
+    0xA3,
+    "f64.div",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.F64Div),
+    2,
+    WasmValueKind.F64,
+    WasmValueKind.F64
+)]
+[Instruction(
+    0,
+    0xA4,
+    "f64.min",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.F64Min),
+    2,
+    WasmValueKind.F64,
+    WasmValueKind.F64
+)]
+[Instruction(
+    0,
+    0xA5,
+    "f64.max",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.F64Max),
+    2,
+    WasmValueKind.F64,
+    WasmValueKind.F64
+)]
+[Instruction(
+    0,
+    0xA6,
+    "f64.copysign",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.F64Copysign),
+    2,
+    WasmValueKind.F64,
+    WasmValueKind.F64
+)]
+[Instruction(
+    0,
+    0xA7,
+    "i32.wrap_i64",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32WrapI64),
+    1,
+    WasmValueKind.I64,
+    WasmValueKind.I32
+)]
+[Instruction(
+    0,
+    0xA8,
+    "i32.trunc_f32_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32TruncF32S),
+    1,
+    WasmValueKind.F32,
+    WasmValueKind.I32
+)]
+[Instruction(
+    0,
+    0xA9,
+    "i32.trunc_f32_u",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32TruncF32U),
+    1,
+    WasmValueKind.F32,
+    WasmValueKind.I32
+)]
+[Instruction(
+    0,
+    0xAA,
+    "i32.trunc_f64_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32TruncF64S),
+    1,
+    WasmValueKind.F64,
+    WasmValueKind.I32
+)]
+[Instruction(
+    0,
+    0xAB,
+    "i32.trunc_f64_u",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32TruncF64U),
+    1,
+    WasmValueKind.F64,
+    WasmValueKind.I32
+)]
+[Instruction(
+    0,
+    0xAC,
+    "i64.extend_i32_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I64ExtendI32S),
+    1,
+    WasmValueKind.I32,
+    WasmValueKind.I64
+)]
+[Instruction(
+    0,
+    0xAD,
+    "i64.extend_i32_u",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I64ExtendI32U),
+    1,
+    WasmValueKind.I32,
+    WasmValueKind.I64
+)]
+[Instruction(
+    0,
+    0xAE,
+    "i64.trunc_f32_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I64TruncF32S),
+    1,
+    WasmValueKind.F32,
+    WasmValueKind.I64
+)]
+[Instruction(
+    0,
+    0xAF,
+    "i64.trunc_f32_u",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I64TruncF32U),
+    1,
+    WasmValueKind.F32,
+    WasmValueKind.I64
+)]
+[Instruction(
+    0,
+    0xB0,
+    "i64.trunc_f64_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I64TruncF64S),
+    1,
+    WasmValueKind.F64,
+    WasmValueKind.I64
+)]
+[Instruction(
+    0,
+    0xB1,
+    "i64.trunc_f64_u",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I64TruncF64U),
+    1,
+    WasmValueKind.F64,
+    WasmValueKind.I64
+)]
+[Instruction(
+    0,
+    0xB2,
+    "f32.convert_i32_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.F32ConvertI32S),
+    1,
+    WasmValueKind.I32,
+    WasmValueKind.F32
+)]
+[Instruction(
+    0,
+    0xB3,
+    "f32.convert_i32_u",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.F32ConvertI32U),
+    1,
+    WasmValueKind.I32,
+    WasmValueKind.F32
+)]
+[Instruction(
+    0,
+    0xB4,
+    "f32.convert_i64_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.F32ConvertI64S),
+    1,
+    WasmValueKind.I64,
+    WasmValueKind.F32
+)]
+[Instruction(
+    0,
+    0xB5,
+    "f32.convert_i64_u",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.F32ConvertI64U),
+    1,
+    WasmValueKind.I64,
+    WasmValueKind.F32
+)]
+[Instruction(
+    0,
+    0xB6,
+    "f32.demote_f64",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.F32DemoteF64),
+    1,
+    WasmValueKind.F64,
+    WasmValueKind.F32
+)]
+[Instruction(
+    0,
+    0xB7,
+    "f64.convert_i32_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.F64ConvertI32S),
+    1,
+    WasmValueKind.I32,
+    WasmValueKind.F64
+)]
+[Instruction(
+    0,
+    0xB8,
+    "f64.convert_i32_u",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.F64ConvertI32U),
+    1,
+    WasmValueKind.I32,
+    WasmValueKind.F64
+)]
+[Instruction(
+    0,
+    0xB9,
+    "f64.convert_i64_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.F64ConvertI64S),
+    1,
+    WasmValueKind.I64,
+    WasmValueKind.F64
+)]
+[Instruction(
+    0,
+    0xBA,
+    "f64.convert_i64_u",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.F64ConvertI64U),
+    1,
+    WasmValueKind.I64,
+    WasmValueKind.F64
+)]
+[Instruction(
+    0,
+    0xBB,
+    "f64.promote_f32",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.F64PromoteF32),
+    1,
+    WasmValueKind.F32,
+    WasmValueKind.F64
+)]
+[Instruction(
+    0,
+    0xBC,
+    "i32.reinterpret_f32",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32ReinterpretF32),
+    1,
+    WasmValueKind.F32,
+    WasmValueKind.I32
+)]
+[Instruction(
+    0,
+    0xBD,
+    "i64.reinterpret_f64",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I64ReinterpretF64),
+    1,
+    WasmValueKind.F64,
+    WasmValueKind.I64
+)]
+[Instruction(
+    0,
+    0xBE,
+    "f32.reinterpret_i32",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.F32ReinterpretI32),
+    1,
+    WasmValueKind.I32,
+    WasmValueKind.F32
+)]
+[Instruction(
+    0,
+    0xBF,
+    "f64.reinterpret_i64",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.F64ReinterpretI64),
+    1,
+    WasmValueKind.I64,
+    WasmValueKind.F64
+)]
+[Instruction(
+    0,
+    0xC0,
+    "i32.extend8_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32Extend8S),
+    1,
+    WasmValueKind.I32,
+    WasmValueKind.I32
+)]
+[Instruction(
+    0,
+    0xC1,
+    "i32.extend16_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32Extend16S),
+    1,
+    WasmValueKind.I32,
+    WasmValueKind.I32
+)]
+[Instruction(
+    0,
+    0xC2,
+    "i64.extend8_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I64Extend8S),
+    1,
+    WasmValueKind.I64,
+    WasmValueKind.I64
+)]
+[Instruction(
+    0,
+    0xC3,
+    "i64.extend16_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I64Extend16S),
+    1,
+    WasmValueKind.I64,
+    WasmValueKind.I64
+)]
+[Instruction(
+    0,
+    0xC4,
+    "i64.extend32_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I64Extend32S),
+    1,
+    WasmValueKind.I64,
+    WasmValueKind.I64
+)]
 [Instruction(0, 0xD0, "ref.null")]
 [Instruction(0, 0xD1, "ref.is_null")]
 [Instruction(0, 0xD2, "ref.func")]
-[Instruction(0xFC, 0x00, "i32.trunc_sat_f32_s")]
-[Instruction(0xFC, 0x01, "i32.trunc_sat_f32_u")]
-[Instruction(0xFC, 0x02, "i32.trunc_sat_f64_s")]
-[Instruction(0xFC, 0x03, "i32.trunc_sat_f64_u")]
-[Instruction(0xFC, 0x04, "i64.trunc_sat_f32_s")]
-[Instruction(0xFC, 0x05, "i64.trunc_sat_f32_u")]
-[Instruction(0xFC, 0x06, "i64.trunc_sat_f64_s")]
-[Instruction(0xFC, 0x07, "i64.trunc_sat_f64_u")]
+[Instruction(
+    0xFC,
+    0x00,
+    "i32.trunc_sat_f32_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32TruncSatF32S),
+    1,
+    WasmValueKind.F32,
+    WasmValueKind.I32
+)]
+[Instruction(
+    0xFC,
+    0x01,
+    "i32.trunc_sat_f32_u",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32TruncSatF32U),
+    1,
+    WasmValueKind.F32,
+    WasmValueKind.I32
+)]
+[Instruction(
+    0xFC,
+    0x02,
+    "i32.trunc_sat_f64_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32TruncSatF64S),
+    1,
+    WasmValueKind.F64,
+    WasmValueKind.I32
+)]
+[Instruction(
+    0xFC,
+    0x03,
+    "i32.trunc_sat_f64_u",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32TruncSatF64U),
+    1,
+    WasmValueKind.F64,
+    WasmValueKind.I32
+)]
+[Instruction(
+    0xFC,
+    0x04,
+    "i64.trunc_sat_f32_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I64TruncSatF32S),
+    1,
+    WasmValueKind.F32,
+    WasmValueKind.I64
+)]
+[Instruction(
+    0xFC,
+    0x05,
+    "i64.trunc_sat_f32_u",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I64TruncSatF32U),
+    1,
+    WasmValueKind.F32,
+    WasmValueKind.I64
+)]
+[Instruction(
+    0xFC,
+    0x06,
+    "i64.trunc_sat_f64_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I64TruncSatF64S),
+    1,
+    WasmValueKind.F64,
+    WasmValueKind.I64
+)]
+[Instruction(
+    0xFC,
+    0x07,
+    "i64.trunc_sat_f64_u",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I64TruncSatF64U),
+    1,
+    WasmValueKind.F64,
+    WasmValueKind.I64
+)]
 [Instruction(0xFC, 0x08, "memory.init")]
 [Instruction(0xFC, 0x09, "data.drop")]
 [Instruction(0xFC, 0x0A, "memory.copy")]

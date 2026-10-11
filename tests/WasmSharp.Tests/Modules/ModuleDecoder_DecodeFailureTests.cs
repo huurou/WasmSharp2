@@ -44,10 +44,10 @@ internal partial class ModuleDecoder_DecodeTests
     }
 
     [Test]
-    [Arguments("6AFF05", "i32.add")]
+    [Arguments("28FF05", "i32.load")]
     [Arguments("02", "block")]
-    [Arguments("FC00", "i32.trunc_sat_f32_s")]
-    [Arguments("FC8000", "i32.trunc_sat_f32_s")]
+    [Arguments("FC08", "memory.init")]
+    [Arguments("FC8800", "memory.init")]
     [Arguments("FC0A", "memory.copy")]
     [Arguments("FD00", "v128.load")]
     [Arguments("FD0C", "v128.const")]

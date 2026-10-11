@@ -152,7 +152,7 @@
   - _Requirements: 5.7, 6.6_
 
 - [ ] 7. 数値命令を型検証と公開実行へ統合する
-- [ ] 7.1 数値命令の宣言・型検証・生成dispatchを接続する
+- [x] 7.1 数値命令の宣言・型検証・生成dispatchを接続する
   - 完成した整数・浮動小数点・変換handlerを全対象命令へ宣言し、入力個数・型・結果型を宣言から検証する。
   - constは既存規則を維持し、比較のi32結果、i64ビット数のi64結果、0xFCの全飽和変換を固定opcodeと照合する。
   - 到達可能な入力不足・型不一致をValidateで拒否し、数値命令を定数式へ許可しない。従来の未対応例が対象命令を使用している場合は元の目的を保つ後続命令へ置き換える。
@@ -302,6 +302,7 @@
 
 ## Implementation Notes
 
+- 7.1:全136数値命令を10引数属性へ接続した。型検証は`NumericSignature`から入力をPopして結果を積む。旧未対応fixtureは位置と未確認範囲を保ってi32.load/memory.initへ置換した。
 - 1.2:TUnitの今回のbyte[]比較では`IsEqualTo`が参照一致を調べた。順序に意味がある符号化は、既知hex等でバイト列の内容を比較する。
 - 2.1:関数本体と定数式の式読取りは`ExpressionDecoder.Read`、sectionと式の共通Unsupported診断は`ModuleBinaryReader.Unsupported`が担う。Bounded/Diagnosticの入口と範囲管理は`ModuleDecoder`に残した。
 - 2.2:1関数の検証は`FunctionValidator.Validate`、module全体と共有する診断2メソッドは`ValidationDiagnostics`が担う。TUnitのfilterにはファイル名ではなく実際のクラス名を指定する。

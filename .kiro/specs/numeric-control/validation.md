@@ -268,3 +268,14 @@
 - 実装記録:`artifacts/numeric-control/task-6.4-20261011T214751/verification.md`。独立レビュー:`artifacts/numeric-control/task-6.4-review-20261011T220631/review.md`。各出力先にコマンド・rawlog・native終了値を保持した。
 
 親エージェントが10handlerの最終差分、代表4クラスと公式8値の原文、RED/GREEN・最終ビルドと3suiteのrawlog・終了値、独立レビュー、検証後の11ファイルのhash一致を確認し、`kiro-verify-completion`は`TASK: VERIFIED`。数値handlerは整数58・浮動小数点40・変換38の計136が揃った。公開命令宣言・型検証・生成dispatchの接続は7.1、公開診断・公式全体の確認は7.2で行う。
+
+## タスク7.1:数値命令の宣言・型検証・生成dispatch
+
+通常0x45〜0xC4の128命令とFC0〜7の8命令を完成済みhandlerへ宣言し、FunctionValidatorはNumericSignatureから入力数・型と結果型を検証する。const4命令と定数式の既存規則を維持し、通常ビルドの生成dispatchを利用した。変更は本体2ファイルと関連テスト8ファイル。要件1.3・2.1・2.2・2.6・4.6・4.7・9.1の本タスクの範囲である。
+
+- 実装者:`READY_FOR_REVIEW`。接続前のREDはビルド成功後207件中56件失敗、dotnet終了2。ONで同じ207件成功後、一時flagを除去した。全体テストで旧未対応fixture2件を追加検出し、停止位置・未確認範囲を保ってmemory.initへ置換して再確認した。
+- 最終Releaseビルド:終了0、警告・エラー0。3suiteは2,514件・76件・701件成功、失敗・スキップ0、各終了0。CSharpier10ファイルと差分確認も成功し、既存のLFを維持した。
+- 履歴なしの独立レビュー:`APPROVED`。全136属性を固定公式の番号・名前・型規則・handlerと照合し、比較のi32、i64計数のi64、FC全番号、constの維持を確認。新規公開テスト2ファイル、既存未対応fixture5ファイル、生成器の既存契約と定数式制限も確認した。独立ビルドと同じ3suiteも成功した。
+- 実装記録:`artifacts/numeric-control/task-7.1-20261012T0500/verification.md`。独立レビュー:`artifacts/numeric-control/task-7.1-review-20261012T0645/review.md`。各出力先にコマンド・rawlog・native終了値を保持した。実装者の最新ログはfinal2-*で、旧失敗ログも保持した。
+
+親エージェントが数値宣言の代表箇所、型検証の最終差分、公開正常・型不成立・定数式テスト、全既存fixture差分、RED/GREENと最終・独立ビルド/3suiteのrawlog・終了値、独立レビュー、検証後の10ファイルのhash一致を確認し、`kiro-verify-completion`は`TASK: VERIFIED`。公開数値trap・start・固定147入力の全体実行は7.2で行う。
