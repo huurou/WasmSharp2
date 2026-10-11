@@ -10,6 +10,168 @@ internal static partial class Interpreter
     private const double I64_UNSIGNED_UPPER_BOUND = 18446744073709551616D;
 
     /// <summary>
+    /// i32を符号付きとしてf32へ直接変換する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのF32ConvertI32S命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult F32ConvertI32S(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        var operand = context.PopValue().AsI32();
+        context.PushValue(WasmValue.FromF32((float)operand));
+        return default;
+    }
+
+    /// <summary>
+    /// i32を符号なしとしてf32へ直接変換する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのF32ConvertI32U命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult F32ConvertI32U(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        var operand = unchecked((uint)context.PopValue().AsI32());
+        context.PushValue(WasmValue.FromF32((float)operand));
+        return default;
+    }
+
+    /// <summary>
+    /// i64を符号付きとしてf32へ直接変換する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのF32ConvertI64S命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult F32ConvertI64S(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        var operand = context.PopValue().AsI64();
+        // doubleを経由せず、整数からf32へ1回だけ丸める。
+        context.PushValue(WasmValue.FromF32((float)operand));
+        return default;
+    }
+
+    /// <summary>
+    /// i64を符号なしとしてf32へ直接変換する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのF32ConvertI64U命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult F32ConvertI64U(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        var operand = unchecked((ulong)context.PopValue().AsI64());
+        // doubleを経由せず、整数からf32へ1回だけ丸める。
+        context.PushValue(WasmValue.FromF32((float)operand));
+        return default;
+    }
+
+    /// <summary>
+    /// i32を符号付きとしてf64へ直接変換する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのF64ConvertI32S命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult F64ConvertI32S(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        var operand = context.PopValue().AsI32();
+        context.PushValue(WasmValue.FromF64((double)operand));
+        return default;
+    }
+
+    /// <summary>
+    /// i32を符号なしとしてf64へ直接変換する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのF64ConvertI32U命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult F64ConvertI32U(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        var operand = unchecked((uint)context.PopValue().AsI32());
+        context.PushValue(WasmValue.FromF64((double)operand));
+        return default;
+    }
+
+    /// <summary>
+    /// i64を符号付きとしてf64へ直接変換する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのF64ConvertI64S命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult F64ConvertI64S(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        var operand = context.PopValue().AsI64();
+        context.PushValue(WasmValue.FromF64((double)operand));
+        return default;
+    }
+
+    /// <summary>
+    /// i64を符号なしとしてf64へ直接変換する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのF64ConvertI64U命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult F64ConvertI64U(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        var operand = unchecked((ulong)context.PopValue().AsI64());
+        context.PushValue(WasmValue.FromF64((double)operand));
+        return default;
+    }
+
+    /// <summary>
+    /// f64をf32へ丸めてNaN結果を補正する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのF32DemoteF64命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult F32DemoteF64(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        var operand = context.PopValue().AsF64();
+        context.PushValue(F32ArithmeticResult((float)operand));
+        return default;
+    }
+
+    /// <summary>
+    /// f32をf64へ正確に拡張してNaN結果を補正する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのF64PromoteF32命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult F64PromoteF32(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        var operand = context.PopValue().AsF32();
+        context.PushValue(F64ArithmeticResult((double)operand));
+        return default;
+    }
+
+    /// <summary>
     /// f32を0方向へ切り捨てて符号付きi32へ変換する
     /// </summary>
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>

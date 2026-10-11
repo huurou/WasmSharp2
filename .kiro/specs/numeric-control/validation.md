@@ -257,3 +257,14 @@
 - 実装記録:`artifacts/numeric-control/task-6.3-20261011T212800/verification.md`。独立レビュー:`artifacts/numeric-control/task-6.3-review-20261011T213928/review.md`。各出力先にコマンド・rawlog・native終了値を保持した。
 
 親エージェントが8handlerと目的幅別補助の全文、代表境界テスト、先行整理154件・RED/GREEN・最終ビルドと3suiteのrawlog・終了値、独立レビューと期待値照合結果、検証後の9ファイルのhash一致を確認し、`kiro-verify-completion`は`TASK: VERIFIED`。公開接続は7.1、公開診断と公式全体の次回確認は7.2で行う。
+
+## タスク6.4:整数convertと浮動小数点の幅変換
+
+全8組合せの整数convertとdemote/promoteの10handlerを追加した。整数は符号解釈後に目的float/doubleへ直接castし、幅変換は既存のNaN補助へ接続する。変更は本体1ファイルと直接テスト10クラス。要件5.7・6.6の内部handlerの範囲である。
+
+- 実装者:`READY_FOR_REVIEW`。既定OFFのREDはビルド成功後131件すべて失敗、dotnet終了2。全10クラスで変換前の結果型を検出した。ONで同じ131件成功後、一時flagを除去した。
+- 最終Releaseビルド:終了0、警告・エラー0。3suiteは2,459件・76件・701件成功、失敗・スキップ0、各終了0。CSharpier11ファイルと差分確認も成功し、既存のLFを維持した。
+- 履歴なしの独立レビュー:`APPROVED`。全10テスト全文、本体差分、符号解釈・整数の上下限・偶数と奇数のtie・幅変換の非正規化数・underflow/overflow・±0・無限大・NaNを確認。固定公式の二重丸め8入力とhexfloatから導いた目的bitを独立に照合した。独立ビルドと同じ3suiteも成功した。
+- 実装記録:`artifacts/numeric-control/task-6.4-20261011T214751/verification.md`。独立レビュー:`artifacts/numeric-control/task-6.4-review-20261011T220631/review.md`。各出力先にコマンド・rawlog・native終了値を保持した。
+
+親エージェントが10handlerの最終差分、代表4クラスと公式8値の原文、RED/GREEN・最終ビルドと3suiteのrawlog・終了値、独立レビュー、検証後の11ファイルのhash一致を確認し、`kiro-verify-completion`は`TASK: VERIFIED`。数値handlerは整数58・浮動小数点40・変換38の計136が揃った。公開命令宣言・型検証・生成dispatchの接続は7.1、公開診断・公式全体の確認は7.2で行う。

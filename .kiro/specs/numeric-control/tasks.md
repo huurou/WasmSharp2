@@ -120,7 +120,7 @@
   - _Boundary: Interpreter.Float_
   - _Requirements: 5.5, 5.7, 5.8_
 
-- [ ] 6. 数値変換の実行処理を追加する
+- [x] 6. 数値変換の実行処理を追加する
 - [x] 6.1 整数の幅変換・符号拡張と同幅の再解釈を実装する
   - wrapとsigned/unsigned extendを区別し、同じ整数型内のextend8/16/32を指定下位幅から計算する。
   - 同幅の整数・浮動小数点間を数値変換せず再解釈し、算術NaNの補正を通さない。
@@ -143,7 +143,7 @@
   - _Boundary: Interpreter.Conversion_
   - _Requirements: 6.5_
 
-- [ ] 6.4 整数から浮動小数点への変換と浮動小数点の幅変換を実装する
+- [x] 6.4 整数から浮動小数点への変換と浮動小数点の幅変換を実装する
   - 符号解釈した整数から目的幅へ直接変換し、i64/unsigned i64からf32へのdouble経由の二重丸めを避ける。
   - promoteの非NaN値を正確に保ち、demoteの丸め、符号付き0・無限大・NaN結果を既存の浮動小数点処理へ合わせる。
   - 固定公式の二重丸めを検出する8値を含む境界を確認し、目的幅のbit列とNaN分類が成立することを確認する。
@@ -314,3 +314,4 @@
 - 5.1:浮動小数点handlerは`Interpreter.Float.cs`に置く。算術NaNの補正と目的幅の保存はprivateの`F32ArithmeticResult`/`F64ArithmeticResult`で共有し、符号bit操作と値運搬はこの補正を通さない。
 - 6.2:位置付きtrap補助は`Interpreter.cs`の`NumericTrap`へ移した。truncはNaNを先に分け、`Math.Truncate`後の半開区間を検査してからcastする。飽和変換ではtrap生成を呼び出さない。
 - 6.3:truncとsatの境界は目的幅・符号ごとの4つのprivate上限定数から求める。satは目的幅別の補助に閉じ、NaNを0、区間外を整数の端へ返してから範囲内だけcastする。
+- 6.4:整数convertは符号解釈した目的幅への直接cast、demote/promoteは既存の幅別NaN補助を使う。二重丸めの公式8値は`conversions.wast`471〜474行・520〜523行のhexfloatから期待bitを求める。
