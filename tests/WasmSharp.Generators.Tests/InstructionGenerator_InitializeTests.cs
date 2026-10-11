@@ -6,6 +6,233 @@ namespace WasmSharp.Generators.Tests;
 internal class InstructionGenerator_InitializeTests
 {
     [Test]
+    [Arguments(0, 0x79, "i64.clz", 1, "I64", "I64")]
+    [Arguments(0, 0x50, "i64.eqz", 1, "I64", "I32")]
+    [Arguments(0, 0x51, "i64.eq", 2, "I64", "I32")]
+    [Arguments(0, 0x6A, "i32.add", 2, "I32", "I32")]
+    [Arguments(0, 0x8D, "f32.ceil", 1, "F32", "F32")]
+    [Arguments(0, 0xA0, "f64.add", 2, "F64", "F64")]
+    [Arguments(0xFC, 0, "i32.trunc_sat_f32_s", 1, "F32", "I32")]
+    public async Task 数値宣言が完全_型効果を記述子へ反映して宣言したhandlerを直接実行する(
+        int prefix,
+        int code,
+        string name,
+        int inputCount,
+        string inputType,
+        string resultType
+    )
+    {
+        // Arrange
+        var compilation = GeneratorTestSource.CreateCompilation(
+            $$"""
+            namespace WasmSharp.Instructions
+            {
+                [Instruction({{prefix}}, {{code}}, "{{name}}", ImmediateKind.None, StackEffectKind.Numeric,
+                    ValidationRule.Numeric, nameof(Execution.Interpreter.Numeric), {{inputCount}},
+                    WasmValueKind.{{inputType}}, WasmValueKind.{{resultType}})]
+                internal static partial class InstructionSet;
+            }
+            namespace WasmSharp.Execution
+            {
+                internal static partial class Interpreter
+                {
+                    internal static ExecutionResult TestRun(InterpreterContext context) => RunLoop(context, 0);
+                    internal static ExecutionResult Numeric(InterpreterContext context, in Instruction instruction)
+                    {
+                        context.Log.Add("{{name}}");
+                        context.CompleteFrame();
+                        return default;
+                    }
+                }
+            }
+            """,
+            GeneratorTestSource.EXECUTION_CONTRACTS
+        );
+        GeneratorDriver driver = CSharpGeneratorDriver.Create(new InstructionGenerator());
+
+        // Act
+        driver = driver.RunGeneratorsAndUpdateCompilation(
+            compilation,
+            out var output,
+            out var diagnostics
+        );
+
+        // Assert
+        await Assert.That(diagnostics).IsEmpty();
+        await GeneratorTestSource.AssertCompilesAndRuns(
+            output,
+            $$"""
+            var found = WasmSharp.Instructions.InstructionSet.TryGet(new({{prefix}}, {{code}}), out var descriptor);
+            var expected = new WasmSharp.Instructions.NumericSignature({{inputCount}},
+                WasmSharp.WasmValueKind.{{inputType}}, WasmSharp.WasmValueKind.{{resultType}});
+            var attribute = new WasmSharp.Instructions.InstructionAttribute({{prefix}}, {{code}}, "{{name}}",
+                WasmSharp.Instructions.ImmediateKind.None, WasmSharp.Instructions.StackEffectKind.Numeric,
+                WasmSharp.Instructions.ValidationRule.Numeric, "Numeric", {{inputCount}},
+                WasmSharp.WasmValueKind.{{inputType}}, WasmSharp.WasmValueKind.{{resultType}});
+            var context = new WasmSharp.Execution.InterpreterContext(1)
+            {
+                Instructions = [new(descriptor.ExecutionOpcode!.Value, default, 12345678901L, 0)]
+            };
+            var result = WasmSharp.Execution.Interpreter.TestRun(context);
+            return found && descriptor.Name == "{{name}}"
+                && descriptor.Immediate == WasmSharp.Instructions.ImmediateKind.None
+                && descriptor.StackEffect == WasmSharp.Instructions.StackEffectKind.Numeric
+                && descriptor.Validation == WasmSharp.Instructions.ValidationRule.Numeric
+                && descriptor.NumericSignature == expected && attribute.NumericSignature == expected
+                && result.Status == WasmSharp.Execution.ExecutionStatus.Success
+                && context.Pc == 1 && context.FrameCount == 0
+                && context.Log.Count == 1 && context.Log[0] == "{{name}}";
+            """
+        );
+    }
+
+    [Test]
+    [Arguments("Numeric", "Numeric", "")]
+    [Arguments("Numeric", "Constant", "")]
+    [Arguments("PushI32", "Numeric", "")]
+    [Arguments("PushI32", "Constant", ", 1, WasmValueKind.I32, WasmValueKind.I32")]
+    [Arguments("Numeric", "Constant", ", 1, WasmValueKind.I32, WasmValueKind.I32")]
+    [Arguments("PushI32", "Numeric", ", 1, WasmValueKind.I32, WasmValueKind.I32")]
+    [Arguments("Numeric", "Numeric", ", 0, WasmValueKind.I32, WasmValueKind.I32")]
+    [Arguments("Numeric", "Numeric", ", 3, WasmValueKind.I32, WasmValueKind.I32")]
+    [Arguments("Numeric", "Numeric", ", 1, WasmValueKind.V128, WasmValueKind.I32")]
+    [Arguments("Numeric", "Numeric", ", 1, WasmValueKind.FuncRef, WasmValueKind.I32")]
+    [Arguments("Numeric", "Numeric", ", 1, WasmValueKind.ExternRef, WasmValueKind.I32")]
+    [Arguments("Numeric", "Numeric", ", 1, WasmValueKind.ExnRef, WasmValueKind.I32")]
+    [Arguments("Numeric", "Numeric", ", 1, (WasmValueKind)999, WasmValueKind.I32")]
+    [Arguments("Numeric", "Numeric", ", 1, WasmValueKind.I32, WasmValueKind.V128")]
+    [Arguments("Numeric", "Numeric", ", 1, WasmValueKind.I32, WasmValueKind.FuncRef")]
+    [Arguments("Numeric", "Numeric", ", 1, WasmValueKind.I32, WasmValueKind.ExternRef")]
+    [Arguments("Numeric", "Numeric", ", 1, WasmValueKind.I32, WasmValueKind.ExnRef")]
+    [Arguments("Numeric", "Numeric", ", 1, WasmValueKind.I32, (WasmValueKind)999")]
+    public async Task 数値規則とsignatureが不整合_不完全宣言の診断を属性位置に報告する(
+        string stackEffect,
+        string validation,
+        string signature
+    )
+    {
+        // Arrange
+        var compilation = GeneratorTestSource.CreateCompilation(
+            $$"""
+            namespace WasmSharp.Instructions
+            {
+                [Instruction(0, 0x6A, "i32.add", ImmediateKind.None, StackEffectKind.{{stackEffect}},
+                    ValidationRule.{{validation}}, nameof(Execution.Interpreter.Handler){{signature}})]
+                internal static partial class InstructionSet;
+            }
+            namespace WasmSharp.Execution
+            {
+                internal static partial class Interpreter
+                {
+                    internal static ExecutionResult Handler(InterpreterContext context, in Instruction instruction)
+                        => default;
+                }
+            }
+            """
+        );
+        GeneratorDriver driver = CSharpGeneratorDriver.Create(new InstructionGenerator());
+
+        // Act
+        driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out _, out var diagnostics);
+
+        // Assert
+        await GeneratorTestSource.AssertDiagnostic(driver, diagnostics, "WSIG002");
+    }
+
+    [Test]
+    [Arguments("", "WSIG003")]
+    [Arguments(
+        "internal static int Handler(InterpreterContext context, in Instruction instruction) => 0;",
+        "WSIG004"
+    )]
+    public async Task 数値宣言のhandlerが契約に合わない_既存のhandler診断を報告する(
+        string handler,
+        string expectedId
+    )
+    {
+        // Arrange
+        var compilation = GeneratorTestSource.CreateCompilation(
+            $$"""
+            namespace WasmSharp.Instructions
+            {
+                [Instruction(0, 0x6A, "i32.add", ImmediateKind.None, StackEffectKind.Numeric,
+                    ValidationRule.Numeric, "Handler", 2, WasmValueKind.I32, WasmValueKind.I32)]
+                internal static partial class InstructionSet;
+            }
+            namespace WasmSharp.Execution
+            {
+                internal static partial class Interpreter
+                {
+                    {{handler}}
+                }
+            }
+            """
+        );
+        GeneratorDriver driver = CSharpGeneratorDriver.Create(new InstructionGenerator());
+
+        // Act
+        driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out _, out var diagnostics);
+
+        // Assert
+        await GeneratorTestSource.AssertDiagnostic(driver, diagnostics, expectedId);
+    }
+
+    [Test]
+    [Arguments(0x02, "block", "BlockType", "Block")]
+    [Arguments(0x0E, "br_table", "BranchTable", "BranchTable")]
+    [Arguments(0x1C, "select", "TypeVector", "TypedSelect")]
+    public async Task 複合即値と制御規則を宣言する_数値signatureなしで記述子へ反映する(
+        int code,
+        string name,
+        string immediate,
+        string rule
+    )
+    {
+        // Arrange
+        var compilation = GeneratorTestSource.CreateCompilation(
+            $$"""
+            namespace WasmSharp.Instructions
+            {
+                [Instruction(0, {{code}}, "{{name}}", ImmediateKind.{{immediate}}, StackEffectKind.{{rule}},
+                    ValidationRule.{{rule}}, nameof(Execution.Interpreter.Handler))]
+                internal static partial class InstructionSet;
+            }
+            namespace WasmSharp.Execution
+            {
+                internal static partial class Interpreter
+                {
+                    internal static ExecutionResult Handler(InterpreterContext context, in Instruction instruction)
+                        => default;
+                }
+            }
+            """,
+            GeneratorTestSource.EXECUTION_CONTRACTS
+        );
+        GeneratorDriver driver = CSharpGeneratorDriver.Create(new InstructionGenerator());
+
+        // Act
+        driver = driver.RunGeneratorsAndUpdateCompilation(
+            compilation,
+            out var output,
+            out var diagnostics
+        );
+
+        // Assert
+        await Assert.That(diagnostics).IsEmpty();
+        await GeneratorTestSource.AssertCompilesAndRuns(
+            output,
+            $$"""
+            return WasmSharp.Instructions.InstructionSet.TryGet(new(0, {{code}}), out var descriptor)
+                && descriptor.Name == "{{name}}"
+                && descriptor.Immediate == WasmSharp.Instructions.ImmediateKind.{{immediate}}
+                && descriptor.StackEffect == WasmSharp.Instructions.StackEffectKind.{{rule}}
+                && descriptor.Validation == WasmSharp.Instructions.ValidationRule.{{rule}}
+                && descriptor.ExecutionOpcode.HasValue && descriptor.NumericSignature == null;
+            """
+        );
+    }
+
+    [Test]
     [Arguments(0x00, "unreachable", "None", "Unreachable")]
     [Arguments(0x10, "call", "Index", "Call")]
     [Arguments(0x0F, "return", "None", "Return")]
@@ -353,6 +580,24 @@ internal class InstructionGenerator_InitializeTests
     [Arguments("ImmediateKind.I32, StackEffectKind.PushI32, ValidationRule.Constant, null")]
     [Arguments("ImmediateKind.I32, StackEffectKind.PushI32, ValidationRule.Constant, \"\"")]
     [Arguments("(ImmediateKind)999, StackEffectKind.PushI32, ValidationRule.Constant, \"Handler\"")]
+    [Arguments(
+        "ImmediateKind.Unsupported, StackEffectKind.Numeric, ValidationRule.Numeric, \"Handler\", 1, WasmValueKind.I32, WasmValueKind.I32"
+    )]
+    [Arguments(
+        "ImmediateKind.None, StackEffectKind.Unsupported, ValidationRule.Numeric, \"Handler\", 1, WasmValueKind.I32, WasmValueKind.I32"
+    )]
+    [Arguments(
+        "ImmediateKind.None, StackEffectKind.Numeric, ValidationRule.Unsupported, \"Handler\", 1, WasmValueKind.I32, WasmValueKind.I32"
+    )]
+    [Arguments(
+        "ImmediateKind.None, StackEffectKind.Numeric, ValidationRule.Numeric, null, 1, WasmValueKind.I32, WasmValueKind.I32"
+    )]
+    [Arguments(
+        "ImmediateKind.None, StackEffectKind.Numeric, ValidationRule.Numeric, \"\", 1, WasmValueKind.I32, WasmValueKind.I32"
+    )]
+    [Arguments(
+        "(ImmediateKind)999, StackEffectKind.Numeric, ValidationRule.Numeric, \"Handler\", 1, WasmValueKind.I32, WasmValueKind.I32"
+    )]
     public async Task 対応済み行が不完全_属性位置付きのビルドエラーを報告する(string metadata)
     {
         // Arrange
@@ -455,18 +700,40 @@ internal class InstructionGenerator_InitializeTests
     }
 
     [Test]
-    [Arguments("Trap", "WasmSharp.Exceptions.WasmTrapReason.IntegerDivideByZero", "null", "null")]
+    [Arguments(
+        "Trap",
+        "WasmSharp.Exceptions.WasmTrapReason.IntegerDivideByZero",
+        "null",
+        "null",
+        false
+    )]
+    [Arguments(
+        "Trap",
+        "WasmSharp.Exceptions.WasmTrapReason.IntegerDivideByZero",
+        "null",
+        "null",
+        true
+    )]
     [Arguments(
         "Exhaustion",
         "null",
         "WasmSharp.Exceptions.WasmExhaustionReason.CallDepthLimit",
-        "12"
+        "12",
+        false
+    )]
+    [Arguments(
+        "Exhaustion",
+        "null",
+        "WasmSharp.Exceptions.WasmExhaustionReason.CallDepthLimit",
+        "12",
+        true
     )]
     public async Task Handlerが失敗する_原因と上限と元位置をそのまま返して次の命令を実行しない(
         string status,
         string trapReason,
         string exhaustionReason,
-        string limit
+        string limit,
+        bool numeric
     )
     {
         // Arrange
@@ -474,12 +741,14 @@ internal class InstructionGenerator_InitializeTests
             status == "Trap"
                 ? $"ExecutionResult.Trap({trapReason}, context.FunctionIndex, instruction.ByteOffset)"
                 : $"ExecutionResult.Exhaustion({exhaustionReason}, {limit}, context.FunctionIndex, instruction.ByteOffset)";
+        var metadata = numeric
+            ? "ImmediateKind.None, StackEffectKind.Numeric, ValidationRule.Numeric, nameof(Execution.Interpreter.Fail), 2, WasmValueKind.I32, WasmValueKind.I32"
+            : "ImmediateKind.I32, StackEffectKind.PushI32, ValidationRule.Constant, nameof(Execution.Interpreter.Fail)";
         var compilation = GeneratorTestSource.CreateCompilation(
             $$"""
             namespace WasmSharp.Instructions
             {
-                [Instruction(0, 0x41, "test.failure", ImmediateKind.I32, StackEffectKind.PushI32,
-                    ValidationRule.Constant, nameof(Execution.Interpreter.Fail))]
+                [Instruction(0, 0x41, "test.failure", {{metadata}})]
                 internal static partial class InstructionSet;
             }
             namespace WasmSharp.Execution
@@ -524,16 +793,29 @@ internal class InstructionGenerator_InitializeTests
     }
 
     [Test]
-    public async Task Opcodeが重複する_属性位置付きのビルドエラーを報告する()
+    [Arguments(false)]
+    [Arguments(true)]
+    public async Task Opcodeが重複する_属性位置付きのビルドエラーを報告する(bool numeric)
     {
         // Arrange
+        var metadata = numeric
+            ? ", ImmediateKind.None, StackEffectKind.Numeric, ValidationRule.Numeric, nameof(Execution.Interpreter.Handler), 1, WasmValueKind.I32, WasmValueKind.I32"
+            : "";
         var compilation = GeneratorTestSource.CreateCompilation(
-            """
+            $$"""
             namespace WasmSharp.Instructions
             {
-                [Instruction(0xFD, 1, "first")]
-                [Instruction(0xFD, 1, "second")]
+                [Instruction(0xFD, 1, "first"{{metadata}})]
+                [Instruction(0xFD, 1, "second"{{metadata}})]
                 internal static partial class InstructionSet;
+            }
+            namespace WasmSharp.Execution
+            {
+                internal static partial class Interpreter
+                {
+                    internal static ExecutionResult Handler(InterpreterContext context, in Instruction instruction)
+                        => default;
+                }
             }
             """
         );
@@ -760,12 +1042,14 @@ internal class InstructionGenerator_InitializeTests
                 && constant.Immediate == WasmSharp.Instructions.ImmediateKind.I32
                 && constant.StackEffect == WasmSharp.Instructions.StackEffectKind.PushI32
                 && constant.Validation == WasmSharp.Instructions.ValidationRule.Constant
+                && constant.NumericSignature == null
                 && constant.ExecutionOpcode.HasValue
                 && unsupportedFound && unsupported.Name == "i32.trunc_sat_f32_s"
                 && unsupported.Immediate == WasmSharp.Instructions.ImmediateKind.Unsupported
                 && unsupported.StackEffect == WasmSharp.Instructions.StackEffectKind.Unsupported
                 && unsupported.Validation == WasmSharp.Instructions.ValidationRule.Unsupported
                 && unsupported.ExecutionOpcode == null
+                && unsupported.NumericSignature == null
                 && System.Enum.GetValues<WasmSharp.Instructions.ExecutionOpcode>().Length == 1
                 && !WasmSharp.Instructions.InstructionSet.TryGet(new(0, 0), out _)
                 && !WasmSharp.Instructions.InstructionSet.TryGet(new(0xFD, 0), out _);

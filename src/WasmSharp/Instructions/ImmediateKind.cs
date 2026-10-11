@@ -39,4 +39,19 @@ internal enum ImmediateKind
     /// 符号なしLEB128で符号化された32ビット添字
     /// </summary>
     Index,
+
+    /// <summary>
+    /// 空型、単一の値型またはs33の型添字で符号化された制御型
+    /// </summary>
+    BlockType,
+
+    /// <summary>
+    /// 候補ラベルのベクトルと既定ラベル
+    /// </summary>
+    BranchTable,
+
+    /// <summary>
+    /// selectの型注釈を表す値型のベクトル
+    /// </summary>
+    TypeVector,
 }

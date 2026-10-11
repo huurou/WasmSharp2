@@ -49,7 +49,7 @@
   - _Depends: 1.1, 2.1, 2.2_
   - _Requirements: 1.1, 1.5, 9.6, 9.7, 10.1, 10.5, 10.7_
 
-- [ ] 3. 後続実装が共有する入力・実行・命令生成の契約を整える
+- [x] 3. 後続実装が共有する入力・実行・命令生成の契約を整える
 - [x] 3.1 s33読取りと複合即値の所有契約を統合する
   - 空型・単一値型・型添字を混同しないblocktypeと、ラベル列・select型列を不変に所有する入力表現を用意する。
   - 既存LEB128処理を利用し、s33の有効な非最短符号化、幅超過、切断を扱う。負の多byte整数を値型へ読み替えない。
@@ -65,7 +65,7 @@
   - _Boundary: Instruction, FunctionCode, BranchTarget_
   - _Requirements: 3.4, 7.7, 7.8, 7.9_
 
-- [ ] 3.3 数値型効果の宣言を生成器とテストへ統合する
+- [x] 3.3 数値型効果の宣言を生成器とテストへ統合する
   - 既存の未対応宣言・対応宣言を維持し、入力個数・入力型・結果型を持つ数値宣言を生成descriptorへ反映する。
   - 入力個数1/2、スカラー4型、Numericとsignatureの整合を検査し、opcode重複・handler不整合の診断を維持する。対象handlerの作成前に未対応命令を対応済みへ切り替えない。
   - 複合即値・制御・selectの規則を表す共通契約も揃える。3.1で更新した生成器fixtureへ数値signature等のこのタスクで追加する契約ソースを埋め込み、重複するスタブを除く。
@@ -307,3 +307,4 @@
 - 2.2:1関数の検証は`FunctionValidator.Validate`、module全体と共有する診断2メソッドは`ValidationDiagnostics`が担う。TUnitのfilterにはファイル名ではなく実際のクラス名を指定する。
 - 3.1:入力命令は`DecodedInstruction`の即値別factoryで構築する。生成器fixtureはBlockType・WasmValue・WasmValueKindの本体ソースを取り込み、WasmFunction参照型だけを最小stubに残した。
 - 3.2:`FunctionCode`の末尾引数で不変の`BranchTargets`を渡す。`Instruction.TargetCount`は既定を除く候補数で、省略時は0。既存の3引数・4引数構築を維持した。
+- 3.3:数値宣言は10引数属性で`NumericSignature`を指定し、StackEffectとValidationの両方をNumericにする。生成器fixtureのWasmValueKindは常時InstructionContractsから取り込み、実行契約側には重複させない。

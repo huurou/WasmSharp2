@@ -48,7 +48,8 @@ internal static class GeneratorTestSource
     )
     {
         var assembly = typeof(GeneratorTestSource).Assembly;
-        // デコード済み命令も実行契約側のWasmValueに依存するため、同じ条件で取り込む。
+        // WasmValueKindは命令宣言にも必要なため、常にInstructionContractsから取り込む。
+        // デコード済み命令とWasmValueは実行契約を使う場合にだけ取り込む。
         var contracts = assembly
             .GetManifestResourceNames()
             .Where(x =>

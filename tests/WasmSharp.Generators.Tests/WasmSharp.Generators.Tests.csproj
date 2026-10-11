@@ -15,11 +15,11 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\WasmSharp.Generators\WasmSharp.Generators.csproj" />
     <EmbeddedResource
-      Include="..\..\src\WasmSharp\Instructions\InstructionAttribute.cs;..\..\src\WasmSharp\Instructions\OpcodeKey.cs;..\..\src\WasmSharp\Instructions\ImmediateKind.cs;..\..\src\WasmSharp\Instructions\StackEffectKind.cs;..\..\src\WasmSharp\Instructions\ValidationRule.cs"
+      Include="..\..\src\WasmSharp\Instructions\InstructionAttribute.cs;..\..\src\WasmSharp\Instructions\OpcodeKey.cs;..\..\src\WasmSharp\Instructions\ImmediateKind.cs;..\..\src\WasmSharp\Instructions\StackEffectKind.cs;..\..\src\WasmSharp\Instructions\ValidationRule.cs;..\..\src\WasmSharp\Instructions\NumericSignature.cs;..\..\src\WasmSharp\WasmValueKind.cs"
       LogicalName="InstructionContracts.%(Filename)%(Extension)"
     />
     <EmbeddedResource
-      Include="..\..\src\WasmSharp\Execution\ExecutionResult.cs;..\..\src\WasmSharp\Execution\Instruction.cs;..\..\src\WasmSharp\WasmValue.cs;..\..\src\WasmSharp\WasmValueKind.cs"
+      Include="..\..\src\WasmSharp\Execution\ExecutionResult.cs;..\..\src\WasmSharp\Execution\Instruction.cs;..\..\src\WasmSharp\WasmValue.cs"
       LogicalName="ExecutionContracts.%(Filename)%(Extension)"
     />
     <EmbeddedResource

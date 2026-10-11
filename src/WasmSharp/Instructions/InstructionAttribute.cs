@@ -57,6 +57,41 @@ internal sealed class InstructionAttribute(
     public string? ExecutionHandler { get; } = executionHandler;
 
     /// <summary>
+    /// 数値命令の入力個数・入力型・結果型を取得する 数値以外の宣言ではnull
+    /// </summary>
+    public NumericSignature? NumericSignature { get; }
+
+    /// <summary>
+    /// 数値命令の型効果と実行handlerを宣言する
+    /// </summary>
+    /// <param name="prefix">通常命令では0、拡張命令では先頭のprefix</param>
+    /// <param name="code">prefix内の命令番号</param>
+    /// <param name="name">Wasm仕様上の命令名</param>
+    /// <param name="immediate">即値の符号化</param>
+    /// <param name="stackEffect">検証時のスタック効果</param>
+    /// <param name="validation">命令の検証規則</param>
+    /// <param name="executionHandler">Interpreterに宣言された静的handler名</param>
+    /// <param name="inputCount">同じ型の入力値の個数</param>
+    /// <param name="inputType">入力のスカラー数値型</param>
+    /// <param name="resultType">結果のスカラー数値型</param>
+    public InstructionAttribute(
+        byte prefix,
+        uint code,
+        string name,
+        ImmediateKind immediate,
+        StackEffectKind stackEffect,
+        ValidationRule validation,
+        string? executionHandler,
+        byte inputCount,
+        WasmValueKind inputType,
+        WasmValueKind resultType
+    )
+        : this(prefix, code, name, immediate, stackEffect, validation, executionHandler)
+    {
+        NumericSignature = new(inputCount, inputType, resultType);
+    }
+
+    /// <summary>
     /// 番号と名前のみで未対応の命令を宣言する
     /// </summary>
     /// <param name="prefix">通常命令では0、拡張命令では先頭のprefix</param>

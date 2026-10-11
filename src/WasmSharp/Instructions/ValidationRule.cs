@@ -64,4 +64,64 @@ internal enum ValidationRule
     /// global添字・可変性・入力型を検証し、入力型を型スタックから取り除く
     /// </summary>
     GlobalSet,
+
+    /// <summary>
+    /// 型スタックを変更しない
+    /// </summary>
+    None,
+
+    /// <summary>
+    /// 数値signatureに従って入力の個数と型を検証し、結果型を積む
+    /// </summary>
+    Numeric,
+
+    /// <summary>
+    /// block型と入力を検証し、結果をラベル型とする制御frameを開始する
+    /// </summary>
+    Block,
+
+    /// <summary>
+    /// loop型と入力を検証し、引数をラベル型とする制御frameを開始する
+    /// </summary>
+    Loop,
+
+    /// <summary>
+    /// i32条件とif型の入力を検証し、制御frameを開始する
+    /// </summary>
+    If,
+
+    /// <summary>
+    /// thenの結果を検証し、elseの入力へ戻す
+    /// </summary>
+    Else,
+
+    /// <summary>
+    /// 現在の制御frameの結果を検証し、外側へ積む
+    /// </summary>
+    ControlEnd,
+
+    /// <summary>
+    /// ラベル添字と値の型を検証し、到達不能にする
+    /// </summary>
+    Branch,
+
+    /// <summary>
+    /// i32条件とラベル型を検証し、非分岐経路の値を維持する
+    /// </summary>
+    BranchIf,
+
+    /// <summary>
+    /// i32選択値と全候補の共通ラベル型を検証し、到達不能にする
+    /// </summary>
+    BranchTable,
+
+    /// <summary>
+    /// i32条件と2候補の同じスカラー数値型を検証する
+    /// </summary>
+    Select,
+
+    /// <summary>
+    /// 型注釈が1個で、i32条件と2候補が注釈型に合うことを検証する
+    /// </summary>
+    TypedSelect,
 }

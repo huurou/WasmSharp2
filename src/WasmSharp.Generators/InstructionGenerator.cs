@@ -133,7 +133,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
     /// <summary>
     /// 命令属性を生成用の宣言へ変換し、必要情報とhandler契約の診断を付ける
     /// </summary>
-    /// <remarks>3引数の属性は未対応命令として保持し、7引数の属性は実行に必要な情報を検査する</remarks>
+    /// <remarks>3引数の属性は未対応命令として保持し、7引数と10引数の属性は実行に必要な情報を検査する</remarks>
     /// <param name="attribute">ソース上のInstructionAttributeの属性情報</param>
     /// <param name="compilation">Interpreterとhandlerの宣言を照合するコンパイル情報</param>
     /// <returns>生成用の命令宣言 不完全な宣言やhandler契約違反はErrorに診断を保持する</returns>
@@ -145,7 +145,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
         var arguments = attribute.ConstructorArguments;
         var location = attribute.ApplicationSyntaxReference!.GetSyntax().GetLocation();
         if (
-            arguments.Length is not (3 or 7)
+            arguments.Length is not (3 or 7 or 10)
             || arguments.Any(x => x.Kind == TypedConstantKind.Error)
         )
         {
@@ -156,6 +156,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
                 "Unsupported",
                 "Unsupported",
                 "Unsupported",
+                null,
                 null,
                 location,
                 incompleteDeclaration_
@@ -169,18 +170,43 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
             arguments.Length == 3 ? "Unsupported" : GetEnumName(arguments[4]),
             arguments.Length == 3 ? "Unsupported" : GetEnumName(arguments[5]),
             arguments.Length == 3 ? null : (string?)arguments[6].Value,
+            arguments.Length == 10
+                ? new NumericSignatureDeclaration(
+                    (byte)arguments[7].Value!,
+                    GetEnumName(arguments[8]),
+                    GetEnumName(arguments[9])
+                )
+                : null,
             location,
             null
         );
         if (
             string.IsNullOrWhiteSpace(declaration.Name)
             || (
-                arguments.Length == 7
+                arguments.Length != 3
                 && (
                     declaration.Immediate == "Unsupported"
                     || declaration.StackEffect == "Unsupported"
                     || declaration.Validation == "Unsupported"
                     || string.IsNullOrWhiteSpace(declaration.Handler)
+                )
+            )
+        )
+        {
+            return declaration with { Error = incompleteDeclaration_ };
+        }
+        var numericStackEffect = declaration.StackEffect == "Numeric";
+        var numericValidation = declaration.Validation == "Numeric";
+        var signature = declaration.NumericSignature;
+        if (
+            numericStackEffect != numericValidation
+            || numericStackEffect != (signature != null)
+            || (
+                signature != null
+                && (
+                    signature.InputCount is not (1 or 2)
+                    || !IsScalarNumericType(signature.InputType)
+                    || !IsScalarNumericType(signature.ResultType)
                 )
             )
         )
@@ -227,7 +253,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
     /// <summary>
     /// 命令属性の列挙定数に対応する宣言名を取得する
     /// </summary>
-    /// <param name="value">即値、スタック効果または検証規則を表す列挙定数</param>
+    /// <param name="value">即値、スタック効果、検証規則または値型を表す列挙定数</param>
     /// <returns>定数値に一致する列挙子名 一致する宣言がない場合はUnsupported</returns>
     private static string GetEnumName(TypedConstant value)
     {
@@ -237,6 +263,16 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
                 .SingleOrDefault(x => x.HasConstantValue && Equals(x.ConstantValue, value.Value))
                 ?.Name
             ?? "Unsupported";
+    }
+
+    /// <summary>
+    /// 数値signatureに使えるスカラー値型の宣言名か判定する
+    /// </summary>
+    /// <param name="name">WasmValueKindの列挙子名</param>
+    /// <returns>i32、i64、f32、f64のいずれかの場合はtrue</returns>
+    private static bool IsScalarNumericType(string name)
+    {
+        return name is "I32" or "I64" or "F32" or "F64";
     }
 
     /// <summary>
@@ -287,13 +323,15 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
             /// <param name="StackEffect">スタック効果</param>
             /// <param name="Validation">検証規則</param>
             /// <param name="ExecutionOpcode">対応済み命令の実行opcode 未対応の場合はnull</param>
+            /// <param name="NumericSignature">数値命令の入力個数・入力型・結果型 数値以外の場合はnull</param>
             internal readonly record struct InstructionDescriptor(
                 OpcodeKey Opcode,
                 string Name,
                 ImmediateKind Immediate,
                 StackEffectKind StackEffect,
                 ValidationRule Validation,
-                ExecutionOpcode? ExecutionOpcode);
+                ExecutionOpcode? ExecutionOpcode,
+                NumericSignature? NumericSignature);
 
             /// <summary>
             /// 命令宣言から生成された命令情報の参照先
@@ -314,8 +352,13 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
                 instruction.Handler == null
                     ? "null"
                     : $"ExecutionOpcode.{instruction.ExecutionOpcode}";
+            var signature = instruction.NumericSignature;
+            var numericSignature =
+                signature == null
+                    ? "null"
+                    : $"new NumericSignature({signature.InputCount}, global::WasmSharp.WasmValueKind.{signature.InputType}, global::WasmSharp.WasmValueKind.{signature.ResultType})";
             source.AppendLine(
-                $"        [{key}] = new({key}, {SymbolDisplay.FormatLiteral(instruction.Name, true)}, ImmediateKind.{instruction.Immediate}, StackEffectKind.{instruction.StackEffect}, ValidationRule.{instruction.Validation}, {executionOpcode}),"
+                $"        [{key}] = new({key}, {SymbolDisplay.FormatLiteral(instruction.Name, true)}, ImmediateKind.{instruction.Immediate}, StackEffectKind.{instruction.StackEffect}, ValidationRule.{instruction.Validation}, {executionOpcode}, {numericSignature}),"
             );
         }
         source.AppendLine(
@@ -410,6 +453,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
     /// <param name="StackEffect">スタック効果を表す列挙子名</param>
     /// <param name="Validation">検証規則を表す列挙子名</param>
     /// <param name="Handler">対応するInterpreterの静的handler名 未対応の宣言ではnull</param>
+    /// <param name="NumericSignature">数値命令の型効果を表す属性値 数値以外の宣言ではnull</param>
     /// <param name="Location">属性宣言のソース上の位置</param>
     /// <param name="Error">宣言の不備を報告する診断 宣言が有効な場合はnull</param>
     private sealed record InstructionDeclaration(
@@ -420,6 +464,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
         string StackEffect,
         string Validation,
         string? Handler,
+        NumericSignatureDeclaration? NumericSignature,
         Location Location,
         DiagnosticDescriptor? Error
     )
@@ -429,4 +474,16 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
         /// </summary>
         public string ExecutionOpcode => Prefix == 0 ? $"Op{Code:X2}" : $"Op{Prefix:X2}_{Code:X2}";
     }
+
+    /// <summary>
+    /// 生成する数値signatureの入力個数と値型の宣言名
+    /// </summary>
+    /// <param name="InputCount">同じ型の入力値の個数</param>
+    /// <param name="InputType">入力のWasmValueKindの列挙子名</param>
+    /// <param name="ResultType">結果のWasmValueKindの列挙子名</param>
+    private sealed record NumericSignatureDeclaration(
+        byte InputCount,
+        string InputType,
+        string ResultType
+    );
 }

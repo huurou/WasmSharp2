@@ -79,4 +79,64 @@ internal enum StackEffectKind
     /// 指定したmutable globalの型の値を取り除く
     /// </summary>
     GlobalSet,
+
+    /// <summary>
+    /// 型スタックを変更しない
+    /// </summary>
+    None,
+
+    /// <summary>
+    /// 数値signatureの入力を取り除き結果を1個積む
+    /// </summary>
+    Numeric,
+
+    /// <summary>
+    /// block型の引数と結果を持つ制御frameを開始する
+    /// </summary>
+    Block,
+
+    /// <summary>
+    /// loop型の引数と結果を持つ制御frameを開始する
+    /// </summary>
+    Loop,
+
+    /// <summary>
+    /// i32条件を取り除き、if型の制御frameを開始する
+    /// </summary>
+    If,
+
+    /// <summary>
+    /// thenの結果を確定し、elseの入力へ戻す
+    /// </summary>
+    Else,
+
+    /// <summary>
+    /// 現在の制御frameを終了し、その結果を外側へ積む
+    /// </summary>
+    ControlEnd,
+
+    /// <summary>
+    /// ラベルの値を取り出して到達不能にする
+    /// </summary>
+    Branch,
+
+    /// <summary>
+    /// i32条件を取り除き、非分岐経路にラベルの値を残す
+    /// </summary>
+    BranchIf,
+
+    /// <summary>
+    /// i32選択値とラベルの値を取り出して到達不能にする
+    /// </summary>
+    BranchTable,
+
+    /// <summary>
+    /// i32条件と同じ数値型の2候補を取り除き、候補型の値を積む
+    /// </summary>
+    Select,
+
+    /// <summary>
+    /// i32条件と注釈型の2候補を取り除き、注釈型の値を積む
+    /// </summary>
+    TypedSelect,
 }

@@ -147,3 +147,14 @@
 - 実装記録:`artifacts/numeric-control/task-3.2-20261011T182008/verification.md`。独立レビュー:`artifacts/numeric-control/task-3.2-review-20261011T185500/review.md`。各出力先にコマンド・ログ・終了値を保持した。
 
 親エージェントが差分、現在のビルド・3suiteとRED/GREENの出力・終了値を確認し、`kiro-verify-completion`は`TASK: VERIFIED`。分岐操作・handler・制御のDecode/Validate接続と公式全体の確認は後続タスクで行う。
+
+## タスク3.3:数値型効果の宣言と生成器契約
+
+既存3引数・7引数属性を維持し、10引数の数値signatureを生成descriptorへ投影した。Numeric両規則とsignatureの整合、入力個数1/2、入出力のスカラー4型を検査し、既存の不完全宣言・opcode重複・handler診断を保持する。複合即値・制御・selectの共通enumと、本体契約を埋め込む生成器fixtureも整えた。変更は本体・生成器6ファイルと専用fixture・テスト・projectの3ファイル。要件1.2・1.3・2.1・2.2・4.6・4.7・9.2の宣言契約の範囲である。
+
+- 実装者:`READY_FOR_REVIEW`。既定OFFのREDはビルド成功後に27件中12件失敗・15件成功、終了2。ONで27件成功し、一時flagを除去した。途中で見つかったfixtureの必須indexと実行契約の取込み不足は修正済み。
+- 最終Releaseビルド:終了0、警告・エラー0。3suiteは1,206件・76件・701件成功、失敗・スキップ0、各終了0。CSharpier8ファイルと差分確認も終了0。
+- 履歴なしの独立レビュー:`APPROVED`。現ソースのビルドと同じ3suiteの成功、RED/GREEN、直接dispatchと失敗結果の伝播、診断、生成器の依存関係とfixtureの契約を確認した。
+- 実装記録:`artifacts/numeric-control/task-3.3-20261011T183600/verification.md`。独立レビュー:`artifacts/numeric-control/task-3.3-review-20261011-independent-8cf463/review.md`。各出力先にコマンド・ログ・終了値を保持した。
+
+親エージェントが差分、新規signature、現在のビルド・3suiteとRED/GREENの出力・終了値、独立レビューを確認し、`kiro-verify-completion`は`TASK: VERIFIED`。対応済みopcodeへの切替、handler・FunctionValidator・公開経路と公式全体の確認は後続タスクで行う。
