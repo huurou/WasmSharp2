@@ -213,3 +213,14 @@
 - 実装記録:`artifacts/numeric-control/task-5.2-20261011T210205/verification.md`。独立レビュー:`artifacts/numeric-control/task-5.2-review-20261011T211700/review.md`。各出力先のcommandsにrawlog・コマンド・native終了値を保持した。
 
 親エージェントが14handlerと幅別補助の最終差分、代表境界テスト、RED/GREENと現在のビルド・3suiteのrawlog・終了値、独立レビューを確認し、`kiro-verify-completion`は`TASK: VERIFIED`。公開命令の接続は7.1、公開統合と公式全体の次回確認は7.2で行う。
+
+## タスク5.3:最小値・最大値と浮動小数点比較
+
+両幅のmin/maxと6比較の16handlerを追加した。min/maxはNaNを先に補正し、等値の非NaNにOR/ANDを適用して±0の規則を保つ。比較は左右順の各幅演算でi32の0/1を返す。変更は本体1ファイルと直接テスト16クラス。要件5.5・5.7・5.8の内部handlerの範囲である。
+
+- 実装者:`READY_FOR_REVIEW`。既定OFFのREDはビルド成功後200件中168件失敗・32件成功、dotnet終了2。全16クラスでmin/maxの値・NaN・0符号、比較の結果型不一致を検出した。ONで同じ200件成功後、一時flagを除去した。
+- 最終Releaseビルド:終了0、警告・エラー0。3suiteは1,951件・76件・701件成功、失敗・スキップ0、各終了0。CSharpier17ファイルと差分確認も成功した。
+- 履歴なしの独立レビュー:`APPROVED`。本体差分と新規16テスト全文、左右交換・特殊値・等値・結果型、既存処理の保持とRED/GREENを確認。独立ビルドと同じ3suiteも成功した。
+- 実装記録:`artifacts/numeric-control/task-5.3-20261011T211400/verification.md`。独立レビュー:`artifacts/numeric-control/task-5.3-review-20261011T221200/review.md`。各出力先にコマンド・rawlog・native終了値を保持した。
+
+親エージェントが16handlerの最終差分、代表境界テスト、RED/GREENと現在のビルド・3suiteのrawlog・終了値、独立レビューを確認し、`kiro-verify-completion`は`TASK: VERIFIED`。浮動小数点40handlerの直接確認を終えた。公開命令の接続は7.1、公開統合と公式全体の次回確認は7.2で行う。

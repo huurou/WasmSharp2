@@ -405,4 +405,296 @@ internal static partial class Interpreter
         );
         return default;
     }
+
+    /// <summary>
+    /// f32の最小値を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのF32Min命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult F32Min(InterpreterContext context, in Instruction instruction)
+    {
+        var right = context.PopValue().AsF32();
+        var left = context.PopValue().AsF32();
+        WasmValue result;
+        if (float.IsNaN(left) || float.IsNaN(right))
+        {
+            result = F32ArithmeticResult(float.NaN);
+        }
+        else if (left == right)
+        {
+            // 等値の非NaNでは符号bitだけが異なり得る ±0はORで−0を選ぶ
+            result = WasmValue.FromF32Bits(
+                BitConverter.SingleToUInt32Bits(left) | BitConverter.SingleToUInt32Bits(right)
+            );
+        }
+        else
+        {
+            result = F32ArithmeticResult(left < right ? left : right);
+        }
+
+        context.PushValue(result);
+        return default;
+    }
+
+    /// <summary>
+    /// f32の最大値を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのF32Max命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult F32Max(InterpreterContext context, in Instruction instruction)
+    {
+        var right = context.PopValue().AsF32();
+        var left = context.PopValue().AsF32();
+        WasmValue result;
+        if (float.IsNaN(left) || float.IsNaN(right))
+        {
+            result = F32ArithmeticResult(float.NaN);
+        }
+        else if (left == right)
+        {
+            // 等値の非NaNでは符号bitだけが異なり得る ±0はANDで+0を選ぶ
+            result = WasmValue.FromF32Bits(
+                BitConverter.SingleToUInt32Bits(left) & BitConverter.SingleToUInt32Bits(right)
+            );
+        }
+        else
+        {
+            result = F32ArithmeticResult(left > right ? left : right);
+        }
+
+        context.PushValue(result);
+        return default;
+    }
+
+    /// <summary>
+    /// f32の等値比較を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのF32Eq命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult F32Eq(InterpreterContext context, in Instruction instruction)
+    {
+        var right = context.PopValue().AsF32();
+        var left = context.PopValue().AsF32();
+        context.PushValue(WasmValue.FromI32(left == right ? 1 : 0));
+        return default;
+    }
+
+    /// <summary>
+    /// f32の不等値比較を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのF32Ne命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult F32Ne(InterpreterContext context, in Instruction instruction)
+    {
+        var right = context.PopValue().AsF32();
+        var left = context.PopValue().AsF32();
+        context.PushValue(WasmValue.FromI32(left != right ? 1 : 0));
+        return default;
+    }
+
+    /// <summary>
+    /// f32の小なり比較を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのF32Lt命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult F32Lt(InterpreterContext context, in Instruction instruction)
+    {
+        var right = context.PopValue().AsF32();
+        var left = context.PopValue().AsF32();
+        context.PushValue(WasmValue.FromI32(left < right ? 1 : 0));
+        return default;
+    }
+
+    /// <summary>
+    /// f32の大なり比較を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのF32Gt命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult F32Gt(InterpreterContext context, in Instruction instruction)
+    {
+        var right = context.PopValue().AsF32();
+        var left = context.PopValue().AsF32();
+        context.PushValue(WasmValue.FromI32(left > right ? 1 : 0));
+        return default;
+    }
+
+    /// <summary>
+    /// f32の以下比較を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのF32Le命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult F32Le(InterpreterContext context, in Instruction instruction)
+    {
+        var right = context.PopValue().AsF32();
+        var left = context.PopValue().AsF32();
+        context.PushValue(WasmValue.FromI32(left <= right ? 1 : 0));
+        return default;
+    }
+
+    /// <summary>
+    /// f32の以上比較を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのF32Ge命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult F32Ge(InterpreterContext context, in Instruction instruction)
+    {
+        var right = context.PopValue().AsF32();
+        var left = context.PopValue().AsF32();
+        context.PushValue(WasmValue.FromI32(left >= right ? 1 : 0));
+        return default;
+    }
+
+    /// <summary>
+    /// f64の最小値を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのF64Min命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult F64Min(InterpreterContext context, in Instruction instruction)
+    {
+        var right = context.PopValue().AsF64();
+        var left = context.PopValue().AsF64();
+        WasmValue result;
+        if (double.IsNaN(left) || double.IsNaN(right))
+        {
+            result = F64ArithmeticResult(double.NaN);
+        }
+        else if (left == right)
+        {
+            // 等値の非NaNでは符号bitだけが異なり得る ±0はORで−0を選ぶ
+            result = WasmValue.FromF64Bits(
+                BitConverter.DoubleToUInt64Bits(left) | BitConverter.DoubleToUInt64Bits(right)
+            );
+        }
+        else
+        {
+            result = F64ArithmeticResult(left < right ? left : right);
+        }
+
+        context.PushValue(result);
+        return default;
+    }
+
+    /// <summary>
+    /// f64の最大値を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのF64Max命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult F64Max(InterpreterContext context, in Instruction instruction)
+    {
+        var right = context.PopValue().AsF64();
+        var left = context.PopValue().AsF64();
+        WasmValue result;
+        if (double.IsNaN(left) || double.IsNaN(right))
+        {
+            result = F64ArithmeticResult(double.NaN);
+        }
+        else if (left == right)
+        {
+            // 等値の非NaNでは符号bitだけが異なり得る ±0はANDで+0を選ぶ
+            result = WasmValue.FromF64Bits(
+                BitConverter.DoubleToUInt64Bits(left) & BitConverter.DoubleToUInt64Bits(right)
+            );
+        }
+        else
+        {
+            result = F64ArithmeticResult(left > right ? left : right);
+        }
+
+        context.PushValue(result);
+        return default;
+    }
+
+    /// <summary>
+    /// f64の等値比較を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのF64Eq命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult F64Eq(InterpreterContext context, in Instruction instruction)
+    {
+        var right = context.PopValue().AsF64();
+        var left = context.PopValue().AsF64();
+        context.PushValue(WasmValue.FromI32(left == right ? 1 : 0));
+        return default;
+    }
+
+    /// <summary>
+    /// f64の不等値比較を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのF64Ne命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult F64Ne(InterpreterContext context, in Instruction instruction)
+    {
+        var right = context.PopValue().AsF64();
+        var left = context.PopValue().AsF64();
+        context.PushValue(WasmValue.FromI32(left != right ? 1 : 0));
+        return default;
+    }
+
+    /// <summary>
+    /// f64の小なり比較を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのF64Lt命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult F64Lt(InterpreterContext context, in Instruction instruction)
+    {
+        var right = context.PopValue().AsF64();
+        var left = context.PopValue().AsF64();
+        context.PushValue(WasmValue.FromI32(left < right ? 1 : 0));
+        return default;
+    }
+
+    /// <summary>
+    /// f64の大なり比較を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのF64Gt命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult F64Gt(InterpreterContext context, in Instruction instruction)
+    {
+        var right = context.PopValue().AsF64();
+        var left = context.PopValue().AsF64();
+        context.PushValue(WasmValue.FromI32(left > right ? 1 : 0));
+        return default;
+    }
+
+    /// <summary>
+    /// f64の以下比較を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのF64Le命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult F64Le(InterpreterContext context, in Instruction instruction)
+    {
+        var right = context.PopValue().AsF64();
+        var left = context.PopValue().AsF64();
+        context.PushValue(WasmValue.FromI32(left <= right ? 1 : 0));
+        return default;
+    }
+
+    /// <summary>
+    /// f64の以上比較を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのF64Ge命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult F64Ge(InterpreterContext context, in Instruction instruction)
+    {
+        var right = context.PopValue().AsF64();
+        var left = context.PopValue().AsF64();
+        context.PushValue(WasmValue.FromI32(left >= right ? 1 : 0));
+        return default;
+    }
 }
