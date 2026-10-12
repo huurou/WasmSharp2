@@ -432,3 +432,17 @@ Releaseビルドは警告・エラー0、focused69件とruntime全2,815件が成
 制御付き直接・相互再帰、深さ2でのloop内の終了済み定義/host call、外側上限4を共有する同期再入、trap・exhaustion・同一host例外後の独立Invokeを確認する9ケースを追加した。初期locals・新しい参照・保存結果・共有globalを検査し、失敗後の内側instanceへの独立入口では上限20で成功する。本体変更なし、初回GREEN。
 
 Releaseビルドは警告・エラー0、内部の参照解除・復元も含むfocused170件とruntime全2,824件が成功した。失敗・skip0、各終了0。履歴なしの独立レビューも別途ビルド・runtime全件・追加9ケースのTRX・整形・最終hashを確認し、APPROVED。親が原ログ・終了値・現在のhashを照合し、`kiro-verify-completion`は`TASK: VERIFIED`。実装記録:`artifacts/numeric-control/task10.4-20261012-implementation/verification.md`。独立レビュー:`artifacts/numeric-control/task-10.4-review-20261012T003031Z/review.md`。10.1〜10.4が揃ったため親項目10も完了とした。
+
+## タスク11.1:最終3suiteと固定公式全体の回帰比較
+
+2026-10-12、HEAD`cb665f2b8b48e0c2fcbda69feedaa77d48c67813`の既存本体・テスト・ランナーで受入を実行した。受入記録のみのタスクで、本体・テストの編集とREDは適用外。要件9.6・10.1・10.3・10.5・10.6の全体実行・比較部分、designの「公式受入のBatch契約」「要件対応」「エラー処理」を確認した。
+
+- Releaseビルドはnative終了0、警告・エラー0。その後のruntime2,824件・生成器76件・runner702件は成功、失敗・skip0、各native終了0。apphostのCLI helpも終了0。
+- 固定147入力・53,907commandの処理と出力は完了し、runはnative終了0。passed16,924、failed0、入力/commandのrunner_error0、runtime_unsupported2,100、blocked33,806、out_of_scope1,077。
+- run完了を保存JSONで確認してから直前baselineと比較し、比較もnative終了0、成立・完了。変化14,524件、条件差・出典差・入力/素材差・追加・欠落・回帰・未比較・現結果のfailed/runner_errorは0。以前passedだった2,491件を保持した。
+- 機械監査は全inputのstatus/issues、全case ID・元JSONのcommand順/型/行・summary・完了状態、比較内のbaseline/currentの全case内容と期待値の不変、5,821素材のhashを照合し、問題0。manifestのSHA-256は`4979e98df30308d4418e3050899f322ec1b085b88b7d2b3c053e2f9e0abe1d3b`。新baseline`4229a52dec5000a2fc1204b9059890d090b3b316d4b1d56808797d6b834f6c12`と旧baseline`0f47b1fc0b648b8e539297a60a3ef5a36c7d78c79ef3f8550ef86b10a5814285`を維持した。
+- 保存先:`artifacts/numeric-control/task-11.1-20261012T003403Z/`。run.jsonのSHA-256は`02ab113a70b5dd1c6ceb5aca12c901dddb8735b1754a035c999953baae9ad779`、comparison.jsonは`794f076ca34de52d786db1b4403af6003d02f37ddd5298b301098962676d454a`。各コマンド・開始/終了UTC・native終了値・stdout/stderrは各`*.result.json`と`*.stdout.log`/`*.stderr.log`、TRXは各`*-trx/`、機械確認は`audit-run.json`と`audit-comparison.json`、最終変更hashは`final-integrity.json`に保存した。
+
+11.1の実行結果を独立レビューへ渡す状態であり、レビューと親の完了確認は別途行う。対象規則の網羅と残存未対応/blocked原因の監査は11.2、受入確定は11.3、同じ結果からのbaseline保存は11.4で未実施。Core2.0全体への準拠を示す結果ではない。
+
+11.1の履歴なしの独立レビューは`APPROVED`。別途3suite全3,602件・CLI help・全53,907caseと5,821素材・元147入力hash・保存済み値と否定assertionを照合して問題0。親が原ログ・native終了値・現在の文書と結果hashを確認し、`kiro-verify-completion`は`TASK: VERIFIED`。独立レビュー:`artifacts/numeric-control/task-11.1-review-20261012T-independent/review.md`。
