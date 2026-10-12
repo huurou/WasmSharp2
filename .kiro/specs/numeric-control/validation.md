@@ -414,3 +414,9 @@ FunctionValidatorのframe内参照をPeekへ整理してから、スカラー4�
 Releaseビルドは警告・エラー0、追加10ケースとruntime全2,800件が成功し、失敗・skip0、各終了0。履歴なしの独立レビューも別途ビルド・全runtime・追加ケースのTRX・整形を確認し、APPROVED。親が原ログ・終了値・最終hashを照合し、`kiro-verify-completion`は`TASK: VERIFIED`。公式全体のrun・比較は11.1で行う。
 
 実装記録:`artifacts/numeric-control/task-10.1-20261012-impl/verification.md`。独立レビュー:`artifacts/numeric-control/task-10.1-review-20261012T090010842/review.md`。
+
+## タスク10.2:選択・分岐と共有状態・ホスト連携
+
+公開4段階で、selectの非短絡とNaN・符号付き0、共有globalの更新順序、br/ifで飛ばす副作用、import定義関数と再exportホストの所属情報・同一性、ホスト例外の型と実体、非選択候補のtrap後の非実行を確認する15ケースを追加した。本体変更なし。初回ビルドのテスト側API利用を修正後、Releaseビルドは警告・エラー0、focused143件とruntime全2,815件が成功した。失敗・skip0、各終了0。
+
+履歴なしの独立レビューは別途ビルド・runtime全件・追加15ケースのTRX・整形・最終hashを確認し、APPROVED。親が原ログ・終了値・現在のhashを照合し、`kiro-verify-completion`は`TASK: VERIFIED`。実装記録:`artifacts/numeric-control/task10-2-20261012T-98a364fc/verification.md`。独立レビュー:`artifacts/numeric-control/task-10.2-review-20261012-a98754da/review.md`。

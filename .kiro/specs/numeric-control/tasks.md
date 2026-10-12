@@ -248,7 +248,7 @@
   - _Depends: 7.2, 9.6_
   - _Requirements: 3.9, 7.8, 7.9, 8.3_
 
-- [ ] 10.2 選択・分岐と共有状態・ホスト連携の順序を確認する
+- [x] 10.2 選択・分岐と共有状態・ホスト連携の順序を確認する
   - selectの両候補と条件でglobal・ホストcallbackを操作し、非短絡で命令順に評価されることと、分岐で飛び越えた副作用が発生しないことを確認する。
   - globalの型・可変性・importによる共有を維持し、実行した更新だけが後続呼出しから観測できることを確認する。
   - importした定義関数の所属instanceと同一性、ホストcallbackの呼出し元情報、ホスト例外の型と実体が保たれる統合テストを成功させる。
@@ -326,3 +326,4 @@
 - 9.4:br_tableはselectorを除く同じnullable型列を既定・候補入力順へ照合してから消費する。不足の拒否はPopが担い、Unknownを具体化しない。出力は候補の後に既定を置き、TargetCountは候補数だけ。
 - 9.5:selectの候補参照は現在frame内のPeek、消費は既存Popを使う。typedの型列長1を先に要求し、局所型検証後に4Featureを通知する。Validateの未確認範囲の終端はInputLengthで、Decode範囲を追加しない。
 - 9.6:WABT1.0.41の空typed select変換による不一致は、承認済みの上流test-suite-runner15でWABT1.0.42へ更新して解消した。旧素材・baselineを保持し、新比較元に旧受入revisionの新素材による結果を保存した。全147入力のrun・比較は終了0、failed・runner_error・回帰0。独立レビューAPPROVEDと親のTASK: VERIFIEDを確認した。新素材・比較元と確認範囲は[移行記録](../test-suite-runner/wabt-1.0.42-migration.md)を参照する。
+- 10.2:globalの値取得は`GetGlobal`、共有実体の取得は`GetGlobalResource`を使う。公開selectのNaN・符号付き0と、非選択候補のtrapも統合確認した。
