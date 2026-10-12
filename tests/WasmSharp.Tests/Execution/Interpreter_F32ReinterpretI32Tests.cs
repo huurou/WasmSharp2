@@ -44,7 +44,7 @@ internal class Interpreter_F32ReinterpretI32Tests
 
         // Act
         var actual = NumericHandlerFixture.Execute(
-            static (InterpreterContext context, in Instruction instruction) =>
+            static (context, in instruction) =>
             {
                 var result = Interpreter.F32ReinterpretI32(context, in instruction);
                 if (result.Status != ExecutionStatus.Success)

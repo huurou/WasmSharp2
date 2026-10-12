@@ -66,7 +66,7 @@ internal partial class ModuleValidator_ValidateTests
     [Arguments(0x7B, "select.typed.v128")]
     [Arguments(0x70, "select.typed.funcref")]
     [Arguments(0x6F, "select.typed.externref")]
-    public async Task typed_selectの両候補がUnknown_明示注釈で分かる後続機能をUnsupportedとして通知する(
+    public async Task Typed_selectの両候補がUnknown_明示注釈で分かる後続機能をUnsupportedとして通知する(
         int valueType,
         string feature
     )

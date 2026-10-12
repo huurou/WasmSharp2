@@ -51,7 +51,7 @@ internal class Interpreter_F32AddTests
 
         // Act
         var actual = NumericHandlerFixture.Execute(
-            static (InterpreterContext context, in Instruction instruction) =>
+            static (context, in instruction) =>
             {
                 var result = Interpreter.F32Add(context, in instruction);
                 if (result.Status != ExecutionStatus.Success)

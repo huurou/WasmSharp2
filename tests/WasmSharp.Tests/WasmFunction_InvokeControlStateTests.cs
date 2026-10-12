@@ -10,7 +10,7 @@ internal partial class WasmFunction_InvokeTests
     [Arguments(false, -3, 11)]
     [Arguments(true, 0, 22)]
     [Arguments(true, -3, 11)]
-    public async Task selectの両候補と条件で共有globalとhostを更新する_非短絡で命令順に評価して選択値を返す(
+    public async Task Selectの両候補と条件で共有globalとhostを更新する_非短絡で命令順に評価して選択値を返す(
         bool typed,
         int condition,
         int expected
@@ -87,7 +87,7 @@ internal partial class WasmFunction_InvokeTests
     [Test]
     [Arguments(0, 4, 11)]
     [Arguments(-1, 3, 7)]
-    public async Task brとifで共有globalへの更新を飛び越える_実行した側だけが別instanceの後続呼出しから見える(
+    public async Task Brとifで共有globalへの更新を飛び越える_実行した側だけが別instanceの後続呼出しから見える(
         int condition,
         int expectedMarker,
         int expectedState
@@ -357,7 +357,7 @@ internal partial class WasmFunction_InvokeTests
     [Test]
     [Arguments("410741006D", WasmTrapReason.IntegerDivideByZero, "integer divide by zero")]
     [Arguments("00", WasmTrapReason.Unreachable, "unreachable executed")]
-    public async Task selectで選ばれない第2候補にtrapがある_候補計算で中断し条件以後の副作用を実行しない(
+    public async Task Selectで選ばれない第2候補にtrapがある_候補計算で中断し条件以後の副作用を実行しない(
         string trapInstructions,
         WasmTrapReason reason,
         string message
@@ -381,7 +381,7 @@ internal partial class WasmFunction_InvokeTests
                 }
             )
         );
-        byte[] afterTrap = Convert.FromHexString("410310001B1A410410001A0B");
+        var afterTrap = Convert.FromHexString("410310001B1A410410001A0B");
         var bytes = HostLinkingModuleBinary.Create(
             HostLinkingModuleBinary.Types(([0x7F], [0x7F]), ([], []), ([], [0x7F])),
             HostLinkingModuleBinary.Imports(

@@ -708,7 +708,7 @@ internal class ModuleBinaryReader_ReadLengthTests
     [Arguments("0261", 2u, 1)]
     [Arguments("8100", 1u, 0)]
     [Arguments("00", 0u, 0)]
-    public async Task prefix前の物理残量以内_取得前に長さだけを返す(
+    public async Task Prefix前の物理残量以内_取得前に長さだけを返す(
         string hex,
         uint expected,
         int expectedRemaining
@@ -749,7 +749,7 @@ internal class ModuleBinaryReader_ReadLengthTests
     }
 
     [Test]
-    public async Task prefix前の物理残量超過_長さprefixの位置を通知する()
+    public async Task Prefix前の物理残量超過_長さprefixの位置を通知する()
     {
         // Arrange
         byte[] bytes = [3, 0x61];

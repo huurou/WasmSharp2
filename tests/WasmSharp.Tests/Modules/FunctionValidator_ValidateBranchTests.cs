@@ -52,7 +52,7 @@ internal partial class FunctionValidator_ValidateTests
     }
 
     [Test]
-    public async Task if両側が同じラベルへ分岐する_条件入口と各前方分岐を別々に確定する()
+    public async Task If両側が同じラベルへ分岐する_条件入口と各前方分岐を別々に確定する()
     {
         // Arrange
         var module = DecodeControl(

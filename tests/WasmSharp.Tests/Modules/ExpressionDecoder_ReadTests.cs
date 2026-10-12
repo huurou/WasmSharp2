@@ -78,9 +78,7 @@ internal class ExpressionDecoder_ReadTests
             using (Assert.Multiple())
             {
                 await Assert
-                    .That(
-                        Convert.ToHexString(instructions.Select(x => (byte)x.Opcode.Code).ToArray())
-                    )
+                    .That(Convert.ToHexString([.. instructions.Select(x => (byte)x.Opcode.Code)]))
                     .IsEqualTo(expectedOpcodes);
                 await Assert.That(instructions[^1].ByteOffset).IsEqualTo(position - 1);
                 await Assert.That(position).IsEqualTo(40L + bytes.Length - 1);
@@ -129,7 +127,7 @@ internal class ExpressionDecoder_ReadTests
     [Arguments("017F", "I32")]
     [Arguments("087F7E7D7C7B706F7F", "I32,I64,F32,F64,V128,FuncRef,ExternRef,I32")]
     [Arguments("81007E", "I64")]
-    public async Task select型列が空か単一か複数である_値型を保持して長さを検証しない(
+    public async Task Select型列が空か単一か複数である_値型を保持して長さを検証しない(
         string vector,
         string expectedTypes
     )
@@ -317,7 +315,7 @@ internal class ExpressionDecoder_ReadTests
                 .That(
                     instructions
                         .Select(x => x.ByteOffset)
-                        .SequenceEqual(new long[] { 40, 42, 44, 49, 58, 61, 62, 63 })
+                        .SequenceEqual([40, 42, 44, 49, 58, 61, 62, 63])
                 )
                 .IsTrue();
             await Assert.That(instructions[0].Immediate.AsI32()).IsEqualTo(-1);

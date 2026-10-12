@@ -59,7 +59,7 @@ internal class Interpreter_F32DemoteF64Tests
     [Arguments(0xFFF8123456789ABCUL)]
     [Arguments(0x7FF0123456789ABCUL)]
     [Arguments(0xFFF0123456789ABCUL)]
-    public async Task canonicalとpayload付きのquietおよびsignalingNaN_正のcanonicalNaNへ揃える(
+    public async Task Canonicalとpayload付きのquietおよびsignalingNaN_正のcanonicalNaNへ揃える(
         ulong operandBits
     )
     {

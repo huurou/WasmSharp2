@@ -48,7 +48,7 @@ internal class Interpreter_F64PromoteF32Tests
     [Arguments(0xFFC12345u)]
     [Arguments(0x7F812345u)]
     [Arguments(0xFF812345u)]
-    public async Task canonicalとpayload付きのquietおよびsignalingNaN_正のcanonicalNaNへ揃える(
+    public async Task Canonicalとpayload付きのquietおよびsignalingNaN_正のcanonicalNaNへ揃える(
         uint operandBits
     )
     {

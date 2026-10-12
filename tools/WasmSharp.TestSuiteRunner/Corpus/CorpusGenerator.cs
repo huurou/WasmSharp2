@@ -175,7 +175,7 @@ internal static class CorpusGenerator
         var outputPath = Path.GetFullPath(
             Path.Combine(request.OutputRoot, CorpusVerifier.GetScriptPath(input.Input.Path))
         );
-        string[] arguments = request
+        var arguments = request
             .Profile.LogicalArguments.Select(x =>
                 x switch
                 {

@@ -12,7 +12,7 @@ internal partial class FunctionValidator_ValidateTests
     [Arguments("0240010B0340010B0B", "", 3, 0)]
     [Arguments("027F41010B037F41020B6A0B", "7F", 4, 2)]
     [Arguments("0200410142020B0300410342040B1A1A0B", "7F7E", 7, 4)]
-    public async Task blockとloopの通常終了が有効_markerを除き関数終端だけReturnを出力する(
+    public async Task Blockとloopの通常終了が有効_markerを除き関数終端だけReturnを出力する(
         string body,
         string results,
         int outputCount,
@@ -74,7 +74,7 @@ internal partial class FunctionValidator_ValidateTests
     }
 
     [Test]
-    public async Task ifとelseが複数引数結果を持つ_前方分岐と両側の最大operandを確定する()
+    public async Task Ifとelseが複数引数結果を持つ_前方分岐と両側の最大operandを確定する()
     {
         // Arrange
         var module = WasmModule.Decode(
@@ -183,7 +183,7 @@ internal partial class FunctionValidator_ValidateTests
     [Test]
     [Arguments("4101410004000B0B", 3, 1)]
     [Arguments("4101410104000B0B", 3, 1)]
-    public async Task else省略の引数型列と結果型列が同じ_if後へ入口値を保持する分岐を確定する(
+    public async Task Else省略の引数型列と結果型列が同じ_if後へ入口値を保持する分岐を確定する(
         string body,
         int targetPc,
         int maximum

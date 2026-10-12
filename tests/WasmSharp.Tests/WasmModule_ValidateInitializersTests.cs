@@ -9,7 +9,7 @@ internal partial class WasmModule_ValidateTests
     [Arguments("4107410941001B0B", 3)]
     [Arguments("4107410941001C017F0B", 3)]
     [Arguments("027F41070B0B", 0)]
-    public async Task selectやblockをGlobal初期化式へ置く_関数内の対応によらずValidateで拒否する(
+    public async Task SelectやblockをGlobal初期化式へ置く_関数内の対応によらずValidateで拒否する(
         string initializer,
         int instructionIndex
     )

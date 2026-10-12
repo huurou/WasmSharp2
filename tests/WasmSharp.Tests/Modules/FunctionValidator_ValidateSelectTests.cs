@@ -15,7 +15,7 @@ internal partial class FunctionValidator_ValidateTests
     [Arguments(0x7E, true)]
     [Arguments(0x7D, true)]
     [Arguments(0x7C, true)]
-    public async Task selectの候補が同じスカラー型で条件がi32_型注釈の有無によらず検証して元の命令位置を保持する(
+    public async Task Selectの候補が同じスカラー型で条件がi32_型注釈の有無によらず検証して元の命令位置を保持する(
         int valueType,
         bool typed
     )
@@ -105,7 +105,7 @@ internal partial class FunctionValidator_ValidateTests
     [Arguments("", "00420041001C017F0B", 3)]
     [Arguments("", "001B420041001B450B", 5)]
     [Arguments("", "41014101410102401B0B1A1A1A0B", 4)]
-    public async Task selectの型や個数が不正_到達不能や後続型でもUnsupportedへ読み替えず元の位置で拒否する(
+    public async Task Selectの型や個数が不正_到達不能や後続型でもUnsupportedへ読み替えず元の位置で拒否する(
         string parameters,
         string body,
         int failureIndex
@@ -147,7 +147,7 @@ internal partial class FunctionValidator_ValidateTests
     [Test]
     [Arguments("1C000B", 0)]
     [Arguments("1C027B700B", 2)]
-    public async Task typed_selectの型ベクトル長が1以外_入力不足や後続型より先にValidateのarity診断で拒否する(
+    public async Task Typed_selectの型ベクトル長が1以外_入力不足や後続型より先にValidateのarity診断で拒否する(
         string body,
         int typeCount
     )

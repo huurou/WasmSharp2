@@ -229,8 +229,9 @@ internal class InstructionSet_TryGetTests
     }
 
     // 固定Core2の型規則とopcode割当から求める期待値 製品の宣言は参照しない
-    private static NumericSignature ExpectedNumericSignature(uint code) =>
-        code switch
+    private static NumericSignature ExpectedNumericSignature(uint code)
+    {
+        return code switch
         {
             0x45 => new(1, WasmValueKind.I32, WasmValueKind.I32),
             >= 0x46 and <= 0x4F => new(2, WasmValueKind.I32, WasmValueKind.I32),
@@ -266,4 +267,5 @@ internal class InstructionSet_TryGetTests
             >= 0xC2 and <= 0xC4 => new(1, WasmValueKind.I64, WasmValueKind.I64),
             _ => throw new ArgumentOutOfRangeException(nameof(code)),
         };
+    }
 }

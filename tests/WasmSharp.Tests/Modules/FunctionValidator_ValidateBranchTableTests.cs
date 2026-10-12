@@ -157,7 +157,7 @@ internal partial class FunctionValidator_ValidateTests
     [Test]
     [Arguments("027C027D0041010E020001010B1A4400000000000000000B1A0B")]
     [Arguments("027C027D000E020001010B1A4400000000000000000B1A0B")]
-    public async Task meet_bottomの分岐値とselectorが多相的_内側f32と外側f64の型を一律一致させない(
+    public async Task Meet_bottomの分岐値とselectorが多相的_内側f32と外側f64の型を一律一致させない(
         string body
     )
     {

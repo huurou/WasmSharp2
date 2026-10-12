@@ -11,7 +11,7 @@ internal partial class WasmFunction_InvokeTests
     [Arguments(0, -1, false, 13)]
     [Arguments(1, int.MaxValue, false, 10)]
     [Arguments(0, -1, true, 13)]
-    public async Task loop引数とifとselectと分岐表を組み合わせる_深さ1で反復し外側値と結果を保持する(
+    public async Task Loop引数とifとselectと分岐表を組み合わせる_深さ1で反復し外側値と結果を保持する(
         int condition,
         int selector,
         bool emptyCandidates,

@@ -142,10 +142,7 @@ internal readonly struct DecodedInstruction
         long byteOffset
     )
     {
-        var builder = ImmutableArray.CreateBuilder<uint>(labels.Length + 1);
-        builder.AddRange(labels);
-        builder.Add(defaultLabel);
-        return new(opcode, byteOffset, labels: builder.MoveToImmutable());
+        return new(opcode, byteOffset, labels: [.. labels, defaultLabel]);
     }
 
     /// <summary>

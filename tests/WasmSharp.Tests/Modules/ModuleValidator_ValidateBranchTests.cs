@@ -67,7 +67,7 @@ internal partial class ModuleValidator_ValidateTests
     }
 
     [Test]
-    public async Task loop引数を持つ後方分岐を多数回実行_値や関数frameや深さを蓄積しない()
+    public async Task Loop引数を持つ後方分岐を多数回実行_値や関数frameや深さを蓄積しない()
     {
         // Arrange
         var module = WasmModule

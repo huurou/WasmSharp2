@@ -44,7 +44,7 @@ internal class Interpreter_F64ReinterpretI64Tests
 
         // Act
         var actual = NumericHandlerFixture.Execute(
-            static (InterpreterContext context, in Instruction instruction) =>
+            static (context, in instruction) =>
             {
                 var result = Interpreter.F64ReinterpretI64(context, in instruction);
                 if (result.Status != ExecutionStatus.Success)

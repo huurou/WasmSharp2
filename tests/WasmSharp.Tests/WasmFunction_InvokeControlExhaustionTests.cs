@@ -8,7 +8,7 @@ internal partial class WasmFunction_InvokeTests
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task ifから直接または相互再帰する_小さい深さ上限で止まり保持状態と新しいlocalsで再実行できる(
+    public async Task Ifから直接または相互再帰する_小さい深さ上限で止まり保持状態と新しいlocalsで再実行できる(
         bool mutual
     )
     {
@@ -16,7 +16,10 @@ internal partial class WasmFunction_InvokeTests
         var state = new WasmGlobal(new(WasmValueKind.I32, true), WasmValue.FromI32(0));
         var provider = new WasmHostModule("env");
         provider.Define("state", state);
-        byte[] Body(byte next) =>
+
+        byte[] Body(byte next)
+        {
+            return
             [
                 // 初期localsを結果として残してから、今回の引数でlocalsを更新する。
                 .. Convert.FromHexString("200220032000210220012103230041016A2400"),
@@ -25,6 +28,8 @@ internal partial class WasmFunction_InvokeTests
                 next,
                 .. Convert.FromHexString("1A1A1A1A0B200220030B"),
             ];
+        }
+
         var instance = WasmModule
             .Decode(
                 HostLinkingModuleBinary.Create(
@@ -83,7 +88,7 @@ internal partial class WasmFunction_InvokeTests
     }
 
     [Test]
-    public async Task loop内で定義関数とhostを繰り返し呼ぶ_終了済みcallと反復が深さへ蓄積せず参照を保つ()
+    public async Task Loop内で定義関数とhostを繰り返し呼ぶ_終了済みcallと反復が深さへ蓄積せず参照を保つ()
     {
         // Arrange
         var reference = new object();

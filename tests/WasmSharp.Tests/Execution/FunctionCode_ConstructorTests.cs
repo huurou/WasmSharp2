@@ -25,7 +25,7 @@ internal class FunctionCode_ConstructorTests
         // Assert
         using (Assert.Multiple())
         {
-            await Assert.That(code.Instructions).IsEqualTo(instructions);
+            await Assert.That(code.Instructions).IsEquivalentTo(instructions);
             await Assert.That(code.Instructions[0].ByteOffset).IsEqualTo(12345678901L);
             await Assert.That(code.BranchTargets.IsDefault).IsFalse();
             await Assert.That(code.BranchTargets).IsEmpty();

@@ -26,7 +26,7 @@ internal static class HostLinkingModuleBinary
 
     public static byte[] LabelVector(params uint[] labels)
     {
-        return [.. Unsigned((uint)labels.Length), .. labels.SelectMany(x => Unsigned(x))];
+        return [.. Unsigned((uint)labels.Length), .. labels.SelectMany(Unsigned)];
     }
 
     public static byte[] TypeVector(params byte[] types)
