@@ -446,3 +446,16 @@ Releaseビルドは警告・エラー0、内部の参照解除・復元も含む
 11.1の実行結果を独立レビューへ渡す状態であり、レビューと親の完了確認は別途行う。対象規則の網羅と残存未対応/blocked原因の監査は11.2、受入確定は11.3、同じ結果からのbaseline保存は11.4で未実施。Core2.0全体への準拠を示す結果ではない。
 
 11.1の履歴なしの独立レビューは`APPROVED`。別途3suite全3,602件・CLI help・全53,907caseと5,821素材・元147入力hash・保存済み値と否定assertionを照合して問題0。親が原ログ・native終了値・現在の文書と結果hashを確認し、`kiro-verify-completion`は`TASK: VERIFIED`。独立レビュー:`artifacts/numeric-control/task-11.1-review-20261012T-independent/review.md`。
+
+## タスク11.2:対象規則と残存原因の監査
+
+11.1の同じrun/comparisonに対して、[受入規則対応と残存原因監査](acceptance.md)を作成した。S1〜S8、全73受入基準、opcode・型規則、現在実装、具体的な公式case IDまたは実行済み直接methodの対応を保持する。原文から要件別件数6・6・9・7・8・7・9・6・7・8を再計数した。HEAD`5d3ee09`の本体・テスト・runnerは11.1実行revisionから不変で、追加テストや3suite/公式runの再実行は不要だった。
+
+- 固定付録の全437opcodeと現在宣言の名前・番号を機械照合し一致した。実行対象160個は、本仕様の非const数値136・既存const4・制御/select11と先行統合9である。全160個の要件番号と本表への参照、数値136個の個別handlerテスト、直接49method/280展開TRXの成功と境界入力を結合した。代表公式caseとfloat_exprsの演算列など815個の具体ID・入力/期待/結果を保存した。
+- 今回のruntime_unsupported2,100件は全てDecodeで、Feature・位置・未確認範囲と元入力/commandを後続briefと現在opcode属性へ対応付けた。所有先はlinear-memory645、tables-references377、simd1,078。本仕様の数値・制御未実装やランナー能力不足の付替えはない。
+- blocked33,806件のdirectを原因まで全件解決し、保存originsと一致した。各辺と起点は同じ入力の先行commandで、全起点が上記後続機能のruntime_unsupportedだった。循環・不在ID・起点分類の不一致0。残りはpassed16,924件と、元JSONがmodule_type=textの対象外1,077件だけである。
+- 所有先/blocked/opcode監査と73行/source/正式method/TRX/公式case対応監査は各native終了0・問題0。diff-checkも成功した。全明細・再実行スクリプト・原ログ・native終了値・最終変更hashは`artifacts/numeric-control/task-11.2-20261012T-audit-5d3ee09/`へ保存した。
+
+要件10.2・10.3・10.4・10.6の11.2監査条件を確認した。10.6の受入確定は11.3、10.8の比較済み同じrunからのbaseline保存は11.4で未実施。10.7の修正ループは今回は不一致・回帰0のため条件不成立として、過去の9.6対応履歴と区別した。本体・runner・テスト・期待値・profile・分類・tasks.md・新旧baselineは変更していない。全73基準の確認完了やnumeric-control/Core2.0全体のGOは主張しない。記録のみのためREDは適用外で、独立レビューと親の完了確認へ渡す段階である。
+
+11.2の履歴なしの独立レビューは`APPROVED`。別途Releaseビルド・runner全702件・独自監査2件を成功させ、全73基準・437割当・160対象・136数値・815case・2,100未対応・33,806blocked起点と現在sourceを照合して問題0。親が原ログ・native終了値・文書と保存結果のhash一致・本体不変を確認し、`kiro-verify-completion`は`TASK: VERIFIED`。独立レビュー:`artifacts/numeric-control/task-11.2-review-20261012T-independent/review.md`。
