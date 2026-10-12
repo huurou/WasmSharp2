@@ -2,7 +2,7 @@
 
 タスク11.2として2026-10-12に、11.1の同じ保存結果を監査した。対象HEADは`5d3ee09`。数値・制御本体、テスト、ランナーは11.1の実行revision`cb665f2b8b48e0c2fcbda69feedaa77d48c67813`から不変で、Releaseビルドの警告・エラー0後に成功したruntime2,824件・生成器76件・runner702件を再利用した。追加テストと全suite/公式runの再実行は行っていない。
 
-全73受入基準の対応を作成し、要件別件数を6・6・9・7・8・7・9・6・7・8と原文から再計数した。10.8のbaseline保存は11.4待ち。本記録は11.3の受入確定、11.4のbaseline保存、numeric-control全体のGO、後続未対応も0を要するCore2.0全体の完成判定を代替しない。
+全73受入基準の対応を作成し、要件別件数を6・6・9・7・8・7・9・6・7・8と原文から再計数した。11.3の受入条件は後述の同一結果照合で確定した。10.8のbaseline保存は11.4待ち。本記録は11.4のbaseline保存、numeric-control全体のGO、後続未対応も0を要するCore2.0全体の完成判定を代替しない。
 
 ## 同一結果と監査出力
 
@@ -123,7 +123,7 @@ S1〜S8は[requirements.mdの固定commitの参照表](requirements.md#参照す
 | 10.3 | S1/S3/S4/S5/S8 | 必要前提が揃う全caseの値/NaN/分岐/状態/否定診断passed | A10 | J、P、U、B | 確認 |
 | 10.4 | S1/S2/S8 | 後続機能のFeature/元case/blocked起点、付替え禁止 | A10 | U、B | 確認 |
 | 10.5 | S8 | 同じ固定条件のcompare、旧passed退行/欠落0 | A10 | J | 確認 |
-| 10.6 | S8 | 全体run/比較完了、failed/runner_error/回帰0、対象case passed | A10 | J、P、U、B、Q | 11.2の監査条件成立。11.3で受入確定 |
+| 10.6 | S8 | 全体run/比較完了、failed/runner_error/回帰0、対象case passed | A10 | J、P、U、B、Q、後述の11.3現在整合確認 | 11.3で受入条件成立を確定。10.8は11.4待ち |
 | 10.7 | S8 | 不一致/回帰時に原因修正して全体run/比較再実行、判定不変 | A10 | J、H | 今回は条件不成立。不一致/回帰0。過去の対応はH参照 |
 | 10.8 | S8 | 比較済み同じrunからbaseline明示保存、本仕様/Core2全体を区別 | A10 | 11.1の同じrun/comparisonを11.4へ引継ぐ | 11.4待ち |
 
@@ -214,4 +214,16 @@ D番号はファイルリンクの行にある正式methodを指す。引数に�
 
 新規の所有先・blocked・opcode監査と73行/source/正式method/TRX/代表case対応監査はnative終了0・問題0。既存文書のdiff-checkはnative終了0。新規文書の`git diff --no-index --check`は空ファイルからの差分を示すnative終了1で、stdout/stderrは空、空白不正0だった。監査自身の初回はtyped/untyped selectの共通名を重複として誤検出したため、重複検査をopcodeキーへ修正し、原ログを保持して再実行した。製品の不一致はなく、本体やテストの修正・全suite再実行は必要なかった。
 
-10.6の11.2監査条件は成立しており、受入確定は11.3で同じ結果に対して行う。10.7の条件となる今回の不一致・回帰は0で、修正ループを実施したとは記録しない。10.8の比較済み同じrunからのbaseline保存は11.4で未実施であり、このタスクでは新旧baselineを更新していない。
+11.2時点で10.6の監査条件は成立しており、同じ結果の受入確定を11.3へ引き継いだ。10.7の条件となる今回の不一致・回帰は0で、修正ループを実施したとは記録しない。10.8の比較済み同じrunからのbaseline保存は11.4で未実施であり、このタスクでは新旧baselineを更新していない。
+
+## 11.3の受入条件確定
+
+2026-10-12、HEAD`a05bf79dd44bae825175eb92b38a3351f6f3687a`で11.1の同じrun/comparison、11.2の対応監査と独立監査を現在状態へ照合した。要件10.3・10.4・10.5・10.6・10.7、designの「責務境界」「要件対応」「公式受入のBatch契約」「エラー処理」を確認し、10.6の受入条件成立を確定した。
+
+- run/comparisonのSHA-256は「同一結果と監査出力」に記載した値と一致する。全147入力/53,907commandの処理と比較が完了し、failed・入力/commandのrunner_error・回帰・欠落・未比較・条件差・素材差は0。以前passedだった2,491件を保持した。同じ保存結果のrun/compare-runはnative終了0で、run完了後に比較している。
+- 前提が揃う16,924caseは全てpassed。11.1の独立した値・NaN・否定診断監査と11.2のsource/coverage監査を同じ結果hashへ結び付けた。全73受入基準の対応、437割当/160実行対象/136数値命令、直接49method/280展開、代表815caseの監査原結果はnative終了0・問題0で、参照sourceの現在hashと一致する。10.8の手順はこの対応から完了扱いにしない。
+- 残るruntime_unsupported2,100件はlinear-memory645・tables-references377・simd1,078で、blocked33,806件はその未対応起点だけに依存する。Feature・元case・位置・未確認範囲と所有先、全依存の監査明細は不変。対象外1,077件は元JSONのtextだけであり、本仕様の未実装やrunner能力不足の付替えはない。
+- src/tests/toolsは11.1の実行revision`cb665f2b8b48e0c2fcbda69feedaa77d48c67813`から不変。不一致・runner_error・回帰・対象規則欠落は検出されず、原因タスクでの修正と境界テストを要する条件は成立しなかった。10.7の修正ループや、その後の11.1/11.2再実行を実施したとは記録しない。記録のみのためRED・feature flagは適用外で、build・3suite・公式run/比較も再実行していない。
+- 現在整合監査と2文書のdiff-checkはnative終了0・問題0。原ログ、コマンド、UTC、native終了値、現在hashと検証範囲は[11.3の検証記録](../../../artifacts/numeric-control/task-11.3-20261012T-acceptance-a05bf79/verification.md)に保存した。11.3の独立レビューと親の完了確認は別途行う。
+
+11.4には上記SHA-256の同じrun/comparisonを渡す。10.8のbaseline-saveは未実施で、新旧baselineは保持した。10.6の条件確定はnumeric-control全体のGOや、後続未対応・blockedも0を要求するCore2.0全体の完成判定を意味しない。
