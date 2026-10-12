@@ -406,3 +406,11 @@ FunctionValidatorのframe内参照をPeekへ整理してから、スカラー4�
 親が独立レビュー・原ログ・native終了値・最終18ファイルのhash一致を確認し、`kiro-verify-completion`は`TASK: VERIFIED`。タスク9.6と親項目9を完了とした。タスク10・11、numeric-control全体の実装検証、Core2.0全体の完成判定は今回の対象外である。現在のrunを次のbaselineとして保存する11.4も未実施。
 
 実装・移行記録:`artifacts/numeric-control/wabt-1.0.42-20261012/`。独立レビュー:`artifacts/numeric-control/wabt-1.0.42-review-20261012/review.md`。親の完了確認:`artifacts/numeric-control/wabt-1.0.42-20261012/completion-verification.md`。
+
+## タスク10.1:呼出しと制御を越える値の保持
+
+既存の公開4段階とfixtureで、0/1/複数引数・結果、全7型のbit列とnull/非null参照、内側分岐・return、外側operand・locals・連続call・保存済み結果を確認する10ケースを追加した。本体変更なし、初回GREEN。
+
+Releaseビルドは警告・エラー0、追加10ケースとruntime全2,800件が成功し、失敗・skip0、各終了0。履歴なしの独立レビューも別途ビルド・全runtime・追加ケースのTRX・整形を確認し、APPROVED。親が原ログ・終了値・最終hashを照合し、`kiro-verify-completion`は`TASK: VERIFIED`。公式全体のrun・比較は11.1で行う。
+
+実装記録:`artifacts/numeric-control/task-10.1-20261012-impl/verification.md`。独立レビュー:`artifacts/numeric-control/task-10.1-review-20261012T090010842/review.md`。
