@@ -1,5 +1,7 @@
 # 数値・制御の検証記録
 
+2026-10-12、全47タスク項目と73受入基準の最終実装検証は**GO**。履歴なしの独立検証後、親も`FEATURE_GO: VERIFIED`を確認した。受入済みの同じ全体結果を新baselineへ明示保存し、比較前のbaseline2件を保持した。詳細は末尾の「仕様全体の最終実装検証」を参照する。
+
 ## タスク1.1:固定素材と比較元の保持
 
 2026-10-11に実装前の環境を確認した。確認範囲は要件10.1・10.5の準備と、設計の「責務境界」「公式受入のBatch契約」である。ランタイム・生成器・ランナーのコードとテストは変更していない。全TUnitと固定公式スイートの実行、数値・制御の受入判定は後続タスクで行う。
@@ -486,3 +488,32 @@ Releaseビルドは警告・エラー0、内部の参照解除・復元も含む
 文書更新と既存保存操作のみで、RED・feature flagは対象外。build・3suite・公式run/比較・Core2全体verifyは再実行していない。独立レビューはReleaseビルド後にrunner全702件を確認し、全タスク後の最終feature gateで3suiteとCLI helpを確認する。後続所有のruntime_unsupported2,100件とその依存blocked33,806件を保持するため、本仕様の受入・baseline保存とCore2.0全体の完成を区別する。numeric-control全体のGOと11.4の独立レビュー・親の完了確認は、この記録から完了扱いにしない。
 
 11.4の履歴なしの独立レビューは`APPROVED`。別途Releaseビルド・runner全702件・限定監査を成功させ、保存元と新baselineの全69,748,280byte/JSON/hash一致、旧2baseline・固定条件・source174件の保持を確認した。保存時binaryと独立レビューの再ビルドでGitリビジョン情報が更新されたbinaryは別の時点として記録した。親が原ログ・native終了値・現在hash・全byte列一致を確認し、`kiro-verify-completion`は`TASK: VERIFIED`。独立レビュー:`artifacts/numeric-control/task-11.4-review-20261012T-independent/review.md`。11.1〜11.4が揃ったため親項目11を完了とした。全タスク完了後のfeature gateは次に行う。
+
+## 仕様全体の最終実装検証
+
+2026-10-12、全タスク完了後のHEAD`fb10b66962e96c1bc431d836c89811678b70b399`でkiro-validate-implを実行した。3suiteとCLIの原コマンド・UTC・native終了値・原ログ・TRXは`artifacts/numeric-control/feature-final-20261012T-full/`へ保存した。履歴を引き継がない別エージェントが、これら原結果と現在source・仕様・設計・保存結果を独立確認した。
+
+- Releaseビルドは警告・エラー0、native終了0。その後のruntime2,824件・生成器76件・runner702件、計3,602件は全Passed、失敗・skip0、各native終了0。ビルド済みCLIのhelpも使用法へ到達し、native終了0。
+- 全10要件・73受入基準、完了47タスク項目、直接49method/280展開と今回TRXを結合し、欠落・Blockedなし。現在の公開4段階、数値signatureと生成dispatch、型検証・線形分岐・値運搬、共有global/import/start/再入/深さ/復元の継ぎ目、配置と依存方向を読み合わせ、境界違反・設計のずれなし。
+- 公式受入と比較は11.1の同じ保存結果を利用する。src/tests/tools/configはその実行revisionから不変、全147入力/53,907command完了、failed・runner_error・回帰・欠落0。全73対応、残存未対応/blocked起点の独立原監査と現在hashを確認した。公式run/比較/保存を重複実行していない。
+- 11.4の次の比較元は`artifacts/numeric-control/task-11.4-20261012T-baseline-7ca484f/run-baseline.json`、SHA-256`02ab113a70b5dd1c6ceb5aca12c901dddb8735b1754a035c999953baae9ad779`。受入済みrunとの全byte列一致、保存native終了0、比較前の2baseline保持を確認した。
+- 独立監査とレポート保存後の再確認はnative終了0・問題0。親も8文書・575source/config・6保護結果の現在hash、原TRX・native終了値・同じHEADを照合し、`kiro-verify-completion`は`FEATURE_GO: VERIFIED`。ここからの追記とロードマップ更新は進捗記録だけで、本体・テスト・判定条件を変更しない。
+
+独立レポート:[validation-report.md](../../../artifacts/numeric-control/feature-final-independent-20261012T-validator/validation-report.md)。独立の最終hashは同出力先の`final-integrity.json`と`final-recheck.json`。親の完了判定:[feature-completion.md](../../../artifacts/numeric-control/feature-final-20261012T-full/feature-completion.md)。
+
+### 今回の継続タスク
+
+各実装者は`READY_FOR_REVIEW`、各独立レビューは`APPROVED`、親の完了確認は`TASK: VERIFIED`。各タスクで`tasks.md`と本書を更新した。表はそれ以外の変更ファイルを示す。
+
+| タスク | 追加・変更したファイル | コミット |
+| --- | --- | --- |
+| 10.1 | `tests/WasmSharp.Tests/WasmFunction_InvokeControlValueTests.cs` | `36a4da1`（改行保持の補正`25b147d`） |
+| 10.2 | `tests/WasmSharp.Tests/WasmFunction_InvokeControlStateTests.cs` | `76f0ff0` |
+| 10.3 | `tests/WasmSharp.Tests/WasmModule_InstantiateStartTests.cs`、`WasmModule_InstantiateNumericTrapTests.cs` | `6528c04` |
+| 10.4 | `tests/WasmSharp.Tests/WasmFunction_InvokeControlExhaustionTests.cs` | `cb665f2` |
+| 11.1 | 共通の受入記録のみ | `5d3ee09` |
+| 11.2 | `.kiro/specs/numeric-control/acceptance.md`新規 | `a05bf79` |
+| 11.3 | `.kiro/specs/numeric-control/acceptance.md`更新 | `7ca484f` |
+| 11.4 | `.kiro/specs/numeric-control/acceptance.md`更新 | `fb10b66` |
+
+このGOはnumeric-controlの完了条件に対する判定である。Core2.0全体は後続linear-memory・tables-references・simdの未対応2,100件と依存blocked33,806件が残る。text形式の対象外は1,077件。先行の受入結果と後続の未対応を区別して引き継ぐ。
