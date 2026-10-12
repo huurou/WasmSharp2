@@ -426,3 +426,9 @@ Releaseビルドは警告・エラー0、追加10ケースとruntime全2,800件�
 既存正常startケースに数値加算とifを組み込み、3Reasonの数値trapケースを制御・共有global更新・保存参照の同一性と失敗後操作へ拡張した。公開Instantiateの段階・元byte位置・診断先頭を維持し、失敗後の更新とcallbackの非実行を確認する。本体変更なし、新規ケース数増加なし、初回GREEN。
 
 Releaseビルドは警告・エラー0、focused69件とruntime全2,815件が成功した。失敗・skip0、各終了0。履歴なしの独立レビューも別途ビルド・runtime全件・変更5ケースのTRX・整形・最終hashを確認し、APPROVED。親が原ログ・終了値・現在のhashを照合し、`kiro-verify-completion`は`TASK: VERIFIED`。実装記録:`artifacts/numeric-control/task-10.3-20261012T-implement/verification.md`。独立レビュー:`artifacts/numeric-control/task-10.3-review-20261012T-independent-26aefb/review.md`。
+
+## タスク10.4:再帰・同期再入と失敗後の復元
+
+制御付き直接・相互再帰、深さ2でのloop内の終了済み定義/host call、外側上限4を共有する同期再入、trap・exhaustion・同一host例外後の独立Invokeを確認する9ケースを追加した。初期locals・新しい参照・保存結果・共有globalを検査し、失敗後の内側instanceへの独立入口では上限20で成功する。本体変更なし、初回GREEN。
+
+Releaseビルドは警告・エラー0、内部の参照解除・復元も含むfocused170件とruntime全2,824件が成功した。失敗・skip0、各終了0。履歴なしの独立レビューも別途ビルド・runtime全件・追加9ケースのTRX・整形・最終hashを確認し、APPROVED。親が原ログ・終了値・現在のhashを照合し、`kiro-verify-completion`は`TASK: VERIFIED`。実装記録:`artifacts/numeric-control/task10.4-20261012-implementation/verification.md`。独立レビュー:`artifacts/numeric-control/task-10.4-review-20261012T003031Z/review.md`。10.1〜10.4が揃ったため親項目10も完了とした。
