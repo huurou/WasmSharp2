@@ -269,7 +269,7 @@
   - _Boundary: Interpreter, InterpreterContext, ExecutionBoundary_
   - _Requirements: 8.5, 9.4, 9.5_
 
-- [ ] 11. 全体受入と比較済みbaselineの更新を完了する
+- [x] 11. 全体受入と比較済みbaselineの更新を完了する
 - [x] 11.1 最終の単体・統合テストと固定公式全体の回帰比較を実行する
   - Releaseビルドの警告・エラー0を確認し、ランタイム・生成器・ランナーの3つのTUnitをコマンドで成功させる。
   - 固定profileと全147入力を変えず新しい出力へ実行し、入力と全commandの記録・終了0を確認してから、保存した直前baselineと比較する。
@@ -294,7 +294,7 @@
   - _Boundary: 受入記録と既存ランナー_
   - _Requirements: 10.3, 10.4, 10.5, 10.6, 10.7_
 
-- [ ] 11.4 受入済みの同じ全体結果からbaselineを明示更新する
+- [x] 11.4 受入済みの同じ全体結果からbaselineを明示更新する
   - 受入条件を満たした比較済みの保存結果を入力として、既存のbaseline保存操作を明示実行する。
   - 更新元の結果・比較結果・固定profile・hash・終了コードを受入記録から追跡できるようにし、比較前のbaselineも保持する。
   - 保存されたbaselineが受入済み結果と一致することを確認し、本仕様の完了と、後続のruntime_unsupported・blockedも0を要求するCore 2.0全体の完成を区別する。

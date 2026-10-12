@@ -2,7 +2,7 @@
 
 タスク11.2として2026-10-12に、11.1の同じ保存結果を監査した。対象HEADは`5d3ee09`。数値・制御本体、テスト、ランナーは11.1の実行revision`cb665f2b8b48e0c2fcbda69feedaa77d48c67813`から不変で、Releaseビルドの警告・エラー0後に成功したruntime2,824件・生成器76件・runner702件を再利用した。追加テストと全suite/公式runの再実行は行っていない。
 
-全73受入基準の対応を作成し、要件別件数を6・6・9・7・8・7・9・6・7・8と原文から再計数した。11.3の受入条件は後述の同一結果照合で確定した。10.8のbaseline保存は11.4待ち。本記録は11.4のbaseline保存、numeric-control全体のGO、後続未対応も0を要するCore2.0全体の完成判定を代替しない。
+全73受入基準の対応を作成し、要件別件数を6・6・9・7・8・7・9・6・7・8と原文から再計数した。11.3で同じ結果の受入条件を確定し、11.4で要件10.8の明示baseline保存を行った。次の機能の比較元は後述の新しいrun-baseline.jsonである。numeric-control全体のGOは最終gateで確認し、後続未対応・blockedも0を要するCore2.0全体の完成判定とは区別する。
 
 ## 同一結果と監査出力
 
@@ -123,9 +123,9 @@ S1〜S8は[requirements.mdの固定commitの参照表](requirements.md#参照す
 | 10.3 | S1/S3/S4/S5/S8 | 必要前提が揃う全caseの値/NaN/分岐/状態/否定診断passed | A10 | J、P、U、B | 確認 |
 | 10.4 | S1/S2/S8 | 後続機能のFeature/元case/blocked起点、付替え禁止 | A10 | U、B | 確認 |
 | 10.5 | S8 | 同じ固定条件のcompare、旧passed退行/欠落0 | A10 | J | 確認 |
-| 10.6 | S8 | 全体run/比較完了、failed/runner_error/回帰0、対象case passed | A10 | J、P、U、B、Q、後述の11.3現在整合確認 | 11.3で受入条件成立を確定。10.8は11.4待ち |
+| 10.6 | S8 | 全体run/比較完了、failed/runner_error/回帰0、対象case passed | A10 | J、P、U、B、Q、後述の11.3現在整合確認 | 11.3で受入条件成立を確定。同じ結果を11.4で明示保存 |
 | 10.7 | S8 | 不一致/回帰時に原因修正して全体run/比較再実行、判定不変 | A10 | J、H | 今回は条件不成立。不一致/回帰0。過去の対応はH参照 |
-| 10.8 | S8 | 比較済み同じrunからbaseline明示保存、本仕様/Core2全体を区別 | A10 | 11.1の同じrun/comparisonを11.4へ引継ぐ | 11.4待ち |
+| 10.8 | S8 | 比較済み同じrunからbaseline明示保存、本仕様/Core2全体を区別 | A10 | 後述の11.4保存元・新比較元・native結果・前後監査 | CLI保存終了0、入力と保存byte列/hash一致、旧2baseline保持。最終feature gateとCore2全体判定は別 |
 
 ## 実行済み直接methodと境界入力
 
@@ -224,6 +224,18 @@ D番号はファイルリンクの行にある正式methodを指す。引数に�
 - 前提が揃う16,924caseは全てpassed。11.1の独立した値・NaN・否定診断監査と11.2のsource/coverage監査を同じ結果hashへ結び付けた。全73受入基準の対応、437割当/160実行対象/136数値命令、直接49method/280展開、代表815caseの監査原結果はnative終了0・問題0で、参照sourceの現在hashと一致する。10.8の手順はこの対応から完了扱いにしない。
 - 残るruntime_unsupported2,100件はlinear-memory645・tables-references377・simd1,078で、blocked33,806件はその未対応起点だけに依存する。Feature・元case・位置・未確認範囲と所有先、全依存の監査明細は不変。対象外1,077件は元JSONのtextだけであり、本仕様の未実装やrunner能力不足の付替えはない。
 - src/tests/toolsは11.1の実行revision`cb665f2b8b48e0c2fcbda69feedaa77d48c67813`から不変。不一致・runner_error・回帰・対象規則欠落は検出されず、原因タスクでの修正と境界テストを要する条件は成立しなかった。10.7の修正ループや、その後の11.1/11.2再実行を実施したとは記録しない。記録のみのためRED・feature flagは適用外で、build・3suite・公式run/比較も再実行していない。
-- 現在整合監査と2文書のdiff-checkはnative終了0・問題0。原ログ、コマンド、UTC、native終了値、現在hashと検証範囲は[11.3の検証記録](../../../artifacts/numeric-control/task-11.3-20261012T-acceptance-a05bf79/verification.md)に保存した。11.3の独立レビューと親の完了確認は別途行う。
+- 現在整合監査と2文書のdiff-checkはnative終了0・問題0。原ログ、コマンド、UTC、native終了値、現在hashと検証範囲は[11.3の検証記録](../../../artifacts/numeric-control/task-11.3-20261012T-acceptance-a05bf79/verification.md)に保存した。11.3の実装時点では独立レビューと親の完了確認へ引き継いだ。その後のAPPROVEDとTASK: VERIFIEDは[validation.md](validation.md#タスク113同じ最終結果の受入条件確定)に記録している。
 
-11.4には上記SHA-256の同じrun/comparisonを渡す。10.8のbaseline-saveは未実施で、新旧baselineは保持した。10.6の条件確定はnumeric-control全体のGOや、後続未対応・blockedも0を要求するCore2.0全体の完成判定を意味しない。
+11.3時点では、上記SHA-256の同じrun/comparisonを11.4へ引き継ぎ、10.8のbaseline-saveは未実施だった。新旧baselineを保持し、10.6の条件確定とnumeric-control全体のGO、後続未対応・blockedも0を要求するCore2.0全体の完成判定を区別した。
+
+## 11.4の明示baseline保存と次の比較元
+
+2026-10-12、HEAD`7ca484f`で11.3の独立APPROVEDと親のTASK: VERIFIED、同じrun/comparisonの現在hash・受入条件、src/tests/tools不変を保存前に確認した。要件10.8とdesignの「責務境界」「要件対応」「公式受入のBatch契約」に従い、既存CLIで受入済みの同じ保存runを明示保存した。
+
+- 保存操作:`tools/WasmSharp.TestSuiteRunner/bin/Release/net10.0/WasmSharp.TestSuiteRunner.exe baseline-save --input artifacts/numeric-control/task-11.1-20261012T003403Z/run.json --output artifacts/numeric-control/task-11.4-20261012T-baseline-7ca484f/run-baseline.json`。native終了0、stdoutは保存完了、stderrは空。[原コマンド・UTC・native結果](../../../artifacts/numeric-control/task-11.4-20261012T-baseline-7ca484f/baseline-save.result.json)と同じ出力先の原stdout/stderrを保持する。
+- **次の機能の比較元:**[`artifacts/numeric-control/task-11.4-20261012T-baseline-7ca484f/run-baseline.json`](../../../artifacts/numeric-control/task-11.4-20261012T-baseline-7ca484f/run-baseline.json)。SHA-256`02ab113a70b5dd1c6ceb5aca12c901dddb8735b1754a035c999953baae9ad779`、69,748,280byte。元run.jsonと保存後の全byte列・JSONが一致し、run ID・全147入力/53,907command・全case分類と期待値もそのまま保持する。比較済みの元comparison.jsonは前掲SHA-256`794f076ca34de52d786db1b4403af6003d02f37ddd5298b301098962676d454a`を維持する。
+- 固定profileは元runのcorpusと[manifest.json](../../../artifacts/numeric-control/wabt-1.0.42-20261012/corpus/manifest.json)に記録されたcore2と同じで、spec commit`05ca4182176763112561ae20153975c12bd689e4`、WABT1.0.42 commit`ff0ef7e0009402740c805a9744c09b05be063e48`、全feature・入力hash・変換条件を変更していない。manifestのSHA-256は`4979e98df30308d4418e3050899f322ec1b085b88b7d2b3c053e2f9e0abe1d3b`。
+- 比較前の[WABT1.0.42 baseline](../../../artifacts/numeric-control/wabt-1.0.42-20261012/run-baseline.json)はSHA-256`4229a52dec5000a2fc1204b9059890d090b3b316d4b1d56808797d6b834f6c12`、[移行前baseline](../../../artifacts/test-suite-runner-acceptance-20261001/run-baseline.json)は`0f47b1fc0b648b8e539297a60a3ef5a36c7d78c79ef3f8550ef86b10a5814285`を保存前後で維持した。[WABT移行記録](../test-suite-runner/wabt-1.0.42-migration.md)も保持し、いずれも上書きしていない。
+- 保存前後の監査はnative終了0・問題0。元run/compare-runのnative終了0と順序、全体完了・failed/runner_error/回帰0、旧passed2,491件保持、参照source174件とrunner binaryの不変を照合した。[前後監査・最終hash・検証記録](../../../artifacts/numeric-control/task-11.4-20261012T-baseline-7ca484f/verification.md)へ結果を保存する。素材再生成、期待値/profile/分類の変更、本体・テスト・runner変更、tasks.md編集はない。
+
+この保存は要件10.8の操作と同一結果の保持を確認したもの。runtime_unsupported2,100件（linear-memory645・tables-references377・simd1,078）と、その依存によるblocked33,806件は残る。numeric-control全体のGOは全タスク後の最終gateで判断し、これらも0を要求するCore2.0全体のverifyとは別である。11.4の独立レビューと親の完了確認は別途行う。

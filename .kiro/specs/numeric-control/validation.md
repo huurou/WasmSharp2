@@ -443,7 +443,7 @@ Releaseビルドは警告・エラー0、内部の参照解除・復元も含む
 - 機械監査は全inputのstatus/issues、全case ID・元JSONのcommand順/型/行・summary・完了状態、比較内のbaseline/currentの全case内容と期待値の不変、5,821素材のhashを照合し、問題0。manifestのSHA-256は`4979e98df30308d4418e3050899f322ec1b085b88b7d2b3c053e2f9e0abe1d3b`。新baseline`4229a52dec5000a2fc1204b9059890d090b3b316d4b1d56808797d6b834f6c12`と旧baseline`0f47b1fc0b648b8e539297a60a3ef5a36c7d78c79ef3f8550ef86b10a5814285`を維持した。
 - 保存先:`artifacts/numeric-control/task-11.1-20261012T003403Z/`。run.jsonのSHA-256は`02ab113a70b5dd1c6ceb5aca12c901dddb8735b1754a035c999953baae9ad779`、comparison.jsonは`794f076ca34de52d786db1b4403af6003d02f37ddd5298b301098962676d454a`。各コマンド・開始/終了UTC・native終了値・stdout/stderrは各`*.result.json`と`*.stdout.log`/`*.stderr.log`、TRXは各`*-trx/`、機械確認は`audit-run.json`と`audit-comparison.json`、最終変更hashは`final-integrity.json`に保存した。
 
-11.1の実行結果を独立レビューへ渡す状態であり、レビューと親の完了確認は別途行う。対象規則の網羅と残存未対応/blocked原因の監査は11.2、受入確定は11.3、同じ結果からのbaseline保存は11.4で未実施。Core2.0全体への準拠を示す結果ではない。
+11.1の実装時点では実行結果を独立レビューへ渡す状態であり、レビューと親の完了確認は別途行う段階だった。この時点では対象規則の網羅と残存未対応/blocked原因の監査は11.2、受入確定は11.3、同じ結果からのbaseline保存は11.4で未実施。Core2.0全体への準拠を示す結果ではない。
 
 11.1の履歴なしの独立レビューは`APPROVED`。別途3suite全3,602件・CLI help・全53,907caseと5,821素材・元147入力hash・保存済み値と否定assertionを照合して問題0。親が原ログ・native終了値・現在の文書と結果hashを確認し、`kiro-verify-completion`は`TASK: VERIFIED`。独立レビュー:`artifacts/numeric-control/task-11.1-review-20261012T-independent/review.md`。
 
@@ -456,7 +456,7 @@ Releaseビルドは警告・エラー0、内部の参照解除・復元も含む
 - blocked33,806件のdirectを原因まで全件解決し、保存originsと一致した。各辺と起点は同じ入力の先行commandで、全起点が上記後続機能のruntime_unsupportedだった。循環・不在ID・起点分類の不一致0。残りはpassed16,924件と、元JSONがmodule_type=textの対象外1,077件だけである。
 - 所有先/blocked/opcode監査と73行/source/正式method/TRX/公式case対応監査は各native終了0・問題0。diff-checkも成功した。全明細・再実行スクリプト・原ログ・native終了値・最終変更hashは`artifacts/numeric-control/task-11.2-20261012T-audit-5d3ee09/`へ保存した。
 
-要件10.2・10.3・10.4・10.6の11.2監査条件を確認した。10.6の受入確定は11.3、10.8の比較済み同じrunからのbaseline保存は11.4で未実施。10.7の修正ループは今回は不一致・回帰0のため条件不成立として、過去の9.6対応履歴と区別した。本体・runner・テスト・期待値・profile・分類・tasks.md・新旧baselineは変更していない。全73基準の確認完了やnumeric-control/Core2.0全体のGOは主張しない。記録のみのためREDは適用外で、独立レビューと親の完了確認へ渡す段階である。
+11.2の実装時点で要件10.2・10.3・10.4・10.6の監査条件を確認した。この時点では10.6の受入確定は11.3、10.8の比較済み同じrunからのbaseline保存は11.4で未実施。10.7の修正ループは今回は不一致・回帰0のため条件不成立として、過去の9.6対応履歴と区別した。本体・runner・テスト・期待値・profile・分類・tasks.md・新旧baselineは変更していない。全73基準の確認完了やnumeric-control/Core2.0全体のGOは主張しない。記録のみのためREDは適用外で、独立レビューと親の完了確認へ渡す段階である。
 
 11.2の履歴なしの独立レビューは`APPROVED`。別途Releaseビルド・runner全702件・独自監査2件を成功させ、全73基準・437割当・160対象・136数値・815case・2,100未対応・33,806blocked起点と現在sourceを照合して問題0。親が原ログ・native終了値・文書と保存結果のhash一致・本体不変を確認し、`kiro-verify-completion`は`TASK: VERIFIED`。独立レビュー:`artifacts/numeric-control/task-11.2-review-20261012T-independent/review.md`。
 
@@ -469,6 +469,20 @@ Releaseビルドは警告・エラー0、内部の参照解除・復元も含む
 - 残存2,100未対応はlinear-memory645・tables-references377・simd1,078、blocked33,806件はその依存だけ、対象外1,077件は元JSONのtextだけである。不一致・runner_error・回帰・対象規則欠落は検出されず、10.7の原因修正・境界テストと11.1/11.2再実行を要する条件は不成立。修正ループを捏造しない。
 - 新しい現在整合監査とdiff-checkはnative終了0・問題0。原ログ・コマンド・UTC・native終了値・現在hashは`artifacts/numeric-control/task-11.3-20261012T-acceptance-a05bf79/`の`*.result.json`・`*.stdout.log`・`*.stderr.log`、`current-consistency.json`・`final-integrity.json`・`verification.md`へ保存した。文書2件はUTF-8/LFで、indexは空。
 
-記録のみでテスト・動作の変更はなく、RED・feature flagは適用外。ソース不変のためbuild・3suite・公式run/比較は再実行せず、11.1の保存結果と現在整合を検証した。10.6の受入条件は成立しており、11.3の独立レビューと親の完了確認へ渡す。10.8の明示baseline保存は11.4待ちで、上記同じrun/comparisonから更新する。新旧baselineは保持し、numeric-control全体のGOやCore2.0全体準拠は主張しない。
+記録のみでテスト・動作の変更はなく、RED・feature flagは適用外。ソース不変のためbuild・3suite・公式run/比較は再実行せず、11.1の保存結果と現在整合を検証した。10.6の受入条件は成立しており、11.3の実装時点では独立レビューと親の完了確認へ引き継いだ。この時点では10.8の明示baseline保存は11.4待ちで、上記同じrun/comparisonから更新する段階だった。新旧baselineは保持し、numeric-control全体のGOやCore2.0全体準拠は主張しない。
 
 11.3の履歴なしの独立レビューは`APPROVED`。別途Releaseビルド・runner全702件・現在整合監査を成功させ、同じ結果の受入条件と現在174sourceのhash、原結果・監査ログを照合して問題0。親が原ログ・native終了値・文書と保護対象の現在hash・本体不変を確認し、`kiro-verify-completion`は`TASK: VERIFIED`。独立レビュー:`artifacts/numeric-control/task-11.3-review-20261012T-independent/review.md`。
+
+## タスク11.4:受入済みの同じ全体結果からbaselineを明示更新
+
+2026-10-12、HEAD`7ca484f`で要件10.8とdesignの「責務境界」「要件対応」「公式受入のBatch契約」を確認した。11.3の独立APPROVED・親のTASK: VERIFIEDと、同じ保存run/comparisonの現在整合を確認してから、[acceptance.mdの11.4保存記録](acceptance.md#114の明示baseline保存と次の比較元)に記載した既存CLIのbaseline-saveを明示実行した。
+
+- 入力runは`artifacts/numeric-control/task-11.1-20261012T003403Z/run.json`、SHA-256`02ab113a70b5dd1c6ceb5aca12c901dddb8735b1754a035c999953baae9ad779`。元comparisonは同じディレクトリの`comparison.json`、SHA-256`794f076ca34de52d786db1b4403af6003d02f37ddd5298b301098962676d454a`。元run/compare-runはnative終了0、runの完了後に比較した。全147入力/53,907commandが完了し、failed・入力/command runner_error・回帰・追加・欠落・未比較0、旧passed2,491件保持、前提成立16,924件passedの受入条件を維持する。
+- baseline-saveはnative終了0、stdoutで保存完了、stderrは空。開始UTC`2026-10-12T01:30:26.489030+00:00`、終了UTC`2026-10-12T01:30:28.511177+00:00`。コマンド全文とnative終了値は`artifacts/numeric-control/task-11.4-20261012T-baseline-7ca484f/baseline-save.result.json`、原ログは同じディレクトリの`baseline-save.stdout.log`/`baseline-save.stderr.log`へ保存した。
+- **次の機能の比較元は`artifacts/numeric-control/task-11.4-20261012T-baseline-7ca484f/run-baseline.json`。**SHA-256`02ab113a70b5dd1c6ceb5aca12c901dddb8735b1754a035c999953baae9ad779`、69,748,280byte。入力runと全byte列・JSON・run ID・件数・分類・期待値が一致する。profileは元runのcorpus/固定manifestに保持したcore2、固定spec/WABT commitと全feature・入力hash・変換条件のままである。
+- 比較前のWABT1.0.42 baselineはSHA-256`4229a52dec5000a2fc1204b9059890d090b3b316d4b1d56808797d6b834f6c12`、移行前baselineは`0f47b1fc0b648b8e539297a60a3ef5a36c7d78c79ef3f8550ef86b10a5814285`を保存前後で維持し、[WABT移行記録](../test-suite-runner/wabt-1.0.42-migration.md)も保持した。元run/comparison/manifest、src/tests/toolsと参照source174件、既存runner binary、tasks.md、Git indexを変更していない。
+- 保存前後監査はnative終了0・問題0。`before.json`/`after.json`、各`audit-*.result.json`と原stdout/stderr、最終2文書と保護対象のhashを`final-integrity.json`、検証範囲を`verification.md`へ保存する。保存前監査の初回は親の11.3完了記録追記による文書hashの時点差を検出し、native終了1だった。追記前の本文を独立レビュー時hashへ照合し、親の完了確認と現在HEADへの一致を確認して再実行した。初回原結果・ログは`*-initial.*`へ保持し、製品不一致として扱わない。
+
+文書更新と既存保存操作のみで、RED・feature flagは対象外。build・3suite・公式run/比較・Core2全体verifyは再実行していない。独立レビューはReleaseビルド後にrunner全702件を確認し、全タスク後の最終feature gateで3suiteとCLI helpを確認する。後続所有のruntime_unsupported2,100件とその依存blocked33,806件を保持するため、本仕様の受入・baseline保存とCore2.0全体の完成を区別する。numeric-control全体のGOと11.4の独立レビュー・親の完了確認は、この記録から完了扱いにしない。
+
+11.4の履歴なしの独立レビューは`APPROVED`。別途Releaseビルド・runner全702件・限定監査を成功させ、保存元と新baselineの全69,748,280byte/JSON/hash一致、旧2baseline・固定条件・source174件の保持を確認した。保存時binaryと独立レビューの再ビルドでGitリビジョン情報が更新されたbinaryは別の時点として記録した。親が原ログ・native終了値・現在hash・全byte列一致を確認し、`kiro-verify-completion`は`TASK: VERIFIED`。独立レビュー:`artifacts/numeric-control/task-11.4-review-20261012T-independent/review.md`。11.1〜11.4が揃ったため親項目11を完了とした。全タスク完了後のfeature gateは次に行う。
