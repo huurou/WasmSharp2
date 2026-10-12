@@ -29,7 +29,34 @@ internal partial class WasmModule_InstantiateTests
                         ("value", 3, 0)
                     ),
                     HostLinkingModuleBinary.Start(definedStart ? 2U : 0U),
-                    HostLinkingModuleBinary.Code(([], [0x23, 0x00, 0x0B]), ([], [0x10, 0x00, 0x0B]))
+                    HostLinkingModuleBinary.Code(
+                        ([], [0x23, 0x00, 0x0B]),
+                        (
+                            [],
+                            [
+                                0x23,
+                                0x00,
+                                0x41,
+                                0x01,
+                                0x6A,
+                                0x24,
+                                0x00,
+                                0x23,
+                                0x00,
+                                0x41,
+                                0x2B,
+                                0x46,
+                                0x04,
+                                0x40,
+                                0x10,
+                                0x00,
+                                0x05,
+                                0x00,
+                                0x0B,
+                                0x0B,
+                            ]
+                        )
+                    )
                 )
             )
             .Validate();
@@ -68,7 +95,8 @@ internal partial class WasmModule_InstantiateTests
         {
             await Assert.That(ReferenceEquals(received, result)).IsTrue();
             await Assert.That(calls).IsEqualTo(1);
-            await Assert.That(value).IsEqualTo(42);
+            await Assert.That(value).IsEqualTo(definedStart ? 43 : 42);
+            await Assert.That(result.GetGlobal("value").AsI32()).IsEqualTo(definedStart ? 43 : 42);
             await Assert.That(initialMemory[0]).IsEqualTo((byte)0);
             await Assert.That(initialElement).IsNull();
             await Assert.That(written[0]).IsEqualTo((byte)9);

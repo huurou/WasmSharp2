@@ -255,7 +255,7 @@
   - _Boundary: Interpreter, Interpreter.Control, ExecutionBoundary_
   - _Requirements: 8.1, 8.2, 8.4, 8.5, 9.2_
 
-- [ ] 10.3 startでの計算と失敗前の状態を確認する
+- [x] 10.3 startでの計算と失敗前の状態を確認する
   - 既存の構築・接続・初期化順序で、数値・制御を使うstartが実行されることを確認する。
   - 正常終了と数値trapを公開Instantiateから確認し、Reason・診断先頭・入力位置と処理段階を検査する。
   - 失敗前のglobal更新とホストが保存したinstance・関数・リソース参照が保持され、以後の副作用が実行されないことを確認する。
