@@ -2,48 +2,69 @@
 
 ## 課題
 
-利用者は線形メモリに対するload/storeやdata segmentを使う計算を実行したい。リソースの生成・import/exportができても、guest命令、segment初期化、bulk操作の意味論は別に必要である。
+利用者は、ロード命令とストア命令で線形メモリを読み書きし、データセグメントを使うWasmプログラムを実行したい。
+既存のランタイムはメモリの生成、インポート、エクスポートに対応しているが、メモリ命令の実行とデータセグメントによる初期化にはまだ対応していない。
 
 ## 現状
 
-着手時にはhost-linkingのmemory型・limits・生成・共有・公開アクセス、numeric-controlの演算と制御、test-suite-runnerのspectest・register・段階別assertionとbaselineを利用できる。
+本仕様では、次の先行仕様で実装した機能を使う。
+
+- host-linking：メモリ型、サイズの上限と下限、メモリの生成と共有、ホスト向けの公開操作。
+- numeric-control：数値演算と制御命令。
+- test-suite-runner：spectest、register、処理段階ごとのアサーション、実行結果の保存と比較。
+
+回帰確認には、先行仕様で保存した**実行結果baseline**を比較基準として使う。
 
 ## 望む結果
 
-同じmemory実体を使ってCore 2.0のスカラーload/store、size/grow、data初期化、bulk memoryを実行できる。imported memoryにも同じ意味論を適用し、境界trap・grow失敗値・検証不成立を区別する。
+利用者が、ホストから操作するメモリと同じ実体に対して、Core 2.0のスカラーロード命令とストア命令、memory.size、memory.grow、データセグメントによる初期化、メモリの一括操作を実行できる。
+インポートしたメモリにも同じ実行規則を適用し、範囲外アクセスによるトラップ、メモリ拡張時の失敗を示す戻り値、静的検証の不成立を区別できる。
 
 ## 方針
 
-guest命令とdata segmentのDecodeから検証・初期化・実行までを本仕様へ集める。memoryの型・割当・共有機構を作り直さず、共通のリソース操作とInstantiate順序へ機能を追加する。
+Wasmのメモリ命令とデータセグメントについて、Decodeから静的検証・初期化・実行までを本仕様で扱う。
+メモリ型やメモリの割り当て・共有の仕組みを作り直さず、既存の共通リソース操作とInstantiateの処理手順に機能を追加する。
 
 ## 範囲
 
-- **対象**: スカラーload/store、符号拡張load、狭幅store、size/grow、32bitアドレス・offset・alignmentの規則
-- **対象**: active/passive data、data count、memory.init/copy/fill、data.drop、初期化・実行の境界trap
-- **対象**: 定義memoryとimported memoryへの同じ命令・初期化の適用、共有memoryの変更とstart実行順序、初期化/start失敗時の観測可能な副作用
-- **対象**: 既存assert_uninstantiable等によるdata初期化trapの判定、公式スイート全体とbaseline差分による回帰確認
-- **対象外**: memoryの基本型・limits・生成・import照合の再実装、memory64、multi-memory、shared memory/threads、SIMD load/store、WASI
+- **対象**: スカラーロード命令・ストア命令、符号拡張を行うロード命令、値の下位ビットだけを書き込むストア命令、memory.size、memory.grow、32ビットアドレス・オフセット・アラインメントの規則
+- **対象**: アクティブデータセグメントとパッシブデータセグメント、データ数セクション、memory.init、memory.copy、memory.fill、data.drop、初期化時と命令実行時の範囲外アクセスによるトラップ
+- **対象**: モジュール内で定義したメモリとインポートしたメモリへの同じ命令・初期化処理の適用、共有するメモリへの変更と開始関数（start）の実行順序、初期化や開始関数の失敗後に観測できる副作用
+- **対象**: 既存のassert_uninstantiableなどを使ったデータセグメント初期化時のトラップの判定、公式スイート全体の実行と実行結果baselineとの比較による回帰確認
+- **対象外**: メモリの基本型・サイズの上限と下限・生成・インポート時の型照合の再実装、memory64、multi-memory、スレッド間で共有するメモリ（shared memory/threads）、SIMDのロード命令・ストア命令、WASI
 
-## 責務の接点
+## 既存機能との接続
 
-- memoryの型・割当・同一性・公開内容アクセスはhost-linkingの契約を使う。guest命令固有の境界・grow失敗値・trapを本仕様が所有する。
-- data初期化を既存Instantiateへ追加し、その完了後に先行仕様のstart実行を行う。imported memoryに対する副作用を含め、初期化とstartの順序を確認する。
-- SIMDは本仕様のメモリアクセスと境界処理を使う。table/elementの初期化はtables-referencesが所有する。
+- メモリ型・割り当て・同一性・ホストから内容へアクセスする公開操作には、host-linkingの契約を使う。
+  Wasm命令に固有の範囲判定、メモリ拡張時の失敗を示す戻り値、トラップは本仕様で扱う。
+- データセグメントの初期化を既存のInstantiateに追加し、初期化が完了した後に、先行仕様で実装した開始関数の実行処理を呼び出す。
+  インポートしたメモリへの副作用も含めて、初期化と開始関数の実行順序を確認する。
+- SIMDは本仕様のメモリアクセス処理と範囲判定を使う。
+  テーブルと要素セグメントの初期化はtables-referencesで扱う。
 
-## この仕様が所有しないこと
+## 本仕様で扱わないこと
 
-ホストmodule登録、spectest、table/element、JSON共通判定、OS固有のメモリ最適化は所有しない。
+ホストモジュールの登録、spectest、テーブルと要素セグメント、JSONに対する共通の判定処理、OS固有のメモリ最適化は本仕様では扱わない。
 
-## 上流・下流
+## 先行仕様と後続仕様
 
-- **上流**: numeric-control host-linkingとtest-suite-runnerの能力を引き継ぐ。
-- **下流**: simdと全体の統合確認 tables-referencesとは並行できる。
+- 先行仕様：numeric-control、host-linking、test-suite-runnerの機能を利用する。
+- 後続仕様：simdとプロジェクト全体の統合確認は、本仕様の機能を利用する。
+  tables-referencesとは並行して進められる。
 
 ## 既存仕様との関係
 
-- **拡張する既存仕様**: host-linkingのmemory実体とInstantiate経路を拡張する。公式検証はtest-suite-runnerの既存能力を使う。
-- **隣接**: import型照合はhost-linking、table/elementはtables-references、vectorメモリ命令はsimd
+- 拡張する仕様：host-linkingのメモリ実体とInstantiateの処理へ機能を追加する。
+- 隣接する仕様：インポート時の型照合はhost-linking、テーブルと要素セグメントはtables-references、ベクトル値を読み書きするメモリ命令はsimdで扱う。
 
 ## 制約と確認事項
 
-機能を追加するたびに固定公式スイートを実行し、[ロードマップの公式検証方針](../../steering/roadmap.md#公式検証の方針と完了条件)に従って対象ケースの合格と回帰がないことを確認する。unsignedアドレスとoffsetをCLRのoverflowや配列例外へ委ねず、grow失敗・trap・資源制限・未実装を区別する。後続機能待ちのケースは、ランタイムが報告した未実装機能と原因を残す。文書は日本語（ja）
+機能を追加するたびに、固定した版の公式スイートを実行する。
+[ロードマップの公式検証方針](../../steering/roadmap.md#公式検証の方針と完了条件)に従って、対象ケースの合格と回帰がないことを確認する。
+後続機能の実装を待つケースについては、ランタイムが報告した未実装機能と原因を残す。
+
+アドレスは符号なし整数として解釈し、オフセットの加算と範囲判定を明示的に行う。
+CLRのオーバーフローや配列アクセス時の例外には委ねない。
+メモリ拡張の失敗、トラップ、資源制限、未実装を区別する。
+
+文書は日本語（ja）で記述する。
