@@ -189,4 +189,88 @@ public sealed class WasmMemory
 
         return true;
     }
+
+    /// <summary>
+    /// memory内の範囲をコピーし、範囲内かを返す
+    /// </summary>
+    /// <param name="destination">コピー先の先頭バイト位置</param>
+    /// <param name="source">コピー元の先頭バイト位置</param>
+    /// <param name="length">コピーするバイト数</param>
+    /// <returns>全範囲を転送できた場合はtrue 範囲外の場合はmemoryを変更せずfalse</returns>
+    internal bool TryCopy(ulong destination, ulong source, ulong length)
+    {
+        if (!ContainsRange(destination, length) || !ContainsRange(source, length))
+        {
+            return false;
+        }
+
+        if (destination > source && destination - source < length)
+        {
+            // 未転送のコピー元を上書きしないよう、後ろから転送する。
+            var destinationEnd = destination + length;
+            var sourceEnd = source + length;
+            while (length != 0)
+            {
+                var destinationOffset = (int)((destinationEnd - 1) % PAGE_SIZE) + 1;
+                var sourceOffset = (int)((sourceEnd - 1) % PAGE_SIZE) + 1;
+                var count = (int)Math.Min(length, (ulong)Math.Min(destinationOffset, sourceOffset));
+                pages_[(int)((sourceEnd - 1) / PAGE_SIZE)]
+                    .AsSpan(sourceOffset - count, count)
+                    .CopyTo(
+                        pages_[(int)((destinationEnd - 1) / PAGE_SIZE)]
+                            .AsSpan(destinationOffset - count, count)
+                    );
+                destinationEnd -= (uint)count;
+                sourceEnd -= (uint)count;
+                length -= (uint)count;
+            }
+
+            return true;
+        }
+
+        while (length != 0)
+        {
+            var destinationOffset = (int)(destination % PAGE_SIZE);
+            var sourceOffset = (int)(source % PAGE_SIZE);
+            var count = (int)
+                Math.Min(
+                    length,
+                    (ulong)Math.Min(PAGE_SIZE - destinationOffset, PAGE_SIZE - sourceOffset)
+                );
+            pages_[(int)(source / PAGE_SIZE)]
+                .AsSpan(sourceOffset, count)
+                .CopyTo(pages_[(int)(destination / PAGE_SIZE)].AsSpan(destinationOffset, count));
+            destination += (uint)count;
+            source += (uint)count;
+            length -= (uint)count;
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// 指定範囲をバイト値で埋め、範囲内かを返す
+    /// </summary>
+    /// <param name="destination">書き込み先の先頭バイト位置</param>
+    /// <param name="value">各バイトに書き込む値</param>
+    /// <param name="length">書き込むバイト数</param>
+    /// <returns>全範囲を書き込めた場合はtrue 範囲外の場合はmemoryを変更せずfalse</returns>
+    internal bool TryFill(ulong destination, byte value, ulong length)
+    {
+        if (!ContainsRange(destination, length))
+        {
+            return false;
+        }
+
+        while (length != 0)
+        {
+            var pageOffset = (int)(destination % PAGE_SIZE);
+            var count = (int)Math.Min(length, (ulong)(PAGE_SIZE - pageOffset));
+            pages_[(int)(destination / PAGE_SIZE)].AsSpan(pageOffset, count).Fill(value);
+            destination += (uint)count;
+            length -= (uint)count;
+        }
+
+        return true;
+    }
 }
