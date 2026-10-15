@@ -183,6 +183,24 @@ internal static class FunctionValidator
                     }
                     break;
 
+                case ValidationRule.MemorySize:
+                case ValidationRule.MemoryGrow:
+                    if (!hasMemory)
+                    {
+                        throw CreateUnknownIndex(
+                            "memory",
+                            0,
+                            "参照するメモリが存在しません。",
+                            instruction.ByteOffset
+                        );
+                    }
+                    if (descriptor.Validation == ValidationRule.MemoryGrow)
+                    {
+                        Pop(WasmValueKind.I32, instruction.ByteOffset);
+                    }
+                    stack.Add(WasmValueKind.I32);
+                    break;
+
                 case ValidationRule.FunctionEnd:
                     var endedFrame = frames[^1];
                     CheckEnd(endedFrame, instruction.ByteOffset);

@@ -6,6 +6,45 @@ namespace WasmSharp.Execution;
 internal static partial class Interpreter
 {
     /// <summary>
+    /// 所属instanceのメモリの現在のページ数をoperandへ積む
+    /// </summary>
+    /// <param name="context">現在の関数を持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのmemory.size命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult Size(InterpreterContext context, in Instruction instruction)
+    {
+        var memory = context.CurrentFunction.Instance.Memories[0];
+        context.PushValue(WasmValue.FromI32((int)memory.PageCount));
+        return default;
+    }
+
+    /// <summary>
+    /// 所属instanceのメモリを拡張し、拡張前のページ数か失敗値をoperandへ積む
+    /// </summary>
+    /// <param name="context">現在の関数と追加ページ数を持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのmemory.grow命令</param>
+    /// <returns>拡張の成否にかかわらず実行の成功</returns>
+    internal static ExecutionResult Grow(InterpreterContext context, in Instruction instruction)
+    {
+        var memory = context.CurrentFunction.Instance.Memories[0];
+        var deltaPages = unchecked((uint)context.PopValue().AsI32());
+        bool success;
+        uint previousPageCount;
+        try
+        {
+            success = memory.TryGrow(deltaPages, out previousPageCount);
+        }
+        catch (OutOfMemoryException)
+        {
+            success = false;
+            previousPageCount = 0;
+        }
+
+        context.PushValue(WasmValue.FromI32(success ? (int)previousPageCount : -1));
+        return default;
+    }
+
+    /// <summary>
     /// 所属instanceのメモリから指定幅を読み、拡張した値をoperandへ積む
     /// </summary>
     /// <param name="context">現在の関数と検証済みのアドレスを持つ実行コンテキスト</param>

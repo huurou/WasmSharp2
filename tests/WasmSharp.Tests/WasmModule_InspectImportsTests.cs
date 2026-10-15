@@ -289,7 +289,7 @@ internal class WasmModule_InspectImportsTests
             HostLinkingModuleBinary.Functions(0),
             HostLinkingModuleBinary.Memories((uint.MaxValue, null)),
             HostLinkingModuleBinary.Start(0),
-            HostLinkingModuleBinary.Code(([], [0x3F, 0x0B]))
+            HostLinkingModuleBinary.Code(([], [0x25, 0x0B]))
         );
         using var stream = new ChunkedReadStream(new MemoryStream(bytes));
 
@@ -339,7 +339,7 @@ internal class WasmModule_InspectImportsTests
         var exception = await Assert
             .That(() => WasmModule.Decode(bytes))
             .ThrowsExactly<WasmUnsupportedFeatureException>();
-        await Assert.That(exception!.Feature).IsEqualTo("memory.size");
+        await Assert.That(exception!.Feature).IsEqualTo("table.get");
     }
 
     [Test]

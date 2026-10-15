@@ -500,8 +500,24 @@ namespace WasmSharp.Instructions;
     4,
     false
 )]
-[Instruction(0, 0x3F, "memory.size")]
-[Instruction(0, 0x40, "memory.grow")]
+[Instruction(
+    0,
+    0x3F,
+    "memory.size",
+    ImmediateKind.MemoryZero,
+    StackEffectKind.PushI32,
+    ValidationRule.MemorySize,
+    nameof(Interpreter.Size)
+)]
+[Instruction(
+    0,
+    0x40,
+    "memory.grow",
+    ImmediateKind.MemoryZero,
+    StackEffectKind.MemoryGrow,
+    ValidationRule.MemoryGrow,
+    nameof(Interpreter.Grow)
+)]
 [Instruction(
     0,
     0x45,

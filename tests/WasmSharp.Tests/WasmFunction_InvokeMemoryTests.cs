@@ -6,6 +6,164 @@ namespace WasmSharp.Tests;
 internal partial class WasmFunction_InvokeTests
 {
     [Test]
+    [Arguments(false, 0u, 1)]
+    [Arguments(true, 0u, 1)]
+    [Arguments(false, 1u, 2)]
+    [Arguments(true, 1u, 2)]
+    [Arguments(false, 3u, 0)]
+    [Arguments(true, 3u, 0)]
+    public async Task メモリサイズ取得と拡張を公開4段階で呼び出す_現在サイズと拡張前サイズを返す(
+        bool imported,
+        uint initialPages,
+        int delta
+    )
+    {
+        // Arrange
+        var hostMemory = new WasmMemory(new(initialPages, 3));
+        var host = new WasmHostModule("env");
+        host.Define("m", hostMemory);
+        var instance = CreateMemorySizeAndGrowModule(imported, initialPages, 3)
+            .Instantiate(imported ? [host] : []);
+        var memory = instance.GetMemory("memory");
+        var original = Enumerable
+            .Range(0, (int)initialPages * 65536)
+            .Select(x => (byte)(x % 251 + 1))
+            .ToArray();
+        memory.Write(0, original);
+        var expectedPages = initialPages + (uint)delta;
+        var actual = new byte[expectedPages * 65536];
+
+        // Act
+        var before = instance.GetFunction("size").Invoke([]);
+        var previous = instance.GetFunction("grow").Invoke([WasmValue.FromI32(delta)]);
+        var after = instance.GetFunction("size").Invoke([]);
+        memory.Read(0, actual);
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(before.Values[0].AsI32()).IsEqualTo((int)initialPages);
+            await Assert.That(previous.Values[0].AsI32()).IsEqualTo((int)initialPages);
+            await Assert.That(after.Values[0].AsI32()).IsEqualTo((int)expectedPages);
+            await Assert.That(memory.PageCount).IsEqualTo(expectedPages);
+            await Assert.That(actual.AsSpan(0, original.Length).SequenceEqual(original)).IsTrue();
+            await Assert.That(actual[original.Length..].All(x => x == 0)).IsTrue();
+            if (imported)
+            {
+                await Assert.That(memory).IsSameReferenceAs(hostMemory);
+                await Assert.That(hostMemory.PageCount).IsEqualTo(expectedPages);
+            }
+        }
+    }
+
+    [Test]
+    [Arguments(3u, 3)]
+    [Arguments(null, 65536)]
+    [Arguments(null, -1)]
+    [Arguments(null, int.MinValue)]
+    public async Task 符号なし拡張量が実体の最大値かCore上限を超える_失敗値を返しサイズと内容を保持する(
+        uint? maximumPages,
+        int delta
+    )
+    {
+        // Arrange
+        foreach (var imported in new[] { false, true })
+        {
+            var hostMemory = new WasmMemory(new(1, maximumPages));
+            var host = new WasmHostModule("env");
+            host.Define("m", hostMemory);
+            var instance = CreateMemorySizeAndGrowModule(imported, 1, maximumPages)
+                .Instantiate(imported ? [host] : []);
+            var memory = instance.GetMemory("memory");
+            var original = Enumerable.Range(0, 65536).Select(x => (byte)(x % 251 + 1)).ToArray();
+            memory.Write(0, original);
+            var actual = new byte[original.Length];
+
+            // Act
+            var result = instance.GetFunction("grow").Invoke([WasmValue.FromI32(delta)]);
+            var size = instance.GetFunction("size").Invoke([]);
+            memory.Read(0, actual);
+
+            // Assert
+            using (Assert.Multiple())
+            {
+                await Assert.That(result.Values[0].AsI32()).IsEqualTo(-1);
+                await Assert.That(size.Values[0].AsI32()).IsEqualTo(1);
+                await Assert.That(memory.PageCount).IsEqualTo(1u);
+                await Assert.That(memory.ByteLength).IsEqualTo(65536UL);
+                await Assert.That(actual.SequenceEqual(original)).IsTrue();
+            }
+        }
+    }
+
+    [Test]
+    public async Task ホストと複数instanceが同じメモリを拡張して書き込む_後続命令から更新後のサイズと内容を観測する()
+    {
+        // Arrange
+        var memory = new WasmMemory(new(1, 4));
+        var host = new WasmHostModule("env");
+        host.Define("m", memory);
+        var module = WasmModule
+            .Decode(
+                HostLinkingModuleBinary.Create(
+                    HostLinkingModuleBinary.Types(
+                        ([], [0x7F]),
+                        ([0x7F], [0x7F]),
+                        ([0x7F, 0x7F], [])
+                    ),
+                    HostLinkingModuleBinary.Imports(
+                        ("env", "m", 2, HostLinkingModuleBinary.Limits(1, 6))
+                    ),
+                    HostLinkingModuleBinary.Functions(0, 1, 1, 2),
+                    HostLinkingModuleBinary.Exports(
+                        ("size", 0, 0),
+                        ("grow", 0, 1),
+                        ("load", 0, 2),
+                        ("store", 0, 3),
+                        ("memory", 2, 0)
+                    ),
+                    HostLinkingModuleBinary.Code(
+                        ([], [0x3F, 0, 0x0B]),
+                        ([], [0x20, 0, 0x40, 0, 0x0B]),
+                        ([], [0x20, 0, 0x2D, 0, 0, 0x0B]),
+                        ([], [0x20, 0, 0x20, 1, 0x3A, 0, 0, 0x0B])
+                    )
+                )
+            )
+            .Validate();
+        var first = module.Instantiate([host]);
+        var second = module.Instantiate([host]);
+
+        // Act
+        var guestPrevious = first.GetFunction("grow").Invoke([WasmValue.FromI32(1)]);
+        var secondSize = second.GetFunction("size").Invoke([]);
+        var hostSuccess = memory.TryGrow(1, out var hostPrevious);
+        memory.Write(131072, [0xAB]);
+        var hostByte = second.GetFunction("load").Invoke([WasmValue.FromI32(131072)]);
+        first.GetFunction("store").Invoke([WasmValue.FromI32(131073), WasmValue.FromI32(0xCD)]);
+        var guestByte = second.GetFunction("load").Invoke([WasmValue.FromI32(131073)]);
+        var finalSize = first.GetFunction("size").Invoke([]);
+        var actual = new byte[2];
+        memory.Read(131072, actual);
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(first.GetMemory("memory")).IsSameReferenceAs(memory);
+            await Assert.That(second.GetMemory("memory")).IsSameReferenceAs(memory);
+            await Assert.That(guestPrevious.Values[0].AsI32()).IsEqualTo(1);
+            await Assert.That(secondSize.Values[0].AsI32()).IsEqualTo(2);
+            await Assert.That(hostSuccess).IsTrue();
+            await Assert.That(hostPrevious).IsEqualTo(2u);
+            await Assert.That(memory.PageCount).IsEqualTo(3u);
+            await Assert.That(finalSize.Values[0].AsI32()).IsEqualTo(3);
+            await Assert.That(hostByte.Values[0].AsI32()).IsEqualTo(0xAB);
+            await Assert.That(guestByte.Values[0].AsI32()).IsEqualTo(0xCD);
+            await Assert.That(Convert.ToHexString(actual)).IsEqualTo("ABCD");
+        }
+    }
+
+    [Test]
     [Arguments((byte)0x28, (byte)0x7F, (byte)2, "81828384", 0x84838281UL)]
     [Arguments((byte)0x29, (byte)0x7E, (byte)3, "8182838485868788", 0x8887868584838281UL)]
     [Arguments((byte)0x2A, (byte)0x7D, (byte)2, "4523C1FF", 0xFFC12345UL)]
@@ -182,6 +340,42 @@ internal partial class WasmFunction_InvokeTests
                 );
             await Assert.That(Convert.ToHexString(actual)).IsEqualTo("81828384");
         }
+    }
+
+    private static WasmModule CreateMemorySizeAndGrowModule(
+        bool imported,
+        uint initialPages,
+        uint? maximumPages
+    )
+    {
+        return WasmModule
+            .Decode(
+                HostLinkingModuleBinary.Create(
+                    HostLinkingModuleBinary.Types(([], [0x7F]), ([0x7F], [0x7F])),
+                    imported
+                        ? HostLinkingModuleBinary.Imports(
+                            (
+                                "env",
+                                "m",
+                                2,
+                                HostLinkingModuleBinary.Limits(initialPages, maximumPages + 2)
+                            )
+                        )
+                        : [],
+                    HostLinkingModuleBinary.Functions(0, 1),
+                    imported ? [] : HostLinkingModuleBinary.Memories((initialPages, maximumPages)),
+                    HostLinkingModuleBinary.Exports(
+                        ("size", 0, 0),
+                        ("grow", 0, 1),
+                        ("memory", 2, 0)
+                    ),
+                    HostLinkingModuleBinary.Code(
+                        ([], [0x3F, 0, 0x0B]),
+                        ([], [0x20, 0, 0x40, 0, 0x0B])
+                    )
+                )
+            )
+            .Validate();
     }
 
     private static WasmValue MemoryValue(byte kind, ulong bits)

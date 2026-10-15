@@ -92,6 +92,7 @@ internal static class ExpressionDecoder
                     new(reader.ReadU32(), reader.ReadU32()),
                     offset
                 ),
+                ImmediateKind.MemoryZero => ReadMemoryZero(opcode, offset, ref reader),
                 _ => throw new InvalidOperationException("対応済み命令の即値情報が不正です。"),
             };
 
@@ -120,6 +121,30 @@ internal static class ExpressionDecoder
                 controls.RemoveAt(controls.Count - 1);
             }
         }
+    }
+
+    /// <summary>
+    /// メモリインデックス0を指定する単一の予約バイトを読む
+    /// </summary>
+    /// <param name="opcode">メモリ命令の識別子</param>
+    /// <param name="offset">命令の入力位置</param>
+    /// <param name="reader">予約バイトの先頭にある読み取り状態</param>
+    /// <returns>予約バイトの構文を検査した命令</returns>
+    private static DecodedInstruction ReadMemoryZero(
+        OpcodeKey opcode,
+        long offset,
+        ref ModuleBinaryReader reader
+    )
+    {
+        if (reader.ReadByte() != 0)
+        {
+            throw reader.Error(
+                "zero byte expected: 予約バイトには0x00が必要です。",
+                reader.Position - 1
+            );
+        }
+
+        return DecodedInstruction.WithoutImmediate(opcode, offset);
     }
 
     /// <summary>

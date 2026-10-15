@@ -44,7 +44,7 @@ internal partial class ModuleDecoder_DecodeTests
     }
 
     [Test]
-    [Arguments("3FFF05", "memory.size")]
+    [Arguments("25FF05", "table.get")]
     [Arguments("11", "call_indirect")]
     [Arguments("FC08", "memory.init")]
     [Arguments("FC8800", "memory.init")]

@@ -75,6 +75,8 @@ internal class InstructionSet_TryGetTests
                             0x22,
                             0x23,
                             0x24,
+                            0x3F,
+                            0x40,
                             0x41,
                             0x42,
                             0x43,

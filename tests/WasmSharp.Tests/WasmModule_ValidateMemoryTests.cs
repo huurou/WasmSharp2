@@ -6,6 +6,16 @@ namespace WasmSharp.Tests;
 internal partial class WasmModule_ValidateTests
 {
     [Test]
+    [Arguments(false, "3F000B", "unknown memory 0", 3)]
+    [Arguments(false, "40000B", "unknown memory 0", 3)]
+    [Arguments(false, "003F001A0B", "unknown memory 0", 4)]
+    [Arguments(false, "0040001A0B", "unknown memory 0", 4)]
+    [Arguments(false, "420040000B", "unknown memory 0", 3)]
+    [Arguments(true, "3F000B", "type mismatch", 1)]
+    [Arguments(true, "40000B", "type mismatch", 3)]
+    [Arguments(true, "420040000B", "type mismatch", 3)]
+    [Arguments(true, "410040000B", "type mismatch", 1)]
+    [Arguments(true, "00420040001A0B", "type mismatch", 4)]
     [Arguments(false, "2803000B", "unknown memory 0", 4)]
     [Arguments(false, "002803000B", "unknown memory 0", 4)]
     [Arguments(false, "003603000B", "unknown memory 0", 4)]
@@ -57,6 +67,8 @@ internal partial class WasmModule_ValidateTests
     [Test]
     [Arguments("002802001A0B")]
     [Arguments("003703000B")]
+    [Arguments("003F001A0B")]
+    [Arguments("0040001A0B")]
     public async Task 到達不能なメモリ命令に具体型と参照とalignの違反がない_スタック多相性でValidateに成功する(
         string instructions
     )
