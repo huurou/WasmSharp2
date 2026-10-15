@@ -79,7 +79,9 @@ internal class InstructionSet_TryGetTests
                             0x42,
                             0x43,
                             0x44,
-                        }.Concat(Enumerable.Range(0x45, 128).Select(x => (uint)x))
+                        }
+                            .Concat(Enumerable.Range(0x28, 23).Select(x => (uint)x))
+                            .Concat(Enumerable.Range(0x45, 128).Select(x => (uint)x))
                     : prefix == 0xFC ? Enumerable.Range(0, 8).Select(x => (uint)x)
                     : []
                 );

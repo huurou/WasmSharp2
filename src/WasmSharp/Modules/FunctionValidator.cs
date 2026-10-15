@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Numerics;
 using WasmSharp.Exceptions;
 using WasmSharp.Execution;
 using WasmSharp.Instructions;
@@ -51,6 +52,8 @@ internal static class FunctionValidator
         List<WasmValueKind?> stack = [];
         List<ControlFrame> frames = [new(ValidationRule.FunctionEnd, [], type.Results, 0, 0)];
         var maxOperandStack = 0;
+        var hasMemory =
+            !module.Memories.IsEmpty || module.Imports.Any(x => x.Kind == WasmExternalKind.Memory);
         foreach (var instruction in function.Instructions)
         {
             if (!InstructionSet.TryGet(instruction.Opcode, out var descriptor))
@@ -135,6 +138,49 @@ internal static class FunctionValidator
                         Pop(numericSignature.InputType, instruction.ByteOffset);
                     }
                     stack.Add(numericSignature.ResultType);
+                    break;
+
+                case ValidationRule.MemoryLoad:
+                case ValidationRule.MemoryStore:
+                    if (!hasMemory)
+                    {
+                        throw CreateUnknownIndex(
+                            "memory",
+                            0,
+                            "参照するメモリが存在しません。",
+                            instruction.ByteOffset
+                        );
+                    }
+                    var memorySignature =
+                        descriptor.MemoryAccessSignature
+                        ?? throw new InvalidOperationException(
+                            "メモリ命令のアクセス情報がありません。"
+                        );
+                    if (
+                        instruction.MemoryArgument.Alignment
+                        > (uint)BitOperations.Log2(memorySignature.ByteWidth)
+                    )
+                    {
+                        throw ValidationDiagnostics.ValidationFailure(
+                            "alignment must not be larger than natural",
+                            "アラインメントが命令のアクセス幅を超えています。",
+                            new(
+                                WasmProcessingStage.Validate,
+                                instruction.ByteOffset,
+                                moduleFunctionIndex,
+                                10
+                            )
+                        );
+                    }
+                    if (descriptor.Validation == ValidationRule.MemoryStore)
+                    {
+                        Pop(memorySignature.ValueType, instruction.ByteOffset);
+                    }
+                    Pop(WasmValueKind.I32, instruction.ByteOffset);
+                    if (descriptor.Validation == ValidationRule.MemoryLoad)
+                    {
+                        stack.Add(memorySignature.ValueType);
+                    }
                     break;
 
                 case ValidationRule.FunctionEnd:
@@ -328,7 +374,9 @@ internal static class FunctionValidator
                         instruction.Immediate,
                         instruction.ByteOffset,
                         outputIndex,
-                        outputTargetCount
+                        outputTargetCount,
+                        instruction.MemoryArgument,
+                        descriptor.MemoryAccessSignature.GetValueOrDefault()
                     )
                 );
             }

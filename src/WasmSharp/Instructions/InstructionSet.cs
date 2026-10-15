@@ -224,29 +224,282 @@ namespace WasmSharp.Instructions;
 )]
 [Instruction(0, 0x25, "table.get")]
 [Instruction(0, 0x26, "table.set")]
-[Instruction(0, 0x28, "i32.load")]
-[Instruction(0, 0x29, "i64.load")]
-[Instruction(0, 0x2A, "f32.load")]
-[Instruction(0, 0x2B, "f64.load")]
-[Instruction(0, 0x2C, "i32.load8_s")]
-[Instruction(0, 0x2D, "i32.load8_u")]
-[Instruction(0, 0x2E, "i32.load16_s")]
-[Instruction(0, 0x2F, "i32.load16_u")]
-[Instruction(0, 0x30, "i64.load8_s")]
-[Instruction(0, 0x31, "i64.load8_u")]
-[Instruction(0, 0x32, "i64.load16_s")]
-[Instruction(0, 0x33, "i64.load16_u")]
-[Instruction(0, 0x34, "i64.load32_s")]
-[Instruction(0, 0x35, "i64.load32_u")]
-[Instruction(0, 0x36, "i32.store")]
-[Instruction(0, 0x37, "i64.store")]
-[Instruction(0, 0x38, "f32.store")]
-[Instruction(0, 0x39, "f64.store")]
-[Instruction(0, 0x3A, "i32.store8")]
-[Instruction(0, 0x3B, "i32.store16")]
-[Instruction(0, 0x3C, "i64.store8")]
-[Instruction(0, 0x3D, "i64.store16")]
-[Instruction(0, 0x3E, "i64.store32")]
+[Instruction(
+    0,
+    0x28,
+    "i32.load",
+    ImmediateKind.MemoryArgument,
+    StackEffectKind.MemoryLoad,
+    ValidationRule.MemoryLoad,
+    nameof(Interpreter.Load),
+    WasmValueKind.I32,
+    4,
+    false
+)]
+[Instruction(
+    0,
+    0x29,
+    "i64.load",
+    ImmediateKind.MemoryArgument,
+    StackEffectKind.MemoryLoad,
+    ValidationRule.MemoryLoad,
+    nameof(Interpreter.Load),
+    WasmValueKind.I64,
+    8,
+    false
+)]
+[Instruction(
+    0,
+    0x2A,
+    "f32.load",
+    ImmediateKind.MemoryArgument,
+    StackEffectKind.MemoryLoad,
+    ValidationRule.MemoryLoad,
+    nameof(Interpreter.Load),
+    WasmValueKind.F32,
+    4,
+    false
+)]
+[Instruction(
+    0,
+    0x2B,
+    "f64.load",
+    ImmediateKind.MemoryArgument,
+    StackEffectKind.MemoryLoad,
+    ValidationRule.MemoryLoad,
+    nameof(Interpreter.Load),
+    WasmValueKind.F64,
+    8,
+    false
+)]
+[Instruction(
+    0,
+    0x2C,
+    "i32.load8_s",
+    ImmediateKind.MemoryArgument,
+    StackEffectKind.MemoryLoad,
+    ValidationRule.MemoryLoad,
+    nameof(Interpreter.Load),
+    WasmValueKind.I32,
+    1,
+    true
+)]
+[Instruction(
+    0,
+    0x2D,
+    "i32.load8_u",
+    ImmediateKind.MemoryArgument,
+    StackEffectKind.MemoryLoad,
+    ValidationRule.MemoryLoad,
+    nameof(Interpreter.Load),
+    WasmValueKind.I32,
+    1,
+    false
+)]
+[Instruction(
+    0,
+    0x2E,
+    "i32.load16_s",
+    ImmediateKind.MemoryArgument,
+    StackEffectKind.MemoryLoad,
+    ValidationRule.MemoryLoad,
+    nameof(Interpreter.Load),
+    WasmValueKind.I32,
+    2,
+    true
+)]
+[Instruction(
+    0,
+    0x2F,
+    "i32.load16_u",
+    ImmediateKind.MemoryArgument,
+    StackEffectKind.MemoryLoad,
+    ValidationRule.MemoryLoad,
+    nameof(Interpreter.Load),
+    WasmValueKind.I32,
+    2,
+    false
+)]
+[Instruction(
+    0,
+    0x30,
+    "i64.load8_s",
+    ImmediateKind.MemoryArgument,
+    StackEffectKind.MemoryLoad,
+    ValidationRule.MemoryLoad,
+    nameof(Interpreter.Load),
+    WasmValueKind.I64,
+    1,
+    true
+)]
+[Instruction(
+    0,
+    0x31,
+    "i64.load8_u",
+    ImmediateKind.MemoryArgument,
+    StackEffectKind.MemoryLoad,
+    ValidationRule.MemoryLoad,
+    nameof(Interpreter.Load),
+    WasmValueKind.I64,
+    1,
+    false
+)]
+[Instruction(
+    0,
+    0x32,
+    "i64.load16_s",
+    ImmediateKind.MemoryArgument,
+    StackEffectKind.MemoryLoad,
+    ValidationRule.MemoryLoad,
+    nameof(Interpreter.Load),
+    WasmValueKind.I64,
+    2,
+    true
+)]
+[Instruction(
+    0,
+    0x33,
+    "i64.load16_u",
+    ImmediateKind.MemoryArgument,
+    StackEffectKind.MemoryLoad,
+    ValidationRule.MemoryLoad,
+    nameof(Interpreter.Load),
+    WasmValueKind.I64,
+    2,
+    false
+)]
+[Instruction(
+    0,
+    0x34,
+    "i64.load32_s",
+    ImmediateKind.MemoryArgument,
+    StackEffectKind.MemoryLoad,
+    ValidationRule.MemoryLoad,
+    nameof(Interpreter.Load),
+    WasmValueKind.I64,
+    4,
+    true
+)]
+[Instruction(
+    0,
+    0x35,
+    "i64.load32_u",
+    ImmediateKind.MemoryArgument,
+    StackEffectKind.MemoryLoad,
+    ValidationRule.MemoryLoad,
+    nameof(Interpreter.Load),
+    WasmValueKind.I64,
+    4,
+    false
+)]
+[Instruction(
+    0,
+    0x36,
+    "i32.store",
+    ImmediateKind.MemoryArgument,
+    StackEffectKind.MemoryStore,
+    ValidationRule.MemoryStore,
+    nameof(Interpreter.Store),
+    WasmValueKind.I32,
+    4,
+    false
+)]
+[Instruction(
+    0,
+    0x37,
+    "i64.store",
+    ImmediateKind.MemoryArgument,
+    StackEffectKind.MemoryStore,
+    ValidationRule.MemoryStore,
+    nameof(Interpreter.Store),
+    WasmValueKind.I64,
+    8,
+    false
+)]
+[Instruction(
+    0,
+    0x38,
+    "f32.store",
+    ImmediateKind.MemoryArgument,
+    StackEffectKind.MemoryStore,
+    ValidationRule.MemoryStore,
+    nameof(Interpreter.Store),
+    WasmValueKind.F32,
+    4,
+    false
+)]
+[Instruction(
+    0,
+    0x39,
+    "f64.store",
+    ImmediateKind.MemoryArgument,
+    StackEffectKind.MemoryStore,
+    ValidationRule.MemoryStore,
+    nameof(Interpreter.Store),
+    WasmValueKind.F64,
+    8,
+    false
+)]
+[Instruction(
+    0,
+    0x3A,
+    "i32.store8",
+    ImmediateKind.MemoryArgument,
+    StackEffectKind.MemoryStore,
+    ValidationRule.MemoryStore,
+    nameof(Interpreter.Store),
+    WasmValueKind.I32,
+    1,
+    false
+)]
+[Instruction(
+    0,
+    0x3B,
+    "i32.store16",
+    ImmediateKind.MemoryArgument,
+    StackEffectKind.MemoryStore,
+    ValidationRule.MemoryStore,
+    nameof(Interpreter.Store),
+    WasmValueKind.I32,
+    2,
+    false
+)]
+[Instruction(
+    0,
+    0x3C,
+    "i64.store8",
+    ImmediateKind.MemoryArgument,
+    StackEffectKind.MemoryStore,
+    ValidationRule.MemoryStore,
+    nameof(Interpreter.Store),
+    WasmValueKind.I64,
+    1,
+    false
+)]
+[Instruction(
+    0,
+    0x3D,
+    "i64.store16",
+    ImmediateKind.MemoryArgument,
+    StackEffectKind.MemoryStore,
+    ValidationRule.MemoryStore,
+    nameof(Interpreter.Store),
+    WasmValueKind.I64,
+    2,
+    false
+)]
+[Instruction(
+    0,
+    0x3E,
+    "i64.store32",
+    ImmediateKind.MemoryArgument,
+    StackEffectKind.MemoryStore,
+    ValidationRule.MemoryStore,
+    nameof(Interpreter.Store),
+    WasmValueKind.I64,
+    4,
+    false
+)]
 [Instruction(0, 0x3F, "memory.size")]
 [Instruction(0, 0x40, "memory.grow")]
 [Instruction(

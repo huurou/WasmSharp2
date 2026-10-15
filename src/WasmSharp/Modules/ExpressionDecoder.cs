@@ -87,6 +87,11 @@ internal static class ExpressionDecoder
                 ),
                 ImmediateKind.BranchTable => ReadBranchTable(opcode, offset, ref reader),
                 ImmediateKind.TypeVector => ReadSelectTypes(opcode, offset, ref reader),
+                ImmediateKind.MemoryArgument => DecodedInstruction.WithMemoryArgument(
+                    opcode,
+                    new(reader.ReadU32(), reader.ReadU32()),
+                    offset
+                ),
                 _ => throw new InvalidOperationException("対応済み命令の即値情報が不正です。"),
             };
 
