@@ -6,6 +6,49 @@ namespace WasmSharp.Execution;
 internal static partial class Interpreter
 {
     /// <summary>
+    /// 所属instanceのデータセグメントを破棄する
+    /// </summary>
+    /// <param name="context">現在の関数を持つ実行コンテキスト</param>
+    /// <param name="instruction">データインデックスを保持する検証済みのdata.drop命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult DataDrop(InterpreterContext context, in Instruction instruction)
+    {
+        context.CurrentFunction.Instance.DataSegments[(int)instruction.Index].Drop();
+        return default;
+    }
+
+    /// <summary>
+    /// 所属instanceのデータセグメントからメモリへ指定範囲をコピーする
+    /// </summary>
+    /// <param name="context">現在の関数とコピー先・コピー元・バイト数を持つ実行コンテキスト</param>
+    /// <param name="instruction">データインデックスを保持する検証済みのmemory.init命令</param>
+    /// <returns>実行の成功またはメモリを変更しない範囲外アクセスのtrap</returns>
+    internal static ExecutionResult MemoryInit(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        var length = unchecked((uint)context.PopValue().AsI32());
+        var source = unchecked((uint)context.PopValue().AsI32());
+        var destination = unchecked((uint)context.PopValue().AsI32());
+        var instance = context.CurrentFunction.Instance;
+        if (
+            !instance
+                .DataSegments[(int)instruction.Index]
+                .TryInitialize(instance.Memories[0], destination, source, length)
+        )
+        {
+            return ExecutionResult.Trap(
+                WasmTrapReason.MemoryOutOfBounds,
+                context.CurrentFunction.FunctionIndex,
+                instruction.ByteOffset
+            );
+        }
+
+        return default;
+    }
+
+    /// <summary>
     /// 所属instanceのメモリの現在のページ数をoperandへ積む
     /// </summary>
     /// <param name="context">現在の関数を持つ実行コンテキスト</param>

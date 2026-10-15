@@ -465,8 +465,8 @@ internal class ExpressionDecoder_ReadTests
     }
 
     [Test]
-    [Arguments(ModuleReadMode.Bounded, "FC8800", "memory.init")]
-    [Arguments(ModuleReadMode.Diagnostic, "FC8800", "memory.init")]
+    [Arguments(ModuleReadMode.Bounded, "25", "table.get")]
+    [Arguments(ModuleReadMode.Diagnostic, "25", "table.get")]
     [Arguments(ModuleReadMode.Bounded, "FD0C", "v128.const")]
     public async Task 未対応命令の後に不正がある_後続を調べず機能と位置と未確認範囲を保持する(
         ModuleReadMode mode,

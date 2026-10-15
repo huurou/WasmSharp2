@@ -142,15 +142,7 @@ internal static class FunctionValidator
 
                 case ValidationRule.MemoryLoad:
                 case ValidationRule.MemoryStore:
-                    if (!hasMemory)
-                    {
-                        throw CreateUnknownIndex(
-                            "memory",
-                            0,
-                            "参照するメモリが存在しません。",
-                            instruction.ByteOffset
-                        );
-                    }
+                    RequireMemory(instruction.ByteOffset);
                     var memorySignature =
                         descriptor.MemoryAccessSignature
                         ?? throw new InvalidOperationException(
@@ -185,20 +177,35 @@ internal static class FunctionValidator
 
                 case ValidationRule.MemorySize:
                 case ValidationRule.MemoryGrow:
-                    if (!hasMemory)
-                    {
-                        throw CreateUnknownIndex(
-                            "memory",
-                            0,
-                            "参照するメモリが存在しません。",
-                            instruction.ByteOffset
-                        );
-                    }
+                    RequireMemory(instruction.ByteOffset);
                     if (descriptor.Validation == ValidationRule.MemoryGrow)
                     {
                         Pop(WasmValueKind.I32, instruction.ByteOffset);
                     }
                     stack.Add(WasmValueKind.I32);
+                    break;
+
+                case ValidationRule.MemoryInit:
+                case ValidationRule.DataDrop:
+                    if (descriptor.Validation == ValidationRule.MemoryInit)
+                    {
+                        RequireMemory(instruction.ByteOffset);
+                    }
+                    if (instruction.Index >= (uint)module.DataSegments.Length)
+                    {
+                        throw CreateUnknownIndex(
+                            "data segment",
+                            instruction.Index,
+                            "参照するデータセグメントが存在しません。",
+                            instruction.ByteOffset
+                        );
+                    }
+                    if (descriptor.Validation == ValidationRule.MemoryInit)
+                    {
+                        Pop(WasmValueKind.I32, instruction.ByteOffset);
+                        Pop(WasmValueKind.I32, instruction.ByteOffset);
+                        Pop(WasmValueKind.I32, instruction.ByteOffset);
+                    }
                     break;
 
                 case ValidationRule.FunctionEnd:
@@ -406,6 +413,14 @@ internal static class FunctionValidator
             maxOperandStack,
             branchTargets.ToImmutable()
         );
+
+        void RequireMemory(long byteOffset)
+        {
+            if (!hasMemory)
+            {
+                throw CreateUnknownIndex("memory", 0, "参照するメモリが存在しません。", byteOffset);
+            }
+        }
 
         (
             ImmutableArray<WasmValueKind> Parameters,

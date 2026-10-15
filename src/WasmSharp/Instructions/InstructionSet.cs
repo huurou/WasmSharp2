@@ -2153,8 +2153,24 @@ namespace WasmSharp.Instructions;
     WasmValueKind.F64,
     WasmValueKind.I64
 )]
-[Instruction(0xFC, 0x08, "memory.init")]
-[Instruction(0xFC, 0x09, "data.drop")]
+[Instruction(
+    0xFC,
+    0x08,
+    "memory.init",
+    ImmediateKind.DataIndexMemoryZero,
+    StackEffectKind.MemoryBulk,
+    ValidationRule.MemoryInit,
+    nameof(Interpreter.MemoryInit)
+)]
+[Instruction(
+    0xFC,
+    0x09,
+    "data.drop",
+    ImmediateKind.DataIndex,
+    StackEffectKind.None,
+    ValidationRule.DataDrop,
+    nameof(Interpreter.DataDrop)
+)]
 [Instruction(0xFC, 0x0A, "memory.copy")]
 [Instruction(0xFC, 0x0B, "memory.fill")]
 [Instruction(0xFC, 0x0C, "table.init")]

@@ -191,7 +191,7 @@ internal partial class WasmModule_DecodeTests
 
     [Test]
     [Arguments("25")]
-    [Arguments("FC08")]
+    [Arguments("FC8C00")]
     [Arguments("FD00")]
     public async Task 診断再走査で未対応命令に到達する_両入力で元の境界不正を保持する(
         string instruction
@@ -470,8 +470,8 @@ internal partial class WasmModule_DecodeTests
     [Test]
     [Arguments(false, "25FF05", "table.get")]
     [Arguments(true, "25FF05", "table.get")]
-    [Arguments(false, "FC8800", "memory.init")]
-    [Arguments(true, "FC8800", "memory.init")]
+    [Arguments(false, "FC8C00", "table.init")]
+    [Arguments(true, "FC8C00", "table.init")]
     [Arguments(false, "FD0C", "v128.const")]
     [Arguments(true, "FD0C", "v128.const")]
     public async Task 公開Decodeで未対応命令に遭遇する_デコーダーの診断を保持する(

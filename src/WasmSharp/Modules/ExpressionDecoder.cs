@@ -55,7 +55,7 @@ internal static class ExpressionDecoder
             var instruction = immediateKind switch
             {
                 ImmediateKind.None => DecodedInstruction.WithoutImmediate(opcode, offset),
-                ImmediateKind.Index => DecodedInstruction.WithIndex(
+                ImmediateKind.Index or ImmediateKind.DataIndex => DecodedInstruction.WithIndex(
                     opcode,
                     reader.ReadU32(),
                     offset
@@ -93,6 +93,11 @@ internal static class ExpressionDecoder
                     offset
                 ),
                 ImmediateKind.MemoryZero => ReadMemoryZero(opcode, offset, ref reader),
+                ImmediateKind.DataIndexMemoryZero => ReadDataIndexMemoryZero(
+                    opcode,
+                    offset,
+                    ref reader
+                ),
                 _ => throw new InvalidOperationException("対応済み命令の即値情報が不正です。"),
             };
 
@@ -124,6 +129,24 @@ internal static class ExpressionDecoder
     }
 
     /// <summary>
+    /// データインデックスとメモリインデックス0の予約バイトを読む
+    /// </summary>
+    /// <param name="opcode">memory.init命令の識別子</param>
+    /// <param name="offset">命令の入力位置</param>
+    /// <param name="reader">データインデックスの先頭にある読み取り状態</param>
+    /// <returns>データインデックスを保持する命令</returns>
+    private static DecodedInstruction ReadDataIndexMemoryZero(
+        OpcodeKey opcode,
+        long offset,
+        ref ModuleBinaryReader reader
+    )
+    {
+        var index = reader.ReadU32();
+        RequireMemoryZero(ref reader);
+        return DecodedInstruction.WithIndex(opcode, index, offset);
+    }
+
+    /// <summary>
     /// メモリインデックス0を指定する単一の予約バイトを読む
     /// </summary>
     /// <param name="opcode">メモリ命令の識別子</param>
@@ -136,6 +159,16 @@ internal static class ExpressionDecoder
         ref ModuleBinaryReader reader
     )
     {
+        RequireMemoryZero(ref reader);
+        return DecodedInstruction.WithoutImmediate(opcode, offset);
+    }
+
+    /// <summary>
+    /// メモリインデックス0の予約バイトを検査する
+    /// </summary>
+    /// <param name="reader">予約バイトの先頭にある読み取り状態</param>
+    private static void RequireMemoryZero(ref ModuleBinaryReader reader)
+    {
         if (reader.ReadByte() != 0)
         {
             throw reader.Error(
@@ -143,8 +176,6 @@ internal static class ExpressionDecoder
                 reader.Position - 1
             );
         }
-
-        return DecodedInstruction.WithoutImmediate(opcode, offset);
     }
 
     /// <summary>
