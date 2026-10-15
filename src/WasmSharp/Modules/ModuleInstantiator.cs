@@ -8,12 +8,12 @@ using WasmSharp.Modules.Imports;
 namespace WasmSharp.Modules;
 
 /// <summary>
-/// importの照合、リソースの構築、startの実行によってinstanceを生成する
+/// importの照合、リソースの構築と初期化、startの実行によってinstanceを生成する
 /// </summary>
 internal static class ModuleInstantiator
 {
     /// <summary>
-    /// 検証済みmoduleのリソースを構築し、startの実行を完了したinstanceを返す
+    /// 検証済みmoduleのリソースを構築・初期化し、startの実行を完了したinstanceを返す
     /// </summary>
     /// <param name="module">静的検証が成功したmodule</param>
     /// <param name="imports">名前で参照する関数と共有リソースの提供登録</param>
@@ -21,13 +21,13 @@ internal static class ModuleInstantiator
     /// <returns>startがあればその実行も正常に終了したinstance</returns>
     /// <remarks>
     /// importした実体は共有し、module内のリソース定義には新しい実体を割り当てる。
-    /// importの照合やリソースの構築に失敗した場合はstartを呼ばない。
-    /// startは構築済みのリソースとexportへアクセスできる。startが失敗しても、
-    /// ホスト側へ保存された参照や実行済みの変更は取り消さない
+    /// importの照合やリソースの構築・初期化に失敗した場合はstartを呼ばない。
+    /// startは初期化済みのリソースとexportへアクセスできる。初期化やstartが失敗しても、
+    /// ホスト側へ保存された参照や完了済みの変更は取り消さない
     /// </remarks>
     /// <exception cref="WasmInstantiateException">importの名前・種類・型が提供登録と一致しない場合</exception>
     /// <exception cref="WasmImplementationLimitException">リソースの構築またはstartの実行に必要な保持数が実装上限を超える場合</exception>
-    /// <exception cref="WasmTrapException">startの実行結果がtrapの場合</exception>
+    /// <exception cref="WasmTrapException">データセグメントの初期化またはstartの実行結果がtrapの場合</exception>
     /// <exception cref="WasmExhaustionException">startの実行結果が資源枯渇の場合</exception>
     /// <exception cref="InvalidOperationException">startから呼んだホスト関数の結果が宣言型に一致しないか、nullの場合</exception>
     internal static WasmInstance Instantiate(
@@ -94,11 +94,57 @@ internal static class ModuleInstantiator
             memories.MoveToImmutable(),
             tables.MoveToImmutable()
         );
+        InitializeDataSegments(instance);
         if (module.Start is { } start)
         {
             ExecutionBoundary.RunStart(instance, instance.Functions[(int)start.FunctionIndex]);
         }
         return instance;
+    }
+
+    /// <summary>
+    /// アクティブデータセグメントを宣言順に転送し、成功した実体を破棄する
+    /// </summary>
+    /// <param name="instance">関数とリソースの接続を完了したinstance</param>
+    /// <exception cref="WasmTrapException">転送先の全範囲が現在のメモリに収まらない場合</exception>
+    private static void InitializeDataSegments(WasmInstance instance)
+    {
+        for (var index = 0; index < instance.Module.DataSegments.Length; index++)
+        {
+            var definition = instance.Module.DataSegments[index];
+            if (definition.ActiveTarget is not { } target)
+            {
+                continue;
+            }
+
+            var offset = unchecked(
+                (uint)
+                    ConstantInitializer
+                        .Evaluate(target.OffsetExpression, instance.Globals.AsSpan())
+                        .AsI32()
+            );
+            var data = instance.DataSegments[index];
+            if (
+                !data.TryInitialize(
+                    instance.Memories[(int)target.MemoryIndex],
+                    offset,
+                    0,
+                    data.Length
+                )
+            )
+            {
+                ExecutionBoundary.ThrowIfFailed(
+                    ExecutionResult.Trap(
+                        WasmTrapReason.MemoryOutOfBounds,
+                        null,
+                        definition.ByteOffset,
+                        11
+                    ),
+                    WasmProcessingStage.Instantiate
+                );
+            }
+            data.Drop();
+        }
     }
 
     /// <summary>

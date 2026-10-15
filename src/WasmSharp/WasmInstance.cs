@@ -42,6 +42,11 @@ public sealed class WasmInstance
     internal ImmutableArray<WasmTable> Tables { get; }
 
     /// <summary>
+    /// 定義順に並ぶ、このinstance固有のデータセグメント実体
+    /// </summary>
+    internal ImmutableArray<DataInstance> DataSegments { get; }
+
+    /// <summary>
     /// このinstanceが新しい実行コンテキストを開くときのポリシー
     /// </summary>
     public WasmExecutionOptions ExecutionOptions { get; }
@@ -78,6 +83,7 @@ public sealed class WasmInstance
         Globals = globals;
         Memories = memories;
         Tables = tables;
+        DataSegments = [.. module.DataSegments.Select(x => new DataInstance(x))];
         exports_ = module.Exports.ToImmutableDictionary(x => x.Name, StringComparer.Ordinal);
         var functionCount = (long)importedFunctions.Length + module.Functions.Length;
         if (functionCount > Array.MaxLength)
