@@ -23,6 +23,7 @@ internal static class ModuleValidator
         ValidateFunctionReferences(module, functionCount);
         ValidateInitializers(module);
         ValidateResources(module);
+        ValidateData(module, memoryCount);
         var codes = ValidateFunctions(module);
         ValidateStart(module);
         ValidateExports(
@@ -37,9 +38,42 @@ internal static class ModuleValidator
     }
 
     /// <summary>
+    /// アクティブデータセグメントのメモリ参照とi32のオフセット式を宣言順に検証する
+    /// </summary>
+    /// <param name="module">リソース宣言の検証を終えたmodule</param>
+    /// <param name="importedMemoryCount">importしたmemoryの個数</param>
+    private static void ValidateData(WasmModule module, uint importedMemoryCount)
+    {
+        var memoryCount = importedMemoryCount + (uint)module.Memories.Length;
+        var importedGlobals = module.Imports.OfType<GlobalImport>().Select(x => x.Type).ToArray();
+        foreach (var data in module.DataSegments)
+        {
+            if (data.ActiveTarget is not { } target)
+            {
+                continue;
+            }
+            if (target.MemoryIndex >= memoryCount)
+            {
+                throw ValidationDiagnostics.UnknownIndex(
+                    "memory",
+                    target.MemoryIndex,
+                    "データセグメントが参照するメモリが存在しません。",
+                    new(WasmProcessingStage.Validate, data.ByteOffset, null, 11)
+                );
+            }
+            ConstantInitializer.Validate(
+                target.OffsetExpression,
+                WasmValueKind.I32,
+                importedGlobals,
+                11
+            );
+        }
+    }
+
+    /// <summary>
     /// 各定義関数を1回の型検査と線形化で処理し、全成功時だけコードを返す
     /// </summary>
-    /// <param name="module">importと定義関数の型参照、global初期化式、リソース宣言の検証を終えたmodule</param>
+    /// <param name="module">importと定義関数の型参照、global初期化式、リソース宣言、データセグメントの検証を終えたmodule</param>
     /// <returns>ローカルに保持した定義順の線形実行コード</returns>
     private static ImmutableArray<FunctionCode> ValidateFunctions(WasmModule module)
     {
