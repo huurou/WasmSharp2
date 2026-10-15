@@ -6,6 +6,52 @@ namespace WasmSharp.Execution;
 internal static partial class Interpreter
 {
     /// <summary>
+    /// 所属instanceのメモリの指定範囲を値の下位8ビットで埋める
+    /// </summary>
+    /// <param name="context">現在の関数とコピー先・値・バイト数を持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのmemory.fill命令</param>
+    /// <returns>実行の成功またはメモリを変更しない範囲外アクセスのtrap</returns>
+    internal static ExecutionResult Fill(InterpreterContext context, in Instruction instruction)
+    {
+        var length = unchecked((uint)context.PopValue().AsI32());
+        var value = unchecked((byte)context.PopValue().AsI32());
+        var destination = unchecked((uint)context.PopValue().AsI32());
+        if (!context.CurrentFunction.Instance.Memories[0].TryFill(destination, value, length))
+        {
+            return ExecutionResult.Trap(
+                WasmTrapReason.MemoryOutOfBounds,
+                context.CurrentFunction.FunctionIndex,
+                instruction.ByteOffset
+            );
+        }
+
+        return default;
+    }
+
+    /// <summary>
+    /// 所属instanceのメモリ内で指定範囲をコピーする
+    /// </summary>
+    /// <param name="context">現在の関数とコピー先・コピー元・バイト数を持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのmemory.copy命令</param>
+    /// <returns>実行の成功またはメモリを変更しない範囲外アクセスのtrap</returns>
+    internal static ExecutionResult Copy(InterpreterContext context, in Instruction instruction)
+    {
+        var length = unchecked((uint)context.PopValue().AsI32());
+        var source = unchecked((uint)context.PopValue().AsI32());
+        var destination = unchecked((uint)context.PopValue().AsI32());
+        if (!context.CurrentFunction.Instance.Memories[0].TryCopy(destination, source, length))
+        {
+            return ExecutionResult.Trap(
+                WasmTrapReason.MemoryOutOfBounds,
+                context.CurrentFunction.FunctionIndex,
+                instruction.ByteOffset
+            );
+        }
+
+        return default;
+    }
+
+    /// <summary>
     /// 所属instanceのデータセグメントを破棄する
     /// </summary>
     /// <param name="context">現在の関数を持つ実行コンテキスト</param>

@@ -6,6 +6,24 @@ namespace WasmSharp.Tests;
 internal partial class WasmModule_ValidateTests
 {
     [Test]
+    [Arguments(false, "FC0A00000B", "unknown memory 0", 5)]
+    [Arguments(false, "00FC0A00000B", "unknown memory 0", 5)]
+    [Arguments(false, "FC0B000B", "unknown memory 0", 4)]
+    [Arguments(false, "00FC0B000B", "unknown memory 0", 4)]
+    [Arguments(true, "FC0A00000B", "type mismatch", 5)]
+    [Arguments(true, "41004100FC0A00000B", "type mismatch", 5)]
+    [Arguments(true, "410041004200FC0A00000B", "type mismatch", 5)]
+    [Arguments(true, "410042004100FC0A00000B", "type mismatch", 5)]
+    [Arguments(true, "420041004100FC0A00000B", "type mismatch", 5)]
+    [Arguments(true, "004200FC0A00000B", "type mismatch", 5)]
+    [Arguments(true, "410041004100FC0A00001A0B", "type mismatch", 2)]
+    [Arguments(true, "FC0B000B", "type mismatch", 4)]
+    [Arguments(true, "41004100FC0B000B", "type mismatch", 4)]
+    [Arguments(true, "410041004200FC0B000B", "type mismatch", 4)]
+    [Arguments(true, "410042004100FC0B000B", "type mismatch", 4)]
+    [Arguments(true, "420041004100FC0B000B", "type mismatch", 4)]
+    [Arguments(true, "004200FC0B000B", "type mismatch", 4)]
+    [Arguments(true, "410041004100FC0B001A0B", "type mismatch", 2)]
     [Arguments(false, "3F000B", "unknown memory 0", 3)]
     [Arguments(false, "40000B", "unknown memory 0", 3)]
     [Arguments(false, "003F001A0B", "unknown memory 0", 4)]
@@ -69,6 +87,10 @@ internal partial class WasmModule_ValidateTests
     [Arguments("003703000B")]
     [Arguments("003F001A0B")]
     [Arguments("0040001A0B")]
+    [Arguments("00FC0A00000B")]
+    [Arguments("00FC0B000B")]
+    [Arguments("00FC8A0000000B")]
+    [Arguments("00FC8B00000B")]
     public async Task 到達不能なメモリ命令に具体型と参照とalignの違反がない_スタック多相性でValidateに成功する(
         string instructions
     )

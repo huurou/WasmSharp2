@@ -2171,8 +2171,24 @@ namespace WasmSharp.Instructions;
     ValidationRule.DataDrop,
     nameof(Interpreter.DataDrop)
 )]
-[Instruction(0xFC, 0x0A, "memory.copy")]
-[Instruction(0xFC, 0x0B, "memory.fill")]
+[Instruction(
+    0xFC,
+    0x0A,
+    "memory.copy",
+    ImmediateKind.MemoryPairZero,
+    StackEffectKind.MemoryBulk,
+    ValidationRule.MemoryBulk,
+    nameof(Interpreter.Copy)
+)]
+[Instruction(
+    0xFC,
+    0x0B,
+    "memory.fill",
+    ImmediateKind.MemoryZero,
+    StackEffectKind.MemoryBulk,
+    ValidationRule.MemoryBulk,
+    nameof(Interpreter.Fill)
+)]
 [Instruction(0xFC, 0x0C, "table.init")]
 [Instruction(0xFC, 0x0D, "elem.drop")]
 [Instruction(0xFC, 0x0E, "table.copy")]

@@ -185,6 +185,11 @@ internal static class FunctionValidator
                     stack.Add(WasmValueKind.I32);
                     break;
 
+                case ValidationRule.MemoryBulk:
+                    RequireMemory(instruction.ByteOffset);
+                    PopMemoryBulk(instruction.ByteOffset);
+                    break;
+
                 case ValidationRule.MemoryInit:
                 case ValidationRule.DataDrop:
                     if (descriptor.Validation == ValidationRule.MemoryInit)
@@ -202,9 +207,7 @@ internal static class FunctionValidator
                     }
                     if (descriptor.Validation == ValidationRule.MemoryInit)
                     {
-                        Pop(WasmValueKind.I32, instruction.ByteOffset);
-                        Pop(WasmValueKind.I32, instruction.ByteOffset);
-                        Pop(WasmValueKind.I32, instruction.ByteOffset);
+                        PopMemoryBulk(instruction.ByteOffset);
                     }
                     break;
 
@@ -413,6 +416,13 @@ internal static class FunctionValidator
             maxOperandStack,
             branchTargets.ToImmutable()
         );
+
+        void PopMemoryBulk(long byteOffset)
+        {
+            Pop(WasmValueKind.I32, byteOffset);
+            Pop(WasmValueKind.I32, byteOffset);
+            Pop(WasmValueKind.I32, byteOffset);
+        }
 
         void RequireMemory(long byteOffset)
         {

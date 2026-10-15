@@ -93,6 +93,7 @@ internal static class ExpressionDecoder
                     offset
                 ),
                 ImmediateKind.MemoryZero => ReadMemoryZero(opcode, offset, ref reader),
+                ImmediateKind.MemoryPairZero => ReadMemoryPairZero(opcode, offset, ref reader),
                 ImmediateKind.DataIndexMemoryZero => ReadDataIndexMemoryZero(
                     opcode,
                     offset,
@@ -161,6 +162,23 @@ internal static class ExpressionDecoder
     {
         RequireMemoryZero(ref reader);
         return DecodedInstruction.WithoutImmediate(opcode, offset);
+    }
+
+    /// <summary>
+    /// コピー先とコピー元のメモリインデックス0を指定する予約バイトを読む
+    /// </summary>
+    /// <param name="opcode">memory.copy命令の識別子</param>
+    /// <param name="offset">命令の入力位置</param>
+    /// <param name="reader">コピー先の予約バイトの先頭にある読み取り状態</param>
+    /// <returns>両方の予約バイトの構文を検査した命令</returns>
+    private static DecodedInstruction ReadMemoryPairZero(
+        OpcodeKey opcode,
+        long offset,
+        ref ModuleBinaryReader reader
+    )
+    {
+        RequireMemoryZero(ref reader);
+        return ReadMemoryZero(opcode, offset, ref reader);
     }
 
     /// <summary>

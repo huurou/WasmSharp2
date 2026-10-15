@@ -14,7 +14,16 @@ internal partial class WasmModule_DecodeTests
     [Arguments("408000", "zero byte expected", 2)]
     [Arguments("3F8080808000", "zero byte expected", 5)]
     [Arguments("408080808000", "zero byte expected", 5)]
-    public async Task メモリサイズ命令の予約バイトが不正か欠落する_両Decode入口が構文診断と位置を返す(
+    [Arguments("FC0A", "unexpected end", 0)]
+    [Arguments("FC0A00", "unexpected end", 0)]
+    [Arguments("FC0A01000B", "zero byte expected", 3)]
+    [Arguments("FC0A00010B", "zero byte expected", 2)]
+    [Arguments("FC0A8000000B", "zero byte expected", 4)]
+    [Arguments("FC0A0080000B", "zero byte expected", 3)]
+    [Arguments("FC0B", "unexpected end", 0)]
+    [Arguments("FC0B010B", "zero byte expected", 2)]
+    [Arguments("FC0B80000B", "zero byte expected", 3)]
+    public async Task メモリ命令の予約バイトが不正か欠落する_両Decode入口が構文診断と位置を返す(
         string instructions,
         string diagnostic,
         int offsetFromEnd
