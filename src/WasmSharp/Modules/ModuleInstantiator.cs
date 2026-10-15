@@ -1,7 +1,7 @@
 using System.Collections.Immutable;
+using System.Runtime.InteropServices;
 using WasmSharp.Exceptions;
 using WasmSharp.Execution;
-using WasmSharp.Instructions;
 using WasmSharp.Modules.ExternalValues;
 using WasmSharp.Modules.Imports;
 
@@ -80,11 +80,10 @@ internal static class ModuleInstantiator
         );
         foreach (var global in module.Globals)
         {
-            var initializer = global.Initializer[0];
-            var value =
-                initializer.Opcode == new OpcodeKey(0, 0x23)
-                    ? globals[(int)initializer.Index].Value
-                    : initializer.Immediate;
+            var value = ConstantInitializer.Evaluate(
+                global.Initializer,
+                ImmutableCollectionsMarshal.AsMemory(globals).Span
+            );
             globals.Add(new WasmGlobal(global.Type, value));
         }
         var instance = new WasmInstance(

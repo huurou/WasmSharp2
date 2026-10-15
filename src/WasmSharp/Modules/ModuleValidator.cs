@@ -1,7 +1,6 @@
 using System.Collections.Immutable;
 using WasmSharp.Exceptions;
 using WasmSharp.Execution;
-using WasmSharp.Instructions;
 using WasmSharp.Modules.Imports;
 
 namespace WasmSharp.Modules;
@@ -78,95 +77,16 @@ internal static class ModuleValidator
     /// <param name="module">デコード済みの静的定義</param>
     private static void ValidateInitializers(WasmModule module)
     {
-        var importedGlobals = module.Imports.OfType<GlobalImport>().ToArray();
+        var importedGlobals = module.Imports.OfType<GlobalImport>().Select(x => x.Type).ToArray();
         foreach (var global in module.Globals)
         {
-            WasmValueKind? resultKind = null;
-            // 結果の型・個数より先に、左から最初の適格性違反を選ぶ。
-            for (var index = 0; index < global.Initializer.Length - 1; index++)
-            {
-                resultKind = ValidateConstantInstruction(
-                    global.Initializer[index],
-                    importedGlobals
-                );
-            }
-
-            var endLocation = new WasmFailureLocation(
-                WasmProcessingStage.Validate,
-                global.Initializer[^1].ByteOffset,
-                null,
+            ConstantInitializer.Validate(
+                global.Initializer,
+                global.Type.ValueKind,
+                importedGlobals,
                 6
             );
-            if (global.Initializer.Length != 2)
-            {
-                throw ValidationDiagnostics.ValidationFailure(
-                    "type mismatch",
-                    "global初期化式の結果が1個ではありません。",
-                    endLocation
-                );
-            }
-            if (resultKind != global.Type.ValueKind)
-            {
-                throw ValidationDiagnostics.ValidationFailure(
-                    "type mismatch",
-                    "global初期化式の結果型が宣言と一致しません。",
-                    endLocation
-                );
-            }
         }
-    }
-
-    /// <summary>
-    /// 定数式の命令の適格性を確認し、生成する値の型を返す
-    /// </summary>
-    /// <param name="instruction">end以外の初期化命令</param>
-    /// <param name="importedGlobals">定数式から参照できるimportしたglobal</param>
-    /// <returns>命令が生成する値の型</returns>
-    private static WasmValueKind ValidateConstantInstruction(
-        DecodedInstruction instruction,
-        ReadOnlySpan<GlobalImport> importedGlobals
-    )
-    {
-        var location = new WasmFailureLocation(
-            WasmProcessingStage.Validate,
-            instruction.ByteOffset,
-            null,
-            6
-        );
-        if (instruction.Opcode == new OpcodeKey(0, 0x23))
-        {
-            if (instruction.Index >= (uint)importedGlobals.Length)
-            {
-                throw ValidationDiagnostics.UnknownIndex(
-                    "global",
-                    instruction.Index,
-                    "global初期化式が参照するimport globalが存在しません。",
-                    location
-                );
-            }
-            var type = importedGlobals[(int)instruction.Index].Type;
-            if (type.IsMutable)
-            {
-                throw ValidationDiagnostics.ValidationFailure(
-                    "constant expression required",
-                    "global初期化式はimmutable globalだけを参照できます。",
-                    location
-                );
-            }
-            return type.ValueKind;
-        }
-        if (
-            InstructionSet.TryGet(instruction.Opcode, out var descriptor)
-            && descriptor.Validation == ValidationRule.Constant
-        )
-        {
-            return instruction.Immediate.Kind;
-        }
-        throw ValidationDiagnostics.ValidationFailure(
-            "constant expression required",
-            "global初期化式に使用できない命令です。",
-            location
-        );
     }
 
     /// <summary>
