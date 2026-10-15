@@ -69,6 +69,16 @@ public sealed class WasmModule
     internal StartDefinition? Start { get; }
 
     /// <summary>
+    /// 定義順のデータセグメントを保持する不変配列
+    /// </summary>
+    internal ImmutableArray<DataDefinition> DataSegments { get; }
+
+    /// <summary>
+    /// 省略可能なデータ数セクションの宣言
+    /// </summary>
+    internal DataCountDefinition? DataCount { get; }
+
+    /// <summary>
     /// デコード元の入力バイナリのバイト数
     /// </summary>
     internal long InputLength { get; }
@@ -85,6 +95,8 @@ public sealed class WasmModule
     /// <param name="memories">定義順のmemory型</param>
     /// <param name="globals">定義順のglobal型と初期化式</param>
     /// <param name="start">省略可能なstart宣言</param>
+    /// <param name="dataSegments">定義順のデータセグメント</param>
+    /// <param name="dataCount">省略可能なデータ数セクションの宣言</param>
     internal WasmModule(
         ReadOnlySpan<WasmFunctionType> types,
         ReadOnlySpan<DecodedFunction> functions,
@@ -94,7 +106,9 @@ public sealed class WasmModule
         ReadOnlySpan<TableDefinition> tables,
         ReadOnlySpan<MemoryDefinition> memories,
         ReadOnlySpan<GlobalDefinition> globals,
-        StartDefinition? start
+        StartDefinition? start,
+        ReadOnlySpan<DataDefinition> dataSegments = default,
+        DataCountDefinition? dataCount = null
     )
     {
         Types = [.. types];
@@ -105,6 +119,8 @@ public sealed class WasmModule
         Memories = [.. memories];
         Globals = [.. globals];
         Start = start;
+        DataSegments = [.. dataSegments];
+        DataCount = dataCount;
         InputLength = inputLength;
     }
 

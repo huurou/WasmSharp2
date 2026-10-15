@@ -195,6 +195,88 @@ internal static class ModuleDecoder
     }
 
     /// <summary>
+    /// データセグメントの初期バイト列、任意の初期化先と宣言位置を取得する
+    /// </summary>
+    /// <param name="reader">データセクションの読み取り状態 宣言の終端まで進める</param>
+    /// <param name="inputLength">未確認範囲の終端に使用する入力全体のバイト数</param>
+    /// <returns>定義順のデータセグメント メモリの存在とオフセット式の型は検証しない</returns>
+    /// <exception cref="WasmDecodeException">件数、フラグ、長さまたはオフセット式の符号化が不正な場合</exception>
+    /// <exception cref="ModuleReadBoundaryException">限定された範囲内で構文を読み終えられない場合</exception>
+    /// <exception cref="WasmUnsupportedFeatureException">オフセット式で未実装の命令に遭遇した場合</exception>
+    /// <exception cref="WasmImplementationLimitException">宣言件数、データ長または命令数がコレクションの保持上限を超える場合</exception>
+    internal static List<DataDefinition> ReadData(ref ModuleBinaryReader reader, int inputLength)
+    {
+        var count = ModuleBinaryFormat.ReadCount(ref reader);
+        List<DataDefinition> segments = [];
+        for (uint index = 0; index < count; index++)
+        {
+            var offset = reader.Position;
+            var flags = reader.ReadU32();
+            ActiveDataTarget? target = null;
+            switch (flags)
+            {
+                case 0:
+                case 2:
+                    var memoryIndex = flags == 0 ? 0 : reader.ReadU32();
+                    var expression = ExpressionDecoder.Read(ref reader, inputLength);
+                    target = new ActiveDataTarget(
+                        memoryIndex,
+                        CollectionsMarshal.AsSpan(expression)
+                    );
+                    break;
+
+                case 1:
+                    break;
+
+                default:
+                    throw reader.Error(
+                        "malformed data segment kind: データセグメントのフラグが不正です。",
+                        reader.Position - 1
+                    );
+            }
+
+            var length = ModuleBinaryFormat.ReadCount(ref reader);
+            segments.Add(new DataDefinition(reader.ReadBytes(length), target, offset));
+        }
+
+        return segments;
+    }
+
+    /// <summary>
+    /// データ数セクションの個数と宣言位置を取得する
+    /// </summary>
+    /// <param name="reader">データ数セクションの読み取り状態 個数の直後まで進める</param>
+    /// <returns>未照合のデータセグメント数と入力位置</returns>
+    /// <exception cref="WasmDecodeException">個数の符号化が不正な場合</exception>
+    /// <exception cref="ModuleReadBoundaryException">限定された範囲内で個数を読み終えられない場合</exception>
+    internal static DataCountDefinition ReadDataCount(ref ModuleBinaryReader reader)
+    {
+        var offset = reader.Position;
+        return new DataCountDefinition(reader.ReadU32(), offset);
+    }
+
+    /// <summary>
+    /// データ数セクションの宣言がある場合、データセグメントの実数との一致を要求する
+    /// </summary>
+    /// <param name="reader">照合時の診断位置を持つ読み取り状態</param>
+    /// <param name="dataCount">省略可能なデータ数セクションの宣言</param>
+    /// <param name="segmentCount">データセクションの省略時は0とするデータセグメントの実数</param>
+    /// <exception cref="WasmDecodeException">宣言された個数と実数が一致しない場合</exception>
+    internal static void RequireDataCountMatch(
+        ref ModuleBinaryReader reader,
+        DataCountDefinition? dataCount,
+        uint segmentCount
+    )
+    {
+        if (dataCount is { } declaration && declaration.Count != segmentCount)
+        {
+            throw reader.Error(
+                "data count and data section have inconsistent lengths: 宣言されたデータセグメント数と実数が一致しません。"
+            );
+        }
+    }
+
+    /// <summary>
     /// globalの型、未評価の初期化式と宣言位置を取得する
     /// </summary>
     /// <param name="reader">global sectionの読み取り状態 宣言の終端まで進める</param>

@@ -23,6 +23,11 @@ internal class WasmModule_ConstructorTests
             DecodedInstruction.WithImmediate(new(0, 0x41), WasmValue.FromI32(42), 22),
         ];
         GlobalDefinition[] globals = [new(new(WasmValueKind.I32, true), initializer, 20)];
+        byte[] dataBytes = [0xAB, 0xCD];
+        DataDefinition[] dataSegments =
+        [
+            new(dataBytes, new ActiveDataTarget(uint.MaxValue, initializer), 32),
+        ];
 
         // Act
         var module = new WasmModule(
@@ -34,7 +39,9 @@ internal class WasmModule_ConstructorTests
             tables,
             memories,
             globals,
-            new StartDefinition(uint.MaxValue, 25)
+            new StartDefinition(uint.MaxValue, 25),
+            dataSegments,
+            new DataCountDefinition(1, 28)
         );
         Array.Clear(types);
         Array.Clear(functions);
@@ -44,6 +51,8 @@ internal class WasmModule_ConstructorTests
         Array.Clear(memories);
         Array.Clear(globals);
         Array.Clear(initializer);
+        Array.Clear(dataBytes);
+        Array.Clear(dataSegments);
 
         // Assert
         using (Assert.Multiple())
@@ -64,6 +73,18 @@ internal class WasmModule_ConstructorTests
             await Assert.That(module.Memories[0].Limits.Minimum).IsEqualTo(uint.MaxValue);
             await Assert.That(module.Globals[0].Initializer[0].Immediate.AsI32()).IsEqualTo(42);
             await Assert.That(module.Start).IsEqualTo(new StartDefinition(uint.MaxValue, 25));
+            await Assert.That(module.DataSegments.Length).IsEqualTo(1);
+            await Assert
+                .That(Convert.ToHexString(module.DataSegments[0].Bytes.AsSpan()))
+                .IsEqualTo("ABCD");
+            await Assert.That(module.DataSegments[0].ByteOffset).IsEqualTo(32L);
+            await Assert
+                .That(module.DataSegments[0].ActiveTarget!.MemoryIndex)
+                .IsEqualTo(uint.MaxValue);
+            await Assert
+                .That(module.DataSegments[0].ActiveTarget!.OffsetExpression[0].Immediate.AsI32())
+                .IsEqualTo(42);
+            await Assert.That(module.DataCount).IsEqualTo(new DataCountDefinition(1, 28));
         }
     }
 
@@ -85,6 +106,9 @@ internal class WasmModule_ConstructorTests
             await Assert.That(module.Memories.IsDefault).IsFalse();
             await Assert.That(module.Globals.IsDefault).IsFalse();
             await Assert.That(module.Start).IsNull();
+            await Assert.That(module.DataSegments.IsDefault).IsFalse();
+            await Assert.That(module.DataSegments.IsEmpty).IsTrue();
+            await Assert.That(module.DataCount).IsNull();
             await Assert.That(function.Locals.IsDefault).IsFalse();
             await Assert.That(function.Instructions.IsDefault).IsFalse();
             await Assert.That(module.Types.Length).IsEqualTo(0);
@@ -93,5 +117,20 @@ internal class WasmModule_ConstructorTests
             await Assert.That(function.Locals.Length).IsEqualTo(0);
             await Assert.That(function.Instructions.Length).IsEqualTo(0);
         }
+    }
+
+    [Test]
+    [Arguments(0u)]
+    [Arguments(uint.MaxValue)]
+    public async Task データ数セクションの宣言がある_実数と照合せず値と位置を保持する(uint count)
+    {
+        // Arrange
+        var declaration = new DataCountDefinition(count, 12);
+
+        // Act
+        var module = new WasmModule([], [], [], 16, [], [], [], [], null, dataCount: declaration);
+
+        // Assert
+        await Assert.That(module.DataCount).IsEqualTo(declaration);
     }
 }
