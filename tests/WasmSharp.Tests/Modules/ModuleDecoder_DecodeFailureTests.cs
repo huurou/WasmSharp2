@@ -8,8 +8,6 @@ internal partial class ModuleDecoder_DecodeTests
 {
     [Test]
     [Arguments("090100", (byte)9, "section.element")]
-    [Arguments("0B0100", (byte)11, "section.data")]
-    [Arguments("0C0100", (byte)12, "section.data_count")]
     public async Task 未対応sectionの後に破損がある_機能と未確認範囲を返して中断する(
         string section,
         byte id,
@@ -138,8 +136,8 @@ internal partial class ModuleDecoder_DecodeTests
     [Arguments("0202FF", 11L, (byte)2)]
     [Arguments("070100020100", 11L, (byte)2)]
     [Arguments("0A01000C0100", 11L, (byte)12)]
-    [Arguments("030201000B0100", 12L, (byte)11)]
-    [Arguments("03020100000201610B0100", 16L, (byte)11)]
+    [Arguments("030201000B0100", 15L, (byte)11)]
+    [Arguments("03020100000201610B0100", 19L, (byte)11)]
     public async Task 未対応内容より前に長さや順序や件数の違反が確定する_破損を優先する(
         string sections,
         long offset,

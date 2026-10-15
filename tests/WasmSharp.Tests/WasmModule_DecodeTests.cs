@@ -238,7 +238,7 @@ internal partial class WasmModule_DecodeTests
     [Arguments("0061736D0100000001020000", 11L, null, (byte)1)]
     [Arguments("0061736D01000000000201FF", 11L, null, (byte)0)]
     [Arguments("0061736D0100000007050101FF0000", 12L, null, (byte)7)]
-    [Arguments("0061736D01000000030201000A0100", 14L, null, (byte)10)]
+    [Arguments("0061736D01000000030201000A0100", 15L, null, (byte)10)]
     [Arguments("0061736D01000000030201000A03010100", 17L, 0u, (byte)10)]
     [Arguments("0061736D01000000030201000A050103000B0B", 18L, 0u, (byte)10)]
     [Arguments("0061736D01000000030201000A0C010A02FFFFFFFF0F7F017E0B", 23L, 0u, (byte)10)]

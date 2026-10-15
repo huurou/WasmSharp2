@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using WasmSharp.Exceptions;
+using WasmSharp.Instructions;
 using WasmSharp.Modules.Definitions;
 using WasmSharp.Modules.Imports;
 
@@ -89,21 +90,19 @@ internal static class ModuleDecoder
         List<TableDefinition> tables = [];
         List<MemoryDefinition> memories = [];
         List<GlobalDefinition> globals = [];
+        List<DataDefinition> dataSegments = [];
+        DataCountDefinition? dataCount = null;
+        uint declaredDataCount = 0;
         StartDefinition? start = null;
         List<uint> functionTypes = [];
         List<DecodedFunction> functions = [];
+        uint declaredCodeCount = 0;
         var previousRank = 0;
         while (reader.Remaining != 0)
         {
             var offset = reader.Position;
             var section = ModuleBinaryFormat.ReadSection(ref reader, ref previousRank);
             var id = section.SectionId!.Value;
-
-            if (id == 11 && functions.Count != functionTypes.Count)
-            {
-                // data以降にcodeは置けないので、その内容が未対応でも件数不一致は確定している。
-                throw reader.Error(FUNCTION_CODE_LENGTH_MESSAGE, offset);
-            }
 
             switch (id)
             {
@@ -154,20 +153,60 @@ internal static class ModuleDecoder
                     break;
 
                 case 10:
-                    functions = ReadCode(
-                        ref section,
-                        functionTypes,
-                        (uint)imports.Count(x => x.Kind == WasmExternalKind.Function),
-                        bytes.Length
-                    );
+                    try
+                    {
+                        functions = ReadCode(
+                            ref section,
+                            functionTypes,
+                            (uint)imports.Count(x => x.Kind == WasmExternalKind.Function),
+                            bytes.Length,
+                            out declaredCodeCount
+                        );
+                    }
+                    catch (WasmUnsupportedFeatureException) when (mode == ModuleReadMode.Bounded)
+                    {
+                        // データ件数はまだ未確定なので、確定した関数件数だけを照合する。
+                        RequireSectionCounts(
+                            ref section,
+                            functionTypes.Count,
+                            declaredCodeCount,
+                            functions,
+                            dataCount,
+                            null
+                        );
+                        throw;
+                    }
+                    break;
+
+                case 11:
+                    try
+                    {
+                        dataSegments = ReadData(ref section, bytes.Length, out declaredDataCount);
+                    }
+                    catch (WasmUnsupportedFeatureException) when (mode == ModuleReadMode.Bounded)
+                    {
+                        // data以降に件数を変更する標準sectionは置けないため、既知の宣言だけで照合する。
+                        // 境界失敗後の診断再走査では、未対応より元の構文違反を優先する。
+                        RequireSectionCounts(
+                            ref section,
+                            functionTypes.Count,
+                            declaredCodeCount,
+                            functions,
+                            dataCount,
+                            declaredDataCount
+                        );
+                        throw;
+                    }
+                    break;
+
+                case 12:
+                    dataCount = ReadDataCount(ref section);
                     break;
 
                 default:
                     var feature = id switch
                     {
                         9 => "section.element",
-                        11 => "section.data",
-                        12 => "section.data_count",
                         _ => throw new InvalidOperationException(),
                     };
                     throw section.Unsupported(feature, bytes.Length, offset);
@@ -176,10 +215,14 @@ internal static class ModuleDecoder
             ModuleBinaryFormat.RequireEnd(ref section);
         }
 
-        if (functions.Count != functionTypes.Count)
-        {
-            throw reader.Error(FUNCTION_CODE_LENGTH_MESSAGE);
-        }
+        RequireSectionCounts(
+            ref reader,
+            functionTypes.Count,
+            declaredCodeCount,
+            functions,
+            dataCount,
+            declaredDataCount
+        );
 
         return new WasmModule(
             CollectionsMarshal.AsSpan(types),
@@ -190,8 +233,58 @@ internal static class ModuleDecoder
             CollectionsMarshal.AsSpan(tables),
             CollectionsMarshal.AsSpan(memories),
             CollectionsMarshal.AsSpan(globals),
-            start
+            start,
+            CollectionsMarshal.AsSpan(dataSegments),
+            dataCount
         );
+    }
+
+    /// <summary>
+    /// 構文を読了した時点かデータ部で中断した時点で、確定済みの件数制約を順に照合する
+    /// </summary>
+    /// <param name="reader">照合時の診断位置を持つ読み取り状態</param>
+    /// <param name="functionCount">functionセクションの宣言件数</param>
+    /// <param name="codeCount">codeセクションの宣言件数 省略時は0</param>
+    /// <param name="functions">コード内のデータ参照を含む、読み取り済みの関数定義</param>
+    /// <param name="dataCount">省略可能なデータ数セクションの宣言</param>
+    /// <param name="segmentCount">データセクションの宣言件数 省略時は0、まだ読み取れない場合はnull</param>
+    /// <exception cref="WasmDecodeException">関数件数、データ件数またはデータ数セクションの要否が不正な場合</exception>
+    private static void RequireSectionCounts(
+        ref ModuleBinaryReader reader,
+        int functionCount,
+        uint codeCount,
+        List<DecodedFunction> functions,
+        DataCountDefinition? dataCount,
+        uint? segmentCount
+    )
+    {
+        if (codeCount != functionCount)
+        {
+            throw reader.Error(FUNCTION_CODE_LENGTH_MESSAGE);
+        }
+
+        if (segmentCount is not { } count)
+        {
+            return;
+        }
+
+        RequireDataCountMatch(ref reader, dataCount, count);
+        if (
+            dataCount is null
+            && functions.Any(x =>
+                x.Instructions.Any(x =>
+                    InstructionSet.TryGet(x.Opcode, out var descriptor)
+                    && descriptor.Immediate
+                        is ImmediateKind.DataIndexMemoryZero
+                            or ImmediateKind.DataIndex
+                )
+            )
+        )
+        {
+            throw reader.Error(
+                "data count section required: データインデックスを使用するコードにはデータ数セクションが必要です。"
+            );
+        }
     }
 
     /// <summary>
@@ -199,16 +292,21 @@ internal static class ModuleDecoder
     /// </summary>
     /// <param name="reader">データセクションの読み取り状態 宣言の終端まで進める</param>
     /// <param name="inputLength">未確認範囲の終端に使用する入力全体のバイト数</param>
+    /// <param name="declaredCount">読み取ったデータセグメントの宣言件数 後続の式が未対応でも保持する</param>
     /// <returns>定義順のデータセグメント メモリの存在とオフセット式の型は検証しない</returns>
     /// <exception cref="WasmDecodeException">件数、フラグ、長さまたはオフセット式の符号化が不正な場合</exception>
     /// <exception cref="ModuleReadBoundaryException">限定された範囲内で構文を読み終えられない場合</exception>
     /// <exception cref="WasmUnsupportedFeatureException">オフセット式で未実装の命令に遭遇した場合</exception>
     /// <exception cref="WasmImplementationLimitException">宣言件数、データ長または命令数がコレクションの保持上限を超える場合</exception>
-    internal static List<DataDefinition> ReadData(ref ModuleBinaryReader reader, int inputLength)
+    internal static List<DataDefinition> ReadData(
+        ref ModuleBinaryReader reader,
+        int inputLength,
+        out uint declaredCount
+    )
     {
-        var count = ModuleBinaryFormat.ReadCount(ref reader);
+        declaredCount = ModuleBinaryFormat.ReadCount(ref reader);
         List<DataDefinition> segments = [];
-        for (uint index = 0; index < count; index++)
+        for (uint index = 0; index < declaredCount; index++)
         {
             var offset = reader.Position;
             var flags = reader.ReadU32();
@@ -362,14 +460,15 @@ internal static class ModuleDecoder
     }
 
     /// <summary>
-    /// function sectionと件数が一致するcode sectionから、定義関数の本体を取得する
+    /// codeセクションの全本体を読み取り、対応するfunction宣言がある定義関数を取得する
     /// </summary>
     /// <param name="reader">code sectionの読み取り状態 関数本体の終端まで進める</param>
     /// <param name="functionTypes">function sectionから取得した定義順の型index</param>
     /// <param name="importedFunctionCount">診断に使用するmodule全体の関数indexの先頭となるimport関数数</param>
     /// <param name="inputLength">未確認範囲の終端に使用する入力全体のバイト数</param>
+    /// <param name="declaredCount">読み取ったcode本体の宣言件数 後続の式が未対応でも保持する</param>
     /// <returns>型index、関数本体の位置、圧縮local宣言と入力命令を保持する定義順の関数</returns>
-    /// <exception cref="WasmDecodeException">件数が一致しないか、関数本体の長さまたは内容の符号化が不正な場合</exception>
+    /// <exception cref="WasmDecodeException">関数本体の長さまたは内容の符号化が不正な場合</exception>
     /// <exception cref="ModuleReadBoundaryException">限定された範囲内で構文を読み終えられない場合</exception>
     /// <exception cref="WasmUnsupportedFeatureException">関数本体で未実装の命令に遭遇した場合</exception>
     /// <exception cref="WasmImplementationLimitException">宣言件数または命令数がコレクションの保持上限を超える場合</exception>
@@ -377,18 +476,13 @@ internal static class ModuleDecoder
         ref ModuleBinaryReader reader,
         List<uint> functionTypes,
         uint importedFunctionCount,
-        int inputLength
+        int inputLength,
+        out uint declaredCount
     )
     {
-        var countOffset = reader.Position;
-        var count = ModuleBinaryFormat.ReadCount(ref reader);
-        if (count != functionTypes.Count)
-        {
-            throw reader.Error(FUNCTION_CODE_LENGTH_MESSAGE, countOffset);
-        }
-
+        declaredCount = ModuleBinaryFormat.ReadCount(ref reader);
         List<DecodedFunction> functions = [];
-        for (uint index = 0; index < count; index++)
+        for (uint index = 0; index < declaredCount; index++)
         {
             var length = reader.ReadLength();
             var body = reader.ReadRange(length, importedFunctionCount + index);
@@ -396,14 +490,18 @@ internal static class ModuleDecoder
             var locals = ReadLocals(ref body);
             var instructions = ExpressionDecoder.Read(ref body, inputLength);
             ModuleBinaryFormat.RequireEnd(ref body);
-            functions.Add(
-                new DecodedFunction(
-                    functionTypes[(int)index],
-                    offset,
-                    CollectionsMarshal.AsSpan(locals),
-                    CollectionsMarshal.AsSpan(instructions)
-                )
-            );
+            // 余剰の本体も構文検査し、型indexのない定義は作らず、読了後の件数照合で拒否する。
+            if (index < functionTypes.Count)
+            {
+                functions.Add(
+                    new DecodedFunction(
+                        functionTypes[(int)index],
+                        offset,
+                        CollectionsMarshal.AsSpan(locals),
+                        CollectionsMarshal.AsSpan(instructions)
+                    )
+                );
+            }
         }
 
         return functions;

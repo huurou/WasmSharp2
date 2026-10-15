@@ -13,7 +13,7 @@ internal class ModuleDecoder_ReadDataTests
         var reader = new ModuleBinaryReader(bytes, 40, 11);
 
         // Act
-        var segments = ModuleDecoder.ReadData(ref reader, 100);
+        var segments = ModuleDecoder.ReadData(ref reader, 100, out _);
         var remaining = reader.Remaining;
         Array.Clear(bytes);
 
@@ -56,7 +56,7 @@ internal class ModuleDecoder_ReadDataTests
         var reader = new ModuleBinaryReader([0], 40, 11);
 
         // Act
-        var segments = ModuleDecoder.ReadData(ref reader, 100);
+        var segments = ModuleDecoder.ReadData(ref reader, 100, out _);
         var remaining = reader.Remaining;
 
         // Assert
@@ -84,7 +84,7 @@ internal class ModuleDecoder_ReadDataTests
             .That(() =>
             {
                 var reader = new ModuleBinaryReader(bytes, 40, 11);
-                ModuleDecoder.ReadData(ref reader, 100);
+                ModuleDecoder.ReadData(ref reader, 100, out _);
             })
             .ThrowsExactly<WasmDecodeException>();
         using (Assert.Multiple())

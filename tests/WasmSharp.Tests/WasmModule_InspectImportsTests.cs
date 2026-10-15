@@ -7,11 +7,11 @@ internal class WasmModule_InspectImportsTests
 {
     [Test]
     [Arguments((byte)9, "section.element")]
-    [Arguments((byte)12, "section.data_count")]
-    [Arguments((byte)11, "section.data")]
-    public async Task 未対応segmentがある_importなしを確定して通常Decodeとは区別する(
+    [Arguments((byte)12, null)]
+    [Arguments((byte)11, null)]
+    public async Task 調査範囲外のsegmentがある_importなしを確定して通常Decodeとは区別する(
         byte id,
-        string feature
+        string? feature
     )
     {
         // Arrange
@@ -31,6 +31,12 @@ internal class WasmModule_InspectImportsTests
             .IsTrue();
 
         // Act & Assert
+        if (id != 9)
+        {
+            await Assert.That(() => WasmModule.Decode(bytes)).ThrowsExactly<WasmDecodeException>();
+            return;
+        }
+
         var exception = await Assert
             .That(() => WasmModule.Decode(bytes))
             .ThrowsExactly<WasmUnsupportedFeatureException>();

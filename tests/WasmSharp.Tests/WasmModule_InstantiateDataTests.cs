@@ -2,11 +2,144 @@ using WasmSharp.Exceptions;
 using WasmSharp.Modules;
 using WasmSharp.Modules.Definitions;
 using WasmSharp.Modules.Imports;
+using WasmSharp.Tests.Fixtures;
 
 namespace WasmSharp.Tests;
 
 internal partial class WasmModule_InstantiateTests
 {
+    [Test]
+    [Arguments(false)]
+    [Arguments(true)]
+    public async Task 公開Decodeしたデータを共有メモリへ初期化する_成功時だけStartへ進み失敗時は先行変更と位置を保持する(
+        bool outOfBounds
+    )
+    {
+        // Arrange
+        var memory = new WasmMemory(new(1));
+        memory.Write(0, [9, 9, 9, 9]);
+        memory.Write(65535, [88]);
+        var calls = 0;
+        var observed = new byte[4];
+        var host = new WasmHostModule("env");
+        host.Define("memory", memory);
+        host.Define(
+            "offset",
+            new WasmGlobal(
+                new(WasmValueKind.I32, false),
+                WasmValue.FromI32(outOfBounds ? 65535 : 2)
+            )
+        );
+        host.Define(
+            "start",
+            WasmFunction.CreateHost(
+                new([], []),
+                (instance, _) =>
+                {
+                    calls++;
+                    instance.GetMemory("memory").Read(0, observed);
+                    return new([]);
+                }
+            )
+        );
+        byte[] data =
+        [
+            3,
+            0,
+            0x41,
+            0,
+            0x0B,
+            1,
+            11,
+            2,
+            0,
+            0x23,
+            0,
+            0x0B,
+            2,
+            22,
+            33,
+            0,
+            0x41,
+            0,
+            0x0B,
+            1,
+            55,
+        ];
+        var bytes = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Types(([], [])),
+            HostLinkingModuleBinary.Imports(
+                ("env", "memory", 2, HostLinkingModuleBinary.Limits(1)),
+                ("env", "offset", 3, [0x7F, 0]),
+                ("env", "start", 0, [0])
+            ),
+            HostLinkingModuleBinary.Exports(("memory", 2, 0)),
+            HostLinkingModuleBinary.Start(0),
+            HostLinkingModuleBinary.Section(12, [3]),
+            HostLinkingModuleBinary.Section(11, data)
+        );
+        var module = WasmModule.Decode(bytes).Validate();
+
+        if (outOfBounds)
+        {
+            // Act & Assert
+            var exception = await Assert
+                .That(() => module.Instantiate([host]))
+                .ThrowsExactly<WasmTrapException>();
+            using (Assert.Multiple())
+            {
+                await Assert.That(exception!.Reason).IsEqualTo(WasmTrapReason.MemoryOutOfBounds);
+                await Assert
+                    .That(
+                        exception.Message.StartsWith(
+                            "out of bounds memory access",
+                            StringComparison.Ordinal
+                        )
+                    )
+                    .IsTrue();
+                await Assert
+                    .That(exception.Location)
+                    .IsEqualTo(
+                        new(
+                            WasmProcessingStage.Instantiate,
+                            bytes.Length - data.Length + 7,
+                            null,
+                            11
+                        )
+                    );
+                await Assert.That(calls).IsEqualTo(0);
+            }
+        }
+        else
+        {
+            // Act
+            var instance = module.Instantiate([host]);
+
+            // Assert
+            using (Assert.Multiple())
+            {
+                await Assert.That(instance.GetMemory("memory")).IsSameReferenceAs(memory);
+                await Assert.That(calls).IsEqualTo(1);
+                await Assert.That(observed.SequenceEqual(new byte[] { 55, 9, 22, 33 })).IsTrue();
+            }
+        }
+
+        // Assert
+        var actual = new byte[4];
+        var end = new byte[1];
+        memory.Read(0, actual);
+        memory.Read(65535, end);
+        using (Assert.Multiple())
+        {
+            await Assert
+                .That(
+                    actual.SequenceEqual(outOfBounds ? new byte[] { 11, 9, 9, 9 } : [55, 9, 22, 33])
+                )
+                .IsTrue();
+            await Assert.That(end[0]).IsEqualTo((byte)88);
+        }
+    }
+
     [Test]
     public async Task アクティブデータが重なる_宣言順に書き込み成功した実体を破棄する()
     {

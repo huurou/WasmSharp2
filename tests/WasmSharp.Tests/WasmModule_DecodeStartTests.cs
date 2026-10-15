@@ -6,6 +6,84 @@ namespace WasmSharp.Tests;
 internal partial class WasmModule_DecodeTests
 {
     [Test]
+    [Arguments((byte)11)]
+    [Arguments((byte)12)]
+    public async Task Startと空のデータ関連セクションがある_両入口のDecodeとimport調査では実行せずInstantiateで実行する(
+        byte sectionId
+    )
+    {
+        // Arrange
+        var bytes = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Types(([], [])),
+            HostLinkingModuleBinary.Imports(("env", "start", 0, [0])),
+            HostLinkingModuleBinary.Start(0),
+            HostLinkingModuleBinary.Section(sectionId, [0])
+        );
+        var calls = 0;
+        var host = new WasmHostModule("env");
+        host.Define(
+            "start",
+            WasmFunction.CreateHost(
+                new([], []),
+                _ =>
+                {
+                    calls++;
+                    return new([]);
+                }
+            )
+        );
+        using var stream = new MemoryStream(bytes);
+        using var inspectionStream = new MemoryStream(bytes);
+
+        // Act
+        var inspections = new[]
+        {
+            WasmModule.InspectImports(bytes),
+            WasmModule.InspectImports(inspectionStream),
+        };
+        var modules = new[]
+        {
+            WasmModule.Decode(bytes).Validate(),
+            WasmModule.Decode(stream).Validate(),
+        };
+
+        // Assert
+        await Assert.That(calls).IsEqualTo(0);
+        foreach (var inspection in inspections)
+        {
+            using (Assert.Multiple())
+            {
+                await Assert.That(inspection.Imports.Single().Name).IsEqualTo("start");
+                await Assert
+                    .That(
+                        inspection.UnverifiedRanges.Any(x =>
+                            x.Stage == WasmProcessingStage.Decode
+                            && x.StartOffset == bytes.Length - 1
+                            && x.EndOffset == bytes.Length
+                        )
+                    )
+                    .IsTrue();
+                await Assert
+                    .That(
+                        inspection.UnverifiedRanges.Any(x =>
+                            x.Stage == WasmProcessingStage.Validate
+                        )
+                    )
+                    .IsTrue();
+            }
+        }
+
+        // Act
+        foreach (var module in modules)
+        {
+            module.Instantiate([host]);
+        }
+
+        // Assert
+        await Assert.That(calls).IsEqualTo(2);
+    }
+
+    [Test]
     [Arguments(false)]
     [Arguments(true)]
     public async Task Startの生の関数添字_両入力で実行や型検証をせず保持する(bool useStream)
@@ -73,8 +151,6 @@ internal partial class WasmModule_DecodeTests
 
     [Test]
     [Arguments((byte)9, "section.element")]
-    [Arguments((byte)11, "section.data")]
-    [Arguments((byte)12, "section.data_count")]
     public async Task Startと未対応segmentがある_両入力でimportを調査できるがstartは実行しない(
         byte id,
         string feature

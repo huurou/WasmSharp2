@@ -31,24 +31,12 @@ internal partial class ModuleDecoder_DecodeTests
         null,
         (byte)3
     )]
-    [Arguments(
-        "030201000A050003006A0B",
-        "function and code section have inconsistent lengths",
-        14L,
-        null,
-        (byte)10
-    )]
-    [Arguments(
-        "0A040102006A",
-        "function and code section have inconsistent lengths",
-        10L,
-        null,
-        (byte)10
-    )]
+    [Arguments("030201000A050003006A0B", "section size mismatch", 15L, null, (byte)10)]
+    [Arguments("0A040102006A", "unexpected end", 14L, 0u, (byte)10)]
     [Arguments(
         "000200030201000A050103006A0B",
         "function and code section have inconsistent lengths",
-        17L,
+        22L,
         null,
         (byte)10
     )]
@@ -144,8 +132,8 @@ internal partial class ModuleDecoder_DecodeTests
     }
 
     [Test]
-    [Arguments("030201000A0100", 14L, null)]
-    [Arguments("0A040102000B", 10L, null)]
+    [Arguments("030201000A0100", 15L, null)]
+    [Arguments("0A040102000B", 14L, null)]
     [Arguments("030201000A040103000B", 18L, 0u)]
     [Arguments("030201000A03010100", 17L, 0u)]
     [Arguments("030201000A050103000B0B", 18L, 0u)]

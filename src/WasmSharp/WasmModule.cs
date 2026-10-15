@@ -275,14 +275,14 @@ public sealed class WasmModule
     /// <returns>startがあればその実行も正常に終了したinstance</returns>
     /// <remarks>
     /// <see cref="Validate"/>の成功後に呼び出す。提供登録は呼び出し時点の名前対応を使い、関数とリソースの実体は共有する。
-    /// startの実行、実行ポリシー、失敗時の参照と変更の扱いは<see cref="Instantiate(WasmImports, WasmExecutionOptions)"/>と同じ
+    /// データセグメントによる初期化、startの実行、実行ポリシー、失敗時の参照と変更の扱いは<see cref="Instantiate(WasmImports, WasmExecutionOptions)"/>と同じ
     /// </remarks>
     /// <exception cref="ArgumentNullException">ホストモジュールの要素がnullの場合</exception>
     /// <exception cref="ArgumentException">同じmodule名とitem名の提供登録が重複する場合</exception>
     /// <exception cref="InvalidOperationException">静的検証に成功していないか、ホスト関数の結果がnullまたは宣言型と一致しない場合</exception>
     /// <exception cref="WasmInstantiateException">importの名前・種類・型が提供登録と一致しない場合</exception>
     /// <exception cref="WasmImplementationLimitException">リソースの構築またはstartの実行に必要な保持数が実装上限を超える場合</exception>
-    /// <exception cref="WasmTrapException">startの実行結果がtrapの場合</exception>
+    /// <exception cref="WasmTrapException">アクティブデータセグメントの初期化先が範囲外か、startの実行結果がtrapの場合</exception>
     /// <exception cref="WasmExhaustionException">startの実行結果が資源枯渇の場合</exception>
     public WasmInstance Instantiate(
         ReadOnlySpan<WasmHostModule> hostModules,
@@ -307,6 +307,8 @@ public sealed class WasmModule
     /// <remarks>
     /// <para>
     /// <see cref="Validate"/>の成功後に呼び出す。importの実体は共有し、module内のリソース定義には毎回新しい実体を割り当てる。
+    /// アクティブデータセグメントは宣言順に初期化し、成功したセグメントを破棄してからstartを実行する。
+    /// 初期化先が範囲外の場合は後続の初期化とstartを実行せず、それ以前に完了したメモリへの変更は取り消さない。
     /// startはこの呼び出しにつき1回実行し、構築済みのリソースとexportへアクセスできる。
     /// importの照合やリソースの構築に失敗した場合はstartを実行しない
     /// </para>
@@ -321,7 +323,7 @@ public sealed class WasmModule
     /// <exception cref="InvalidOperationException">静的検証に成功していないか、ホスト関数の結果がnullまたは宣言型と一致しない場合</exception>
     /// <exception cref="WasmInstantiateException">importの名前・種類・型が提供登録と一致しない場合</exception>
     /// <exception cref="WasmImplementationLimitException">リソースの構築またはstartの実行に必要な保持数が実装上限を超える場合</exception>
-    /// <exception cref="WasmTrapException">startの実行結果がtrapの場合</exception>
+    /// <exception cref="WasmTrapException">アクティブデータセグメントの初期化先が範囲外か、startの実行結果がtrapの場合</exception>
     /// <exception cref="WasmExhaustionException">startの実行結果が資源枯渇の場合</exception>
     public WasmInstance Instantiate(WasmImports imports, WasmExecutionOptions? options = null)
     {
