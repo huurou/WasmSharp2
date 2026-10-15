@@ -77,7 +77,7 @@ graph TD
 | JSON | .NET標準`System.Text.Json` | command境界の読取に`Utf8JsonReader`/`JsonDocument`、自分の結果DTOに`JsonSerializer`を使用する。 |
 | hash・path・起動 | 標準`SHA256`、`Path`、`ProcessStartInfo.ArgumentList` | シェル文字列を組み立てず変換器を直接起動する。 |
 | ランタイム | 既存`src/WasmSharp`へのProjectReference | 公開契約だけを使用する。 |
-| 変換 | WABT`ff0ef7e0009402740c805a9744c09b05be063e48` | 外部プロセスはgenerateだけで使用する。 |
+| 変換 | WABT`c8dc7b6eae42b3aa3e95b9014dc02b71f8e0e1db` | 1.0.42にDataCount修正を加えたcommit。外部プロセスはgenerateだけで使用する。 |
 | 公式入力 | spec`05ca4182176763112561ae20153975c12bd689e4` | `test/core`の全147WAST SIMD57件を含む。 |
 | テスト | TUnit、net10.0 | 版は既存テストプロジェクトに合わせる。現行は1.66.16 |
 
@@ -253,6 +253,7 @@ stdoutには入力単位の進捗、対象/処理済み/未処理/件数未確�
 - ONは`mutable-globals, saturating-float-to-int, sign-extension, simd, multi-value, bulk-memory, reference-types` OFFは`exceptions, threads, function-references, tail-call, annotations, code-metadata, gc, memory64, multi-memory, extended-const, relaxed-simd, custom-page-sizes, compact-imports, wide-arithmetic` WABT1.0.42ではOFFに保つ7機能（exceptions、tail-call、annotations、memory64、multi-memory、extended-const、relaxed-simd）が既定ONなので、対応する無効化引数を指定する。
 - generate開始時に入力一覧/生バイトhashをprofileと照合する。spec-root自体がGitチェックアウトならHEADも照合し、Git管理外へ同じ入力をコピーした配置は全147入力の一覧/hashの一致で受け付ける。コピー先の親に無関係なGitリポジトリがあっても、そのHEADをspecの版と扱わない。WABT-rootは固定HEADを確認できるGitチェックアウトを要求する。取得元を示すURLにはprofileに記録した上流URLを使い、ミラー等の実際のoriginは参考出典として分け、URLの違いだけで拒否しない。HEAD/hash不一致や必要なGit情報の取得失敗は生成前提のrunner_errorとして記録し、変換は開始せず未処理と非0終了を明示する。ソースツリー全体のhashを取らず、変換器のビルド条件はexeのSHA-256で代表させる。実行ファイルのhash差だけで別ビルドを拒否しない。
 - WABTは`WorkingDirectory=<spec-root>/test/core`、引数はprofileの`LogicalArguments`から入力・出力のplaceholderを解決する。Core2.0外の7機能を無効化する引数を含め、順序と値を保持する。出力は`-o <absolute-output>/modules/<relative.json>` CLIで解決済みの絶対出力pathを渡し、出力がspec配下へずれないようにする。path区切りは`/`に固定する。profileで指定した無効化引数だけを追加し、`--enable-all`、`--no-check`、`--debug-names`は渡さない。検証有効、canonical LEB有効、relocatable無効、debug names無効を変換条件に記録する。JSONを書き換えて再現性を作らない。
+- 承認済みのDataCount修正はsubmodule内でコミットし、親のgitlinkとprofileを修正後commitへ固定する。上流未公開のcommitは親管理のGit bundleから復元する。差分パッチ、適用前後のソースSHA-256、ビルド条件を外部のビルド記録へ保存し、manifest内のexe SHA-256と対応付けて素材と一緒に保持する。schema、Core 2.0の機能設定と公式入力は変更しない。手順と比較元の移行結果は[DataCount移行記録](wabt-datacount-migration.md)を参照する。
 - manifestには配置rootを除いた論理引数、作業ディレクトリの基準、feature、出力に影響する固定option、変換器hashを記録する。OS/アーキテクチャ、実際の絶対path、日時は参考出典として分離し、素材同一性の条件へ含めない。
 - 入力をOrdinal順に列挙し、各入力のプロセス終了とJSON・全参照素材の照合まで成功したときだけ`succeeded`にする。失敗は診断・終了値を持つ`runner_error`、未開始は`unprocessed`とする。独立した残りの変換を継続する。
 - stdout/stderrは両方を回収してデッドロックを避ける。素材の余剰・欠落も専用`modules/`領域で検出する。入力ごとの部分生成物は失敗としてmanifestへ残し、成功へ格上げしない。

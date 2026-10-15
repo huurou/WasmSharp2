@@ -53,6 +53,12 @@ WasmSharp2の実装者が、固定したWebAssembly Core 2.0の公式スイー�
 6. When 利用者が固定条件を変更する場合, the Test Suite Runner shall 専用の更新操作を設けず、変更後の再生成結果と変換baselineの比較で変更前後の条件と差分を記録し、baseline保存コマンドによる明示的な上書きで新しい固定条件を確定する。
 7. While 素材の生成・照合・実行・比較を行っている間, the Test Suite Runner shall 公式入力、固定した外部ソース、LICENSE・NOTICEを変更しない。
 
+2026-10-16に承認されたWABTのDataCount修正は、submodule内のcommit`c8dc7b6eae42b3aa3e95b9014dc02b71f8e0e1db`として固定する。
+復元用Git bundleと差分パッチを親リポジトリで管理し、適用元・修正後commit、パッチのSHA-256、変更前後のソースのSHA-256、ビルド条件、実行ファイルのSHA-256を別のビルド記録へ保存する。
+この記録をmanifestとともに保持し、実行ファイルのSHA-256で対応付ける。
+修正済みcommitの取得とビルドは素材生成の前提工程で行い、ランナーによる外部ソースの変更は行わない。
+手順と移行結果は[DataCount修正の移行記録](wabt-datacount-migration.md)に記載する。
+
 ### 要件3: 全入力の変換とmanifest
 
 **目的:** 実装者として、どの入力からどの素材が生成されたかと、変換の完了状況を漏れなく確認したい。

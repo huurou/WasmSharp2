@@ -188,6 +188,7 @@
     到達不能な命令によるデータセグメントの参照も検査する。
   - メモリがないモジュールでもパッシブデータセグメントとdata.dropを使えること、アクティブデータセグメントが初期化後に破棄されること、memory.initが元のデータを保持すること、繰り返しdata.dropを実行できることを確認する。
   - 処理するバイト数が0の場合と範囲外の場合も含め、公開APIのテストと公式テストスイート全体の実行・比較を完了する。
+  - _前提工程完了（2026-10-16）: ユーザー承認に基づきWABTのDataCount出力を修正し、固定素材・先行受入済み実装の比較元を別保存した。公式2件はValidateで期待どおり失敗して合格となり、全体比較のfailed・runner_error・回帰は0件。[移行記録](../test-suite-runner/wabt-datacount-migration.md)を参照する。タスク6.1の完了判定は実装レビューで別途行う。_
   - _Boundary: InstructionDefinitions, MemoryDecoding, MemoryValidation, MemoryExecution, DataInstance_
   - _Depends: 2.1, 3.2, 5.2_
   - _Requirements: 1.2, 1.5, 2.1, 2.4, 2.5, 2.6, 2.8, 5.1, 5.2, 5.5, 6.1, 6.2, 6.3, 6.6, 6.7, 6.8, 7.3, 8.1, 8.3, 8.4_
@@ -266,3 +267,4 @@
 ## Implementation Notes
 
 - デコードの件数照合にはReadCodeとReadDataの宣言件数を使い、code中断時のデータ総数は未確定とする。未対応時の照合はBounded解析だけで行い、Diagnostic再走査では元の境界診断を保持する。
+- データ0件でmemory.initまたはdata.dropを使う公式2ケースの変換不具合は、2026-10-16のWABT修正と素材移行で解消した。要件1.5の検査と公式期待値は維持し、6.1の再開時は移行後のmanifestと比較元を使う。

@@ -10,7 +10,7 @@ internal class Core2Profile_LoadTests
     {
         // Arrange
         const string SPEC_COMMIT = "05ca4182176763112561ae20153975c12bd689e4";
-        const string WABT_COMMIT = "ff0ef7e0009402740c805a9744c09b05be063e48";
+        const string WABT_COMMIT = "c8dc7b6eae42b3aa3e95b9014dc02b71f8e0e1db";
 
         // Act
         var profile = Core2Profile.Load();

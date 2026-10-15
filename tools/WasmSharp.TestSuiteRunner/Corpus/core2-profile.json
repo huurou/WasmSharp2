@@ -6,7 +6,7 @@
   },
   "wabt": {
     "url": "https://github.com/WebAssembly/wabt.git",
-    "commit": "ff0ef7e0009402740c805a9744c09b05be063e48"
+    "commit": "c8dc7b6eae42b3aa3e95b9014dc02b71f8e0e1db"
   },
   "features": [
     {

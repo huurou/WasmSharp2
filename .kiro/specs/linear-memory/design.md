@@ -417,6 +417,9 @@ Batch契約では、runによる全テストの実行、保存済み結果に対
 より新しい先行機能の受入結果が統合先に取り込まれていない場合、比較元の候補は`artifacts/numeric-control/task-11.4-20261012T-baseline-7ca484f/run-baseline.json`とする。
 先行仕様の[受入記録](../numeric-control/acceptance.md)と照合し、実装着手時にファイルの存在、ハッシュ値、対応するmanifestを確認する。
 記録されたSHA-256は`02ab113a70b5dd1c6ceb5aca12c901dddb8735b1754a035c999953baae9ad779`である。
+2026-10-16の承認済みDataCount修正とWABTのコミット後は、同じ受入済み実装で再作成した`artifacts/linear-memory/wabt-commit-20261016/run-baseline.json`を比較元とする。
+SHA-256は`619961b91dfa83c233864799e7f87323f811e5889c3d6faa7b460812fb72c4f5`で、対応するmanifestは同ディレクトリの`corpus/manifest.json`である。
+旧比較元は保持し、移行根拠を[test-suite-runnerの記録](../test-suite-runner/wabt-datacount-migration.md)に残す。本仕様の実装途中の結果を比較元として保存したものではない。
 tables-referencesなどを先に取り込んだ場合は、その受入記録にある比較元を選び、パス・SHA-256・保存元の仕様・対応するmanifestをacceptance.mdへ記録する。
 実装途中に統合先を更新した場合も、最終比較の前に同じ手順で比較元を確認する。
 日時だけで新しいファイルを選ばず、比較元の内容は本仕様の受入が完了するまで更新しない。

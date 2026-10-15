@@ -1,5 +1,7 @@
 # linear-memoryの受入準備記録
 
+タスク1.1の記録は当時の状態を保持している。現在の素材と比較元は末尾の「DataCount修正後の素材と比較元」を参照する。
+
 ## 確認した範囲
 
 2026-10-16（JST）にタスク1.1の環境・固定素材・比較元を確認した。
@@ -135,3 +137,45 @@ python -X utf8 artifacts/linear-memory/task-1.1-20261015T151304Z/audit-inputs.py
 コマンドが出力したgit接尾辞と、固定commit・実行ファイルのハッシュ一致を確認し、版の先頭要素を照合するよう監査側だけを訂正した。
 初回のスクリプト・JSON・実行ログ・終了値は同ディレクトリの`initial-*`に保持し、訂正後の終了0と区別した。
 素材・期待値・分類・baselineの比較条件は変更していない。
+
+## DataCount修正後の素材と比較元
+
+2026-10-16、ユーザー承認に基づいてWABT1.0.42のDataCount出力を修正し、タスク6.1の変換不具合による停止条件を解消した。
+修正、WABT自身の検証結果と既存不一致、比較元を移行した根拠は[test-suite-runnerの移行記録](../test-suite-runner/wabt-datacount-migration.md)に記載した。
+本節は前提工程の記録であり、タスク6.1やlinear-memory全体の受入完了を示すものではない。
+
+パッチ適用状態での初回検証では、`artifacts/linear-memory/wabt-datacount-20261016/`に次の組を保存した。現在の組は後述の「WABT修正コミットの固定後」を参照する。
+
+| 用途 | 相対パス | SHA-256 |
+| --- | --- | --- |
+| 素材 | `corpus/manifest.json` | `13ab25b6adcfaed009fdc01cea33818847c911f0b7d4aa0dd5d1b26f481d1b84` |
+| 変換baseline | `conversion-baseline.json` | `13ab25b6adcfaed009fdc01cea33818847c911f0b7d4aa0dd5d1b26f481d1b84` |
+| 実行結果baseline | `run-baseline.json` | `70fc7bd5a5fc44225272552950ed45efd25f2f6ae45c05cb660a4850dad1f968` |
+
+実行結果baselineはnumeric-controlの受入済みrevision`5287c36d7c2a90cc836f4ff2b23b91bffc279f53`から作成した。
+旧素材で旧baselineとの全53,907ケースの一致を確認し、新素材で既存passed16,924件と全結果分類の維持を確認した後、別ファイルへ保存した。
+旧素材・旧baselineは保持した。
+
+実装途中のlinear-memoryを新素材で実行した結果は、同ディレクトリの`run.json`と`comparison.json`である。
+Releaseビルドは警告・エラー0件、その後の3テストプロジェクトは計4,013件成功、失敗・skip0件だった。
+公式全体実行と移行後baselineとの比較は終了0で、failed・runner_error・回帰・欠落・未比較は0件だった。
+問題のmemory_init.wast#128と#136は、Decodeを通過し、Validateで期待した診断となって合格した。
+全体にはruntime_unsupported1,631件とblocked32,744件が残るため、Core 2.0全件合格とは扱わない。
+本仕様の実装途中のrunを受入baselineとして保存する操作は行っていない。
+
+### WABT修正コミットの固定後
+
+同日、ユーザー指示によりWABT本体の変更をcommit`c8dc7b6eae42b3aa3e95b9014dc02b71f8e0e1db`へ保存し、親gitlinkとprofileを更新した。
+以後は`artifacts/linear-memory/wabt-commit-20261016/`の次の組を使う。
+
+| 用途 | 相対パス | SHA-256 |
+| --- | --- | --- |
+| 素材 | `corpus/manifest.json` | `c60dec91f788791a9b790835b2629c2d970e3fb44afab4d63f209df9097e263e` |
+| 変換baseline | `conversion-baseline.json` | `c60dec91f788791a9b790835b2629c2d970e3fb44afab4d63f209df9097e263e` |
+| 実行結果baseline | `run-baseline.json` | `619961b91dfa83c233864799e7f87323f811e5889c3d6faa7b460812fb72c4f5` |
+
+受入済みrevisionの埋込みprofileだけを新WABT commitに合わせて再実行した。
+直前の比較元と全53,907ケースが一致し、現在の実装のrunも直前の全ケースと一致した。
+現在のrunと上表の比較元のcompare-runは終了0で、failed・runner_error・回帰は0件だった。
+修正前の素材・比較元とパッチ適用状態での素材・比較元は、いずれも保持した。
+詳細は[test-suite-runnerの移行記録](../test-suite-runner/wabt-datacount-migration.md)と[commit-audit.json](../../../artifacts/linear-memory/wabt-commit-20261016/commit-audit.json)を参照する。

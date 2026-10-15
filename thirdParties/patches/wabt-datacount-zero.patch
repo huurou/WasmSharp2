@@ -1,0 +1,279 @@
+diff --git a/src/binary-writer.cc b/src/binary-writer.cc
+index e37d646..d3d38aa 100644
+--- a/src/binary-writer.cc
++++ b/src/binary-writer.cc
+@@ -383,6 +383,31 @@ struct CodeMetadataSection {
+ using CodeMetadataSections =
+     std::unordered_map<std::string_view, CodeMetadataSection>;
+ 
++bool HasDataSegmentInstruction(const Module& module) {
++  struct Finder : ExprVisitor::DelegateNop {
++    bool found = false;
++
++    Result OnDataDropExpr(DataDropExpr*) override {
++      found = true;
++      return Result::Ok;
++    }
++
++    Result OnMemoryInitExpr(MemoryInitExpr*) override {
++      found = true;
++      return Result::Ok;
++    }
++  } finder;
++
++  ExprVisitor visitor(&finder);
++  for (size_t i = module.num_func_imports; i < module.funcs.size(); ++i) {
++    (void)visitor.VisitFunc(module.funcs[i]);
++    if (finder.found) {
++      return true;
++    }
++  }
++  return false;
++}
++
+ class BinaryWriter {
+   WABT_DISALLOW_COPY_AND_ASSIGN(BinaryWriter);
+ 
+@@ -1710,8 +1735,10 @@ Result BinaryWriter::WriteModule() {
+     EndSection();
+   }
+ 
+-  if (options_.features.bulk_memory_enabled() &&
+-      module_->data_segments.size()) {
++  const bool write_data_count =
++      options_.features.bulk_memory_enabled() &&
++      (module_->data_segments.size() || HasDataSegmentInstruction(*module_));
++  if (write_data_count) {
+     // Keep track of the data count section offset so it can be removed if
+     // it isn't needed.
+     data_count_start_ = stream_->offset();
+@@ -1754,8 +1781,7 @@ Result BinaryWriter::WriteModule() {
+   }
+ 
+   // Remove the DataCount section if there are no instructions that require it.
+-  if (options_.features.bulk_memory_enabled() &&
+-      module_->data_segments.size() && !has_data_segment_instruction_) {
++  if (write_data_count && !has_data_segment_instruction_) {
+     Offset size = stream_->offset() - data_count_end_;
+     if (size) {
+       // If the DataCount section was followed by anything, assert that it's
+diff --git a/test/spec/memory64/memory_init.txt b/test/spec/memory64/memory_init.txt
+index 28fd5ce..7f56a12 100644
+--- a/test/spec/memory64/memory_init.txt
++++ b/test/spec/memory64/memory_init.txt
+@@ -6,7 +6,8 @@ test() =>
+ test() =>
+ test() =>
+ out/test/spec/memory64/memory_init.wast:190: assert_invalid passed:
+-  0000023: error: data.drop requires data count section
++  out/test/spec/memory64/memory_init/memory_init.4.wasm:0000027: error: data_segment variable out of range: 0 (max 0)
++  0000027: error: OnDataDropExpr callback failed
+ out/test/spec/memory64/memory_init.wast:196: assert_invalid passed:
+   out/test/spec/memory64/memory_init/memory_init.5.wasm:000002c: error: data_segment variable out of range: 4 (max 1)
+   000002c: error: OnDataDropExpr callback failed
+@@ -14,7 +15,9 @@ test() =>
+ out/test/spec/memory64/memory_init.wast:217: assert_trap passed: out of bounds memory access: memory.init out of bounds
+ out/test/spec/memory64/memory_init.wast:224: assert_trap passed: out of bounds memory access: memory.init out of bounds
+ out/test/spec/memory64/memory_init.wast:227: assert_invalid passed:
+-  000002a: error: memory.init requires data count section
++  out/test/spec/memory64/memory_init/memory_init.9.wasm:000002f: error: memory variable out of range: 0 (max 0)
++  out/test/spec/memory64/memory_init/memory_init.9.wasm:000002f: error: data_segment variable out of range: 1 (max 0)
++  000002f: error: OnMemoryInitExpr callback failed
+ out/test/spec/memory64/memory_init.wast:233: assert_invalid passed:
+   out/test/spec/memory64/memory_init/memory_init.10.wasm:0000034: error: data_segment variable out of range: 1 (max 1)
+   0000034: error: OnMemoryInitExpr callback failed
+@@ -228,7 +231,8 @@ test() =>
+ test() =>
+ test() =>
+ out/test/spec/memory64/memory_init.wast:1153: assert_invalid passed:
+-  0000023: error: data.drop requires data count section
++  out/test/spec/memory64/memory_init/memory_init.95.wasm:0000027: error: data_segment variable out of range: 0 (max 0)
++  0000027: error: OnDataDropExpr callback failed
+ out/test/spec/memory64/memory_init.wast:1159: assert_invalid passed:
+   out/test/spec/memory64/memory_init/memory_init.96.wasm:000002c: error: data_segment variable out of range: 4 (max 1)
+   000002c: error: OnDataDropExpr callback failed
+@@ -236,7 +240,10 @@ test() =>
+ out/test/spec/memory64/memory_init.wast:1180: assert_trap passed: out of bounds memory access: memory.init out of bounds
+ out/test/spec/memory64/memory_init.wast:1187: assert_trap passed: out of bounds memory access: memory.init out of bounds
+ out/test/spec/memory64/memory_init.wast:1190: assert_invalid passed:
+-  000002a: error: memory.init requires data count section
++  out/test/spec/memory64/memory_init/memory_init.100.wasm:000002f: error: memory variable out of range: 0 (max 0)
++  out/test/spec/memory64/memory_init/memory_init.100.wasm:000002f: error: data_segment variable out of range: 1 (max 0)
++  out/test/spec/memory64/memory_init/memory_init.100.wasm:000002f: error: type mismatch in memory.init, expected [i32, i32, i32] but got [i64, i32, i32]
++  000002f: error: OnMemoryInitExpr callback failed
+ out/test/spec/memory64/memory_init.wast:1196: assert_invalid passed:
+   out/test/spec/memory64/memory_init/memory_init.101.wasm:0000034: error: data_segment variable out of range: 1 (max 1)
+   0000034: error: OnMemoryInitExpr callback failed
+diff --git a/test/spec/memory_init.txt b/test/spec/memory_init.txt
+index 03d9eba..8497805 100644
+--- a/test/spec/memory_init.txt
++++ b/test/spec/memory_init.txt
+@@ -6,7 +6,8 @@ test() =>
+ test() =>
+ test() =>
+ out/test/spec/memory_init.wast:190: assert_invalid passed:
+-  0000023: error: data.drop requires data count section
++  out/test/spec/memory_init/memory_init.4.wasm:0000027: error: data_segment variable out of range: 0 (max 0)
++  0000027: error: OnDataDropExpr callback failed
+ out/test/spec/memory_init.wast:196: assert_invalid passed:
+   out/test/spec/memory_init/memory_init.5.wasm:000002c: error: data_segment variable out of range: 4 (max 1)
+   000002c: error: OnDataDropExpr callback failed
+@@ -14,7 +15,9 @@ test() =>
+ out/test/spec/memory_init.wast:217: assert_trap passed: out of bounds memory access: memory.init out of bounds
+ out/test/spec/memory_init.wast:224: assert_trap passed: out of bounds memory access: memory.init out of bounds
+ out/test/spec/memory_init.wast:227: assert_invalid passed:
+-  000002a: error: memory.init requires data count section
++  out/test/spec/memory_init/memory_init.9.wasm:000002f: error: memory variable out of range: 0 (max 0)
++  out/test/spec/memory_init/memory_init.9.wasm:000002f: error: data_segment variable out of range: 1 (max 0)
++  000002f: error: OnMemoryInitExpr callback failed
+ out/test/spec/memory_init.wast:233: assert_invalid passed:
+   out/test/spec/memory_init/memory_init.10.wasm:0000034: error: data_segment variable out of range: 1 (max 1)
+   0000034: error: OnMemoryInitExpr callback failed
+diff --git a/test/dump/data-count-section-zero.txt b/test/dump/data-count-section-zero.txt
+new file mode 100644
+--- /dev/null
++++ b/test/dump/data-count-section-zero.txt
+@@ -0,0 +1,143 @@
++;;; TOOL: run-objdump-spec
++;;; ARGS1: --headers %(temp_file)s.0.wasm %(temp_file)s.1.wasm %(temp_file)s.2.wasm %(temp_file)s.3.wasm %(temp_file)s.4.wasm
++(assert_invalid
++  (module
++    (memory 1)
++    (func data.drop 0))
++  "unknown data segment")
++(assert_invalid
++  (module
++    (memory 1)
++    (func
++      i32.const 0
++      i32.const 0
++      i32.const 0
++      memory.init 0))
++  "unknown data segment")
++(assert_invalid
++  (module
++    (memory 1)
++    (func
++      (block
++        (loop
++          i32.const 0
++          if
++            nop
++          else
++            unreachable
++            data.drop 0
++          end))))
++  "unknown data segment")
++(assert_invalid
++  (module
++    (memory 1)
++    (func
++      (block
++        unreachable
++        (loop
++          unreachable
++          memory.init 0))))
++  "unknown data segment")
++(module
++  (memory 1)
++  (func nop))
++(;; STDOUT ;;;
++
++data-count-section-zero.0.wasm:	file format wasm 0x1
++
++Sections:
++
++     Type start=0x0000000a end=0x0000000e (size=0x00000004) count: 1
++ Function start=0x00000010 end=0x00000012 (size=0x00000002) count: 1
++   Memory start=0x00000014 end=0x00000017 (size=0x00000003) count: 1
++DataCount start=0x00000019 end=0x0000001a (size=0x00000001) count: 0
++     Code start=0x0000001c end=0x00000023 (size=0x00000007) count: 1
++
++Code Disassembly:
++
++00001e func[0]:
++ 00001f: fc 09 00                   | data.drop 0
++ 000022: 0b                         | end
++
++data-count-section-zero.1.wasm:	file format wasm 0x1
++
++Sections:
++
++     Type start=0x0000000a end=0x0000000e (size=0x00000004) count: 1
++ Function start=0x00000010 end=0x00000012 (size=0x00000002) count: 1
++   Memory start=0x00000014 end=0x00000017 (size=0x00000003) count: 1
++DataCount start=0x00000019 end=0x0000001a (size=0x00000001) count: 0
++     Code start=0x0000001c end=0x0000002a (size=0x0000000e) count: 1
++
++Code Disassembly:
++
++00001e func[0]:
++ 00001f: 41 00                      | i32.const 0
++ 000021: 41 00                      | i32.const 0
++ 000023: 41 00                      | i32.const 0
++ 000025: fc 08 00 00                | memory.init 0 0
++ 000029: 0b                         | end
++
++data-count-section-zero.2.wasm:	file format wasm 0x1
++
++Sections:
++
++     Type start=0x0000000a end=0x0000000e (size=0x00000004) count: 1
++ Function start=0x00000010 end=0x00000012 (size=0x00000002) count: 1
++   Memory start=0x00000014 end=0x00000017 (size=0x00000003) count: 1
++DataCount start=0x00000019 end=0x0000001a (size=0x00000001) count: 0
++     Code start=0x0000001c end=0x00000031 (size=0x00000015) count: 1
++
++Code Disassembly:
++
++00001e func[0]:
++ 00001f: 02 40                      | block
++ 000021: 03 40                      |   loop
++ 000023: 41 00                      |     i32.const 0
++ 000025: 04 40                      |     if
++ 000027: 01                         |       nop
++ 000028: 05                         |     else
++ 000029: 00                         |       unreachable
++ 00002a: fc 09 00                   |       data.drop 0
++ 00002d: 0b                         |     end
++ 00002e: 0b                         |   end
++ 00002f: 0b                         | end
++ 000030: 0b                         | end
++
++data-count-section-zero.3.wasm:	file format wasm 0x1
++
++Sections:
++
++     Type start=0x0000000a end=0x0000000e (size=0x00000004) count: 1
++ Function start=0x00000010 end=0x00000012 (size=0x00000002) count: 1
++   Memory start=0x00000014 end=0x00000017 (size=0x00000003) count: 1
++DataCount start=0x00000019 end=0x0000001a (size=0x00000001) count: 0
++     Code start=0x0000001c end=0x0000002c (size=0x00000010) count: 1
++
++Code Disassembly:
++
++00001e func[0]:
++ 00001f: 02 40                      | block
++ 000021: 00                         |   unreachable
++ 000022: 03 40                      |   loop
++ 000024: 00                         |     unreachable
++ 000025: fc 08 00 00                |     memory.init 0 0
++ 000029: 0b                         |   end
++ 00002a: 0b                         | end
++ 00002b: 0b                         | end
++
++data-count-section-zero.4.wasm:	file format wasm 0x1
++
++Sections:
++
++     Type start=0x0000000a end=0x0000000e (size=0x00000004) count: 1
++ Function start=0x00000010 end=0x00000012 (size=0x00000002) count: 1
++   Memory start=0x00000014 end=0x00000017 (size=0x00000003) count: 1
++     Code start=0x00000019 end=0x0000001e (size=0x00000005) count: 1
++
++Code Disassembly:
++
++00001b func[0]:
++ 00001c: 01                         | nop
++ 00001d: 0b                         | end
++;;; STDOUT ;;)
