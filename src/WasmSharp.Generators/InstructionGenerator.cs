@@ -63,6 +63,18 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
     );
 
     /// <summary>
+    /// ロード命令・ストア命令のアクセス情報が規則や値型と整合しない場合の診断
+    /// </summary>
+    private static readonly DiagnosticDescriptor invalidMemoryAccess_ = new(
+        "WSIG005",
+        "メモリアクセス情報の不整合",
+        "命令 '{0}' のメモリアクセス情報・即値・スタック効果・検証規則を確認してください。",
+        "InstructionGeneration",
+        DiagnosticSeverity.Error,
+        isEnabledByDefault: true
+    );
+
+    /// <summary>
     /// 命令属性の収集と診断を登録し、宣言が有効な場合に命令情報と実行分岐を生成する
     /// </summary>
     /// <param name="context">ソース生成の初期化コンテキスト</param>
@@ -133,7 +145,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
     /// <summary>
     /// 命令属性を生成用の宣言へ変換し、必要情報とhandler契約の診断を付ける
     /// </summary>
-    /// <remarks>3引数の属性は未対応命令として保持し、7引数と10引数の属性は実行に必要な情報を検査する</remarks>
+    /// <remarks>3引数の属性は未対応命令として保持し、10引数の属性は引数の型で数値用とメモリ用を区別する</remarks>
     /// <param name="attribute">ソース上のInstructionAttributeの属性情報</param>
     /// <param name="compilation">Interpreterとhandlerの宣言を照合するコンパイル情報</param>
     /// <returns>生成用の命令宣言 不完全な宣言やhandler契約違反はErrorに診断を保持する</returns>
@@ -158,6 +170,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
                 "Unsupported",
                 null,
                 null,
+                null,
                 location,
                 incompleteDeclaration_
             );
@@ -170,11 +183,19 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
             arguments.Length == 3 ? "Unsupported" : GetEnumName(arguments[4]),
             arguments.Length == 3 ? "Unsupported" : GetEnumName(arguments[5]),
             arguments.Length == 3 ? null : (string?)arguments[6].Value,
-            arguments.Length == 10
+            arguments.Length == 10 && arguments[7].Type?.SpecialType == SpecialType.System_Byte
                 ? new NumericSignatureDeclaration(
                     (byte)arguments[7].Value!,
                     GetEnumName(arguments[8]),
                     GetEnumName(arguments[9])
+                )
+                : null,
+            arguments.Length == 10
+            && arguments[7].Type?.ToDisplayString() == "WasmSharp.WasmValueKind"
+                ? new MemoryAccessSignatureDeclaration(
+                    GetEnumName(arguments[7]),
+                    (byte)arguments[8].Value!,
+                    (bool)arguments[9].Value!
                 )
                 : null,
             location,
@@ -194,6 +215,10 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
         )
         {
             return declaration with { Error = incompleteDeclaration_ };
+        }
+        if (!HasValidMemoryAccess(declaration))
+        {
+            return declaration with { Error = invalidMemoryAccess_ };
         }
         var numericStackEffect = declaration.StackEffect == "Numeric";
         var numericValidation = declaration.Validation == "Numeric";
@@ -276,6 +301,52 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
     }
 
     /// <summary>
+    /// ロード命令・ストア命令の即値・型効果とアクセス情報の整合性を検査する
+    /// </summary>
+    /// <param name="declaration">属性から読み取った命令宣言</param>
+    /// <returns>アクセス情報の過不足がなく、値型と幅・符号拡張が整合する場合はtrue</returns>
+    private static bool HasValidMemoryAccess(InstructionDeclaration declaration)
+    {
+        var isLoad = declaration.Validation == "MemoryLoad";
+        var isStore = declaration.Validation == "MemoryStore";
+        var signature = declaration.MemoryAccessSignature;
+        if (
+            !isLoad
+            && !isStore
+            && declaration.StackEffect is not ("MemoryLoad" or "MemoryStore")
+            && signature == null
+        )
+        {
+            return true;
+        }
+        if (
+            !(isLoad || isStore)
+            || declaration.StackEffect != declaration.Validation
+            || declaration.Immediate != "MemoryArgument"
+            || signature == null
+        )
+        {
+            return false;
+        }
+        var valueWidth = signature.ValueType switch
+        {
+            "I32" or "F32" => 4,
+            "I64" or "F64" => 8,
+            _ => 0,
+        };
+        if (signature.ByteWidth is not (1 or 2 or 4 or 8) || signature.ByteWidth > valueWidth)
+        {
+            return false;
+        }
+        var isInteger = signature.ValueType is "I32" or "I64";
+        if (!isInteger && signature.ByteWidth != valueWidth)
+        {
+            return false;
+        }
+        return !signature.SignExtend || (isLoad && isInteger && signature.ByteWidth < valueWidth);
+    }
+
+    /// <summary>
     /// 命令情報の検索表と、対応済み命令の実行opcodeを宣言するソースを生成する
     /// </summary>
     /// <param name="instructions">診断がなく、prefixと命令番号が重複しない命令宣言の一覧</param>
@@ -324,6 +395,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
             /// <param name="Validation">検証規則</param>
             /// <param name="ExecutionOpcode">対応済み命令の実行opcode 未対応の場合はnull</param>
             /// <param name="NumericSignature">数値命令の入力個数・入力型・結果型 数値以外の場合はnull</param>
+            /// <param name="MemoryAccessSignature">ロード命令・ストア命令のアクセス情報 それ以外の場合はnull</param>
             internal readonly record struct InstructionDescriptor(
                 OpcodeKey Opcode,
                 string Name,
@@ -331,7 +403,8 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
                 StackEffectKind StackEffect,
                 ValidationRule Validation,
                 ExecutionOpcode? ExecutionOpcode,
-                NumericSignature? NumericSignature);
+                NumericSignature? NumericSignature,
+                MemoryAccessSignature? MemoryAccessSignature);
 
             /// <summary>
             /// 命令宣言から生成された命令情報の参照先
@@ -357,8 +430,13 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
                 signature == null
                     ? "null"
                     : $"new NumericSignature({signature.InputCount}, global::WasmSharp.WasmValueKind.{signature.InputType}, global::WasmSharp.WasmValueKind.{signature.ResultType})";
+            var memory = instruction.MemoryAccessSignature;
+            var memoryAccessSignature =
+                memory == null
+                    ? "null"
+                    : $"new MemoryAccessSignature(global::WasmSharp.WasmValueKind.{memory.ValueType}, {memory.ByteWidth}, {(memory.SignExtend ? "true" : "false")})";
             source.AppendLine(
-                $"        [{key}] = new({key}, {SymbolDisplay.FormatLiteral(instruction.Name, true)}, ImmediateKind.{instruction.Immediate}, StackEffectKind.{instruction.StackEffect}, ValidationRule.{instruction.Validation}, {executionOpcode}, {numericSignature}),"
+                $"        [{key}] = new({key}, {SymbolDisplay.FormatLiteral(instruction.Name, true)}, ImmediateKind.{instruction.Immediate}, StackEffectKind.{instruction.StackEffect}, ValidationRule.{instruction.Validation}, {executionOpcode}, {numericSignature}, {memoryAccessSignature}),"
             );
         }
         source.AppendLine(
@@ -454,6 +532,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
     /// <param name="Validation">検証規則を表す列挙子名</param>
     /// <param name="Handler">対応するInterpreterの静的handler名 未対応の宣言ではnull</param>
     /// <param name="NumericSignature">数値命令の型効果を表す属性値 数値以外の宣言ではnull</param>
+    /// <param name="MemoryAccessSignature">ロード命令・ストア命令のアクセス情報 それ以外の宣言ではnull</param>
     /// <param name="Location">属性宣言のソース上の位置</param>
     /// <param name="Error">宣言の不備を報告する診断 宣言が有効な場合はnull</param>
     private sealed record InstructionDeclaration(
@@ -465,6 +544,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
         string Validation,
         string? Handler,
         NumericSignatureDeclaration? NumericSignature,
+        MemoryAccessSignatureDeclaration? MemoryAccessSignature,
         Location Location,
         DiagnosticDescriptor? Error
     )
@@ -485,5 +565,17 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
         byte InputCount,
         string InputType,
         string ResultType
+    );
+
+    /// <summary>
+    /// 生成するメモリアクセス情報の属性値
+    /// </summary>
+    /// <param name="ValueType">読み書きするWasmValueKindの列挙子名</param>
+    /// <param name="ByteWidth">読み書きするバイト数</param>
+    /// <param name="SignExtend">狭い整数のロードで符号拡張するか</param>
+    private sealed record MemoryAccessSignatureDeclaration(
+        string ValueType,
+        byte ByteWidth,
+        bool SignExtend
     );
 }

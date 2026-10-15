@@ -15,7 +15,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\WasmSharp.Generators\WasmSharp.Generators.csproj" />
     <EmbeddedResource
-      Include="..\..\src\WasmSharp\Instructions\InstructionAttribute.cs;..\..\src\WasmSharp\Instructions\OpcodeKey.cs;..\..\src\WasmSharp\Instructions\ImmediateKind.cs;..\..\src\WasmSharp\Instructions\StackEffectKind.cs;..\..\src\WasmSharp\Instructions\ValidationRule.cs;..\..\src\WasmSharp\Instructions\NumericSignature.cs;..\..\src\WasmSharp\WasmValueKind.cs"
+      Include="..\..\src\WasmSharp\Instructions\InstructionAttribute.cs;..\..\src\WasmSharp\Instructions\OpcodeKey.cs;..\..\src\WasmSharp\Instructions\ImmediateKind.cs;..\..\src\WasmSharp\Instructions\StackEffectKind.cs;..\..\src\WasmSharp\Instructions\ValidationRule.cs;..\..\src\WasmSharp\Instructions\NumericSignature.cs;..\..\src\WasmSharp\Instructions\MemoryArgument.cs;..\..\src\WasmSharp\Instructions\MemoryAccessSignature.cs;..\..\src\WasmSharp\WasmValueKind.cs"
       LogicalName="InstructionContracts.%(Filename)%(Extension)"
     />
     <EmbeddedResource

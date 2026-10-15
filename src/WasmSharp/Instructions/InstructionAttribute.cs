@@ -62,6 +62,11 @@ internal sealed class InstructionAttribute(
     public NumericSignature? NumericSignature { get; }
 
     /// <summary>
+    /// メモリ命令の値型・アクセス幅・符号拡張の指定を取得する ロード・ストア以外ではnull
+    /// </summary>
+    public MemoryAccessSignature? MemoryAccessSignature { get; }
+
+    /// <summary>
     /// 数値命令の型効果と実行handlerを宣言する
     /// </summary>
     /// <param name="prefix">通常命令では0、拡張命令では先頭のprefix</param>
@@ -89,6 +94,36 @@ internal sealed class InstructionAttribute(
         : this(prefix, code, name, immediate, stackEffect, validation, executionHandler)
     {
         NumericSignature = new(inputCount, inputType, resultType);
+    }
+
+    /// <summary>
+    /// ロード命令・ストア命令のアクセス情報と実行handlerを宣言する
+    /// </summary>
+    /// <param name="prefix">通常命令では0、拡張命令では先頭のprefix</param>
+    /// <param name="code">prefix内の命令番号</param>
+    /// <param name="name">Wasm仕様上の命令名</param>
+    /// <param name="immediate">即値の符号化</param>
+    /// <param name="stackEffect">検証時のスタック効果</param>
+    /// <param name="validation">命令の検証規則</param>
+    /// <param name="executionHandler">Interpreterに宣言された静的handler名</param>
+    /// <param name="valueType">読み書きする値のスカラー数値型</param>
+    /// <param name="byteWidth">読み書きするバイト数</param>
+    /// <param name="signExtend">狭い整数のロードで符号拡張するか</param>
+    public InstructionAttribute(
+        byte prefix,
+        uint code,
+        string name,
+        ImmediateKind immediate,
+        StackEffectKind stackEffect,
+        ValidationRule validation,
+        string? executionHandler,
+        WasmValueKind valueType,
+        byte byteWidth,
+        bool signExtend
+    )
+        : this(prefix, code, name, immediate, stackEffect, validation, executionHandler)
+    {
+        MemoryAccessSignature = new(valueType, byteWidth, signExtend);
     }
 
     /// <summary>

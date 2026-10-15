@@ -139,4 +139,24 @@ internal enum StackEffectKind
     /// i32条件と注釈型の2候補を取り除き、注釈型の値を積む
     /// </summary>
     TypedSelect,
+
+    /// <summary>
+    /// i32アドレスを取り除き、メモリアクセス情報の値型を積む
+    /// </summary>
+    MemoryLoad,
+
+    /// <summary>
+    /// メモリアクセス情報の値型とi32アドレスを取り除く
+    /// </summary>
+    MemoryStore,
+
+    /// <summary>
+    /// i32のページ数を取り除き、拡張前のページ数をi32で積む
+    /// </summary>
+    MemoryGrow,
+
+    /// <summary>
+    /// 3つのi32値を取り除く
+    /// </summary>
+    MemoryBulk,
 }

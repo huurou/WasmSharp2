@@ -24,6 +24,11 @@ internal readonly struct DecodedInstruction
     internal uint Index { get; }
 
     /// <summary>
+    /// メモリ命令のアラインメント指数とオフセット
+    /// </summary>
+    internal MemoryArgument MemoryArgument { get; }
+
+    /// <summary>
     /// 構造化制御の型指定
     /// </summary>
     internal BlockType BlockType { get; }
@@ -53,6 +58,7 @@ internal readonly struct DecodedInstruction
     /// <param name="blockType">制御の型指定 他の命令ではdefault</param>
     /// <param name="labels">候補と既定ラベル 他の命令では非defaultの空配列</param>
     /// <param name="selectTypes">selectの型列 他の命令では非defaultの空配列</param>
+    /// <param name="memoryArgument">メモリ命令の即値 他の命令ではdefault</param>
     private DecodedInstruction(
         OpcodeKey opcode,
         long byteOffset,
@@ -60,13 +66,15 @@ internal readonly struct DecodedInstruction
         uint index = 0,
         BlockType blockType = default,
         ImmutableArray<uint> labels = default,
-        ImmutableArray<WasmValueKind> selectTypes = default
+        ImmutableArray<WasmValueKind> selectTypes = default,
+        MemoryArgument memoryArgument = default
     )
     {
         Opcode = opcode;
         ByteOffset = byteOffset;
         Immediate = immediate;
         Index = index;
+        MemoryArgument = memoryArgument;
         BlockType = blockType;
         Labels = labels.IsDefault ? [] : labels;
         SelectTypes = selectTypes.IsDefault ? [] : selectTypes;
@@ -109,6 +117,22 @@ internal readonly struct DecodedInstruction
     internal static DecodedInstruction WithIndex(OpcodeKey opcode, uint index, long byteOffset)
     {
         return new(opcode, byteOffset, index: index);
+    }
+
+    /// <summary>
+    /// メモリ命令の即値を持つ入力命令を構築する
+    /// </summary>
+    /// <param name="opcode">命令の識別子</param>
+    /// <param name="memoryArgument">アラインメント指数とオフセット</param>
+    /// <param name="byteOffset">入力バイナリ上の命令のバイト位置</param>
+    /// <returns>メモリ命令以外の即値を既定値に統一した命令</returns>
+    internal static DecodedInstruction WithMemoryArgument(
+        OpcodeKey opcode,
+        MemoryArgument memoryArgument,
+        long byteOffset
+    )
+    {
+        return new(opcode, byteOffset, memoryArgument: memoryArgument);
     }
 
     /// <summary>

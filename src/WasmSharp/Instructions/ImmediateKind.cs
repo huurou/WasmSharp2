@@ -54,4 +54,29 @@ internal enum ImmediateKind
     /// selectの型注釈を表す値型のベクトル
     /// </summary>
     TypeVector,
+
+    /// <summary>
+    /// アラインメント指数とオフセットを表す2つのu32
+    /// </summary>
+    MemoryArgument,
+
+    /// <summary>
+    /// メモリインデックス0を指定する予約バイト
+    /// </summary>
+    MemoryZero,
+
+    /// <summary>
+    /// コピー先とコピー元のメモリインデックス0を指定する2つの予約バイト
+    /// </summary>
+    MemoryPairZero,
+
+    /// <summary>
+    /// データインデックスのu32とメモリインデックス0を指定する予約バイト
+    /// </summary>
+    DataIndexMemoryZero,
+
+    /// <summary>
+    /// データインデックスを表すu32
+    /// </summary>
+    DataIndex,
 }

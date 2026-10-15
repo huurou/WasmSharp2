@@ -124,4 +124,39 @@ internal enum ValidationRule
     /// 型注釈が1個で、i32条件と2候補が注釈型に合うことを検証する
     /// </summary>
     TypedSelect,
+
+    /// <summary>
+    /// メモリとアラインメント、i32アドレスを検証し、アクセス情報の値型を積む
+    /// </summary>
+    MemoryLoad,
+
+    /// <summary>
+    /// メモリとアラインメント、書き込む値の型とi32アドレスを検証する
+    /// </summary>
+    MemoryStore,
+
+    /// <summary>
+    /// メモリが存在することを検証し、ページ数をi32で積む
+    /// </summary>
+    MemorySize,
+
+    /// <summary>
+    /// メモリとi32のページ数を検証し、拡張前のページ数をi32で積む
+    /// </summary>
+    MemoryGrow,
+
+    /// <summary>
+    /// メモリが存在し、3つの入力がi32型であることを検証する
+    /// </summary>
+    MemoryBulk,
+
+    /// <summary>
+    /// メモリとデータインデックス、3つのi32入力を検証する
+    /// </summary>
+    MemoryInit,
+
+    /// <summary>
+    /// データインデックスを検証し、型スタックを変更しない
+    /// </summary>
+    DataDrop,
 }

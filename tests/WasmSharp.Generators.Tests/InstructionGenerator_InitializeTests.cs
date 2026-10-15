@@ -3,7 +3,7 @@ using Microsoft.CodeAnalysis.CSharp;
 
 namespace WasmSharp.Generators.Tests;
 
-internal class InstructionGenerator_InitializeTests
+internal partial class InstructionGenerator_InitializeTests
 {
     [Test]
     [Arguments(0, 0x79, "i64.clz", 1, "I64", "I64")]
@@ -79,6 +79,7 @@ internal class InstructionGenerator_InitializeTests
                 && descriptor.StackEffect == WasmSharp.Instructions.StackEffectKind.Numeric
                 && descriptor.Validation == WasmSharp.Instructions.ValidationRule.Numeric
                 && descriptor.NumericSignature == expected && attribute.NumericSignature == expected
+                && descriptor.MemoryAccessSignature == null && attribute.MemoryAccessSignature == null
                 && result.Status == WasmSharp.Execution.ExecutionStatus.Success
                 && context.Pc == 1 && context.FrameCount == 0
                 && context.Log.Count == 1 && context.Log[0] == "{{name}}";

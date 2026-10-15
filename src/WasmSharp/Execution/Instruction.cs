@@ -11,12 +11,16 @@ namespace WasmSharp.Execution;
 /// <param name="byteOffset">入力バイナリ上の命令のバイト位置</param>
 /// <param name="index">命令が参照する関数・local・分岐情報などの番号（番号を指定しない命令では参照しない）</param>
 /// <param name="targetCount">分岐表の既定を除く候補数 分岐表以外では参照しない</param>
+/// <param name="memoryArgument">メモリ命令のアラインメント指数とオフセット</param>
+/// <param name="memoryAccessSignature">ロード命令・ストア命令のアクセス情報</param>
 internal readonly struct Instruction(
     ExecutionOpcode opcode,
     WasmValue immediate,
     long byteOffset,
     uint index,
-    int targetCount = 0
+    int targetCount = 0,
+    MemoryArgument memoryArgument = default,
+    MemoryAccessSignature memoryAccessSignature = default
 )
 {
     /// <summary>
@@ -44,4 +48,14 @@ internal readonly struct Instruction(
     /// 分岐表の既定を除く候補数 候補がない場合は0
     /// </summary>
     internal int TargetCount { get; } = targetCount;
+
+    /// <summary>
+    /// メモリ命令のアラインメント指数とオフセット
+    /// </summary>
+    internal MemoryArgument MemoryArgument { get; } = memoryArgument;
+
+    /// <summary>
+    /// ロード命令・ストア命令の値型・アクセス幅・符号拡張の指定
+    /// </summary>
+    internal MemoryAccessSignature MemoryAccessSignature { get; } = memoryAccessSignature;
 }
