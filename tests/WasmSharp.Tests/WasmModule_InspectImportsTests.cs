@@ -379,6 +379,167 @@ internal class WasmModule_InspectImportsTests
         }
     }
 
+    [Test]
+    [Arguments("table.get")]
+    [Arguments("section.element")]
+    [Arguments("v128.const")]
+    public async Task メモリ命令とデータに後続仕様の未対応が併存する_生成を拒否してimport調査は本体とデータを未確認に保つ(
+        string feature
+    )
+    {
+        // Arrange
+        byte[] instruction = feature switch
+        {
+            "table.get" => [0x41, 0, 0x25, 0, 0x1A],
+            "v128.const" => [0xFD, 0x0C, .. new byte[16], 0x1A],
+            _ => [],
+        };
+        var code = HostLinkingModuleBinary.Code(
+            ([], [0x41, 0, 0x41, 42, 0x41, 1, 0xFC, 11, 0, .. instruction, 0x10, 0, 0x0B])
+        );
+        var data = HostLinkingModuleBinary.Section(11, [1, 0, 0x41, 0, 0x0B, 1, 0xAB]);
+        byte[] elements =
+            feature == "section.element" ? HostLinkingModuleBinary.Section(9, [0]) : [];
+        var bytes = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Types(([], [])),
+            HostLinkingModuleBinary.Imports(
+                ("env", "memory", 2, HostLinkingModuleBinary.Limits(1)),
+                ("env", "observe", 0, [0])
+            ),
+            HostLinkingModuleBinary.Functions(0),
+            HostLinkingModuleBinary.Tables((0x6F, 1, null)),
+            HostLinkingModuleBinary.Start(1),
+            elements,
+            code,
+            data
+        );
+        var codeOffset = bytes.Length - data.Length - code.Length;
+        var failureOffset =
+            feature == "section.element"
+                ? codeOffset - elements.Length
+                : codeOffset
+                    + Array.IndexOf(code, feature == "table.get" ? (byte)0x25 : (byte)0xFD);
+        var memory = new WasmMemory(new(1));
+        memory.Write(0, [99]);
+        var calls = 0;
+        var host = new WasmHostModule("env");
+        host.Define("memory", memory);
+        host.Define(
+            "observe",
+            WasmFunction.CreateHost(
+                new([], []),
+                _ =>
+                {
+                    calls++;
+                    return new([]);
+                }
+            )
+        );
+
+        foreach (var useStream in new[] { false, true })
+        {
+            using var inspectionStream = new ChunkedReadStream(new MemoryStream(bytes));
+            using var decodeStream = new ChunkedReadStream(new MemoryStream(bytes));
+            WasmInstance? returned = null;
+
+            // Act
+            var inspection = useStream
+                ? WasmModule.InspectImports(inspectionStream)
+                : WasmModule.InspectImports(bytes);
+
+            // Act & Assert
+            var exception = await Assert
+                .That(() =>
+                    returned = (
+                        useStream ? WasmModule.Decode(decodeStream) : WasmModule.Decode(bytes)
+                    )
+                        .Validate()
+                        .Instantiate([host])
+                )
+                .ThrowsExactly<WasmUnsupportedFeatureException>();
+            var actual = new byte[1];
+            memory.Read(0, actual);
+
+            // Assert
+            using (Assert.Multiple())
+            {
+                await Assert.That(exception!.Feature).IsEqualTo(feature);
+                await Assert
+                    .That(exception.Location)
+                    .IsEqualTo(
+                        new(
+                            WasmProcessingStage.Decode,
+                            failureOffset,
+                            feature == "section.element" ? null : 1u,
+                            feature == "section.element" ? (byte)9 : (byte)10
+                        )
+                    );
+                await Assert.That(exception.UnverifiedRanges.Length).IsEqualTo(2);
+                await Assert
+                    .That(exception.UnverifiedRanges[0].Stage)
+                    .IsEqualTo(WasmProcessingStage.Decode);
+                await Assert
+                    .That(exception.UnverifiedRanges[0].StartOffset)
+                    .IsEqualTo(failureOffset);
+                await Assert.That(exception.UnverifiedRanges[0].EndOffset).IsEqualTo(bytes.Length);
+                await Assert
+                    .That(exception.UnverifiedRanges[1].Stage)
+                    .IsEqualTo(WasmProcessingStage.Validate);
+                await Assert.That(exception.UnverifiedRanges[1].StartOffset).IsEqualTo(0L);
+                await Assert.That(exception.UnverifiedRanges[1].EndOffset).IsEqualTo(bytes.Length);
+                await Assert.That(returned).IsNull();
+                await Assert.That(calls).IsEqualTo(0);
+                await Assert.That(actual[0]).IsEqualTo((byte)99);
+                await Assert
+                    .That(
+                        inspection
+                            .Imports.Select(x => (x.ModuleName, x.Name, x.Kind))
+                            .SequenceEqual([
+                                ("env", "memory", WasmExternalKind.Memory),
+                                ("env", "observe", WasmExternalKind.Function),
+                            ])
+                    )
+                    .IsTrue();
+                await Assert
+                    .That(((WasmImportInfo.Memory)inspection.Imports[0]).Limits)
+                    .IsEqualTo(new WasmLimits(1));
+                var functionType = ((WasmImportInfo.Function)inspection.Imports[1]).Type;
+                await Assert.That(functionType.Parameters).IsEmpty();
+                await Assert.That(functionType.Results).IsEmpty();
+                await Assert
+                    .That(inspection.UnverifiedRanges.Length)
+                    .IsEqualTo(feature == "section.element" ? 7 : 6);
+                await Assert
+                    .That(
+                        inspection.UnverifiedRanges.Any(x =>
+                            x.Stage == WasmProcessingStage.Decode
+                            && x.StartOffset == codeOffset + 2
+                            && x.EndOffset == bytes.Length - data.Length
+                        )
+                    )
+                    .IsTrue();
+                await Assert
+                    .That(
+                        inspection.UnverifiedRanges.Any(x =>
+                            x.Stage == WasmProcessingStage.Decode
+                            && x.StartOffset == bytes.Length - data.Length + 2
+                            && x.EndOffset == bytes.Length
+                        )
+                    )
+                    .IsTrue();
+                await Assert
+                    .That(inspection.UnverifiedRanges[^1].Stage)
+                    .IsEqualTo(WasmProcessingStage.Validate);
+                await Assert.That(inspection.UnverifiedRanges[^1].StartOffset).IsEqualTo(0L);
+                await Assert
+                    .That(inspection.UnverifiedRanges[^1].EndOffset)
+                    .IsEqualTo(bytes.Length);
+                await Assert.That(inspectionStream.CanRead).IsTrue();
+                await Assert.That(decodeStream.CanRead).IsTrue();
+            }
+        }
+    }
+
     private sealed class FailingReadStream(Exception exception) : MemoryStream
     {
         public override int Read(Span<byte> buffer)
