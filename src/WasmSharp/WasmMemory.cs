@@ -74,14 +74,9 @@ public sealed class WasmMemory
     /// <exception cref="ArgumentOutOfRangeException">書き込み範囲が現在のmemoryの外にある場合 内容は変更しない</exception>
     public void Write(ulong offset, ReadOnlySpan<byte> source)
     {
-        ValidateRange(offset, source.Length);
-        while (!source.IsEmpty)
+        if (!TryWrite(offset, source))
         {
-            var pageOffset = (int)(offset % PAGE_SIZE);
-            var length = Math.Min(PAGE_SIZE - pageOffset, source.Length);
-            source[..length].CopyTo(pages_[(int)(offset / PAGE_SIZE)].AsSpan(pageOffset, length));
-            offset += (uint)length;
-            source = source[length..];
+            throw new ArgumentOutOfRangeException(nameof(offset), "memoryの範囲外です。");
         }
     }
 
@@ -94,14 +89,9 @@ public sealed class WasmMemory
     /// <exception cref="ArgumentOutOfRangeException">読み出し範囲が現在のmemoryの外にある場合 destinationは変更しない</exception>
     public void Read(ulong offset, Span<byte> destination)
     {
-        ValidateRange(offset, destination.Length);
-        while (!destination.IsEmpty)
+        if (!TryRead(offset, destination))
         {
-            var pageOffset = (int)(offset % PAGE_SIZE);
-            var length = Math.Min(PAGE_SIZE - pageOffset, destination.Length);
-            pages_[(int)(offset / PAGE_SIZE)].AsSpan(pageOffset, length).CopyTo(destination);
-            offset += (uint)length;
-            destination = destination[length..];
+            throw new ArgumentOutOfRangeException(nameof(offset), "memoryの範囲外です。");
         }
     }
 
@@ -139,17 +129,64 @@ public sealed class WasmMemory
     }
 
     /// <summary>
-    /// コピー対象の全範囲が現在のmemoryに収まることを確認する
+    /// 指定した全範囲が現在のmemoryに収まるかを返す
     /// </summary>
-    /// <param name="offset">範囲の先頭バイト位置</param>
-    /// <param name="length">バッファから取得した非負のバイト数</param>
-    /// <exception cref="ArgumentOutOfRangeException">範囲が現在のmemoryの外にある場合</exception>
-    private void ValidateRange(ulong offset, int length)
+    /// <param name="offset">範囲の先頭バイト位置 長さが0の場合も検査する</param>
+    /// <param name="length">範囲のバイト数</param>
+    /// <returns>全範囲が現在のmemoryに収まる場合はtrue</returns>
+    internal bool ContainsRange(ulong offset, ulong length)
     {
         // 加算のオーバーフローを避け、コピー前に全範囲を検査する。
-        if (offset > ByteLength || (ulong)length > ByteLength - offset)
+        return offset <= ByteLength && length <= ByteLength - offset;
+    }
+
+    /// <summary>
+    /// 指定範囲をホスト側バッファへコピーし、範囲内かを返す
+    /// </summary>
+    /// <param name="offset">読み出し元の先頭バイト位置</param>
+    /// <param name="destination">その長さだけ読み出したバイトを受け取るホスト側バッファ</param>
+    /// <returns>全範囲を転送できた場合はtrue 範囲外の場合はdestinationを変更せずfalse</returns>
+    internal bool TryRead(ulong offset, Span<byte> destination)
+    {
+        if (!ContainsRange(offset, (ulong)destination.Length))
         {
-            throw new ArgumentOutOfRangeException(nameof(offset), "memoryの範囲外です。");
+            return false;
         }
+
+        while (!destination.IsEmpty)
+        {
+            var pageOffset = (int)(offset % PAGE_SIZE);
+            var length = Math.Min(PAGE_SIZE - pageOffset, destination.Length);
+            pages_[(int)(offset / PAGE_SIZE)].AsSpan(pageOffset, length).CopyTo(destination);
+            offset += (uint)length;
+            destination = destination[length..];
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// 指定範囲へホスト側バッファの内容をコピーし、範囲内かを返す
+    /// </summary>
+    /// <param name="offset">書き込み先の先頭バイト位置</param>
+    /// <param name="source">全体をコピーするホスト側バッファ</param>
+    /// <returns>全範囲を転送できた場合はtrue 範囲外の場合はmemoryを変更せずfalse</returns>
+    internal bool TryWrite(ulong offset, ReadOnlySpan<byte> source)
+    {
+        if (!ContainsRange(offset, (ulong)source.Length))
+        {
+            return false;
+        }
+
+        while (!source.IsEmpty)
+        {
+            var pageOffset = (int)(offset % PAGE_SIZE);
+            var length = Math.Min(PAGE_SIZE - pageOffset, source.Length);
+            source[..length].CopyTo(pages_[(int)(offset / PAGE_SIZE)].AsSpan(pageOffset, length));
+            offset += (uint)length;
+            source = source[length..];
+        }
+
+        return true;
     }
 }
