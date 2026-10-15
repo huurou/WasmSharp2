@@ -30,9 +30,9 @@
 | テスト | 既存3プロジェクトはいずれも`net10.0`、TUnit`1.66.16` |
 | 生成器 | 本体は`netstandard2.0`、生成器テストは`net10.0` |
 
-SDKの原出力は[dotnet-info.log](../../../artifacts/linear-memory/task-1.1-20261015T151304Z/dotnet-info.log)、環境確認コマンドと終了値は[environment.json](../../../artifacts/linear-memory/task-1.1-20261015T151304Z/environment.json)に保存した。
+SDK情報を表示したコマンドの出力は[dotnet-info.log](../../../artifacts/linear-memory/task-1.1-20261015T151304Z/dotnet-info.log)、環境確認コマンドと終了値は[environment.json](../../../artifacts/linear-memory/task-1.1-20261015T151304Z/environment.json)に保存した。
 HEADとsubmoduleの状態も同じ証拠ディレクトリに保存した。
-開始時の`git status --porcelain=v1`は確認して空だったが、原ログは保存していない。
+開始時の`git status --porcelain=v1`は確認して空だったが、コマンドの出力はファイルに保存していない。
 
 ## 固定版と素材
 
@@ -113,7 +113,7 @@ dotnet run --project tests/WasmSharp.TestSuiteRunner.Tests/WasmSharp.TestSuiteRu
 ./tools/WasmSharp.TestSuiteRunner/bin/Release/net10.0/WasmSharp.TestSuiteRunner.exe --help
 ```
 
-| 検証 | 終了値 | 件数・結果 | 原コマンド・UTC・終了値 | テスト結果 |
+| 検証 | 終了値 | 件数・結果 | 実行コマンド・UTC・終了値 | テスト結果 |
 | --- | --- | --- | --- | --- |
 | Releaseビルド | 0 | 警告0、エラー0 | [build.result.json](../../../artifacts/linear-memory/task-1.1-20261015T151304Z/build.result.json) | [標準出力](../../../artifacts/linear-memory/task-1.1-20261015T151304Z/build.stdout.log) |
 | ランタイム | 0 | 成功2,824、失敗0、スキップ0 | [runtime.result.json](../../../artifacts/linear-memory/task-1.1-20261015T151304Z/runtime.result.json) | [TRX](../../../artifacts/linear-memory/task-1.1-20261015T151304Z/runtime-trx/WasmSharp.Tests_net10.0_x64.trx) |
@@ -132,6 +132,6 @@ python -X utf8 artifacts/linear-memory/task-1.1-20261015T151304Z/audit-inputs.py
 ```
 
 初回の補助監査はWABTの版表示全体を文字列`1.0.42`と比較したため、終了1になった。
-原出力のgit接尾辞と、固定commit・実行ファイルのハッシュ一致を確認し、版の先頭要素を照合するよう監査側だけを訂正した。
-初回のスクリプト・JSON・原ログ・終了値は同ディレクトリの`initial-*`に保持し、訂正後の終了0と区別した。
+コマンドが出力したgit接尾辞と、固定commit・実行ファイルのハッシュ一致を確認し、版の先頭要素を照合するよう監査側だけを訂正した。
+初回のスクリプト・JSON・実行ログ・終了値は同ディレクトリの`initial-*`に保持し、訂正後の終了0と区別した。
 素材・期待値・分類・baselineの比較条件は変更していない。
