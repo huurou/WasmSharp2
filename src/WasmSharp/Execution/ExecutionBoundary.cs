@@ -106,7 +106,7 @@ internal static class ExecutionBoundary
     /// </summary>
     /// <param name="result">実行の成功、trap、資源枯渇のいずれかを表す結果</param>
     /// <param name="stage">生成する例外の位置情報に設定する処理段階</param>
-    /// <remarks>成功時は何もしない。失敗時は原因・上限・関数index・命令位置を保持する</remarks>
+    /// <remarks>成功時は何もしない。失敗時は原因・上限・関数index・バイト位置・セクションIDを保持する</remarks>
     /// <exception cref="WasmTrapException">結果がtrapの場合</exception>
     /// <exception cref="WasmExhaustionException">結果が資源枯渇の場合</exception>
     internal static void ThrowIfFailed(ExecutionResult result, WasmProcessingStage stage)
@@ -116,7 +116,12 @@ internal static class ExecutionBoundary
             throw new WasmTrapException(
                 GetTrapMessage(result.TrapReason!.Value),
                 result.TrapReason!.Value,
-                new WasmFailureLocation(stage, result.ByteOffset, result.FunctionIndex)
+                new WasmFailureLocation(
+                    stage,
+                    result.ByteOffset,
+                    result.FunctionIndex,
+                    result.SectionId
+                )
             );
         }
         if (result.Status == ExecutionStatus.Exhaustion)
@@ -143,6 +148,7 @@ internal static class ExecutionBoundary
             WasmTrapReason.IntegerDivideByZero => "integer divide by zero",
             WasmTrapReason.IntegerOverflow => "integer overflow",
             WasmTrapReason.InvalidConversionToInteger => "invalid conversion to integer",
+            WasmTrapReason.MemoryOutOfBounds => "out of bounds memory access",
             _ => "Wasmの実行中にtrapが発生しました。",
         };
     }

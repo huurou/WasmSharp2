@@ -54,6 +54,41 @@ internal class ExecutionBoundary_ThrowIfFailedTests
     }
 
     [Test]
+    public async Task 関数外の初期化でメモリ範囲外になる_参照診断とデータセグメント位置を保ったtrap例外にする()
+    {
+        // Arrange
+        var result = ExecutionResult.Trap(
+            WasmTrapReason.MemoryOutOfBounds,
+            null,
+            12345678900,
+            sectionId: 11
+        );
+
+        // Act & Assert
+        var exception = await Assert
+            .That(() => ExecutionBoundary.ThrowIfFailed(result, WasmProcessingStage.Instantiate))
+            .ThrowsExactly<WasmTrapException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.Reason).IsEqualTo(WasmTrapReason.MemoryOutOfBounds);
+            await Assert
+                .That(
+                    exception.Message.StartsWith(
+                        "out of bounds memory access",
+                        StringComparison.Ordinal
+                    )
+                )
+                .IsTrue();
+            await Assert
+                .That(exception.Location)
+                .IsEqualTo(
+                    new WasmFailureLocation(WasmProcessingStage.Instantiate, 12345678900, null, 11)
+                );
+            await Assert.That(exception.InnerException).IsNull();
+        }
+    }
+
+    [Test]
     [Arguments(WasmProcessingStage.Invoke)]
     [Arguments(WasmProcessingStage.Instantiate)]
     public async Task Exhaustionの結果を受け取る_段階と原因と上限と元位置を保った専用例外にする(
@@ -89,14 +124,26 @@ internal class ExecutionBoundary_ThrowIfFailedTests
     }
 
     [Test]
-    [Arguments(WasmProcessingStage.Invoke)]
-    [Arguments(WasmProcessingStage.Instantiate)]
-    public async Task Unreachableの結果を受け取る_参照診断と段階と原因と元位置を保ったtrap例外にする(
-        WasmProcessingStage stage
+    [Arguments(WasmProcessingStage.Invoke, WasmTrapReason.Unreachable, "unreachable executed")]
+    [Arguments(WasmProcessingStage.Instantiate, WasmTrapReason.Unreachable, "unreachable executed")]
+    [Arguments(
+        WasmProcessingStage.Invoke,
+        WasmTrapReason.MemoryOutOfBounds,
+        "out of bounds memory access"
+    )]
+    [Arguments(
+        WasmProcessingStage.Instantiate,
+        WasmTrapReason.MemoryOutOfBounds,
+        "out of bounds memory access"
+    )]
+    public async Task 参照診断に対応するTrapの結果を受け取る_段階と原因と元位置を保ったtrap例外にする(
+        WasmProcessingStage stage,
+        WasmTrapReason reason,
+        string expectedMessage
     )
     {
         // Arrange
-        var result = ExecutionResult.Trap(WasmTrapReason.Unreachable, uint.MaxValue, 12345678900);
+        var result = ExecutionResult.Trap(reason, uint.MaxValue, 12345678900);
 
         // Act & Assert
         var exception = await Assert
@@ -104,11 +151,9 @@ internal class ExecutionBoundary_ThrowIfFailedTests
             .ThrowsExactly<WasmTrapException>();
         using (Assert.Multiple())
         {
-            await Assert.That(exception!.Reason).IsEqualTo(WasmTrapReason.Unreachable);
+            await Assert.That(exception!.Reason).IsEqualTo(reason);
             await Assert
-                .That(
-                    exception.Message.StartsWith("unreachable executed", StringComparison.Ordinal)
-                )
+                .That(exception.Message.StartsWith(expectedMessage, StringComparison.Ordinal))
                 .IsTrue();
             await Assert
                 .That(exception.Location)
@@ -127,7 +172,6 @@ internal class ExecutionBoundary_ThrowIfFailedTests
         // Arrange
         WasmTrapReason[] reasons =
         [
-            WasmTrapReason.MemoryOutOfBounds,
             WasmTrapReason.TableOutOfBounds,
             WasmTrapReason.IndirectCallTypeMismatch,
             WasmTrapReason.UninitializedElement,

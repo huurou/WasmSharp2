@@ -85,6 +85,7 @@ internal class ExecutionResult_TrapTests
             await Assert.That(result.TrapReason).IsEqualTo(WasmTrapReason.IntegerDivideByZero);
             await Assert.That(result.FunctionIndex).IsEqualTo(FUNCTION_INDEX);
             await Assert.That(result.ByteOffset).IsEqualTo(37L);
+            await Assert.That(result.SectionId).IsNull();
             await Assert.That(result.ExhaustionReason).IsNull();
             await Assert.That(result.Limit).IsNull();
         }

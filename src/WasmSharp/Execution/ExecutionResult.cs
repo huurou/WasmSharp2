@@ -49,6 +49,11 @@ internal readonly struct ExecutionResult
     internal long? ByteOffset { get; }
 
     /// <summary>
+    /// 失敗の診断に用いるセクションID 正常終了時と位置を特定できない場合はnull
+    /// </summary>
+    internal byte? SectionId { get; }
+
+    /// <summary>
     /// 実行状態と、その状態に対応する戻り値または失敗情報を保持する
     /// </summary>
     /// <param name="status">実行状態</param>
@@ -58,6 +63,7 @@ internal readonly struct ExecutionResult
     /// <param name="limit">到達した実行資源の上限</param>
     /// <param name="functionIndex">失敗が発生した関数のindex</param>
     /// <param name="byteOffset">失敗が発生した入力バイナリ上のバイト位置</param>
+    /// <param name="sectionId">失敗が発生したセクションのID</param>
     private ExecutionResult(
         ExecutionStatus status,
         ImmutableArray<WasmValue> values,
@@ -65,7 +71,8 @@ internal readonly struct ExecutionResult
         WasmExhaustionReason? exhaustionReason,
         int? limit,
         uint? functionIndex,
-        long? byteOffset
+        long? byteOffset,
+        byte? sectionId = null
     )
     {
         Status = status;
@@ -75,6 +82,7 @@ internal readonly struct ExecutionResult
         Limit = limit;
         FunctionIndex = functionIndex;
         ByteOffset = byteOffset;
+        SectionId = sectionId;
     }
 
     /// <summary>
@@ -91,10 +99,16 @@ internal readonly struct ExecutionResult
     /// trapの原因と発生位置を保持する失敗結果を構築する
     /// </summary>
     /// <param name="reason">trapの原因</param>
-    /// <param name="functionIndex">trapが発生した関数のindex</param>
+    /// <param name="functionIndex">trapが発生した関数のindex 関数外ではnull</param>
     /// <param name="byteOffset">trapが発生した入力バイナリ上のバイト位置</param>
+    /// <param name="sectionId">trapが発生したセクションのID 特定しない場合はnull</param>
     /// <returns>trapを表す実行結果</returns>
-    internal static ExecutionResult Trap(WasmTrapReason reason, uint functionIndex, long byteOffset)
+    internal static ExecutionResult Trap(
+        WasmTrapReason reason,
+        uint? functionIndex,
+        long byteOffset,
+        byte? sectionId = null
+    )
     {
         return new ExecutionResult(
             ExecutionStatus.Trap,
@@ -103,7 +117,8 @@ internal readonly struct ExecutionResult
             exhaustionReason: null,
             limit: null,
             functionIndex: functionIndex,
-            byteOffset: byteOffset
+            byteOffset: byteOffset,
+            sectionId: sectionId
         );
     }
 
