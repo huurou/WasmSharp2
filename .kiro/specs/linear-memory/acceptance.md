@@ -1,7 +1,7 @@
-# linear-memoryの受入準備記録
+# linear-memoryの受入記録
 
 タスク1.1の記録は当時の状態を保持している。
-現在の素材と比較元は「DataCount修正後の素材と比較元」、最終受入の照合は「8.3の最終受入照合」を参照する。
+現在の固定素材は「DataCount修正後の素材と比較元」、最終受入の照合は「8.3の最終受入照合」、次機能の比較元は「8.4の明示baseline保存」を参照する。
 
 ## 確認した範囲
 
@@ -185,7 +185,7 @@ Releaseビルドは警告・エラー0件、その後の3テストプロジェ�
 
 2026-10-16（JST）、HEAD`f6f638d471ac8c2175fbfeb6732beb381eb2fbea`で、線形メモリの実装挙動と回帰比較の受入条件を照合した。
 要件1.1～8.5の53項目は、公式ケースまたは成功済みの直接テストと検証記録へ対応付けた。
-**要件8.6の保存はタスク8.4で実施予定であり、未完了である。**
+**8.3照合時点では、要件8.6の保存はタスク8.4で実施予定であり、未完了だった。**
 本節の判定は8.3の担当範囲に限る。
 後続機能に依存する未対応と前提不成立が残るため、Core 2.0全体の完成を意味しない。
 
@@ -278,7 +278,8 @@ assert_unlinkableのReasonも既存のリンク不成立分類と一致した。
 掲載した公式ケースはすべて正式runでpassedだった。
 直接テストはファイル名からクラス名を推測せず、実際のクラス・メソッドと最新TRXを対応付けた。
 表の成功件数はTRXの実行行数である。
-全パラメーター・テストID・公式command・観測診断は[coverage-matrix.json](../../../artifacts/linear-memory/task-8.3-20261015T235054739Z/coverage-matrix.json)に保存した。
+全パラメーター・テストID・公式command・観測診断は[8.3時点のcoverage-matrix.json](../../../artifacts/linear-memory/task-8.3-20261015T235054739Z/coverage-matrix.json)に保存した。
+下表の要件8.6は8.4の保存後に更新し、54項目すべての最終対応は[coverage-matrix-final.json](../../../artifacts/linear-memory/task-8.4-20261016T001148Z/coverage-matrix-final.json)に保存した。
 
 要件4.3の実際のメモリ割当失敗は再現していない。
 設計指定のコード確認として、[Grow](../../../src/WasmSharp/Execution/Interpreter.Memory.cs#L116)がTryGrow呼出しだけをOutOfMemoryException捕捉で囲み-1へ変換することと、[TryGrow](../../../src/WasmSharp/WasmMemory.cs#L119)が全追加領域の割当後にページ表を確定することを確認した。
@@ -340,7 +341,7 @@ assert_unlinkableのReasonも既存のリンク不成立分類と一致した。
 | 8.3 | 比較元の全passed16924件を維持し欠落・未比較・回帰を0件とする | `i32.wast#1`<br>[acceptance-audit.json](../../../artifacts/linear-memory/task-8.3-20261015T235054739Z/acceptance-audit.json)<br>[comparison.json](../../../artifacts/linear-memory/review-8.2-20261015T234057463Z/comparison.json) | 照合済み |
 | 8.4 | failed/runner_error/回帰と本仕様の未対応起因が残らず固定条件を維持する | `memory_init.wast#128`<br>`memory_init.wast#136`<br>[acceptance-audit.json](../../../artifacts/linear-memory/task-8.3-20261015T235054739Z/acceptance-audit.json)<br>[root-cause-audit.json](../../../artifacts/linear-memory/task-8.3-20261015T235054739Z/root-cause-audit.json) | 照合済み |
 | 8.5 | 後続のtables-referencesとsimdへの依存を分類と起因で保持する | [WasmModule_InspectImportsTests.メモリ命令とデータに後続仕様の未対応が併存する_生成を拒否してimport調査は本体とデータを未確認に保つ](../../../tests/WasmSharp.Tests/WasmModule_InspectImportsTests.cs#L386)（3件成功）<br>[root-cause-audit.json](../../../artifacts/linear-memory/task-8.3-20261015T235054739Z/root-cause-audit.json) | 照合済み |
-| 8.6 | 同じ正式runのbaseline-saveと保存一致の確認はタスク8.4で実施予定・未完了 | [CompletionPolicy_BaselineSaveTests.Failedやrunner_errorやblockedを含む全件記録済みの結果を保存した_成功の0を返す](../../../tests/WasmSharp.TestSuiteRunner.Tests/Reports/CompletionPolicy_BaselineSaveTests.cs#L9)（1件成功）<br>[tasks.md](../../../.kiro/specs/linear-memory/tasks.md) | 8.4で保存予定・未完了 |
+| 8.6 | 比較済みの同じ正式runを明示保存し、全バイト・ケース・分類・metadataの一致と旧比較元の不変を確認する | [baseline-save.result.json](../../../artifacts/linear-memory/task-8.4-20261016T001148Z/baseline-save.result.json)<br>[baseline-save-audit.json](../../../artifacts/linear-memory/task-8.4-20261016T001148Z/baseline-save-audit.json)<br>[run-baseline.json](../../../artifacts/linear-memory/task-8.4-20261016T001148Z/run-baseline.json) | 保存・照合済み |
 
 
 ### 関連する公式入力の洗い出し
@@ -420,7 +421,58 @@ python -X utf8 artifacts/linear-memory/task-8.3-20261015T235054739Z/audit-accept
 git -c core.excludesFile= diff --check -- .kiro/specs/linear-memory/acceptance.md
 ```
 
-タスク8.4は、上表の正式runと正式comparisonを再確認した後、**同じ正式run**を入力として既存baseline-saveを明示実行する。
-保存内容とrunの一致、保存後のパス・SHA-256・コマンド・終了値を本記録へ追加し、要件8.6の実証と対応表の状態を更新する。
+8.3時点では、タスク8.4で上表の正式runと正式comparisonを再確認した後、**同じ正式run**を入力として既存baseline-saveを明示実行する方針とした。
+保存内容とrunの一致、保存後のパス・SHA-256・コマンド・終了値を本記録へ追加し、要件8.6の実証と対応表の状態を更新する計画だった。
 8.3ではbaseline-saveを実行しておらず、比較元`wabt-commit-20261016/run-baseline.json`を保持している。
-次の比較元は8.4の保存後に確定する。
+次の比較元は、後述の8.4の保存後に確定した。
+
+## 8.4の明示baseline保存
+
+2026-10-16（JST）、HEAD`29f88c80795128a2b9739a254a772560d245876c`で、比較済みの同じ正式runを次機能の実行結果baselineとして保存した。
+[8.3の独立レビュー](../../../artifacts/linear-memory/review-8.3-20261016T000420009Z/review.md)は本仕様の挙動・比較を承認済みであり、保存前に正式run・comparisonと旧比較元の固定SHA-256、全147入力・53,907ケースの結果と比較レコード、以前のpassed16,924件の維持を再確認した。
+保存前の確認結果は[before-save.json](../../../artifacts/linear-memory/task-8.4-20261016T001148Z/before-save.json)にある。
+
+既存CLIのbaseline-saveへ正式runをそのまま入力し、新規の専用ディレクトリへ出力した。
+作業ディレクトリは`D:\source\repos\WasmSharp2`、UTC開始は`2026-10-16T00:13:40.2205731Z`、終了は`2026-10-16T00:13:42.2863940Z`、終了コードは0だった。
+正確な引数・UTC・終了値は[baseline-save.result.json](../../../artifacts/linear-memory/task-8.4-20261016T001148Z/baseline-save.result.json)、出力は[stdout](../../../artifacts/linear-memory/task-8.4-20261016T001148Z/baseline-save.stdout.log)と[stderr](../../../artifacts/linear-memory/task-8.4-20261016T001148Z/baseline-save.stderr.log)に保存した。
+stdoutは保存完了と保存先を表示し、stderrは空だった。
+
+```powershell
+./tools/WasmSharp.TestSuiteRunner/bin/Release/net10.0/WasmSharp.TestSuiteRunner.exe baseline-save --input artifacts/linear-memory/review-8.2-20261015T234057463Z/run.json --output artifacts/linear-memory/task-8.4-20261016T001148Z/run-baseline.json
+```
+
+| 用途 | パス | SHA-256 |
+| --- | --- | --- |
+| 保存入力の正式run | [review-8.2-20261015T234057463Z/run.json](../../../artifacts/linear-memory/review-8.2-20261015T234057463Z/run.json) | `70e9453f222304b22a04f1e2b2f4cd2e56208192d5b59e0603615dade18309a1` |
+| 同じrunの正式comparison | [review-8.2-20261015T234057463Z/comparison.json](../../../artifacts/linear-memory/review-8.2-20261015T234057463Z/comparison.json) | `2b1695fd9e23e8178ee825ba2b7dd02c8750f518d1dd842ced2ffb32a0a7f590` |
+| 次機能が使う保存baseline | [task-8.4-20261016T001148Z/run-baseline.json](../../../artifacts/linear-memory/task-8.4-20261016T001148Z/run-baseline.json) | `70e9453f222304b22a04f1e2b2f4cd2e56208192d5b59e0603615dade18309a1` |
+| 次機能が使う対応manifest | [wabt-commit-20261016/corpus/manifest.json](../../../artifacts/linear-memory/wabt-commit-20261016/corpus/manifest.json) | `c60dec91f788791a9b790835b2629c2d970e3fb44afab4d63f209df9097e263e` |
+| 保持した旧比較元 | [wabt-commit-20261016/run-baseline.json](../../../artifacts/linear-memory/wabt-commit-20261016/run-baseline.json) | `619961b91dfa83c233864799e7f87323f811e5889c3d6faa7b460812fb72c4f5` |
+
+保存後の[baseline-save-audit.json](../../../artifacts/linear-memory/task-8.4-20261016T001148Z/baseline-save-audit.json)では、保存baselineと正式runの69,058,822byteすべてが一致した。
+全ケースの識別子・順序・詳細、分類件数、埋込みmanifest、実行ポリシー、完了情報、provenanceも一致した。
+保存前後で正式run・comparison・manifest・旧比較元・8.3の監査と独立レビュー・tasks.md・保存CLIのexeとDLLのSHA-256は変わらなかった。
+旧比較元は上書きしていない。
+
+| 保存metadata・結果 | 確認値 |
+| --- | --- |
+| 保存元run ID | `75e373e4-c90d-4679-89fe-986b8fc1371e` |
+| 保存元run開始UTC | `2026-10-15T23:45:31.3648423+00:00` |
+| profile | `core2`、全21機能と147入力を保持 |
+| 実行ポリシー | `max_call_depth=1024` |
+| 処理・出力の完了 | `processing_complete=true`、`output_complete=true` |
+| 入力・ケース | 147入力、53,907ケース |
+| passed / failed / runner_error | 23,050 / 0 / 0 |
+| runtime_unsupported / blocked / out_of_scope | 1,457 / 28,323 / 1,077 |
+| 受入済みcomparisonの回帰・欠落・追加・未比較 | 各0 |
+
+保存前後の監査は[audit-baseline.py](../../../artifacts/linear-memory/task-8.4-20261016T001148Z/audit-baseline.py)で実行し、どちらも終了0だった。
+各コマンド・UTC・終了値は[audit-before.result.json](../../../artifacts/linear-memory/task-8.4-20261016T001148Z/audit-before.result.json)と[audit-after.result.json](../../../artifacts/linear-memory/task-8.4-20261016T001148Z/audit-after.result.json)、stdout/stderrはそれぞれ同名のログにある。
+8.3時点の対応表JSONと未保存記録は保持し、要件8.6の保存証拠だけを補った[最終54項目の対応表](../../../artifacts/linear-memory/task-8.4-20261016T001148Z/coverage-matrix-final.json)を別に保存した。
+最終対応表は54項目照合済み、未完了0件である。
+
+次機能は、本節の保存baselineと対応manifestを一組として比較へ使用する。
+保存のために公式run/compareや素材再生成を繰り返しておらず、既存の未対応1,457件とblocked28,323件も分類・起因を保持した。
+これらは前節で確認したtables-referencesとsimdの対応待ちであり、この保存はCore 2.0全体の完成や全件合格を意味しない。
+製品・テストの変更を伴わないため、REDはN/Aとし、実装担当では全テストを追加反復していない。
+文書の全54行、出典リンク、保存証拠との一致、変更範囲とdiff --checkは[verify-document.py](../../../artifacts/linear-memory/task-8.4-20261016T001148Z/verify-document.py)で確認し、結果を[verification-summary.json](../../../artifacts/linear-memory/task-8.4-20261016T001148Z/verification-summary.json)に保存した。
