@@ -207,7 +207,9 @@ internal partial class WasmFunction_InvokeTests
             Array.Fill(bytes, (byte)0xFF);
             var instance = module.Validate().Instantiate(imported ? [host] : []);
             var memory = instance.GetMemory("memory");
-            memory.Write(3, Convert.FromHexString(initial));
+            var initialBytes = Convert.FromHexString(initial);
+            memory.Write(3, initialBytes);
+            memory.Write((ulong)(3 + initialBytes.Length), [0xEE]);
             var result = instance.GetFunction("run").Invoke([WasmValue.FromI32(1)]);
 
             // Assert

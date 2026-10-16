@@ -70,6 +70,10 @@ WABT1.0.42には、データセグメントが0件の場合に必要なDataCount
 
 以下の専用ビルドではWABT自身のテストとlibwasm・WASIを無効にし、SHA-256実装には固定済みPicoSHA2を使用する。
 旧実行ファイルを保持するため、修正前と異なる出力先を使う。
+これは修正済みcommitから変換器を新しく用意する手順であり、保存済み素材の生成に使った実行ファイルと同一のビルドではない。
+保存済み素材は、パッチ適用状態で`BUILD_TESTS=ON`・`BUILD_LIBWASM=ON`として構成した`artifacts/wabt-datacount-tests/Release/wast2json.exe`で生成した。
+その後、ソースと実行ファイルが不変であることを確認して修正commitへ対応付けた。実行ファイルのSHA-256とビルド条件は[移行記録](../.kiro/specs/test-suite-runner/wabt-datacount-migration.md#修正版の識別)を参照する。
+新しいビルドではビルド条件と実行ファイルのSHA-256を記録し、再生成後の`compare-conversion`で出典差と素材差を確認する。保存済み実行ファイルとのhash一致は前提にしない。
 
 ```powershell
 cmake -S thirdParties/wabt -B artifacts/wabt-core2-1.0.42-datacount -G "Visual Studio 18 2026" -A x64 -DBUILD_TESTS=OFF -DBUILD_LIBWASM=OFF -DWITH_WASI=OFF -DUSE_INTERNAL_SHA256=ON -DWERROR=ON

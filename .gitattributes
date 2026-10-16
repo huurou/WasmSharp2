@@ -1,1 +1,2 @@
 .husky/pre-commit text eol=lf
+thirdParties/patches/*.patch text eol=lf

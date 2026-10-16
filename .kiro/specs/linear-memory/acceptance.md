@@ -476,3 +476,13 @@ stdoutは保存完了と保存先を表示し、stderrは空だった。
 これらは前節で確認したtables-referencesとsimdの対応待ちであり、この保存はCore 2.0全体の完成や全件合格を意味しない。
 製品・テストの変更を伴わないため、REDはN/Aとし、実装担当では全テストを追加反復していない。
 文書の全54行、出典リンク、保存証拠との一致、変更範囲とdiff --checkは[verify-document.py](../../../artifacts/linear-memory/task-8.4-20261016T001148Z/verify-document.py)で確認し、結果を[verification-summary.json](../../../artifacts/linear-memory/task-8.4-20261016T001148Z/verification-summary.json)に保存した。
+
+## 2026-10-16の実装検証
+
+commit`40107aed6bae67485e5aeb00c8a83a6c30321c5c`に対する[実装検証レポート](../../../artifacts/linear-memory/final-review-20261016T002604Z/report.md)は、linear-memoryの全タスク1〜8と54受入基準をGOと判定した。
+同レポートは当該commitに対する履歴として保持し、後続の変更への判定とは区別する。
+後続仕様に依存する未対応・前提不成立は残っており、Core 2.0全体の完成を示すものではない。
+
+2026-10-17のレビュー修正後も、8.4で保存したbaselineは更新していない。
+修正後の比較で生じた33件（data.wastの15件、global.wastの18件）は、診断の補足文だけの既知の差であり、結果分類・位置・例外型の変化と回帰は0件だった。
+次機能の比較では、[レビュー対応の検証記録](tasks.md#claude-codeレビュー対応2026-10-17)と[33件の全件照合](../../../artifacts/linear-memory/claude-review-20261017-4aa3bd52/diagnostic-delta-audit.json)を参照する。

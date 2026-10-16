@@ -15,7 +15,7 @@ internal static class FunctionValidator
     /// 定義関数の参照と値スタックの型を検証し、対応する線形実行コードを作成する
     /// </summary>
     /// <remarks>入力の型配列とmoduleの検証成功状態・実行コードは変更しない</remarks>
-    /// <param name="module">importと定義関数の型参照、global初期化式、リソース宣言の検証を終えたmodule</param>
+    /// <param name="module">importと定義関数の型参照、global初期化式、リソース宣言、データセグメントの検証を終えたmodule</param>
     /// <param name="definitionIndex">importを含まない定義順の関数index</param>
     /// <param name="moduleFunctionIndex">型の参照と診断に使用する、importを含むmodule全体の関数index</param>
     /// <param name="functionTypes">importを先頭とする関数index順の解決済みの型</param>

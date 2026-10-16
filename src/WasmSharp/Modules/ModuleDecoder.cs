@@ -23,7 +23,7 @@ internal static class ModuleDecoder
     /// <remarks>型や参照の妥当性の検証と、インスタンス化は行わない</remarks>
     /// <param name="bytes">ヘッダーから始まる入力バイナリ全体</param>
     /// <returns>入力上の診断位置を保持する、未検証のmodule定義</returns>
-    /// <exception cref="WasmDecodeException">対応する構文の符号化、sectionの構成またはfunctionとcodeの件数が不正な場合</exception>
+    /// <exception cref="WasmDecodeException">対応する構文の符号化、sectionの構成、functionとcodeの件数、またはデータ数セクションの件数や要否が不正な場合</exception>
     /// <exception cref="WasmUnsupportedFeatureException">仕様に存在する、未実装のsectionまたは命令に遭遇した場合 入力全体の有効性は保証しない</exception>
     /// <exception cref="WasmImplementationLimitException">宣言件数または命令数がコレクションの保持上限を超える場合</exception>
     internal static WasmModule Decode(ReadOnlySpan<byte> bytes)
@@ -75,7 +75,7 @@ internal static class ModuleDecoder
     /// <param name="bytes">ヘッダーから始まる入力バイナリ全体</param>
     /// <param name="mode">通常解析または境界失敗後の診断用読取り</param>
     /// <returns>入力上の診断位置を保持する、未検証のmodule定義</returns>
-    /// <exception cref="WasmDecodeException">対応する構文の符号化、sectionの構成またはfunctionとcodeの件数が不正な場合</exception>
+    /// <exception cref="WasmDecodeException">対応する構文の符号化、sectionの構成、functionとcodeの件数、またはデータ数セクションの件数や要否が不正な場合</exception>
     /// <exception cref="ModuleReadBoundaryException">限定された範囲内で構文を読み終えられない場合</exception>
     /// <exception cref="WasmUnsupportedFeatureException">仕様に存在する、未実装のsectionまたは命令に遭遇した場合 入力全体の有効性は保証しない</exception>
     /// <exception cref="WasmImplementationLimitException">宣言件数または命令数がコレクションの保持上限を超える場合</exception>

@@ -164,6 +164,9 @@ bundleのSHA-256は`9acda200aba8351ddee07e6cbacc71bb9f42ffc0cf83e824a25cf06603da
 新しい検証証拠は`artifacts/linear-memory/wabt-commit-20261016/`へ保存した。
 WABTソースと実行ファイルは先のテスト時点から不変で、既存のビルド・WABTテスト証拠を引き継ぐ。
 WABTの追加ビルド・全テスト再実行は行わず、ソース4ファイルと実行ファイルのSHA-256を照合した。
+現行素材にも、初回のパッチ適用状態で構成した`artifacts/wabt-datacount-tests/Release/wast2json.exe`（`BUILD_TESTS=ON`・`BUILD_LIBWASM=ON`、SHA-256`2c9114cb9fc457c323f0d45eb507614a9530180b4b7a656bd9914823ff8a31c8`）を使用した。
+`thirdParties/README.md`の`wabt-core2-1.0.42-datacount`への専用ビルドは、新しい実行ファイルを用意する代替手順であり、上記のビルド記録をその実行ファイルの証拠としては扱わない。
+テスト依存も、初回検証では固定commitの公式アーカイブから取得し、READMEでは同じgitlinkをsubmoduleとして取得する手順を示している。
 ランナーはReleaseビルドで警告・エラー0件、変更した固定値のテストを含む702テストが成功した。
 
 新profileで全147入力を再生成し、直前の5,821素材と全バイトが一致した。

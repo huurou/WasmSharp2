@@ -136,7 +136,7 @@ internal partial class ModuleDecoder_DecodeTests
     [Arguments("0A01000C0100", 11L, (byte)12)]
     [Arguments("030201000B0100", 15L, (byte)11)]
     [Arguments("03020100000201610B0100", 19L, (byte)11)]
-    public async Task 未対応内容より前に長さや順序や件数の違反が確定する_破損を優先する(
+    public async Task セクションの長さや順序や件数が不正である_元位置を保持して破損を報告する(
         string sections,
         long offset,
         byte id

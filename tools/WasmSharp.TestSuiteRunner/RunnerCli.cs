@@ -514,8 +514,8 @@ internal sealed class RunnerCli(Core2Profile profile)
     private static void WriteHelp(TextWriter output)
     {
         var converter = OperatingSystem.IsWindows()
-            ? "artifacts/wabt-core2-1.0.42/Release/wast2json.exe"
-            : "artifacts/wabt-core2-1.0.42/wast2json";
+            ? "artifacts/wabt-core2-1.0.42-datacount/Release/wast2json.exe"
+            : "artifacts/wabt-core2-1.0.42-datacount/wast2json";
         output.WriteLine(
             $$"""
             Test Suite Runner: WebAssembly Core 2.0の公式適合検証ツール

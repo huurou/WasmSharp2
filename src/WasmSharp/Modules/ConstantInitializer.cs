@@ -40,7 +40,7 @@ internal static class ConstantInitializer
         {
             throw ValidationDiagnostics.ValidationFailure(
                 "type mismatch",
-                "global初期化式の結果が1個ではありません。",
+                "定数式の結果が1個ではありません。",
                 endLocation
             );
         }
@@ -48,7 +48,7 @@ internal static class ConstantInitializer
         {
             throw ValidationDiagnostics.ValidationFailure(
                 "type mismatch",
-                "global初期化式の結果型が宣言と一致しません。",
+                "定数式の結果型が要求された型と一致しません。",
                 endLocation
             );
         }
@@ -97,7 +97,7 @@ internal static class ConstantInitializer
                 throw ValidationDiagnostics.UnknownIndex(
                     "global",
                     instruction.Index,
-                    "global初期化式が参照するimport globalが存在しません。",
+                    "定数式が参照するimport globalが存在しません。",
                     location
                 );
             }
@@ -106,7 +106,7 @@ internal static class ConstantInitializer
             {
                 throw ValidationDiagnostics.ValidationFailure(
                     "constant expression required",
-                    "global初期化式はimmutable globalだけを参照できます。",
+                    "定数式はimmutable globalだけを参照できます。",
                     location
                 );
             }
@@ -121,7 +121,7 @@ internal static class ConstantInitializer
         }
         throw ValidationDiagnostics.ValidationFailure(
             "constant expression required",
-            "global初期化式に使用できない命令です。",
+            "定数式に使用できない命令です。",
             location
         );
     }
