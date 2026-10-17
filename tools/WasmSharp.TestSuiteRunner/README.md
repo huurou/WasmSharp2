@@ -51,7 +51,22 @@ Linuxでは実行ファイル名を`WasmSharp.TestSuiteRunner`に読み替え、
 & $runner compare-run --baseline artifacts/run-baseline.json --current artifacts/run-2.json --output artifacts/run-diff.json
 ```
 
-比較結果で分類・期待値・実際の値・診断・回帰を確認します。修正が必要なら、新しい出力先で実行と比較を繰り返します。問題を解消して結果を確認した後、保存済みJSONからbaselineを明示的に更新します。
+比較結果で分類・期待値・実際の値・診断・回帰を確認します。
+`run`と`compare-run`の終了0だけでは、追加機能の受入完了を判定できません。
+機能の完了確認とbaseline更新の前に、同じ全体実行結果について次を確認します。
+
+- 全対象の記録・出力と比較が完了し、`failed`・入力単位とcommand単位の`runner_error`・回帰・欠落・未比較が0件である。
+- 必要なランタイム機能が揃った対象ケースがすべて`passed`であり、各受入基準と公式ケースまたは必要な直接テストとの対応がある。
+- 残る`runtime_unsupported`をケースIDと診断の未実装機能から担当仕様へ対応付け、今回の機能自身と原因不明の件数が0件である。
+- 残る`blocked`の`cause.direct`を起点まで追跡し、`cause.origins`と一致することを確認する。許容するのは後続仕様の未対応に依存するケースだけとし、今回の機能自身の実装不足や原因不明による件数を0件にする。
+
+件数とケースID、残る未対応・前提不成立の原因を、各機能仕様の受入記録に残します。
+ファイル名だけで担当機能を決めると、同じ入力に含まれる他機能のケースを誤って分類するため、診断と依存原因を確認します。
+判定条件は[ロードマップの公式検証方針](../../.kiro/steering/roadmap.md)、記録例は[linear-memoryの残る未対応の起因](../../.kiro/specs/linear-memory/acceptance.md#残る未対応の起因)を参照してください。
+この機能別の確認は受入記録で行い、CLIの`verify`はCore 2.0全体の最終判定に使います。
+
+条件を満たさない場合は修正し、新しい出力先で実行と比較を繰り返します。
+上記の確認を終えた後、保存済みJSONからbaselineを明示的に更新します。
 
 ```powershell
 & $runner baseline-save --input artifacts/run-2.json --output artifacts/run-baseline.json
@@ -86,3 +101,9 @@ manifestと生成物の相対配置を保てば、素材ディレクトリを移
 ```
 
 `verify`は全対象の記録・出力が完了し、入力異常がなく、out_of_scope以外の全commandがpassedの場合だけ終了0になります。複数回の部分的な成功を合算する操作はありません。
+
+## 通常CIの検証範囲
+
+[Unit tests](../../.github/workflows/unit-tests.yml)はReleaseビルドと、ランタイム・生成器・ランナーのTUnitテストを実行します。
+通常CIでは公式スイート全体の`run`・baseline比較・`verify`を実行しないため、CIの成功は機能別の公式受入やCore 2.0全件合格を意味しません。
+機能の完了確認には、上記の全体実行・比較と、対象機能に残る未対応・前提不成立の確認が必要です。
