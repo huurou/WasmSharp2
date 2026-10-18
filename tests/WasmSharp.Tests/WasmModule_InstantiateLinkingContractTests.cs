@@ -239,21 +239,27 @@ internal partial class WasmModule_InstantiateTests
     }
 
     [Test]
-    [Arguments(false)]
-    [Arguments(true)]
-    public async Task Globalの値型または可変性が異なる_変換せず拒否する(bool mutable)
+    [Arguments(false, false)]
+    [Arguments(true, false)]
+    [Arguments(false, true)]
+    [Arguments(true, true)]
+    public async Task Globalの値型または可変性が異なる_変換せず拒否する(bool mutable, bool vector)
     {
         // Arrange
+        var kind = vector ? (byte)0x7B : (byte)0x7F;
+        var value = vector
+            ? WasmValue.FromV128(0x7FF8123456789ABC, 0x8000000000000000)
+            : WasmValue.FromI32(42);
         var module = WasmModule
             .Decode(
                 HostLinkingModuleBinary.Create(
                     HostLinkingModuleBinary.Imports(
-                        ("env", "g", 3, [mutable ? (byte)0x7F : (byte)0x7E, 0])
+                        ("env", "g", 3, [mutable ? kind : (byte)0x7E, 0])
                     )
                 )
             )
             .Validate();
-        var global = new WasmGlobal(new(WasmValueKind.I32, mutable), WasmValue.FromI32(42));
+        var global = new WasmGlobal(new(value.Kind, mutable), value);
         var host = new WasmHostModule("env");
         host.Define("g", global);
         var imports = new WasmImports();
@@ -274,7 +280,7 @@ internal partial class WasmModule_InstantiateTests
                     )
                 )
                 .IsTrue();
-            await Assert.That(global.Value.AsI32()).IsEqualTo(42);
+            await Assert.That(global.Value).IsEqualTo(value);
         }
     }
 

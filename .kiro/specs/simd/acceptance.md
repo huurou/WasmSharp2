@@ -349,3 +349,10 @@ New-Item -ItemType Directory -Path $taskOutput | Out-Null
 製品変更なしの適合確認として、既存のv128引数・複数結果・localゼロ初期値・直接call・return・block/if/分岐・両形式host・typed/untyped selectを再利用し、不足するloop/backedge/drop2件、別module間接call1件、引数/結果型不一致2件、再export1件、同期再入3件を追加した。上下64bit・型と順序、所属/呼び出し元instance、関数の同一性、外側operand/local、ホスト例外同一性と返却済み結果を確認する。[項目別対応](../../../artifacts/simd/task-9.1-20261018T204713Z/coverage.md)では、新規v128再入の成功2件/ホスト例外1件と、再利用したscalarのtrap・exhaustion・不正host結果・別instanceの上限復元を区別した。
 
 非behavioralでRED=N/A。警告・エラー0のReleaseビルド後、新規9件・再利用50件・runtime4794件が全成功・失敗/skip0・各終了0。[独立レビュー](../../../artifacts/simd/review-9.1-20261018T205414Z/review-verdict.md)はAPPROVEDで、同じ全件結果に9/50件が含まれることも確認した。変更は既存テスト1ファイルへの402行追加だけ。CRLF維持、整形・差分・最終hash一致を確認し、親のkiro-verify-completionはVERIFIED。start/global/共有memoryと最終受入は後続範囲。
+
+
+## 9.2 globalと共有memory・start
+
+製品変更なしの適合確認で、global共有1件・memory共有1件と既存リンク型/可変性のv128パラメータ2件を追加した。globalはimmutable/mutable import/exportの同一性、guest get/set→host/別instance、host更新→guest、保存済み値と定義globalのinstance独立を確認。memoryはdataの全16byte、grow後ゼロ、scalar/SIMD/host更新、2instanceとhostの同一性、grow前data保持を確認した。既存のglobal初期化・定数式/型/可変制約と8.4のInvoke/starttrap2件など13メソッド38件を再利用し、失敗store未変更・先行副作用・保存参照・次callを維持した。
+
+[担当記録](../../../artifacts/simd/task-9.2-20261018T210136Z/self-review.md)はRED=N/Aの非behavioral確認。警告・エラー0のビルド後、追加filter6件（新規4/旧リンク2）・再利用38件・runtime4798件が全成功・失敗/skip0・終了0。[独立レビュー](../../../artifacts/simd/review-task-9.2-20261018T211000Z/review-verdict.md)はAPPROVEDで、全件TUnit JSONから同じ44件の成功を確認し、期待byteも独立計算した。変更3テストの既存改行、最終hash、整形/差分検査は一致。親は全差分・原ログ・現在hashを照合し、kiro-verify-completionをVERIFIEDとした。公式最終受入とCPU支援無効の確認は10.xへ引き継ぐ。

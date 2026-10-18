@@ -262,7 +262,7 @@
   - _Depends: 3.2, 7.1, 7.2, 7.3_
   - _Requirements: 1.3, 1.4, 1.5, 1.6, 2.1, 2.2, 2.4, 2.5, 2.7, 7.1, 7.2, 7.3, 7.4, 7.5, 7.7, 8.2, 8.3, 8.4_
 
-- [ ] 9. 既存の呼び出し・状態共有との統合を確認する
+- [x] 9. 既存の呼び出し・状態共有との統合を確認する
 - [x] 9.1 v128の共通値経路とホスト連携を確認する
   - 引数・複数結果・local初期値・直接call・間接call・return・block/loop/if・分岐・dropで128bitを保持する。
   - typed/untyped select、ホストcallback、再exportと同期再入で既存の型・instance・失敗契約を確認する。
@@ -271,7 +271,7 @@
   - _Depends: 8.1, 8.2, 8.3, 8.4_
   - _Requirements: 3.1, 3.3, 3.4, 3.6_
 
-- [ ] 9.2 v128 globalと共有メモリ・startを確認する
+- [x] 9.2 v128 globalと共有メモリ・startを確認する
   - 定義・immutable/mutable import・export・get/setでglobalの初期値と同一性を確認する。
   - data初期化、grow、scalarとの混在、別instanceとホストによる共有memoryの観測を確認する。
   - start/Invokeのtrapで失敗storeが未変更となり、先行副作用・保存参照・次の呼び出しの契約が維持されることを確認する。

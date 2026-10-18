@@ -6,6 +6,101 @@ namespace WasmSharp.Tests;
 internal partial class WasmFunction_InvokeTests
 {
     [Test]
+    public async Task SIMDで共有memoryを読み書きする_data初期化とgrowとscalarとホストの更新を別instanceでも観測する()
+    {
+        // Arrange
+        var initialBytes = Convert.FromHexString("BC9A78563412F87F0000000000000080");
+        var initial = Vector(Convert.ToHexString(initialBytes));
+        var vector = Vector("1032547698BADCFEEFCDAB8967452301");
+        var memory = new WasmMemory(new(1, 2));
+        var host = new WasmHostModule("env");
+        host.Define("memory", memory);
+        var module = WasmModule
+            .Decode(
+                HostLinkingModuleBinary.Create(
+                    HostLinkingModuleBinary.Types(
+                        ([0x7F], [0x7B]),
+                        ([0x7F, 0x7B], []),
+                        ([0x7F], [0x7F]),
+                        ([0x7F, 0x7F], [])
+                    ),
+                    HostLinkingModuleBinary.Imports(
+                        ("env", "memory", 2, HostLinkingModuleBinary.Limits(1, 2))
+                    ),
+                    HostLinkingModuleBinary.Functions(0, 1, 2, 3, 2),
+                    HostLinkingModuleBinary.Exports(
+                        ("load", 0, 0),
+                        ("store", 0, 1),
+                        ("read", 0, 2),
+                        ("write", 0, 3),
+                        ("grow", 0, 4),
+                        ("memory", 2, 0)
+                    ),
+                    HostLinkingModuleBinary.Code(
+                        ([], [0x20, 0, 0xFD, 0, 0, 0, 0x0B]),
+                        ([], [0x20, 0, 0x20, 1, 0xFD, 0x0B, 0, 0, 0x0B]),
+                        ([], [0x20, 0, 0x28, 2, 0, 0x0B]),
+                        ([], [0x20, 0, 0x20, 1, 0x36, 2, 0, 0x0B]),
+                        ([], [0x20, 0, 0x40, 0, 0x0B])
+                    ),
+                    HostLinkingModuleBinary.Section(11, [1, 0, 0x41, 15, 0x0B, 16, .. initialBytes])
+                )
+            )
+            .Validate();
+
+        // Act
+        var first = module.Instantiate([host]);
+        var second = module.Instantiate([host]);
+        var initialized = first.GetFunction("load").Invoke([WasmValue.FromI32(15)]).Values[0];
+        var initializedScalar = second.GetFunction("read").Invoke([WasmValue.FromI32(15)]).Values[
+            0
+        ];
+        var savedBytes = new byte[16];
+        memory.Read(15, savedBytes);
+        var grown = first.GetFunction("grow").Invoke([WasmValue.FromI32(1)]).Values[0];
+        var zero = second.GetFunction("load").Invoke([WasmValue.FromI32(65536)]).Values[0];
+        second.GetFunction("store").Invoke([WasmValue.FromI32(65539), vector]);
+        var scalar = first.GetFunction("read").Invoke([WasmValue.FromI32(65539)]).Values[0];
+        var storedBytes = new byte[16];
+        memory.Read(65539, storedBytes);
+        first
+            .GetFunction("write")
+            .Invoke([WasmValue.FromI32(65543), WasmValue.FromI32(unchecked((int)0xFFC00042))]);
+        var afterScalar = second.GetFunction("load").Invoke([WasmValue.FromI32(65539)]).Values[0];
+        memory.Write(65547, Convert.FromHexString("0000000000000080"));
+        var afterHost = first.GetFunction("load").Invoke([WasmValue.FromI32(65539)]).Values[0];
+        var fromSecond = second.GetFunction("load").Invoke([WasmValue.FromI32(65539)]).Values[0];
+        var retained = second.GetFunction("load").Invoke([WasmValue.FromI32(15)]).Values[0];
+        var currentBytes = new byte[16];
+        memory.Read(65539, currentBytes);
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(first.GetMemory("memory")).IsSameReferenceAs(memory);
+            await Assert.That(second.GetMemory("memory")).IsSameReferenceAs(memory);
+            await Assert.That(initialized).IsEqualTo(initial);
+            await Assert.That(initializedScalar.AsI32()).IsEqualTo(0x56789ABC);
+            await Assert.That(savedBytes.SequenceEqual(initialBytes)).IsTrue();
+            await Assert.That(grown.AsI32()).IsEqualTo(1);
+            await Assert.That(memory.PageCount).IsEqualTo(2u);
+            await Assert.That(second.GetMemory("memory").PageCount).IsEqualTo(2u);
+            await Assert.That(zero.AsV128()).IsEqualTo((0UL, 0UL));
+            await Assert.That(scalar.AsI32()).IsEqualTo(0x76543210);
+            await Assert.That(Vector(Convert.ToHexString(storedBytes))).IsEqualTo(vector);
+            await Assert
+                .That(afterScalar.AsV128())
+                .IsEqualTo((0xFFC0004276543210UL, 0x0123456789ABCDEFUL));
+            await Assert
+                .That(afterHost.AsV128())
+                .IsEqualTo((0xFFC0004276543210UL, 0x8000000000000000UL));
+            await Assert.That(fromSecond).IsEqualTo(afterHost);
+            await Assert.That(Vector(Convert.ToHexString(currentBytes))).IsEqualTo(afterHost);
+            await Assert.That(retained).IsEqualTo(initial);
+        }
+    }
+
+    [Test]
     [Arguments((byte)0x00, 16, "0102030405060708090A0B0C0D0E0F10")]
     [Arguments((byte)0x01, 8, "01000200030004000500060007000800")]
     [Arguments((byte)0x07, 1, "01010101010101010101010101010101")]
