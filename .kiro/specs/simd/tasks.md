@@ -227,7 +227,7 @@
   - _Boundary: SimdMemoryExecution_
   - _Requirements: 7.3, 7.4, 7.5, 7.7_
 
-- [ ] 8. 演算群を命令宣言と公式実行へ統合する
+- [x] 8. 演算群を命令宣言と公式実行へ統合する
 - [x] 8.1 lane・論理・比較の命令を公開経路へ接続する
   - 対応する即値、型効果、lane制約、handlerを共通の命令宣言へ接続する。
   - 既存の未対応期待と対応済み命令集合を更新し、公開経路で引数・戻り値を確認する。
@@ -253,7 +253,7 @@
   - _Depends: 3.2, 6.1, 6.2, 6.3, 6.4_
   - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 8.2, 8.3, 8.4_
 
-- [ ] 8.4 メモリ命令を公開経路へ接続する
+- [x] 8.4 メモリ命令を公開経路へ接続する
   - 通常・拡張・splat・zero・laneの全22命令を、即値・アクセス幅・lane制約・handlerへ対応付ける。
   - memargとlane即値の切断、memory不在、各幅のalignment上限、lane上限と型順、到達不能部分の否定ケースを追加・実行し、診断と公開Invoke/startのmemory trapを確認する。
   - ModuleDecoder_DecodeInstructionTests、WasmModule_DecodeDataTests、WasmModule_InspectImportsTestsを含むメモリ命令の未対応期待を見直す。設計の方針に従い、接続後の入力でも診断の再走査・検査順・非実行・import情報の未確認範囲を検証し、未対応状態だけを対象にしたケースの廃止理由を記録する。

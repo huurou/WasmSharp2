@@ -89,7 +89,7 @@ internal partial class ModuleDecoder_DecodeTests
     }
 
     [Test]
-    public async Task 有効なcall即値の後に未対応命令がある_後続命令の位置と未確認範囲を返す()
+    public async Task 有効なcall即値の後にメモリ即値が切断される_後続命令のDecode境界位置を返す()
     {
         // Arrange
         var bytes = HostLinkingModuleBinary.Create(
@@ -101,20 +101,20 @@ internal partial class ModuleDecoder_DecodeTests
         // Act & Assert
         var exception = await Assert
             .That(() => WasmModule.Decode(bytes))
-            .ThrowsExactly<WasmUnsupportedFeatureException>();
+            .ThrowsExactly<WasmDecodeException>();
         using (Assert.Multiple())
         {
-            await Assert.That(exception!.Feature).IsEqualTo("v128.load");
+            await Assert
+                .That(
+                    exception!.Message.StartsWith(
+                        "unexpected end of section or function",
+                        StringComparison.Ordinal
+                    )
+                )
+                .IsTrue();
             await Assert
                 .That(exception.Location)
-                .IsEqualTo(new(WasmProcessingStage.Decode, bytes.Length - 2, 0, 10));
-            await Assert
-                .That(exception.UnverifiedRanges[0].StartOffset)
-                .IsEqualTo(bytes.Length - 2L);
-            await Assert.That(exception.UnverifiedRanges[0].EndOffset).IsEqualTo(bytes.Length);
-            await Assert
-                .That(exception.UnverifiedRanges[1].Stage)
-                .IsEqualTo(WasmProcessingStage.Validate);
+                .IsEqualTo(new(WasmProcessingStage.Decode, bytes.Length, 0, 10));
         }
     }
 }

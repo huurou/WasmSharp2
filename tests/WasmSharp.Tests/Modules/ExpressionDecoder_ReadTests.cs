@@ -574,16 +574,14 @@ internal class ExpressionDecoder_ReadTests
     }
 
     [Test]
-    [Arguments(ModuleReadMode.Bounded, "FD00", "v128.load")]
-    [Arguments(ModuleReadMode.Diagnostic, "FD00", "v128.load")]
-    public async Task 未対応命令の後に不正がある_後続を調べず機能と位置と未確認範囲を保持する(
-        ModuleReadMode mode,
-        string opcode,
-        string feature
+    [Arguments(ModuleReadMode.Bounded)]
+    [Arguments(ModuleReadMode.Diagnostic)]
+    public async Task メモリ命令の後に不正がある_即値を読んで後続の構文不正の位置を返す(
+        ModuleReadMode mode
     )
     {
         // Arrange
-        var bytes = Convert.FromHexString("417F" + opcode + "FF05");
+        var bytes = Convert.FromHexString("417FFD000000FF05");
 
         // Act & Assert
         var exception = await Assert
@@ -592,34 +590,15 @@ internal class ExpressionDecoder_ReadTests
                 var reader = new ModuleBinaryReader(bytes, 40, 10, 3, mode);
                 ExpressionDecoder.Read(ref reader, 100);
             })
-            .ThrowsExactly<WasmUnsupportedFeatureException>();
+            .ThrowsExactly<WasmDecodeException>();
         using (Assert.Multiple())
         {
-            await Assert.That(exception!.Feature).IsEqualTo(feature);
+            await Assert
+                .That(exception!.Message.StartsWith("illegal opcode", StringComparison.Ordinal))
+                .IsTrue();
             await Assert
                 .That(exception.Location)
-                .IsEqualTo(new(WasmProcessingStage.Decode, 42, 3, 10));
-            await Assert.That(exception.UnverifiedRanges.Length).IsEqualTo(2);
-            await Assert
-                .That(exception.UnverifiedRanges[0])
-                .IsEqualTo(
-                    new WasmUnverifiedRange(
-                        WasmProcessingStage.Decode,
-                        42,
-                        100,
-                        "この構文以降のデコードが未完了です。"
-                    )
-                );
-            await Assert
-                .That(exception.UnverifiedRanges[1])
-                .IsEqualTo(
-                    new WasmUnverifiedRange(
-                        WasmProcessingStage.Validate,
-                        0,
-                        100,
-                        "入力全体の検証が未実施です。"
-                    )
-                );
+                .IsEqualTo(new(WasmProcessingStage.Decode, 46, 3, 10));
         }
     }
 

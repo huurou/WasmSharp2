@@ -29,11 +29,10 @@ internal partial class ModuleDecoder_DecodeTests
     }
 
     [Test]
-    [Arguments("FD0105", "v128.load8x8_s")]
-    [Arguments("FD00", "v128.load")]
-    public async Task 割当済み未対応命令_即値や後続を調べず未確認範囲を返す(
-        string instructions,
-        string feature
+    [Arguments("FD0105")]
+    [Arguments("FD00")]
+    public async Task メモリ命令の即値が切断される_未対応にせずDecodeの境界位置を返す(
+        string instructions
     )
     {
         // Arrange
@@ -42,24 +41,20 @@ internal partial class ModuleDecoder_DecodeTests
         // Act & Assert
         var exception = await Assert
             .That(() => ModuleDecoder.Decode(bytes))
-            .ThrowsExactly<WasmUnsupportedFeatureException>();
+            .ThrowsExactly<WasmDecodeException>();
         using (Assert.Multiple())
         {
-            await Assert.That(exception!.Feature).IsEqualTo(feature);
+            await Assert
+                .That(
+                    exception!.Message.StartsWith(
+                        "unexpected end of section or function",
+                        StringComparison.Ordinal
+                    )
+                )
+                .IsTrue();
             await Assert
                 .That(exception.Location)
-                .IsEqualTo(new(WasmProcessingStage.Decode, 33, 0, 10));
-            await Assert.That(exception.UnverifiedRanges.Length).IsEqualTo(2);
-            await Assert
-                .That(exception.UnverifiedRanges[0].Stage)
-                .IsEqualTo(WasmProcessingStage.Decode);
-            await Assert.That(exception.UnverifiedRanges[0].StartOffset).IsEqualTo(33L);
-            await Assert.That(exception.UnverifiedRanges[0].EndOffset).IsEqualTo(bytes.Length);
-            await Assert
-                .That(exception.UnverifiedRanges[1].Stage)
-                .IsEqualTo(WasmProcessingStage.Validate);
-            await Assert.That(exception.UnverifiedRanges[1].StartOffset).IsEqualTo(0L);
-            await Assert.That(exception.UnverifiedRanges[1].EndOffset).IsEqualTo(bytes.Length);
+                .IsEqualTo(new(WasmProcessingStage.Decode, bytes.Length, 0, 10));
         }
     }
 

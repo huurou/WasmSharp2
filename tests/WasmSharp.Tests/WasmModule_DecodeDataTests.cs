@@ -198,7 +198,7 @@ internal partial class WasmModule_DecodeTests
     [Arguments(true, 1, "function and code section have inconsistent lengths")]
     [Arguments(true, 2, "function and code section have inconsistent lengths")]
     [Arguments(false, 2, "data count and data section have inconsistent lengths")]
-    public async Task データの式が未対応で宣言件数の違反が確定している_関数件数とデータ件数の順でDecode失敗を選ぶ(
+    public async Task 完全なメモリ式と宣言件数違反がある_関数件数とデータ件数の順でDecode失敗を選ぶ(
         bool functionMismatch,
         byte dataCount,
         string diagnostic
@@ -209,8 +209,7 @@ internal partial class WasmModule_DecodeTests
             HostLinkingModuleBinary.Types(([], [])),
             functionMismatch ? HostLinkingModuleBinary.Functions(0) : [],
             HostLinkingModuleBinary.Section(12, [dataCount]),
-            HostLinkingModuleBinary.Section(11, [1, 0, 0xFD, 0]),
-            [13, 0]
+            HostLinkingModuleBinary.Section(11, [1, 0, 0xFD, 0, 0, 0, 0x0B, 0])
         );
 
         // Act & Assert
@@ -224,14 +223,14 @@ internal partial class WasmModule_DecodeTests
                 .IsTrue();
             await Assert
                 .That(exception.Location)
-                .IsEqualTo(new(WasmProcessingStage.Decode, bytes.Length - 2, null, 11));
+                .IsEqualTo(new(WasmProcessingStage.Decode, bytes.Length, null, 11));
         }
     }
 
     [Test]
-    [Arguments(false, "0100FD00", 1)]
-    [Arguments(true, "02010000FD00", 2)]
-    public async Task データの式が未対応で確定済みの件数違反がない_後続を調べず原因と未確認範囲を保持する(
+    [Arguments(false, "0100FD0000000B00", 1)]
+    [Arguments(true, "02010000FD0000000B00", 2)]
+    public async Task データに完全なメモリ式がある_件数が整合する場合はDecodeしてValidateで非定数を拒否する(
         bool hasDataCount,
         string data,
         byte count
@@ -239,41 +238,41 @@ internal partial class WasmModule_DecodeTests
     {
         // Arrange
         var bytes = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Memories((1, null)),
             hasDataCount ? HostLinkingModuleBinary.Section(12, [count]) : [],
-            HostLinkingModuleBinary.Section(11, Convert.FromHexString(data)),
-            [13, 0]
+            HostLinkingModuleBinary.Section(11, Convert.FromHexString(data))
         );
+        var module = WasmModule.Decode(bytes);
+        var instruction = module.DataSegments[^1].ActiveTarget!.OffsetExpression[0];
 
         // Act & Assert
         var exception = await Assert
-            .That(() => WasmModule.Decode(bytes))
-            .ThrowsExactly<WasmUnsupportedFeatureException>();
+            .That(() => module.Validate())
+            .ThrowsExactly<WasmValidateException>();
         using (Assert.Multiple())
         {
-            await Assert.That(exception!.Feature).IsEqualTo("v128.load");
+            await Assert
+                .That(
+                    exception!.Message.StartsWith(
+                        "constant expression required",
+                        StringComparison.Ordinal
+                    )
+                )
+                .IsTrue();
             await Assert
                 .That(exception.Location)
-                .IsEqualTo(new(WasmProcessingStage.Decode, bytes.Length - 4, null, 11));
-            await Assert.That(exception.UnverifiedRanges.Length).IsEqualTo(2);
+                .IsEqualTo(new(WasmProcessingStage.Validate, instruction.ByteOffset, null, 11));
+            await Assert.That(module.FunctionCodes).IsEmpty();
             await Assert
-                .That(exception.UnverifiedRanges[0].Stage)
-                .IsEqualTo(WasmProcessingStage.Decode);
-            await Assert
-                .That(exception.UnverifiedRanges[0].StartOffset)
-                .IsEqualTo(bytes.Length - 4L);
-            await Assert.That(exception.UnverifiedRanges[0].EndOffset).IsEqualTo(bytes.Length);
-            await Assert
-                .That(exception.UnverifiedRanges[1].Stage)
-                .IsEqualTo(WasmProcessingStage.Validate);
-            await Assert.That(exception.UnverifiedRanges[1].StartOffset).IsEqualTo(0L);
-            await Assert.That(exception.UnverifiedRanges[1].EndOffset).IsEqualTo(bytes.Length);
+                .That(() => module.Instantiate([]))
+                .ThrowsExactly<InvalidOperationException>();
         }
     }
 
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task データの宣言範囲外に未対応命令がある_診断再走査でも元の境界違反を件数不一致で置き換えない(
+    public async Task データの宣言範囲外でメモリ即値が切断される_診断再走査でも件数不一致にせず元入力の位置を返す(
         bool functionMismatch
     )
     {
@@ -297,7 +296,7 @@ internal partial class WasmModule_DecodeTests
                 .IsTrue();
             await Assert
                 .That(exception.Location)
-                .IsEqualTo(new(WasmProcessingStage.Decode, bytes.Length - 4, null, 11));
+                .IsEqualTo(new(WasmProcessingStage.Decode, bytes.Length, null, 11));
         }
     }
 
@@ -344,69 +343,39 @@ internal partial class WasmModule_DecodeTests
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task コード内未対応命令で読了できない_確定した関数件数だけを照合して後続データの件数を推測しない(
+    public async Task 完全なメモリ命令の後にデータ構文違反がある_両入力で件数を推測せず後続の構文診断を優先する(
         bool functionMismatch
     )
     {
         // Arrange
-        var data = HostLinkingModuleBinary.Section(11, [1, 1, 0]);
         var bytes = HostLinkingModuleBinary.Create(
             HostLinkingModuleBinary.Types(([], [])),
             functionMismatch ? [] : HostLinkingModuleBinary.Functions(0),
-            HostLinkingModuleBinary.Section(12, [1]),
-            HostLinkingModuleBinary.Code(([], [0xFD, 0])),
-            data,
-            [13, 0]
+            HostLinkingModuleBinary.Section(12, [2]),
+            HostLinkingModuleBinary.Code(([], [0x41, 0, 0xFD, 0, 0, 0, 0x1A, 0x0B])),
+            HostLinkingModuleBinary.Section(11, [1, 3])
         );
         foreach (var useStream in new[] { false, true })
         {
             using var stream = new MemoryStream(bytes);
 
             // Act & Assert
-            if (functionMismatch)
+            var exception = await Assert
+                .That(() => useStream ? WasmModule.Decode(stream) : WasmModule.Decode(bytes))
+                .ThrowsExactly<WasmDecodeException>();
+            using (Assert.Multiple())
             {
-                var exception = await Assert
-                    .That(() => useStream ? WasmModule.Decode(stream) : WasmModule.Decode(bytes))
-                    .ThrowsExactly<WasmDecodeException>();
-                using (Assert.Multiple())
-                {
-                    await Assert
-                        .That(
-                            exception!.Message.StartsWith(
-                                "function and code section have inconsistent lengths",
-                                StringComparison.Ordinal
-                            )
+                await Assert
+                    .That(
+                        exception!.Message.StartsWith(
+                            "malformed data segment kind",
+                            StringComparison.Ordinal
                         )
-                        .IsTrue();
-                    await Assert
-                        .That(exception.Location)
-                        .IsEqualTo(
-                            new(
-                                WasmProcessingStage.Decode,
-                                bytes.Length - data.Length - 2,
-                                null,
-                                10
-                            )
-                        );
-                }
-            }
-            else
-            {
-                var exception = await Assert
-                    .That(() => useStream ? WasmModule.Decode(stream) : WasmModule.Decode(bytes))
-                    .ThrowsExactly<WasmUnsupportedFeatureException>();
-                using (Assert.Multiple())
-                {
-                    await Assert.That(exception!.Feature).IsEqualTo("v128.load");
-                    await Assert
-                        .That(exception.Location)
-                        .IsEqualTo(
-                            new(WasmProcessingStage.Decode, bytes.Length - data.Length - 4, 0, 10)
-                        );
-                    await Assert
-                        .That(exception.UnverifiedRanges[0].EndOffset)
-                        .IsEqualTo(bytes.Length);
-                }
+                    )
+                    .IsTrue();
+                await Assert
+                    .That(exception.Location)
+                    .IsEqualTo(new(WasmProcessingStage.Decode, bytes.Length - 1, null, 11));
             }
         }
     }

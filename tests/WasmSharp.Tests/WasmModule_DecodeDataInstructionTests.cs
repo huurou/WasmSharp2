@@ -138,7 +138,7 @@ internal partial class WasmModule_DecodeTests
     [Arguments(true, (byte)2, "function and code section have inconsistent lengths")]
     [Arguments(false, (byte)2, "data count and data section have inconsistent lengths")]
     [Arguments(false, null, "data count section required")]
-    public async Task データ参照後のデータ式が未対応である_確定した件数違反とデータ数宣言の欠落を未対応より優先する(
+    public async Task データ参照後に完全なメモリ式がある_関数件数とデータ件数とデータ数宣言の順で検査する(
         bool functionMismatch,
         byte? dataCount,
         string diagnostic
@@ -152,8 +152,7 @@ internal partial class WasmModule_DecodeTests
                 : HostLinkingModuleBinary.Functions(0),
             dataCount is { } count ? HostLinkingModuleBinary.Section(12, [count]) : [],
             HostLinkingModuleBinary.Code(([], [0xFC, 9, 0, 0x0B])),
-            HostLinkingModuleBinary.Section(11, [1, 0, 0xFD, 0]),
-            [13, 0]
+            HostLinkingModuleBinary.Section(11, [1, 0, 0xFD, 0, 0, 0, 0x0B, 0])
         );
 
         // Act & Assert
@@ -167,7 +166,7 @@ internal partial class WasmModule_DecodeTests
                 .IsTrue();
             await Assert
                 .That(exception.Location)
-                .IsEqualTo(new(WasmProcessingStage.Decode, bytes.Length - 2, null, 11));
+                .IsEqualTo(new(WasmProcessingStage.Decode, bytes.Length, null, 11));
         }
     }
 }

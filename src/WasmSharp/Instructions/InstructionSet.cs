@@ -2291,18 +2291,150 @@ namespace WasmSharp.Instructions;
     ValidationRule.TableFill,
     nameof(Interpreter.TableFill)
 )]
-[Instruction(0xFD, 0x00, "v128.load")]
-[Instruction(0xFD, 0x01, "v128.load8x8_s")]
-[Instruction(0xFD, 0x02, "v128.load8x8_u")]
-[Instruction(0xFD, 0x03, "v128.load16x4_s")]
-[Instruction(0xFD, 0x04, "v128.load16x4_u")]
-[Instruction(0xFD, 0x05, "v128.load32x2_s")]
-[Instruction(0xFD, 0x06, "v128.load32x2_u")]
-[Instruction(0xFD, 0x07, "v128.load8_splat")]
-[Instruction(0xFD, 0x08, "v128.load16_splat")]
-[Instruction(0xFD, 0x09, "v128.load32_splat")]
-[Instruction(0xFD, 0x0A, "v128.load64_splat")]
-[Instruction(0xFD, 0x0B, "v128.store")]
+[Instruction(
+    0xFD,
+    0x00,
+    "v128.load",
+    ImmediateKind.MemoryArgument,
+    StackEffectKind.MemoryLoad,
+    ValidationRule.MemoryLoad,
+    nameof(Interpreter.V128Load),
+    WasmValueKind.V128,
+    16,
+    false
+)]
+[Instruction(
+    0xFD,
+    0x01,
+    "v128.load8x8_s",
+    ImmediateKind.MemoryArgument,
+    StackEffectKind.MemoryLoad,
+    ValidationRule.MemoryLoad,
+    nameof(Interpreter.V128Load8x8S),
+    WasmValueKind.V128,
+    8,
+    false
+)]
+[Instruction(
+    0xFD,
+    0x02,
+    "v128.load8x8_u",
+    ImmediateKind.MemoryArgument,
+    StackEffectKind.MemoryLoad,
+    ValidationRule.MemoryLoad,
+    nameof(Interpreter.V128Load8x8U),
+    WasmValueKind.V128,
+    8,
+    false
+)]
+[Instruction(
+    0xFD,
+    0x03,
+    "v128.load16x4_s",
+    ImmediateKind.MemoryArgument,
+    StackEffectKind.MemoryLoad,
+    ValidationRule.MemoryLoad,
+    nameof(Interpreter.V128Load16x4S),
+    WasmValueKind.V128,
+    8,
+    false
+)]
+[Instruction(
+    0xFD,
+    0x04,
+    "v128.load16x4_u",
+    ImmediateKind.MemoryArgument,
+    StackEffectKind.MemoryLoad,
+    ValidationRule.MemoryLoad,
+    nameof(Interpreter.V128Load16x4U),
+    WasmValueKind.V128,
+    8,
+    false
+)]
+[Instruction(
+    0xFD,
+    0x05,
+    "v128.load32x2_s",
+    ImmediateKind.MemoryArgument,
+    StackEffectKind.MemoryLoad,
+    ValidationRule.MemoryLoad,
+    nameof(Interpreter.V128Load32x2S),
+    WasmValueKind.V128,
+    8,
+    false
+)]
+[Instruction(
+    0xFD,
+    0x06,
+    "v128.load32x2_u",
+    ImmediateKind.MemoryArgument,
+    StackEffectKind.MemoryLoad,
+    ValidationRule.MemoryLoad,
+    nameof(Interpreter.V128Load32x2U),
+    WasmValueKind.V128,
+    8,
+    false
+)]
+[Instruction(
+    0xFD,
+    0x07,
+    "v128.load8_splat",
+    ImmediateKind.MemoryArgument,
+    StackEffectKind.MemoryLoad,
+    ValidationRule.MemoryLoad,
+    nameof(Interpreter.V128LoadSplat),
+    WasmValueKind.V128,
+    1,
+    false
+)]
+[Instruction(
+    0xFD,
+    0x08,
+    "v128.load16_splat",
+    ImmediateKind.MemoryArgument,
+    StackEffectKind.MemoryLoad,
+    ValidationRule.MemoryLoad,
+    nameof(Interpreter.V128LoadSplat),
+    WasmValueKind.V128,
+    2,
+    false
+)]
+[Instruction(
+    0xFD,
+    0x09,
+    "v128.load32_splat",
+    ImmediateKind.MemoryArgument,
+    StackEffectKind.MemoryLoad,
+    ValidationRule.MemoryLoad,
+    nameof(Interpreter.V128LoadSplat),
+    WasmValueKind.V128,
+    4,
+    false
+)]
+[Instruction(
+    0xFD,
+    0x0A,
+    "v128.load64_splat",
+    ImmediateKind.MemoryArgument,
+    StackEffectKind.MemoryLoad,
+    ValidationRule.MemoryLoad,
+    nameof(Interpreter.V128LoadSplat),
+    WasmValueKind.V128,
+    8,
+    false
+)]
+[Instruction(
+    0xFD,
+    0x0B,
+    "v128.store",
+    ImmediateKind.MemoryArgument,
+    StackEffectKind.MemoryStore,
+    ValidationRule.MemoryStore,
+    nameof(Interpreter.V128Store),
+    WasmValueKind.V128,
+    16,
+    false
+)]
 [Instruction(
     0xFD,
     0x0C,
@@ -3107,16 +3239,134 @@ namespace WasmSharp.Instructions;
     new[] { WasmValueKind.V128 },
     WasmValueKind.I32
 )]
-[Instruction(0xFD, 0x54, "v128.load8_lane")]
-[Instruction(0xFD, 0x55, "v128.load16_lane")]
-[Instruction(0xFD, 0x56, "v128.load32_lane")]
-[Instruction(0xFD, 0x57, "v128.load64_lane")]
-[Instruction(0xFD, 0x58, "v128.store8_lane")]
-[Instruction(0xFD, 0x59, "v128.store16_lane")]
-[Instruction(0xFD, 0x5A, "v128.store32_lane")]
-[Instruction(0xFD, 0x5B, "v128.store64_lane")]
-[Instruction(0xFD, 0x5C, "v128.load32_zero")]
-[Instruction(0xFD, 0x5D, "v128.load64_zero")]
+[Instruction(
+    0xFD,
+    0x54,
+    "v128.load8_lane",
+    ImmediateKind.MemoryArgumentLaneIndex,
+    StackEffectKind.MemoryLoadLane,
+    ValidationRule.MemoryLoadLane,
+    nameof(Interpreter.V128LoadLane),
+    WasmValueKind.V128,
+    1,
+    false,
+    LaneCount = 16
+)]
+[Instruction(
+    0xFD,
+    0x55,
+    "v128.load16_lane",
+    ImmediateKind.MemoryArgumentLaneIndex,
+    StackEffectKind.MemoryLoadLane,
+    ValidationRule.MemoryLoadLane,
+    nameof(Interpreter.V128LoadLane),
+    WasmValueKind.V128,
+    2,
+    false,
+    LaneCount = 8
+)]
+[Instruction(
+    0xFD,
+    0x56,
+    "v128.load32_lane",
+    ImmediateKind.MemoryArgumentLaneIndex,
+    StackEffectKind.MemoryLoadLane,
+    ValidationRule.MemoryLoadLane,
+    nameof(Interpreter.V128LoadLane),
+    WasmValueKind.V128,
+    4,
+    false,
+    LaneCount = 4
+)]
+[Instruction(
+    0xFD,
+    0x57,
+    "v128.load64_lane",
+    ImmediateKind.MemoryArgumentLaneIndex,
+    StackEffectKind.MemoryLoadLane,
+    ValidationRule.MemoryLoadLane,
+    nameof(Interpreter.V128LoadLane),
+    WasmValueKind.V128,
+    8,
+    false,
+    LaneCount = 2
+)]
+[Instruction(
+    0xFD,
+    0x58,
+    "v128.store8_lane",
+    ImmediateKind.MemoryArgumentLaneIndex,
+    StackEffectKind.MemoryStoreLane,
+    ValidationRule.MemoryStoreLane,
+    nameof(Interpreter.V128StoreLane),
+    WasmValueKind.V128,
+    1,
+    false,
+    LaneCount = 16
+)]
+[Instruction(
+    0xFD,
+    0x59,
+    "v128.store16_lane",
+    ImmediateKind.MemoryArgumentLaneIndex,
+    StackEffectKind.MemoryStoreLane,
+    ValidationRule.MemoryStoreLane,
+    nameof(Interpreter.V128StoreLane),
+    WasmValueKind.V128,
+    2,
+    false,
+    LaneCount = 8
+)]
+[Instruction(
+    0xFD,
+    0x5A,
+    "v128.store32_lane",
+    ImmediateKind.MemoryArgumentLaneIndex,
+    StackEffectKind.MemoryStoreLane,
+    ValidationRule.MemoryStoreLane,
+    nameof(Interpreter.V128StoreLane),
+    WasmValueKind.V128,
+    4,
+    false,
+    LaneCount = 4
+)]
+[Instruction(
+    0xFD,
+    0x5B,
+    "v128.store64_lane",
+    ImmediateKind.MemoryArgumentLaneIndex,
+    StackEffectKind.MemoryStoreLane,
+    ValidationRule.MemoryStoreLane,
+    nameof(Interpreter.V128StoreLane),
+    WasmValueKind.V128,
+    8,
+    false,
+    LaneCount = 2
+)]
+[Instruction(
+    0xFD,
+    0x5C,
+    "v128.load32_zero",
+    ImmediateKind.MemoryArgument,
+    StackEffectKind.MemoryLoad,
+    ValidationRule.MemoryLoad,
+    nameof(Interpreter.V128LoadZero),
+    WasmValueKind.V128,
+    4,
+    false
+)]
+[Instruction(
+    0xFD,
+    0x5D,
+    "v128.load64_zero",
+    ImmediateKind.MemoryArgument,
+    StackEffectKind.MemoryLoad,
+    ValidationRule.MemoryLoad,
+    nameof(Interpreter.V128LoadZero),
+    WasmValueKind.V128,
+    8,
+    false
+)]
 [Instruction(
     0xFD,
     0x5E,

@@ -191,9 +191,9 @@ internal partial class WasmModule_DecodeTests
 
     [Test]
     [Arguments("FD0D", 19L)]
-    [Arguments("FD8C0000000000000000000000000000000000FD00", 17L)]
+    [Arguments("FD8C0000000000000000000000000000000000FD00", 38L)]
     [Arguments("FD8C00", 20L)]
-    [Arguments("FD00", 17L)]
+    [Arguments("FD00", 19L)]
     public async Task 診断再走査で境界後の命令に到達する_両入力で完全な即値と切断の診断位置を区別する(
         string instruction,
         long offset
@@ -496,39 +496,33 @@ internal partial class WasmModule_DecodeTests
     }
 
     [Test]
-    [Arguments(false, "FD0105", "v128.load8x8_s")]
-    [Arguments(true, "FD0105", "v128.load8x8_s")]
-    public async Task 公開Decodeで未対応命令に遭遇する_デコーダーの診断を保持する(
-        bool useStream,
-        string instructions,
-        string feature
+    [Arguments(false)]
+    [Arguments(true)]
+    public async Task 公開Decodeでメモリ即値が切断される_両入力でデコーダーの境界診断を保持する(
+        bool useStream
     )
     {
         // Arrange
-        var bytes = ConstantModuleBinary.Create(0x7F, Convert.FromHexString(instructions));
+        var bytes = ConstantModuleBinary.Create(0x7F, Convert.FromHexString("FD0105"));
         using var stream = new MemoryStream(bytes);
 
         // Act & Assert
         var exception = await Assert
             .That(() => useStream ? WasmModule.Decode(stream) : WasmModule.Decode(bytes))
-            .ThrowsExactly<WasmUnsupportedFeatureException>();
+            .ThrowsExactly<WasmDecodeException>();
         using (Assert.Multiple())
         {
-            await Assert.That(exception!.Feature).IsEqualTo(feature);
+            await Assert
+                .That(
+                    exception!.Message.StartsWith(
+                        "unexpected end of section or function",
+                        StringComparison.Ordinal
+                    )
+                )
+                .IsTrue();
             await Assert
                 .That(exception.Location)
-                .IsEqualTo(new(WasmProcessingStage.Decode, 33, 0, 10));
-            await Assert.That(exception.UnverifiedRanges.Length).IsEqualTo(2);
-            await Assert
-                .That(exception.UnverifiedRanges[0].Stage)
-                .IsEqualTo(WasmProcessingStage.Decode);
-            await Assert.That(exception.UnverifiedRanges[0].StartOffset).IsEqualTo(33L);
-            await Assert.That(exception.UnverifiedRanges[0].EndOffset).IsEqualTo(bytes.Length);
-            await Assert
-                .That(exception.UnverifiedRanges[1].Stage)
-                .IsEqualTo(WasmProcessingStage.Validate);
-            await Assert.That(exception.UnverifiedRanges[1].StartOffset).IsEqualTo(0L);
-            await Assert.That(exception.UnverifiedRanges[1].EndOffset).IsEqualTo(bytes.Length);
+                .IsEqualTo(new(WasmProcessingStage.Decode, bytes.Length, 0, 10));
             await Assert.That(stream.CanRead).IsTrue();
         }
     }

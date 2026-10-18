@@ -267,7 +267,7 @@ internal class WasmModule_InspectImportsTests
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task 未対応本体とstartと巨大limitsがある_生成や実行を要求せず全種類を取得する(
+    public async Task メモリ命令とstartと巨大limitsがある_生成や実行を要求せず全種類を取得する(
         bool useStream
     )
     {
@@ -283,7 +283,7 @@ internal class WasmModule_InspectImportsTests
             HostLinkingModuleBinary.Functions(0),
             HostLinkingModuleBinary.Memories((uint.MaxValue, null)),
             HostLinkingModuleBinary.Start(0),
-            HostLinkingModuleBinary.Code(([], [0xFD, 0]))
+            HostLinkingModuleBinary.Code(([], [0x41, 0, 0xFD, 0, 0, 0, 0x1A, 0x0B]))
         );
         using var stream = new ChunkedReadStream(new MemoryStream(bytes));
 
@@ -329,11 +329,12 @@ internal class WasmModule_InspectImportsTests
                 .IsEqualTo(WasmProcessingStage.Validate);
         }
 
-        // Act & Assert
-        var exception = await Assert
-            .That(() => WasmModule.Decode(bytes))
-            .ThrowsExactly<WasmUnsupportedFeatureException>();
-        await Assert.That(exception!.Feature).IsEqualTo("v128.load");
+        // Act
+        var module = WasmModule.Decode(bytes);
+
+        // Assert
+        await Assert.That(module.FunctionCodes).IsEmpty();
+        await Assert.That(module.Functions[0].Instructions[1].MemoryArgument.Offset).IsEqualTo(0u);
     }
 
     [Test]
@@ -371,7 +372,7 @@ internal class WasmModule_InspectImportsTests
     [Arguments("i8x16.shuffle")]
     [Arguments("v128.load")]
     [Arguments("v128.const")]
-    public async Task メモリ命令とデータにSIMDが併存する_対応命令は検証でき未対応命令は拒否してimport調査範囲を保つ(
+    public async Task メモリ命令とデータにSIMDが併存する_DecodeとValidateは実行せずimport調査範囲を保つ(
         string feature
     )
     {
@@ -392,7 +393,7 @@ internal class WasmModule_InspectImportsTests
                 .. Enumerable.Repeat((byte)31, 16),
                 0x1A,
             ],
-            "v128.load" => [0xFD, 0],
+            "v128.load" => [0x41, 0, 0xFD, 0, 0, 0, 0x1A],
             _ => [],
         };
         var code = HostLinkingModuleBinary.Code(
@@ -412,7 +413,6 @@ internal class WasmModule_InspectImportsTests
             data
         );
         var codeOffset = bytes.Length - data.Length - code.Length;
-        var failureOffset = codeOffset + Array.IndexOf(code, (byte)0xFD);
         var memory = new WasmMemory(new(1));
         memory.Write(0, [99]);
         var calls = 0;
@@ -436,65 +436,21 @@ internal class WasmModule_InspectImportsTests
             memory.Write(0, [99]);
             using var inspectionStream = new ChunkedReadStream(new MemoryStream(bytes));
             using var decodeStream = new ChunkedReadStream(new MemoryStream(bytes));
-            WasmInstance? returned = null;
-            WasmModule? module = null;
 
             // Act
             var inspection = useStream
                 ? WasmModule.InspectImports(inspectionStream)
                 : WasmModule.InspectImports(bytes);
 
-            WasmUnsupportedFeatureException? exception = null;
-            if (feature != "v128.load")
-            {
-                module = (
-                    useStream ? WasmModule.Decode(decodeStream) : WasmModule.Decode(bytes)
-                ).Validate();
-            }
-            else
-            {
-                // Act & Assert
-                exception = await Assert
-                    .That(() =>
-                        returned = (
-                            useStream ? WasmModule.Decode(decodeStream) : WasmModule.Decode(bytes)
-                        )
-                            .Validate()
-                            .Instantiate([host])
-                    )
-                    .ThrowsExactly<WasmUnsupportedFeatureException>();
-            }
+            var module = (
+                useStream ? WasmModule.Decode(decodeStream) : WasmModule.Decode(bytes)
+            ).Validate();
             var actual = new byte[1];
             memory.Read(0, actual);
 
             // Assert
             using (Assert.Multiple())
             {
-                if (exception is not null)
-                {
-                    await Assert.That(exception.Feature).IsEqualTo(feature);
-                    await Assert
-                        .That(exception.Location)
-                        .IsEqualTo(new(WasmProcessingStage.Decode, failureOffset, 1u, (byte)10));
-                    await Assert.That(exception.UnverifiedRanges.Length).IsEqualTo(2);
-                    await Assert
-                        .That(exception.UnverifiedRanges[0].Stage)
-                        .IsEqualTo(WasmProcessingStage.Decode);
-                    await Assert
-                        .That(exception.UnverifiedRanges[0].StartOffset)
-                        .IsEqualTo(failureOffset);
-                    await Assert
-                        .That(exception.UnverifiedRanges[0].EndOffset)
-                        .IsEqualTo(bytes.Length);
-                    await Assert
-                        .That(exception.UnverifiedRanges[1].Stage)
-                        .IsEqualTo(WasmProcessingStage.Validate);
-                    await Assert.That(exception.UnverifiedRanges[1].StartOffset).IsEqualTo(0L);
-                    await Assert
-                        .That(exception.UnverifiedRanges[1].EndOffset)
-                        .IsEqualTo(bytes.Length);
-                }
-                await Assert.That(returned).IsNull();
                 await Assert.That(calls).IsEqualTo(0);
                 await Assert.That(actual[0]).IsEqualTo((byte)99);
                 await Assert
@@ -542,10 +498,9 @@ internal class WasmModule_InspectImportsTests
                 await Assert.That(inspectionStream.CanRead).IsTrue();
                 await Assert.That(decodeStream.CanRead).IsTrue();
             }
-            if (module is not null)
             {
                 // Act
-                returned = module.Instantiate([host]);
+                var returned = module.Instantiate([host]);
                 memory.Read(0, actual);
 
                 // Assert

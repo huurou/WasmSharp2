@@ -210,6 +210,77 @@ internal class InstructionSet_TryGetTests
     }
 
     [Test]
+    public async Task SIMDメモリ接続の固定付録にある全メモリ群_22命令の即値と幅とlane制約とhandlerが一致する()
+    {
+        // Arrange
+        var expected = Core2InstructionFixture
+            .Read(0xFD)
+            .Where(x =>
+                x.Value.StartsWith("v128.load", StringComparison.Ordinal)
+                || x.Value.StartsWith("v128.store", StringComparison.Ordinal)
+            )
+            .ToArray();
+        var declarations = typeof(InstructionSet)
+            .GetCustomAttributes<InstructionAttribute>()
+            .Where(x => x.Prefix == 0xFD)
+            .ToDictionary(x => x.Code);
+
+        // Assert
+        await Assert.That(expected.Length).IsEqualTo(22);
+        foreach (var item in expected)
+        {
+            var operation = item.Value.Split('.')[1];
+            var lane = operation.EndsWith("_lane", StringComparison.Ordinal);
+            var store = operation.StartsWith("store", StringComparison.Ordinal);
+            var width =
+                operation is "load" or "store" ? 16
+                : operation.Contains('x') ? 8
+                : int.Parse(System.Text.RegularExpressions.Regex.Match(operation, @"\d+").Value)
+                    / 8;
+            var handler =
+                lane ? (store ? "V128StoreLane" : "V128LoadLane")
+                : operation.EndsWith("_splat", StringComparison.Ordinal) ? "V128LoadSplat"
+                : operation.EndsWith("_zero", StringComparison.Ordinal) ? "V128LoadZero"
+                : "V128"
+                    + string.Concat(
+                        operation.Split('_').Select(x => char.ToUpperInvariant(x[0]) + x[1..])
+                    );
+            var rule = store
+                ? (lane ? ValidationRule.MemoryStoreLane : ValidationRule.MemoryStore)
+                : (lane ? ValidationRule.MemoryLoadLane : ValidationRule.MemoryLoad);
+            var stackEffect = store
+                ? (lane ? StackEffectKind.MemoryStoreLane : StackEffectKind.MemoryStore)
+                : (lane ? StackEffectKind.MemoryLoadLane : StackEffectKind.MemoryLoad);
+
+            // Act
+            var found = InstructionSet.TryGet(new(0xFD, item.Key), out var actual);
+
+            // Assert
+            using (Assert.Multiple())
+            {
+                await Assert.That(found).IsTrue();
+                await Assert.That(actual.Name).IsEqualTo(item.Value);
+                await Assert.That(actual.ExecutionOpcode).IsNotNull();
+                await Assert
+                    .That(actual.Immediate)
+                    .IsEqualTo(
+                        lane ? ImmediateKind.MemoryArgumentLaneIndex : ImmediateKind.MemoryArgument
+                    );
+                await Assert.That(actual.StackEffect).IsEqualTo(stackEffect);
+                await Assert.That(actual.Validation).IsEqualTo(rule);
+                await Assert.That(actual.LaneCount).IsEqualTo((byte)(lane ? 16 / width : 0));
+                await Assert.That(actual.NumericSignature).IsNull();
+                await Assert
+                    .That(actual.MemoryAccessSignature?.ValueType)
+                    .IsEqualTo(WasmValueKind.V128);
+                await Assert.That(actual.MemoryAccessSignature?.ByteWidth).IsEqualTo((byte)width);
+                await Assert.That(actual.MemoryAccessSignature?.SignExtend).IsFalse();
+                await Assert.That(declarations[item.Key].ExecutionHandler).IsEqualTo(handler);
+            }
+        }
+    }
+
+    [Test]
     public async Task V128定数が接続されている_既存定数handlerと定数式規則を使う()
     {
         // Arrange
@@ -320,33 +391,7 @@ internal class InstructionSet_TryGetTests
                             .Concat(Enumerable.Range(0x28, 23).Select(x => (uint)x))
                             .Concat(Enumerable.Range(0x45, 128).Select(x => (uint)x))
                     : prefix == 0xFC ? Enumerable.Range(0, 18).Select(x => (uint)x)
-                    : Enumerable
-                        .Range(0x0C, 72)
-                        .Concat(
-                            new[]
-                            {
-                                0x63,
-                                0x64,
-                                0x83,
-                                0x84,
-                                0xA3,
-                                0xA4,
-                                0xC3,
-                                0xC4,
-                                0xD6,
-                                0xD7,
-                                0xD8,
-                                0xD9,
-                                0xDA,
-                                0xDB,
-                            }
-                        )
-                        .Select(x => (uint)x)
-                        .Concat(
-                            expected
-                                .Where(x => IsIntegerSimd(x.Value) || IsFloatSimd(x.Value))
-                                .Select(x => x.Key)
-                        )
+                    : expected.Keys
                 );
             await Assert.That(InstructionSet.TryGet(new(prefix, 256), out _)).IsFalse();
             await Assert.That(InstructionSet.TryGet(new(prefix, uint.MaxValue), out _)).IsFalse();

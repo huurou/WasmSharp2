@@ -333,3 +333,12 @@ New-Item -ItemType Directory -Path $taskOutput | Out-Null
 [実装記録](../../../artifacts/simd/task-8.3-20261018T200613Z/evidence-index.md)で、40宣言全体のOFF21件全失敗・終了2→同一ソースと期待値のまま明示DefineConstants指定のON21件全成功・終了0を記録した。40フラグ完全除去後のReleaseビルドは警告・エラー0、4710/160/702件全成功・失敗/スキップ0・各終了0。旧174metadata、source/test ID・引数と最終hashを確認し、整形・差分検査も成功した。
 
 [独立レビュー](../../../artifacts/simd/review-8.3-20261018T201449Z/review-verdict.md)はAPPROVED。40枝の展開、全905source・5実行artifactと公式runの同一性、公開20期待vectorの独立計算も一致した。[公式監査](../../../artifacts/simd/task-8.3-20261018T200613Z/results-audit-classified.json)は147入力・53907commandでpassed52027、runtime_unsupported159、blocked644、out_of_scope1077。元27482件と直前38169件のpassedを全保持し13858件が新たに成功した。NaN pattern1592件と具体lane12141件は未変更のValueMatcher/ScriptExecutorで判定し、期待値の正規化や新しい判定器は追加していない。全期待値・出典・147source/5821素材・固定条件は不変、否定診断5295件も前方一致、失敗・回帰・欠落・未比較・未処理0。残159/644はすべてメモリ22命令に原因を再帰して対応付け、独立照合も一致した。親は原ログ・終了値・コードを直接確認し、kiro-verify-completionをVERIFIEDとした。未解決指摘はない。CPU支援無効とverify/baseline-saveは後続の最終受入で確認する。
+
+
+## 8.4 メモリ命令の公開接続
+
+通常・拡張・splat・zero・laneの22宣言を既存12handlerへ接続し、FD全236命令が対応済みとなった。製品変更は22属性のみ。既存137handlerテストを再利用し、新規75件でbyte/Stream即値切断、全22alignment境界、全8lane上限、memory→alignment→lane→operand順、到達不能、型順、元位置と再検証、公開Invoke/startのtrap・失敗store未変更・先行更新・保存参照・次の呼び出しを確認した。
+
+[実装記録](../../../artifacts/simd/task-8.4-20261018T202312Z/status-report.md)と[独立レビュー](../../../artifacts/simd/review-8.4-20261018T203820Z/review-verdict.md)はREADY_FOR_REVIEW/APPROVED。全22宣言の同一908source・75件のID/引数/期待値でOFF全失敗・終了2→明示ON全成功・終了0、全フラグ除去後も全成功。警告・エラー0のReleaseビルド後、4785/160/702件全成功・失敗/skip0・各終了0。最終12hash・既存改行・整形・差分検査も一致した。旧期待の指定9ファイルと追加1ファイルについて、診断再走査・元位置・検査順・非実行・import未確認範囲を維持し、未対応状態だけのケースを廃止した理由を[引継ぎ](../../../artifacts/simd/task-8.4-20261018T202312Z/old-expectations-handoff.md)へ記録した。汎用unsupported分類・公開例外・宣言判定・例外変換は保持した。
+
+[公式監査](../../../artifacts/simd/task-8.4-20261018T202312Z/results-audit-classified.json)は147入力53907command、passed52830・out_of_scope1077、未対応/blocked/failed/runner_error/回帰/欠落/未比較/未処理0。元27482件と直前52027件のpassedを全保持し803件が新たに成功した。全期待値・147source/5821素材・出典/profileは不変。v128結果23573件と型だけの期待を持つtrap50件を区別して監査し、既存matcherを使用した。初回補助監査のassert_return限定仮定と初回analyzer失敗は解消し原ログも保持した。親は原ログ・終了値・最終hashと独立監査を直接確認し、kiro-verify-completionをVERIFIEDとした。共通経路9.x、CPU支援無効、最終verifyとbaseline保存は後続範囲で、機能全体GOは含めない。
