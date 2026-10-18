@@ -117,7 +117,7 @@ sequenceDiagram
     participant Module as WasmModule
     participant Validator as FunctionValidator
     participant Instance as WasmInstance
-    participant Loop as Interpreter
+    participant Executor as Interpreter
     participant Memory as WasmMemory
     User->>Module: Decode
     User->>Module: Validate
@@ -125,10 +125,10 @@ sequenceDiagram
     Validator-->>Module: FunctionCode
     User->>Module: Instantiate
     Module->>Instance: 定数式でglobalを初期化
-    User->>Loop: Invoke
-    Loop->>Memory: 指定幅のTryReadまたはTryWrite
-    Memory-->>Loop: 成否
-    Loop-->>User: 結果または境界で変換したtrap
+    User->>Executor: Invoke
+    Executor->>Memory: 指定幅のTryReadまたはTryWrite
+    Memory-->>Executor: 成否
+    Executor-->>User: 結果または境界で変換したtrap
 ```
 
 startも同じ実行ループを使う。globalのv128.const初期化はstartより前で、SIMD演算を初期化式として実行しない。失敗時に先行する成功済み副作用を巻き戻す仕組みは追加しない。
