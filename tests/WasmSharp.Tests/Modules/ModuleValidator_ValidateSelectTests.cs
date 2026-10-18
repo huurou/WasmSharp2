@@ -8,8 +8,6 @@ internal partial class ModuleValidator_ValidateTests
     [Test]
     [Arguments(0x7B, false, "select.v128")]
     [Arguments(0x7B, true, "select.typed.v128")]
-    [Arguments(0x70, true, "select.typed.funcref")]
-    [Arguments(0x6F, true, "select.typed.externref")]
     public async Task 後続型のselectがその場の型検証に成功_ValidateのFeatureと未完了範囲を保持し部分コードを公開しない(
         int valueType,
         bool typed,
@@ -64,8 +62,6 @@ internal partial class ModuleValidator_ValidateTests
 
     [Test]
     [Arguments(0x7B, "select.typed.v128")]
-    [Arguments(0x70, "select.typed.funcref")]
-    [Arguments(0x6F, "select.typed.externref")]
     public async Task Typed_selectの両候補がUnknown_明示注釈で分かる後続機能をUnsupportedとして通知する(
         int valueType,
         string feature

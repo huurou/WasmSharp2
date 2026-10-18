@@ -321,20 +321,20 @@ internal static class ModuleBinaryFormat
     }
 
     /// <summary>
-    /// tableの参照型をs7の符号化から取得する
+    /// 参照型をs7の符号化から取得する
     /// </summary>
     /// <param name="reader">参照型の先頭にある読取り状態 1byte進める</param>
     /// <returns>funcrefまたはexternref</returns>
     /// <exception cref="WasmDecodeException">参照型の符号化が不正か、診断用読取りで物理EOFへ達した場合</exception>
     /// <exception cref="ModuleReadBoundaryException">通常解析で参照型を限定範囲内で取得できない場合</exception>
-    private static WasmValueKind ReadReferenceType(ref ModuleBinaryReader reader)
+    internal static WasmValueKind ReadReferenceType(ref ModuleBinaryReader reader)
     {
         var offset = reader.Position;
         return reader.ReadS7() switch
         {
             -0x10 => WasmValueKind.FuncRef,
             -0x11 => WasmValueKind.ExternRef,
-            _ => throw reader.Error("malformed reference type: tableの参照型が不正です。", offset),
+            _ => throw reader.Error("malformed reference type: 参照型が不正です。", offset),
         };
     }
 

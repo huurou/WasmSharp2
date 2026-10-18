@@ -183,7 +183,7 @@ baselineは最終受入まで保持する。
   - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7_
 
 - [ ] 6. 参照・基本table操作・要素初期化を公開4段階へ統合する
-- [ ] 6.1 参照命令・参照定数式・typed selectを統合する
+- [x] 6.1 参照命令・参照定数式・typed selectを統合する
   - 参照即値のDecodeと命令宣言を、完成した検証・実行処理へ接続する。
   - globalのref.funcを関数先行構築へ接続し、参照のlocals・引数・結果・構造化制御・typed selectを公開APIで往復する。
   - 未宣言参照、typed selectの型数・型不一致、通常selectの参照禁止、定数式の制約を公開Validateから確認する。

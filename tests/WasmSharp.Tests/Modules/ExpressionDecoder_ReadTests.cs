@@ -7,6 +7,40 @@ namespace WasmSharp.Tests.Modules;
 internal class ExpressionDecoder_ReadTests
 {
     [Test]
+    [Arguments(ModuleReadMode.Bounded)]
+    [Arguments(ModuleReadMode.Diagnostic)]
+    public async Task 参照命令が続く_型別nullと未検証の最大関数添字と入力位置を保持する(
+        ModuleReadMode mode
+    )
+    {
+        // Arrange
+        var reader = new ModuleBinaryReader(
+            Convert.FromHexString("D070D06FD1D2FFFFFFFF0F0BFF"),
+            40,
+            10,
+            3,
+            mode
+        );
+
+        // Act
+        var instructions = ExpressionDecoder.Read(ref reader, 100);
+        var followingByte = reader.ReadByte();
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert
+                .That(instructions.Select(x => x.ByteOffset).SequenceEqual([40, 42, 44, 45, 51]))
+                .IsTrue();
+            await Assert.That(instructions[0].Immediate).IsEqualTo(WasmValue.FromFuncRef(null));
+            await Assert.That(instructions[1].Immediate).IsEqualTo(WasmValue.FromExternRef(null));
+            await Assert.That(instructions[2].Opcode).IsEqualTo(new OpcodeKey(0, 0xD1));
+            await Assert.That(instructions[3].Index).IsEqualTo(uint.MaxValue);
+            await Assert.That(followingByte).IsEqualTo((byte)0xFF);
+        }
+    }
+
+    [Test]
     [Arguments("40", BlockTypeKind.Empty, WasmValueKind.I32, 0u)]
     [Arguments("7F", BlockTypeKind.Value, WasmValueKind.I32, 0u)]
     [Arguments("7E", BlockTypeKind.Value, WasmValueKind.I64, 0u)]

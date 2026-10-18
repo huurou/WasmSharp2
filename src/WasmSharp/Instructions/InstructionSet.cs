@@ -2054,9 +2054,33 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I64,
     WasmValueKind.I64
 )]
-[Instruction(0, 0xD0, "ref.null")]
-[Instruction(0, 0xD1, "ref.is_null")]
-[Instruction(0, 0xD2, "ref.func")]
+[Instruction(
+    0,
+    0xD0,
+    "ref.null",
+    ImmediateKind.ReferenceType,
+    StackEffectKind.PushReference,
+    ValidationRule.Constant,
+    nameof(Interpreter.PushConstant)
+)]
+[Instruction(
+    0,
+    0xD1,
+    "ref.is_null",
+    ImmediateKind.None,
+    StackEffectKind.RefIsNull,
+    ValidationRule.RefIsNull,
+    nameof(Interpreter.RefIsNull)
+)]
+[Instruction(
+    0,
+    0xD2,
+    "ref.func",
+    ImmediateKind.Index,
+    StackEffectKind.RefFunc,
+    ValidationRule.RefFunc,
+    nameof(Interpreter.RefFunc)
+)]
 [Instruction(
     0xFC,
     0x00,

@@ -87,6 +87,13 @@ internal static class ExpressionDecoder
                 ),
                 ImmediateKind.BranchTable => ReadBranchTable(opcode, offset, ref reader),
                 ImmediateKind.TypeVector => ReadSelectTypes(opcode, offset, ref reader),
+                ImmediateKind.ReferenceType => DecodedInstruction.WithImmediate(
+                    opcode,
+                    ModuleBinaryFormat.ReadReferenceType(ref reader) == WasmValueKind.FuncRef
+                        ? WasmValue.FromFuncRef(null)
+                        : WasmValue.FromExternRef(null),
+                    offset
+                ),
                 ImmediateKind.MemoryArgument => DecodedInstruction.WithMemoryArgument(
                     opcode,
                     new(reader.ReadU32(), reader.ReadU32()),

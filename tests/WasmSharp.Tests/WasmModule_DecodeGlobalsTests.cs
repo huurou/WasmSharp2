@@ -135,7 +135,6 @@ internal partial class WasmModule_DecodeTests
     }
 
     [Test]
-    [Arguments("D0700B", "ref.null")]
     [Arguments("FD0C", "v128.const")]
     public async Task Global初期化式が未対応命令_機能と位置と未確認範囲を返す(
         string hex,

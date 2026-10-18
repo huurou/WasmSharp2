@@ -686,15 +686,6 @@ internal static class FunctionValidator
                     instruction.ByteOffset
                 );
             }
-            if (candidateType is WasmValueKind.FuncRef or WasmValueKind.ExternRef)
-            {
-                throw CreateUnsupported(
-                    candidateType == WasmValueKind.FuncRef
-                        ? "select.typed.funcref"
-                        : "select.typed.externref",
-                    instruction.ByteOffset
-                );
-            }
             stack.Add(candidateType);
         }
 

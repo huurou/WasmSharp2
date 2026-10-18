@@ -81,6 +81,9 @@ internal class InstructionSet_TryGetTests
                             0x42,
                             0x43,
                             0x44,
+                            0xD0,
+                            0xD1,
+                            0xD2,
                         }
                             .Concat(Enumerable.Range(0x28, 23).Select(x => (uint)x))
                             .Concat(Enumerable.Range(0x45, 128).Select(x => (uint)x))
@@ -128,13 +131,34 @@ internal class InstructionSet_TryGetTests
     )]
     [Arguments(0x1B, ImmediateKind.None, StackEffectKind.Select, ValidationRule.Select, "Select")]
     [Arguments(
+        0xD0,
+        ImmediateKind.ReferenceType,
+        StackEffectKind.PushReference,
+        ValidationRule.Constant,
+        "PushConstant"
+    )]
+    [Arguments(
+        0xD1,
+        ImmediateKind.None,
+        StackEffectKind.RefIsNull,
+        ValidationRule.RefIsNull,
+        "RefIsNull"
+    )]
+    [Arguments(
+        0xD2,
+        ImmediateKind.Index,
+        StackEffectKind.RefFunc,
+        ValidationRule.RefFunc,
+        "RefFunc"
+    )]
+    [Arguments(
         0x1C,
         ImmediateKind.TypeVector,
         StackEffectKind.TypedSelect,
         ValidationRule.TypedSelect,
         "Select"
     )]
-    public async Task 制御とselectの宣言を確認する_即値と型効果と規則と共有handlerが一致する(
+    public async Task 制御とselectと参照の宣言を確認する_即値と型効果と規則と共有handlerが一致する(
         uint code,
         ImmediateKind immediate,
         StackEffectKind stackEffect,
