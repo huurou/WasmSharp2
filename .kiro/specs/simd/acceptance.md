@@ -153,3 +153,17 @@ New-Item -ItemType Directory -Path $taskOutput | Out-Null
 要件1.5・1.6・2.1〜2.5・2.7の準備として、定数型、lane・shuffle制約、laneメモリ型効果と実行表現への即値引渡しを追加した。到達不能でも静的制約を確認し、laneメモリは固定参照実装と同じmemory→alignment→lane→operandの順序を保つ。検証成功時だけコードを返す既存契約を維持し、selectは変更していない。
 
 [実装記録](../../../artifacts/simd/task-2.4-20261018T141555Z/status-report.md)と[独立レビュー](../../../artifacts/simd/review-2.4-20261018T142026Z/review-verdict.md)で、Releaseビルドの警告・エラー0、ランタイム3,798件・生成器160件成功、失敗とスキップ0、各終了0、整形と差分チェック成功を確認した。未接続の準備として独立レビューは`APPROVED`、`kiro-verify-completion`のタスク2.4判定は`VERIFIED`とした。新しい型順・lane・shuffle・alignment・到達不能の否定経路は3.1・8.1・8.2・8.4で接続後に検証する。
+
+## 3.1 定数・global初期化とv128 selectの接続
+
+要件1.1〜1.4・1.6・2.6・2.7・3.1・3.2・3.4・3.5に対応する接続として、`v128.const`を既存`PushConstant`と定数初期化式へ接続し、typed/untyped selectのv128未対応制限を除去した。公開API・decoder・handler・`ConstantInitializer`は既存処理を使い、専用評価器は追加していない。残る235個の0xFD命令は未接続である。
+
+[実装記録](../../../artifacts/simd/task-3.1-20261018T142431Z/status-report.md)で、一時フラグOFFの公開経路11件すべてのRED、ONのGREEN、フラグ除去後の成功を確認した。[独立レビュー](../../../artifacts/simd/review-3.1-20261018T143705Z/review-verdict.md)は`APPROVED`で、Releaseビルドの警告・エラー0、ランタイム3,826件・生成器160件・ランナー702件成功、失敗とスキップ0、各終了0、13ファイルの整形と差分チェック成功を確認した。byte列・Stream、入力変更からの独立、NaN payload・符号付きゼロを含む128bit、global初期化と選択、切断・不正LEB128・要求型不一致の段階と位置を確認した。
+
+未対応期待の更新と廃止は次のとおりである。
+
+- `ExpressionDecoder_ReadTests`と`ModuleDecoder_DecodeFailureTests`の`FD0C`各1件、`WasmModule_DecodeTests`の`FD0C`・`FD8C00`とbyte列・Streamの組合せ4件は、constが未対応であることだけを期待するため廃止し、完全即値・切断・LEB不正・型不一致の確認へ置き換えた。
+- `ModuleDecoder_ReadElementTests`と`WasmModule_DecodeGlobalsTests`は完全即値、切断、要求型不一致に分け、sectionと位置、Decode・Validateの境界を維持した。
+- selectの後段不一致、再検証と部分コード未公開、到達不能のtyped selectを確認した。診断再走査は完全const後の未対応loadで元の境界不正を保持し、const切断の位置は別に確認した。`InspectImports`の非実行と未確認範囲も保持した。
+
+`kiro-verify-completion`のタスク3.1判定は`VERIFIED`で、未解決の指摘はない。公式全体run・比較は3.2、演算を含む定数式拒否は8.1、広い共通経路・ホスト・状態共有は9.xで検証する。

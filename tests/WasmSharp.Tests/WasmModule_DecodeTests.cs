@@ -190,11 +190,13 @@ internal partial class WasmModule_DecodeTests
     }
 
     [Test]
-    [Arguments("FD0D")]
-    [Arguments("FD8C00")]
-    [Arguments("FD00")]
-    public async Task 診断再走査で未対応命令に到達する_両入力で元の境界不正を保持する(
-        string instruction
+    [Arguments("FD0D", 17L)]
+    [Arguments("FD8C0000000000000000000000000000000000FD00", 17L)]
+    [Arguments("FD8C00", 20L)]
+    [Arguments("FD00", 17L)]
+    public async Task 診断再走査で境界後の命令に到達する_両入力で完全な即値と切断の診断位置を区別する(
+        string instruction,
+        long offset
     )
     {
         // Arrange
@@ -222,7 +224,7 @@ internal partial class WasmModule_DecodeTests
                     .IsTrue();
                 await Assert
                     .That(exception.Location)
-                    .IsEqualTo(new(WasmProcessingStage.Decode, 17, 0, 10));
+                    .IsEqualTo(new(WasmProcessingStage.Decode, offset, 0, 10));
             }
         }
     }
@@ -453,12 +455,49 @@ internal partial class WasmModule_DecodeTests
     }
 
     [Test]
+    [Arguments("FD0C", 35L, "unexpected end of section or function")]
+    [Arguments("FD0C000000000000000000000000000000", 35L, "unexpected end of section or function")]
+    [Arguments(
+        "FD0C00000000000000000000000000000000",
+        51L,
+        "unexpected end of section or function"
+    )]
+    [Arguments("FD8C80808010", 38L, "integer too large")]
+    [Arguments("FD8C8080808000", 39L, "integer representation too long")]
+    public async Task V128定数の即値か命令番号か終端が破損_両入力でDecode診断と元位置を保持する(
+        string instructions,
+        long offset,
+        string prefix
+    )
+    {
+        // Arrange
+        var bytes = ConstantModuleBinary.Create(0x7B, Convert.FromHexString(instructions));
+        using var stream = new ChunkedReadStream(new MemoryStream(bytes));
+        Func<WasmModule>[] decoders =
+        [
+            () => WasmModule.Decode(bytes),
+            () => WasmModule.Decode(stream),
+        ];
+
+        // Act & Assert
+        foreach (var decode in decoders)
+        {
+            var exception = await Assert.That(decode).ThrowsExactly<WasmDecodeException>();
+            using (Assert.Multiple())
+            {
+                await Assert
+                    .That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal))
+                    .IsTrue();
+                await Assert
+                    .That(exception.Location)
+                    .IsEqualTo(new(WasmProcessingStage.Decode, offset, 0, 10));
+            }
+        }
+    }
+
+    [Test]
     [Arguments(false, "FD0105", "v128.load8x8_s")]
     [Arguments(true, "FD0105", "v128.load8x8_s")]
-    [Arguments(false, "FD8C00", "v128.const")]
-    [Arguments(true, "FD8C00", "v128.const")]
-    [Arguments(false, "FD0C", "v128.const")]
-    [Arguments(true, "FD0C", "v128.const")]
     public async Task 公開Decodeで未対応命令に遭遇する_デコーダーの診断を保持する(
         bool useStream,
         string instructions,

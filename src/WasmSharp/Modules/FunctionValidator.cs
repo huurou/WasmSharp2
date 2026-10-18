@@ -23,7 +23,6 @@ internal static class FunctionValidator
     /// <param name="references">当該module検証で共有する参照情報</param>
     /// <returns>実行命令と確定済み分岐情報、追加localsとoperandの最大要素数を持つ、この定義関数の実行コード</returns>
     /// <exception cref="WasmValidateException">命令の参照先、globalの可変性、入力型または結果の型・個数・順序が不正な場合</exception>
-    /// <exception cref="WasmUnsupportedFeatureException">その場の型検証が成立したselectの候補型が後続機能に属する場合</exception>
     /// <exception cref="InvalidOperationException">デコード済み命令の記述子や検証規則が実装内で一致しない場合</exception>
     internal static FunctionCode Validate(
         WasmModule module,
@@ -740,13 +739,6 @@ internal static class FunctionValidator
             Pop(candidateType, instruction.ByteOffset);
             Pop(candidateType, instruction.ByteOffset);
 
-            if (candidateType == WasmValueKind.V128)
-            {
-                throw CreateUnsupported(
-                    typed ? "select.typed.v128" : "select.v128",
-                    instruction.ByteOffset
-                );
-            }
             stack.Add(candidateType);
         }
 
@@ -912,29 +904,6 @@ internal static class FunctionValidator
                 "type mismatch",
                 message,
                 new(WasmProcessingStage.Validate, byteOffset, moduleFunctionIndex, 10)
-            );
-        }
-
-        WasmUnsupportedFeatureException CreateUnsupported(string feature, long byteOffset)
-        {
-            return new WasmUnsupportedFeatureException(
-                "selectの候補型に対する処理が未実装です。",
-                feature,
-                new(WasmProcessingStage.Validate, byteOffset, moduleFunctionIndex, 10),
-                [
-                    new WasmUnverifiedRange(
-                        WasmProcessingStage.Validate,
-                        byteOffset,
-                        module.InputLength,
-                        "この命令以降の検証が未完了です。"
-                    ),
-                    new WasmUnverifiedRange(
-                        WasmProcessingStage.Validate,
-                        0,
-                        module.InputLength,
-                        "module全体の検証が未完了です。"
-                    ),
-                ]
             );
         }
 

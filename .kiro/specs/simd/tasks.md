@@ -82,7 +82,7 @@
   - _Requirements: 1.5, 1.6, 2.1, 2.2, 2.3, 2.4, 2.5, 2.7_
 
 - [ ] 3. v128定数と選択を公開経路へ統合する
-- [ ] 3.1 定数・global初期化とv128 selectを接続する
+- [x] 3.1 定数・global初期化とv128 selectを接続する
   - v128定数を既存の定数pushと初期化式へ接続し、専用評価器を追加しない。
   - typed/untyped selectのv128未対応制限だけを解消し、型・条件の検証を保つ。
   - 定数の128bit、global初期値、NaN payload、±0と選択した値の保持を公開4段階で確認する。
@@ -310,9 +310,10 @@
 
 ## Implementation Notes
 
+- 3.1: `v128.const`とtyped/untypedのv128 selectを公開経路へ接続した。残る235個の0xFD命令は未接続。定数・globalのbyte/Stream、bit保持と型不一致を確認済みで、公式全体run・比較は3.2で行う。
 - 2.4: lane・shuffleの診断先頭は`invalid lane index`。laneメモリはmemory存在→alignment→lane→operandの順を維持する。`Instruction`へ`ShuffleLanes`・`LaneIndex`を渡す準備が完了し、新規経路の否定テストは接続時に行う。
 - 2.2: `SimdValue`のbyte変換は`FromLittleEndian(ReadOnlySpan<byte>)`と`WriteLittleEndian(Span<byte>)`。lane幅・indexは検証済みとして扱い、浮動小数点や符号の解釈はhandlerに残す。
-- 2.1: SIMD即値は`V128`・`Shuffle`・`LaneIndex`・`MemoryArgumentLaneIndex`、laneメモリ規則は`MemoryLoadLane`・`MemoryStoreLane`を使う。生成metadataの`LaneCount`はlane即値なしで0。全236命令はまだ未接続である。
+- 2.1: SIMD即値は`V128`・`Shuffle`・`LaneIndex`・`MemoryArgumentLaneIndex`、laneメモリ規則は`MemoryLoadLane`・`MemoryStoreLane`を使う。生成metadataの`LaneCount`はlane即値なしで0。2.1では命令を接続せず生成契約を準備した。
 - 1.4: `Interpreter.Float.cs`内の`F32MinResult`・`F32MaxResult`・`F64MinResult`・`F64MaxResult`と、既存の算術結果・丸め・飽和変換の補助をSIMDのpartialから再利用する。
 - 1.2: `NumericSignature`は`InputTypes`と`ResultType`へ統一した。入力型列はスタック下側から上側の順で、validatorは逆順に消費する。型列のテスト比較には`SequenceEqual`を使う。生成契約の異種入力・3入力・v128拡張は2.1で行う。
 - 1.1: 比較元は`artifacts/tables-references/task-8.4-20261018T090714Z/run-baseline.json`、manifestは`artifacts/linear-memory/wabt-commit-20261016/corpus/manifest.json`。既存fixtureで必要な入力を構成できる。固定条件・検証コマンドは`acceptance.md`を参照する。

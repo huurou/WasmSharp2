@@ -2,6 +2,7 @@ using WasmSharp.Exceptions;
 using WasmSharp.Instructions;
 using WasmSharp.Modules;
 using WasmSharp.Modules.Definitions;
+using WasmSharp.Tests.Fixtures;
 
 namespace WasmSharp.Tests.Modules;
 
@@ -358,9 +359,9 @@ internal class ModuleDecoder_ReadElementTests
     }
 
     [Test]
-    [Arguments("0100FD0C", 42L)]
-    [Arguments("01057001FD0C", 44L)]
-    public async Task 式に未対応命令がある_未確認範囲と要素セクションの位置を保持する(
+    [Arguments("0100FD0C", 44L)]
+    [Arguments("01057001FD0C", 46L)]
+    public async Task 要素式のV128定数が切断される_両読取モードで即値先頭と要素セクションの位置を保持する(
         string hex,
         long offset
     )
@@ -368,31 +369,98 @@ internal class ModuleDecoder_ReadElementTests
         // Arrange
         var bytes = Convert.FromHexString(hex);
 
-        // Act & Assert
-        var exception = await Assert
-            .That(() =>
+        foreach (var mode in new[] { ModuleReadMode.Bounded, ModuleReadMode.Diagnostic })
+        {
+            Action read = () =>
             {
-                var reader = new ModuleBinaryReader(bytes, 40, 9);
+                var reader = new ModuleBinaryReader(bytes, 40, 9, mode: mode);
                 ModuleDecoder.ReadElement(ref reader, 100);
-            })
-            .ThrowsExactly<WasmUnsupportedFeatureException>();
+            };
+
+            // Act & Assert
+            WasmDecodeException failure;
+            if (mode == ModuleReadMode.Bounded)
+            {
+                var exception = await Assert
+                    .That(read)
+                    .ThrowsExactly<ModuleReadBoundaryException>();
+                failure = exception!.Fallback;
+            }
+            else
+            {
+                failure = (await Assert.That(read).ThrowsExactly<WasmDecodeException>())!;
+            }
+            using (Assert.Multiple())
+            {
+                await Assert
+                    .That(
+                        failure.Message.StartsWith(
+                            "unexpected end of section or function",
+                            StringComparison.Ordinal
+                        )
+                    )
+                    .IsTrue();
+                await Assert
+                    .That(failure.Location)
+                    .IsEqualTo(new(WasmProcessingStage.Decode, offset, null, 9));
+            }
+        }
+    }
+
+    [Test]
+    [Arguments(false)]
+    [Arguments(true)]
+    public async Task 要素式に完全なV128定数がある_即値をDecodeして要求型との不一致をValidateで返す(
+        bool initializer
+    )
+    {
+        // Arrange
+        byte[] prefix = initializer ? [1, 5, 0x70, 1] : [1, 0];
+        byte[] suffix = initializer ? [] : [0];
+        byte[] payload = [.. prefix, 0xFD, 0x0C, .. new byte[16], 0x0B, .. suffix];
+        foreach (var mode in new[] { ModuleReadMode.Bounded, ModuleReadMode.Diagnostic })
+        {
+            var reader = new ModuleBinaryReader(payload, 40, 9, mode: mode);
+
+            // Act
+            var segments = ModuleDecoder.ReadElement(ref reader, 100);
+            var expression = initializer
+                ? segments[0].Initializers[0]
+                : segments[0].ActiveTarget!.OffsetExpression;
+
+            // Assert
+            using (Assert.Multiple())
+            {
+                await Assert.That(expression[0].Immediate.AsV128()).IsEqualTo((0UL, 0UL));
+                await Assert.That(expression[0].ByteOffset).IsEqualTo(40L + prefix.Length);
+                await Assert.That(expression[^1].ByteOffset).IsEqualTo(58L + prefix.Length);
+            }
+        }
+        var module = WasmModule.Decode(
+            HostLinkingModuleBinary.Create(
+                HostLinkingModuleBinary.Tables((0x70, 0, null)),
+                HostLinkingModuleBinary.Section(9, payload)
+            )
+        );
+        var expectedOffset = initializer
+            ? module.ElementSegments[0].Initializers[0][^1].ByteOffset
+            : module.ElementSegments[0].ActiveTarget!.OffsetExpression[^1].ByteOffset;
+
+        // Act & Assert
+        var failure = await Assert
+            .That(() => module.Validate())
+            .ThrowsExactly<WasmValidateException>();
         using (Assert.Multiple())
         {
-            await Assert.That(exception!.Feature).IsEqualTo("v128.const");
             await Assert
-                .That(exception.Location)
-                .IsEqualTo(new(WasmProcessingStage.Decode, offset, null, 9));
-            await Assert.That(exception.UnverifiedRanges.Length).IsEqualTo(2);
+                .That(failure!.Message.StartsWith("type mismatch", StringComparison.Ordinal))
+                .IsTrue();
             await Assert
-                .That(exception.UnverifiedRanges[0])
-                .IsEqualTo(
-                    new WasmUnverifiedRange(
-                        WasmProcessingStage.Decode,
-                        offset,
-                        100,
-                        "この構文以降のデコードが未完了です。"
-                    )
-                );
+                .That(failure.Location)
+                .IsEqualTo(new(WasmProcessingStage.Validate, expectedOffset, null, 9));
+            await Assert
+                .That(() => module.Instantiate([]))
+                .ThrowsExactly<InvalidOperationException>();
         }
     }
 }

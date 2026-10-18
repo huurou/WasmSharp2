@@ -9,6 +9,81 @@ internal class ExpressionDecoder_ReadTests
     [Test]
     [Arguments(ModuleReadMode.Bounded)]
     [Arguments(ModuleReadMode.Diagnostic)]
+    public async Task V128定数が続く_16byteの所有と即値後の命令位置を保持する(ModuleReadMode mode)
+    {
+        // Arrange
+        var bytes = Convert.FromHexString("FD0C0123456789ABCDEFFEDCBA98765432100BFF");
+        var reader = new ModuleBinaryReader(bytes, 40, 10, 3, mode);
+
+        // Act
+        var instructions = ExpressionDecoder.Read(ref reader, 100);
+        var followingByte = reader.ReadByte();
+        Array.Clear(bytes);
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(instructions.Count).IsEqualTo(2);
+            await Assert
+                .That(instructions[0].Immediate.AsV128())
+                .IsEqualTo((0xEFCDAB8967452301UL, 0x1032547698BADCFEUL));
+            await Assert
+                .That(instructions.Select(x => x.ByteOffset).SequenceEqual([40, 58]))
+                .IsTrue();
+            await Assert.That(followingByte).IsEqualTo((byte)0xFF);
+        }
+    }
+
+    [Test]
+    [Arguments(ModuleReadMode.Bounded)]
+    [Arguments(ModuleReadMode.Diagnostic)]
+    public async Task V128定数の16byteが途中で切れる_両読取モードで即値先頭の境界診断を保持する(
+        ModuleReadMode mode
+    )
+    {
+        // Arrange
+        for (var length = 0; length < 16; length++)
+        {
+            byte[] bytes = [0xFD, 0x0C, .. new byte[length]];
+            Action read = () =>
+            {
+                var reader = new ModuleBinaryReader(bytes, 40, 10, 3, mode);
+                ExpressionDecoder.Read(ref reader, 100);
+            };
+
+            // Act & Assert
+            WasmDecodeException failure;
+            if (mode == ModuleReadMode.Bounded)
+            {
+                var exception = await Assert
+                    .That(read)
+                    .ThrowsExactly<ModuleReadBoundaryException>();
+                failure = exception!.Fallback;
+            }
+            else
+            {
+                failure = (await Assert.That(read).ThrowsExactly<WasmDecodeException>())!;
+            }
+            using (Assert.Multiple())
+            {
+                await Assert
+                    .That(
+                        failure.Message.StartsWith(
+                            "unexpected end of section or function",
+                            StringComparison.Ordinal
+                        )
+                    )
+                    .IsTrue();
+                await Assert
+                    .That(failure.Location)
+                    .IsEqualTo(new(WasmProcessingStage.Decode, 42, 3, 10));
+            }
+        }
+    }
+
+    [Test]
+    [Arguments(ModuleReadMode.Bounded)]
+    [Arguments(ModuleReadMode.Diagnostic)]
     public async Task 参照命令が続く_型別nullと未検証の最大関数添字と入力位置を保持する(
         ModuleReadMode mode
     )
@@ -501,7 +576,6 @@ internal class ExpressionDecoder_ReadTests
     [Test]
     [Arguments(ModuleReadMode.Bounded, "FD00", "v128.load")]
     [Arguments(ModuleReadMode.Diagnostic, "FD00", "v128.load")]
-    [Arguments(ModuleReadMode.Bounded, "FD0C", "v128.const")]
     public async Task 未対応命令の後に不正がある_後続を調べず機能と位置と未確認範囲を保持する(
         ModuleReadMode mode,
         string opcode,

@@ -7,6 +7,29 @@ namespace WasmSharp.Tests.Instructions;
 internal class InstructionSet_TryGetTests
 {
     [Test]
+    public async Task V128定数が接続されている_既存定数handlerと定数式規則を使う()
+    {
+        // Arrange
+        var declaration = typeof(InstructionSet)
+            .GetCustomAttributes<InstructionAttribute>()
+            .Single(x => x.Prefix == 0xFD && x.Code == 0x0C);
+
+        // Act
+        var found = InstructionSet.TryGet(new(0xFD, 0x0C), out var descriptor);
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(found).IsTrue();
+            await Assert.That(descriptor.Immediate).IsEqualTo(ImmediateKind.V128);
+            await Assert.That(descriptor.StackEffect).IsEqualTo(StackEffectKind.PushV128);
+            await Assert.That(descriptor.Validation).IsEqualTo(ValidationRule.Constant);
+            await Assert.That(descriptor.ExecutionOpcode).IsNotNull();
+            await Assert.That(declaration.ExecutionHandler).IsEqualTo("PushConstant");
+        }
+    }
+
+    [Test]
     [Arguments((byte)0, 183)]
     [Arguments((byte)0xFC, 18)]
     [Arguments((byte)0xFD, 236)]
@@ -94,7 +117,7 @@ internal class InstructionSet_TryGetTests
                             .Concat(Enumerable.Range(0x28, 23).Select(x => (uint)x))
                             .Concat(Enumerable.Range(0x45, 128).Select(x => (uint)x))
                     : prefix == 0xFC ? Enumerable.Range(0, 18).Select(x => (uint)x)
-                    : []
+                    : new uint[] { 0x0C }
                 );
             await Assert.That(InstructionSet.TryGet(new(prefix, 256), out _)).IsFalse();
             await Assert.That(InstructionSet.TryGet(new(prefix, uint.MaxValue), out _)).IsFalse();

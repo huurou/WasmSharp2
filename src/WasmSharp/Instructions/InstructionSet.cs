@@ -2303,7 +2303,15 @@ namespace WasmSharp.Instructions;
 [Instruction(0xFD, 0x09, "v128.load32_splat")]
 [Instruction(0xFD, 0x0A, "v128.load64_splat")]
 [Instruction(0xFD, 0x0B, "v128.store")]
-[Instruction(0xFD, 0x0C, "v128.const")]
+[Instruction(
+    0xFD,
+    0x0C,
+    "v128.const",
+    ImmediateKind.V128,
+    StackEffectKind.PushV128,
+    ValidationRule.Constant,
+    nameof(Interpreter.PushConstant)
+)]
 [Instruction(0xFD, 0x0D, "i8x16.shuffle")]
 [Instruction(0xFD, 0x0E, "i8x16.swizzle")]
 [Instruction(0xFD, 0x0F, "i8x16.splat")]

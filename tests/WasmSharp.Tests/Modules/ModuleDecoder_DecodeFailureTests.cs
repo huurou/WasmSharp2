@@ -32,7 +32,6 @@ internal partial class ModuleDecoder_DecodeTests
     [Arguments("FD0105", "v128.load8x8_s")]
     [Arguments("FD0D", "i8x16.shuffle")]
     [Arguments("FD00", "v128.load")]
-    [Arguments("FD0C", "v128.const")]
     [Arguments("FDDF01", "i64x2.extmul_high_i32x4_u")]
     public async Task 割当済み未対応命令_即値や後続を調べず未確認範囲を返す(
         string instructions,

@@ -135,33 +135,78 @@ internal partial class WasmModule_DecodeTests
     }
 
     [Test]
-    [Arguments("FD0C", "v128.const")]
-    public async Task Global初期化式が未対応命令_機能と位置と未確認範囲を返す(
-        string hex,
-        string feature
+    [Arguments(false)]
+    [Arguments(true)]
+    public async Task GlobalのV128定数が要求型と異なる_完全な即値はDecodeして終端位置でValidate失敗になる(
+        bool useStream
     )
     {
         // Arrange
         var bytes = HostLinkingModuleBinary.Create(
-            HostLinkingModuleBinary.Globals((0x70, false, Convert.FromHexString(hex)))
+            HostLinkingModuleBinary.Globals((0x70, false, [0xFD, 0x0C, .. new byte[16], 0x0B]))
         );
+        using var stream = new ChunkedReadStream(new MemoryStream(bytes));
+
+        // Act
+        var module = useStream ? WasmModule.Decode(stream) : WasmModule.Decode(bytes);
+
+        // Assert
+        await Assert
+            .That(module.Globals[0].Initializer[0].Immediate.AsV128())
+            .IsEqualTo((0UL, 0UL));
+
+        // Act & Assert
+        for (var attempt = 0; attempt < 2; attempt++)
+        {
+            var exception = await Assert
+                .That(() => module.Validate())
+                .ThrowsExactly<WasmValidateException>();
+            using (Assert.Multiple())
+            {
+                await Assert
+                    .That(exception!.Message.StartsWith("type mismatch", StringComparison.Ordinal))
+                    .IsTrue();
+                await Assert
+                    .That(exception.Location)
+                    .IsEqualTo(new(WasmProcessingStage.Validate, 31, null, 6));
+                await Assert.That(module.FunctionCodes.IsEmpty).IsTrue();
+                await Assert
+                    .That(() => module.Instantiate([]))
+                    .ThrowsExactly<InvalidOperationException>();
+            }
+        }
+    }
+
+    [Test]
+    [Arguments(false)]
+    [Arguments(true)]
+    public async Task GlobalのV128定数が切断される_要求型の検証へ進まずDecodeで即値位置を返す(
+        bool useStream
+    )
+    {
+        // Arrange
+        var bytes = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Globals((0x70, false, [0xFD, 0x0C]))
+        );
+        using var stream = new ChunkedReadStream(new MemoryStream(bytes));
 
         // Act & Assert
         var exception = await Assert
-            .That(() => WasmModule.Decode(bytes))
-            .ThrowsExactly<WasmUnsupportedFeatureException>();
+            .That(() => useStream ? WasmModule.Decode(stream) : WasmModule.Decode(bytes))
+            .ThrowsExactly<WasmDecodeException>();
         using (Assert.Multiple())
         {
-            await Assert.That(exception!.Feature).IsEqualTo(feature);
+            await Assert
+                .That(
+                    exception!.Message.StartsWith(
+                        "unexpected end of section or function",
+                        StringComparison.Ordinal
+                    )
+                )
+                .IsTrue();
             await Assert
                 .That(exception.Location)
-                .IsEqualTo(new(WasmProcessingStage.Decode, 13, null, 6));
-            await Assert.That(exception.UnverifiedRanges.Length).IsEqualTo(2);
-            await Assert.That(exception.UnverifiedRanges[0].StartOffset).IsEqualTo(13L);
-            await Assert.That(exception.UnverifiedRanges[0].EndOffset).IsEqualTo(bytes.Length);
-            await Assert
-                .That(exception.UnverifiedRanges[1].Stage)
-                .IsEqualTo(WasmProcessingStage.Validate);
+                .IsEqualTo(new(WasmProcessingStage.Decode, 15, null, 6));
         }
     }
 }
