@@ -77,7 +77,7 @@ baselineは最終受入まで保持する。
   - _Requirements: 7.2, 7.3, 7.4, 8.1, 8.2, 8.3_
 
 - [ ] 3. 宣言集合・定数式・命令の検証を追加する
-- [ ] 3.1 参照の検証に必要な添字型と宣言集合を構築する
+- [x] 3.1 参照の検証に必要な添字型と宣言集合を構築する
   - module検証内でtable型・element型・関数総数・宣言済み関数添字を一度構築する。
   - 関数本体とstartを除く全定義から宣言を集め、global式・関数export・全modeのelementと、関数本体/start/importだけの否定例を確認する。
   - 同じ集合を後続の定数式と関数検証へ渡せる状態にし、検証成功時だけコードを確定する契約を維持する。
@@ -318,3 +318,4 @@ manifestと比較元baselineのSHA-256はresearch.mdの記録と一致した。
 ## Implementation Notes
 
 - 初期化式列は`ReadOnlySpan<IEnumerable<DecodedInstruction>>`で受け、`ElementDefinition`が各式を一度コピーする。`ExpressionDecoder.Read`の`List<DecodedInstruction>`をそのまま渡せる。
+- 宣言集合は固定仕様の`Free.instr`に合わせ、関数本体とstart以外の式から`ref.func`と`call`の関数添字を集める。定数性や添字の妥当性は後続の検証で判定する。

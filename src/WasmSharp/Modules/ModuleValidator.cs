@@ -17,10 +17,9 @@ internal static class ModuleValidator
     /// <returns>importを含まない定義順の線形実行コード</returns>
     internal static ImmutableArray<FunctionCode> Validate(WasmModule module)
     {
-        var (functionCount, tableCount, memoryCount, globalCount) = ValidateImportReferences(
-            module
-        );
+        var (functionCount, _, memoryCount, globalCount) = ValidateImportReferences(module);
         ValidateFunctionReferences(module, functionCount);
+        var references = ReferenceValidationContext.Create(module, functionCount);
         ValidateInitializers(module);
         ValidateResources(module);
         ValidateData(module, memoryCount);
@@ -28,8 +27,8 @@ internal static class ModuleValidator
         ValidateStart(module);
         ValidateExports(
             module,
-            functionCount + (uint)module.Functions.Length,
-            tableCount + (uint)module.Tables.Length,
+            references.FunctionCount,
+            (uint)references.TableElementTypes.Length,
             memoryCount + (uint)module.Memories.Length,
             globalCount + (uint)module.Globals.Length
         );
