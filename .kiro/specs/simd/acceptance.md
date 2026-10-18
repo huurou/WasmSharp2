@@ -356,3 +356,78 @@ New-Item -ItemType Directory -Path $taskOutput | Out-Null
 製品変更なしの適合確認で、global共有1件・memory共有1件と既存リンク型/可変性のv128パラメータ2件を追加した。globalはimmutable/mutable import/exportの同一性、guest get/set→host/別instance、host更新→guest、保存済み値と定義globalのinstance独立を確認。memoryはdataの全16byte、grow後ゼロ、scalar/SIMD/host更新、2instanceとhostの同一性、grow前data保持を確認した。既存のglobal初期化・定数式/型/可変制約と8.4のInvoke/starttrap2件など13メソッド38件を再利用し、失敗store未変更・先行副作用・保存参照・次callを維持した。
 
 [担当記録](../../../artifacts/simd/task-9.2-20261018T210136Z/self-review.md)はRED=N/Aの非behavioral確認。警告・エラー0のビルド後、追加filter6件（新規4/旧リンク2）・再利用38件・runtime4798件が全成功・失敗/skip0・終了0。[独立レビュー](../../../artifacts/simd/review-task-9.2-20261018T211000Z/review-verdict.md)はAPPROVEDで、全件TUnit JSONから同じ44件の成功を確認し、期待byteも独立計算した。変更3テストの既存改行、最終hash、整形/差分検査は一致。親は全差分・原ログ・現在hashを照合し、kiro-verify-completionをVERIFIEDとした。公式最終受入とCPU支援無効の確認は10.xへ引き継ぐ。
+
+
+## 10.1 命令集合・規則対応と局所検証
+
+HEAD`10d744753ea32d12721251c0b9901512ba09004e`で製品とテストを変更せず確認した。51受入基準の固定規則・実装・既存テストへの対応は[coverage.md](coverage.md)。以下の監査・実行記録は`artifacts/simd/task-10.1-20261018T211244Z/`に保存した。
+
+### 命令集合・生成metadata
+
+固定仕様submoduleのcommitは`05ca4182176763112561ae20153975c12bd689e4`、WABTは`c8dc7b6eae42b3aa3e95b9014dc02b71f8e0e1db`で一致した。固定付録`document/core/appendix/index-instructions.py`とmacroを読み、Releaseビルド済みDLLからreflectionで取得した生成metadataと照合した。既存`Core2InstructionFixture`と`InstructionSet_TryGetTests`は今回の全ランタイムテストでも実行した。
+
+- 通常183、FC18、FD236命令の番号・名前が一致し、FDの未接続・欠落・名前不一致は0。全437宣言に`ImmediateKind.Unsupported`は残らない。
+- FDは236宣言→236種類の`ExecutionOpcode`→226種類のhandler。生成器の`ExecutionOpcode`はprefix/codeごとの識別子で、メモリのsplat・zero・laneではhandlerを共有する。従来引継ぎの「distinct FD実行opcode226」はhandler数との取り違えだったため、今回の生成metadataと`InstructionGenerator.cs:646`に従って訂正した。236種類のhandlerを要求するという意味ではない。
+- 00〜FFの20欠番は`9A A2 A5 A6 AF B0 B2 B3 B4 BB C2 C5 C6 CF D0 D2 D3 D4 E2 EE`で、metadataにもない。範囲外番号と不正LEBも既存Decodeテストで拒否する。
+- `metadata-extract.ps1`は生成された`Interpreter.RunLoop`のILを命令境界に従って解読し、全226handlerへのcallを確認した。`instruction-audit.json`に全236命令の即値・型・幅・lane制約・固定規則アンカー・handlerを記録し、`handler-test-index.json`に既存225handlerテストクラスと公開v128.constテストの対応を記録した。命令数とcallの存在だけを意味論や最終合格の根拠にはしない。
+
+### 指定9ファイルの旧未対応期待
+
+表のパスは`tests/WasmSharp.Tests/`からの相対パス。8.4の`old-expectations-handoff.md`を参照した後、下記の現在のテスト本文を直接読み、今回の4,798件の全件実行で再確認した。今回のタスクではテストを再編集していない。
+
+| ファイル | 維持した独立した目的と現在の確認 | 廃止した観測と理由 |
+| --- | --- | --- |
+| Modules/ExpressionDecoder_ReadTests.cs | 「メモリ命令の後に不正がある」はBounded/Diagnosticの両モードで完全なv128.loadのmemargを読み、後続のillegal opcodeを位置46・function3・section10で報告する。既存の通常/診断再走査の境界処理も保持する。 | 全FD命令接続により、当該入力の「未対応後を走査しない」「2未確認範囲」という観測は生じないため廃止した。reader.Unsupportedと公開例外の汎用契約は残す。 |
+| Modules/ModuleDecoder_DecodeFailureTests.cs | 「メモリ命令の即値が切断される」は旧FD0105/FD00をDecodeの境界診断・物理終端・function0/section10として確認する。「未割当opcodeか不正LEBか平坦else」はFD9A01/FD8002等を破損として拒否する。 | 未対応機能・即値前の打切り・未確認範囲は接続後の同じ入力では発生しない。未割当を未対応に読み替えて代用しない。 |
+| Modules/ModuleDecoder_DecodeInstructionTests.cs | 「有効なcall即値の後にメモリ即値が切断される」で複数byteのcall添字を読了後、後続FD00の切断を元入力の物理終端・function0/section10で返す。 | 後続メモリ命令の機能名・未確認範囲の期待は、正常に接続されたため廃止した。複数byte即値後の診断位置という目的は保持する。 |
+| Modules/ModuleDecoder_ReadElementTests.cs | 3.1で更新された「要素式に完全なV128定数がある」で、両読取モードの完全16byteと元位置、elementのoffset/initializerの要求型不一致をValidateでtype mismatch、section9・元終端位置、Instantiate不可として確認する。切断のDecode診断も別テストで保持する。 | 完全なv128.constは対応命令になったため、即値前の未対応という期待を廃止した。Decodeと要求型の検証を分離する。 |
+| Modules/ModuleValidator_ValidateSelectTests.cs | 3.1で更新されたtyped/untypedの候補/条件の型不一致、余剰値、到達不能と再検証を保持する。「V128のselect候補か条件の型が不一致」は2回のValidate失敗、元select位置、FunctionCodes空、Instantiate不可を確認する。 | v128 selectの明示的な未対応分岐は接続時に除去した。正常なselectや型不一致を未対応としていた期待は保持しない。 |
+| WasmModule_DecodeTests.cs | 「診断再走査で境界後の命令に到達する」はbyte/Streamで完全な即値と切断を区別し、元位置19/38等のDecode診断を確認する。「公開Decodeでメモリ即値が切断される」も両入口の境界診断を保持する。 | 未対応による再走査打切り、機能名・範囲の期待は、全命令接続後の同じ入力では存在しないため廃止した。診断の再走査自体は残す。 |
+| WasmModule_DecodeDataTests.cs | 「完全なメモリ式と宣言件数違反がある」で関数件数→データ件数を保持する。「データに完全なメモリ式がある」は整合時にDecode後のValidateでconstant expression requiredとInstantiate不可を確認する。「データの宣言範囲外でメモリ即値が切断される」は再走査でも元終端を保持する。「完全なメモリ命令の後にデータ構文違反がある」は件数を推測せず構文診断を先に返す。 | 未対応時だけの早期件数照合、後続を走査しないという観測は同じ入力で成立しないため廃止した。読了後の検査順と定数式の規則を継続する。 |
+| WasmModule_DecodeGlobalsTests.cs | 3.1で更新された完全v128.constの未評価bit保持と要求型不一致、切断を両入力で確認する。「GlobalのV128定数が要求型と異なる」は2回のValidateでtype mismatch・位置31/section6・FunctionCodes空・Instantiate不可。 | 完全な定数の未対応という期待は接続により廃止した。即値切断と要求型不一致はそれぞれDecode/Validateへ移した。 |
+| WasmModule_InspectImportsTests.cs | 「メモリ命令とstartと巨大limitsがある」で生成・実行を要求せず全import種類を取得する。「メモリ命令とデータにSIMDが併存する」はconst/shuffle/loadそれぞれの完全入力をbyte/Streamで調査し、Decode/Validate後もcallback0・memory99を確認する。code/dataを含む6未確認範囲と全体Validate未実施範囲を保持し、Instantiate時に初めてcallback1・memory42になる。 | 未対応本体を前提とした旧名、現状到達しないunsupported枝の期待、意味のないnull local等は接続時に除去した。InspectImportsの未確認範囲と非実行は現在も正常入力から到達するため保持した。 |
+
+追加の`WasmModule_DecodeDataInstructionTests.cs`も確認した。「データ参照後に完全なメモリ式がある」の旧3期待は、`data.drop`を含むコードとデータ式で、構文読了後に関数件数→データ件数→data count section必須の順を検査する目的を保持する。8.4で完全なmemarg/endへ更新し、目的外の後続不正sectionを除き、同じ検査順・元位置を検査する。接続後に発生しなくなった未対応による打切りを廃止しただけで、製品の責務は追加していない。
+
+### 保持した汎用unsupported経路の到達性と理由
+
+現在の固定Core 2.0の正常入力は、通常183/FC18/FD236のいずれでも`ImmediateKind.Unsupported`を選ばない。未割当opcodeは`ExpressionDecoder.Read`でillegal opcodeとしてDecode不正になる。v128 selectの未対応分岐も除去済みで、テスト専用の未対応opcodeや注入機構はない。
+
+次の汎用経路は設計「公開経路の統合確認」で保持を指定された既存の宣言・公開例外・分類・変換契約であり、全接続を理由に削除していない。
+
+- `InstructionAttribute.cs`の名前だけのconstructorがUnsupportedの即値・型効果・検証規則を構成する契約。現在の固定命令宣言では使用されないが、生成器テストの未接続宣言や契約診断を扱う。
+- `ExpressionDecoder.Read`のUnsupported宣言判定と`ModuleBinaryReader.Unsupported`の元位置・未確認範囲の構築。現在の固定命令入力からはこの宣言条件が成立しない。readerの構築処理はソースで確認し、`WasmUnsupportedFeatureException_ConstructorTests`は公開例外の機能・位置・未確認範囲を直接確認する。到達不能になったreader分岐のための注入や新規テストは追加しない。
+- `ModuleDecoder.ResolveBoundaryFailure`と件数照合周辺の`catch(WasmUnsupportedFeatureException)`。現在の固定正常入力にはthrow元がないため到達しないが、既存の未対応で再走査済み診断を置き換えない契約を残す。現行の切断・後続不正・件数順は表の接続後テストで確認する。
+- `ImportInspector.Inspect/InspectionFailure`のUnsupportedFeature分類と公開取得失敗への変換。現在の固定正常入力では未対応例外の変換分岐に到達しない。`WasmImportInspectionException_ConstructorTests`等とランナー`CaseDiagnostic_FromExceptionTests`は、公開例外の機能・位置・未確認範囲を扱う契約を直接確認する。
+- ランナーの`CaseDiagnostic.FromException`、`AssertionJudge.Judge`、`ScriptExecutor`のruntime_unsupported/blocked分類は公開未対応例外を受け取る汎用契約として保持する。既存`CaseDiagnostic_FromExceptionTests`と`AssertionJudge_JudgeTests`を今回の702件全件で実行した。現在の固定Core 2.0ランタイムに未接続命令が残ることを意味しない。
+
+InspectImportsの`UnverifiedRanges`はunsupportedと同義ではなく、調査対象外payloadと全体Validate未実施の通知である。この範囲は現在の正常入力でも到達可能で、上記mixedテストで6範囲を直接確認する。未対応例外の注入によって到達性を作ることはしていない。
+
+### Releaseビルドと3プロジェクト
+
+すべて順次実行し、ビルド成功・警告0・エラー0を確認してからテストへ進んだ。UTC・argv・終了値は各`*-command.json`、全出力は同名の`.log`に記録した。製品とテストソースは開始時から不変である。今回の作業は非behavioralでRED=N/A、新規テストはない。
+
+| コマンド | 記録 | 結果 |
+| --- | --- | --- |
+| `dotnet build WasmSharp2.slnx -c Release --warnaserror` | build-command.json/build.log | exit0、警告0・エラー0 |
+| `dotnet run --project tests/WasmSharp.Tests/WasmSharp.Tests.csproj -c Release --no-build` | runtime-all-command.json/runtime-all.log | 4,798件成功、失敗0・スキップ0、exit0 |
+| `dotnet run --project tests/WasmSharp.Generators.Tests/WasmSharp.Generators.Tests.csproj -c Release --no-build` | generator-all-command.json/generator-all.log | 160件成功、失敗0・スキップ0、exit0 |
+| `dotnet run --project tests/WasmSharp.TestSuiteRunner.Tests/WasmSharp.TestSuiteRunner.Tests.csproj -c Release --no-build` | runner-all-command.json/runner-all.log | 702件成功、失敗0・スキップ0、exit0 |
+
+### CPU支援を無効にした子プロセスの確認
+
+通常環境の`--list-tests`で805件を発見してから、2026-10-18T21:15:48.6004306Z〜21:15:52.3230903Zに新しいdotnet子プロセスだけへ`ProcessStartInfo.Environment["DOTNET_EnableHWIntrinsic"]="0"`を設定し、一度実行した。コマンドは次のとおりで、通常実行と同じテストと期待値を使う。
+
+```text
+dotnet run --project tests/WasmSharp.Tests/WasmSharp.Tests.csproj -c Release --no-build -- --treenode-filter '/*/*/(Interpreter_I8x16*)|(Interpreter_I16x8*)|(Interpreter_I32x4*)|(Interpreter_I64x2*)|(Interpreter_F32x4*)|(Interpreter_F64x2*)|(Interpreter_V128*)/*'
+```
+
+- 環境: Microsoft Windows 10.0.26300、x64、Intel64 Family 6 Model 183 Stepping 1/GenuineIntel。TUnitレポートのテストランタイムは.NET 10.0.13。起動に使用したPowerShell自体の.NET 10.0.11とは区別する。`dotnet-info.log`にSDK/ランタイム一覧を保存した。
+- 発見805件、実行805件成功・失敗0・スキップ0・exit0。`hw-discovery.log`、`hw-disabled.log`、各command JSON、上書き前にコピーした`hw-disabled-test-results/`のTUnit JSON/HTMLが対応する。`handler-test-index.json`と同じ225クラスの集合である。
+- 親プロセスの`DOTNET_EnableHWIntrinsic`はbefore/afterとも未設定、child要求値は`0`。親環境、ユーザー環境、マシン環境へ設定を書き込まず、後続プロセスに持ち越していない。
+- これは設計で定めたJITのHWIntrinsic設定による確認である。BCLや事前コンパイル済みコードを含むCPU命令の全面無効化、異なるCPU/OSでの確認を意味しない。
+
+今回の固定条件のhashは`instruction-audit.json`、実行source hashの開始/終了照合は`preflight.json`/`postflight.json`へ保存する。8.4の既存公式run監査は参照したが、10.2の単一最終run/compare/verify、10.3のbaseline-saveはこのタスクでは実行していない。8系の最終判定と保存はローカル要件/ADRの適合運用であり、Wasm規範にbaseline保存規則があるようには扱わない。タスク10.1の局所検証をSIMD機能全体またはCore 2.0全体のGOには読み替えない。
+
+
+[独立レビュー](../../../artifacts/simd/review-10.1-20261018T212841Z/review-verdict.md)はAPPROVED。独立ビルド警告/エラー0、4798/160/702件全成功・失敗/skip0・全終了0。HW無効805件は再実行せず、保存結果・discovery・通常全件のID・source/DLLhashで同一性を確認した。親は全51行と旧期待/汎用経路の記録、原ログ・終了値・現在979hashを直接確認し、kiro-verify-completionをVERIFIEDとした。未解決指摘はなく、単一最終run/verifyとbaseline保存へ進む。
