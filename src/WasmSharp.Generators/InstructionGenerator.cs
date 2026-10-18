@@ -185,8 +185,9 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
             arguments.Length == 3 ? null : (string?)arguments[6].Value,
             arguments.Length == 10 && arguments[7].Type?.SpecialType == SpecialType.System_Byte
                 ? new NumericSignatureDeclaration(
-                    (byte)arguments[7].Value!,
-                    GetEnumName(arguments[8]),
+                    Enumerable
+                        .Repeat(GetEnumName(arguments[8]), (byte)arguments[7].Value!)
+                        .ToImmutableArray(),
                     GetEnumName(arguments[9])
                 )
                 : null,
@@ -229,8 +230,8 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
             || (
                 signature != null
                 && (
-                    signature.InputCount is not (1 or 2)
-                    || !IsScalarNumericType(signature.InputType)
+                    signature.InputTypes.Length is not (1 or 2)
+                    || signature.InputTypes.Any(x => !IsScalarNumericType(x))
                     || !IsScalarNumericType(signature.ResultType)
                 )
             )
@@ -394,7 +395,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
             /// <param name="StackEffect">スタック効果</param>
             /// <param name="Validation">検証規則</param>
             /// <param name="ExecutionOpcode">対応済み命令の実行opcode 未対応の場合はnull</param>
-            /// <param name="NumericSignature">数値命令の入力個数・入力型・結果型 数値以外の場合はnull</param>
+            /// <param name="NumericSignature">数値命令の入力型列・結果型 数値以外の場合はnull</param>
             /// <param name="MemoryAccessSignature">ロード命令・ストア命令のアクセス情報 それ以外の場合はnull</param>
             internal readonly record struct InstructionDescriptor(
                 OpcodeKey Opcode,
@@ -429,7 +430,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
             var numericSignature =
                 signature == null
                     ? "null"
-                    : $"new NumericSignature({signature.InputCount}, global::WasmSharp.WasmValueKind.{signature.InputType}, global::WasmSharp.WasmValueKind.{signature.ResultType})";
+                    : $"new NumericSignature([{string.Join(", ", signature.InputTypes.Select(x => $"global::WasmSharp.WasmValueKind.{x}"))}], global::WasmSharp.WasmValueKind.{signature.ResultType})";
             var memory = instruction.MemoryAccessSignature;
             var memoryAccessSignature =
                 memory == null
@@ -556,14 +557,12 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
     }
 
     /// <summary>
-    /// 生成する数値signatureの入力個数と値型の宣言名
+    /// 生成する数値signatureの入力型列と結果型の宣言名
     /// </summary>
-    /// <param name="InputCount">同じ型の入力値の個数</param>
-    /// <param name="InputType">入力のWasmValueKindの列挙子名</param>
+    /// <param name="InputTypes">スタック下側から上側の順序で並ぶWasmValueKindの列挙子名</param>
     /// <param name="ResultType">結果のWasmValueKindの列挙子名</param>
     private sealed record NumericSignatureDeclaration(
-        byte InputCount,
-        string InputType,
+        ImmutableArray<string> InputTypes,
         string ResultType
     );
 

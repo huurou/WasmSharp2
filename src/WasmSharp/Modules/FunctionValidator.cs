@@ -177,9 +177,9 @@ internal static class FunctionValidator
                     var numericSignature =
                         descriptor.NumericSignature
                         ?? throw new InvalidOperationException("数値命令の型情報がありません。");
-                    for (var index = 0; index < numericSignature.InputCount; index++)
+                    for (var index = numericSignature.InputTypes.Length - 1; index >= 0; index--)
                     {
-                        Pop(numericSignature.InputType, instruction.ByteOffset);
+                        Pop(numericSignature.InputTypes[index], instruction.ByteOffset);
                     }
                     stack.Add(numericSignature.ResultType);
                     break;

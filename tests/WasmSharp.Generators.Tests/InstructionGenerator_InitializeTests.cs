@@ -23,6 +23,10 @@ internal partial class InstructionGenerator_InitializeTests
     )
     {
         // Arrange
+        var inputTypes = string.Join(
+            ", ",
+            Enumerable.Repeat($"WasmSharp.WasmValueKind.{inputType}", inputCount)
+        );
         var compilation = GeneratorTestSource.CreateCompilation(
             $$"""
             namespace WasmSharp.Instructions
@@ -63,8 +67,8 @@ internal partial class InstructionGenerator_InitializeTests
             output,
             $$"""
             var found = WasmSharp.Instructions.InstructionSet.TryGet(new({{prefix}}, {{code}}), out var descriptor);
-            var expected = new WasmSharp.Instructions.NumericSignature({{inputCount}},
-                WasmSharp.WasmValueKind.{{inputType}}, WasmSharp.WasmValueKind.{{resultType}});
+            var expected = new WasmSharp.Instructions.NumericSignature([{{inputTypes}}],
+                WasmSharp.WasmValueKind.{{resultType}});
             var attribute = new WasmSharp.Instructions.InstructionAttribute({{prefix}}, {{code}}, "{{name}}",
                 WasmSharp.Instructions.ImmediateKind.None, WasmSharp.Instructions.StackEffectKind.Numeric,
                 WasmSharp.Instructions.ValidationRule.Numeric, "Numeric", {{inputCount}},
@@ -78,7 +82,11 @@ internal partial class InstructionGenerator_InitializeTests
                 && descriptor.Immediate == WasmSharp.Instructions.ImmediateKind.None
                 && descriptor.StackEffect == WasmSharp.Instructions.StackEffectKind.Numeric
                 && descriptor.Validation == WasmSharp.Instructions.ValidationRule.Numeric
-                && descriptor.NumericSignature == expected && attribute.NumericSignature == expected
+                && descriptor.NumericSignature is { } generatedSignature && attribute.NumericSignature is { } attributeSignature
+                && System.Linq.Enumerable.SequenceEqual(generatedSignature.InputTypes, expected.InputTypes)
+                && generatedSignature.ResultType == expected.ResultType
+                && System.Linq.Enumerable.SequenceEqual(attributeSignature.InputTypes, expected.InputTypes)
+                && attributeSignature.ResultType == expected.ResultType
                 && descriptor.MemoryAccessSignature == null && attribute.MemoryAccessSignature == null
                 && result.Status == WasmSharp.Execution.ExecutionStatus.Success
                 && context.Pc == 1 && context.FrameCount == 0

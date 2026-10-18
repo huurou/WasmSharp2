@@ -109,3 +109,9 @@ New-Item -ItemType Directory -Path $taskOutput | Out-Null
 ### 独立レビューと完了確認
 
 独立レビューは`APPROVED`で、指摘はなかった。[レビューの実行記録](../../../artifacts/simd/review-1.1-resume-20261018T130404Z/commands.json)でReleaseビルドの警告・エラー0、3プロジェクト合計4,569件成功・失敗とスキップ0、CLI起動の終了0を再確認した。`kiro-verify-completion`のタスク1.1判定は`VERIFIED`とし、未確認範囲は後続のSIMD機能検証と公式全体実行である。
+
+## 1.2 数値型効果の共通表現
+
+要件2.1・2.7と設計のInstructionMetadata、ExpressionDecoder・FunctionValidatorに従い、数値型効果を不変の順序付き入力型列と1結果型へ統一した。既存の属性記法は同型列へ変換し、validatorは逆順にpopする。SIMD接続や入力数・型の受入範囲は変更していない。
+
+テストを先に変更し、ビルド成功後に生成器の動的コンパイル7ケースが新契約の不足で失敗するREDを確認した。[実装時のログ](../../../artifacts/simd/task-1.2-20261018T130820Z/)を保存している。独立レビューは`APPROVED`で、[再検証ログ](../../../artifacts/simd/review-1.2-20261018T131402Z/)ではReleaseビルドの警告・エラー0、ランタイム3,761件・生成器106件・ランナー702件成功、失敗とスキップ0、全コマンド終了0、変更6ファイルの整形チェック成功を確認した。`kiro-verify-completion`のタスク1.2判定は`VERIFIED`で、未解決の指摘はない。公式全体runは機能接続後に行う。

@@ -1,3 +1,5 @@
+using System.Linq;
+
 namespace WasmSharp.Instructions;
 
 /// <summary>
@@ -57,7 +59,7 @@ internal sealed class InstructionAttribute(
     public string? ExecutionHandler { get; } = executionHandler;
 
     /// <summary>
-    /// 数値命令の入力個数・入力型・結果型を取得する 数値以外の宣言ではnull
+    /// 数値命令の入力型列・結果型を取得する 数値以外の宣言ではnull
     /// </summary>
     public NumericSignature? NumericSignature { get; }
 
@@ -93,7 +95,7 @@ internal sealed class InstructionAttribute(
     )
         : this(prefix, code, name, immediate, stackEffect, validation, executionHandler)
     {
-        NumericSignature = new(inputCount, inputType, resultType);
+        NumericSignature = new([.. Enumerable.Repeat(inputType, inputCount)], resultType);
     }
 
     /// <summary>

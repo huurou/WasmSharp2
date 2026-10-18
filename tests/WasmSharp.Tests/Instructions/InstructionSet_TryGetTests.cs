@@ -195,7 +195,7 @@ internal class InstructionSet_TryGetTests
     [Test]
     [Arguments((byte)0, 128)]
     [Arguments((byte)0xFC, 8)]
-    public async Task 全数値命令の宣言を固定仕様と照合する_入力個数と型と結果型とhandlerが一致する(
+    public async Task 全数値命令の宣言を固定仕様と照合する_入力型列と結果型とhandlerが一致する(
         byte prefix,
         int count
     )
@@ -221,8 +221,7 @@ internal class InstructionSet_TryGetTests
                 prefix == 0
                     ? ExpectedNumericSignature((uint)code)
                     : new NumericSignature(
-                        1,
-                        code % 4 < 2 ? WasmValueKind.F32 : WasmValueKind.F64,
+                        [code % 4 < 2 ? WasmValueKind.F32 : WasmValueKind.F64],
                         code < 4 ? WasmValueKind.I32 : WasmValueKind.I64
                     );
             using (Assert.Multiple())
@@ -232,9 +231,17 @@ internal class InstructionSet_TryGetTests
                 await Assert.That(descriptor.Immediate).IsEqualTo(ImmediateKind.None);
                 await Assert.That(descriptor.StackEffect).IsEqualTo(StackEffectKind.Numeric);
                 await Assert.That(descriptor.Validation).IsEqualTo(ValidationRule.Numeric);
+                await Assert.That(descriptor.NumericSignature).IsNotNull();
                 await Assert
-                    .That(descriptor.NumericSignature)
-                    .IsEqualTo((NumericSignature?)signature);
+                    .That(
+                        descriptor.NumericSignature!.Value.InputTypes.SequenceEqual(
+                            signature.InputTypes
+                        )
+                    )
+                    .IsTrue();
+                await Assert
+                    .That(descriptor.NumericSignature!.Value.ResultType)
+                    .IsEqualTo(signature.ResultType);
                 await Assert.That(descriptor.ExecutionOpcode).IsNotNull();
                 await Assert.That(declarations[key].ExecutionHandler).IsEqualTo(handler);
             }
@@ -264,38 +271,38 @@ internal class InstructionSet_TryGetTests
     {
         return code switch
         {
-            0x45 => new(1, WasmValueKind.I32, WasmValueKind.I32),
-            >= 0x46 and <= 0x4F => new(2, WasmValueKind.I32, WasmValueKind.I32),
-            0x50 => new(1, WasmValueKind.I64, WasmValueKind.I32),
-            >= 0x51 and <= 0x5A => new(2, WasmValueKind.I64, WasmValueKind.I32),
-            >= 0x5B and <= 0x60 => new(2, WasmValueKind.F32, WasmValueKind.I32),
-            >= 0x61 and <= 0x66 => new(2, WasmValueKind.F64, WasmValueKind.I32),
-            >= 0x67 and <= 0x69 => new(1, WasmValueKind.I32, WasmValueKind.I32),
-            >= 0x6A and <= 0x78 => new(2, WasmValueKind.I32, WasmValueKind.I32),
-            >= 0x79 and <= 0x7B => new(1, WasmValueKind.I64, WasmValueKind.I64),
-            >= 0x7C and <= 0x8A => new(2, WasmValueKind.I64, WasmValueKind.I64),
-            >= 0x8B and <= 0x91 => new(1, WasmValueKind.F32, WasmValueKind.F32),
-            >= 0x92 and <= 0x98 => new(2, WasmValueKind.F32, WasmValueKind.F32),
-            >= 0x99 and <= 0x9F => new(1, WasmValueKind.F64, WasmValueKind.F64),
-            >= 0xA0 and <= 0xA6 => new(2, WasmValueKind.F64, WasmValueKind.F64),
-            0xA7 => new(1, WasmValueKind.I64, WasmValueKind.I32),
-            0xA8 or 0xA9 => new(1, WasmValueKind.F32, WasmValueKind.I32),
-            0xAA or 0xAB => new(1, WasmValueKind.F64, WasmValueKind.I32),
-            0xAC or 0xAD => new(1, WasmValueKind.I32, WasmValueKind.I64),
-            0xAE or 0xAF => new(1, WasmValueKind.F32, WasmValueKind.I64),
-            0xB0 or 0xB1 => new(1, WasmValueKind.F64, WasmValueKind.I64),
-            0xB2 or 0xB3 => new(1, WasmValueKind.I32, WasmValueKind.F32),
-            0xB4 or 0xB5 => new(1, WasmValueKind.I64, WasmValueKind.F32),
-            0xB6 => new(1, WasmValueKind.F64, WasmValueKind.F32),
-            0xB7 or 0xB8 => new(1, WasmValueKind.I32, WasmValueKind.F64),
-            0xB9 or 0xBA => new(1, WasmValueKind.I64, WasmValueKind.F64),
-            0xBB => new(1, WasmValueKind.F32, WasmValueKind.F64),
-            0xBC => new(1, WasmValueKind.F32, WasmValueKind.I32),
-            0xBD => new(1, WasmValueKind.F64, WasmValueKind.I64),
-            0xBE => new(1, WasmValueKind.I32, WasmValueKind.F32),
-            0xBF => new(1, WasmValueKind.I64, WasmValueKind.F64),
-            0xC0 or 0xC1 => new(1, WasmValueKind.I32, WasmValueKind.I32),
-            >= 0xC2 and <= 0xC4 => new(1, WasmValueKind.I64, WasmValueKind.I64),
+            0x45 => new([WasmValueKind.I32], WasmValueKind.I32),
+            >= 0x46 and <= 0x4F => new([WasmValueKind.I32, WasmValueKind.I32], WasmValueKind.I32),
+            0x50 => new([WasmValueKind.I64], WasmValueKind.I32),
+            >= 0x51 and <= 0x5A => new([WasmValueKind.I64, WasmValueKind.I64], WasmValueKind.I32),
+            >= 0x5B and <= 0x60 => new([WasmValueKind.F32, WasmValueKind.F32], WasmValueKind.I32),
+            >= 0x61 and <= 0x66 => new([WasmValueKind.F64, WasmValueKind.F64], WasmValueKind.I32),
+            >= 0x67 and <= 0x69 => new([WasmValueKind.I32], WasmValueKind.I32),
+            >= 0x6A and <= 0x78 => new([WasmValueKind.I32, WasmValueKind.I32], WasmValueKind.I32),
+            >= 0x79 and <= 0x7B => new([WasmValueKind.I64], WasmValueKind.I64),
+            >= 0x7C and <= 0x8A => new([WasmValueKind.I64, WasmValueKind.I64], WasmValueKind.I64),
+            >= 0x8B and <= 0x91 => new([WasmValueKind.F32], WasmValueKind.F32),
+            >= 0x92 and <= 0x98 => new([WasmValueKind.F32, WasmValueKind.F32], WasmValueKind.F32),
+            >= 0x99 and <= 0x9F => new([WasmValueKind.F64], WasmValueKind.F64),
+            >= 0xA0 and <= 0xA6 => new([WasmValueKind.F64, WasmValueKind.F64], WasmValueKind.F64),
+            0xA7 => new([WasmValueKind.I64], WasmValueKind.I32),
+            0xA8 or 0xA9 => new([WasmValueKind.F32], WasmValueKind.I32),
+            0xAA or 0xAB => new([WasmValueKind.F64], WasmValueKind.I32),
+            0xAC or 0xAD => new([WasmValueKind.I32], WasmValueKind.I64),
+            0xAE or 0xAF => new([WasmValueKind.F32], WasmValueKind.I64),
+            0xB0 or 0xB1 => new([WasmValueKind.F64], WasmValueKind.I64),
+            0xB2 or 0xB3 => new([WasmValueKind.I32], WasmValueKind.F32),
+            0xB4 or 0xB5 => new([WasmValueKind.I64], WasmValueKind.F32),
+            0xB6 => new([WasmValueKind.F64], WasmValueKind.F32),
+            0xB7 or 0xB8 => new([WasmValueKind.I32], WasmValueKind.F64),
+            0xB9 or 0xBA => new([WasmValueKind.I64], WasmValueKind.F64),
+            0xBB => new([WasmValueKind.F32], WasmValueKind.F64),
+            0xBC => new([WasmValueKind.F32], WasmValueKind.I32),
+            0xBD => new([WasmValueKind.F64], WasmValueKind.I64),
+            0xBE => new([WasmValueKind.I32], WasmValueKind.F32),
+            0xBF => new([WasmValueKind.I64], WasmValueKind.F64),
+            0xC0 or 0xC1 => new([WasmValueKind.I32], WasmValueKind.I32),
+            >= 0xC2 and <= 0xC4 => new([WasmValueKind.I64], WasmValueKind.I64),
             _ => throw new ArgumentOutOfRangeException(nameof(code)),
         };
     }

@@ -23,7 +23,7 @@
   - _Boundary: ConformanceVerification_
   - _Requirements: 8.1, 8.3_
 
-- [ ] 1.2 数値型効果の共通表現を既存scalar経路へ統合する
+- [x] 1.2 数値型効果の共通表現を既存scalar経路へ統合する
   - 同型入力数の表現を、順序付き入力型列と1結果型へ整理する。
   - 命令属性・生成metadata・生成器の検査と型検証の消費側を同じ契約へ移し、既存の属性記法とscalarの動作を維持する。
   - InstructionSet_TryGetTestsとruntime契約を埋め込む生成器テストのconstructor・比較を追随させ、入力型列の順序付き要素比較と結果型の確認へ移す。既存scalarの型・pop順・診断が変わらないことを確認する。
@@ -310,5 +310,6 @@
 
 ## Implementation Notes
 
+- 1.2: `NumericSignature`は`InputTypes`と`ResultType`へ統一した。入力型列はスタック下側から上側の順で、validatorは逆順に消費する。型列のテスト比較には`SequenceEqual`を使う。生成契約の異種入力・3入力・v128拡張は2.1で行う。
 - 1.1: 比較元は`artifacts/tables-references/task-8.4-20261018T090714Z/run-baseline.json`、manifestは`artifacts/linear-memory/wabt-commit-20261016/corpus/manifest.json`。既存fixtureで必要な入力を構成できる。固定条件・検証コマンドは`acceptance.md`を参照する。
 
