@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using WasmSharp.Instructions;
 
 namespace WasmSharp.Execution;
@@ -14,6 +15,8 @@ namespace WasmSharp.Execution;
 /// <param name="memoryArgument">メモリ命令のアラインメント指数とオフセット</param>
 /// <param name="memoryAccessSignature">ロード命令・ストア命令のアクセス情報</param>
 /// <param name="secondaryIndex">2個の添字を持つ命令の2番目の番号</param>
+/// <param name="shuffleLanes">shuffleの選択値を保持する不変のbyte列</param>
+/// <param name="laneIndex">laneを指定する命令の添字</param>
 internal readonly struct Instruction(
     ExecutionOpcode opcode,
     WasmValue immediate,
@@ -22,7 +25,9 @@ internal readonly struct Instruction(
     int targetCount = 0,
     MemoryArgument memoryArgument = default,
     MemoryAccessSignature memoryAccessSignature = default,
-    uint secondaryIndex = 0
+    uint secondaryIndex = 0,
+    ImmutableArray<byte> shuffleLanes = default,
+    byte laneIndex = 0
 )
 {
     /// <summary>
@@ -65,4 +70,15 @@ internal readonly struct Instruction(
     /// ロード命令・ストア命令の値型・アクセス幅・符号拡張の指定
     /// </summary>
     internal MemoryAccessSignature MemoryAccessSignature { get; } = memoryAccessSignature;
+
+    /// <summary>
+    /// shuffleの選択値を保持する不変のbyte列
+    /// </summary>
+    internal ImmutableArray<byte> ShuffleLanes { get; } =
+        shuffleLanes.IsDefault ? [] : shuffleLanes;
+
+    /// <summary>
+    /// laneを指定する命令の添字
+    /// </summary>
+    internal byte LaneIndex { get; } = laneIndex;
 }

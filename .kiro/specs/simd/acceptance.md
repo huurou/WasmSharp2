@@ -147,3 +147,9 @@ New-Item -ItemType Directory -Path $taskOutput | Out-Null
 要件1.1〜1.6の接続準備として、4種類のSIMD即値の読み取りと、`DecodedInstruction`の`ShuffleLanes`・`LaneIndex`を追加した。shuffleは入力からコピーして所有し、memargとlaneを別々に保持する。lane・shuffleの範囲検査はValidateへ残し、既存readerと元位置を維持した。
 
 [実装記録](../../../artifacts/simd/task-2.3-20261018T140646Z/status-report.md)と[独立レビュー](../../../artifacts/simd/review-2.3-20261018T141117Z/review-verdict.md)で、Releaseビルドの警告・エラー0、ランタイム3,798件・生成器160件成功、失敗とスキップ0、終了0、整形と差分チェック成功を確認した。未接続の準備として独立レビューは`APPROVED`、`kiro-verify-completion`のタスク2.3判定は`VERIFIED`とした。新経路の正常・切断・LEB128検証は未実施で、3.1・8.1・8.2・8.4の接続後に行う。全236命令はまだ未対応のままである。
+
+## 2.4 SIMD静的制約と線形化の準備
+
+要件1.5・1.6・2.1〜2.5・2.7の準備として、定数型、lane・shuffle制約、laneメモリ型効果と実行表現への即値引渡しを追加した。到達不能でも静的制約を確認し、laneメモリは固定参照実装と同じmemory→alignment→lane→operandの順序を保つ。検証成功時だけコードを返す既存契約を維持し、selectは変更していない。
+
+[実装記録](../../../artifacts/simd/task-2.4-20261018T141555Z/status-report.md)と[独立レビュー](../../../artifacts/simd/review-2.4-20261018T142026Z/review-verdict.md)で、Releaseビルドの警告・エラー0、ランタイム3,798件・生成器160件成功、失敗とスキップ0、各終了0、整形と差分チェック成功を確認した。未接続の準備として独立レビューは`APPROVED`、`kiro-verify-completion`のタスク2.4判定は`VERIFIED`とした。新しい型順・lane・shuffle・alignment・到達不能の否定経路は3.1・8.1・8.2・8.4で接続後に検証する。

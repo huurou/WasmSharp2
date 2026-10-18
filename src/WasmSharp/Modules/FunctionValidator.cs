@@ -124,6 +124,7 @@ internal static class FunctionValidator
                             StackEffectKind.PushI64 => WasmValueKind.I64,
                             StackEffectKind.PushF32 => WasmValueKind.F32,
                             StackEffectKind.PushF64 => WasmValueKind.F64,
+                            StackEffectKind.PushV128 => WasmValueKind.V128,
                             StackEffectKind.PushReference => instruction.Immediate.Kind,
                             _ => throw new InvalidOperationException(
                                 "定数命令のスタック効果が不正です。"
@@ -174,6 +175,22 @@ internal static class FunctionValidator
                     break;
 
                 case ValidationRule.Numeric:
+                    switch (descriptor.Immediate)
+                    {
+                        case ImmediateKind.LaneIndex:
+                            ValidateLaneIndex(
+                                instruction.LaneIndex,
+                                descriptor.LaneCount,
+                                instruction.ByteOffset
+                            );
+                            break;
+                        case ImmediateKind.Shuffle:
+                            foreach (var laneIndex in instruction.ShuffleLanes)
+                            {
+                                ValidateLaneIndex(laneIndex, 32, instruction.ByteOffset);
+                            }
+                            break;
+                    }
                     var numericSignature =
                         descriptor.NumericSignature
                         ?? throw new InvalidOperationException("数値命令の型情報がありません。");
@@ -186,13 +203,36 @@ internal static class FunctionValidator
 
                 case ValidationRule.MemoryLoad:
                 case ValidationRule.MemoryStore:
+                case ValidationRule.MemoryLoadLane:
+                case ValidationRule.MemoryStoreLane:
                     var memorySignature = ValidateMemoryAccess(instruction, descriptor);
-                    if (descriptor.Validation == ValidationRule.MemoryStore)
+                    if (
+                        descriptor.Validation
+                        is ValidationRule.MemoryLoadLane
+                            or ValidationRule.MemoryStoreLane
+                    )
+                    {
+                        ValidateLaneIndex(
+                            instruction.LaneIndex,
+                            descriptor.LaneCount,
+                            instruction.ByteOffset
+                        );
+                    }
+                    if (
+                        descriptor.Validation
+                        is ValidationRule.MemoryStore
+                            or ValidationRule.MemoryLoadLane
+                            or ValidationRule.MemoryStoreLane
+                    )
                     {
                         Pop(memorySignature.ValueType, instruction.ByteOffset);
                     }
                     Pop(WasmValueKind.I32, instruction.ByteOffset);
-                    if (descriptor.Validation == ValidationRule.MemoryLoad)
+                    if (
+                        descriptor.Validation
+                        is ValidationRule.MemoryLoad
+                            or ValidationRule.MemoryLoadLane
+                    )
                     {
                         stack.Add(memorySignature.ValueType);
                     }
@@ -531,7 +571,9 @@ internal static class FunctionValidator
                         outputTargetCount,
                         instruction.MemoryArgument,
                         descriptor.MemoryAccessSignature.GetValueOrDefault(),
-                        instruction.SecondaryIndex
+                        instruction.SecondaryIndex,
+                        instruction.ShuffleLanes,
+                        instruction.LaneIndex
                     )
                 );
             }
@@ -577,6 +619,18 @@ internal static class FunctionValidator
                 );
             }
             return references.ElementTypes[(int)index];
+        }
+
+        void ValidateLaneIndex(byte laneIndex, byte laneCount, long byteOffset)
+        {
+            if (laneIndex >= laneCount)
+            {
+                throw ValidationDiagnostics.ValidationFailure(
+                    "invalid lane index",
+                    "laneの添字が命令の上限を超えています。",
+                    new(WasmProcessingStage.Validate, byteOffset, moduleFunctionIndex, 10)
+                );
+            }
         }
 
         void RequireMemory(long byteOffset)

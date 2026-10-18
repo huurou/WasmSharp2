@@ -46,7 +46,7 @@
   - _Boundary: ScalarFloatSemantics_
   - _Requirements: 6.2, 6.3, 6.4_
 
-- [ ] 2. SIMDの宣言・即値・検証基盤を追加する
+- [x] 2. SIMDの宣言・即値・検証基盤を追加する
 - [x] 2.1 SIMDの型効果と即値制約を生成できるようにする
   - 1〜3個の異種数値入力、v128結果、lane上限、vectorメモリの実際のアクセス幅を宣言から生成する。
   - 定数・shuffle・lane・memargとlaneの組合せ、およびlaneメモリの検証規則を表現する。
@@ -72,7 +72,7 @@
   - _Depends: 2.1_
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6_
 
-- [ ] 2.4 SIMDの静的制約と型検証・線形化を追加する
+- [x] 2.4 SIMDの静的制約と型検証・線形化を追加する
   - 入力型列を逆順に消費し、lane上限、shuffle全要素、memory存在と幅に応じたalignmentを検査する。
   - 通常load/storeとlane load/storeの型効果を区別し、到達不能部分でも静的制約を省略しない。
   - 定数・shuffle・lane・memargと元位置を実行表現へ渡し、検証失敗で成功状態を公開しない。
@@ -310,6 +310,7 @@
 
 ## Implementation Notes
 
+- 2.4: lane・shuffleの診断先頭は`invalid lane index`。laneメモリはmemory存在→alignment→lane→operandの順を維持する。`Instruction`へ`ShuffleLanes`・`LaneIndex`を渡す準備が完了し、新規経路の否定テストは接続時に行う。
 - 2.2: `SimdValue`のbyte変換は`FromLittleEndian(ReadOnlySpan<byte>)`と`WriteLittleEndian(Span<byte>)`。lane幅・indexは検証済みとして扱い、浮動小数点や符号の解釈はhandlerに残す。
 - 2.1: SIMD即値は`V128`・`Shuffle`・`LaneIndex`・`MemoryArgumentLaneIndex`、laneメモリ規則は`MemoryLoadLane`・`MemoryStoreLane`を使う。生成metadataの`LaneCount`はlane即値なしで0。全236命令はまだ未接続である。
 - 1.4: `Interpreter.Float.cs`内の`F32MinResult`・`F32MaxResult`・`F64MinResult`・`F64MaxResult`と、既存の算術結果・丸め・飽和変換の補助をSIMDのpartialから再利用する。
