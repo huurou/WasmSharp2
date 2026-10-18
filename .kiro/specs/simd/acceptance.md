@@ -115,3 +115,9 @@ New-Item -ItemType Directory -Path $taskOutput | Out-Null
 要件2.1・2.7と設計のInstructionMetadata、ExpressionDecoder・FunctionValidatorに従い、数値型効果を不変の順序付き入力型列と1結果型へ統一した。既存の属性記法は同型列へ変換し、validatorは逆順にpopする。SIMD接続や入力数・型の受入範囲は変更していない。
 
 テストを先に変更し、ビルド成功後に生成器の動的コンパイル7ケースが新契約の不足で失敗するREDを確認した。[実装時のログ](../../../artifacts/simd/task-1.2-20261018T130820Z/)を保存している。独立レビューは`APPROVED`で、[再検証ログ](../../../artifacts/simd/review-1.2-20261018T131402Z/)ではReleaseビルドの警告・エラー0、ランタイム3,761件・生成器106件・ランナー702件成功、失敗とスキップ0、全コマンド終了0、変更6ファイルの整形チェック成功を確認した。`kiro-verify-completion`のタスク1.2判定は`VERIFIED`で、未解決の指摘はない。公式全体runは機能接続後に行う。
+
+## 1.3 メモリ存在とalignmentの共通検証
+
+要件1.6・2.4・2.5に対応する準備として、`FunctionValidator`の既存検査を`ValidateMemoryAccess`へ抽出した。memory存在、アクセス情報、自然alignment、operandの検査順と診断位置を維持した。既存テストが正常・不正・到達不能を確認するためテストの追加は行っていない。
+
+[実装時のログ](../../../artifacts/simd/task-1.3-20261018T131740Z/)と[独立レビューのログ](../../../artifacts/simd/review-1.3-20261018T132116Z/)で、Releaseビルドの警告・エラー0、ランタイム3,761件成功、失敗とスキップ0、終了0、整形と差分チェック成功を確認した。独立レビューは`APPROVED`、`kiro-verify-completion`のタスク1.3判定は`VERIFIED`で、未解決の指摘はない。

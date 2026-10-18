@@ -186,28 +186,7 @@ internal static class FunctionValidator
 
                 case ValidationRule.MemoryLoad:
                 case ValidationRule.MemoryStore:
-                    RequireMemory(instruction.ByteOffset);
-                    var memorySignature =
-                        descriptor.MemoryAccessSignature
-                        ?? throw new InvalidOperationException(
-                            "メモリ命令のアクセス情報がありません。"
-                        );
-                    if (
-                        instruction.MemoryArgument.Alignment
-                        > (uint)BitOperations.Log2(memorySignature.ByteWidth)
-                    )
-                    {
-                        throw ValidationDiagnostics.ValidationFailure(
-                            "alignment must not be larger than natural",
-                            "アラインメントが命令のアクセス幅を超えています。",
-                            new(
-                                WasmProcessingStage.Validate,
-                                instruction.ByteOffset,
-                                moduleFunctionIndex,
-                                10
-                            )
-                        );
-                    }
+                    var memorySignature = ValidateMemoryAccess(instruction, descriptor);
                     if (descriptor.Validation == ValidationRule.MemoryStore)
                     {
                         Pop(memorySignature.ValueType, instruction.ByteOffset);
@@ -606,6 +585,34 @@ internal static class FunctionValidator
             {
                 throw CreateUnknownIndex("memory", 0, "参照するメモリが存在しません。", byteOffset);
             }
+        }
+
+        MemoryAccessSignature ValidateMemoryAccess(
+            DecodedInstruction instruction,
+            InstructionDescriptor descriptor
+        )
+        {
+            RequireMemory(instruction.ByteOffset);
+            var memorySignature =
+                descriptor.MemoryAccessSignature
+                ?? throw new InvalidOperationException("メモリ命令のアクセス情報がありません。");
+            if (
+                instruction.MemoryArgument.Alignment
+                > (uint)BitOperations.Log2(memorySignature.ByteWidth)
+            )
+            {
+                throw ValidationDiagnostics.ValidationFailure(
+                    "alignment must not be larger than natural",
+                    "アラインメントが命令のアクセス幅を超えています。",
+                    new(
+                        WasmProcessingStage.Validate,
+                        instruction.ByteOffset,
+                        moduleFunctionIndex,
+                        10
+                    )
+                );
+            }
+            return memorySignature;
         }
 
         (
