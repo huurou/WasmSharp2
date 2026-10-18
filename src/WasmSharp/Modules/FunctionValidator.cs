@@ -380,6 +380,34 @@ internal static class FunctionValidator
                     PushTypes(calleeType.Results);
                     break;
 
+                case ValidationRule.CallIndirect:
+                    // バイナリの即値順と分け、テーブル、型、funcref制約、operandの順に検査する。
+                    var indirectTableType = GetTableElementType(
+                        instruction.SecondaryIndex,
+                        instruction.ByteOffset
+                    );
+                    if (instruction.Index >= (uint)module.Types.Length)
+                    {
+                        throw CreateUnknownIndex(
+                            "type",
+                            instruction.Index,
+                            "参照する型が存在しません。",
+                            instruction.ByteOffset
+                        );
+                    }
+                    if (indirectTableType != WasmValueKind.FuncRef)
+                    {
+                        throw CreateException(
+                            "間接呼び出し先のテーブルにはfuncrefが必要です。",
+                            instruction.ByteOffset
+                        );
+                    }
+                    var indirectCalleeType = module.Types[(int)instruction.Index];
+                    Pop(WasmValueKind.I32, instruction.ByteOffset);
+                    PopTypes(indirectCalleeType.Parameters.AsSpan(), instruction.ByteOffset);
+                    PushTypes(indirectCalleeType.Results);
+                    break;
+
                 case ValidationRule.Return:
                     PopTypes(type.Results.AsSpan(), instruction.ByteOffset);
                     MarkUnreachable();

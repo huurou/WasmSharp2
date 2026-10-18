@@ -76,7 +76,7 @@ baselineは最終受入まで保持する。
   - _Depends: 2.1_
   - _Requirements: 7.2, 7.3, 7.4, 8.1, 8.2, 8.3_
 
-- [ ] 3. 宣言集合・定数式・命令の検証を追加する
+- [x] 3. 宣言集合・定数式・命令の検証を追加する
 - [x] 3.1 参照の検証に必要な添字型と宣言集合を構築する
   - module検証内でtable型・element型・関数総数・宣言済み関数添字を一度構築する。
   - 関数本体とstartを除く全定義から宣言を集め、global式・関数export・全modeのelementと、関数本体/start/importだけの否定例を確認する。
@@ -113,7 +113,7 @@ baselineは最終受入まで保持する。
   - _Depends: 3.2, 3.3_
   - _Requirements: 2.1, 2.3, 2.5, 2.6, 2.7, 5.6_
 
-- [ ] 3.5 間接呼び出しの型・table・引数列を検証する
+- [x] 3.5 間接呼び出しの型・table・引数列を検証する
   - table存在→type存在→funcref制約→operandの順で検証し、selectorと引数の型・個数・順序を既存スタックへ接続する。7.2ではtableとtypeがともに未知の場合と、externref tableに未知typeを指定した場合の診断順も確認する。
   - 複数結果を既存の型スタックへ積み、到達不能時も静的添字とtable型の検査を維持する。
   - 7.2の統合で未知type/table、externref table、不足・不一致operandを拒否できる分岐を完成させる。
