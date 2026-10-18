@@ -325,3 +325,11 @@ New-Item -ItemType Directory -Path $taskOutput | Out-Null
 [実装記録](../../../artifacts/simd/task-8.2-20261018T194827Z/handoff.md)の新規19件は、公開4段階の境界値、128以上subopcodeの最短・許容非最短LEB128、全4幅shiftの型順と逆順Validate拒否、metadataを確認する。88宣言全体の同一ソースでOFF19件全失敗・終了2→明示DefineConstants指定のON19件全成功・終了0、対象外148metadata不変を確認した。フラグ完全除去後のReleaseビルドは警告・エラー0、4689/160/702件が全成功・失敗/スキップ0・各終了0。初期のassertion規約エラーと補助ログの日本語表記の誤認は解消し、旧ログも保持した。FDDF01の未対応だけを期待する1引数は接続により廃止し、公開境界値テストへ移行した。汎用の位置・未確認範囲の目的は残るmemory2引数で維持した。
 
 [独立レビュー](../../../artifacts/simd/review-8.2-20261018T195855Z/review-verdict.md)はAPPROVED。機械検査・担当境界・最終5hash・既存改行・RED切替を直接確認し、[公式監査](../../../artifacts/simd/task-8.2-20261018T194827Z/results-audit-classified.json)も独立に照合した。147入力・53907commandはpassed38169、runtime_unsupported268、blocked14393、out_of_scope1077。元passed27482と直前35520を全保持し2649件が新たに成功した。全期待値・出典・147source/5821素材・固定条件は不変、否定診断5205件も前方一致、失敗・回帰・欠落・未比較・未処理0。残未対応/blockedは浮動小数点・変換109/13749とメモリ159/644だけで、cause.direct再帰とoriginsの独立照合も一致した。親は原ログ・終了値・最終コードを直接確認し、kiro-verify-completionをVERIFIEDとした。未解決指摘はなく、verify/baseline-saveは最終受入で行う。
+
+## 8.3 浮動小数点・変換の公開接続
+
+既存float30・変換10handlerを型効果と宣言へ接続し、固定付録の40命令とopcode・入力数・結果・即値・handlerを照合した。製品変更は40属性だけで、それ以外のInstructionSetは全byte不変。FDは214命令が対応済みで、残22命令はメモリだけ。既存40handlerの247テストを再利用し、新規公開20ケースとmetadata1ケースでrawbits・NaN payload・±0・pmin/pmaxのoperand順・最近接偶数・飽和・整数変換・demote/promote・未使用laneを確認した。旧未対応ケースの廃止は0件。
+
+[実装記録](../../../artifacts/simd/task-8.3-20261018T200613Z/evidence-index.md)で、40宣言全体のOFF21件全失敗・終了2→同一ソースと期待値のまま明示DefineConstants指定のON21件全成功・終了0を記録した。40フラグ完全除去後のReleaseビルドは警告・エラー0、4710/160/702件全成功・失敗/スキップ0・各終了0。旧174metadata、source/test ID・引数と最終hashを確認し、整形・差分検査も成功した。
+
+[独立レビュー](../../../artifacts/simd/review-8.3-20261018T201449Z/review-verdict.md)はAPPROVED。40枝の展開、全905source・5実行artifactと公式runの同一性、公開20期待vectorの独立計算も一致した。[公式監査](../../../artifacts/simd/task-8.3-20261018T200613Z/results-audit-classified.json)は147入力・53907commandでpassed52027、runtime_unsupported159、blocked644、out_of_scope1077。元27482件と直前38169件のpassedを全保持し13858件が新たに成功した。NaN pattern1592件と具体lane12141件は未変更のValueMatcher/ScriptExecutorで判定し、期待値の正規化や新しい判定器は追加していない。全期待値・出典・147source/5821素材・固定条件は不変、否定診断5295件も前方一致、失敗・回帰・欠落・未比較・未処理0。残159/644はすべてメモリ22命令に原因を再帰して対応付け、独立照合も一致した。親は原ログ・終了値・コードを直接確認し、kiro-verify-completionをVERIFIEDとした。未解決指摘はない。CPU支援無効とverify/baseline-saveは後続の最終受入で確認する。

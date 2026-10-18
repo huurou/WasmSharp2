@@ -146,6 +146,70 @@ internal class InstructionSet_TryGetTests
     }
 
     [Test]
+    public async Task SIMD浮動接続の固定付録にある演算変換群_40命令の型効果とhandlerが一致する()
+    {
+        // Arrange
+        var expected = Core2InstructionFixture
+            .Read(0xFD)
+            .Where(x => IsFloatSimd(x.Value))
+            .ToArray();
+        var declarations = typeof(InstructionSet)
+            .GetCustomAttributes<InstructionAttribute>()
+            .Where(x => x.Prefix == 0xFD)
+            .ToDictionary(x => x.Code);
+
+        // Act
+        var actual = expected
+            .Select(x =>
+            {
+                InstructionSet.TryGet(new(0xFD, x.Key), out var descriptor);
+                return (Entry: x, Descriptor: descriptor);
+            })
+            .ToArray();
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(expected.Length).IsEqualTo(40);
+            foreach (var item in actual)
+            {
+                var operation = item.Entry.Value.Split('.')[1];
+                var binary =
+                    operation
+                    is "add"
+                        or "sub"
+                        or "mul"
+                        or "div"
+                        or "min"
+                        or "max"
+                        or "pmin"
+                        or "pmax";
+                WasmValueKind[] inputs = binary
+                    ? [WasmValueKind.V128, WasmValueKind.V128]
+                    : [WasmValueKind.V128];
+                var handler = string.Concat(
+                    item.Entry.Value.Split('.', '_')
+                        .Select(x => char.ToUpperInvariant(x[0]) + x[1..])
+                );
+                var descriptor = item.Descriptor;
+                await Assert.That(descriptor.Name).IsEqualTo(item.Entry.Value);
+                await Assert.That(descriptor.ExecutionOpcode).IsNotNull();
+                await Assert.That(descriptor.Immediate).IsEqualTo(ImmediateKind.None);
+                await Assert.That(descriptor.StackEffect).IsEqualTo(StackEffectKind.Numeric);
+                await Assert.That(descriptor.Validation).IsEqualTo(ValidationRule.Numeric);
+                await Assert.That(descriptor.LaneCount).IsEqualTo((byte)0);
+                await Assert
+                    .That(descriptor.NumericSignature?.InputTypes.SequenceEqual(inputs) ?? false)
+                    .IsTrue();
+                await Assert
+                    .That(descriptor.NumericSignature?.ResultType)
+                    .IsEqualTo(WasmValueKind.V128);
+                await Assert.That(declarations[item.Entry.Key].ExecutionHandler).IsEqualTo(handler);
+            }
+        }
+    }
+
+    [Test]
     public async Task V128定数が接続されている_既存定数handlerと定数式規則を使う()
     {
         // Arrange
@@ -278,7 +342,11 @@ internal class InstructionSet_TryGetTests
                             }
                         )
                         .Select(x => (uint)x)
-                        .Concat(expected.Where(x => IsIntegerSimd(x.Value)).Select(x => x.Key))
+                        .Concat(
+                            expected
+                                .Where(x => IsIntegerSimd(x.Value) || IsFloatSimd(x.Value))
+                                .Select(x => x.Key)
+                        )
                 );
             await Assert.That(InstructionSet.TryGet(new(prefix, 256), out _)).IsFalse();
             await Assert.That(InstructionSet.TryGet(new(prefix, uint.MaxValue), out _)).IsFalse();
@@ -451,6 +519,14 @@ internal class InstructionSet_TryGetTests
                 await Assert.That(descriptor.NumericSignature).IsNull();
             }
         }
+    }
+
+    private static bool IsFloatSimd(string name)
+    {
+        return System.Text.RegularExpressions.Regex.IsMatch(
+            name,
+            @"^f(?:32x4|64x2)\.(?:abs|neg|sqrt|add|sub|mul|div|ceil|floor|trunc|nearest|min|max|pmin|pmax|convert_.*|demote_.*|promote_.*)$|^i32x4\.trunc_sat_f(?:32x4|64x2)_[su](?:_zero)?$"
+        );
     }
 
     private static bool IsIntegerSimd(string name)
