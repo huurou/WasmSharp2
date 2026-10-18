@@ -193,7 +193,7 @@ baselineは最終受入まで保持する。
   - _Depends: 3.2, 3.3, 5.1, 2.3_
   - _Requirements: 1.1, 1.3, 1.4, 2.2, 2.4, 2.6, 2.7, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 6.1, 8.5_
 
-- [ ] 6.3 全要素形式のDecodeを追加する
+- [x] 6.3 全要素形式のDecodeを追加する
   - flags0〜7を静的定義へ変換し、旧形式の関数添字列を元の入力位置付きの参照式へ正規化する。
   - 空section、elemkind、暗黙funcref、明示reftype、table添字、offset式を読み取る。
   - 不正flags・参照型・LEB128・長さ・終端をDecodeで拒否し、添字・型の不正はValidateへ渡す。

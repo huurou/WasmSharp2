@@ -288,6 +288,101 @@ internal static class ModuleDecoder
     }
 
     /// <summary>
+    /// 要素セグメントの参照型、未評価の初期化式列、方式と宣言位置を取得する
+    /// </summary>
+    /// <param name="reader">要素セクションの読み取り状態 宣言の終端まで進める</param>
+    /// <param name="inputLength">未確認範囲の終端に使用する入力全体のバイト数</param>
+    /// <returns>宣言順の要素セグメント 添字、式の型と定数性は検証しない</returns>
+    /// <exception cref="WasmDecodeException">件数、フラグ、要素型または式の符号化が不正な場合</exception>
+    /// <exception cref="ModuleReadBoundaryException">限定された範囲内で構文を読み終えられない場合</exception>
+    /// <exception cref="WasmUnsupportedFeatureException">式で未実装の命令に遭遇した場合</exception>
+    /// <exception cref="WasmImplementationLimitException">宣言件数または命令数がコレクションの保持上限を超える場合</exception>
+    internal static List<ElementDefinition> ReadElement(
+        ref ModuleBinaryReader reader,
+        int inputLength
+    )
+    {
+        var count = ModuleBinaryFormat.ReadCount(ref reader);
+        List<ElementDefinition> segments = [];
+        for (uint index = 0; index < count; index++)
+        {
+            var offset = reader.Position;
+            var flags = reader.ReadU32();
+            ActiveElementTarget? target = null;
+            switch (flags)
+            {
+                case 0:
+                case 2:
+                case 4:
+                case 6:
+                    var tableIndex = flags is 0 or 4 ? 0 : reader.ReadU32();
+                    var expression = ExpressionDecoder.Read(ref reader, inputLength);
+                    target = new ActiveElementTarget(
+                        tableIndex,
+                        CollectionsMarshal.AsSpan(expression)
+                    );
+                    break;
+
+                case 1:
+                case 3:
+                case 5:
+                case 7:
+                    break;
+
+                default:
+                    throw reader.Error(
+                        "malformed elements segment kind: 要素セグメントのフラグが不正です。",
+                        reader.Position - 1
+                    );
+            }
+
+            var elementType = WasmValueKind.FuncRef;
+            if (flags is 1 or 2 or 3)
+            {
+                var kindOffset = reader.Position;
+                if (reader.ReadByte() != 0)
+                {
+                    throw reader.Error("malformed element kind: 要素種別が不正です。", kindOffset);
+                }
+            }
+            else if (flags >= 5)
+            {
+                elementType = ModuleBinaryFormat.ReadReferenceType(ref reader);
+            }
+
+            var initializerCount = ModuleBinaryFormat.ReadCount(ref reader);
+            List<IEnumerable<DecodedInstruction>> initializers = [];
+            for (uint initializerIndex = 0; initializerIndex < initializerCount; initializerIndex++)
+            {
+                if (flags < 4)
+                {
+                    var indexOffset = reader.Position;
+                    var functionIndex = reader.ReadU32();
+                    // 旧形式の関数添字を式へ統一し、合成したendにも元の添字位置を保持する。
+                    initializers.Add([
+                        DecodedInstruction.WithIndex(new(0, 0xD2), functionIndex, indexOffset),
+                        DecodedInstruction.WithoutImmediate(new(0, 0x0B), indexOffset),
+                    ]);
+                }
+                else
+                {
+                    initializers.Add(ExpressionDecoder.Read(ref reader, inputLength));
+                }
+            }
+
+            var initializerSpan = CollectionsMarshal.AsSpan(initializers);
+            segments.Add(
+                target is { } activeTarget
+                    ? ElementDefinition.Active(elementType, initializerSpan, activeTarget, offset)
+                : flags is 1 or 5 ? ElementDefinition.Passive(elementType, initializerSpan, offset)
+                : ElementDefinition.Declarative(elementType, initializerSpan, offset)
+            );
+        }
+
+        return segments;
+    }
+
+    /// <summary>
     /// データセグメントの初期バイト列、任意の初期化先と宣言位置を取得する
     /// </summary>
     /// <param name="reader">データセクションの読み取り状態 宣言の終端まで進める</param>
