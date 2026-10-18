@@ -7,6 +7,53 @@ namespace WasmSharp.Tests.Execution;
 internal class Interpreter_PushConstantTests
 {
     [Test]
+    [Arguments(WasmValueKind.FuncRef)]
+    [Arguments(WasmValueKind.ExternRef)]
+    public async Task 型付きnull参照を積む_指定された参照型とnullを保つ(WasmValueKind kind)
+    {
+        // Arrange
+        var value =
+            kind == WasmValueKind.FuncRef
+                ? WasmValue.FromFuncRef(null)
+                : WasmValue.FromExternRef(null);
+        var instruction = new Instruction(default, value, 1001, 0);
+        var context = InterpreterContext.Enter(new(10), out var isOutermost);
+        ExecutionResult result;
+        WasmValue actual;
+        int valueCount;
+
+        // Act
+        try
+        {
+            context.EnsureCapacity(0, 1, new(WasmProcessingStage.Invoke));
+            result = Interpreter.PushConstant(context, in instruction);
+            actual = context.GetValue(0);
+            valueCount = context.ValueCount;
+        }
+        finally
+        {
+            context.Restore(0, 0, 0);
+            InterpreterContext.Exit(isOutermost);
+        }
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(result.Status).IsEqualTo(ExecutionStatus.Success);
+            await Assert.That(valueCount).IsEqualTo(1);
+            await Assert.That(actual.Kind).IsEqualTo(kind);
+            if (kind == WasmValueKind.FuncRef)
+            {
+                await Assert.That(actual.AsFuncRef()).IsNull();
+            }
+            else
+            {
+                await Assert.That(actual.AsExternRef()).IsNull();
+            }
+        }
+    }
+
+    [Test]
     [Arguments(0x41, ImmediateKind.I32, StackEffectKind.PushI32)]
     [Arguments(0x42, ImmediateKind.I64, StackEffectKind.PushI64)]
     [Arguments(0x43, ImmediateKind.F32Bits, StackEffectKind.PushF32)]
