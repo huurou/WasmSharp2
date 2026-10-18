@@ -918,6 +918,196 @@ internal static partial class Interpreter
     }
 
     /// <summary>
+    /// f32のlaneを等値比較し全bit1または0を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのF32x4Eq命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult F32x4Eq(InterpreterContext context, in Instruction instruction)
+    {
+        return CompareSimdLanes(
+            context,
+            32,
+            static (x, y) =>
+                BitConverter.UInt32BitsToSingle((uint)x) == BitConverter.UInt32BitsToSingle((uint)y)
+        );
+    }
+
+    /// <summary>
+    /// f32のlaneを不等値比較し全bit1または0を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのF32x4Ne命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult F32x4Ne(InterpreterContext context, in Instruction instruction)
+    {
+        return CompareSimdLanes(
+            context,
+            32,
+            static (x, y) =>
+                BitConverter.UInt32BitsToSingle((uint)x) != BitConverter.UInt32BitsToSingle((uint)y)
+        );
+    }
+
+    /// <summary>
+    /// f32のlaneを小なり比較し全bit1または0を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのF32x4Lt命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult F32x4Lt(InterpreterContext context, in Instruction instruction)
+    {
+        return CompareSimdLanes(
+            context,
+            32,
+            static (x, y) =>
+                BitConverter.UInt32BitsToSingle((uint)x) < BitConverter.UInt32BitsToSingle((uint)y)
+        );
+    }
+
+    /// <summary>
+    /// f32のlaneを大なり比較し全bit1または0を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのF32x4Gt命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult F32x4Gt(InterpreterContext context, in Instruction instruction)
+    {
+        return CompareSimdLanes(
+            context,
+            32,
+            static (x, y) =>
+                BitConverter.UInt32BitsToSingle((uint)x) > BitConverter.UInt32BitsToSingle((uint)y)
+        );
+    }
+
+    /// <summary>
+    /// f32のlaneを小なりまたは等値比較し全bit1または0を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのF32x4Le命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult F32x4Le(InterpreterContext context, in Instruction instruction)
+    {
+        return CompareSimdLanes(
+            context,
+            32,
+            static (x, y) =>
+                BitConverter.UInt32BitsToSingle((uint)x) <= BitConverter.UInt32BitsToSingle((uint)y)
+        );
+    }
+
+    /// <summary>
+    /// f32のlaneを大なりまたは等値比較し全bit1または0を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのF32x4Ge命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult F32x4Ge(InterpreterContext context, in Instruction instruction)
+    {
+        return CompareSimdLanes(
+            context,
+            32,
+            static (x, y) =>
+                BitConverter.UInt32BitsToSingle((uint)x) >= BitConverter.UInt32BitsToSingle((uint)y)
+        );
+    }
+
+    /// <summary>
+    /// f64のlaneを等値比較し全bit1または0を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのF64x2Eq命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult F64x2Eq(InterpreterContext context, in Instruction instruction)
+    {
+        return CompareSimdLanes(
+            context,
+            64,
+            static (x, y) =>
+                BitConverter.UInt64BitsToDouble(x) == BitConverter.UInt64BitsToDouble(y)
+        );
+    }
+
+    /// <summary>
+    /// f64のlaneを不等値比較し全bit1または0を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのF64x2Ne命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult F64x2Ne(InterpreterContext context, in Instruction instruction)
+    {
+        return CompareSimdLanes(
+            context,
+            64,
+            static (x, y) =>
+                BitConverter.UInt64BitsToDouble(x) != BitConverter.UInt64BitsToDouble(y)
+        );
+    }
+
+    /// <summary>
+    /// f64のlaneを小なり比較し全bit1または0を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのF64x2Lt命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult F64x2Lt(InterpreterContext context, in Instruction instruction)
+    {
+        return CompareSimdLanes(
+            context,
+            64,
+            static (x, y) => BitConverter.UInt64BitsToDouble(x) < BitConverter.UInt64BitsToDouble(y)
+        );
+    }
+
+    /// <summary>
+    /// f64のlaneを大なり比較し全bit1または0を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのF64x2Gt命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult F64x2Gt(InterpreterContext context, in Instruction instruction)
+    {
+        return CompareSimdLanes(
+            context,
+            64,
+            static (x, y) => BitConverter.UInt64BitsToDouble(x) > BitConverter.UInt64BitsToDouble(y)
+        );
+    }
+
+    /// <summary>
+    /// f64のlaneを小なりまたは等値比較し全bit1または0を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのF64x2Le命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult F64x2Le(InterpreterContext context, in Instruction instruction)
+    {
+        return CompareSimdLanes(
+            context,
+            64,
+            static (x, y) =>
+                BitConverter.UInt64BitsToDouble(x) <= BitConverter.UInt64BitsToDouble(y)
+        );
+    }
+
+    /// <summary>
+    /// f64のlaneを大なりまたは等値比較し全bit1または0を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのF64x2Ge命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult F64x2Ge(InterpreterContext context, in Instruction instruction)
+    {
+        return CompareSimdLanes(
+            context,
+            64,
+            static (x, y) =>
+                BitConverter.UInt64BitsToDouble(x) >= BitConverter.UInt64BitsToDouble(y)
+        );
+    }
+
+    /// <summary>
     /// 128bitのいずれかのbitが非ゼロならi32の1を返す
     /// </summary>
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>

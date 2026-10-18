@@ -100,7 +100,7 @@
   - _Depends: 3.1_
   - _Requirements: 1.6, 8.1, 8.2, 8.3, 8.4_
 
-- [ ] 4. lane・論理・比較の実行を追加する
+- [x] 4. lane・論理・比較の実行を追加する
 - [x] 4.1 整数と浮動小数点のsplat・extract・replaceを追加する
   - 各lane幅とスカラー型の組合せを扱い、i8/i16の切詰め・符号拡張・ゼロ拡張を区別する。
   - 指定lane以外の128bitを保ち、浮動小数点のbitをそのまま運ぶ。
@@ -123,7 +123,7 @@
   - _Boundary: SimdLaneExecution_
   - _Requirements: 4.5, 4.6_
 
-- [ ] 4.4 浮動小数点のvector比較を追加する
+- [x] 4.4 浮動小数点のvector比較を追加する
   - f32x4/f64x2の6比較を追加し、NaN・±0・無限大の比較結果を扱う。
   - true/falseを各laneの全bit1/0として返す。
   - 両精度でNaNを左右operandへ置いたテストが成立する状態にする。
