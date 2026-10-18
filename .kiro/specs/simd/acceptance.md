@@ -195,3 +195,9 @@ New-Item -ItemType Directory -Path $taskOutput | Out-Null
 製品・テストは変更しておらず、3.1で成功した3テストプロジェクトは重複実行していない。本節は定数・選択を接続した単位の確認であり、未接続235命令を残す。`verify`・`baseline-save`は実行しておらず、SIMD全体の機能受入およびCore 2.0全体の完成は未判定である。
 
 [独立レビュー](../../../artifacts/simd/review-3.2-20261018T145754Z/verdict.md)は`APPROVED`で、別の全体run・比較と原因監査でも同じ件数、既存passedの維持、回帰・欠落・未比較0を確認した。親は保存されたビルド・比較・監査の出力と終了値、変更差分を確認し、`kiro-verify-completion`のタスク3.2判定を`VERIFIED`とした。未解決の指摘はない。
+
+## 4.1 splat・extract・replaceの実行
+
+要件4.1に対応する20handlerを`Interpreter.SimdLane.cs`へ追加した。既存`SimdValue`を使い、整数の切詰め・符号拡張・ゼロ拡張、floatのbit運搬と非対象laneの保持を扱う。設計で指定された最小の`SimdHandlerFixture`でlane即値を渡し、各メソッドのテスト60件で先頭・末尾lane、NaN payload・±0、結果型・sentinel・stack数を確認した。命令宣言への接続は8.1で行う。
+
+[実装記録](../../../artifacts/simd/task-4.1-20261018T150640Z/StatusReport.md)では、一時フラグOFFの60件失敗、ONの60件成功、フラグ除去後の成功を確認した。[独立レビュー](../../../artifacts/simd/review-4.1-20261018T151358Z/review-verdict.md)は`APPROVED`で、Releaseビルドの警告・エラー0、ランタイム3,886件成功、失敗・スキップ0、終了0、変更22C#の整形・空白検査成功を確認した。親はhandler・境界テストと実際の出力・終了値を確認し、`kiro-verify-completion`のタスク4.1判定を`VERIFIED`とした。未解決の指摘はない。公開経路と公式全体実行は未実施である。
