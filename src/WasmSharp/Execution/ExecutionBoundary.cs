@@ -1,3 +1,4 @@
+using System.Globalization;
 using WasmSharp.Exceptions;
 
 namespace WasmSharp.Execution;
@@ -114,7 +115,7 @@ internal static class ExecutionBoundary
         if (result.Status == ExecutionStatus.Trap)
         {
             throw new WasmTrapException(
-                GetTrapMessage(result.TrapReason!.Value),
+                GetTrapMessage(result),
                 result.TrapReason!.Value,
                 new WasmFailureLocation(
                     stage,
@@ -136,19 +137,28 @@ internal static class ExecutionBoundary
     }
 
     /// <summary>
-    /// 実行中のtrapの原因から公開診断を選ぶ
+    /// 実行中のtrapの結果から公開診断を選ぶ
     /// </summary>
-    /// <param name="reason">実行中に検出されたtrapの原因</param>
+    /// <param name="result">実行中に検出されたtrapの原因と診断情報</param>
     /// <returns>原因に対応する公開診断</returns>
-    private static string GetTrapMessage(WasmTrapReason reason)
+    private static string GetTrapMessage(ExecutionResult result)
     {
-        return reason switch
+        var elementIndexSuffix = result.TableElementIndex is { } index
+            ? " " + unchecked((int)index).ToString(CultureInfo.InvariantCulture)
+            : "";
+        return (result.TrapReason!.Value, result.TrapDiagnosticKind) switch
         {
-            WasmTrapReason.Unreachable => "unreachable executed",
-            WasmTrapReason.IntegerDivideByZero => "integer divide by zero",
-            WasmTrapReason.IntegerOverflow => "integer overflow",
-            WasmTrapReason.InvalidConversionToInteger => "invalid conversion to integer",
-            WasmTrapReason.MemoryOutOfBounds => "out of bounds memory access",
+            (WasmTrapReason.Unreachable, _) => "unreachable executed",
+            (WasmTrapReason.IntegerDivideByZero, _) => "integer divide by zero",
+            (WasmTrapReason.IntegerOverflow, _) => "integer overflow",
+            (WasmTrapReason.InvalidConversionToInteger, _) => "invalid conversion to integer",
+            (WasmTrapReason.MemoryOutOfBounds, _) => "out of bounds memory access",
+            (WasmTrapReason.TableOutOfBounds, TrapDiagnosticKind.UndefinedElement) =>
+                "undefined element" + elementIndexSuffix,
+            (WasmTrapReason.TableOutOfBounds, _) => "out of bounds table access",
+            (WasmTrapReason.UninitializedElement, _) => "uninitialized element"
+                + elementIndexSuffix,
+            (WasmTrapReason.IndirectCallTypeMismatch, _) => "indirect call type mismatch",
             _ => "Wasmの実行中にtrapが発生しました。",
         };
     }

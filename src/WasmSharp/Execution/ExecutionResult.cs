@@ -54,6 +54,16 @@ internal readonly struct ExecutionResult
     internal byte? SectionId { get; }
 
     /// <summary>
+    /// trapの公開診断の種別 既存結果とtrap以外ではDefault
+    /// </summary>
+    internal TrapDiagnosticKind TrapDiagnosticKind { get; }
+
+    /// <summary>
+    /// trapの診断に用いるテーブル要素添字 指定しない場合はnull
+    /// </summary>
+    internal uint? TableElementIndex { get; }
+
+    /// <summary>
     /// 実行状態と、その状態に対応する戻り値または失敗情報を保持する
     /// </summary>
     /// <param name="status">実行状態</param>
@@ -64,6 +74,8 @@ internal readonly struct ExecutionResult
     /// <param name="functionIndex">失敗が発生した関数のindex</param>
     /// <param name="byteOffset">失敗が発生した入力バイナリ上のバイト位置</param>
     /// <param name="sectionId">失敗が発生したセクションのID</param>
+    /// <param name="trapDiagnosticKind">trapの公開診断の種別</param>
+    /// <param name="tableElementIndex">trapの診断に用いるテーブル要素添字</param>
     private ExecutionResult(
         ExecutionStatus status,
         ImmutableArray<WasmValue> values,
@@ -72,7 +84,9 @@ internal readonly struct ExecutionResult
         int? limit,
         uint? functionIndex,
         long? byteOffset,
-        byte? sectionId = null
+        byte? sectionId = null,
+        TrapDiagnosticKind trapDiagnosticKind = TrapDiagnosticKind.Default,
+        uint? tableElementIndex = null
     )
     {
         Status = status;
@@ -83,6 +97,8 @@ internal readonly struct ExecutionResult
         FunctionIndex = functionIndex;
         ByteOffset = byteOffset;
         SectionId = sectionId;
+        TrapDiagnosticKind = trapDiagnosticKind;
+        TableElementIndex = tableElementIndex;
     }
 
     /// <summary>
@@ -102,12 +118,16 @@ internal readonly struct ExecutionResult
     /// <param name="functionIndex">trapが発生した関数のindex 関数外ではnull</param>
     /// <param name="byteOffset">trapが発生した入力バイナリ上のバイト位置</param>
     /// <param name="sectionId">trapが発生したセクションのID 特定しない場合はnull</param>
+    /// <param name="trapDiagnosticKind">trapの公開診断の種別</param>
+    /// <param name="tableElementIndex">trapの診断に用いるテーブル要素添字 指定しない場合はnull</param>
     /// <returns>trapを表す実行結果</returns>
     internal static ExecutionResult Trap(
         WasmTrapReason reason,
         uint? functionIndex,
         long byteOffset,
-        byte? sectionId = null
+        byte? sectionId = null,
+        TrapDiagnosticKind trapDiagnosticKind = TrapDiagnosticKind.Default,
+        uint? tableElementIndex = null
     )
     {
         return new ExecutionResult(
@@ -118,7 +138,9 @@ internal readonly struct ExecutionResult
             limit: null,
             functionIndex: functionIndex,
             byteOffset: byteOffset,
-            sectionId: sectionId
+            sectionId: sectionId,
+            trapDiagnosticKind: trapDiagnosticKind,
+            tableElementIndex: tableElementIndex
         );
     }
 
@@ -152,6 +174,22 @@ internal readonly struct ExecutionResult
             byteOffset: byteOffset
         );
     }
+}
+
+/// <summary>
+/// trapの原因に対応する公開診断の選択
+/// </summary>
+internal enum TrapDiagnosticKind
+{
+    /// <summary>
+    /// 原因に対応する既定の診断
+    /// </summary>
+    Default,
+
+    /// <summary>
+    /// 間接呼び出しのテーブル範囲外を示す診断
+    /// </summary>
+    UndefinedElement,
 }
 
 /// <summary>

@@ -33,6 +33,14 @@ internal class ExecutionResult_ValuesTests
             }
         }
         await Assert.That(results[0].Status).IsEqualTo(ExecutionStatus.Success);
+        foreach (var result in results)
+        {
+            using (Assert.Multiple())
+            {
+                await Assert.That(result.TrapDiagnosticKind).IsEqualTo(TrapDiagnosticKind.Default);
+                await Assert.That(result.TableElementIndex).IsNull();
+            }
+        }
     }
 }
 
@@ -88,6 +96,36 @@ internal class ExecutionResult_TrapTests
             await Assert.That(result.SectionId).IsNull();
             await Assert.That(result.ExhaustionReason).IsNull();
             await Assert.That(result.Limit).IsNull();
+            await Assert.That(result.TrapDiagnosticKind).IsEqualTo(TrapDiagnosticKind.Default);
+            await Assert.That(result.TableElementIndex).IsNull();
+        }
+    }
+
+    [Test]
+    public async Task trapの診断種別と要素添字を指定する_原因と位置に加えて診断情報を保持する()
+    {
+        // Act
+        var result = ExecutionResult.Trap(
+            WasmTrapReason.TableOutOfBounds,
+            3,
+            42,
+            10,
+            TrapDiagnosticKind.UndefinedElement,
+            uint.MaxValue
+        );
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(result.Status).IsEqualTo(ExecutionStatus.Trap);
+            await Assert.That(result.TrapReason).IsEqualTo(WasmTrapReason.TableOutOfBounds);
+            await Assert.That(result.FunctionIndex).IsEqualTo(3U);
+            await Assert.That(result.ByteOffset).IsEqualTo(42L);
+            await Assert.That(result.SectionId).IsEqualTo((byte)10);
+            await Assert
+                .That(result.TrapDiagnosticKind)
+                .IsEqualTo(TrapDiagnosticKind.UndefinedElement);
+            await Assert.That(result.TableElementIndex).IsEqualTo(uint.MaxValue);
         }
     }
 }
