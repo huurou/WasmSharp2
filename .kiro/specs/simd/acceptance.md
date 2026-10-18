@@ -167,3 +167,31 @@ New-Item -ItemType Directory -Path $taskOutput | Out-Null
 - selectの後段不一致、再検証と部分コード未公開、到達不能のtyped selectを確認した。診断再走査は完全const後の未対応loadで元の境界不正を保持し、const切断の位置は別に確認した。`InspectImports`の非実行と未確認範囲も保持した。
 
 `kiro-verify-completion`のタスク3.1判定は`VERIFIED`で、未解決の指摘はない。公式全体run・比較は3.2、演算を含む定数式拒否は8.1、広い共通経路・ホスト・状態共有は9.xで検証する。
+
+## 3.2 定数・選択の統合結果の公式全体確認
+
+要件1.6・8.1〜8.4と設計の「ConformanceVerification」「失敗処理（Error Handling）」「公開経路の統合確認」「公式受入と最終判定」に従い、3.1の接続後に固定147入力・53,907commandを新しい出力先へ全体実行し、直前の受入済みbaselineと同一の入力・command単位で比較した。[Task Brief](../../../artifacts/simd/task-3.2-20261018T144703Z/task-brief.md)の完了条件は、定数・select起因のfailedと既存passedの回帰0、残る未接続命令の未対応・blockedの原因確認、結果保存である。
+
+| 検証 | 結果 | 記録 |
+| --- | --- | --- |
+| `dotnet build WasmSharp2.slnx -c Release --warnaserror` | 終了0、警告0・エラー0 | [build.log](../../../artifacts/simd/task-3.2-20261018T144703Z/build.log) |
+| ビルド済みCLIの`--help` | 終了0 | [help.log](../../../artifacts/simd/task-3.2-20261018T144703Z/help.log) |
+| 固定manifestの`run` | 終了0、処理・出力完了、入力異常・未処理0 | [run.json](../../../artifacts/simd/task-3.2-20261018T144703Z/run.json) |
+| tables-references受入済みbaselineとの`compare-run` | 終了0、成立・完了、差分659件 | [comparison.json](../../../artifacts/simd/task-3.2-20261018T144703Z/comparison.json) |
+| 全ケース・固定素材・依存原因の監査 | 終了0 | [results-audit.json](../../../artifacts/simd/task-3.2-20261018T144703Z/results-audit.json) |
+
+結果はpassed27,918、runtime_unsupported828、blocked24,084、out_of_scope1,077、failed0、runner_error0だった。baselineのpassed27,482件はすべてpassedを保持し、条件差・出典差・素材差・追加・欠落・回帰・未比較はすべて0件である。659件の差分は、runtime_unsupportedからpassedへの251件、blockedからpassedへの185件、runtime_unsupportedのまま`v128.const`を通過して別の未接続命令へ停止位置が進んだ223件である。
+
+全53,907件のID・順序・行・種別・期待診断・期待値を元の公式JSONとbaselineへ照合し、147入力と5,821素材のhashを再計算した。SIMD有効・relaxed-SIMD無効のprofileと実行ポリシーは不変である。manifestはSHA256 `c60dec91f788791a9b790835b2629c2d970e3fb44afab4d63f209df9097e263e`、baselineは`9d51acea7309d02af302118c932bf25d9725336304f370b48d04cae995176496`、profileは`53e65ededab6814a6f73ac17ff286cedb35221b01aea83bbdd20e0ab15b452bc`を保持した。今回のrunのSHA256は`8a7f7d312c4e68e09b79a23a268cc9b177f77fbfb9bc5b15b121be2428506de6`である。
+
+定数を通る具体例として、`simd/simd_const.wast#198`のf32x4定数、`#573`のmoduleと`#574`の分岐戻り値、`#599`のglobal定義と`#602`のglobal.getがpassedとなった。[ケース記録](../../../artifacts/simd/task-3.2-20261018T144703Z/const-select-cases.json)には公式command・期待・実際・段階・診断を保存した。新たにpassedとなったv128戻り値180件は、公式lane値から再構成した128bitと上下64bitの一致も確認した。全体のpassed否定assertion4,697件は期待診断への前方一致を満たす。`select.wast#119`は`type mismatch`、Validate、`WasmValidateException`、byte_offset27・function_index0・section_id10でpassedだった。定数のテキスト形式に関する否定180件は従来どおりout_of_scopeで、バイナリ診断の成功には合算していない。
+
+固定`select.wast`の148件はすべてpassedで、baselineの各ケース結果と完全に一致した。同ファイルはv128を扱わず、固定147入力のうちv128と通常selectが共存する`simd_boolean.wast`の6箇所もi32候補を選択する。typed/untypedのv128 select自体は公式素材に収録されていないため、3.1で実行済みの公開4段階による選択6件、候補・条件型不一致6件、終端の余剰値2件、到達不能typed1件の計15件がすべてpassedであることを[保存済みTUnit結果の抜粋](../../../artifacts/simd/task-3.2-20261018T144703Z/supporting-select-tests-3.1.json)と[3.1の独立レビュー](../../../artifacts/simd/review-3.1-20261018T143705Z/review-verdict.md)へ結び付けた。NaN payload・符号付きゼロを含むbit保持、型不一致の`type mismatch`とValidate位置・section10、再試行時に成功状態を公開しない確認は3.1の結果を再利用し、今回再実行していない。
+
+残るruntime_unsupported828件は、既存宣言から確認した未接続235個の0xFD命令のうち226種類の公開診断featureへ対応した。全件がDecodeの`WasmUnsupportedFeatureException`で元位置と未確認範囲を保持し、`v128.const`やv128 selectによる未対応はない。blocked24,084件は全件の`cause.direct`を再帰し、求めた起因が記録済みの`origins`と一致し、上記未接続命令の未対応にのみ到達した。[原因一覧](../../../artifacts/simd/task-3.2-20261018T144703Z/remaining-causes.json)には各ID・出典行・診断・直接依存・起因featureを保存し、期待・実際は同じrunの各IDへ対応付けた。ファイル名だけで分類していない。`simd_const.wast`全体もpassed554、out_of_scope180、`i32x4.add`によるruntime_unsupported1件（`#605`）、それに依存するblocked22件であり、この残りを定数の成功へ読み替えていない。
+
+[事前確認](../../../artifacts/simd/task-3.2-20261018T144703Z/preflight.json)と[実行後確認](../../../artifacts/simd/task-3.2-20261018T144703Z/postflight.json)でsrc・tests・tools配下668ファイル、CLI・ランタイムのバイナリ、固定素材・profile・baselineの不変を確認した。ビルド後のCLI・ランタイムのassembly情報は対象HEAD`0f7e688adcddce3860a1d554438388e98a8e0135`を含む。[コマンド・終了値](../../../artifacts/simd/task-3.2-20261018T144703Z/commands.json)と各ログ、[監査スクリプト](../../../artifacts/simd/task-3.2-20261018T144703Z/audit-results.py)を保存した。初回の記録用スクリプトは成功済みビルドの日本語「0 エラー」の集計で終了1となり、読み取りの正規表現だけを修正して続行した。製品の失敗ではなく、詳細は[記録](../../../artifacts/simd/task-3.2-20261018T144703Z/validation-script-note.json)に残した。
+
+製品・テストは変更しておらず、3.1で成功した3テストプロジェクトは重複実行していない。本節は定数・選択を接続した単位の確認であり、未接続235命令を残す。`verify`・`baseline-save`は実行しておらず、SIMD全体の機能受入およびCore 2.0全体の完成は未判定である。
+
+[独立レビュー](../../../artifacts/simd/review-3.2-20261018T145754Z/verdict.md)は`APPROVED`で、別の全体run・比較と原因監査でも同じ件数、既存passedの維持、回帰・欠落・未比較0を確認した。親は保存されたビルド・比較・監査の出力と終了値、変更差分を確認し、`kiro-verify-completion`のタスク3.2判定を`VERIFIED`とした。未解決の指摘はない。
