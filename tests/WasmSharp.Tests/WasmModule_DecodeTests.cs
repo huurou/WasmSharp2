@@ -105,7 +105,7 @@ internal partial class WasmModule_DecodeTests
     }
 
     [Test]
-    [Arguments("11", "unexpected end of section or function", 26L)]
+    [Arguments("FD0D", "unexpected end of section or function", 26L)]
     [Arguments("0B", "section size mismatch", 27L)]
     [Arguments("0528", "END opcode expected", 26L)]
     public async Task 入れ子endの後に宣言境界を越える_診断再走査も両入力で同じ構文規則を使う(
@@ -190,7 +190,7 @@ internal partial class WasmModule_DecodeTests
     }
 
     [Test]
-    [Arguments("11")]
+    [Arguments("FD0D")]
     [Arguments("FD8C00")]
     [Arguments("FD00")]
     public async Task 診断再走査で未対応命令に到達する_両入力で元の境界不正を保持する(
@@ -453,8 +453,8 @@ internal partial class WasmModule_DecodeTests
     }
 
     [Test]
-    [Arguments(false, "11FF05", "call_indirect")]
-    [Arguments(true, "11FF05", "call_indirect")]
+    [Arguments(false, "FD0105", "v128.load8x8_s")]
+    [Arguments(true, "FD0105", "v128.load8x8_s")]
     [Arguments(false, "FD8C00", "v128.const")]
     [Arguments(true, "FD8C00", "v128.const")]
     [Arguments(false, "FD0C", "v128.const")]

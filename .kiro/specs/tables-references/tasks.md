@@ -219,7 +219,7 @@ baselineは最終受入まで保持する。
   - _Depends: 3.4, 5.2, 2.3, 6.1, 6.3_
   - _Requirements: 1.1, 2.1, 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 8.1, 8.4, 8.5_
 
-- [ ] 7. 一括操作と間接呼び出しを統合する
+- [x] 7. 一括操作と間接呼び出しを統合する
 - [x] 7.1 一括table命令とelem.dropを公開経路へ接続する
   - 2添字のDecodeと宣言を接続し、table.initのelem→table、copyのdst→srcの即値順を確認する。
   - 全modeとdrop後の0長・非0長、反復drop、別instanceの分離、import同一実体の重複copyを公開APIで確認する。
@@ -229,7 +229,7 @@ baselineは最終受入まで保持する。
   - _Depends: 3.4, 5.3, 6.3_
   - _Requirements: 1.1, 1.3, 2.1, 2.5, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 8.3, 8.5_
 
-- [ ] 7.2 間接callと失敗後に残る関数参照を統合する
+- [x] 7.2 間接callと失敗後に残る関数参照を統合する
   - type→tableのDecode、命令宣言、静的検証、対象選択と共通呼び出しを接続する。
   - 別moduleの同型関数・複数結果・元instanceのリソース、呼び出し元を受け取るホスト関数を公開APIで確認する。
   - 境界・null・型不一致のtrapと再帰・同期再入・例外後の状態復元を確認する。
@@ -324,3 +324,4 @@ manifestと比較元baselineのSHA-256はresearch.mdの記録と一致した。
 - 既存ファイルの改行形式を保って編集し、意味のない全行差分を作らない。
 - 6.4の公式`elem.wast#93`は、#92のactive elementが共有tableへ書くnullを前提とする。調査結果は`artifacts/tables-references/debug-6.2-20261018T050755Z/debug-report.md`。期待値・分類・baselineを変更せず、6.2→6.3→6.4の順で接続し、6.4を6.3完了後に再検証する。
 - LEB128の`integer too large`は不正な最終バイトの位置、`integer representation too long`は最大幅の読取後位置を使う。EOFの位置契約と区別する。
+- 未対応命令を差し替えるテストでは、opcode開始位置に加えてprefixの消費位置と診断再走査の後続バイトを確認し、元の外枠不正を保つ。

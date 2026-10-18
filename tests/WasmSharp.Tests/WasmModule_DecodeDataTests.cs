@@ -209,7 +209,7 @@ internal partial class WasmModule_DecodeTests
             HostLinkingModuleBinary.Types(([], [])),
             functionMismatch ? HostLinkingModuleBinary.Functions(0) : [],
             HostLinkingModuleBinary.Section(12, [dataCount]),
-            HostLinkingModuleBinary.Section(11, [1, 0, 0x11, 0xFF]),
+            HostLinkingModuleBinary.Section(11, [1, 0, 0xFD, 0]),
             [13, 0]
         );
 
@@ -224,13 +224,13 @@ internal partial class WasmModule_DecodeTests
                 .IsTrue();
             await Assert
                 .That(exception.Location)
-                .IsEqualTo(new(WasmProcessingStage.Decode, bytes.Length - 3, null, 11));
+                .IsEqualTo(new(WasmProcessingStage.Decode, bytes.Length - 2, null, 11));
         }
     }
 
     [Test]
-    [Arguments(false, "010011FF", 1)]
-    [Arguments(true, "0201000011FF", 2)]
+    [Arguments(false, "0100FD00", 1)]
+    [Arguments(true, "02010000FD00", 2)]
     public async Task データの式が未対応で確定済みの件数違反がない_後続を調べず原因と未確認範囲を保持する(
         bool hasDataCount,
         string data,
@@ -250,7 +250,7 @@ internal partial class WasmModule_DecodeTests
             .ThrowsExactly<WasmUnsupportedFeatureException>();
         using (Assert.Multiple())
         {
-            await Assert.That(exception!.Feature).IsEqualTo("call_indirect");
+            await Assert.That(exception!.Feature).IsEqualTo("v128.load");
             await Assert
                 .That(exception.Location)
                 .IsEqualTo(new(WasmProcessingStage.Decode, bytes.Length - 4, null, 11));
@@ -283,7 +283,7 @@ internal partial class WasmModule_DecodeTests
             functionMismatch ? HostLinkingModuleBinary.Functions(0) : [],
             HostLinkingModuleBinary.Section(12, [2]),
             HostLinkingModuleBinary.Section(11, [1, 0, 0x41, 0]),
-            HostLinkingModuleBinary.Section(0, [0x11])
+            HostLinkingModuleBinary.Section(0, [0xFD, 0], declaredLength: 1)
         );
 
         // Act & Assert
@@ -297,7 +297,7 @@ internal partial class WasmModule_DecodeTests
                 .IsTrue();
             await Assert
                 .That(exception.Location)
-                .IsEqualTo(new(WasmProcessingStage.Decode, bytes.Length - 3, null, 11));
+                .IsEqualTo(new(WasmProcessingStage.Decode, bytes.Length - 4, null, 11));
         }
     }
 
@@ -354,7 +354,7 @@ internal partial class WasmModule_DecodeTests
             HostLinkingModuleBinary.Types(([], [])),
             functionMismatch ? [] : HostLinkingModuleBinary.Functions(0),
             HostLinkingModuleBinary.Section(12, [1]),
-            HostLinkingModuleBinary.Code(([], [0x11, 0xFF])),
+            HostLinkingModuleBinary.Code(([], [0xFD, 0])),
             data,
             [13, 0]
         );
@@ -397,7 +397,7 @@ internal partial class WasmModule_DecodeTests
                     .ThrowsExactly<WasmUnsupportedFeatureException>();
                 using (Assert.Multiple())
                 {
-                    await Assert.That(exception!.Feature).IsEqualTo("call_indirect");
+                    await Assert.That(exception!.Feature).IsEqualTo("v128.load");
                     await Assert
                         .That(exception.Location)
                         .IsEqualTo(

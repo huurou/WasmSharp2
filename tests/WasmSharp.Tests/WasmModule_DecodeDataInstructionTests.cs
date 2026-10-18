@@ -152,7 +152,7 @@ internal partial class WasmModule_DecodeTests
                 : HostLinkingModuleBinary.Functions(0),
             dataCount is { } count ? HostLinkingModuleBinary.Section(12, [count]) : [],
             HostLinkingModuleBinary.Code(([], [0xFC, 9, 0, 0x0B])),
-            HostLinkingModuleBinary.Section(11, [1, 0, 0x11, 0xFF]),
+            HostLinkingModuleBinary.Section(11, [1, 0, 0xFD, 0]),
             [13, 0]
         );
 
@@ -167,7 +167,7 @@ internal partial class WasmModule_DecodeTests
                 .IsTrue();
             await Assert
                 .That(exception.Location)
-                .IsEqualTo(new(WasmProcessingStage.Decode, bytes.Length - 3, null, 11));
+                .IsEqualTo(new(WasmProcessingStage.Decode, bytes.Length - 2, null, 11));
         }
     }
 }

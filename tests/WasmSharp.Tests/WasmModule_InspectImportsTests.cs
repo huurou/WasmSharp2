@@ -283,7 +283,7 @@ internal class WasmModule_InspectImportsTests
             HostLinkingModuleBinary.Functions(0),
             HostLinkingModuleBinary.Memories((uint.MaxValue, null)),
             HostLinkingModuleBinary.Start(0),
-            HostLinkingModuleBinary.Code(([], [0x11, 0x0B]))
+            HostLinkingModuleBinary.Code(([], [0xFD, 0]))
         );
         using var stream = new ChunkedReadStream(new MemoryStream(bytes));
 
@@ -333,7 +333,7 @@ internal class WasmModule_InspectImportsTests
         var exception = await Assert
             .That(() => WasmModule.Decode(bytes))
             .ThrowsExactly<WasmUnsupportedFeatureException>();
-        await Assert.That(exception!.Feature).IsEqualTo("call_indirect");
+        await Assert.That(exception!.Feature).IsEqualTo("v128.load");
     }
 
     [Test]
@@ -368,7 +368,7 @@ internal class WasmModule_InspectImportsTests
     }
 
     [Test]
-    [Arguments("call_indirect")]
+    [Arguments("i8x16.shuffle")]
     [Arguments("v128.const")]
     public async Task メモリ命令とデータに後続仕様の未対応が併存する_生成を拒否してimport調査は本体とデータを未確認に保つ(
         string feature
@@ -378,7 +378,7 @@ internal class WasmModule_InspectImportsTests
         byte[] instruction = feature switch
         {
             "v128.const" => [0xFD, 0x0C, .. new byte[16], 0x1A],
-            "call_indirect" => [0x11, 0, 0],
+            "i8x16.shuffle" => [0xFD, 0x0D, 0],
             _ => [],
         };
         var code = HostLinkingModuleBinary.Code(
@@ -398,16 +398,7 @@ internal class WasmModule_InspectImportsTests
             data
         );
         var codeOffset = bytes.Length - data.Length - code.Length;
-        var failureOffset =
-            codeOffset
-            + Array.IndexOf(
-                code,
-                feature switch
-                {
-                    "call_indirect" => (byte)0x11,
-                    _ => (byte)0xFD,
-                }
-            );
+        var failureOffset = codeOffset + Array.IndexOf(code, (byte)0xFD);
         var memory = new WasmMemory(new(1));
         memory.Write(0, [99]);
         var calls = 0;

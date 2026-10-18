@@ -203,7 +203,15 @@ namespace WasmSharp.Instructions;
     ValidationRule.BranchTable,
     nameof(Interpreter.BranchTable)
 )]
-[Instruction(0, 0x11, "call_indirect")]
+[Instruction(
+    0,
+    0x11,
+    "call_indirect",
+    ImmediateKind.IndexPair,
+    StackEffectKind.CallIndirect,
+    ValidationRule.CallIndirect,
+    nameof(Interpreter.CallIndirect)
+)]
 [Instruction(
     0,
     0x1B,
