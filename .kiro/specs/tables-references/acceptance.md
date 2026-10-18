@@ -1,0 +1,124 @@
+# tables-references受入記録
+
+## 1.1 固定素材と既存テスト基盤の確認
+
+2026-10-18に、HEAD`0a51bbcb0534107ca5fa4418caff6f93aaac22d4`で準備タスク1.1を確認した。
+Releaseビルドは警告・エラー0、既存3プロジェクトのテストは合計4,084件成功だった。
+本記録は実装着手時の前提確認であり、対象機能の受入判定は後続タスクで行う。
+
+### Task Brief
+
+| 項目 | 内容 |
+| --- | --- |
+| 受入基準 | 固定profile・素材・直前の受入済みbaselineを識別し、既知の診断差をケース単位で特定する。既存fixtureの能力と、Releaseビルド後の既存テスト成立を確認する。 |
+| 完了条件 | 本記録と、新規[証跡ディレクトリ](../../../artifacts/tables-references/task-1.1-20261018T020426Z/)にコマンド・UTC・終了値・ログ・TRX・素材監査を保存する。 |
+| 設計制約 | ConformanceVerificationの範囲で既存CLIとfixtureを使う。linear-memory最終保存を比較元とし、baselineと固定素材を保持する。 |
+| 検証方法 | hashとprofileの照合、保存済み結果間の既知差照合、警告をエラー扱いするReleaseビルド、3つのTUnitプロジェクト、CLIの`--help`を順に確認する。 |
+
+対象要件は[requirements.md](requirements.md)の9.1、9.3、9.5である。
+参照した設計見出しは[ConformanceVerification](design.md#conformanceverification)、[検証方針（Testing Strategy）](design.md#検証方針testing-strategy)、[ファイル構成計画（File Structure Plan）](design.md#ファイル構成計画file-structure-plan)である。
+9.1と9.3の全体実行・回帰判定は機能接続後に行い、今回は素材と比較元の確認までを扱う。
+
+### 固定素材と比較元
+
+比較元は[linear-memoryの明示baseline保存](../linear-memory/acceptance.md#84の明示baseline保存)に従って選んだ。
+[素材監査](../../../artifacts/tables-references/task-1.1-20261018T020426Z/prerequisites-audit.json)で以下を実ファイルから再確認した。
+
+| 対象 | 識別情報 |
+| --- | --- |
+| 固定Core 2.0仕様 | `05ca4182176763112561ae20153975c12bd689e4` |
+| 固定WABT | `c8dc7b6eae42b3aa3e95b9014dc02b71f8e0e1db`。1.0.42とDataCount修正 |
+| manifest | [wabt-commit-20261016/corpus/manifest.json](../../../artifacts/linear-memory/wabt-commit-20261016/corpus/manifest.json) |
+| manifestのSHA-256 | `c60dec91f788791a9b790835b2629c2d970e3fb44afab4d63f209df9097e263e` |
+| 受入済みbaseline | [task-8.4-20261016T001148Z/run-baseline.json](../../../artifacts/linear-memory/task-8.4-20261016T001148Z/run-baseline.json) |
+| baselineのSHA-256 | `70e9453f222304b22a04f1e2b2f4cd2e56208192d5b59e0603615dade18309a1` |
+| 素材生成に使った変換器 | `artifacts/wabt-datacount-tests/Release/wast2json.exe` |
+| 変換器のSHA-256 | `2c9114cb9fc457c323f0d45eb507614a9530180b4b7a656bd9914823ff8a31c8` |
+
+specとWABTの作業コピーのHEADは上記固定commitと一致した。
+[現行profile](../../../tools/WasmSharp.TestSuiteRunner/Corpus/core2-profile.json)とmanifestのprofile、baseline内のcorpusとmanifestは、それぞれ全体が一致した。
+profileは全21機能のうち7機能がON、14機能がOFFで、147入力にSIMDの57入力を含む。
+固定specのGit blobから147入力のSHA-256を確認し、manifestが参照する5,821素材の存在とSHA-256も確認した。
+内訳はJSON147件、Wasm4,597件、WAT1,077件である。
+
+変換済みJSONの53,907commandとbaselineの全ケースは、入力の相対pathとcommandの添字による識別子・順序が一致し、重複はなかった。
+manifestとbaselineはいずれも処理・出力が完了していた。
+baselineのケースを再集計した結果は以下のとおりである。
+
+| 分類 | 件数 |
+| --- | ---: |
+| passed | 23,050 |
+| failed | 0 |
+| runtime_unsupported | 1,457 |
+| runner_error | 0 |
+| out_of_scope | 1,077 |
+| blocked | 28,323 |
+| 合計 | 53,907 |
+
+### 2026-10-17の既知診断差
+
+出典は[linear-memoryの受入記録の追記](../linear-memory/acceptance.md#2026-10-16の実装検証)、[レビュー対応の検証記録](../linear-memory/tasks.md#claude-codeレビュー対応2026-10-17)、[元の全件照合](../../../artifacts/linear-memory/claude-review-20261017-4aa3bd52/diagnostic-delta-audit.json)である。
+保存済み[レビュー後のrun](../../../artifacts/linear-memory/claude-review-20261017-4aa3bd52/run.json)と今回の比較元baselineを読み取り、下記の33件だけが異なることを再確認した。
+commandの添字は0始まりである。
+
+| 入力 | commandの添字 | 件数 |
+| --- | --- | ---: |
+| data.wast | 9、10、47、49、50、51、52、53、54、55、56、57、58、59、60 | 15 |
+| global.wast | 63〜80 | 18 |
+
+全33件で診断message以外のケース情報が一致し、分類は変更前後ともpassedだった。
+期待診断に対する前方一致とコロンまでの診断prefixを維持し、位置、段階、例外型も変わらなかった。
+[保存済み比較結果](../../../artifacts/linear-memory/claude-review-20261017-4aa3bd52/comparison.json)は、回帰・追加・欠落・未比較・failed・runner_errorが各0件だった。
+
+[今回の素材監査](../../../artifacts/tables-references/task-1.1-20261018T020426Z/prerequisites-audit.json)には、出典3ファイルのSHA-256と、全33件の識別子・期待診断・変更前後のmessage・位置・例外型を保存した。
+後続の比較ではこの内容と照合し、33件という件数だけで既知差と判断しない。
+
+### 既存fixtureの確認
+
+[HostLinkingModuleBinary](../../../tests/WasmSharp.Tests/Fixtures/HostLinkingModuleBinary.cs)の既存操作で、後続タスクの入力を構成できる。
+
+| 必要な入力 | 既存操作 |
+| --- | --- |
+| funcref・externrefの型、table、global、locals、式 | `Types`、`TypeVector`、`Tables`、`Globals`、`Code`へ型バイトや式を渡す。 |
+| flags0〜7のelement、空section、不正flags・終端・宣言長 | `Section(9, payload, declaredLength)`へ件数とelementのrawバイト列を渡す。 |
+| call_indirect、table.init、table.copyの2添字 | `Unsigned`をバイナリ仕様の添字順に2回配置し、`Code`へ渡す。 |
+| 既存の直接callの内部実行 | [ExecutionInstanceFixture](../../../tests/WasmSharp.Tests/Fixtures/ExecutionInstanceFixture.cs)を使う。 |
+
+`Section`と`Code`は入力の不足値や終端を補正しない。
+型バイト、複合即値、非最短・切断した整数、宣言長等を保持する既存の[fixtureテスト](../../../tests/WasmSharp.Tests/Fixtures/HostLinkingModuleBinary_CreateTests.cs)も、今回のランタイム全テストに含めて実行した。
+追加の共通補助は不要と判断し、C#とテストを変更しなかった。
+そのため、機能フラグとREDは適用していない。
+
+### ビルドと既存テスト
+
+実行環境はWindows x64、.NET SDK10.0.402、Microsoft.NETCore.App10.0.13である。
+[環境情報](../../../artifacts/tables-references/task-1.1-20261018T020426Z/dotnet-info.stdout.log)に実測値を保存した。
+3つのテストプロジェクトはすべて`net10.0`、TUnit1.66.16を使用している。
+
+次のコマンドをリポジトリルートで、記載順に実行した。
+各`*.result.json`に正確なコマンド、UTC、終了値を、同名の`*.stdout.log`と`*.stderr.log`に出力を保存した。
+
+```powershell
+dotnet build WasmSharp2.slnx -c Release --warnaserror
+dotnet run --project tests/WasmSharp.Tests/WasmSharp.Tests.csproj -c Release --no-build -- --report-trx --results-directory artifacts/tables-references/task-1.1-20261018T020426Z/runtime
+dotnet run --project tests/WasmSharp.Generators.Tests/WasmSharp.Generators.Tests.csproj -c Release --no-build -- --report-trx --results-directory artifacts/tables-references/task-1.1-20261018T020426Z/generators
+dotnet run --project tests/WasmSharp.TestSuiteRunner.Tests/WasmSharp.TestSuiteRunner.Tests.csproj -c Release --no-build -- --report-trx --results-directory artifacts/tables-references/task-1.1-20261018T020426Z/runner
+./tools/WasmSharp.TestSuiteRunner/bin/Release/net10.0/WasmSharp.TestSuiteRunner.exe --help
+python artifacts/tables-references/task-1.1-20261018T020426Z/audit-prerequisites.py
+```
+
+| 検証 | 結果 | 証跡 |
+| --- | --- | --- |
+| Releaseビルド | 終了0、警告0、エラー0 | [build.result.json](../../../artifacts/tables-references/task-1.1-20261018T020426Z/build.result.json) |
+| ランタイム | 終了0、3,289件成功、失敗・スキップ各0 | [実行記録](../../../artifacts/tables-references/task-1.1-20261018T020426Z/runtime.result.json)、[TRX](../../../artifacts/tables-references/task-1.1-20261018T020426Z/runtime/WasmSharp.Tests_net10.0_x64.trx) |
+| 生成器 | 終了0、93件成功、失敗・スキップ各0 | [実行記録](../../../artifacts/tables-references/task-1.1-20261018T020426Z/generators.result.json)、[TRX](../../../artifacts/tables-references/task-1.1-20261018T020426Z/generators/WasmSharp.Generators.Tests_net10.0_x64.trx) |
+| 公式ランナー | 終了0、702件成功、失敗・スキップ各0 | [実行記録](../../../artifacts/tables-references/task-1.1-20261018T020426Z/runner.result.json)、[TRX](../../../artifacts/tables-references/task-1.1-20261018T020426Z/runner/WasmSharp.TestSuiteRunner.Tests_net10.0_x64.trx) |
+| CLI起動 | 終了0 | [help.result.json](../../../artifacts/tables-references/task-1.1-20261018T020426Z/help.result.json) |
+| 素材・比較元・既知差の監査 | 終了0 | [audit.result.json](../../../artifacts/tables-references/task-1.1-20261018T020426Z/audit.result.json)、[監査スクリプト](../../../artifacts/tables-references/task-1.1-20261018T020426Z/audit-prerequisites.py) |
+
+通常のコマンド実行はプロセス作成前に`helper_unknown_error: setup refresh had errors`となったため、上記は`sandbox_permissions: require_escalated`で実行した。
+これは環境側の起動失敗であり、ビルド・テストの失敗には数えていない。
+
+今回、公式全体のrun、compare-run、baseline-save、WABTのビルド・テスト、素材の再生成は行っていない。
+既知差の確認は保存済み結果の照合であり、新しい公式実行結果ではない。
+素材監査の最後にも上記manifestとbaselineのSHA-256が変わらないことを確認した。
