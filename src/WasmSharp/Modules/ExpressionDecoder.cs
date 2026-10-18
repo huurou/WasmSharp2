@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using WasmSharp.Exceptions;
+using WasmSharp.Execution;
 using WasmSharp.Instructions;
 
 namespace WasmSharp.Modules;
@@ -86,6 +87,21 @@ internal static class ExpressionDecoder
                     WasmValue.FromF64Bits(reader.ReadF64Bits()),
                     offset
                 ),
+                ImmediateKind.V128 => DecodedInstruction.WithImmediate(
+                    opcode,
+                    SimdValue.FromLittleEndian(reader.ReadBytes(16)).ToValue(),
+                    offset
+                ),
+                ImmediateKind.Shuffle => DecodedInstruction.WithShuffleLanes(
+                    opcode,
+                    reader.ReadBytes(16),
+                    offset
+                ),
+                ImmediateKind.LaneIndex => DecodedInstruction.WithLaneIndex(
+                    opcode,
+                    reader.ReadByte(),
+                    offset
+                ),
                 ImmediateKind.BlockType => DecodedInstruction.WithBlockType(
                     opcode,
                     ReadBlockType(ref reader),
@@ -105,6 +121,13 @@ internal static class ExpressionDecoder
                     new(reader.ReadU32(), reader.ReadU32()),
                     offset
                 ),
+                ImmediateKind.MemoryArgumentLaneIndex =>
+                    DecodedInstruction.WithMemoryArgumentLaneIndex(
+                        opcode,
+                        new(reader.ReadU32(), reader.ReadU32()),
+                        reader.ReadByte(),
+                        offset
+                    ),
                 ImmediateKind.MemoryZero => ReadMemoryZero(opcode, offset, ref reader),
                 ImmediateKind.MemoryPairZero => ReadMemoryPairZero(opcode, offset, ref reader),
                 ImmediateKind.DataIndexMemoryZero => ReadDataIndexMemoryZero(

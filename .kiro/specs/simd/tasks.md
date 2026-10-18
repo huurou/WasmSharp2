@@ -63,7 +63,7 @@
   - _Boundary: SimdValue_
   - _Requirements: 3.1, 4.1, 6.6_
 
-- [ ] 2.3 SIMD即値を読み取り、入力から独立して保持する
+- [x] 2.3 SIMD即値を読み取り、入力から独立して保持する
   - 16byte定数、16byte shuffle、1byte lane、memargとlaneを読み取る。
   - byte列とStreamで同じ値を得て、切断・不正LEB128・未割当番号をDecodeの失敗として区別する。
   - lane範囲やshuffle値をDecodeで拒否せず、Validateへ値と元位置を渡す。

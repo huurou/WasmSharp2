@@ -49,6 +49,16 @@ internal readonly struct DecodedInstruction
     internal ImmutableArray<WasmValueKind> SelectTypes { get; }
 
     /// <summary>
+    /// shuffleの選択値を保持する不変のbyte列
+    /// </summary>
+    internal ImmutableArray<byte> ShuffleLanes { get; }
+
+    /// <summary>
+    /// laneを指定する命令の添字
+    /// </summary>
+    internal byte LaneIndex { get; }
+
+    /// <summary>
     /// 入力バイナリ上の命令のバイト位置
     /// </summary>
     internal long ByteOffset { get; }
@@ -65,6 +75,8 @@ internal readonly struct DecodedInstruction
     /// <param name="selectTypes">selectの型列 他の命令では非defaultの空配列</param>
     /// <param name="memoryArgument">メモリ命令の即値 他の命令ではdefault</param>
     /// <param name="secondaryIndex">2番目の添字 他の命令では0</param>
+    /// <param name="shuffleLanes">shuffleの選択値 他の命令では非defaultの空配列</param>
+    /// <param name="laneIndex">laneの添字 他の命令では0</param>
     private DecodedInstruction(
         OpcodeKey opcode,
         long byteOffset,
@@ -74,7 +86,9 @@ internal readonly struct DecodedInstruction
         ImmutableArray<uint> labels = default,
         ImmutableArray<WasmValueKind> selectTypes = default,
         MemoryArgument memoryArgument = default,
-        uint secondaryIndex = 0
+        uint secondaryIndex = 0,
+        ImmutableArray<byte> shuffleLanes = default,
+        byte laneIndex = 0
     )
     {
         Opcode = opcode;
@@ -86,6 +100,8 @@ internal readonly struct DecodedInstruction
         BlockType = blockType;
         Labels = labels.IsDefault ? [] : labels;
         SelectTypes = selectTypes.IsDefault ? [] : selectTypes;
+        ShuffleLanes = shuffleLanes.IsDefault ? [] : shuffleLanes;
+        LaneIndex = laneIndex;
     }
 
     /// <summary>
@@ -159,6 +175,56 @@ internal readonly struct DecodedInstruction
     )
     {
         return new(opcode, byteOffset, memoryArgument: memoryArgument);
+    }
+
+    /// <summary>
+    /// メモリ即値とlaneの添字を持つ入力命令を構築する
+    /// </summary>
+    /// <param name="opcode">命令の識別子</param>
+    /// <param name="memoryArgument">アラインメント指数とオフセット</param>
+    /// <param name="laneIndex">符号化されたlaneの添字 範囲の検証は後段で行う</param>
+    /// <param name="byteOffset">入力バイナリ上の命令のバイト位置</param>
+    /// <returns>メモリ即値とlaneの添字を保持する命令</returns>
+    internal static DecodedInstruction WithMemoryArgumentLaneIndex(
+        OpcodeKey opcode,
+        MemoryArgument memoryArgument,
+        byte laneIndex,
+        long byteOffset
+    )
+    {
+        return new(opcode, byteOffset, memoryArgument: memoryArgument, laneIndex: laneIndex);
+    }
+
+    /// <summary>
+    /// laneの添字を持つ入力命令を構築する
+    /// </summary>
+    /// <param name="opcode">命令の識別子</param>
+    /// <param name="laneIndex">符号化されたlaneの添字 範囲の検証は後段で行う</param>
+    /// <param name="byteOffset">入力バイナリ上の命令のバイト位置</param>
+    /// <returns>lane以外の即値を既定値に統一した命令</returns>
+    internal static DecodedInstruction WithLaneIndex(
+        OpcodeKey opcode,
+        byte laneIndex,
+        long byteOffset
+    )
+    {
+        return new(opcode, byteOffset, laneIndex: laneIndex);
+    }
+
+    /// <summary>
+    /// shuffleの選択値をコピーして入力命令を構築する
+    /// </summary>
+    /// <param name="opcode">命令の識別子</param>
+    /// <param name="shuffleLanes">符号化された選択値 範囲の検証は後段で行う</param>
+    /// <param name="byteOffset">入力バイナリ上の命令のバイト位置</param>
+    /// <returns>不変の選択値列を所有する命令</returns>
+    internal static DecodedInstruction WithShuffleLanes(
+        OpcodeKey opcode,
+        ReadOnlySpan<byte> shuffleLanes,
+        long byteOffset
+    )
+    {
+        return new(opcode, byteOffset, shuffleLanes: ImmutableArray.Create(shuffleLanes));
     }
 
     /// <summary>

@@ -141,3 +141,9 @@ New-Item -ItemType Directory -Path $taskOutput | Out-Null
 要件3.1・4.1・6.6に対応する内部`SimdValue`を追加した。上下64bitを保持し、8/16/32/64bitのlane取得・切詰め置換と、16byteのlittle-endian相互変換を提供する。`WasmValue`とBCLだけに依存し、操作ごとの配列確保やCPU固有分岐はない。
 
 [実装記録](../../../artifacts/simd/task-2.2-20261018T135140Z/status-report.md)に5操作のREDとGREENを保存した。一時フラグ除去後の[独立レビュー](../../../artifacts/simd/review-2.2-20261018T140227Z/review-verdict.md)は`APPROVED`で、Releaseビルドの警告・エラー0、関連37件を含むランタイム3,798件成功、失敗とスキップ0、終了0と整形成功を確認した。64bit境界、64bit幅のmask、非対象lane保持、NaN payload・符号付きゼロを含むbit往復を確認し、`kiro-verify-completion`のタスク2.2判定は`VERIFIED`とした。未解決の指摘はない。公開SIMD経路とCPU支援無効時のhandler検証は後続で行う。
+
+## 2.3 SIMD即値の読み取りと保持の準備
+
+要件1.1〜1.6の接続準備として、4種類のSIMD即値の読み取りと、`DecodedInstruction`の`ShuffleLanes`・`LaneIndex`を追加した。shuffleは入力からコピーして所有し、memargとlaneを別々に保持する。lane・shuffleの範囲検査はValidateへ残し、既存readerと元位置を維持した。
+
+[実装記録](../../../artifacts/simd/task-2.3-20261018T140646Z/status-report.md)と[独立レビュー](../../../artifacts/simd/review-2.3-20261018T141117Z/review-verdict.md)で、Releaseビルドの警告・エラー0、ランタイム3,798件・生成器160件成功、失敗とスキップ0、終了0、整形と差分チェック成功を確認した。未接続の準備として独立レビューは`APPROVED`、`kiro-verify-completion`のタスク2.3判定は`VERIFIED`とした。新経路の正常・切断・LEB128検証は未実施で、3.1・8.1・8.2・8.4の接続後に行う。全236命令はまだ未対応のままである。
