@@ -431,3 +431,36 @@ dotnet run --project tests/WasmSharp.Tests/WasmSharp.Tests.csproj -c Release --n
 
 
 [独立レビュー](../../../artifacts/simd/review-10.1-20261018T212841Z/review-verdict.md)はAPPROVED。独立ビルド警告/エラー0、4798/160/702件全成功・失敗/skip0・全終了0。HW無効805件は再実行せず、保存結果・discovery・通常全件のID・source/DLLhashで同一性を確認した。親は全51行と旧期待/汎用経路の記録、原ログ・終了値・現在979hashを直接確認し、kiro-verify-completionをVERIFIEDとした。未解決指摘はなく、単一最終run/verifyとbaseline保存へ進む。
+
+
+## 10.2 単一最終runによる公式比較と全体判定
+
+全8仕様を統合したHEAD`eb0542d51fd2da9c6ebb3b1c7f97c075c1f61579`で、製品・テストを変更せず、非behavioralの受入確認を行った。REDはN/A。警告0・エラー0のcanonical Release build後、固定147入力を新規出力へ一度だけrunし、同じ結果に元baselineとのcompare-runとverifyを順次適用した。実行記録は`artifacts/simd/task-10.2-20261018T213901Z/`へ保存した。
+
+| 操作 | UTC | 終了値・結果 |
+| --- | --- | --- |
+| canonical Release build | 2026-10-18T21:46:02.456254Z〜21:46:24.281671Z | 0、警告0・エラー0 |
+| CLI --help | 21:46:50.437103Z〜21:46:50.589000Z | 0 |
+| 固定全体run | 21:46:57.865833Z〜21:47:03.332082Z | 0、147入力53907command |
+| 元baseline compare-run | 21:47:08.839586Z〜21:47:14.547866Z | 0、比較成立・完了 |
+| 同じrunのverify | 21:47:20.659511Z〜21:47:22.030356Z | 0、「最終判定: 合格」 |
+| 原JSON・固定入力の監査 | 21:49:23.228160Z〜21:49:31.564942Z | 0 |
+
+各`*-command.json`は実際のargv・cwd・UTC・終了値・原logのSHA256を保持する。build後・run前の`before-run.json`と`execution-snapshot/`には913source/project入力と5CLI実行artifactを保存し、64spec/steering、147公式source+5821素材の5968hashも前後で照合した。固定manifest`c60dec91f788791a9b790835b2629c2d970e3fb44afab4d63f209df9097e263e`、元baseline`9d51acea7309d02af302118c932bf25d9725336304f370b48d04cae995176496`、profile`53e65ededab6814a6f73ac17ff286cedb35221b01aea83bbdd20e0ab15b452bc`、spec`05ca4182176763112561ae20153975c12bd689e4`、WABT`c8dc7b6eae42b3aa3e95b9014dc02b71f8e0e1db`は不変。SIMDはON、relaxed-SIMDはOFF、feature状態は7ON/14OFFだった。
+
+最終結果はpassed52830・out_of_scope1077で、failed・runtime_unsupported・runner_error・blockedはすべて0。入力異常、未処理、件数未確定、欠落、未比較、回帰も0。対象外1077件は公式JSONのmodule_type=textに一致した。元baselineの27482passedと直前8.4の52830passedを全保持した。元baselineからの25348改善はunsupported1079件とblocked24269件のpassed化で、元blockedのcause.directを再帰し、cause.originsとSIMDのfeature診断へ対応付けた。8.4との全case payload差は0件で、新規passedの追加は0件だった。
+
+全53907commandのidentity・順序・line・type・公式expectedが固定JSON、元baseline、直前8.4と一致した。否定assertion5420件の診断先頭・段階・例外型、assert_return45636件の個数・型・順序も確認した。v128戻り23573件と型だけのexpectedを持つtrap50件を区別し、NaN pattern1592件を含む値判定には未変更の既存ValueMatcherを使用した。素材再生成、公式期待値の正規化、profile縮小、新matcher、ケース除外は行っていない。詳細は`results-audit.json`、`baseline-cause-resolution.json`、`vector-judgment-index.json`を参照する。
+
+採用する結果とSHA256は次のとおり。同じrunのhashをcompare/verifyの前後で照合した。
+
+- `run.json`: `31b0282af0cc5b7b528a660ae409349c2a748538ac8e58fd3a0da2e31e387d6d`
+- `comparison.json`: `540c175a24581fb8f2b959dd8dbc2f5c69916f318b2c52e86aed0c1e142813ec`
+- `verify.log`: `06507d30554bf535e9fed37017ace5d1023e049b611dea474d582d1ae40fbf17`
+
+SIMD機能の公式受入条件は成立した。Core 2.0全体についても、同じ単一runへの既存verifyは固定profile・固定入力の範囲で合格した。この2つを分けて記録し、今回の結果を仕様全体の最終GOや任意入力・対象外proposal・他CPU/OSの保証には広げない。10.1の全3tests/HW無効805件を本タスクでは重複実行していない。baseline-saveは未実行で、10.3へ同じrunを引き継ぐ。
+
+補助preflightの初回継続sessionを見落とした再呼出しは、既存出力の排他作成によりexit1となった。初回exitは不明のまま残し、build後に新規名before-runをexit0で採取して完全性を監査した。初期進捗の件数誤記も913/64へ訂正した。原ログと補助操作の説明は`self-review.md`、`auxiliary-operations.json`、`auxiliary-preflight-second-session-output.txt`に保持する。製品・テストや公式runのやり直しはなく、未解決の不成立はない。
+
+
+[独立レビュー](../../../artifacts/simd/review-10.2-independent-20261018T215427Z/review-verdict.md)はAPPROVED。同じrunへの独立compare/verifyは終了0で、全53907期待・ID・順序、5968素材、現在913入力/5実行artifactと保存snapshot、元/直前passedの全保持を確認した。親も原ログ・全case期待・現在hashを照合し、kiro-verify-completionをVERIFIEDとした。固定Core 2.0 profileの全体verify合格とSIMD公式受入条件の成立を確認でき、同じrunを10.3の新規baseline保存へ引き継ぐ。

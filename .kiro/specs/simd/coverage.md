@@ -1,6 +1,6 @@
 # SIMDの規則・実装・局所検証の対応
 
-タスク10.1で、HEAD`10d744753ea32d12721251c0b9901512ba09004e`の製品・テストを変更せずに確認した。51受入基準の番号は[requirements.md](requirements.md)に従う。局所検証と命令接続の監査を記録する文書であり、10.2の単一最終run・比較・verifyと10.3のbaseline保存は未実施である。
+タスク10.1で、HEAD`10d744753ea32d12721251c0b9901512ba09004e`の製品・テストを変更せずに確認した。51受入基準の番号は[requirements.md](requirements.md)に従う。局所検証と命令接続の監査を記録し、10.2の単一最終run・比較・verifyを完了した。10.3のbaseline保存は未実施である。最終受入状況は[acceptance.md](acceptance.md)を参照する。
 
 固定規範は`thirdParties/WebAssembly-spec`の`05ca4182176763112561ae20153975c12bd689e4`。表の規則名は同submodule内のRSTアンカーを示す。`B`=`document/core/binary/instructions.rst`、`BV`=`document/core/binary/values.rst`、`V`=`document/core/valid/instructions.rst`、`E`=`document/core/exec/instructions.rst`、`N`=`document/core/exec/numerics.rst`、`EM`=`document/core/exec/modules.rst`。たとえば`E:exec-vec-shuffle`は`.. _exec-vec-shuffle:`を指す。命令ごとの型・検証・実行アンカーは固定付録`document/core/appendix/index-instructions.py`にも収録されている。
 
@@ -55,12 +55,12 @@ Decode・Validate・Instantiate・Invokeの公開状態、例外・再検証・�
 | 7.6 | EM:exec-module、E:exec-memory.grow/exec-memory.init、vector memory規則。共有実体はローカルAPI契約 | R/Modules/ModuleInstantiator.cs、R/WasmMemory.cs、R/Execution/Interpreter.SimdMemory.cs | T/WasmFunction_InvokeSimdMemoryTests.cs「SIMDで共有memoryを読み書きする」。data16byte、guest grow戻り値1、2pageと追加領域0、host/2instance/scalar/vector間の相互観測。 |
 | 7.7 | Eのmemory trap、EM:exec-module、公開位置・失敗後参照はADR0011 | R/Execution/ExecutionBoundary.csとSIMDメモリhandler、R/Modules/ModuleInstantiator.cs | T/WasmFunction_InvokeSimdMemoryTests.cs「SIMDメモリ接続のstoreがInvokeかstartでtrapする」2件、T/WasmModule_InstantiateStartTests.cs。先行33、末尾A5不変、保存instance、後続callback非実行、次call、同一memory。 |
 | 8.1 | 固定仕様全体、ローカル要件8.1・ADR0003・固定corpus | C/Corpus/core2-profile.json、Core2Profile.cs、CorpusVerifier.cs | GT/InstructionGenerator_InitializeTests.cs等、CT/Corpus/CorpusVerifier_VerifyTests.cs、CT/Corpus/CorpusVerifier_VerifySourcesTests.cs、今回の固定commit/manifest/profile/baseline hash照合。SIMD ON・relaxed-SIMD OFFを維持。 |
-| 8.2 | ローカル要件8.2・ADR0012、Nのlane/NaN規則 | C/Execution/ScriptExecutor.cs、ValueMatcher.cs、AssertionJudge.cs | CT/Execution/ValueMatcher_MatchTests.csのv128 lane/NaN/型/個数、AssertionJudge_JudgeTests.cs。8.4の既存全体runと監査を参照。最終統合の全体runは10.2で実施する。 |
-| 8.3 | ローカル要件8.3・ADR0003、公式commandの同定条件 | C/Baselines/BaselineComparer.cs、C/Reports/CompletionPolicy.cs:CompareRun | CT/Baselines/BaselineComparer_CompareRunTests.cs「以前passedだったケースが別分類になる」「以前passedだった結果が欠落する」。8.4の回帰0記録を保持し、10.2の最終比較は未実施。 |
-| 8.4 | ローカル要件8.4・CONTEXT.mdの分類・ADR0012 | C/Execution/ScriptExecutor.cs、AssertionJudge.cs、C/Reports/CaseDiagnostic.cs | CT/Execution/AssertionJudge_JudgeTests.cs「判定できない例外」、CT/Reports/CaseDiagnostic_FromExceptionTests.csの未対応/host/位置、8.4のresults-audit-classified.json。runner_error/failed/unsupported/blockedを区別。最終原因監査は10.2。 |
-| 8.5 | 固定仕様の規則対応、ローカル要件8.5・設計「公式受入と最終判定」 | 今回の全236命令監査と本表、C/Reports/CompletionPolicy.cs | 51行の規則・実装・既存テスト、Release警告エラー0、3プロジェクト全件とHW無効805件。命令数だけで判定しない。最終のpassed/failed/runner_error/回帰判定は10.2。 |
+| 8.2 | ローカル要件8.2・ADR0012、Nのlane/NaN規則 | C/Execution/ScriptExecutor.cs、ValueMatcher.cs、AssertionJudge.cs | CT/Execution/ValueMatcher_MatchTests.csのv128 lane/NaN/型/個数、AssertionJudge_JudgeTests.cs。8.4の既存全体runと監査を参照。10.2の単一最終runでも対象52830件passedを確認した。 |
+| 8.3 | ローカル要件8.3・ADR0003、公式commandの同定条件 | C/Baselines/BaselineComparer.cs、C/Reports/CompletionPolicy.cs:CompareRun | CT/Baselines/BaselineComparer_CompareRunTests.cs「以前passedだったケースが別分類になる」「以前passedだった結果が欠落する」。8.4の回帰0記録を保持し、10.2でも元27482件/直前52830件passedを全保持し、回帰/欠落0を確認した。 |
+| 8.4 | ローカル要件8.4・CONTEXT.mdの分類・ADR0012 | C/Execution/ScriptExecutor.cs、AssertionJudge.cs、C/Reports/CaseDiagnostic.cs | CT/Execution/AssertionJudge_JudgeTests.cs「判定できない例外」、CT/Reports/CaseDiagnostic_FromExceptionTests.csの未対応/host/位置、8.4のresults-audit-classified.json。runner_error/failed/unsupported/blockedを区別。10.2でも4不成立分類0と元未対応/blocked原因の解消を確認した。 |
+| 8.5 | 固定仕様の規則対応、ローカル要件8.5・設計「公式受入と最終判定」 | 今回の全236命令監査と本表、C/Reports/CompletionPolicy.cs | 51行の規則・実装・既存テスト、Release警告エラー0、3プロジェクト全件とHW無効805件。命令数だけで判定しない。10.2の最終runと比較は対象52830passed・4不成立分類/回帰0、同じrunのverifyは合格。 |
 | 8.6 | ローカル要件8.6・設計「公式受入と最終判定」。Wasm規範にbaseline-saveの規則はない | C/Baselines/BaselineStore.cs:Save、C/Reports/ReportStore.cs:SaveBaseline、CompletionPolicy.BaselineSave | CT/Baselines/BaselineStore_SaveTests.cs「全件記録済みでfailedとrunner_errorと未対応を含む_バイト列を変えず既存baselineへ保存する」、CT/Reports/CompletionPolicy_BaselineSaveTests.cs。10.3で同じ受入済み最終runを新規baselineへ保存・byte一致確認する手順。未実施。 |
-| 8.7 | ローカル要件8.7・ADR0003・設計「公式受入と最終判定」。全8仕様の単一結果の完了契約 | C/Reports/CompletionPolicy.cs:Verify、ReportStore.cs:Validate | CT/Reports/CompletionPolicy_VerifyTests.csの成功、4不成立分類、欠落・件数未確定、profile不一致。10.2で単一最終runにverifyし、対象外以外passed・未処理欠落0・4分類0を要求する。未実施。 |
+| 8.7 | ローカル要件8.7・ADR0003・設計「公式受入と最終判定」。全8仕様の単一結果の完了契約 | C/Reports/CompletionPolicy.cs:Verify、ReportStore.cs:Validate | CT/Reports/CompletionPolicy_VerifyTests.csの成功、4不成立分類、欠落・件数未確定、profile不一致。10.2の単一最終runへverifyを適用して合格。対象52830passed/対象外1077、未処理/欠落/4不成立分類0。 |
 
 ## 命令集合と生成物の照合
 
@@ -85,3 +85,8 @@ Decode・Validate・Instantiate・Invokeの公開状態、例外・再検証・�
 `hw-discovery`は通常環境で対象805件を発見し、`hw-disabled`は`ProcessStartInfo.Environment`で新規dotnet子プロセスだけに`DOTNET_EnableHWIntrinsic=0`を渡して一度実行した。805件成功・失敗0・スキップ0・exit0。親環境のbefore/afterはともに未設定で、設定の永続化は行っていない。これはJITのHWIntrinsic設定による確認であり、BCLや事前コンパイル済みコードを含むCPU命令の全面無効化、異なるCPU/OSでの確認ではない。
 
 固定manifest・profile・比較元baselineのhashは`instruction-audit.json`に記録した。8.4の既存監査は全147入力・53,907commandの52,830passed/1,077out_of_scope、4不成立分類・回帰・欠落0を記録しているが、これは10.2の最終統合run/verifyの代用ではない。今回の作業は非behavioralでREDはN/A、新規テストや製品変更はない。旧9+1ファイルの目的保持・廃止理由、汎用unsupported枝の現在の到達性・保持理由は同ディレクトリの`acceptance-fragment.md`にまとめ、独立レビュー後に親がacceptance.mdへ反映する。
+
+
+## 単一最終runの受入（10.2）
+
+[受入記録](acceptance.md)と[最終公式監査](../../../artifacts/simd/task-10.2-20261018T213901Z/results-audit.json)で、147入力53907commandを完了し、52830passed/1077out_of_scope、4不成立分類・入力異常・未処理・回帰・欠落・未比較0を確認した。元27482件と直前52830件のpassedを全保持し、同じrunへの比較とverifyが終了0。[独立レビュー](../../../artifacts/simd/review-10.2-independent-20261018T215427Z/review-verdict.md)もAPPROVED。runのSHA256は`31b0282af0cc5b7b528a660ae409349c2a748538ac8e58fd3a0da2e31e387d6d`。固定Core 2.0 profileの全体verify合格とSIMD公式受入条件の成立を区別し、同じrunのbaseline保存は10.3へ引き継ぐ。
