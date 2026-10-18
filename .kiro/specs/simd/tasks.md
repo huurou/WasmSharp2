@@ -139,7 +139,7 @@
   - _Depends: 2.2_
   - _Requirements: 5.1, 5.3_
 
-- [ ] 5.2 飽和算術とnarrowを追加する
+- [x] 5.2 飽和算術とnarrowを追加する
   - 対象幅のsigned/unsigned加減算を飽和させる。
   - narrowはsigned入力を解釈して出力範囲へ飽和し、2operandのlane順を保つ。
   - 負入力からunsigned出力へのゼロ化と上下限前後の結果を確認する。
@@ -310,6 +310,7 @@
 
 ## Implementation Notes
 
+- 5.2: `SaturateSimdInteger(int value, int minimum, int maximum)`で中間値を飽和しlaneのbit列を返す。narrowは`ExecuteSimdIntegerNarrow`と純粋な`MapSimdIntegerNarrow`を使う。
 - 5.1: `ExecuteSimdIntegerUnary/Binary/Shift`でstack操作、`MapSimdIntegerUnary/Binary/Shift`で純粋なlane計算を扱う。後続の同幅演算では再利用し、新規機能の一時フラグを既存共通処理へ掛けない。
 - 4.3: `CompareSimdLanes(InterpreterContext, int, Func<ulong, ulong, bool>)`がlane走査と全bit1/0の結果構築を共有する。符号・型の解釈はhandlerのstatic predicateへ置き、4.4でも再利用する。
 - 3.1: `v128.const`とtyped/untypedのv128 selectを公開経路へ接続した。残る235個の0xFD命令は未接続。定数・globalのbyte/Stream、bit保持と型不一致を確認済みで、公式全体run・比較は3.2で行う。

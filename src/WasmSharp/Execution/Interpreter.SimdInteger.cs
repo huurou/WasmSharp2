@@ -29,6 +29,42 @@ internal static partial class Interpreter
     }
 
     /// <summary>
+    /// 16bitのsigned入力を8bitの符号付き範囲へ飽和して連結する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI8x16NarrowI16x8S命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I8x16NarrowI16x8S(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        return ExecuteSimdIntegerNarrow(
+            context,
+            16,
+            static x => SaturateSimdInteger(unchecked((short)x), sbyte.MinValue, sbyte.MaxValue)
+        );
+    }
+
+    /// <summary>
+    /// 16bitのsigned入力を8bitの符号なし範囲へ飽和して連結する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI8x16NarrowI16x8U命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I8x16NarrowI16x8U(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        return ExecuteSimdIntegerNarrow(
+            context,
+            16,
+            static x => SaturateSimdInteger(unchecked((short)x), 0, byte.MaxValue)
+        );
+    }
+
+    /// <summary>
     /// 8bitの各laneで加算を行い幅内へ折り返す
     /// </summary>
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
@@ -40,6 +76,43 @@ internal static partial class Interpreter
     }
 
     /// <summary>
+    /// 8bitの各laneで符号付き加算を行い出力範囲へ飽和する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI8x16AddSatS命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I8x16AddSatS(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        return ExecuteSimdIntegerBinary(
+            context,
+            8,
+            static (x, y) =>
+                SaturateSimdInteger(unchecked((sbyte)x + (sbyte)y), sbyte.MinValue, sbyte.MaxValue)
+        );
+    }
+
+    /// <summary>
+    /// 8bitの各laneで符号なし加算を行い出力範囲へ飽和する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI8x16AddSatU命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I8x16AddSatU(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        return ExecuteSimdIntegerBinary(
+            context,
+            8,
+            static (x, y) => SaturateSimdInteger((int)x + (int)y, 0, byte.MaxValue)
+        );
+    }
+
+    /// <summary>
     /// 8bitの各laneで減算を行い幅内へ折り返す
     /// </summary>
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
@@ -48,6 +121,43 @@ internal static partial class Interpreter
     internal static ExecutionResult I8x16Sub(InterpreterContext context, in Instruction instruction)
     {
         return ExecuteSimdIntegerBinary(context, 8, static (x, y) => unchecked(x - y));
+    }
+
+    /// <summary>
+    /// 8bitの各laneで符号付き減算を行い出力範囲へ飽和する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI8x16SubSatS命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I8x16SubSatS(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        return ExecuteSimdIntegerBinary(
+            context,
+            8,
+            static (x, y) =>
+                SaturateSimdInteger(unchecked((sbyte)x - (sbyte)y), sbyte.MinValue, sbyte.MaxValue)
+        );
+    }
+
+    /// <summary>
+    /// 8bitの各laneで符号なし減算を行い出力範囲へ飽和する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI8x16SubSatU命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I8x16SubSatU(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        return ExecuteSimdIntegerBinary(
+            context,
+            8,
+            static (x, y) => SaturateSimdInteger((int)x - (int)y, 0, byte.MaxValue)
+        );
     }
 
     /// <summary>
@@ -120,6 +230,42 @@ internal static partial class Interpreter
     }
 
     /// <summary>
+    /// 32bitのsigned入力を16bitの符号付き範囲へ飽和して連結する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI16x8NarrowI32x4S命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I16x8NarrowI32x4S(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        return ExecuteSimdIntegerNarrow(
+            context,
+            32,
+            static x => SaturateSimdInteger(unchecked((int)x), short.MinValue, short.MaxValue)
+        );
+    }
+
+    /// <summary>
+    /// 32bitのsigned入力を16bitの符号なし範囲へ飽和して連結する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI16x8NarrowI32x4U命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I16x8NarrowI32x4U(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        return ExecuteSimdIntegerNarrow(
+            context,
+            32,
+            static x => SaturateSimdInteger(unchecked((int)x), 0, ushort.MaxValue)
+        );
+    }
+
+    /// <summary>
     /// 16bitの各laneで加算を行い幅内へ折り返す
     /// </summary>
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
@@ -131,6 +277,43 @@ internal static partial class Interpreter
     }
 
     /// <summary>
+    /// 16bitの各laneで符号付き加算を行い出力範囲へ飽和する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI16x8AddSatS命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I16x8AddSatS(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        return ExecuteSimdIntegerBinary(
+            context,
+            16,
+            static (x, y) =>
+                SaturateSimdInteger(unchecked((short)x + (short)y), short.MinValue, short.MaxValue)
+        );
+    }
+
+    /// <summary>
+    /// 16bitの各laneで符号なし加算を行い出力範囲へ飽和する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI16x8AddSatU命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I16x8AddSatU(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        return ExecuteSimdIntegerBinary(
+            context,
+            16,
+            static (x, y) => SaturateSimdInteger((int)x + (int)y, 0, ushort.MaxValue)
+        );
+    }
+
+    /// <summary>
     /// 16bitの各laneで減算を行い幅内へ折り返す
     /// </summary>
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
@@ -139,6 +322,43 @@ internal static partial class Interpreter
     internal static ExecutionResult I16x8Sub(InterpreterContext context, in Instruction instruction)
     {
         return ExecuteSimdIntegerBinary(context, 16, static (x, y) => unchecked(x - y));
+    }
+
+    /// <summary>
+    /// 16bitの各laneで符号付き減算を行い出力範囲へ飽和する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI16x8SubSatS命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I16x8SubSatS(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        return ExecuteSimdIntegerBinary(
+            context,
+            16,
+            static (x, y) =>
+                SaturateSimdInteger(unchecked((short)x - (short)y), short.MinValue, short.MaxValue)
+        );
+    }
+
+    /// <summary>
+    /// 16bitの各laneで符号なし減算を行い出力範囲へ飽和する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI16x8SubSatU命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I16x8SubSatU(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        return ExecuteSimdIntegerBinary(
+            context,
+            16,
+            static (x, y) => SaturateSimdInteger((int)x - (int)y, 0, ushort.MaxValue)
+        );
     }
 
     /// <summary>
@@ -437,6 +657,25 @@ internal static partial class Interpreter
     }
 
     /// <summary>
+    /// narrowのoperandを逆順に取り出し幅を縮めた結果を積む
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="sourceBitWidth">入力laneの幅</param>
+    /// <param name="saturate">signed入力を出力範囲へ飽和する演算</param>
+    /// <returns>実行の成功</returns>
+    private static ExecutionResult ExecuteSimdIntegerNarrow(
+        InterpreterContext context,
+        int sourceBitWidth,
+        Func<ulong, ulong> saturate
+    )
+    {
+        var second = SimdValue.FromValue(context.PopValue());
+        var first = SimdValue.FromValue(context.PopValue());
+        context.PushValue(MapSimdIntegerNarrow(first, second, sourceBitWidth, saturate).ToValue());
+        return default;
+    }
+
+    /// <summary>
     /// i32シフト量をlane幅で剰余化してvectorの演算結果を積む
     /// </summary>
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
@@ -453,6 +692,18 @@ internal static partial class Interpreter
         var vector = SimdValue.FromValue(context.PopValue());
         context.PushValue(MapSimdIntegerShift(vector, bitWidth, shift, operation).ToValue());
         return default;
+    }
+
+    /// <summary>
+    /// 広い整数の中間値を出力範囲へ制限してlane用のビット列を返す
+    /// </summary>
+    /// <param name="value">幅内へ折り返す前の整数値</param>
+    /// <param name="minimum">出力範囲の下限</param>
+    /// <param name="maximum">出力範囲の上限</param>
+    /// <returns>飽和した整数のビット列</returns>
+    private static ulong SaturateSimdInteger(int value, int minimum, int maximum)
+    {
+        return unchecked((ulong)Math.Clamp(value, minimum, maximum));
     }
 
     /// <summary>
@@ -504,6 +755,41 @@ internal static partial class Interpreter
                 second.GetLane(bitWidth, laneIndex)
             );
             result = result.WithLane(bitWidth, laneIndex, bits);
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// 両operandのlaneを飽和して第1operandから順に半分の幅へ連結する
+    /// </summary>
+    /// <param name="first">下側へ配置する左operandのビット列</param>
+    /// <param name="second">上側へ配置する右operandのビット列</param>
+    /// <param name="sourceBitWidth">入力laneの幅</param>
+    /// <param name="saturate">signed入力を出力範囲へ飽和する純粋演算</param>
+    /// <returns>出力幅へ飽和して連結したビット列</returns>
+    private static SimdValue MapSimdIntegerNarrow(
+        SimdValue first,
+        SimdValue second,
+        int sourceBitWidth,
+        Func<ulong, ulong> saturate
+    )
+    {
+        var result = default(SimdValue);
+        var destinationBitWidth = sourceBitWidth / 2;
+        var sourceLaneCount = 128 / sourceBitWidth;
+        for (var laneIndex = 0; laneIndex < sourceLaneCount; laneIndex++)
+        {
+            result = result.WithLane(
+                destinationBitWidth,
+                laneIndex,
+                saturate(first.GetLane(sourceBitWidth, laneIndex))
+            );
+            result = result.WithLane(
+                destinationBitWidth,
+                laneIndex + sourceLaneCount,
+                saturate(second.GetLane(sourceBitWidth, laneIndex))
+            );
         }
 
         return result;

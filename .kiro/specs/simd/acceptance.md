@@ -227,3 +227,9 @@ New-Item -ItemType Directory -Path $taskOutput | Out-Null
 [実装記録](../../../artifacts/simd/task-5.1-20261018T160155Z/StatusReport.md)の初回REDは104件失敗・1件成功だった。非負入力だけのabsは無演算と同値だったため、ON側の編集後に入力を正数・負数の混在へ直し、実装を保持したままOFFで105件すべての失敗を確認し直した。[修正経緯](../../../artifacts/simd/task-5.1-20261018T160155Z/RedRevision.md)と初回ログを保持している。続くONは105件成功し、一時フラグ除去後も成功した。
 
 [独立レビュー](../../../artifacts/simd/review-5.1-20261018T161121Z/review-verdict.md)は`APPROVED`で、編集順序の経緯をFYIとして記録した。Releaseビルドの警告・エラー0、ランタイム4,177件成功、失敗・スキップ0、終了0、変更32C#の整形・空白・hash確認成功を確認した。固定31命令の集合と、多倍長整数・byte切出しモデルによる105期待定数の独立計算も一致した。親は算術・シフト処理と代表的境界テスト、実際の出力・終了値を確認し、`kiro-verify-completion`のタスク5.1判定を`VERIFIED`とした。未解決の指摘はない。公開接続と公式全体実行は8.2で行う。
+
+## 5.2 飽和算術とnarrow
+
+要件5.2に対応する飽和加減算8handlerとnarrow4handlerを追加した。同幅の二項演算処理を再利用し、narrowはsigned入力の飽和と第1・第2operandの連結を専用のstack処理・純粋なlane処理で扱う。12ケースの各vectorに上下限の前後、unsigned減算の負化、unsigned narrowの負入力、source最小・最大、連結順の異なるlaneを含めた。既存31handlerと6helperの本体は維持した。
+
+[実装記録](../../../artifacts/simd/task-5.2-20261018T161708Z/)で一時フラグOFFの12件失敗、ONの12件成功、フラグ除去後の成功を確認した。[独立レビュー](../../../artifacts/simd/review-5.2-20261018T162636Z/review-verdict.md)は`APPROVED`で、Releaseビルドの警告・エラー0、ランタイム4,189件成功、失敗・スキップ0、終了0、変更13C#の整形・空白確認成功を確認した。固定参照の12命令集合と、12期待vectorの独立した整数計算も一致した。親は飽和・narrow処理と代表的境界テスト、実際の出力・終了値を確認し、`kiro-verify-completion`のタスク5.2判定を`VERIFIED`とした。未解決の指摘はない。公開接続と公式全体実行は8.2で行う。
