@@ -43,6 +43,11 @@ public sealed class WasmInstance
     internal ImmutableArray<WasmTable> Tables { get; }
 
     /// <summary>
+    /// 宣言順に並ぶ、このinstance固有の要素セグメント実体
+    /// </summary>
+    internal ImmutableArray<ElementInstance> ElementSegments { get; }
+
+    /// <summary>
     /// 定義順に並ぶ、このinstance固有のデータセグメント実体
     /// </summary>
     internal ImmutableArray<DataInstance> DataSegments { get; }
@@ -61,7 +66,7 @@ public sealed class WasmInstance
         : this(module, options, [], [], [], []) { }
 
     /// <summary>
-    /// importした実体を接続し、定義関数、global、データセグメントを順に構築する
+    /// importした実体を接続し、定義関数、global、要素セグメント、データセグメントを順に構築する
     /// </summary>
     /// <param name="module">元となる検証済みのmodule定義</param>
     /// <param name="options">新しい実行コンテキストを開くときの実行ポリシー</param>
@@ -123,6 +128,21 @@ public sealed class WasmInstance
             globals.Add(new WasmGlobal(global.Type, value));
         }
         Globals = globals.MoveToImmutable();
+        var elements = ImmutableArray.CreateBuilder<ElementInstance>(module.ElementSegments.Length);
+        foreach (var segment in module.ElementSegments)
+        {
+            var values = new WasmValue[segment.Initializers.Length];
+            for (var index = 0; index < values.Length; index++)
+            {
+                values[index] = ConstantInitializer.Evaluate(
+                    segment.Initializers[index],
+                    Globals.AsSpan(),
+                    Functions.AsSpan()
+                );
+            }
+            elements.Add(new ElementInstance(values));
+        }
+        ElementSegments = elements.MoveToImmutable();
         DataSegments = [.. module.DataSegments.Select(x => new DataInstance(x))];
     }
 
