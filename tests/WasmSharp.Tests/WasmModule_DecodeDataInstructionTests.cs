@@ -152,7 +152,7 @@ internal partial class WasmModule_DecodeTests
                 : HostLinkingModuleBinary.Functions(0),
             dataCount is { } count ? HostLinkingModuleBinary.Section(12, [count]) : [],
             HostLinkingModuleBinary.Code(([], [0xFC, 9, 0, 0x0B])),
-            HostLinkingModuleBinary.Section(11, [1, 0, 0x25, 0xFF]),
+            HostLinkingModuleBinary.Section(11, [1, 0, 0x11, 0xFF]),
             [13, 0]
         );
 

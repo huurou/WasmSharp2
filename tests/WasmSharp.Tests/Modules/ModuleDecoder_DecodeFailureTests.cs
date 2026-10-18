@@ -29,7 +29,7 @@ internal partial class ModuleDecoder_DecodeTests
     }
 
     [Test]
-    [Arguments("25FF05", "table.get")]
+    [Arguments("11FF05", "call_indirect")]
     [Arguments("11", "call_indirect")]
     [Arguments("FC0C", "table.init")]
     [Arguments("FD00", "v128.load")]

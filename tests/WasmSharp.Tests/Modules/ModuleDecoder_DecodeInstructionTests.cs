@@ -95,7 +95,7 @@ internal partial class ModuleDecoder_DecodeTests
         var bytes = HostLinkingModuleBinary.Create(
             HostLinkingModuleBinary.Types(([], [])),
             HostLinkingModuleBinary.Functions(0),
-            HostLinkingModuleBinary.Code(([], [0x10, 0x80, 1, 0x25, 0x0B]))
+            HostLinkingModuleBinary.Code(([], [0x10, 0x80, 1, 0x11, 0x0B]))
         );
 
         // Act & Assert
@@ -104,7 +104,7 @@ internal partial class ModuleDecoder_DecodeTests
             .ThrowsExactly<WasmUnsupportedFeatureException>();
         using (Assert.Multiple())
         {
-            await Assert.That(exception!.Feature).IsEqualTo("table.get");
+            await Assert.That(exception!.Feature).IsEqualTo("call_indirect");
             await Assert
                 .That(exception.Location)
                 .IsEqualTo(new(WasmProcessingStage.Decode, bytes.Length - 2, 0, 10));

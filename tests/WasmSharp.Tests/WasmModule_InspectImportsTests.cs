@@ -283,7 +283,7 @@ internal class WasmModule_InspectImportsTests
             HostLinkingModuleBinary.Functions(0),
             HostLinkingModuleBinary.Memories((uint.MaxValue, null)),
             HostLinkingModuleBinary.Start(0),
-            HostLinkingModuleBinary.Code(([], [0x25, 0x0B]))
+            HostLinkingModuleBinary.Code(([], [0x11, 0x0B]))
         );
         using var stream = new ChunkedReadStream(new MemoryStream(bytes));
 
@@ -333,7 +333,7 @@ internal class WasmModule_InspectImportsTests
         var exception = await Assert
             .That(() => WasmModule.Decode(bytes))
             .ThrowsExactly<WasmUnsupportedFeatureException>();
-        await Assert.That(exception!.Feature).IsEqualTo("table.get");
+        await Assert.That(exception!.Feature).IsEqualTo("call_indirect");
     }
 
     [Test]
@@ -368,7 +368,6 @@ internal class WasmModule_InspectImportsTests
     }
 
     [Test]
-    [Arguments("table.get")]
     [Arguments("call_indirect")]
     [Arguments("v128.const")]
     public async Task メモリ命令とデータに後続仕様の未対応が併存する_生成を拒否してimport調査は本体とデータを未確認に保つ(
@@ -378,7 +377,6 @@ internal class WasmModule_InspectImportsTests
         // Arrange
         byte[] instruction = feature switch
         {
-            "table.get" => [0x41, 0, 0x25, 0, 0x1A],
             "v128.const" => [0xFD, 0x0C, .. new byte[16], 0x1A],
             "call_indirect" => [0x11, 0, 0],
             _ => [],
@@ -406,7 +404,6 @@ internal class WasmModule_InspectImportsTests
                 code,
                 feature switch
                 {
-                    "table.get" => (byte)0x25,
                     "call_indirect" => (byte)0x11,
                     _ => (byte)0xFD,
                 }

@@ -75,6 +75,8 @@ internal class InstructionSet_TryGetTests
                             0x22,
                             0x23,
                             0x24,
+                            0x25,
+                            0x26,
                             0x3F,
                             0x40,
                             0x41,
@@ -87,7 +89,8 @@ internal class InstructionSet_TryGetTests
                         }
                             .Concat(Enumerable.Range(0x28, 23).Select(x => (uint)x))
                             .Concat(Enumerable.Range(0x45, 128).Select(x => (uint)x))
-                    : prefix == 0xFC ? Enumerable.Range(0, 12).Select(x => (uint)x)
+                    : prefix == 0xFC
+                        ? Enumerable.Range(0, 12).Select(x => (uint)x).Concat([15u, 16u])
                     : []
                 );
             await Assert.That(InstructionSet.TryGet(new(prefix, 256), out _)).IsFalse();

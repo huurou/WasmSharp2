@@ -222,8 +222,24 @@ namespace WasmSharp.Instructions;
     ValidationRule.TypedSelect,
     nameof(Interpreter.Select)
 )]
-[Instruction(0, 0x25, "table.get")]
-[Instruction(0, 0x26, "table.set")]
+[Instruction(
+    0,
+    0x25,
+    "table.get",
+    ImmediateKind.Index,
+    StackEffectKind.TableGet,
+    ValidationRule.TableGet,
+    nameof(Interpreter.TableGet)
+)]
+[Instruction(
+    0,
+    0x26,
+    "table.set",
+    ImmediateKind.Index,
+    StackEffectKind.TableSet,
+    ValidationRule.TableSet,
+    nameof(Interpreter.TableSet)
+)]
 [Instruction(
     0,
     0x28,
@@ -2216,8 +2232,24 @@ namespace WasmSharp.Instructions;
 [Instruction(0xFC, 0x0C, "table.init")]
 [Instruction(0xFC, 0x0D, "elem.drop")]
 [Instruction(0xFC, 0x0E, "table.copy")]
-[Instruction(0xFC, 0x0F, "table.grow")]
-[Instruction(0xFC, 0x10, "table.size")]
+[Instruction(
+    0xFC,
+    0x0F,
+    "table.grow",
+    ImmediateKind.Index,
+    StackEffectKind.TableGrow,
+    ValidationRule.TableGrow,
+    nameof(Interpreter.TableGrow)
+)]
+[Instruction(
+    0xFC,
+    0x10,
+    "table.size",
+    ImmediateKind.Index,
+    StackEffectKind.TableSize,
+    ValidationRule.TableSize,
+    nameof(Interpreter.TableSize)
+)]
 [Instruction(0xFC, 0x11, "table.fill")]
 [Instruction(0xFD, 0x00, "v128.load")]
 [Instruction(0xFD, 0x01, "v128.load8x8_s")]
