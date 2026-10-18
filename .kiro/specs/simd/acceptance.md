@@ -307,3 +307,13 @@ New-Item -ItemType Directory -Path $taskOutput | Out-Null
 [実装記録](../../../artifacts/simd/task-7.3-20261018T185820Z/handoff.md)の54ケースで全4幅の先頭・末尾lane、非整列・メモリ末尾・ページ横断、1byte超過・33bit加算、全128bitまたは全memory、stack・sentinel・trap位置を確認した。OFF54件すべて失敗・終了2、ON54件成功、フラグ除去後の成功を記録した。期待値は製品のlane処理を使わずbyte列から構成した。
 
 [独立レビュー](../../../artifacts/simd/review-7.3-20261018T190447Z/review-verdict.md)はAPPROVED。Releaseビルド警告・エラー0、ランタイム4,631件成功・失敗/スキップ0・終了0、3C#の整形・空白・hash・フラグ確認が成功した。親は最終コード・両テスト、実際の出力と終了値を直接確認し、kiro-verify-completionのタスク7.3判定をVERIFIEDとした。未解決の指摘はない。公開接続と公式全体実行は8.4、Invoke/startの失敗後の統合契約は9.2で確認する。
+
+## 8.1 lane・論理・比較の公開接続
+
+既存の85handlerを命令宣言へ接続し、型列・結果型・即値・lane数と固定付録を照合した。FDは86命令が対応済み、150命令が未接続となった。製品変更はInstructionSetだけ。新規40件は代表14命令の公開Invoke、byte[]/Stream、即値切断、lane上限、shuffle31/32、混合入力の逆順、到達不能、定数式拒否と失敗後の状態を確認する。既存85handlerの246件も成功した。9対象テストの扱いは[引継ぎ](../../../artifacts/simd/task-8.1-20261018T191116Z/handoff.md)に記録し、shuffleの未対応のみの1引数を廃止した。診断再走査2位置を即値先頭へ更新し、非実行・import未確認範囲などの独立目的を保持した。
+
+初回レビューは、保存フラグが85宣言を切り替えていないためREJECTEDとなった。通常の実装前後の失敗・成功を、指定のOFF→ONと説明した点を訂正した。[修正記録](../../../artifacts/simd/task-8.1-20261018T191116Z/remediation-1-20261018T193220Z/handoff-correction.md)では同一ソースの85宣言を既定OFFからDefineConstants指定でONへ切り替え、生成metadata0/85→85/85、同じ40件の全失敗・終了2→全成功・終了0を確認した。完全除去後の8ファイルは初回最終版と全byte・hashが一致し、旧記録は保持した。既存改行も維持した。
+
+[修正後の独立レビュー](../../../artifacts/simd/review-8.1-remediation-independent-20261018T193744Z/review-verdict.md)はAPPROVED。警告・エラー0のReleaseビルド後、4671/160/702件が全成功、失敗・スキップ0・各終了0。整形・差分・hash・フラグ確認も成功した。公式run時との902ソース・5実行artifact・固定素材・結果JSONの同一性を確認し、同じrun/比較を採用した。
+
+[公式結果](../../../artifacts/simd/task-8.1-20261018T191116Z/results-audit.json)は147入力・53907commandでpassed35520、runtime_unsupported526、blocked16784、out_of_scope1077。元27482件と前回27918件のpassedを全保持し、7602件が新たにpassedとなった。期待値・出典・5821素材は不変、否定診断4978件は前方一致、失敗・回帰・欠落・未比較・未処理0。残未対応/blockedは整数260/2453、浮動小数点・変換107/13687、メモリ159/644へ原因を再帰して対応付け、独立監査も一致した。親は原ログ・終了値・最終コードを直接確認し、kiro-verify-completionをVERIFIEDとした。未解決指摘はなく、verifyとbaseline-saveは後続の最終受入で行う。

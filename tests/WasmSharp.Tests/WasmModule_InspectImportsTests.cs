@@ -369,8 +369,9 @@ internal class WasmModule_InspectImportsTests
 
     [Test]
     [Arguments("i8x16.shuffle")]
+    [Arguments("v128.load")]
     [Arguments("v128.const")]
-    public async Task メモリ命令とデータにSIMDが併存する_定数は生成でき未対応命令は拒否してimport調査範囲を保つ(
+    public async Task メモリ命令とデータにSIMDが併存する_対応命令は検証でき未対応命令は拒否してimport調査範囲を保つ(
         string feature
     )
     {
@@ -378,7 +379,20 @@ internal class WasmModule_InspectImportsTests
         byte[] instruction = feature switch
         {
             "v128.const" => [0xFD, 0x0C, .. new byte[16], 0x1A],
-            "i8x16.shuffle" => [0xFD, 0x0D, 0],
+            "i8x16.shuffle" =>
+            [
+                0xFD,
+                0x0C,
+                .. new byte[16],
+                0xFD,
+                0x0C,
+                .. new byte[16],
+                0xFD,
+                0x0D,
+                .. Enumerable.Repeat((byte)31, 16),
+                0x1A,
+            ],
+            "v128.load" => [0xFD, 0],
             _ => [],
         };
         var code = HostLinkingModuleBinary.Code(
@@ -431,7 +445,7 @@ internal class WasmModule_InspectImportsTests
                 : WasmModule.InspectImports(bytes);
 
             WasmUnsupportedFeatureException? exception = null;
-            if (feature == "v128.const")
+            if (feature != "v128.load")
             {
                 module = (
                     useStream ? WasmModule.Decode(decodeStream) : WasmModule.Decode(bytes)

@@ -2312,77 +2312,801 @@ namespace WasmSharp.Instructions;
     ValidationRule.Constant,
     nameof(Interpreter.PushConstant)
 )]
-[Instruction(0xFD, 0x0D, "i8x16.shuffle")]
-[Instruction(0xFD, 0x0E, "i8x16.swizzle")]
-[Instruction(0xFD, 0x0F, "i8x16.splat")]
-[Instruction(0xFD, 0x10, "i16x8.splat")]
-[Instruction(0xFD, 0x11, "i32x4.splat")]
-[Instruction(0xFD, 0x12, "i64x2.splat")]
-[Instruction(0xFD, 0x13, "f32x4.splat")]
-[Instruction(0xFD, 0x14, "f64x2.splat")]
-[Instruction(0xFD, 0x15, "i8x16.extract_lane_s")]
-[Instruction(0xFD, 0x16, "i8x16.extract_lane_u")]
-[Instruction(0xFD, 0x17, "i8x16.replace_lane")]
-[Instruction(0xFD, 0x18, "i16x8.extract_lane_s")]
-[Instruction(0xFD, 0x19, "i16x8.extract_lane_u")]
-[Instruction(0xFD, 0x1A, "i16x8.replace_lane")]
-[Instruction(0xFD, 0x1B, "i32x4.extract_lane")]
-[Instruction(0xFD, 0x1C, "i32x4.replace_lane")]
-[Instruction(0xFD, 0x1D, "i64x2.extract_lane")]
-[Instruction(0xFD, 0x1E, "i64x2.replace_lane")]
-[Instruction(0xFD, 0x1F, "f32x4.extract_lane")]
-[Instruction(0xFD, 0x20, "f32x4.replace_lane")]
-[Instruction(0xFD, 0x21, "f64x2.extract_lane")]
-[Instruction(0xFD, 0x22, "f64x2.replace_lane")]
-[Instruction(0xFD, 0x23, "i8x16.eq")]
-[Instruction(0xFD, 0x24, "i8x16.ne")]
-[Instruction(0xFD, 0x25, "i8x16.lt_s")]
-[Instruction(0xFD, 0x26, "i8x16.lt_u")]
-[Instruction(0xFD, 0x27, "i8x16.gt_s")]
-[Instruction(0xFD, 0x28, "i8x16.gt_u")]
-[Instruction(0xFD, 0x29, "i8x16.le_s")]
-[Instruction(0xFD, 0x2A, "i8x16.le_u")]
-[Instruction(0xFD, 0x2B, "i8x16.ge_s")]
-[Instruction(0xFD, 0x2C, "i8x16.ge_u")]
-[Instruction(0xFD, 0x2D, "i16x8.eq")]
-[Instruction(0xFD, 0x2E, "i16x8.ne")]
-[Instruction(0xFD, 0x2F, "i16x8.lt_s")]
-[Instruction(0xFD, 0x30, "i16x8.lt_u")]
-[Instruction(0xFD, 0x31, "i16x8.gt_s")]
-[Instruction(0xFD, 0x32, "i16x8.gt_u")]
-[Instruction(0xFD, 0x33, "i16x8.le_s")]
-[Instruction(0xFD, 0x34, "i16x8.le_u")]
-[Instruction(0xFD, 0x35, "i16x8.ge_s")]
-[Instruction(0xFD, 0x36, "i16x8.ge_u")]
-[Instruction(0xFD, 0x37, "i32x4.eq")]
-[Instruction(0xFD, 0x38, "i32x4.ne")]
-[Instruction(0xFD, 0x39, "i32x4.lt_s")]
-[Instruction(0xFD, 0x3A, "i32x4.lt_u")]
-[Instruction(0xFD, 0x3B, "i32x4.gt_s")]
-[Instruction(0xFD, 0x3C, "i32x4.gt_u")]
-[Instruction(0xFD, 0x3D, "i32x4.le_s")]
-[Instruction(0xFD, 0x3E, "i32x4.le_u")]
-[Instruction(0xFD, 0x3F, "i32x4.ge_s")]
-[Instruction(0xFD, 0x40, "i32x4.ge_u")]
-[Instruction(0xFD, 0x41, "f32x4.eq")]
-[Instruction(0xFD, 0x42, "f32x4.ne")]
-[Instruction(0xFD, 0x43, "f32x4.lt")]
-[Instruction(0xFD, 0x44, "f32x4.gt")]
-[Instruction(0xFD, 0x45, "f32x4.le")]
-[Instruction(0xFD, 0x46, "f32x4.ge")]
-[Instruction(0xFD, 0x47, "f64x2.eq")]
-[Instruction(0xFD, 0x48, "f64x2.ne")]
-[Instruction(0xFD, 0x49, "f64x2.lt")]
-[Instruction(0xFD, 0x4A, "f64x2.gt")]
-[Instruction(0xFD, 0x4B, "f64x2.le")]
-[Instruction(0xFD, 0x4C, "f64x2.ge")]
-[Instruction(0xFD, 0x4D, "v128.not")]
-[Instruction(0xFD, 0x4E, "v128.and")]
-[Instruction(0xFD, 0x4F, "v128.andnot")]
-[Instruction(0xFD, 0x50, "v128.or")]
-[Instruction(0xFD, 0x51, "v128.xor")]
-[Instruction(0xFD, 0x52, "v128.bitselect")]
-[Instruction(0xFD, 0x53, "v128.any_true")]
+[Instruction(
+    0xFD,
+    0x0D,
+    "i8x16.shuffle",
+    ImmediateKind.Shuffle,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I8x16Shuffle),
+    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x0E,
+    "i8x16.swizzle",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I8x16Swizzle),
+    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x0F,
+    "i8x16.splat",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I8x16Splat),
+    new[] { WasmValueKind.I32 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x10,
+    "i16x8.splat",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I16x8Splat),
+    new[] { WasmValueKind.I32 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x11,
+    "i32x4.splat",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32x4Splat),
+    new[] { WasmValueKind.I32 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x12,
+    "i64x2.splat",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I64x2Splat),
+    new[] { WasmValueKind.I64 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x13,
+    "f32x4.splat",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.F32x4Splat),
+    new[] { WasmValueKind.F32 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x14,
+    "f64x2.splat",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.F64x2Splat),
+    new[] { WasmValueKind.F64 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x15,
+    "i8x16.extract_lane_s",
+    ImmediateKind.LaneIndex,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I8x16ExtractLaneS),
+    new[] { WasmValueKind.V128 },
+    WasmValueKind.I32,
+    LaneCount = 16
+)]
+[Instruction(
+    0xFD,
+    0x16,
+    "i8x16.extract_lane_u",
+    ImmediateKind.LaneIndex,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I8x16ExtractLaneU),
+    new[] { WasmValueKind.V128 },
+    WasmValueKind.I32,
+    LaneCount = 16
+)]
+[Instruction(
+    0xFD,
+    0x17,
+    "i8x16.replace_lane",
+    ImmediateKind.LaneIndex,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I8x16ReplaceLane),
+    new[] { WasmValueKind.V128, WasmValueKind.I32 },
+    WasmValueKind.V128,
+    LaneCount = 16
+)]
+[Instruction(
+    0xFD,
+    0x18,
+    "i16x8.extract_lane_s",
+    ImmediateKind.LaneIndex,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I16x8ExtractLaneS),
+    new[] { WasmValueKind.V128 },
+    WasmValueKind.I32,
+    LaneCount = 8
+)]
+[Instruction(
+    0xFD,
+    0x19,
+    "i16x8.extract_lane_u",
+    ImmediateKind.LaneIndex,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I16x8ExtractLaneU),
+    new[] { WasmValueKind.V128 },
+    WasmValueKind.I32,
+    LaneCount = 8
+)]
+[Instruction(
+    0xFD,
+    0x1A,
+    "i16x8.replace_lane",
+    ImmediateKind.LaneIndex,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I16x8ReplaceLane),
+    new[] { WasmValueKind.V128, WasmValueKind.I32 },
+    WasmValueKind.V128,
+    LaneCount = 8
+)]
+[Instruction(
+    0xFD,
+    0x1B,
+    "i32x4.extract_lane",
+    ImmediateKind.LaneIndex,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32x4ExtractLane),
+    new[] { WasmValueKind.V128 },
+    WasmValueKind.I32,
+    LaneCount = 4
+)]
+[Instruction(
+    0xFD,
+    0x1C,
+    "i32x4.replace_lane",
+    ImmediateKind.LaneIndex,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32x4ReplaceLane),
+    new[] { WasmValueKind.V128, WasmValueKind.I32 },
+    WasmValueKind.V128,
+    LaneCount = 4
+)]
+[Instruction(
+    0xFD,
+    0x1D,
+    "i64x2.extract_lane",
+    ImmediateKind.LaneIndex,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I64x2ExtractLane),
+    new[] { WasmValueKind.V128 },
+    WasmValueKind.I64,
+    LaneCount = 2
+)]
+[Instruction(
+    0xFD,
+    0x1E,
+    "i64x2.replace_lane",
+    ImmediateKind.LaneIndex,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I64x2ReplaceLane),
+    new[] { WasmValueKind.V128, WasmValueKind.I64 },
+    WasmValueKind.V128,
+    LaneCount = 2
+)]
+[Instruction(
+    0xFD,
+    0x1F,
+    "f32x4.extract_lane",
+    ImmediateKind.LaneIndex,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.F32x4ExtractLane),
+    new[] { WasmValueKind.V128 },
+    WasmValueKind.F32,
+    LaneCount = 4
+)]
+[Instruction(
+    0xFD,
+    0x20,
+    "f32x4.replace_lane",
+    ImmediateKind.LaneIndex,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.F32x4ReplaceLane),
+    new[] { WasmValueKind.V128, WasmValueKind.F32 },
+    WasmValueKind.V128,
+    LaneCount = 4
+)]
+[Instruction(
+    0xFD,
+    0x21,
+    "f64x2.extract_lane",
+    ImmediateKind.LaneIndex,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.F64x2ExtractLane),
+    new[] { WasmValueKind.V128 },
+    WasmValueKind.F64,
+    LaneCount = 2
+)]
+[Instruction(
+    0xFD,
+    0x22,
+    "f64x2.replace_lane",
+    ImmediateKind.LaneIndex,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.F64x2ReplaceLane),
+    new[] { WasmValueKind.V128, WasmValueKind.F64 },
+    WasmValueKind.V128,
+    LaneCount = 2
+)]
+[Instruction(
+    0xFD,
+    0x23,
+    "i8x16.eq",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I8x16Eq),
+    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x24,
+    "i8x16.ne",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I8x16Ne),
+    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x25,
+    "i8x16.lt_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I8x16LtS),
+    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x26,
+    "i8x16.lt_u",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I8x16LtU),
+    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x27,
+    "i8x16.gt_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I8x16GtS),
+    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x28,
+    "i8x16.gt_u",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I8x16GtU),
+    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x29,
+    "i8x16.le_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I8x16LeS),
+    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x2A,
+    "i8x16.le_u",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I8x16LeU),
+    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x2B,
+    "i8x16.ge_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I8x16GeS),
+    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x2C,
+    "i8x16.ge_u",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I8x16GeU),
+    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x2D,
+    "i16x8.eq",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I16x8Eq),
+    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x2E,
+    "i16x8.ne",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I16x8Ne),
+    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x2F,
+    "i16x8.lt_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I16x8LtS),
+    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x30,
+    "i16x8.lt_u",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I16x8LtU),
+    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x31,
+    "i16x8.gt_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I16x8GtS),
+    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x32,
+    "i16x8.gt_u",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I16x8GtU),
+    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x33,
+    "i16x8.le_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I16x8LeS),
+    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x34,
+    "i16x8.le_u",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I16x8LeU),
+    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x35,
+    "i16x8.ge_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I16x8GeS),
+    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x36,
+    "i16x8.ge_u",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I16x8GeU),
+    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x37,
+    "i32x4.eq",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32x4Eq),
+    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x38,
+    "i32x4.ne",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32x4Ne),
+    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x39,
+    "i32x4.lt_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32x4LtS),
+    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x3A,
+    "i32x4.lt_u",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32x4LtU),
+    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x3B,
+    "i32x4.gt_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32x4GtS),
+    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x3C,
+    "i32x4.gt_u",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32x4GtU),
+    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x3D,
+    "i32x4.le_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32x4LeS),
+    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x3E,
+    "i32x4.le_u",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32x4LeU),
+    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x3F,
+    "i32x4.ge_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32x4GeS),
+    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x40,
+    "i32x4.ge_u",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32x4GeU),
+    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x41,
+    "f32x4.eq",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.F32x4Eq),
+    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x42,
+    "f32x4.ne",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.F32x4Ne),
+    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x43,
+    "f32x4.lt",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.F32x4Lt),
+    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x44,
+    "f32x4.gt",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.F32x4Gt),
+    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x45,
+    "f32x4.le",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.F32x4Le),
+    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x46,
+    "f32x4.ge",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.F32x4Ge),
+    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x47,
+    "f64x2.eq",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.F64x2Eq),
+    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x48,
+    "f64x2.ne",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.F64x2Ne),
+    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x49,
+    "f64x2.lt",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.F64x2Lt),
+    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x4A,
+    "f64x2.gt",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.F64x2Gt),
+    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x4B,
+    "f64x2.le",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.F64x2Le),
+    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x4C,
+    "f64x2.ge",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.F64x2Ge),
+    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x4D,
+    "v128.not",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.V128Not),
+    new[] { WasmValueKind.V128 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x4E,
+    "v128.and",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.V128And),
+    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x4F,
+    "v128.andnot",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.V128AndNot),
+    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x50,
+    "v128.or",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.V128Or),
+    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x51,
+    "v128.xor",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.V128Xor),
+    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x52,
+    "v128.bitselect",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.V128Bitselect),
+    new[] { WasmValueKind.V128, WasmValueKind.V128, WasmValueKind.V128 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x53,
+    "v128.any_true",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.V128AnyTrue),
+    new[] { WasmValueKind.V128 },
+    WasmValueKind.I32
+)]
 [Instruction(0xFD, 0x54, "v128.load8_lane")]
 [Instruction(0xFD, 0x55, "v128.load16_lane")]
 [Instruction(0xFD, 0x56, "v128.load32_lane")]
@@ -2398,8 +3122,28 @@ namespace WasmSharp.Instructions;
 [Instruction(0xFD, 0x60, "i8x16.abs")]
 [Instruction(0xFD, 0x61, "i8x16.neg")]
 [Instruction(0xFD, 0x62, "i8x16.popcnt")]
-[Instruction(0xFD, 0x63, "i8x16.all_true")]
-[Instruction(0xFD, 0x64, "i8x16.bitmask")]
+[Instruction(
+    0xFD,
+    0x63,
+    "i8x16.all_true",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I8x16AllTrue),
+    new[] { WasmValueKind.V128 },
+    WasmValueKind.I32
+)]
+[Instruction(
+    0xFD,
+    0x64,
+    "i8x16.bitmask",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I8x16Bitmask),
+    new[] { WasmValueKind.V128 },
+    WasmValueKind.I32
+)]
 [Instruction(0xFD, 0x65, "i8x16.narrow_i16x8_s")]
 [Instruction(0xFD, 0x66, "i8x16.narrow_i16x8_u")]
 [Instruction(0xFD, 0x67, "f32x4.ceil")]
@@ -2430,8 +3174,28 @@ namespace WasmSharp.Instructions;
 [Instruction(0xFD, 0x80, "i16x8.abs")]
 [Instruction(0xFD, 0x81, "i16x8.neg")]
 [Instruction(0xFD, 0x82, "i16x8.q15mulr_sat_s")]
-[Instruction(0xFD, 0x83, "i16x8.all_true")]
-[Instruction(0xFD, 0x84, "i16x8.bitmask")]
+[Instruction(
+    0xFD,
+    0x83,
+    "i16x8.all_true",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I16x8AllTrue),
+    new[] { WasmValueKind.V128 },
+    WasmValueKind.I32
+)]
+[Instruction(
+    0xFD,
+    0x84,
+    "i16x8.bitmask",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I16x8Bitmask),
+    new[] { WasmValueKind.V128 },
+    WasmValueKind.I32
+)]
 [Instruction(0xFD, 0x85, "i16x8.narrow_i32x4_s")]
 [Instruction(0xFD, 0x86, "i16x8.narrow_i32x4_u")]
 [Instruction(0xFD, 0x87, "i16x8.extend_low_i8x16_s")]
@@ -2460,8 +3224,28 @@ namespace WasmSharp.Instructions;
 [Instruction(0xFD, 0x9F, "i16x8.extmul_high_i8x16_u")]
 [Instruction(0xFD, 0xA0, "i32x4.abs")]
 [Instruction(0xFD, 0xA1, "i32x4.neg")]
-[Instruction(0xFD, 0xA3, "i32x4.all_true")]
-[Instruction(0xFD, 0xA4, "i32x4.bitmask")]
+[Instruction(
+    0xFD,
+    0xA3,
+    "i32x4.all_true",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32x4AllTrue),
+    new[] { WasmValueKind.V128 },
+    WasmValueKind.I32
+)]
+[Instruction(
+    0xFD,
+    0xA4,
+    "i32x4.bitmask",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32x4Bitmask),
+    new[] { WasmValueKind.V128 },
+    WasmValueKind.I32
+)]
 [Instruction(0xFD, 0xA7, "i32x4.extend_low_i16x8_s")]
 [Instruction(0xFD, 0xA8, "i32x4.extend_high_i16x8_s")]
 [Instruction(0xFD, 0xA9, "i32x4.extend_low_i16x8_u")]
@@ -2483,8 +3267,28 @@ namespace WasmSharp.Instructions;
 [Instruction(0xFD, 0xBF, "i32x4.extmul_high_i16x8_u")]
 [Instruction(0xFD, 0xC0, "i64x2.abs")]
 [Instruction(0xFD, 0xC1, "i64x2.neg")]
-[Instruction(0xFD, 0xC3, "i64x2.all_true")]
-[Instruction(0xFD, 0xC4, "i64x2.bitmask")]
+[Instruction(
+    0xFD,
+    0xC3,
+    "i64x2.all_true",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I64x2AllTrue),
+    new[] { WasmValueKind.V128 },
+    WasmValueKind.I32
+)]
+[Instruction(
+    0xFD,
+    0xC4,
+    "i64x2.bitmask",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I64x2Bitmask),
+    new[] { WasmValueKind.V128 },
+    WasmValueKind.I32
+)]
 [Instruction(0xFD, 0xC7, "i64x2.extend_low_i32x4_s")]
 [Instruction(0xFD, 0xC8, "i64x2.extend_high_i32x4_s")]
 [Instruction(0xFD, 0xC9, "i64x2.extend_low_i32x4_u")]
@@ -2495,12 +3299,72 @@ namespace WasmSharp.Instructions;
 [Instruction(0xFD, 0xCE, "i64x2.add")]
 [Instruction(0xFD, 0xD1, "i64x2.sub")]
 [Instruction(0xFD, 0xD5, "i64x2.mul")]
-[Instruction(0xFD, 0xD6, "i64x2.eq")]
-[Instruction(0xFD, 0xD7, "i64x2.ne")]
-[Instruction(0xFD, 0xD8, "i64x2.lt_s")]
-[Instruction(0xFD, 0xD9, "i64x2.gt_s")]
-[Instruction(0xFD, 0xDA, "i64x2.le_s")]
-[Instruction(0xFD, 0xDB, "i64x2.ge_s")]
+[Instruction(
+    0xFD,
+    0xD6,
+    "i64x2.eq",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I64x2Eq),
+    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0xD7,
+    "i64x2.ne",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I64x2Ne),
+    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0xD8,
+    "i64x2.lt_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I64x2LtS),
+    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0xD9,
+    "i64x2.gt_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I64x2GtS),
+    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0xDA,
+    "i64x2.le_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I64x2LeS),
+    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0xDB,
+    "i64x2.ge_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I64x2GeS),
+    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    WasmValueKind.V128
+)]
 [Instruction(0xFD, 0xDC, "i64x2.extmul_low_i32x4_s")]
 [Instruction(0xFD, 0xDD, "i64x2.extmul_high_i32x4_s")]
 [Instruction(0xFD, 0xDE, "i64x2.extmul_low_i32x4_u")]

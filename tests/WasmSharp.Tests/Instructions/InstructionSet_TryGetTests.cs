@@ -7,6 +7,81 @@ namespace WasmSharp.Tests.Instructions;
 internal class InstructionSet_TryGetTests
 {
     [Test]
+    public async Task SIMD接続の固定付録にあるlane論理比較群_85命令の型効果と即値とhandlerが一致する()
+    {
+        // Arrange
+        var expected = Core2InstructionFixture
+            .Read(0xFD)
+            .Where(x =>
+                System.Text.RegularExpressions.Regex.IsMatch(
+                    x.Value,
+                    @"^(?:[if]\d+x\d+)\.(?:splat|extract_lane(?:_[su])?|replace_lane|eq|ne|lt(?:_[su])?|gt(?:_[su])?|le(?:_[su])?|ge(?:_[su])?|all_true|bitmask)$|^i8x16\.(?:shuffle|swizzle)$|^v128\.(?:not|and|andnot|or|xor|bitselect|any_true)$"
+                )
+            )
+            .ToArray();
+        var declarations = typeof(InstructionSet)
+            .GetCustomAttributes<InstructionAttribute>()
+            .Where(x => x.Prefix == 0xFD)
+            .ToDictionary(x => x.Code);
+
+        // Assert
+        await Assert.That(expected.Length).IsEqualTo(85);
+        foreach (var item in expected)
+        {
+            var parts = item.Value.Split('.');
+            var operation = parts[1];
+            var hasLane =
+                operation.StartsWith("extract_lane", StringComparison.Ordinal)
+                || operation == "replace_lane";
+            var width = parts[0] == "v128" ? 128 : int.Parse(parts[0][1..].Split('x')[0]);
+            var scalar = parts[0].StartsWith('f')
+                ? (width == 32 ? WasmValueKind.F32 : WasmValueKind.F64)
+                : (width == 64 ? WasmValueKind.I64 : WasmValueKind.I32);
+            WasmValueKind[] inputs =
+                operation == "splat" ? [scalar]
+                : operation == "replace_lane" ? [WasmValueKind.V128, scalar]
+                : operation == "bitselect"
+                    ? [WasmValueKind.V128, WasmValueKind.V128, WasmValueKind.V128]
+                : hasLane || operation is "not" or "any_true" or "all_true" or "bitmask"
+                    ? [WasmValueKind.V128]
+                : [WasmValueKind.V128, WasmValueKind.V128];
+            var result =
+                operation.StartsWith("extract_lane", StringComparison.Ordinal) ? scalar
+                : operation is "any_true" or "all_true" or "bitmask" ? WasmValueKind.I32
+                : WasmValueKind.V128;
+            var handler = string.Concat(
+                    item.Value.Split('.', '_').Select(x => char.ToUpperInvariant(x[0]) + x[1..])
+                )
+                .Replace("Andnot", "AndNot", StringComparison.Ordinal);
+
+            // Act
+            var found = InstructionSet.TryGet(new(0xFD, item.Key), out var actual);
+
+            // Assert
+            using (Assert.Multiple())
+            {
+                await Assert.That(found).IsTrue();
+                await Assert.That(actual.ExecutionOpcode).IsNotNull();
+                await Assert
+                    .That(actual.Immediate)
+                    .IsEqualTo(
+                        hasLane ? ImmediateKind.LaneIndex
+                        : operation == "shuffle" ? ImmediateKind.Shuffle
+                        : ImmediateKind.None
+                    );
+                await Assert.That(actual.LaneCount).IsEqualTo((byte)(hasLane ? 128 / width : 0));
+                await Assert.That(actual.StackEffect).IsEqualTo(StackEffectKind.Numeric);
+                await Assert.That(actual.Validation).IsEqualTo(ValidationRule.Numeric);
+                await Assert
+                    .That(actual.NumericSignature!.Value.InputTypes.SequenceEqual(inputs))
+                    .IsTrue();
+                await Assert.That(actual.NumericSignature.Value.ResultType).IsEqualTo(result);
+                await Assert.That(declarations[item.Key].ExecutionHandler).IsEqualTo(handler);
+            }
+        }
+    }
+
+    [Test]
     public async Task V128定数が接続されている_既存定数handlerと定数式規則を使う()
     {
         // Arrange
@@ -117,7 +192,28 @@ internal class InstructionSet_TryGetTests
                             .Concat(Enumerable.Range(0x28, 23).Select(x => (uint)x))
                             .Concat(Enumerable.Range(0x45, 128).Select(x => (uint)x))
                     : prefix == 0xFC ? Enumerable.Range(0, 18).Select(x => (uint)x)
-                    : new uint[] { 0x0C }
+                    : Enumerable
+                        .Range(0x0C, 72)
+                        .Concat(
+                            new[]
+                            {
+                                0x63,
+                                0x64,
+                                0x83,
+                                0x84,
+                                0xA3,
+                                0xA4,
+                                0xC3,
+                                0xC4,
+                                0xD6,
+                                0xD7,
+                                0xD8,
+                                0xD9,
+                                0xDA,
+                                0xDB,
+                            }
+                        )
+                        .Select(x => (uint)x)
                 );
             await Assert.That(InstructionSet.TryGet(new(prefix, 256), out _)).IsFalse();
             await Assert.That(InstructionSet.TryGet(new(prefix, uint.MaxValue), out _)).IsFalse();
