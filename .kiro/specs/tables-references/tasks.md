@@ -8,7 +8,7 @@
 新しい公開API、未完成instanceの公開、成功だけを返す仮handlerは作らない。
 
 準備段階では命令・sectionの未対応報告を維持する。
-6.1・6.2・6.4・7.1・7.2で対応済みへ接続し、それぞれ未対応を期待する既存テストと命令集合の期待値を更新する。
+6.1・6.3・6.4・7.1・7.2で対応済みへ接続し、それぞれ未対応を期待する既存テストと命令集合の期待値を更新する。
 metadataからまだ呼べない検証分岐やhandlerは、接続タスクで公開経路から検証する。
 テストを追加・変更したタスクは、警告・エラー0のReleaseビルドを確認後、関連テストをコマンドで実行する。
 接続した機能単位で固定スイート全体のrunとbaselineとのcompare-runを行い、問題はランタイムで修正する。
@@ -16,8 +16,8 @@ metadataからまだ呼べない検証分岐やhandlerは、接続タスクで�
 並列候補は5.1と5.2のみとする。
 大項目1〜4を完了してから着手し、共通fixture・命令宣言・validatorを編集しない。
 同じ出力を使うビルド・テスト・公式runは並行実行しない。
-大項目6は要素初期化を基本table命令の公式全体検証より先に成立させ、記載順の6.1→6.3→6.4→6.2で進める。
-それ以外は記載順と_Depends:_に従う。
+大項目6は要素初期化を基本table命令の公式全体検証より先に成立させる。
+記載順と_Depends:_に従う。
 baselineは最終受入まで保持する。
 
 - [x] 1. 検証前提を確認し、既存処理の責務を整理する
@@ -193,30 +193,30 @@ baselineは最終受入まで保持する。
   - _Depends: 3.2, 3.3, 5.1, 2.3_
   - _Requirements: 1.1, 1.3, 1.4, 2.2, 2.4, 2.6, 2.7, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 6.1, 8.5_
 
-- [x] 6.3 全要素形式のDecodeを追加する
+- [x] 6.2 全要素形式のDecodeを追加する
   - flags0〜7を静的定義へ変換し、旧形式の関数添字列を元の入力位置付きの参照式へ正規化する。
   - 空section、elemkind、暗黙funcref、明示reftype、table添字、offset式を読み取る。
   - 不正flags・参照型・LEB128・長さ・終端をDecodeで拒否し、添字・型の不正はValidateへ渡す。
-  - 内部読み取りテストを通し、section9全体の公開対応切り替えは初期化が揃う6.4で行う。
+  - 内部読み取りテストを通し、section9全体の公開対応切り替えは初期化が揃う6.3で行う。
   - _Boundary: ModuleDecoder_
   - _Depends: 2.2, 6.1_
   - _Requirements: 1.2, 1.3, 1.4_
 
-- [ ] 6.4 要素の検証・構築・初期化を既存dataとstartへ統合する
+- [ ] 6.3 要素の検証・構築・初期化を既存dataとstartへ統合する
   - 4.3で構築した全要素実体に対し、宣言順にactive転送・成功後drop、declarative drop、passive保持を行う。
   - 要素処理後に既存data初期化とstartを実行し、section9を公開4段階で対応済みにする。
   - 不正な要素型・offset・table、初期化境界、失敗した転送の未変更と先行成功分の保持を公開APIで確認する。
   - link不成立時の未変更とelement→data→startの順序を確認し、関連TUnitと公式全体run・比較を通す。
   - _Boundary: ModuleDecoder, ReferenceValidation, ConstantInitializer, InstanceConstruction, ElementInstance, ExecutionBoundary_
-  - _Depends: 3.4, 4.3, 2.3, 6.3_
+  - _Depends: 3.4, 4.3, 2.3, 6.2_
   - _Requirements: 1.2, 2.3, 2.4, 2.7, 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.7, 8.1, 8.2, 8.5_
 
-- [ ] 6.2 基本テーブル命令を統合する
+- [ ] 6.4 基本テーブル命令を統合する
   - get/set/size/growの添字Decode、命令宣言、検証とhandlerを接続する。
   - 複数table、funcref・externref、共有実体、uint添字、増大失敗を公開APIで確認する。
   - 境界trapとAPI誤用・ホスト例外の区別を確認し、関連TUnitと公式全体run・比較を通す。
   - _Boundary: InstructionDefinitions, ModuleDecoder, ReferenceValidation, TableExecution, WasmTable_
-  - _Depends: 3.4, 5.2, 2.3, 6.1, 6.4_
+  - _Depends: 3.4, 5.2, 2.3, 6.1, 6.3_
   - _Requirements: 1.1, 2.1, 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 8.1, 8.4, 8.5_
 
 - [ ] 7. 一括操作と間接呼び出しを統合する
@@ -226,7 +226,7 @@ baselineは最終受入まで保持する。
   - 型不一致と範囲違反を所定段階で拒否し、失敗した命令の部分書込みを防ぐ。
   - 対応命令の期待を更新し、関連TUnitと公式全体run・比較を通す。
   - _Boundary: InstructionDefinitions, ModuleDecoder, ReferenceValidation, TableExecution, ElementInstance, WasmTable_
-  - _Depends: 3.4, 5.3, 6.4_
+  - _Depends: 3.4, 5.3, 6.3_
   - _Requirements: 1.1, 1.3, 2.1, 2.5, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 8.3, 8.5_
 
 - [ ] 7.2 間接callと失敗後に残る関数参照を統合する
@@ -236,7 +236,7 @@ baselineは最終受入まで保持する。
   - 要素またはdataの初期化失敗後に共有tableへ残った関数を呼び、宣言的要素の破棄順と保存済み参照の有効性を確認する。
   - 関連TUnitと公式全体run・比較を通し、対象の間接call未対応を解消する。
   - _Boundary: InstructionDefinitions, ModuleDecoder, ReferenceValidation, FunctionDispatch, InstanceConstruction, ExecutionBoundary_
-  - _Depends: 3.5, 5.4, 2.3, 6.4, 7.1_
+  - _Depends: 3.5, 5.4, 2.3, 6.3, 7.1_
   - _Requirements: 1.1, 2.5, 5.6, 6.4, 6.6, 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7, 8.2, 8.3, 8.5_
 
 - [ ] 8. 固定スイートと規則の対応で最終受入を確認する
@@ -246,7 +246,7 @@ baselineは最終受入まで保持する。
   - Releaseビルドの警告・エラー0の後、3プロジェクトのテストをコマンドで実行する。
   - 実際のOOMを再現していない範囲と、上限失敗試験・捕捉範囲レビューを区別した結果を残す。
   - _Boundary: ConformanceVerification_
-  - _Depends: 6.1, 6.2, 6.4, 7.1, 7.2_
+  - _Depends: 6.1, 6.4, 6.3, 7.1, 7.2_
   - _Requirements: 1.5, 8.1, 8.3, 8.4, 8.5, 9.5_
 
 - [ ] 8.2 全公式commandを実行し、受入済みbaselineと比較する
@@ -322,4 +322,4 @@ manifestと比較元baselineのSHA-256はresearch.mdの記録と一致した。
 - 宣言集合は固定仕様の`Free.instr`に合わせ、関数本体とstart以外の式から`ref.func`と`call`の関数添字を集める。定数性や添字の妥当性は後続の検証で判定する。
 - WasmValue等の値列は`SequenceEqual`で順序と内容を比較する。TUnitの`IsEqualTo`で配列参照を比較しない。
 - 既存ファイルの改行形式を保って編集し、意味のない全行差分を作らない。
-- 6.2の公式`elem.wast#93`は、#92のactive elementが共有tableへ書くnullを前提とする。調査結果は`artifacts/tables-references/debug-6.2-20261018T050755Z/debug-report.md`。期待値・分類・baselineを変更せず、6.3→6.4→6.2の順で接続し、6.2を6.4完了後に再検証する。
+- 6.4の公式`elem.wast#93`は、#92のactive elementが共有tableへ書くnullを前提とする。調査結果は`artifacts/tables-references/debug-6.2-20261018T050755Z/debug-report.md`。期待値・分類・baselineを変更せず、6.2→6.3→6.4の順で接続し、6.4を6.3完了後に再検証する。
