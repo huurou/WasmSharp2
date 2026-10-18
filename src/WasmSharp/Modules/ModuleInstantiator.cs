@@ -1,5 +1,4 @@
 using System.Collections.Immutable;
-using System.Runtime.InteropServices;
 using WasmSharp.Exceptions;
 using WasmSharp.Execution;
 using WasmSharp.Modules.ExternalValues;
@@ -73,24 +72,11 @@ internal static class ModuleInstantiator
         {
             memories.Add(new WasmMemory(memory.Limits));
         }
-        var globals = CreateIndex(
-            linked.OfType<GlobalExternalValue>().Select(x => x.Value),
-            module.Globals.Length,
-            6
-        );
-        foreach (var global in module.Globals)
-        {
-            var value = ConstantInitializer.Evaluate(
-                global.Initializer,
-                ImmutableCollectionsMarshal.AsMemory(globals).Span
-            );
-            globals.Add(new WasmGlobal(global.Type, value));
-        }
         var instance = new WasmInstance(
             module,
             options,
             [.. linked.OfType<FunctionExternalValue>().Select(x => x.Value)],
-            globals.MoveToImmutable(),
+            [.. linked.OfType<GlobalExternalValue>().Select(x => x.Value)],
             memories.MoveToImmutable(),
             tables.MoveToImmutable()
         );

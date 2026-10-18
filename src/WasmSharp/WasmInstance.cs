@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Runtime.InteropServices;
 using WasmSharp.Exceptions;
 using WasmSharp.Execution;
 using WasmSharp.Modules;
@@ -52,7 +53,7 @@ public sealed class WasmInstance
     public WasmExecutionOptions ExecutionOptions { get; }
 
     /// <summary>
-    /// importとリソース定義を持たないmoduleのinstanceを構築する
+    /// importとmemory/table定義を持たないmoduleのinstanceを構築する
     /// </summary>
     /// <param name="module">元となる静的なmodule定義</param>
     /// <param name="options">新しい実行コンテキストを開くときの実行ポリシー</param>
@@ -60,30 +61,28 @@ public sealed class WasmInstance
         : this(module, options, [], [], [], []) { }
 
     /// <summary>
-    /// importした関数を接続し、このinstanceに所属する定義関数を構築する
+    /// importした実体を接続し、定義関数、global、データセグメントを順に構築する
     /// </summary>
     /// <param name="module">元となる検証済みのmodule定義</param>
     /// <param name="options">新しい実行コンテキストを開くときの実行ポリシー</param>
     /// <param name="importedFunctions">関数のimport宣言順に並ぶ共有実体</param>
-    /// <param name="globals">importを先頭に置き、定義を続けた初期化済みglobalの実体表</param>
+    /// <param name="importedGlobals">globalのimport宣言順に並ぶ共有実体</param>
     /// <param name="memories">importを先頭に置き、定義を続けた割当済みmemoryの実体表</param>
     /// <param name="tables">importを先頭に置き、定義を続けた割当済みtableの実体表</param>
-    /// <exception cref="WasmImplementationLimitException">importと定義を合わせた関数数が保持上限を超える場合</exception>
+    /// <exception cref="WasmImplementationLimitException">importと定義を合わせた関数数またはglobal数が保持上限を超える場合</exception>
     internal WasmInstance(
         WasmModule module,
         WasmExecutionOptions options,
         ImmutableArray<WasmFunction> importedFunctions,
-        ImmutableArray<WasmGlobal> globals,
+        ImmutableArray<WasmGlobal> importedGlobals,
         ImmutableArray<WasmMemory> memories,
         ImmutableArray<WasmTable> tables
     )
     {
         Module = module;
         ExecutionOptions = options;
-        Globals = globals;
         Memories = memories;
         Tables = tables;
-        DataSegments = [.. module.DataSegments.Select(x => new DataInstance(x))];
         exports_ = module.Exports.ToImmutableDictionary(x => x.Name, StringComparer.Ordinal);
         var functionCount = (long)importedFunctions.Length + module.Functions.Length;
         if (functionCount > Array.MaxLength)
@@ -102,6 +101,28 @@ public sealed class WasmInstance
             functions.Add(new DefinedFunction(this, (uint)(importedFunctions.Length + i), (uint)i));
         }
         Functions = functions.MoveToImmutable();
+        var globalCount = (long)importedGlobals.Length + module.Globals.Length;
+        if (globalCount > Array.MaxLength)
+        {
+            throw new WasmImplementationLimitException(
+                "実体表が保持上限を超えています。",
+                WasmImplementationLimitReason.CollectionSize,
+                Array.MaxLength,
+                new WasmFailureLocation(WasmProcessingStage.Instantiate, SectionId: 6)
+            );
+        }
+        var globals = ImmutableArray.CreateBuilder<WasmGlobal>((int)globalCount);
+        globals.AddRange(importedGlobals);
+        foreach (var global in module.Globals)
+        {
+            var value = ConstantInitializer.Evaluate(
+                global.Initializer,
+                ImmutableCollectionsMarshal.AsMemory(globals).Span
+            );
+            globals.Add(new WasmGlobal(global.Type, value));
+        }
+        Globals = globals.MoveToImmutable();
+        DataSegments = [.. module.DataSegments.Select(x => new DataInstance(x))];
     }
 
     /// <summary>

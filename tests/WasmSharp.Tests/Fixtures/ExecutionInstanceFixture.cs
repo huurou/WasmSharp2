@@ -20,7 +20,7 @@ internal static class ExecutionInstanceFixture
             int MaxOperandStack
         )> functions,
         ImmutableArray<WasmFunction> importedFunctions,
-        ImmutableArray<WasmGlobal> globals
+        ImmutableArray<WasmGlobal> importedGlobals
     )
     {
         var module = new WasmModule(
@@ -53,7 +53,7 @@ internal static class ExecutionInstanceFixture
             module,
             WasmExecutionOptions.Default,
             importedFunctions,
-            globals,
+            importedGlobals,
             [],
             []
         );
