@@ -190,4 +190,60 @@ public sealed class WasmTable
         elements_[(int)index] = value;
         return true;
     }
+
+    /// <summary>
+    /// 指定位置へ参照列を転送し、全範囲が収まるかを返す
+    /// </summary>
+    /// <param name="destination">転送先の先頭要素位置</param>
+    /// <param name="values">要素型と一致する検証済みの参照列</param>
+    /// <returns>転送できた場合はtrue 範囲外の場合は内容を変更せずfalse</returns>
+    internal bool TryWrite(uint destination, ReadOnlySpan<WasmValue> values)
+    {
+        if ((ulong)destination + (ulong)values.Length > Count)
+        {
+            return false;
+        }
+
+        values.CopyTo(elements_.AsSpan((int)destination, values.Length));
+        return true;
+    }
+
+    /// <summary>
+    /// 同型tableの参照列をコピーし、両範囲が収まるかを返す
+    /// </summary>
+    /// <param name="source">要素型が一致する検証済みのコピー元table</param>
+    /// <param name="destination">コピー先の先頭要素位置</param>
+    /// <param name="sourceOffset">コピー元の先頭要素位置</param>
+    /// <param name="length">コピーする要素数</param>
+    /// <returns>コピーできた場合はtrue 範囲外の場合は内容を変更せずfalse</returns>
+    internal bool TryCopy(WasmTable source, uint destination, uint sourceOffset, uint length)
+    {
+        if ((ulong)destination + length > Count || (ulong)sourceOffset + length > source.Count)
+        {
+            return false;
+        }
+
+        source
+            .elements_.AsSpan((int)sourceOffset, (int)length)
+            .CopyTo(elements_.AsSpan((int)destination, (int)length));
+        return true;
+    }
+
+    /// <summary>
+    /// 指定範囲を同じ参照で埋め、全範囲が収まるかを返す
+    /// </summary>
+    /// <param name="destination">書き込み先の先頭要素位置</param>
+    /// <param name="value">要素型と一致する検証済みの参照</param>
+    /// <param name="length">書き込む要素数</param>
+    /// <returns>書き込めた場合はtrue 範囲外の場合は内容を変更せずfalse</returns>
+    internal bool TryFill(uint destination, WasmValue value, uint length)
+    {
+        if ((ulong)destination + length > Count)
+        {
+            return false;
+        }
+
+        elements_.AsSpan((int)destination, (int)length).Fill(value);
+        return true;
+    }
 }
