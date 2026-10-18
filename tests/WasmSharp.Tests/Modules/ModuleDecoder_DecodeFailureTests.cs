@@ -31,7 +31,6 @@ internal partial class ModuleDecoder_DecodeTests
     [Test]
     [Arguments("11FF05", "call_indirect")]
     [Arguments("11", "call_indirect")]
-    [Arguments("FC0C", "table.init")]
     [Arguments("FD00", "v128.load")]
     [Arguments("FD0C", "v128.const")]
     [Arguments("FDDF01", "i64x2.extmul_high_i32x4_u")]

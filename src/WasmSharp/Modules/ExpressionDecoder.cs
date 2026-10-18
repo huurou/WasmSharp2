@@ -60,6 +60,12 @@ internal static class ExpressionDecoder
                     reader.ReadU32(),
                     offset
                 ),
+                ImmediateKind.IndexPair => DecodedInstruction.WithIndexPair(
+                    opcode,
+                    reader.ReadU32(),
+                    reader.ReadU32(),
+                    offset
+                ),
                 ImmediateKind.I32 => DecodedInstruction.WithImmediate(
                     opcode,
                     WasmValue.FromI32(reader.ReadS32()),

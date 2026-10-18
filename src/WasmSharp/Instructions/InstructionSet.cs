@@ -2229,9 +2229,33 @@ namespace WasmSharp.Instructions;
     ValidationRule.MemoryBulk,
     nameof(Interpreter.Fill)
 )]
-[Instruction(0xFC, 0x0C, "table.init")]
-[Instruction(0xFC, 0x0D, "elem.drop")]
-[Instruction(0xFC, 0x0E, "table.copy")]
+[Instruction(
+    0xFC,
+    0x0C,
+    "table.init",
+    ImmediateKind.IndexPair,
+    StackEffectKind.TableInit,
+    ValidationRule.TableInit,
+    nameof(Interpreter.TableInit)
+)]
+[Instruction(
+    0xFC,
+    0x0D,
+    "elem.drop",
+    ImmediateKind.Index,
+    StackEffectKind.ElementDrop,
+    ValidationRule.ElementDrop,
+    nameof(Interpreter.ElementDrop)
+)]
+[Instruction(
+    0xFC,
+    0x0E,
+    "table.copy",
+    ImmediateKind.IndexPair,
+    StackEffectKind.TableCopy,
+    ValidationRule.TableCopy,
+    nameof(Interpreter.TableCopy)
+)]
 [Instruction(
     0xFC,
     0x0F,
@@ -2250,7 +2274,15 @@ namespace WasmSharp.Instructions;
     ValidationRule.TableSize,
     nameof(Interpreter.TableSize)
 )]
-[Instruction(0xFC, 0x11, "table.fill")]
+[Instruction(
+    0xFC,
+    0x11,
+    "table.fill",
+    ImmediateKind.Index,
+    StackEffectKind.TableFill,
+    ValidationRule.TableFill,
+    nameof(Interpreter.TableFill)
+)]
 [Instruction(0xFD, 0x00, "v128.load")]
 [Instruction(0xFD, 0x01, "v128.load8x8_s")]
 [Instruction(0xFD, 0x02, "v128.load8x8_u")]

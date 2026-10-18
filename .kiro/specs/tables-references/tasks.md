@@ -220,7 +220,7 @@ baselineは最終受入まで保持する。
   - _Requirements: 1.1, 2.1, 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 8.1, 8.4, 8.5_
 
 - [ ] 7. 一括操作と間接呼び出しを統合する
-- [ ] 7.1 一括table命令とelem.dropを公開経路へ接続する
+- [x] 7.1 一括table命令とelem.dropを公開経路へ接続する
   - 2添字のDecodeと宣言を接続し、table.initのelem→table、copyのdst→srcの即値順を確認する。
   - 全modeとdrop後の0長・非0長、反復drop、別instanceの分離、import同一実体の重複copyを公開APIで確認する。
   - 型不一致と範囲違反を所定段階で拒否し、失敗した命令の部分書込みを防ぐ。
@@ -323,3 +323,4 @@ manifestと比較元baselineのSHA-256はresearch.mdの記録と一致した。
 - WasmValue等の値列は`SequenceEqual`で順序と内容を比較する。TUnitの`IsEqualTo`で配列参照を比較しない。
 - 既存ファイルの改行形式を保って編集し、意味のない全行差分を作らない。
 - 6.4の公式`elem.wast#93`は、#92のactive elementが共有tableへ書くnullを前提とする。調査結果は`artifacts/tables-references/debug-6.2-20261018T050755Z/debug-report.md`。期待値・分類・baselineを変更せず、6.2→6.3→6.4の順で接続し、6.4を6.3完了後に再検証する。
+- LEB128の`integer too large`は不正な最終バイトの位置、`integer representation too long`は最大幅の読取後位置を使う。EOFの位置契約と区別する。
