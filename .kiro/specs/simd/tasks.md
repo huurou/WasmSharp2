@@ -153,7 +153,7 @@
   - _Boundary: SimdIntegerExecution_
   - _Requirements: 5.4_
 
-- [ ] 5.4 low/highの拡張と拡張乗算を追加する
+- [x] 5.4 low/highの拡張と拡張乗算を追加する
   - 固定仕様のextendとextmulをlow/high、signed/unsignedごとに実装する。
   - 入力の半分の選択と拡張先lane幅での演算を保つ。
   - 上下で異なる入力と符号境界で、選択順・拡張・積のbitが正しいことを確認する。

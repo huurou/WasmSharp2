@@ -856,6 +856,513 @@ internal static partial class Interpreter
     }
 
     /// <summary>
+    /// 8bitの下側laneを符号付きで16bitへ拡張する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI16x8ExtendLowI8x16S命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I16x8ExtendLowI8x16S(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        return ExecuteSimdIntegerExtend(
+            context,
+            8,
+            high: false,
+            static x => unchecked((ulong)(sbyte)x)
+        );
+    }
+
+    /// <summary>
+    /// 8bitの下側laneを符号なしで16bitへ拡張する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI16x8ExtendLowI8x16U命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I16x8ExtendLowI8x16U(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        return ExecuteSimdIntegerExtend(context, 8, high: false, static x => x);
+    }
+
+    /// <summary>
+    /// 8bitの上側laneを符号付きで16bitへ拡張する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI16x8ExtendHighI8x16S命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I16x8ExtendHighI8x16S(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        return ExecuteSimdIntegerExtend(
+            context,
+            8,
+            high: true,
+            static x => unchecked((ulong)(sbyte)x)
+        );
+    }
+
+    /// <summary>
+    /// 8bitの上側laneを符号なしで16bitへ拡張する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI16x8ExtendHighI8x16U命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I16x8ExtendHighI8x16U(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        return ExecuteSimdIntegerExtend(context, 8, high: true, static x => x);
+    }
+
+    /// <summary>
+    /// 8bitの下側laneを符号付きで16bitへ拡張して乗算する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI16x8ExtMulLowI8x16S命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I16x8ExtMulLowI8x16S(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        return ExecuteSimdIntegerExtMul(
+            context,
+            8,
+            high: false,
+            static (x, y) => unchecked((ulong)((long)(sbyte)x * (sbyte)y))
+        );
+    }
+
+    /// <summary>
+    /// 8bitの下側laneを符号なしで16bitへ拡張して乗算する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI16x8ExtMulLowI8x16U命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I16x8ExtMulLowI8x16U(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        return ExecuteSimdIntegerExtMul(context, 8, high: false, static (x, y) => x * y);
+    }
+
+    /// <summary>
+    /// 8bitの上側laneを符号付きで16bitへ拡張して乗算する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI16x8ExtMulHighI8x16S命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I16x8ExtMulHighI8x16S(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        return ExecuteSimdIntegerExtMul(
+            context,
+            8,
+            high: true,
+            static (x, y) => unchecked((ulong)((long)(sbyte)x * (sbyte)y))
+        );
+    }
+
+    /// <summary>
+    /// 8bitの上側laneを符号なしで16bitへ拡張して乗算する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI16x8ExtMulHighI8x16U命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I16x8ExtMulHighI8x16U(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        return ExecuteSimdIntegerExtMul(context, 8, high: true, static (x, y) => x * y);
+    }
+
+    /// <summary>
+    /// 16bitの下側laneを符号付きで32bitへ拡張する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI32x4ExtendLowI16x8S命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I32x4ExtendLowI16x8S(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        return ExecuteSimdIntegerExtend(
+            context,
+            16,
+            high: false,
+            static x => unchecked((ulong)(short)x)
+        );
+    }
+
+    /// <summary>
+    /// 16bitの下側laneを符号なしで32bitへ拡張する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI32x4ExtendLowI16x8U命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I32x4ExtendLowI16x8U(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        return ExecuteSimdIntegerExtend(context, 16, high: false, static x => x);
+    }
+
+    /// <summary>
+    /// 16bitの上側laneを符号付きで32bitへ拡張する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI32x4ExtendHighI16x8S命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I32x4ExtendHighI16x8S(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        return ExecuteSimdIntegerExtend(
+            context,
+            16,
+            high: true,
+            static x => unchecked((ulong)(short)x)
+        );
+    }
+
+    /// <summary>
+    /// 16bitの上側laneを符号なしで32bitへ拡張する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI32x4ExtendHighI16x8U命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I32x4ExtendHighI16x8U(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        return ExecuteSimdIntegerExtend(context, 16, high: true, static x => x);
+    }
+
+    /// <summary>
+    /// 16bitの下側laneを符号付きで32bitへ拡張して乗算する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI32x4ExtMulLowI16x8S命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I32x4ExtMulLowI16x8S(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        return ExecuteSimdIntegerExtMul(
+            context,
+            16,
+            high: false,
+            static (x, y) => unchecked((ulong)((long)(short)x * (short)y))
+        );
+    }
+
+    /// <summary>
+    /// 16bitの下側laneを符号なしで32bitへ拡張して乗算する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI32x4ExtMulLowI16x8U命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I32x4ExtMulLowI16x8U(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        return ExecuteSimdIntegerExtMul(context, 16, high: false, static (x, y) => x * y);
+    }
+
+    /// <summary>
+    /// 16bitの上側laneを符号付きで32bitへ拡張して乗算する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI32x4ExtMulHighI16x8S命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I32x4ExtMulHighI16x8S(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        return ExecuteSimdIntegerExtMul(
+            context,
+            16,
+            high: true,
+            static (x, y) => unchecked((ulong)((long)(short)x * (short)y))
+        );
+    }
+
+    /// <summary>
+    /// 16bitの上側laneを符号なしで32bitへ拡張して乗算する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI32x4ExtMulHighI16x8U命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I32x4ExtMulHighI16x8U(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        return ExecuteSimdIntegerExtMul(context, 16, high: true, static (x, y) => x * y);
+    }
+
+    /// <summary>
+    /// 32bitの下側laneを符号付きで64bitへ拡張する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI64x2ExtendLowI32x4S命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I64x2ExtendLowI32x4S(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        return ExecuteSimdIntegerExtend(
+            context,
+            32,
+            high: false,
+            static x => unchecked((ulong)(int)x)
+        );
+    }
+
+    /// <summary>
+    /// 32bitの下側laneを符号なしで64bitへ拡張する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI64x2ExtendLowI32x4U命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I64x2ExtendLowI32x4U(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        return ExecuteSimdIntegerExtend(context, 32, high: false, static x => x);
+    }
+
+    /// <summary>
+    /// 32bitの上側laneを符号付きで64bitへ拡張する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI64x2ExtendHighI32x4S命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I64x2ExtendHighI32x4S(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        return ExecuteSimdIntegerExtend(
+            context,
+            32,
+            high: true,
+            static x => unchecked((ulong)(int)x)
+        );
+    }
+
+    /// <summary>
+    /// 32bitの上側laneを符号なしで64bitへ拡張する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI64x2ExtendHighI32x4U命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I64x2ExtendHighI32x4U(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        return ExecuteSimdIntegerExtend(context, 32, high: true, static x => x);
+    }
+
+    /// <summary>
+    /// 32bitの下側laneを符号付きで64bitへ拡張して乗算する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI64x2ExtMulLowI32x4S命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I64x2ExtMulLowI32x4S(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        return ExecuteSimdIntegerExtMul(
+            context,
+            32,
+            high: false,
+            static (x, y) => unchecked((ulong)((long)(int)x * (int)y))
+        );
+    }
+
+    /// <summary>
+    /// 32bitの下側laneを符号なしで64bitへ拡張して乗算する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI64x2ExtMulLowI32x4U命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I64x2ExtMulLowI32x4U(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        return ExecuteSimdIntegerExtMul(context, 32, high: false, static (x, y) => x * y);
+    }
+
+    /// <summary>
+    /// 32bitの上側laneを符号付きで64bitへ拡張して乗算する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI64x2ExtMulHighI32x4S命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I64x2ExtMulHighI32x4S(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        return ExecuteSimdIntegerExtMul(
+            context,
+            32,
+            high: true,
+            static (x, y) => unchecked((ulong)((long)(int)x * (int)y))
+        );
+    }
+
+    /// <summary>
+    /// 32bitの上側laneを符号なしで64bitへ拡張して乗算する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI64x2ExtMulHighI32x4U命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I64x2ExtMulHighI32x4U(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        return ExecuteSimdIntegerExtMul(context, 32, high: true, static (x, y) => x * y);
+    }
+
+    /// <summary>
+    /// extendのoperandを取り出し選択した半分のlaneを拡張して積む
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="sourceBitWidth">入力laneの幅</param>
+    /// <param name="high">上側の半分を選択するか</param>
+    /// <param name="extend">符号解釈に従ってlaneを拡張する演算</param>
+    /// <returns>実行の成功</returns>
+    private static ExecutionResult ExecuteSimdIntegerExtend(
+        InterpreterContext context,
+        int sourceBitWidth,
+        bool high,
+        Func<ulong, ulong> extend
+    )
+    {
+        var vector = SimdValue.FromValue(context.PopValue());
+        context.PushValue(MapSimdIntegerExtend(vector, sourceBitWidth, high, extend).ToValue());
+        return default;
+    }
+
+    /// <summary>
+    /// extmulのoperandを逆順に取り出し選択した半分の拡張乗算結果を積む
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="sourceBitWidth">入力laneの幅</param>
+    /// <param name="high">上側の半分を選択するか</param>
+    /// <param name="multiply">符号解釈に従って拡張幅で乗算する演算</param>
+    /// <returns>実行の成功</returns>
+    private static ExecutionResult ExecuteSimdIntegerExtMul(
+        InterpreterContext context,
+        int sourceBitWidth,
+        bool high,
+        Func<ulong, ulong, ulong> multiply
+    )
+    {
+        var second = SimdValue.FromValue(context.PopValue());
+        var first = SimdValue.FromValue(context.PopValue());
+        context.PushValue(
+            MapSimdIntegerExtMul(first, second, sourceBitWidth, high, multiply).ToValue()
+        );
+        return default;
+    }
+
+    /// <summary>
+    /// 入力の半分を選択して出力lane 0から拡張したビット列を並べる
+    /// </summary>
+    /// <param name="vector">入力のビット列</param>
+    /// <param name="sourceBitWidth">入力laneの幅</param>
+    /// <param name="high">上側の半分を選択するか</param>
+    /// <param name="extend">laneごとの純粋な拡張演算</param>
+    /// <returns>倍のlane幅へ拡張したビット列</returns>
+    private static SimdValue MapSimdIntegerExtend(
+        SimdValue vector,
+        int sourceBitWidth,
+        bool high,
+        Func<ulong, ulong> extend
+    )
+    {
+        var result = default(SimdValue);
+        var destinationBitWidth = sourceBitWidth * 2;
+        var laneCount = 128 / destinationBitWidth;
+        var firstLaneIndex = high ? laneCount : 0;
+        for (var laneIndex = 0; laneIndex < laneCount; laneIndex++)
+        {
+            result = result.WithLane(
+                destinationBitWidth,
+                laneIndex,
+                extend(vector.GetLane(sourceBitWidth, firstLaneIndex + laneIndex))
+            );
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// 両operandの同じ半分を選択し拡張幅の積を出力lane 0から並べる
+    /// </summary>
+    /// <param name="first">左operandのビット列</param>
+    /// <param name="second">右operandのビット列</param>
+    /// <param name="sourceBitWidth">入力laneの幅</param>
+    /// <param name="high">上側の半分を選択するか</param>
+    /// <param name="multiply">laneごとの純粋な拡張乗算</param>
+    /// <returns>倍のlane幅に保持した積のビット列</returns>
+    private static SimdValue MapSimdIntegerExtMul(
+        SimdValue first,
+        SimdValue second,
+        int sourceBitWidth,
+        bool high,
+        Func<ulong, ulong, ulong> multiply
+    )
+    {
+        var result = default(SimdValue);
+        var destinationBitWidth = sourceBitWidth * 2;
+        var laneCount = 128 / destinationBitWidth;
+        var firstLaneIndex = high ? laneCount : 0;
+        for (var laneIndex = 0; laneIndex < laneCount; laneIndex++)
+        {
+            var sourceLaneIndex = firstLaneIndex + laneIndex;
+            result = result.WithLane(
+                destinationBitWidth,
+                laneIndex,
+                multiply(
+                    first.GetLane(sourceBitWidth, sourceLaneIndex),
+                    second.GetLane(sourceBitWidth, sourceLaneIndex)
+                )
+            );
+        }
+
+        return result;
+    }
+
+    /// <summary>
     /// 単項整数演算のoperandを取り出し結果を積む
     /// </summary>
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>

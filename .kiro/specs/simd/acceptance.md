@@ -239,3 +239,9 @@ New-Item -ItemType Directory -Path $taskOutput | Out-Null
 要件5.4に対応する15handlerを追加し、既存の単項・二項演算処理を再利用した。signed/unsigned min/maxは選択したlaneのbit列を返し、avgr_uは広い中間値で奇数和を切り上げ、popcntは各byteのbit数を数える。19ケースで符号境界、大小・等値、上下64bit、平均の偶数和・奇数和・最大値同士、全16byteのbit数とstack契約を確認した。既存43handlerと9helperの本体は維持した。
 
 [実装記録](../../../artifacts/simd/task-5.3-20261018T163225Z/StatusReport.md)で一時フラグOFFの19件失敗、ONの19件成功、フラグ除去後の成功を確認した。[独立レビュー](../../../artifacts/simd/review-5.3-20261018T163936Z/review-verdict.md)は`APPROVED`で、Releaseビルドの警告・エラー0、ランタイム4,208件成功、失敗・スキップ0、終了0、変更16C#の整形・空白・hash確認成功を確認した。固定参照の15命令集合と19期待vectorの独立計算も一致した。親は最終predicate、代表的境界テスト、実際の出力・終了値を直接確認し、`kiro-verify-completion`のタスク5.3判定を`VERIFIED`とした。未解決の指摘はない。公開接続と公式全体実行は8.2で行う。
+
+## 5.4 low/highの拡張と拡張乗算
+
+要件5.5に対応するextend12handlerとextmul12handlerを追加した。context操作と純粋なlane処理を分け、選択した入力の半分を拡張先のlane 0から配置する。32→64bitのsigned積はlong、unsigned積はulongで保持する。32ケースで上下の非対称入力、符号境界、拡張幅の積、最大uint同士の積、結果型・sentinel・stack数を確認した。既存58handlerと9helperの本体は維持した。
+
+[実装記録](../../../artifacts/simd/task-5.4-20261018T164644Z/)で一時フラグOFFの32件失敗、ONの32件成功、フラグ除去後の成功を確認した。[独立レビュー](../../../artifacts/simd/review-5.4-20261018T165447Z/review-verdict.md)は`APPROVED`で、Releaseビルドの警告・エラー0、ランタイム4,240件成功、失敗・スキップ0、終了0、変更25C#の整形・空白確認成功を確認した。固定参照の24命令集合・subopcodeと32期待vectorの独立計算が一致し、各ケースが逆の半分・符号解釈も検出した。24テストのhashはRED・最終・レビュー時点で一致した。親は拡張処理・代表的境界テスト、実際の出力・終了値を確認し、`kiro-verify-completion`のタスク5.4判定を`VERIFIED`とした。未解決の指摘はない。公開接続と公式全体実行は8.2で行う。
