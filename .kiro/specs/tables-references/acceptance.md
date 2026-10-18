@@ -357,6 +357,26 @@ dotnet tools/WasmSharp.TestSuiteRunner/bin/Release/net10.0/WasmSharp.TestSuiteRu
 
 8.3ではこの同じrunを使って対象規則・ケースと残る未対応・前提不成立の起因を最終照合する。8.4のbaseline-saveは未実行であり、本節は対象ケースの最終受入やCore 2.0全体の完成を宣言しない。
 
+## 8.3 対象ケースと残る未対応の起因の照合
+
+要件9.2・9.4・9.5と設計のConformanceVerification・公式受入に従い、8.2の同じ比較済みrun（SHA256 `9d51acea7309d02af302118c932bf25d9725336304f370b48d04cae995176496`）を受入対象とした。全53,907ケースが7.2の保存結果と一致し、固定素材のケース識別子・行・種別とも一致することを[今回の監査](../../../artifacts/tables-references/task-8.3-20261018T090100Z/results-audit-initial.json)で確認した。
+
+| 重点確認した公式入力 | passed | out_of_scope |
+| --- | ---: | ---: |
+| ref_null・ref_func・ref_is_null・select・global | 291 | 3 |
+| table・table_get/set/size/grow/fill/copy/init | 2,697 | 6 |
+| elem | 95 | 0 |
+| call_indirect・func_ptrs | 195 | 11 |
+| bulk・linking・start | 268 | 1 |
+
+上記19入力の前提が揃う3,546ケースはすべてpassedだった。複数table、一括操作、間接call、初期化失敗を含み、Instantiate失敗を期待する20ケースも期待段階でpassedとなった。対象外21ケースは既存の分類を保持し、passedへ合算していない。重点入力だけで範囲を限定せず、全147入力の残るruntime_unsupported1,079件とblocked24,269件も照合した。
+
+未対応は各ケースの公開診断に報告されたSIMD命令であり、blockedは全件の起因ケースがそのSIMD未対応へ到達した。対象機能に由来するruntime_unsupportedとblockedは0件だった。現在runから再計算した全ケースの機能・起因が[7.2のケース別一覧][tr-audit-7-2]と一致することを確認し、一覧のhash、各ケースの出典、機能別件数を今回の監査へ結び付けた。フォルダ名だけでは判断していない。out_of_scope1,077件は別分類のまま保持する。
+
+8.1の[55基準対応表](#55受入基準の対応)を再利用し、[今回の対応検査](../../../artifacts/tables-references/task-8.3-20261018T090100Z/coverage-initial.json)で55行の規則・実装・リンクと60テストメソッド、既存TRXのruntime3,761件・generator106件・runner702件の全成功を再照合した。製品・テスト・CLIのhashも8.2時点と一致する。公式runやテストは重複実行しておらず、実際の領域確保失敗によるOOMの未再現範囲は8.1の記載どおりである。
+
+[監査スクリプト](../../../artifacts/tables-references/task-8.3-20261018T090100Z/audit-acceptance.py)と[引数・終了値](../../../artifacts/tables-references/task-8.3-20261018T090100Z/commands-initial.json)を保存した。55基準検査とケース監査はいずれも終了0だった。8.1時点の表と記述は履歴として保持し、最新の判定は9.1・9.3が8.2で成立、9.2・9.4・9.5が本節までで成立である。9.6は8.4の明示baseline保存待ちであり、本タスクでは保存していない。残るSIMD待ちを保持した機能受入であり、Core 2.0全体の完成は宣言しない。
+
 [tr-bin-instr]: ../../../thirdParties/WebAssembly-spec/document/core/binary/instructions.rst
 [tr-bin-module]: ../../../thirdParties/WebAssembly-spec/document/core/binary/modules.rst
 [tr-valid-instr]: ../../../thirdParties/WebAssembly-spec/document/core/valid/instructions.rst
