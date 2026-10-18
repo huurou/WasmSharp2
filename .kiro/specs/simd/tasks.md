@@ -56,7 +56,7 @@
   - _Depends: 1.2_
   - _Requirements: 1.2, 1.3, 2.1, 2.2, 2.3, 2.4_
 
-- [ ] 2.2 128bitのlane取得・置換とbyte変換を追加する
+- [x] 2.2 128bitのlane取得・置換とbyte変換を追加する
   - 既存の上下64bitからlaneを取得・置換し、little-endianの16byteと相互変換する。
   - 8/16/32/64bit幅、上下64bitの境界、64bit幅のmask・shiftを正しく扱う。
   - lane 0の位置、非対象laneの保持、全bitの往復一致をテストで確認する。
@@ -310,6 +310,7 @@
 
 ## Implementation Notes
 
+- 2.2: `SimdValue`のbyte変換は`FromLittleEndian(ReadOnlySpan<byte>)`と`WriteLittleEndian(Span<byte>)`。lane幅・indexは検証済みとして扱い、浮動小数点や符号の解釈はhandlerに残す。
 - 2.1: SIMD即値は`V128`・`Shuffle`・`LaneIndex`・`MemoryArgumentLaneIndex`、laneメモリ規則は`MemoryLoadLane`・`MemoryStoreLane`を使う。生成metadataの`LaneCount`はlane即値なしで0。全236命令はまだ未接続である。
 - 1.4: `Interpreter.Float.cs`内の`F32MinResult`・`F32MaxResult`・`F64MinResult`・`F64MaxResult`と、既存の算術結果・丸め・飽和変換の補助をSIMDのpartialから再利用する。
 - 1.2: `NumericSignature`は`InputTypes`と`ResultType`へ統一した。入力型列はスタック下側から上側の順で、validatorは逆順に消費する。型列のテスト比較には`SequenceEqual`を使う。生成契約の異種入力・3入力・v128拡張は2.1で行う。

@@ -135,3 +135,9 @@ New-Item -ItemType Directory -Path $taskOutput | Out-Null
 [初回実装記録](../../../artifacts/simd/task-2.1-20261018T133210Z/status-report.md)では、一時フラグOFFで150件中29件失敗、ONで150件成功、フラグ除去後も成功を確認した。後から追加した9件は既存実装の補強テストで、個別のREDは取得していない。[初回レビュー](../../../artifacts/simd/review-2.1-20261018T133957Z/review-verdict.md)で重複`LaneCount`による生成器例外を検出したため、[修正記録](../../../artifacts/simd/task-2.1-remediation-1-20261018T134355Z/status-report.md)の回帰テストで修正前のREDを取得し、既存`WSIG002`で拒否する条件を追加した。
 
 [独立再レビュー](../../../artifacts/simd/review-2.1-r2-20261018T134655Z/review-verdict.md)は`APPROVED`で、Releaseビルドの警告・エラー0、生成器160件・ランタイム3,761件成功、失敗とスキップ0、全終了0、変更9ファイルの整形と差分チェック成功を確認した。`kiro-verify-completion`のタスク2.1判定は`VERIFIED`で、未解決の指摘はない。
+
+## 2.2 128bitのlane操作とbyte変換
+
+要件3.1・4.1・6.6に対応する内部`SimdValue`を追加した。上下64bitを保持し、8/16/32/64bitのlane取得・切詰め置換と、16byteのlittle-endian相互変換を提供する。`WasmValue`とBCLだけに依存し、操作ごとの配列確保やCPU固有分岐はない。
+
+[実装記録](../../../artifacts/simd/task-2.2-20261018T135140Z/status-report.md)に5操作のREDとGREENを保存した。一時フラグ除去後の[独立レビュー](../../../artifacts/simd/review-2.2-20261018T140227Z/review-verdict.md)は`APPROVED`で、Releaseビルドの警告・エラー0、関連37件を含むランタイム3,798件成功、失敗とスキップ0、終了0と整形成功を確認した。64bit境界、64bit幅のmask、非対象lane保持、NaN payload・符号付きゼロを含むbit往復を確認し、`kiro-verify-completion`のタスク2.2判定は`VERIFIED`とした。未解決の指摘はない。公開SIMD経路とCPU支援無効時のhandler検証は後続で行う。
