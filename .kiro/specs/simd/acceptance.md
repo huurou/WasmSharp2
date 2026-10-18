@@ -277,3 +277,11 @@ New-Item -ItemType Directory -Path $taskOutput | Out-Null
 [実装記録](../../../artifacts/simd/task-6.3-20261018T180049Z/StatusReport.md)の初回OFFは37件失敗・終了2、ONは37件成功だった。最初の全件確認後、自己確認でf32unsignedの末尾laneの期待値が全ケース0だったため、1ケースを-12.5から+12.5へ変更し、出力12を確認するよう補強した。元ログを保持し、再度OFFで37件すべて失敗、ONで37件成功を確認した。補強後の最終結果はlane3-final-*である。
 
 [独立レビュー](../../../artifacts/simd/task-6.3-review-20261018T181114Z/ReviewVerdict.md)はAPPROVED。フラグ除去後のReleaseビルド警告・エラー0、ランタイム4,452件成功・失敗/スキップ0・終了0、5C#の整形・空白・hash検査、37期待vectorの独立照合一致を確認した。補強後REDの全37引数も現在のテストと一致した。親は4wrapper・2helper・代表的テスト、実際の出力と終了値を確認し、kiro-verify-completionのタスク6.3判定をVERIFIEDとした。未解決の指摘はない。公開接続・公式全体実行は8.3で行う。
+
+## 6.4 整数から浮動小数点への変換と精度変更
+
+要件6.5・6.6に対応するconvert4handler、demote・promote各1handlerを追加した。挙動追加に先立ち、既存変換helperを入力幅・出力幅・rawbit演算へ整理し、警告・エラー0のReleaseビルドと既存4クラス37件の成功を確認した。入力と出力のlane数の小さい方だけを変換し、結果の未使用laneはゼロを保つ。
+
+[実装記録](../../../artifacts/simd/task-6.4-20261018T181628Z/StatusReport.md)の新規42ケースでは、signed/unsigned、2^24付近とuint上限、demoteの最近接偶数・中点前後・overflow・underflow、promoteのlow選択、±0・無限大・NaNと128bit・stack契約を確認した。OFF42件失敗・終了2、ON42件成功、フラグ除去後の成功を記録した。ON実装後の4convertテスト名の訂正は入力の符号解釈を明確にする表現変更だけで、REDの入力・期待値とケース数は維持した。
+
+[独立レビュー](../../../artifacts/simd/review-6.4-20261018T182524Z/review.md)はAPPROVED。Releaseビルド警告・エラー0、ランタイム4,494件成功・失敗/スキップ0・終了0、7C#の整形・空白・hash検査、42期待vectorの独立計算一致、先行整理とRED段階の再構成・時刻順を確認した。親は最終wrapper・共通Map・代表的テスト、実際の出力と終了値を確認し、kiro-verify-completionのタスク6.4判定をVERIFIEDとした。未解決の指摘はない。公開接続・公式全体実行は8.3、統合後のHW支援無効確認は10.1で行う。

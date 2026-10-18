@@ -174,7 +174,7 @@
   - _Boundary: SimdIntegerExecution_
   - _Requirements: 5.6_
 
-- [ ] 6. 浮動小数点と変換の実行を追加する
+- [x] 6. 浮動小数点と変換の実行を追加する
 - [x] 6.1 符号bit操作と基本算術を追加する
   - f32x4/f64x2のabs/negをbit操作で扱い、NaN payloadを保持する。
   - add/sub/mul/div/sqrtを同精度の規則で計算し、許されるNaN結果を返す。
@@ -197,7 +197,7 @@
   - _Boundary: SimdFloatExecution_
   - _Requirements: 6.4, 6.5_
 
-- [ ] 6.4 整数から浮動小数点への変換と精度変更を追加する
+- [x] 6.4 整数から浮動小数点への変換と精度変更を追加する
   - convertのsigned/unsigned、low lane選択、demoteとpromoteを扱う。
   - demote_zeroの未使用laneをゼロにし、変換精度の丸めを保つ。
   - 符号境界、精度境界と非対象laneの結果を確認する。
@@ -310,6 +310,7 @@
 
 ## Implementation Notes
 
+- 6.4: vectorの数値変換はExecuteSimdConversion/MapSimdConversionで入力幅・出力幅・rawbit演算を共有する。処理するlane数は両幅のlane数の小さい方とし、未使用laneはdefault結果のゼロを保持する。
 - 6.3: 変換テストでは未使用laneを除き、各出力laneに非ゼロの期待値があることも確認する。末尾laneが全ケース0だったため1ケースを補強し、OFFのREDから確認し直した。
 - 5.2: `SaturateSimdInteger(int value, int minimum, int maximum)`で中間値を飽和しlaneのbit列を返す。narrowは`ExecuteSimdIntegerNarrow`と純粋な`MapSimdIntegerNarrow`を使う。
 - 5.1: `ExecuteSimdIntegerUnary/Binary/Shift`でstack操作、`MapSimdIntegerUnary/Binary/Shift`で純粋なlane計算を扱う。後続の同幅演算では再利用し、新規機能の一時フラグを既存共通処理へ掛けない。
