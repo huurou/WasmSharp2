@@ -22,6 +22,7 @@ internal static class ModuleValidator
         var references = ReferenceValidationContext.Create(module, functionCount);
         ValidateInitializers(module, references);
         ValidateResources(module);
+        ValidateElements(module, references);
         ValidateData(module, memoryCount, references);
         var codes = ValidateFunctions(module, references);
         ValidateStart(module);
@@ -34,6 +35,63 @@ internal static class ModuleValidator
         );
         ValidateMemoryCount(module, memoryCount);
         return codes;
+    }
+
+    /// <summary>
+    /// 全方式の要素式を検証し、アクティブの場合は転送先とオフセット式も検証する
+    /// </summary>
+    /// <param name="module">global初期化式とリソース宣言の検証を終えたmodule</param>
+    /// <param name="references">当該module検証で共有する参照情報</param>
+    private static void ValidateElements(WasmModule module, ReferenceValidationContext references)
+    {
+        var importedGlobals = module.Imports.OfType<GlobalImport>().Select(x => x.Type).ToArray();
+        foreach (var element in module.ElementSegments)
+        {
+            foreach (var initializer in element.Initializers)
+            {
+                ConstantInitializer.Validate(
+                    initializer,
+                    element.ElementType,
+                    importedGlobals,
+                    references,
+                    9
+                );
+            }
+            if (element.ActiveTarget is not { } target)
+            {
+                continue;
+            }
+            var location = new WasmFailureLocation(
+                WasmProcessingStage.Validate,
+                element.ByteOffset,
+                null,
+                9
+            );
+            if (target.TableIndex >= (uint)references.TableElementTypes.Length)
+            {
+                throw ValidationDiagnostics.UnknownIndex(
+                    "table",
+                    target.TableIndex,
+                    "要素セグメントが参照するテーブルが存在しません。",
+                    location
+                );
+            }
+            if (element.ElementType != references.TableElementTypes[(int)target.TableIndex])
+            {
+                throw ValidationDiagnostics.ValidationFailure(
+                    "type mismatch",
+                    "要素セグメントの参照型と対象テーブルの参照型が一致しません。",
+                    location
+                );
+            }
+            ConstantInitializer.Validate(
+                target.OffsetExpression,
+                WasmValueKind.I32,
+                importedGlobals,
+                references,
+                9
+            );
+        }
     }
 
     /// <summary>
@@ -78,7 +136,7 @@ internal static class ModuleValidator
     /// <summary>
     /// 各定義関数を1回の型検査と線形化で処理し、全成功時だけコードを返す
     /// </summary>
-    /// <param name="module">importと定義関数の型参照、global初期化式、リソース宣言、データセグメントの検証を終えたmodule</param>
+    /// <param name="module">importと定義関数の型参照、global初期化式、リソース宣言、要素・データセグメントの検証を終えたmodule</param>
     /// <param name="references">当該module検証で共有する参照情報</param>
     /// <returns>ローカルに保持した定義順の線形実行コード</returns>
     private static ImmutableArray<FunctionCode> ValidateFunctions(

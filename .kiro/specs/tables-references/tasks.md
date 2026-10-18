@@ -103,7 +103,7 @@ baselineは最終受入まで保持する。
   - _Depends: 2.1, 3.1_
   - _Requirements: 2.1, 2.2, 2.6, 3.4, 3.5, 3.6_
 
-- [ ] 3.4 要素とテーブル命令の添字・参照型を検証する
+- [x] 3.4 要素とテーブル命令の添字・参照型を検証する
   - 全modeの要素式、activeのtable型とi32 offsetを検証し、passive/declarativeにはtableの存在を要求しない。
   - table命令のoperandと型を検証し、copy元先とinit元先の参照型を照合する。
   - table.initはtable→elem→型一致→operandの順で検査し、要素の診断カテゴリをelem segmentとする。tableとelemがともに未知の公式ケースでunknown tableを優先することを7.1の公開経路で確認する。

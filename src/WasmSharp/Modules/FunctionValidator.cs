@@ -15,7 +15,7 @@ internal static class FunctionValidator
     /// 定義関数の参照と値スタックの型を検証し、対応する線形実行コードを作成する
     /// </summary>
     /// <remarks>入力の型配列とmoduleの検証成功状態・実行コードは変更しない</remarks>
-    /// <param name="module">importと定義関数の型参照、global初期化式、リソース宣言、データセグメントの検証を終えたmodule</param>
+    /// <param name="module">importと定義関数の型参照、global初期化式、リソース宣言、要素・データセグメントの検証を終えたmodule</param>
     /// <param name="definitionIndex">importを含まない定義順の関数index</param>
     /// <param name="moduleFunctionIndex">型の参照と診断に使用する、importを含むmodule全体の関数index</param>
     /// <param name="functionTypes">importを先頭とする関数index順の解決済みの型</param>
@@ -231,7 +231,7 @@ internal static class FunctionValidator
 
                 case ValidationRule.MemoryBulk:
                     RequireMemory(instruction.ByteOffset);
-                    PopMemoryBulk(instruction.ByteOffset);
+                    PopThreeI32(instruction.ByteOffset);
                     break;
 
                 case ValidationRule.MemoryInit:
@@ -251,8 +251,83 @@ internal static class FunctionValidator
                     }
                     if (descriptor.Validation == ValidationRule.MemoryInit)
                     {
-                        PopMemoryBulk(instruction.ByteOffset);
+                        PopThreeI32(instruction.ByteOffset);
                     }
+                    break;
+
+                case ValidationRule.TableGet:
+                case ValidationRule.TableSet:
+                case ValidationRule.TableGrow:
+                case ValidationRule.TableSize:
+                case ValidationRule.TableFill:
+                    var tableElementType = GetTableElementType(
+                        instruction.Index,
+                        instruction.ByteOffset
+                    );
+                    switch (descriptor.Validation)
+                    {
+                        case ValidationRule.TableGet:
+                            Pop(WasmValueKind.I32, instruction.ByteOffset);
+                            stack.Add(tableElementType);
+                            break;
+                        case ValidationRule.TableSet:
+                            Pop(tableElementType, instruction.ByteOffset);
+                            Pop(WasmValueKind.I32, instruction.ByteOffset);
+                            break;
+                        case ValidationRule.TableGrow:
+                            Pop(WasmValueKind.I32, instruction.ByteOffset);
+                            Pop(tableElementType, instruction.ByteOffset);
+                            stack.Add(WasmValueKind.I32);
+                            break;
+                        case ValidationRule.TableSize:
+                            stack.Add(WasmValueKind.I32);
+                            break;
+                        case ValidationRule.TableFill:
+                            Pop(WasmValueKind.I32, instruction.ByteOffset);
+                            Pop(tableElementType, instruction.ByteOffset);
+                            Pop(WasmValueKind.I32, instruction.ByteOffset);
+                            break;
+                    }
+                    break;
+
+                case ValidationRule.TableCopy:
+                    var destinationType = GetTableElementType(
+                        instruction.Index,
+                        instruction.ByteOffset
+                    );
+                    var sourceType = GetTableElementType(
+                        instruction.SecondaryIndex,
+                        instruction.ByteOffset
+                    );
+                    if (destinationType != sourceType)
+                    {
+                        throw CreateException(
+                            "コピー元とコピー先のテーブルの参照型が一致しません。",
+                            instruction.ByteOffset
+                        );
+                    }
+                    PopThreeI32(instruction.ByteOffset);
+                    break;
+
+                case ValidationRule.TableInit:
+                    // バイナリの即値順と分け、テーブル、要素、型、operandの順に検査する。
+                    var initializationTableType = GetTableElementType(
+                        instruction.SecondaryIndex,
+                        instruction.ByteOffset
+                    );
+                    var elementType = GetElementType(instruction.Index, instruction.ByteOffset);
+                    if (initializationTableType != elementType)
+                    {
+                        throw CreateException(
+                            "要素セグメントと対象テーブルの参照型が一致しません。",
+                            instruction.ByteOffset
+                        );
+                    }
+                    PopThreeI32(instruction.ByteOffset);
+                    break;
+
+                case ValidationRule.ElementDrop:
+                    GetElementType(instruction.Index, instruction.ByteOffset);
                     break;
 
                 case ValidationRule.FunctionEnd:
@@ -448,7 +523,8 @@ internal static class FunctionValidator
                         outputIndex,
                         outputTargetCount,
                         instruction.MemoryArgument,
-                        descriptor.MemoryAccessSignature.GetValueOrDefault()
+                        descriptor.MemoryAccessSignature.GetValueOrDefault(),
+                        instruction.SecondaryIndex
                     )
                 );
             }
@@ -461,11 +537,39 @@ internal static class FunctionValidator
             branchTargets.ToImmutable()
         );
 
-        void PopMemoryBulk(long byteOffset)
+        void PopThreeI32(long byteOffset)
         {
             Pop(WasmValueKind.I32, byteOffset);
             Pop(WasmValueKind.I32, byteOffset);
             Pop(WasmValueKind.I32, byteOffset);
+        }
+
+        WasmValueKind GetTableElementType(uint index, long byteOffset)
+        {
+            if (index >= (uint)references.TableElementTypes.Length)
+            {
+                throw CreateUnknownIndex(
+                    "table",
+                    index,
+                    "参照するテーブルが存在しません。",
+                    byteOffset
+                );
+            }
+            return references.TableElementTypes[(int)index];
+        }
+
+        WasmValueKind GetElementType(uint index, long byteOffset)
+        {
+            if (index >= (uint)references.ElementTypes.Length)
+            {
+                throw CreateUnknownIndex(
+                    "elem segment",
+                    index,
+                    "参照する要素セグメントが存在しません。",
+                    byteOffset
+                );
+            }
+            return references.ElementTypes[(int)index];
         }
 
         void RequireMemory(long byteOffset)
