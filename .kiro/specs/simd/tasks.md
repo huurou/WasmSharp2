@@ -131,7 +131,7 @@
   - _Requirements: 4.5_
 
 - [ ] 5. 整数SIMDの実行を追加する
-- [ ] 5.1 通常の整数算術とシフトを追加する
+- [x] 5.1 通常の整数算術とシフトを追加する
   - 固定仕様に存在する各lane幅のabs・neg・add・sub・mulと3種類のshiftを扱う。
   - 演算結果をlane幅へ折り返し、i32シフト量をlane幅で剰余化する。
   - 最小負数、overflow、幅以上のシフトとsigned/unsigned右シフトの差を確認する。
@@ -310,6 +310,7 @@
 
 ## Implementation Notes
 
+- 5.1: `ExecuteSimdIntegerUnary/Binary/Shift`でstack操作、`MapSimdIntegerUnary/Binary/Shift`で純粋なlane計算を扱う。後続の同幅演算では再利用し、新規機能の一時フラグを既存共通処理へ掛けない。
 - 4.3: `CompareSimdLanes(InterpreterContext, int, Func<ulong, ulong, bool>)`がlane走査と全bit1/0の結果構築を共有する。符号・型の解釈はhandlerのstatic predicateへ置き、4.4でも再利用する。
 - 3.1: `v128.const`とtyped/untypedのv128 selectを公開経路へ接続した。残る235個の0xFD命令は未接続。定数・globalのbyte/Stream、bit保持と型不一致を確認済みで、公式全体run・比較は3.2で行う。
 - 2.4: lane・shuffleの診断先頭は`invalid lane index`。laneメモリはmemory存在→alignment→lane→operandの順を維持する。`Instruction`へ`ShuffleLanes`・`LaneIndex`を渡す準備が完了し、新規経路の否定テストは接続時に行う。
