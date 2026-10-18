@@ -106,7 +106,11 @@ internal static class ModuleInstantiator
             var offset = unchecked(
                 (uint)
                     ConstantInitializer
-                        .Evaluate(target.OffsetExpression, instance.Globals.AsSpan())
+                        .Evaluate(
+                            target.OffsetExpression,
+                            instance.Globals.AsSpan(),
+                            instance.Functions.AsSpan()
+                        )
                         .AsI32()
             );
             var data = instance.DataSegments[index];

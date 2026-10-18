@@ -117,7 +117,8 @@ public sealed class WasmInstance
         {
             var value = ConstantInitializer.Evaluate(
                 global.Initializer,
-                ImmutableCollectionsMarshal.AsMemory(globals).Span
+                ImmutableCollectionsMarshal.AsMemory(globals).Span,
+                Functions.AsSpan()
             );
             globals.Add(new WasmGlobal(global.Type, value));
         }

@@ -20,9 +20,9 @@ internal static class ModuleValidator
         var (functionCount, _, memoryCount, globalCount) = ValidateImportReferences(module);
         ValidateFunctionReferences(module, functionCount);
         var references = ReferenceValidationContext.Create(module, functionCount);
-        ValidateInitializers(module);
+        ValidateInitializers(module, references);
         ValidateResources(module);
-        ValidateData(module, memoryCount);
+        ValidateData(module, memoryCount, references);
         var codes = ValidateFunctions(module);
         ValidateStart(module);
         ValidateExports(
@@ -41,7 +41,12 @@ internal static class ModuleValidator
     /// </summary>
     /// <param name="module">リソース宣言の検証を終えたmodule</param>
     /// <param name="importedMemoryCount">importしたmemoryの個数</param>
-    private static void ValidateData(WasmModule module, uint importedMemoryCount)
+    /// <param name="references">当該module検証で共有する参照情報</param>
+    private static void ValidateData(
+        WasmModule module,
+        uint importedMemoryCount,
+        ReferenceValidationContext references
+    )
     {
         var memoryCount = importedMemoryCount + (uint)module.Memories.Length;
         var importedGlobals = module.Imports.OfType<GlobalImport>().Select(x => x.Type).ToArray();
@@ -64,6 +69,7 @@ internal static class ModuleValidator
                 target.OffsetExpression,
                 WasmValueKind.I32,
                 importedGlobals,
+                references,
                 11
             );
         }
@@ -108,7 +114,11 @@ internal static class ModuleValidator
     /// globalの初期化式を評価せず、1個の宣言型の値を生成することを検証する
     /// </summary>
     /// <param name="module">デコード済みの静的定義</param>
-    private static void ValidateInitializers(WasmModule module)
+    /// <param name="references">当該module検証で共有する参照情報</param>
+    private static void ValidateInitializers(
+        WasmModule module,
+        ReferenceValidationContext references
+    )
     {
         var importedGlobals = module.Imports.OfType<GlobalImport>().Select(x => x.Type).ToArray();
         foreach (var global in module.Globals)
@@ -117,6 +127,7 @@ internal static class ModuleValidator
                 global.Initializer,
                 global.Type.ValueKind,
                 importedGlobals,
+                references,
                 6
             );
         }
