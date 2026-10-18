@@ -458,6 +458,672 @@ internal static partial class Interpreter
     }
 
     /// <summary>
+    /// 8bitのlaneをビット列で比較し全bit1または0を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI8x16Eq命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I8x16Eq(InterpreterContext context, in Instruction instruction)
+    {
+        return CompareSimdLanes(context, 8, static (x, y) => x == y);
+    }
+
+    /// <summary>
+    /// 8bitのlaneをビット列で比較し全bit1または0を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI8x16Ne命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I8x16Ne(InterpreterContext context, in Instruction instruction)
+    {
+        return CompareSimdLanes(context, 8, static (x, y) => x != y);
+    }
+
+    /// <summary>
+    /// 8bitのlaneを符号付き比較し全bit1または0を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI8x16LtS命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I8x16LtS(InterpreterContext context, in Instruction instruction)
+    {
+        return CompareSimdLanes(
+            context,
+            8,
+            static (x, y) => unchecked((sbyte)x) < unchecked((sbyte)y)
+        );
+    }
+
+    /// <summary>
+    /// 8bitのlaneを符号なし比較し全bit1または0を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI8x16LtU命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I8x16LtU(InterpreterContext context, in Instruction instruction)
+    {
+        return CompareSimdLanes(context, 8, static (x, y) => x < y);
+    }
+
+    /// <summary>
+    /// 8bitのlaneを符号付き比較し全bit1または0を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI8x16GtS命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I8x16GtS(InterpreterContext context, in Instruction instruction)
+    {
+        return CompareSimdLanes(
+            context,
+            8,
+            static (x, y) => unchecked((sbyte)x) > unchecked((sbyte)y)
+        );
+    }
+
+    /// <summary>
+    /// 8bitのlaneを符号なし比較し全bit1または0を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI8x16GtU命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I8x16GtU(InterpreterContext context, in Instruction instruction)
+    {
+        return CompareSimdLanes(context, 8, static (x, y) => x > y);
+    }
+
+    /// <summary>
+    /// 8bitのlaneを符号付き比較し全bit1または0を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI8x16LeS命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I8x16LeS(InterpreterContext context, in Instruction instruction)
+    {
+        return CompareSimdLanes(
+            context,
+            8,
+            static (x, y) => unchecked((sbyte)x) <= unchecked((sbyte)y)
+        );
+    }
+
+    /// <summary>
+    /// 8bitのlaneを符号なし比較し全bit1または0を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI8x16LeU命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I8x16LeU(InterpreterContext context, in Instruction instruction)
+    {
+        return CompareSimdLanes(context, 8, static (x, y) => x <= y);
+    }
+
+    /// <summary>
+    /// 8bitのlaneを符号付き比較し全bit1または0を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI8x16GeS命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I8x16GeS(InterpreterContext context, in Instruction instruction)
+    {
+        return CompareSimdLanes(
+            context,
+            8,
+            static (x, y) => unchecked((sbyte)x) >= unchecked((sbyte)y)
+        );
+    }
+
+    /// <summary>
+    /// 8bitのlaneを符号なし比較し全bit1または0を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI8x16GeU命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I8x16GeU(InterpreterContext context, in Instruction instruction)
+    {
+        return CompareSimdLanes(context, 8, static (x, y) => x >= y);
+    }
+
+    /// <summary>
+    /// 16bitのlaneをビット列で比較し全bit1または0を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI16x8Eq命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I16x8Eq(InterpreterContext context, in Instruction instruction)
+    {
+        return CompareSimdLanes(context, 16, static (x, y) => x == y);
+    }
+
+    /// <summary>
+    /// 16bitのlaneをビット列で比較し全bit1または0を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI16x8Ne命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I16x8Ne(InterpreterContext context, in Instruction instruction)
+    {
+        return CompareSimdLanes(context, 16, static (x, y) => x != y);
+    }
+
+    /// <summary>
+    /// 16bitのlaneを符号付き比較し全bit1または0を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI16x8LtS命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I16x8LtS(InterpreterContext context, in Instruction instruction)
+    {
+        return CompareSimdLanes(
+            context,
+            16,
+            static (x, y) => unchecked((short)x) < unchecked((short)y)
+        );
+    }
+
+    /// <summary>
+    /// 16bitのlaneを符号なし比較し全bit1または0を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI16x8LtU命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I16x8LtU(InterpreterContext context, in Instruction instruction)
+    {
+        return CompareSimdLanes(context, 16, static (x, y) => x < y);
+    }
+
+    /// <summary>
+    /// 16bitのlaneを符号付き比較し全bit1または0を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI16x8GtS命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I16x8GtS(InterpreterContext context, in Instruction instruction)
+    {
+        return CompareSimdLanes(
+            context,
+            16,
+            static (x, y) => unchecked((short)x) > unchecked((short)y)
+        );
+    }
+
+    /// <summary>
+    /// 16bitのlaneを符号なし比較し全bit1または0を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI16x8GtU命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I16x8GtU(InterpreterContext context, in Instruction instruction)
+    {
+        return CompareSimdLanes(context, 16, static (x, y) => x > y);
+    }
+
+    /// <summary>
+    /// 16bitのlaneを符号付き比較し全bit1または0を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI16x8LeS命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I16x8LeS(InterpreterContext context, in Instruction instruction)
+    {
+        return CompareSimdLanes(
+            context,
+            16,
+            static (x, y) => unchecked((short)x) <= unchecked((short)y)
+        );
+    }
+
+    /// <summary>
+    /// 16bitのlaneを符号なし比較し全bit1または0を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI16x8LeU命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I16x8LeU(InterpreterContext context, in Instruction instruction)
+    {
+        return CompareSimdLanes(context, 16, static (x, y) => x <= y);
+    }
+
+    /// <summary>
+    /// 16bitのlaneを符号付き比較し全bit1または0を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI16x8GeS命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I16x8GeS(InterpreterContext context, in Instruction instruction)
+    {
+        return CompareSimdLanes(
+            context,
+            16,
+            static (x, y) => unchecked((short)x) >= unchecked((short)y)
+        );
+    }
+
+    /// <summary>
+    /// 16bitのlaneを符号なし比較し全bit1または0を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI16x8GeU命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I16x8GeU(InterpreterContext context, in Instruction instruction)
+    {
+        return CompareSimdLanes(context, 16, static (x, y) => x >= y);
+    }
+
+    /// <summary>
+    /// 32bitのlaneをビット列で比較し全bit1または0を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI32x4Eq命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I32x4Eq(InterpreterContext context, in Instruction instruction)
+    {
+        return CompareSimdLanes(context, 32, static (x, y) => x == y);
+    }
+
+    /// <summary>
+    /// 32bitのlaneをビット列で比較し全bit1または0を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI32x4Ne命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I32x4Ne(InterpreterContext context, in Instruction instruction)
+    {
+        return CompareSimdLanes(context, 32, static (x, y) => x != y);
+    }
+
+    /// <summary>
+    /// 32bitのlaneを符号付き比較し全bit1または0を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI32x4LtS命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I32x4LtS(InterpreterContext context, in Instruction instruction)
+    {
+        return CompareSimdLanes(
+            context,
+            32,
+            static (x, y) => unchecked((int)x) < unchecked((int)y)
+        );
+    }
+
+    /// <summary>
+    /// 32bitのlaneを符号なし比較し全bit1または0を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI32x4LtU命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I32x4LtU(InterpreterContext context, in Instruction instruction)
+    {
+        return CompareSimdLanes(context, 32, static (x, y) => x < y);
+    }
+
+    /// <summary>
+    /// 32bitのlaneを符号付き比較し全bit1または0を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI32x4GtS命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I32x4GtS(InterpreterContext context, in Instruction instruction)
+    {
+        return CompareSimdLanes(
+            context,
+            32,
+            static (x, y) => unchecked((int)x) > unchecked((int)y)
+        );
+    }
+
+    /// <summary>
+    /// 32bitのlaneを符号なし比較し全bit1または0を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI32x4GtU命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I32x4GtU(InterpreterContext context, in Instruction instruction)
+    {
+        return CompareSimdLanes(context, 32, static (x, y) => x > y);
+    }
+
+    /// <summary>
+    /// 32bitのlaneを符号付き比較し全bit1または0を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI32x4LeS命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I32x4LeS(InterpreterContext context, in Instruction instruction)
+    {
+        return CompareSimdLanes(
+            context,
+            32,
+            static (x, y) => unchecked((int)x) <= unchecked((int)y)
+        );
+    }
+
+    /// <summary>
+    /// 32bitのlaneを符号なし比較し全bit1または0を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI32x4LeU命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I32x4LeU(InterpreterContext context, in Instruction instruction)
+    {
+        return CompareSimdLanes(context, 32, static (x, y) => x <= y);
+    }
+
+    /// <summary>
+    /// 32bitのlaneを符号付き比較し全bit1または0を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI32x4GeS命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I32x4GeS(InterpreterContext context, in Instruction instruction)
+    {
+        return CompareSimdLanes(
+            context,
+            32,
+            static (x, y) => unchecked((int)x) >= unchecked((int)y)
+        );
+    }
+
+    /// <summary>
+    /// 32bitのlaneを符号なし比較し全bit1または0を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI32x4GeU命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I32x4GeU(InterpreterContext context, in Instruction instruction)
+    {
+        return CompareSimdLanes(context, 32, static (x, y) => x >= y);
+    }
+
+    /// <summary>
+    /// 64bitのlaneをビット列で比較し全bit1または0を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI64x2Eq命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I64x2Eq(InterpreterContext context, in Instruction instruction)
+    {
+        return CompareSimdLanes(context, 64, static (x, y) => x == y);
+    }
+
+    /// <summary>
+    /// 64bitのlaneをビット列で比較し全bit1または0を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI64x2Ne命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I64x2Ne(InterpreterContext context, in Instruction instruction)
+    {
+        return CompareSimdLanes(context, 64, static (x, y) => x != y);
+    }
+
+    /// <summary>
+    /// 64bitのlaneを符号付き比較し全bit1または0を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI64x2LtS命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I64x2LtS(InterpreterContext context, in Instruction instruction)
+    {
+        return CompareSimdLanes(
+            context,
+            64,
+            static (x, y) => unchecked((long)x) < unchecked((long)y)
+        );
+    }
+
+    /// <summary>
+    /// 64bitのlaneを符号付き比較し全bit1または0を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI64x2GtS命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I64x2GtS(InterpreterContext context, in Instruction instruction)
+    {
+        return CompareSimdLanes(
+            context,
+            64,
+            static (x, y) => unchecked((long)x) > unchecked((long)y)
+        );
+    }
+
+    /// <summary>
+    /// 64bitのlaneを符号付き比較し全bit1または0を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI64x2LeS命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I64x2LeS(InterpreterContext context, in Instruction instruction)
+    {
+        return CompareSimdLanes(
+            context,
+            64,
+            static (x, y) => unchecked((long)x) <= unchecked((long)y)
+        );
+    }
+
+    /// <summary>
+    /// 64bitのlaneを符号付き比較し全bit1または0を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI64x2GeS命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I64x2GeS(InterpreterContext context, in Instruction instruction)
+    {
+        return CompareSimdLanes(
+            context,
+            64,
+            static (x, y) => unchecked((long)x) >= unchecked((long)y)
+        );
+    }
+
+    /// <summary>
+    /// 128bitのいずれかのbitが非ゼロならi32の1を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのV128AnyTrue命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult V128AnyTrue(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        return AnyTrueSimdLanes(context);
+    }
+
+    /// <summary>
+    /// すべてのlaneが非ゼロならi32の1を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI8x16AllTrue命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I8x16AllTrue(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        return AllTrueSimdLanes(context, 8);
+    }
+
+    /// <summary>
+    /// 各laneの最上位bitをlane番号順にi32へ集める
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI8x16Bitmask命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I8x16Bitmask(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        return BitmaskSimdLanes(context, 8);
+    }
+
+    /// <summary>
+    /// すべてのlaneが非ゼロならi32の1を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI16x8AllTrue命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I16x8AllTrue(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        return AllTrueSimdLanes(context, 16);
+    }
+
+    /// <summary>
+    /// 各laneの最上位bitをlane番号順にi32へ集める
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI16x8Bitmask命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I16x8Bitmask(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        return BitmaskSimdLanes(context, 16);
+    }
+
+    /// <summary>
+    /// すべてのlaneが非ゼロならi32の1を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI32x4AllTrue命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I32x4AllTrue(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        return AllTrueSimdLanes(context, 32);
+    }
+
+    /// <summary>
+    /// 各laneの最上位bitをlane番号順にi32へ集める
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI32x4Bitmask命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I32x4Bitmask(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        return BitmaskSimdLanes(context, 32);
+    }
+
+    /// <summary>
+    /// すべてのlaneが非ゼロならi32の1を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI64x2AllTrue命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I64x2AllTrue(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        return AllTrueSimdLanes(context, 64);
+    }
+
+    /// <summary>
+    /// 各laneの最上位bitをlane番号順にi32へ集める
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI64x2Bitmask命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I64x2Bitmask(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        return BitmaskSimdLanes(context, 64);
+    }
+
+    /// <summary>
+    /// 同じ幅のlaneに比較を適用し真偽を全bit1または0で保持する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="bitWidth">laneの幅</param>
+    /// <param name="compare">handlerで符号を解釈する比較</param>
+    /// <returns>実行の成功</returns>
+    private static ExecutionResult CompareSimdLanes(
+        InterpreterContext context,
+        int bitWidth,
+        Func<ulong, ulong, bool> compare
+    )
+    {
+        var second = SimdValue.FromValue(context.PopValue());
+        var first = SimdValue.FromValue(context.PopValue());
+        var result = default(SimdValue);
+        for (var laneIndex = 0; laneIndex < 128 / bitWidth; laneIndex++)
+        {
+            var matched = compare(
+                first.GetLane(bitWidth, laneIndex),
+                second.GetLane(bitWidth, laneIndex)
+            );
+            result = result.WithLane(bitWidth, laneIndex, matched ? ulong.MaxValue : 0);
+        }
+
+        context.PushValue(result.ToValue());
+        return default;
+    }
+
+    /// <summary>
+    /// 128bit全体の非ゼロ判定をi32で返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <returns>実行の成功</returns>
+    private static ExecutionResult AnyTrueSimdLanes(InterpreterContext context)
+    {
+        var vector = context.PopValue().AsV128();
+        context.PushValue(WasmValue.FromI32((vector.Low64 | vector.High64) != 0 ? 1 : 0));
+        return default;
+    }
+
+    /// <summary>
+    /// すべてのlaneの非ゼロ判定をi32で返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="bitWidth">laneの幅</param>
+    /// <returns>実行の成功</returns>
+    private static ExecutionResult AllTrueSimdLanes(InterpreterContext context, int bitWidth)
+    {
+        var vector = SimdValue.FromValue(context.PopValue());
+        var allTrue = true;
+        for (var laneIndex = 0; laneIndex < 128 / bitWidth; laneIndex++)
+        {
+            allTrue &= vector.GetLane(bitWidth, laneIndex) != 0;
+        }
+
+        context.PushValue(WasmValue.FromI32(allTrue ? 1 : 0));
+        return default;
+    }
+
+    /// <summary>
+    /// 各laneの最上位bitをi32の対応位置へ集める
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="bitWidth">laneの幅</param>
+    /// <returns>実行の成功</returns>
+    private static ExecutionResult BitmaskSimdLanes(InterpreterContext context, int bitWidth)
+    {
+        var vector = SimdValue.FromValue(context.PopValue());
+        var mask = 0;
+        for (var laneIndex = 0; laneIndex < 128 / bitWidth; laneIndex++)
+        {
+            var signBit = vector.GetLane(bitWidth, laneIndex) >> (bitWidth - 1);
+            mask |= (int)signBit << laneIndex;
+        }
+
+        context.PushValue(WasmValue.FromI32(mask));
+        return default;
+    }
+
+    /// <summary>
     /// 指定幅へ切り詰めたビット列を128bit全体へ複製する
     /// </summary>
     /// <param name="context">結果を積む実行コンテキスト</param>

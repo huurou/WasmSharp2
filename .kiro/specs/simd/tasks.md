@@ -116,7 +116,7 @@
   - _Boundary: SimdLaneExecution_
   - _Requirements: 4.2, 4.3, 4.4_
 
-- [ ] 4.3 整数比較と縮約判定を追加する
+- [x] 4.3 整数比較と縮約判定を追加する
   - 固定仕様にある整数lane型ごとの比較を符号付き・符号なしで区別する。
   - any_true・all_true・bitmaskを追加し、比較の全bit1/0とlane順を保つ。
   - i64に存在しないunsigned比較を増やさず、符号境界と混在laneの結果を確認する。
@@ -310,6 +310,7 @@
 
 ## Implementation Notes
 
+- 4.3: `CompareSimdLanes(InterpreterContext, int, Func<ulong, ulong, bool>)`がlane走査と全bit1/0の結果構築を共有する。符号・型の解釈はhandlerのstatic predicateへ置き、4.4でも再利用する。
 - 3.1: `v128.const`とtyped/untypedのv128 selectを公開経路へ接続した。残る235個の0xFD命令は未接続。定数・globalのbyte/Stream、bit保持と型不一致を確認済みで、公式全体run・比較は3.2で行う。
 - 2.4: lane・shuffleの診断先頭は`invalid lane index`。laneメモリはmemory存在→alignment→lane→operandの順を維持する。`Instruction`へ`ShuffleLanes`・`LaneIndex`を渡す準備が完了し、新規経路の否定テストは接続時に行う。
 - 2.2: `SimdValue`のbyte変換は`FromLittleEndian(ReadOnlySpan<byte>)`と`WriteLittleEndian(Span<byte>)`。lane幅・indexは検証済みとして扱い、浮動小数点や符号の解釈はhandlerに残す。

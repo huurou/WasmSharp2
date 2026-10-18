@@ -207,3 +207,9 @@ New-Item -ItemType Directory -Path $taskOutput | Out-Null
 要件4.2〜4.4に対応する8handlerを追加した。shuffleの2operand連結順、swizzleの範囲外ゼロと6種類の128bit論理演算を扱う。21ケースでshuffleの0/15/16/31、swizzleの15/16/255、上下64bit、非可換演算のoperand順、bit単位mask、結果型・sentinel・stack数を確認した。既存20handlerとhelperは変更していない。
 
 [実装記録](../../../artifacts/simd/task-4.2-20261018T151906Z/status-report.md)で一時フラグOFFの21件失敗、ONの21件成功、フラグ除去後の成功を確認した。[独立レビュー](../../../artifacts/simd/review-4.2-20261018T152555Z/review-verdict.md)は`APPROVED`で、Releaseビルドの警告・エラー0、ランタイム3,907件成功、失敗・スキップ0、終了0、変更10C#の整形・空白検査成功を確認した。親は最終差分・境界テストと出力・終了値を直接確認し、`kiro-verify-completion`のタスク4.2判定を`VERIFIED`とした。未解決の指摘はない。公開経路への接続と公式全体実行は8.1で行う。
+
+## 4.3 整数比較と縮約判定
+
+要件4.5・4.6に対応する整数比較36handlerと縮約9handlerを追加した。比較のlane走査を共有し、符号解釈を型別predicateへ置いた。`any_true`・`all_true`・`bitmask`はそれぞれ128bit全体の非ゼロ、全laneの非ゼロ、lane最上位bitの集合を扱う。既存28handlerとhelperは維持した。
+
+[実装記録](../../../artifacts/simd/task-4.3-20261018T153209Z/)で一時フラグOFFの111件失敗、ONの111件成功、フラグ除去後の成功を確認した。[独立レビュー](../../../artifacts/simd/review-4.3-20261018T154026Z/review-verdict.md)は`APPROVED`で、Releaseビルドの警告・エラー0、ランタイム4,018件成功、失敗・スキップ0、終了0、変更46C#の整形・空白・hash確認成功を確認した。固定参照の45命令集合と一致し、比較58ケース・縮約53ケースの期待定数も独立計算で一致した。親は比較・縮約処理、代表的な境界テスト、出力・終了値を直接確認し、`kiro-verify-completion`のタスク4.3判定を`VERIFIED`とした。未解決の指摘はない。公開経路と公式全体実行は8.1で行う。
