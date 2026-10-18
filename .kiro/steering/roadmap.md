@@ -132,7 +132,7 @@ Decode・Validate・Instantiate・Invokeを別々の機能仕様にせず、機�
 - [x] test-suite-conformance -- 既知944件の不一致を解消し、固定全体結果のfailed・runner_error・回帰0、baseline明示更新、48受入基準と最終実装検証GOを確認済み。後続4機能は未解消のまま引き継ぐ。記録は[最終受入記録](../specs/test-suite-conformance/acceptance.md#仕様全体の最終実装検証)。 Dependencies: test-suite-runner
 - [x] numeric-control -- スカラー数値命令・構造化制御・数値trap・再帰・複数値制御を追加し、73受入基準、最終実装検証GO、比較済み結果のbaseline明示保存を確認済み。記録は[最終実装検証](../specs/numeric-control/validation.md#仕様全体の最終実装検証)。 Dependencies: host-linking, test-suite-runner, test-suite-conformance
 - [x] linear-memory -- スカラーload/store、data segment、bulk memoryと初期化・実行のtrapを公式検証する。 Dependencies: numeric-control
-- [ ] tables-references -- 参照命令、table操作、element segment、間接呼出しと初期化・実行のtrapを公式検証する。 Dependencies: numeric-control
+- [x] tables-references -- 参照命令、table操作、element segment、間接呼出しと初期化・実行のtrapを公式検証する。 Dependencies: numeric-control
 - [ ] simd -- v128とCore 2.0 SIMDを共通命令テーブル・実行ループに実装し、公式SIMDケースで検証する。 Dependencies: linear-memory
 
 作業順は、①完成済みの最小基盤、②実行・リンク基盤、③公式適合検証ツールと初回baseline、④テストスイートで判明したランタイムの実装修正、⑤数値・制御、⑥メモリとテーブル・参照、⑦SIMD ⑥の2仕様は並行可能で、SIMDはメモリが揃えば着手できる。②は③を完了前提にせず、③で②の公式結果と残る実装上の問題を確認する。④以降も初回から同じ判定基準のスイートで回帰確認する。
