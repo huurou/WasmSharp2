@@ -127,3 +127,11 @@ New-Item -ItemType Directory -Path $taskOutput | Out-Null
 要件6.2・6.3・6.4に対応する先行整理として、4つのscalar min/maxから純粋処理を同じpartial内のprivate補助へ抽出した。NaN・符号付きゼロの規則とoperand順を維持し、既存の算術結果・丸め・飽和i32変換の補助は移動せず再利用する。動作を変えない抽出で、必要な境界条件を既存テストが検証するため追加テストは作成していない。
 
 [実装時のログ](../../../artifacts/simd/task-1.4-20261018T132438Z/)と[独立レビュー](../../../artifacts/simd/review-1.4-20261018T132831Z/review-verdict.md)で、Releaseビルドの警告・エラー0、ランタイム3,761件成功、失敗とスキップ0、全終了0、整形と差分チェック成功を確認した。独立レビューは`APPROVED`、`kiro-verify-completion`のタスク1.4判定は`VERIFIED`で、未解決の指摘はない。
+
+## 2.1 SIMDの生成契約
+
+要件1.2・1.3・2.1〜2.4の準備として、1〜3入力の型列とv128結果、SIMD即値、`LaneCount`、vectorアクセス幅とlaneメモリ規則を生成可能にした。入力配列をコピーし、不正な宣言は既存診断で拒否する。全236命令の未対応状態は維持し、Decode・Validate・実行の接続は後続で行う。
+
+[初回実装記録](../../../artifacts/simd/task-2.1-20261018T133210Z/status-report.md)では、一時フラグOFFで150件中29件失敗、ONで150件成功、フラグ除去後も成功を確認した。後から追加した9件は既存実装の補強テストで、個別のREDは取得していない。[初回レビュー](../../../artifacts/simd/review-2.1-20261018T133957Z/review-verdict.md)で重複`LaneCount`による生成器例外を検出したため、[修正記録](../../../artifacts/simd/task-2.1-remediation-1-20261018T134355Z/status-report.md)の回帰テストで修正前のREDを取得し、既存`WSIG002`で拒否する条件を追加した。
+
+[独立再レビュー](../../../artifacts/simd/review-2.1-r2-20261018T134655Z/review-verdict.md)は`APPROVED`で、Releaseビルドの警告・エラー0、生成器160件・ランタイム3,761件成功、失敗とスキップ0、全終了0、変更9ファイルの整形と差分チェック成功を確認した。`kiro-verify-completion`のタスク2.1判定は`VERIFIED`で、未解決の指摘はない。

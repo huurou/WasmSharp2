@@ -69,6 +69,39 @@ internal sealed class InstructionAttribute(
     public MemoryAccessSignature? MemoryAccessSignature { get; }
 
     /// <summary>
+    /// lane即値の上限を取得または設定する lane即値を持たない場合は0
+    /// </summary>
+    public byte LaneCount { get; set; }
+
+    /// <summary>
+    /// スタック下側から上側の入力型列をコピーして数値命令を宣言する
+    /// </summary>
+    /// <param name="prefix">通常命令では0、拡張命令では先頭のprefix</param>
+    /// <param name="code">prefix内の命令番号</param>
+    /// <param name="name">Wasm仕様上の命令名</param>
+    /// <param name="immediate">即値の符号化</param>
+    /// <param name="stackEffect">検証時のスタック効果</param>
+    /// <param name="validation">命令の検証規則</param>
+    /// <param name="executionHandler">Interpreterに宣言された静的handler名</param>
+    /// <param name="inputTypes">スタック下側から上側の入力数値型列</param>
+    /// <param name="resultType">結果の数値型</param>
+    public InstructionAttribute(
+        byte prefix,
+        uint code,
+        string name,
+        ImmediateKind immediate,
+        StackEffectKind stackEffect,
+        ValidationRule validation,
+        string? executionHandler,
+        WasmValueKind[] inputTypes,
+        WasmValueKind resultType
+    )
+        : this(prefix, code, name, immediate, stackEffect, validation, executionHandler)
+    {
+        NumericSignature = new([.. inputTypes], resultType);
+    }
+
+    /// <summary>
     /// 数値命令の型効果と実行handlerを宣言する
     /// </summary>
     /// <param name="prefix">通常命令では0、拡張命令では先頭のprefix</param>
@@ -79,8 +112,8 @@ internal sealed class InstructionAttribute(
     /// <param name="validation">命令の検証規則</param>
     /// <param name="executionHandler">Interpreterに宣言された静的handler名</param>
     /// <param name="inputCount">同じ型の入力値の個数</param>
-    /// <param name="inputType">入力のスカラー数値型</param>
-    /// <param name="resultType">結果のスカラー数値型</param>
+    /// <param name="inputType">入力の数値型</param>
+    /// <param name="resultType">結果の数値型</param>
     public InstructionAttribute(
         byte prefix,
         uint code,
@@ -108,7 +141,7 @@ internal sealed class InstructionAttribute(
     /// <param name="stackEffect">検証時のスタック効果</param>
     /// <param name="validation">命令の検証規則</param>
     /// <param name="executionHandler">Interpreterに宣言された静的handler名</param>
-    /// <param name="valueType">読み書きする値のスカラー数値型</param>
+    /// <param name="valueType">読み書きする値の数値型</param>
     /// <param name="byteWidth">読み書きするバイト数</param>
     /// <param name="signExtend">狭い整数のロードで符号拡張するか</param>
     public InstructionAttribute(

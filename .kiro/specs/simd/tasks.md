@@ -47,7 +47,7 @@
   - _Requirements: 6.2, 6.3, 6.4_
 
 - [ ] 2. SIMDの宣言・即値・検証基盤を追加する
-- [ ] 2.1 SIMDの型効果と即値制約を生成できるようにする
+- [x] 2.1 SIMDの型効果と即値制約を生成できるようにする
   - 1〜3個の異種数値入力、v128結果、lane上限、vectorメモリの実際のアクセス幅を宣言から生成する。
   - 定数・shuffle・lane・memargとlaneの組合せ、およびlaneメモリの検証規則を表現する。
   - 不正な型列・lane制約・メモリ幅やhandler欠落を生成時に拒否し、既存診断の契約を維持する。
@@ -310,6 +310,7 @@
 
 ## Implementation Notes
 
+- 2.1: SIMD即値は`V128`・`Shuffle`・`LaneIndex`・`MemoryArgumentLaneIndex`、laneメモリ規則は`MemoryLoadLane`・`MemoryStoreLane`を使う。生成metadataの`LaneCount`はlane即値なしで0。全236命令はまだ未接続である。
 - 1.4: `Interpreter.Float.cs`内の`F32MinResult`・`F32MaxResult`・`F64MinResult`・`F64MaxResult`と、既存の算術結果・丸め・飽和変換の補助をSIMDのpartialから再利用する。
 - 1.2: `NumericSignature`は`InputTypes`と`ResultType`へ統一した。入力型列はスタック下側から上側の順で、validatorは逆順に消費する。型列のテスト比較には`SequenceEqual`を使う。生成契約の異種入力・3入力・v128拡張は2.1で行う。
 - 1.1: 比較元は`artifacts/tables-references/task-8.4-20261018T090714Z/run-baseline.json`、manifestは`artifacts/linear-memory/wabt-commit-20261016/corpus/manifest.json`。既存fixtureで必要な入力を構成できる。固定条件・検証コマンドは`acceptance.md`を参照する。

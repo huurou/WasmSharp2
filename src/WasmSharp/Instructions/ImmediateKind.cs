@@ -89,4 +89,24 @@ internal enum ImmediateKind
     /// 符号なしLEB128で符号化された2個の32ビット添字
     /// </summary>
     IndexPair,
+
+    /// <summary>
+    /// リトルエンディアンで符号化された128ビットの定数
+    /// </summary>
+    V128,
+
+    /// <summary>
+    /// 32未満の選択値を持つ16個のbyte 検証前は範囲を制限しない
+    /// </summary>
+    Shuffle,
+
+    /// <summary>
+    /// laneの添字を表す1byte
+    /// </summary>
+    LaneIndex,
+
+    /// <summary>
+    /// メモリのアラインメント指数・オフセットとlaneの添字
+    /// </summary>
+    MemoryArgumentLaneIndex,
 }

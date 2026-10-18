@@ -37,6 +37,9 @@ internal class InstructionSet_TryGetTests
                 descriptor.Immediate != ImmediateKind.Unsupported
                 || descriptor.StackEffect != StackEffectKind.Unsupported
                 || descriptor.Validation != ValidationRule.Unsupported
+                || descriptor.LaneCount != 0
+                || descriptor.NumericSignature != null
+                || descriptor.MemoryAccessSignature != null
             )
             {
                 inconsistent.Add(code);

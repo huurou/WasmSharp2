@@ -6,6 +6,130 @@ namespace WasmSharp.Generators.Tests;
 internal partial class InstructionGenerator_InitializeTests
 {
     [Test]
+    [Arguments("MemoryArgument", "MemoryLoad", 16, 0)]
+    [Arguments("MemoryArgument", "MemoryStore", 16, 0)]
+    [Arguments("MemoryArgument", "MemoryLoad", 8, 0)]
+    [Arguments("MemoryArgument", "MemoryLoad", 4, 0)]
+    [Arguments("MemoryArgument", "MemoryLoad", 2, 0)]
+    [Arguments("MemoryArgument", "MemoryLoad", 1, 0)]
+    [Arguments("MemoryArgumentLaneIndex", "MemoryLoadLane", 1, 16)]
+    [Arguments("MemoryArgumentLaneIndex", "MemoryLoadLane", 2, 8)]
+    [Arguments("MemoryArgumentLaneIndex", "MemoryStoreLane", 4, 4)]
+    [Arguments("MemoryArgumentLaneIndex", "MemoryStoreLane", 8, 2)]
+    public async Task Vectorメモリ宣言が完全_アクセス幅とlane規則を生成する(
+        string immediate,
+        string rule,
+        int byteWidth,
+        int laneCount
+    )
+    {
+        // Arrange
+        var compilation = GeneratorTestSource.CreateCompilation(
+            $$"""
+            namespace WasmSharp.Instructions
+            {
+                [Instruction(0xFD, 1, "simd.memory", ImmediateKind.{{immediate}}, StackEffectKind.{{rule}},
+                    ValidationRule.{{rule}}, nameof(Execution.Interpreter.Handler), WasmValueKind.V128,
+                    {{byteWidth}}, false, LaneCount = {{laneCount}})]
+                internal static partial class InstructionSet;
+            }
+            namespace WasmSharp.Execution
+            {
+                internal static partial class Interpreter
+                {
+                    internal static ExecutionResult Handler(InterpreterContext context, in Instruction instruction) => default;
+                }
+            }
+            """,
+            GeneratorTestSource.EXECUTION_CONTRACTS
+        );
+        GeneratorDriver driver = CSharpGeneratorDriver.Create(new InstructionGenerator());
+
+        // Act
+        driver = driver.RunGeneratorsAndUpdateCompilation(
+            compilation,
+            out var output,
+            out var diagnostics
+        );
+
+        // Assert
+        await Assert.That(diagnostics).IsEmpty();
+        await GeneratorTestSource.AssertCompilesAndRuns(
+            output,
+            $$"""
+            return WasmSharp.Instructions.InstructionSet.TryGet(new(0xFD, 1), out var descriptor)
+                && descriptor.Immediate == WasmSharp.Instructions.ImmediateKind.{{immediate}}
+                && descriptor.StackEffect == WasmSharp.Instructions.StackEffectKind.{{rule}}
+                && descriptor.Validation == WasmSharp.Instructions.ValidationRule.{{rule}}
+                && descriptor.LaneCount == {{laneCount}} && descriptor.NumericSignature == null
+                && descriptor.MemoryAccessSignature == new WasmSharp.Instructions.MemoryAccessSignature(
+                    WasmSharp.WasmValueKind.V128, {{byteWidth}}, false) && descriptor.ExecutionOpcode.HasValue;
+            """
+        );
+    }
+
+    [Test]
+    [Arguments("MemoryArgument", "MemoryLoad", "MemoryLoad", "V128", 0, false, 0)]
+    [Arguments("MemoryArgument", "MemoryLoad", "MemoryLoad", "V128", 3, false, 0)]
+    [Arguments("MemoryArgument", "MemoryLoad", "MemoryLoad", "V128", 32, false, 0)]
+    [Arguments("MemoryArgument", "MemoryLoad", "MemoryLoad", "V128", 8, true, 0)]
+    [Arguments("MemoryArgument", "MemoryStore", "MemoryStore", "V128", 8, false, 0)]
+    [Arguments("MemoryArgumentLaneIndex", "MemoryLoadLane", "MemoryLoadLane", "V128", 16, false, 1)]
+    [Arguments("MemoryArgumentLaneIndex", "MemoryLoadLane", "MemoryLoadLane", "V128", 2, false, 0)]
+    [Arguments("MemoryArgumentLaneIndex", "MemoryLoadLane", "MemoryLoadLane", "V128", 2, false, 4)]
+    [Arguments("MemoryArgumentLaneIndex", "MemoryLoadLane", "MemoryLoadLane", "I32", 4, false, 4)]
+    [Arguments(
+        "MemoryArgumentLaneIndex",
+        "MemoryStoreLane",
+        "MemoryStoreLane",
+        "V128",
+        1,
+        true,
+        16
+    )]
+    [Arguments("MemoryArgument", "MemoryLoadLane", "MemoryLoadLane", "V128", 2, false, 8)]
+    [Arguments("MemoryArgumentLaneIndex", "MemoryLoad", "MemoryLoad", "V128", 2, false, 8)]
+    [Arguments("MemoryArgumentLaneIndex", "MemoryLoadLane", "MemoryStoreLane", "V128", 2, false, 8)]
+    public async Task Vectorメモリの幅やlane規則が不整合_既存のメモリ診断を報告する(
+        string immediate,
+        string stackEffect,
+        string validation,
+        string valueType,
+        int byteWidth,
+        bool signExtend,
+        int laneCount
+    )
+    {
+        // Arrange
+        var sign = signExtend ? "true" : "false";
+        var compilation = GeneratorTestSource.CreateCompilation(
+            $$"""
+            namespace WasmSharp.Instructions
+            {
+                [Instruction(0xFD, 1, "simd.memory", ImmediateKind.{{immediate}}, StackEffectKind.{{stackEffect}},
+                    ValidationRule.{{validation}}, nameof(Execution.Interpreter.Handler), WasmValueKind.{{valueType}},
+                    {{byteWidth}}, {{sign}}, LaneCount = {{laneCount}})]
+                internal static partial class InstructionSet;
+            }
+            namespace WasmSharp.Execution
+            {
+                internal static partial class Interpreter
+                {
+                    internal static ExecutionResult Handler(InterpreterContext context, in Instruction instruction) => default;
+                }
+            }
+            """
+        );
+        GeneratorDriver driver = CSharpGeneratorDriver.Create(new InstructionGenerator());
+
+        // Act
+        driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out _, out var diagnostics);
+
+        // Assert
+        await GeneratorTestSource.AssertDiagnostic(driver, diagnostics, "WSIG005");
+    }
+
+    [Test]
     [Arguments(0x30, "i64.load8_s", "MemoryLoad", "I64", 1, true)]
     [Arguments(0x3B, "i32.store16", "MemoryStore", "I32", 2, false)]
     [Arguments(0x2A, "f32.load", "MemoryLoad", "F32", 4, false)]
@@ -100,6 +224,8 @@ internal partial class InstructionGenerator_InitializeTests
     [Test]
     [Arguments("MemoryArgument", "MemoryLoad", "MemoryLoad", "")]
     [Arguments("MemoryArgument", "MemoryStore", "MemoryStore", "")]
+    [Arguments("MemoryArgumentLaneIndex", "MemoryLoadLane", "MemoryLoadLane", "")]
+    [Arguments("MemoryArgumentLaneIndex", "MemoryStoreLane", "MemoryStoreLane", "")]
     [Arguments("MemoryArgument", "MemoryLoad", "MemoryLoad", ", WasmValueKind.I32, 0, false")]
     [Arguments("MemoryArgument", "MemoryLoad", "MemoryLoad", ", WasmValueKind.I32, 8, false")]
     [Arguments("MemoryArgument", "MemoryLoad", "MemoryLoad", ", WasmValueKind.I64, 3, false")]

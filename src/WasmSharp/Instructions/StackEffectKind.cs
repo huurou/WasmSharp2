@@ -219,4 +219,19 @@ internal enum StackEffectKind
     /// i32の選択値と指定型の引数を取り除き、その結果を積む
     /// </summary>
     CallIndirect,
+
+    /// <summary>
+    /// 128ビットvectorをスタックに積む
+    /// </summary>
+    PushV128,
+
+    /// <summary>
+    /// v128とi32アドレスを取り除き、laneを置き換えたv128を積む
+    /// </summary>
+    MemoryLoadLane,
+
+    /// <summary>
+    /// v128とi32アドレスを取り除き、指定laneを書き込む
+    /// </summary>
+    MemoryStoreLane,
 }

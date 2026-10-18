@@ -145,7 +145,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
     /// <summary>
     /// 命令属性を生成用の宣言へ変換し、必要情報とhandler契約の診断を付ける
     /// </summary>
-    /// <remarks>3引数の属性は未対応命令として保持し、10引数の属性は引数の型で数値用とメモリ用を区別する</remarks>
+    /// <remarks>3引数は未対応、9引数は入力型列、10引数は引数の型で同型数値用とメモリ用を区別する</remarks>
     /// <param name="attribute">ソース上のInstructionAttributeの属性情報</param>
     /// <param name="compilation">Interpreterとhandlerの宣言を照合するコンパイル情報</param>
     /// <returns>生成用の命令宣言 不完全な宣言やhandler契約違反はErrorに診断を保持する</returns>
@@ -157,8 +157,10 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
         var arguments = attribute.ConstructorArguments;
         var location = attribute.ApplicationSyntaxReference!.GetSyntax().GetLocation();
         if (
-            arguments.Length is not (3 or 7 or 10)
+            arguments.Length is not (3 or 7 or 9 or 10)
             || arguments.Any(x => x.Kind == TypedConstantKind.Error)
+            || attribute.NamedArguments.Any(x => x.Value.Kind == TypedConstantKind.Error)
+            || attribute.NamedArguments.Count(x => x.Key == "LaneCount") > 1
         )
         {
             return new InstructionDeclaration(
@@ -171,6 +173,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
                 null,
                 null,
                 null,
+                0,
                 location,
                 incompleteDeclaration_
             );
@@ -183,13 +186,21 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
             arguments.Length == 3 ? "Unsupported" : GetEnumName(arguments[4]),
             arguments.Length == 3 ? "Unsupported" : GetEnumName(arguments[5]),
             arguments.Length == 3 ? null : (string?)arguments[6].Value,
-            arguments.Length == 10 && arguments[7].Type?.SpecialType == SpecialType.System_Byte
-                ? new NumericSignatureDeclaration(
-                    Enumerable
-                        .Repeat(GetEnumName(arguments[8]), (byte)arguments[7].Value!)
-                        .ToImmutableArray(),
-                    GetEnumName(arguments[9])
-                )
+            arguments.Length == 9
+                    ? new NumericSignatureDeclaration(
+                        arguments[7].IsNull
+                            ? ImmutableArray<string>.Empty
+                            : arguments[7].Values.Select(GetEnumName).ToImmutableArray(),
+                        GetEnumName(arguments[8])
+                    )
+                : arguments.Length == 10
+                && arguments[7].Type?.SpecialType == SpecialType.System_Byte
+                    ? new NumericSignatureDeclaration(
+                        Enumerable
+                            .Repeat(GetEnumName(arguments[8]), (byte)arguments[7].Value!)
+                            .ToImmutableArray(),
+                        GetEnumName(arguments[9])
+                    )
                 : null,
             arguments.Length == 10
             && arguments[7].Type?.ToDisplayString() == "WasmSharp.WasmValueKind"
@@ -199,6 +210,10 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
                     (bool)arguments[9].Value!
                 )
                 : null,
+            attribute
+                .NamedArguments.Where(x => x.Key == "LaneCount")
+                .Select(x => x.Value.Value is byte count ? count : (byte)0)
+                .SingleOrDefault(),
             location,
             null
         );
@@ -230,11 +245,12 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
             || (
                 signature != null
                 && (
-                    signature.InputTypes.Length is not (1 or 2)
-                    || signature.InputTypes.Any(x => !IsScalarNumericType(x))
-                    || !IsScalarNumericType(signature.ResultType)
+                    signature.InputTypes.Length is not (1 or 2 or 3)
+                    || signature.InputTypes.Any(x => !IsNumericType(x))
+                    || !IsNumericType(signature.ResultType)
                 )
             )
+            || !HasValidSimdImmediate(declaration)
         )
         {
             return declaration with { Error = incompleteDeclaration_ };
@@ -292,13 +308,63 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
     }
 
     /// <summary>
-    /// 数値signatureに使えるスカラー値型の宣言名か判定する
+    /// 数値signatureに使える値型の宣言名か判定する
     /// </summary>
     /// <param name="name">WasmValueKindの列挙子名</param>
-    /// <returns>i32、i64、f32、f64のいずれかの場合はtrue</returns>
-    private static bool IsScalarNumericType(string name)
+    /// <returns>i32、i64、f32、f64、v128のいずれかの場合はtrue</returns>
+    private static bool IsNumericType(string name)
     {
-        return name is "I32" or "I64" or "F32" or "F64";
+        return name is "I32" or "I64" or "F32" or "F64" or "V128";
+    }
+
+    /// <summary>
+    /// SIMD即値の形状と型効果・lane上限の整合性を検査する
+    /// </summary>
+    /// <param name="declaration">属性から読み取った命令宣言</param>
+    /// <returns>即値に必要な型効果とlane上限が揃う場合はtrue</returns>
+    private static bool HasValidSimdImmediate(InstructionDeclaration declaration)
+    {
+        var signature = declaration.NumericSignature;
+        if (declaration.Immediate == "V128" || declaration.StackEffect == "PushV128")
+        {
+            return declaration.Immediate == "V128"
+                && declaration.StackEffect == "PushV128"
+                && declaration.Validation == "Constant"
+                && declaration.LaneCount == 0
+                && signature == null;
+        }
+        if (declaration.Immediate == "MemoryArgumentLaneIndex")
+        {
+            return declaration.MemoryAccessSignature != null;
+        }
+        if (declaration.Immediate == "LaneIndex")
+        {
+            if (signature == null || declaration.LaneCount is not (2 or 4 or 8 or 16))
+            {
+                return false;
+            }
+            var inputs = signature.InputTypes;
+            var scalar = inputs.Length == 1 ? signature.ResultType : inputs[1];
+            var validScalar = scalar switch
+            {
+                "I32" => declaration.LaneCount is 4 or 8 or 16,
+                "I64" or "F64" => declaration.LaneCount == 2,
+                "F32" => declaration.LaneCount == 4,
+                _ => false,
+            };
+            return validScalar
+                && inputs[0] == "V128"
+                && (inputs.Length == 1 || (inputs.Length == 2 && signature.ResultType == "V128"));
+        }
+        if (declaration.LaneCount != 0)
+        {
+            return false;
+        }
+        return declaration.Immediate != "Shuffle"
+            || (
+                signature is { InputTypes.Length: 2, ResultType: "V128" }
+                && signature.InputTypes.All(x => x == "V128")
+            );
     }
 
     /// <summary>
@@ -308,13 +374,16 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
     /// <returns>アクセス情報の過不足がなく、値型と幅・符号拡張が整合する場合はtrue</returns>
     private static bool HasValidMemoryAccess(InstructionDeclaration declaration)
     {
-        var isLoad = declaration.Validation == "MemoryLoad";
-        var isStore = declaration.Validation == "MemoryStore";
+        var isLoad = declaration.Validation is "MemoryLoad" or "MemoryLoadLane";
+        var isStore = declaration.Validation is "MemoryStore" or "MemoryStoreLane";
+        var isLane = declaration.Validation is "MemoryLoadLane" or "MemoryStoreLane";
         var signature = declaration.MemoryAccessSignature;
         if (
             !isLoad
             && !isStore
-            && declaration.StackEffect is not ("MemoryLoad" or "MemoryStore")
+            && declaration.StackEffect
+                is not ("MemoryLoad" or "MemoryStore" or "MemoryLoadLane" or "MemoryStoreLane")
+            && declaration.Immediate != "MemoryArgumentLaneIndex"
             && signature == null
         )
         {
@@ -323,11 +392,28 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
         if (
             !(isLoad || isStore)
             || declaration.StackEffect != declaration.Validation
-            || declaration.Immediate != "MemoryArgument"
+            || declaration.Immediate != (isLane ? "MemoryArgumentLaneIndex" : "MemoryArgument")
             || signature == null
         )
         {
             return false;
+        }
+        if (isLane)
+        {
+            return signature.ValueType == "V128"
+                && signature.ByteWidth is 1 or 2 or 4 or 8
+                && signature.ByteWidth * declaration.LaneCount == 16
+                && !signature.SignExtend;
+        }
+        if (declaration.LaneCount != 0)
+        {
+            return false;
+        }
+        if (signature.ValueType == "V128")
+        {
+            return signature.ByteWidth is 1 or 2 or 4 or 8 or 16
+                && (isLoad || signature.ByteWidth == 16)
+                && !signature.SignExtend;
         }
         var valueWidth = signature.ValueType switch
         {
@@ -397,6 +483,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
             /// <param name="ExecutionOpcode">対応済み命令の実行opcode 未対応の場合はnull</param>
             /// <param name="NumericSignature">数値命令の入力型列・結果型 数値以外の場合はnull</param>
             /// <param name="MemoryAccessSignature">ロード命令・ストア命令のアクセス情報 それ以外の場合はnull</param>
+            /// <param name="LaneCount">lane即値の上限 lane即値を持たない場合は0</param>
             internal readonly record struct InstructionDescriptor(
                 OpcodeKey Opcode,
                 string Name,
@@ -405,7 +492,8 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
                 ValidationRule Validation,
                 ExecutionOpcode? ExecutionOpcode,
                 NumericSignature? NumericSignature,
-                MemoryAccessSignature? MemoryAccessSignature);
+                MemoryAccessSignature? MemoryAccessSignature,
+                byte LaneCount);
 
             /// <summary>
             /// 命令宣言から生成された命令情報の参照先
@@ -437,7 +525,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
                     ? "null"
                     : $"new MemoryAccessSignature(global::WasmSharp.WasmValueKind.{memory.ValueType}, {memory.ByteWidth}, {(memory.SignExtend ? "true" : "false")})";
             source.AppendLine(
-                $"        [{key}] = new({key}, {SymbolDisplay.FormatLiteral(instruction.Name, true)}, ImmediateKind.{instruction.Immediate}, StackEffectKind.{instruction.StackEffect}, ValidationRule.{instruction.Validation}, {executionOpcode}, {numericSignature}, {memoryAccessSignature}),"
+                $"        [{key}] = new({key}, {SymbolDisplay.FormatLiteral(instruction.Name, true)}, ImmediateKind.{instruction.Immediate}, StackEffectKind.{instruction.StackEffect}, ValidationRule.{instruction.Validation}, {executionOpcode}, {numericSignature}, {memoryAccessSignature}, {instruction.LaneCount}),"
             );
         }
         source.AppendLine(
@@ -534,6 +622,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
     /// <param name="Handler">対応するInterpreterの静的handler名 未対応の宣言ではnull</param>
     /// <param name="NumericSignature">数値命令の型効果を表す属性値 数値以外の宣言ではnull</param>
     /// <param name="MemoryAccessSignature">ロード命令・ストア命令のアクセス情報 それ以外の宣言ではnull</param>
+    /// <param name="LaneCount">lane即値の上限 lane即値を持たない場合は0</param>
     /// <param name="Location">属性宣言のソース上の位置</param>
     /// <param name="Error">宣言の不備を報告する診断 宣言が有効な場合はnull</param>
     private sealed record InstructionDeclaration(
@@ -546,6 +635,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
         string? Handler,
         NumericSignatureDeclaration? NumericSignature,
         MemoryAccessSignatureDeclaration? MemoryAccessSignature,
+        byte LaneCount,
         Location Location,
         DiagnosticDescriptor? Error
     )

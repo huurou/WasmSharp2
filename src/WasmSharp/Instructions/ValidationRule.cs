@@ -214,4 +214,14 @@ internal enum ValidationRule
     /// funcrefテーブルと型添字、i32の選択値、引数型を検証し、結果型を積む
     /// </summary>
     CallIndirect,
+
+    /// <summary>
+    /// メモリ・alignment・lane上限とi32・v128の入力を検証し、v128を積む
+    /// </summary>
+    MemoryLoadLane,
+
+    /// <summary>
+    /// メモリ・alignment・lane上限とi32・v128の入力を検証する
+    /// </summary>
+    MemoryStoreLane,
 }

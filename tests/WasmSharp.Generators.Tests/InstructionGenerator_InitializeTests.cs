@@ -6,6 +6,254 @@ namespace WasmSharp.Generators.Tests;
 internal partial class InstructionGenerator_InitializeTests
 {
     [Test]
+    public async Task LaneCountを重複指定する_生成器例外を起こさず不完全宣言の診断を報告する()
+    {
+        // Arrange
+        var compilation = GeneratorTestSource.CreateCompilation(
+            """
+            namespace WasmSharp.Instructions
+            {
+                [Instruction(0xFD, 1, "simd.invalid", ImmediateKind.LaneIndex, StackEffectKind.Numeric,
+                    ValidationRule.Numeric, nameof(Execution.Interpreter.Handler),
+                    new WasmValueKind[] { WasmValueKind.V128 }, WasmValueKind.F32,
+                    LaneCount = 4, LaneCount = 2)]
+                internal static partial class InstructionSet;
+            }
+            namespace WasmSharp.Execution
+            {
+                internal static partial class Interpreter
+                {
+                    internal static ExecutionResult Handler(InterpreterContext context, in Instruction instruction) => default;
+                }
+            }
+            """
+        );
+        GeneratorDriver driver = CSharpGeneratorDriver.Create(new InstructionGenerator());
+
+        // Act
+        driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out _, out var diagnostics);
+
+        // Assert
+        await GeneratorTestSource.AssertDiagnostic(driver, diagnostics, "WSIG002");
+        await Assert.That(driver.GetRunResult().Results.Single().Exception).IsNull();
+    }
+
+    [Test]
+    [Arguments("V128", "PushI32", "Constant")]
+    [Arguments("None", "PushV128", "Constant")]
+    [Arguments("V128", "PushV128", "None")]
+    [Arguments("LaneIndex", "PushI32", "Constant")]
+    [Arguments("Shuffle", "PushI32", "Constant")]
+    public async Task SIMD即値と型効果が不整合_既存の不完全宣言診断を報告する(
+        string immediate,
+        string stackEffect,
+        string validation
+    )
+    {
+        // Arrange
+        var compilation = GeneratorTestSource.CreateCompilation(
+            $$"""
+            namespace WasmSharp.Instructions
+            {
+                [Instruction(0xFD, 1, "simd.invalid", ImmediateKind.{{immediate}}, StackEffectKind.{{stackEffect}},
+                    ValidationRule.{{validation}}, nameof(Execution.Interpreter.Handler))]
+                internal static partial class InstructionSet;
+            }
+            namespace WasmSharp.Execution
+            {
+                internal static partial class Interpreter
+                {
+                    internal static ExecutionResult Handler(InterpreterContext context, in Instruction instruction) => default;
+                }
+            }
+            """
+        );
+        GeneratorDriver driver = CSharpGeneratorDriver.Create(new InstructionGenerator());
+
+        // Act
+        driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out _, out var diagnostics);
+
+        // Assert
+        await GeneratorTestSource.AssertDiagnostic(driver, diagnostics, "WSIG002");
+    }
+
+    [Test]
+    [Arguments("WasmValueKind.I32", "V128", "None", 0)]
+    [Arguments("WasmValueKind.V128, WasmValueKind.I32", "V128", "None", 0)]
+    [Arguments("WasmValueKind.V128, WasmValueKind.F32", "V128", "LaneIndex", 4)]
+    [Arguments("WasmValueKind.V128", "I32", "LaneIndex", 16)]
+    [Arguments("WasmValueKind.V128", "I32", "LaneIndex", 8)]
+    [Arguments("WasmValueKind.V128", "F64", "LaneIndex", 2)]
+    [Arguments("WasmValueKind.V128, WasmValueKind.V128", "V128", "Shuffle", 0)]
+    [Arguments("WasmValueKind.V128, WasmValueKind.V128, WasmValueKind.V128", "V128", "None", 0)]
+    public async Task SIMD数値宣言が完全_型順と即値形状とlane上限を生成して入力配列をコピーする(
+        string inputTypes,
+        string resultType,
+        string immediate,
+        int laneCount
+    )
+    {
+        // Arrange
+        var compilation = GeneratorTestSource.CreateCompilation(
+            $$"""
+            namespace WasmSharp.Instructions
+            {
+                [Instruction(0xFD, 1, "simd.numeric", ImmediateKind.{{immediate}}, StackEffectKind.Numeric,
+                    ValidationRule.Numeric, nameof(Execution.Interpreter.Handler),
+                    new WasmValueKind[] { {{inputTypes}} }, WasmValueKind.{{resultType}}, LaneCount = {{laneCount}})]
+                internal static partial class InstructionSet;
+            }
+            namespace WasmSharp.Execution
+            {
+                internal static partial class Interpreter
+                {
+                    internal static ExecutionResult Handler(InterpreterContext context, in Instruction instruction) => default;
+                }
+            }
+            """,
+            GeneratorTestSource.EXECUTION_CONTRACTS
+        );
+        GeneratorDriver driver = CSharpGeneratorDriver.Create(new InstructionGenerator());
+
+        // Act
+        driver = driver.RunGeneratorsAndUpdateCompilation(
+            compilation,
+            out var output,
+            out var diagnostics
+        );
+
+        // Assert
+        await Assert.That(diagnostics).IsEmpty();
+        await GeneratorTestSource.AssertCompilesAndRuns(
+            output,
+            $$"""
+            var inputs = new WasmSharp.WasmValueKind[] { {{inputTypes.Replace(
+                "WasmValueKind",
+                "WasmSharp.WasmValueKind"
+            )}} };
+            var expected = System.Linq.Enumerable.ToArray(inputs);
+            var attribute = new WasmSharp.Instructions.InstructionAttribute(0xFD, 1, "simd.numeric",
+                WasmSharp.Instructions.ImmediateKind.{{immediate}}, WasmSharp.Instructions.StackEffectKind.Numeric,
+                WasmSharp.Instructions.ValidationRule.Numeric, "Handler", inputs, WasmSharp.WasmValueKind.{{resultType}})
+                { LaneCount = {{laneCount}} };
+            inputs[0] = WasmSharp.WasmValueKind.ExternRef;
+            return WasmSharp.Instructions.InstructionSet.TryGet(new(0xFD, 1), out var descriptor)
+                && descriptor.Immediate == WasmSharp.Instructions.ImmediateKind.{{immediate}}
+                && descriptor.LaneCount == {{laneCount}} && attribute.LaneCount == {{laneCount}}
+                && descriptor.NumericSignature is { } generated && attribute.NumericSignature is { } owned
+                && System.Linq.Enumerable.SequenceEqual(generated.InputTypes, expected)
+                && System.Linq.Enumerable.SequenceEqual(owned.InputTypes, expected)
+                && generated.ResultType == WasmSharp.WasmValueKind.{{resultType}}
+                && owned.ResultType == generated.ResultType && descriptor.ExecutionOpcode.HasValue;
+            """
+        );
+    }
+
+    [Test]
+    public async Task V128定数を宣言する_定数即値と型効果を生成する()
+    {
+        // Arrange
+        var compilation = GeneratorTestSource.CreateCompilation(
+            """
+            namespace WasmSharp.Instructions
+            {
+                [Instruction(0xFD, 12, "v128.const", ImmediateKind.V128, StackEffectKind.PushV128,
+                    ValidationRule.Constant, nameof(Execution.Interpreter.Handler))]
+                internal static partial class InstructionSet;
+            }
+            namespace WasmSharp.Execution
+            {
+                internal static partial class Interpreter
+                {
+                    internal static ExecutionResult Handler(InterpreterContext context, in Instruction instruction) => default;
+                }
+            }
+            """,
+            GeneratorTestSource.EXECUTION_CONTRACTS
+        );
+        GeneratorDriver driver = CSharpGeneratorDriver.Create(new InstructionGenerator());
+
+        // Act
+        driver = driver.RunGeneratorsAndUpdateCompilation(
+            compilation,
+            out var output,
+            out var diagnostics
+        );
+
+        // Assert
+        await Assert.That(diagnostics).IsEmpty();
+        await GeneratorTestSource.AssertCompilesAndRuns(
+            output,
+            """
+            return WasmSharp.Instructions.InstructionSet.TryGet(new(0xFD, 12), out var descriptor)
+                && descriptor.Immediate == WasmSharp.Instructions.ImmediateKind.V128
+                && descriptor.StackEffect == WasmSharp.Instructions.StackEffectKind.PushV128
+                && descriptor.Validation == WasmSharp.Instructions.ValidationRule.Constant
+                && descriptor.NumericSignature == null && descriptor.MemoryAccessSignature == null
+                && descriptor.LaneCount == 0 && descriptor.ExecutionOpcode.HasValue;
+            """
+        );
+    }
+
+    [Test]
+    [Arguments("new WasmValueKind[] { }", "I32", "None", 0)]
+    [Arguments("null", "I32", "None", 0)]
+    [Arguments(
+        "new WasmValueKind[] { WasmValueKind.I32, WasmValueKind.I32, WasmValueKind.I32, WasmValueKind.I32 }",
+        "I32",
+        "None",
+        0
+    )]
+    [Arguments("new WasmValueKind[] { WasmValueKind.FuncRef }", "V128", "None", 0)]
+    [Arguments("new WasmValueKind[] { (WasmValueKind)999 }", "V128", "None", 0)]
+    [Arguments("new WasmValueKind[] { WasmValueKind.V128 }", "ExternRef", "None", 0)]
+    [Arguments("new WasmValueKind[] { WasmValueKind.V128 }", "I32", "LaneIndex", 0)]
+    [Arguments("new WasmValueKind[] { WasmValueKind.V128 }", "I32", "LaneIndex", 3)]
+    [Arguments("new WasmValueKind[] { WasmValueKind.V128 }", "F64", "LaneIndex", 4)]
+    [Arguments("new WasmValueKind[] { WasmValueKind.V128 }", "I32", "None", 16)]
+    [Arguments("new WasmValueKind[] { WasmValueKind.V128 }", "V128", "Shuffle", 0)]
+    [Arguments(
+        "new WasmValueKind[] { WasmValueKind.V128, WasmValueKind.I32 }",
+        "V128",
+        "Shuffle",
+        0
+    )]
+    public async Task SIMD型列やlane制約が不正_既存の不完全宣言診断を報告する(
+        string inputs,
+        string resultType,
+        string immediate,
+        int laneCount
+    )
+    {
+        // Arrange
+        var compilation = GeneratorTestSource.CreateCompilation(
+            $$"""
+            namespace WasmSharp.Instructions
+            {
+                [Instruction(0xFD, 1, "simd.invalid", ImmediateKind.{{immediate}}, StackEffectKind.Numeric,
+                    ValidationRule.Numeric, nameof(Execution.Interpreter.Handler), {{inputs}},
+                    WasmValueKind.{{resultType}}, LaneCount = {{laneCount}})]
+                internal static partial class InstructionSet;
+            }
+            namespace WasmSharp.Execution
+            {
+                internal static partial class Interpreter
+                {
+                    internal static ExecutionResult Handler(InterpreterContext context, in Instruction instruction) => default;
+                }
+            }
+            """
+        );
+        GeneratorDriver driver = CSharpGeneratorDriver.Create(new InstructionGenerator());
+
+        // Act
+        driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out _, out var diagnostics);
+
+        // Assert
+        await GeneratorTestSource.AssertDiagnostic(driver, diagnostics, "WSIG002");
+    }
+
+    [Test]
     [Arguments(0, 0x79, "i64.clz", 1, "I64", "I64")]
     [Arguments(0, 0x50, "i64.eqz", 1, "I64", "I32")]
     [Arguments(0, 0x51, "i64.eq", 2, "I64", "I32")]
@@ -13,6 +261,8 @@ internal partial class InstructionGenerator_InitializeTests
     [Arguments(0, 0x8D, "f32.ceil", 1, "F32", "F32")]
     [Arguments(0, 0xA0, "f64.add", 2, "F64", "F64")]
     [Arguments(0xFC, 0, "i32.trunc_sat_f32_s", 1, "F32", "I32")]
+    [Arguments(0xFD, 82, "v128.bitselect", 3, "V128", "V128")]
+    [Arguments(0xFD, 83, "v128.any_true", 1, "V128", "I32")]
     public async Task 数値宣言が完全_型効果を記述子へ反映して宣言したhandlerを直接実行する(
         int prefix,
         int code,
@@ -103,13 +353,11 @@ internal partial class InstructionGenerator_InitializeTests
     [Arguments("Numeric", "Constant", ", 1, WasmValueKind.I32, WasmValueKind.I32")]
     [Arguments("PushI32", "Numeric", ", 1, WasmValueKind.I32, WasmValueKind.I32")]
     [Arguments("Numeric", "Numeric", ", 0, WasmValueKind.I32, WasmValueKind.I32")]
-    [Arguments("Numeric", "Numeric", ", 3, WasmValueKind.I32, WasmValueKind.I32")]
-    [Arguments("Numeric", "Numeric", ", 1, WasmValueKind.V128, WasmValueKind.I32")]
+    [Arguments("Numeric", "Numeric", ", 4, WasmValueKind.I32, WasmValueKind.I32")]
     [Arguments("Numeric", "Numeric", ", 1, WasmValueKind.FuncRef, WasmValueKind.I32")]
     [Arguments("Numeric", "Numeric", ", 1, WasmValueKind.ExternRef, WasmValueKind.I32")]
     [Arguments("Numeric", "Numeric", ", 1, WasmValueKind.ExnRef, WasmValueKind.I32")]
     [Arguments("Numeric", "Numeric", ", 1, (WasmValueKind)999, WasmValueKind.I32")]
-    [Arguments("Numeric", "Numeric", ", 1, WasmValueKind.I32, WasmValueKind.V128")]
     [Arguments("Numeric", "Numeric", ", 1, WasmValueKind.I32, WasmValueKind.FuncRef")]
     [Arguments("Numeric", "Numeric", ", 1, WasmValueKind.I32, WasmValueKind.ExternRef")]
     [Arguments("Numeric", "Numeric", ", 1, WasmValueKind.I32, WasmValueKind.ExnRef")]
@@ -149,14 +397,26 @@ internal partial class InstructionGenerator_InitializeTests
     }
 
     [Test]
-    [Arguments("", "WSIG003")]
+    [Arguments("", "WSIG003", "2, WasmValueKind.I32, WasmValueKind.I32")]
+    [Arguments(
+        "",
+        "WSIG003",
+        "new WasmValueKind[] { WasmValueKind.V128, WasmValueKind.I32 }, WasmValueKind.V128"
+    )]
     [Arguments(
         "internal static int Handler(InterpreterContext context, in Instruction instruction) => 0;",
-        "WSIG004"
+        "WSIG004",
+        "2, WasmValueKind.I32, WasmValueKind.I32"
+    )]
+    [Arguments(
+        "internal static int Handler(InterpreterContext context, in Instruction instruction) => 0;",
+        "WSIG004",
+        "new WasmValueKind[] { WasmValueKind.V128, WasmValueKind.I32 }, WasmValueKind.V128"
     )]
     public async Task 数値宣言のhandlerが契約に合わない_既存のhandler診断を報告する(
         string handler,
-        string expectedId
+        string expectedId,
+        string signature
     )
     {
         // Arrange
@@ -165,7 +425,7 @@ internal partial class InstructionGenerator_InitializeTests
             namespace WasmSharp.Instructions
             {
                 [Instruction(0, 0x6A, "i32.add", ImmediateKind.None, StackEffectKind.Numeric,
-                    ValidationRule.Numeric, "Handler", 2, WasmValueKind.I32, WasmValueKind.I32)]
+                    ValidationRule.Numeric, "Handler", {{signature}})]
                 internal static partial class InstructionSet;
             }
             namespace WasmSharp.Execution
