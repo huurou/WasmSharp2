@@ -1,3 +1,5 @@
+using System.Numerics;
+
 namespace WasmSharp.Execution;
 
 internal static partial class Interpreter
@@ -26,6 +28,20 @@ internal static partial class Interpreter
     internal static ExecutionResult I8x16Neg(InterpreterContext context, in Instruction instruction)
     {
         return ExecuteSimdIntegerUnary(context, 8, static x => unchecked(0UL - x));
+    }
+
+    /// <summary>
+    /// 8bitの各laneで1のbit数を数える
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI8x16Popcnt命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I8x16Popcnt(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        return ExecuteSimdIntegerUnary(context, 8, static x => (ulong)BitOperations.PopCount(x));
     }
 
     /// <summary>
@@ -158,6 +174,84 @@ internal static partial class Interpreter
             8,
             static (x, y) => SaturateSimdInteger((int)x - (int)y, 0, byte.MaxValue)
         );
+    }
+
+    /// <summary>
+    /// 8bitの各laneを符号付きで比較して最小値のビット列を選ぶ
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI8x16MinS命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I8x16MinS(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        return ExecuteSimdIntegerBinary(
+            context,
+            8,
+            static (x, y) => unchecked((sbyte)x) <= unchecked((sbyte)y) ? x : y
+        );
+    }
+
+    /// <summary>
+    /// 8bitの各laneを符号なしで比較して最小値のビット列を選ぶ
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI8x16MinU命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I8x16MinU(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        return ExecuteSimdIntegerBinary(context, 8, static (x, y) => x <= y ? x : y);
+    }
+
+    /// <summary>
+    /// 8bitの各laneを符号付きで比較して最大値のビット列を選ぶ
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI8x16MaxS命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I8x16MaxS(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        return ExecuteSimdIntegerBinary(
+            context,
+            8,
+            static (x, y) => unchecked((sbyte)x) >= unchecked((sbyte)y) ? x : y
+        );
+    }
+
+    /// <summary>
+    /// 8bitの各laneを符号なしで比較して最大値のビット列を選ぶ
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI8x16MaxU命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I8x16MaxU(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        return ExecuteSimdIntegerBinary(context, 8, static (x, y) => x >= y ? x : y);
+    }
+
+    /// <summary>
+    /// 8bitの各laneで符号なしの和を広い中間値に保持して平均を切り上げる
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI8x16AvgrU命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I8x16AvgrU(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        return ExecuteSimdIntegerBinary(context, 8, static (x, y) => (x + y + 1) >> 1);
     }
 
     /// <summary>
@@ -373,6 +467,84 @@ internal static partial class Interpreter
     }
 
     /// <summary>
+    /// 16bitの各laneを符号付きで比較して最小値のビット列を選ぶ
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI16x8MinS命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I16x8MinS(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        return ExecuteSimdIntegerBinary(
+            context,
+            16,
+            static (x, y) => unchecked((short)x) <= unchecked((short)y) ? x : y
+        );
+    }
+
+    /// <summary>
+    /// 16bitの各laneを符号なしで比較して最小値のビット列を選ぶ
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI16x8MinU命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I16x8MinU(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        return ExecuteSimdIntegerBinary(context, 16, static (x, y) => x <= y ? x : y);
+    }
+
+    /// <summary>
+    /// 16bitの各laneを符号付きで比較して最大値のビット列を選ぶ
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI16x8MaxS命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I16x8MaxS(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        return ExecuteSimdIntegerBinary(
+            context,
+            16,
+            static (x, y) => unchecked((short)x) >= unchecked((short)y) ? x : y
+        );
+    }
+
+    /// <summary>
+    /// 16bitの各laneを符号なしで比較して最大値のビット列を選ぶ
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI16x8MaxU命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I16x8MaxU(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        return ExecuteSimdIntegerBinary(context, 16, static (x, y) => x >= y ? x : y);
+    }
+
+    /// <summary>
+    /// 16bitの各laneで符号なしの和を広い中間値に保持して平均を切り上げる
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI16x8AvgrU命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I16x8AvgrU(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        return ExecuteSimdIntegerBinary(context, 16, static (x, y) => (x + y + 1) >> 1);
+    }
+
+    /// <summary>
     /// 16bitの各laneで左シフトを行い幅内へ折り返す
     /// </summary>
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
@@ -472,6 +644,70 @@ internal static partial class Interpreter
     internal static ExecutionResult I32x4Mul(InterpreterContext context, in Instruction instruction)
     {
         return ExecuteSimdIntegerBinary(context, 32, static (x, y) => unchecked(x * y));
+    }
+
+    /// <summary>
+    /// 32bitの各laneを符号付きで比較して最小値のビット列を選ぶ
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI32x4MinS命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I32x4MinS(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        return ExecuteSimdIntegerBinary(
+            context,
+            32,
+            static (x, y) => unchecked((int)x) <= unchecked((int)y) ? x : y
+        );
+    }
+
+    /// <summary>
+    /// 32bitの各laneを符号なしで比較して最小値のビット列を選ぶ
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI32x4MinU命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I32x4MinU(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        return ExecuteSimdIntegerBinary(context, 32, static (x, y) => x <= y ? x : y);
+    }
+
+    /// <summary>
+    /// 32bitの各laneを符号付きで比較して最大値のビット列を選ぶ
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI32x4MaxS命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I32x4MaxS(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        return ExecuteSimdIntegerBinary(
+            context,
+            32,
+            static (x, y) => unchecked((int)x) >= unchecked((int)y) ? x : y
+        );
+    }
+
+    /// <summary>
+    /// 32bitの各laneを符号なしで比較して最大値のビット列を選ぶ
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI32x4MaxU命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I32x4MaxU(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        return ExecuteSimdIntegerBinary(context, 32, static (x, y) => x >= y ? x : y);
     }
 
     /// <summary>

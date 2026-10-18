@@ -233,3 +233,9 @@ New-Item -ItemType Directory -Path $taskOutput | Out-Null
 要件5.2に対応する飽和加減算8handlerとnarrow4handlerを追加した。同幅の二項演算処理を再利用し、narrowはsigned入力の飽和と第1・第2operandの連結を専用のstack処理・純粋なlane処理で扱う。12ケースの各vectorに上下限の前後、unsigned減算の負化、unsigned narrowの負入力、source最小・最大、連結順の異なるlaneを含めた。既存31handlerと6helperの本体は維持した。
 
 [実装記録](../../../artifacts/simd/task-5.2-20261018T161708Z/)で一時フラグOFFの12件失敗、ONの12件成功、フラグ除去後の成功を確認した。[独立レビュー](../../../artifacts/simd/review-5.2-20261018T162636Z/review-verdict.md)は`APPROVED`で、Releaseビルドの警告・エラー0、ランタイム4,189件成功、失敗・スキップ0、終了0、変更13C#の整形・空白確認成功を確認した。固定参照の12命令集合と、12期待vectorの独立した整数計算も一致した。親は飽和・narrow処理と代表的境界テスト、実際の出力・終了値を確認し、`kiro-verify-completion`のタスク5.2判定を`VERIFIED`とした。未解決の指摘はない。公開接続と公式全体実行は8.2で行う。
+
+## 5.3 整数min/max・切上げ平均・popcnt
+
+要件5.4に対応する15handlerを追加し、既存の単項・二項演算処理を再利用した。signed/unsigned min/maxは選択したlaneのbit列を返し、avgr_uは広い中間値で奇数和を切り上げ、popcntは各byteのbit数を数える。19ケースで符号境界、大小・等値、上下64bit、平均の偶数和・奇数和・最大値同士、全16byteのbit数とstack契約を確認した。既存43handlerと9helperの本体は維持した。
+
+[実装記録](../../../artifacts/simd/task-5.3-20261018T163225Z/StatusReport.md)で一時フラグOFFの19件失敗、ONの19件成功、フラグ除去後の成功を確認した。[独立レビュー](../../../artifacts/simd/review-5.3-20261018T163936Z/review-verdict.md)は`APPROVED`で、Releaseビルドの警告・エラー0、ランタイム4,208件成功、失敗・スキップ0、終了0、変更16C#の整形・空白・hash確認成功を確認した。固定参照の15命令集合と19期待vectorの独立計算も一致した。親は最終predicate、代表的境界テスト、実際の出力・終了値を直接確認し、`kiro-verify-completion`のタスク5.3判定を`VERIFIED`とした。未解決の指摘はない。公開接続と公式全体実行は8.2で行う。

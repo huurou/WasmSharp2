@@ -146,7 +146,7 @@
   - _Boundary: SimdIntegerExecution_
   - _Requirements: 5.2_
 
-- [ ] 5.3 最小・最大・切上げ平均・bit数を追加する
+- [x] 5.3 最小・最大・切上げ平均・bit数を追加する
   - 対象幅のsigned/unsigned min/max、avgr_u、i8x16.popcntを扱う。
   - 平均計算の中間値を保持し、奇数和を正しく切り上げる。
   - 符号境界、最大値同士、全byteのbit数を代表的境界値で確認する。
