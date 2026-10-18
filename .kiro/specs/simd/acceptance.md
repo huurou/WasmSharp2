@@ -342,3 +342,10 @@ New-Item -ItemType Directory -Path $taskOutput | Out-Null
 [実装記録](../../../artifacts/simd/task-8.4-20261018T202312Z/status-report.md)と[独立レビュー](../../../artifacts/simd/review-8.4-20261018T203820Z/review-verdict.md)はREADY_FOR_REVIEW/APPROVED。全22宣言の同一908source・75件のID/引数/期待値でOFF全失敗・終了2→明示ON全成功・終了0、全フラグ除去後も全成功。警告・エラー0のReleaseビルド後、4785/160/702件全成功・失敗/skip0・各終了0。最終12hash・既存改行・整形・差分検査も一致した。旧期待の指定9ファイルと追加1ファイルについて、診断再走査・元位置・検査順・非実行・import未確認範囲を維持し、未対応状態だけのケースを廃止した理由を[引継ぎ](../../../artifacts/simd/task-8.4-20261018T202312Z/old-expectations-handoff.md)へ記録した。汎用unsupported分類・公開例外・宣言判定・例外変換は保持した。
 
 [公式監査](../../../artifacts/simd/task-8.4-20261018T202312Z/results-audit-classified.json)は147入力53907command、passed52830・out_of_scope1077、未対応/blocked/failed/runner_error/回帰/欠落/未比較/未処理0。元27482件と直前52027件のpassedを全保持し803件が新たに成功した。全期待値・147source/5821素材・出典/profileは不変。v128結果23573件と型だけの期待を持つtrap50件を区別して監査し、既存matcherを使用した。初回補助監査のassert_return限定仮定と初回analyzer失敗は解消し原ログも保持した。親は原ログ・終了値・最終hashと独立監査を直接確認し、kiro-verify-completionをVERIFIEDとした。共通経路9.x、CPU支援無効、最終verifyとbaseline保存は後続範囲で、機能全体GOは含めない。
+
+
+## 9.1 共通値経路とホスト連携
+
+製品変更なしの適合確認として、既存のv128引数・複数結果・localゼロ初期値・直接call・return・block/if/分岐・両形式host・typed/untyped selectを再利用し、不足するloop/backedge/drop2件、別module間接call1件、引数/結果型不一致2件、再export1件、同期再入3件を追加した。上下64bit・型と順序、所属/呼び出し元instance、関数の同一性、外側operand/local、ホスト例外同一性と返却済み結果を確認する。[項目別対応](../../../artifacts/simd/task-9.1-20261018T204713Z/coverage.md)では、新規v128再入の成功2件/ホスト例外1件と、再利用したscalarのtrap・exhaustion・不正host結果・別instanceの上限復元を区別した。
+
+非behavioralでRED=N/A。警告・エラー0のReleaseビルド後、新規9件・再利用50件・runtime4794件が全成功・失敗/skip0・各終了0。[独立レビュー](../../../artifacts/simd/review-9.1-20261018T205414Z/review-verdict.md)はAPPROVEDで、同じ全件結果に9/50件が含まれることも確認した。変更は既存テスト1ファイルへの402行追加だけ。CRLF維持、整形・差分・最終hash一致を確認し、親のkiro-verify-completionはVERIFIED。start/global/共有memoryと最終受入は後続範囲。
