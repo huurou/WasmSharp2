@@ -83,8 +83,12 @@ public sealed class WasmTable
     /// <exception cref="ArgumentOutOfRangeException">indexが現在のtableの範囲外の場合</exception>
     public WasmValue Get(uint index)
     {
-        ValidateIndex(index);
-        return elements_[index];
+        if (!TryGet(index, out var value))
+        {
+            throw new ArgumentOutOfRangeException(nameof(index), "tableの範囲外です。");
+        }
+
+        return value;
     }
 
     /// <summary>
@@ -96,13 +100,17 @@ public sealed class WasmTable
     /// <exception cref="ArgumentException">valueの型が要素型と一致しない場合 要素は変更しない</exception>
     public void Set(uint index, WasmValue value)
     {
-        ValidateIndex(index);
         if (value.Kind != ElementType)
         {
+            // 値の型が異なる場合も、従来どおり範囲違反を先に公開する。
+            Get(index);
             throw new ArgumentException("tableの要素型と値の型が一致しません。", nameof(value));
         }
 
-        elements_[index] = value;
+        if (!TrySet(index, value))
+        {
+            throw new ArgumentOutOfRangeException(nameof(index), "tableの範囲外です。");
+        }
     }
 
     /// <summary>
@@ -149,15 +157,37 @@ public sealed class WasmTable
     }
 
     /// <summary>
-    /// 指定位置が現在のtableの範囲内にあることを確認する
+    /// 指定位置の参照を取得し、範囲内かを返す
     /// </summary>
-    /// <param name="index">確認する要素位置</param>
-    /// <exception cref="ArgumentOutOfRangeException">indexが現在の要素数以上の場合</exception>
-    private void ValidateIndex(uint index)
+    /// <param name="index">取得する要素位置</param>
+    /// <param name="value">取得した参照 範囲外の場合はdefault</param>
+    /// <returns>取得できた場合はtrue 範囲外の場合はfalse</returns>
+    internal bool TryGet(uint index, out WasmValue value)
     {
-        if (index >= Count)
+        if ((ulong)index >= Count)
         {
-            throw new ArgumentOutOfRangeException(nameof(index), "tableの範囲外です。");
+            value = default;
+            return false;
         }
+
+        value = elements_[(int)index];
+        return true;
+    }
+
+    /// <summary>
+    /// 指定位置へ参照を設定し、範囲内かを返す
+    /// </summary>
+    /// <param name="index">設定する要素位置</param>
+    /// <param name="value">要素型と一致する検証済みの参照</param>
+    /// <returns>設定できた場合はtrue 範囲外の場合は内容を変更せずfalse</returns>
+    internal bool TrySet(uint index, WasmValue value)
+    {
+        if ((ulong)index >= Count)
+        {
+            return false;
+        }
+
+        elements_[(int)index] = value;
+        return true;
     }
 }

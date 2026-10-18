@@ -12,7 +12,14 @@ internal class WasmTable_GetTests
         var table = new WasmTable(WasmValueKind.FuncRef, new WasmLimits(count));
 
         // Act & Assert
-        await Assert.That(() => table.Get(index)).ThrowsExactly<ArgumentOutOfRangeException>();
-        await Assert.That(table.Count).IsEqualTo(count);
+        var exception = await Assert
+            .That(() => table.Get(index))
+            .ThrowsExactly<ArgumentOutOfRangeException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.ParamName).IsEqualTo("index");
+            await Assert.That(exception.Message).StartsWith("tableの範囲外です。");
+            await Assert.That(table.Count).IsEqualTo(count);
+        }
     }
 }
