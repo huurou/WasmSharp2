@@ -205,7 +205,7 @@
   - _Requirements: 6.5, 6.6_
 
 - [ ] 7. SIMDメモリ命令の実行を追加する
-- [ ] 7.1 通常のvector load/storeを追加する
+- [x] 7.1 通常のvector load/storeを追加する
   - unsigned i32アドレスとoffsetをulongで合成し、既存の同じmemory実体へ16byteを転送する。
   - little-endianと非整列アクセスを扱い、失敗を位置付きの既存trap結果で返す。
   - 末尾ぴったり・1byte超過・ページ境界・最大uintとoffset、失敗storeの未変更を確認する。

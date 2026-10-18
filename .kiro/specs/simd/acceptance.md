@@ -285,3 +285,9 @@ New-Item -ItemType Directory -Path $taskOutput | Out-Null
 [実装記録](../../../artifacts/simd/task-6.4-20261018T181628Z/StatusReport.md)の新規42ケースでは、signed/unsigned、2^24付近とuint上限、demoteの最近接偶数・中点前後・overflow・underflow、promoteのlow選択、±0・無限大・NaNと128bit・stack契約を確認した。OFF42件失敗・終了2、ON42件成功、フラグ除去後の成功を記録した。ON実装後の4convertテスト名の訂正は入力の符号解釈を明確にする表現変更だけで、REDの入力・期待値とケース数は維持した。
 
 [独立レビュー](../../../artifacts/simd/review-6.4-20261018T182524Z/review.md)はAPPROVED。Releaseビルド警告・エラー0、ランタイム4,494件成功・失敗/スキップ0・終了0、7C#の整形・空白・hash検査、42期待vectorの独立計算一致、先行整理とRED段階の再構成・時刻順を確認した。親は最終wrapper・共通Map・代表的テスト、実際の出力と終了値を確認し、kiro-verify-completionのタスク6.4判定をVERIFIEDとした。未解決の指摘はない。公開接続・公式全体実行は8.3、統合後のHW支援無効確認は10.1で行う。
+
+## 7.1 通常のvector load/store
+
+要件7.1・7.4・7.5に対応するV128Load/V128Storeを追加した。unsigned i32とoffsetをulongで合成し、既存WasmMemoryのTryRead/TryWriteとSimdValueのlittle-endian変換を使って16byteを転送する。22ケースで非整列・末尾ぴったり・1byte超過・ページ横断・0page・最大uintとoffset、全128bitとstack、元の関数index・byte位置を持つtrap、失敗storeの全memory不変を確認した。scalar・fixture・他handlerは変更していない。
+
+[実装記録](../../../artifacts/simd/task-7.1-20261018T183042Z/StatusReport.md)でOFF22件失敗・終了2、ON22件成功、フラグ除去後の成功を確認した。[独立レビュー](../../../artifacts/simd/task-7.1-review-20261018T183701Z/ReviewVerdict.md)はAPPROVED。Releaseビルド警告・エラー0、ランタイム4,516件成功・失敗/スキップ0・終了0、3C#の整形・空白・hash確認が成功した。親は2handler・境界テストと実際の出力・終了値を確認し、kiro-verify-completionのタスク7.1判定をVERIFIEDとした。未解決の指摘はない。公開接続・公式全体実行は8.4で行う。
