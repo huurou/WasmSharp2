@@ -251,3 +251,9 @@ New-Item -ItemType Directory -Path $taskOutput | Out-Null
 要件5.6のpairwise4handlerとdot1handlerを追加し、既存の単項・二項処理を再利用した。pairwiseは出力幅ごとの隣接2laneを符号解釈に従って加算し、dotはlongの積和をi32へ折り返す。5ケースに符号境界、上下で異なるlane、dotの2147483648から0x80000000への折返しを含め、結果型・128bit・sentinel・stack数を確認した。既存82handlerと13helperの本体は維持した。
 
 [実装記録](../../../artifacts/simd/task-5.5-20261018T170156Z/StatusReport.md)で、一時フラグOFFの5件失敗・終了2、ONの5件成功、フラグ除去後の成功を確認した。RED終了値の報告文の誤記は保存JSONと同じ2へ訂正し、元のログは保持した。[独立レビュー](../../../artifacts/simd/task-5.5-independent-review-20261018T171130Z/ReviewVerdict.md)は`APPROVED`で、Releaseビルドの警告・エラー0、ランタイム4,245件成功、失敗・スキップ0、終了0、6C#の整形・空白確認成功を確認した。固定5命令集合と5期待vectorの独立計算が一致した。保存済み公式JSONの58期待値も固定規則の計算と一致したが、公式ランタイム実行とは区別する。親は5wrapper・dotテスト、実際の出力・終了値を確認し、kiro-verify-completionのタスク5.5判定をVERIFIEDとした。未解決の指摘はない。公開接続と公式全体実行は8.2で行う。
+
+## 5.6 Q15の丸め付き飽和乗算
+
+要件5.6のQ15 handlerを追加した。既存の二項処理と飽和処理を再利用し、signed i16の積に16384を加え、15bit算術シフト後にi16へ制限する。中間値はintで保持できる。2vector・16laneで最小値同士の32767、最大値同士の32766、正負の丸め境界と型・128bit・stack契約を確認した。既存87handlerと13helperの本体は維持した。
+
+[実装記録](../../../artifacts/simd/task-5.6-20261018T171859Z/StatusReport.md)の一時フラグOFFは2件失敗・終了2、ONは同じ2件成功・終了0。[独立レビュー](../../../artifacts/simd/review-5.6-20261018T172509Z/ReviewVerdict.md)はAPPROVEDで、フラグ除去後のReleaseビルド警告・エラー0、ランタイム4,247件成功・失敗/スキップ0・終了0、明示2C#の整形・空白確認成功、16laneの独立計算一致を確認した。REDと最終のテストは同一である。親は計算式・境界テスト・実際の出力と終了値を確認し、kiro-verify-completionのタスク5.6判定をVERIFIEDとした。未解決の指摘はない。公開接続と公式全体実行は8.2で行う。

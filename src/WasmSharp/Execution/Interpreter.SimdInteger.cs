@@ -324,6 +324,29 @@ internal static partial class Interpreter
     }
 
     /// <summary>
+    /// signed i16の積をQ15で丸めて16bitへ飽和する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI16x8Q15MulRSatS命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I16x8Q15MulRSatS(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        return ExecuteSimdIntegerBinary(
+            context,
+            16,
+            static (x, y) =>
+                SaturateSimdInteger(
+                    unchecked(((short)x * (short)y + 0x4000) >> 15),
+                    short.MinValue,
+                    short.MaxValue
+                )
+        );
+    }
+
+    /// <summary>
     /// 32bitのsigned入力を16bitの符号付き範囲へ飽和して連結する
     /// </summary>
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
