@@ -121,3 +121,9 @@ New-Item -ItemType Directory -Path $taskOutput | Out-Null
 要件1.6・2.4・2.5に対応する準備として、`FunctionValidator`の既存検査を`ValidateMemoryAccess`へ抽出した。memory存在、アクセス情報、自然alignment、operandの検査順と診断位置を維持した。既存テストが正常・不正・到達不能を確認するためテストの追加は行っていない。
 
 [実装時のログ](../../../artifacts/simd/task-1.3-20261018T131740Z/)と[独立レビューのログ](../../../artifacts/simd/review-1.3-20261018T132116Z/)で、Releaseビルドの警告・エラー0、ランタイム3,761件成功、失敗とスキップ0、終了0、整形と差分チェック成功を確認した。独立レビューは`APPROVED`、`kiro-verify-completion`のタスク1.3判定は`VERIFIED`で、未解決の指摘はない。
+
+## 1.4 共有する浮動小数点の純粋処理
+
+要件6.2・6.3・6.4に対応する先行整理として、4つのscalar min/maxから純粋処理を同じpartial内のprivate補助へ抽出した。NaN・符号付きゼロの規則とoperand順を維持し、既存の算術結果・丸め・飽和i32変換の補助は移動せず再利用する。動作を変えない抽出で、必要な境界条件を既存テストが検証するため追加テストは作成していない。
+
+[実装時のログ](../../../artifacts/simd/task-1.4-20261018T132438Z/)と[独立レビュー](../../../artifacts/simd/review-1.4-20261018T132831Z/review-verdict.md)で、Releaseビルドの警告・エラー0、ランタイム3,761件成功、失敗とスキップ0、全終了0、整形と差分チェック成功を確認した。独立レビューは`APPROVED`、`kiro-verify-completion`のタスク1.4判定は`VERIFIED`で、未解決の指摘はない。

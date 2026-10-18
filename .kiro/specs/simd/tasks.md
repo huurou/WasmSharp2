@@ -14,7 +14,7 @@
 
 並列性を検討したが、基盤契約、同じ演算群ファイル、命令宣言、公式検証出力を順次更新するため、この計画には(P)を付けない。順序と_Depends:_に従う。baselineは最終受入まで保持する。通常の機能タスクに必要な検証を任意扱いにしない。
 
-- [ ] 1. 検証前提を整え、既存処理の責務を整理する
+- [x] 1. 検証前提を整え、既存処理の責務を整理する
 - [x] 1.1 固定素材・比較元と既存fixtureを確認する
   - .NET 10、固定spec、3つのテストプロジェクトと公式CLIの既存構成を確認する。
   - 最新tables-referencesの受入baselineと対応manifestの存在・hash・profile・素材を確認し、設計時点から変更があれば現在の受入記録に合わせる。
@@ -39,7 +39,7 @@
   - _Boundary: FunctionValidator_
   - _Requirements: 1.6, 2.4, 2.5_
 
-- [ ] 1.4 共有する浮動小数点の純粋処理を整理する
+- [x] 1.4 共有する浮動小数点の純粋処理を整理する
   - NaN結果化、符号付きゼロを保つ丸め、飽和i32変換の既存補助を再利用可能な状態にする。
   - min/maxで共有が必要な純粋処理だけを既存handlerから抽出し、既に使える補助は移動しない。
   - scalarのNaN・±0・丸め・飽和境界のテストが成立し、演算結果が変わらないことを確認する。
@@ -310,6 +310,7 @@
 
 ## Implementation Notes
 
+- 1.4: `Interpreter.Float.cs`内の`F32MinResult`・`F32MaxResult`・`F64MinResult`・`F64MaxResult`と、既存の算術結果・丸め・飽和変換の補助をSIMDのpartialから再利用する。
 - 1.2: `NumericSignature`は`InputTypes`と`ResultType`へ統一した。入力型列はスタック下側から上側の順で、validatorは逆順に消費する。型列のテスト比較には`SequenceEqual`を使う。生成契約の異種入力・3入力・v128拡張は2.1で行う。
 - 1.1: 比較元は`artifacts/tables-references/task-8.4-20261018T090714Z/run-baseline.json`、manifestは`artifacts/linear-memory/wabt-commit-20261016/corpus/manifest.json`。既存fixtureで必要な入力を構成できる。固定条件・検証コマンドは`acceptance.md`を参照する。
 

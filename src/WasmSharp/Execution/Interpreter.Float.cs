@@ -53,6 +53,98 @@ internal static partial class Interpreter
     }
 
     /// <summary>
+    /// NaNと符号付きゼロの規則を適用してf32の最小値を返す
+    /// </summary>
+    /// <param name="left">左側のoperand</param>
+    /// <param name="right">右側のoperand</param>
+    /// <returns>最小値のビット列を持つf32のvalue</returns>
+    private static WasmValue F32MinResult(float left, float right)
+    {
+        if (float.IsNaN(left) || float.IsNaN(right))
+        {
+            return F32ArithmeticResult(float.NaN);
+        }
+        if (left == right)
+        {
+            // 等値の非NaNでは符号bitだけが異なり得る ±0はORで−0を選ぶ
+            return WasmValue.FromF32Bits(
+                BitConverter.SingleToUInt32Bits(left) | BitConverter.SingleToUInt32Bits(right)
+            );
+        }
+
+        return F32ArithmeticResult(left < right ? left : right);
+    }
+
+    /// <summary>
+    /// NaNと符号付きゼロの規則を適用してf32の最大値を返す
+    /// </summary>
+    /// <param name="left">左側のoperand</param>
+    /// <param name="right">右側のoperand</param>
+    /// <returns>最大値のビット列を持つf32のvalue</returns>
+    private static WasmValue F32MaxResult(float left, float right)
+    {
+        if (float.IsNaN(left) || float.IsNaN(right))
+        {
+            return F32ArithmeticResult(float.NaN);
+        }
+        if (left == right)
+        {
+            // 等値の非NaNでは符号bitだけが異なり得る ±0はANDで+0を選ぶ
+            return WasmValue.FromF32Bits(
+                BitConverter.SingleToUInt32Bits(left) & BitConverter.SingleToUInt32Bits(right)
+            );
+        }
+
+        return F32ArithmeticResult(left > right ? left : right);
+    }
+
+    /// <summary>
+    /// NaNと符号付きゼロの規則を適用してf64の最小値を返す
+    /// </summary>
+    /// <param name="left">左側のoperand</param>
+    /// <param name="right">右側のoperand</param>
+    /// <returns>最小値のビット列を持つf64のvalue</returns>
+    private static WasmValue F64MinResult(double left, double right)
+    {
+        if (double.IsNaN(left) || double.IsNaN(right))
+        {
+            return F64ArithmeticResult(double.NaN);
+        }
+        if (left == right)
+        {
+            // 等値の非NaNでは符号bitだけが異なり得る ±0はORで−0を選ぶ
+            return WasmValue.FromF64Bits(
+                BitConverter.DoubleToUInt64Bits(left) | BitConverter.DoubleToUInt64Bits(right)
+            );
+        }
+
+        return F64ArithmeticResult(left < right ? left : right);
+    }
+
+    /// <summary>
+    /// NaNと符号付きゼロの規則を適用してf64の最大値を返す
+    /// </summary>
+    /// <param name="left">左側のoperand</param>
+    /// <param name="right">右側のoperand</param>
+    /// <returns>最大値のビット列を持つf64のvalue</returns>
+    private static WasmValue F64MaxResult(double left, double right)
+    {
+        if (double.IsNaN(left) || double.IsNaN(right))
+        {
+            return F64ArithmeticResult(double.NaN);
+        }
+        if (left == right)
+        {
+            // 等値の非NaNでは符号bitだけが異なり得る ±0はANDで+0を選ぶ
+            return WasmValue.FromF64Bits(
+                BitConverter.DoubleToUInt64Bits(left) & BitConverter.DoubleToUInt64Bits(right)
+            );
+        }
+
+        return F64ArithmeticResult(left > right ? left : right);
+    }
+
+    /// <summary>
     /// f32の加算結果を対象幅へ丸める
     /// </summary>
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
@@ -416,24 +508,7 @@ internal static partial class Interpreter
     {
         var right = context.PopValue().AsF32();
         var left = context.PopValue().AsF32();
-        WasmValue result;
-        if (float.IsNaN(left) || float.IsNaN(right))
-        {
-            result = F32ArithmeticResult(float.NaN);
-        }
-        else if (left == right)
-        {
-            // 等値の非NaNでは符号bitだけが異なり得る ±0はORで−0を選ぶ
-            result = WasmValue.FromF32Bits(
-                BitConverter.SingleToUInt32Bits(left) | BitConverter.SingleToUInt32Bits(right)
-            );
-        }
-        else
-        {
-            result = F32ArithmeticResult(left < right ? left : right);
-        }
-
-        context.PushValue(result);
+        context.PushValue(F32MinResult(left, right));
         return default;
     }
 
@@ -447,24 +522,7 @@ internal static partial class Interpreter
     {
         var right = context.PopValue().AsF32();
         var left = context.PopValue().AsF32();
-        WasmValue result;
-        if (float.IsNaN(left) || float.IsNaN(right))
-        {
-            result = F32ArithmeticResult(float.NaN);
-        }
-        else if (left == right)
-        {
-            // 等値の非NaNでは符号bitだけが異なり得る ±0はANDで+0を選ぶ
-            result = WasmValue.FromF32Bits(
-                BitConverter.SingleToUInt32Bits(left) & BitConverter.SingleToUInt32Bits(right)
-            );
-        }
-        else
-        {
-            result = F32ArithmeticResult(left > right ? left : right);
-        }
-
-        context.PushValue(result);
+        context.PushValue(F32MaxResult(left, right));
         return default;
     }
 
@@ -562,24 +620,7 @@ internal static partial class Interpreter
     {
         var right = context.PopValue().AsF64();
         var left = context.PopValue().AsF64();
-        WasmValue result;
-        if (double.IsNaN(left) || double.IsNaN(right))
-        {
-            result = F64ArithmeticResult(double.NaN);
-        }
-        else if (left == right)
-        {
-            // 等値の非NaNでは符号bitだけが異なり得る ±0はORで−0を選ぶ
-            result = WasmValue.FromF64Bits(
-                BitConverter.DoubleToUInt64Bits(left) | BitConverter.DoubleToUInt64Bits(right)
-            );
-        }
-        else
-        {
-            result = F64ArithmeticResult(left < right ? left : right);
-        }
-
-        context.PushValue(result);
+        context.PushValue(F64MinResult(left, right));
         return default;
     }
 
@@ -593,24 +634,7 @@ internal static partial class Interpreter
     {
         var right = context.PopValue().AsF64();
         var left = context.PopValue().AsF64();
-        WasmValue result;
-        if (double.IsNaN(left) || double.IsNaN(right))
-        {
-            result = F64ArithmeticResult(double.NaN);
-        }
-        else if (left == right)
-        {
-            // 等値の非NaNでは符号bitだけが異なり得る ±0はANDで+0を選ぶ
-            result = WasmValue.FromF64Bits(
-                BitConverter.DoubleToUInt64Bits(left) & BitConverter.DoubleToUInt64Bits(right)
-            );
-        }
-        else
-        {
-            result = F64ArithmeticResult(left > right ? left : right);
-        }
-
-        context.PushValue(result);
+        context.PushValue(F64MaxResult(left, right));
         return default;
     }
 
