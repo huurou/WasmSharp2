@@ -377,6 +377,16 @@ dotnet tools/WasmSharp.TestSuiteRunner/bin/Release/net10.0/WasmSharp.TestSuiteRu
 
 [監査スクリプト](../../../artifacts/tables-references/task-8.3-20261018T090100Z/audit-acceptance.py)と[引数・終了値](../../../artifacts/tables-references/task-8.3-20261018T090100Z/commands-initial.json)を保存した。55基準検査とケース監査はいずれも終了0だった。8.1時点の表と記述は履歴として保持し、最新の判定は9.1・9.3が8.2で成立、9.2・9.4・9.5が本節までで成立である。9.6は8.4の明示baseline保存待ちであり、本タスクでは保存していない。残るSIMD待ちを保持した機能受入であり、Core 2.0全体の完成は宣言しない。
 
+## 8.4 比較済み結果の明示baseline保存
+
+要件9.6と設計のConformanceVerification・公式受入に従い、8.2で比較し8.3で受け入れた同じrunだけを既存CLIのbaseline-saveへ渡した。新しい保存先が存在しないことを確認して実行し、終了0だった。
+
+後続機能では、[今回のrun-baseline.json](../../../artifacts/tables-references/task-8.4-20261018T090714Z/run-baseline.json)と[対応manifest](../../../artifacts/linear-memory/wabt-commit-20261016/corpus/manifest.json)を組にして使用する。SHA256はbaselineが`9d51acea7309d02af302118c932bf25d9725336304f370b48d04cae995176496`、manifestが`c60dec91f788791a9b790835b2629c2d970e3fb44afab4d63f209df9097e263e`である。
+
+[今回の照合](../../../artifacts/tables-references/task-8.4-20261018T090714Z/checks.json)で入力とbaselineのバイト列が完全一致し、全147入力・53,907command、分類・素材・出典・実行条件、処理・出力の完了を保持したことを確認した。内包するcorpus全体と参照pathも対応manifestと一致した。入力run・manifest・旧linear-memoryのbaselineは保存前後で不変であり、旧baselineは上書きしていない。[引数・終了値](../../../artifacts/tables-references/task-8.4-20261018T090714Z/commands.json)と[検証記録](../../../artifacts/tables-references/task-8.4-20261018T090714Z/verification.md)へ保存結果をまとめた。
+
+最新の判定は9.1・9.3が8.2、9.2・9.4・9.5が8.1・8.3、9.6が本節で成立であり、55受入基準は本機能の範囲で最終受入済みである。8.1の55行対応表と8.2・8.3の待ち状態は各時点の履歴として保持する。残るSIMD待ちのruntime_unsupported1,079件・blocked24,269件とout_of_scope1,077件を保持し、Core 2.0全体の完成は宣言しない。実際の領域確保失敗によるOOMの未再現範囲も8.1の記載どおりである。
+
 [tr-bin-instr]: ../../../thirdParties/WebAssembly-spec/document/core/binary/instructions.rst
 [tr-bin-module]: ../../../thirdParties/WebAssembly-spec/document/core/binary/modules.rst
 [tr-valid-instr]: ../../../thirdParties/WebAssembly-spec/document/core/valid/instructions.rst
