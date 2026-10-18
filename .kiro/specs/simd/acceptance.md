@@ -269,3 +269,11 @@ New-Item -ItemType Directory -Path $taskOutput | Out-Null
 要件6.2の丸め・6.3に対応する16handlerを追加した。ceil/floor/trunc/nearestは既存の同精度補助でゼロ符号とNaNを扱い、nearestは最近接偶数とする。min/maxは既存補助を再利用し、pmin/pmaxは固定比較で選ばれたoperandのrawbitsを返す。108ケースで正負の丸め境界、±0、非正規化数、無限大、左右のNaN・signaling payload、lane・stack契約を確認した。既存14handler・4helperは維持した。
 
 [実装記録](../../../artifacts/simd/task-6.2-20261018T174633Z/StatusReport.md)でOFF108件失敗・終了2、ON108件成功、フラグ除去後の成功を確認した。[独立レビュー](../../../artifacts/simd/task-6.2-review-20261018T175337Z/verdict.md)はAPPROVED。Releaseビルド警告・エラー0、ランタイム4,415件成功・失敗/スキップ0・終了0、明示17C#の整形・空白検査成功、108組・288laneの期待定数の独立照合一致を確認した。親は最終wrapper・代表的テスト、実際の出力・終了値を確認し、kiro-verify-completionのタスク6.2判定をVERIFIEDとした。未解決の指摘はない。公開接続・公式全体実行は8.3で行う。
+
+## 6.3 浮動小数点から整数への飽和変換
+
+要件6.4・6.5のzero形式に対応する4handlerを追加した。各handlerは既存TruncateSaturatingI32を再利用し、stack操作と純粋なlane変換を分けた。37ケースでsigned/unsigned境界の内外、正負の小数・ゼロ・非正規化数、NaN・無限大、zero形式の上位lane、128bitとstack契約を確認した。既存製品コードは変更していない。
+
+[実装記録](../../../artifacts/simd/task-6.3-20261018T180049Z/StatusReport.md)の初回OFFは37件失敗・終了2、ONは37件成功だった。最初の全件確認後、自己確認でf32unsignedの末尾laneの期待値が全ケース0だったため、1ケースを-12.5から+12.5へ変更し、出力12を確認するよう補強した。元ログを保持し、再度OFFで37件すべて失敗、ONで37件成功を確認した。補強後の最終結果はlane3-final-*である。
+
+[独立レビュー](../../../artifacts/simd/task-6.3-review-20261018T181114Z/ReviewVerdict.md)はAPPROVED。フラグ除去後のReleaseビルド警告・エラー0、ランタイム4,452件成功・失敗/スキップ0・終了0、5C#の整形・空白・hash検査、37期待vectorの独立照合一致を確認した。補強後REDの全37引数も現在のテストと一致した。親は4wrapper・2helper・代表的テスト、実際の出力と終了値を確認し、kiro-verify-completionのタスク6.3判定をVERIFIEDとした。未解決の指摘はない。公開接続・公式全体実行は8.3で行う。

@@ -190,7 +190,7 @@
   - _Boundary: SimdFloatExecution_
   - _Requirements: 6.2, 6.3_
 
-- [ ] 6.3 浮動小数点から整数への飽和変換を追加する
+- [x] 6.3 浮動小数点から整数への飽和変換を追加する
   - f32x4/f64x2からのsigned/unsigned i32変換を扱い、NaNを0、範囲外を端点とする。
   - f64x2のzero形式は結果の上位laneをゼロにする。
   - 上下限の内外、NaN・無限大とゼロ方向切捨てを確認し、数値trapを返さない状態にする。
@@ -310,6 +310,7 @@
 
 ## Implementation Notes
 
+- 6.3: 変換テストでは未使用laneを除き、各出力laneに非ゼロの期待値があることも確認する。末尾laneが全ケース0だったため1ケースを補強し、OFFのREDから確認し直した。
 - 5.2: `SaturateSimdInteger(int value, int minimum, int maximum)`で中間値を飽和しlaneのbit列を返す。narrowは`ExecuteSimdIntegerNarrow`と純粋な`MapSimdIntegerNarrow`を使う。
 - 5.1: `ExecuteSimdIntegerUnary/Binary/Shift`でstack操作、`MapSimdIntegerUnary/Binary/Shift`で純粋なlane計算を扱う。後続の同幅演算では再利用し、新規機能の一時フラグを既存共通処理へ掛けない。
 - 4.3: `CompareSimdLanes(InterpreterContext, int, Func<ulong, ulong, bool>)`がlane走査と全bit1/0の結果構築を共有する。符号・型の解釈はhandlerのstatic predicateへ置き、4.4でも再利用する。
