@@ -82,6 +82,70 @@ internal class InstructionSet_TryGetTests
     }
 
     [Test]
+    public async Task SIMD整数接続の固定付録にある整数群_88命令の型効果とhandlerが一致する()
+    {
+        // Arrange
+        var expected = Core2InstructionFixture
+            .Read(0xFD)
+            .Where(x => IsIntegerSimd(x.Value))
+            .ToArray();
+        var declarations = typeof(InstructionSet)
+            .GetCustomAttributes<InstructionAttribute>()
+            .Where(x => x.Prefix == 0xFD)
+            .ToDictionary(x => x.Code);
+
+        // Act
+        var actual = expected
+            .Select(x =>
+            {
+                InstructionSet.TryGet(new(0xFD, x.Key), out var descriptor);
+                return (Entry: x, Descriptor: descriptor);
+            })
+            .ToArray();
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(expected.Length).IsEqualTo(88);
+            foreach (var item in actual)
+            {
+                var operation = item.Entry.Value.Split('.')[1];
+                var unary =
+                    operation is "abs" or "neg" or "popcnt"
+                    || operation.StartsWith("extend_", StringComparison.Ordinal)
+                    || operation.StartsWith("extadd_", StringComparison.Ordinal);
+                WasmValueKind[] inputs =
+                    operation is "shl" or "shr_s" or "shr_u"
+                        ? [WasmValueKind.V128, WasmValueKind.I32]
+                    : unary ? [WasmValueKind.V128]
+                    : [WasmValueKind.V128, WasmValueKind.V128];
+                var handler = string.Concat(
+                        item.Entry.Value.Split('.', '_')
+                            .Select(x => char.ToUpperInvariant(x[0]) + x[1..])
+                    )
+                    .Replace("Extmul", "ExtMul", StringComparison.Ordinal)
+                    .Replace("Extadd", "ExtAdd", StringComparison.Ordinal)
+                    .Replace("Q15mulr", "Q15MulR", StringComparison.Ordinal);
+                var descriptor = item.Descriptor;
+                await Assert.That(descriptor.Name).IsEqualTo(item.Entry.Value);
+                await Assert.That(descriptor.ExecutionOpcode).IsNotNull();
+                await Assert.That(descriptor.Immediate).IsEqualTo(ImmediateKind.None);
+                await Assert.That(descriptor.StackEffect).IsEqualTo(StackEffectKind.Numeric);
+                await Assert.That(descriptor.Validation).IsEqualTo(ValidationRule.Numeric);
+                await Assert.That(descriptor.LaneCount).IsEqualTo((byte)0);
+                await Assert.That(descriptor.NumericSignature.HasValue).IsTrue();
+                await Assert
+                    .That(descriptor.NumericSignature?.InputTypes.SequenceEqual(inputs) ?? false)
+                    .IsTrue();
+                await Assert
+                    .That(descriptor.NumericSignature?.ResultType)
+                    .IsEqualTo(WasmValueKind.V128);
+                await Assert.That(declarations[item.Entry.Key].ExecutionHandler).IsEqualTo(handler);
+            }
+        }
+    }
+
+    [Test]
     public async Task V128定数が接続されている_既存定数handlerと定数式規則を使う()
     {
         // Arrange
@@ -214,6 +278,7 @@ internal class InstructionSet_TryGetTests
                             }
                         )
                         .Select(x => (uint)x)
+                        .Concat(expected.Where(x => IsIntegerSimd(x.Value)).Select(x => x.Key))
                 );
             await Assert.That(InstructionSet.TryGet(new(prefix, 256), out _)).IsFalse();
             await Assert.That(InstructionSet.TryGet(new(prefix, uint.MaxValue), out _)).IsFalse();
@@ -386,6 +451,14 @@ internal class InstructionSet_TryGetTests
                 await Assert.That(descriptor.NumericSignature).IsNull();
             }
         }
+    }
+
+    private static bool IsIntegerSimd(string name)
+    {
+        return System.Text.RegularExpressions.Regex.IsMatch(
+            name,
+            @"^i(?:8x16|16x8|32x4|64x2)\.(?:abs|neg|popcnt|narrow_.*|shl|shr_[su]|add(?:_sat_[su])?|sub(?:_sat_[su])?|mul|min_[su]|max_[su]|avgr_u|extend_.*|extmul_.*|extadd_pairwise_.*|dot_.*|q15mulr_sat_s)$"
+        );
     }
 
     // 固定Core2の型規則とopcode割当から求める期待値 製品の宣言は参照しない

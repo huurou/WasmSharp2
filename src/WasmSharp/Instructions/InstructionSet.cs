@@ -3119,9 +3119,42 @@ namespace WasmSharp.Instructions;
 [Instruction(0xFD, 0x5D, "v128.load64_zero")]
 [Instruction(0xFD, 0x5E, "f32x4.demote_f64x2_zero")]
 [Instruction(0xFD, 0x5F, "f64x2.promote_low_f32x4")]
-[Instruction(0xFD, 0x60, "i8x16.abs")]
-[Instruction(0xFD, 0x61, "i8x16.neg")]
-[Instruction(0xFD, 0x62, "i8x16.popcnt")]
+[Instruction(
+    0xFD,
+    0x60,
+    "i8x16.abs",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I8x16Abs),
+    1,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x61,
+    "i8x16.neg",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I8x16Neg),
+    1,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x62,
+    "i8x16.popcnt",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I8x16Popcnt),
+    1,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
 [Instruction(
     0xFD,
     0x63,
@@ -3144,36 +3177,286 @@ namespace WasmSharp.Instructions;
     new[] { WasmValueKind.V128 },
     WasmValueKind.I32
 )]
-[Instruction(0xFD, 0x65, "i8x16.narrow_i16x8_s")]
-[Instruction(0xFD, 0x66, "i8x16.narrow_i16x8_u")]
+[Instruction(
+    0xFD,
+    0x65,
+    "i8x16.narrow_i16x8_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I8x16NarrowI16x8S),
+    2,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x66,
+    "i8x16.narrow_i16x8_u",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I8x16NarrowI16x8U),
+    2,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
 [Instruction(0xFD, 0x67, "f32x4.ceil")]
 [Instruction(0xFD, 0x68, "f32x4.floor")]
 [Instruction(0xFD, 0x69, "f32x4.trunc")]
 [Instruction(0xFD, 0x6A, "f32x4.nearest")]
-[Instruction(0xFD, 0x6B, "i8x16.shl")]
-[Instruction(0xFD, 0x6C, "i8x16.shr_s")]
-[Instruction(0xFD, 0x6D, "i8x16.shr_u")]
-[Instruction(0xFD, 0x6E, "i8x16.add")]
-[Instruction(0xFD, 0x6F, "i8x16.add_sat_s")]
-[Instruction(0xFD, 0x70, "i8x16.add_sat_u")]
-[Instruction(0xFD, 0x71, "i8x16.sub")]
-[Instruction(0xFD, 0x72, "i8x16.sub_sat_s")]
-[Instruction(0xFD, 0x73, "i8x16.sub_sat_u")]
+[Instruction(
+    0xFD,
+    0x6B,
+    "i8x16.shl",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I8x16Shl),
+    new[] { WasmValueKind.V128, WasmValueKind.I32 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x6C,
+    "i8x16.shr_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I8x16ShrS),
+    new[] { WasmValueKind.V128, WasmValueKind.I32 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x6D,
+    "i8x16.shr_u",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I8x16ShrU),
+    new[] { WasmValueKind.V128, WasmValueKind.I32 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x6E,
+    "i8x16.add",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I8x16Add),
+    2,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x6F,
+    "i8x16.add_sat_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I8x16AddSatS),
+    2,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x70,
+    "i8x16.add_sat_u",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I8x16AddSatU),
+    2,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x71,
+    "i8x16.sub",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I8x16Sub),
+    2,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x72,
+    "i8x16.sub_sat_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I8x16SubSatS),
+    2,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x73,
+    "i8x16.sub_sat_u",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I8x16SubSatU),
+    2,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
 [Instruction(0xFD, 0x74, "f64x2.ceil")]
 [Instruction(0xFD, 0x75, "f64x2.floor")]
-[Instruction(0xFD, 0x76, "i8x16.min_s")]
-[Instruction(0xFD, 0x77, "i8x16.min_u")]
-[Instruction(0xFD, 0x78, "i8x16.max_s")]
-[Instruction(0xFD, 0x79, "i8x16.max_u")]
+[Instruction(
+    0xFD,
+    0x76,
+    "i8x16.min_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I8x16MinS),
+    2,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x77,
+    "i8x16.min_u",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I8x16MinU),
+    2,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x78,
+    "i8x16.max_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I8x16MaxS),
+    2,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x79,
+    "i8x16.max_u",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I8x16MaxU),
+    2,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
 [Instruction(0xFD, 0x7A, "f64x2.trunc")]
-[Instruction(0xFD, 0x7B, "i8x16.avgr_u")]
-[Instruction(0xFD, 0x7C, "i16x8.extadd_pairwise_i8x16_s")]
-[Instruction(0xFD, 0x7D, "i16x8.extadd_pairwise_i8x16_u")]
-[Instruction(0xFD, 0x7E, "i32x4.extadd_pairwise_i16x8_s")]
-[Instruction(0xFD, 0x7F, "i32x4.extadd_pairwise_i16x8_u")]
-[Instruction(0xFD, 0x80, "i16x8.abs")]
-[Instruction(0xFD, 0x81, "i16x8.neg")]
-[Instruction(0xFD, 0x82, "i16x8.q15mulr_sat_s")]
+[Instruction(
+    0xFD,
+    0x7B,
+    "i8x16.avgr_u",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I8x16AvgrU),
+    2,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x7C,
+    "i16x8.extadd_pairwise_i8x16_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I16x8ExtAddPairwiseI8x16S),
+    1,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x7D,
+    "i16x8.extadd_pairwise_i8x16_u",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I16x8ExtAddPairwiseI8x16U),
+    1,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x7E,
+    "i32x4.extadd_pairwise_i16x8_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32x4ExtAddPairwiseI16x8S),
+    1,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x7F,
+    "i32x4.extadd_pairwise_i16x8_u",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32x4ExtAddPairwiseI16x8U),
+    1,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x80,
+    "i16x8.abs",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I16x8Abs),
+    1,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x81,
+    "i16x8.neg",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I16x8Neg),
+    1,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x82,
+    "i16x8.q15mulr_sat_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I16x8Q15MulRSatS),
+    2,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
 [Instruction(
     0xFD,
     0x83,
@@ -3196,34 +3479,328 @@ namespace WasmSharp.Instructions;
     new[] { WasmValueKind.V128 },
     WasmValueKind.I32
 )]
-[Instruction(0xFD, 0x85, "i16x8.narrow_i32x4_s")]
-[Instruction(0xFD, 0x86, "i16x8.narrow_i32x4_u")]
-[Instruction(0xFD, 0x87, "i16x8.extend_low_i8x16_s")]
-[Instruction(0xFD, 0x88, "i16x8.extend_high_i8x16_s")]
-[Instruction(0xFD, 0x89, "i16x8.extend_low_i8x16_u")]
-[Instruction(0xFD, 0x8A, "i16x8.extend_high_i8x16_u")]
-[Instruction(0xFD, 0x8B, "i16x8.shl")]
-[Instruction(0xFD, 0x8C, "i16x8.shr_s")]
-[Instruction(0xFD, 0x8D, "i16x8.shr_u")]
-[Instruction(0xFD, 0x8E, "i16x8.add")]
-[Instruction(0xFD, 0x8F, "i16x8.add_sat_s")]
-[Instruction(0xFD, 0x90, "i16x8.add_sat_u")]
-[Instruction(0xFD, 0x91, "i16x8.sub")]
-[Instruction(0xFD, 0x92, "i16x8.sub_sat_s")]
-[Instruction(0xFD, 0x93, "i16x8.sub_sat_u")]
+[Instruction(
+    0xFD,
+    0x85,
+    "i16x8.narrow_i32x4_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I16x8NarrowI32x4S),
+    2,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x86,
+    "i16x8.narrow_i32x4_u",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I16x8NarrowI32x4U),
+    2,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x87,
+    "i16x8.extend_low_i8x16_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I16x8ExtendLowI8x16S),
+    1,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x88,
+    "i16x8.extend_high_i8x16_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I16x8ExtendHighI8x16S),
+    1,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x89,
+    "i16x8.extend_low_i8x16_u",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I16x8ExtendLowI8x16U),
+    1,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x8A,
+    "i16x8.extend_high_i8x16_u",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I16x8ExtendHighI8x16U),
+    1,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x8B,
+    "i16x8.shl",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I16x8Shl),
+    new[] { WasmValueKind.V128, WasmValueKind.I32 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x8C,
+    "i16x8.shr_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I16x8ShrS),
+    new[] { WasmValueKind.V128, WasmValueKind.I32 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x8D,
+    "i16x8.shr_u",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I16x8ShrU),
+    new[] { WasmValueKind.V128, WasmValueKind.I32 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x8E,
+    "i16x8.add",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I16x8Add),
+    2,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x8F,
+    "i16x8.add_sat_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I16x8AddSatS),
+    2,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x90,
+    "i16x8.add_sat_u",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I16x8AddSatU),
+    2,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x91,
+    "i16x8.sub",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I16x8Sub),
+    2,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x92,
+    "i16x8.sub_sat_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I16x8SubSatS),
+    2,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x93,
+    "i16x8.sub_sat_u",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I16x8SubSatU),
+    2,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
 [Instruction(0xFD, 0x94, "f64x2.nearest")]
-[Instruction(0xFD, 0x95, "i16x8.mul")]
-[Instruction(0xFD, 0x96, "i16x8.min_s")]
-[Instruction(0xFD, 0x97, "i16x8.min_u")]
-[Instruction(0xFD, 0x98, "i16x8.max_s")]
-[Instruction(0xFD, 0x99, "i16x8.max_u")]
-[Instruction(0xFD, 0x9B, "i16x8.avgr_u")]
-[Instruction(0xFD, 0x9C, "i16x8.extmul_low_i8x16_s")]
-[Instruction(0xFD, 0x9D, "i16x8.extmul_high_i8x16_s")]
-[Instruction(0xFD, 0x9E, "i16x8.extmul_low_i8x16_u")]
-[Instruction(0xFD, 0x9F, "i16x8.extmul_high_i8x16_u")]
-[Instruction(0xFD, 0xA0, "i32x4.abs")]
-[Instruction(0xFD, 0xA1, "i32x4.neg")]
+[Instruction(
+    0xFD,
+    0x95,
+    "i16x8.mul",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I16x8Mul),
+    2,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x96,
+    "i16x8.min_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I16x8MinS),
+    2,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x97,
+    "i16x8.min_u",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I16x8MinU),
+    2,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x98,
+    "i16x8.max_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I16x8MaxS),
+    2,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x99,
+    "i16x8.max_u",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I16x8MaxU),
+    2,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x9B,
+    "i16x8.avgr_u",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I16x8AvgrU),
+    2,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x9C,
+    "i16x8.extmul_low_i8x16_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I16x8ExtMulLowI8x16S),
+    2,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x9D,
+    "i16x8.extmul_high_i8x16_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I16x8ExtMulHighI8x16S),
+    2,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x9E,
+    "i16x8.extmul_low_i8x16_u",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I16x8ExtMulLowI8x16U),
+    2,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0x9F,
+    "i16x8.extmul_high_i8x16_u",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I16x8ExtMulHighI8x16U),
+    2,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0xA0,
+    "i32x4.abs",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32x4Abs),
+    1,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0xA1,
+    "i32x4.neg",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32x4Neg),
+    1,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
 [Instruction(
     0xFD,
     0xA3,
@@ -3246,27 +3823,255 @@ namespace WasmSharp.Instructions;
     new[] { WasmValueKind.V128 },
     WasmValueKind.I32
 )]
-[Instruction(0xFD, 0xA7, "i32x4.extend_low_i16x8_s")]
-[Instruction(0xFD, 0xA8, "i32x4.extend_high_i16x8_s")]
-[Instruction(0xFD, 0xA9, "i32x4.extend_low_i16x8_u")]
-[Instruction(0xFD, 0xAA, "i32x4.extend_high_i16x8_u")]
-[Instruction(0xFD, 0xAB, "i32x4.shl")]
-[Instruction(0xFD, 0xAC, "i32x4.shr_s")]
-[Instruction(0xFD, 0xAD, "i32x4.shr_u")]
-[Instruction(0xFD, 0xAE, "i32x4.add")]
-[Instruction(0xFD, 0xB1, "i32x4.sub")]
-[Instruction(0xFD, 0xB5, "i32x4.mul")]
-[Instruction(0xFD, 0xB6, "i32x4.min_s")]
-[Instruction(0xFD, 0xB7, "i32x4.min_u")]
-[Instruction(0xFD, 0xB8, "i32x4.max_s")]
-[Instruction(0xFD, 0xB9, "i32x4.max_u")]
-[Instruction(0xFD, 0xBA, "i32x4.dot_i16x8_s")]
-[Instruction(0xFD, 0xBC, "i32x4.extmul_low_i16x8_s")]
-[Instruction(0xFD, 0xBD, "i32x4.extmul_high_i16x8_s")]
-[Instruction(0xFD, 0xBE, "i32x4.extmul_low_i16x8_u")]
-[Instruction(0xFD, 0xBF, "i32x4.extmul_high_i16x8_u")]
-[Instruction(0xFD, 0xC0, "i64x2.abs")]
-[Instruction(0xFD, 0xC1, "i64x2.neg")]
+[Instruction(
+    0xFD,
+    0xA7,
+    "i32x4.extend_low_i16x8_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32x4ExtendLowI16x8S),
+    1,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0xA8,
+    "i32x4.extend_high_i16x8_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32x4ExtendHighI16x8S),
+    1,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0xA9,
+    "i32x4.extend_low_i16x8_u",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32x4ExtendLowI16x8U),
+    1,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0xAA,
+    "i32x4.extend_high_i16x8_u",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32x4ExtendHighI16x8U),
+    1,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0xAB,
+    "i32x4.shl",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32x4Shl),
+    new[] { WasmValueKind.V128, WasmValueKind.I32 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0xAC,
+    "i32x4.shr_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32x4ShrS),
+    new[] { WasmValueKind.V128, WasmValueKind.I32 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0xAD,
+    "i32x4.shr_u",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32x4ShrU),
+    new[] { WasmValueKind.V128, WasmValueKind.I32 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0xAE,
+    "i32x4.add",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32x4Add),
+    2,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0xB1,
+    "i32x4.sub",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32x4Sub),
+    2,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0xB5,
+    "i32x4.mul",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32x4Mul),
+    2,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0xB6,
+    "i32x4.min_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32x4MinS),
+    2,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0xB7,
+    "i32x4.min_u",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32x4MinU),
+    2,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0xB8,
+    "i32x4.max_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32x4MaxS),
+    2,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0xB9,
+    "i32x4.max_u",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32x4MaxU),
+    2,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0xBA,
+    "i32x4.dot_i16x8_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32x4DotI16x8S),
+    2,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0xBC,
+    "i32x4.extmul_low_i16x8_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32x4ExtMulLowI16x8S),
+    2,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0xBD,
+    "i32x4.extmul_high_i16x8_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32x4ExtMulHighI16x8S),
+    2,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0xBE,
+    "i32x4.extmul_low_i16x8_u",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32x4ExtMulLowI16x8U),
+    2,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0xBF,
+    "i32x4.extmul_high_i16x8_u",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I32x4ExtMulHighI16x8U),
+    2,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0xC0,
+    "i64x2.abs",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I64x2Abs),
+    1,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0xC1,
+    "i64x2.neg",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I64x2Neg),
+    1,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
 [Instruction(
     0xFD,
     0xC3,
@@ -3289,16 +4094,123 @@ namespace WasmSharp.Instructions;
     new[] { WasmValueKind.V128 },
     WasmValueKind.I32
 )]
-[Instruction(0xFD, 0xC7, "i64x2.extend_low_i32x4_s")]
-[Instruction(0xFD, 0xC8, "i64x2.extend_high_i32x4_s")]
-[Instruction(0xFD, 0xC9, "i64x2.extend_low_i32x4_u")]
-[Instruction(0xFD, 0xCA, "i64x2.extend_high_i32x4_u")]
-[Instruction(0xFD, 0xCB, "i64x2.shl")]
-[Instruction(0xFD, 0xCC, "i64x2.shr_s")]
-[Instruction(0xFD, 0xCD, "i64x2.shr_u")]
-[Instruction(0xFD, 0xCE, "i64x2.add")]
-[Instruction(0xFD, 0xD1, "i64x2.sub")]
-[Instruction(0xFD, 0xD5, "i64x2.mul")]
+[Instruction(
+    0xFD,
+    0xC7,
+    "i64x2.extend_low_i32x4_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I64x2ExtendLowI32x4S),
+    1,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0xC8,
+    "i64x2.extend_high_i32x4_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I64x2ExtendHighI32x4S),
+    1,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0xC9,
+    "i64x2.extend_low_i32x4_u",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I64x2ExtendLowI32x4U),
+    1,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0xCA,
+    "i64x2.extend_high_i32x4_u",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I64x2ExtendHighI32x4U),
+    1,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0xCB,
+    "i64x2.shl",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I64x2Shl),
+    new[] { WasmValueKind.V128, WasmValueKind.I32 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0xCC,
+    "i64x2.shr_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I64x2ShrS),
+    new[] { WasmValueKind.V128, WasmValueKind.I32 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0xCD,
+    "i64x2.shr_u",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I64x2ShrU),
+    new[] { WasmValueKind.V128, WasmValueKind.I32 },
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0xCE,
+    "i64x2.add",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I64x2Add),
+    2,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0xD1,
+    "i64x2.sub",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I64x2Sub),
+    2,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0xD5,
+    "i64x2.mul",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I64x2Mul),
+    2,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
 [Instruction(
     0xFD,
     0xD6,
@@ -3365,10 +4277,54 @@ namespace WasmSharp.Instructions;
     new[] { WasmValueKind.V128, WasmValueKind.V128 },
     WasmValueKind.V128
 )]
-[Instruction(0xFD, 0xDC, "i64x2.extmul_low_i32x4_s")]
-[Instruction(0xFD, 0xDD, "i64x2.extmul_high_i32x4_s")]
-[Instruction(0xFD, 0xDE, "i64x2.extmul_low_i32x4_u")]
-[Instruction(0xFD, 0xDF, "i64x2.extmul_high_i32x4_u")]
+[Instruction(
+    0xFD,
+    0xDC,
+    "i64x2.extmul_low_i32x4_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I64x2ExtMulLowI32x4S),
+    2,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0xDD,
+    "i64x2.extmul_high_i32x4_s",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I64x2ExtMulHighI32x4S),
+    2,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0xDE,
+    "i64x2.extmul_low_i32x4_u",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I64x2ExtMulLowI32x4U),
+    2,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
+[Instruction(
+    0xFD,
+    0xDF,
+    "i64x2.extmul_high_i32x4_u",
+    ImmediateKind.None,
+    StackEffectKind.Numeric,
+    ValidationRule.Numeric,
+    nameof(Interpreter.I64x2ExtMulHighI32x4U),
+    2,
+    WasmValueKind.V128,
+    WasmValueKind.V128
+)]
 [Instruction(0xFD, 0xE0, "f32x4.abs")]
 [Instruction(0xFD, 0xE1, "f32x4.neg")]
 [Instruction(0xFD, 0xE3, "f32x4.sqrt")]

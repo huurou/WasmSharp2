@@ -317,3 +317,11 @@ New-Item -ItemType Directory -Path $taskOutput | Out-Null
 [修正後の独立レビュー](../../../artifacts/simd/review-8.1-remediation-independent-20261018T193744Z/review-verdict.md)はAPPROVED。警告・エラー0のReleaseビルド後、4671/160/702件が全成功、失敗・スキップ0・各終了0。整形・差分・hash・フラグ確認も成功した。公式run時との902ソース・5実行artifact・固定素材・結果JSONの同一性を確認し、同じrun/比較を採用した。
 
 [公式結果](../../../artifacts/simd/task-8.1-20261018T191116Z/results-audit.json)は147入力・53907commandでpassed35520、runtime_unsupported526、blocked16784、out_of_scope1077。元27482件と前回27918件のpassedを全保持し、7602件が新たにpassedとなった。期待値・出典・5821素材は不変、否定診断4978件は前方一致、失敗・回帰・欠落・未比較・未処理0。残未対応/blockedは整数260/2453、浮動小数点・変換107/13687、メモリ159/644へ原因を再帰して対応付け、独立監査も一致した。親は原ログ・終了値・最終コードを直接確認し、kiro-verify-completionをVERIFIEDとした。未解決指摘はなく、verifyとbaseline-saveは後続の最終受入で行う。
+
+## 8.2 整数演算の公開接続
+
+既存88handlerを通常・飽和・shift・拡張・積和の宣言へ接続した。固定付録からopcode・名前・型列・結果型・handlerを照合し、shift12宣言の入力は下から[V128,I32]とした。製品変更はこの88宣言だけで、それ以外のInstructionSetは全byte不変。FDは174命令が対応済み、未接続は浮動小数点・変換40とメモリ22。既存88handlerの175テストを再利用した。
+
+[実装記録](../../../artifacts/simd/task-8.2-20261018T194827Z/handoff.md)の新規19件は、公開4段階の境界値、128以上subopcodeの最短・許容非最短LEB128、全4幅shiftの型順と逆順Validate拒否、metadataを確認する。88宣言全体の同一ソースでOFF19件全失敗・終了2→明示DefineConstants指定のON19件全成功・終了0、対象外148metadata不変を確認した。フラグ完全除去後のReleaseビルドは警告・エラー0、4689/160/702件が全成功・失敗/スキップ0・各終了0。初期のassertion規約エラーと補助ログの日本語表記の誤認は解消し、旧ログも保持した。FDDF01の未対応だけを期待する1引数は接続により廃止し、公開境界値テストへ移行した。汎用の位置・未確認範囲の目的は残るmemory2引数で維持した。
+
+[独立レビュー](../../../artifacts/simd/review-8.2-20261018T195855Z/review-verdict.md)はAPPROVED。機械検査・担当境界・最終5hash・既存改行・RED切替を直接確認し、[公式監査](../../../artifacts/simd/task-8.2-20261018T194827Z/results-audit-classified.json)も独立に照合した。147入力・53907commandはpassed38169、runtime_unsupported268、blocked14393、out_of_scope1077。元passed27482と直前35520を全保持し2649件が新たに成功した。全期待値・出典・147source/5821素材・固定条件は不変、否定診断5205件も前方一致、失敗・回帰・欠落・未比較・未処理0。残未対応/blockedは浮動小数点・変換109/13749とメモリ159/644だけで、cause.direct再帰とoriginsの独立照合も一致した。親は原ログ・終了値・最終コードを直接確認し、kiro-verify-completionをVERIFIEDとした。未解決指摘はなく、verify/baseline-saveは最終受入で行う。
