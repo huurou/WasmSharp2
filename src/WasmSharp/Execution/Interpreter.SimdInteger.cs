@@ -1252,6 +1252,92 @@ internal static partial class Interpreter
     }
 
     /// <summary>
+    /// 隣接する8bitのsigned laneを16bitへ拡張して加算する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI16x8ExtAddPairwiseI8x16S命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I16x8ExtAddPairwiseI8x16S(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        return ExecuteSimdIntegerUnary(
+            context,
+            16,
+            static x => unchecked((ulong)((sbyte)x + (sbyte)(x >> 8)))
+        );
+    }
+
+    /// <summary>
+    /// 隣接する8bitのunsigned laneを16bitへ拡張して加算する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI16x8ExtAddPairwiseI8x16U命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I16x8ExtAddPairwiseI8x16U(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        return ExecuteSimdIntegerUnary(context, 16, static x => (x & 0xFFUL) + (x >> 8));
+    }
+
+    /// <summary>
+    /// 隣接する16bitのsigned laneを32bitへ拡張して加算する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI32x4ExtAddPairwiseI16x8S命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I32x4ExtAddPairwiseI16x8S(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        return ExecuteSimdIntegerUnary(
+            context,
+            32,
+            static x => unchecked((ulong)((short)x + (short)(x >> 16)))
+        );
+    }
+
+    /// <summary>
+    /// 隣接する16bitのunsigned laneを32bitへ拡張して加算する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI32x4ExtAddPairwiseI16x8U命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I32x4ExtAddPairwiseI16x8U(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        return ExecuteSimdIntegerUnary(context, 32, static x => (x & 0xFFFFUL) + (x >> 16));
+    }
+
+    /// <summary>
+    /// 隣接するsigned i16の2積を加算して32bitへ折り返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI32x4DotI16x8S命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I32x4DotI16x8S(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        // 2つの最小i16の積和は2147483648になるためlongで加算してから32bitへ折り返す
+        return ExecuteSimdIntegerBinary(
+            context,
+            32,
+            static (x, y) =>
+                unchecked(
+                    (ulong)((long)(short)x * (short)y + (long)(short)(x >> 16) * (short)(y >> 16))
+                )
+        );
+    }
+
+    /// <summary>
     /// extendのoperandを取り出し選択した半分のlaneを拡張して積む
     /// </summary>
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>

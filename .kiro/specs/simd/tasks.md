@@ -160,7 +160,7 @@
   - _Boundary: SimdIntegerExecution_
   - _Requirements: 5.5_
 
-- [ ] 5.5 隣接laneの拡張加算とdotを追加する
+- [x] 5.5 隣接laneの拡張加算とdotを追加する
   - extadd_pairwiseの符号解釈と隣接対を扱う。
   - signed i16の積をi32の隣接対ごとに加算し、結果の折返しを保つ。
   - lane順とdotのoverflowを含むテストが成立する状態にする。

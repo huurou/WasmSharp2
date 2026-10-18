@@ -245,3 +245,9 @@ New-Item -ItemType Directory -Path $taskOutput | Out-Null
 要件5.5に対応するextend12handlerとextmul12handlerを追加した。context操作と純粋なlane処理を分け、選択した入力の半分を拡張先のlane 0から配置する。32→64bitのsigned積はlong、unsigned積はulongで保持する。32ケースで上下の非対称入力、符号境界、拡張幅の積、最大uint同士の積、結果型・sentinel・stack数を確認した。既存58handlerと9helperの本体は維持した。
 
 [実装記録](../../../artifacts/simd/task-5.4-20261018T164644Z/)で一時フラグOFFの32件失敗、ONの32件成功、フラグ除去後の成功を確認した。[独立レビュー](../../../artifacts/simd/review-5.4-20261018T165447Z/review-verdict.md)は`APPROVED`で、Releaseビルドの警告・エラー0、ランタイム4,240件成功、失敗・スキップ0、終了0、変更25C#の整形・空白確認成功を確認した。固定参照の24命令集合・subopcodeと32期待vectorの独立計算が一致し、各ケースが逆の半分・符号解釈も検出した。24テストのhashはRED・最終・レビュー時点で一致した。親は拡張処理・代表的境界テスト、実際の出力・終了値を確認し、`kiro-verify-completion`のタスク5.4判定を`VERIFIED`とした。未解決の指摘はない。公開接続と公式全体実行は8.2で行う。
+
+## 5.5 隣接laneの拡張加算とdot
+
+要件5.6のpairwise4handlerとdot1handlerを追加し、既存の単項・二項処理を再利用した。pairwiseは出力幅ごとの隣接2laneを符号解釈に従って加算し、dotはlongの積和をi32へ折り返す。5ケースに符号境界、上下で異なるlane、dotの2147483648から0x80000000への折返しを含め、結果型・128bit・sentinel・stack数を確認した。既存82handlerと13helperの本体は維持した。
+
+[実装記録](../../../artifacts/simd/task-5.5-20261018T170156Z/StatusReport.md)で、一時フラグOFFの5件失敗・終了2、ONの5件成功、フラグ除去後の成功を確認した。RED終了値の報告文の誤記は保存JSONと同じ2へ訂正し、元のログは保持した。[独立レビュー](../../../artifacts/simd/task-5.5-independent-review-20261018T171130Z/ReviewVerdict.md)は`APPROVED`で、Releaseビルドの警告・エラー0、ランタイム4,245件成功、失敗・スキップ0、終了0、6C#の整形・空白確認成功を確認した。固定5命令集合と5期待vectorの独立計算が一致した。保存済み公式JSONの58期待値も固定規則の計算と一致したが、公式ランタイム実行とは区別する。親は5wrapper・dotテスト、実際の出力・終了値を確認し、kiro-verify-completionのタスク5.5判定をVERIFIEDとした。未解決の指摘はない。公開接続と公式全体実行は8.2で行う。
