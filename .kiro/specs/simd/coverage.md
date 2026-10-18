@@ -1,6 +1,6 @@
 # SIMDの規則・実装・局所検証の対応
 
-タスク10.1で、HEAD`10d744753ea32d12721251c0b9901512ba09004e`の製品・テストを変更せずに確認した。51受入基準の番号は[requirements.md](requirements.md)に従う。局所検証と命令接続の監査を記録し、10.2の単一最終run・比較・verifyを完了した。10.3のbaseline保存は未実施である。最終受入状況は[acceptance.md](acceptance.md)を参照する。
+タスク10.1で、HEAD`10d744753ea32d12721251c0b9901512ba09004e`の製品・テストを変更せずに確認した。51受入基準の番号は[requirements.md](requirements.md)に従う。局所検証と命令接続の監査を記録し、10.2の単一最終run・比較・verifyを完了した。10.3で同じ受入済みrunの新規baseline保存と全byte・SHA256一致も確認した。最終受入状況は[acceptance.md](acceptance.md)を参照する。
 
 固定規範は`thirdParties/WebAssembly-spec`の`05ca4182176763112561ae20153975c12bd689e4`。表の規則名は同submodule内のRSTアンカーを示す。`B`=`document/core/binary/instructions.rst`、`BV`=`document/core/binary/values.rst`、`V`=`document/core/valid/instructions.rst`、`E`=`document/core/exec/instructions.rst`、`N`=`document/core/exec/numerics.rst`、`EM`=`document/core/exec/modules.rst`。たとえば`E:exec-vec-shuffle`は`.. _exec-vec-shuffle:`を指す。命令ごとの型・検証・実行アンカーは固定付録`document/core/appendix/index-instructions.py`にも収録されている。
 
@@ -59,7 +59,7 @@ Decode・Validate・Instantiate・Invokeの公開状態、例外・再検証・�
 | 8.3 | ローカル要件8.3・ADR0003、公式commandの同定条件 | C/Baselines/BaselineComparer.cs、C/Reports/CompletionPolicy.cs:CompareRun | CT/Baselines/BaselineComparer_CompareRunTests.cs「以前passedだったケースが別分類になる」「以前passedだった結果が欠落する」。8.4の回帰0記録を保持し、10.2でも元27482件/直前52830件passedを全保持し、回帰/欠落0を確認した。 |
 | 8.4 | ローカル要件8.4・CONTEXT.mdの分類・ADR0012 | C/Execution/ScriptExecutor.cs、AssertionJudge.cs、C/Reports/CaseDiagnostic.cs | CT/Execution/AssertionJudge_JudgeTests.cs「判定できない例外」、CT/Reports/CaseDiagnostic_FromExceptionTests.csの未対応/host/位置、8.4のresults-audit-classified.json。runner_error/failed/unsupported/blockedを区別。10.2でも4不成立分類0と元未対応/blocked原因の解消を確認した。 |
 | 8.5 | 固定仕様の規則対応、ローカル要件8.5・設計「公式受入と最終判定」 | 今回の全236命令監査と本表、C/Reports/CompletionPolicy.cs | 51行の規則・実装・既存テスト、Release警告エラー0、3プロジェクト全件とHW無効805件。命令数だけで判定しない。10.2の最終runと比較は対象52830passed・4不成立分類/回帰0、同じrunのverifyは合格。 |
-| 8.6 | ローカル要件8.6・設計「公式受入と最終判定」。Wasm規範にbaseline-saveの規則はない | C/Baselines/BaselineStore.cs:Save、C/Reports/ReportStore.cs:SaveBaseline、CompletionPolicy.BaselineSave | CT/Baselines/BaselineStore_SaveTests.cs「全件記録済みでfailedとrunner_errorと未対応を含む_バイト列を変えず既存baselineへ保存する」、CT/Reports/CompletionPolicy_BaselineSaveTests.cs。10.3で同じ受入済み最終runを新規baselineへ保存・byte一致確認する手順。未実施。 |
+| 8.6 | ローカル要件8.6・設計「公式受入と最終判定」。Wasm規範にbaseline-saveの規則はない | C/Baselines/BaselineStore.cs:Save、C/Reports/ReportStore.cs:SaveBaseline、CompletionPolicy.BaselineSave | CT/Baselines/BaselineStore_SaveTests.cs「全件記録済みでfailedとrunner_errorと未対応を含む_バイト列を変えず既存baselineへ保存する」、CT/Reports/CompletionPolicy_BaselineSaveTests.cs。10.3で同じ受入済みrunを[新規baseline](../../../artifacts/simd/task-10.3-20261018T215944Z/run-baseline.json)へ保存。67,126,816byteすべてとSHA256が一致、元baselineは保持。 |
 | 8.7 | ローカル要件8.7・ADR0003・設計「公式受入と最終判定」。全8仕様の単一結果の完了契約 | C/Reports/CompletionPolicy.cs:Verify、ReportStore.cs:Validate | CT/Reports/CompletionPolicy_VerifyTests.csの成功、4不成立分類、欠落・件数未確定、profile不一致。10.2の単一最終runへverifyを適用して合格。対象52830passed/対象外1077、未処理/欠落/4不成立分類0。 |
 
 ## 命令集合と生成物の照合
@@ -89,4 +89,8 @@ Decode・Validate・Instantiate・Invokeの公開状態、例外・再検証・�
 
 ## 単一最終runの受入（10.2）
 
-[受入記録](acceptance.md)と[最終公式監査](../../../artifacts/simd/task-10.2-20261018T213901Z/results-audit.json)で、147入力53907commandを完了し、52830passed/1077out_of_scope、4不成立分類・入力異常・未処理・回帰・欠落・未比較0を確認した。元27482件と直前52830件のpassedを全保持し、同じrunへの比較とverifyが終了0。[独立レビュー](../../../artifacts/simd/review-10.2-independent-20261018T215427Z/review-verdict.md)もAPPROVED。runのSHA256は`31b0282af0cc5b7b528a660ae409349c2a748538ac8e58fd3a0da2e31e387d6d`。固定Core 2.0 profileの全体verify合格とSIMD公式受入条件の成立を区別し、同じrunのbaseline保存は10.3へ引き継ぐ。
+[受入記録](acceptance.md)と[最終公式監査](../../../artifacts/simd/task-10.2-20261018T213901Z/results-audit.json)で、147入力53907commandを完了し、52830passed/1077out_of_scope、4不成立分類・入力異常・未処理・回帰・欠落・未比較0を確認した。元27482件と直前52830件のpassedを全保持し、同じrunへの比較とverifyが終了0。[独立レビュー](../../../artifacts/simd/review-10.2-independent-20261018T215427Z/review-verdict.md)もAPPROVED。runのSHA256は`31b0282af0cc5b7b528a660ae409349c2a748538ac8e58fd3a0da2e31e387d6d`。固定Core 2.0 profileの全体verify合格とSIMD公式受入条件の成立を区別し、10.3で同じrunを[新規baseline](../../../artifacts/simd/task-10.3-20261018T215944Z/run-baseline.json)へ保存し、全byte・同じSHA256の一致を確認した。
+
+## 明示baseline保存（10.3）
+
+同じ受入済み最終runを既存baseline-saveで新規保存し、67,126,816byteとSHA256`31b0282af0cc5b7b528a660ae409349c2a748538ac8e58fd3a0da2e31e387d6d`の一致を確認した。元baselineは不変。[独立レビュー](../../../artifacts/simd/review-10.3-independent-20261018T220504Z/review-verdict.md)はAPPROVED、[親の完了確認](../../../artifacts/simd/task-10.3-20261018T215944Z/parent-verification.md)はVERIFIED。保存終了0と10.2の比較・verifyによる合格判定は別に扱う。

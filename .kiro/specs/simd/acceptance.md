@@ -464,3 +464,21 @@ SIMD機能の公式受入条件は成立した。Core 2.0全体についても�
 
 
 [独立レビュー](../../../artifacts/simd/review-10.2-independent-20261018T215427Z/review-verdict.md)はAPPROVED。同じrunへの独立compare/verifyは終了0で、全53907期待・ID・順序、5968素材、現在913入力/5実行artifactと保存snapshot、元/直前passedの全保持を確認した。親も原ログ・全case期待・現在hashを照合し、kiro-verify-completionをVERIFIEDとした。固定Core 2.0 profileの全体verify合格とSIMD公式受入条件の成立を確認でき、同じrunを10.3の新規baseline保存へ引き継ぐ。
+
+## 10.3 比較・受入済みrunの明示baseline保存
+
+10.2で比較・verify・独立APPROVED・親VERIFIEDを得た同じ`artifacts/simd/task-10.2-20261018T213901Z/run.json`を、既存`baseline-save`で新規`artifacts/simd/task-10.3-20261018T215944Z/run-baseline.json`へ保存した。製品・テストの変更はなく、非behavioralでREDはN/A。
+
+| 操作 | UTC | 終了値・結果 |
+| --- | --- | --- |
+| 保存前の同一性確認 | `preflight-command.json`参照 | 0。913入力/5実行artifactが10.2記録と一致、元baseline/採用run/固定manifest/profileのSHA256一致、新規出力の不存在を確認。 |
+| 同じ採用runのbaseline-save | 2026-10-18T22:02:22.846033Z〜22:02:24.969362Z | 0、保存完了。`baseline-save-command.json`と原`baseline-save.log`へargv/cwd/UTC/終了値を保存。 |
+| 保存後の同一性確認 | `postflight-command.json`参照 | 0。入力と新規baselineの67,126,816byteすべてが一致し、SHA256も一致。保存前後の913入力/5artifact/受入根拠15ファイルは不変。 |
+
+入力と保存結果のSHA256はともに`31b0282af0cc5b7b528a660ae409349c2a748538ac8e58fd3a0da2e31e387d6d`。元baseline`artifacts/tables-references/task-8.4-20261018T090714Z/run-baseline.json`は置換せず、SHA256`9d51acea7309d02af302118c932bf25d9725336304f370b48d04cae995176496`を保持した。
+
+保存JSONのcorpusは固定manifestと完全一致し、profileは現在の固定profileと完全一致する。run_idは`1820ada6-3530-46ce-895f-0593e10600b7`で、provenance、manifest_path、execution_policyは採用runと同じ。manifest`c60dec91f788791a9b790835b2629c2d970e3fb44afab4d63f209df9097e263e`、profile`53e65ededab6814a6f73ac17ff286cedb35221b01aea83bbdd20e0ab15b452bc`、spec`05ca4182176763112561ae20153975c12bd689e4`、WABT`c8dc7b6eae42b3aa3e95b9014dc02b71f8e0e1db`、SIMD ON/relaxed-SIMD OFF、7ON/14OFFを保持した。147sourceと5821素材の識別情報は10.2で監査済みの5968項目と一致し、同じbyte列のrunから新規baselineへ保存されている。素材の再生成や5968個の再ハッシュは行っていない。
+
+スイートの合格は10.2の採用run、comparison.json、verify.log、results-audit.jsonに基づく。147入力53907commandの52830passed/1077out_of_scope、4不成立分類・未処理・欠落・回帰・未比較0という結果と、今回の保存操作の終了0を分けて記録する。新規run/compare/verify、build、全3TUnit、HW無効805件の再実行はしていない。保存成功をテスト成功や機能全体GOへ読み替えない。
+
+詳細は`artifacts/simd/task-10.3-20261018T215944Z/`の`task-brief.md`、`preflight.json`、`baseline-save-command.json`、`postflight.json`、`self-review.md`、`final-checks.json`を参照する。[独立レビュー](../../../artifacts/simd/review-10.3-independent-20261018T220504Z/review-verdict.md)はAPPROVED、[親の完了確認](../../../artifacts/simd/task-10.3-20261018T215944Z/parent-verification.md)はVERIFIED。
