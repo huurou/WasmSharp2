@@ -335,6 +335,28 @@ dotnet tools/WasmSharp.TestSuiteRunner/bin/Release/net10.0/WasmSharp.TestSuiteRu
 これらは7.2成立結果の再確認であり、8.2の新規全体実行と8.3の最終受入を代替しない。
 8.4では、8.2・8.3で比較・受入を終えた同じ結果だけをbaseline-saveへ渡す。今回はbaselineを保存しておらず、Core 2.0全体の完成も宣言しない。
 
+## 8.2 全公式commandの実行と固定baseline比較
+
+要件9.1・9.3と設計のConformanceVerification・公式受入に従い、固定manifestから全147入力・53,907commandを新しい保存先へ実行した。素材・期待値・分類・比較元を保持し、同じ保存結果を固定baselineおよび7.2の保存結果と比較することをTask Briefとした。
+
+成果物は[task-8.2-20261018T084643Z](../../../artifacts/tables-references/task-8.2-20261018T084643Z/)に保存した。
+
+| 実行・比較 | 結果 | 保存結果 |
+| --- | --- | --- |
+| 固定manifestによる`run` | 終了0、処理・出力完了、入力異常・未処理0 | [run.json](../../../artifacts/tables-references/task-8.2-20261018T084643Z/run.json) |
+| linear-memory受入済みbaselineとの`compare-run` | 終了0、成立・完了、差分4,466件 | [comparison.json](../../../artifacts/tables-references/task-8.2-20261018T084643Z/comparison.json) |
+| 7.2の保存結果との`compare-run` | 終了0、成立・完了、差分0件 | [comparison-7.2.json](../../../artifacts/tables-references/task-8.2-20261018T084643Z/comparison-7.2.json) |
+
+結果はpassed27,482、runtime_unsupported1,079、blocked24,269、out_of_scope1,077、failed0、runner_error0だった。両比較の条件差・出典差・入力素材差・追加・欠落・回帰・未比較はすべて0件だった。
+
+[ケース監査](../../../artifacts/tables-references/task-8.2-20261018T084643Z/results-audit.json)では全commandの識別子・行・種別をmanifestと照合し、7.2の全ケース結果と一致することを確認した。固定baselineとの差分は、既知33件のmessageのみの差、runtime_unsupportedからpassedへの378件、blockedからpassedへの4,054件、`simd/simd_const.wast#573`の停止位置変更1件である。既知33件は1.1のcaseID一覧および6.1の保存結果と照合し、message以外の不変を確認した。最後の1件はelementのsection9から`v128.const`のsection10へ進んだものだった。差分4,466件は7.2の比較結果とケース単位で一致し、7.2で成立していたケースの回帰はない。
+
+5,821素材と147入力のhashを再計算した。[事前確認](../../../artifacts/tables-references/task-8.2-20261018T084643Z/preflight.json)に現在のsrc・tests・tools配下659ファイルとCLIのhashを保存し、7.2の変更13ファイルとの一致および公式実行前後の不変を確認した。manifestのSHA256は`c60dec91f788791a9b790835b2629c2d970e3fb44afab4d63f209df9097e263e`、固定baselineは`70e9453f222304b22a04f1e2b2f4cd2e56208192d5b59e0603615dade18309a1`のままである。
+
+今回の比較済みrunのSHA256は`9d51acea7309d02af302118c932bf25d9725336304f370b48d04cae995176496`である。[コマンド記録](../../../artifacts/tables-references/task-8.2-20261018T084643Z/commands.json)と各ログに引数・終了値を保存し、ビルド済みCLIの`--help`、ケース監査、`git diff --check`も終了0だった。製品・テストの変更はなく、8.1で完了した3プロジェクトのテストは重複実行していない。
+
+8.3ではこの同じrunを使って対象規則・ケースと残る未対応・前提不成立の起因を最終照合する。8.4のbaseline-saveは未実行であり、本節は対象ケースの最終受入やCore 2.0全体の完成を宣言しない。
+
 [tr-bin-instr]: ../../../thirdParties/WebAssembly-spec/document/core/binary/instructions.rst
 [tr-bin-module]: ../../../thirdParties/WebAssembly-spec/document/core/binary/modules.rst
 [tr-valid-instr]: ../../../thirdParties/WebAssembly-spec/document/core/valid/instructions.rst
