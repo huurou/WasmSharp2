@@ -16,6 +16,7 @@ metadataからまだ呼べない検証分岐やhandlerは、接続タスクで�
 並列候補は5.1と5.2のみとする。
 大項目1〜4を完了してから着手し、共通fixture・命令宣言・validatorを編集しない。
 同じ出力を使うビルド・テスト・公式runは並行実行しない。
+大項目6は要素初期化を基本table命令の公式全体検証より先に成立させ、記載順の6.1→6.3→6.4→6.2で進める。
 それ以外は記載順と_Depends:_に従う。
 baselineは最終受入まで保持する。
 
@@ -192,14 +193,6 @@ baselineは最終受入まで保持する。
   - _Depends: 3.2, 3.3, 5.1, 2.3_
   - _Requirements: 1.1, 1.3, 1.4, 2.2, 2.4, 2.6, 2.7, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 6.1, 8.5_
 
-- [ ] 6.2 基本テーブル命令を統合する
-  - get/set/size/growの添字Decode、命令宣言、検証とhandlerを接続する。
-  - 複数table、funcref・externref、共有実体、uint添字、増大失敗を公開APIで確認する。
-  - 境界trapとAPI誤用・ホスト例外の区別を確認し、関連TUnitと公式全体run・比較を通す。
-  - _Boundary: InstructionDefinitions, ModuleDecoder, ReferenceValidation, TableExecution, WasmTable_
-  - _Depends: 3.4, 5.2, 2.3, 6.1_
-  - _Requirements: 1.1, 2.1, 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 8.1, 8.4, 8.5_
-
 - [ ] 6.3 全要素形式のDecodeを追加する
   - flags0〜7を静的定義へ変換し、旧形式の関数添字列を元の入力位置付きの参照式へ正規化する。
   - 空section、elemkind、暗黙funcref、明示reftype、table添字、offset式を読み取る。
@@ -217,6 +210,14 @@ baselineは最終受入まで保持する。
   - _Boundary: ModuleDecoder, ReferenceValidation, ConstantInitializer, InstanceConstruction, ElementInstance, ExecutionBoundary_
   - _Depends: 3.4, 4.3, 2.3, 6.3_
   - _Requirements: 1.2, 2.3, 2.4, 2.7, 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.7, 8.1, 8.2, 8.5_
+
+- [ ] 6.2 基本テーブル命令を統合する
+  - get/set/size/growの添字Decode、命令宣言、検証とhandlerを接続する。
+  - 複数table、funcref・externref、共有実体、uint添字、増大失敗を公開APIで確認する。
+  - 境界trapとAPI誤用・ホスト例外の区別を確認し、関連TUnitと公式全体run・比較を通す。
+  - _Boundary: InstructionDefinitions, ModuleDecoder, ReferenceValidation, TableExecution, WasmTable_
+  - _Depends: 3.4, 5.2, 2.3, 6.1, 6.4_
+  - _Requirements: 1.1, 2.1, 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 8.1, 8.4, 8.5_
 
 - [ ] 7. 一括操作と間接呼び出しを統合する
 - [ ] 7.1 一括table命令とelem.dropを公開経路へ接続する
@@ -320,3 +321,5 @@ manifestと比較元baselineのSHA-256はresearch.mdの記録と一致した。
 - 初期化式列は`ReadOnlySpan<IEnumerable<DecodedInstruction>>`で受け、`ElementDefinition`が各式を一度コピーする。`ExpressionDecoder.Read`の`List<DecodedInstruction>`をそのまま渡せる。
 - 宣言集合は固定仕様の`Free.instr`に合わせ、関数本体とstart以外の式から`ref.func`と`call`の関数添字を集める。定数性や添字の妥当性は後続の検証で判定する。
 - WasmValue等の値列は`SequenceEqual`で順序と内容を比較する。TUnitの`IsEqualTo`で配列参照を比較しない。
+- 既存ファイルの改行形式を保って編集し、意味のない全行差分を作らない。
+- 6.2の公式`elem.wast#93`は、#92のactive elementが共有tableへ書くnullを前提とする。調査結果は`artifacts/tables-references/debug-6.2-20261018T050755Z/debug-report.md`。期待値・分類・baselineを変更せず、6.3→6.4→6.2の順で接続し、6.2を6.4完了後に再検証する。
