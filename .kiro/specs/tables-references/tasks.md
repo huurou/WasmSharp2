@@ -147,7 +147,7 @@ baselineは最終受入まで保持する。
   - _Depends: 1.4, 2.2, 3.2, 4.2_
   - _Requirements: 5.6, 6.1, 6.3_
 
-- [ ] 5. 参照・テーブル・間接呼び出しの実行処理を準備する
+- [x] 5. 参照・テーブル・間接呼び出しの実行処理を準備する
 - [x] 5.1 (P) 参照値を生成・判定するhandlerを追加する
   - 関数参照は現在の定義関数の所属instanceから取得し、nullは参照型別に扱う。
   - null判定はfuncref・externrefの両方でi32の0または1を返す。
@@ -173,7 +173,7 @@ baselineは最終受入まで保持する。
   - _Depends: 4.1, 4.3, 5.2_
   - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6_
 
-- [ ] 5.4 間接呼び出しの対象を解決して共通callへ渡す
+- [x] 5.4 間接呼び出しの対象を解決して共通callへ渡す
   - selectorを取得し、table境界、null、引数型列・結果型列の順に検査する。
   - 型オブジェクトや型添字の同一性ではなく、構造が等しい関数型を許可する。
   - 成功時は同じ関数実体を共通callへ渡し、失敗時は関数実行・深さ増加・ホストcallbackを行わない。境界違反とnull要素の結果にはselectorを保持して公開境界へ渡す。
@@ -319,3 +319,4 @@ manifestと比較元baselineのSHA-256はresearch.mdの記録と一致した。
 
 - 初期化式列は`ReadOnlySpan<IEnumerable<DecodedInstruction>>`で受け、`ElementDefinition`が各式を一度コピーする。`ExpressionDecoder.Read`の`List<DecodedInstruction>`をそのまま渡せる。
 - 宣言集合は固定仕様の`Free.instr`に合わせ、関数本体とstart以外の式から`ref.func`と`call`の関数添字を集める。定数性や添字の妥当性は後続の検証で判定する。
+- WasmValue等の値列は`SequenceEqual`で順序と内容を比較する。TUnitの`IsEqualTo`で配列参照を比較しない。
