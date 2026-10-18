@@ -263,3 +263,9 @@ New-Item -ItemType Directory -Path $taskOutput | Out-Null
 要件6.1・6.2の基本算術・6.6に対応し、f32x4/f64x2のabs・neg・add・sub・mul・div・sqrtの14handlerを追加した。stack処理と純粋なlane計算を分け、abs/negはrawbit、算術は既存の同精度NaN処理を使う。60ケースでsignaling NaNを含むpayload保持、±0、無限大、非正規化数、operand順、丸めと平方根の境界、128bit・stack契約を確認した。既存製品コードは変更していない。
 
 [実装記録](../../../artifacts/simd/task-6.1-20261018T172944Z/StatusReport.md)でOFF60全件失敗・終了2、ON60成功を確認した。対象コードの浮動小数点計算を使わない有理数・高精度平方根による160laneの期待bit計算も一致した。[独立レビュー](../../../artifacts/simd/review-task-6.1-20261018T174020Z/review.md)はAPPROVEDで、フラグ除去後のReleaseビルド警告・エラー0、ランタイム4,307件成功・失敗/スキップ0・終了0、15C#の整形・空白・hash検査、重要な18laneの独立計算が成功した。実装側では新規プロセスのDOTNET_EnableHWIntrinsic=0による60件も成功し、設定はその実行だけに限定した。親はwrapper・4helperと代表的テスト、実際の出力・終了値を確認し、kiro-verify-completionのタスク6.1判定をVERIFIEDとした。未解決の指摘はない。公開接続・公式全体実行は8.3、統合状態の支援無効確認は10.1で行う。
+
+## 6.2 丸めと2種類の最小・最大演算
+
+要件6.2の丸め・6.3に対応する16handlerを追加した。ceil/floor/trunc/nearestは既存の同精度補助でゼロ符号とNaNを扱い、nearestは最近接偶数とする。min/maxは既存補助を再利用し、pmin/pmaxは固定比較で選ばれたoperandのrawbitsを返す。108ケースで正負の丸め境界、±0、非正規化数、無限大、左右のNaN・signaling payload、lane・stack契約を確認した。既存14handler・4helperは維持した。
+
+[実装記録](../../../artifacts/simd/task-6.2-20261018T174633Z/StatusReport.md)でOFF108件失敗・終了2、ON108件成功、フラグ除去後の成功を確認した。[独立レビュー](../../../artifacts/simd/task-6.2-review-20261018T175337Z/verdict.md)はAPPROVED。Releaseビルド警告・エラー0、ランタイム4,415件成功・失敗/スキップ0・終了0、明示17C#の整形・空白検査成功、108組・288laneの期待定数の独立照合一致を確認した。親は最終wrapper・代表的テスト、実際の出力・終了値を確認し、kiro-verify-completionのタスク6.2判定をVERIFIEDとした。未解決の指摘はない。公開接続・公式全体実行は8.3で行う。
