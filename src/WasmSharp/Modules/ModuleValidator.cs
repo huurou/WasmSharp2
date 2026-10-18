@@ -23,7 +23,7 @@ internal static class ModuleValidator
         ValidateInitializers(module, references);
         ValidateResources(module);
         ValidateData(module, memoryCount, references);
-        var codes = ValidateFunctions(module);
+        var codes = ValidateFunctions(module, references);
         ValidateStart(module);
         ValidateExports(
             module,
@@ -79,8 +79,12 @@ internal static class ModuleValidator
     /// 各定義関数を1回の型検査と線形化で処理し、全成功時だけコードを返す
     /// </summary>
     /// <param name="module">importと定義関数の型参照、global初期化式、リソース宣言、データセグメントの検証を終えたmodule</param>
+    /// <param name="references">当該module検証で共有する参照情報</param>
     /// <returns>ローカルに保持した定義順の線形実行コード</returns>
-    private static ImmutableArray<FunctionCode> ValidateFunctions(WasmModule module)
+    private static ImmutableArray<FunctionCode> ValidateFunctions(
+        WasmModule module,
+        ReferenceValidationContext references
+    )
     {
         var importedFunctionCount = (uint)module.Imports.Count(x => x is FunctionImport);
         WasmFunctionType[] functionTypes =
@@ -102,7 +106,8 @@ internal static class ModuleValidator
                     definitionIndex,
                     importedFunctionCount + (uint)definitionIndex,
                     functionTypes,
-                    globalTypes
+                    globalTypes,
+                    references
                 )
             );
         }

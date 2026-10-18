@@ -30,7 +30,14 @@ internal partial class FunctionValidator_ValidateTests
         var definition = module.Functions[0];
 
         // Act
-        var code = FunctionValidator.Validate(module, 0, 1, functionTypes, globalTypes);
+        var code = FunctionValidator.Validate(
+            module,
+            0,
+            1,
+            functionTypes,
+            globalTypes,
+            ReferenceValidationContext.Create(module, 1)
+        );
 
         // Assert
         using (Assert.Multiple())
@@ -89,7 +96,16 @@ internal partial class FunctionValidator_ValidateTests
 
         // Act & Assert
         var exception = await Assert
-            .That(() => FunctionValidator.Validate(module, 0, 1, functionTypes, globalTypes))
+            .That(() =>
+                FunctionValidator.Validate(
+                    module,
+                    0,
+                    1,
+                    functionTypes,
+                    globalTypes,
+                    ReferenceValidationContext.Create(module, 1)
+                )
+            )
             .ThrowsExactly<WasmValidateException>();
         using (Assert.Multiple())
         {

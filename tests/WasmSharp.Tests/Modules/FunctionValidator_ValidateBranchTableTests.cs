@@ -26,7 +26,14 @@ internal partial class FunctionValidator_ValidateTests
         var module = DecodeControl([], Convert.FromHexString(results), Convert.FromHexString(body));
 
         // Act
-        var code = FunctionValidator.Validate(module, 0, 0, [module.Types[0]], []);
+        var code = FunctionValidator.Validate(
+            module,
+            0,
+            0,
+            [module.Types[0]],
+            [],
+            ReferenceValidationContext.Create(module, 0)
+        );
 
         // Assert
         var instruction = code.Instructions[branchPc];
@@ -70,7 +77,14 @@ internal partial class FunctionValidator_ValidateTests
         );
 
         // Act
-        var code = FunctionValidator.Validate(module, 0, 0, [module.Types[0]], []);
+        var code = FunctionValidator.Validate(
+            module,
+            0,
+            0,
+            [module.Types[0]],
+            [],
+            ReferenceValidationContext.Create(module, 0)
+        );
 
         // Assert
         var instruction = code.Instructions[7];
@@ -140,7 +154,14 @@ internal partial class FunctionValidator_ValidateTests
         );
 
         // Act
-        var code = FunctionValidator.Validate(module, 0, 0, [module.Types[0]], []);
+        var code = FunctionValidator.Validate(
+            module,
+            0,
+            0,
+            [module.Types[0]],
+            [],
+            ReferenceValidationContext.Create(module, 0)
+        );
 
         // Assert
         using (Assert.Multiple())
@@ -165,7 +186,14 @@ internal partial class FunctionValidator_ValidateTests
         var module = DecodeControl([], [], Convert.FromHexString(body));
 
         // Act
-        var code = FunctionValidator.Validate(module, 0, 0, [module.Types[0]], []);
+        var code = FunctionValidator.Validate(
+            module,
+            0,
+            0,
+            [module.Types[0]],
+            [],
+            ReferenceValidationContext.Create(module, 0)
+        );
 
         // Assert
         using (Assert.Multiple())

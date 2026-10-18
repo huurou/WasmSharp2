@@ -20,6 +20,7 @@ internal static class FunctionValidator
     /// <param name="moduleFunctionIndex">型の参照と診断に使用する、importを含むmodule全体の関数index</param>
     /// <param name="functionTypes">importを先頭とする関数index順の解決済みの型</param>
     /// <param name="globalTypes">importを先頭とするglobal index順の解決済みの型</param>
+    /// <param name="references">当該module検証で共有する参照情報</param>
     /// <returns>実行命令と確定済み分岐情報、追加localsとoperandの最大要素数を持つ、この定義関数の実行コード</returns>
     /// <exception cref="WasmValidateException">命令の参照先、globalの可変性、入力型または結果の型・個数・順序が不正な場合</exception>
     /// <exception cref="WasmUnsupportedFeatureException">その場の型検証が成立したselectの候補型が後続機能に属する場合</exception>
@@ -29,7 +30,8 @@ internal static class FunctionValidator
         int definitionIndex,
         uint moduleFunctionIndex,
         WasmFunctionType[] functionTypes,
-        WasmGlobalType[] globalTypes
+        WasmGlobalType[] globalTypes,
+        ReferenceValidationContext references
     )
     {
         const int STACKALLOC_DECLARATION_LIMIT = 128;
@@ -122,11 +124,53 @@ internal static class FunctionValidator
                             StackEffectKind.PushI64 => WasmValueKind.I64,
                             StackEffectKind.PushF32 => WasmValueKind.F32,
                             StackEffectKind.PushF64 => WasmValueKind.F64,
+                            StackEffectKind.PushReference => instruction.Immediate.Kind,
                             _ => throw new InvalidOperationException(
                                 "定数命令のスタック効果が不正です。"
                             ),
                         }
                     );
+                    break;
+
+                case ValidationRule.RefFunc:
+                    if (instruction.Index >= references.FunctionCount)
+                    {
+                        throw CreateUnknownIndex(
+                            "function",
+                            instruction.Index,
+                            "参照する関数が存在しません。",
+                            instruction.ByteOffset
+                        );
+                    }
+                    if (!references.DeclaredFunctions.Contains(instruction.Index))
+                    {
+                        throw ValidationDiagnostics.ValidationFailure(
+                            "undeclared function reference",
+                            "参照する関数が宣言されていません。",
+                            new(
+                                WasmProcessingStage.Validate,
+                                instruction.ByteOffset,
+                                moduleFunctionIndex,
+                                10
+                            )
+                        );
+                    }
+                    stack.Add(WasmValueKind.FuncRef);
+                    break;
+
+                case ValidationRule.RefIsNull:
+                    var referenceType = Pop(null, instruction.ByteOffset);
+                    if (
+                        referenceType is { }
+                        && referenceType is not (WasmValueKind.FuncRef or WasmValueKind.ExternRef)
+                    )
+                    {
+                        throw CreateException(
+                            "null判定の入力には参照型が必要です。",
+                            instruction.ByteOffset
+                        );
+                    }
+                    stack.Add(WasmValueKind.I32);
                     break;
 
                 case ValidationRule.Numeric:
@@ -503,16 +547,21 @@ internal static class FunctionValidator
             Pop(candidateType, instruction.ByteOffset);
             Pop(candidateType, instruction.ByteOffset);
 
-            var feature = candidateType switch
+            if (candidateType == WasmValueKind.V128)
             {
-                WasmValueKind.V128 => typed ? "select.typed.v128" : "select.v128",
-                WasmValueKind.FuncRef => "select.typed.funcref",
-                WasmValueKind.ExternRef => "select.typed.externref",
-                _ => null,
-            };
-            if (feature is not null)
+                throw CreateUnsupported(
+                    typed ? "select.typed.v128" : "select.v128",
+                    instruction.ByteOffset
+                );
+            }
+            if (candidateType is WasmValueKind.FuncRef or WasmValueKind.ExternRef)
             {
-                throw CreateUnsupported(feature, instruction.ByteOffset);
+                throw CreateUnsupported(
+                    candidateType == WasmValueKind.FuncRef
+                        ? "select.typed.funcref"
+                        : "select.typed.externref",
+                    instruction.ByteOffset
+                );
             }
             stack.Add(candidateType);
         }
