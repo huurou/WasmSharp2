@@ -15,7 +15,7 @@
 並列性を検討したが、基盤契約、同じ演算群ファイル、命令宣言、公式検証出力を順次更新するため、この計画には(P)を付けない。順序と_Depends:_に従う。baselineは最終受入まで保持する。通常の機能タスクに必要な検証を任意扱いにしない。
 
 - [ ] 1. 検証前提を整え、既存処理の責務を整理する
-- [ ] 1.1 固定素材・比較元と既存fixtureを確認する
+- [x] 1.1 固定素材・比較元と既存fixtureを確認する
   - .NET 10、固定spec、3つのテストプロジェクトと公式CLIの既存構成を確認する。
   - 最新tables-referencesの受入baselineと対応manifestの存在・hash・profile・素材を確認し、設計時点から変更があれば現在の受入記録に合わせる。
   - SIMD即値・関数型・global・memoryを持つ入力を既存のバイナリfixtureで作れるよう必要最小限の補助を追加する。
@@ -307,4 +307,8 @@
   - _Boundary: ConformanceVerification_
   - _Depends: 10.2_
   - _Requirements: 8.6_
+
+## Implementation Notes
+
+- 1.1: 比較元は`artifacts/tables-references/task-8.4-20261018T090714Z/run-baseline.json`、manifestは`artifacts/linear-memory/wabt-commit-20261016/corpus/manifest.json`。既存fixtureで必要な入力を構成できる。固定条件・検証コマンドは`acceptance.md`を参照する。
 
