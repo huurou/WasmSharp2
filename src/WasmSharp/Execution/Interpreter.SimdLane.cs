@@ -305,6 +305,159 @@ internal static partial class Interpreter
     }
 
     /// <summary>
+    /// 2個のvectorを連結したbyte列から即値で選択する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI8x16Shuffle命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I8x16Shuffle(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        var second = SimdValue.FromValue(context.PopValue());
+        var first = SimdValue.FromValue(context.PopValue());
+        var result = default(SimdValue);
+        for (var laneIndex = 0; laneIndex < 16; laneIndex++)
+        {
+            var index = instruction.ShuffleLanes[laneIndex];
+            var bits = index < 16 ? first.GetLane(8, index) : second.GetLane(8, index - 16);
+            result = result.WithLane(8, laneIndex, bits);
+        }
+
+        context.PushValue(result.ToValue());
+        return default;
+    }
+
+    /// <summary>
+    /// index vectorに従ってbyteを選択し範囲外をゼロにする
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのI8x16Swizzle命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult I8x16Swizzle(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        var indices = SimdValue.FromValue(context.PopValue());
+        var vector = SimdValue.FromValue(context.PopValue());
+        var result = default(SimdValue);
+        for (var laneIndex = 0; laneIndex < 16; laneIndex++)
+        {
+            var index = indices.GetLane(8, laneIndex);
+            var bits = index < 16 ? vector.GetLane(8, (int)index) : 0;
+            result = result.WithLane(8, laneIndex, bits);
+        }
+
+        context.PushValue(result.ToValue());
+        return default;
+    }
+
+    /// <summary>
+    /// 128bitすべてのbitを反転する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのV128Not命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult V128Not(InterpreterContext context, in Instruction instruction)
+    {
+        var vector = context.PopValue().AsV128();
+        context.PushValue(WasmValue.FromV128(~vector.Low64, ~vector.High64));
+        return default;
+    }
+
+    /// <summary>
+    /// 2個のvectorのbitごとの論理積を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのV128And命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult V128And(InterpreterContext context, in Instruction instruction)
+    {
+        var second = context.PopValue().AsV128();
+        var first = context.PopValue().AsV128();
+        context.PushValue(
+            WasmValue.FromV128(first.Low64 & second.Low64, first.High64 & second.High64)
+        );
+        return default;
+    }
+
+    /// <summary>
+    /// 第1vectorと第2vectorを反転したbit列の論理積を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのV128AndNot命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult V128AndNot(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        var second = context.PopValue().AsV128();
+        var first = context.PopValue().AsV128();
+        context.PushValue(
+            WasmValue.FromV128(first.Low64 & ~second.Low64, first.High64 & ~second.High64)
+        );
+        return default;
+    }
+
+    /// <summary>
+    /// 2個のvectorのbitごとの論理和を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのV128Or命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult V128Or(InterpreterContext context, in Instruction instruction)
+    {
+        var second = context.PopValue().AsV128();
+        var first = context.PopValue().AsV128();
+        context.PushValue(
+            WasmValue.FromV128(first.Low64 | second.Low64, first.High64 | second.High64)
+        );
+        return default;
+    }
+
+    /// <summary>
+    /// 2個のvectorのbitごとの排他的論理和を返す
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのV128Xor命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult V128Xor(InterpreterContext context, in Instruction instruction)
+    {
+        var second = context.PopValue().AsV128();
+        var first = context.PopValue().AsV128();
+        context.PushValue(
+            WasmValue.FromV128(first.Low64 ^ second.Low64, first.High64 ^ second.High64)
+        );
+        return default;
+    }
+
+    /// <summary>
+    /// maskが1のbitを第1vectorから選択する
+    /// </summary>
+    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
+    /// <param name="instruction">検証済みのV128Bitselect命令</param>
+    /// <returns>実行の成功</returns>
+    internal static ExecutionResult V128Bitselect(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        var mask = context.PopValue().AsV128();
+        var second = context.PopValue().AsV128();
+        var first = context.PopValue().AsV128();
+        context.PushValue(
+            WasmValue.FromV128(
+                (first.Low64 & mask.Low64) | (second.Low64 & ~mask.Low64),
+                (first.High64 & mask.High64) | (second.High64 & ~mask.High64)
+            )
+        );
+        return default;
+    }
+
+    /// <summary>
     /// 指定幅へ切り詰めたビット列を128bit全体へ複製する
     /// </summary>
     /// <param name="context">結果を積む実行コンテキスト</param>

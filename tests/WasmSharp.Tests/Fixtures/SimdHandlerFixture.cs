@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using WasmSharp.Exceptions;
 using WasmSharp.Execution;
 
@@ -13,7 +14,8 @@ internal static class SimdHandlerFixture
     ) Execute(
         NumericHandlerFixture.Handler handler,
         ReadOnlySpan<WasmValue> operands,
-        byte laneIndex = 0
+        byte laneIndex = 0,
+        ImmutableArray<byte> shuffleLanes = default
     )
     {
         var function = ExecutionFunctionFixture.Create([], maxOperandStack: operands.Length + 1);
@@ -37,7 +39,8 @@ internal static class SimdHandlerFixture
                 default,
                 12345678901,
                 0,
-                laneIndex: laneIndex
+                laneIndex: laneIndex,
+                shuffleLanes: shuffleLanes
             );
             var result = handler(context, in instruction);
             return (result, context.PeekValue(), context.GetValue(0), context.ValueCount);

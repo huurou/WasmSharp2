@@ -201,3 +201,9 @@ New-Item -ItemType Directory -Path $taskOutput | Out-Null
 要件4.1に対応する20handlerを`Interpreter.SimdLane.cs`へ追加した。既存`SimdValue`を使い、整数の切詰め・符号拡張・ゼロ拡張、floatのbit運搬と非対象laneの保持を扱う。設計で指定された最小の`SimdHandlerFixture`でlane即値を渡し、各メソッドのテスト60件で先頭・末尾lane、NaN payload・±0、結果型・sentinel・stack数を確認した。命令宣言への接続は8.1で行う。
 
 [実装記録](../../../artifacts/simd/task-4.1-20261018T150640Z/StatusReport.md)では、一時フラグOFFの60件失敗、ONの60件成功、フラグ除去後の成功を確認した。[独立レビュー](../../../artifacts/simd/review-4.1-20261018T151358Z/review-verdict.md)は`APPROVED`で、Releaseビルドの警告・エラー0、ランタイム3,886件成功、失敗・スキップ0、終了0、変更22C#の整形・空白検査成功を確認した。親はhandler・境界テストと実際の出力・終了値を確認し、`kiro-verify-completion`のタスク4.1判定を`VERIFIED`とした。未解決の指摘はない。公開経路と公式全体実行は未実施である。
+
+## 4.2 shuffle・swizzleと128bit論理演算
+
+要件4.2〜4.4に対応する8handlerを追加した。shuffleの2operand連結順、swizzleの範囲外ゼロと6種類の128bit論理演算を扱う。21ケースでshuffleの0/15/16/31、swizzleの15/16/255、上下64bit、非可換演算のoperand順、bit単位mask、結果型・sentinel・stack数を確認した。既存20handlerとhelperは変更していない。
+
+[実装記録](../../../artifacts/simd/task-4.2-20261018T151906Z/status-report.md)で一時フラグOFFの21件失敗、ONの21件成功、フラグ除去後の成功を確認した。[独立レビュー](../../../artifacts/simd/review-4.2-20261018T152555Z/review-verdict.md)は`APPROVED`で、Releaseビルドの警告・エラー0、ランタイム3,907件成功、失敗・スキップ0、終了0、変更10C#の整形・空白検査成功を確認した。親は最終差分・境界テストと出力・終了値を直接確認し、`kiro-verify-completion`のタスク4.2判定を`VERIFIED`とした。未解決の指摘はない。公開経路への接続と公式全体実行は8.1で行う。

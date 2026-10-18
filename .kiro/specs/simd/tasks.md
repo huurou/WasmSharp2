@@ -109,7 +109,7 @@
   - _Depends: 2.2, 3.2_
   - _Requirements: 4.1_
 
-- [ ] 4.2 shuffle・swizzleと128bit論理演算を追加する
+- [x] 4.2 shuffle・swizzleと128bit論理演算を追加する
   - shuffleの2operand連結順、swizzleの範囲外ゼロ、bitselectのmask選択を扱う。
   - not・and・andnot・or・xorを128bitすべてに適用する。
   - shuffleの0/15/16/31、swizzleの15/16/255とbit単位のmaskで期待bitが得られることを確認する。
