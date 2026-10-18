@@ -91,6 +91,7 @@ internal static class ModuleDecoder
         List<MemoryDefinition> memories = [];
         List<GlobalDefinition> globals = [];
         List<DataDefinition> dataSegments = [];
+        List<ElementDefinition> elementSegments = [];
         DataCountDefinition? dataCount = null;
         uint declaredDataCount = 0;
         StartDefinition? start = null;
@@ -152,6 +153,10 @@ internal static class ModuleDecoder
                     start = new StartDefinition(section.ReadU32(), startOffset);
                     break;
 
+                case 9:
+                    elementSegments = ReadElement(ref section, bytes.Length);
+                    break;
+
                 case 10:
                     try
                     {
@@ -202,14 +207,6 @@ internal static class ModuleDecoder
                 case 12:
                     dataCount = ReadDataCount(ref section);
                     break;
-
-                default:
-                    var feature = id switch
-                    {
-                        9 => "section.element",
-                        _ => throw new InvalidOperationException(),
-                    };
-                    throw section.Unsupported(feature, bytes.Length, offset);
             }
 
             ModuleBinaryFormat.RequireEnd(ref section);
@@ -235,7 +232,8 @@ internal static class ModuleDecoder
             CollectionsMarshal.AsSpan(globals),
             start,
             CollectionsMarshal.AsSpan(dataSegments),
-            dataCount
+            dataCount,
+            CollectionsMarshal.AsSpan(elementSegments)
         );
     }
 

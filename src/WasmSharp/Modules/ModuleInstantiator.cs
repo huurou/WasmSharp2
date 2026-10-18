@@ -1,6 +1,7 @@
 using System.Collections.Immutable;
 using WasmSharp.Exceptions;
 using WasmSharp.Execution;
+using WasmSharp.Modules.Definitions;
 using WasmSharp.Modules.ExternalValues;
 using WasmSharp.Modules.Imports;
 
@@ -26,7 +27,7 @@ internal static class ModuleInstantiator
     /// </remarks>
     /// <exception cref="WasmInstantiateException">importの名前・種類・型が提供登録と一致しない場合</exception>
     /// <exception cref="WasmImplementationLimitException">リソースの構築またはstartの実行に必要な保持数が実装上限を超える場合</exception>
-    /// <exception cref="WasmTrapException">データセグメントの初期化またはstartの実行結果がtrapの場合</exception>
+    /// <exception cref="WasmTrapException">要素・データセグメントの初期化またはstartの実行結果がtrapの場合</exception>
     /// <exception cref="WasmExhaustionException">startの実行結果が資源枯渇の場合</exception>
     /// <exception cref="InvalidOperationException">startから呼んだホスト関数の結果が宣言型に一致しないか、nullの場合</exception>
     internal static WasmInstance Instantiate(
@@ -80,12 +81,64 @@ internal static class ModuleInstantiator
             memories.MoveToImmutable(),
             tables.MoveToImmutable()
         );
+        InitializeElementSegments(instance);
         InitializeDataSegments(instance);
         if (module.Start is { } start)
         {
             ExecutionBoundary.RunStart(instance, instance.Functions[(int)start.FunctionIndex]);
         }
         return instance;
+    }
+
+    /// <summary>
+    /// 要素を宣言順に処理し、アクティブは転送後、宣言的要素は転送せず破棄する
+    /// </summary>
+    /// <param name="instance">関数とリソースの構築を完了したinstance</param>
+    /// <exception cref="WasmTrapException">転送先の全範囲が現在のテーブルに収まらない場合</exception>
+    private static void InitializeElementSegments(WasmInstance instance)
+    {
+        for (var index = 0; index < instance.Module.ElementSegments.Length; index++)
+        {
+            var definition = instance.Module.ElementSegments[index];
+            var element = instance.ElementSegments[index];
+            if (definition.ActiveTarget is { } target)
+            {
+                var offset = unchecked(
+                    (uint)
+                        ConstantInitializer
+                            .Evaluate(
+                                target.OffsetExpression,
+                                instance.Globals.AsSpan(),
+                                instance.Functions.AsSpan()
+                            )
+                            .AsI32()
+                );
+                if (
+                    !element.TryInitialize(
+                        instance.Tables[(int)target.TableIndex],
+                        offset,
+                        0,
+                        element.Length
+                    )
+                )
+                {
+                    ExecutionBoundary.ThrowIfFailed(
+                        ExecutionResult.Trap(
+                            WasmTrapReason.TableOutOfBounds,
+                            null,
+                            definition.ByteOffset,
+                            9
+                        ),
+                        WasmProcessingStage.Instantiate
+                    );
+                }
+            }
+            else if (definition.Mode != ElementMode.Declarative)
+            {
+                continue;
+            }
+            element.Drop();
+        }
     }
 
     /// <summary>

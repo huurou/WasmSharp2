@@ -319,7 +319,7 @@ internal partial class WasmModule_DecodeTests
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task 未対応sectionの後に破損がある_両入力で構文と検証の未確認範囲を通知する(
+    public async Task 空要素sectionの後に破損がある_両入力で後続sectionの位置を通知する(
         bool useStream
     )
     {
@@ -330,25 +330,10 @@ internal partial class WasmModule_DecodeTests
         // Act & Assert
         var exception = await Assert
             .That(() => useStream ? WasmModule.Decode(stream) : WasmModule.Decode(bytes))
-            .ThrowsExactly<WasmUnsupportedFeatureException>();
-        using (Assert.Multiple())
-        {
-            await Assert.That(exception!.Feature).IsEqualTo("section.element");
-            await Assert
-                .That(exception.Location)
-                .IsEqualTo(new(WasmProcessingStage.Decode, 8, null, 9));
-            await Assert.That(exception.UnverifiedRanges.Length).IsEqualTo(2);
-            await Assert
-                .That(exception.UnverifiedRanges[0].Stage)
-                .IsEqualTo(WasmProcessingStage.Decode);
-            await Assert.That(exception.UnverifiedRanges[0].StartOffset).IsEqualTo(8L);
-            await Assert.That(exception.UnverifiedRanges[0].EndOffset).IsEqualTo(bytes.Length);
-            await Assert
-                .That(exception.UnverifiedRanges[1].Stage)
-                .IsEqualTo(WasmProcessingStage.Validate);
-            await Assert.That(exception.UnverifiedRanges[1].StartOffset).IsEqualTo(0L);
-            await Assert.That(exception.UnverifiedRanges[1].EndOffset).IsEqualTo(bytes.Length);
-        }
+            .ThrowsExactly<WasmDecodeException>();
+        await Assert
+            .That(exception!.Location)
+            .IsEqualTo(new(WasmProcessingStage.Decode, 11, null, 13));
     }
 
     [Test]

@@ -202,7 +202,7 @@ baselineは最終受入まで保持する。
   - _Depends: 2.2, 6.1_
   - _Requirements: 1.2, 1.3, 1.4_
 
-- [ ] 6.3 要素の検証・構築・初期化を既存dataとstartへ統合する
+- [x] 6.3 要素の検証・構築・初期化を既存dataとstartへ統合する
   - 4.3で構築した全要素実体に対し、宣言順にactive転送・成功後drop、declarative drop、passive保持を行う。
   - 要素処理後に既存data初期化とstartを実行し、section9を公開4段階で対応済みにする。
   - 不正な要素型・offset・table、初期化境界、失敗した転送の未変更と先行成功分の保持を公開APIで確認する。

@@ -6,13 +6,10 @@ namespace WasmSharp.Tests;
 internal class WasmModule_InspectImportsTests
 {
     [Test]
-    [Arguments((byte)9, "section.element")]
-    [Arguments((byte)12, null)]
-    [Arguments((byte)11, null)]
-    public async Task 調査範囲外のsegmentがある_importなしを確定して通常Decodeとは区別する(
-        byte id,
-        string? feature
-    )
+    [Arguments((byte)9)]
+    [Arguments((byte)12)]
+    [Arguments((byte)11)]
+    public async Task 調査範囲外のsegmentがある_importなしを確定して通常Decodeとは区別する(byte id)
     {
         // Arrange
         var bytes = HostLinkingModuleBinary.Create(HostLinkingModuleBinary.Section(id, [0xFF]));
@@ -31,16 +28,7 @@ internal class WasmModule_InspectImportsTests
             .IsTrue();
 
         // Act & Assert
-        if (id != 9)
-        {
-            await Assert.That(() => WasmModule.Decode(bytes)).ThrowsExactly<WasmDecodeException>();
-            return;
-        }
-
-        var exception = await Assert
-            .That(() => WasmModule.Decode(bytes))
-            .ThrowsExactly<WasmUnsupportedFeatureException>();
-        await Assert.That(exception!.Feature).IsEqualTo(feature);
+        await Assert.That(() => WasmModule.Decode(bytes)).ThrowsExactly<WasmDecodeException>();
     }
 
     [Test]
@@ -381,7 +369,7 @@ internal class WasmModule_InspectImportsTests
 
     [Test]
     [Arguments("table.get")]
-    [Arguments("section.element")]
+    [Arguments("call_indirect")]
     [Arguments("v128.const")]
     public async Task メモリ命令とデータに後続仕様の未対応が併存する_生成を拒否してimport調査は本体とデータを未確認に保つ(
         string feature
@@ -392,14 +380,13 @@ internal class WasmModule_InspectImportsTests
         {
             "table.get" => [0x41, 0, 0x25, 0, 0x1A],
             "v128.const" => [0xFD, 0x0C, .. new byte[16], 0x1A],
+            "call_indirect" => [0x11, 0, 0],
             _ => [],
         };
         var code = HostLinkingModuleBinary.Code(
             ([], [0x41, 0, 0x41, 42, 0x41, 1, 0xFC, 11, 0, .. instruction, 0x10, 0, 0x0B])
         );
         var data = HostLinkingModuleBinary.Section(11, [1, 0, 0x41, 0, 0x0B, 1, 0xAB]);
-        byte[] elements =
-            feature == "section.element" ? HostLinkingModuleBinary.Section(9, [0]) : [];
         var bytes = HostLinkingModuleBinary.Create(
             HostLinkingModuleBinary.Types(([], [])),
             HostLinkingModuleBinary.Imports(
@@ -409,16 +396,21 @@ internal class WasmModule_InspectImportsTests
             HostLinkingModuleBinary.Functions(0),
             HostLinkingModuleBinary.Tables((0x6F, 1, null)),
             HostLinkingModuleBinary.Start(1),
-            elements,
             code,
             data
         );
         var codeOffset = bytes.Length - data.Length - code.Length;
         var failureOffset =
-            feature == "section.element"
-                ? codeOffset - elements.Length
-                : codeOffset
-                    + Array.IndexOf(code, feature == "table.get" ? (byte)0x25 : (byte)0xFD);
+            codeOffset
+            + Array.IndexOf(
+                code,
+                feature switch
+                {
+                    "table.get" => (byte)0x25,
+                    "call_indirect" => (byte)0x11,
+                    _ => (byte)0xFD,
+                }
+            );
         var memory = new WasmMemory(new(1));
         memory.Write(0, [99]);
         var calls = 0;
@@ -466,14 +458,7 @@ internal class WasmModule_InspectImportsTests
                 await Assert.That(exception!.Feature).IsEqualTo(feature);
                 await Assert
                     .That(exception.Location)
-                    .IsEqualTo(
-                        new(
-                            WasmProcessingStage.Decode,
-                            failureOffset,
-                            feature == "section.element" ? null : 1u,
-                            feature == "section.element" ? (byte)9 : (byte)10
-                        )
-                    );
+                    .IsEqualTo(new(WasmProcessingStage.Decode, failureOffset, 1u, (byte)10));
                 await Assert.That(exception.UnverifiedRanges.Length).IsEqualTo(2);
                 await Assert
                     .That(exception.UnverifiedRanges[0].Stage)
@@ -506,9 +491,7 @@ internal class WasmModule_InspectImportsTests
                 var functionType = ((WasmImportInfo.Function)inspection.Imports[1]).Type;
                 await Assert.That(functionType.Parameters).IsEmpty();
                 await Assert.That(functionType.Results).IsEmpty();
-                await Assert
-                    .That(inspection.UnverifiedRanges.Length)
-                    .IsEqualTo(feature == "section.element" ? 7 : 6);
+                await Assert.That(inspection.UnverifiedRanges.Length).IsEqualTo(6);
                 await Assert
                     .That(
                         inspection.UnverifiedRanges.Any(x =>
