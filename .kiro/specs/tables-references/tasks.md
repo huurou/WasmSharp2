@@ -59,7 +59,7 @@ baselineは最終受入まで保持する。
   - _Boundary: InstructionDefinitions_
   - _Requirements: 1.1, 8.5, 9.5_
 
-- [ ] 2.2 要素のmodeと初期化式を不変の静的定義で保持する
+- [x] 2.2 要素のmodeと初期化式を不変の静的定義で保持する
   - active・passive・declarativeを明示し、activeだけが対象tableとoffset式を持つ定義を追加する。
   - 参照型、初期化式列、入力位置を所有し、moduleに宣言順で保持する。
   - 不正なmodeとtargetの組合せを作らず、元の入力コレクションの変更が定義へ波及しないことを確認する。
@@ -314,3 +314,7 @@ git -c core.excludesFile= diff --cached --check
 開始時のgit ls-files --stageと照合し、インデックスは変更されていない。
 manifestと比較元baselineのSHA-256はresearch.mdの記録と一致した。
 文書だけの変更のためビルド・テスト・公式スイートは実行しておらず、テストの成功・失敗・スキップ件数は未計測である。
+
+## Implementation Notes
+
+- 初期化式列は`ReadOnlySpan<IEnumerable<DecodedInstruction>>`で受け、`ElementDefinition`が各式を一度コピーする。`ExpressionDecoder.Read`の`List<DecodedInstruction>`をそのまま渡せる。

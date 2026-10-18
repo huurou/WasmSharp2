@@ -79,6 +79,11 @@ public sealed class WasmModule
     internal DataCountDefinition? DataCount { get; }
 
     /// <summary>
+    /// 宣言順の要素セグメントを保持する不変配列
+    /// </summary>
+    internal ImmutableArray<ElementDefinition> ElementSegments { get; }
+
+    /// <summary>
     /// デコード元の入力バイナリのバイト数
     /// </summary>
     internal long InputLength { get; }
@@ -97,6 +102,7 @@ public sealed class WasmModule
     /// <param name="start">省略可能なstart宣言</param>
     /// <param name="dataSegments">定義順のデータセグメント</param>
     /// <param name="dataCount">省略可能なデータ数セクションの宣言</param>
+    /// <param name="elementSegments">宣言順の要素セグメント</param>
     internal WasmModule(
         ReadOnlySpan<WasmFunctionType> types,
         ReadOnlySpan<DecodedFunction> functions,
@@ -108,7 +114,8 @@ public sealed class WasmModule
         ReadOnlySpan<GlobalDefinition> globals,
         StartDefinition? start,
         ReadOnlySpan<DataDefinition> dataSegments = default,
-        DataCountDefinition? dataCount = null
+        DataCountDefinition? dataCount = null,
+        ReadOnlySpan<ElementDefinition> elementSegments = default
     )
     {
         Types = [.. types];
@@ -121,6 +128,7 @@ public sealed class WasmModule
         Start = start;
         DataSegments = [.. dataSegments];
         DataCount = dataCount;
+        ElementSegments = [.. elementSegments];
         InputLength = inputLength;
     }
 

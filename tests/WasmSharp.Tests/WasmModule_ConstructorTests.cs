@@ -109,6 +109,8 @@ internal class WasmModule_ConstructorTests
             await Assert.That(module.DataSegments.IsDefault).IsFalse();
             await Assert.That(module.DataSegments.IsEmpty).IsTrue();
             await Assert.That(module.DataCount).IsNull();
+            await Assert.That(module.ElementSegments.IsDefault).IsFalse();
+            await Assert.That(module.ElementSegments.IsEmpty).IsTrue();
             await Assert.That(function.Locals.IsDefault).IsFalse();
             await Assert.That(function.Instructions.IsDefault).IsFalse();
             await Assert.That(module.Types.Length).IsEqualTo(0);
@@ -116,6 +118,45 @@ internal class WasmModule_ConstructorTests
             await Assert.That(module.Exports.Length).IsEqualTo(0);
             await Assert.That(function.Locals.Length).IsEqualTo(0);
             await Assert.That(function.Instructions.Length).IsEqualTo(0);
+        }
+    }
+
+    [Test]
+    public async Task 元の要素配列を変更する_要素セグメントを宣言順で独立して保持する()
+    {
+        // Arrange
+        var active = ElementDefinition.Active(
+            WasmValueKind.FuncRef,
+            [],
+            new ActiveElementTarget(2, []),
+            30
+        );
+        var passive = ElementDefinition.Passive(WasmValueKind.ExternRef, [], 40);
+        var declarative = ElementDefinition.Declarative(WasmValueKind.FuncRef, [], 50);
+        ElementDefinition[] elements = [active, passive, declarative];
+
+        // Act
+        var module = new WasmModule(
+            [],
+            [],
+            [],
+            60,
+            [],
+            [],
+            [],
+            [],
+            null,
+            elementSegments: elements
+        );
+        Array.Clear(elements);
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(module.ElementSegments.Length).IsEqualTo(3);
+            await Assert.That(ReferenceEquals(module.ElementSegments[0], active)).IsTrue();
+            await Assert.That(ReferenceEquals(module.ElementSegments[1], passive)).IsTrue();
+            await Assert.That(ReferenceEquals(module.ElementSegments[2], declarative)).IsTrue();
         }
     }
 
