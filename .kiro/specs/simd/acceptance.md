@@ -291,3 +291,11 @@ New-Item -ItemType Directory -Path $taskOutput | Out-Null
 要件7.1・7.4・7.5に対応するV128Load/V128Storeを追加した。unsigned i32とoffsetをulongで合成し、既存WasmMemoryのTryRead/TryWriteとSimdValueのlittle-endian変換を使って16byteを転送する。22ケースで非整列・末尾ぴったり・1byte超過・ページ横断・0page・最大uintとoffset、全128bitとstack、元の関数index・byte位置を持つtrap、失敗storeの全memory不変を確認した。scalar・fixture・他handlerは変更していない。
 
 [実装記録](../../../artifacts/simd/task-7.1-20261018T183042Z/StatusReport.md)でOFF22件失敗・終了2、ON22件成功、フラグ除去後の成功を確認した。[独立レビュー](../../../artifacts/simd/task-7.1-review-20261018T183701Z/ReviewVerdict.md)はAPPROVED。Releaseビルド警告・エラー0、ランタイム4,516件成功・失敗/スキップ0・終了0、3C#の整形・空白・hash確認が成功した。親は2handler・境界テストと実際の出力・終了値を確認し、kiro-verify-completionのタスク7.1判定をVERIFIEDとした。未解決の指摘はない。公開接続・公式全体実行は8.4で行う。
+
+## 7.2 拡張load・splat load・zero load
+
+要件7.2・7.4・7.5に対応し、拡張6入口と幅を共有するsplat・zero各1入口で12命令を扱う。先に通常loadの読み出し・trap伝播をReadSimdMemoryへ整理し、警告・エラー0のビルドと既存22件成功を確認した。アクセス幅は拡張8byte、splat1/2/4/8byte、zero4/8byteとし、stackallocの未読部分をClearしてから指定幅だけ読む。拡張・複製のlane計算は純粋helperへ分けた。既存storeは維持した。
+
+[実装記録](../../../artifacts/simd/task-7.2-20261018T184236Z/status-report.md)で、テスト名の構文エラーを直した後の警告・エラー0のビルド、新規61件のOFF全失敗・終了2、ON61件成功を確認した。一時フラグ宣言の残存除去と、親の設計照合による純粋helper抽出後に再検証した。最終結果はpure-helper-*である。
+
+[独立レビュー](../../../artifacts/simd/review-task-7.2-20261018T185234Z/review-verdict.md)はAPPROVED。Releaseビルド警告・エラー0、ランタイム4,577件成功・失敗/スキップ0・終了0、9C#の整形・空白・hash・フラグ確認、37成功期待vectorの独立計算一致を確認した。61ケースで全12命令の符号・幅・LE、必要幅の末尾と1byte超過、非整列・ページ横断、uint加算、trap位置とstackを確認した。親は最終コード・代表的テスト、実際の出力と終了値を確認し、kiro-verify-completionのタスク7.2判定をVERIFIEDとした。未解決の指摘はない。laneは7.3、公開接続・公式全体実行は8.4で行う。

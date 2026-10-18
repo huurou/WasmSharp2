@@ -213,7 +213,7 @@
   - _Depends: 2.2, 2.4_
   - _Requirements: 7.1, 7.4, 7.5_
 
-- [ ] 7.2 拡張load・splat load・zero loadを追加する
+- [x] 7.2 拡張load・splat load・zero loadを追加する
   - 命令固有のbyte幅だけを読み、符号拡張／ゼロ拡張、複製、上位ゼロ化を行う。
   - zero loadにlane即値を要求せず、出力幅とアクセス幅を区別する。
   - 各幅の境界直前・超過と読み出したbitの変換結果を確認する。
@@ -310,6 +310,7 @@
 
 ## Implementation Notes
 
+- 7.2: ReadSimdMemory(context, in instruction, Span<byte>)がaddressを消費し、既存memoryへの読み出しと位置付きtrapを共有する。部分読み出しのpaddingは呼出し側でClearする。拡張・複製は同partial内の純粋helperを使う。
 - 6.4: vectorの数値変換はExecuteSimdConversion/MapSimdConversionで入力幅・出力幅・rawbit演算を共有する。処理するlane数は両幅のlane数の小さい方とし、未使用laneはdefault結果のゼロを保持する。
 - 6.3: 変換テストでは未使用laneを除き、各出力laneに非ゼロの期待値があることも確認する。末尾laneが全ケース0だったため1ケースを補強し、OFFのREDから確認し直した。
 - 5.2: `SaturateSimdInteger(int value, int minimum, int maximum)`で中間値を飽和しlaneのbit列を返す。narrowは`ExecuteSimdIntegerNarrow`と純粋な`MapSimdIntegerNarrow`を使う。
