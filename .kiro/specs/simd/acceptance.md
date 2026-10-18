@@ -299,3 +299,11 @@ New-Item -ItemType Directory -Path $taskOutput | Out-Null
 [実装記録](../../../artifacts/simd/task-7.2-20261018T184236Z/status-report.md)で、テスト名の構文エラーを直した後の警告・エラー0のビルド、新規61件のOFF全失敗・終了2、ON61件成功を確認した。一時フラグ宣言の残存除去と、親の設計照合による純粋helper抽出後に再検証した。最終結果はpure-helper-*である。
 
 [独立レビュー](../../../artifacts/simd/review-task-7.2-20261018T185234Z/review-verdict.md)はAPPROVED。Releaseビルド警告・エラー0、ランタイム4,577件成功・失敗/スキップ0・終了0、9C#の整形・空白・hash・フラグ確認、37成功期待vectorの独立計算一致を確認した。61ケースで全12命令の符号・幅・LE、必要幅の末尾と1byte超過、非整列・ページ横断、uint加算、trap位置とstackを確認した。親は最終コード・代表的テスト、実際の出力と終了値を確認し、kiro-verify-completionのタスク7.2判定をVERIFIEDとした。未解決の指摘はない。laneは7.3、公開接続・公式全体実行は8.4で行う。
+
+## 7.3 lane load/store
+
+要件7.3・7.4・7.5と7.7のhandler範囲に対応し、ByteWidthとLaneIndexを共有するload・store各1入口で8命令を扱う。既存storeの書き込み・trapをWriteSimdMemoryへ先に整理し、警告・エラー0のビルドと既存83件成功を確認した。loadは指定幅を読み対象laneだけ置換し、storeはlittle-endian表現の対象laneだけを既存memoryへ渡す。
+
+[実装記録](../../../artifacts/simd/task-7.3-20261018T185820Z/handoff.md)の54ケースで全4幅の先頭・末尾lane、非整列・メモリ末尾・ページ横断、1byte超過・33bit加算、全128bitまたは全memory、stack・sentinel・trap位置を確認した。OFF54件すべて失敗・終了2、ON54件成功、フラグ除去後の成功を記録した。期待値は製品のlane処理を使わずbyte列から構成した。
+
+[独立レビュー](../../../artifacts/simd/review-7.3-20261018T190447Z/review-verdict.md)はAPPROVED。Releaseビルド警告・エラー0、ランタイム4,631件成功・失敗/スキップ0・終了0、3C#の整形・空白・hash・フラグ確認が成功した。親は最終コード・両テスト、実際の出力と終了値を直接確認し、kiro-verify-completionのタスク7.3判定をVERIFIEDとした。未解決の指摘はない。公開接続と公式全体実行は8.4、Invoke/startの失敗後の統合契約は9.2で確認する。

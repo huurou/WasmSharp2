@@ -204,7 +204,7 @@
   - _Boundary: SimdFloatExecution_
   - _Requirements: 6.5, 6.6_
 
-- [ ] 7. SIMDメモリ命令の実行を追加する
+- [x] 7. SIMDメモリ命令の実行を追加する
 - [x] 7.1 通常のvector load/storeを追加する
   - unsigned i32アドレスとoffsetをulongで合成し、既存の同じmemory実体へ16byteを転送する。
   - little-endianと非整列アクセスを扱い、失敗を位置付きの既存trap結果で返す。
@@ -220,7 +220,7 @@
   - _Boundary: SimdMemoryExecution_
   - _Requirements: 7.2, 7.4, 7.5_
 
-- [ ] 7.3 lane load/storeを追加する
+- [x] 7.3 lane load/storeを追加する
   - 検証済みlane indexに従い、対象幅だけを転送する。
   - loadは非対象lane、storeは非対象memoryを保持し、storeの結果値を作らない。
   - 全lane幅で先頭・末尾laneと境界trap、失敗時の未変更を確認する。

@@ -35,20 +35,58 @@ internal static partial class Interpreter
     )
     {
         var value = SimdValue.FromValue(context.PopValue());
-        var address =
-            (ulong)unchecked((uint)context.PopValue().AsI32()) + instruction.MemoryArgument.Offset;
         Span<byte> bytes = stackalloc byte[16];
         value.WriteLittleEndian(bytes);
-        if (!context.CurrentFunction.Instance.Memories[0].TryWrite(address, bytes))
+        return WriteSimdMemory(context, in instruction, bytes);
+    }
+
+    /// <summary>
+    /// 指定幅だけをメモリから読み、operandのv128の対象laneを置き換える
+    /// </summary>
+    /// <param name="context">現在の関数と検証済みのアドレス・vectorを持つ実行コンテキスト</param>
+    /// <param name="instruction">アクセス幅とlane indexを持つ検証済みのload_lane命令</param>
+    /// <returns>実行の成功または範囲外アクセスのtrap</returns>
+    internal static ExecutionResult V128LoadLane(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        var value = SimdValue.FromValue(context.PopValue());
+        Span<byte> bytes = stackalloc byte[16];
+        bytes.Clear();
+        var byteWidth = instruction.MemoryAccessSignature.ByteWidth;
+        var result = ReadSimdMemory(context, in instruction, bytes[..byteWidth]);
+        if (result.Status != ExecutionStatus.Success)
         {
-            return ExecutionResult.Trap(
-                WasmTrapReason.MemoryOutOfBounds,
-                context.CurrentFunction.FunctionIndex,
-                instruction.ByteOffset
-            );
+            return result;
         }
 
+        var bitWidth = byteWidth * 8;
+        var bits = SimdValue.FromLittleEndian(bytes).GetLane(bitWidth, 0);
+        context.PushValue(value.WithLane(bitWidth, instruction.LaneIndex, bits).ToValue());
         return default;
+    }
+
+    /// <summary>
+    /// operandのv128の対象laneを指定幅でメモリへ書き込む
+    /// </summary>
+    /// <param name="context">現在の関数と検証済みのアドレス・vectorを持つ実行コンテキスト</param>
+    /// <param name="instruction">アクセス幅とlane indexを持つ検証済みのstore_lane命令</param>
+    /// <returns>実行の成功またはメモリを変更しない範囲外アクセスのtrap</returns>
+    internal static ExecutionResult V128StoreLane(
+        InterpreterContext context,
+        in Instruction instruction
+    )
+    {
+        var value = SimdValue.FromValue(context.PopValue());
+        Span<byte> bytes = stackalloc byte[16];
+        value.WriteLittleEndian(bytes);
+        var byteWidth = instruction.MemoryAccessSignature.ByteWidth;
+        return WriteSimdMemory(
+            context,
+            in instruction,
+            bytes.Slice(instruction.LaneIndex * byteWidth, byteWidth)
+        );
     }
 
     /// <summary>
@@ -264,6 +302,26 @@ internal static partial class Interpreter
         var address =
             (ulong)unchecked((uint)context.PopValue().AsI32()) + instruction.MemoryArgument.Offset;
         return context.CurrentFunction.Instance.Memories[0].TryRead(address, destination)
+            ? default
+            : ExecutionResult.Trap(
+                WasmTrapReason.MemoryOutOfBounds,
+                context.CurrentFunction.FunctionIndex,
+                instruction.ByteOffset
+            );
+    }
+
+    /// <summary>
+    /// operandの符号なしアドレスとoffsetへ指定範囲を書き、範囲外の位置情報を保持する
+    /// </summary>
+    private static ExecutionResult WriteSimdMemory(
+        InterpreterContext context,
+        in Instruction instruction,
+        ReadOnlySpan<byte> source
+    )
+    {
+        var address =
+            (ulong)unchecked((uint)context.PopValue().AsI32()) + instruction.MemoryArgument.Offset;
+        return context.CurrentFunction.Instance.Memories[0].TryWrite(address, source)
             ? default
             : ExecutionResult.Trap(
                 WasmTrapReason.MemoryOutOfBounds,
