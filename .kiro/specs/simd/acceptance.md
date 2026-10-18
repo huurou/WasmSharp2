@@ -257,3 +257,9 @@ New-Item -ItemType Directory -Path $taskOutput | Out-Null
 要件5.6のQ15 handlerを追加した。既存の二項処理と飽和処理を再利用し、signed i16の積に16384を加え、15bit算術シフト後にi16へ制限する。中間値はintで保持できる。2vector・16laneで最小値同士の32767、最大値同士の32766、正負の丸め境界と型・128bit・stack契約を確認した。既存87handlerと13helperの本体は維持した。
 
 [実装記録](../../../artifacts/simd/task-5.6-20261018T171859Z/StatusReport.md)の一時フラグOFFは2件失敗・終了2、ONは同じ2件成功・終了0。[独立レビュー](../../../artifacts/simd/review-5.6-20261018T172509Z/ReviewVerdict.md)はAPPROVEDで、フラグ除去後のReleaseビルド警告・エラー0、ランタイム4,247件成功・失敗/スキップ0・終了0、明示2C#の整形・空白確認成功、16laneの独立計算一致を確認した。REDと最終のテストは同一である。親は計算式・境界テスト・実際の出力と終了値を確認し、kiro-verify-completionのタスク5.6判定をVERIFIEDとした。未解決の指摘はない。公開接続と公式全体実行は8.2で行う。
+
+## 6.1 浮動小数点の符号bit操作と基本算術
+
+要件6.1・6.2の基本算術・6.6に対応し、f32x4/f64x2のabs・neg・add・sub・mul・div・sqrtの14handlerを追加した。stack処理と純粋なlane計算を分け、abs/negはrawbit、算術は既存の同精度NaN処理を使う。60ケースでsignaling NaNを含むpayload保持、±0、無限大、非正規化数、operand順、丸めと平方根の境界、128bit・stack契約を確認した。既存製品コードは変更していない。
+
+[実装記録](../../../artifacts/simd/task-6.1-20261018T172944Z/StatusReport.md)でOFF60全件失敗・終了2、ON60成功を確認した。対象コードの浮動小数点計算を使わない有理数・高精度平方根による160laneの期待bit計算も一致した。[独立レビュー](../../../artifacts/simd/review-task-6.1-20261018T174020Z/review.md)はAPPROVEDで、フラグ除去後のReleaseビルド警告・エラー0、ランタイム4,307件成功・失敗/スキップ0・終了0、15C#の整形・空白・hash検査、重要な18laneの独立計算が成功した。実装側では新規プロセスのDOTNET_EnableHWIntrinsic=0による60件も成功し、設定はその実行だけに限定した。親はwrapper・4helperと代表的テスト、実際の出力・終了値を確認し、kiro-verify-completionのタスク6.1判定をVERIFIEDとした。未解決の指摘はない。公開接続・公式全体実行は8.3、統合状態の支援無効確認は10.1で行う。
