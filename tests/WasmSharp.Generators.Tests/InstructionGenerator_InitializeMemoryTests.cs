@@ -39,6 +39,7 @@ internal partial class InstructionGenerator_InitializeTests
                     {
                         var received = instruction.MemoryArgument.Alignment == uint.MaxValue
                             && instruction.MemoryArgument.Offset == 0xFEDCBA98u
+                            && instruction.SecondaryIndex == 0
                             && instruction.MemoryAccessSignature == new Instructions.MemoryAccessSignature(
                                 WasmValueKind.{{valueType}}, {{byteWidth}}, {{sign}});
                         context.Value = WasmValue.FromI32(received ? 1 : 0);
@@ -87,7 +88,8 @@ internal partial class InstructionGenerator_InitializeTests
                 && descriptor.NumericSignature == null && attribute.NumericSignature == null
                 && decoded.Opcode == new WasmSharp.Instructions.OpcodeKey(0, {{code}})
                 && decoded.MemoryArgument.Alignment == uint.MaxValue && decoded.MemoryArgument.Offset == 0xFEDCBA98u
-                && decoded.Index == 0 && decoded.Labels.IsEmpty && instruction.TargetCount == 0
+                && decoded.Index == 0 && decoded.SecondaryIndex == 0
+                && decoded.Labels.IsEmpty && instruction.TargetCount == 0
                 && instruction.ByteOffset == 12345678901L
                 && result.Status == WasmSharp.Execution.ExecutionStatus.Success
                 && context.Pc == 1 && context.FrameCount == 0 && context.Value.AsI32() == 1;

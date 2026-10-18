@@ -79,4 +79,14 @@ internal enum ImmediateKind
     /// データインデックスを表すu32
     /// </summary>
     DataIndex,
+
+    /// <summary>
+    /// funcrefまたはexternrefを指定する参照型
+    /// </summary>
+    ReferenceType,
+
+    /// <summary>
+    /// 符号なしLEB128で符号化された2個の32ビット添字
+    /// </summary>
+    IndexPair,
 }

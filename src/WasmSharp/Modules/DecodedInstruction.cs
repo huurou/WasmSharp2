@@ -24,6 +24,11 @@ internal readonly struct DecodedInstruction
     internal uint Index { get; }
 
     /// <summary>
+    /// 2個の添字を持つ命令の2番目の番号
+    /// </summary>
+    internal uint SecondaryIndex { get; }
+
+    /// <summary>
     /// メモリ命令のアラインメント指数とオフセット
     /// </summary>
     internal MemoryArgument MemoryArgument { get; }
@@ -59,6 +64,7 @@ internal readonly struct DecodedInstruction
     /// <param name="labels">候補と既定ラベル 他の命令では非defaultの空配列</param>
     /// <param name="selectTypes">selectの型列 他の命令では非defaultの空配列</param>
     /// <param name="memoryArgument">メモリ命令の即値 他の命令ではdefault</param>
+    /// <param name="secondaryIndex">2番目の添字 他の命令では0</param>
     private DecodedInstruction(
         OpcodeKey opcode,
         long byteOffset,
@@ -67,13 +73,15 @@ internal readonly struct DecodedInstruction
         BlockType blockType = default,
         ImmutableArray<uint> labels = default,
         ImmutableArray<WasmValueKind> selectTypes = default,
-        MemoryArgument memoryArgument = default
+        MemoryArgument memoryArgument = default,
+        uint secondaryIndex = 0
     )
     {
         Opcode = opcode;
         ByteOffset = byteOffset;
         Immediate = immediate;
         Index = index;
+        SecondaryIndex = secondaryIndex;
         MemoryArgument = memoryArgument;
         BlockType = blockType;
         Labels = labels.IsDefault ? [] : labels;
@@ -117,6 +125,24 @@ internal readonly struct DecodedInstruction
     internal static DecodedInstruction WithIndex(OpcodeKey opcode, uint index, long byteOffset)
     {
         return new(opcode, byteOffset, index: index);
+    }
+
+    /// <summary>
+    /// 2個の添字の即値を持つ入力命令を構築する
+    /// </summary>
+    /// <param name="opcode">命令の識別子</param>
+    /// <param name="index">符号化順で最初の添字</param>
+    /// <param name="secondaryIndex">符号化順で2番目の添字</param>
+    /// <param name="byteOffset">入力バイナリ上の命令のバイト位置</param>
+    /// <returns>2個の添字以外の即値を既定値に統一した命令</returns>
+    internal static DecodedInstruction WithIndexPair(
+        OpcodeKey opcode,
+        uint index,
+        uint secondaryIndex,
+        long byteOffset
+    )
+    {
+        return new(opcode, byteOffset, index: index, secondaryIndex: secondaryIndex);
     }
 
     /// <summary>

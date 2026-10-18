@@ -159,4 +159,59 @@ internal enum ValidationRule
     /// データインデックスを検証し、型スタックを変更しない
     /// </summary>
     DataDrop,
+
+    /// <summary>
+    /// 参照型の入力を検証し、null判定の結果型i32を積む
+    /// </summary>
+    RefIsNull,
+
+    /// <summary>
+    /// 関数添字と参照の宣言を検証し、funcref型を積む
+    /// </summary>
+    RefFunc,
+
+    /// <summary>
+    /// テーブル添字とi32の要素添字を検証し、要素の参照型を積む
+    /// </summary>
+    TableGet,
+
+    /// <summary>
+    /// テーブル添字とi32の要素添字、要素の参照型を検証する
+    /// </summary>
+    TableSet,
+
+    /// <summary>
+    /// テーブルと要素セグメントの添字と参照型、3つのi32入力を検証する
+    /// </summary>
+    TableInit,
+
+    /// <summary>
+    /// 要素セグメント添字を検証し、型スタックを変更しない
+    /// </summary>
+    ElementDrop,
+
+    /// <summary>
+    /// コピー先とコピー元のテーブル添字と参照型、3つのi32入力を検証する
+    /// </summary>
+    TableCopy,
+
+    /// <summary>
+    /// テーブル添字と参照型の初期値、i32の増分を検証し、結果型i32を積む
+    /// </summary>
+    TableGrow,
+
+    /// <summary>
+    /// テーブル添字を検証し、要素数の型i32を積む
+    /// </summary>
+    TableSize,
+
+    /// <summary>
+    /// テーブル添字とi32の開始位置、要素の参照型、i32の長さを検証する
+    /// </summary>
+    TableFill,
+
+    /// <summary>
+    /// funcrefテーブルと型添字、i32の選択値、引数型を検証し、結果型を積む
+    /// </summary>
+    CallIndirect,
 }

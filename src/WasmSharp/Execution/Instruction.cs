@@ -13,6 +13,7 @@ namespace WasmSharp.Execution;
 /// <param name="targetCount">分岐表の既定を除く候補数 分岐表以外では参照しない</param>
 /// <param name="memoryArgument">メモリ命令のアラインメント指数とオフセット</param>
 /// <param name="memoryAccessSignature">ロード命令・ストア命令のアクセス情報</param>
+/// <param name="secondaryIndex">2個の添字を持つ命令の2番目の番号</param>
 internal readonly struct Instruction(
     ExecutionOpcode opcode,
     WasmValue immediate,
@@ -20,7 +21,8 @@ internal readonly struct Instruction(
     uint index,
     int targetCount = 0,
     MemoryArgument memoryArgument = default,
-    MemoryAccessSignature memoryAccessSignature = default
+    MemoryAccessSignature memoryAccessSignature = default,
+    uint secondaryIndex = 0
 )
 {
     /// <summary>
@@ -38,6 +40,11 @@ internal readonly struct Instruction(
     /// </summary>
     /// <remarks>単一分岐では1件、分岐表では候補列の開始番号を参照する</remarks>
     internal uint Index { get; } = index;
+
+    /// <summary>
+    /// 2個の添字を持つ命令の2番目の番号
+    /// </summary>
+    internal uint SecondaryIndex { get; } = secondaryIndex;
 
     /// <summary>
     /// 入力バイナリ上の命令のバイト位置

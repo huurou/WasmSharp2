@@ -21,6 +21,7 @@ internal class Instruction_ConstructorTests
             await Assert.That(instruction.Immediate).IsEqualTo(immediate);
             await Assert.That(instruction.ByteOffset).IsEqualTo(12345678901L);
             await Assert.That(instruction.Index).IsEqualTo(7u);
+            await Assert.That(instruction.SecondaryIndex).IsEqualTo(0u);
             await Assert.That(instruction.TargetCount).IsEqualTo(0);
         }
     }
@@ -48,6 +49,7 @@ internal class Instruction_ConstructorTests
         {
             await Assert.That(instruction.Index).IsEqualTo(INDEX);
             await Assert.That(instruction.TargetCount).IsEqualTo(targetCount);
+            await Assert.That(instruction.SecondaryIndex).IsEqualTo(0u);
             await Assert.That(instruction.ByteOffset).IsEqualTo(BYTE_OFFSET);
         }
     }

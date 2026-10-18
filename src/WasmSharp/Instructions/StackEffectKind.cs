@@ -159,4 +159,64 @@ internal enum StackEffectKind
     /// 3つのi32値を取り除く
     /// </summary>
     MemoryBulk,
+
+    /// <summary>
+    /// 即値の参照型を持つnullを積む
+    /// </summary>
+    PushReference,
+
+    /// <summary>
+    /// 参照型の値を取り除き、null判定の結果をi32で積む
+    /// </summary>
+    RefIsNull,
+
+    /// <summary>
+    /// 指定関数のfuncrefを積む
+    /// </summary>
+    RefFunc,
+
+    /// <summary>
+    /// i32の要素添字を取り除き、テーブルの参照型の値を積む
+    /// </summary>
+    TableGet,
+
+    /// <summary>
+    /// テーブルの参照型の値とi32の要素添字を取り除く
+    /// </summary>
+    TableSet,
+
+    /// <summary>
+    /// 要素初期化の長さ、コピー元とコピー先を表す3つのi32値を取り除く
+    /// </summary>
+    TableInit,
+
+    /// <summary>
+    /// 要素セグメントを破棄し、スタックを変更しない
+    /// </summary>
+    ElementDrop,
+
+    /// <summary>
+    /// テーブルのコピーの長さ、コピー元とコピー先を表す3つのi32値を取り除く
+    /// </summary>
+    TableCopy,
+
+    /// <summary>
+    /// i32の増分と参照型の初期値を取り除き、増大前の要素数をi32で積む
+    /// </summary>
+    TableGrow,
+
+    /// <summary>
+    /// テーブルの要素数をi32で積む
+    /// </summary>
+    TableSize,
+
+    /// <summary>
+    /// i32の長さ、参照型の値、i32の開始位置を取り除く
+    /// </summary>
+    TableFill,
+
+    /// <summary>
+    /// i32の選択値と指定型の引数を取り除き、その結果を積む
+    /// </summary>
+    CallIndirect,
 }
