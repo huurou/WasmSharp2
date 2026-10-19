@@ -1,5 +1,5 @@
 ---
-updated_at: 2026-10-03
+updated_at: 2026-10-19
 ---
 
 # 技術方針
@@ -26,11 +26,15 @@ updated_at: 2026-10-03
 
 `Instructions/InstructionSet.cs`の宣言を命令情報のソースとし、実行handlerと組み合わせて命令一覧と実行分岐を生成する。生成した`switch`からhandlerを直接呼び出し、宣言の重複やhandlerの不整合は生成時の診断で検出する。
 
+数値・SIMDの入力型列と結果型、メモリアクセスの値型・幅・符号拡張、lane即値の上限も命令宣言に保持する。共通の検証・線形化・handlerでこの情報を使い、命令群ごとに型規則やメモリ幅の対応表を重複させない。SIMDも同じ値スタックと生成実行ループを使う。
+
 ランタイムから生成器への参照は`OutputItemType="Analyzer"`、`ReferenceOutputAssembly="false"`とする。生成器を実行時依存にせず、生成ソースはビルド中間出力として扱う。変更対象は宣言・handler・生成器とし、生成コマンドの別途実行や生成ソースの手管理を要求しない（[ADR 0006](../../docs/adr/0006-generated-instruction-dispatch.md)）。
 
 ## 値の所有と同期実行
 
 バイト列や値・型のコレクション入力には`ReadOnlySpan<T>`を使い、保持する定義・型・結果はコピーして`ImmutableArray<T>`等で所有する。後続の呼び出しや元バッファの変更で、返却済みの結果が変わらない契約を保つ。数値の取得・構築ではWasmのビット列を保持する。
+
+数値演算はWasmのNaN・符号付きゼロ・丸め・変換範囲の規則を明示的に扱い、同じ規則をSIMDのlane演算でも再利用する。`v128`はビット列として保持し、laneの解釈を演算に応じて切り替える。メモリとの変換はlittle-endianで行い、ホストの表現へ依存させない。
 
 importした関数とリソースは同じ実体を共有し、module内で定義したリソースにはinstanceごとに新しい実体を割り当てる。ホストからmemoryへは範囲を指定して読み書きし、内部領域を直接参照する借用ビューを公開しない。読み出したバイトはホスト側のコピーとして扱い、同期再入やmemoryの増大をまたぐビューの寿命管理を利用者へ要求しない（[ADR 0009](../../docs/adr/0009-range-based-host-memory-access.md)）。
 
@@ -52,4 +56,8 @@ TUnitはAAA、日本語の条件・期待結果名、`await Assert.That(...)`を
 
 ランナーは否定assertionの段階・例外型・失敗分類に加え、期待診断との`Message.StartsWith(expectedText, StringComparison.Ordinal)`を判定する。不一致は`failed`のまま記録し、期待値の正規化や分類の変更で解消しない。ランタイムの診断文・診断選択への対応は[ADR 0012](../../docs/adr/0012-reference-diagnostic-compatibility.md)と`test-suite-conformance`に従い、ランタイムに公式JSONやテスト識別子への依存を持ち込まない。
 
+診断互換性のために通常解析の読取り境界を緩めない。Decodeで境界失敗が確定した場合だけ、同じ構文処理を診断用モードで1回再走査して原因を選ぶ。再走査で未対応・実装上限に遭遇した場合は元の不正を保持し、型検証でも原因の選択と診断文の組立てを分ける。
+
 操作手順は[ランナーのガイド](../../tools/WasmSharp.TestSuiteRunner/README.md)に保持する。生成済み素材の実行には元WAST・WABTを要求せず、baseline保存・比較・最終判定は保存済みJSONだけを使い、再生成・再実行しない。機能変更後は全体実行と現baselineの比較を行い、必要な修正と再比較を終えてから`baseline-save`で明示更新する。保存成功は処理と記録が完了した結果を保存できたことを示し、スイート合格を意味しない。Core 2.0全体の最終判定は、単一の全体実行結果を`verify`で評価する。
+
+`run`・`compare-run`の終了0だけでは機能の受入完了としない。対象ケースの成立と受入基準との対応を確認し、残る`runtime_unsupported`を診断から担当仕様へ対応付ける。`blocked`は`cause.direct`を起点まで追い、`cause.origins`と照合する。今回の機能自身の未対応や原因不明を残したままbaselineを更新せず、判定結果を各仕様の受入記録へ残す。

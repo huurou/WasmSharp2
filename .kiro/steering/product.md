@@ -1,5 +1,5 @@
 ---
-updated_at: 2026-10-03
+updated_at: 2026-10-19
 ---
 
 # プロダクト概要
@@ -24,9 +24,11 @@ C#の呼び出し元が、バイト列またはStreamからmoduleをデコード
 
 実装済みの`runtime-foundation`と`host-linking`では、公開4段階に加え、引数・複数結果・localsを含む関数実行、import/export、ホストcallback、start、global・memory・tableの生成と共有を扱う。対応範囲と受入の詳細は[基盤タスク](../specs/runtime-foundation/tasks.md)、[ホスト連携タスク](../specs/host-linking/tasks.md)、[ロードマップ](roadmap.md)を参照する。
 
-`test-suite-runner`は、固定公式素材の生成、spectest・registerを使う公開API実行、期待値・診断の判定、結果保存・回帰比較を実装し、初回公式受入とbaseline保存まで記録済み 操作は[ランナーのガイド](../../tools/WasmSharp.TestSuiteRunner/README.md)、受入結果と残る不一致は[引継ぎ文書](../specs/test-suite-conformance/handoff.md)を参照する。
+`test-suite-runner`は、固定公式素材の生成、spectest・registerを使う公開API実行、期待値・診断の判定、結果保存・回帰比較・最終判定を提供する。`test-suite-conformance`では初回公式受入で観測したランタイムの不一致を解消した。操作は[ランナーのガイド](../../tools/WasmSharp.TestSuiteRunner/README.md)、当時の受入結果は[適合検証の記録](../specs/test-suite-conformance/acceptance.md)を参照する。
 
-`test-suite-runner`の仕様全体の最終実装検証を完了した後、`test-suite-conformance`で観測済みのランタイムの不一致を修正し、数値・制御と各リソース命令、SIMDの順に整備する。リソースの生成・共有とホストからの操作は実装済みだが、memory/tableのguest命令やdata/element初期化は後続仕様が同じ実体へ追加する。公開型やopcodeの登録、値の保持ができることと、その機能を実行できることを区別する。
+`numeric-control`、`linear-memory`、`tables-references`、`simd`で、スカラー数値・構造化制御、memory/tableのguest命令、data/element初期化、参照・間接呼び出し、Core 2.0 SIMDを同じ検証・実行基盤へ追加済み。ホストとguestは同じリソース実体を操作する。各仕様の実装・受入状況は[ロードマップ](roadmap.md)に保持する。公開型やopcodeの登録、値の保持ができることと、その機能の実行・検証が完了していることを区別する。
+
+全8仕様を統合した固定スイートの単一実行には、`verify`合格と比較済み結果のbaseline保存の記録がある。詳細は[SIMDの公式受入記録](../specs/simd/acceptance.md#102-単一最終runによる公式比較と全体判定)を参照する。この記録と仕様全体の最終実装検証GOは区別し、固定した入力・profileでの結果を任意入力や別環境の保証へ広げない。
 
 Core 2.0全体の完成は、固定した公式テスト集合による検証と仕様規則との対応で判断する。最小経路の成功、素材の変換成功、個別テストの成功だけで全体への準拠を宣言しない。ランナーの初回受入やbaseline保存の成功も全件合格とは区別し、残る不一致・未対応・前提不成立を保持する。
 

@@ -1,5 +1,5 @@
 ---
-updated_at: 2026-10-03
+updated_at: 2026-10-19
 ---
 
 # プロジェクト構成
@@ -24,10 +24,13 @@ updated_at: 2026-10-03
 
 `tools/WasmSharp.TestSuiteRunner/`では、素材の固定・生成・照合を`Corpus/`、スクリプトの状態・公開API実行・assertion判定を`Execution/`、結果の記録・保存・完了判定を`Reports/`、baseline保存・比較を`Baselines/`へまとめる。CLIは引数と入出力先を扱い、指定された工程を呼び出す。実行で得た観測と判定結果を保存し、比較・最終判定は保存済みデータを使う。別工程からランタイムの実行を繰り返さず、工程ごとの責務と検証を保つ。
 
+命令handlerは`Execution/`内の`Interpreter`の機能別partialへまとめ、生成された単一の実行ループから呼び出す。handlerはoperand操作・アドレス計算・Wasmの失敗理由を扱い、memory/tableの保持・範囲確認・転送はリソース型へ集約する。スカラーとSIMDでリソース表現やアクセス処理を複製しない。
+
 ## 公開境界と依存関係
 
 - 利用者向けの契約を`public`とし、内部実装は`internal`以下に保つ。テストによる内部参照には対象テストプロジェクトへの`InternalsVisibleTo`を用いる。
 - `WasmModule`は静的定義と実行コードを所有する。`WasmInstance`は定義から生成した関数・リソースとimportした共有実体を保持する。module内の定義にはinstanceごとの実体を割り当て、importでは提供元と同じ実体を共有する。定義関数は所属instanceと関数indexで定義・実行コードへ到達する。ホスト関数は取得元instanceへ固定せず、同一実体を共有し、必要なinstanceは呼び出し時に渡す。
+- data/elementの静的定義はmoduleに置き、実行に使う内容と破棄状態はinstanceごとに保持する。不変のdataバイト列は共有できるが、elementの参照列はinstanceの関数・globalを使って評価する。segmentの破棄でmodule定義や別instanceの状態を変更しない。
 - instanceの公開取得操作は`GetFunction`などの名前による操作とする。`WasmInstance`に`Exports`コレクションを追加しない。export名と種類の一覧はmoduleの静的定義として`WasmModule.GetExports()`で宣言順に列挙し、実体・内部indexを含めない。
 - 命令宣言とhandlerからの生成方式、生成器のビルド時参照は[技術方針](tech.md)に従う。ランタイムをテスト・公式ランナー・WABTへ依存させない。
 - 通常ビルドの生成ソースは`obj/`、外部ツールのビルドや変換成果物は`artifacts/`等の出力先に置き、手書きのソースコードと分ける。

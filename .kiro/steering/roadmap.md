@@ -1,5 +1,5 @@
 ---
-updated_at: 2026-10-12
+updated_at: 2026-10-19
 ---
 
 # WasmSharp2ロードマップ
@@ -10,7 +10,9 @@ C#でWebAssemblyバイナリをデコード・検証・インスタンス化・�
 
 下記8仕様を機能ごとに4段階を通して実装する。公式テスト素材の固定・生成から実行・回帰比較までは、`test-suite-runner`で一つの仕様・ツールとして扱い、初期実装から公式期待診断を前方一致で判定する。その後の`test-suite-conformance`で、テストスイートで判明したランタイムの実装上の問題をまとめて修正する。診断互換性はその一部とし、実行結果に応じて修正項目を追記・見直す。Core 3.0は将来の別計画とする。この分割方針の承認と、各仕様のrequirements・design・tasks・実装の承認は区別する。文書の言語は日本語とし、`spec.json.language`は`ja`とする。
 
-`runtime-foundation`と`host-linking`は完了し、関数呼出し・リソース生成・import/exportの実行・リンク基盤まで整備済み。`test-suite-runner`も、その公開能力を使うspectest・register、全体実行・回帰比較の実装と初回公式受入・baseline保存、仕様全体の最終実装検証GOまで記録済み。`test-suite-conformance`は既知944件を解消し、failed・runner_error・回帰0、baseline明示更新と最終実装検証GOを確認した。`numeric-control`はスカラー数値命令と構造化制御を追加し、73受入基準・最終実装検証GO・比較済み結果のbaseline保存を確認した。次は`linear-memory`と`tables-references`へ進む。先行仕様の承認済み要件・設計・タスクと完成状態は維持する。後続機能では同じ公式スイートによる診断照合と回帰確認も完了条件に含める。
+`runtime-foundation`と`host-linking`は完了し、関数呼出し・リソース生成・import/exportの実行・リンク基盤まで整備済み。`test-suite-runner`も、その公開能力を使うspectest・register、全体実行・回帰比較の実装と初回公式受入・baseline保存、仕様全体の最終実装検証GOまで記録済み。`test-suite-conformance`は既知944件を解消し、failed・runner_error・回帰0、baseline明示更新と最終実装検証GOを確認した。`numeric-control`はスカラー数値命令と構造化制御を追加し、73受入基準・最終実装検証GO・比較済み結果のbaseline保存を確認した。`linear-memory`、`tables-references`、`simd`も実装タスクと公式受入・比較済み結果のbaseline保存まで記録済み。先行仕様の承認済み要件・設計・タスクと完成状態は維持する。今後の変更でも同じ公式スイートによる診断照合と回帰確認を完了条件に含める。
+
+最新の公式受入記録では、全8仕様を統合した単一runについて、147入力・53,907commandのうち52,830件がpassed、1,077件がout_of_scope、failed・runtime_unsupported・runner_error・blocked・回帰・欠落が0件で、`verify`合格とbaseline保存が記録されている。根拠は[SIMDの公式受入](../specs/simd/acceptance.md#102-単一最終runによる公式比較と全体判定)と[baseline保存](../specs/simd/acceptance.md#103-比較受入済みrunの明示baseline保存)。固定した入力・profileでの全体verify合格と、SIMD仕様全体の最終実装検証GOは区別する。
 
 ## discovery時点の現状（2026-09-06）
 
@@ -91,7 +93,7 @@ baselineの保存と比較は別々のコマンドにし、保存済みの結果
 
 `runtime-foundation`と`host-linking`は公開APIの直接テストによる受入まで完了している。この完了は公式スイートの受入とは区別する。`test-suite-runner`の初回公式受入では、全入力の素材生成と再現性、spectestとregisterを使う実行・リンク経路、全commandの記録と初回baselineをまとめて検証する。
 
-2026-10-01の初回公式受入と素材移動後の再実行・回帰比較は[ランナーのタスク記録](../specs/test-suite-runner/tasks.md)に保持する。残る診断不一致、未対応とそれに依存する前提不成立、baselineの所在と再開手順は[後続仕様への引継ぎ](../specs/test-suite-conformance/handoff.md)を参照する。タスク単位の公式受入、仕様全体の最終実装検証、Core 2.0全件合格はそれぞれ区別する。
+2026-10-01の初回公式受入と素材移動後の再実行・回帰比較は[ランナーのタスク記録](../specs/test-suite-runner/tasks.md)に保持する。当時の診断不一致、未対応とそれに依存する前提不成立、baselineの所在と再開手順は[後続仕様への引継ぎ](../specs/test-suite-conformance/handoff.md)に残す。現在の受入結果とbaselineは[SIMDの受入記録](../specs/simd/acceptance.md)を参照する。タスク単位の公式受入、仕様全体の最終実装検証、Core 2.0全件合格はそれぞれ区別する。
 
 初回のランナー受入では、固定スイート全体を処理し、ランナー自体と素材に起因する入力単位・command単位の`runner_error`を0件にする。初期必須の公式ケースを実行・判定できない問題はランタイム側も含めて`test-suite-runner`で修正し、独自テストだけで受入を代替しない。判定で得た`failed`と、初期必須の実行経路を妨げず原因をランタイム側と確認できた`runner_error`は、ケース・期待・実際・原因を記録して`test-suite-conformance`へ引き継げる。必要な前提が成立しない後続commandは原因付きの`blocked`として残す。`failed`や`runner_error`が残る実行・回帰比較の終了コードは非0のままとし、ランナーの受入とランタイムの全件合格を区別する。
 
@@ -129,11 +131,11 @@ Decode・Validate・Instantiate・Invokeを別々の機能仕様にせず、機�
 - [x] runtime-foundation -- 明示的な4段階APIと値・型・失敗分類、最小の線形実行基盤 Dependencies: none
 - [x] host-linking -- 関数実行、global・memory・tableの生成と共有、import/export、ホストcallbackとstartを公開APIで扱う実行・リンク基盤 Dependencies: runtime-foundation
 - [x] test-suite-runner -- 固定公式素材の生成、spectest・register、公開API実行・判定、全commandの結果記録・回帰比較と初回baseline（仕様全体の最終実装検証GO。記録は[test-suite-conformanceの準備記録](../specs/test-suite-conformance/acceptance.md#上流仕様の最終実装検証)） Dependencies: host-linking
-- [x] test-suite-conformance -- 既知944件の不一致を解消し、固定全体結果のfailed・runner_error・回帰0、baseline明示更新、48受入基準と最終実装検証GOを確認済み。後続4機能は未解消のまま引き継ぐ。記録は[最終受入記録](../specs/test-suite-conformance/acceptance.md#仕様全体の最終実装検証)。 Dependencies: test-suite-runner
+- [x] test-suite-conformance -- 既知944件の不一致を解消し、固定全体結果のfailed・runner_error・回帰0、baseline明示更新、48受入基準と最終実装検証GOを確認済み。当仕様の受入時点では後続4機能の未対応を引き継いだ。記録は[最終受入記録](../specs/test-suite-conformance/acceptance.md#仕様全体の最終実装検証)。 Dependencies: test-suite-runner
 - [x] numeric-control -- スカラー数値命令・構造化制御・数値trap・再帰・複数値制御を追加し、73受入基準、最終実装検証GO、比較済み結果のbaseline明示保存を確認済み。記録は[最終実装検証](../specs/numeric-control/validation.md#仕様全体の最終実装検証)。 Dependencies: host-linking, test-suite-runner, test-suite-conformance
-- [x] linear-memory -- スカラーload/store、data segment、bulk memoryと初期化・実行のtrapを公式検証する。 Dependencies: numeric-control
-- [x] tables-references -- 参照命令、table操作、element segment、間接呼出しと初期化・実行のtrapを公式検証する。 Dependencies: numeric-control
-- [ ] simd -- v128とCore 2.0 SIMDを共通命令テーブル・実行ループに実装し、公式SIMDケースで検証する。 Dependencies: linear-memory
+- [x] linear-memory -- スカラーload/store、data segment、bulk memoryと初期化・実行のtrapを実装し、公式受入とbaseline保存を記録済み。記録は[受入記録](../specs/linear-memory/acceptance.md)。 Dependencies: numeric-control
+- [x] tables-references -- 参照命令、table操作、element segment、間接呼出しと初期化・実行のtrapを実装し、公式受入とbaseline保存を記録済み。記録は[受入記録](../specs/tables-references/acceptance.md)。 Dependencies: numeric-control
+- [x] simd -- v128とCore 2.0 SIMDを共通命令テーブル・実行ループに実装し、公式受入、単一runの全体verify合格、baseline保存を記録済み。記録は[受入記録](../specs/simd/acceptance.md)。 Dependencies: linear-memory
 
 作業順は、①完成済みの最小基盤、②実行・リンク基盤、③公式適合検証ツールと初回baseline、④テストスイートで判明したランタイムの実装修正、⑤数値・制御、⑥メモリとテーブル・参照、⑦SIMD ⑥の2仕様は並行可能で、SIMDはメモリが揃えば着手できる。②は③を完了前提にせず、③で②の公式結果と残る実装上の問題を確認する。④以降も初回から同じ判定基準のスイートで回帰確認する。
 
