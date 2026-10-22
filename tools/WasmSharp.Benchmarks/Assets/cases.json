@@ -469,5 +469,75 @@
     },
     "state_policy": "read_only",
     "comparison_group": "scan.sum-u32"
+  },
+  {
+    "case_id": "kernel.matrix",
+    "case_revision": 1,
+    "asset_id": "kernel",
+    "asset_sha256": "89f0b4cd5c3e868d282ff8e5869045b384ab6ca85a5c6f549beb3d61a1bc3ed9",
+    "measurement_stage": "invoke",
+    "operation_definition": {
+      "description": "公開Invokeを1回、32×32のu32行列積で全出力を上書き",
+      "operations_per_invoke": 1,
+      "includes_state_restoration": false
+    },
+    "workload": [
+      {
+        "name": "matrix_output",
+        "count": 1024,
+        "unit": "elements"
+      },
+      {
+        "name": "multiply_accumulate",
+        "count": 32768,
+        "unit": "iterations"
+      }
+    ],
+    "input": {
+      "function_export": "matrix",
+      "arguments": [
+        { "type": "i32", "bits": "00010000" },
+        { "type": "i32", "bits": "00011000" },
+        { "type": "i32", "bits": "00012000" }
+      ],
+      "arrays": [
+        {
+          "memory_export": "memory",
+          "offset": 65536,
+          "element_type": "u32",
+          "length": 1024,
+          "pattern": "seeded_u32",
+          "seed": 305419896,
+          "fill_byte": null
+        },
+        {
+          "memory_export": "memory",
+          "offset": 69632,
+          "element_type": "u32",
+          "length": 1024,
+          "pattern": "seeded_u32",
+          "seed": 2654435769,
+          "fill_byte": null
+        }
+      ]
+    },
+    "input_hash": "8c5f12668ed298442bcfaabfbb529d242e8d446a6fb1bc8af2ba4b2c407e20bc",
+    "expected_result": {
+      "values": [],
+      "arrays": [
+        {
+          "memory_export": "memory",
+          "offset": 73728,
+          "element_type": "u32",
+          "length": 1024,
+          "hash_algorithm": "sha256",
+          "digest": "bcd94ddfdd7eddddfadf4b84f7c6b7de3ed0c3768607cd53f20227cb6d53fd3c"
+        }
+      ],
+      "globals": [],
+      "tables": []
+    },
+    "state_policy": "overwrite_output",
+    "comparison_group": "kernel.matrix-u32"
   }
 ]

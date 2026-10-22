@@ -50,7 +50,7 @@
   - _Boundary: 固定素材とケース_
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 2.7, 3.1_
 
-- [ ] 2.3 C由来の整数行列kernelを固定する
+- [x] 2.3 C由来の整数行列kernelを固定する
   - 32×32のu32行列積を自作freestanding Cで生成し、固定seed・32bit剰余演算・出力全要素の上書きを使う。
   - 設計のコンパイル条件と必要exportを指定し、未解決symbolや不要なimportを許容せず、固定profileでバイナリを検査する。
   - 単純な独立参照計算で固定した出力digestに一致し、同じ処理を繰り返しても前回出力が入力へ混入しない。
@@ -349,3 +349,4 @@
 - 1.4: run・process検査・指標・環境/source・比較policyの保存契約を定義した。null指標には取得不能理由を持たせ、絶対差と比率を別の型で保存する。Release警告・エラー0、契約テスト22件成功、独立レビューAPPROVED。検証記録は`artifacts/runtime-performance/task-1.4-20261022T151500Z/`と`artifacts/runtime-performance/task-1.4-review-20261022T161100Z/`に保存した。
 - 2.1: `CaseInput`を`CaseJson.Options`でコンパクトJSONへ直列化したUTF-8列のSHA-256を入力hashとする。2素材・6ケースを固定し、期待値は手計算と閉形式で照合した。Release警告・エラー0、契約テスト25件成功。独立レビューでも新規出力へのCore2検査と6ケース各8回の公開Invoke照合が成功しAPPROVED。検証記録は`artifacts/runtime-performance/task-2.1-20261022T145210Z/`と`artifacts/runtime-performance/task-2.1-review-20261022T150306Z/`に保存した。
 - 2.2: memoryの固定点反復に加え、別instanceで両出力を破壊してから1回のInvokeで回復することを確認した。scalar/SIMDは引数・配列・仕事量・期待値を共有するが、入力hashは関数export名を含むため異なる。Release警告・エラー0、契約テスト28件成功。独立レビューでも2素材のCore2検査と3ケース各8回の全byte・digest照合が成功しAPPROVED。記録は`artifacts/runtime-performance/task-2.2-20261022T150925Z/`と`artifacts/runtime-performance/task-2.2-review-20261022T152013Z/`に保存した。
+- 2.3: `SeededU32`はxorshift32（左13・右17・左5、更新後に格納）とし、左右seedを`0x12345678`・`0x9e3779b9`へ固定した。Clang/LLD21.1.8の明示生成、import0とCore2検査、独立BigInteger計算、公開Invoke9回の全入力保持・全出力一致・破壊出力回復を確認した。Release警告・エラー0、契約テスト30件成功、独立レビューAPPROVED。記録は`artifacts/runtime-performance/task-2.3-20261022T152628Z/`と`artifacts/runtime-performance/task-2.3-review-20261022T153519Z/`に保存した。

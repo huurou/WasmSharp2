@@ -1,6 +1,6 @@
 # 素材とケースの固定条件
 
-タスク2.1・2.2で追加する4素材・9ケース。固定値は`cases.json`の既存`BenchmarkCase`形式で保持する。6素材・15ケースへの統合とmanifest生成はタスク2.5、ケース読込・公開APIの検査器はタスク3.1・3.2で接続する。
+タスク2.1〜2.3で追加する5素材・10ケース。固定値は`cases.json`の既存`BenchmarkCase`形式で保持する。6素材・15ケースへの統合とmanifest生成はタスク2.5、ケース読込・公開APIの検査器はタスク3.1・3.2で接続する。
 
 全ケースは1回の公開Invokeを1操作とする。loopの4096回はguestの仕事量であり、操作数ではない。module・instance・export・引数・配列は計時前に準備する。invoke・callsのmemory・globalの変更はなく、tableも読み取りだけである。これらの状態復元は不要で、各Invokeは同じ引数から開始する。callsのinstanceとホスト関数はケースごとに生成する。
 
@@ -29,4 +29,29 @@
 
 `input_hash`は`CaseInput`を`CaseJson.Options`でコンパクトJSONへ直列化したUTF-8バイト列のSHA-256。関数export名も含むためscalarとSIMDではhashが異なるが、引数と配列生成条件、期待値、仕事量は同じである。`asset_sha256`は固定WABTで変換したバイナリのSHA-256であり、生成ログにsource・profile・ツールとの対応を残す。素材または入力・期待値・操作を変更するときはケース版を更新する。
 
-通常TUnitは同じ`cases.json`をビルド時にコピーして読み、外部compilerやBDNを起動しない。WATの変換・Core2検査と生成物の公開API照合は、素材準備時に別途行う。
+## C由来の整数行列積
+
+`kernel.c`は32×32のu32行列積を計算する自作freestanding Cで、importを持たない。`matrix: (i32,i32,i32) → ()`の3引数は左入力・右入力・出力のbyte offsetで、それぞれ65536、69632、73728を指定する。各行列は1024個のu32をrow-major、little-endianで格納する。`memory`は2ページ固定で、先頭64KiBをstack用に確保し、入力2領域と出力4096byteを互いに分離する。
+
+`SeededU32`は配列ごとに`state=seed`で開始し、各要素について次の3更新を順番に行った後のstateを格納する。stateは符号なし32bitで、左shiftの上位bitは捨て、右shiftは論理shiftとする。値を小さい範囲へ縮約しない。
+
+```text
+state ^= state << 13
+state ^= state >> 17
+state ^= state << 5
+```
+
+左入力のseedは`0x12345678`（305419896）、右入力は`0x9e3779b9`（2654435769）。最初の要素はそれぞれ`0x87985aa5`、`0x510c4619`となる。入力の生成・書き込みは計時外で1回行い、以後は読み取りだけで使う。出力は初期値に依存せず、各Invokeで0から積和を計算して全1024要素を上書きする。前回出力を入力に使わず、別途の状態復元は行わない。1公開Invokeが1操作、1024出力要素と32768回の積和がguestの仕事量である。
+
+Cのunsigned積和はmod2^32で計算する。固定期待値はC#の`BigInteger`で各内積を求め、最後に下位32bitを取る独立参照計算から確定した。全1024要素で内積がuintの上限を超えるため、剰余演算を含む入力である。全4096byteのSHA-256は`bcd94ddfdd7eddddfadf4b84f7c6b7de3ed0c3768607cd53f20227cb6d53fd3c`。通常TUnitでも独立計算と`cases.json`を照合し、Wasmの観測値から期待値を更新しない。
+
+ClangとLLDは21.1.8の明示pathを指定し、コンパイルとlinkを分ける。出力先は新規ディレクトリとする。
+
+```powershell
+& $ClangPath --target=wasm32-unknown-unknown -O2 -ffreestanding -nostdlib -fno-vectorize -fno-slp-vectorize -Werror -c tools/WasmSharp.Benchmarks/Assets/sources/kernel.c -o "$OutputDirectory/kernel.o"
+& $LldPath --no-entry --export=matrix --export-memory --unresolved-symbols=report-all --stack-first -z stack-size=65536 --initial-memory=131072 --max-memory=131072 "$OutputDirectory/kernel.o" -o "$OutputDirectory/kernel.wasm"
+```
+
+`wasm-validate`へは既存`core2-profile.json`のenabled/default_enabled差分だけをfeature引数として渡し、生成物を検査する。公開`InspectImports`でimport0件を確認し、`Decode→Validate→Instantiate→Invoke`で固定digest、反復前後の入力全byte、出力全byteを照合する。出力を意図的に破壊してからのInvokeでも全要素の回復を確認する。生成・検証記録は`artifacts/runtime-performance/task-2.3-20261022T152628Z/`、再生成コマンドと終了値はその`generated/commands.json`に保持する。
+
+通常TUnitは同じ`cases.json`をビルド時にコピーして読み、外部compilerやBDNを起動しない。WAT/Cの変換・Core2検査と生成物の公開API照合は、素材準備時に別途行う。
