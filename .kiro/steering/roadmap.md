@@ -1,5 +1,5 @@
 ---
-updated_at: 2026-10-19
+updated_at: 2026-10-22
 ---
 
 # WasmSharp2ロードマップ
@@ -8,11 +8,13 @@ updated_at: 2026-10-19
 
 C#でWebAssemblyバイナリをデコード・検証・インスタンス化・実行するライブラリを一から実装する。初期の完了目標は**WebAssembly Core 2.0のバイナリ・検証・実行への準拠**とし、公式テストのバイナリ対象集合で検証する。WATの処理はライブラリの対象外とする。
 
-下記8仕様を機能ごとに4段階を通して実装する。公式テスト素材の固定・生成から実行・回帰比較までは、`test-suite-runner`で一つの仕様・ツールとして扱い、初期実装から公式期待診断を前方一致で判定する。その後の`test-suite-conformance`で、テストスイートで判明したランタイムの実装上の問題をまとめて修正する。診断互換性はその一部とし、実行結果に応じて修正項目を追記・見直す。Core 3.0は将来の別計画とする。この分割方針の承認と、各仕様のrequirements・design・tasks・実装の承認は区別する。文書の言語は日本語とし、`spec.json.language`は`ja`とする。
+Core 2.0に対応する8仕様を機能ごとに4段階を通して実装する。公式テスト素材の固定・生成から実行・回帰比較までは、`test-suite-runner`で一つの仕様・ツールとして扱い、初期実装から公式期待診断を前方一致で判定する。その後の`test-suite-conformance`で、テストスイートで判明したランタイムの実装上の問題をまとめて修正する。診断互換性はその一部とし、実行結果に応じて修正項目を追記・見直す。Core 3.0は将来の別計画とする。この分割方針の承認と、各仕様のrequirements・design・tasks・実装の承認は区別する。文書の言語は日本語とし、`spec.json.language`は`ja`とする。
 
 `runtime-foundation`と`host-linking`は完了し、関数呼出し・リソース生成・import/exportの実行・リンク基盤まで整備済み。`test-suite-runner`も、その公開能力を使うspectest・register、全体実行・回帰比較の実装と初回公式受入・baseline保存、仕様全体の最終実装検証GOまで記録済み。`test-suite-conformance`は既知944件を解消し、failed・runner_error・回帰0、baseline明示更新と最終実装検証GOを確認した。`numeric-control`はスカラー数値命令と構造化制御を追加し、73受入基準・最終実装検証GO・比較済み結果のbaseline保存を確認した。`linear-memory`、`tables-references`、`simd`も実装タスクと公式受入・比較済み結果のbaseline保存まで記録済み。先行仕様の承認済み要件・設計・タスクと完成状態は維持する。今後の変更でも同じ公式スイートによる診断照合と回帰確認を完了条件に含める。
 
 最新の公式受入記録では、全8仕様を統合した単一runについて、147入力・53,907commandのうち52,830件がpassed、1,077件がout_of_scope、failed・runtime_unsupported・runner_error・blocked・回帰・欠落が0件で、`verify`合格とbaseline保存が記録されている。根拠は[SIMDの公式受入](../specs/simd/acceptance.md#102-単一最終runによる公式比較と全体判定)と[baseline保存](../specs/simd/acceptance.md#103-比較受入済みrunの明示baseline保存)。固定した入力・profileでの全体verify合格と、SIMD仕様全体の最終実装検証GOは区別する。
+
+2026-10-22の追加discoveryでは、Core 3.0の前に性能測定と改善を行う方針を選択した。新しい単一仕様`runtime-performance`で代表ケースを測り、実行時間の短縮とメモリ割り当ての最小化を同格の目標として、寄与の大きい1〜3箇所を改善する。既存8仕様の完了状態を維持し、後述の「性能測定と改善」として追加する。
 
 ## discovery時点の現状（2026-09-06）
 
@@ -128,6 +130,8 @@ Decode・Validate・Instantiate・Invokeを別々の機能仕様にせず、機�
 
 ## Specs (dependency order)
 
+### Core 2.0への対応
+
 - [x] runtime-foundation -- 明示的な4段階APIと値・型・失敗分類、最小の線形実行基盤 Dependencies: none
 - [x] host-linking -- 関数実行、global・memory・tableの生成と共有、import/export、ホストcallbackとstartを公開APIで扱う実行・リンク基盤 Dependencies: runtime-foundation
 - [x] test-suite-runner -- 固定公式素材の生成、spectest・register、公開API実行・判定、全commandの結果記録・回帰比較と初回baseline（仕様全体の最終実装検証GO。記録は[test-suite-conformanceの準備記録](../specs/test-suite-conformance/acceptance.md#上流仕様の最終実装検証)） Dependencies: host-linking
@@ -149,6 +153,18 @@ Decode・Validate・Instantiate・Invokeを別々の機能仕様にせず、機�
 | `tables-references` | 参照命令、element初期化とstart・共有tableの複合ケース 初期の参照比較を再利用 |
 | `simd` | SIMD命令の公式ケース 初期のv128・lane比較を再利用 |
 
+### 性能測定と改善
+
+- [ ] runtime-performance -- 代表ケースの時間・managed割り当て量を測定し、基準値の保存、主要1〜3箇所の改善、変更前後の比較とCore 2.0の回帰確認を行う。方針は[ブリーフ](../specs/runtime-performance/brief.md)。 Dependencies: runtime-foundation, host-linking, test-suite-runner, test-suite-conformance, numeric-control, linear-memory, tables-references, simd
+
+2026-10-22に選択したA案では、準備処理・呼び出し・計算・メモリ・SIMDを合計10〜15ケース程度で代表させ、測定から改善対象を選ぶ。時間とメモリ割り当てを同格に扱い、時間が同等でも操作当たりの割り当てが減れば改善として評価する。GCと、再利用による保持メモリへの影響も確認する。測定基盤だけで完了とせず、少なくとも1件の測定で裏付けられた改善までを範囲とする。規模は中を想定する。
+
+短いInvokeだけに集中するB案は初期作業を小さくできるが、測定前に優先領域を狭めるため採用しない。他ランタイムとの比較を含むC案は、素材・実行方式・設定を揃える作業が増えるため後続とする。測定器は公開APIを使う独立したツールとし、初期環境は現在のWindows x64/.NET10、BenchmarkDotNetを土台とする。素材の最終選定と導入・実行互換性の確認は仕様化・実装で行う。
+
+性能の数値目標と悪化の判断幅は、同じ版の再測定でばらつきと割り当て量を確認してから、各改善に着手する前に定める。時間と割り当ての両指標・個別結果を残し、片方や総合値だけで悪化を隠さない。性能基準値は公式適合検証のbaselineと分ける。公開API・Core 2.0の意味論・診断互換性を維持し、完了確認では既存方針による固定スイート全体の実行・比較・verifyを行う。
+
+この追加はdiscoveryでの方針決定であり、性能測定・改善・実装検証の完了や、requirements・design・tasksの承認を意味しない。Core 3.0、WASI、JIT/AOTやregister IRへの全面変更、並行実行保証、外部比較、全opcodeの個別性能テスト、一律しきい値による性能CIは初回範囲に含めない。
+
 ## 将来のCore 3.0
 
 2.0の固定profile・corpus・結果baselineを残し、3.0の仕様と期待結果は別計画として追加する。版が変わると以前invalidだった入力が有効になる場合もあるため、3.0実行時に2.0の否定テストをそのまま適用できるとは約束しない。必要なら2.0の版別実行契約またはリリースを維持する方法を、その計画で決める。
@@ -158,6 +174,7 @@ GC・再帰型・型付き参照、例外処理、64bitアドレス等では型�
 ## 根拠
 
 - ユーザー提示の10項目と2026-09-06のdiscovery回答
+- 2026-10-22のdiscovery回答と割り当て最小化の追加方針、[性能測定の調査ノート](../../docs/research/wasm-performance-measurement.md)、[runtime-performanceのブリーフ](../specs/runtime-performance/brief.md)
 - 2026-09-27に採用した追加要求と、[参照診断互換性](../../docs/adr/0012-reference-diagnostic-compatibility.md)のADR
 - [用語集](../../CONTEXT.md)と、[明示的な4段階API](../../docs/adr/0001-explicit-staged-runtime-api.md)、[同一パスの線形インタープリタ](../../docs/adr/0002-single-pass-linear-interpreter.md)、[Core 2.0の固定適合検証](../../docs/adr/0003-core2-fixed-conformance-profile.md)、[trapの伝播方式](../../docs/adr/0004-trap-result-propagation.md)のADR
 - [調査ノート](../../docs/research/wasm-runtime-discovery.md) 公式仕様とWABTの出典、固定時の注意点を含む。
