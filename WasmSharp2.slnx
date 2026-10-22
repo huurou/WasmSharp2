@@ -3,12 +3,14 @@
     <Project Path="tests/WasmSharp.Tests/WasmSharp.Tests.csproj" />
     <Project Path="tests/WasmSharp.Generators.Tests/WasmSharp.Generators.Tests.csproj" />
     <Project Path="tests/WasmSharp.TestSuiteRunner.Tests/WasmSharp.TestSuiteRunner.Tests.csproj" />
+    <Project Path="tests/WasmSharp.Benchmarks.Tests/WasmSharp.Benchmarks.Tests.csproj" />
   </Folder>
   <Folder Name="/Tests/Fixtures/">
     <Project Path="tests/WasmSharp.TestSuiteRunner.Tests/Fixtures/ConverterFixture/ConverterFixture.csproj" />
   </Folder>
   <Folder Name="/Tools/">
     <Project Path="tools/WasmSharp.TestSuiteRunner/WasmSharp.TestSuiteRunner.csproj" />
+    <Project Path="tools/WasmSharp.Benchmarks/WasmSharp.Benchmarks.csproj" />
   </Folder>
   <Project Path="src/WasmSharp/WasmSharp.csproj" />
   <Project Path="src/WasmSharp.Generators/WasmSharp.Generators.csproj" />

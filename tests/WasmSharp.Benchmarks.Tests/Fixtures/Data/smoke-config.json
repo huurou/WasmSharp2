@@ -1,0 +1,13 @@
+{
+  "jobId": "Smoke",
+  "runtime": ".NET 10.0",
+  "platform": "X64",
+  "buildConfiguration": "Release",
+  "runStrategy": "Throughput",
+  "launchCount": 1,
+  "warmupCount": 1,
+  "iterationCount": 1,
+  "invocationCount": 64,
+  "unrollFactor": 1,
+  "memoryRandomization": false
+}
