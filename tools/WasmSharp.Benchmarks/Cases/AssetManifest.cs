@@ -8,7 +8,13 @@ internal sealed record AssetManifest(
     ManifestFile Profile,
     ManifestFile Cases,
     List<AssetDefinition> Assets
-);
+)
+{
+    /// <summary>
+    /// manifestの相対参照を照合し、計時前に素材と入力を読み込む
+    /// </summary>
+    internal static LoadedAssets Load(string path) => LoadedAssets.Load(path);
+}
 
 /// <summary>
 /// manifestからの相対pathとファイル内容のSHA-256

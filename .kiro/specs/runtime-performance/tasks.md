@@ -73,7 +73,7 @@
   - _Requirements: 1.1, 1.2, 1.3, 1.5, 8.4_
 
 - [ ] 3. ケース読込と正しさの照合を成立させる
-- [ ] 3.1 固定素材と入力をケースへ対応付ける
+- [x] 3.1 固定素材と入力をケースへ対応付ける
   - 素材manifestから相対pathでバイト列を読み、hashを照合する。ケース定義を唯一の入力・期待値として使い、測定メソッドとの対応だけを別に保持する。
   - 明示型の引数、固定seedの配列、操作数・guest仕事量・状態方針を復元し、scalarとSIMDの共通入力を確認する。
   - 正常fixtureは読込でき、hash不一致・未知ケース・入力の食い違いは測定前に理由付きで拒否される。
@@ -352,3 +352,4 @@
 - 2.3: `SeededU32`はxorshift32（左13・右17・左5、更新後に格納）とし、左右seedを`0x12345678`・`0x9e3779b9`へ固定した。Clang/LLD21.1.8の明示生成、import0とCore2検査、独立BigInteger計算、公開Invoke9回の全入力保持・全出力一致・破壊出力回復を確認した。Release警告・エラー0、契約テスト30件成功、独立レビューAPPROVED。記録は`artifacts/runtime-performance/task-2.3-20261022T152628Z/`と`artifacts/runtime-performance/task-2.3-review-20261022T153519Z/`に保存した。
 - 2.4: large素材は255加算関数とstartの計256定義、64KiB data、固定tableとglobalを生成する。フラグOFFの失敗、ONと除去後の成功を確認した。Release警告・エラー0、契約テスト32件、公開インスタンス化24回と先行instance変更後の独立性21回が成功、独立レビューAPPROVED。記録は`artifacts/runtime-performance/task-2.4-20261022T154151Z/`と`artifacts/runtime-performance/task-2.4-review-20261022T155635Z/`。測定ツールREADMEの旧「2バイナリ・toolchain-smoke」表記は非阻害の指摘として2.5の全生成手順更新へ引き継ぐ。
 - 2.5: 6素材・15ケースの統合生成を接続し、既存13ケースと採用hashを保持した。manifestは出力基準の相対参照、source revisionは基点HEADと内容hashを分ける。引数hashはSystem.Text.Json既定の順序付き文字列配列のコンパクトUTF-8 JSONから求める。PowerShell7.5以上が必要。旧README表記を解消し、Release警告・エラー0、契約テスト34件、全生成・DTO読込・公開API・既存出力とhash不一致の拒否を独立確認してAPPROVED。記録は`artifacts/runtime-performance/task-2.5-20261022T160359Z/`と`artifacts/runtime-performance/review-2.5-20261023T010000Z/`。
+- 3.1: 保存DTOを維持して`AssetManifest.Load`から`LoadedAssets`へ読込み、profile・cases・binary・入力のhashを照合する。`CaseCatalog`はメソッド名の対応だけを固定し、`InputFactory`は型とbit列・little-endian配列を復元する。生成ツールは読込に要求しない。フラグOFFの新規20件失敗、ONと除去後54件成功、Release警告・エラー0。6素材15ケースの読込とmatrix全出力digest、比較条件・重複の拒否を独立確認してAPPROVED。記録は`artifacts/runtime-performance/task-3.1-20261022T162754Z/`と`artifacts/runtime-performance/review-3.1-20261023T021500Z/`。メソッド名と測定クラスの接続は後続タスクで行う。
