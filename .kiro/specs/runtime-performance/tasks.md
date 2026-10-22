@@ -89,7 +89,7 @@
   - _Requirements: 1.4, 2.4, 2.7, 3.1, 3.2_
 
 - [ ] 4. 測定設定と結果保存を実装する
-- [ ] 4.1 (P) 測定器の実行条件とexporterを固定する
+- [x] 4.1 (P) 測定器の実行条件とexporterを固定する
   - .NET10・x64・Release・Throughput・1launch、割り当て観測、Full JSON・measurement CSVを設定し、電源planの自動変更とMemoryRandomizationを無効にする。
   - pilot・warmup・反復調整は測定器へ委ね、実効Job設定、実際の反復数、outlier方針、ActualとResultを記録可能にする。
   - 単一スレッド同期処理の試走で設定とraw出力を確認し、バッチ平均と個々のInvoke遅延を区別する。保存処理の変更とは独立して進める。
@@ -342,6 +342,8 @@
   - _Requirements: 5.4, 6.8, 8.2, 8.4_
 
 ## Implementation Notes
+
+- 4.1: `BenchmarkConfig.Create`はMeasurement JobとMemoryDiagnoser・Full JSON・measurement CSVを固定し、pilot・warmup・反復調整はBDNへ委ねる。CSVの調整項目は`Default`、実際の操作数・反復数はrawに残る。試走はJSON/CSV全88行・Actual/Result各15行・子終了0・Errors空・GC/割当・電源plan維持を確認し、基準値には採用していない。Release警告・エラー0、独立レビュー全4project5,738件成功、APPROVED。記録は`artifacts/runtime-performance/task-4.1-20261022T222408Z/`と`artifacts/runtime-performance/review-4.1-20261022T223207Z/`。
 
 - 3.2: `CaseVerifier.Verify`は段階別観測を照合し、Invoke後の状態を修復しない。Instantiateの初期資源とstartは追加Invoke前に確認し、固定入力・全出力digest・数値bit列・tableの関数実体を照合する。固定素材の提供登録は`CreateImports`で毎回新規生成する。フラグOFFのRED、除去後のRelease警告・エラー0、契約テスト76件、独立レビューの全4project5,736件と15ケースの独立probe230件成功、APPROVED。検証記録は`artifacts/runtime-performance/task-3.2-20261023T040000Z/`と`artifacts/runtime-performance/review-3.2-20261022T221824Z/`。
 

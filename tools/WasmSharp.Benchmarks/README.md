@@ -15,6 +15,16 @@ dotnet run --project tests/WasmSharp.Benchmarks.Tests/WasmSharp.Benchmarks.Tests
 
 ビルドの警告・エラー0を確認してからテストを実行する。TUnit1.66.16の通常テストは、出力先にコピーしたJSONの設定fixture・保存契約・15ケースの固定値を読み、固定Jobとexporter・diagnoserの構成や独立計算した期待値を確認する。BenchmarkDotNetの起動、WABT・Clangによる素材生成、性能の合否判定は行わない。
 
+## 本測定用の設定
+
+`Measurements/BenchmarkConfig.Create()`は、同期処理用の`Measurement` Jobを.NET10・x64・Release・Throughput・1launchへ固定する。MemoryDiagnoser、Full JSON、measurement CSVを有効にし、MemoryRandomizationと電源planの自動変更を無効にする。pilot・warmup・本測定の反復数、1iterationの操作数とunrollは固定せず、BenchmarkDotNet0.15.8の自動調整を使う。現在のCLI入口は下記の短縮試走設定を使用し、この本測定設定と15ケースの接続は後続タスクで行う。
+
+各launchは新しいprocessで実行する。JIT・pilot・warmup・本測定に加え、MemoryDiagnoserによる割り当て観測用の追加反復がある。module・instanceの生成範囲と状態復元は測定ケースが定義し、設定クラスでは生成や復元を行わない。
+
+outlier方針はThroughput既定の`RemoveUpper`を明示する。Full JSONとmeasurement CSVには除外前の`Workload/Actual`と、overhead中央値の控除とoutlier処理後の`Workload/Result`を残す。rawのlaunch・iteration・mode/stage・操作数・経過nsから反復数と操作当たり時間を再確認できる。平均・中央値・標準偏差・99.9%信頼区間はバッチ反復の操作当たり平均に対する統計であり、個々のInvokeの遅延分布を表さない。Jobの表示・実効設定と実際の反復数も試走記録に残す。
+
+MemoryDiagnoserのGC総回数・操作数・割り当て量は時間測定とは別の観測区間に対応する。managed割り当ては保持量、ピーク量、nativeメモリ、guest線形メモリ内の利用量とは区別する。通常reportの丸めたbytes/opだけで割り当ての不存在を判断しない。
+
 ## Windows x64での別process試走
 
 BenchmarkDotNet0.15.8を固定し、.NET10/x64/Releaseの別processで、空moduleの公開`Decode`を実行する。1操作は1回のDecodeで、バイト列は事前に用意し、戻り値を保持する。setupで事前検証し、cleanupで最後のmoduleをValidate・Instantiateする。素材コンパイラは不要。
