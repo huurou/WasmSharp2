@@ -1,0 +1,50 @@
+{
+  "policy": {
+    "schema_version": 1, "policy_id": "fixture-policy", "created_at_utc": "2026-10-21T12:00:00+00:00",
+    "cases": [{
+      "case_id": "invoke.single", "minimum_independent_runs": 3,
+      "time": {
+        "allowed_increase": {"kind": "ratio", "fraction": 0.05},
+        "reduction_target": null,
+        "equivalence": {"decrease": {"kind": "ratio", "fraction": 0.01}, "increase": {"kind": "ratio", "fraction": 0.01}},
+        "noise": {"kind": "absolute", "difference": 0.5},
+        "run_variation": {"kind": "ratio", "fraction": 0.02}
+      },
+      "allocation": {
+        "allowed_increase": {"kind": "absolute", "difference": 1},
+        "reduction_target": {"kind": "absolute", "difference": 4},
+        "equivalence": {"decrease": {"kind": "absolute", "difference": 0}, "increase": {"kind": "absolute", "difference": 0}},
+        "noise": {"kind": "absolute", "difference": 0},
+        "run_variation": {"kind": "absolute", "difference": 0.001}
+      }
+    }]
+  },
+  "request": {
+    "baseline_run_ids": ["before-1", "before-2", "before-3"], "current_run_ids": ["after-1", "after-2", "after-3"],
+    "policy_path": "policies/before-change.json", "policy_sha256": "policy-hash", "case_ids": ["invoke.single"]
+  },
+  "report": {
+    "schema_version": 1,
+    "baseline_runs": [{"run_id": "before-1", "manifest": {"relative_path": "before-1/run.json", "sha256": "before-hash"}}],
+    "current_runs": [{"run_id": "after-1", "manifest": {"relative_path": "after-1/run.json", "sha256": "after-hash"}}],
+    "policy": {"relative_path": "policies/before-change.json", "sha256": "policy-hash"},
+    "cases": [{
+      "case_id": "invoke.single", "decision": "indeterminate", "target_achieved": false, "blocks_completion": true,
+      "reasons": [{"kind": "condition_mismatch", "description": "電源planが異なる"}, {"kind": "insufficient_measurements", "description": "独立runが不足している"}],
+      "condition_differences": [{"condition": "power.plan_id", "baseline": "plan-a", "current": "plan-b", "baseline_run_id": "before-1", "current_run_id": "after-1"}],
+      "time": {
+        "baseline": {"runs": [{"run_id": "before-1", "value": 125.25, "confidence_interval": {"lower": 124.5, "upper": 126, "level": 0.999}}], "median": 125.25, "minimum": 125.25, "maximum": 125.25},
+        "current": {"runs": [{"run_id": "after-1", "value": 124, "confidence_interval": {"lower": 123.5, "upper": 124.5, "level": 0.999}}], "median": 124, "minimum": 124, "maximum": 124},
+        "change": {"absolute_difference": -1.25, "ratio": 0.9900199600798403},
+        "decision": "equivalent", "within_allowed_increase": true, "target_achieved": false, "reasons": []
+      },
+      "allocation": {
+        "baseline": {"runs": [{"run_id": "before-1", "value": 0, "confidence_interval": null}], "median": 0, "minimum": 0, "maximum": 0},
+        "current": {"runs": [{"run_id": "after-1", "value": 0.000244140625, "confidence_interval": null}], "median": 0.000244140625, "minimum": 0.000244140625, "maximum": 0.000244140625},
+        "change": {"absolute_difference": 0.000244140625, "ratio": null},
+        "decision": "indeterminate", "within_allowed_increase": true, "target_achieved": false,
+        "reasons": [{"kind": "target_not_reached", "description": "削減目標に届かない"}]
+      }
+    }]
+  }
+}

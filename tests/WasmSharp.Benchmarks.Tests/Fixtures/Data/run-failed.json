@@ -1,0 +1,55 @@
+{
+  "run": {
+    "schema_version": 1, "run_id": "fixture-failure",
+    "started_at_utc": "2026-10-22T12:00:00+00:00", "completed_at_utc": null,
+    "kind": "smoke", "status": "incomplete",
+    "planned_case_ids": ["invoke.single", "invoke.empty", "decode.small"],
+    "cases": [
+      {
+        "case_id": "invoke.single", "status": "failed",
+        "metrics": {
+          "time": null, "time_unavailable_reason": "後検査が失敗したため採用しない",
+          "allocation": null, "allocation_unavailable_reason": "後検査が失敗したため採用しない",
+          "gc": null, "gc_unavailable_reason": "GC観測を取得できない"
+        },
+        "benchmark_report": {
+          "build_succeeded": true, "validation_succeeded": true,
+          "processes": [{"job_id": "job-1", "process_id": 4322, "exit_code": 1, "errors": ["cleanup failed"], "has_result_measurements": true, "check_file": {"relative_path": "checks/failure.json", "sha256": "failure-hash"}}]
+        },
+        "failures": [{"case_id": "invoke.single", "stage": "postcheck", "last_confirmed_stage": "execution_started", "reason": "期待値不一致", "exception_type": "System.InvalidOperationException", "message": "expected 1, actual 2", "interruption_reason": null}],
+        "raw_files": [{"relative_path": "raw/partial.csv", "sha256": "partial-hash"}]
+      },
+      {
+        "case_id": "invoke.empty", "status": "unavailable",
+        "metrics": {"time": null, "time_unavailable_reason": "結果行なし", "allocation": null, "allocation_unavailable_reason": "観測なし", "gc": null, "gc_unavailable_reason": "観測なし"},
+        "benchmark_report": null, "failures": [], "raw_files": []
+      },
+      {
+        "case_id": "decode.small", "status": "incomplete",
+        "metrics": {"time": null, "time_unavailable_reason": "未実行", "allocation": null, "allocation_unavailable_reason": "未実行", "gc": null, "gc_unavailable_reason": "未実行"},
+        "benchmark_report": null,
+        "failures": [{"case_id": "decode.small", "stage": "benchmark_process_exit", "last_confirmed_stage": "precheck", "reason": "benchmark process終了", "exception_type": null, "message": null, "interruption_reason": "processが中断された"}],
+        "raw_files": []
+      }
+    ],
+    "environment_file": null, "source_file": null, "asset_manifest_file": null, "cases_file": null, "job_settings_file": null,
+    "failures": [{"case_id": null, "stage": "benchmark_process_exit", "last_confirmed_stage": "execution_started", "reason": "予定caseが完了していない", "exception_type": null, "message": null, "interruption_reason": "利用者による中断"}]
+  },
+  "environment": null,
+  "source": {
+    "head": "fixture-head", "index_diff": {"relative_path": "source/index.patch", "sha256": "index-hash"}, "worktree_diff": {"relative_path": "source/worktree.patch", "sha256": "worktree-hash"},
+    "untracked_files": [], "submodules": [],
+    "runtime": {"revision": "runtime-revision", "sha256": "runtime-source-hash", "files": []},
+    "harness": {"revision": "harness-revision", "sha256": "harness-source-hash", "files": []},
+    "assemblies_before": [{"role": "runtime", "path": "D:/run/WasmSharp.dll", "sha256": "before-hash"}],
+    "assemblies_after": [{"role": "runtime", "path": "D:/run/WasmSharp.dll", "sha256": "after-hash"}],
+    "changes": [{"kind": "assembly", "path": "D:/run/WasmSharp.dll", "before_sha256": "before-hash", "after_sha256": "after-hash"}]
+  },
+  "checks": [{
+    "run_id": "fixture-failure", "case_id": "invoke.single", "job_id": "job-1", "process_id": 4322,
+    "precheck": {"status": "succeeded", "observations": []}, "execution_started": true,
+    "postcheck": {"status": "failed", "observations": [{"name": "result", "expected": "i32:00000001", "actual": "i32:00000002", "matches": false}]},
+    "last_confirmed_stage": "execution_started", "loaded_assemblies": [],
+    "failures": [{"case_id": "invoke.single", "stage": "postcheck", "last_confirmed_stage": "execution_started", "reason": "期待値不一致", "exception_type": "System.InvalidOperationException", "message": "expected 1, actual 2", "interruption_reason": null}]
+  }]
+}

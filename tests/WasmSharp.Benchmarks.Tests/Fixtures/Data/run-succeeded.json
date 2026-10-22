@@ -1,0 +1,102 @@
+{
+  "run": {
+    "schema_version": 1,
+    "run_id": "fixture-success",
+    "started_at_utc": "2026-10-22T12:00:00+00:00",
+    "completed_at_utc": "2026-10-22T12:01:00+00:00",
+    "kind": "measurement",
+    "status": "succeeded",
+    "planned_case_ids": ["invoke.single"],
+    "cases": [{
+      "case_id": "invoke.single",
+      "status": "succeeded",
+      "metrics": {
+        "time": {
+          "measurement_count": 12,
+          "mean_nanoseconds_per_operation": 125.25,
+          "median_nanoseconds_per_operation": 125.125,
+          "standard_deviation_nanoseconds_per_operation": 0.375,
+          "confidence_interval": {"lower": 124.5, "upper": 126, "level": 0.999},
+          "raw_measurements": {"relative_path": "raw/measurements.csv", "sha256": "measurement-hash"}
+        },
+        "time_unavailable_reason": null,
+        "allocation": {
+          "total_allocated_bytes": 1,
+          "total_operations": 4096,
+          "bytes_per_operation": 0.000244140625,
+          "displayed_bytes_per_operation": 0,
+          "rounding": {"decimal_places": 0, "midpoint_rounding": "to_even", "description": "BDN表示の整数丸め"},
+          "scope": "process_managed_allocations",
+          "iteration": "separate_from_timing"
+        },
+        "allocation_unavailable_reason": null,
+        "gc": {
+          "total_operations": 4096,
+          "gen0": {"total_collections": 2, "collections_per_thousand_operations": 0.48828125},
+          "gen1": {"total_collections": 1, "collections_per_thousand_operations": 0.244140625},
+          "gen2": {"total_collections": 0, "collections_per_thousand_operations": 0},
+          "iteration": "separate_from_timing"
+        },
+        "gc_unavailable_reason": null
+      },
+      "benchmark_report": {
+        "build_succeeded": true,
+        "validation_succeeded": true,
+        "processes": [{
+          "job_id": "job-1", "process_id": 4321, "exit_code": 0,
+          "errors": [], "has_result_measurements": true,
+          "check_file": {"relative_path": "checks/invoke.single-4321.json", "sha256": "check-hash"}
+        }]
+      },
+      "failures": [],
+      "raw_files": [{"relative_path": "raw/full.json", "sha256": "full-hash"}]
+    }],
+    "environment_file": {"relative_path": "environment.json", "sha256": "environment-hash"},
+    "source_file": {"relative_path": "source/source.json", "sha256": "source-hash"},
+    "asset_manifest_file": {"relative_path": "assets/asset-manifest.json", "sha256": "asset-hash"},
+    "cases_file": {"relative_path": "cases.json", "sha256": "cases-hash"},
+    "job_settings_file": {"relative_path": "job.json", "sha256": "job-hash"},
+    "failures": []
+  },
+  "environment": {
+    "cpu": "fixture CPU", "logical_processor_count": 8,
+    "operating_system": "Windows fixture", "os_architecture": "x64", "process_architecture": "x64",
+    "sdk_version": "10.0.402", "runtime_version": "10.0.10", "benchmark_dot_net_version": "0.15.8",
+    "build_configuration": "Release",
+    "gc_settings": [{"name": "ServerGC", "value": "false"}],
+    "jit_settings": [{"name": "TieredCompilation", "value": "true"}],
+    "environment_variables": [{"name": "DOTNET_EnableHWIntrinsic", "value": "1"}],
+    "power": {"plan_id": "fixture-plan", "plan_name": "Balanced", "power_source": "ac"},
+    "command": {"executable_path": "C:/dotnet/dotnet.exe", "arguments": ["run", "-c", "Release"], "working_directory": "D:/source/repos/WasmSharp2"},
+    "processes": [{
+      "role": "benchmark", "job_id": "job-1", "launch_count": 1,
+      "job_settings": [{"name": "Strategy", "value": "Throughput"}],
+      "runtime_configuration": [{"name": "System.GC.Server", "value": "false"}],
+      "environment_variables": [{"name": "WASMSHARP_BENCHMARK_RUN_CONFIG", "value": "D:/runs/fixture/config.json"}]
+    }]
+  },
+  "source": {
+    "head": "fixture-head",
+    "index_diff": {"relative_path": "source/index.patch", "sha256": "index-hash"},
+    "worktree_diff": {"relative_path": "source/worktree.patch", "sha256": "worktree-hash"},
+    "untracked_files": [{"relative_path": "tools/WasmSharp.Benchmarks/New.cs", "sha256": "new-source-hash"}],
+    "submodules": [{"relative_path": "thirdParties/wabt", "revision": "wabt-revision", "is_dirty": false}],
+    "runtime": {"revision": "runtime-revision", "sha256": "runtime-source-hash", "files": [{"relative_path": "src/WasmSharp/WasmModule.cs", "sha256": "module-hash"}]},
+    "harness": {"revision": "harness-revision", "sha256": "harness-source-hash", "files": [{"relative_path": "tools/WasmSharp.Benchmarks/WasmSharp.Benchmarks.csproj", "sha256": "project-hash"}]},
+    "assemblies_before": [{"role": "runtime", "path": "D:/run/WasmSharp.dll", "sha256": "assembly-hash"}],
+    "assemblies_after": [{"role": "runtime", "path": "D:/run/WasmSharp.dll", "sha256": "assembly-hash"}],
+    "changes": []
+  },
+  "checks": [{
+    "run_id": "fixture-success", "case_id": "invoke.single", "job_id": "job-1", "process_id": 4321,
+    "precheck": {"status": "succeeded", "observations": [{"name": "result", "expected": "i32:00000001", "actual": "i32:00000001", "matches": true}]},
+    "execution_started": true,
+    "postcheck": {"status": "succeeded", "observations": [{"name": "result", "expected": "i32:00000001", "actual": "i32:00000001", "matches": true}]},
+    "last_confirmed_stage": "postcheck",
+    "loaded_assemblies": [
+      {"role": "runtime", "path": "D:/run/child/WasmSharp.dll", "sha256": "loaded-runtime-hash"},
+      {"role": "harness", "path": "D:/run/child/WasmSharp.Benchmarks.dll", "sha256": "loaded-harness-hash"}
+    ],
+    "failures": []
+  }]
+}

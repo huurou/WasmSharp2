@@ -4,7 +4,7 @@
 
 基本は記載順に進める。`(P)`は依存タスク完了後に並列化できるものだけに付ける。タスク11・12は改善計画で2件目・3件目を選定した場合に実施し、選定しない場合は理由を改善計画へ残す。Validate単体、grow、バッファ再利用の検証も条件成立時だけ行い、初期15ケースや最適化方式を先に拡張しない。条件付きタスクの依存は、選定時には完了、非選定時には非該当理由の確認で成立する。
 
-- [ ] 1. 測定と契約テストの実行基盤を用意する
+- [x] 1. 測定と契約テストの実行基盤を用意する
 - [x] 1.1 測定用・テスト用プロジェクトを既存solutionへ統合する
   - 既存ツールの構成に合わせて.NET10の実行可能プロジェクトとTUnitのテストプロジェクトを追加し、ランタイムの公開APIだけを測定側から参照する。
   - BenchmarkDotNet0.15.8とTUnit1.66.16を固定し、小さい保存データfixtureを使えるテスト基盤を用意する。通常のテストへ素材コンパイラや性能測定を持ち込まない。
@@ -27,7 +27,7 @@
   - _Boundary: BenchmarkCase・CaseObservation・AssetManifest_
   - _Requirements: 1.2, 1.4, 2.6, 2.7, 3.1_
 
-- [ ] 1.4 実行・保存・比較で共有するデータ契約を定義する
+- [x] 1.4 実行・保存・比較で共有するデータ契約を定義する
   - run用途、予定ケース、ケース別成否、nullable指標と取得不能理由、process別検査、環境とsource同定を保存できる形にする。
   - 比較要求と結果、全ケースの両指標の許容幅、対象の削減目標、同等範囲、独立run数、ノイズ幅・反復間判断幅を表現し、絶対差と比率を区別する。
   - 小さい正常・失敗fixtureを往復保存して状態と数値が保たれることを確認し、後続の測定・保存・比較が使う契約を揃える。
@@ -346,3 +346,4 @@
 - 1.2: Clang21.1.8のwasm targetでは`--ld-path`が未使用になるため、`-c`でobjectを生成して明示pathの`wasm-ld`を直接起動する。固定WABTのReleaseツールとLLVM21.1.8は`artifacts/runtime-performance/task-1.2-20261022T162000Z/wabt/Release/`と`artifacts/runtime-performance/tools/clang+llvm-21.1.8-x86_64-pc-windows-msvc/bin/`へ配置した。最小WAT/CのCore2検査、版・hash、公式比較元を確認済み。独立レビューAPPROVEDと検証記録は`artifacts/runtime-performance/task-1.2-review-20261022T141156Z-146a2afe/`に保存した。
 - 1.1: BDNはリポジトリ内の同名`.csproj`を探索するため、ソース控えはzip等で保持する。試走の親process終了0だけでは成功とせず、子process終了値・実行件数・raw出力を確認する。Release警告・エラー0、全4テストprojectの5,662件成功、独立レビューAPPROVED。試走と検証記録は`artifacts/runtime-performance/task-1.1-20261022-impl/`と`artifacts/runtime-performance/task-1.1-review-20261022-231400/`に保存した。
 - 1.3: ケースと素材のJSON契約は`CaseJson.Options`でsnake_case、文字列enum、必須引数とnullable注釈の検査を共有する。入力生成・hash照合・Verifierは後続タスクで実装する。Release警告・エラー0、契約テスト16件成功、独立レビューAPPROVED。検証記録は`artifacts/runtime-performance/task-1.3-20261022T142133Z/`と`artifacts/runtime-performance/task-1.3-review-20261022T234100-7b9e6c/`に保存した。
+- 1.4: run・process検査・指標・環境/source・比較policyの保存契約を定義した。null指標には取得不能理由を持たせ、絶対差と比率を別の型で保存する。Release警告・エラー0、契約テスト22件成功、独立レビューAPPROVED。検証記録は`artifacts/runtime-performance/task-1.4-20261022T151500Z/`と`artifacts/runtime-performance/task-1.4-review-20261022T161100Z/`に保存した。
