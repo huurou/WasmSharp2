@@ -2,7 +2,7 @@
 
 WasmSharp2の公開APIを使う性能測定ツール。現在の実行入口はBenchmarkDotNetの導入確認用の試走で、性能基準値の取得には使用しない。
 
-呼び出し用の2素材・6ケースについては、[固定条件と期待値の計算](Assets/README.md)と[cases.json](Assets/cases.json)を参照する。
+固定した6素材・15ケースについては、[分類・開始状態・期待値の根拠](Assets/README.md)と[cases.json](Assets/cases.json)を参照する。素材の統合生成は利用できるが、15ケースの測定CLIと検査器は後続タスクで接続する。
 
 ## ビルドと契約テスト
 
@@ -13,7 +13,7 @@ dotnet build WasmSharp2.slnx -c Release --warnaserror
 dotnet run --project tests/WasmSharp.Benchmarks.Tests/WasmSharp.Benchmarks.Tests.csproj -c Release --no-build
 ```
 
-ビルドの警告・エラー0を確認してからテストを実行する。TUnit1.66.16の通常テストは、出力先にコピーした小さいJSONの設定fixtureを読み、固定Jobとexporter・diagnoserの構成を確認する。BenchmarkDotNetの起動、WABT・Clangによる素材生成、性能の合否判定は行わない。
+ビルドの警告・エラー0を確認してからテストを実行する。TUnit1.66.16の通常テストは、出力先にコピーしたJSONの設定fixture・保存契約・15ケースの固定値を読み、固定Jobとexporter・diagnoserの構成や独立計算した期待値を確認する。BenchmarkDotNetの起動、WABT・Clangによる素材生成、性能の合否判定は行わない。
 
 ## Windows x64での別process試走
 
@@ -38,11 +38,11 @@ dotnet run --project tools/WasmSharp.Benchmarks/WasmSharp.Benchmarks.csproj -c R
 
 `smoke.log`に子processの起動と終了0、1benchmarkの実行、MemoryDiagnoserの出力があることを確認する。`bdn/results/`の`*-report-full.json`には環境・統計・個々の測定値・Memoryが、`*-measurements.csv`には反復ごとの測定値が出力される。JSONの`BytesAllocatedPerOperation`が取得でき、CSVにも測定行があることを確認する。空moduleでもランタイムのオブジェクト生成によるmanaged割り当てが生じる。
 
-この試走は測定器の導入確認に限定する。固定15ケース、本測定用の反復条件、結果の採用判定、比較、公式適合検証は後続の実装・受入で確認する。
+この試走は測定器の導入確認に限定する。固定15ケースの本測定、反復条件、結果の採用判定、比較、公式適合検証は後続の実装・受入で確認する。
 
 ## 素材生成ツールの準備
 
-PowerShell7、Windows x64、Visual StudioのC++ビルドツールとCMakeを使う。WABTは既存DataCount修正を含む固定commit`c8dc7b6eae42b3aa3e95b9014dc02b71f8e0e1db`、Clang/LLDは21.1.8を使用する。`PATH`上の素材コンパイラは使わず、4実行ファイルを絶対pathで指定する。
+PowerShell7.5以上、Windows x64、Visual StudioのC++ビルドツールとCMakeを使う。WABTは既存DataCount修正を含む固定commit`c8dc7b6eae42b3aa3e95b9014dc02b71f8e0e1db`、Clang/LLDは21.1.8を使用する。`PATH`上の素材コンパイラは使わず、4実行ファイルを絶対pathで指定する。
 
 最初に[既存の外部ツール手順](../../thirdParties/README.md)に従って固定submoduleを用意する。次をリポジトリルートで実行し、素材生成用の`wat2wasm`とバイナリ検査用の`wasm-validate`を同じRelease構成でビルドする。`$cmake`は利用環境の実行ファイルへ合わせる。
 
@@ -73,25 +73,29 @@ $llvmBin = Join-Path $llvmRoot 'clang+llvm-21.1.8-x86_64-pc-windows-msvc/bin'
 
 WABTはApache-2.0、LLVMはApache-2.0 WITH LLVM-exceptionで配布される。取得物のライセンスと表示は各配布元のものを保持する。ツールは素材準備時にのみ使用し、通常のTUnitや測定processから起動しない。
 
-### 最小WAT/Cの変換とCore2検査
+### 6素材・15ケースの生成とCore2検査
 
 ```powershell
-$toolCheck = Join-Path (Get-Location) ('artifacts/runtime-performance/toolcheck-' + [guid]::NewGuid().ToString('N'))
+$assetSet = Join-Path (Get-Location) ('artifacts/runtime-performance/assets-' + [guid]::NewGuid().ToString('N'))
 ./tools/WasmSharp.Benchmarks/Assets/Prepare-Assets.ps1 `
     -Wat2WasmPath (Join-Path $wabtBuild 'Release/wat2wasm.exe') `
     -WasmValidatePath (Join-Path $wabtBuild 'Release/wasm-validate.exe') `
     -ClangPath (Join-Path $llvmBin 'clang.exe') `
     -WasmLdPath (Join-Path $llvmBin 'wasm-ld.exe') `
-    -OutputDirectory $toolCheck
+    -OutputDirectory $assetSet
 ```
 
-スクリプトはWABTのcheckoutとReleaseビルド条件、4ツールの版を検査する。既存の[Core2 profile](../WasmSharp.TestSuiteRunner/Corpus/core2-profile.json)を読み、既定値との差からfeature引数を得る。別のfeature一覧は定義しない。最小WATとfreestanding Cの`add`を生成し、双方を同じprofileの`wasm-validate --verbose`で検査してimport0件を確認する。
+この1コマンドでWABTのcheckoutとReleaseビルド条件、4ツールの版を確認し、5つの保存sourceと生成するlarge WATから6バイナリを作る。既存の[Core2 profile](../WasmSharp.TestSuiteRunner/Corpus/core2-profile.json)のenabled/default_enabled差分からfeature引数を得て、全素材を`wasm-validate --verbose`で検査する。importはcallsとpreparation-largeが各1件、それ以外は0件と照合する。ツール準備用のsmokeバイナリはこの集合へ含めない。
 
-Cの生成条件は`--target=wasm32-unknown-unknown -O2 -ffreestanding -nostdlib -fno-vectorize -fno-slp-vectorize -Werror -c`。Clangでobjectを作り、指定された`wasm-ld`を直接起動して`--no-entry --export=add --unresolved-symbols=report-all`でリンクする。コンパイルとリンクの引数・終了値は別々に保存する。Clang21.1.8のwasm targetでは`--ld-path`がunused警告となるため、Clangへのリンク指定で代用しない。未解決symbolを許容しない。[Clangのfreestanding条件](https://clang.llvm.org/docs/UsersManual.html#freestanding-builds)と[LLDのWebAssembly条件](https://lld.llvm.org/WebAssembly.html)も参照できる。
+Cの生成条件は`--target=wasm32-unknown-unknown -O2 -ffreestanding -nostdlib -fno-vectorize -fno-slp-vectorize -Werror -c`。Clangでobjectを作り、指定された`wasm-ld`を直接起動してmatrixとmemoryをexportし、未解決symbolを拒否する。stackを先頭64KiB、memoryを2ページに固定する。引数の全体は[sources.json](Assets/sources.json)のkernelへ保持し、コンパイルとリンクの実行引数・終了値を別々に保存する。Clang21.1.8のwasm targetでは`--ld-path`がunused警告となるため、Clangへのリンク指定で代用しない。
 
-出力には最小sourceと2バイナリ、コマンド・引数・終了値を持つ`commands.json`、各ログ、`WABT-CMakeCache.txt`を保存する。成功した場合だけ`sources.json`を保存し、4ツールの絶対path・版・SHA-256、WABTのcommit・ビルド条件、profileとsource・生成物のhashを記録する。`scope=toolchain-smoke`はツール準備の確認を表し、固定6素材のmanifestや性能測定結果として使用しない。WABTのビルドログも保持し、異なる環境での実行ファイルhash一致は前提にしない。
+出力は`wasm/`の6バイナリ、`sources/`の6source、コピーした`cases.json`・`core2-profile.json`・`NOTICE.md`・`source-definitions.json`・生成script、`commands.json`・各ログ・`WABT-CMakeCache.txt`を含む。全検査と採用済みbinary hashの照合が成功した場合だけ、既存DTO形式の`asset-manifest.json`と生成記録`sources.json`を保存する。生成記録のscopeは`runtime-performance-fixed-assets`。6素材と15ケースの分類、出典・固定版・利用条件・表示、source/tool/profile/binaryと生成引数のSHA-256を追跡できる。
 
-既存出力先は拒否する。失敗した出力はログ確認用に残り、再実行には新しい出力先を使う。この段階では公開APIによる期待値照合、固定6素材・15ケースの登録、本測定、公式全体runは未実施で、後続タスクの受入に含める。
+manifestの参照はmanifest基準の相対pathで、素材・source・profile・ケースは出力内に保存する。ツール実行ファイルはコピーせず、元のツール配置への相対pathとhashで参照する。ツール参照の再照合にはその配置が必要で、素材だけの移動後にツールを再配置しても測定素材の内容は変わらない。各生成stepの引数hashは順序を保持する文字列配列をSystem.Text.Json既定設定のコンパクトJSONへ直列化したUTF-8列のSHA-256である。`base:<HEAD>;sha256:<内容hash>`のrevisionは基点と使用内容を区別し、未コミットのsourceやscriptをHEADと同一視しない。
+
+既存出力先は拒否し、失敗時もログと中間出力を残す。再実行には必ず新しい出力先を使う。素材・入力・期待値・操作を変えたら対象ケースの`case_revision`を上げ、独立計算で固定値を見直してから新しい集合を生成する。生成処理は`cases.json`の採用hashや期待値を更新しない。旧manifest・ケース・結果は保持し、版またはhashの異なるケースを同条件の性能比較へ使わない。
+
+今回の素材採用では既存13ケースの入力・期待値・binary hashを保持し、小moduleの準備2ケースを追加した。公開APIの期待値確認はタスク2.1〜2.5の検証記録へ保存する。利用者向け`check`、15ケースの本測定・比較、最終公式全体runは後続タスクの実装・受入であり、この生成成功だけでは完了しない。
 
 ### 最終公式受入の比較元
 

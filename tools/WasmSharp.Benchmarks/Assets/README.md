@@ -1,6 +1,15 @@
 # 素材とケースの固定条件
 
-タスク2.1〜2.4で追加する6素材・13ケース。固定値は`cases.json`の既存`BenchmarkCase`形式で保持する。6素材・15ケースへの統合とmanifest生成、小moduleの準備2ケースはタスク2.5、ケース読込・公開APIの検査器はタスク3.1・3.2で接続する。
+6素材・15ケースの固定値を`cases.json`の`BenchmarkCase`形式で保持する。`sources.json`は各ケースの分類・素材の出典・利用条件とCの生成条件を保持する。生成は`Prepare-Assets.ps1`の1コマンドで全6素材を扱い、新しい出力へmanifestと15ケースを保存する。ケース読込・利用者向け公開API検査器はタスク3.1・3.2で接続する。
+
+| 素材 | ケース | 主な分類 |
+| --- | --- | --- |
+| invoke | invoke.empty / invoke.single / invoke.multi / decode.small / decode-validate.small | 結果0・1・複数、小moduleの準備 |
+| calls | loop.integer-direct / loop.float-host / loop.indirect | 整数・分岐・直接call、f64・host callback、間接call |
+| memory | memory.copy-fill | 64KiBずつのfillとcopy |
+| scan | scan.scalar / scan.simd | 同じ配列のscalar/SIMD走査 |
+| kernel | kernel.matrix | C由来の整数行列積 |
+| preparation-large | decode.large / decode-validate.large / instantiate.large | 大moduleの準備、import・リソース・segment・start |
 
 Invokeの10ケースは1回の公開Invokeを1操作とする。loopの4096回はguestの仕事量であり、操作数ではない。module・instance・export・引数・配列は計時前に準備する。invoke・callsのmemory・globalの変更はなく、tableも読み取りだけである。これらの状態復元は不要で、各Invokeは同じ引数から開始する。callsのinstanceとホスト関数はケースごとに生成する。
 
@@ -45,12 +54,7 @@ state ^= state << 5
 
 Cのunsigned積和はmod2^32で計算する。固定期待値はC#の`BigInteger`で各内積を求め、最後に下位32bitを取る独立参照計算から確定した。全1024要素で内積がuintの上限を超えるため、剰余演算を含む入力である。全4096byteのSHA-256は`bcd94ddfdd7eddddfadf4b84f7c6b7de3ed0c3768607cd53f20227cb6d53fd3c`。通常TUnitでも独立計算と`cases.json`を照合し、Wasmの観測値から期待値を更新しない。
 
-ClangとLLDは21.1.8の明示pathを指定し、コンパイルとlinkを分ける。出力先は新規ディレクトリとする。
-
-```powershell
-& $ClangPath --target=wasm32-unknown-unknown -O2 -ffreestanding -nostdlib -fno-vectorize -fno-slp-vectorize -Werror -c tools/WasmSharp.Benchmarks/Assets/sources/kernel.c -o "$OutputDirectory/kernel.o"
-& $LldPath --no-entry --export=matrix --export-memory --unresolved-symbols=report-all --stack-first -z stack-size=65536 --initial-memory=131072 --max-memory=131072 "$OutputDirectory/kernel.o" -o "$OutputDirectory/kernel.wasm"
-```
+ClangとLLDは21.1.8の明示pathを指定し、コンパイルとlinkを分ける。固定引数は`sources.json`のkernelに保持し、下記の統合生成コマンドで使用する。`--no-entry`、`--export=matrix`、`--export-memory`、`--unresolved-symbols=report-all`、`--stack-first -z stack-size=65536`、`--initial-memory=131072 --max-memory=131072`でlinkする。
 
 `wasm-validate`へは既存`core2-profile.json`のenabled/default_enabled差分だけをfeature引数として渡し、生成物を検査する。公開`InspectImports`でimport0件を確認し、`Decode→Validate→Instantiate→Invoke`で固定digest、反復前後の入力全byte、出力全byteを照合する。出力を意図的に破壊してからのInvokeでも全要素の回復を確認する。生成・検証記録は`artifacts/runtime-performance/task-2.3-20261022T152628Z/`、再生成コマンドと終了値はその`generated/commands.json`に保持する。
 
@@ -58,7 +62,7 @@ ClangとLLDは21.1.8の明示pathを指定し、コンパイルとlinkを分け�
 
 ## 大きいmoduleの準備
 
-`Prepare-Assets.ps1`が`preparation-large.wat`を新規出力先へ生成し、固定WABTで変換・Core2検査する。既存の最小WAT/C smokeも同じ実行で生成・検査する。largeの固定形状は次のとおり。
+`Prepare-Assets.ps1`が`sources/preparation-large.wat`を新規出力先へ生成し、固定WABTで変換・Core2検査する。largeの固定形状は次のとおり。
 
 | 対象 | 固定条件 |
 | --- | --- |
@@ -73,15 +77,26 @@ ClangとLLDは21.1.8の明示pathを指定し、コンパイルとlinkを分け�
 
 3ケースの`Input.Arrays`は空とし、data segmentを外部書き込みで置き換えない。`input_hash`は他のケースと同じ`CaseJson.Options`のコンパクトJSONを使う。期待値は上記の手計算と独立して作った65536byteから固定し、Wasmの結果から更新しない。
 
-リポジトリルートで、固定ツールの明示pathと存在しない出力先を指定する。
+## 小さいmoduleの準備
+
+`decode.small`と`decode-validate.small`は同じ`invoke.wasm`を事前に読み、3定義関数を含む新しいmoduleをそれぞれDecode、Decode+Validateする。1操作は新しいmodule1個で、毎回同じバイト列から開始する。Validate/Instantiate/Invokeの後検査は計時外に行い、`single(-42)`がi32のbit列`ffffffd6`を返すことを確認する。importや外部配列の書き込みは不要で、入力hashは`invoke.single`と同じである。
+
+## 全素材の再生成
+
+PowerShell7.5以上、Windows x64で、リポジトリルートから固定ツールの明示pathと存在しない出力先を指定する。ツールの取得・固定版のビルドは[測定ツールの手順](../README.md#素材生成ツールの準備)を参照する。
 
 ```powershell
-& tools/WasmSharp.Benchmarks/Assets/Prepare-Assets.ps1 `
+$assetSet = Join-Path (Get-Location) ('artifacts/runtime-performance/assets-' + [guid]::NewGuid().ToString('N'))
+./tools/WasmSharp.Benchmarks/Assets/Prepare-Assets.ps1 `
     -Wat2WasmPath $Wat2WasmPath `
     -WasmValidatePath $WasmValidatePath `
     -ClangPath $ClangPath `
     -WasmLdPath $WasmLdPath `
-    -OutputDirectory artifacts/runtime-performance/preparation-large-001
+    -OutputDirectory $assetSet
 ```
 
-`commands.json`に引数・終了値、`sources.json`に生成条件とsource/tool/profile/binaryのhashを保存する。この段階の出力はsmoke2バイナリとlarge1バイナリであり、測定6素材全体のmanifestはタスク2.5で接続する。
+出力の`wasm/`に6バイナリ、`sources/`に6sourceを保存し、`cases.json`・`core2-profile.json`・`NOTICE.md`・`source-definitions.json`・生成scriptもコピーする。生成物のCore2検査・import数・15ケースの採用binary hashを照合した後、`asset-manifest.json`と生成記録`sources.json`を保存する。`commands.json`には生成・検査の引数と終了値、各ログへの参照を保持する。toolchain smokeは測定集合へ含めない。
+
+source revisionは基点HEADと使用内容のSHA-256を別々に表す。manifest内のファイル参照はすべてmanifest基準の相対pathで、生成stepの引数hashはSystem.Text.Json既定設定による順序付き文字列配列のコンパクトUTF-8 JSONから計算する。ツール本体は元の配置への相対参照と実行ファイルhashを保持し、コピーしない。
+
+生成処理は固定期待値と採用hashを更新せず、不一致は失敗する。既存出力も拒否し、失敗時の中間出力・ログを保持する。素材・入力・期待値・操作を変更するときはケース版を更新し、新しい出力へ保存して旧manifest・旧ケース・旧結果を残す。版・hashが異なる記録を同条件として比較しない。

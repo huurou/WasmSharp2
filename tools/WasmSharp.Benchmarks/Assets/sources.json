@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "edition": 1,
+  "origin": "このリポジトリの性能測定用に作成した自作WATとfreestanding C",
+  "contains_external_code": false,
+  "usage_and_redistribution": "リポジトリの配布方針を適用する。このファイルによる追加の利用許諾はない。",
+  "required_notices": "外部コードに由来する素材の表示義務はない。WABTとLLVMのライセンス・表示は各ツール配布物に保持する。",
+  "notice": "NOTICE.md",
+  "assets": [
+    { "asset_id": "invoke", "source": "sources/invoke.wat", "kind": "wat", "import_count": 0, "case_categories": {"invoke.empty": "結果0個", "invoke.single": "結果1個", "invoke.multi": "複数結果", "decode.small": "小moduleのDecode", "decode-validate.small": "小moduleのDecode+Validate"} },
+    { "asset_id": "calls", "source": "sources/calls.wat", "kind": "wat", "import_count": 1, "case_categories": {"loop.integer-direct": "整数演算と分岐と直接call", "loop.float-host": "浮動小数点演算とhost callback", "loop.indirect": "間接call"} },
+    { "asset_id": "memory", "source": "sources/memory.wat", "kind": "wat", "import_count": 0, "case_categories": {"memory.copy-fill": "memory.copyとmemory.fill"} },
+    { "asset_id": "scan", "source": "sources/scan.wat", "kind": "wat", "import_count": 0, "case_categories": {"scan.scalar": "scalar走査", "scan.simd": "SIMD走査"} },
+    { "asset_id": "kernel", "source": "sources/kernel.c", "kind": "c", "import_count": 0, "case_categories": {"kernel.matrix": "C由来の整数行列積"} },
+    { "asset_id": "preparation-large", "source": "sources/preparation-large.wat", "kind": "generated_wat", "import_count": 1, "case_categories": {"decode.large": "大moduleのDecode", "decode-validate.large": "大moduleのDecode+Validate", "instantiate.large": "import接続とリソース生成とsegment初期化とstart"} }
+  ],
+  "kernel": {
+    "compile_arguments": ["--target=wasm32-unknown-unknown", "-O2", "-ffreestanding", "-nostdlib", "-fno-vectorize", "-fno-slp-vectorize", "-Werror", "-c"],
+    "link_arguments": ["--no-entry", "--export=matrix", "--export-memory", "--unresolved-symbols=report-all", "--stack-first", "-z", "stack-size=65536", "--initial-memory=131072", "--max-memory=131072"]
+  }
+}

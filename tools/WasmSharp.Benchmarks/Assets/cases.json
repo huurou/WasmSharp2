@@ -824,5 +824,91 @@
     },
     "state_policy": "fresh_instance",
     "comparison_group": "instantiate.large"
+  },
+  {
+    "case_id": "decode.small",
+    "case_revision": 1,
+    "asset_id": "invoke",
+    "asset_sha256": "23562335a92f5a3ec0101cf8fb153c5002107261e277e513588fa812a577ac88",
+    "measurement_stage": "decode",
+    "operation_definition": {
+      "description": "事前読込バイト列から公開Decodeで新しい小moduleを1個生成する",
+      "operations_per_invoke": 1,
+      "includes_state_restoration": false
+    },
+    "workload": [
+      {
+        "name": "defined_functions",
+        "count": 3,
+        "unit": "functions"
+      }
+    ],
+    "input": {
+      "function_export": "single",
+      "arguments": [
+        {
+          "type": "i32",
+          "bits": "ffffffd6"
+        }
+      ],
+      "arrays": []
+    },
+    "input_hash": "5fa2f5d45a92e18e69f1e2ca7156916d6f2a2a9fb34050bc60f25b72c3fbda6d",
+    "expected_result": {
+      "values": [
+        {
+          "type": "i32",
+          "bits": "ffffffd6"
+        }
+      ],
+      "arrays": [],
+      "globals": [],
+      "tables": []
+    },
+    "state_policy": "fresh_module",
+    "comparison_group": "decode.small"
+  },
+  {
+    "case_id": "decode-validate.small",
+    "case_revision": 1,
+    "asset_id": "invoke",
+    "asset_sha256": "23562335a92f5a3ec0101cf8fb153c5002107261e277e513588fa812a577ac88",
+    "measurement_stage": "decode_validate",
+    "operation_definition": {
+      "description": "事前読込バイト列から新しい小moduleをDecodeしValidateを完了する",
+      "operations_per_invoke": 1,
+      "includes_state_restoration": false
+    },
+    "workload": [
+      {
+        "name": "defined_functions",
+        "count": 3,
+        "unit": "functions"
+      }
+    ],
+    "input": {
+      "function_export": "single",
+      "arguments": [
+        {
+          "type": "i32",
+          "bits": "ffffffd6"
+        }
+      ],
+      "arrays": []
+    },
+    "input_hash": "5fa2f5d45a92e18e69f1e2ca7156916d6f2a2a9fb34050bc60f25b72c3fbda6d",
+    "expected_result": {
+      "values": [
+        {
+          "type": "i32",
+          "bits": "ffffffd6"
+        }
+      ],
+      "arrays": [],
+      "globals": [],
+      "tables": []
+    },
+    "state_policy": "fresh_module",
+    "comparison_group": "decode-validate.small"
   }
 ]

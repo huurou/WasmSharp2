@@ -34,7 +34,7 @@
   - _Boundary: RunManifest・ComparisonPolicy_
   - _Requirements: 3.2, 3.3, 4.1, 4.3, 5.1, 5.2, 6.3_
 
-- [ ] 2. 代表処理の素材と固定期待値を用意する
+- [x] 2. 代表処理の素材と固定期待値を用意する
 - [x] 2.1 短い呼び出しとループ・関数呼び出しの素材を作る
   - 結果0個・1個・複数個の呼び出しと、整数分岐・直接call、浮動小数点・host callback、間接callの素材を作る。
   - ループ回数4,096、入力、関数型、table内容、結果の型・順序・bit列を固定し、callbackに累積状態を持たせない。
@@ -64,7 +64,7 @@
   - _Boundary: 素材生成script_
   - _Requirements: 1.1, 1.2, 1.3, 2.4, 2.7, 3.1_
 
-- [ ] 2.5 6素材・15ケースを新規出力とmanifestへ統合する
+- [x] 2.5 6素材・15ケースを新規出力とmanifestへ統合する
   - 生成処理を接続し、source・tool・profile・引数・binaryのhash、出典・固定版・利用条件・必要表示を生成記録へ保存する。
   - 6バイナリと15ケースの分類、入力、期待値、操作単位、開始状態を対応付け、採用binary hashを固定する。
   - 再生成では既存の素材集合を上書きせず、変更時はケース版と旧結果を区別する。生成から固定profile検査までを準備手順のコマンドで再現できる。
@@ -351,3 +351,4 @@
 - 2.2: memoryの固定点反復に加え、別instanceで両出力を破壊してから1回のInvokeで回復することを確認した。scalar/SIMDは引数・配列・仕事量・期待値を共有するが、入力hashは関数export名を含むため異なる。Release警告・エラー0、契約テスト28件成功。独立レビューでも2素材のCore2検査と3ケース各8回の全byte・digest照合が成功しAPPROVED。記録は`artifacts/runtime-performance/task-2.2-20261022T150925Z/`と`artifacts/runtime-performance/task-2.2-review-20261022T152013Z/`に保存した。
 - 2.3: `SeededU32`はxorshift32（左13・右17・左5、更新後に格納）とし、左右seedを`0x12345678`・`0x9e3779b9`へ固定した。Clang/LLD21.1.8の明示生成、import0とCore2検査、独立BigInteger計算、公開Invoke9回の全入力保持・全出力一致・破壊出力回復を確認した。Release警告・エラー0、契約テスト30件成功、独立レビューAPPROVED。記録は`artifacts/runtime-performance/task-2.3-20261022T152628Z/`と`artifacts/runtime-performance/task-2.3-review-20261022T153519Z/`に保存した。
 - 2.4: large素材は255加算関数とstartの計256定義、64KiB data、固定tableとglobalを生成する。フラグOFFの失敗、ONと除去後の成功を確認した。Release警告・エラー0、契約テスト32件、公開インスタンス化24回と先行instance変更後の独立性21回が成功、独立レビューAPPROVED。記録は`artifacts/runtime-performance/task-2.4-20261022T154151Z/`と`artifacts/runtime-performance/task-2.4-review-20261022T155635Z/`。測定ツールREADMEの旧「2バイナリ・toolchain-smoke」表記は非阻害の指摘として2.5の全生成手順更新へ引き継ぐ。
+- 2.5: 6素材・15ケースの統合生成を接続し、既存13ケースと採用hashを保持した。manifestは出力基準の相対参照、source revisionは基点HEADと内容hashを分ける。引数hashはSystem.Text.Json既定の順序付き文字列配列のコンパクトUTF-8 JSONから求める。PowerShell7.5以上が必要。旧README表記を解消し、Release警告・エラー0、契約テスト34件、全生成・DTO読込・公開API・既存出力とhash不一致の拒否を独立確認してAPPROVED。記録は`artifacts/runtime-performance/task-2.5-20261022T160359Z/`と`artifacts/runtime-performance/review-2.5-20261023T010000Z/`。
