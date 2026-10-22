@@ -72,7 +72,7 @@
   - _Depends: 2.1, 2.2, 2.3, 2.4_
   - _Requirements: 1.1, 1.2, 1.3, 1.5, 8.4_
 
-- [ ] 3. ケース読込と正しさの照合を成立させる
+- [x] 3. ケース読込と正しさの照合を成立させる
 - [x] 3.1 固定素材と入力をケースへ対応付ける
   - 素材manifestから相対pathでバイト列を読み、hashを照合する。ケース定義を唯一の入力・期待値として使い、測定メソッドとの対応だけを別に保持する。
   - 明示型の引数、固定seedの配列、操作数・guest仕事量・状態方針を復元し、scalarとSIMDの共通入力を確認する。
@@ -81,7 +81,7 @@
   - _Depends: 2.5_
   - _Requirements: 1.2, 1.4, 1.5, 2.6, 2.7_
 
-- [ ] 3.2 公開操作の結果と反復後の状態を照合する
+- [x] 3.2 公開操作の結果と反復後の状態を照合する
   - 各段階の観測から固定期待値を照合し、Decode後の追加操作やInstantiate後のstart確認も計時外で行えるようにする。
   - Invokeの結果個数・順序・bit列、copy/fill・行列出力全体、必要なmemory・table・global状態を確認する。ケース間で可変import実体を共有しない。
   - 全15ケースの事前照合と反復後照合が成立し、意図的な不一致はケース・段階・期待・観測を持つ失敗として検出される。
@@ -342,6 +342,8 @@
   - _Requirements: 5.4, 6.8, 8.2, 8.4_
 
 ## Implementation Notes
+
+- 3.2: `CaseVerifier.Verify`は段階別観測を照合し、Invoke後の状態を修復しない。Instantiateの初期資源とstartは追加Invoke前に確認し、固定入力・全出力digest・数値bit列・tableの関数実体を照合する。固定素材の提供登録は`CreateImports`で毎回新規生成する。フラグOFFのRED、除去後のRelease警告・エラー0、契約テスト76件、独立レビューの全4project5,736件と15ケースの独立probe230件成功、APPROVED。検証記録は`artifacts/runtime-performance/task-3.2-20261023T040000Z/`と`artifacts/runtime-performance/review-3.2-20261022T221824Z/`。
 
 - 1.2: Clang21.1.8のwasm targetでは`--ld-path`が未使用になるため、`-c`でobjectを生成して明示pathの`wasm-ld`を直接起動する。固定WABTのReleaseツールとLLVM21.1.8は`artifacts/runtime-performance/task-1.2-20261022T162000Z/wabt/Release/`と`artifacts/runtime-performance/tools/clang+llvm-21.1.8-x86_64-pc-windows-msvc/bin/`へ配置した。最小WAT/CのCore2検査、版・hash、公式比較元を確認済み。独立レビューAPPROVEDと検証記録は`artifacts/runtime-performance/task-1.2-review-20261022T141156Z-146a2afe/`に保存した。
 - 1.1: BDNはリポジトリ内の同名`.csproj`を探索するため、ソース控えはzip等で保持する。試走の親process終了0だけでは成功とせず、子process終了値・実行件数・raw出力を確認する。Release警告・エラー0、全4テストprojectの5,662件成功、独立レビューAPPROVED。試走と検証記録は`artifacts/runtime-performance/task-1.1-20261022-impl/`と`artifacts/runtime-performance/task-1.1-review-20261022-231400/`に保存した。
