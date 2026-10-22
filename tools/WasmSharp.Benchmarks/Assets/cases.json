@@ -1,0 +1,263 @@
+[
+  {
+    "case_id": "invoke.empty",
+    "case_revision": 1,
+    "asset_id": "invoke",
+    "asset_sha256": "23562335a92f5a3ec0101cf8fb153c5002107261e277e513588fa812a577ac88",
+    "measurement_stage": "invoke",
+    "operation_definition": {
+      "description": "公開Invokeを1回",
+      "operations_per_invoke": 1,
+      "includes_state_restoration": false
+    },
+    "workload": [],
+    "input": {
+      "function_export": "empty",
+      "arguments": [],
+      "arrays": []
+    },
+    "input_hash": "aba2c3da18447c2f6891b02e8d3aacbe0f930fe17e697ae1ea227fd9ee7c9583",
+    "expected_result": {
+      "values": [],
+      "arrays": [],
+      "globals": [],
+      "tables": []
+    },
+    "state_policy": "read_only",
+    "comparison_group": "invoke.empty"
+  },
+  {
+    "case_id": "invoke.single",
+    "case_revision": 1,
+    "asset_id": "invoke",
+    "asset_sha256": "23562335a92f5a3ec0101cf8fb153c5002107261e277e513588fa812a577ac88",
+    "measurement_stage": "invoke",
+    "operation_definition": {
+      "description": "公開Invokeを1回",
+      "operations_per_invoke": 1,
+      "includes_state_restoration": false
+    },
+    "workload": [],
+    "input": {
+      "function_export": "single",
+      "arguments": [
+        {
+          "type": "i32",
+          "bits": "ffffffd6"
+        }
+      ],
+      "arrays": []
+    },
+    "input_hash": "5fa2f5d45a92e18e69f1e2ca7156916d6f2a2a9fb34050bc60f25b72c3fbda6d",
+    "expected_result": {
+      "values": [
+        {
+          "type": "i32",
+          "bits": "ffffffd6"
+        }
+      ],
+      "arrays": [],
+      "globals": [],
+      "tables": []
+    },
+    "state_policy": "read_only",
+    "comparison_group": "invoke.single"
+  },
+  {
+    "case_id": "invoke.multi",
+    "case_revision": 1,
+    "asset_id": "invoke",
+    "asset_sha256": "23562335a92f5a3ec0101cf8fb153c5002107261e277e513588fa812a577ac88",
+    "measurement_stage": "invoke",
+    "operation_definition": {
+      "description": "公開Invokeを1回",
+      "operations_per_invoke": 1,
+      "includes_state_restoration": false
+    },
+    "workload": [],
+    "input": {
+      "function_export": "multi",
+      "arguments": [
+        {
+          "type": "i32",
+          "bits": "89abcdef"
+        },
+        {
+          "type": "i64",
+          "bits": "fedcba9876543210"
+        },
+        {
+          "type": "f64",
+          "bits": "8000000000000000"
+        }
+      ],
+      "arrays": []
+    },
+    "input_hash": "3acfec26c2121c416b9bd98c87236825da116af3ff7c9247ad02681de7a28d05",
+    "expected_result": {
+      "values": [
+        {
+          "type": "i32",
+          "bits": "89abcdef"
+        },
+        {
+          "type": "i64",
+          "bits": "fedcba9876543210"
+        },
+        {
+          "type": "f64",
+          "bits": "8000000000000000"
+        }
+      ],
+      "arrays": [],
+      "globals": [],
+      "tables": []
+    },
+    "state_policy": "read_only",
+    "comparison_group": "invoke.multi"
+  },
+  {
+    "case_id": "loop.integer-direct",
+    "case_revision": 1,
+    "asset_id": "calls",
+    "asset_sha256": "6c9e61aea052474802b7181fd6861d57a24caac1acfa636798e8582d08f0bcc1",
+    "measurement_stage": "invoke",
+    "operation_definition": {
+      "description": "公開Invokeを1回",
+      "operations_per_invoke": 1,
+      "includes_state_restoration": false
+    },
+    "workload": [
+      {
+        "name": "guest_loop",
+        "count": 4096,
+        "unit": "iterations"
+      }
+    ],
+    "input": {
+      "function_export": "integer_direct",
+      "arguments": [
+        {
+          "type": "i32",
+          "bits": "00000011"
+        }
+      ],
+      "arrays": []
+    },
+    "input_hash": "415a5e8fc348db03b21bab186680974329dc2430aadbb7082a70d1d1f1cde14d",
+    "expected_result": {
+      "values": [
+        {
+          "type": "i32",
+          "bits": "fffff811"
+        }
+      ],
+      "arrays": [],
+      "globals": [],
+      "tables": []
+    },
+    "state_policy": "read_only",
+    "comparison_group": "loop.integer-direct"
+  },
+  {
+    "case_id": "loop.float-host",
+    "case_revision": 1,
+    "asset_id": "calls",
+    "asset_sha256": "6c9e61aea052474802b7181fd6861d57a24caac1acfa636798e8582d08f0bcc1",
+    "measurement_stage": "invoke",
+    "operation_definition": {
+      "description": "公開Invokeを1回",
+      "operations_per_invoke": 1,
+      "includes_state_restoration": false
+    },
+    "workload": [
+      {
+        "name": "guest_loop",
+        "count": 4096,
+        "unit": "iterations"
+      }
+    ],
+    "input": {
+      "function_export": "float_host",
+      "arguments": [
+        {
+          "type": "f64",
+          "bits": "3ff8000000000000"
+        }
+      ],
+      "arrays": []
+    },
+    "input_hash": "65332e9be1c84ab4ae66e81b03d3f203cb2706fff0fe8aefe61611e009c678ee",
+    "expected_result": {
+      "values": [
+        {
+          "type": "f64",
+          "bits": "414ffe00c0000000"
+        }
+      ],
+      "arrays": [],
+      "globals": [],
+      "tables": []
+    },
+    "state_policy": "read_only",
+    "comparison_group": "loop.float-host"
+  },
+  {
+    "case_id": "loop.indirect",
+    "case_revision": 1,
+    "asset_id": "calls",
+    "asset_sha256": "6c9e61aea052474802b7181fd6861d57a24caac1acfa636798e8582d08f0bcc1",
+    "measurement_stage": "invoke",
+    "operation_definition": {
+      "description": "公開Invokeを1回",
+      "operations_per_invoke": 1,
+      "includes_state_restoration": false
+    },
+    "workload": [
+      {
+        "name": "guest_loop",
+        "count": 4096,
+        "unit": "iterations"
+      }
+    ],
+    "input": {
+      "function_export": "indirect",
+      "arguments": [
+        {
+          "type": "i32",
+          "bits": "00000011"
+        }
+      ],
+      "arrays": []
+    },
+    "input_hash": "3a820fc0c210e8f062f9901449f4d43c4eee05d8979372a69a8401c2207d8e2c",
+    "expected_result": {
+      "values": [
+        {
+          "type": "i32",
+          "bits": "00002011"
+        }
+      ],
+      "arrays": [],
+      "globals": [],
+      "tables": [
+        {
+          "export_name": "functions",
+          "length": 2,
+          "elements": [
+            {
+              "index": 0,
+              "function_export": "add_one"
+            },
+            {
+              "index": 1,
+              "function_export": "add_three"
+            }
+          ]
+        }
+      ]
+    },
+    "state_policy": "read_only",
+    "comparison_group": "loop.indirect"
+  }
+]

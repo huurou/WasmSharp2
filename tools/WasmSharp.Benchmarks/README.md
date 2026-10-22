@@ -2,6 +2,8 @@
 
 WasmSharp2の公開APIを使う性能測定ツール。現在の実行入口はBenchmarkDotNetの導入確認用の試走で、性能基準値の取得には使用しない。
 
+呼び出し用の2素材・6ケースについては、[固定条件と期待値の計算](Assets/README.md)と[cases.json](Assets/cases.json)を参照する。
+
 ## ビルドと契約テスト
 
 .NET10 SDKを使い、リポジトリのルートから実行する。

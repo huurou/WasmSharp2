@@ -35,7 +35,7 @@
   - _Requirements: 3.2, 3.3, 4.1, 4.3, 5.1, 5.2, 6.3_
 
 - [ ] 2. 代表処理の素材と固定期待値を用意する
-- [ ] 2.1 短い呼び出しとループ・関数呼び出しの素材を作る
+- [x] 2.1 短い呼び出しとループ・関数呼び出しの素材を作る
   - 結果0個・1個・複数個の呼び出しと、整数分岐・直接call、浮動小数点・host callback、間接callの素材を作る。
   - ループ回数4,096、入力、関数型、table内容、結果の型・順序・bit列を固定し、callbackに累積状態を持たせない。
   - 独立した参照計算または手計算で期待値を定め、2素材を変換・検査して公開API経由の結果が一致する。
@@ -347,3 +347,4 @@
 - 1.1: BDNはリポジトリ内の同名`.csproj`を探索するため、ソース控えはzip等で保持する。試走の親process終了0だけでは成功とせず、子process終了値・実行件数・raw出力を確認する。Release警告・エラー0、全4テストprojectの5,662件成功、独立レビューAPPROVED。試走と検証記録は`artifacts/runtime-performance/task-1.1-20261022-impl/`と`artifacts/runtime-performance/task-1.1-review-20261022-231400/`に保存した。
 - 1.3: ケースと素材のJSON契約は`CaseJson.Options`でsnake_case、文字列enum、必須引数とnullable注釈の検査を共有する。入力生成・hash照合・Verifierは後続タスクで実装する。Release警告・エラー0、契約テスト16件成功、独立レビューAPPROVED。検証記録は`artifacts/runtime-performance/task-1.3-20261022T142133Z/`と`artifacts/runtime-performance/task-1.3-review-20261022T234100-7b9e6c/`に保存した。
 - 1.4: run・process検査・指標・環境/source・比較policyの保存契約を定義した。null指標には取得不能理由を持たせ、絶対差と比率を別の型で保存する。Release警告・エラー0、契約テスト22件成功、独立レビューAPPROVED。検証記録は`artifacts/runtime-performance/task-1.4-20261022T151500Z/`と`artifacts/runtime-performance/task-1.4-review-20261022T161100Z/`に保存した。
+- 2.1: `CaseInput`を`CaseJson.Options`でコンパクトJSONへ直列化したUTF-8列のSHA-256を入力hashとする。2素材・6ケースを固定し、期待値は手計算と閉形式で照合した。Release警告・エラー0、契約テスト25件成功。独立レビューでも新規出力へのCore2検査と6ケース各8回の公開Invoke照合が成功しAPPROVED。検証記録は`artifacts/runtime-performance/task-2.1-20261022T145210Z/`と`artifacts/runtime-performance/task-2.1-review-20261022T150306Z/`に保存した。

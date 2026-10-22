@@ -4,7 +4,7 @@ using WasmSharp.Benchmarks.Cases;
 
 namespace WasmSharp.Benchmarks.Tests.Cases;
 
-internal class BenchmarkCase_DeserializeTests
+internal partial class BenchmarkCase_DeserializeTests
 {
     [Test]
     public async Task 小さいケースfixtureを読む_操作と入力と固定期待値を復元する()

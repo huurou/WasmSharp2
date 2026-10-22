@@ -14,5 +14,10 @@
   <ItemGroup>
     <ProjectReference Include="..\..\tools\WasmSharp.Benchmarks\WasmSharp.Benchmarks.csproj" />
     <None Update="Fixtures\Data\**\*" CopyToOutputDirectory="PreserveNewest" />
+    <None
+      Include="..\..\tools\WasmSharp.Benchmarks\Assets\cases.json"
+      Link="Fixtures\Data\cases.json"
+      CopyToOutputDirectory="PreserveNewest"
+    />
   </ItemGroup>
 </Project>
