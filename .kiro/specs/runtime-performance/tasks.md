@@ -12,7 +12,7 @@
   - _Boundary: 測定project・テストprojectの統合_
   - _Requirements: 4.1, 5.2, 8.1_
 
-- [ ] 1.2 固定素材を生成・検査するツールを用意する
+- [x] 1.2 固定素材を生成・検査するツールを用意する
   - 既存DataCount修正を含む固定WABTから、素材生成とバイナリ検査に使う2つの実行ファイルをReleaseで用意する。公式profileは既存ファイルを読み取る。
   - Clang/LLD21.1.8の実行ファイルを指定できるようにし、版・hash・ビルド条件を確認する。PATH上に存在することを前提にしない。
   - 最小WATとfreestanding Cの変換・固定Core2 profileでの検査を実行し、生成ツールの指定方法と再実行コマンドを測定ツールの準備手順へ残す。
@@ -343,4 +343,5 @@
 
 ## Implementation Notes
 
+- 1.2: Clang21.1.8のwasm targetでは`--ld-path`が未使用になるため、`-c`でobjectを生成して明示pathの`wasm-ld`を直接起動する。固定WABTのReleaseツールとLLVM21.1.8は`artifacts/runtime-performance/task-1.2-20261022T162000Z/wabt/Release/`と`artifacts/runtime-performance/tools/clang+llvm-21.1.8-x86_64-pc-windows-msvc/bin/`へ配置した。最小WAT/CのCore2検査、版・hash、公式比較元を確認済み。独立レビューAPPROVEDと検証記録は`artifacts/runtime-performance/task-1.2-review-20261022T141156Z-146a2afe/`に保存した。
 - 1.1: BDNはリポジトリ内の同名`.csproj`を探索するため、ソース控えはzip等で保持する。試走の親process終了0だけでは成功とせず、子process終了値・実行件数・raw出力を確認する。Release警告・エラー0、全4テストprojectの5,662件成功、独立レビューAPPROVED。試走と検証記録は`artifacts/runtime-performance/task-1.1-20261022-impl/`と`artifacts/runtime-performance/task-1.1-review-20261022-231400/`に保存した。
