@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "profile": { "relative_path": "core2-profile.json", "sha256": "1111111111111111111111111111111111111111111111111111111111111111" },
+  "cases": { "relative_path": "cases.json", "sha256": "2222222222222222222222222222222222222222222222222222222222222222" },
+  "assets": [{
+    "asset_id": "fixture",
+    "binary": { "relative_path": "wasm/fixture.wasm", "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" },
+    "sources": [{
+      "relative_path": "sources/fixture.wat",
+      "revision": "fixture-revision",
+      "sha256": "3333333333333333333333333333333333333333333333333333333333333333"
+    }],
+    "generation_steps": [{
+      "tool": {
+        "name": "wat2wasm",
+        "version": "1.0.42",
+        "revision": "fixture-tool-revision",
+        "executable": { "relative_path": "tools/wat2wasm.exe", "sha256": "4444444444444444444444444444444444444444444444444444444444444444" },
+        "build_configuration": "Release"
+      },
+      "arguments": ["sources/fixture.wat", "-o", "wasm/fixture.wasm"],
+      "arguments_sha256": "5555555555555555555555555555555555555555555555555555555555555555"
+    }]
+  }]
+}

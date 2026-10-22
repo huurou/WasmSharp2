@@ -1,0 +1,50 @@
+{
+  "case_id": "fixture.invoke",
+  "case_revision": 2,
+  "asset_id": "fixture",
+  "asset_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "measurement_stage": "invoke",
+  "operation_definition": {
+    "description": "公開Invokeを1回",
+    "operations_per_invoke": 1,
+    "includes_state_restoration": false
+  },
+  "workload": [{ "name": "input", "count": 4, "unit": "elements" }],
+  "input": {
+    "function_export": "run",
+    "arguments": [
+      { "type": "i32", "bits": "ffffffff" },
+      { "type": "f64", "bits": "8000000000000000" }
+    ],
+    "arrays": [{
+      "memory_export": "memory",
+      "offset": 16,
+      "element_type": "u32",
+      "length": 4,
+      "pattern": "seeded_u32",
+      "seed": 4294967295,
+      "fill_byte": null
+    }]
+  },
+  "input_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "expected_result": {
+    "values": [
+      { "type": "i32", "bits": "ffffffff" },
+      { "type": "i64", "bits": "ffffffffffffffff" },
+      { "type": "f32", "bits": "80000000" },
+      { "type": "f64", "bits": "7ff8000000000042" }
+    ],
+    "arrays": [{
+      "memory_export": "memory",
+      "offset": 64,
+      "element_type": "u32",
+      "length": 4,
+      "hash_algorithm": "SHA-256",
+      "digest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+    }],
+    "globals": [{ "export_name": "started", "value": { "type": "i32", "bits": "00000001" } }],
+    "tables": [{ "export_name": "functions", "length": 1, "elements": [{ "index": 0, "function_export": "run" }] }]
+  },
+  "state_policy": "overwrite_output",
+  "comparison_group": "fixture.same-input"
+}

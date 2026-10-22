@@ -20,7 +20,7 @@
   - _Boundary: 素材生成script_
   - _Requirements: 1.3, 8.2, 8.4_
 
-- [ ] 1.3 素材・ケース・段階別観測の共通データを定義する
+- [x] 1.3 素材・ケース・段階別観測の共通データを定義する
   - ケース識別子と版、素材・入力hash、測定区間、操作単位、仕事量、開始状態、固定期待値、比較グループを設計どおり表現する。
   - module・instance・Invokeの観測を区別し、数値の型とbit列、配列の長さとdigestを失わずに保持する。
   - 小さいfixtureの読込で定義を復元でき、入力・期待値をケースと測定メソッドの対応表へ重複保持しないことを確認する。
@@ -345,3 +345,4 @@
 
 - 1.2: Clang21.1.8のwasm targetでは`--ld-path`が未使用になるため、`-c`でobjectを生成して明示pathの`wasm-ld`を直接起動する。固定WABTのReleaseツールとLLVM21.1.8は`artifacts/runtime-performance/task-1.2-20261022T162000Z/wabt/Release/`と`artifacts/runtime-performance/tools/clang+llvm-21.1.8-x86_64-pc-windows-msvc/bin/`へ配置した。最小WAT/CのCore2検査、版・hash、公式比較元を確認済み。独立レビューAPPROVEDと検証記録は`artifacts/runtime-performance/task-1.2-review-20261022T141156Z-146a2afe/`に保存した。
 - 1.1: BDNはリポジトリ内の同名`.csproj`を探索するため、ソース控えはzip等で保持する。試走の親process終了0だけでは成功とせず、子process終了値・実行件数・raw出力を確認する。Release警告・エラー0、全4テストprojectの5,662件成功、独立レビューAPPROVED。試走と検証記録は`artifacts/runtime-performance/task-1.1-20261022-impl/`と`artifacts/runtime-performance/task-1.1-review-20261022-231400/`に保存した。
+- 1.3: ケースと素材のJSON契約は`CaseJson.Options`でsnake_case、文字列enum、必須引数とnullable注釈の検査を共有する。入力生成・hash照合・Verifierは後続タスクで実装する。Release警告・エラー0、契約テスト16件成功、独立レビューAPPROVED。検証記録は`artifacts/runtime-performance/task-1.3-20261022T142133Z/`と`artifacts/runtime-performance/task-1.3-review-20261022T234100-7b9e6c/`に保存した。
