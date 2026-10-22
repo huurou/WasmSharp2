@@ -1,8 +1,8 @@
 # 素材とケースの固定条件
 
-タスク2.1〜2.3で追加する5素材・10ケース。固定値は`cases.json`の既存`BenchmarkCase`形式で保持する。6素材・15ケースへの統合とmanifest生成はタスク2.5、ケース読込・公開APIの検査器はタスク3.1・3.2で接続する。
+タスク2.1〜2.4で追加する6素材・13ケース。固定値は`cases.json`の既存`BenchmarkCase`形式で保持する。6素材・15ケースへの統合とmanifest生成、小moduleの準備2ケースはタスク2.5、ケース読込・公開APIの検査器はタスク3.1・3.2で接続する。
 
-全ケースは1回の公開Invokeを1操作とする。loopの4096回はguestの仕事量であり、操作数ではない。module・instance・export・引数・配列は計時前に準備する。invoke・callsのmemory・globalの変更はなく、tableも読み取りだけである。これらの状態復元は不要で、各Invokeは同じ引数から開始する。callsのinstanceとホスト関数はケースごとに生成する。
+Invokeの10ケースは1回の公開Invokeを1操作とする。loopの4096回はguestの仕事量であり、操作数ではない。module・instance・export・引数・配列は計時前に準備する。invoke・callsのmemory・globalの変更はなく、tableも読み取りだけである。これらの状態復元は不要で、各Invokeは同じ引数から開始する。callsのinstanceとホスト関数はケースごとに生成する。
 
 ## 入力と独立した期待値計算
 
@@ -55,3 +55,33 @@ ClangとLLDは21.1.8の明示pathを指定し、コンパイルとlinkを分け�
 `wasm-validate`へは既存`core2-profile.json`のenabled/default_enabled差分だけをfeature引数として渡し、生成物を検査する。公開`InspectImports`でimport0件を確認し、`Decode→Validate→Instantiate→Invoke`で固定digest、反復前後の入力全byte、出力全byteを照合する。出力を意図的に破壊してからのInvokeでも全要素の回復を確認する。生成・検証記録は`artifacts/runtime-performance/task-2.3-20261022T152628Z/`、再生成コマンドと終了値はその`generated/commands.json`に保持する。
 
 通常TUnitは同じ`cases.json`をビルド時にコピーして読み、外部compilerやBDNを起動しない。WAT/Cの変換・Core2検査と生成物の公開API照合は、素材準備時に別途行う。
+
+## 大きいmoduleの準備
+
+`Prepare-Assets.ps1`が`preparation-large.wat`を新規出力先へ生成し、固定WABTで変換・Core2検査する。既存の最小WAT/C smokeも同じ実行で生成・検査する。largeの固定形状は次のとおり。
+
+| 対象 | 固定条件 |
+| --- | --- |
+| 定義関数 | `f000`〜`f254`の255個とstart1個、計256個。importは数えない。各`fNNN: (i32) → (i32)`は`local.get 0; i32.const NNN; i32.add`で引数へ番号を加算する。`f000`、`f127`、`f254`をexportする。 |
+| import | `bench.add_one: (i32) → (i32)`の1件。hostは引数+1をmod2^32で返すstatic callbackとし、累積状態や外部リソース更新を持たない。 |
+| memory/data | `memory`は最小・最大とも1ページ。active dataはoffset0から65536byte、各byteは`i mod256`。ホストによる初期入力の書き込みは不要。 |
+| table/element | `functions`は`funcref`、最小・最大とも4要素。active elementがindex0〜2へ同じinstanceの`f000`、`f127`、`f254`を設定し、index3はnull。 |
+| global/start | immutable i32の`seed`は41。mutable i32の`start_result`の初期値は-1。startは`global.get seed; call add_one; global.set start_result`を実行し、自instanceの値を42へ設定する。 |
+| 後検査Invoke | `f254(17)`の結果は`17+254=271`（`0000010f`）。全dataのdigest、table参照、globalも照合する。 |
+
+`decode.large`は事前読込バイト列から毎回新しいmoduleをDecodeし、`decode-validate.large`はさらにValidateまでを1操作とする。`instantiate.large`は検証済みmoduleから毎回新しいinstanceを生成し、import接続・リソース生成・segment初期化・start完了を1操作とする。状態復元は不要で、ケース間で可変リソースを共有しない。Decode後のValidate/Instantiate/Invoke、Decode+Validate後のInstantiate/Invoke、Instantiate後のリソースとInvokeの照合は計時外へ置く。
+
+3ケースの`Input.Arrays`は空とし、data segmentを外部書き込みで置き換えない。`input_hash`は他のケースと同じ`CaseJson.Options`のコンパクトJSONを使う。期待値は上記の手計算と独立して作った65536byteから固定し、Wasmの結果から更新しない。
+
+リポジトリルートで、固定ツールの明示pathと存在しない出力先を指定する。
+
+```powershell
+& tools/WasmSharp.Benchmarks/Assets/Prepare-Assets.ps1 `
+    -Wat2WasmPath $Wat2WasmPath `
+    -WasmValidatePath $WasmValidatePath `
+    -ClangPath $ClangPath `
+    -WasmLdPath $WasmLdPath `
+    -OutputDirectory artifacts/runtime-performance/preparation-large-001
+```
+
+`commands.json`に引数・終了値、`sources.json`に生成条件とsource/tool/profile/binaryのhashを保存する。この段階の出力はsmoke2バイナリとlarge1バイナリであり、測定6素材全体のmanifestはタスク2.5で接続する。

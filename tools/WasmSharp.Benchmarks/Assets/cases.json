@@ -539,5 +539,290 @@
     },
     "state_policy": "overwrite_output",
     "comparison_group": "kernel.matrix-u32"
+  },
+  {
+    "case_id": "decode.large",
+    "case_revision": 1,
+    "asset_id": "preparation-large",
+    "asset_sha256": "d721a8adab3cb00e37def752d6493196c9a8c3f307b62aa8a67cdb4f8fd91f3b",
+    "measurement_stage": "decode",
+    "operation_definition": {
+      "description": "事前読込バイト列から新しいmoduleをDecodeする公開操作1回",
+      "includes_state_restoration": false,
+      "operations_per_invoke": 1
+    },
+    "workload": [
+      {
+        "unit": "functions",
+        "count": 256,
+        "name": "defined_functions"
+      },
+      {
+        "unit": "bytes",
+        "count": 65536,
+        "name": "data"
+      }
+    ],
+    "input": {
+      "function_export": "f254",
+      "arguments": [
+        {
+          "type": "i32",
+          "bits": "00000011"
+        }
+      ],
+      "arrays": []
+    },
+    "input_hash": "b8a7961680dc15e924bbfcd7426e88c6df3644f509a89f4439f6e2c73d51bbf1",
+    "expected_result": {
+      "values": [
+        {
+          "bits": "0000010f",
+          "type": "i32"
+        }
+      ],
+      "arrays": [
+        {
+          "memory_export": "memory",
+          "offset": 0,
+          "element_type": "u8",
+          "length": 65536,
+          "hash_algorithm": "sha256",
+          "digest": "7daca2095d0438260fa849183dfc67faa459fdf4936e1bc91eec6b281b27e4c2"
+        }
+      ],
+      "globals": [
+        {
+          "value": {
+            "bits": "00000029",
+            "type": "i32"
+          },
+          "export_name": "seed"
+        },
+        {
+          "value": {
+            "bits": "0000002a",
+            "type": "i32"
+          },
+          "export_name": "start_result"
+        }
+      ],
+      "tables": [
+        {
+          "export_name": "functions",
+          "length": 4,
+          "elements": [
+            {
+              "function_export": "f000",
+              "index": 0
+            },
+            {
+              "function_export": "f127",
+              "index": 1
+            },
+            {
+              "function_export": "f254",
+              "index": 2
+            },
+            {
+              "function_export": null,
+              "index": 3
+            }
+          ]
+        }
+      ]
+    },
+    "state_policy": "fresh_module",
+    "comparison_group": "decode.large"
+  },
+  {
+    "case_id": "decode-validate.large",
+    "case_revision": 1,
+    "asset_id": "preparation-large",
+    "asset_sha256": "d721a8adab3cb00e37def752d6493196c9a8c3f307b62aa8a67cdb4f8fd91f3b",
+    "measurement_stage": "decode_validate",
+    "operation_definition": {
+      "description": "事前読込バイト列から新しいmoduleをDecodeしValidateする一連の公開操作1回",
+      "includes_state_restoration": false,
+      "operations_per_invoke": 1
+    },
+    "workload": [
+      {
+        "unit": "functions",
+        "count": 256,
+        "name": "defined_functions"
+      },
+      {
+        "unit": "bytes",
+        "count": 65536,
+        "name": "data"
+      }
+    ],
+    "input": {
+      "function_export": "f254",
+      "arguments": [
+        {
+          "type": "i32",
+          "bits": "00000011"
+        }
+      ],
+      "arrays": []
+    },
+    "input_hash": "b8a7961680dc15e924bbfcd7426e88c6df3644f509a89f4439f6e2c73d51bbf1",
+    "expected_result": {
+      "values": [
+        {
+          "bits": "0000010f",
+          "type": "i32"
+        }
+      ],
+      "arrays": [
+        {
+          "memory_export": "memory",
+          "offset": 0,
+          "element_type": "u8",
+          "length": 65536,
+          "hash_algorithm": "sha256",
+          "digest": "7daca2095d0438260fa849183dfc67faa459fdf4936e1bc91eec6b281b27e4c2"
+        }
+      ],
+      "globals": [
+        {
+          "value": {
+            "bits": "00000029",
+            "type": "i32"
+          },
+          "export_name": "seed"
+        },
+        {
+          "value": {
+            "bits": "0000002a",
+            "type": "i32"
+          },
+          "export_name": "start_result"
+        }
+      ],
+      "tables": [
+        {
+          "export_name": "functions",
+          "length": 4,
+          "elements": [
+            {
+              "function_export": "f000",
+              "index": 0
+            },
+            {
+              "function_export": "f127",
+              "index": 1
+            },
+            {
+              "function_export": "f254",
+              "index": 2
+            },
+            {
+              "function_export": null,
+              "index": 3
+            }
+          ]
+        }
+      ]
+    },
+    "state_policy": "fresh_module",
+    "comparison_group": "decode-validate.large"
+  },
+  {
+    "case_id": "instantiate.large",
+    "case_revision": 1,
+    "asset_id": "preparation-large",
+    "asset_sha256": "d721a8adab3cb00e37def752d6493196c9a8c3f307b62aa8a67cdb4f8fd91f3b",
+    "measurement_stage": "instantiate",
+    "operation_definition": {
+      "description": "検証済みmoduleからimport接続・リソース生成・segment初期化・startを含む公開Instantiate1回",
+      "includes_state_restoration": false,
+      "operations_per_invoke": 1
+    },
+    "workload": [
+      {
+        "unit": "functions",
+        "count": 256,
+        "name": "defined_functions"
+      },
+      {
+        "unit": "bytes",
+        "count": 65536,
+        "name": "data"
+      }
+    ],
+    "input": {
+      "function_export": "f254",
+      "arguments": [
+        {
+          "type": "i32",
+          "bits": "00000011"
+        }
+      ],
+      "arrays": []
+    },
+    "input_hash": "b8a7961680dc15e924bbfcd7426e88c6df3644f509a89f4439f6e2c73d51bbf1",
+    "expected_result": {
+      "values": [
+        {
+          "bits": "0000010f",
+          "type": "i32"
+        }
+      ],
+      "arrays": [
+        {
+          "memory_export": "memory",
+          "offset": 0,
+          "element_type": "u8",
+          "length": 65536,
+          "hash_algorithm": "sha256",
+          "digest": "7daca2095d0438260fa849183dfc67faa459fdf4936e1bc91eec6b281b27e4c2"
+        }
+      ],
+      "globals": [
+        {
+          "value": {
+            "bits": "00000029",
+            "type": "i32"
+          },
+          "export_name": "seed"
+        },
+        {
+          "value": {
+            "bits": "0000002a",
+            "type": "i32"
+          },
+          "export_name": "start_result"
+        }
+      ],
+      "tables": [
+        {
+          "export_name": "functions",
+          "length": 4,
+          "elements": [
+            {
+              "function_export": "f000",
+              "index": 0
+            },
+            {
+              "function_export": "f127",
+              "index": 1
+            },
+            {
+              "function_export": "f254",
+              "index": 2
+            },
+            {
+              "function_export": null,
+              "index": 3
+            }
+          ]
+        }
+      ]
+    },
+    "state_policy": "fresh_instance",
+    "comparison_group": "instantiate.large"
   }
 ]

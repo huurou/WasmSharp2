@@ -57,7 +57,7 @@
   - _Boundary: 固定素材とケース_
   - _Requirements: 1.1, 1.2, 1.3, 2.7, 3.1_
 
-- [ ] 2.4 準備段階を代表する大きいmoduleを生成する
+- [x] 2.4 準備段階を代表する大きいmoduleを生成する
   - 256定義関数と64KiB dataを持つ素材を生成し、関数形状、data・element内容、import、memory・table・global、start結果を固定する。
   - startは自instanceだけを更新し、提供するhost関数は累積副作用を持たないようにする。
   - 変換・固定profile検査後、公開APIによるインスタンス化でリソース初期状態とstart結果を確認できる。
@@ -350,3 +350,4 @@
 - 2.1: `CaseInput`を`CaseJson.Options`でコンパクトJSONへ直列化したUTF-8列のSHA-256を入力hashとする。2素材・6ケースを固定し、期待値は手計算と閉形式で照合した。Release警告・エラー0、契約テスト25件成功。独立レビューでも新規出力へのCore2検査と6ケース各8回の公開Invoke照合が成功しAPPROVED。検証記録は`artifacts/runtime-performance/task-2.1-20261022T145210Z/`と`artifacts/runtime-performance/task-2.1-review-20261022T150306Z/`に保存した。
 - 2.2: memoryの固定点反復に加え、別instanceで両出力を破壊してから1回のInvokeで回復することを確認した。scalar/SIMDは引数・配列・仕事量・期待値を共有するが、入力hashは関数export名を含むため異なる。Release警告・エラー0、契約テスト28件成功。独立レビューでも2素材のCore2検査と3ケース各8回の全byte・digest照合が成功しAPPROVED。記録は`artifacts/runtime-performance/task-2.2-20261022T150925Z/`と`artifacts/runtime-performance/task-2.2-review-20261022T152013Z/`に保存した。
 - 2.3: `SeededU32`はxorshift32（左13・右17・左5、更新後に格納）とし、左右seedを`0x12345678`・`0x9e3779b9`へ固定した。Clang/LLD21.1.8の明示生成、import0とCore2検査、独立BigInteger計算、公開Invoke9回の全入力保持・全出力一致・破壊出力回復を確認した。Release警告・エラー0、契約テスト30件成功、独立レビューAPPROVED。記録は`artifacts/runtime-performance/task-2.3-20261022T152628Z/`と`artifacts/runtime-performance/task-2.3-review-20261022T153519Z/`に保存した。
+- 2.4: large素材は255加算関数とstartの計256定義、64KiB data、固定tableとglobalを生成する。フラグOFFの失敗、ONと除去後の成功を確認した。Release警告・エラー0、契約テスト32件、公開インスタンス化24回と先行instance変更後の独立性21回が成功、独立レビューAPPROVED。記録は`artifacts/runtime-performance/task-2.4-20261022T154151Z/`と`artifacts/runtime-performance/task-2.4-review-20261022T155635Z/`。測定ツールREADMEの旧「2バイナリ・toolchain-smoke」表記は非阻害の指摘として2.5の全生成手順更新へ引き継ぐ。
