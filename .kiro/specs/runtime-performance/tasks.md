@@ -43,7 +43,7 @@
   - _Depends: 1.2, 1.3_
   - _Requirements: 1.1, 1.2, 1.3, 2.6, 2.7, 3.1_
 
-- [ ] 2.2 memory転送とscalar・SIMD走査の素材を作る
+- [x] 2.2 memory転送とscalar・SIMD走査の素材を作る
   - 固定の入力領域と出力領域で64KiBのfillとcopyを各1回行い、前後で同じ状態となる素材を作る。
   - 同じ16,384個のu32入力をscalarとSIMDで走査し、仕事量と期待値2,088,960を対応付ける。
   - 2素材を変換・検査し、反復後の出力全体と走査結果が固定値に一致する。期待値はWasmの観測結果から生成しない。
@@ -348,3 +348,4 @@
 - 1.3: ケースと素材のJSON契約は`CaseJson.Options`でsnake_case、文字列enum、必須引数とnullable注釈の検査を共有する。入力生成・hash照合・Verifierは後続タスクで実装する。Release警告・エラー0、契約テスト16件成功、独立レビューAPPROVED。検証記録は`artifacts/runtime-performance/task-1.3-20261022T142133Z/`と`artifacts/runtime-performance/task-1.3-review-20261022T234100-7b9e6c/`に保存した。
 - 1.4: run・process検査・指標・環境/source・比較policyの保存契約を定義した。null指標には取得不能理由を持たせ、絶対差と比率を別の型で保存する。Release警告・エラー0、契約テスト22件成功、独立レビューAPPROVED。検証記録は`artifacts/runtime-performance/task-1.4-20261022T151500Z/`と`artifacts/runtime-performance/task-1.4-review-20261022T161100Z/`に保存した。
 - 2.1: `CaseInput`を`CaseJson.Options`でコンパクトJSONへ直列化したUTF-8列のSHA-256を入力hashとする。2素材・6ケースを固定し、期待値は手計算と閉形式で照合した。Release警告・エラー0、契約テスト25件成功。独立レビューでも新規出力へのCore2検査と6ケース各8回の公開Invoke照合が成功しAPPROVED。検証記録は`artifacts/runtime-performance/task-2.1-20261022T145210Z/`と`artifacts/runtime-performance/task-2.1-review-20261022T150306Z/`に保存した。
+- 2.2: memoryの固定点反復に加え、別instanceで両出力を破壊してから1回のInvokeで回復することを確認した。scalar/SIMDは引数・配列・仕事量・期待値を共有するが、入力hashは関数export名を含むため異なる。Release警告・エラー0、契約テスト28件成功。独立レビューでも2素材のCore2検査と3ケース各8回の全byte・digest照合が成功しAPPROVED。記録は`artifacts/runtime-performance/task-2.2-20261022T150925Z/`と`artifacts/runtime-performance/task-2.2-review-20261022T152013Z/`に保存した。

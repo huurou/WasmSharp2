@@ -259,5 +259,215 @@
     },
     "state_policy": "read_only",
     "comparison_group": "loop.indirect"
+  },
+  {
+    "case_id": "memory.copy-fill",
+    "case_revision": 1,
+    "asset_id": "memory",
+    "asset_sha256": "62feea1ac385129cd6cad5bef23567ea63a1ce4f2b18ab9749ffac35ca2469dd",
+    "measurement_stage": "invoke",
+    "operation_definition": {
+      "description": "公開Invokeを1回",
+      "operations_per_invoke": 1,
+      "includes_state_restoration": false
+    },
+    "workload": [
+      {
+        "name": "fill",
+        "count": 65536,
+        "unit": "bytes"
+      },
+      {
+        "name": "copy",
+        "count": 65536,
+        "unit": "bytes"
+      }
+    ],
+    "input": {
+      "function_export": "copy_fill",
+      "arguments": [],
+      "arrays": [
+        {
+          "memory_export": "memory",
+          "offset": 0,
+          "element_type": "u8",
+          "length": 65536,
+          "pattern": "index_modulo256",
+          "seed": null,
+          "fill_byte": null
+        },
+        {
+          "memory_export": "memory",
+          "offset": 65536,
+          "element_type": "u8",
+          "length": 65536,
+          "pattern": "repeated_byte",
+          "seed": null,
+          "fill_byte": 165
+        },
+        {
+          "memory_export": "memory",
+          "offset": 131072,
+          "element_type": "u8",
+          "length": 65536,
+          "pattern": "index_modulo256",
+          "seed": null,
+          "fill_byte": null
+        }
+      ]
+    },
+    "input_hash": "24a376d6f05e12183e519fcefb6c275b623f502cd8e08879d457e626b303a1bf",
+    "expected_result": {
+      "values": [
+        {
+          "type": "i32",
+          "bits": "000001a4"
+        }
+      ],
+      "arrays": [
+        {
+          "memory_export": "memory",
+          "offset": 0,
+          "element_type": "u8",
+          "length": 65536,
+          "hash_algorithm": "sha256",
+          "digest": "7daca2095d0438260fa849183dfc67faa459fdf4936e1bc91eec6b281b27e4c2"
+        },
+        {
+          "memory_export": "memory",
+          "offset": 65536,
+          "element_type": "u8",
+          "length": 65536,
+          "hash_algorithm": "sha256",
+          "digest": "77007cd74a06dc54e5114d01a41d2721679d5668a0c20022fe102c87ad4d65b8"
+        },
+        {
+          "memory_export": "memory",
+          "offset": 131072,
+          "element_type": "u8",
+          "length": 65536,
+          "hash_algorithm": "sha256",
+          "digest": "7daca2095d0438260fa849183dfc67faa459fdf4936e1bc91eec6b281b27e4c2"
+        }
+      ],
+      "globals": [],
+      "tables": []
+    },
+    "state_policy": "fixed_point",
+    "comparison_group": "memory.copy-fill"
+  },
+  {
+    "case_id": "scan.scalar",
+    "case_revision": 1,
+    "asset_id": "scan",
+    "asset_sha256": "0d7ecabe8e14f74082523efc309d9439a96725ccfc764bc2bb39ef8bbf8cd258",
+    "measurement_stage": "invoke",
+    "operation_definition": {
+      "description": "公開Invokeを1回",
+      "operations_per_invoke": 1,
+      "includes_state_restoration": false
+    },
+    "workload": [
+      {
+        "name": "scan",
+        "count": 16384,
+        "unit": "elements"
+      }
+    ],
+    "input": {
+      "function_export": "scalar",
+      "arguments": [],
+      "arrays": [
+        {
+          "memory_export": "memory",
+          "offset": 0,
+          "element_type": "u32",
+          "length": 16384,
+          "pattern": "index_modulo256",
+          "seed": null,
+          "fill_byte": null
+        }
+      ]
+    },
+    "input_hash": "55a71f9b13612a25c4caad55e2081f78db0ac03fb428f7fcd10395a916ebc945",
+    "expected_result": {
+      "values": [
+        {
+          "type": "i32",
+          "bits": "001fe000"
+        }
+      ],
+      "arrays": [
+        {
+          "memory_export": "memory",
+          "offset": 0,
+          "element_type": "u32",
+          "length": 16384,
+          "hash_algorithm": "sha256",
+          "digest": "c8e233312b3ae2deb6458f8c06afb8b52ecc48ee34ea81ea3c86cdb34e4e817c"
+        }
+      ],
+      "globals": [],
+      "tables": []
+    },
+    "state_policy": "read_only",
+    "comparison_group": "scan.sum-u32"
+  },
+  {
+    "case_id": "scan.simd",
+    "case_revision": 1,
+    "asset_id": "scan",
+    "asset_sha256": "0d7ecabe8e14f74082523efc309d9439a96725ccfc764bc2bb39ef8bbf8cd258",
+    "measurement_stage": "invoke",
+    "operation_definition": {
+      "description": "公開Invokeを1回",
+      "operations_per_invoke": 1,
+      "includes_state_restoration": false
+    },
+    "workload": [
+      {
+        "name": "scan",
+        "count": 16384,
+        "unit": "elements"
+      }
+    ],
+    "input": {
+      "function_export": "simd",
+      "arguments": [],
+      "arrays": [
+        {
+          "memory_export": "memory",
+          "offset": 0,
+          "element_type": "u32",
+          "length": 16384,
+          "pattern": "index_modulo256",
+          "seed": null,
+          "fill_byte": null
+        }
+      ]
+    },
+    "input_hash": "d2fb003efcb215e70e6fe992ba9d10b69407d1cffa03abdd9a79dad5341465e5",
+    "expected_result": {
+      "values": [
+        {
+          "type": "i32",
+          "bits": "001fe000"
+        }
+      ],
+      "arrays": [
+        {
+          "memory_export": "memory",
+          "offset": 0,
+          "element_type": "u32",
+          "length": 16384,
+          "hash_algorithm": "sha256",
+          "digest": "c8e233312b3ae2deb6458f8c06afb8b52ecc48ee34ea81ea3c86cdb34e4e817c"
+        }
+      ],
+      "globals": [],
+      "tables": []
+    },
+    "state_policy": "read_only",
+    "comparison_group": "scan.sum-u32"
   }
 ]
