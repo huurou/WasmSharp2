@@ -97,7 +97,7 @@
   - _Depends: 1.1, 1.4, 3.2_
   - _Requirements: 2.1, 4.2, 5.3_
 
-- [ ] 4.2 (P) 新規runの保存と未完了読込を実装する
+- [x] 4.2 (P) 新規runの保存と未完了読込を実装する
   - 予定ケースと実行中状態を新規出力へ保存し、当該run内のraw・検査・条件を対応付けて最後に完了を確定する。
   - 既存出力を拒否し、途中終了や保存失敗のrunは読込時にも未完了のままとする。性能基準値と公式baselineを分ける。
   - 小さいfixtureで上書き拒否、rawとケースの対応、未完了の保持を確認できる。測定設定の変更とは別の境界だけを扱う。
@@ -342,6 +342,8 @@
   - _Requirements: 5.4, 6.8, 8.2, 8.4_
 
 ## Implementation Notes
+
+- 4.2: `RunStore`は新規runをIncompleteで保存し、条件・raw・process検査とcase結果を対応付けて最後に完了を確定する。`RunSource.IndexDiff/WorktreeDiff/UntrackedFiles`も保存参照として存在/hashを照合し、未追跡コピーはrun直下からリポジトリ相対構造を保つ。`SourceSet.Files`とassemblyの観測pathはこの照合へ含めない。process検査は段階別snapshotを追記し、保存後のDTO一覧を所有する。Release警告・エラー0、契約113件、独立レビュー全4project5,773件成功、APPROVED。記録は`artifacts/runtime-performance/task-4.2-20261022T223812Z/`、`task-4.2-fix1-20261022T230001Z/`、`review-4.2-r2-20261022T230545Z/`。保存失敗テストのUnix分岐は未実行。
 
 - 4.1: `BenchmarkConfig.Create`はMeasurement JobとMemoryDiagnoser・Full JSON・measurement CSVを固定し、pilot・warmup・反復調整はBDNへ委ねる。CSVの調整項目は`Default`、実際の操作数・反復数はrawに残る。試走はJSON/CSV全88行・Actual/Result各15行・子終了0・Errors空・GC/割当・電源plan維持を確認し、基準値には採用していない。Release警告・エラー0、独立レビュー全4project5,738件成功、APPROVED。記録は`artifacts/runtime-performance/task-4.1-20261022T222408Z/`と`artifacts/runtime-performance/review-4.1-20261022T223207Z/`。
 
