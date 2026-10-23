@@ -105,8 +105,7 @@ internal static class BenchmarkRun
     }
 
     /// <summary>
-    /// 記録済みの設定でBDNを起動し、processの観測とrawを未完了runへ保存する
-    /// 指標を採取しても、成功の確定は後続の採用判定で行う
+    /// 記録済みの設定でBDNを起動し、観測・検査・保存が揃った結果を確定する
     /// </summary>
     internal static RunManifest Run(RunRequest request)
     {
@@ -178,6 +177,7 @@ internal static class BenchmarkRun
             {
                 CaptureSourceAfter(request.RepositoryDirectory, prepared.Store, source);
             }
+            stage = RunStage.Saving;
             SaveReports(request, prepared, summaries);
         }
         catch (Exception exception)
@@ -199,7 +199,7 @@ internal static class BenchmarkRun
     }
 
     /// <summary>
-    /// BDNの観測を予定caseと対応付け、成功確定前の結果を保存する
+    /// BDNの観測を予定caseと対応付け、採用判定後に保存全体の完了を確認する
     /// </summary>
     internal static void SaveReports(
         RunRequest request,
@@ -207,6 +207,7 @@ internal static class BenchmarkRun
         IEnumerable<Summary> summaries
     )
     {
+        var summaryList = summaries.ToList();
         var rawDirectory = Path.Combine(request.OutputDirectory, "raw");
         var raw = Directory.Exists(rawDirectory)
             ? Directory
@@ -217,9 +218,10 @@ internal static class BenchmarkRun
                 ))
                 .ToList()
             : [];
+        var results = new List<CaseRunResult>();
         foreach (var caseId in request.CaseIds)
         {
-            var reports = summaries
+            var reports = summaryList
                 .SelectMany(x => x.Reports)
                 .Where(x =>
                     CaseCatalog.GetCaseId(
@@ -229,61 +231,215 @@ internal static class BenchmarkRun
                     ) == caseId
                 )
                 .ToList();
-            var processes = prepared
-                .Jobs.SelectMany(job =>
-                    AttachChecks(
-                        request.OutputDirectory,
-                        prepared.RunId,
-                        caseId,
-                        job.Id,
-                        reports
-                            .Where(x => x.BenchmarkCase.Job.Id == job.Id)
-                            .SelectMany(x => x.ExecuteResults)
-                            .Select(x => new BenchmarkProcessResult(
-                                job.Id,
-                                x.ProcessId,
-                                x.ExitCode,
-                                x.Errors.ToList(),
-                                x.Measurements.Any(y => y.IterationStage == IterationStage.Result),
-                                null
-                            ))
-                    )
+            var result = CaptureCase(request, prepared, summaryList, caseId, reports, raw);
+            prepared.Store.SaveCase(result);
+            results.Add(result);
+        }
+        if (results.All(x => x.Status != ResultStatus.Incomplete))
+        {
+            var status =
+                results.Any(x => x.Status == ResultStatus.Failed) ? ResultStatus.Failed
+                : results.Any(x => x.Status == ResultStatus.Unavailable) ? ResultStatus.Unavailable
+                : ResultStatus.Succeeded;
+            prepared.Store.Complete(status, results.SelectMany(x => x.Failures).ToList());
+        }
+    }
+
+    private static CaseRunResult CaptureCase(
+        RunRequest request,
+        PreparedRun prepared,
+        List<Summary> summaries,
+        string caseId,
+        List<BenchmarkReport> reports,
+        List<ManifestFile> raw
+    )
+    {
+        var processes = prepared
+            .Jobs.SelectMany(job =>
+                AttachChecks(
+                    request.OutputDirectory,
+                    prepared.RunId,
+                    caseId,
+                    job.Id,
+                    reports
+                        .Where(x => x.BenchmarkCase.Job.Id == job.Id)
+                        .SelectMany(x => x.ExecuteResults)
+                        .Select(x => new BenchmarkProcessResult(
+                            job.Id,
+                            x.ProcessId,
+                            x.ExitCode,
+                            x.Errors.ToList(),
+                            x.Measurements.Any(y =>
+                                y.IterationMode == IterationMode.Workload
+                                && y.IterationStage == IterationStage.Result
+                                && y.Operations > 0
+                            ),
+                            null
+                        ))
                 )
-                .ToList();
-            var checkFailures = processes
-                .Select(x => LatestCheck(request.OutputDirectory, x.CheckFile))
-                .Where(x => x is not null)
-                .SelectMany(x => x!.Failures)
-                .ToList();
-            var failures = processes
-                .Where(x => x.ExitCode != 0 || x.Errors.Count > 0)
-                .Select(x => new RunFailure(
-                    caseId,
-                    RunStage.BenchmarkProcessExit,
-                    LatestCheck(request.OutputDirectory, x.CheckFile)?.LastConfirmedStage,
-                    "benchmark processの終了または診断processの観測が未完了です。",
-                    null,
-                    string.Join(Environment.NewLine, x.Errors),
-                    "終了値=" + x.ExitCode
-                ))
-                .Concat(checkFailures)
-                .ToList();
-            var metrics = CaptureMetrics(prepared.Store, reports);
-            prepared.Store.SaveCase(
-                new(
-                    caseId,
-                    checkFailures.Count > 0 ? ResultStatus.Failed : ResultStatus.Incomplete,
-                    metrics.Metrics,
-                    new(
-                        reports.Count > 0 && reports.All(x => x.BuildResult.IsBuildSuccess),
-                        summaries.All(x => !x.HasCriticalValidationErrors),
-                        processes
-                    ),
-                    failures,
-                    metrics.Measurements is null ? raw.ToList() : [.. raw, metrics.Measurements]
+            )
+            .ToList();
+        var metrics = CaptureMetrics(prepared.Store, reports);
+        var result = new CaseRunResult(
+            caseId,
+            ResultStatus.Incomplete,
+            metrics.Metrics,
+            new(
+                reports.Count > 0 && reports.All(x => x.BuildResult.IsBuildSuccess),
+                summaries.All(x => !x.HasCriticalValidationErrors),
+                processes
+            ),
+            [],
+            metrics.Measurements is null ? raw.ToList() : [.. raw, metrics.Measurements]
+        );
+        return EvaluateCase(request, prepared, summaries, reports, result);
+    }
+
+    private static CaseRunResult EvaluateCase(
+        RunRequest request,
+        PreparedRun prepared,
+        List<Summary> summaries,
+        List<BenchmarkReport> reports,
+        CaseRunResult result
+    )
+    {
+        var failures = new List<RunFailure>();
+        var failed = false;
+        var incomplete = false;
+        void AddFailure(
+            RunStage stage,
+            string reason,
+            RunStage? last = null,
+            string? message = null,
+            string? interruption = null
+        ) => failures.Add(new(result.CaseId, stage, last, reason, null, message, interruption));
+
+        if (
+            reports.Count != prepared.Jobs.Length
+            || !reports
+                .Select(x => x.BenchmarkCase.Job.Id)
+                .ToHashSet()
+                .SetEquals(prepared.Jobs.Select(x => x.Id))
+        )
+        {
+            incomplete = true;
+            AddFailure(
+                RunStage.BenchmarkProcessExit,
+                "予定したcase/JobのBDN reportが揃っていません。"
+            );
+        }
+        if (reports.Any(x => !x.BuildResult.IsBuildSuccess))
+        {
+            failed = true;
+            AddFailure(
+                RunStage.Build,
+                "BDNのbuildが成功していません。",
+                message: string.Join(
+                    Environment.NewLine,
+                    reports
+                        .Where(x => !x.BuildResult.IsBuildSuccess)
+                        .Select(x => x.BuildResult.ErrorMessage)
                 )
             );
         }
+        if (!result.BenchmarkReport!.ValidationSucceeded)
+        {
+            failed = true;
+            AddFailure(
+                RunStage.Validation,
+                "BDNのvalidationに失敗しました。",
+                message: string.Join(
+                    Environment.NewLine,
+                    summaries
+                        .SelectMany(x => x.ValidationErrors)
+                        .Where(x => x.IsCritical)
+                        .Select(x => x.Message)
+                )
+            );
+        }
+        if (result.BenchmarkReport.Processes.Count == 0)
+        {
+            incomplete = true;
+            AddFailure(
+                RunStage.BenchmarkProcessExit,
+                "予定したbenchmark processの実行記録がありません。"
+            );
+        }
+        foreach (var process in result.BenchmarkReport.Processes)
+        {
+            var check = LatestCheck(request.OutputDirectory, process.CheckFile);
+            if (check?.Failures.Count > 0)
+            {
+                failed = true;
+                failures.AddRange(check.Failures);
+            }
+            if (process.Errors.Count > 0)
+            {
+                failed = true;
+                AddFailure(
+                    RunStage.BenchmarkProcessExit,
+                    "BDNのErrorsに測定失敗が記録されています。",
+                    check?.LastConfirmedStage,
+                    string.Join(Environment.NewLine, process.Errors)
+                );
+            }
+            foreach (
+                var (stage, correctness) in new[]
+                {
+                    (RunStage.Precheck, check?.Precheck),
+                    (RunStage.Postcheck, check?.Postcheck),
+                }
+            )
+            {
+                if (
+                    correctness is not null
+                    && (
+                        correctness.Status == ResultStatus.Failed
+                        || correctness.Observations.Any(x => !x.Matches)
+                    )
+                )
+                {
+                    failed = true;
+                    if (!failures.Any(x => x.Stage == stage))
+                    {
+                        AddFailure(
+                            stage,
+                            "固定期待値との照合に失敗しました。",
+                            check?.LastConfirmedStage
+                        );
+                    }
+                }
+            }
+            if (
+                process.ExitCode != 0
+                || !process.HasResultMeasurements
+                || check?.Precheck?.Status != ResultStatus.Succeeded
+                || check.Postcheck?.Status != ResultStatus.Succeeded
+                || !check.ExecutionStarted
+            )
+            {
+                incomplete = true;
+                AddFailure(
+                    RunStage.BenchmarkProcessExit,
+                    "同じprocessの正常終了・Result測定行・前後検査完了が揃っていません。",
+                    check?.LastConfirmedStage,
+                    interruption: "Job="
+                        + process.JobId
+                        + "; PID="
+                        + process.ProcessId
+                        + "; 終了値="
+                        + (process.ExitCode?.ToString() ?? "取得不能")
+                );
+            }
+        }
+        var metrics = result.Metrics;
+        var status =
+            failed ? ResultStatus.Failed
+            : incomplete ? ResultStatus.Incomplete
+            : metrics.Time is null || metrics.Allocation is null || metrics.Gc is null
+                ? ResultStatus.Unavailable
+            : ResultStatus.Succeeded;
+        return result with { Status = status, Failures = failures };
     }
 
     /// <summary>

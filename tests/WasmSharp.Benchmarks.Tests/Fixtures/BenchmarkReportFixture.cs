@@ -3,6 +3,7 @@ using BenchmarkDotNet.Environments;
 using BenchmarkDotNet.Reports;
 using BenchmarkDotNet.Running;
 using BenchmarkDotNet.Toolchains.Results;
+using BenchmarkDotNet.Validators;
 using WasmSharp.Benchmarks.Measurements;
 using WasmSharp.Benchmarks.Results;
 
@@ -18,7 +19,15 @@ internal sealed class BenchmarkReportFixture : IDisposable
     internal BenchmarkReport Report { get; }
     internal Summary Summary { get; }
 
-    internal BenchmarkReportFixture(IEnumerable<string>? lines = null)
+    internal BenchmarkReportFixture(
+        IEnumerable<string>? lines = null,
+        int? exitCode = 0,
+        bool buildSucceeded = true,
+        bool validationSucceeded = true,
+        List<string>? plannedCaseIds = null,
+        IEnumerable<ExecuteResult>? additionalProcesses = null,
+        bool executed = true
+    )
     {
         var config = BenchmarkConfig.Create();
         var benchmark = BenchmarkConverter
@@ -31,7 +40,7 @@ internal sealed class BenchmarkReportFixture : IDisposable
         var output = (lines ?? ReadLines()).ToArray();
         var execute = new ExecuteResult(
             true,
-            0,
+            exitCode,
             123,
             output.Where(x => !x.StartsWith("//")).ToArray(),
             output.Where(x => x.StartsWith("//")).ToArray(),
@@ -39,7 +48,16 @@ internal sealed class BenchmarkReportFixture : IDisposable
             1
         );
         var generate = GenerateResult.Success(null!, []);
-        Report = new(true, benchmark, generate, BuildResult.Success(generate), [execute], []);
+        Report = new(
+            true,
+            benchmark,
+            generate,
+            buildSucceeded
+                ? BuildResult.Success(generate)
+                : BuildResult.Failure(generate, "fixture build failure"),
+            executed ? [execute, .. additionalProcesses ?? []] : [],
+            []
+        );
         Summary = new(
             "固定report fixture",
             [Report],
@@ -48,18 +66,26 @@ internal sealed class BenchmarkReportFixture : IDisposable
             Path.Combine(DirectoryPath, "fixture.log"),
             TimeSpan.Zero,
             CultureInfo.InvariantCulture,
-            [],
+            validationSucceeded
+                ? []
+                : [new ValidationError(true, "fixture validation failure", benchmark)],
             []
         );
         Prepared = new(
-            RunStore.Create(DirectoryPath, run_.Manifest),
+            RunStore.Create(
+                DirectoryPath,
+                run_.Manifest with
+                {
+                    PlannedCaseIds = plannedCaseIds ?? ["invoke.single"],
+                }
+            ),
             run_.Manifest.RunId,
             [benchmark.Job]
         );
         Request = new(
             DirectoryPath,
             "fixtureで素材を読み込まない",
-            ["invoke.single"],
+            plannedCaseIds ?? ["invoke.single"],
             RunKind.Smoke,
             config,
             "",
@@ -75,6 +101,15 @@ internal sealed class BenchmarkReportFixture : IDisposable
         File.ReadAllLines(
             Path.Combine(AppContext.BaseDirectory, "Fixtures", "Data", "bdn-0.15.8-metrics.txt")
         );
+
+    internal void SaveConditions() => run_.SaveConditions(Prepared.Store);
+
+    internal ProcessCheck SuccessfulCheck(int processId = 123) =>
+        run_.Check with
+        {
+            JobId = Prepared.Jobs.Single().Id,
+            ProcessId = processId,
+        };
 
     public void Dispose() => run_.Dispose();
 }

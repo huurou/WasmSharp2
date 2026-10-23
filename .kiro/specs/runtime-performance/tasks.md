@@ -139,7 +139,7 @@
   - _Depends: 4.2, 4.3, 5.1, 5.2_
   - _Requirements: 3.1, 3.2, 3.3, 5.1, 5.2, 5.6_
 
-- [ ] 6. 指標の採取と成功判定を実装する
+- [x] 6. 指標の採取と成功判定を実装する
 - [x] 6.1 時間・割り当て・GCを同じケースへ保存する
   - 時間の単位・測定数・平均・中央値・標準偏差・99.9%信頼区間を、launch・iteration・mode/stage・操作数・経過時間のrawと対応付ける。
   - managed割り当て総量・操作数・丸め前bytes/op・表示値と、Gen0/1/2総回数・1,000操作当たりの値を保存する。
@@ -149,7 +149,7 @@
   - _Depends: 4.2, 5.3_
   - _Requirements: 4.1, 4.2, 4.3, 4.4, 5.1_
 
-- [ ] 6.2 測定失敗・取得不能・未完了を成功値から除外する
+- [x] 6.2 測定失敗・取得不能・未完了を成功値から除外する
   - 予定report、build・validation、全process終了値とErrors、測定行、同processの前後検査、必須指標、保存完了のすべてを突合する。
   - 結果不一致・trap・例外、指標欠落、予定ケース欠落、中断を設計の状態と理由へ分類し、取得不能値を0で埋めない。
   - process終了の詳細が分からない場合は最後に確認した段階までを記録し、推測で補完しない。
@@ -342,6 +342,8 @@
   - _Requirements: 5.4, 6.8, 8.2, 8.4_
 
 ## Implementation Notes
+
+- 6.2: `CaptureCase/EvaluateCase`へ観測収集と判定を分離し、report・全process・前後検査・必須指標・RunStoreの保存完了を突合する。観測値/rawは保持し、Failed/Incomplete/Unavailableを成功採用から除外する。Incompleteを含むrunは完了へ補完しない。Release警告・エラー0、契約179件、独立レビュー全4project5,839件成功、APPROVED。既存試走と小report/検査fixtureで主要境界を検証。記録は`artifacts/runtime-performance/task-6.2-20261023T012743Z/`と`review-6.2-20261023T014134Z/`。ExtraRun未知終了はnull、1反復Smokeの非有限CIはUnavailableのまま8.1へ引継ぐ。Ubuntu未実行。
 
 - 6.1: `BenchmarkRun.SaveReports`へ保存を先に分離し、Result統計・Actual含むraw CSV・割当総量/操作数/丸め前/ToEven表示・GC全世代を同caseへ保存する。4.1の実出力89行・15Result反復を小fixtureへ採用し、元出力/統計の一致を確認。Release警告・エラー0、契約158件、独立レビュー全4project5,818件成功、APPROVED。記録は`artifacts/runtime-performance/task-6.1-20261023T010716Z/`と`review-6.1-20261023T012101Z/`。1反復SmokeのCI非有限は理由付きTime=nullとなるため6.2/8.1で考慮する。GC欠落/操作数0や複数Jobのreportも0へ補完しない。成功確定は6.2、Ubuntu未実行。
 
