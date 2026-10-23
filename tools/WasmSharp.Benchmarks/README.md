@@ -1,8 +1,8 @@
 # WasmSharp.Benchmarks
 
-WasmSharp2の公開APIを使う性能測定ツール。現在の実行入口はBenchmarkDotNetの導入確認用の試走で、性能基準値の取得には使用しない。
+WasmSharp2の公開APIを使う性能測定ツール。固定素材の確認、ケースを選んだ測定と保存、保存run群の比較を行う。
 
-固定した6素材・15ケースについては、[分類・開始状態・期待値の根拠](Assets/README.md)と[cases.json](Assets/cases.json)を参照する。素材の統合生成は利用できるが、15ケースの測定CLIと検査器は後続タスクで接続する。
+固定した6素材・15ケースについては、[分類・開始状態・期待値の根拠](Assets/README.md)と[cases.json](Assets/cases.json)を参照する。測定結果の成功と、性能改善の受入成立は区別する。
 
 ## ビルドと契約テスト
 
@@ -17,7 +17,7 @@ dotnet run --project tests/WasmSharp.Benchmarks.Tests/WasmSharp.Benchmarks.Tests
 
 ## 本測定用の設定
 
-`Measurements/BenchmarkConfig.Create()`は、同期処理用の`Measurement` Jobを.NET10・x64・Release・Throughput・1launchへ固定する。MemoryDiagnoser、Full JSON、measurement CSVを有効にし、MemoryRandomizationと電源planの自動変更を無効にする。pilot・warmup・本測定の反復数、1iterationの操作数とunrollは固定せず、BenchmarkDotNet0.15.8の自動調整を使う。現在のCLI入口は下記の短縮試走設定を使用し、この本測定設定と15ケースの接続は後続タスクで行う。
+`run --kind measurement`は、同期処理用の`Measurement` Jobを.NET10・x64・Release・Throughput・1launchへ固定する。MemoryDiagnoser、Full JSON、measurement CSVを有効にし、MemoryRandomizationと電源planの自動変更を無効にする。pilot・warmup・本測定の反復数、1iterationの操作数とunrollは固定せず、BenchmarkDotNet0.15.8の自動調整を使う。`--kind`の省略時もmeasurementとなる。
 
 各launchは新しいprocessで実行する。JIT・pilot・warmup・本測定に加え、MemoryDiagnoserによる割り当て観測用の追加反復がある。module・instanceの生成範囲と状態復元は測定ケースが定義し、設定クラスでは生成や復元を行わない。
 
@@ -25,30 +25,51 @@ outlier方針はThroughput既定の`RemoveUpper`を明示する。Full JSONとme
 
 MemoryDiagnoserのGC総回数・操作数・割り当て量は時間測定とは別の観測区間に対応する。managed割り当ては保持量、ピーク量、nativeメモリ、guest線形メモリ内の利用量とは区別する。通常reportの丸めたbytes/opだけで割り当ての不存在を判断しない。
 
-## Windows x64での別process試走
+## 素材確認・ケース選択・結果保存
 
-BenchmarkDotNet0.15.8を固定し、.NET10/x64/Releaseの別processで、空moduleの公開`Decode`を実行する。1操作は1回のDecodeで、バイト列は事前に用意し、戻り値を保持する。setupで事前検証し、cleanupで最後のmoduleをValidate・Instantiateする。素材コンパイラは不要。
-
-Job名は`Smoke`、`RunStrategy.Throughput`、launch/warmup/測定は各1回、1iterationは64操作、unrollは1とする。MemoryRandomizationを無効にし、電源planは変更しない。JIT・overhead・割り当て観測用の反復はBenchmarkDotNetも実行する。少数反復による統計の不足や短いiterationの警告は試走の制限であり、時間・bytes/opを性能基準値や改善の判定に採用しない。
-
-上記ビルドが成功した後、毎回新しい保存先で実行する。
+下記の素材生成後、リポジトリルートで実行する。`$assetSet`は生成済み素材のディレクトリ。`check`はmanifest/profile/バイナリ/入力のhashを照合し、全ケースの公開操作と固定期待値を検査する。測定processからWABTやClangは起動しない。
 
 ```powershell
-$smokeRoot = Join-Path (Get-Location) ("artifacts/runtime-performance/smoke-" + [guid]::NewGuid().ToString('N'))
-New-Item -ItemType Directory -Path $smokeRoot | Out-Null
-dotnet --info | Set-Content (Join-Path $smokeRoot 'dotnet-info.txt')
-git rev-parse HEAD | Set-Content (Join-Path $smokeRoot 'revision.txt')
-git status --short | Set-Content (Join-Path $smokeRoot 'git-status.txt')
-git diff --binary HEAD | Set-Content (Join-Path $smokeRoot 'changes.patch')
-powercfg /getactivescheme | Set-Content (Join-Path $smokeRoot 'power-plan.txt')
-dotnet run --project tools/WasmSharp.Benchmarks/WasmSharp.Benchmarks.csproj -c Release --no-build -- --filter '*SmokeBenchmarks*' --artifacts (Join-Path $smokeRoot 'bdn') 2>&1 | Tee-Object -FilePath (Join-Path $smokeRoot 'smoke.log')
+$manifest = Join-Path $assetSet 'asset-manifest.json'
+dotnet run --project tools/WasmSharp.Benchmarks/WasmSharp.Benchmarks.csproj -c Release --no-build -- check --assets $manifest
+$checkExit = $LASTEXITCODE
+$smokeRun = Join-Path (Get-Location) ('artifacts/runtime-performance/smoke-' + [guid]::NewGuid().ToString('N'))
+dotnet run --project tools/WasmSharp.Benchmarks/WasmSharp.Benchmarks.csproj -c Release --no-build -- run --assets $manifest --case invoke.single --kind smoke --output $smokeRun
+$smokeExit = $LASTEXITCODE
 ```
 
-初回実装中など未追跡ファイルがある場合は、`changes.patch`には含まれないため、対象ソースをzip等にまとめて試走版を保持する。同名の`.csproj`をリポジトリ配下へそのままコピーすると、BenchmarkDotNetのproject探索が失敗する。SDK/runtimeと実行コマンド、電源接続状態、手動指定したGC/JITの環境変数を試走記録に残す。
+`--case`は固定IDまたは`all`を受け付ける。Decode等の区間、1操作、仕事量、開始状態、計時外の準備はcase定義に保持し、Invokeは準備済みinstanceを使う。Smokeは新しい別processで1launch・1warmup・3測定iteration・各64操作・unroll1を使う。有限の信頼区間と保存経路を確認する短縮試走であり、数値は性能基準値へ採用しない。全体の配線確認には同じコマンドの`--case all --kind smoke`を使える。
 
-`smoke.log`に子processの起動と終了0、1benchmarkの実行、MemoryDiagnoserの出力があることを確認する。`bdn/results/`の`*-report-full.json`には環境・統計・個々の測定値・Memoryが、`*-measurements.csv`には反復ごとの測定値が出力される。JSONの`BytesAllocatedPerOperation`が取得でき、CSVにも測定行があることを確認する。空moduleでもランタイムのオブジェクト生成によるmanaged割り当てが生じる。
+本測定は毎回新しい保存先へ出力する。比較する両版で同じ引数とJob・環境条件を使い、独立runを交互に必要回数取得する。
 
-この試走は測定器の導入確認に限定する。固定15ケースの本測定、反復条件、結果の採用判定、比較、公式適合検証は後続の実装・受入で確認する。
+```powershell
+$measurementRun = Join-Path (Get-Location) ('artifacts/runtime-performance/measurement-' + [guid]::NewGuid().ToString('N'))
+dotnet run --project tools/WasmSharp.Benchmarks/WasmSharp.Benchmarks.csproj -c Release --no-build -- run --assets $manifest --case all --kind measurement --output $measurementRun
+$measurementExit = $LASTEXITCODE
+```
+
+出力先は事前作成せず、既存ディレクトリ・ファイルへの出力は拒否する。`run.json`に予定case・用途・成否・指標、`environment.json`に実行processのコマンド・cwd・CPU/OS/SDK/runtime/GC/JIT/電源条件、`source/`と未追跡sourceコピーに使用版と差分を保存する。`inputs/`には素材・case・Job・子process設定、`raw/bdn/`にはFull JSON・measurement CSV・reportとBDNログ、`checks/`には同じcase/Job/PIDの前検査・実行開始・後検査を残す。親の終了値だけで成功とせず、`run.json`の子終了値、Errors、raw、前後検査、必須指標が揃ったことを確認する。未知の追加診断process終了値はnull、未完了はIncomplete、欠落指標は理由付きUnavailableのまま保持する。
+
+終了値は成立0、保存できた測定失敗・必須指標取得不能・比較受入不成立1、引数/I/O/未完了2。`check`の期待値不一致も理由と終了1を返す。失敗時のrawや観測値は残すが、成功した性能測定へ採用しない。再試行は新しい出力先で行う。
+
+## 保存run群の比較
+
+改善前に固定したpolicyを指定する。`--baseline`と`--current`にはrunディレクトリをカンマ区切りの1引数で渡し、空要素を含めない。比較入力とpolicyを読み取るだけで、期待値・基準値・policyを更新しない。入力run内の新規サブディレクトリへの出力も拒否する。
+
+```powershell
+$baselineRuns = @('artifacts/runtime-performance/before-1', 'artifacts/runtime-performance/before-2', 'artifacts/runtime-performance/before-3')
+$currentRuns = @('artifacts/runtime-performance/after-1', 'artifacts/runtime-performance/after-2', 'artifacts/runtime-performance/after-3')
+$policy = 'artifacts/runtime-performance/planned-comparison-policy.json'
+$comparisonOutput = Join-Path (Get-Location) ('artifacts/runtime-performance/comparison-' + [guid]::NewGuid().ToString('N'))
+dotnet run --project tools/WasmSharp.Benchmarks/WasmSharp.Benchmarks.csproj -c Release --no-build -- compare --baseline ($baselineRuns -join ',') --current ($currentRuns -join ',') --policy $policy --output $comparisonOutput
+$comparisonExit = $LASTEXITCODE
+```
+
+policyの型は[ComparisonPolicy.cs](Results/ComparisonPolicy.cs)にあり、各caseの時間・割り当ての許容幅、削減目標、同等範囲、ノイズ幅、反復間判断幅、必要独立run数を指定する。数値は基準値の同版再測定に基づいて事前に定める。`comparison.json`には入力manifest内のrun IDとhash、policy hash、caseごとの改善・同等・悪化・判定不能、個別値・差・理由・条件差を保存する。CLIの`--assets`の配置差や出力先は比較条件から除くが、case選択・用途・Job等の意味のある設定は照合する。
+
+正常Measurementと必須比較が揃い、全caseの両指標が許容内で、選定目標の少なくとも1件を達成したときだけ受入成立となる。Smoke・失敗・取得不能・未完了のrunは改善判定へ採用しない。原因調査ではまずcase別の時間と割り当て、raw反復・GC・条件差・失敗段階を確認する。追加の診断や保持観測は通常Measurementと混在させず、専用手順でDiagnostic/Retentionとして保存する。
+
+今回のWindows x64での操作確認と再実行scriptは[タスク8.1の記録](../../artifacts/runtime-performance/task-8.1-20261023T024900Z/evidence.md)を参照する。正常Smoke、隔離素材での後検査失敗、保存結果の比較除外を確認する。通常契約の比較成立は小さい保存fixtureで検証し、Smokeやfixtureを性能基準値へ採用しない。全15ケースの本測定基準値取得、改善policyの策定、最終公式全体検証は後続の受入作業であり、Ubuntuは未実行。
 
 ## 素材生成ツールの準備
 
@@ -105,7 +126,7 @@ manifestの参照はmanifest基準の相対pathで、素材・source・profile�
 
 既存出力先は拒否し、失敗時もログと中間出力を残す。再実行には必ず新しい出力先を使う。素材・入力・期待値・操作を変えたら対象ケースの`case_revision`を上げ、独立計算で固定値を見直してから新しい集合を生成する。生成処理は`cases.json`の採用hashや期待値を更新しない。旧manifest・ケース・結果は保持し、版またはhashの異なるケースを同条件の性能比較へ使わない。
 
-今回の素材採用では既存13ケースの入力・期待値・binary hashを保持し、小moduleの準備2ケースを追加した。公開APIの期待値確認はタスク2.1〜2.5の検証記録へ保存する。利用者向け`check`、15ケースの本測定・比較、最終公式全体runは後続タスクの実装・受入であり、この生成成功だけでは完了しない。
+今回の素材採用では既存13ケースの入力・期待値・binary hashを保持し、小moduleの準備2ケースを追加した。公開APIの期待値確認はタスク2.1〜2.5の検証記録へ保存する。生成後は上記の`check`と別process Smokeを行い、その後に独立した本測定・比較・公式全体runへ進む。この生成成功だけでは性能改善の受入を意味しない。
 
 ### 最終公式受入の比較元
 

@@ -7,6 +7,59 @@ namespace WasmSharp.Benchmarks.Cases;
 /// </summary>
 internal static class CaseVerifier
 {
+    /// <summary>
+    /// 固定素材から測定区間に対応する公開操作を行い、その結果を照合する
+    /// </summary>
+    internal static VerificationResult Verify(LoadedAssets assets, string caseId)
+    {
+        var definition = assets.Catalog.Get(caseId);
+        var stage = "Decode";
+        try
+        {
+            var module = WasmModule.Decode(assets.GetBinary(definition.AssetId).AsSpan());
+            if (definition.MeasurementStage == MeasurementStage.Decode)
+            {
+                return Verify(definition, new ModuleObservation(module));
+            }
+            stage = "Validate";
+            module.Validate();
+            if (definition.MeasurementStage == MeasurementStage.DecodeValidate)
+            {
+                return Verify(definition, new ModuleObservation(module));
+            }
+            stage = "Instantiate";
+            var instance = module.Instantiate(CreateImports());
+            if (definition.MeasurementStage == MeasurementStage.Instantiate)
+            {
+                return Verify(definition, new InstanceObservation(instance));
+            }
+            var input = assets.GetInput(caseId);
+            foreach (var array in input.Arrays)
+            {
+                instance.GetMemory(array.MemoryExport).Write(array.Offset, array.Bytes.AsSpan());
+            }
+            stage = "Invoke";
+            return Verify(
+                definition,
+                new InvokeObservation(
+                    instance,
+                    instance.GetFunction(input.FunctionExport).Invoke(input.Arguments.AsSpan())
+                )
+            );
+        }
+        catch (Exception exception)
+        {
+            return new(
+                false,
+                caseId,
+                stage,
+                "exception",
+                "正常終了",
+                $"{exception.GetType().FullName}: {exception.Message}"
+            );
+        }
+    }
+
     internal static VerificationResult Verify(BenchmarkCase definition, CaseObservation observation)
     {
         var stage = definition.MeasurementStage.ToString();

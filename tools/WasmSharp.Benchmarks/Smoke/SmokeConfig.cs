@@ -21,7 +21,7 @@ internal static class SmokeConfig
             .WithStrategy(RunStrategy.Throughput)
             .WithLaunchCount(1)
             .WithWarmupCount(1)
-            .WithIterationCount(1)
+            .WithIterationCount(3)
             .WithInvocationCount(64)
             .WithUnrollFactor(1)
             .WithMemoryRandomization(false)

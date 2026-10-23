@@ -253,7 +253,7 @@ internal sealed class ConditionPaths
                 }
                 continue;
             }
-            if (parts[0] == "--asset-manifest")
+            if (parts[0] is "--asset-manifest" or "--assets")
             {
                 values.Add("--asset-manifest=asset-manifest");
                 if (parts.Length == 1)

@@ -176,7 +176,7 @@
   - _Requirements: 4.4, 6.3, 6.4, 6.5, 6.6, 6.7, 6.8_
 
 - [ ] 8. 利用者の操作と標準検証へ統合する
-- [ ] 8.1 素材確認・測定・比較のCLIを接続する
+- [x] 8.1 素材確認・測定・比較のCLIを接続する
   - 設計のcheck・run・compareとcase選択を接続し、新規出力先、用途、比較元、事前policyを指定して操作できるようにする。
   - 成功、保存できた測定失敗・受入不成立、引数・I/O・未完了の終了値を0・1・2に分ける。
   - 素材生成からcheck、別processの正常・後検査失敗Smoke、保存結果のcompareまでをWindows x64で実行し、失敗を性能値へ採用しないことを確認する。
@@ -342,6 +342,8 @@
   - _Requirements: 5.4, 6.8, 8.2, 8.4_
 
 ## Implementation Notes
+
+- 8.1: ProgramからBenchmarkCliへ入出力責務を分離し、check/run/compareと0/1/2の終了値・新規保存を接続した。`--assets`を配置正規化へ対応付け、Smokeだけ3反復へ変更して有限CIを取得する。Measurement Jobは維持。Release警告・エラー0、契約308件、独立レビュー全4project5,968件成功、APPROVED。新規素材生成/全15check0・正常Smoke0・後検査失敗Smoke1・比較1/非採用/入力hash不変を確認。記録は`artifacts/runtime-performance/task-8.1-20261023T024900Z/`と`review-8.1-20261023T031105Z/`。親buildとBDN子buildのhash差・清掃後の観測path不在を区別する。採用素材は2.5のmanifestを維持。Ubuntuと基準値取得は未実行。
 
 - 7.2: `RunComparison.Compare`は条件読込を共有し、run群/policyと指標集計を境界内のpartialへ分ける。中央値・個値・CI・差/比率、0基準、ノイズ/ばらつき、阻害/非阻害、全15ケースと累積悪化を判定し、IsAcceptedで全体受入を示す。内部要求は保存先参照をRunDirectoriesと明示し、JSON名は維持、報告IDはmanifest内IDとする。Release警告・エラー0、契約292件（Compare65件）、独立レビュー全4project5,952件成功、APPROVED。記録は`artifacts/runtime-performance/task-7.2-20261023T022053Z/`と`review-7.2-20261023T024038Z/`。保存fixtureだけを使用し、Ubuntu未実行。
 

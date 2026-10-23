@@ -1,4 +1,3 @@
-using BenchmarkDotNet.Running;
-using WasmSharp.Benchmarks.Smoke;
+using WasmSharp.Benchmarks;
 
-BenchmarkSwitcher.FromAssembly(typeof(SmokeConfig).Assembly).Run(args, SmokeConfig.Create());
+return new BenchmarkCli().Run(args, Console.Out, Console.Error);
