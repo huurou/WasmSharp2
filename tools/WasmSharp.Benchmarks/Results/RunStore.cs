@@ -20,6 +20,48 @@ internal sealed class RunStore
     }
 
     /// <summary>
+    /// 子processが未完了runへ検査snapshotを追記するために開く
+    /// </summary>
+    internal static RunStore OpenChecks(string outputDirectory, string runId)
+    {
+        var manifest = JsonSerializer.Deserialize<RunManifest>(
+            File.ReadAllBytes(Path.Combine(outputDirectory, "run.json")),
+            CaseJson.Options
+        )!;
+        if (manifest.RunId != runId || manifest.CompletedAtUtc is not null)
+        {
+            throw new InvalidDataException("検査の保存先runが一致しないか完了しています。");
+        }
+        return new(outputDirectory, manifest);
+    }
+
+    /// <summary>
+    /// 追記した検査snapshotを保存参照とともに読み出す
+    /// </summary>
+    internal static List<(ManifestFile File, ProcessCheck Check)> ReadChecks(string outputDirectory)
+    {
+        var directory = Path.Combine(outputDirectory, "checks");
+        if (!Directory.Exists(directory))
+        {
+            return [];
+        }
+        return Directory
+            .GetFiles(directory, "*.json")
+            .Select(x =>
+            {
+                var bytes = File.ReadAllBytes(x);
+                return (
+                    new ManifestFile(
+                        Path.GetRelativePath(outputDirectory, x).Replace('\\', '/'),
+                        Convert.ToHexStringLower(SHA256.HashData(bytes))
+                    ),
+                    JsonSerializer.Deserialize<ProcessCheck>(bytes, CaseJson.Options)!
+                );
+            })
+            .ToList();
+    }
+
+    /// <summary>
     /// 予定ケースと識別情報を持つ未完了runを新規作成する
     /// </summary>
     internal static RunStore Create(string outputDirectory, RunManifest manifest)
@@ -174,6 +216,12 @@ internal sealed class RunStore
     /// </summary>
     internal void SaveCase(CaseRunResult result) =>
         SaveManifest(manifest_ with { Cases = [.. manifest_.Cases, result] });
+
+    /// <summary>
+    /// runが未完了のまま終了するときも観測した原因を保持する
+    /// </summary>
+    internal void SaveFailure(RunFailure failure) =>
+        SaveManifest(manifest_ with { Failures = [.. manifest_.Failures, failure] });
 
     /// <summary>
     /// 全予定ケースと保存参照を照合した後に、呼出元が判定した状態で完了を確定する

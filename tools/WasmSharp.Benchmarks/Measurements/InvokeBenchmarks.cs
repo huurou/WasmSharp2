@@ -11,6 +11,7 @@ namespace WasmSharp.Benchmarks.Measurements;
 public class InvokeBenchmarks
 {
     private readonly Consumer consumer_ = new();
+    private BenchmarkProcess? process_;
     private BenchmarkCase definition_ = null!;
     private WasmInstance instance_ = null!;
     private WasmFunction function_ = null!;
@@ -27,7 +28,7 @@ public class InvokeBenchmarks
     private WasmResults lastMatrixResults_ = null!;
 
     [GlobalSetup(Target = nameof(Empty))]
-    public void SetupEmpty() => Initialize(LoadAssets(), "invoke.empty");
+    public void SetupEmpty() => Setup(nameof(Empty));
 
     [Benchmark(OperationsPerInvoke = 1)]
     public void Empty()
@@ -37,7 +38,7 @@ public class InvokeBenchmarks
     }
 
     [GlobalSetup(Target = nameof(Single))]
-    public void SetupSingle() => Initialize(LoadAssets(), "invoke.single");
+    public void SetupSingle() => Setup(nameof(Single));
 
     [Benchmark(OperationsPerInvoke = 1)]
     public void Single()
@@ -47,7 +48,7 @@ public class InvokeBenchmarks
     }
 
     [GlobalSetup(Target = nameof(Multi))]
-    public void SetupMulti() => Initialize(LoadAssets(), "invoke.multi");
+    public void SetupMulti() => Setup(nameof(Multi));
 
     [Benchmark(OperationsPerInvoke = 1)]
     public void Multi()
@@ -57,7 +58,7 @@ public class InvokeBenchmarks
     }
 
     [GlobalSetup(Target = nameof(IntegerDirect))]
-    public void SetupIntegerDirect() => Initialize(LoadAssets(), "loop.integer-direct");
+    public void SetupIntegerDirect() => Setup(nameof(IntegerDirect));
 
     [Benchmark(OperationsPerInvoke = 1)]
     public void IntegerDirect()
@@ -67,7 +68,7 @@ public class InvokeBenchmarks
     }
 
     [GlobalSetup(Target = nameof(FloatHost))]
-    public void SetupFloatHost() => Initialize(LoadAssets(), "loop.float-host");
+    public void SetupFloatHost() => Setup(nameof(FloatHost));
 
     [Benchmark(OperationsPerInvoke = 1)]
     public void FloatHost()
@@ -77,7 +78,7 @@ public class InvokeBenchmarks
     }
 
     [GlobalSetup(Target = nameof(Indirect))]
-    public void SetupIndirect() => Initialize(LoadAssets(), "loop.indirect");
+    public void SetupIndirect() => Setup(nameof(Indirect));
 
     [Benchmark(OperationsPerInvoke = 1)]
     public void Indirect()
@@ -87,7 +88,7 @@ public class InvokeBenchmarks
     }
 
     [GlobalSetup(Target = nameof(CopyFill))]
-    public void SetupCopyFill() => Initialize(LoadAssets(), "memory.copy-fill");
+    public void SetupCopyFill() => Setup(nameof(CopyFill));
 
     [Benchmark(OperationsPerInvoke = 1)]
     public void CopyFill()
@@ -97,7 +98,7 @@ public class InvokeBenchmarks
     }
 
     [GlobalSetup(Target = nameof(ScanScalar))]
-    public void SetupScanScalar() => Initialize(LoadAssets(), "scan.scalar");
+    public void SetupScanScalar() => Setup(nameof(ScanScalar));
 
     [Benchmark(OperationsPerInvoke = 1)]
     public void ScanScalar()
@@ -107,7 +108,7 @@ public class InvokeBenchmarks
     }
 
     [GlobalSetup(Target = nameof(ScanSimd))]
-    public void SetupScanSimd() => Initialize(LoadAssets(), "scan.simd");
+    public void SetupScanSimd() => Setup(nameof(ScanSimd));
 
     [Benchmark(OperationsPerInvoke = 1)]
     public void ScanSimd()
@@ -117,7 +118,7 @@ public class InvokeBenchmarks
     }
 
     [GlobalSetup(Target = nameof(Matrix))]
-    public void SetupMatrix() => Initialize(LoadAssets(), "kernel.matrix");
+    public void SetupMatrix() => Setup(nameof(Matrix));
 
     [Benchmark(OperationsPerInvoke = 1)]
     public void Matrix()
@@ -128,6 +129,16 @@ public class InvokeBenchmarks
 
     [GlobalCleanup]
     public void Cleanup()
+    {
+        if (process_ is null)
+        {
+            CheckLastResult();
+            return;
+        }
+        process_.Cleanup(CheckLastResult);
+    }
+
+    private void CheckLastResult()
     {
         var results = definition_.CaseId switch
         {
@@ -191,8 +202,11 @@ public class InvokeBenchmarks
         return instance;
     }
 
-    private static LoadedAssets LoadAssets() =>
-        AssetManifest.Load(Path.Combine(AppContext.BaseDirectory, "Assets", "asset-manifest.json"));
+    private void Setup(string method)
+    {
+        process_ = BenchmarkProcess.Start(nameof(InvokeBenchmarks) + "." + method);
+        process_.Setup(Initialize);
+    }
 
     private void Verify(InvokeObservation observation)
     {

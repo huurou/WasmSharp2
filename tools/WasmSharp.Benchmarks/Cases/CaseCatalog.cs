@@ -108,6 +108,9 @@ internal sealed class CaseCatalog
 
     internal string GetMeasurementMethod(string caseId) => methods_[Get(caseId).CaseId];
 
+    internal static string GetCaseId(string measurementMethod) =>
+        methods_.Single(x => x.Value == measurementMethod).Key;
+
     private static void CheckEqual(
         BenchmarkCase first,
         BenchmarkCase other,

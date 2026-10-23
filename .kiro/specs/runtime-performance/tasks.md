@@ -113,7 +113,7 @@
   - _Depends: 4.1, 4.2_
   - _Requirements: 5.1, 5.2, 5.3, 5.5, 5.6_
 
-- [ ] 5. 公開APIの測定区間とprocess別検査を接続する
+- [x] 5. 公開APIの測定区間とprocess別検査を接続する
 - [x] 5.1 準備段階の5ケースを測定する
   - 小・大moduleのDecodeとDecode+Validateでは、事前読込バイト列から毎回新しいmoduleを生成する。
   - Instantiateでは検証済みmoduleから新しいinstanceを生成し、import接続、リソース生成、segment初期化、startまでを計時内に含める。
@@ -131,7 +131,7 @@
   - _Depends: 3.2, 4.1_
   - _Requirements: 2.1, 2.5, 2.6, 2.7, 3.1, 5.3_
 
-- [ ] 5.3 親子processの実行設定と前後検査を統合する
+- [x] 5.3 親子processの実行設定と前後検査を統合する
   - 親が予定ケースとrun設定を保存し、専用環境変数で子processへ設定pathを渡す。子は計時外で設定を読む。
   - run・case・Job・processの対応を保って、前検査、実行開始、後検査、失敗を保存し、子が実際に読み込んだランタイムと測定assemblyのpath・hashを残す。
   - 正常終了、後検査失敗、中断の別process試走で、測定結果と対応する検査記録を突合できる。追加の診断processも取り違えない。
@@ -342,6 +342,8 @@
   - _Requirements: 5.4, 6.8, 8.2, 8.4_
 
 ## Implementation Notes
+
+- 5.3: 親PrepareはIncompleteの予定runとJob別設定JSONを保存し、`WASMSHARP_BENCHMARK_RUN_CONFIG`で子へ渡す。子の`BenchmarkProcess`は計時外で前検査・実行開始・後検査・失敗をPID別snapshotへ追記し、実際ロードしたassemblyを記録する。Release警告・エラー0、契約151件、独立レビュー全4project5,811件成功、APPROVED。正常・後検査失敗（子0でもErrorsあり）・中断83・追加診断PIDを別process Smokeで照合。BDN0.15.8のExtraRunはExecuteResultsに含まれず、終了値はnullを維持してrawログと併記する。指標採取・成功確定は6.1/6.2へ引継ぐ。記録は`artifacts/runtime-performance/task-5.3-20261023T010600Z/`と`review-5.3-20261023T010021Z/`。Ubuntu未実行、Smokeは基準値未採用。
 
 - 5.2: `InvokeBenchmarks`は10ケースの公開Invoke・専用field保持・事前生成Consumerによる参照消費を各1操作とし、InitializeとCleanupへ準備・照合を分離する。前検査と測定のinstance/importを共有せず、Cleanupで追加Invokeしない。Release警告・エラー0、契約144件、独立レビュー全4project5,804件成功、APPROVED。10ケースの別process Smokeは全子終了0・Errors空・raw294行・GC/割当・Cleanup対応成功。記録は`artifacts/runtime-performance/task-5.2-20261023T002153Z/`と`review-5.2-20261023T003239Z/`。ソースコピーの更新時刻保持による増分ビルド見落としに注意。Ubuntu未実行、Smokeは基準値未採用。
 
