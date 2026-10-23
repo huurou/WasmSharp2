@@ -140,7 +140,7 @@
   - _Requirements: 3.1, 3.2, 3.3, 5.1, 5.2, 5.6_
 
 - [ ] 6. 指標の採取と成功判定を実装する
-- [ ] 6.1 時間・割り当て・GCを同じケースへ保存する
+- [x] 6.1 時間・割り当て・GCを同じケースへ保存する
   - 時間の単位・測定数・平均・中央値・標準偏差・99.9%信頼区間を、launch・iteration・mode/stage・操作数・経過時間のrawと対応付ける。
   - managed割り当て総量・操作数・丸め前bytes/op・表示値と、Gen0/1/2総回数・1,000操作当たりの値を保存する。
   - 時間と割り当てが別反復の観測であること、process全体のmanaged割り当てであること、表示0の丸め条件を記録する。
@@ -342,6 +342,8 @@
   - _Requirements: 5.4, 6.8, 8.2, 8.4_
 
 ## Implementation Notes
+
+- 6.1: `BenchmarkRun.SaveReports`へ保存を先に分離し、Result統計・Actual含むraw CSV・割当総量/操作数/丸め前/ToEven表示・GC全世代を同caseへ保存する。4.1の実出力89行・15Result反復を小fixtureへ採用し、元出力/統計の一致を確認。Release警告・エラー0、契約158件、独立レビュー全4project5,818件成功、APPROVED。記録は`artifacts/runtime-performance/task-6.1-20261023T010716Z/`と`review-6.1-20261023T012101Z/`。1反復SmokeのCI非有限は理由付きTime=nullとなるため6.2/8.1で考慮する。GC欠落/操作数0や複数Jobのreportも0へ補完しない。成功確定は6.2、Ubuntu未実行。
 
 - 5.3: 親PrepareはIncompleteの予定runとJob別設定JSONを保存し、`WASMSHARP_BENCHMARK_RUN_CONFIG`で子へ渡す。子の`BenchmarkProcess`は計時外で前検査・実行開始・後検査・失敗をPID別snapshotへ追記し、実際ロードしたassemblyを記録する。Release警告・エラー0、契約151件、独立レビュー全4project5,811件成功、APPROVED。正常・後検査失敗（子0でもErrorsあり）・中断83・追加診断PIDを別process Smokeで照合。BDN0.15.8のExtraRunはExecuteResultsに含まれず、終了値はnullを維持してrawログと併記する。指標採取・成功確定は6.1/6.2へ引継ぐ。記録は`artifacts/runtime-performance/task-5.3-20261023T010600Z/`と`review-5.3-20261023T010021Z/`。Ubuntu未実行、Smokeは基準値未採用。
 

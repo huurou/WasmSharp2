@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using BenchmarkDotNet.Engines;
 using BenchmarkDotNet.Jobs;
@@ -105,7 +106,7 @@ internal static class BenchmarkRun
 
     /// <summary>
     /// 記録済みの設定でBDNを起動し、processの観測とrawを未完了runへ保存する
-    /// 指標の抽出と成功の確定は、この実行境界の後に行う
+    /// 指標を採取しても、成功の確定は後続の採用判定で行う
     /// </summary>
     internal static RunManifest Run(RunRequest request)
     {
@@ -177,91 +178,7 @@ internal static class BenchmarkRun
             {
                 CaptureSourceAfter(request.RepositoryDirectory, prepared.Store, source);
             }
-            var rawDirectory = Path.Combine(request.OutputDirectory, "raw");
-            var raw = Directory.Exists(rawDirectory)
-                ? Directory
-                    .GetFiles(rawDirectory, "*", SearchOption.AllDirectories)
-                    .Select(x => new ManifestFile(
-                        Path.GetRelativePath(request.OutputDirectory, x).Replace('\\', '/'),
-                        Convert.ToHexStringLower(SHA256.HashData(File.ReadAllBytes(x)))
-                    ))
-                    .ToList()
-                : [];
-            foreach (var caseId in request.CaseIds)
-            {
-                var reports = summaries
-                    .SelectMany(x => x.Reports)
-                    .Where(x =>
-                        CaseCatalog.GetCaseId(
-                            x.BenchmarkCase.Descriptor.Type.Name
-                                + "."
-                                + x.BenchmarkCase.Descriptor.WorkloadMethod.Name
-                        ) == caseId
-                    )
-                    .ToList();
-                var processes = prepared
-                    .Jobs.SelectMany(job =>
-                        AttachChecks(
-                            request.OutputDirectory,
-                            prepared.RunId,
-                            caseId,
-                            job.Id,
-                            reports
-                                .Where(x => x.BenchmarkCase.Job.Id == job.Id)
-                                .SelectMany(x => x.ExecuteResults)
-                                .Select(x => new BenchmarkProcessResult(
-                                    job.Id,
-                                    x.ProcessId,
-                                    x.ExitCode,
-                                    x.Errors.ToList(),
-                                    x.Measurements.Any(y =>
-                                        y.IterationStage == IterationStage.Result
-                                    ),
-                                    null
-                                ))
-                        )
-                    )
-                    .ToList();
-                var checkFailures = processes
-                    .Select(x => LatestCheck(request.OutputDirectory, x.CheckFile))
-                    .Where(x => x is not null)
-                    .SelectMany(x => x!.Failures)
-                    .ToList();
-                var failures = processes
-                    .Where(x => x.ExitCode != 0 || x.Errors.Count > 0)
-                    .Select(x => new RunFailure(
-                        caseId,
-                        RunStage.BenchmarkProcessExit,
-                        LatestCheck(request.OutputDirectory, x.CheckFile)?.LastConfirmedStage,
-                        "benchmark processの終了または診断processの観測が未完了です。",
-                        null,
-                        string.Join(Environment.NewLine, x.Errors),
-                        "終了値=" + x.ExitCode
-                    ))
-                    .Concat(checkFailures)
-                    .ToList();
-                prepared.Store.SaveCase(
-                    new(
-                        caseId,
-                        checkFailures.Count > 0 ? ResultStatus.Failed : ResultStatus.Incomplete,
-                        new(
-                            null,
-                            "指標の採取が完了していません。",
-                            null,
-                            "指標の採取が完了していません。",
-                            null,
-                            "指標の採取が完了していません。"
-                        ),
-                        new(
-                            reports.Count > 0 && reports.All(x => x.BuildResult.IsBuildSuccess),
-                            summaries.All(x => !x.HasCriticalValidationErrors),
-                            processes
-                        ),
-                        failures,
-                        raw
-                    )
-                );
-            }
+            SaveReports(request, prepared, summaries);
         }
         catch (Exception exception)
         {
@@ -279,6 +196,94 @@ internal static class BenchmarkRun
             throw;
         }
         return RunStore.Load(request.OutputDirectory);
+    }
+
+    /// <summary>
+    /// BDNの観測を予定caseと対応付け、成功確定前の結果を保存する
+    /// </summary>
+    internal static void SaveReports(
+        RunRequest request,
+        PreparedRun prepared,
+        IEnumerable<Summary> summaries
+    )
+    {
+        var rawDirectory = Path.Combine(request.OutputDirectory, "raw");
+        var raw = Directory.Exists(rawDirectory)
+            ? Directory
+                .GetFiles(rawDirectory, "*", SearchOption.AllDirectories)
+                .Select(x => new ManifestFile(
+                    Path.GetRelativePath(request.OutputDirectory, x).Replace('\\', '/'),
+                    Convert.ToHexStringLower(SHA256.HashData(File.ReadAllBytes(x)))
+                ))
+                .ToList()
+            : [];
+        foreach (var caseId in request.CaseIds)
+        {
+            var reports = summaries
+                .SelectMany(x => x.Reports)
+                .Where(x =>
+                    CaseCatalog.GetCaseId(
+                        x.BenchmarkCase.Descriptor.Type.Name
+                            + "."
+                            + x.BenchmarkCase.Descriptor.WorkloadMethod.Name
+                    ) == caseId
+                )
+                .ToList();
+            var processes = prepared
+                .Jobs.SelectMany(job =>
+                    AttachChecks(
+                        request.OutputDirectory,
+                        prepared.RunId,
+                        caseId,
+                        job.Id,
+                        reports
+                            .Where(x => x.BenchmarkCase.Job.Id == job.Id)
+                            .SelectMany(x => x.ExecuteResults)
+                            .Select(x => new BenchmarkProcessResult(
+                                job.Id,
+                                x.ProcessId,
+                                x.ExitCode,
+                                x.Errors.ToList(),
+                                x.Measurements.Any(y => y.IterationStage == IterationStage.Result),
+                                null
+                            ))
+                    )
+                )
+                .ToList();
+            var checkFailures = processes
+                .Select(x => LatestCheck(request.OutputDirectory, x.CheckFile))
+                .Where(x => x is not null)
+                .SelectMany(x => x!.Failures)
+                .ToList();
+            var failures = processes
+                .Where(x => x.ExitCode != 0 || x.Errors.Count > 0)
+                .Select(x => new RunFailure(
+                    caseId,
+                    RunStage.BenchmarkProcessExit,
+                    LatestCheck(request.OutputDirectory, x.CheckFile)?.LastConfirmedStage,
+                    "benchmark processの終了または診断processの観測が未完了です。",
+                    null,
+                    string.Join(Environment.NewLine, x.Errors),
+                    "終了値=" + x.ExitCode
+                ))
+                .Concat(checkFailures)
+                .ToList();
+            var metrics = CaptureMetrics(prepared.Store, reports);
+            prepared.Store.SaveCase(
+                new(
+                    caseId,
+                    checkFailures.Count > 0 ? ResultStatus.Failed : ResultStatus.Incomplete,
+                    metrics.Metrics,
+                    new(
+                        reports.Count > 0 && reports.All(x => x.BuildResult.IsBuildSuccess),
+                        summaries.All(x => !x.HasCriticalValidationErrors),
+                        processes
+                    ),
+                    failures,
+                    metrics.Measurements is null ? raw.ToList() : [.. raw, metrics.Measurements]
+                )
+            );
+        }
     }
 
     /// <summary>
@@ -329,6 +334,112 @@ internal static class BenchmarkRun
             results.Add(new(jobId, check.Check.ProcessId, null, [], false, check.File));
         }
         return results;
+    }
+
+    /// <summary>
+    /// Workload/Resultの統計と別反復の割り当て・GCを対応付け、全測定行を保存する
+    /// </summary>
+    private static (CaseMetrics Metrics, ManifestFile? Measurements) CaptureMetrics(
+        RunStore store,
+        List<BenchmarkReport> reports
+    )
+    {
+        if (reports.Count != 1)
+        {
+            const string REASON = "caseに対応する単一のBDN reportがありません。";
+            return (new(null, REASON, null, REASON, null, REASON), null);
+        }
+
+        var report = reports[0];
+        var csv = new StringBuilder(
+            "launch_index,iteration_index,iteration_mode,iteration_stage,operations,elapsed_nanoseconds\n"
+        );
+        foreach (var measurement in report.AllMeasurements)
+        {
+            csv.AppendLine(
+                FormattableString.Invariant(
+                    $"{measurement.LaunchIndex},{measurement.IterationIndex},{measurement.IterationMode},{measurement.IterationStage},{measurement.Operations},{measurement.Nanoseconds:R}"
+                )
+            );
+        }
+        var measurements = store.SaveFile(
+            "raw/metrics/" + Guid.NewGuid().ToString("N") + "-measurements.csv",
+            Encoding.UTF8.GetBytes(csv.ToString())
+        );
+        var statistics = report.ResultStatistics;
+        TimeStatistics? time = null;
+        if (
+            statistics is not null
+            && double.IsFinite(statistics.ConfidenceInterval.Lower)
+            && double.IsFinite(statistics.ConfidenceInterval.Upper)
+        )
+        {
+            time = new(
+                statistics.N,
+                statistics.Mean,
+                statistics.Median,
+                statistics.StandardDeviation,
+                new(
+                    statistics.ConfidenceInterval.Lower,
+                    statistics.ConfidenceInterval.Upper,
+                    0.999
+                ),
+                measurements
+            );
+        }
+        var gcStats = report.GcStats;
+        var totalBytes = gcStats.GetTotalAllocatedBytes(false);
+        AllocationStatistics? allocation = null;
+        GcStatistics? gc = null;
+        if (gcStats.TotalOperations > 0)
+        {
+            var displayedBytes = gcStats.GetBytesAllocatedPerOperation(report.BenchmarkCase);
+            if (totalBytes is long bytes && displayedBytes is long displayed)
+            {
+                allocation = new(
+                    bytes,
+                    gcStats.TotalOperations,
+                    (double)bytes / gcStats.TotalOperations,
+                    displayed,
+                    new(
+                        0,
+                        MidpointRounding.ToEven,
+                        "BenchmarkDotNet0.15.8は総bytes/操作数を整数へToEven丸めする。表示0は割り当て不存在を意味しない。"
+                    ),
+                    AllocationScope.ProcessManagedAllocations,
+                    ObservationIteration.SeparateFromTiming
+                );
+            }
+            gc = new(
+                gcStats.TotalOperations,
+                new(
+                    gcStats.Gen0Collections,
+                    gcStats.Gen0Collections / (double)gcStats.TotalOperations * 1000
+                ),
+                new(
+                    gcStats.Gen1Collections,
+                    gcStats.Gen1Collections / (double)gcStats.TotalOperations * 1000
+                ),
+                new(
+                    gcStats.Gen2Collections,
+                    gcStats.Gen2Collections / (double)gcStats.TotalOperations * 1000
+                ),
+                ObservationIteration.SeparateFromTiming
+            );
+        }
+        return (
+            new(
+                time,
+                time is null ? "BDNの時間統計または99.9%信頼区間を取得できませんでした。" : null,
+                allocation,
+                allocation is null
+                    ? "BDNのmanaged割り当て総量またはGC観測操作数を取得できませんでした。"
+                    : null,
+                gc,
+                gc is null ? "BDNのGC観測操作数を取得できませんでした。" : null
+            ),
+            measurements
+        );
     }
 
     private static ProcessCheck? LatestCheck(string outputDirectory, ManifestFile? file) =>
