@@ -158,7 +158,7 @@
   - _Requirements: 3.2, 3.3, 5.1_
 
 - [ ] 7. 保存済み結果の比較を実装する
-- [ ] 7.1 内容と設定によって比較条件を照合する
+- [x] 7.1 内容と設定によって比較条件を照合する
   - 素材・入力・期待値・仕事量・区間・状態復元・harness・依存版・ビルド・Job・環境を照合し、ランタイム変更以外の差を列挙する。
   - run固有ID・時刻・保存path・process ID等を比較条件から除外し、実行ファイルや素材のpathは役割と相対pathへ対応付ける。実効GC/JITや意味のある引数は比較する。
   - assembly hashは使用物の同定に使い、build先やランタイム変更に伴う差だけでは比較不能にしない。
@@ -342,6 +342,8 @@
   - _Requirements: 5.4, 6.8, 8.2, 8.4_
 
 ## Implementation Notes
+
+- 7.1: `RunComparison.CompareConditions`はRunStore.Loadを再利用し、保存内容/設定の差を既存ConditionDifference/ComparisonReasonへ返す。runtimeコードと識別/配置差は除外し、runtime集合中のproject/共通build設定は照合する。ProjectPathは保存cwdから解決しconstructorのroot復元と共有する。Release警告・エラー0、契約227件（条件照合48件）、独立レビュー全4project5,887件成功、APPROVED。記録は`artifacts/runtime-performance/task-7.1-fix1-20261023T020834Z/`と`review-7.1-r2-20261023T021300Z/`。数値/policy判定は7.2、Ubuntu未実行。
 
 - 6.2: `CaptureCase/EvaluateCase`へ観測収集と判定を分離し、report・全process・前後検査・必須指標・RunStoreの保存完了を突合する。観測値/rawは保持し、Failed/Incomplete/Unavailableを成功採用から除外する。Incompleteを含むrunは完了へ補完しない。Release警告・エラー0、契約179件、独立レビュー全4project5,839件成功、APPROVED。既存試走と小report/検査fixtureで主要境界を検証。記録は`artifacts/runtime-performance/task-6.2-20261023T012743Z/`と`review-6.2-20261023T014134Z/`。ExtraRun未知終了はnull、1反復Smokeの非有限CIはUnavailableのまま8.1へ引継ぐ。Ubuntu未実行。
 
