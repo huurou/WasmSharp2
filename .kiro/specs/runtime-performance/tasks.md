@@ -88,7 +88,7 @@
   - _Boundary: CaseVerifier_
   - _Requirements: 1.4, 2.4, 2.7, 3.1, 3.2_
 
-- [ ] 4. 測定設定と結果保存を実装する
+- [x] 4. 測定設定と結果保存を実装する
 - [x] 4.1 (P) 測定器の実行条件とexporterを固定する
   - .NET10・x64・Release・Throughput・1launch、割り当て観測、Full JSON・measurement CSVを設定し、電源planの自動変更とMemoryRandomizationを無効にする。
   - pilot・warmup・反復調整は測定器へ委ね、実効Job設定、実際の反復数、outlier方針、ActualとResultを記録可能にする。
@@ -105,7 +105,7 @@
   - _Depends: 1.4, 3.2_
   - _Requirements: 3.3, 5.1, 5.4_
 
-- [ ] 4.3 実行環境と使用sourceを採取する
+- [x] 4.3 実行環境と使用sourceを採取する
   - CPU・OS・architecture、SDK/runtime・測定器版、GC/JIT、電源と接続状態、コマンド、process構成を実行条件へ保存する。
   - HEAD、index/worktree差分、測定で使う未追跡source/project、submodule、素材・ケース・Job設定を記録し、ランタイムとharnessのsource集合を分けて同定する。
   - 使用source/project・assemblyの実行前後hashを照合し、途中変更を比較不成立にできる。無関係な未追跡ファイルは収集しない。
@@ -342,6 +342,8 @@
   - _Requirements: 5.4, 6.8, 8.2, 8.4_
 
 ## Implementation Notes
+
+- 4.3: `BenchmarkRun`の採取APIはCollectorの観測と指定Job/runtimeconfigを区別し、使用sourceをruntime/harnessへ分けて前後hashを照合する。復元用Git差分は色・外部変換を抑止してa/b接頭辞を固定する。Release警告・エラー0、契約122件、独立レビュー全4project5,782件成功、APPROVED。採取のみの試走で141source・assembly・保存参照179件・素材6件のhash不一致0。記録は`task-4.3-fix2-20261022T235017Z/`と`review-4.3-r3-20261022T235438Z/`（`artifacts/runtime-performance/`配下）。内部Tiering/PGO/ReadyToRunは理由付きUnavailable、Ubuntu未実行。
 
 - 4.2: `RunStore`は新規runをIncompleteで保存し、条件・raw・process検査とcase結果を対応付けて最後に完了を確定する。`RunSource.IndexDiff/WorktreeDiff/UntrackedFiles`も保存参照として存在/hashを照合し、未追跡コピーはrun直下からリポジトリ相対構造を保つ。`SourceSet.Files`とassemblyの観測pathはこの照合へ含めない。process検査は段階別snapshotを追記し、保存後のDTO一覧を所有する。Release警告・エラー0、契約113件、独立レビュー全4project5,773件成功、APPROVED。記録は`artifacts/runtime-performance/task-4.2-20261022T223812Z/`、`task-4.2-fix1-20261022T230001Z/`、`review-4.2-r2-20261022T230545Z/`。保存失敗テストのUnix分岐は未実行。
 
