@@ -137,6 +137,31 @@ internal sealed class RunComparisonFixture : IDisposable
         Jobs = Environment.Processes.ToList();
     }
 
+    internal void SetCases(List<BenchmarkCase> cases)
+    {
+        Cases = cases;
+        Manifest = Manifest with
+        {
+            PlannedCaseIds = cases.Select(x => x.CaseId).ToList(),
+            Cases = cases
+                .Select(x => template_.Manifest.Cases.Single() with { CaseId = x.CaseId })
+                .ToList(),
+        };
+        Assets = Assets with
+        {
+            Assets = cases
+                .DistinctBy(x => x.AssetId)
+                .Select(x =>
+                    Assets.Assets.Single() with
+                    {
+                        AssetId = x.AssetId,
+                        Binary = new("wasm/" + x.AssetId + ".wasm", x.AssetSha256),
+                    }
+                )
+                .ToList(),
+        };
+    }
+
     internal void Save()
     {
         var store = RunStore.Create(DirectoryPath, Manifest);
@@ -157,37 +182,45 @@ internal sealed class RunComparisonFixture : IDisposable
         var raw = store.SaveFile("raw/full.json", "{}"u8);
         var measurements = store.SaveFile("raw/measurements.csv", "operations,ns\n1,125.25"u8);
         var processId = Manifest.RunId == "before" ? 4321 : 8765;
-        var check = store.SaveCheck(
-            template_.Check with
-            {
-                RunId = Manifest.RunId,
-                JobId = Jobs.Single().JobId,
-                ProcessId = processId,
-            }
-        );
-        var result = Manifest.Cases.Single();
-        store.SaveCase(
-            result with
-            {
-                RawFiles = [raw, measurements],
-                Metrics = result.Metrics with
+        foreach (var result in Manifest.Cases)
+        {
+            var check = store.SaveCheck(
+                template_.Check with
                 {
-                    Time = result.Metrics.Time! with { RawMeasurements = measurements },
-                },
-                BenchmarkReport = result.BenchmarkReport! with
+                    RunId = Manifest.RunId,
+                    CaseId = result.CaseId,
+                    JobId = Jobs.Single().JobId,
+                    ProcessId = processId,
+                }
+            );
+            store.SaveCase(
+                result with
                 {
-                    Processes =
-                    [
-                        result.BenchmarkReport.Processes.Single() with
-                        {
-                            JobId = Jobs.Single().JobId,
-                            ProcessId = processId,
-                            CheckFile = check,
-                        },
-                    ],
-                },
-            }
-        );
+                    RawFiles = [raw, measurements],
+                    Metrics = result.Metrics with
+                    {
+                        Time = result.Metrics.Time is { } time
+                            ? time with
+                            {
+                                RawMeasurements = measurements,
+                            }
+                            : null,
+                    },
+                    BenchmarkReport = result.BenchmarkReport! with
+                    {
+                        Processes =
+                        [
+                            result.BenchmarkReport.Processes.Single() with
+                            {
+                                JobId = Jobs.Single().JobId,
+                                ProcessId = processId,
+                                CheckFile = check,
+                            },
+                        ],
+                    },
+                }
+            );
+        }
         if (Manifest.Status != ResultStatus.Incomplete)
         {
             store.Complete(Manifest.Status, Manifest.Failures);

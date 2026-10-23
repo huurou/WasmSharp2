@@ -6,7 +6,7 @@ namespace WasmSharp.Benchmarks.Results;
 /// <summary>
 /// 保存済みrunの条件を照合する 数値と事前policyによる判定は別の工程で扱う。
 /// </summary>
-internal static class RunComparison
+internal static partial class RunComparison
 {
     /// <summary>
     /// 保存済みの2runについて、指定caseの条件差と比較できない理由を返す
@@ -20,6 +20,15 @@ internal static class RunComparison
         var reasons = new List<ComparisonReason>();
         var baseline = ReadConditions(baselineDirectory, caseId, reasons);
         var current = ReadConditions(currentDirectory, caseId, reasons);
+        return CompareConditions(baseline, current, reasons);
+    }
+
+    private static RunConditionComparison CompareConditions(
+        RunConditions? baseline,
+        RunConditions? current,
+        List<ComparisonReason> reasons
+    )
+    {
         var differences = new List<ConditionDifference>();
         if (baseline is not null && current is not null)
         {
@@ -53,13 +62,14 @@ internal static class RunComparison
     private static RunConditions? ReadConditions(
         string directory,
         string caseId,
-        List<ComparisonReason> reasons
+        List<ComparisonReason> reasons,
+        RunManifest? savedRun = null
     )
     {
         try
         {
             // 保存参照の存在とhashはRunStoreに集約し、観測された外部pathを再読込しない
-            var run = RunStore.Load(directory);
+            var run = savedRun ?? RunStore.Load(directory);
             var result = run.Cases.SingleOrDefault(x => x.CaseId == caseId);
             if (
                 run.Kind != RunKind.Measurement

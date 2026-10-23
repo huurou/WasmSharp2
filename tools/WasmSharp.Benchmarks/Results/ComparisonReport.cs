@@ -1,13 +1,14 @@
+using System.Text.Json.Serialization;
 using WasmSharp.Benchmarks.Cases;
 
 namespace WasmSharp.Benchmarks.Results;
 
 /// <summary>
-/// 保存済みrun群と変更前policyを指定する比較要求
+/// 保存runディレクトリ群と変更前policyを指定する比較要求 JSON属性名は既存形式を保つ。
 /// </summary>
 internal sealed record ComparisonRequest(
-    List<string> BaselineRunIds,
-    List<string> CurrentRunIds,
+    [property: JsonPropertyName("baseline_run_ids")] List<string> BaselineRunDirectories,
+    [property: JsonPropertyName("current_run_ids")] List<string> CurrentRunDirectories,
     string PolicyPath,
     string PolicySha256,
     List<string> CaseIds
@@ -22,7 +23,20 @@ internal sealed record ComparisonReport(
     List<ComparedRun> CurrentRuns,
     ManifestFile Policy,
     List<CaseComparison> Cases
-);
+)
+{
+    /// <summary>
+    /// 全対象caseの両指標が許容内で、選定目標の少なくとも1件が達成したことを表す
+    /// </summary>
+    internal bool IsAccepted =>
+        Cases.Count != 0
+        && Cases.All(x =>
+            !x.BlocksCompletion
+            && x.Time.WithinAllowedIncrease == true
+            && x.Allocation.WithinAllowedIncrease == true
+        )
+        && Cases.Any(x => x.TargetAchieved);
+}
 
 /// <summary>
 /// 比較に使用したrun IDとmanifestのpath・hash

@@ -157,7 +157,7 @@
   - _Boundary: BenchmarkRun_
   - _Requirements: 3.2, 3.3, 5.1_
 
-- [ ] 7. 保存済み結果の比較を実装する
+- [x] 7. 保存済み結果の比較を実装する
 - [x] 7.1 内容と設定によって比較条件を照合する
   - 素材・入力・期待値・仕事量・区間・状態復元・harness・依存版・ビルド・Job・環境を照合し、ランタイム変更以外の差を列挙する。
   - run固有ID・時刻・保存path・process ID等を比較条件から除外し、実行ファイルや素材のpathは役割と相対pathへ対応付ける。実効GC/JITや意味のある引数は比較する。
@@ -167,7 +167,7 @@
   - _Depends: 1.4, 4.3, 6.2_
   - _Requirements: 1.5, 5.4, 5.5_
 
-- [ ] 7.2 事前policyで両指標と全ケースを判定する
+- [x] 7.2 事前policyで両指標と全ケースを判定する
   - 独立run群の中央値、個々の値・幅・信頼区間、絶対差・比率を示し、0基準の比率はnullとして絶対差で判定する。
   - 条件・正しさ・測定数・ばらつきの成立を先に確認し、悪化、改善、同等、判定不能の順序と理由を設計どおり評価する。
   - 時間が同等で割り当てのみ目標達成した場合も改善とし、非対象ケースの改善と選定変更の達成件数を区別する。
@@ -342,6 +342,8 @@
   - _Requirements: 5.4, 6.8, 8.2, 8.4_
 
 ## Implementation Notes
+
+- 7.2: `RunComparison.Compare`は条件読込を共有し、run群/policyと指標集計を境界内のpartialへ分ける。中央値・個値・CI・差/比率、0基準、ノイズ/ばらつき、阻害/非阻害、全15ケースと累積悪化を判定し、IsAcceptedで全体受入を示す。内部要求は保存先参照をRunDirectoriesと明示し、JSON名は維持、報告IDはmanifest内IDとする。Release警告・エラー0、契約292件（Compare65件）、独立レビュー全4project5,952件成功、APPROVED。記録は`artifacts/runtime-performance/task-7.2-20261023T022053Z/`と`review-7.2-20261023T024038Z/`。保存fixtureだけを使用し、Ubuntu未実行。
 
 - 7.1: `RunComparison.CompareConditions`はRunStore.Loadを再利用し、保存内容/設定の差を既存ConditionDifference/ComparisonReasonへ返す。runtimeコードと識別/配置差は除外し、runtime集合中のproject/共通build設定は照合する。ProjectPathは保存cwdから解決しconstructorのroot復元と共有する。Release警告・エラー0、契約227件（条件照合48件）、独立レビュー全4project5,887件成功、APPROVED。記録は`artifacts/runtime-performance/task-7.1-fix1-20261023T020834Z/`と`review-7.1-r2-20261023T021300Z/`。数値/policy判定は7.2、Ubuntu未実行。
 
