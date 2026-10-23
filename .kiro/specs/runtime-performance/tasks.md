@@ -114,7 +114,7 @@
   - _Requirements: 5.1, 5.2, 5.3, 5.5, 5.6_
 
 - [ ] 5. 公開APIの測定区間とprocess別検査を接続する
-- [ ] 5.1 準備段階の5ケースを測定する
+- [x] 5.1 準備段階の5ケースを測定する
   - 小・大moduleのDecodeとDecode+Validateでは、事前読込バイト列から毎回新しいmoduleを生成する。
   - Instantiateでは検証済みmoduleから新しいinstanceを生成し、import接続、リソース生成、segment初期化、startまでを計時内に含める。
   - 最後の戻り値を保持し、後検査で追加操作や初期状態を照合する。5ケースの試走でI/O・生成・照合が計時外にあり、各1操作の区間を識別できる。
@@ -342,6 +342,8 @@
   - _Requirements: 5.4, 6.8, 8.2, 8.4_
 
 ## Implementation Notes
+
+- 5.1: `PreparationBenchmarks`は公開操作と最後の戻り値保持だけを計時し、内部Initializeで前検査後に測定用状態を新規準備する。既定素材配置は`AppContext.BaseDirectory/Assets/asset-manifest.json`で、5.3のrun設定へ接続する。Release警告・エラー0、契約131件、独立レビュー全4project5,791件成功、APPROVED。5ケースの別process Smokeは各1操作・子終了0・Errors空・raw/GC/割当・Cleanup完了。記録は`artifacts/runtime-performance/task-5.1-20261023T000305Z/`と`review-5.1-20261023T001528Z/`。probeの継承Cleanupは属性重複を避ける。Ubuntu未実行、Smokeを基準値に混ぜない。
 
 - 4.3: `BenchmarkRun`の採取APIはCollectorの観測と指定Job/runtimeconfigを区別し、使用sourceをruntime/harnessへ分けて前後hashを照合する。復元用Git差分は色・外部変換を抑止してa/b接頭辞を固定する。Release警告・エラー0、契約122件、独立レビュー全4project5,782件成功、APPROVED。採取のみの試走で141source・assembly・保存参照179件・素材6件のhash不一致0。記録は`task-4.3-fix2-20261022T235017Z/`と`review-4.3-r3-20261022T235438Z/`（`artifacts/runtime-performance/`配下）。内部Tiering/PGO/ReadyToRunは理由付きUnavailable、Ubuntu未実行。
 
