@@ -122,7 +122,7 @@
   - _Depends: 3.2, 4.1_
   - _Requirements: 2.1, 2.2, 2.4, 2.7, 3.1_
 
-- [ ] 5.2 定常Invokeの10ケースを測定する
+- [x] 5.2 定常Invokeの10ケースを測定する
   - module・instance・export取得・引数準備と事前照合を計時外へ置き、公開Invokeから結果取得・消費までを1操作として測定する。
   - 短いInvokeに反復前セットアップを追加せず、結果0個も同じ消費方法で扱う。guestループ回数を操作数に代用しない。
   - copy/fillの固定点、行列の出力上書き、読み取り専用入力を全測定段階で維持し、hot pathへ照合・JSON・hash・ログ・boxingを入れない。
@@ -342,6 +342,8 @@
   - _Requirements: 5.4, 6.8, 8.2, 8.4_
 
 ## Implementation Notes
+
+- 5.2: `InvokeBenchmarks`は10ケースの公開Invoke・専用field保持・事前生成Consumerによる参照消費を各1操作とし、InitializeとCleanupへ準備・照合を分離する。前検査と測定のinstance/importを共有せず、Cleanupで追加Invokeしない。Release警告・エラー0、契約144件、独立レビュー全4project5,804件成功、APPROVED。10ケースの別process Smokeは全子終了0・Errors空・raw294行・GC/割当・Cleanup対応成功。記録は`artifacts/runtime-performance/task-5.2-20261023T002153Z/`と`review-5.2-20261023T003239Z/`。ソースコピーの更新時刻保持による増分ビルド見落としに注意。Ubuntu未実行、Smokeは基準値未採用。
 
 - 5.1: `PreparationBenchmarks`は公開操作と最後の戻り値保持だけを計時し、内部Initializeで前検査後に測定用状態を新規準備する。既定素材配置は`AppContext.BaseDirectory/Assets/asset-manifest.json`で、5.3のrun設定へ接続する。Release警告・エラー0、契約131件、独立レビュー全4project5,791件成功、APPROVED。5ケースの別process Smokeは各1操作・子終了0・Errors空・raw/GC/割当・Cleanup完了。記録は`artifacts/runtime-performance/task-5.1-20261023T000305Z/`と`review-5.1-20261023T001528Z/`。probeの継承Cleanupは属性重複を避ける。Ubuntu未実行、Smokeを基準値に混ぜない。
 
