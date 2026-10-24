@@ -216,7 +216,7 @@
   - _Boundary: 改善・受入手順_
   - _Requirements: 5.2, 5.6, 8.4_
 
-- [ ] 9.4 診断で時間と割り当ての原因を切り分ける
+- [x] 9.4 診断で時間と割り当ての原因を切り分ける
   - 準備したツールでprofileを取得し、通常測定とは別のDiagnostic系列へ保存する。
   - 時間と割り当て双方の寄与を調べ、観測した処理と代表ケースを対応付ける。
   - Validate単体やgrowが必要な場合だけ凍結harnessの診断用コピーへ追加する。未検証moduleまたは固定初期サイズinstanceをiteration外でバッチ作成し、各1回だけ操作する別Jobとする。
@@ -342,6 +342,8 @@
   - _Requirements: 5.4, 6.8, 8.2, 8.4_
 
 ## Implementation Notes
+
+- 9.4: 代表12ケースのDiagnosticで時間・割当stackとコードを対応付け、`diagnosis.md`へ候補・所有境界・既存テスト・限界を保存した。direct/indirectのWasmFailureLocation割当重みは99.660%/99.788%で、通常のguest callごとの生成へ対応。結果再コピー・検証builderも候補とし、選定/policyは未確定。元scalar抽出に後検査stack2本を見つけ、元データ保持で全ケース前後100msを除いた中央4.8秒へ統一し混入0を確認。UTC対応原因は未確認、PollGC/inliningと低sampleの限界も保持し、bytes/opや改善率へ換算しない。独立レビューはRelease警告・エラー0、全4project5,968件、12profile/204保存ファイルhash・独立再読込12/12一致、固定105ファイル・3箇所のsource集合・開始終了258ファイル不一致0でAPPROVED。記録は`artifacts/runtime-performance/task-9.4-20261024T113533Z/`と`review-9.4-20261024T114847Z/`。Validate単体/grow追加は不要、受入15ケース/harness・ツールは不変。
 
 - 9.3: dotnet-trace10.0.750501とTraceEvent3.1.21を固定し、`Diagnostics/`の手順・templateで元repo外の診断コピーとDiagnostic出力を用意した。Programだけ既存caseのInitialize/反復/Cleanupへ置き換え、Wasm処理PIDから時間sampleとGCAllocationTickのstackを採取する。独立レビューはRelease警告・エラー0、全4project5,968件、5秒採取PID75672/4,489操作・前後検査成功、時間sample2,558/割当tick9,695のstack読込・EventsLost0、再読込一致・上書き拒否、固定105ファイル・元runtime/harness一致を確認しAPPROVED。準備記録は`artifacts/runtime-performance/task-9.3-20261024T111451Z/preparation-final/preparation.json`、診断コピーと再実行pathは同`evidence.md`、レビューは`review-9.3-20261024T112842Z/`。初回の未公開tool版導入失敗を保持し、公式feedの実在版へ固定した。sampleはCPU使用率や正確なbytes/opへ置換せず、原因調査・選定・保持観測・最適化は後続へ分ける。
 
