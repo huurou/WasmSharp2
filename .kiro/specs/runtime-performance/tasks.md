@@ -175,7 +175,7 @@
   - _Boundary: RunComparison・ComparisonPolicy_
   - _Requirements: 4.4, 6.3, 6.4, 6.5, 6.6, 6.7, 6.8_
 
-- [ ] 8. 利用者の操作と標準検証へ統合する
+- [x] 8. 利用者の操作と標準検証へ統合する
 - [x] 8.1 素材確認・測定・比較のCLIを接続する
   - 設計のcheck・run・compareとcase選択を接続し、新規出力先、用途、比較元、事前policyを指定して操作できるようにする。
   - 成功、保存できた測定失敗・受入不成立、引数・I/O・未完了の終了値を0・1・2に分ける。
@@ -185,8 +185,7 @@
   - _Depends: 2.5, 5.3, 6.2, 7.2_
   - _Requirements: 2.1, 3.2, 3.3, 5.1, 5.3, 5.4, 8.4_
 
-- [ ] 8.2 新しい契約テストを標準コマンドと通常CIへ組み込む
-  - _Blocked: 自動承認レビューが独立Releaseビルド・全4テストに伴う生成物と検証記録の書き込みをread-onlyの範囲外として拒否した。kiro-debugのSTOP_FOR_HUMANに従い、ユーザーの明示許可まで停止する。_
+- [x] 8.2 新しい契約テストを標準コマンドと通常CIへ組み込む
   - 既存3プロジェクトに限定された実行設定へ測定ツールの契約テストを追加し、標準手順と技術方針を同じ実行対象へ揃える。
   - 通常CIでは小さい保存データfixtureだけを使い、BDN起動、性能の合否、Clang/WABT生成を要求しない。
   - Releaseビルドの警告・エラー0の後、追加したテストをコマンドで全件実行し、既存テストの実行経路も保持されていることを確認する。
@@ -344,7 +343,7 @@
 
 ## Implementation Notes
 
-- 8.2: README・通常CI・技術方針を4テストprojectへ揃える変更を保持している。実装側Releaseビルドは警告・エラー0、契約308件成功、独立レビューの読取チェックと最終ファイルhash照合は成功。独立ビルド・全4テスト・検証記録保存は自動承認レビューに起動前に3回拒否され、REJECTED後の実装担当はBLOCKED、独立診断はEXTERNAL_DEPENDENCY/STOP_FOR_HUMANと判定した。コード不具合の指摘はなく、ユーザーが検証生成物の書き込みを明示許可した後に独立レビューを再開する。実装記録は`artifacts/runtime-performance/task-8.2-20261023T032054Z/`。未完了・未コミットであり、後続タスクと最終検証は未実施。
+- 8.2: README・通常CI・技術方針を4テストprojectへ揃えた。前回の停止はレビューのread-only指定と検証生成物の書き込みの衝突で、再診断はCONFIG_GAP/RETRY_TASK。再開時にコード非編集と検証生成物の書き込み許可を区別し、必要な権限申請が承認された。Release警告・エラー0、設定31件、契約308件、独立レビュー全4project5,968件成功、失敗・スキップ0、APPROVED。検証前後の対象ファイルhash一致を確認。実装変更は`3ba5bff`、最新記録は`artifacts/runtime-performance/task-8.2-resume-20261024T101038Z/`と`review-8.2-resume-20261024T101515Z/`。Ubuntu・性能測定・公式全体検証は未実施。
 
 - 8.1: ProgramからBenchmarkCliへ入出力責務を分離し、check/run/compareと0/1/2の終了値・新規保存を接続した。`--assets`を配置正規化へ対応付け、Smokeだけ3反復へ変更して有限CIを取得する。Measurement Jobは維持。Release警告・エラー0、契約308件、独立レビュー全4project5,968件成功、APPROVED。新規素材生成/全15check0・正常Smoke0・後検査失敗Smoke1・比較1/非採用/入力hash不変を確認。記録は`artifacts/runtime-performance/task-8.1-20261023T024900Z/`と`review-8.1-20261023T031105Z/`。親buildとBDN子buildのhash差・清掃後の観測path不在を区別する。採用素材は2.5のmanifestを維持。Ubuntuと基準値取得は未実行。
 
