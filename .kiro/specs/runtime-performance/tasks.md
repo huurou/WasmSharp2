@@ -202,7 +202,7 @@
   - _Depends: 8.1, 8.2_
   - _Requirements: 5.2, 5.4, 5.5, 8.4_
 
-- [ ] 9.2 全15ケースの基準値を独立runで取得する
+- [x] 9.2 全15ケースの基準値を独立runで取得する
   - 固定した同版・入力・条件で3回以上独立測定し、時間のばらつきと丸め前割り当て量の安定性を確認する。
   - Smokeを基準値に混ぜず、各runの成否・環境・source・raw・前後検査と採用ID/hashを残す。
   - 全15ケースの比較前提が成立し、両指標の基準値と観測した幅を再集計できる。不成立なら原因を解消して新規出力へ取り直す。
@@ -342,6 +342,8 @@
   - _Requirements: 5.4, 6.8, 8.2, 8.4_
 
 ## Implementation Notes
+
+- 9.2: 固定した9.1復元版・6素材・Measurement Jobで全15ケースを独立3run直列測定し、45/45ケースSucceeded。基準値・採用ID/hash・再集計経路は`baseline.md`、詳細は`artifacts/runtime-performance/task-9.2-20261024T104127Z/`。時間の幅/中央値は0.471〜7.887%、丸め前割当は11ケース一致、4ケースの微差も保持した。独立レビューはRelease警告・エラー0、全4project5,968件、保存380ファイルhash・BDN45ケース・raw3,616行・表15行・14,826条件値差0を確認しAPPROVED。記録は`review-9.2-20261024T110649Z/`。固定source150件・assemblyと元HEAD/index/refs不変。集計のreflection引数型不一致は手順scriptだけを修正して失敗ログを保持した。Smoke不採用、改善目標/policy・診断・最適化・最終公式検証・Ubuntuは未実施。
 
 - 9.1: `Restore-RunSource.ps1`で保存HEAD・index/worktree差分・使用未追跡sourceを元repo外の独立cloneへ復元し、ファイル・集合hashと再帰submodule状態を照合する。C#・計時harness・依存版は変更せず、READMEへ復元・同版build・測定手順を追加した。元版と復元版のRelease警告・エラー0、全15check・別process Smoke成功、300比較条件の差0、元HEAD/refs/index/statusと旧保存runの不変を確認。独立レビューも全4project5,968件・復元契約成功、APPROVED。記録は`artifacts/runtime-performance/task-9.1-20261024T102137Z/`と`review-9.1-20261024T103507Z/`。継続用復元先は`task-9.1-20261024T102137Z/restored-path.txt`に保存し、runtime集合`4966bd32750411fb132e6849c0f3b56992a2a5be382cdb3e84d07fdd14c8a751`・harness集合`bfdd7e94b71ecbf21c50669310920af24dd10616861790f5d668b926609c824d`を固定基点とする。Smokeは基準値に含めず、本測定・診断・最終公式検証・Ubuntuは未実施。
 

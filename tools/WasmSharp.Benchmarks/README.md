@@ -4,6 +4,8 @@ WasmSharp2の公開APIを使う性能測定ツール。固定素材の確認、�
 
 固定した6素材・15ケースについては、[分類・開始状態・期待値の根拠](Assets/README.md)と[cases.json](Assets/cases.json)を参照する。測定結果の成功と、性能改善の受入成立は区別する。
 
+採用する性能基準値、独立runのID/hashと再集計手順は[性能基準値](../../.kiro/specs/runtime-performance/baseline.md)を参照する。
+
 ## ビルドと契約テスト
 
 .NET10 SDKを使い、リポジトリのルートから実行する。
