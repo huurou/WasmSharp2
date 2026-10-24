@@ -124,6 +124,52 @@ policyの型は[ComparisonPolicy.cs](Results/ComparisonPolicy.cs)にあり、各
 
 今回のWindows x64での操作確認と再実行scriptは[タスク8.1の記録](../../artifacts/runtime-performance/task-8.1-20261023T024900Z/evidence.md)を参照する。正常Smoke、隔離素材での後検査失敗、保存結果の比較除外を確認する。通常契約の比較成立は小さい保存fixtureで検証し、Smokeやfixtureを性能基準値へ採用しない。全15ケースの本測定基準値取得、改善policyの策定、最終公式全体検証は後続の受入作業であり、Ubuntuは未実行。
 
+## 原因調査の診断コピーとDiagnostic出力
+
+[採用基準値](../../.kiro/specs/runtime-performance/baseline.md)で観測した短いInvoke、guest内のcall、Decode/Validate等の時間・割り当ての寄与を調べるため、managed stackの時間sampleとGC割り当てsampleを同じprocessから取得する。以下は採取と読込の準備であり、改善対象や数値目標の選定は後続のprofile調査で行う。
+
+Windows x64では`dotnet-trace`を`10.0.750501`に固定し、`--profile dotnet-sampled-thread-time,gc-verbose --buffersize 256 --buffering-mode Drop --format NetTrace`を使う。[公式NuGetの対象framework](https://www.nuget.org/packages/dotnet-trace/10.0.750501)と[公式リリース](https://github.com/dotnet/diagnostics/releases/tag/v10.0.750501)を確認し、下記の.NET10環境で採取を確認した。globalインストールやシステム設定変更は行わず、専用出力内へ`dotnet tool install --tool-path ... --version 10.0.750501 --arch x64`で配置する。
+
+読込は`Microsoft.Diagnostics.Tracing.TraceEvent`の`3.1.21`を指定した小さい独立projectで行う。[公式NuGet](https://www.nuget.org/packages/Microsoft.Diagnostics.Tracing.TraceEvent/3.1.21)の.NET Standard2.0対応を確認し、.NET10でのnettrace→ETLX変換とstack読込を確認した。読込project、依存lock、実行DLLとSHA-256は準備出力へ保存する。受入用projectの依存版は変更しない。
+
+リポジトリルートから、採用runを**受入用の復元先とは別の、元リポジトリ外の新規path**へ復元する。PowerShell7.5以上と基準runと同じSDK/runtime完全版を使う。次のscriptは復元後、診断コピーの`Program.cs`だけを専用workloadへ替え、既存の`CaseCatalog`、`Initialize`、測定メソッド、`Cleanup`を直接再利用する。Wasmを処理するprocessを`dotnet-trace collect -- dotnet exec <workload.dll>`で起動するため、BDNの親だけを採取する経路はない。[公式の子process起動時の注意](https://learn.microsoft.com/en-us/dotnet/core/diagnostics/dotnet-trace#launch-a-child-application-and-collect-a-trace-from-its-startup-using-dotnet-trace)も参照する。
+
+```powershell
+$repository = (Get-Location).Path
+$diagnosticRecord = Join-Path $repository ('artifacts/runtime-performance/diagnostic-' + [guid]::NewGuid().ToString('N'))
+$diagnosticCopy = Join-Path ([IO.Path]::GetTempPath()) ('wasmsharp-diagnostic-' + [guid]::NewGuid().ToString('N'))
+./tools/WasmSharp.Benchmarks/Diagnostics/Prepare-Diagnostic.ps1 `
+    -RunDirectory artifacts/runtime-performance/task-9.2-20261024T104127Z/run-1 `
+    -DestinationDirectory $diagnosticCopy `
+    -OutputDirectory (Join-Path $diagnosticRecord 'preparation') `
+    -AssetManifestPath artifacts/runtime-performance/task-2.5-20261022T160359Z/accepted-assets/asset-manifest.json
+
+$preparation = Join-Path $diagnosticRecord 'preparation/preparation.json'
+$diagnosticRun = Join-Path $diagnosticRecord ('Diagnostic-' + [guid]::NewGuid().ToString('N'))
+./tools/WasmSharp.Benchmarks/Diagnostics/Collect-Diagnostic.ps1 `
+    -PreparationPath $preparation -CaseId loop.integer-direct -Seconds 5 -OutputDirectory $diagnosticRun
+```
+
+準備先・復元先・採取先の再使用は拒否する。失敗した出力も残すため、再準備・再採取には新規pathを使う。準備出力の`preparation.json`に固定した実行ファイルの絶対path・版・SHA-256、採用runのhash、素材、SDK/runtimeを保存し、`source-final.json`に基準HEADとruntime/harnessそれぞれの内容hash、`diagnostic-program.diff`にコピーへの変更を保存する。`commands.json`は引数・cwd・終了値、各`.log`は出力、`recipe/`は使用script/templateを保持する。診断コピー、ツールと準備記録は後続の再採取まで保持する。
+
+`Collect-Diagnostic.ps1`の`-CaseId`は固定15ケースから1件、`-Seconds`は1〜300秒を指定する。素材は読込時にhash照合し、反復前・反復後は既存の固定期待値で検査する。Invokeのmodule/instance/export/引数準備と準備系の開始条件は既存実装に従う。準備後に1秒反復してウォームアップし、指定秒数の反復を行う。processは採取ごとに新規、Invokeのinstanceは同process内で反復利用、Decode/Instantiateは既存caseの各操作で新規生成する。反復用delegate・時計確認と診断自体の費用が加わるため、この操作数や経過秒から受入性能値を計算しない。
+
+採取先には`kind: Diagnostic`の`diagnostic.json`、`trace.nettrace`、`workload.json`、`readability.json`、変換済みETLXとコマンド・条件・hashを保存する。`workload.json`の対象PID、実際のruntime完全版、GC/JIT設定、前後検査、反復区間のUTCを確認する。`conditions.json`にCPU/OS、電源planと取得可能なbattery状態、採取profileを保存する。給電状態をbattery情報から特定できない場合は未確認として扱う。JITの最適化設定の実効値は公開APIで網羅できないため、保存したruntimeconfig・GC/JIT環境変数とRyuJIT識別を使い、推測で埋めない。
+
+`readability.json`は対象PIDかつウォームアップ後の反復区間に絞り、イベント数、`GC/AllocationTick`の型とstack、時間sampleのstackを保存する。イベント欠落がなく、両方でWasmSharpのstackを読めた場合に読込コマンドが終了0となる。`top-methods.log`の`dotnet-trace report ... topN --inclusive`はprocess全体（準備・warmupを含む）の補助表示であり、反復区間だけの寄与は`readability.json`で確認する。
+
+既存traceだけを再読込する場合も、ETLXの新規保存先を使う。
+
+```powershell
+$prepared = Get-Content $preparation -Raw | ConvertFrom-Json
+$reread = Join-Path $diagnosticRun ('reread-' + [guid]::NewGuid().ToString('N') + '.json')
+& $prepared.dotnet exec $prepared.reader_assembly (Join-Path $diagnosticRun 'trace.nettrace') (Join-Path $diagnosticRun 'workload.json') $reread
+```
+
+時間sampleはthreadがstack上にあった時間の推定であり、CPU使用率そのものではない。割り当ては`GCAllocationTick`によるsampleとその重みであり、全objectの記録や通常Measurementの正確なbytes/opではない。GC、待機、未解決stackも併せて読む。[profileの意味とEventPipe bufferの制約](https://learn.microsoft.com/en-us/dotnet/core/diagnostics/dotnet-trace#options-1)に従い、欠落があれば採取条件を明記して新規出力へ取り直す。診断付きの値や本節の出力を通常Measurement・比較policyへ混ぜない。
+
+今回の最小採取、固定ツールのhash、保持する診断コピーと再実行pathは[タスク9.3の記録](../../artifacts/runtime-performance/task-9.3-20261024T111451Z/evidence.md)に残す。保持量・rootの採取は再利用方式が選ばれた場合に、同じprocess数・入力・小→大→小の反復列と強制GC条件を決め、別のRetention系列として準備する。今回は再利用未選定のため保持観測、全ケースの原因調査、最適化選定・数値目標策定は未実施。
+
 ## 素材生成ツールの準備
 
 PowerShell7.5以上、Windows x64、Visual StudioのC++ビルドツールとCMakeを使う。WABTは既存DataCount修正を含む固定commit`c8dc7b6eae42b3aa3e95b9014dc02b71f8e0e1db`、Clang/LLDは21.1.8を使用する。`PATH`上の素材コンパイラは使わず、4実行ファイルを絶対pathで指定する。

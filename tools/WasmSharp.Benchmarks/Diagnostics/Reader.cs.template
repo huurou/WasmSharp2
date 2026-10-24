@@ -1,0 +1,91 @@
+using System.Text.Json;
+using Microsoft.Diagnostics.Tracing.Etlx;
+using Microsoft.Diagnostics.Tracing.Parsers.Clr;
+
+// nettraceの全体を保持し、対象PIDの反復区間だけを読込結果へ抽出する
+var workload = JsonDocument.Parse(File.ReadAllText(args[1])).RootElement;
+var processId = workload.GetProperty("process_id").GetInt32();
+var start = workload.GetProperty("work_started_utc").GetDateTime();
+var stop = workload.GetProperty("work_stopped_utc").GetDateTime();
+var etlx = TraceLog.CreateFromEventPipeDataFile(args[0], args[2] + ".etlx");
+using var log = new TraceLog(etlx);
+var samples = new Dictionary<string, long>(StringComparer.Ordinal);
+var allocations = new Dictionary<string, long>(StringComparer.Ordinal);
+var eventCounts = new Dictionary<string, long>(StringComparer.Ordinal);
+long sampled = 0;
+long allocated = 0;
+long sampleStacks = 0;
+long allocationStacks = 0;
+foreach (var data in log.Events)
+{
+    if (
+        data.ProcessID != processId
+        || data.TimeStamp.ToUniversalTime() < start
+        || data.TimeStamp.ToUniversalTime() > stop
+    )
+    {
+        continue;
+    }
+    var name = data.ProviderName + "/" + data.EventName;
+    eventCounts[name] = eventCounts.GetValueOrDefault(name) + 1;
+    var isSample = data.ProviderName == "Microsoft-DotNETCore-SampleProfiler";
+    var isAllocation = data is GCAllocationTickTraceData;
+    if (!isSample && !isAllocation)
+    {
+        continue;
+    }
+    var frames = new List<string>();
+    for (var frame = data.CallStack(); frame is not null; frame = frame.Caller)
+    {
+        frames.Add(frame.CodeAddress.FullMethodName);
+    }
+    var stack = string.Join("\n", frames);
+    if (isSample)
+    {
+        sampled++;
+        if (frames.Count > 0)
+        {
+            sampleStacks++;
+        }
+        samples[stack] = samples.GetValueOrDefault(stack) + 1;
+    }
+    if (data is GCAllocationTickTraceData allocation)
+    {
+        allocated++;
+        if (frames.Count > 0)
+        {
+            allocationStacks++;
+        }
+        var key = allocation.TypeName + "\n" + stack;
+        allocations[key] = allocations.GetValueOrDefault(key) + allocation.AllocationAmount64;
+    }
+}
+var sampleWasmStacks = samples.Where(x => x.Key.Contains("WasmSharp.")).Sum(x => x.Value);
+var allocationWasmBytes = allocations.Where(x => x.Key.Contains("WasmSharp.")).Sum(x => x.Value);
+var readable = log.EventsLost == 0 && sampleWasmStacks > 0 && allocationWasmBytes > 0;
+File.WriteAllText(
+    args[2],
+    JsonSerializer.Serialize(
+        new
+        {
+            kind = "Diagnostic",
+            process_id = processId,
+            case_id = workload.GetProperty("case_id").GetString(),
+            start,
+            stop,
+            events_lost = log.EventsLost,
+            sampled_events = sampled,
+            sample_events_with_stack = sampleStacks,
+            allocation_tick_events = allocated,
+            allocation_events_with_stack = allocationStacks,
+            samples_with_wasm_stack = sampleWasmStacks,
+            sampled_allocation_bytes_with_wasm_stack = allocationWasmBytes,
+            readable,
+            event_counts = eventCounts,
+            sample_stacks = samples.OrderByDescending(x => x.Value),
+            allocation_stacks_sampled_bytes = allocations.OrderByDescending(x => x.Value),
+        },
+        new JsonSerializerOptions { WriteIndented = true }
+    )
+);
+return readable ? 0 : 1;

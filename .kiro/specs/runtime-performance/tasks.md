@@ -209,7 +209,7 @@
   - _Boundary: 改善・受入手順_
   - _Requirements: 4.1, 5.1, 5.2, 5.4, 6.1_
 
-- [ ] 9.3 原因調査に使う診断ツールと専用出力を用意する
+- [x] 9.3 原因調査に使う診断ツールと専用出力を用意する
   - 基準値で調べる必要のある時間・割り当ての寄与に合わせて.NET診断ツールを選び、版と実行ファイル・引数を固定する。
   - 通常測定と別のDiagnostic系列および診断用コピーを用意し、必要なら保持観測用の採取環境も準備する。
   - 最小の診断採取を実行して結果を読めることを確認し、準備と再実行コマンドを操作手順へ残す。
@@ -342,6 +342,8 @@
   - _Requirements: 5.4, 6.8, 8.2, 8.4_
 
 ## Implementation Notes
+
+- 9.3: dotnet-trace10.0.750501とTraceEvent3.1.21を固定し、`Diagnostics/`の手順・templateで元repo外の診断コピーとDiagnostic出力を用意した。Programだけ既存caseのInitialize/反復/Cleanupへ置き換え、Wasm処理PIDから時間sampleとGCAllocationTickのstackを採取する。独立レビューはRelease警告・エラー0、全4project5,968件、5秒採取PID75672/4,489操作・前後検査成功、時間sample2,558/割当tick9,695のstack読込・EventsLost0、再読込一致・上書き拒否、固定105ファイル・元runtime/harness一致を確認しAPPROVED。準備記録は`artifacts/runtime-performance/task-9.3-20261024T111451Z/preparation-final/preparation.json`、診断コピーと再実行pathは同`evidence.md`、レビューは`review-9.3-20261024T112842Z/`。初回の未公開tool版導入失敗を保持し、公式feedの実在版へ固定した。sampleはCPU使用率や正確なbytes/opへ置換せず、原因調査・選定・保持観測・最適化は後続へ分ける。
 
 - 9.2: 固定した9.1復元版・6素材・Measurement Jobで全15ケースを独立3run直列測定し、45/45ケースSucceeded。基準値・採用ID/hash・再集計経路は`baseline.md`、詳細は`artifacts/runtime-performance/task-9.2-20261024T104127Z/`。時間の幅/中央値は0.471〜7.887%、丸め前割当は11ケース一致、4ケースの微差も保持した。独立レビューはRelease警告・エラー0、全4project5,968件、保存380ファイルhash・BDN45ケース・raw3,616行・表15行・14,826条件値差0を確認しAPPROVED。記録は`review-9.2-20261024T110649Z/`。固定source150件・assemblyと元HEAD/index/refs不変。集計のreflection引数型不一致は手順scriptだけを修正して失敗ログを保持した。Smoke不採用、改善目標/policy・診断・最適化・最終公式検証・Ubuntuは未実施。
 

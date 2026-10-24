@@ -1,0 +1,95 @@
+using System.Diagnostics;
+using System.Reflection;
+using System.Runtime;
+using System.Runtime.InteropServices;
+using System.Text.Json;
+using WasmSharp.Benchmarks.Cases;
+using WasmSharp.Benchmarks.Measurements;
+
+// 診断コピーのProgram.csだけに配置する 受入用の測定CLIには組み込まない
+var assets = LoadedAssets.Load(args[0]);
+var caseId = args[1];
+var seconds = int.Parse(args[2]);
+var output = args[3];
+var method = assets.Catalog.GetMeasurementMethod(caseId).Split('.');
+object benchmark =
+    method[0] == nameof(InvokeBenchmarks) ? new InvokeBenchmarks() : new PreparationBenchmarks();
+var type = benchmark.GetType();
+type.GetMethod("Initialize", BindingFlags.Instance | BindingFlags.NonPublic)!
+    .Invoke(benchmark, [assets, caseId]);
+var operationMethod = type.GetMethod(method[1])!;
+
+// 戻り値のある準備操作も直接delegateで呼び、反復中のReflection割り当てを避ける
+Action operation;
+if (operationMethod.ReturnType == typeof(void))
+{
+    operation = operationMethod.CreateDelegate<Action>(benchmark);
+}
+else if (operationMethod.ReturnType == typeof(WasmSharp.WasmModule))
+{
+    var prepare = operationMethod.CreateDelegate<Func<WasmSharp.WasmModule>>(benchmark);
+    operation = () => prepare();
+}
+else
+{
+    var prepare = operationMethod.CreateDelegate<Func<WasmSharp.WasmInstance>>(benchmark);
+    operation = () => prepare();
+}
+
+var warmup = Stopwatch.StartNew();
+long warmupOperations = 0;
+while (warmup.Elapsed.TotalSeconds < 1)
+{
+    operation();
+    warmupOperations++;
+}
+var started = DateTime.UtcNow;
+var clock = Stopwatch.StartNew();
+long operations = 0;
+while (clock.Elapsed.TotalSeconds < seconds)
+{
+    operation();
+    operations++;
+}
+var stopped = DateTime.UtcNow;
+type.GetMethod("Cleanup")!.Invoke(benchmark, null);
+File.WriteAllText(
+    output,
+    JsonSerializer.Serialize(
+        new
+        {
+            kind = "Diagnostic",
+            case_id = caseId,
+            process_id = Environment.ProcessId,
+            runtime = RuntimeInformation.FrameworkDescription,
+            corelib_version = typeof(object)
+                .Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!
+                .InformationalVersion,
+            architecture = RuntimeInformation.ProcessArchitecture.ToString(),
+            operating_system = RuntimeInformation.OSDescription,
+            gc = GC.GetConfigurationVariables(),
+            server_gc = GCSettings.IsServerGC,
+            gc_latency_mode = GCSettings.LatencyMode.ToString(),
+            jit = BenchmarkDotNet.Environments.HostEnvironmentInfo.GetCurrent().JitInfo,
+            gc_jit_environment = Environment
+                .GetEnvironmentVariables()
+                .Cast<System.Collections.DictionaryEntry>()
+                .Where(x =>
+                    ((string)x.Key).StartsWith("DOTNET_", StringComparison.OrdinalIgnoreCase)
+                    || ((string)x.Key).StartsWith("COMPlus_", StringComparison.OrdinalIgnoreCase)
+                )
+                .ToDictionary(x => (string)x.Key, x => (string)x.Value!),
+            warmup_operations = warmupOperations,
+            warmup_seconds = 1,
+            requested_seconds = seconds,
+            operations,
+            work_started_utc = started,
+            work_stopped_utc = stopped,
+            before_check = "Succeeded",
+            after_check = "Succeeded",
+            exit_code = 0,
+        },
+        new JsonSerializerOptions { WriteIndented = true }
+    )
+);
+return 0;
