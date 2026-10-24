@@ -52,6 +52,57 @@ $measurementExit = $LASTEXITCODE
 
 終了値は成立0、保存できた測定失敗・必須指標取得不能・比較受入不成立1、引数/I/O/未完了2。`check`の期待値不一致も理由と終了1を返す。失敗時のrawや観測値は残すが、成功した性能測定へ採用しない。再試行は新しい出力先で行う。
 
+## 保存した基準revisionの復元
+
+PowerShell7.5以上とGitを使う。`Restore-RunSource.ps1`は保存runの`source_file`を読み、保存ファイルのhashを確認してから、HEADを独立cloneへcheckoutし、index差分、worktree差分、使用未追跡source/projectの順に復元する。元リポジトリのworktree・index・branchを変更せず、cloneのobjectも共有しない。使用runtime/harnessの全ファイルと、相対pathをOrdinal順に並べたSystem.Text.Json形式の集合hashを照合する。既存復元先と元リポジトリ配下の復元先は拒否する。元リポジトリ配下に同名projectを複製すると、BDNのproject探索にも影響する。
+
+元リポジトリに保存HEADと必要なsubmoduleのobjectがあることを前提とする。初期化済みsubmoduleは保存revisionの独立cloneへ復元し、未初期化のものはgitlinkを保持する。使用ファイルの欠落・hash不一致、測定中のsource変更、dirtyなsubmoduleがある場合は停止する。失敗時も復元先を残すため、再試行には新しいpathを使う。保存runと素材の配置は変更しない。
+
+```powershell
+$repository = (Get-Location).Path
+$savedRun = (Resolve-Path 'artifacts/runtime-performance/before-1').Path
+$savedManifest = Get-Content (Join-Path $savedRun 'run.json') -Raw | ConvertFrom-Json
+$savedEnvironment = Get-Content (Join-Path $savedRun $savedManifest.environment_file.relative_path) -Raw | ConvertFrom-Json
+$restored = Join-Path ([IO.Path]::GetTempPath()) ('wasmsharp-baseline-' + [guid]::NewGuid().ToString('N'))
+./tools/WasmSharp.Benchmarks/Restore-RunSource.ps1 -RunDirectory $savedRun -RepositoryDirectory $repository -DestinationDirectory $restored
+
+# 素材は採用済みの同じmanifestを両版で参照する。再生成・期待値更新は行わない。
+$manifest = (Resolve-Path 'artifacts/runtime-performance/task-2.5-20261022T160359Z/accepted-assets/asset-manifest.json').Path
+$restoredSmoke = Join-Path $repository ('artifacts/runtime-performance/restored-smoke-' + [guid]::NewGuid().ToString('N'))
+Push-Location $restored
+try {
+    if ((dotnet --version) -ne $savedEnvironment.sdk_version) { throw '保存SDKの完全版と異なります。' }
+    dotnet --info
+    dotnet --list-runtimes
+    dotnet build WasmSharp2.slnx -c Release --warnaserror
+    if ($LASTEXITCODE -ne 0) { throw '復元版のReleaseビルドに失敗しました。' }
+    dotnet run --project tools/WasmSharp.Benchmarks/WasmSharp.Benchmarks.csproj -c Release --no-build -- check --assets $manifest
+    if ($LASTEXITCODE -ne 0) { throw '復元版の素材・期待値確認に失敗しました。' }
+    dotnet run --project tools/WasmSharp.Benchmarks/WasmSharp.Benchmarks.csproj -c Release --no-build -- run --assets $manifest --case invoke.single --kind smoke --output $restoredSmoke
+    if ($LASTEXITCODE -ne 0) { throw '復元版のSmokeに失敗しました。' }
+} finally { Pop-Location }
+$smokeManifest = Get-Content (Join-Path $restoredSmoke 'run.json') -Raw | ConvertFrom-Json
+$smokeEnvironment = Get-Content (Join-Path $restoredSmoke $smokeManifest.environment_file.relative_path) -Raw | ConvertFrom-Json
+if ($smokeEnvironment.runtime_version -cne $savedEnvironment.runtime_version) { throw 'runtimeの完全版が異なります。' }
+```
+
+SDKは`10.0`のような系列名で済ませず、保存した完全版を使う。今回のWindows x64はSDK`10.0.402`、runtime`.NET 10.0.13; 10.0.13-servicing.26504.104+4099f83977f4d29604a9aeb971fb0a7bc1d5f699`。選ばれるruntimeを`dotnet --info`で確認し、インストール先の`System.Private.CoreLib.dll`のProductVersionと保存値の後半を照合してから実行する。実行後も上記のように実際の`environment.json`で一致を確認する。異なる場合は同じ完全版を用意して両版を新規runへ再測定する。
+
+基準値を採る前に、保存sourceの`harness.files`全体（計時・前後検査・集計コード、project設定、BDN依存版）と、`runtime.files`内のproject・共通build設定を固定する。改善の受入まで変更しない。GC/JIT関連環境変数、runtimeconfig、Job、電源plan・AC接続、CPU/OS・architectureも両版で揃える。sourceのhashは相対pathと内容で照合し、root/cwd・出力先・実行時刻・PID・assemblyの配置由来のhash差で代用しない。復元版のSmokeが成功し、保存source/hashと実行条件が揃ったことを確認してから本測定へ進む。Smokeは基準値に含めない。
+
+本測定では、上記でbuildした復元版と候補版それぞれをcwdとして、次の同じ引数を使い、同じ環境・期間で順番を交互にして各3run以上を新規保存する。`$measurementRun`は毎回新しいpathとし、旧runを上書きしない。基準側runのsourceでharness集合hashが保存元と一致すること、候補側では変更対象のruntime以外に条件差がないことを、下記の保存run群の比較で確認する。条件差があれば性能改善の受入を保留する。
+
+```powershell
+Push-Location $restored # 候補版では候補の独立ディレクトリを指定する。
+try {
+    $measurementRun = Join-Path $repository ('artifacts/runtime-performance/baseline-measurement-' + [guid]::NewGuid().ToString('N'))
+    dotnet run --project tools/WasmSharp.Benchmarks/WasmSharp.Benchmarks.csproj -c Release --no-build -- run --assets $manifest --case all --kind measurement --output $measurementRun
+    if ($LASTEXITCODE -ne 0) { throw '本測定に失敗しました。' }
+} finally { Pop-Location }
+```
+
+復元契約の検証は`./tools/WasmSharp.Benchmarks/Tests/Restore-RunSource.Tests.ps1`で実行する。Gitへの書込みは一時ディレクトリ内のfixtureと復元先だけで、staged/worktree差分・使用未追跡ファイルの復元、内容hash、元HEAD/index/statusの維持を確認する。
+
 ## 保存run群の比較
 
 改善前に固定したpolicyを指定する。`--baseline`と`--current`にはrunディレクトリをカンマ区切りの1引数で渡し、空要素を含めない。比較入力とpolicyを読み取るだけで、期待値・基準値・policyを更新しない。入力run内の新規サブディレクトリへの出力も拒否する。

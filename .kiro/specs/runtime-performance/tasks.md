@@ -194,7 +194,7 @@
   - _Requirements: 8.1, 8.4_
 
 - [ ] 9. 比較環境と基準値から改善計画を確定する
-- [ ] 9.1 基準revisionを復元して同条件で測定できるようにする
+- [x] 9.1 基準revisionを復元して同条件で測定できるようにする
   - 保存したHEAD・差分・使用する未追跡source/projectから独立した比較用ディレクトリを復元し、source内容hashを照合する。
   - 同じ完全版SDK/runtime・harness・素材・入力・ビルド条件でビルドとSmokeを再現する。復元のために利用者の作業ツリーやGitの状態を変更しない。
   - 計時・検査・集計コードと設定・依存版を固定し、復元・ビルド・測定コマンドを操作手順へ残す。元の環境と異なるpathでも同条件として照合できる。
@@ -342,6 +342,8 @@
   - _Requirements: 5.4, 6.8, 8.2, 8.4_
 
 ## Implementation Notes
+
+- 9.1: `Restore-RunSource.ps1`で保存HEAD・index/worktree差分・使用未追跡sourceを元repo外の独立cloneへ復元し、ファイル・集合hashと再帰submodule状態を照合する。C#・計時harness・依存版は変更せず、READMEへ復元・同版build・測定手順を追加した。元版と復元版のRelease警告・エラー0、全15check・別process Smoke成功、300比較条件の差0、元HEAD/refs/index/statusと旧保存runの不変を確認。独立レビューも全4project5,968件・復元契約成功、APPROVED。記録は`artifacts/runtime-performance/task-9.1-20261024T102137Z/`と`review-9.1-20261024T103507Z/`。継続用復元先は`task-9.1-20261024T102137Z/restored-path.txt`に保存し、runtime集合`4966bd32750411fb132e6849c0f3b56992a2a5be382cdb3e84d07fdd14c8a751`・harness集合`bfdd7e94b71ecbf21c50669310920af24dd10616861790f5d668b926609c824d`を固定基点とする。Smokeは基準値に含めず、本測定・診断・最終公式検証・Ubuntuは未実施。
 
 - 8.2: README・通常CI・技術方針を4テストprojectへ揃えた。前回の停止はレビューのread-only指定と検証生成物の書き込みの衝突で、再診断はCONFIG_GAP/RETRY_TASK。再開時にコード非編集と検証生成物の書き込み許可を区別し、必要な権限申請が承認された。Release警告・エラー0、設定31件、契約308件、独立レビュー全4project5,968件成功、失敗・スキップ0、APPROVED。検証前後の対象ファイルhash一致を確認。実装変更は`3ba5bff`、最新記録は`artifacts/runtime-performance/task-8.2-resume-20261024T101038Z/`と`review-8.2-resume-20261024T101515Z/`。Ubuntu・性能測定・公式全体検証は未実施。
 
