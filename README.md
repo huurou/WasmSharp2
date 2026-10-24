@@ -24,10 +24,11 @@ git hook run pre-commit
 ## ビルドとテスト
 
 ```sh
-dotnet build WasmSharp2.slnx -c Release
+dotnet build WasmSharp2.slnx -c Release --warnaserror
 dotnet run --project tests/WasmSharp.Tests/WasmSharp.Tests.csproj -c Release --no-build
 dotnet run --project tests/WasmSharp.Generators.Tests/WasmSharp.Generators.Tests.csproj -c Release --no-build
 dotnet run --project tests/WasmSharp.TestSuiteRunner.Tests/WasmSharp.TestSuiteRunner.Tests.csproj -c Release --no-build
+dotnet run --project tests/WasmSharp.Benchmarks.Tests/WasmSharp.Benchmarks.Tests.csproj -c Release --no-build
 dotnet csharpier check .
 ```
 
@@ -39,6 +40,6 @@ dotnet csharpier check .
 
 ## GitHub Actions
 
-[Unit tests](.github/workflows/unit-tests.yml)は、push・pull request・手動実行で起動します。Ubuntu上で.NET 10と固定したCore 2.0仕様を取得し、警告をエラーとして扱うReleaseビルド後に、ランタイム・生成器・公式適合検証ランナーの3つのテストプロジェクトを実行します。
+[Unit tests](.github/workflows/unit-tests.yml)は、push・pull request・手動実行で起動します。Ubuntu上で.NET 10と固定したCore 2.0仕様を取得し、警告をエラーとして扱うReleaseビルド後に、ランタイム・生成器・公式適合検証ランナー・測定ツールの4つのテストプロジェクトを実行します。測定ツールの契約テストは小さい保存データfixtureを使い、BDNの起動、性能の合否判定、Clang/WABTによる素材生成は行いません。
 
 テスト結果のTRXファイルは、各実行のArtifactsに`unit-test-results`として保存します。いずれかのテストが失敗した場合も、残りの実行と結果の保存を行います。

@@ -1,5 +1,5 @@
 ---
-updated_at: 2026-10-19
+updated_at: 2026-10-23
 ---
 
 # 技術方針
@@ -10,7 +10,7 @@ updated_at: 2026-10-19
 | --- | --- |
 | ランタイム | C# / .NET 10（`net10.0`） NullableとImplicitUsingsを有効にする。 |
 | 命令生成器 | `netstandard2.0` / C# 13.0 / Roslynの`IIncrementalGenerator` 通常ビルドで命令情報と実行分岐を生成する。 |
-| テスト | .NET 10 / TUnit ランタイム・生成器・公式ランナーをそれぞれ実行可能テストプロジェクトで検証する。 |
+| テスト | .NET 10 / TUnit ランタイム・生成器・公式ランナー・測定ツールをそれぞれ実行可能テストプロジェクトで検証する。 |
 | 整形 | CSharpierとHusky.Net .NETローカルツールとして固定し、コミット時にステージ済みの対象ファイルを整形する。 |
 
 パッケージの版は各`.csproj`、ローカルツールの版は[ツールマニフェスト](../../.config/dotnet-tools.json)を正とする。生成器はコンパイラが読み込むため、ランタイムとはTFMを分け、拡張Analyzerルールを有効にする。
@@ -44,9 +44,9 @@ importした関数とリソースは同じ実体を共有し、module内で定�
 
 ## 開発と検証
 
-環境構築と標準コマンドは[README](../../README.md)を参照する。テスト実行前にReleaseビルドの警告・エラー0を確認し、ビルド済みの3つのTUnitプロジェクトを`dotnet run --no-build`で実行する。テスト追加・変更時はコマンドでの実行を必須とする。
+環境構築と標準コマンドは[README](../../README.md)を参照する。テスト実行前にReleaseビルドの警告・エラー0を確認し、ビルド済みの4つのTUnitプロジェクトを`dotnet run --no-build`で実行する。テスト追加・変更時はコマンドでの実行を必須とする。
 
-通常CIは[Unit tests](../../.github/workflows/unit-tests.yml)で3つのTUnitプロジェクトを実行する。ランナーテストの変換器fixtureは.NETビルドで用意し、通常CIではWABTのビルド、公式スイート全体の実行、利用者のbaseline更新を行わない。CIの単体・統合テスト成功と、固定公式素材を使う受入結果は区別する。
+通常CIは[Unit tests](../../.github/workflows/unit-tests.yml)で同じ4つのTUnitプロジェクトを実行する。ランナーテストの変換器fixtureは.NETビルドで用意する。測定ツールの契約テストは小さい保存データfixtureを使い、BDNの起動、性能の合否判定、Clang/WABTによる素材生成を行わない。通常CIではWABTのビルド、公式スイート全体の実行、利用者のbaseline更新も行わない。CIの単体・統合テスト成功と、固定公式素材を使う受入結果は区別する。
 
 TUnitはAAA、日本語の条件・期待結果名、`await Assert.That(...)`を使う。絞り込みには`--treenode-filter`を使う。生成器テストは実際のランタイム契約ソースを埋め込むため、対象ファイルの移動・改名ではテストプロジェクトの`EmbeddedResource`も更新する。
 
