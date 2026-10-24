@@ -252,6 +252,7 @@
   - _Requirements: 6.2, 7.1, 7.2, 7.3, 7.4, 7.5, 8.1_
 
 - [ ] 10.3 第1の変更の性能と必要な参照寿命確認を統合する
+  - _Blocked: debug attempted twice, still failing — 修正版harnessの固定ゲート5run目でmemory.copy-fillの同一131072操作に総割当1680bytes差が再出した。具体的な割当元は未特定で、元目標・許容幅を保持した性能受入が成立していない。残りの取り直し・新版policy・候補測定は行わない。_
   - 変更前後を同期間に交互に各3run以上測り、対象ケースと全15ケースの許容幅を事前policyで評価する。結果と両指標の差・ばらつきを保存する。
   - 再利用を追加した場合は別のRetention系列で、同じprocess数・入力・反復数・小→大→小の列による保持量とrootを比較し、必要最小限のWeakReferenceテストを実行する。
   - 時間が同等で割り当てだけ目標達成した場合も評価し、許容幅超過や比較不足は修正・再測定で解消する。成立した版だけを次の変更の比較元とする。
@@ -319,7 +320,7 @@
   - _Depends: 9.1, 9.5, 10.3, 11.3, 12.3_
   - _Requirements: 6.4, 6.5, 6.6, 6.7, 6.8_
 
-- [ ] 13.2 最終版のビルドと公開契約の回帰を確認する
+- [x] 13.2 最終版のビルドと公開契約の回帰を確認する
   - 最終版をReleaseで警告・エラー0にし、変更したテストと関連テストをコマンドで実行する。
   - 正常終了・trap・exhaustion・同じホスト例外実体の伝播後の独立呼び出し、同期再入、結果・引数・locals・import・所属instanceを、選定箇所に対応する既存ケースで確認する。
   - 数値・SIMDのbit列、memory/tableの部分更新禁止、先行segment・startの副作用、失敗前に保持された参照の契約を確認する。
@@ -344,6 +345,10 @@
   - _Requirements: 5.4, 6.8, 8.2, 8.4_
 
 ## Implementation Notes
+
+- 13.2: 性能比較に依存しない候補runtimeの機能回帰として、Release警告・エラー0、全4project5,981件と新processの`DOTNET_EnableHWIntrinsic=0`によるSIMD15メソッド81件の成功・失敗/スキップ0を確認した。公開契約26メソッドのsource/TRX対応と結果は`regression-results.md`、実行記録は`artifacts/runtime-performance/task-13.2-20261024T153250Z/`。独立レビューも同じ全検証と前後source照合でAPPROVED、記録は`review-13.2-20261024T154303Z/`。親はレビュー後の893ファイル、文書hash、元policy、TRXを照合し`parent-completion.json`でVERIFIEDとした。通常入口の割当回帰を含む候補runtime集合は`0ac1b7884daa13e42d294d99fec63b59462eb1bcc917fc8e2aaab7bee9472c87`。今回の検証は未レビューの10.3harness差分を含むworkingtreeで行い、その変更の承認や性能受入を意味しない。13.1・13.3・13.4、Ubuntu/他CPUは未実施。今後runtimeが変われば13.2を再実行する。
+
+- 10.3: 初回の全15ケース交互6runは時間7ケースの過大ばらつきで未採用。2回の診断と再実装でJob要求と子processの実際の前後affinity観測を分離し、保存・比較契約320件とRelease警告・エラー0を確認したが、最後の旧runtime固定ゲートは12予定run中5runで総1680bytes差が再出して停止した。全5runの子終了0・前後検査・mask16384・条件差0・raw再計算一致・警告0は確認済み。具体的な割当thread/型/発生元は未特定で、測定値補正・run選別・閾値緩和は行っていない。元policy/両runtime/旧記録を保持し、新版policy・候補再測定・性能受入は未実施。新harnessのコードと文書は独立レビュー未実施・未コミット。記録は`artifacts/runtime-performance/task-10.3-retry2-20261024T150905Z/`と`debug-10.3-r2-20261024T144426Z/`。indexのbyte hashは変化したため不変とは扱わず、初期stage変更0・最終cached diff0と初期blob一覧なしの限界を保存した。性能比較13.1と受入13.3/13.4は保留し、依存指定のない公開契約回帰13.2だけを続行できる。
 
 - 10.2: InterpreterContextの保持上限超過分岐だけでWasmFailureLocationを生成し、通常入口の事前生成を除いた。公開Invokeで深さ2の1call/1024callと返値42を確認する回帰を追加し、旧eager/OFFは追加57288bytes>4096bytesでRED（保存終了値2、旧報告1を訂正）、ON/フラグ除去後GREEN。容量8ケースは期待診断を維持してinstance Interfaceへ移行し、ThreadStaticの終了を同期helper内でawait前に完了する。独立レビューはRelease警告・エラー0、全4project5,969件・整形3C#成功、フラグ残存0・公開診断/容量算術/復元/所有維持でAPPROVED。runtime集合は`0ac1b7884daa13e42d294d99fec63b59462eb1bcc917fc8e2aaab7bee9472c87`、harness/policy/固定基準版は不変。記録は`artifacts/runtime-performance/task-10.2-20261024T123953Z/`と`review-10.2-20261024T125100Z/`。全15ケース本測定の性能受入と公式全体検証は未実施。
 
