@@ -123,17 +123,12 @@ internal sealed class InterpreterContext
     /// <exception cref="WasmImplementationLimitException">必要数が配列の保持上限を超える場合</exception>
     internal void EnsureCapacity(ulong operandBase, int maxOperandStack, DefinedFunction function)
     {
-        var location = new WasmFailureLocation(
-            Stage,
-            function.Definition.BodyOffset,
-            function.FunctionIndex
-        );
         // 加算前に広げ、両方の必要数を検査してから配列を拡張する。
-        var frameCapacity = CalculateCapacity(frames_.Length, (ulong)FrameCount + 1, location);
+        var frameCapacity = CalculateCapacity(frames_.Length, (ulong)FrameCount + 1, function);
         var valueCapacity = CalculateCapacity(
             values_.Length,
             operandBase + (ulong)maxOperandStack,
-            location
+            function
         );
         if (frameCapacity != frames_.Length)
         {
@@ -150,14 +145,10 @@ internal sealed class InterpreterContext
     /// </summary>
     /// <param name="capacity">現在の配列容量</param>
     /// <param name="requiredCount">必要な要素数</param>
-    /// <param name="location">保持上限を超えた場合に報告する処理段階と入力上の位置</param>
+    /// <param name="function">保持上限を超えた場合に位置を報告する開始対象の定義関数</param>
     /// <returns>必要数を満たす容量 現在の容量が十分ならその値</returns>
     /// <exception cref="WasmImplementationLimitException">必要数が配列の保持上限を超える場合</exception>
-    internal static int CalculateCapacity(
-        int capacity,
-        ulong requiredCount,
-        WasmFailureLocation location
-    )
+    internal int CalculateCapacity(int capacity, ulong requiredCount, DefinedFunction function)
     {
         if (requiredCount > (ulong)Array.MaxLength)
         {
@@ -165,7 +156,11 @@ internal sealed class InterpreterContext
                 "実行スタックの必要数がコレクションの保持上限を超えました。",
                 WasmImplementationLimitReason.CollectionSize,
                 Array.MaxLength,
-                location
+                new WasmFailureLocation(
+                    Stage,
+                    function.Definition.BodyOffset,
+                    function.FunctionIndex
+                )
             );
         }
         if (requiredCount <= (ulong)capacity)

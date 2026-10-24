@@ -18,11 +18,8 @@ internal class InterpreterContext_CalculateCapacityTests
         int expected
     )
     {
-        // Arrange
-        var location = new WasmFailureLocation(WasmProcessingStage.Invoke, 30, 0);
-
         // Act
-        var actual = InterpreterContext.CalculateCapacity(capacity, requiredCount, location);
+        var actual = CalculateCapacity(capacity, requiredCount);
 
         // Assert
         await Assert.That(actual).IsEqualTo(expected);
@@ -31,15 +28,8 @@ internal class InterpreterContext_CalculateCapacityTests
     [Test]
     public async Task 倍増だけが保持上限を超える_必要数が収まれば上限までに抑える()
     {
-        // Arrange
-        var location = new WasmFailureLocation(WasmProcessingStage.Invoke, 30, 0);
-
         // Act
-        var capacity = InterpreterContext.CalculateCapacity(
-            Array.MaxLength - 1,
-            (ulong)Array.MaxLength,
-            location
-        );
+        var capacity = CalculateCapacity(Array.MaxLength - 1, (ulong)Array.MaxLength);
 
         // Assert
         await Assert.That(capacity).IsEqualTo(Array.MaxLength);
@@ -55,7 +45,7 @@ internal class InterpreterContext_CalculateCapacityTests
 
         // Act & Assert
         var exception = await Assert
-            .That(() => InterpreterContext.CalculateCapacity(8, requiredCount, location))
+            .That(() => CalculateCapacity(8, requiredCount))
             .ThrowsExactly<WasmImplementationLimitException>();
         using (Assert.Multiple())
         {
@@ -64,6 +54,21 @@ internal class InterpreterContext_CalculateCapacityTests
                 .IsEqualTo(WasmImplementationLimitReason.CollectionSize);
             await Assert.That(exception.Limit).IsEqualTo(Array.MaxLength);
             await Assert.That(exception.Location).IsEqualTo(location);
+        }
+    }
+
+    private static int CalculateCapacity(int capacity, ulong requiredCount)
+    {
+        var function = FunctionFixture.Create();
+        var context = InterpreterContext.Enter(new(10), out var isOutermost);
+        try
+        {
+            context.Stage = WasmProcessingStage.Invoke;
+            return context.CalculateCapacity(capacity, requiredCount, function);
+        }
+        finally
+        {
+            InterpreterContext.Exit(isOutermost);
         }
     }
 }

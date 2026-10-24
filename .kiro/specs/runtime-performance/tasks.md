@@ -243,7 +243,7 @@
   - _Depends: 9.5_
   - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5, 8.1_
 
-- [ ] 10.2 第1の箇所へ測定に裏付けられた最適化を行う
+- [x] 10.2 第1の箇所へ測定に裏付けられた最適化を行う
   - 整理済みの所有境界内で、事前に狙った時間または割り当ての原因を減らす局所変更を行う。公開API・段階・診断・境界検査を維持する。
   - 対象に応じて結果とcallback引数の独立性、locals、関数とimportの同一性、所属instance、数値bit列、範囲と部分更新禁止、segment・start失敗前の副作用を保つ。
   - 再利用時は論理的コンテキストと物理bufferの寿命を分け、再入中の領域を貸し出さず、全終了経路で深さ・上限・Stage・使用数と不要参照を復元・除去する。
@@ -344,6 +344,8 @@
   - _Requirements: 5.4, 6.8, 8.2, 8.4_
 
 ## Implementation Notes
+
+- 10.2: InterpreterContextの保持上限超過分岐だけでWasmFailureLocationを生成し、通常入口の事前生成を除いた。公開Invokeで深さ2の1call/1024callと返値42を確認する回帰を追加し、旧eager/OFFは追加57288bytes>4096bytesでRED（保存終了値2、旧報告1を訂正）、ON/フラグ除去後GREEN。容量8ケースは期待診断を維持してinstance Interfaceへ移行し、ThreadStaticの終了を同期helper内でawait前に完了する。独立レビューはRelease警告・エラー0、全4project5,969件・整形3C#成功、フラグ残存0・公開診断/容量算術/復元/所有維持でAPPROVED。runtime集合は`0ac1b7884daa13e42d294d99fec63b59462eb1bcc917fc8e2aaab7bee9472c87`、harness/policy/固定基準版は不変。記録は`artifacts/runtime-performance/task-10.2-20261024T123953Z/`と`review-10.2-20261024T125100Z/`。全15ケース本測定の性能受入と公式全体検証は未実施。
 
 - 10.1: `EnsureCapacity`へ診断元のDefinedFunctionを渡し、位置組立てをStage/容量を所有するInterpreterContextへ移した。本体2ファイルと内部Interfaceを使う18テスト/fixtureだけを変更し、成功時1個の生成・CalculateCapacity本体・診断期待値を維持した。Interface移行のCS1503×2のRED後、Release警告・エラー0、runtime4,798件、独立レビュー全4project5,968件・整形20ファイル成功、開始終了hash不一致0でAPPROVED。runtime集合は`7d101d93eb47efc791679fa99a1a2fb516d757c34feb056732abdd3f41d18e84`、harness/policy/固定基準版は不変。記録は`artifacts/runtime-performance/task-10.1-20261024T122154Z/`と`review-10.1-20261024T123123Z/`。遅延生成・性能本測定・公式全体検証は未実施。
 
