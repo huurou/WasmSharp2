@@ -120,6 +120,8 @@ $comparisonExit = $LASTEXITCODE
 
 policyの型は[ComparisonPolicy.cs](Results/ComparisonPolicy.cs)にあり、各caseの時間・割り当ての許容幅、削減目標、同等範囲、ノイズ幅、反復間判断幅、必要独立run数を指定する。数値は基準値の同版再測定に基づいて事前に定める。`comparison.json`には入力manifest内のrun IDとhash、policy hash、caseごとの改善・同等・悪化・判定不能、個別値・差・理由・条件差を保存する。CLIの`--assets`の配置差や出力先は比較条件から除くが、case選択・用途・Job等の意味のある設定は照合する。
 
+今回の変更前基準と選定1件は[性能改善計画](../../.kiro/specs/runtime-performance/optimization-plan.md)、全体と第1変更で共用する数値設定は[comparison-policy.json](../../.kiro/specs/runtime-performance/comparison-policy.json)を参照する。
+
 正常Measurementと必須比較が揃い、全caseの両指標が許容内で、選定目標の少なくとも1件を達成したときだけ受入成立となる。Smoke・失敗・取得不能・未完了のrunは改善判定へ採用しない。原因調査ではまずcase別の時間と割り当て、raw反復・GC・条件差・失敗段階を確認する。追加の診断や保持観測は通常Measurementと混在させず、専用手順でDiagnostic/Retentionとして保存する。
 
 今回のWindows x64での操作確認と再実行scriptは[タスク8.1の記録](../../artifacts/runtime-performance/task-8.1-20261023T024900Z/evidence.md)を参照する。正常Smoke、隔離素材での後検査失敗、保存結果の比較除外を確認する。通常契約の比較成立は小さい保存fixtureで検証し、Smokeやfixtureを性能基準値へ採用しない。全15ケースの本測定基準値取得、改善policyの策定、最終公式全体検証は後続の受入作業であり、Ubuntuは未実行。
