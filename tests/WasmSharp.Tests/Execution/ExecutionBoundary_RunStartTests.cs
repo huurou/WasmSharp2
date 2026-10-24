@@ -199,7 +199,7 @@ internal class ExecutionBoundary_RunStartTests
                 try
                 {
                     outer.Stage = WasmProcessingStage.Invoke;
-                    outer.EnsureCapacity(0, 1, new(WasmProcessingStage.Invoke));
+                    outer.EnsureCapacity(0, 1, FunctionFixture.Create());
                     outer.PushValue(WasmValue.FromI32(42));
                     outer.TryEnterCall();
                     try

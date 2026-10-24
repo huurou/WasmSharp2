@@ -358,7 +358,7 @@ internal class Interpreter_CallIndirectTests
         try
         {
             context.Stage = WasmProcessingStage.Invoke;
-            context.EnsureCapacity(0, caller.Code.MaxOperandStack, new(WasmProcessingStage.Invoke));
+            context.EnsureCapacity(0, caller.Code.MaxOperandStack, caller);
             context.TryEnterCall();
             var frame = new ExecutionFrame(caller, 0, 0) { Pc = 1 };
             context.PushFrame(frame);

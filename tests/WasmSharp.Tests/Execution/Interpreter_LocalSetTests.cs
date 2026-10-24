@@ -40,7 +40,8 @@ internal class Interpreter_LocalSetTests
         // Act
         try
         {
-            context.EnsureCapacity(0, 1, new(WasmProcessingStage.Invoke));
+            context.Stage = WasmProcessingStage.Invoke;
+            context.EnsureCapacity(0, 1, frame.Function);
             context.TryEnterCall();
             context.PushFrame(frame);
             context.PushValue(outer);

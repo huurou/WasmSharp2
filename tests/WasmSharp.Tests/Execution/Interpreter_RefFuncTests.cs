@@ -39,9 +39,10 @@ internal class Interpreter_RefFuncTests
         // Act
         try
         {
-            context.EnsureCapacity(0, 1, new(WasmProcessingStage.Invoke));
+            context.Stage = WasmProcessingStage.Invoke;
+            context.EnsureCapacity(0, 1, (DefinedFunction)importer.Functions[1]);
             context.EnterFrame((DefinedFunction)importer.Functions[1], 0);
-            context.EnsureCapacity(0, 1, new(WasmProcessingStage.Invoke));
+            context.EnsureCapacity(0, 1, current);
             context.EnterFrame(current, 0);
 
             result = Interpreter.RefFunc(context, in instruction);

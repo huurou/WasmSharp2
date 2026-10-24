@@ -41,11 +41,7 @@ internal static class ControlHandlerFixture
         try
         {
             context.Stage = WasmProcessingStage.Invoke;
-            context.EnsureCapacity(
-                1,
-                function.Code.MaxOperandStack,
-                new(WasmProcessingStage.Invoke)
-            );
+            context.EnsureCapacity(1, function.Code.MaxOperandStack, function);
             context.TryEnterCall();
             context.PushFrame(frame);
             context.PushValue(local_);

@@ -82,7 +82,8 @@ internal class Interpreter_RunTests
                 var context = InterpreterContext.Enter(new(10), out var isOutermost);
                 try
                 {
-                    context.EnsureCapacity(0, 1, new(stage));
+                    context.Stage = stage;
+                    context.EnsureCapacity(0, 1, frame.Function);
                     context.TryEnterCall();
                     context.PushFrame(frame);
                     context.PushValue(value);
@@ -146,7 +147,8 @@ internal class Interpreter_RunTests
                 var context = InterpreterContext.Enter(new(10), out var isOutermost);
                 try
                 {
-                    context.EnsureCapacity(0, 1, new(WasmProcessingStage.Invoke));
+                    context.Stage = WasmProcessingStage.Invoke;
+                    context.EnsureCapacity(0, 1, frame.Function);
                     context.TryEnterCall();
                     context.PushFrame(frame);
                     context.PushValue(WasmValue.FromI32(73));
@@ -201,7 +203,8 @@ internal class Interpreter_RunTests
         // Act
         try
         {
-            context.EnsureCapacity(0, 1, new(WasmProcessingStage.Invoke));
+            context.Stage = WasmProcessingStage.Invoke;
+            context.EnsureCapacity(0, 1, frame.Function);
             context.TryEnterCall();
             context.PushFrame(frame);
             context.PushValue(value);
@@ -351,7 +354,8 @@ internal class Interpreter_RunTests
         // Act
         try
         {
-            context.EnsureCapacity(0, 1, new(WasmProcessingStage.Invoke));
+            context.Stage = WasmProcessingStage.Invoke;
+            context.EnsureCapacity(0, 1, frame.Function);
             context.TryEnterCall();
             context.PushFrame(frame);
             context.PushValue(value);
@@ -459,7 +463,8 @@ internal class Interpreter_RunTests
                 var context = InterpreterContext.Enter(new(10), out var isOutermost);
                 try
                 {
-                    context.EnsureCapacity(0, 1, new(WasmProcessingStage.Invoke));
+                    context.Stage = WasmProcessingStage.Invoke;
+                    context.EnsureCapacity(0, 1, frame.Function);
                     context.TryEnterCall();
                     context.PushFrame(frame);
                     context.PushValue(value);

@@ -1,6 +1,7 @@
 using WasmSharp.Exceptions;
 using WasmSharp.Execution;
 using WasmSharp.Instructions;
+using WasmSharp.Tests.Fixtures;
 
 namespace WasmSharp.Tests.Execution;
 
@@ -25,7 +26,8 @@ internal class Interpreter_PushConstantTests
         // Act
         try
         {
-            context.EnsureCapacity(0, 1, new(WasmProcessingStage.Invoke));
+            context.Stage = WasmProcessingStage.Invoke;
+            context.EnsureCapacity(0, 1, FunctionFixture.Create());
             result = Interpreter.PushConstant(context, in instruction);
             actual = context.GetValue(0);
             valueCount = context.ValueCount;
@@ -103,11 +105,8 @@ internal class Interpreter_PushConstantTests
         // Act
         try
         {
-            context.EnsureCapacity(
-                0,
-                function.Code.MaxOperandStack,
-                new(WasmProcessingStage.Invoke)
-            );
+            context.Stage = WasmProcessingStage.Invoke;
+            context.EnsureCapacity(0, function.Code.MaxOperandStack, function);
             context.PushFrame(new(function, 0, 0));
             instruction = context.ReadNextInstruction();
             result = Interpreter.PushConstant(context, in instruction);

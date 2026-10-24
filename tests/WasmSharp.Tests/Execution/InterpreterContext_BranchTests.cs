@@ -30,10 +30,11 @@ internal class InterpreterContext_GetBranchTargetTests
         // Act
         try
         {
-            context.EnsureCapacity(0, 0, new(WasmProcessingStage.Invoke));
+            context.Stage = WasmProcessingStage.Invoke;
+            context.EnsureCapacity(0, 0, outer);
             context.TryEnterCall();
             context.PushFrame(new(outer, 0, 0) { Pc = 5 });
-            context.EnsureCapacity(0, 0, new(WasmProcessingStage.Invoke));
+            context.EnsureCapacity(0, 0, inner);
             context.TryEnterCall();
             context.PushFrame(new(inner, 0, 0) { Pc = 1 });
 
@@ -124,14 +125,15 @@ internal class InterpreterContext_BranchTests
         try
         {
             var oldEnd = prefix.Length + discardCount + keepCount;
-            context.EnsureCapacity(0, oldEnd, new(WasmProcessingStage.Invoke));
+            context.Stage = WasmProcessingStage.Invoke;
+            context.EnsureCapacity(0, oldEnd, caller.Function);
             context.TryEnterCall();
             context.PushFrame(caller);
             foreach (var value in prefix)
             {
                 context.PushValue(value);
             }
-            context.EnsureCapacity(0, oldEnd, new(WasmProcessingStage.Invoke));
+            context.EnsureCapacity(0, oldEnd, current.Function);
             context.TryEnterCall();
             context.PushFrame(current);
             for (var i = 0; i < discardCount; i++)

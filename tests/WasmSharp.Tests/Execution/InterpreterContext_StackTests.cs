@@ -88,13 +88,14 @@ internal class InterpreterContext_EnsureCapacityTests
                 var context = InterpreterContext.Enter(new(10), out var isOutermost);
                 try
                 {
-                    context.EnsureCapacity(0, 1, location);
+                    context.Stage = WasmProcessingStage.Instantiate;
+                    context.EnsureCapacity(0, 1, function);
                     context.TryEnterCall();
                     context.PushFrame(new(function, 0, 0));
                     context.PushValue(WasmValue.FromI32(42));
                     try
                     {
-                        context.EnsureCapacity(int.MaxValue, int.MaxValue, location);
+                        context.EnsureCapacity(int.MaxValue, int.MaxValue, function);
                     }
                     finally
                     {
@@ -158,7 +159,6 @@ internal class InterpreterContext_RestoreTests
         var innerFunction = (DefinedFunction)instance.Functions[1];
         var reference = new object();
         var context = InterpreterContext.Enter(new(10), out var isOutermost);
-        var location = new WasmFailureLocation(WasmProcessingStage.Invoke, 30, 0);
         ExecutionFrame outerFrame;
         ExecutionFrame innerFrame;
         ExecutionFrame removedFrame;
@@ -175,7 +175,8 @@ internal class InterpreterContext_RestoreTests
         // Act
         try
         {
-            context.EnsureCapacity(2, 1, location);
+            context.Stage = WasmProcessingStage.Invoke;
+            context.EnsureCapacity(2, 1, function);
             context.TryEnterCall();
             context.PushFrame(new(function, 0, 2) { Pc = 1 });
             context.PushValue(WasmValue.FromI64(17));
@@ -183,7 +184,7 @@ internal class InterpreterContext_RestoreTests
             context.PushValue(WasmValue.FromExternRef(reference));
 
             // 引数・localsの後ろにoperand領域を確保し、両方の配列を拡張する。
-            context.EnsureCapacity(5, 8, location);
+            context.EnsureCapacity(5, 8, innerFunction);
             context.TryEnterCall();
             context.PushFrame(new(innerFunction, 3, 5) { Pc = 7 });
             context.PushValue(WasmValue.FromExternRef(new object()));
@@ -263,7 +264,7 @@ internal class InterpreterContext_EnterFrameTests
             0
         );
         var reference = new object();
-        var location = new WasmFailureLocation(WasmProcessingStage.Invoke, 30, 0);
+        var outerFunction = FunctionFixture.Create();
         var context = InterpreterContext.Enter(new(10), out var isOutermost);
         ExecutionFrame frame;
         WasmValue[] values;
@@ -271,10 +272,11 @@ internal class InterpreterContext_EnterFrameTests
         // Act
         try
         {
-            context.EnsureCapacity(1, 0, location);
-            context.PushFrame(new(FunctionFixture.Create(), 0, 0));
+            context.Stage = WasmProcessingStage.Invoke;
+            context.EnsureCapacity(1, 0, outerFunction);
+            context.PushFrame(new(outerFunction, 0, 0));
             context.PushValue(WasmValue.FromI32(42));
-            context.EnsureCapacity(10, 0, location);
+            context.EnsureCapacity(10, 0, function);
             context.PushValue(WasmValue.FromExternRef(reference));
             context.EnterFrame(function, 1);
             frame = context.GetFrame(1);
@@ -317,7 +319,6 @@ internal class InterpreterContext_EnterFrameTests
             [new(1, WasmValueKind.F32)],
             1
         );
-        var location = new WasmFailureLocation(WasmProcessingStage.Invoke, 30, 0);
         var context = InterpreterContext.Enter(new(10), out var isOutermost);
         ExecutionFrame outerFrame;
         ExecutionFrame innerFrame;
@@ -328,11 +329,12 @@ internal class InterpreterContext_EnterFrameTests
         // Act
         try
         {
-            context.EnsureCapacity(3, 1, location);
+            context.Stage = WasmProcessingStage.Invoke;
+            context.EnsureCapacity(3, 1, function);
             context.PushValue(WasmValue.FromI64(7));
             context.EnterFrame(function, 0);
             context.PushValue(WasmValue.FromI64(9));
-            context.EnsureCapacity(4, 1, location);
+            context.EnsureCapacity(4, 1, function);
             context.TryEnterCall();
             context.EnterFrame(function, 2);
             innerFrame = context.GetFrame(1);

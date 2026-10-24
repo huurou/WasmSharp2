@@ -22,11 +22,8 @@ internal static class NumericHandlerFixture
         var context = InterpreterContext.Enter(WasmExecutionOptions.Default, out var isOutermost);
         try
         {
-            context.EnsureCapacity(
-                0,
-                function.Code.MaxOperandStack,
-                new(WasmProcessingStage.Invoke)
-            );
+            context.Stage = WasmProcessingStage.Invoke;
+            context.EnsureCapacity(0, function.Code.MaxOperandStack, function);
             context.PushFrame(new(function, 0, 0));
             context.PushValue(sentinel_);
             foreach (var operand in operands)

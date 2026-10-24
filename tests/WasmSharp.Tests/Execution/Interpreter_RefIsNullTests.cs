@@ -30,7 +30,8 @@ internal class Interpreter_RefIsNullTests
         // Act
         try
         {
-            context.EnsureCapacity(0, 1, new(WasmProcessingStage.Invoke));
+            context.Stage = WasmProcessingStage.Invoke;
+            context.EnsureCapacity(0, 1, FunctionFixture.Create());
             context.PushValue(value);
 
             result = Interpreter.RefIsNull(context, in instruction);

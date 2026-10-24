@@ -235,7 +235,7 @@
   - _Requirements: 4.5, 6.2, 6.3, 7.1, 7.2, 7.3, 7.4, 7.5_
 
 - [ ] 10. 第1の選定箇所を改善する
-- [ ] 10.1 第1の箇所の責務と所有を先に整理する
+- [x] 10.1 第1の箇所の責務と所有を先に整理する
   - 改善計画で選んだ1つの境界だけを対象に、値・状態・資源の所有を既存責務へ揃える。既に満たす場合は理由を残し、不要な抽出を行わない。
   - 既存テストを優先し、変更で生じる所有・寿命・失敗の危険にだけ直接テストを補う。
   - 挙動を維持した状態でReleaseビルドと関連テストが通り、最適化へ進める。測定harnessは変更しない。
@@ -344,6 +344,8 @@
   - _Requirements: 5.4, 6.8, 8.2, 8.4_
 
 ## Implementation Notes
+
+- 10.1: `EnsureCapacity`へ診断元のDefinedFunctionを渡し、位置組立てをStage/容量を所有するInterpreterContextへ移した。本体2ファイルと内部Interfaceを使う18テスト/fixtureだけを変更し、成功時1個の生成・CalculateCapacity本体・診断期待値を維持した。Interface移行のCS1503×2のRED後、Release警告・エラー0、runtime4,798件、独立レビュー全4project5,968件・整形20ファイル成功、開始終了hash不一致0でAPPROVED。runtime集合は`7d101d93eb47efc791679fa99a1a2fb516d757c34feb056732abdd3f41d18e84`、harness/policy/固定基準版は不変。記録は`artifacts/runtime-performance/task-10.1-20261024T122154Z/`と`review-10.1-20261024T123123Z/`。遅延生成・性能本測定・公式全体検証は未実施。
 
 - 9.5: `optimization-plan.md`で通常入口のWasmFailureLocation生成1件を選定し、10.1の内部Interface整理・10.2の失敗時生成へ分けた。第2/第3の改善と再利用は非選定、11/12は条件不成立で非該当。`comparison-policy.json`は全15ケース/30指標/独立3run、direct/indirect各180000bytes/op削減、時間幅は基準run間幅とCI、割当幅は観測安定性から固定した。全体/第1変更は同一policy（SHA-256`e8dbcf4a4eadf015a6a60e0415652badf56038ba7b3742b54f24c495c03ebfba`）を参照し、両対象の目標達成も個別確認する。独立レビューはRelease警告・エラー0、全4project5,968件、全policy値再計算一致、CLIの同run重複拒否とproduction数値比較30指標同等/許容内・対象2指標だけ目標未達、source/入力hash不変でAPPROVED。記録は`artifacts/runtime-performance/task-9.5-20261024T120137Z/`と`review-9.5-20261024T121336Z/`。実装・候補比較・改善達成は未実施。
 

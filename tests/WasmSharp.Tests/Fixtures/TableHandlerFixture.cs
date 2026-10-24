@@ -75,9 +75,10 @@ internal static class TableHandlerFixture
         var context = InterpreterContext.Enter(WasmExecutionOptions.Default, out var isOutermost);
         try
         {
-            context.EnsureCapacity(0, 0, new(WasmProcessingStage.Invoke));
+            context.Stage = WasmProcessingStage.Invoke;
+            context.EnsureCapacity(0, 0, caller);
             context.EnterFrame(caller, 0);
-            context.EnsureCapacity(0, 4, new(WasmProcessingStage.Invoke));
+            context.EnsureCapacity(0, 4, function);
             context.EnterFrame(function, 0);
             context.PushValue(NumericHandlerFixture.Sentinel);
             foreach (var operand in operands)

@@ -229,11 +229,7 @@ internal static partial class Interpreter
         context.EnsureCapacity(
             (ulong)stackBase + (ulong)function.Type.Parameters.Length + function.Code.LocalCount,
             function.Code.MaxOperandStack,
-            new WasmFailureLocation(
-                context.Stage,
-                function.Definition.BodyOffset,
-                function.FunctionIndex
-            )
+            function
         );
     }
 

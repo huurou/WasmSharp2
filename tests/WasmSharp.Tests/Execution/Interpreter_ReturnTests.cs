@@ -43,11 +43,12 @@ internal class Interpreter_ReturnTests
         // Act
         try
         {
-            context.EnsureCapacity(0, 1, new(WasmProcessingStage.Invoke));
+            context.Stage = WasmProcessingStage.Invoke;
+            context.EnsureCapacity(0, 1, outerFunction);
             context.TryEnterCall();
             context.PushFrame(new(outerFunction, 0, 0) { Pc = 17 });
             context.PushValue(WasmValue.FromI32(42));
-            context.EnsureCapacity(3, 3, new(WasmProcessingStage.Invoke));
+            context.EnsureCapacity(3, 3, function);
             context.TryEnterCall();
             context.PushFrame(new(function, 1, 3));
             context.PushValue(WasmValue.FromI32(1));

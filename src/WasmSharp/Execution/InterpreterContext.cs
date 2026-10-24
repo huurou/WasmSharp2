@@ -119,14 +119,15 @@ internal sealed class InterpreterContext
     /// </summary>
     /// <param name="operandBase">共有値スタック上の引数とlocalsに続くoperand領域の開始位置</param>
     /// <param name="maxOperandStack">関数の検証で求めたoperandの最大要素数</param>
-    /// <param name="location">保持上限を超えた場合に報告する処理段階と入力上の位置</param>
+    /// <param name="function">保持上限を超えた場合に位置を報告する開始対象の定義関数</param>
     /// <exception cref="WasmImplementationLimitException">必要数が配列の保持上限を超える場合</exception>
-    internal void EnsureCapacity(
-        ulong operandBase,
-        int maxOperandStack,
-        WasmFailureLocation location
-    )
+    internal void EnsureCapacity(ulong operandBase, int maxOperandStack, DefinedFunction function)
     {
+        var location = new WasmFailureLocation(
+            Stage,
+            function.Definition.BodyOffset,
+            function.FunctionIndex
+        );
         // 加算前に広げ、両方の必要数を検査してから配列を拡張する。
         var frameCapacity = CalculateCapacity(frames_.Length, (ulong)FrameCount + 1, location);
         var valueCapacity = CalculateCapacity(
