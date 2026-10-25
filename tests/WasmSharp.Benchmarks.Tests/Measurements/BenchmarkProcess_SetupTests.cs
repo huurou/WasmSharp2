@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text.Json;
 using WasmSharp.Benchmarks.Cases;
@@ -98,6 +99,18 @@ internal class BenchmarkProcess_SetupTests
                     )
                     .IsTrue();
                 await Assert.That(checks.Last().LoadedAssemblies.Count).IsEqualTo(2);
+                if (OperatingSystem.IsWindows() || OperatingSystem.IsLinux())
+                {
+                    using var current = Process.GetCurrentProcess();
+                    var completed = checks.Single(x => x.Postcheck is not null);
+                    await Assert
+                        .That(completed.AffinityBefore)
+                        .IsEqualTo(current.ProcessorAffinity.ToInt64());
+                    await Assert
+                        .That(completed.AffinityAfter)
+                        .IsEqualTo(current.ProcessorAffinity.ToInt64());
+                    await Assert.That(completed.AffinityUnavailableReason).IsNull();
+                }
                 await Assert
                     .That(
                         checks

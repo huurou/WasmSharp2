@@ -108,18 +108,22 @@ internal static partial class RunComparison
             }
             var definition = Read<List<BenchmarkCase>>(directory, run.CasesFile!)
                 .Single(x => x.CaseId == caseId);
+            var jobs = Read<List<ProcessConfiguration>>(directory, run.JobSettingsFile!);
+            var checks = ReadAffinityChecks(directory, run, jobs);
             return RunConditions.Create(
                 run,
                 definition,
                 Read<AssetManifest>(directory, run.AssetManifestFile!),
                 Read<RunEnvironment>(directory, run.EnvironmentFile!),
                 source,
-                Read<List<ProcessConfiguration>>(directory, run.JobSettingsFile!)
+                jobs,
+                checks
             );
         }
         catch (Exception exception)
             when (exception
                     is IOException
+                        or InvalidDataException
                         or JsonException
                         or InvalidOperationException
                         or ArgumentException
@@ -134,6 +138,55 @@ internal static partial class RunComparison
             );
             return null;
         }
+    }
+
+    private static List<ProcessCheck> ReadAffinityChecks(
+        string directory,
+        RunManifest run,
+        List<ProcessConfiguration> jobs
+    )
+    {
+        var checks = new List<ProcessCheck>();
+        foreach (var result in run.Cases)
+        {
+            var processes = result.BenchmarkReport?.Processes ?? [];
+            if (
+                jobs.Count == 0
+                || jobs.Any(x => processes.Count(y => y.JobId == x.JobId) < x.LaunchCount)
+            )
+            {
+                throw new InvalidDataException("全予定子processのaffinity観測が揃っていません。");
+            }
+            foreach (var process in processes)
+            {
+                if (process.CheckFile is null || !jobs.Any(x => x.JobId == process.JobId))
+                {
+                    throw new InvalidDataException("子processのaffinity検査がありません。");
+                }
+                var check = Read<ProcessCheck>(directory, process.CheckFile);
+                if (
+                    check.AffinityBefore is null or 0
+                    || check.AffinityAfter is null or 0
+                    || check.AffinityBefore != check.AffinityAfter
+                    || check.AffinityUnavailableReason is not null
+                )
+                {
+                    throw new InvalidDataException(
+                        $"case '{result.CaseId}', PID={process.ProcessId}: affinityの前後観測が欠落または不一致です。{check.AffinityUnavailableReason}"
+                    );
+                }
+                checks.Add(check);
+            }
+        }
+        if (
+            checks
+                .GroupBy(x => x.JobId)
+                .Any(x => x.Select(y => y.AffinityBefore).Distinct().Count() != 1)
+        )
+        {
+            throw new InvalidDataException("同じJobの子process間でaffinityが異なります。");
+        }
+        return checks;
     }
 
     private static bool AssembliesUnchanged(RunSource source) =>

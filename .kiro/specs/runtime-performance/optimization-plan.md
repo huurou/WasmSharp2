@@ -128,3 +128,57 @@ dotnet run --project tests/WasmSharp.Tests/WasmSharp.Tests.csproj -c Release --n
 
 今回の変更は計画・JSON・READMEリンクのみでruntime/harness/C#を変更していない。新規単体テストや測定用フラグは追加せず、同じ全回帰を重複実行しない。source集合照合と差分検査は[final-check.json](../../../artifacts/runtime-performance/task-9.5-20261024T120137Z/final-check.json)へ保存する。最適化、候補との交互測定、保持観測、最終公式全体run/比較/verify、Ubuntuは未実施。9.5の完了は性能改善や仕様全体の受入を意味しない。
 
+## 10.3再試行前のharness修正と基準再特徴化計画
+
+初回の交互6runは全caseの前後検査が成立した一方、時間7caseの過大ばらつきで未採用となった。[第1変更の初回結果](change-1-results.md)と元policyを保持し、候補の受入を中止した。[診断結果](../../../artifacts/runtime-performance/debug-10.3-r1-20261024T134500Z/debug-report.md)は、基準側にも比較前提を満たさない時間モードがあり、外部workerの実行位置がJobでDefaultのまま記録される設定欠落を確認した。元runのCPU位置は不明であり、CPUやPGOが全7caseの原因とは断定しない。
+
+design.mdの「基準値と改善計画」に従い、Measurement Jobへ親processの現在のaffinityを明示する最小修正を行う。runtime、素材、15case、計時区間、BDNのLaunchCount=1とpilot/warmup/反復調整は変えない。新harness集合は`8b026cd35c8b10190d44355ffb075987e1ba2bdd151b20d0e314989eb66a3211`。保存9.2run-1から新規tempへ復元した旧runtime集合`4966bd32750411fb132e6849c0f3b56992a2a5be382cdb3e84d07fdd14c8a751`へ同じ修正を組み合わせる。既存固定復元先は変更しない。
+
+新条件は私有workerのCPU14/mask`0x4000`（16384）、`DOTNET_TieredPGO=0`とし、SDK/runtime/GC/電源・素材を維持する。元親の設定はfinallyで復元し、collectorとBDN子PIDの実際のmask、ProcessorCount、保存Job.Affinity、環境変数、前後sourceを記録する。新条件の旧runtimeだけで全15caseを独立3run直列測定する。候補probeや初回C群は導出へ使わず、大きい複数モードが残る場合は幅の拡大で覆わず停止する。
+
+この基準3runのみから上記9.5の式・丸めでNoiseとRunVariationを再導出する。元`comparison-policy.json`は変更せず、別版`comparison-policy-recalibrated.json`へ保存する。全15caseの削減目標（direct/indirect各180000bytes/op）、AllowedIncrease、Equivalence、必要独立run数は型と値を完全に保持する。変更可能な値はNoiseとRunVariation、識別子と作成時刻だけとし、差分とhashを保存して独立レビューする。
+
+記録先は`artifacts/runtime-performance/task-10.3-retry1-20261024T141717Z/`。harness修正・基準側45case・新版policy固定の部分範囲が揃った時点で独立レビューへ引き渡す。レビュー承認前に候補の本測定は開始しない。承認後の新規交互6runと全30指標のproduction比較、元目標と許容幅による判断、最終公式検証は未完了であり、この再特徴化を10.3の完了や性能受入とは扱わない。
+
+
+### 再試行1の結果: 基準側の前提不成立で停止
+
+旧runtimeと新harnessの全15case×3runは保存契約・前後検査・実PID/mask・条件照合に成功したが、scan.simdの約2倍の時間モード、memoryの13.652%偏差、matrix/indirectの1bytes/opを超える同版割当差が残った。巨大な判断幅で覆わず、新版policyは作成していない。元policyと全目標・許容幅を保持し、候補測定は未実施。詳細は[第1変更の再試行記録](change-1-results.md#103再試行1-affinity記録の修正と基準側の再特徴化)とtask-10.3-retry1-20261024T141717Z/instability-summary.jsonに保存した。10.3はBLOCKEDであり、独立レビューcheckpointの前提となる版付きpolicy固定にも到達していない。原因調査と判断可能な基準の確立が再開条件となる。
+
+### 再試行2の結果: 実観測の保存と短期ゲートの前提不成立
+
+[debug round2](../../../artifacts/runtime-performance/debug-10.3-r2-20261024T144426Z/debug-report.md)に従い、再試行1のWithAffinity再設定を省き、Job要求値の保存と子processの計時外の前後mask観測を分離した。ProcessCheck→RunStore→RunConditions/RunComparisonへ接続し、観測欠落/取得不能/前後差/子process間差/run間差を比較から除外する。旧runtime/候補runtime/素材/元policyは維持し、両側新harness集合は`5b66c040c551df97c7964984140dc75f88ad91f2e8da7dfb02c3df36dc4af6f8`。Release警告・エラー0、Benchmarks.Tests320件成功、15caseのcheckと別process Smokeが成立した。
+
+旧runtimeだけの短期ゲートをscan.simd×3→memory.copy-fill×3→kernel.matrix×3→loop.indirect×3へ事前固定した。scan3run後、memoryの2runで同じ131072操作に対して54525952/54527632bytes、正確に1680bytes差が再出したため5runで停止した。全子終了0・Errors空・check/mask一致・条件差0・raw再計算一致・警告0でも、既知不安定性が残るため10.3はBLOCKED。API警告の除去を原因解消の証明にしない。差引き・run選別・追加取り直しはせず、残り7run/45case/新版policy/候補測定は開始していない。元policyの削減目標・許容幅・同等範囲・必要独立run数は完全保持。詳細は[再試行2の結果](change-1-results.md#103再試行2-子processのaffinity観測と短期ゲートの停止)と`artifacts/runtime-performance/task-10.3-retry2-20261024T150905Z/`を参照する。
+
+## 10.3再開: 修正済み割り当て測定による基準値の取得
+
+2026-10-25の利用者の指示により、追加調査で再現しなかったSIMD時間の約2倍モードは未解決として記録し、10.3を再開する。[割り当て測定の修正](allocation-fix.md)で原因を確認したGC後処理は修正済みだが、その修正をSIMD時間の原因解消とは扱わない。新しい測定で異常が再出した場合は全結果を保持し、幅の拡大やrun選別で覆わない。
+
+記録先は[task-10.3-resume-20261025](../../../artifacts/runtime-performance/task-10.3-resume-20261025/)。旧runtime集合`4966bd32750411fb132e6849c0f3b56992a2a5be382cdb3e84d07fdd14c8a751`と候補runtime集合`0ac1b7884daa13e42d294d99fec63b59462eb1bcc917fc8e2aaab7bee9472c87`を保持し、両側で修正harness集合`c3f92f2403345611b998a7420dc9054be38c6e190c3618115d3c60170f09fa8f`を使う。CPU14/mask16384、DOTNET_TieredPGO=0、HighPerformance/AC、SDK/runtime完全版・BDN・素材を固定し、observerはCPU14から外す。通常Measurementへtraceや診断設定を混ぜず、他のbuild/test/profileと並行実行しない。
+
+先に旧runtimeだけの全15ケースを独立3run測定する。この3runだけから9.5の式でNoiseとRunVariationを再導出し、元policyを保持したまま別版`comparison-policy-recalibrated.json`へ保存する。AllowedIncrease、Equivalence、ReductionTarget、MinimumIndependentRunsは元の型と値を完全保持する。direct/indirectそれぞれ180000bytes/op以上の削減目標を変えない。候補データは導出に使わない。
+
+基準3runと版付きpolicyの固定後に独立レビューを行う。承認後だけ、A1→B1→A2→B2→A3→B3で各3runを新規取得し、production compareの全30指標と両割り当て目標を確認する。再利用は追加しておらずRetentionは非該当。公開契約は変更していないため10.2/13.2の検証を引き継ぎ、今回の測定準備に不要なテストやフラグは追加しない。
+
+### 再開の基準checkpoint
+
+旧runtime・修正harnessの独立3runは45ケースすべてSucceeded、子process終了0・Errors空・前後検査成功・前後mask16384、production条件差0、raw時間/割り当て/GCの再計算一致となった。全15ケースで3runのbytes/opは一致し、SIMDの平均時間は591896.185、615218.242、596998.678ns/opで約2倍モードは再現しなかった。
+
+時間のばらつきは残る。`decode-validate.small`の3runは3818.136、2767.034、2747.133ns/opでS=38.706%、`memory.copy-fill`は2604.066、3008.477、2594.198ns/opでS=15.909%だった。[全15ケースの値・導出](../../../artifacts/runtime-performance/task-10.3-resume-20261025/numeric-table.md)を隠さず保存し、9.5の式でNoise/RunVariationを再導出した。これらの値を許容増加幅へ転用しない。元のAllowedIncreaseとEquivalenceは前者3.5%、後者3.5%のままで、candidateの中央値増加は元の幅で判断する。
+
+別版policy IDは`runtime-performance-recalibrated-change-1-20261025-resume`、SHA-256は`a7386a5bc1c7dd07a1483f7359aab5f4aadd51190b4522c8e041988fd93500a1`。[policy-diff.json](../../../artifacts/runtime-performance/task-10.3-resume-20261025/policy-diff.json)で全15ケースの目標・許容増加・同等範囲・必要独立run数の完全保持を確認した。production型の読込と数値自己比較は30指標すべてEquivalent/許容内、CLIは同じrunを両群へ使う操作を予定どおり終了1で拒否した。入力342ファイルのhash不一致0。これはpolicyの整合確認であり、候補との改善受入ではない。
+
+baseline-1の外部observerはPIDだけを追跡し、終了済みPIDへの観測が混入した。3PIDの最終観測は対応postcheck最終更新より約80〜160秒後で、元のBDN終了0行もある。各maskの時刻とprocess開始時刻を保存していなかったため、混在値の全発生時点は復元できず、`external_observer_verified=false`として保持する。process内の前後mask一致は確認できるが、途中に配置変更が一度もなかったとは証明しない。この制約は同runの生データを変更せず記録した。baseline-2/3はobserver側だけをPID+開始時刻・process名・pathの同定とpostcheck後の監視停止へ修正し、16processずつの外部観測も成立した。harnessは変更していない。
+
+候補Measurementは独立レビュー承認まで未開始。10.3の承認後に行う交互6runも、13.1の別途必要な最終比較としては扱わない。
+
+### 再開の個別評価結果
+
+基準checkpointの独立レビューAPPROVED後、固定policyのままA1→B1→A2→B2→A3→B3を新規取得した。全90ケースはSucceeded、条件差0、前後mask・生データ再計算・source固定が成立した。全6runと比較前後684入力のhashを保持し、不一致0件だった。
+
+direct/indirectの割り当てはそれぞれ230176→744、229928→496bytes/opで、両方とも229432bytes/op削減し180000bytes/op目標を達成した。一方、production compareは終了1・IsAccepted=false、許容内を確認できたのは28/30指標だった。invoke.emptyの旧群の最大中央値偏差11.717%がRunVariation10.5%を超え、kernel.matrixは旧群4.795%・候補群3.992%がRunVariation3%を超えたため、これら2ケースの時間は判定不能・完了阻害となった。悪化判定は0件だが、比較前提が揃っていないため第1変更の受入完了とはしない。
+
+SIMD時間は旧群中央値590450.837ns/op、候補群602740.765ns/opで2.081%増、元の同等範囲7%内かつ反復間条件内だった。約2倍モードは再出していない。この結果を根拠に元の原因が解消したとは断定しない。
+
+詳細は[comparison-values.md](../../../artifacts/runtime-performance/task-10.3-resume-20261025/comparison-values.md)、[verification.json](../../../artifacts/runtime-performance/task-10.3-resume-20261025/verification.json)、[variation-observations.json](../../../artifacts/runtime-performance/task-10.3-resume-20261025/variation-observations.json)。候補の結果を使ったpolicy更新、追加取り直し、run選別は行っていない。10.3の受入と13.1以降の最終受入は未完了のまま記録する。

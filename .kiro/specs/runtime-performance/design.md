@@ -74,7 +74,9 @@ flowchart TD
     Official --> Api
 ```
 
-BenchmarkDotNetのprocess分離、計時、warmup、統計、割り当て観測を採用する。独自コードは素材と正しさ、測定結果の採用条件、再現情報、前後比較に限定する。DI container、実行エンジンadapter、独自タイマー・統計推定器は作らない。
+BenchmarkDotNetのprocess分離、計時、warmup、統計、割り当て観測を採用する。独自コードは素材と正しさ、測定結果の採用条件、再現情報、前後比較に限定する。DI container、Wasm実行エンジンadapter、独自タイマー・統計推定器は作らない。
+
+2026-10-25の原因調査と利用者の修正指示を受け、測定基盤に限ってBDNの公開`IEngineFactory`/`IEngine`による追加統計の調整を認める。BDN0.15.8の計測準備GCが起動するArrayPool清掃の混入を防ぐため、最後のGC後にもfinalizer完了を待つ。時間測定とその自動調整・統計処理は標準エンジンへ委譲する。BDN本体の複製、private APIの書換え、カウンター値の補正は行わない。原因と再現条件は[割り当て量の調査](allocation-investigation.md)を参照する。
 
 ### 技術構成
 
@@ -227,6 +229,8 @@ flowchart TD
 `GlobalSetup`で素材hash・環境を照合し、測定前の期待値確認を行った後に測定用状態を作る。`GlobalCleanup`で最後に保持した戻り値とmemory/table/globalの必要な状態を照合する。Decodeの最後のmoduleを計時外でValidate・Instantiate・Invokeし、Decode+Validateでも計時外でInstantiate・Invokeして期待値を確認する。Instantiateは最後のinstanceの初期状態・start結果を検証する。途中のtrap・例外は測定失敗となる。
 
 BDNはJIT、pilot、warmup、本測定に加え、割り当て観測用の反復も実行する。初期ケースは全段階で同じ処理量になるよう、読み取り専用、固定点へ戻る操作、または毎回同じ出力を上書きする操作に限定する。copy/fillは事前に最終状態へ揃え、1操作後も同じ状態へ戻る。matrixは出力全要素を毎回上書きし、前回結果を入力に使わない。table・importした実体はケース間で共有せず、callbackも累積状態を持たない。
+
+MeasurementとSmokeは`WasmAllocationEngineFactory`を使う。標準エンジンの追加統計だけを無効にし、時間測定の後で、最終Actual反復の操作数と選択済みunrollを引き継いで追加反復を行う。`Collect→Wait→Collect→Wait→GcStats.ReadInitial→WorkloadAction→GcStats.ReadFinal`の順序とし、process全体のmanaged割り当て・GC・ThreadingStats・例外頻度を同じ反復に対応させる。IterationSetup/Cleanupはカウンターの外に置く。標準エンジンの生時間結果とoutlier方針を保持する。使用factoryはJob設定へ保存する。追加反復は標準`Run`が返した後、`BenchmarkStop`イベントより後になるため、外部の割り当てトレースはprocess終了まで採取する。
 
 | 区間 | 計時内 | 計時外 |
 | --- | --- | --- |

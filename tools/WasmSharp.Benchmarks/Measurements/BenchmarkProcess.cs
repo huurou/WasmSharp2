@@ -1,3 +1,5 @@
+using System.ComponentModel;
+using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text.Json;
 using WasmSharp.Benchmarks.Cases;
@@ -53,6 +55,7 @@ internal sealed class BenchmarkProcess
     {
         try
         {
+            CaptureAffinity(after: false);
             check_ = check_ with
             {
                 LoadedAssemblies = new[]
@@ -89,6 +92,7 @@ internal sealed class BenchmarkProcess
     {
         try
         {
+            CaptureAffinity(after: true);
             verify();
             check_ = check_ with { Postcheck = Success(), LastConfirmedStage = RunStage.Postcheck };
             Save();
@@ -102,6 +106,47 @@ internal sealed class BenchmarkProcess
 
     private static CorrectnessCheck Success() =>
         new(ResultStatus.Succeeded, [new("固定期待値との照合", "全項目一致", "全項目一致", true)]);
+
+    private void CaptureAffinity(bool after)
+    {
+        long? mask = null;
+        string? reason = null;
+        if (OperatingSystem.IsWindows() || OperatingSystem.IsLinux())
+        {
+            try
+            {
+                using var process = Process.GetCurrentProcess();
+                mask = process.ProcessorAffinity.ToInt64();
+                if (mask == 0)
+                {
+                    mask = null;
+                    reason = "processのaffinityが0で観測できません。";
+                }
+            }
+            catch (Exception exception)
+                when (exception
+                        is Win32Exception
+                            or InvalidOperationException
+                            or PlatformNotSupportedException
+                )
+            {
+                reason = exception.GetType().Name + ": " + exception.Message;
+            }
+        }
+        else
+        {
+            reason = "processのaffinity観測はWindows/Linuxだけに対応しています。";
+        }
+
+        check_ = check_ with
+        {
+            AffinityBefore = after ? check_.AffinityBefore : mask,
+            AffinityAfter = after ? mask : check_.AffinityAfter,
+            AffinityUnavailableReason = reason is null
+                ? check_.AffinityUnavailableReason
+                : (after ? "後観測: " : "前観測: ") + reason,
+        };
+    }
 
     private void Fail(RunStage stage, Exception exception)
     {

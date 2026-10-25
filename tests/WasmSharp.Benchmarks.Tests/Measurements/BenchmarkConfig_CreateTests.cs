@@ -14,6 +14,39 @@ namespace WasmSharp.Benchmarks.Tests.Measurements;
 internal class BenchmarkConfig_CreateTests
 {
     [Test]
+    public async Task 本測定設定を作る_ファイナライザー完了を待つ割り当て測定を選ぶ()
+    {
+        // Arrange
+        // Act
+        var job = BenchmarkConfig.Create().GetJobs().Single();
+        var factory = job.ResolveValue(
+            InfrastructureMode.EngineFactoryCharacteristic,
+            EngineParameters.DefaultResolver
+        );
+
+        // Assert
+        await Assert.That(factory.GetType().Name).IsEqualTo("WasmAllocationEngineFactory");
+    }
+
+    [Test]
+    public async Task 本測定設定を作る_継承した実行位置をBDNで再設定せず要求値は既定として保存する()
+    {
+        // Arrange
+        // Act
+        var job = BenchmarkConfig.Create().GetJobs().Single();
+        var saved = BenchmarkRun.DescribeProcess("Measurement", job);
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(job.HasValue(EnvironmentMode.AffinityCharacteristic)).IsFalse();
+            await Assert
+                .That(saved.JobSettings.Single(x => x.Name == "EnvironmentMode.Affinity").Value)
+                .IsEqualTo("Default");
+        }
+    }
+
+    [Test]
     public async Task 本測定設定を作る_固定した実行条件で反復調整を測定器へ委ねる()
     {
         // Arrange

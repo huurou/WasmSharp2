@@ -15,6 +15,9 @@ internal sealed class RunComparisonFixture : IDisposable
     internal List<BenchmarkCase> Cases { get; set; }
     internal AssetManifest Assets { get; set; }
     internal List<ProcessConfiguration> Jobs { get; set; }
+    internal long? AffinityBefore { get; set; } = 16384;
+    internal long? AffinityAfter { get; set; } = 16384;
+    internal string? AffinityUnavailableReason { get; set; }
 
     internal RunComparisonFixture(string runId, string root)
     {
@@ -191,6 +194,9 @@ internal sealed class RunComparisonFixture : IDisposable
                     CaseId = result.CaseId,
                     JobId = Jobs.Single().JobId,
                     ProcessId = processId,
+                    AffinityBefore = AffinityBefore,
+                    AffinityAfter = AffinityAfter,
+                    AffinityUnavailableReason = AffinityUnavailableReason,
                 }
             );
             store.SaveCase(

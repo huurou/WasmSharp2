@@ -1,13 +1,30 @@
 using System.Text.Json;
 using BenchmarkDotNet.Diagnosers;
+using BenchmarkDotNet.Engines;
 using BenchmarkDotNet.Exporters.Csv;
 using BenchmarkDotNet.Exporters.Json;
+using BenchmarkDotNet.Jobs;
 using WasmSharp.Benchmarks.Smoke;
 
 namespace WasmSharp.Benchmarks.Tests.Smoke;
 
 internal class SmokeConfig_CreateTests
 {
+    [Test]
+    public async Task 試走設定を作る_本測定と同じ割り当て測定を選ぶ()
+    {
+        // Arrange
+        // Act
+        var job = SmokeConfig.Create().GetJobs().Single();
+        var factory = job.ResolveValue(
+            InfrastructureMode.EngineFactoryCharacteristic,
+            EngineParameters.DefaultResolver
+        );
+
+        // Assert
+        await Assert.That(factory.GetType().Name).IsEqualTo("WasmAllocationEngineFactory");
+    }
+
     [Test]
     public async Task 保存した設定fixtureを使う_別process用の最小試走条件を復元する()
     {

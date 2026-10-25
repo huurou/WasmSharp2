@@ -19,6 +19,7 @@ internal static class BenchmarkConfig
             .WithPlatform(Platform.X64)
             .WithCustomBuildConfiguration("Release")
             .WithStrategy(RunStrategy.Throughput)
+            .WithEngineFactory(new WasmAllocationEngineFactory())
             .WithLaunchCount(1)
             .WithMemoryRandomization(false)
             .WithOutlierMode(OutlierMode.RemoveUpper)

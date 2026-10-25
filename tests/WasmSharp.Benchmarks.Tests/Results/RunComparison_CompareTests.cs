@@ -7,6 +7,42 @@ namespace WasmSharp.Benchmarks.Tests.Results;
 internal class RunComparison_CompareTests
 {
     [Test]
+    [Arguments(null, null)]
+    [Arguments(16384, 1)]
+    [Arguments(1, 1)]
+    public async Task 子processの実行位置が欠落または不一致_数値目標を満たしても受入を阻害する(
+        long? before,
+        long? after
+    )
+    {
+        // Arrange
+        using var fixture = new ComparisonFixture();
+        fixture.Current[0].AffinityBefore = before;
+        fixture.Current[0].AffinityAfter = after;
+        var request = fixture.Save();
+
+        // Act
+        var report = RunComparison.Compare(request);
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(report.IsAccepted).IsFalse();
+            await Assert.That(report.Cases.Single().BlocksCompletion).IsTrue();
+            await Assert
+                .That(report.Cases.Single().Decision)
+                .IsEqualTo(ComparisonDecision.Indeterminate);
+            await Assert
+                .That(
+                    report
+                        .Cases.Single()
+                        .Reasons.Any(x => x.Kind == ComparisonReasonKind.ConditionMismatch)
+                )
+                .IsTrue();
+        }
+    }
+
+    [Test]
     public async Task 時間が同等で割当目標だけを達成する_各runの値と中央値と差を示して改善として受け入れる()
     {
         // Arrange

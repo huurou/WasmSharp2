@@ -351,6 +351,8 @@
 
 ## Implementation Notes
 
+- 測定基盤修正の保存（2026-10-25）: 独立レビュー済みの割り当て測定境界・子processのaffinity観測/比較と関連テスト、基準値の再取得・SIMD調査・性能比較の記録を保存した。コード修正の保存と性能改善の受入を分け、10.3/13.1/13.4の未完了状態を維持する。
+
 - 13.3（2026-10-25）: 固定147入力・53907commandの全体run、同じrunのcompare-runとverifyは全終了0。passed52830件・既存out_of_scope1077件、失敗・未対応・異常・blocked・回帰・欠落・未比較0。独立レビューも同じrunへの比較・verifyと357項目の照合に成功しAPPROVED。固定6249ファイルのhash不一致0、親は現行runtime/harness152ファイルと原ログ・runを照合してVERIFIEDとした。記録は`acceptance.md`、`artifacts/runtime-performance/task-13.3-20261025/`と`review-13.3-20261025/`。13.1と同じ候補sourceを確認し、製品修正・baseline保存は行っていない。これは機能範囲だけの完了で、10.3/13.1の性能未受入、13.4と仕様全体の未完了を保持する。
 
 - 10.3再開（2026-10-25）: 利用者の「全然再現しなかったら未解決でいいからBlock解除して先に進んでください」に従い、SIMD時間の原因未特定を再開の阻害条件から外した。割り当て測定の修正は`allocation-fix.md`、SIMD調査は`simd-time-investigation.md`を参照。今回の診断値は受入用の基準値へ採用しない。新harnessは`c3f92f2403345611b998a7420dc9054be38c6e190c3618115d3c60170f09fa8f`、旧/候補runtimeと元policyは保持した。基準側の全15ケース×3runとNoise/RunVariationのみの再導出、独立レビュー後の交互比較から再開し、再発や元許容幅での不成立は隠さず評価する。

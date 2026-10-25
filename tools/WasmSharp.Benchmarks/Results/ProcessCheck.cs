@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace WasmSharp.Benchmarks.Results;
 
 /// <summary>
@@ -13,7 +15,13 @@ internal sealed record ProcessCheck(
     CorrectnessCheck? Postcheck,
     RunStage? LastConfirmedStage,
     List<AssemblyIdentity> LoadedAssemblies,
-    List<RunFailure> Failures
+    List<RunFailure> Failures,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        long? AffinityBefore = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        long? AffinityAfter = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        string? AffinityUnavailableReason = null
 );
 
 /// <summary>

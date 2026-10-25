@@ -1,5 +1,7 @@
 using System.Security.Cryptography;
+using BenchmarkDotNet.Jobs;
 using WasmSharp.Benchmarks.Cases;
+using WasmSharp.Benchmarks.Measurements;
 using WasmSharp.Benchmarks.Results;
 using WasmSharp.Benchmarks.Tests.Fixtures;
 
@@ -7,6 +9,131 @@ namespace WasmSharp.Benchmarks.Tests.Results;
 
 internal class RunComparison_CompareConditionsTests
 {
+    [Test]
+    public async Task 予定launch数に子processが足りない_存在する観測が正常でも比較を受け入れない()
+    {
+        // Arrange
+        using var baseline = new RunComparisonFixture("before", "D:/before");
+        using var current = new RunComparisonFixture("after", "E:/after");
+        baseline.Jobs = [baseline.Jobs.Single() with { LaunchCount = 2 }];
+        current.Jobs = [current.Jobs.Single() with { LaunchCount = 2 }];
+        baseline.Save();
+        current.Save();
+
+        // Act
+        var actual = RunComparison.CompareConditions(
+            baseline.DirectoryPath,
+            current.DirectoryPath,
+            "invoke.single"
+        );
+
+        // Assert
+        await Assert.That(actual.IsComparable).IsFalse();
+        await Assert
+            .That(actual.Reasons.All(x => x.Description.Contains("全予定子process")))
+            .IsTrue();
+    }
+
+    [Test]
+    [Arguments(null, 16384, null)]
+    [Arguments(16384, null, null)]
+    [Arguments(0, 0, null)]
+    [Arguments(16384, 1, null)]
+    [Arguments(null, null, "未対応OS")]
+    public async Task 子processの実行位置が欠落または前後不一致_比較を受け入れない(
+        long? before,
+        long? after,
+        string? reason
+    )
+    {
+        // Arrange
+        using var baseline = new RunComparisonFixture("before", "D:/before");
+        using var current = new RunComparisonFixture("after", "E:/after");
+        current.AffinityBefore = before;
+        current.AffinityAfter = after;
+        current.AffinityUnavailableReason = reason;
+        baseline.Save();
+        current.Save();
+
+        // Act
+        var actual = RunComparison.CompareConditions(
+            baseline.DirectoryPath,
+            current.DirectoryPath,
+            "invoke.single"
+        );
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(actual.IsComparable).IsFalse();
+            await Assert
+                .That(actual.Reasons.Any(x => x.Kind == ComparisonReasonKind.ConditionMismatch))
+                .IsTrue();
+        }
+    }
+
+    [Test]
+    public async Task 子processの実行位置がrun間で違う_同じJob要求値でも観測条件差を返す()
+    {
+        // Arrange
+        using var baseline = new RunComparisonFixture("before", "D:/before");
+        using var current = new RunComparisonFixture("after", "E:/after");
+        current.AffinityBefore = 1;
+        current.AffinityAfter = 1;
+        baseline.Save();
+        current.Save();
+
+        // Act
+        var actual = RunComparison.CompareConditions(
+            baseline.DirectoryPath,
+            current.DirectoryPath,
+            "invoke.single"
+        );
+
+        // Assert
+        var difference = actual.Differences.Single(x => x.Condition == "process.affinity[0].mask");
+        using (Assert.Multiple())
+        {
+            await Assert.That(actual.IsComparable).IsFalse();
+            await Assert.That(difference.Baseline).IsEqualTo("16384");
+            await Assert.That(difference.Current).IsEqualTo("1");
+        }
+    }
+
+    [Test]
+    public async Task 保存したJobの実行位置が違う_同じCPU数でも比較条件差として返す()
+    {
+        // Arrange
+        using var baseline = new RunComparisonFixture("before", "D:/before");
+        using var current = new RunComparisonFixture("after", "E:/after");
+        var job = BenchmarkConfig.Create().GetJobs().Single();
+        baseline.Jobs = [BenchmarkRun.DescribeProcess("Measurement", job.WithAffinity((IntPtr)1))];
+        current.Jobs =
+        [
+            BenchmarkRun.DescribeProcess("Measurement", job.WithAffinity((IntPtr)16384)),
+        ];
+        baseline.Save();
+        current.Save();
+
+        // Act
+        var actual = RunComparison.CompareConditions(
+            baseline.DirectoryPath,
+            current.DirectoryPath,
+            "invoke.single"
+        );
+
+        // Assert
+        var difference = actual.Differences.Single(x =>
+            x.Condition == "job.processes[0].job_settings.EnvironmentMode.Affinity"
+        );
+        using (Assert.Multiple())
+        {
+            await Assert.That(actual.IsComparable).IsFalse();
+            await Assert.That(difference.Baseline).IsEqualTo("1");
+            await Assert.That(difference.Current).IsEqualTo("16384");
+        }
+    }
+
     [Test]
     public async Task 配置先と識別子とランタイムコードだけが違う_同条件として比較できる()
     {

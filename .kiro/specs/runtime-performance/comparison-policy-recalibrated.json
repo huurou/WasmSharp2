@@ -1,0 +1,823 @@
+{
+  "schema_version": 1,
+  "policy_id": "runtime-performance-recalibrated-change-1-20261025-resume",
+  "created_at_utc": "2026-10-25T00:30:38.730686Z",
+  "cases": [
+    {
+      "case_id": "decode-validate.large",
+      "minimum_independent_runs": 3,
+      "time": {
+        "allowed_increase": {
+          "kind": "ratio",
+          "fraction": 0.065
+        },
+        "reduction_target": null,
+        "equivalence": {
+          "decrease": {
+            "kind": "ratio",
+            "fraction": 0.065
+          },
+          "increase": {
+            "kind": "ratio",
+            "fraction": 0.065
+          }
+        },
+        "noise": {
+          "kind": "ratio",
+          "fraction": 0.097
+        },
+        "run_variation": {
+          "kind": "ratio",
+          "fraction": 0.115
+        }
+      },
+      "allocation": {
+        "allowed_increase": {
+          "kind": "absolute",
+          "difference": 1
+        },
+        "reduction_target": null,
+        "equivalence": {
+          "decrease": {
+            "kind": "absolute",
+            "difference": 1
+          },
+          "increase": {
+            "kind": "absolute",
+            "difference": 1
+          }
+        },
+        "noise": {
+          "kind": "absolute",
+          "difference": 0.03125
+        },
+        "run_variation": {
+          "kind": "absolute",
+          "difference": 1
+        }
+      }
+    },
+    {
+      "case_id": "decode-validate.small",
+      "minimum_independent_runs": 3,
+      "time": {
+        "allowed_increase": {
+          "kind": "ratio",
+          "fraction": 0.035
+        },
+        "reduction_target": null,
+        "equivalence": {
+          "decrease": {
+            "kind": "ratio",
+            "fraction": 0.035
+          },
+          "increase": {
+            "kind": "ratio",
+            "fraction": 0.035
+          }
+        },
+        "noise": {
+          "kind": "ratio",
+          "fraction": 0.388
+        },
+        "run_variation": {
+          "kind": "ratio",
+          "fraction": 0.46
+        }
+      },
+      "allocation": {
+        "allowed_increase": {
+          "kind": "absolute",
+          "difference": 1
+        },
+        "reduction_target": null,
+        "equivalence": {
+          "decrease": {
+            "kind": "absolute",
+            "difference": 1
+          },
+          "increase": {
+            "kind": "absolute",
+            "difference": 1
+          }
+        },
+        "noise": {
+          "kind": "absolute",
+          "difference": 0.00048828125
+        },
+        "run_variation": {
+          "kind": "absolute",
+          "difference": 1
+        }
+      }
+    },
+    {
+      "case_id": "decode.large",
+      "minimum_independent_runs": 3,
+      "time": {
+        "allowed_increase": {
+          "kind": "ratio",
+          "fraction": 0.05
+        },
+        "reduction_target": null,
+        "equivalence": {
+          "decrease": {
+            "kind": "ratio",
+            "fraction": 0.05
+          },
+          "increase": {
+            "kind": "ratio",
+            "fraction": 0.05
+          }
+        },
+        "noise": {
+          "kind": "ratio",
+          "fraction": 0.157
+        },
+        "run_variation": {
+          "kind": "ratio",
+          "fraction": 0.13
+        }
+      },
+      "allocation": {
+        "allowed_increase": {
+          "kind": "absolute",
+          "difference": 1
+        },
+        "reduction_target": null,
+        "equivalence": {
+          "decrease": {
+            "kind": "absolute",
+            "difference": 1
+          },
+          "increase": {
+            "kind": "absolute",
+            "difference": 1
+          }
+        },
+        "noise": {
+          "kind": "absolute",
+          "difference": 0.0078125
+        },
+        "run_variation": {
+          "kind": "absolute",
+          "difference": 1
+        }
+      }
+    },
+    {
+      "case_id": "decode.small",
+      "minimum_independent_runs": 3,
+      "time": {
+        "allowed_increase": {
+          "kind": "ratio",
+          "fraction": 0.045
+        },
+        "reduction_target": null,
+        "equivalence": {
+          "decrease": {
+            "kind": "ratio",
+            "fraction": 0.045
+          },
+          "increase": {
+            "kind": "ratio",
+            "fraction": 0.045
+          }
+        },
+        "noise": {
+          "kind": "ratio",
+          "fraction": 0.172
+        },
+        "run_variation": {
+          "kind": "ratio",
+          "fraction": 0.175
+        }
+      },
+      "allocation": {
+        "allowed_increase": {
+          "kind": "absolute",
+          "difference": 1
+        },
+        "reduction_target": null,
+        "equivalence": {
+          "decrease": {
+            "kind": "absolute",
+            "difference": 1
+          },
+          "increase": {
+            "kind": "absolute",
+            "difference": 1
+          }
+        },
+        "noise": {
+          "kind": "absolute",
+          "difference": 0.0001220703125
+        },
+        "run_variation": {
+          "kind": "absolute",
+          "difference": 1
+        }
+      }
+    },
+    {
+      "case_id": "instantiate.large",
+      "minimum_independent_runs": 3,
+      "time": {
+        "allowed_increase": {
+          "kind": "ratio",
+          "fraction": 0.04
+        },
+        "reduction_target": null,
+        "equivalence": {
+          "decrease": {
+            "kind": "ratio",
+            "fraction": 0.04
+          },
+          "increase": {
+            "kind": "ratio",
+            "fraction": 0.04
+          }
+        },
+        "noise": {
+          "kind": "ratio",
+          "fraction": 0.063
+        },
+        "run_variation": {
+          "kind": "ratio",
+          "fraction": 0.08
+        }
+      },
+      "allocation": {
+        "allowed_increase": {
+          "kind": "absolute",
+          "difference": 1
+        },
+        "reduction_target": null,
+        "equivalence": {
+          "decrease": {
+            "kind": "absolute",
+            "difference": 1
+          },
+          "increase": {
+            "kind": "absolute",
+            "difference": 1
+          }
+        },
+        "noise": {
+          "kind": "absolute",
+          "difference": 0.00048828125
+        },
+        "run_variation": {
+          "kind": "absolute",
+          "difference": 1
+        }
+      }
+    },
+    {
+      "case_id": "invoke.empty",
+      "minimum_independent_runs": 3,
+      "time": {
+        "allowed_increase": {
+          "kind": "ratio",
+          "fraction": 0.075
+        },
+        "reduction_target": null,
+        "equivalence": {
+          "decrease": {
+            "kind": "ratio",
+            "fraction": 0.075
+          },
+          "increase": {
+            "kind": "ratio",
+            "fraction": 0.075
+          }
+        },
+        "noise": {
+          "kind": "ratio",
+          "fraction": 0.112
+        },
+        "run_variation": {
+          "kind": "ratio",
+          "fraction": 0.105
+        }
+      },
+      "allocation": {
+        "allowed_increase": {
+          "kind": "absolute",
+          "difference": 1
+        },
+        "reduction_target": null,
+        "equivalence": {
+          "decrease": {
+            "kind": "absolute",
+            "difference": 1
+          },
+          "increase": {
+            "kind": "absolute",
+            "difference": 1
+          }
+        },
+        "noise": {
+          "kind": "absolute",
+          "difference": 1.52587890625e-05
+        },
+        "run_variation": {
+          "kind": "absolute",
+          "difference": 1
+        }
+      }
+    },
+    {
+      "case_id": "invoke.multi",
+      "minimum_independent_runs": 3,
+      "time": {
+        "allowed_increase": {
+          "kind": "ratio",
+          "fraction": 0.025
+        },
+        "reduction_target": null,
+        "equivalence": {
+          "decrease": {
+            "kind": "ratio",
+            "fraction": 0.025
+          },
+          "increase": {
+            "kind": "ratio",
+            "fraction": 0.025
+          }
+        },
+        "noise": {
+          "kind": "ratio",
+          "fraction": 0.078
+        },
+        "run_variation": {
+          "kind": "ratio",
+          "fraction": 0.065
+        }
+      },
+      "allocation": {
+        "allowed_increase": {
+          "kind": "absolute",
+          "difference": 1
+        },
+        "reduction_target": null,
+        "equivalence": {
+          "decrease": {
+            "kind": "absolute",
+            "difference": 1
+          },
+          "increase": {
+            "kind": "absolute",
+            "difference": 1
+          }
+        },
+        "noise": {
+          "kind": "absolute",
+          "difference": 1.52587890625e-05
+        },
+        "run_variation": {
+          "kind": "absolute",
+          "difference": 1
+        }
+      }
+    },
+    {
+      "case_id": "invoke.single",
+      "minimum_independent_runs": 3,
+      "time": {
+        "allowed_increase": {
+          "kind": "ratio",
+          "fraction": 0.01
+        },
+        "reduction_target": null,
+        "equivalence": {
+          "decrease": {
+            "kind": "ratio",
+            "fraction": 0.01
+          },
+          "increase": {
+            "kind": "ratio",
+            "fraction": 0.01
+          }
+        },
+        "noise": {
+          "kind": "ratio",
+          "fraction": 0.092
+        },
+        "run_variation": {
+          "kind": "ratio",
+          "fraction": 0.07
+        }
+      },
+      "allocation": {
+        "allowed_increase": {
+          "kind": "absolute",
+          "difference": 1
+        },
+        "reduction_target": null,
+        "equivalence": {
+          "decrease": {
+            "kind": "absolute",
+            "difference": 1
+          },
+          "increase": {
+            "kind": "absolute",
+            "difference": 1
+          }
+        },
+        "noise": {
+          "kind": "absolute",
+          "difference": 1.52587890625e-05
+        },
+        "run_variation": {
+          "kind": "absolute",
+          "difference": 1
+        }
+      }
+    },
+    {
+      "case_id": "kernel.matrix",
+      "minimum_independent_runs": 3,
+      "time": {
+        "allowed_increase": {
+          "kind": "ratio",
+          "fraction": 0.05
+        },
+        "reduction_target": null,
+        "equivalence": {
+          "decrease": {
+            "kind": "ratio",
+            "fraction": 0.05
+          },
+          "increase": {
+            "kind": "ratio",
+            "fraction": 0.05
+          }
+        },
+        "noise": {
+          "kind": "ratio",
+          "fraction": 0.033
+        },
+        "run_variation": {
+          "kind": "ratio",
+          "fraction": 0.03
+        }
+      },
+      "allocation": {
+        "allowed_increase": {
+          "kind": "absolute",
+          "difference": 1
+        },
+        "reduction_target": null,
+        "equivalence": {
+          "decrease": {
+            "kind": "absolute",
+            "difference": 1
+          },
+          "increase": {
+            "kind": "absolute",
+            "difference": 1
+          }
+        },
+        "noise": {
+          "kind": "absolute",
+          "difference": 1.0
+        },
+        "run_variation": {
+          "kind": "absolute",
+          "difference": 1
+        }
+      }
+    },
+    {
+      "case_id": "loop.float-host",
+      "minimum_independent_runs": 3,
+      "time": {
+        "allowed_increase": {
+          "kind": "ratio",
+          "fraction": 0.045
+        },
+        "reduction_target": null,
+        "equivalence": {
+          "decrease": {
+            "kind": "ratio",
+            "fraction": 0.045
+          },
+          "increase": {
+            "kind": "ratio",
+            "fraction": 0.045
+          }
+        },
+        "noise": {
+          "kind": "ratio",
+          "fraction": 0.121
+        },
+        "run_variation": {
+          "kind": "ratio",
+          "fraction": 0.1
+        }
+      },
+      "allocation": {
+        "allowed_increase": {
+          "kind": "absolute",
+          "difference": 1
+        },
+        "reduction_target": null,
+        "equivalence": {
+          "decrease": {
+            "kind": "absolute",
+            "difference": 1
+          },
+          "increase": {
+            "kind": "absolute",
+            "difference": 1
+          }
+        },
+        "noise": {
+          "kind": "absolute",
+          "difference": 0.0625
+        },
+        "run_variation": {
+          "kind": "absolute",
+          "difference": 1
+        }
+      }
+    },
+    {
+      "case_id": "loop.indirect",
+      "minimum_independent_runs": 3,
+      "time": {
+        "allowed_increase": {
+          "kind": "ratio",
+          "fraction": 0.025
+        },
+        "reduction_target": null,
+        "equivalence": {
+          "decrease": {
+            "kind": "ratio",
+            "fraction": 0.025
+          },
+          "increase": {
+            "kind": "ratio",
+            "fraction": 0.025
+          }
+        },
+        "noise": {
+          "kind": "ratio",
+          "fraction": 0.061
+        },
+        "run_variation": {
+          "kind": "ratio",
+          "fraction": 0.055
+        }
+      },
+      "allocation": {
+        "allowed_increase": {
+          "kind": "absolute",
+          "difference": 1
+        },
+        "reduction_target": {
+          "kind": "absolute",
+          "difference": 180000
+        },
+        "equivalence": {
+          "decrease": {
+            "kind": "absolute",
+            "difference": 1
+          },
+          "increase": {
+            "kind": "absolute",
+            "difference": 1
+          }
+        },
+        "noise": {
+          "kind": "absolute",
+          "difference": 0.125
+        },
+        "run_variation": {
+          "kind": "absolute",
+          "difference": 1
+        }
+      }
+    },
+    {
+      "case_id": "loop.integer-direct",
+      "minimum_independent_runs": 3,
+      "time": {
+        "allowed_increase": {
+          "kind": "ratio",
+          "fraction": 0.025
+        },
+        "reduction_target": null,
+        "equivalence": {
+          "decrease": {
+            "kind": "ratio",
+            "fraction": 0.025
+          },
+          "increase": {
+            "kind": "ratio",
+            "fraction": 0.025
+          }
+        },
+        "noise": {
+          "kind": "ratio",
+          "fraction": 0.045
+        },
+        "run_variation": {
+          "kind": "ratio",
+          "fraction": 0.055
+        }
+      },
+      "allocation": {
+        "allowed_increase": {
+          "kind": "absolute",
+          "difference": 1
+        },
+        "reduction_target": {
+          "kind": "absolute",
+          "difference": 180000
+        },
+        "equivalence": {
+          "decrease": {
+            "kind": "absolute",
+            "difference": 1
+          },
+          "increase": {
+            "kind": "absolute",
+            "difference": 1
+          }
+        },
+        "noise": {
+          "kind": "absolute",
+          "difference": 0.125
+        },
+        "run_variation": {
+          "kind": "absolute",
+          "difference": 1
+        }
+      }
+    },
+    {
+      "case_id": "memory.copy-fill",
+      "minimum_independent_runs": 3,
+      "time": {
+        "allowed_increase": {
+          "kind": "ratio",
+          "fraction": 0.035
+        },
+        "reduction_target": null,
+        "equivalence": {
+          "decrease": {
+            "kind": "ratio",
+            "fraction": 0.035
+          },
+          "increase": {
+            "kind": "ratio",
+            "fraction": 0.035
+          }
+        },
+        "noise": {
+          "kind": "ratio",
+          "fraction": 0.16
+        },
+        "run_variation": {
+          "kind": "ratio",
+          "fraction": 0.175
+        }
+      },
+      "allocation": {
+        "allowed_increase": {
+          "kind": "absolute",
+          "difference": 1
+        },
+        "reduction_target": null,
+        "equivalence": {
+          "decrease": {
+            "kind": "absolute",
+            "difference": 1
+          },
+          "increase": {
+            "kind": "absolute",
+            "difference": 1
+          }
+        },
+        "noise": {
+          "kind": "absolute",
+          "difference": 0.000244140625
+        },
+        "run_variation": {
+          "kind": "absolute",
+          "difference": 1
+        }
+      }
+    },
+    {
+      "case_id": "scan.scalar",
+      "minimum_independent_runs": 3,
+      "time": {
+        "allowed_increase": {
+          "kind": "ratio",
+          "fraction": 0.08
+        },
+        "reduction_target": null,
+        "equivalence": {
+          "decrease": {
+            "kind": "ratio",
+            "fraction": 0.08
+          },
+          "increase": {
+            "kind": "ratio",
+            "fraction": 0.08
+          }
+        },
+        "noise": {
+          "kind": "ratio",
+          "fraction": 0.032
+        },
+        "run_variation": {
+          "kind": "ratio",
+          "fraction": 0.04
+        }
+      },
+      "allocation": {
+        "allowed_increase": {
+          "kind": "absolute",
+          "difference": 1
+        },
+        "reduction_target": null,
+        "equivalence": {
+          "decrease": {
+            "kind": "absolute",
+            "difference": 1
+          },
+          "increase": {
+            "kind": "absolute",
+            "difference": 1
+          }
+        },
+        "noise": {
+          "kind": "absolute",
+          "difference": 0.25
+        },
+        "run_variation": {
+          "kind": "absolute",
+          "difference": 1
+        }
+      }
+    },
+    {
+      "case_id": "scan.simd",
+      "minimum_independent_runs": 3,
+      "time": {
+        "allowed_increase": {
+          "kind": "ratio",
+          "fraction": 0.07
+        },
+        "reduction_target": null,
+        "equivalence": {
+          "decrease": {
+            "kind": "ratio",
+            "fraction": 0.07
+          },
+          "increase": {
+            "kind": "ratio",
+            "fraction": 0.07
+          }
+        },
+        "noise": {
+          "kind": "ratio",
+          "fraction": 0.04
+        },
+        "run_variation": {
+          "kind": "ratio",
+          "fraction": 0.05
+        }
+      },
+      "allocation": {
+        "allowed_increase": {
+          "kind": "absolute",
+          "difference": 1
+        },
+        "reduction_target": null,
+        "equivalence": {
+          "decrease": {
+            "kind": "absolute",
+            "difference": 1
+          },
+          "increase": {
+            "kind": "absolute",
+            "difference": 1
+          }
+        },
+        "noise": {
+          "kind": "absolute",
+          "difference": 0.0625
+        },
+        "run_variation": {
+          "kind": "absolute",
+          "difference": 1
+        }
+      }
+    }
+  ]
+}

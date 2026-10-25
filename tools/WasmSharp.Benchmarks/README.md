@@ -27,6 +27,10 @@ outlier方針はThroughput既定の`RemoveUpper`を明示する。Full JSONとme
 
 MemoryDiagnoserのGC総回数・操作数・割り当て量は時間測定とは別の観測区間に対応する。managed割り当ては保持量、ピーク量、nativeメモリ、guest線形メモリ内の利用量とは区別する。通常reportの丸めたbytes/opだけで割り当ての不存在を判断しない。
 
+MeasurementとSmokeは`WasmAllocationEngineFactory`を使用する。時間測定と自動調整はBDN標準エンジンへ委譲し、追加の割り当て反復では、準備用の最後のGC後にも`GC.WaitForPendingFinalizers()`を実行する。BDN0.15.8の標準順序では、このGCが起動したArrayPool清掃の割り当てがカウンター間へ混入するためである。最終Actual反復の操作数と標準エンジンが選んだunrollを引き継ぎ、process全体の割り当てカウンターを使う。固定量の減算やスレッド単位のカウンターへの置換はしない。workload自身が発生させたGCや背景処理の割り当ては引き続き計測対象となる。
+
+追加反復は標準エンジンの`Run`が返った後に行うため、BDNの`BenchmarkStop`イベントより後になる。通常の時間結果・割り当て結果は保存されるが、このイベントを終了条件とする外部トレースでは追加反復を採取できない。割り当ての診断ではprocess終了まで採取する。使用factoryは保存Job設定に含まれ、修正前のharnessとは同条件の受入比較に使わない。
+
 ## 素材確認・ケース選択・結果保存
 
 下記の素材生成後、リポジトリルートで実行する。`$assetSet`は生成済み素材のディレクトリ。`check`はmanifest/profile/バイナリ/入力のhashを照合し、全ケースの公開操作と固定期待値を検査する。測定processからWABTやClangは起動しない。
@@ -121,6 +125,8 @@ $comparisonExit = $LASTEXITCODE
 policyの型は[ComparisonPolicy.cs](Results/ComparisonPolicy.cs)にあり、各caseの時間・割り当ての許容幅、削減目標、同等範囲、ノイズ幅、反復間判断幅、必要独立run数を指定する。数値は基準値の同版再測定に基づいて事前に定める。`comparison.json`には入力manifest内のrun IDとhash、policy hash、caseごとの改善・同等・悪化・判定不能、個別値・差・理由・条件差を保存する。CLIの`--assets`の配置差や出力先は比較条件から除くが、case選択・用途・Job等の意味のある設定は照合する。
 
 今回の変更前基準と選定1件は[性能改善計画](../../.kiro/specs/runtime-performance/optimization-plan.md)、全体と第1変更で共用する数値設定は[comparison-policy.json](../../.kiro/specs/runtime-performance/comparison-policy.json)を参照する。
+
+最初の交互6runの結果と採用保留の理由は[第1変更の比較結果](../../.kiro/specs/runtime-performance/change-1-results.md)を参照する。
 
 正常Measurementと必須比較が揃い、全caseの両指標が許容内で、選定目標の少なくとも1件を達成したときだけ受入成立となる。Smoke・失敗・取得不能・未完了のrunは改善判定へ採用しない。原因調査ではまずcase別の時間と割り当て、raw反復・GC・条件差・失敗段階を確認する。追加の診断や保持観測は通常Measurementと混在させず、専用手順でDiagnostic/Retentionとして保存する。
 
@@ -244,3 +250,13 @@ Get-FileHash artifacts/simd/task-10.3-20261018T215944Z/run-baseline.json -Algori
 ```
 
 [先行SIMD受入の10.2・10.3](../../.kiro/specs/simd/acceptance.md#102-単一最終runによる公式比較と全体判定)には、固定スイートのpassed52,830件・out_of_scope1,077件、failed・runtime_unsupported・runner_error・blocked・回帰・欠落0件と、比較・verify済みの同じrunからのbaseline保存が記録されている。ツールの最小変換成功や比較元の存在確認は、本仕様の最終公式受入の完了を意味しない。
+
+## 子processの実行位置の保存
+
+Jobの`EnvironmentMode.Affinity`は設定要求として保存する。通常Jobは継承maskをBDNへ再設定せず、`Default`の要求記録を保持する。実際の実行条件は各子processがSetup/Cleanupの計時外で`Process.ProcessorAffinity`から取得した前後maskを`checks/`へ保存し、比較時に照合する。Windows/Linuxで同APIが取得できるmaskを対象とし、未対応OSや取得不能はnullと理由を保持する。0やDefaultを観測不能の代用にしない。
+
+全予定case/Job/launchの観測不足、前後差、同じJobの子process間差、run間差は受入不能となる。旧保存runの読込は維持するが、実観測のないrunは新harnessでの性能比較へ採用しない。特定CPUを固定する場合は起動workerのmaskを外側で設定し、子processの保存値まで確認する。
+
+今回のCPU14/mask16384・PGO0による短期ゲートは、memory.copy-fillの同操作数で総1680bytes差が再出したため5runで停止した。Job再設定のAPI警告は消えたが、不安定性の原因解消や性能受入は確認できていない。[再試行2の結果](../../.kiro/specs/runtime-performance/change-1-results.md#103再試行2-子processのaffinity観測と短期ゲートの停止)を参照する。新版policy・候補比較・最終公式検証は未実施。
+
+その後、1680bytes差を準備GC後のArrayPool清掃と特定し、[割り当て測定の修正](../../.kiro/specs/runtime-performance/allocation-fix.md)を行った。修正後の旧runtimeによるmatrix・memory・SIMD各3runは追加総量0だった。[SIMD時間の調査](../../.kiro/specs/runtime-performance/simd-time-investigation.md)では約2倍モードが再現せず、利用者の指示により未解決のままBlockを解除した。新harnessで基準値を再取得し、第1変更と最終版の交互比較まで実施した。割り当て削減は再現したが、時間のばらつきにより性能受入は未成立である。固定公式検証は成立しており、現在の結果と未解決事項は[検証引継ぎ](../../.kiro/specs/runtime-performance/acceptance.md)を参照する。

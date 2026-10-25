@@ -17,7 +17,8 @@ internal sealed class RunConditions(string runId)
         AssetManifest assets,
         RunEnvironment environment,
         RunSource source,
-        List<ProcessConfiguration> jobs
+        List<ProcessConfiguration> jobs,
+        List<ProcessCheck> checks
     )
     {
         var conditions = new RunConditions(run.RunId);
@@ -113,6 +114,16 @@ internal sealed class RunConditions(string runId)
         conditions.Add("environment.variables", Settings(environment.EnvironmentVariables, paths));
         conditions.Add("environment.processes", Processes(environment.Processes, paths));
         conditions.Add("job.processes", Processes(jobs, paths));
+        conditions.Add(
+            "process.affinity",
+            jobs.Select(x => new
+                {
+                    Configuration = Processes([x], paths).Single(),
+                    Mask = checks.First(y => y.JobId == x.JobId).AffinityBefore,
+                })
+                .OrderBy(x => JsonSerializer.Serialize(x, CaseJson.Options), StringComparer.Ordinal)
+                .ToArray()
+        );
         conditions.Add("command.executable", paths.CommandExecutable());
         conditions.Add("command.arguments", paths.CommandArguments());
         return conditions;
