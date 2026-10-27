@@ -109,7 +109,7 @@ internal static partial class RunComparison
             var definition = Read<List<BenchmarkCase>>(directory, run.CasesFile!)
                 .Single(x => x.CaseId == caseId);
             var jobs = Read<List<ProcessConfiguration>>(directory, run.JobSettingsFile!);
-            var checks = ReadAffinityChecks(directory, run, jobs);
+            var checks = ReadProcessChecks(directory, run, jobs);
             return RunConditions.Create(
                 run,
                 definition,
@@ -140,7 +140,7 @@ internal static partial class RunComparison
         }
     }
 
-    private static List<ProcessCheck> ReadAffinityChecks(
+    private static List<ProcessCheck> ReadProcessChecks(
         string directory,
         RunManifest run,
         List<ProcessConfiguration> jobs
@@ -165,6 +165,15 @@ internal static partial class RunComparison
                 }
                 var check = Read<ProcessCheck>(directory, process.CheckFile);
                 if (
+                    string.IsNullOrWhiteSpace(check.RuntimeVersion)
+                    || check.RuntimeVersion.Contains("Unavailable:", StringComparison.Ordinal)
+                )
+                {
+                    throw new InvalidDataException(
+                        $"case '{result.CaseId}', PID={process.ProcessId}: 子processのruntime観測がありません。"
+                    );
+                }
+                if (
                     check.AffinityBefore is null or 0
                     || check.AffinityAfter is null or 0
                     || check.AffinityBefore != check.AffinityAfter
@@ -185,6 +194,14 @@ internal static partial class RunComparison
         )
         {
             throw new InvalidDataException("同じJobの子process間でaffinityが異なります。");
+        }
+        if (
+            checks
+                .GroupBy(x => x.JobId)
+                .Any(x => x.Select(y => y.RuntimeVersion).Distinct().Count() != 1)
+        )
+        {
+            throw new InvalidDataException("同じJobの子process間でruntimeが異なります。");
         }
         return checks;
     }

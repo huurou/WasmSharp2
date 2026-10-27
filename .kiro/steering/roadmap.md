@@ -1,5 +1,5 @@
 ---
-updated_at: 2026-10-22
+updated_at: 2026-10-27
 ---
 
 # WasmSharp2ロードマップ
@@ -12,7 +12,7 @@ Core 2.0に対応する8仕様を機能ごとに4段階を通して実装する�
 
 `runtime-foundation`と`host-linking`は完了し、関数呼出し・リソース生成・import/exportの実行・リンク基盤まで整備済み。`test-suite-runner`も、その公開能力を使うspectest・register、全体実行・回帰比較の実装と初回公式受入・baseline保存、仕様全体の最終実装検証GOまで記録済み。`test-suite-conformance`は既知944件を解消し、failed・runner_error・回帰0、baseline明示更新と最終実装検証GOを確認した。`numeric-control`はスカラー数値命令と構造化制御を追加し、73受入基準・最終実装検証GO・比較済み結果のbaseline保存を確認した。`linear-memory`、`tables-references`、`simd`も実装タスクと公式受入・比較済み結果のbaseline保存まで記録済み。先行仕様の承認済み要件・設計・タスクと完成状態は維持する。今後の変更でも同じ公式スイートによる診断照合と回帰確認を完了条件に含める。
 
-最新の公式受入記録では、全8仕様を統合した単一runについて、147入力・53,907commandのうち52,830件がpassed、1,077件がout_of_scope、failed・runtime_unsupported・runner_error・blocked・回帰・欠落が0件で、`verify`合格とbaseline保存が記録されている。根拠は[SIMDの公式受入](../specs/simd/acceptance.md#102-単一最終runによる公式比較と全体判定)と[baseline保存](../specs/simd/acceptance.md#103-比較受入済みrunの明示baseline保存)。固定した入力・profileでの全体verify合格と、SIMD仕様全体の最終実装検証GOは区別する。
+最新の公式受入記録では、全8仕様を統合した単一runについて、147入力・53,907commandのうち52,830件がpassed、1,077件がout_of_scope、failed・runtime_unsupported・runner_error・blocked・回帰・欠落が0件で、`verify`合格とbaseline保存が記録されている。現在の比較元は[runtime-performanceの受入記録](../specs/runtime-performance/acceptance.md#最終状態の機能確認と保存)にあるrun ID`6b419ae0-55c2-4dd9-a4b0-3d63debbae1e`、baseline SHA-256`e0842ab5d95fb6ad5f936939cbbac7348458d4c45a9444a1e9c73d42acb650cc`。先行する[SIMDの公式受入](../specs/simd/acceptance.md#102-単一最終runによる公式比較と全体判定)と旧baselineも保持する。固定した入力・profileでの全体verify合格と、仕様全体の最終実装検証GOは区別する。
 
 2026-10-22の追加discoveryでは、Core 3.0の前に性能測定と改善を行う方針を選択した。新しい単一仕様`runtime-performance`で代表ケースを測り、実行時間の短縮とメモリ割り当ての最小化を同格の目標として、寄与の大きい1〜3箇所を改善する。既存8仕様の完了状態を維持し、後述の「性能測定と改善」として追加する。
 
@@ -39,7 +39,7 @@ Core 2.0に対応する8仕様を機能ごとに4段階を通して実装する�
 - **追加対象（2026-09-27）**: 公式期待診断への前方一致と、参照実装特有の診断選択への互換性 ランナーの判定は`test-suite-runner`の初期実装に含め、ランタイムへの対応は、スイートで判明した実装上の問題全般を扱う`test-suite-conformance`に含める。
 - **対象外**: ランタイムと自作ツールによるWAT・WASTの解析、WASI、Component Model、JavaScript/Web API、JIT/AOT、既存エンジンへの実行委譲
 - **初期対象外**: GC、型付き関数参照、Wasm例外処理、tail-call、memory64、multi-memory、extended-const、relaxed-SIMD、threads等、Core 2.0の外にある機能 3.0のdeterministic profileも初期の追加要件にしない。
-- 性能の数値目標、NuGet公開、追加TFM・OSへの対応は今回決めていない。将来のためだけの抽象化や拡張口は設けない。
+- 性能の数値目標と判断幅は[runtime-performanceの改善計画](../specs/runtime-performance/optimization-plan.md)と[今回の受入条件](../specs/runtime-performance/requirements.md#今回の受入に関する利用者判断2026-10-26)に保持する。NuGet公開、追加TFM・OSへの対応は未決定。将来のためだけの抽象化や拡張口は設けない。
 
 ## 維持する10項目
 
@@ -95,7 +95,7 @@ baselineの保存と比較は別々のコマンドにし、保存済みの結果
 
 `runtime-foundation`と`host-linking`は公開APIの直接テストによる受入まで完了している。この完了は公式スイートの受入とは区別する。`test-suite-runner`の初回公式受入では、全入力の素材生成と再現性、spectestとregisterを使う実行・リンク経路、全commandの記録と初回baselineをまとめて検証する。
 
-2026-10-01の初回公式受入と素材移動後の再実行・回帰比較は[ランナーのタスク記録](../specs/test-suite-runner/tasks.md)に保持する。当時の診断不一致、未対応とそれに依存する前提不成立、baselineの所在と再開手順は[後続仕様への引継ぎ](../specs/test-suite-conformance/handoff.md)に残す。現在の受入結果とbaselineは[SIMDの受入記録](../specs/simd/acceptance.md)を参照する。タスク単位の公式受入、仕様全体の最終実装検証、Core 2.0全件合格はそれぞれ区別する。
+2026-10-01の初回公式受入と素材移動後の再実行・回帰比較は[ランナーのタスク記録](../specs/test-suite-runner/tasks.md)に保持する。当時の診断不一致、未対応とそれに依存する前提不成立、baselineの所在と再開手順は[後続仕様への引継ぎ](../specs/test-suite-conformance/handoff.md)に残す。現在の受入結果とbaselineは[runtime-performanceの受入記録](../specs/runtime-performance/acceptance.md#最終状態の機能確認と保存)を参照する。タスク単位の公式受入、仕様全体の最終実装検証、Core 2.0全件合格はそれぞれ区別する。
 
 初回のランナー受入では、固定スイート全体を処理し、ランナー自体と素材に起因する入力単位・command単位の`runner_error`を0件にする。初期必須の公式ケースを実行・判定できない問題はランタイム側も含めて`test-suite-runner`で修正し、独自テストだけで受入を代替しない。判定で得た`failed`と、初期必須の実行経路を妨げず原因をランタイム側と確認できた`runner_error`は、ケース・期待・実際・原因を記録して`test-suite-conformance`へ引き継げる。必要な前提が成立しない後続commandは原因付きの`blocked`として残す。`failed`や`runner_error`が残る実行・回帰比較の終了コードは非0のままとし、ランナーの受入とランタイムの全件合格を区別する。
 
@@ -155,7 +155,11 @@ Decode・Validate・Instantiate・Invokeを別々の機能仕様にせず、機�
 
 ### 性能測定と改善
 
-- [ ] runtime-performance -- 代表ケースの時間・managed割り当て量を測定し、基準値の保存、主要1〜3箇所の改善、変更前後の比較とCore 2.0の回帰確認を行う。方針は[ブリーフ](../specs/runtime-performance/brief.md)。 Dependencies: runtime-foundation, host-linking, test-suite-runner, test-suite-conformance, numeric-control, linear-memory, tables-references, simd
+2026-10-27の追加性能評価は完了し、WasmResultsの結果再コピー削減案とFunctionValidatorの命令builder転送案は両方不採用とした。[全15ケースの比較系列](../../artifacts/runtime-performance/additional-optimization-20261027/strict-final-20261027-v2/)は26/30指標が許容内で、元のpolicyと追加目標policyの比較はともに終了1となった。現在のruntime集合は、先の受入runtime`0ac1b7884daa13e42d294d99fec63b59462eb1bcc917fc8e2aaab7bee9472c87`へ復帰しており、全112ファイルの一致を[final-selection.json](../../artifacts/runtime-performance/additional-optimization-20261027/final-selection.json)に保存した。
+
+2案を含むruntime`baa8b4ed547184e92325e7dd92516d7fd5d78049e359ad4f7925551af88f6553`と、その後のFunctionValidator単独候補`0563688abda2884bffadba1a12c2034e95ab7340500e57319b5c035bf23c3b69`は、[追加改善記録](../specs/runtime-performance/additional-optimization.md)に残す過去の候補である。下記の完了と限定例外は既受入の範囲を維持し、追加候補には適用していない。memory.copy-fillの追加原因調査は再開しない。復帰後の最終Releaseビルドは警告・エラー0、全6,011テスト成功・失敗0・skip0、固定公式147入力・53,907コマンドは52,830成功・1,077対象外、比較差・退行0、run/compare-run/verify終了0を確認した。詳細は追加改善記録とfinal-validation-20261027へ保存した。Claudeのruntime Round3は終了0・最終result・is_error=false・同一セッションを確認し、新規欠陥なし。documentsは2026-10-27 10:40に同じセッションで再開し、Round6で追加N1も解消、新しい欠陥なしと確認した。全4群の最終再レビューは終了0・最終result・is_error=false・初回セッションID一致で完了した。全26指摘は採用21・不採用5で、採用分の未対応はない。再開予約は停止済みである。
+
+- [x] runtime-performance -- 代表ケースの時間・managed割り当て量を測定し、基準値の保存、選定した1箇所の改善、変更前後の比較とCore 2.0の回帰確認を完了した。[受入結果](../specs/runtime-performance/acceptance.md)では、短時間指標の運用policyによる29/30指標の許容内、直接・間接呼び出し各229432bytes/opの削減、memory.copy-fill時間1指標の限定例外、公式baseline保存と独立した最終実装検証GOを記録する。方針は[ブリーフ](../specs/runtime-performance/brief.md)。 Dependencies: runtime-foundation, host-linking, test-suite-runner, test-suite-conformance, numeric-control, linear-memory, tables-references, simd
 
 2026-10-22に選択したA案では、準備処理・呼び出し・計算・メモリ・SIMDを合計10〜15ケース程度で代表させ、測定から改善対象を選ぶ。時間とメモリ割り当てを同格に扱い、時間が同等でも操作当たりの割り当てが減れば改善として評価する。GCと、再利用による保持メモリへの影響も確認する。測定基盤だけで完了とせず、少なくとも1件の測定で裏付けられた改善までを範囲とする。規模は中を想定する。
 
@@ -163,7 +167,7 @@ Decode・Validate・Instantiate・Invokeを別々の機能仕様にせず、機�
 
 性能の数値目標と悪化の判断幅は、同じ版の再測定でばらつきと割り当て量を確認してから、各改善に着手する前に定める。時間と割り当ての両指標・個別結果を残し、片方や総合値だけで悪化を隠さない。性能基準値は公式適合検証のbaselineと分ける。公開API・Core 2.0の意味論・診断互換性を維持し、完了確認では既存方針による固定スイート全体の実行・比較・verifyを行う。
 
-この追加はdiscoveryでの方針決定であり、性能測定・改善・実装検証の完了や、requirements・design・tasksの承認を意味しない。Core 3.0、WASI、JIT/AOTやregister IRへの全面変更、並行実行保証、外部比較、全opcodeの個別性能テスト、一律しきい値による性能CIは初回範囲に含めない。
+上記はdiscovery時点の方針であり、その後の仕様化・実装・受入を経て2026-10-27に完了した。今回のWindows/.NET環境と利用者が認めた例外の範囲は[受入結果](../specs/runtime-performance/acceptance.md)に従う。Core 3.0、WASI、JIT/AOTやregister IRへの全面変更、並行実行保証、外部比較、全opcodeの個別性能テスト、一律しきい値による性能CIは初回範囲に含めない。
 
 ## 将来のCore 3.0
 

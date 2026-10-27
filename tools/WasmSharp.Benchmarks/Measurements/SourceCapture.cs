@@ -1,5 +1,4 @@
 using System.Security.Cryptography;
-using System.Text;
 using System.Text.Json;
 using WasmSharp.Benchmarks.Cases;
 using WasmSharp.Benchmarks.Results;
@@ -32,33 +31,33 @@ internal sealed class SourceCapture(string repositoryDirectory)
             head,
             store.SaveFile(
                 "source/index.diff",
-                Encoding.UTF8.GetBytes(
-                    Git(
-                        "diff",
-                        "--no-color",
-                        "--src-prefix=a/",
-                        "--dst-prefix=b/",
-                        "--cached",
-                        "--binary",
-                        "--full-index",
-                        "--no-ext-diff",
-                        "--no-textconv"
-                    )
+                CaptureCommand.RunBytes(
+                    "git",
+                    repositoryDirectory_,
+                    "diff",
+                    "--no-color",
+                    "--src-prefix=a/",
+                    "--dst-prefix=b/",
+                    "--cached",
+                    "--binary",
+                    "--full-index",
+                    "--no-ext-diff",
+                    "--no-textconv"
                 )
             ),
             store.SaveFile(
                 "source/worktree.diff",
-                Encoding.UTF8.GetBytes(
-                    Git(
-                        "diff",
-                        "--no-color",
-                        "--src-prefix=a/",
-                        "--dst-prefix=b/",
-                        "--binary",
-                        "--full-index",
-                        "--no-ext-diff",
-                        "--no-textconv"
-                    )
+                CaptureCommand.RunBytes(
+                    "git",
+                    repositoryDirectory_,
+                    "diff",
+                    "--no-color",
+                    "--src-prefix=a/",
+                    "--dst-prefix=b/",
+                    "--binary",
+                    "--full-index",
+                    "--no-ext-diff",
+                    "--no-textconv"
                 )
             ),
             untracked,

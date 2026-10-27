@@ -12,6 +12,60 @@ namespace WasmSharp.Benchmarks.Tests.Measurements;
 internal class BenchmarkProcess_SetupTests
 {
     [Test]
+    public async Task 前検査成功後の保存が失敗_検査成功と未開始を保持して保存失敗を記録する()
+    {
+        // Arrange
+        using var fixture = new BenchmarkProcessFixture();
+        var process = BenchmarkProcess.Start("InvokeBenchmarks.Single");
+
+        // Act & Assert
+        var exception = await Assert
+            .That(() => process.Setup((_, _) => fixture.BlockCheckWrites()))
+            .Throws<IOException>();
+        fixture.RestoreCheckWrites();
+        process.Cleanup(() => { });
+        var failed = RunStore
+            .ReadChecks(fixture.Run.DirectoryPath)
+            .Single(x => x.Check.Failures.Count > 0)
+            .Check;
+        using (Assert.Multiple())
+        {
+            await Assert.That(failed.Precheck!.Status).IsEqualTo(ResultStatus.Succeeded);
+            await Assert.That(failed.ExecutionStarted).IsFalse();
+            await Assert.That(failed.Failures.Single().Stage).IsEqualTo(RunStage.Saving);
+            await Assert
+                .That(failed.Failures.Single().LastConfirmedStage)
+                .IsEqualTo(RunStage.Precheck);
+            await Assert
+                .That(failed.Failures.Single().ExceptionType)
+                .IsEqualTo(exception!.GetType().FullName);
+        }
+    }
+
+    [Test]
+    public async Task 前検査失敗の保存も失敗_元の検査例外を同じ実体で返す()
+    {
+        // Arrange
+        using var fixture = new BenchmarkProcessFixture();
+        var process = BenchmarkProcess.Start("InvokeBenchmarks.Single");
+        var expected = new InvalidOperationException("前検査の不一致");
+
+        // Act & Assert
+        var actual = await Assert
+            .That(() =>
+                process.Setup(
+                    (_, _) =>
+                    {
+                        fixture.BlockCheckWrites();
+                        throw expected;
+                    }
+                )
+            )
+            .ThrowsExactly<InvalidOperationException>();
+        await Assert.That(actual).IsSameReferenceAs(expected);
+    }
+
+    [Test]
     public async Task 前検査で結果が不一致_実行を開始せずケースと例外を保存する()
     {
         // Arrange
@@ -99,6 +153,13 @@ internal class BenchmarkProcess_SetupTests
                     )
                     .IsTrue();
                 await Assert.That(checks.Last().LoadedAssemblies.Count).IsEqualTo(2);
+                await Assert
+                    .That(
+                        checks.All(x =>
+                            x.RuntimeVersion == EnvironmentCapture.CurrentRuntimeVersion
+                        )
+                    )
+                    .IsTrue();
                 if (OperatingSystem.IsWindows() || OperatingSystem.IsLinux())
                 {
                     using var current = Process.GetCurrentProcess();

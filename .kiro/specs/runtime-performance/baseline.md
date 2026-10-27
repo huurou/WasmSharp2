@@ -1,5 +1,15 @@
 # 性能基準値
 
+## スタック配置固定後の基準値（2026-10-26採用）
+
+現在の比較には、共通harness`a17a67bd4ce46c3e8b6f028e4416949b3d180bf06733609114fa07e511ab0d3c`による[独立3run・全45ケース](../../../artifacts/runtime-performance/goal-aligned-stack-021d4706cee24a6c87379cbcdfba4dce/summary-baseline/summary.json)を使用する。基準runtime、6素材・15ケース、CPU14、SDK/runtime・BDN完全版は保持し、TieredCompilation=0・TieredPGO=0、計時入口のスタック配置固定を両側で揃えた。全ケースの正しさ、保存契約、生データの再計算、条件一致が成立し、割り当て量は全15ケースで3runとも一致した。
+
+残る時間の変動は日常利用PCの制約として記録し、利用者の指示に従って追加の原因調査を終了した。基準側だけからNoiseとRunVariationを導出した[旧比較policy](comparison-policy-aligned-stack.json)と未受入結果を保持する。最終比較には、同じ基準3runから利用者の短い測定の幅の許容方針を反映した[運用policy](comparison-policy-daily-pc.json)を使用した。SHA-256は`2c2796ad88bd2cb063ec228b86bf813638b8753258bc8144bd01f9b228131719`。導出・適用範囲と旧比較後の変更であることは[optimization-plan.md](optimization-plan.md#利用者が許容した短い測定の幅を最終判定へ反映する)、29/30指標が許容内・memory.copy-fillの時間が判定不能となった結果は[最終比較](final-performance-results.md#最終候補の比較2026-10-26)を参照する。候補値を判断幅の計算に使わず、全割り当て基準と削減目標は保持した。
+
+過去の基準・policy・測定結果は削除せず、以下に当時の条件と結果を保持する。異なるharnessやJIT条件の測定を現在の比較へ混ぜない。
+
+## 以前の基準値
+
 タスク9.2で、同版・同じ6素材/15ケース・同条件のMeasurementを独立3run取得した。記録日は2026-10-24。時間とmanaged割り当て量を同格の主指標とし、以下のrunを基準値の計算に用いる。Smokeと診断用runは含めていない。改善の数値目標、許容幅、ComparisonPolicyは後続のタスク9.5で定める。
 
 ## 基準版と固定条件

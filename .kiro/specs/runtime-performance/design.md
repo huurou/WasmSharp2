@@ -232,6 +232,8 @@ BDNはJIT、pilot、warmup、本測定に加え、割り当て観測用の反復
 
 MeasurementとSmokeは`WasmAllocationEngineFactory`を使う。標準エンジンの追加統計だけを無効にし、時間測定の後で、最終Actual反復の操作数と選択済みunrollを引き継いで追加反復を行う。`Collect→Wait→Collect→Wait→GcStats.ReadInitial→WorkloadAction→GcStats.ReadFinal`の順序とし、process全体のmanaged割り当て・GC・ThreadingStats・例外頻度を同じ反復に対応させる。IterationSetup/Cleanupはカウンターの外に置く。標準エンジンの生時間結果とoutlier方針を保持する。使用factoryはJob設定へ保存する。追加反復は標準`Run`が返した後、`BenchmarkStop`イベントより後になるため、外部の割り当てトレースはprocess終了まで採取する。
 
+時間測定の標準`Run`呼び出しだけを`BenchmarkStack`へ委譲し、可変stackallocで明示anchorのアドレスを4096byte境界のoffset0へ揃える。markerのサイズは非inlineメソッドの引数にし、2回の可変確保で固定フレームのoffsetへ依存せず配置を揃える。確保・初期化・位置検査はBDNの計時前に終え、pilot・warmup・本測定・overheadの時計と反復制御を変更しない。標準factoryの初期Setup/Jitting、追加の割り当て反復、最終Cleanupはこの固定区間の外にある。これは共通harnessの呼出配置を揃える条件であり、runtime内部の局所変数や任意の呼出元で同じ性能になる保証ではない。anchor0とhelperを基準測定前に固定し、runtime別・case別・観測性能による調整は行わない。旧runtimeにも同じharnessを適用して基準を取り直し、以前の配置条件のrunとは混在させない。
+
 | 区間 | 計時内 | 計時外 |
 | --- | --- | --- |
 | Decode | 固定バイト列から新しいmoduleの生成と結果保持 | ファイル読込、変換、期待値照合 |
@@ -255,6 +257,10 @@ Invokeの返却値はcase専用fieldへ保持し、事前に生成した`Consume
 4. 時間統計、raw測定値、GCと割り当て観測が揃い、保存が完了している。
 
 親はrun IDと絶対出力先を含むrun設定JSONを作成し、そのpathを専用環境変数`WASMSHARP_BENCHMARK_RUN_CONFIG`で子processへ渡す。子は計時外でこれを読み、case IDを測定メソッドとの固定対応から得る。run ID、process ID、出力先、この設定path、自動生成されるJob識別子は保存上の識別情報として保持し、比較条件から除外する。Jobの実効設定とGC/JIT等へ影響する環境変数は除外しない。子processが読み込んだWasmSharpと測定assemblyの実際のpath・hashを検査記録へ保存し、親のbuild出力だけで代用しない。
+
+`ProcessCheck.runtime_version`には子processが使用したruntimeの完全版を保存する。旧記録の読込互換性のためnullableとするが、null・未記録は比較に必要な情報の欠落として扱い、collectorのruntime版から補完しない。同じJob内の子processは同じruntime版を要求し、run間の差は比較条件差として記録する。子の生成条件である`RuntimeFrameworkVersion`と`RollForward`の環境値も保存・比較する。
+
+子runtime版を持たない旧runと過去の受入結果は保持する。保存した旧harnessでの再比較は当時の判定の再現に限定し、現行harnessでは不足情報として比較を拒否する。現行基準で評価する場合は両版を同じ新harnessで測定し直し、旧runの値や欠落項目を書き換えない。
 
 BDNの`IsSuccess`や`Report.Success`だけに依存しない。GlobalCleanup例外や中断を見逃さないよう、終了値・BDN error・process別記録を突合する。開始済みで完了記録のないrunは読込時にも`Incomplete`とし、完了へ補完しない。再実行は新しいrun IDで行う。
 
@@ -321,13 +327,13 @@ CLIは`check --assets <manifest>`、`run --assets <manifest> --case <id|all> --o
 
 ### 基準値と改善計画
 
-全15ケースを同じ版・同じ条件で3回以上独立実行し、時間の幅と割り当ての安定性を確認する。測定器の試走はSmokeとして保存し、性能基準値に使わない。通常の測定中に電源planを自動変更せず、選んだplanと接続状態を記録して揃える。GC/JITは通常の.NET10設定を基に、BDN Jobとruntimeconfig・関連環境変数を保存する。
+全15ケースを同じ版・同じ条件で3回以上独立実行し、時間の幅と割り当ての安定性を確認する。測定器の試走はSmokeとして保存し、性能基準値に使わない。通常の測定中に電源planを自動変更せず、選んだplanと接続状態を記録して揃える。GC/JITは通常の.NET10設定を基に、BDN Jobとruntimeconfig・関連環境変数を保存する。段階的JITの状態を固定する再測定では、両版の起動時に`DOTNET_TieredCompilation=0`と`DOTNET_TieredPGO=0`を明示し、別系列として扱う。旧条件のrunと混在させず、新条件の基準側だけからノイズ幅と反復間の判断幅を確定してから候補を測定する。削減目標・許容増加幅・同等範囲・必要独立run数は維持する。
 
 受入に使う基準revisionと候補revisionは、同じ測定環境・期間で順序を交互にして各3run以上を取得する。基準revisionは保存したHEAD・index/worktree差分・未追跡source/projectから独立した比較用ディレクトリへ復元し、内容hashを照合する。同じharness・素材・入力・SDK/runtimeの完全な版とビルド設定を使い、旧runを保持したまま新しい出力先へ保存する。復元・ビルド・測定の具体的なコマンドはREADMEに記載する。環境が変わった場合は既定の条件差の規則に従い、双方の再測定と事前policyの前提確認が成立するまで受入を保留し、候補の結果に合わせて閾値を後付けしない。
 
 harnessの同一性は測定project全体と、その計時・状態検査・集計に使う共通コード、project設定、依存版の単位で判断する。基準値取得とpolicy確定の前にこれらを固定し、改善の受入まで凍結する。原因調査用のValidate単体・grow等は、凍結した測定projectを別ディレクトリへ複製した診断用の作業コピーで、その`PreparationBenchmarks`へ追加する。診断用コピーは別のDiagnostic系列として記録し、固定15ケースを測る受入用source集合へ混ぜない。
 
-受入用harness自体の修正が必要なら進行中の候補の受入を中止し、保存した基準revisionのランタイムsourceへ修正済みharnessを組み合わせて基準値を取り直す。元のpolicyの削減目標・許容増加幅・同等範囲は全体policyを含めて保持し、更新できるのは基準側の再測定に基づくノイズ幅と反復間の判断幅だけとする。候補の結果に合わせて目標や閾値を後付けしない。元の目標・許容幅で判断できなければ候補は受け入れず、改善計画からやり直す。この前提を満たす場合だけ、候補側にも同じ修正済みharnessを使って比較する。組み合わせたruntimeとharnessそれぞれの版・source集合を記録し、旧runtimeと旧harnessのrunを新harnessの候補runへ流用しない。
+受入用harness自体の修正が必要なら進行中の候補の受入を中止し、保存した基準revisionのランタイムsourceへ修正済みharnessを組み合わせて基準値を取り直す。元のpolicyの削減目標・許容増加幅・同等範囲は全体policyを含めて保持し、更新できるのは基準側の再測定に基づくノイズ幅と反復間の判断幅だけとする。候補の結果に合わせて目標や閾値を後付けしない。元の目標・許容幅で判断できなければ候補は受け入れず、改善計画からやり直す。この前提を満たす場合だけ、候補側にも同じ修正済みharnessを使って比較する。組み合わせたruntimeとharnessそれぞれの版・source集合を記録し、旧runtimeと旧harnessのrunを新harnessの候補runへ流用しない。今回の短い時間指標には、下記「完了条件」と[要件の利用者判断](requirements.md#今回の受入に関する利用者判断2026-10-26)に記録した運用幅の例外を適用する。
 
 `optimization-plan.md`は、採用runのID/hash、原因を示すprofile、対象1〜3箇所とケース、変更する責務、守る所有・寿命、数値目標とComparisonPolicy、必要な直接テストを変更前に保存する。具体的な数値を測定前に作らないことは未決定の設計放置ではなく、要件6.1〜6.3に従う工程上の確定条件である。
 
@@ -348,6 +354,10 @@ poolや再利用を選ぶ場合、論理的なWasm実行コンテキストと物
 保持観測は通常runから分離する。同じprocess数、入力、反復数、小→大→小の呼び出し列で、強制GC後のmanaged heap、保持中のinstanceの有無、private bytes等の採用指標を変更前後で比較する。heap dump等で残った参照のrootを確認し、追加した再利用が関係する所有境界にはWeakReferenceを使う最小限の直接テストを置く。強制GCやdump採取を時間比較へ混ぜない。返却済み結果が意図して保持する参照と、終了済みコンテキストの不要な参照を区別する。
 
 ### 完了条件
+
+今回の最終候補には、[要件の利用者判断](requirements.md#今回の受入に関する利用者判断2026-10-26)に記録した2つの例外を適用する。まず、短い操作の時間は[改善計画](optimization-plan.md#利用者が許容した短い測定の幅を最終判定へ反映する)の基準値に基づく運用幅で最終評価する。旧比較を観測した後の判断変更であり、最終測定開始前に固定した`comparison-policy-daily-pc.json`を使う。従来policyの不成立結果は保持し、統計的同等性や全環境での回帰不在を主張しない。
+
+その運用policyで許容内となった29/30指標と割り当て削減目標を確認したうえで、memory.copy-fillの時間だけを判定不能のまま例外受入する。比較ツールの終了1・IsAccepted=falseと観測値は保持する。この未確定受入に伴う追加の数値policy変更は行わず、機能・保存・比較条件は維持する。以下の一般条件は、この2つの限定例外を除いて適用する。
 
 各変更後に対象ケースを比較し、最終版では元の基準revisionと全15ケースを再測定する。事前の許容幅を超える悪化、比較契約で完了を阻害する判定不能、正しさの不成立を残さず、最終版でも選定した変更の少なくとも1件で全体policyの時間または割り当ての目標達成を再現する。profile付きrunから改善率を採用しない。条件を揃えた再測定で改善を確認できなければ完了扱いにしない。
 

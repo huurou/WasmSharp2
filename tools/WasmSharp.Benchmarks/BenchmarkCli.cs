@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Security.Cryptography;
 using System.Text.Json;
 using WasmSharp.Benchmarks.Cases;
@@ -39,6 +40,7 @@ internal sealed class BenchmarkCli
                         or NotSupportedException
                         or JsonException
                         or InvalidOperationException
+                        or Win32Exception
             )
         {
             error.WriteLine(exception.Message);

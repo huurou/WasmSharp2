@@ -29,6 +29,8 @@ MemoryDiagnoserのGC総回数・操作数・割り当て量は時間測定とは
 
 MeasurementとSmokeは`WasmAllocationEngineFactory`を使用する。時間測定と自動調整はBDN標準エンジンへ委譲し、追加の割り当て反復では、準備用の最後のGC後にも`GC.WaitForPendingFinalizers()`を実行する。BDN0.15.8の標準順序では、このGCが起動したArrayPool清掃の割り当てがカウンター間へ混入するためである。最終Actual反復の操作数と標準エンジンが選んだunrollを引き継ぎ、process全体の割り当てカウンターを使う。固定量の減算やスレッド単位のカウンターへの置換はしない。workload自身が発生させたGCや背景処理の割り当ては引き続き計測対象となる。
 
+標準エンジンの`Run`は`BenchmarkStack`を通し、計時前の可変stackallocで明示anchorのアドレスを4096byte境界のoffset0へ揃える。配置を揃えられない場合は失敗させる。stackの確保・初期化・位置検査は計時外で、BDNの時計・pilot・warmup・本測定・overhead・outlier処理は維持する。標準factoryの初期Setup/Jitting、後続の追加割り当て反復、最終Cleanupはこの固定区間に含めない。固定するのはharnessの入口であり、runtime内部の配置や任意の呼出元での性能を保証するものではない。基準・候補の両方で同じhelperとanchor0を固定し、性能を見て位置を選び直さない。この条件を導入する前のrunは比較へ混ぜず、旧runtimeと新harnessで基準を取り直す。
+
 追加反復は標準エンジンの`Run`が返った後に行うため、BDNの`BenchmarkStop`イベントより後になる。通常の時間結果・割り当て結果は保存されるが、このイベントを終了条件とする外部トレースでは追加反復を採取できない。割り当ての診断ではprocess終了まで採取する。使用factoryは保存Job設定に含まれ、修正前のharnessとは同条件の受入比較に使わない。
 
 ## 素材確認・ケース選択・結果保存
@@ -92,9 +94,11 @@ $smokeEnvironment = Get-Content (Join-Path $restoredSmoke $smokeManifest.environ
 if ($smokeEnvironment.runtime_version -cne $savedEnvironment.runtime_version) { throw 'runtimeの完全版が異なります。' }
 ```
 
-SDKは`10.0`のような系列名で済ませず、保存した完全版を使う。今回のWindows x64はSDK`10.0.402`、runtime`.NET 10.0.13; 10.0.13-servicing.26504.104+4099f83977f4d29604a9aeb971fb0a7bc1d5f699`。選ばれるruntimeを`dotnet --info`で確認し、インストール先の`System.Private.CoreLib.dll`のProductVersionと保存値の後半を照合してから実行する。実行後も上記のように実際の`environment.json`で一致を確認する。異なる場合は同じ完全版を用意して両版を新規runへ再測定する。
+SDKは`10.0`のような系列名で済ませず、保存した完全版を使う。今回のWindows x64はSDK`10.0.402`、runtime`.NET 10.0.13; 10.0.13-servicing.26504.104+4099f83977f4d29604a9aeb971fb0a7bc1d5f699`。インストール先の`System.Private.CoreLib.dll`のProductVersionと保存値の後半を照合してから実行する。複数のpatch版がある場合、`dotnet run`やapphostは新しいpatchを選び得るため、受入時と同じ条件の再実行には[受入時の測定条件](#受入時の測定条件2026-10-26)のcollector・生成子の版固定を使う。実行後も上記のように実際の`environment.json`で一致を確認する。異なる場合は同じ完全版を用意して両版を新規runへ再測定する。
 
 基準値を採る前に、保存sourceの`harness.files`全体（計時・前後検査・集計コード、project設定、BDN依存版）と、`runtime.files`内のproject・共通build設定を固定する。改善の受入まで変更しない。GC/JIT関連環境変数、runtimeconfig、Job、電源plan・AC接続、CPU/OS・architectureも両版で揃える。sourceのhashは相対pathと内容で照合し、root/cwd・出力先・実行時刻・PID・assemblyの配置由来のhash差で代用しない。復元版のSmokeが成功し、保存source/hashと実行条件が揃ったことを確認してから本測定へ進む。Smokeは基準値に含めない。
+
+段階的JITを固定する別系列では、collectorを起動するworkerに`$env:DOTNET_TieredCompilation='0'`と`$env:DOTNET_TieredPGO='0'`を設定し、復元版・候補版の両方へ継承させる。workerの元の値は`finally`で復元する。保存された`environment.json`で両設定を確認し、CPU14/mask16384・高パフォーマンスplan・AC接続を含む他条件も揃える。診断用のJitDisasmやprofilerは設定しない。新条件で基準側の全15ケースを独立3run取得し、既存の削減目標・許容増加幅・同等範囲を保持してノイズ幅と反復間の判断幅だけを確定する。候補の結果を判断幅の導出へ使わず、旧条件のrunを比較へ混ぜない。今回の最終評価には、利用者判断による短い時間指標の運用幅の例外を適用した。適用policyと範囲は次節に記載する。
 
 本測定では、上記でbuildした復元版と候補版それぞれをcwdとして、次の同じ引数を使い、同じ環境・期間で順番を交互にして各3run以上を新規保存する。`$measurementRun`は毎回新しいpathとし、旧runを上書きしない。基準側runのsourceでharness集合hashが保存元と一致すること、候補側では変更対象のruntime以外に条件差がないことを、下記の保存run群の比較で確認する。条件差があれば性能改善の受入を保留する。
 
@@ -108,6 +112,66 @@ try {
 ```
 
 復元契約の検証は`./tools/WasmSharp.Benchmarks/Tests/Restore-RunSource.Tests.ps1`で実行する。Gitへの書込みは一時ディレクトリ内のfixtureと復元先だけで、staged/worktree差分・使用未追跡ファイルの復元、内容hash、元HEAD/index/statusの維持を確認する。
+
+## 受入時の測定条件（2026-10-26）
+
+今回の受入はWindows x64・Intel Core i7-13700K、SDK10.0.402、.NET10.0.13、BDN0.15.8、HighPerformance/ACに限定する。共通harnessは計時入口のスタック配置を固定し、TieredCompilationとTieredPGOをともに0にする。[採用基準値](../../.kiro/specs/runtime-performance/baseline.md)の配置固定系列3runと、[運用policy](../../.kiro/specs/runtime-performance/comparison-policy-daily-pc.json)を使用した。policyのSHA-256は`2c2796ad88bd2cb063ec228b86bf813638b8753258bc8144bd01f9b228131719`。短い時間指標の幅は旧比較の観測後、最終測定開始前に変更しており、適用範囲は[要件の利用者判断](../../.kiro/specs/runtime-performance/requirements.md#今回の受入に関する利用者判断2026-10-26)に従う。
+
+受入時のsourceを再現する場合、上記の復元手順の`$savedRun`には、基準版は`artifacts/runtime-performance/goal-aligned-stack-021d4706cee24a6c87379cbcdfba4dce/final-pinned-A1`、候補版は同じ親ディレクトリの`final-pinned-B1`を指定し、それぞれ別の新規ディレクトリへ復元する。保存sourceのruntime集合は基準`4966bd32750411fb132e6849c0f3b56992a2a5be382cdb3e84d07fdd14c8a751`、候補`0ac1b7884daa13e42d294d99fec63b59462eb1bcc917fc8e2aaab7bee9472c87`、共通harness集合は`a17a67bd4ce46c3e8b6f028e4416949b3d180bf06733609114fa07e511ab0d3c`である。現在の作業ツリーを受入時のsourceと同一とは扱わない。
+
+collectorは`dotnet exec --fx-version 10.0.13`で起動し、BDNが生成する子processのビルドへ環境プロパティ`RuntimeFrameworkVersion=10.0.13`と`RollForward=Disable`を継承させる。復元版のビルド後、上記の`check`とSmokeもこの起動方法・環境設定で行う。CPU14（mask16384）を起動workerからcollectorと測定子へ継承し、起動後はworkerをCPU14/15以外へ戻す。測定中に子のaffinityを再設定しない。
+
+以下は1runの起動例である。`$restored`は今回測る復元版、`$manifest`は両版で共通の採用済み素材を指す。設定は当該PowerShell processだけに適用し、終了時に元へ戻す。別版のSmokeと本測定も同じ方法で起動し、各子のrawログのruntime完全版と`checks/`の前後mask16384を照合する。
+
+```powershell
+$measurementRun = Join-Path $repository ('artifacts/runtime-performance/accepted-conditions-' + [guid]::NewGuid().ToString('N'))
+$collectorAssembly = Join-Path $restored 'tools/WasmSharp.Benchmarks/bin/Release/net10.0/WasmSharp.Benchmarks.dll'
+$measurementWorker = [Diagnostics.Process]::GetCurrentProcess()
+$originalAffinity = $measurementWorker.ProcessorAffinity
+$observerAffinity = $originalAffinity.ToInt64() -band (-bnot 49152)
+$environmentNames = @('GIT_OPTIONAL_LOCKS', 'DOTNET_TieredCompilation', 'DOTNET_TieredPGO', 'RuntimeFrameworkVersion', 'RollForward')
+$originalEnvironment = @{}
+foreach ($name in $environmentNames) { $originalEnvironment[$name] = [Environment]::GetEnvironmentVariable($name, 'Process') }
+try {
+    if ($observerAffinity -eq 0) { throw 'CPU14/15以外のobserver配置が必要です。' }
+    $env:GIT_OPTIONAL_LOCKS = '0'
+    $env:DOTNET_TieredCompilation = '0'
+    $env:DOTNET_TieredPGO = '0'
+    $env:RuntimeFrameworkVersion = '10.0.13'
+    $env:RollForward = 'Disable'
+    $measurementWorker.ProcessorAffinity = [IntPtr]16384
+    $collectorArguments = @('exec', '--fx-version', '10.0.13', ('"' + $collectorAssembly + '"'), 'run', '--assets', ('"' + $manifest + '"'), '--case', 'all', '--kind', 'measurement', '--output', ('"' + $measurementRun + '"'))
+    $measurementProcess = Start-Process -FilePath (Get-Command dotnet).Source -ArgumentList $collectorArguments -WorkingDirectory $restored -WindowStyle Hidden -PassThru -RedirectStandardOutput ($measurementRun + '.log') -RedirectStandardError ($measurementRun + '.err')
+    $measurementWorker.ProcessorAffinity = [IntPtr]$observerAffinity
+    $measurementProcess.WaitForExit()
+    $measurementExit = $measurementProcess.ExitCode
+    $measurementProcess.Dispose()
+    if ($measurementExit -ne 0) { throw '本測定に失敗しました。保存結果を確認してください。' }
+} finally {
+    foreach ($name in $environmentNames) {
+        if ($null -eq $originalEnvironment[$name]) { Remove-Item -LiteralPath ('Env:' + $name) -ErrorAction SilentlyContinue }
+        else { [Environment]::SetEnvironmentVariable($name, $originalEnvironment[$name], 'Process') }
+    }
+    $measurementWorker.ProcessorAffinity = $originalAffinity
+    $measurementWorker.Dispose()
+}
+```
+
+受入時は外部observerもCPU14/15を除外して1秒間隔で観測した。observerを併用する場合はPIDと開始時刻・process名・pathで同定し、`checks/`にpostcheckが保存されたprocessは以後観測しない。終了済みPIDの再利用を同じ測定子の観測へ混ぜず、観測時刻とmaskを保存する。上記の起動例は外部観測の保存を含まない。受入時の観測処理と記録形式は[保存した測定script](../../artifacts/runtime-performance/goal-aligned-stack-021d4706cee24a6c87379cbcdfba4dce/Measure-Run-Pinned.ps1)を参照する。
+
+基準Aと候補BをA1→B1→A2→B2→A3→B3の順で直列に実行し、各runで新規出力先を指定する。重いbuild/test/profileを並行させず、正しさ・source/hash・両版の条件一致を確認する。保存済みの最終6runは子runtime版の記録追加前のrunであり、現行harnessでは情報不足として比較を拒否する。当時の判定だけを再現する場合は、上記で保存sourceから復元・ビルドした旧harnessのCLIを使い、リポジトリルートで次を実行する。`$restored`はその復元先であり、現在の作業ツリーを指定しない。A2は準備段階のアクセス拒否後に再開した`final-pinned-A2-retry1`を使い、0ケースの失敗runも保持する。
+
+```powershell
+$acceptedSeries = 'artifacts/runtime-performance/goal-aligned-stack-021d4706cee24a6c87379cbcdfba4dce'
+$baselineRuns = @('final-pinned-A1', 'final-pinned-A2-retry1', 'final-pinned-A3') | ForEach-Object { Join-Path $acceptedSeries $_ }
+$currentRuns = @('final-pinned-B1', 'final-pinned-B2', 'final-pinned-B3') | ForEach-Object { Join-Path $acceptedSeries $_ }
+$comparisonOutput = Join-Path $repository ('artifacts/runtime-performance/accepted-comparison-' + [guid]::NewGuid().ToString('N'))
+$legacyCollectorAssembly = Join-Path $restored 'tools/WasmSharp.Benchmarks/bin/Release/net10.0/WasmSharp.Benchmarks.dll'
+dotnet exec --fx-version 10.0.13 $legacyCollectorAssembly compare --baseline ($baselineRuns -join ',') --current ($currentRuns -join ',') --policy .kiro/specs/runtime-performance/comparison-policy-daily-pc.json --output $comparisonOutput
+$comparisonExit = $LASTEXITCODE
+```
+
+保存済み結果の判定は、運用policyによる29/30指標の許容内、memory.copy-fill時間の判定不能、終了1・`IsAccepted=false`である。詳細と利用者による限定例外は[受入結果](../../.kiro/specs/runtime-performance/acceptance.md)を参照する。従来の[配置固定policy](../../.kiro/specs/runtime-performance/comparison-policy-aligned-stack.json)による第1変更比較も保持し、運用policyの結果を従来基準の合格へ置き換えない。
 
 ## 保存run群の比較
 
@@ -124,7 +188,7 @@ $comparisonExit = $LASTEXITCODE
 
 policyの型は[ComparisonPolicy.cs](Results/ComparisonPolicy.cs)にあり、各caseの時間・割り当ての許容幅、削減目標、同等範囲、ノイズ幅、反復間判断幅、必要独立run数を指定する。数値は基準値の同版再測定に基づいて事前に定める。`comparison.json`には入力manifest内のrun IDとhash、policy hash、caseごとの改善・同等・悪化・判定不能、個別値・差・理由・条件差を保存する。CLIの`--assets`の配置差や出力先は比較条件から除くが、case選択・用途・Job等の意味のある設定は照合する。
 
-今回の変更前基準と選定1件は[性能改善計画](../../.kiro/specs/runtime-performance/optimization-plan.md)、全体と第1変更で共用する数値設定は[comparison-policy.json](../../.kiro/specs/runtime-performance/comparison-policy.json)を参照する。
+今回の変更前基準と選定1件は[性能改善計画](../../.kiro/specs/runtime-performance/optimization-plan.md)、最初に固定した数値設定は[comparison-policy.json](../../.kiro/specs/runtime-performance/comparison-policy.json)を参照する。最終受入の再比較には[上記の手順](#受入時の測定条件2026-10-26)と[comparison-policy-daily-pc.json](../../.kiro/specs/runtime-performance/comparison-policy-daily-pc.json)を使う。
 
 最初の交互6runの結果と採用保留の理由は[第1変更の比較結果](../../.kiro/specs/runtime-performance/change-1-results.md)を参照する。
 
@@ -159,6 +223,8 @@ $diagnosticRun = Join-Path $diagnosticRecord ('Diagnostic-' + [guid]::NewGuid().
 ```
 
 準備先・復元先・採取先の再使用は拒否する。失敗した出力も残すため、再準備・再採取には新規pathを使う。準備出力の`preparation.json`に固定した実行ファイルの絶対path・版・SHA-256、採用runのhash、素材、SDK/runtimeを保存し、`source-final.json`に基準HEADとruntime/harnessそれぞれの内容hash、`diagnostic-program.diff`にコピーへの変更を保存する。`commands.json`は引数・cwd・終了値、各`.log`は出力、`recipe/`は使用script/templateを保持する。診断コピー、ツールと準備記録は後続の再採取まで保持する。
+
+診断のruntimeは、runが参照する子processの検査記録から選び、`expected_runtime_source=process_check`として保存する。collectorと子の版が異なる場合も子の版を使う。runtime観測が一部欠ける場合や複数の版が混在するrunは拒否する。全検査が`runtime_version`追加前の旧形式の場合だけcollectorの版を代用し、`expected_runtime_source=collector_legacy`と明記する。workloadとreaderは選んだ版を`--fx-version`へ指定し、workloadのruntime/CoreLib完全版も照合する。
 
 `Collect-Diagnostic.ps1`の`-CaseId`は固定15ケースから1件、`-Seconds`は1〜300秒を指定する。素材は読込時にhash照合し、反復前・反復後は既存の固定期待値で検査する。Invokeのmodule/instance/export/引数準備と準備系の開始条件は既存実装に従う。準備後に1秒反復してウォームアップし、指定秒数の反復を行う。processは採取ごとに新規、Invokeのinstanceは同process内で反復利用、Decode/Instantiateは既存caseの各操作で新規生成する。反復用delegate・時計確認と診断自体の費用が加わるため、この操作数や経過秒から受入性能値を計算しない。
 
@@ -235,7 +301,7 @@ manifestの参照はmanifest基準の相対pathで、素材・source・profile�
 
 今回の素材採用では既存13ケースの入力・期待値・binary hashを保持し、小moduleの準備2ケースを追加した。公開APIの期待値確認はタスク2.1〜2.5の検証記録へ保存する。生成後は上記の`check`と別process Smokeを行い、その後に独立した本測定・比較・公式全体runへ進む。この生成成功だけでは性能改善の受入を意味しない。
 
-### 最終公式受入の比較元
+### 最終公式受入で使用した比較元と次回のbaseline
 
 本仕様の最終受入では、既存の[公式ランナー手順](../WasmSharp.TestSuiteRunner/README.md)で全体runを行い、その同じ結果へ`compare-run`と`verify`を適用する。準備時点では以下の存在・SHA-256を確認する。
 
@@ -251,12 +317,16 @@ Get-FileHash artifacts/simd/task-10.3-20261018T215944Z/run-baseline.json -Algori
 
 [先行SIMD受入の10.2・10.3](../../.kiro/specs/simd/acceptance.md#102-単一最終runによる公式比較と全体判定)には、固定スイートのpassed52,830件・out_of_scope1,077件、failed・runtime_unsupported・runner_error・blocked・回帰・欠落0件と、比較・verify済みの同じrunからのbaseline保存が記録されている。ツールの最小変換成功や比較元の存在確認は、本仕様の最終公式受入の完了を意味しない。
 
+上表は今回の受入で使用した旧比較元である。次回の公式比較元には、[最新の受入記録](../../.kiro/specs/runtime-performance/acceptance.md#最終状態の機能確認と保存)にある`artifacts/runtime-performance/goal-user-accepted-7dbe1cdf41004f9c96cf9dd3c00a660d/run-baseline.json`（SHA-256`e0842ab5d95fb6ad5f936939cbbac7348458d4c45a9444a1e9c73d42acb650cc`）を使う。公式baselineは性能基準値や比較policyとは別に扱う。
+
 ## 子processの実行位置の保存
 
 Jobの`EnvironmentMode.Affinity`は設定要求として保存する。通常Jobは継承maskをBDNへ再設定せず、`Default`の要求記録を保持する。実際の実行条件は各子processがSetup/Cleanupの計時外で`Process.ProcessorAffinity`から取得した前後maskを`checks/`へ保存し、比較時に照合する。Windows/Linuxで同APIが取得できるmaskを対象とし、未対応OSや取得不能はnullと理由を保持する。0やDefaultを観測不能の代用にしない。
 
 全予定case/Job/launchの観測不足、前後差、同じJobの子process間差、run間差は受入不能となる。旧保存runの読込は維持するが、実観測のないrunは新harnessでの性能比較へ採用しない。特定CPUを固定する場合は起動workerのmaskを外側で設定し、子processの保存値まで確認する。
 
+子processのruntime完全版は`ProcessCheck.runtime_version`へ保存する。旧記録の読込では未記録をnullとして保持するが、比較時は情報不足として拒否し、collectorの版で補完しない。同じJob内の子processは同じruntime版を要求し、run間の差は比較条件差となる。`RuntimeFrameworkVersion`と`RollForward`の環境値も保存・比較する。旧runと過去の受入結果は削除せず、[保存した旧harnessによる再比較](#受入時の測定条件2026-10-26)で当時の判定を再現できる。現行harnessでの受入には、両版を同じharnessで測定し直したrunを使う。
+
 今回のCPU14/mask16384・PGO0による短期ゲートは、memory.copy-fillの同操作数で総1680bytes差が再出したため5runで停止した。Job再設定のAPI警告は消えたが、不安定性の原因解消や性能受入は確認できていない。[再試行2の結果](../../.kiro/specs/runtime-performance/change-1-results.md#103再試行2-子processのaffinity観測と短期ゲートの停止)を参照する。新版policy・候補比較・最終公式検証は未実施。
 
-その後、1680bytes差を準備GC後のArrayPool清掃と特定し、[割り当て測定の修正](../../.kiro/specs/runtime-performance/allocation-fix.md)を行った。修正後の旧runtimeによるmatrix・memory・SIMD各3runは追加総量0だった。[SIMD時間の調査](../../.kiro/specs/runtime-performance/simd-time-investigation.md)では約2倍モードが再現せず、利用者の指示により未解決のままBlockを解除した。新harnessで基準値を再取得し、第1変更と最終版の交互比較まで実施した。割り当て削減は再現したが、時間のばらつきにより性能受入は未成立である。固定公式検証は成立しており、現在の結果と未解決事項は[検証引継ぎ](../../.kiro/specs/runtime-performance/acceptance.md)を参照する。
+その後、1680bytes差を準備GC後のArrayPool清掃と特定し、[割り当て測定の修正](../../.kiro/specs/runtime-performance/allocation-fix.md)を行った。修正後の旧runtimeによるmatrix・memory・SIMD各3runは追加総量0だった。[SIMD時間の調査](../../.kiro/specs/runtime-performance/simd-time-investigation.md)では約2倍モードが再現せず、利用者の指示により未解決のままBlockを解除した。新harnessで基準値を再取得し、第1変更と最終版の交互比較まで実施した。直接・間接呼び出しは各229432bytes/opの割り当て削減を再現した。最終比較は運用policyによる29/30指標が許容内で、memory.copy-fillの時間だけは判定不能・比較終了1を維持する。2026-10-26の利用者指示により、この1指標を未確定のまま例外受入し、追加調査を終了した。固定公式検証と新規baseline保存は成功しており、現在の結果と制約は[受入結果](../../.kiro/specs/runtime-performance/acceptance.md)を参照する。

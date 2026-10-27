@@ -26,7 +26,12 @@ internal class BenchmarkRun_CaptureEnvironmentTests
             1,
             [new("Strategy", "Throughput")],
             [new("System.GC.Server", "false")],
-            [new("DOTNET_EnableHWIntrinsic", "0"), new("UNRELATED_API_TOKEN", "must not be saved")]
+            [
+                new("DOTNET_EnableHWIntrinsic", "0"),
+                new("RuntimeFrameworkVersion", "10.0.13"),
+                new("RollForward", "Disable"),
+                new("UNRELATED_API_TOKEN", "must not be saved"),
+            ]
         );
 
         // Act
@@ -75,7 +80,11 @@ internal class BenchmarkRun_CaptureEnvironmentTests
                         .Processes.Single(x => x.Role == "Diagnostic")
                         .EnvironmentVariables.Select(x => x.Name)
                 )
-                .IsEquivalentTo(["DOTNET_EnableHWIntrinsic"]);
+                .IsEquivalentTo([
+                    "DOTNET_EnableHWIntrinsic",
+                    "RuntimeFrameworkVersion",
+                    "RollForward",
+                ]);
             await Assert
                 .That(File.ReadAllText(Path.Combine(fixture.DirectoryPath, "environment.json")))
                 .DoesNotContain("must not be saved");

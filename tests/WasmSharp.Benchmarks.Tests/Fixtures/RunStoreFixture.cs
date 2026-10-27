@@ -25,7 +25,10 @@ internal sealed class RunStoreFixture : IDisposable
         Manifest = fixture["run"]!.Deserialize<RunManifest>(CaseJson.Options)!;
         Environment = fixture["environment"]!.Deserialize<RunEnvironment>(CaseJson.Options)!;
         Source = fixture["source"]!.Deserialize<RunSource>(CaseJson.Options)!;
-        Check = fixture["checks"]![0]!.Deserialize<ProcessCheck>(CaseJson.Options)!;
+        Check = fixture["checks"]![0]!.Deserialize<ProcessCheck>(CaseJson.Options)! with
+        {
+            RuntimeVersion = Environment.RuntimeVersion,
+        };
     }
 
     internal void SaveConditions(RunStore store)

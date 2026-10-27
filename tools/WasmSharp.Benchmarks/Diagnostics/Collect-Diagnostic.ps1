@@ -27,6 +27,8 @@ function VerifyFiles {
 }
 VerifyFiles
 if ((& $prepared.dotnet --version) -cne $prepared.sdk_version) { throw '準備時とSDK完全版が異なります。' }
+if ($prepared.expected_runtime -notmatch '^\.NET ([^; ]+); ') { throw '保存runtimeからframework完全版を取得できません。' }
+$frameworkVersion = $Matches[1]
 New-Item -ItemType Directory -Path $output | Out-Null
 Copy-Item $preparationFile (Join-Path $output 'preparation.json')
 Copy-Item $prepared.source_file (Join-Path $output 'source-final.json')
@@ -63,10 +65,10 @@ $conditions = [ordered]@{
 $conditions | ConvertTo-Json -Depth 10 | Set-Content (Join-Path $output 'conditions.json') -Encoding utf8
 $trace = Join-Path $output 'trace.nettrace'
 $workload = Join-Path $output 'workload.json'
-Run 'collect' $prepared.dotnet_trace @('collect', '--profile', $conditions.profile, '--buffersize', '256', '--buffering-mode', 'Drop', '--format', 'NetTrace', '--output', $trace, '--show-child-io', '--', $prepared.dotnet, 'exec', $prepared.workload_assembly, $prepared.asset_manifest, $CaseId, "$Seconds", $workload)
+Run 'collect' $prepared.dotnet_trace @('collect', '--profile', $conditions.profile, '--buffersize', '256', '--buffering-mode', 'Drop', '--format', 'NetTrace', '--output', $trace, '--show-child-io', '--', $prepared.dotnet, 'exec', '--fx-version', $frameworkVersion, $prepared.workload_assembly, $prepared.asset_manifest, $CaseId, "$Seconds", $workload)
 $result = Get-Content $workload -Raw | ConvertFrom-Json
 if (($result.runtime + '; ' + $result.corelib_version) -cne $prepared.expected_runtime) { throw '採用runのruntime完全版と異なります。' }
-Run 'read' $prepared.dotnet @('exec', $prepared.reader_assembly, $trace, $workload, (Join-Path $output 'readability.json'))
+Run 'read' $prepared.dotnet @('exec', '--fx-version', $frameworkVersion, $prepared.reader_assembly, $trace, $workload, (Join-Path $output 'readability.json'))
 Run 'top-methods' $prepared.dotnet_trace @('report', $trace, 'topN', '--number', '15', '--inclusive', '--verbose')
 VerifyFiles
 $files = @(Get-ChildItem $output -File | ForEach-Object { [ordered]@{ path = $_.Name; sha256 = Hash $_.FullName } })

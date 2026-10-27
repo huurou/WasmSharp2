@@ -9,6 +9,50 @@ namespace WasmSharp.Benchmarks.Tests;
 internal class BenchmarkCli_RunTests
 {
     [Test]
+    [NotInParallel]
+    public async Task Gitを起動できない_測定を開始せず理由と終了値2を返す()
+    {
+        // Arrange
+        using var assets = new AssetLoadingFixture();
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        var directory = Path.Combine(assets.DirectoryPath, "new-run");
+        var previousPath = Environment.GetEnvironmentVariable("PATH");
+        try
+        {
+            Environment.SetEnvironmentVariable("PATH", assets.DirectoryPath);
+
+            // Act
+            var exitCode = new BenchmarkCli().Run(
+                [
+                    "run",
+                    "--assets",
+                    assets.ManifestPath,
+                    "--case",
+                    "invoke.single",
+                    "--output",
+                    directory,
+                ],
+                output,
+                error
+            );
+
+            // Assert
+            using (Assert.Multiple())
+            {
+                await Assert.That(exitCode).IsEqualTo(2);
+                await Assert.That(error.ToString()).Contains("git");
+                await Assert.That(output.ToString()).IsEqualTo("");
+                await Assert.That(Directory.Exists(directory)).IsFalse();
+            }
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("PATH", previousPath);
+        }
+    }
+
+    [Test]
     public async Task 固定素材のcheckを行う_全ケースの公開操作と期待値の一致を表示する()
     {
         // Arrange

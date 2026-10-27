@@ -73,7 +73,7 @@ internal class Interpreter_RunTests
         var value = WasmValue.FromExternRef(new object());
         ExecutionFrame actualFrame = default;
         WasmValue actualValue = default;
-        (int Frames, int Values, int Depth) state = default;
+        (int Frames, int Values, int Depth, WasmProcessingStage Stage) state = default;
 
         // Act & Assert
         var exception = await Assert
@@ -82,7 +82,6 @@ internal class Interpreter_RunTests
                 var context = InterpreterContext.Enter(new(10), out var isOutermost);
                 try
                 {
-                    context.Stage = stage;
                     context.EnsureCapacity(0, 1, frame.Function);
                     context.TryEnterCall();
                     context.PushFrame(frame);
@@ -95,7 +94,12 @@ internal class Interpreter_RunTests
                     {
                         actualFrame = context.GetFrame(0);
                         actualValue = context.GetValue(0);
-                        state = (context.FrameCount, context.ValueCount, context.CallDepth);
+                        state = (
+                            context.FrameCount,
+                            context.ValueCount,
+                            context.CallDepth,
+                            context.Stage
+                        );
                     }
                 }
                 finally
@@ -117,7 +121,7 @@ internal class Interpreter_RunTests
                 .IsEqualTo(new WasmFailureLocation(stage, 12345678900, 1));
             await Assert.That(actualFrame).IsEqualTo(frame);
             await Assert.That(actualValue).IsEqualTo(value);
-            await Assert.That(state).IsEqualTo((1, 1, 1));
+            await Assert.That(state).IsEqualTo((1, 1, 1, WasmProcessingStage.Decode));
         }
     }
 
@@ -454,7 +458,7 @@ internal class Interpreter_RunTests
         var value = WasmValue.FromExternRef(new object());
         ExecutionFrame actualFrame = default;
         WasmValue actualValue = default;
-        (int Frames, int Values, int Depth) state = default;
+        (int Frames, int Values, int Depth, WasmProcessingStage Stage) state = default;
 
         // Act & Assert
         var exception = await Assert
@@ -463,7 +467,6 @@ internal class Interpreter_RunTests
                 var context = InterpreterContext.Enter(new(10), out var isOutermost);
                 try
                 {
-                    context.Stage = WasmProcessingStage.Invoke;
                     context.EnsureCapacity(0, 1, frame.Function);
                     context.TryEnterCall();
                     context.PushFrame(frame);
@@ -481,7 +484,12 @@ internal class Interpreter_RunTests
                     {
                         actualFrame = context.GetFrame(0);
                         actualValue = context.GetValue(0);
-                        state = (context.FrameCount, context.ValueCount, context.CallDepth);
+                        state = (
+                            context.FrameCount,
+                            context.ValueCount,
+                            context.CallDepth,
+                            context.Stage
+                        );
                     }
                 }
                 finally
@@ -503,7 +511,7 @@ internal class Interpreter_RunTests
                 .IsEqualTo(new WasmFailureLocation(WasmProcessingStage.Invoke, 12345678900, 1));
             await Assert.That(actualFrame).IsEqualTo(frame);
             await Assert.That(actualValue).IsEqualTo(value);
-            await Assert.That(state).IsEqualTo((1, 1, 1));
+            await Assert.That(state).IsEqualTo((1, 1, 1, WasmProcessingStage.Decode));
         }
     }
 }

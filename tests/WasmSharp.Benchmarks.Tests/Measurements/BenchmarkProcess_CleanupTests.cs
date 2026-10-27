@@ -8,6 +8,61 @@ namespace WasmSharp.Benchmarks.Tests.Measurements;
 internal class BenchmarkProcess_CleanupTests
 {
     [Test]
+    public async Task 後検査成功後の保存が失敗_検査成功を保持して保存失敗を記録する()
+    {
+        // Arrange
+        using var fixture = new BenchmarkProcessFixture();
+        var process = BenchmarkProcess.Start("InvokeBenchmarks.Single");
+        process.Setup((_, _) => { });
+
+        // Act & Assert
+        var exception = await Assert
+            .That(() => process.Cleanup(fixture.BlockCheckWrites))
+            .Throws<IOException>();
+        fixture.RestoreCheckWrites();
+        process.Cleanup(() => { });
+        var failed = RunStore
+            .ReadChecks(fixture.Run.DirectoryPath)
+            .Single(x => x.Check.Failures.Count > 0)
+            .Check;
+        using (Assert.Multiple())
+        {
+            await Assert.That(failed.Precheck!.Status).IsEqualTo(ResultStatus.Succeeded);
+            await Assert.That(failed.Postcheck!.Status).IsEqualTo(ResultStatus.Succeeded);
+            await Assert.That(failed.ExecutionStarted).IsTrue();
+            await Assert.That(failed.Failures.Single().Stage).IsEqualTo(RunStage.Saving);
+            await Assert
+                .That(failed.Failures.Single().LastConfirmedStage)
+                .IsEqualTo(RunStage.Postcheck);
+            await Assert
+                .That(failed.Failures.Single().ExceptionType)
+                .IsEqualTo(exception!.GetType().FullName);
+        }
+    }
+
+    [Test]
+    public async Task 後検査失敗の保存も失敗_元の検査例外を同じ実体で返す()
+    {
+        // Arrange
+        using var fixture = new BenchmarkProcessFixture();
+        var process = BenchmarkProcess.Start("InvokeBenchmarks.Single");
+        process.Setup((_, _) => { });
+        var expected = new InvalidOperationException("後検査の不一致");
+
+        // Act & Assert
+        var actual = await Assert
+            .That(() =>
+                process.Cleanup(() =>
+                {
+                    fixture.BlockCheckWrites();
+                    throw expected;
+                })
+            )
+            .ThrowsExactly<InvalidOperationException>();
+        await Assert.That(actual).IsSameReferenceAs(expected);
+    }
+
+    [Test]
     public async Task 最後の結果が不一致_後検査失敗と最後に確認した段階を保存して例外を返す()
     {
         // Arrange

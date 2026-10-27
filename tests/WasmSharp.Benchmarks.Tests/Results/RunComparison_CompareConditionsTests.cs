@@ -10,11 +10,105 @@ namespace WasmSharp.Benchmarks.Tests.Results;
 internal class RunComparison_CompareConditionsTests
 {
     [Test]
+    public async Task 子processのruntimeが異なる_collectorが同じでも条件差を返す()
+    {
+        // Arrange
+        using var baseline = new RunComparisonFixture("before", "before");
+        using var current = new RunComparisonFixture("after", "after");
+        baseline.ProcessRuntimeVersion = ".NET 10.0.13; corelib-before";
+        current.ProcessRuntimeVersion = ".NET 10.0.14; corelib-after";
+        baseline.Save();
+        current.Save();
+
+        // Act
+        var actual = RunComparison.CompareConditions(
+            baseline.DirectoryPath,
+            current.DirectoryPath,
+            "invoke.single"
+        );
+
+        // Assert
+        var difference = actual.Differences.Single(x =>
+            x.Condition == "process.runtime[0].version"
+        );
+        using (Assert.Multiple())
+        {
+            await Assert.That(actual.IsComparable).IsFalse();
+            await Assert.That(difference.Baseline).IsEqualTo(baseline.ProcessRuntimeVersion);
+            await Assert.That(difference.Current).IsEqualTo(current.ProcessRuntimeVersion);
+        }
+    }
+
+    [Test]
+    public async Task 同じJobの別caseで子processのruntimeが異なる_選択caseが一致していても比較を拒否する()
+    {
+        // Arrange
+        using var baseline = new RunComparisonFixture("before", "before");
+        using var current = new RunComparisonFixture("after", "after");
+        var definition = baseline.Cases.Single();
+        List<BenchmarkCase> cases = [definition, definition with { CaseId = "invoke.other" }];
+        baseline.SetCases(cases);
+        current.SetCases(cases);
+        baseline.ProcessRuntimeVersion = ".NET 10.0.13; corelib-before";
+        current.ProcessRuntimeVersion = baseline.ProcessRuntimeVersion;
+        current.ProcessRuntimeVersionsByCase["invoke.other"] = ".NET 10.0.14; corelib-after";
+        baseline.Save();
+        current.Save();
+
+        // Act
+        var actual = RunComparison.CompareConditions(
+            baseline.DirectoryPath,
+            current.DirectoryPath,
+            "invoke.single"
+        );
+
+        // Assert
+        var reason = actual.Reasons.Single();
+        using (Assert.Multiple())
+        {
+            await Assert.That(actual.IsComparable).IsFalse();
+            await Assert.That(reason.Kind).IsEqualTo(ComparisonReasonKind.ConditionMismatch);
+            await Assert
+                .That(reason.Description)
+                .Contains("同じJobの子process間でruntimeが異なります。");
+        }
+    }
+
+    [Test]
+    [Arguments(null)]
+    [Arguments("")]
+    public async Task 子processのruntimeが未記録_collectorから補わず比較を拒否する(string? version)
+    {
+        // Arrange
+        using var baseline = new RunComparisonFixture("before", "before");
+        using var current = new RunComparisonFixture("after", "after");
+        current.ProcessRuntimeVersion = version;
+        baseline.Save();
+        current.Save();
+
+        // Act
+        var actual = RunComparison.CompareConditions(
+            baseline.DirectoryPath,
+            current.DirectoryPath,
+            "invoke.single"
+        );
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(actual.IsComparable).IsFalse();
+            await Assert
+                .That(actual.Reasons.Single().Description)
+                .Contains("子processのruntime観測がありません");
+        }
+    }
+
+    [Test]
     public async Task 予定launch数に子processが足りない_存在する観測が正常でも比較を受け入れない()
     {
         // Arrange
-        using var baseline = new RunComparisonFixture("before", "D:/before");
-        using var current = new RunComparisonFixture("after", "E:/after");
+        using var baseline = new RunComparisonFixture("before", "before");
+        using var current = new RunComparisonFixture("after", "after");
         baseline.Jobs = [baseline.Jobs.Single() with { LaunchCount = 2 }];
         current.Jobs = [current.Jobs.Single() with { LaunchCount = 2 }];
         baseline.Save();
@@ -47,8 +141,8 @@ internal class RunComparison_CompareConditionsTests
     )
     {
         // Arrange
-        using var baseline = new RunComparisonFixture("before", "D:/before");
-        using var current = new RunComparisonFixture("after", "E:/after");
+        using var baseline = new RunComparisonFixture("before", "before");
+        using var current = new RunComparisonFixture("after", "after");
         current.AffinityBefore = before;
         current.AffinityAfter = after;
         current.AffinityUnavailableReason = reason;
@@ -76,8 +170,8 @@ internal class RunComparison_CompareConditionsTests
     public async Task 子processの実行位置がrun間で違う_同じJob要求値でも観測条件差を返す()
     {
         // Arrange
-        using var baseline = new RunComparisonFixture("before", "D:/before");
-        using var current = new RunComparisonFixture("after", "E:/after");
+        using var baseline = new RunComparisonFixture("before", "before");
+        using var current = new RunComparisonFixture("after", "after");
         current.AffinityBefore = 1;
         current.AffinityAfter = 1;
         baseline.Save();
@@ -104,8 +198,8 @@ internal class RunComparison_CompareConditionsTests
     public async Task 保存したJobの実行位置が違う_同じCPU数でも比較条件差として返す()
     {
         // Arrange
-        using var baseline = new RunComparisonFixture("before", "D:/before");
-        using var current = new RunComparisonFixture("after", "E:/after");
+        using var baseline = new RunComparisonFixture("before", "before");
+        using var current = new RunComparisonFixture("after", "after");
         var job = BenchmarkConfig.Create().GetJobs().Single();
         baseline.Jobs = [BenchmarkRun.DescribeProcess("Measurement", job.WithAffinity((IntPtr)1))];
         current.Jobs =
@@ -138,8 +232,8 @@ internal class RunComparison_CompareConditionsTests
     public async Task 配置先と識別子とランタイムコードだけが違う_同条件として比較できる()
     {
         // Arrange
-        using var baseline = new RunComparisonFixture("before", "D:/before");
-        using var current = new RunComparisonFixture("after", "E:/after");
+        using var baseline = new RunComparisonFixture("before", "before");
+        using var current = new RunComparisonFixture("after", "after");
         current.Source = current.Source with
         {
             Head = "new-head",
@@ -238,8 +332,8 @@ internal class RunComparison_CompareConditionsTests
     )
     {
         // Arrange
-        using var baseline = new RunComparisonFixture("before", "D:/before");
-        using var current = new RunComparisonFixture("after", "E:/after");
+        using var baseline = new RunComparisonFixture("before", "before");
+        using var current = new RunComparisonFixture("after", "after");
         Change(current, scenario);
         baseline.Save();
         current.Save();
@@ -274,8 +368,8 @@ internal class RunComparison_CompareConditionsTests
     public async Task runまたはcaseが成功していない_正常性能runと比較できない(ResultStatus status)
     {
         // Arrange
-        using var baseline = new RunComparisonFixture("before", "D:/before");
-        using var current = new RunComparisonFixture("after", "E:/after");
+        using var baseline = new RunComparisonFixture("before", "before");
+        using var current = new RunComparisonFixture("after", "after");
         current.Manifest = current.Manifest with { Status = status };
         baseline.Save();
         current.Save();
@@ -299,8 +393,8 @@ internal class RunComparison_CompareConditionsTests
     public async Task 通常測定以外の用途である_正常性能runと比較できない(RunKind kind)
     {
         // Arrange
-        using var baseline = new RunComparisonFixture("before", "D:/before");
-        using var current = new RunComparisonFixture("after", "E:/after");
+        using var baseline = new RunComparisonFixture("before", "before");
+        using var current = new RunComparisonFixture("after", "after");
         current.Manifest = current.Manifest with { Kind = kind };
         baseline.Save();
         current.Save();
@@ -324,8 +418,8 @@ internal class RunComparison_CompareConditionsTests
     public async Task 使用物の途中変更がある_変更前後のrunとして比較しない(ContentKind kind)
     {
         // Arrange
-        using var baseline = new RunComparisonFixture("before", "D:/before");
-        using var current = new RunComparisonFixture("after", "E:/after");
+        using var baseline = new RunComparisonFixture("before", "before");
+        using var current = new RunComparisonFixture("after", "after");
         current.Source = current.Source with
         {
             Changes = [new(kind, "changed", "before", "after")],
@@ -349,8 +443,8 @@ internal class RunComparison_CompareConditionsTests
     public async Task 保存後に参照内容が改変される_RunStoreが検出した未完了を採用しない()
     {
         // Arrange
-        using var baseline = new RunComparisonFixture("before", "D:/before");
-        using var current = new RunComparisonFixture("after", "E:/after");
+        using var baseline = new RunComparisonFixture("before", "before");
+        using var current = new RunComparisonFixture("after", "after");
         baseline.Save();
         current.Save();
         File.WriteAllText(Path.Combine(current.DirectoryPath, "cases.json"), "[]");
@@ -375,15 +469,18 @@ internal class RunComparison_CompareConditionsTests
     )
     {
         // Arrange
-        using var baseline = new RunComparisonFixture("before", "D:/before");
-        using var current = new RunComparisonFixture("after", "E:/after");
+        using var baseline = new RunComparisonFixture("before", "before");
+        using var current = new RunComparisonFixture("after", "after");
         if (executable)
         {
             baseline.Environment = baseline.Environment with
             {
                 Command = baseline.Environment.Command with
                 {
-                    ExecutablePath = "D:/before/bin/WasmSharp.Benchmarks.exe",
+                    ExecutablePath = Path.Combine(
+                        baseline.RepositoryDirectory,
+                        "bin/WasmSharp.Benchmarks.exe"
+                    ),
                     Arguments = ["--case", "invoke.single"],
                 },
             };
@@ -391,7 +488,10 @@ internal class RunComparison_CompareConditionsTests
             {
                 Command = current.Environment.Command with
                 {
-                    ExecutablePath = "E:/after/elsewhere/WasmSharp.Benchmarks.exe",
+                    ExecutablePath = Path.Combine(
+                        current.RepositoryDirectory,
+                        "elsewhere/WasmSharp.Benchmarks.exe"
+                    ),
                     Arguments = ["--case", "invoke.single"],
                 },
             };
@@ -436,13 +536,16 @@ internal class RunComparison_CompareConditionsTests
     )
     {
         // Arrange
-        using var baseline = new RunComparisonFixture("before", "D:/before");
-        using var current = new RunComparisonFixture("after", "E:/after");
+        using var baseline = new RunComparisonFixture("before", "before");
+        using var current = new RunComparisonFixture("after", "after");
         current.Environment = current.Environment with
         {
             Command = current.Environment.Command with
             {
-                WorkingDirectory = "E:/after/tools/WasmSharp.Benchmarks",
+                WorkingDirectory = Path.Combine(
+                    current.RepositoryDirectory,
+                    "tools/WasmSharp.Benchmarks"
+                ),
                 Arguments = current
                     .Environment.Command.Arguments.Select(x =>
                         x.EndsWith(".csproj", StringComparison.Ordinal) ? project : x
@@ -678,7 +781,10 @@ internal class RunComparison_CompareConditionsTests
                         Arguments = environment
                             .Command.Arguments.Select(x =>
                                 x.EndsWith(".csproj", StringComparison.Ordinal)
-                                    ? "E:/after/alternate/Benchmarks.csproj"
+                                    ? Path.Combine(
+                                        fixture.RepositoryDirectory,
+                                        "alternate/Benchmarks.csproj"
+                                    )
                                     : x
                             )
                             .ToList(),

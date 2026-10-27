@@ -125,6 +125,16 @@ internal sealed class RunConditions(string runId)
                 .ToArray()
         );
         conditions.Add("command.executable", paths.CommandExecutable());
+        conditions.Add(
+            "process.runtime",
+            jobs.Select(x => new
+                {
+                    Configuration = Processes([x], paths).Single(),
+                    Version = checks.First(y => y.JobId == x.JobId).RuntimeVersion,
+                })
+                .OrderBy(x => JsonSerializer.Serialize(x, CaseJson.Options), StringComparer.Ordinal)
+                .ToArray()
+        );
         conditions.Add("command.arguments", paths.CommandArguments());
         return conditions;
     }

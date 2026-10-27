@@ -50,6 +50,10 @@ internal sealed class LoadedAssets(
         );
         foreach (var asset in manifest.Assets)
         {
+            foreach (var source in asset.Sources)
+            {
+                ResolvePath(directory, source.RelativePath);
+            }
             if (
                 !binaries.TryAdd(
                     asset.AssetId,
@@ -81,13 +85,7 @@ internal sealed class LoadedAssets(
 
     private static byte[] ReadVerified(string directory, ManifestFile file)
     {
-        if (Path.IsPathRooted(file.RelativePath))
-        {
-            throw new InvalidDataException(
-                $"素材path'{file.RelativePath}'はmanifestからの相対pathで指定してください。"
-            );
-        }
-        var bytes = File.ReadAllBytes(Path.Combine(directory, file.RelativePath));
+        var bytes = File.ReadAllBytes(ResolvePath(directory, file.RelativePath));
         if (Convert.ToHexStringLower(SHA256.HashData(bytes)) != file.Sha256)
         {
             throw new InvalidDataException(
@@ -95,6 +93,30 @@ internal sealed class LoadedAssets(
             );
         }
         return bytes;
+    }
+
+    private static string ResolvePath(string directory, string relativePath)
+    {
+        if (Path.IsPathRooted(relativePath))
+        {
+            throw new InvalidDataException(
+                $"素材path'{relativePath}'はmanifestからの相対pathで指定してください。"
+            );
+        }
+        var path = Path.GetFullPath(Path.Combine(directory, relativePath));
+        var prefix = Path.EndsInDirectorySeparator(directory)
+            ? directory
+            : directory + Path.DirectorySeparatorChar;
+        var comparison = OperatingSystem.IsWindows()
+            ? StringComparison.OrdinalIgnoreCase
+            : StringComparison.Ordinal;
+        if (!path.StartsWith(prefix, comparison))
+        {
+            throw new InvalidDataException(
+                $"素材path'{relativePath}'はmanifest配下の相対pathで指定してください。"
+            );
+        }
+        return path;
     }
 
     private static T ReadJson<T>(byte[] bytes, string path)

@@ -1,5 +1,5 @@
 ---
-updated_at: 2026-10-19
+updated_at: 2026-10-27
 ---
 
 # プロダクト概要
@@ -28,7 +28,7 @@ C#の呼び出し元が、バイト列またはStreamからmoduleをデコード
 
 `numeric-control`、`linear-memory`、`tables-references`、`simd`で、スカラー数値・構造化制御、memory/tableのguest命令、data/element初期化、参照・間接呼び出し、Core 2.0 SIMDを同じ検証・実行基盤へ追加済み。ホストとguestは同じリソース実体を操作する。各仕様の実装・受入状況は[ロードマップ](roadmap.md)に保持する。公開型やopcodeの登録、値の保持ができることと、その機能の実行・検証が完了していることを区別する。
 
-全8仕様を統合した固定スイートの単一実行には、`verify`合格と比較済み結果のbaseline保存の記録がある。詳細は[SIMDの公式受入記録](../specs/simd/acceptance.md#102-単一最終runによる公式比較と全体判定)を参照する。この記録と仕様全体の最終実装検証GOは区別し、固定した入力・profileでの結果を任意入力や別環境の保証へ広げない。
+全8仕様を統合した固定スイートの単一実行には、`verify`合格と比較済み結果のbaseline保存の記録がある。最新の比較元は[runtime-performanceの公式受入記録](../specs/runtime-performance/acceptance.md#最終状態の機能確認と保存)にあるrun ID`6b419ae0-55c2-4dd9-a4b0-3d63debbae1e`、baseline SHA-256`e0842ab5d95fb6ad5f936939cbbac7348458d4c45a9444a1e9c73d42acb650cc`を参照する。先行する[SIMDの公式受入記録](../specs/simd/acceptance.md#102-単一最終runによる公式比較と全体判定)も保持する。この記録と仕様全体の最終実装検証GOは区別し、固定した入力・profileでの結果を任意入力や別環境の保証へ広げない。
 
 Core 2.0全体の完成は、固定した公式テスト集合による検証と仕様規則との対応で判断する。最小経路の成功、素材の変換成功、個別テストの成功だけで全体への準拠を宣言しない。ランナーの初回受入やbaseline保存の成功も全件合格とは区別し、残る不一致・未対応・前提不成立を保持する。
 
@@ -36,7 +36,7 @@ Core 2.0全体の完成は、固定した公式テスト集合による検証と
 
 - ランタイムと自作ツールによるWAT・WASTの解析、WASI、Component Model、JavaScript/Web API、JIT/AOT、既存エンジンへの実行委譲は対象外
 - Core 3.0とCore 2.0外の機能は将来の別計画とする。
-- 性能の数値目標、NuGet公開、追加TFM・OSへの対応は未決定
+- NuGet公開、追加TFM・OSへの対応は未決定
 
 ## 方針の根拠
 

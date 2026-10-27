@@ -7,6 +7,43 @@ namespace WasmSharp.Benchmarks.Tests.Measurements;
 internal class BenchmarkRun_CaptureSourceBeforeTests
 {
     [Test]
+    public async Task UTF8でない変更を含む_保存した差分からindexとworktreeの元バイト列を復元できる()
+    {
+        // Arrange
+        using var fixture = new SourceCaptureFixture();
+        fixture.Git("config", "--local", "core.autocrlf", "false");
+        const string RELATIVE_PATH = "src/WasmSharp/Runtime.cs";
+        byte[] indexContent = [.. "class Runtime {} // "u8, 0xFF, 0x0A];
+        byte[] worktreeContent = [.. "class Runtime {} // "u8, 0xFE, 0x0A];
+        var path = Path.Combine(fixture.RepositoryDirectory, RELATIVE_PATH);
+        File.WriteAllBytes(path, indexContent);
+        fixture.Git("add", RELATIVE_PATH);
+        File.WriteAllBytes(path, worktreeContent);
+        var store = RunStore.Create(fixture.Run.DirectoryPath, fixture.Run.Manifest);
+
+        // Act
+        var source = BenchmarkRun.CaptureSourceBefore(fixture.RepositoryDirectory, store, []);
+        fixture.Git("restore", "--source=HEAD", "--staged", "--worktree", "--", RELATIVE_PATH);
+        fixture.Git(
+            "apply",
+            "--index",
+            Path.Combine(fixture.Run.DirectoryPath, source.IndexDiff.RelativePath)
+        );
+        var restoredIndex = File.ReadAllBytes(path);
+        fixture.Git(
+            "apply",
+            Path.Combine(fixture.Run.DirectoryPath, source.WorktreeDiff.RelativePath)
+        );
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(restoredIndex.SequenceEqual(indexContent)).IsTrue();
+            await Assert.That(File.ReadAllBytes(path).SequenceEqual(worktreeContent)).IsTrue();
+        }
+    }
+
+    [Test]
     public async Task Gitの接頭辞を省略する_保存したindexとworktreeの差分を順に復元できる()
     {
         // Arrange

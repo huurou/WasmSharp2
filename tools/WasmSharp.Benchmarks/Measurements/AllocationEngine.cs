@@ -26,7 +26,7 @@ internal sealed class AllocationEngine(
 
     public RunResults Run()
     {
-        var timed = timingEngine.Run();
+        var timed = BenchmarkStack.Run(timingEngine);
         var totalOperations = timed
             .EngineMeasurements.Last(x =>
                 x.IterationMode == IterationMode.Workload

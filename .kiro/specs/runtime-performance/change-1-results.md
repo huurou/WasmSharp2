@@ -1,5 +1,11 @@
 # 第1変更の比較結果
 
+## 2026-10-26の再検証
+
+唯一のランタイム変更を、利用者の短い測定の幅の許容方針を反映した別版policyと新規交互6runで再検証した。29/30指標が許容内、直接・間接呼び出しは各229432bytes/op削減し、目標180000bytes/opを再現した。memory.copy-fillの時間はばらつきで判定不能となり、production比較は未受入である。[最終比較](final-performance-results.md#最終候補の比較2026-10-26)に条件・全ケースの値・不確かさを示す。従来policyによる未受入の結果も保持し、合格へ読み替えない。最新の[利用者判断](requirements.md#今回の受入に関する利用者判断2026-10-26)により、memory.copy-fillの時間を未確定のまま例外受入し、第1変更の採用を完了する。以下は以前の個別評価として保持する。
+
+## 以前の個別評価
+
 **第1変更の採用は保留する。タスク10.3は未完了。** 予定した交互6run・90ケースの測定と保存は完了したが、固定policyによる比較で完了を阻害する理由が残った。割り当ての削減観測を、性能改善の受入や次の変更の比較元へ進める根拠にしない。
 
 production `ComparisonReport.IsAccepted=false`、compare終了値`1`、両指標の許容内を確認できた数`23/30`、阻害ケース`7`件、条件差`0`件。詳細は[comparison.json](../../../artifacts/runtime-performance/task-10.3-20261024T125550Z/comparison/comparison.json)と[verification.json](../../../artifacts/runtime-performance/task-10.3-20261024T125550Z/verification.json)を参照する。

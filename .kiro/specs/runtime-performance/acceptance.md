@@ -1,14 +1,60 @@
-# runtime-performanceの検証引継ぎ
+# runtime-performanceの受入結果
+
+2026-10-27の追加性能評価は完了し、WasmResultsの結果再コピー削減案とFunctionValidatorの命令builder転送案は、今回は両方不採用とした。[追加改善記録](additional-optimization.md)と[最終比較系列](../../../artifacts/runtime-performance/additional-optimization-20261027/strict-final-20261027-v2/)を参照する。校正3runと最終交互6runの全135ケースは成功し、比較条件差は0件だったが、時間11指標と割り当て15指標の計26/30指標が許容内にとどまり、元のpolicyと追加目標policyの比較はともに終了1・IsAccepted=falseとなった。
+
+現在のruntime集合は、先に受け入れた`0ac1b7884daa13e42d294d99fec63b59462eb1bcc917fc8e2aaab7bee9472c87`へ復帰した。全112ファイルの一致と両案の不採用理由は[final-selection.json](../../../artifacts/runtime-performance/additional-optimization-20261027/final-selection.json)に保存した。以下の旧受入と限定例外はその範囲を維持し、追加候補の比較には適用していない。memory.copy-fillの追加原因調査も再開しない。
+
+今回の最終機能検証に使ったharness集合は`49fca777409e361615d2c4139baf1a5bea09a0d8d7414f6788419e2373e1467c`である。全41ファイルとruntime全112ファイルのhashは[source-after.json](../../../artifacts/runtime-performance/additional-optimization-20261027/final-validation-20261027/source-after.json)に保存し、検証後も一致を確認した。
+
+復帰後の最終Releaseビルドは警告・エラー0、全6,011テスト成功・失敗0・skip0、固定公式147入力・53,907コマンドは52,830成功・1,077対象外、比較差・退行0、run/compare-run/verify終了0を確認した。詳細は追加改善記録とfinal-validation-20261027へ保存した。Claudeのruntime Round3は終了0・最終result・is_error=false・同一セッションを確認し、新規欠陥なし。documentsは2026-10-27 10:40に同じセッションで再開し、Round6で追加N1も解消、新しい欠陥なしと確認した。全4群の最終再レビューは終了0・最終result・is_error=false・初回セッションID一致で完了した。全26指摘は採用21・不採用5で、採用分の未対応はない。再開予約は停止済みである。以下の過去の検証成功やGOを、今回の最終確認完了へ読み替えない。
+
+## 先に受け入れた性能結果（2026-10-26）
+
+2026-10-26の最終交互6runでは、全90ケースの正しさ・保存・条件照合に成功し、[運用policy](comparison-policy-daily-pc.json)による判定で29/30指標が許容内、直接・間接呼び出しは各229432bytes/opの削減となった。memory.copy-fillの時間だけは中央値2155.543→2549.165ns（+18.261%）、候補の1runが5240.093nsとなり、ばらつきで判定不能である。production比較は終了1・IsAccepted=falseを保持する。[最終比較](final-performance-results.md#最終候補の比較2026-10-26)へ全値を保存した。
+
+利用者は追加診断後に「じゃあもう追わなくて良い 完了扱いにせよ」と指示した。[今回の受入条件](requirements.md#今回の受入に関する利用者判断2026-10-26)に基づき、この時間1指標を未確定のまま例外受入し、追加調査を終了する。production比較の不成立を保持し、性能値を合格へ書き換えない。基準側の一時的なharness変更は退避内容へ復元済みである。
+
+## 最終状態の機能確認と保存
+
+以下は2026-10-26の受入版に対する記録であり、今回の追加評価より前のharnessと検証結果である。
+
+2026-10-26の利用者判断後、同じ最終ソースでReleaseビルド、全4テストプロジェクト、CLI起動、固定公式スイートを再確認した。ビルドは警告・エラー0、テストは5993件成功・失敗0・スキップ0（runtime4799件、生成器160件、公式ランナー702件、測定ツール332件）。SDK10.0.402、Windows x64、実行runtimeは.NET10.0.13を使用した。[実行コマンド・終了値・ログ](../../../artifacts/runtime-performance/goal-user-accepted-7dbe1cdf41004f9c96cf9dd3c00a660d/commands.json)と[機能検証の詳細](regression-results.md)を参照する。
+
+新しい[公式run](../../../artifacts/runtime-performance/goal-user-accepted-7dbe1cdf41004f9c96cf9dd3c00a660d/official-run.json)はrun ID`6b419ae0-55c2-4dd9-a4b0-3d63debbae1e`、147入力・53907コマンド、passed52830件・out_of_scope1077件である。失敗・未対応・ランナー異常・前提不成立は0件。旧baselineとの[比較](../../../artifacts/runtime-performance/goal-user-accepted-7dbe1cdf41004f9c96cf9dd3c00a660d/official-comparison.json)は成立・完了し、回帰・欠落・未比較・条件差は0件。同じrunのverifyも終了0、「最終判定: 合格」となった。
+
+既存の`baseline-save`で、この比較・verify済みrunを新規[run-baseline.json](../../../artifacts/runtime-performance/goal-user-accepted-7dbe1cdf41004f9c96cf9dd3c00a660d/run-baseline.json)へ保存した。runと新baselineのSHA-256はともに`e0842ab5d95fb6ad5f936939cbbac7348458d4c45a9444a1e9c73d42acb650cc`。旧SIMD baselineは変更していない。[保存コマンドとhash](../../../artifacts/runtime-performance/goal-user-accepted-7dbe1cdf41004f9c96cf9dd3c00a660d/baseline-save.json)から再実行できる。
+
+確認前後のruntime・harness153ファイルは最終性能測定時と同一である。候補runtime集合`0ac1b7884daa13e42d294d99fec63b59462eb1bcc917fc8e2aaab7bee9472c87`、harness集合`a17a67bd4ce46c3e8b6f028e4416949b3d180bf06733609114fa07e511ab0d3c`を使用した。保存済み性能runの再比較は元の比較結果と一致し、終了1を維持した。追加の性能計測・プロファイラー導入は行っていない。
+
+受入範囲は固定素材・profileと今回のWindows/.NET環境である。Ubuntuや別環境での性能、memory.copy-fillの時間悪化の有無とCPU内部の原因は確認していない。
+
+## 最終実装検証
+
+以下は2026-10-26の受入版に対して翌27日に行った記録であり、今回の追加評価より前のharnessと検証結果である。
+
+2026-10-27、主担当と会話履歴を引き継がない別エージェントが、同じ最終実装と上記の限定した受入条件に対してGOを確認した。独立検証でもReleaseビルドは警告・エラー0、全5993テストとCLI起動は成功し、保存済み性能比較の一致、29/30指標の許容内、両対象の割り当て削減、公式compare/verifyと新baselineの同一性を確認した。要件8節の対応、責務境界、依存方向、タスク間の連携に未解決の阻害事項はない。[独立確認のログ](../../../artifacts/runtime-performance/independent-user-accepted-20261027/)を参照する。両方のGO後、[ロードマップ](../../steering/roadmap.md)の該当項目を完了にした。時間1指標の例外と環境上の制約は維持する。
+
+## 再実行手順
+
+性能のsource復元、受入時のruntime・JIT・CPU配置の固定、新規交互6runと保存済み最終6runの比較は[測定ツールの受入時の測定条件](../../../tools/WasmSharp.Benchmarks/README.md#受入時の測定条件2026-10-26)に保持する。基準値と[運用policy](comparison-policy-daily-pc.json)を区別し、従来policyの不成立結果と今回の数値比較の終了1を維持する。
+
+公式検証の再実行には[ランナー手順](../../../tools/WasmSharp.TestSuiteRunner/README.md)を使い、上記の新baselineを次回の比較元とする。今回の公式run・compare-run・verifyの引数は[commands.json](../../../artifacts/runtime-performance/goal-user-accepted-7dbe1cdf41004f9c96cf9dd3c00a660d/commands.json)、比較済みrunのbaseline保存は[baseline-save.json](../../../artifacts/runtime-performance/goal-user-accepted-7dbe1cdf41004f9c96cf9dd3c00a660d/baseline-save.json)に保持する。再実行では新しい出力先を指定する。
+
+## 以前の記録（2026-10-25時点・現行ではない）
+
+以下の未完了状態と数値は当時の記録である。現在の受入状態は冒頭から「再実行手順」までの各節に従う。
+
+### 以前の機能検証
 
 2026-10-25時点で、タスク13.3の固定公式スイートは全体run・直前baselineとの比較・同じrunのverifyが成立した。性能の10.3と13.1は未完了・未受入のままであり、仕様全体のGOや13.4のbaseline保存は行っていない。利用者指示に基づくtasks.mdの順序例外により、独立した機能検証を先に進めた記録である。
 
-## 性能の状態
+### 当時の性能の状態
 
 [allocation-fix.md](allocation-fix.md)の計測境界修正後、最終候補のdirect/indirectはそれぞれ229432bytes/opの削減を再現し、事前目標180000bytes/opを満たした。ただし[final-performance-results.md](final-performance-results.md)の全15ケース比較では、時間の反復間変動により5ケースが判定不能となり、production compareは終了1、`IsAccepted=false`である。悪化判定0件を「悪化なし」や全指標の許容内と読み替えない。memory.copy-fillの時間中央値は2960→5098ns（約+72.2%）だった。
 
 [simd-time-investigation.md](simd-time-investigation.md)のSIMD約2倍時間は今回再現せず、原因は未解決として残した。最終SIMD中央値616318→616811ns（約+0.080%）は時間同等だったが、他ケースの判定不能を解消するものではない。追加の通過待ち測定や判断幅の変更は行っていない（6.7、6.8）。
 
-## 同じ最終ソースと実行ファイル
+### 同じ最終ソースと実行ファイル
 
 HEADは`544e17db97e1fe7be8c697bbb89fb0f375a1fa0a`。未コミット差分を含むため、HEADだけで同定しない。[source-before.json](../../../artifacts/runtime-performance/task-13.3-20261025/source-before.json)と[source-after.json](../../../artifacts/runtime-performance/task-13.3-20261025/source-after.json)で、13.1と同じ候補runtime集合`0ac1b7884daa13e42d294d99fec63b59462eb1bcc917fc8e2aaab7bee9472c87`、共通harness集合`c3f92f2403345611b998a7420dc9054be38c6e190c3618115d3c60170f09fa8f`を確認した。SDK10.0.402、.NET10.0.13、Windows x64を使用した。
 
@@ -22,7 +68,7 @@ HEADは`544e17db97e1fe7be8c697bbb89fb0f375a1fa0a`。未コミット差分を含�
 
 同sourceに対する[既存canonical Releaseビルド](../../../artifacts/runtime-performance/task-10.3-resume-20261025/independent-review/build.log)の警告・エラー0を参照した。公開契約の検証は[regression-results.md](regression-results.md)にある13.2の5981件とHW無効SIMD81件、harness修正後は既存の独立Benchmarks332件成功を参照する。今回、製品・テストを変更しておらず、重複ビルド・全単体テストは行っていない。
 
-## 固定素材と比較元
+### 固定素材と比較元
 
 | 対象 | 記録・SHA-256 |
 | --- | --- |
@@ -34,7 +80,7 @@ HEADは`544e17db97e1fe7be8c697bbb89fb0f375a1fa0a`。未コミット差分を含�
 
 直前の[SIMD受入10.2/10.3](../simd/acceptance.md#102-単一最終runによる公式比較と全体判定)と[親の確認](../../../artifacts/simd/task-10.3-20261018T215944Z/parent-verification.md)を確認した。147公式sourceと5821素材のhashはmanifestと一致し、SIMD ON・relaxed-SIMD OFF、feature状態7ON/14OFFを維持した。素材の再生成、期待値・診断照合の緩和、対象集合の縮小、baselineの変更はない。
 
-## 今回の公式機能検証
+### 2026-10-25の公式機能検証
 
 記録先は[task-13.3-20261025](../../../artifacts/runtime-performance/task-13.3-20261025/)。既存CLIを使い、各操作を個別に実行した。完全なargv・cwd・開始終了UTC・終了値・原ログhash・入力hashは各`*-command.json`に保存した。
 
@@ -63,7 +109,7 @@ $runner = 'tools/WasmSharp.TestSuiteRunner/bin/Release/net10.0/WasmSharp.TestSui
 
 合否判定は既存CLIによる。補助scriptはファイル同一性・保存結果の件数と集合を照合するもので、Wasmの期待値判定を実装しない。詳細は[results-audit-final.json](../../../artifacts/runtime-performance/task-13.3-20261025/results-audit-final.json)を参照する。今回の主張は固定profile・固定入力に対する13.3の機能条件の成立に限定する（8.2、8.3）。
 
-## 未実施範囲と引継ぎ
+### 当時の未実施範囲と引継ぎ
 
 [独立レビュー](../../../artifacts/runtime-performance/review-13.3-20261025/review-verdict.md)は、同じrunへのcompare-run・verifyの再実行がともに終了0、固定6249ファイルと全53907commandを含む357項目の照合成功で、13.3の機能範囲のみAPPROVEDとした。[親の完了確認](../../../artifacts/runtime-performance/task-13.3-20261025/parent-completion.json)も現行runtime/harness152ファイル・原ログ・run・旧baselineのhash一致によりVERIFIEDとし、13.3を完了に更新した。
 

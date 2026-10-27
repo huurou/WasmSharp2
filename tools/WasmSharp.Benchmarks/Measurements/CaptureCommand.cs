@@ -10,6 +10,29 @@ internal static class CaptureCommand
 {
     internal static string Run(string executable, string directory, params string[] arguments)
     {
+        using var process = Start(executable, directory, arguments);
+        var output = process.StandardOutput.ReadToEndAsync();
+        var error = process.StandardError.ReadToEndAsync();
+        process.WaitForExit();
+        var text = output.GetAwaiter().GetResult();
+        EnsureSucceeded(process, executable, error);
+        return text;
+    }
+
+    internal static byte[] RunBytes(string executable, string directory, params string[] arguments)
+    {
+        using var process = Start(executable, directory, arguments);
+        using var output = new MemoryStream();
+        var copy = process.StandardOutput.BaseStream.CopyToAsync(output);
+        var error = process.StandardError.ReadToEndAsync();
+        process.WaitForExit();
+        copy.GetAwaiter().GetResult();
+        EnsureSucceeded(process, executable, error);
+        return output.ToArray();
+    }
+
+    private static Process Start(string executable, string directory, string[] arguments)
+    {
         var start = new ProcessStartInfo(executable)
         {
             WorkingDirectory = directory,
@@ -24,17 +47,15 @@ internal static class CaptureCommand
             start.ArgumentList.Add(argument);
         }
 
-        using var process = Process.Start(start)!;
-        var output = process.StandardOutput.ReadToEndAsync();
-        var error = process.StandardError.ReadToEndAsync();
-        process.WaitForExit();
-        var text = output.GetAwaiter().GetResult();
+        return Process.Start(start)!;
+    }
+
+    private static void EnsureSucceeded(Process process, string executable, Task<string> error)
+    {
         var diagnostic = error.GetAwaiter().GetResult();
         if (process.ExitCode != 0)
         {
             throw new InvalidOperationException(executable + "の採取に失敗しました: " + diagnostic);
         }
-
-        return text;
     }
 }

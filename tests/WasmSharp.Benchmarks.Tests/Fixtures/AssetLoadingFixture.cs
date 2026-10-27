@@ -6,8 +6,12 @@ namespace WasmSharp.Benchmarks.Tests.Fixtures;
 
 internal sealed class AssetLoadingFixture : IDisposable
 {
-    internal string DirectoryPath { get; } =
-        Path.Combine(Path.GetTempPath(), "wasm-benchmark-assets-" + Guid.NewGuid().ToString("N"));
+    private readonly string rootDirectory_ = Path.Combine(
+        Path.GetTempPath(),
+        "wasm-benchmark-assets-" + Guid.NewGuid().ToString("N")
+    );
+
+    internal string DirectoryPath => Path.Combine(rootDirectory_, "assets");
     internal string ManifestPath => Path.Combine(DirectoryPath, "asset-manifest.json");
     internal AssetManifest Manifest { get; private set; }
     internal List<BenchmarkCase> Definitions { get; }
@@ -67,6 +71,12 @@ internal sealed class AssetLoadingFixture : IDisposable
             JsonSerializer.SerializeToUtf8Bytes(Manifest, CaseJson.Options)
         );
 
+    internal void SaveManifest(AssetManifest manifest)
+    {
+        Manifest = manifest;
+        SaveManifest();
+    }
+
     private ManifestFile FileDefinition(string path) =>
         new(
             path,
@@ -75,5 +85,5 @@ internal sealed class AssetLoadingFixture : IDisposable
             )
         );
 
-    public void Dispose() => Directory.Delete(DirectoryPath, recursive: true);
+    public void Dispose() => Directory.Delete(rootDirectory_, recursive: true);
 }

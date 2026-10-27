@@ -19,6 +19,9 @@ namespace WasmSharp.Benchmarks.Measurements;
 /// </summary>
 internal static class EnvironmentCapture
 {
+    internal static string CurrentRuntimeVersion =>
+        RuntimeInformation.FrameworkDescription + "; " + Version(typeof(object).Assembly);
+
     internal static RunEnvironment Capture(
         RunStore store,
         CommandInvocation command,
@@ -59,7 +62,7 @@ internal static class EnvironmentCapture
             RuntimeInformation.OSArchitecture.ToString(),
             RuntimeInformation.ProcessArchitecture.ToString(),
             ReadCommand("dotnet", command.WorkingDirectory, "--version"),
-            RuntimeInformation.FrameworkDescription + "; " + Version(typeof(object).Assembly),
+            CurrentRuntimeVersion,
             Version(typeof(DefaultConfig).Assembly),
             typeof(BenchmarkRun)
                 .Assembly.GetCustomAttribute<AssemblyConfigurationAttribute>()
@@ -182,6 +185,13 @@ internal static class EnvironmentCapture
 
     private static bool IsRelevantVariable(string name)
     {
+        if (
+            name.Equals("RuntimeFrameworkVersion", StringComparison.OrdinalIgnoreCase)
+            || name.Equals("RollForward", StringComparison.OrdinalIgnoreCase)
+        )
+        {
+            return true;
+        }
         foreach (var prefix in new[] { "DOTNET_", "COMPlus_" })
         {
             if (!name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))

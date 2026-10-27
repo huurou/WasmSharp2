@@ -801,8 +801,8 @@ internal class RunComparison_CompareTests
     {
         // Arrange
         using var fixture = new ComparisonFixture();
-        var before = new RunComparisonFixture("before-3", "D:/before");
-        var after = new RunComparisonFixture("after-3", "E:/after");
+        var before = new RunComparisonFixture("before-3", "before");
+        var after = new RunComparisonFixture("after-3", "after");
         before.SetCases(fixture.Baseline[0].Cases);
         after.SetCases(fixture.Current[0].Cases);
         fixture.Baseline.Add(before);

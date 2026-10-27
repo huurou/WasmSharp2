@@ -6,6 +6,88 @@ namespace WasmSharp.Benchmarks.Tests.Cases;
 internal class CaseVerifier_VerifyTests
 {
     [Test]
+    public async Task 入力配列のmemoryが存在しない_入力準備の失敗をInvoke段階として保持する()
+    {
+        // Arrange
+        using var fixture = new AssetLoadingFixture();
+        var definition = fixture.Definitions[0];
+        fixture.Definitions[0] = AssetLoadingFixture.WithInput(
+            definition,
+            definition.Input with
+            {
+                Arrays =
+                [
+                    new(
+                        "missing",
+                        0,
+                        ArrayElementType.U8,
+                        1,
+                        ArrayInputPattern.IndexModulo256,
+                        null,
+                        null
+                    ),
+                ],
+            }
+        );
+        fixture.SaveCases();
+        var loaded = AssetManifest.Load(fixture.ManifestPath);
+
+        // Act
+        var result = CaseVerifier.Verify(loaded, definition.CaseId);
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(result.Succeeded).IsFalse();
+            await Assert.That(result.CaseId).IsEqualTo(definition.CaseId);
+            await Assert.That(result.Stage).IsEqualTo("Invoke");
+            await Assert.That(result.Subject).IsEqualTo("exception");
+            await Assert.That(result.Observed).Contains("System.ArgumentException");
+        }
+    }
+
+    [Test]
+    [Arguments(MeasurementStage.Decode)]
+    [Arguments(MeasurementStage.DecodeValidate)]
+    [Arguments(MeasurementStage.Instantiate)]
+    public async Task 追加Invokeの引数が不正_入力生成の失敗をInvoke段階として保持する(
+        MeasurementStage stage
+    )
+    {
+        // Arrange
+        var definition = VerificationFixture.Definition(stage);
+        definition = AssetLoadingFixture.WithInput(
+            definition,
+            definition.Input with
+            {
+                Arguments = [new(NumericType.I32, "invalid")],
+            }
+        );
+        var module = VerificationFixture.Decode();
+        CaseObservation observation = stage switch
+        {
+            MeasurementStage.Decode => new ModuleObservation(module),
+            MeasurementStage.DecodeValidate => new ModuleObservation(module.Validate()),
+            _ => new InstanceObservation(
+                module.Validate().Instantiate(CaseVerifier.CreateImports())
+            ),
+        };
+
+        // Act
+        var result = CaseVerifier.Verify(definition, observation);
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(result.Succeeded).IsFalse();
+            await Assert.That(result.CaseId).IsEqualTo(definition.CaseId);
+            await Assert.That(result.Stage).IsEqualTo("Invoke");
+            await Assert.That(result.Subject).IsEqualTo("exception");
+            await Assert.That(result.Observed).Contains("System.IO.InvalidDataException");
+        }
+    }
+
+    [Test]
     [Arguments(false)]
     [Arguments(true)]
     public async Task 出力を上書きする操作を反復する_全出力を照合し破壊した末尾も検出する(

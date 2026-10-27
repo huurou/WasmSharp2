@@ -44,9 +44,9 @@ function SourceSet($Set, [string]$Root) {
 
 $manifest = Get-Content (Join-Path $run 'run.json') -Raw | ConvertFrom-Json
 $saved = Get-Content (Join-Path $run $manifest.source_file.relative_path) -Raw | ConvertFrom-Json
-$environment = Get-Content (Join-Path $run $manifest.environment_file.relative_path) -Raw | ConvertFrom-Json
+$runtime = & (Join-Path $PSScriptRoot 'Read-DiagnosticRuntime.ps1') -RunDirectory $run
 $dotnet = (Get-Command dotnet).Source
-if ((& $dotnet --version) -cne $environment.sdk_version) { throw '採用runのSDK完全版と異なります。' }
+if ((& $dotnet --version) -cne $runtime.sdk_version) { throw '採用runのSDK完全版と異なります。' }
 & (Join-Path $PSScriptRoot '../Restore-RunSource.ps1') -RunDirectory $run -RepositoryDirectory $repository -DestinationDirectory $DestinationDirectory *> (Join-Path $output 'restore.log')
 $commands.Add([ordered]@{ name = 'restore'; executable = (Join-Path $PSScriptRoot '../Restore-RunSource.ps1'); arguments = @('-RunDirectory', $run, '-RepositoryDirectory', $repository, '-DestinationDirectory', $DestinationDirectory); cwd = (Get-Location).Path; exit_code = 0 })
 $destination = (Resolve-Path -LiteralPath $DestinationDirectory).Path
@@ -96,8 +96,9 @@ $preparation = [ordered]@{
     trace_event_version = '3.1.21'
     workload_assembly = $workload
     reader_assembly = $reader
-    sdk_version = $environment.sdk_version
-    expected_runtime = $environment.runtime_version
+    sdk_version = $runtime.sdk_version
+    expected_runtime = $runtime.version
+    expected_runtime_source = $runtime.source
     source_file = (Join-Path $output 'source-final.json')
     fixed_files = $hashes
 }

@@ -21,7 +21,9 @@ internal sealed record ProcessCheck(
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         long? AffinityAfter = null,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        string? AffinityUnavailableReason = null
+        string? AffinityUnavailableReason = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        string? RuntimeVersion = null
 );
 
 /// <summary>

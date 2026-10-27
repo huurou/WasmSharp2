@@ -9,6 +9,7 @@ internal sealed class RunComparisonFixture : IDisposable
     private readonly RunStoreFixture template_ = new();
 
     internal string DirectoryPath => template_.DirectoryPath;
+    internal string RepositoryDirectory { get; }
     internal RunManifest Manifest { get; set; }
     internal RunEnvironment Environment { get; set; }
     internal RunSource Source { get; set; }
@@ -18,9 +19,13 @@ internal sealed class RunComparisonFixture : IDisposable
     internal long? AffinityBefore { get; set; } = 16384;
     internal long? AffinityAfter { get; set; } = 16384;
     internal string? AffinityUnavailableReason { get; set; }
+    internal string? ProcessRuntimeVersion { get; set; }
+    internal Dictionary<string, string?> ProcessRuntimeVersionsByCase { get; } = [];
 
-    internal RunComparisonFixture(string runId, string root)
+    internal RunComparisonFixture(string runId, string repositoryName)
     {
+        var root = Path.Combine(Path.GetTempPath(), "wasm-run-comparison", repositoryName);
+        RepositoryDirectory = root;
         Manifest = template_.Manifest with { RunId = runId, Kind = RunKind.Measurement };
         Environment = template_.Environment with
         {
@@ -61,6 +66,7 @@ internal sealed class RunComparisonFixture : IDisposable
                 },
             ],
         };
+        ProcessRuntimeVersion = Environment.RuntimeVersion;
         Source = template_.Source with
         {
             AssembliesBefore =
@@ -197,6 +203,10 @@ internal sealed class RunComparisonFixture : IDisposable
                     AffinityBefore = AffinityBefore,
                     AffinityAfter = AffinityAfter,
                     AffinityUnavailableReason = AffinityUnavailableReason,
+                    RuntimeVersion = ProcessRuntimeVersionsByCase.GetValueOrDefault(
+                        result.CaseId,
+                        ProcessRuntimeVersion
+                    ),
                 }
             );
             store.SaveCase(
@@ -226,6 +236,7 @@ internal sealed class RunComparisonFixture : IDisposable
                     },
                 }
             );
+            processId++;
         }
         if (Manifest.Status != ResultStatus.Incomplete)
         {

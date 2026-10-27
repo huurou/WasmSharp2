@@ -5,7 +5,7 @@ param()
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $restoreScript = Join-Path $PSScriptRoot '../Restore-RunSource.ps1'
-$gitExecutable = (Get-Command git -CommandType Application).Source
+$gitExecutable = (Get-Command git -CommandType Application -TotalCount 1).Source
 $testRoot = Join-Path ([IO.Path]::GetTempPath()) ('wasmsharp-source-test-' + [guid]::NewGuid().ToString('N'))
 $repository = Join-Path $testRoot 'repository'
 $run = Join-Path $testRoot 'run'

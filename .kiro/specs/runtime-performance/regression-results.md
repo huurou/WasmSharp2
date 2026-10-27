@@ -1,8 +1,26 @@
 # タスク13.2機能回帰検証結果
 
+現在のruntime集合は、先に受け入れた`0ac1b7884daa13e42d294d99fec63b59462eb1bcc917fc8e2aaab7bee9472c87`である。2026-10-27の追加性能評価を終え、WasmResultsの結果再コピー削減案とFunctionValidatorの命令builder転送案は両方不採用とし、追加差分を戻し、全112ファイルが既受入runtimeと一致した。[最終採否とsource照合](../../../artifacts/runtime-performance/additional-optimization-20261027/final-selection.json)、[全15ケースの比較系列](../../../artifacts/runtime-performance/additional-optimization-20261027/strict-final-20261027-v2/)、[追加改善記録](additional-optimization.md)を参照する。
+
+初期の2案を含むruntime`baa8b4ed547184e92325e7dd92516d7fd5d78049e359ad4f7925551af88f6553`と、後続のFunctionValidator単独候補`0563688abda2884bffadba1a12c2034e95ab7340500e57319b5c035bf23c3b69`は、評価した過去の候補であり、現在のruntimeではない。旧受入と限定例外の範囲を維持し、追加候補へ例外を適用していない。memory.copy-fillの追加原因調査は再開しない。
+
+復帰後の最終Releaseビルドは警告・エラー0、全6,011テスト成功・失敗0・skip0、固定公式147入力・53,907コマンドは52,830成功・1,077対象外、比較差・退行0、run/compare-run/verify終了0を確認した。詳細は追加改善記録とfinal-validation-20261027へ保存した。Claudeのruntime Round3は終了0・最終result・is_error=false・同一セッションを確認し、新規欠陥なし。documentsは2026-10-27 10:40に同じセッションで再開し、Round6で追加N1も解消、新しい欠陥なしと確認した。全4群の最終再レビューは終了0・最終result・is_error=false・初回セッションID一致で完了した。全26指摘は採用21・不採用5で、採用分の未対応はない。再開予約は停止済みである。以下は先に受け入れたruntimeの過去の機能検証記録であり、今回の最終検証結果とは区別する。
+
+## 先に受け入れた候補の確認（2026-10-26）
+
+利用者の限定例外受入後、同じ最終ソースで再確認した。Releaseビルドは警告・エラー0、全4テストプロジェクトは5,993件成功・失敗0・スキップ0となった。内訳はruntime4,799件、生成器160件、公式ランナー702件、測定ツール332件。CLIの起動も成功した。[コマンドと終了値](../../../artifacts/runtime-performance/goal-user-accepted-7dbe1cdf41004f9c96cf9dd3c00a660d/commands.json)、各ログ・TRX、実行前後のsource照合を同じディレクトリに保存した。
+
+SDK10.0.402、テストの実行runtimeは`dotnet exec --fx-version 10.0.13`で固定した。runtime集合は`0ac1b7884daa13e42d294d99fec63b59462eb1bcc917fc8e2aaab7bee9472c87`、harness集合は`a17a67bd4ce46c3e8b6f028e4416949b3d180bf06733609114fa07e511ab0d3c`。以下の公開契約との対応と、同じruntime集合に対するHW無効SIMD81件の確認範囲を維持する。今回の変更は測定入口の配置固定であり、runtimeの意味論は変更していない。
+
+固定公式スイートの新しい全体run、旧baselineとの比較、同じrunへのverifyも終了0だった。147入力・53,907コマンド、passed52,830件・out_of_scope1,077件で、失敗・未対応・ランナー異常・前提不成立・回帰・欠落は0件。[公式結果](../../../artifacts/runtime-performance/goal-user-accepted-7dbe1cdf41004f9c96cf9dd3c00a660d/official-run.json)と[比較結果](../../../artifacts/runtime-performance/goal-user-accepted-7dbe1cdf41004f9c96cf9dd3c00a660d/official-comparison.json)を保存した。機能の成功と性能の受入は分けて判断する。
+
+## 以前の機能検証（2026-10-24時点・現行ではない）
+
+以下の未完了・未実施状態は当時の記録である。現行候補の再確認は冒頭、最終受入・baseline保存・実装検証の状態は[受入結果](acceptance.md)に従う。
+
 候補ランタイムの機能回帰として、Releaseビルドは警告・エラー0、4つのTUnitプロジェクトは合計5981件成功・失敗0・スキップ0だった。新processの`DOTNET_EnableHWIntrinsic=0`では、SIMDの公開API直接テスト15メソッド・81件が成功し、失敗・スキップ0だった。この結果は性能改善の受入やfeatureGOを示さない。
 
-## 対象と前提
+### 対象と前提
 
 - タスク: [tasks.mdの13.2](tasks.md)。Boundaryは選定ランタイム箇所・既存直接テストの統合。Depends指定はなく、10.3がBlockedでも候補版の機能回帰を独立して確認する。
 - 要件: [requirements.md](requirements.md)の7.1、7.2、7.3、7.4、7.5、8.1。
@@ -14,7 +32,7 @@
 
 記録先は[artifacts/runtime-performance/task-13.2-20261024T153250Z](../../../artifacts/runtime-performance/task-13.2-20261024T153250Z/)。実行前に[task-brief.md](../../../artifacts/runtime-performance/task-13.2-20261024T153250Z/task-brief.md)で受入基準・完了定義・設計制約・検証方式を確定した。
 
-## 検証対象の内容
+### 検証対象の内容
 
 | 集合 | SHA-256 |
 | --- | --- |
@@ -26,7 +44,7 @@ runtime/harnessのファイル一覧は10.2の`final-check.json`から、hash計
 
 開始時には、タスク10.3の未レビュー・未コミット差分が既に存在した。対象は`optimization-plan.md`、`tasks.md`、未追跡`change-1-results.md`、測定ツールREADME、`BenchmarkProcess`、`ProcessCheck`、`RunConditions`、`RunComparison`と対応する5テスト/fixtureである。開始statusとindex/worktree差分を`source-before*`へ保存し、今回も保持した。4projectの成功はこのworkingtreeを対象とするが、harness修正の独立レビューや性能受入を代替しない。Gitのstage内容とrefsを前後比較し、indexのbytehashだけでstageの意味的な不変を判断しない。
 
-## コマンドと結果
+### コマンドと結果
 
 Releaseビルドを先に実行した。各テストには`--report-trx --results-directory <記録先>/trx/<ID>`を指定した。実際の引数配列・cwd・開始終了UTC・終了値は各IDのJSON、標準出力は各IDのlog、集計は[validation-summary.json](../../../artifacts/runtime-performance/task-13.2-20261024T153250Z/validation-summary.json)に保存した。
 
@@ -45,7 +63,7 @@ Releaseビルドを先に実行した。各テストには`--report-trx --result
 
 公開APIの起動確認は、02-runtimeに含まれる既存の`Decode→Validate→Instantiate→GetFunction→Invoke`直接テスト（定数結果42、数値、SIMD、host連携等）で行った。同じ公開経路の独立smokeを重複して追加しない。
 
-## 公開契約と既存テストの対応
+### 公開契約と既存テストの対応
 
 以下は02-runtimeのTRXで全件Passedを確認した代表ケースである。件数はパラメーター展開後。各メソッドのsource path/行番号、class、test IDと件数は[contract-coverage.json](../../../artifacts/runtime-performance/task-13.2-20261024T153250Z/contract-coverage.json)に保存した。公開APIテストの多くは`WasmFunction_InvokeTests`または`WasmModule_InstantiateTests`のpartial classであり、ファイル名をclass名として扱わない。
 
@@ -80,13 +98,13 @@ Releaseビルドを先に実行した。各テストには`--report-trx --result
 
 7.1の公開4段階・失敗分類/位置/診断、7.2の数値/SIMD bit列と参照同一性、7.3の結果・引数・locals・import/所属instance、7.4の正常/trap/exhaustion/同じホスト例外実体の終了後と同期再入、7.5の部分更新禁止・先行segment/start副作用・保存参照に対応する既存ケースが成功した。8.1は先行したReleaseビルド警告・エラー0と全4projectのコマンド実行で確認した。新しい公開APIや意味論を追加していない。
 
-## 記録処理の補足と限界
+### 記録処理の補足と限界
 
 検証コマンド6件は全て終了0だった。記録用source採取の初回はPowerShellの空配列扱い、集計の初回は環境変数復元値の違いにより、それぞれ終了1となった。製品テストの失敗として扱わず、[artifact-notes.md](../../../artifacts/runtime-performance/task-13.2-20261024T153250Z/artifact-notes.md)に原因と補正を残した。
 
 当初の`finally`は.NETへnullを渡した結果、各コマンドを動かしたshell内で環境変数の未設定nullが空文字になった。元JSONの`hw_intrinsic_restored`は書き換えていない。その個別shellは終了済みで、後続の新規shellでは未設定を確認した。user/machineの環境設定は変更していない。再利用用スクリプトは未設定ならEnv:から削除する処理へ補正し、[environment-restoration.json](../../../artifacts/runtime-performance/task-13.2-20261024T153250Z/environment-restoration.json)で同じ復元処理だけをprobeした（before=null/存在false、temporary=0、after=null/存在false）。この補正でruntimeやテストsourceは変わっておらず、テストを重複実行していない。
 
-## 未実施範囲と再実行条件
+### 当時の未実施範囲と再実行条件
 
 - 10.3は、旧runtime固定ゲートの割当総量1680bytes差の再出によりBlockedのまま。元policy・数値目標・許容幅を保持し、新版policy・候補の再測定・性能受入を実施していない。
 - 13.1の最終性能比較、13.3の固定公式素材全体run・同じ結果へのcompare-run/verify、13.4の受入baseline保存は実施していない。通常のランナーテスト702件成功は固定公式スイート全体の合格を示さない。

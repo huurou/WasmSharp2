@@ -33,12 +33,12 @@ internal static class CaseVerifier
             {
                 return Verify(definition, new InstanceObservation(instance));
             }
+            stage = "Invoke";
             var input = assets.GetInput(caseId);
             foreach (var array in input.Arrays)
             {
                 instance.GetMemory(array.MemoryExport).Write(array.Offset, array.Bytes.AsSpan());
             }
-            stage = "Invoke";
             return Verify(
                 definition,
                 new InvokeObservation(
@@ -152,12 +152,12 @@ internal static class CaseVerifier
         {
             return initialState;
         }
+        stage = "Invoke";
         var input = InputFactory.Create(definition);
         foreach (var array in input.Arrays)
         {
             instance.GetMemory(array.MemoryExport).Write(array.Offset, array.Bytes.AsSpan());
         }
-        stage = "Invoke";
         var result = VerifyResults(
             definition,
             instance.GetFunction(input.FunctionExport).Invoke(input.Arguments.AsSpan())

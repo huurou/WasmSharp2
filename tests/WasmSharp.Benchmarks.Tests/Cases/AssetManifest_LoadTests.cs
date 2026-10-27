@@ -49,6 +49,64 @@ internal class AssetManifest_LoadTests
     }
 
     [Test]
+    [Arguments("profile")]
+    [Arguments("cases")]
+    [Arguments("binary")]
+    [Arguments("source")]
+    public async Task 相対参照が同じ接頭辞の隣接ディレクトリを指す_manifest配下からの逸脱を拒否する(
+        string reference
+    )
+    {
+        // Arrange
+        using var fixture = new AssetLoadingFixture();
+        var original = reference switch
+        {
+            "cases" => fixture.Manifest.Cases,
+            "binary" => fixture.Manifest.Assets[0].Binary,
+            _ => fixture.Manifest.Profile,
+        };
+        var outsideDirectory = fixture.DirectoryPath + "-outside";
+        Directory.CreateDirectory(outsideDirectory);
+        var outsidePath = Path.Combine(outsideDirectory, Path.GetFileName(original.RelativePath));
+        File.Copy(Path.Combine(fixture.DirectoryPath, original.RelativePath), outsidePath);
+        var escaped = original with
+        {
+            RelativePath = Path.GetRelativePath(fixture.DirectoryPath, outsidePath),
+        };
+        var manifest = fixture.Manifest;
+        fixture.SaveManifest(
+            reference switch
+            {
+                "profile" => manifest with { Profile = escaped },
+                "cases" => manifest with { Cases = escaped },
+                "binary" => manifest with
+                {
+                    Assets = [manifest.Assets[0] with { Binary = escaped }],
+                },
+                _ => manifest with
+                {
+                    Assets =
+                    [
+                        manifest.Assets[0] with
+                        {
+                            Sources = [new(escaped.RelativePath, "fixture", escaped.Sha256)],
+                        },
+                    ],
+                },
+            }
+        );
+
+        // Act & Assert
+        var exception = await Assert
+            .That(() => AssetManifest.Load(fixture.ManifestPath))
+            .Throws<InvalidDataException>();
+        await Assert
+            .That(exception!.Message)
+            .Contains(escaped.RelativePath)
+            .And.Contains("manifest配下");
+    }
+
+    [Test]
     public async Task ケースの素材hashが異なる_ケースIDと理由を返す()
     {
         // Arrange

@@ -35,8 +35,8 @@ internal sealed class ComparisonFixture : IDisposable
         );
         for (var index = 0; index < 3; index++)
         {
-            var before = new RunComparisonFixture("before-" + index, "D:/before");
-            var after = new RunComparisonFixture("after-" + index, "E:/after");
+            var before = new RunComparisonFixture("before-" + index, "before");
+            var after = new RunComparisonFixture("after-" + index, "after");
             before.SetCases(cases);
             after.SetCases(cases);
             Baseline.Add(before);

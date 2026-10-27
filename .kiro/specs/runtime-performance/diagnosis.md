@@ -84,4 +84,3 @@ context/frame/value buffer再利用も空Invokeの原因に対応するが、保
 今回は診断と文書化のみでC#・テスト・source/project/依存版を変更していない。9.3のRelease build/契約確認・独立全4project成功を前提とし、同じテストを重複実行していない。通常CIへprofile起動テストや一時フラグを追加していない。最初のartifact作成はsandboxで拒否されたため、許可された診断記録の作成・採取・再集計をrequire_escalatedで実行した。採取・読込の失敗は0件。
 
 未実施は小module2ケースとcopy/fillのprofile、Validate単体/grow、opcode別の時間帰属、CPU専用profile、保持メモリ/root観測、最適化・policy・候補版との性能比較、最終公式全体run/比較/verify、Ubuntu。今回の診断成功は性能改善や仕様全体の受入完了を示さない。
-

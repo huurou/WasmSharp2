@@ -30,7 +30,8 @@ internal sealed class BenchmarkProcess
             null,
             null,
             [],
-            []
+            [],
+            RuntimeVersion: EnvironmentCapture.CurrentRuntimeVersion
         );
     }
 
@@ -53,53 +54,66 @@ internal sealed class BenchmarkProcess
 
     internal void Setup(Action<LoadedAssets, string> initialize)
     {
-        try
-        {
-            CaptureAffinity(after: false);
-            check_ = check_ with
+        RunChecked(
+            RunStage.Precheck,
+            () =>
             {
-                LoadedAssemblies = new[]
+                CaptureAffinity(after: false);
+                check_ = check_ with
                 {
-                    (AssemblyRole.Runtime, typeof(WasmModule).Assembly.Location),
-                    (AssemblyRole.Harness, typeof(InvokeBenchmarks).Assembly.Location),
-                }
-                    .Select(x => new AssemblyIdentity(
-                        x.Item1,
-                        x.Location,
-                        Convert.ToHexStringLower(SHA256.HashData(File.ReadAllBytes(x.Location)))
-                    ))
-                    .ToList(),
-            };
-            store_.SaveCheck(check_);
-            initialize(AssetManifest.Load(configuration_.AssetManifestPath), check_.CaseId);
-            check_ = check_ with { Precheck = Success(), LastConfirmedStage = RunStage.Precheck };
-            Save();
-            check_ = check_ with
+                    LoadedAssemblies = new[]
+                    {
+                        (AssemblyRole.Runtime, typeof(WasmModule).Assembly.Location),
+                        (AssemblyRole.Harness, typeof(InvokeBenchmarks).Assembly.Location),
+                    }
+                        .Select(x => new AssemblyIdentity(
+                            x.Item1,
+                            x.Location,
+                            Convert.ToHexStringLower(SHA256.HashData(File.ReadAllBytes(x.Location)))
+                        ))
+                        .ToList(),
+                };
+            }
+        );
+        Save();
+        RunChecked(
+            RunStage.Precheck,
+            () => initialize(AssetManifest.Load(configuration_.AssetManifestPath), check_.CaseId)
+        );
+        check_ = check_ with { Precheck = Success(), LastConfirmedStage = RunStage.Precheck };
+        Save();
+        Save(
+            check_ with
             {
                 ExecutionStarted = true,
                 LastConfirmedStage = RunStage.ExecutionStarted,
-            };
-            Save();
-        }
-        catch (Exception exception)
-        {
-            Fail(RunStage.Precheck, exception);
-            throw;
-        }
+            }
+        );
     }
 
     internal void Cleanup(Action verify)
     {
+        RunChecked(
+            RunStage.Postcheck,
+            () =>
+            {
+                CaptureAffinity(after: true);
+                verify();
+            }
+        );
+        check_ = check_ with { Postcheck = Success(), LastConfirmedStage = RunStage.Postcheck };
+        Save();
+    }
+
+    private void RunChecked(RunStage stage, Action action)
+    {
         try
         {
-            CaptureAffinity(after: true);
-            verify();
-            check_ = check_ with { Postcheck = Success(), LastConfirmedStage = RunStage.Postcheck };
-            Save();
+            action();
         }
         catch (Exception exception)
         {
-            Fail(RunStage.Postcheck, exception);
+            Fail(stage, exception);
             throw;
         }
     }
@@ -158,6 +172,22 @@ internal sealed class BenchmarkProcess
         {
             Precheck = stage == RunStage.Precheck ? failed : check_.Precheck,
             Postcheck = stage == RunStage.Postcheck ? failed : check_.Postcheck,
+        };
+        AddFailure(stage, "計時外の準備または検査に失敗しました。", exception);
+        try
+        {
+            Save();
+        }
+        catch
+        {
+            // 保存の失敗はFailuresへ保持し、元の検査例外を呼出元へ返す。
+        }
+    }
+
+    private void AddFailure(RunStage stage, string reason, Exception exception)
+    {
+        check_ = check_ with
+        {
             Failures =
             [
                 .. check_.Failures,
@@ -165,15 +195,27 @@ internal sealed class BenchmarkProcess
                     check_.CaseId,
                     stage,
                     check_.LastConfirmedStage,
-                    "計時外の準備または検査に失敗しました。",
+                    reason,
                     exception.GetType().FullName,
                     exception.Message,
                     null
                 ),
             ],
         };
-        Save();
     }
 
-    private void Save() => store_.SaveCheck(check_);
+    private void Save(ProcessCheck? snapshot = null)
+    {
+        var saved = snapshot ?? check_;
+        try
+        {
+            store_.SaveCheck(saved);
+        }
+        catch (Exception exception)
+        {
+            AddFailure(RunStage.Saving, "検査snapshotの保存に失敗しました。", exception);
+            throw;
+        }
+        check_ = saved;
+    }
 }
