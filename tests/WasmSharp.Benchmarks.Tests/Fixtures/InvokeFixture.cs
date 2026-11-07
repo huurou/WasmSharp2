@@ -154,8 +154,9 @@ internal static class InvokeFixture
     internal static LoadedAssets BuildAssets(
         BenchmarkCase definition,
         ImmutableArray<byte> bytes
-    ) =>
-        new(
+    )
+    {
+        return new(
             new(1, new("profile.json", ""), new("cases.json", ""), []),
             new CaseCatalog([definition]),
             new Dictionary<string, ImmutableArray<byte>>
@@ -167,4 +168,5 @@ internal static class InvokeFixture
                 [definition.CaseId] = InputFactory.Create(definition),
             }.ToImmutableDictionary()
         );
+    }
 }

@@ -25,8 +25,8 @@ internal static class InputFactory
         }
         return new PreparedInput(
             input.FunctionExport,
-            input.Arguments.Select(x => CreateValue(x, definition.CaseId)).ToImmutableArray(),
-            input.Arrays.Select(x => CreateArray(x, definition.CaseId)).ToImmutableArray()
+            [.. input.Arguments.Select(x => CreateValue(x, definition.CaseId))],
+            [.. input.Arrays.Select(x => CreateArray(x, definition.CaseId))]
         );
     }
 
@@ -133,7 +133,7 @@ internal static class InputFactory
                 }
             }
         }
-        return new PreparedArrayInput(input.MemoryExport, input.Offset, bytes.ToImmutableArray());
+        return new PreparedArrayInput(input.MemoryExport, input.Offset, [.. bytes]);
     }
 }
 

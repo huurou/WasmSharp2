@@ -1,11 +1,11 @@
-using System.Collections.Immutable;
-using System.Security.Cryptography;
-using System.Text;
-using System.Text.Json;
 using BenchmarkDotNet.Engines;
 using BenchmarkDotNet.Jobs;
 using BenchmarkDotNet.Reports;
 using BenchmarkDotNet.Running;
+using System.Collections.Immutable;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
 using WasmSharp.Benchmarks.Cases;
 using WasmSharp.Benchmarks.Results;
 
@@ -68,7 +68,7 @@ internal static class BenchmarkRun
                         output,
                         Path.Combine(output, "inputs", "assets", "asset-manifest.json"),
                         job.Id,
-                        request.CaseIds.ToList()
+                        [.. request.CaseIds]
                     );
                     var file = store.SaveFile(
                         "inputs/run-" + Guid.NewGuid().ToString("N") + ".json",
@@ -157,15 +157,14 @@ internal static class BenchmarkRun
                     .Where(x => x.Methods.Length > 0)
                     .Select(x => BenchmarkConverter.MethodsToBenchmarks(x.Type, x.Methods, config))
                     .Select(info => new BenchmarkRunInfo(
-                        info.BenchmarksCases.Select(x =>
+                        [.. info.BenchmarksCases.Select(x =>
                                 BenchmarkDotNet.Running.BenchmarkCase.Create(
                                     x.Descriptor,
                                     prepared.Jobs.Single(job => job.Id == x.Job.Id),
                                     x.Parameters,
                                     x.Config
                                 )
-                            )
-                            .ToArray(),
+                            )],
                         info.Type,
                         info.Config
                     ))
@@ -241,7 +240,7 @@ internal static class BenchmarkRun
                 results.Any(x => x.Status == ResultStatus.Failed) ? ResultStatus.Failed
                 : results.Any(x => x.Status == ResultStatus.Unavailable) ? ResultStatus.Unavailable
                 : ResultStatus.Succeeded;
-            prepared.Store.Complete(status, results.SelectMany(x => x.Failures).ToList());
+            prepared.Store.Complete(status, [.. results.SelectMany(x => x.Failures)]);
         }
     }
 
@@ -268,7 +267,7 @@ internal static class BenchmarkRun
                             job.Id,
                             x.ProcessId,
                             x.ExitCode,
-                            x.Errors.ToList(),
+                            [.. x.Errors],
                             x.Measurements.Any(y =>
                                 y.IterationMode == IterationMode.Workload
                                 && y.IterationStage == IterationStage.Result
@@ -290,7 +289,7 @@ internal static class BenchmarkRun
                 processes
             ),
             [],
-            metrics.Measurements is null ? raw.ToList() : [.. raw, metrics.Measurements]
+            metrics.Measurements is null ? [.. raw] : [.. raw, metrics.Measurements]
         );
         return EvaluateCase(request, prepared, summaries, reports, result);
     }
@@ -312,7 +311,10 @@ internal static class BenchmarkRun
             RunStage? last = null,
             string? message = null,
             string? interruption = null
-        ) => failures.Add(new(result.CaseId, stage, last, reason, null, message, interruption));
+        )
+        {
+            failures.Add(new(result.CaseId, stage, last, reason, null, message, interruption));
+        }
 
         if (
             reports.Count != prepared.Jobs.Length
@@ -603,13 +605,15 @@ internal static class BenchmarkRun
         );
     }
 
-    private static ProcessCheck? LatestCheck(string outputDirectory, ManifestFile? file) =>
-        file is null
+    private static ProcessCheck? LatestCheck(string outputDirectory, ManifestFile? file)
+    {
+        return file is null
             ? null
             : JsonSerializer.Deserialize<ProcessCheck>(
                 File.ReadAllBytes(Path.Combine(outputDirectory, file.RelativePath)),
                 CaseJson.Options
             );
+    }
 
     /// <summary>
     /// Jobの明示値とBDNへ委ねる既定値を区別してprocess構成を記録する

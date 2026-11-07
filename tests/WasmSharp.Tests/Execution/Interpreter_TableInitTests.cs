@@ -112,7 +112,7 @@ internal class Interpreter_TableInitTests
     }
 
     [Test]
-    public async Task tableと供給元の末尾から長さ0を転送する_内容と供給元を保って成功する()
+    public async Task Tableと供給元の末尾から長さ0を転送する_内容と供給元を保って成功する()
     {
         // Arrange
         var table = new WasmTable(WasmValueKind.FuncRef, new(1));

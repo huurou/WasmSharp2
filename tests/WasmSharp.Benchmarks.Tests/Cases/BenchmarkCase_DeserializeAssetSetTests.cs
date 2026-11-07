@@ -110,10 +110,9 @@ internal partial class BenchmarkCase_DeserializeTests
                 await Assert
                     .That(definition.Workload)
                     .IsEquivalentTo(
-                        new[]
-                        {
+                        [
                             new WorkloadQuantity("defined_functions", 3, WorkloadUnit.Functions),
-                        }
+                        ]
                     );
                 await Assert.That(definition.Input.FunctionExport).IsEqualTo("single");
                 await Assert

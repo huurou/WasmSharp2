@@ -82,7 +82,7 @@ internal class WasmTable_TryCopyTests
         var expected =
             destination > sourceOffset
                 ? new[] { references[0], references[0], references[1], references[2] }
-                : new[] { references[1], references[2], references[3], references[3] };
+                : [references[1], references[2], references[3], references[3]];
 
         // Act
         var success = table.TryCopy(alias, destination, sourceOffset, 3);

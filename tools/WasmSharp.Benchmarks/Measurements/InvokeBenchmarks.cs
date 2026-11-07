@@ -1,6 +1,6 @@
-using System.Collections.Immutable;
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Engines;
+using System.Collections.Immutable;
 using WasmSharp.Benchmarks.Cases;
 
 namespace WasmSharp.Benchmarks.Measurements;
@@ -28,7 +28,10 @@ public class InvokeBenchmarks
     private WasmResults lastMatrixResults_ = null!;
 
     [GlobalSetup(Target = nameof(Empty))]
-    public void SetupEmpty() => Setup(nameof(Empty));
+    public void SetupEmpty()
+    {
+        Setup(nameof(Empty));
+    }
 
     [Benchmark(OperationsPerInvoke = 1)]
     public void Empty()
@@ -38,7 +41,10 @@ public class InvokeBenchmarks
     }
 
     [GlobalSetup(Target = nameof(Single))]
-    public void SetupSingle() => Setup(nameof(Single));
+    public void SetupSingle()
+    {
+        Setup(nameof(Single));
+    }
 
     [Benchmark(OperationsPerInvoke = 1)]
     public void Single()
@@ -48,7 +54,10 @@ public class InvokeBenchmarks
     }
 
     [GlobalSetup(Target = nameof(Multi))]
-    public void SetupMulti() => Setup(nameof(Multi));
+    public void SetupMulti()
+    {
+        Setup(nameof(Multi));
+    }
 
     [Benchmark(OperationsPerInvoke = 1)]
     public void Multi()
@@ -58,7 +67,10 @@ public class InvokeBenchmarks
     }
 
     [GlobalSetup(Target = nameof(IntegerDirect))]
-    public void SetupIntegerDirect() => Setup(nameof(IntegerDirect));
+    public void SetupIntegerDirect()
+    {
+        Setup(nameof(IntegerDirect));
+    }
 
     [Benchmark(OperationsPerInvoke = 1)]
     public void IntegerDirect()
@@ -68,7 +80,10 @@ public class InvokeBenchmarks
     }
 
     [GlobalSetup(Target = nameof(FloatHost))]
-    public void SetupFloatHost() => Setup(nameof(FloatHost));
+    public void SetupFloatHost()
+    {
+        Setup(nameof(FloatHost));
+    }
 
     [Benchmark(OperationsPerInvoke = 1)]
     public void FloatHost()
@@ -78,7 +93,10 @@ public class InvokeBenchmarks
     }
 
     [GlobalSetup(Target = nameof(Indirect))]
-    public void SetupIndirect() => Setup(nameof(Indirect));
+    public void SetupIndirect()
+    {
+        Setup(nameof(Indirect));
+    }
 
     [Benchmark(OperationsPerInvoke = 1)]
     public void Indirect()
@@ -88,7 +106,10 @@ public class InvokeBenchmarks
     }
 
     [GlobalSetup(Target = nameof(CopyFill))]
-    public void SetupCopyFill() => Setup(nameof(CopyFill));
+    public void SetupCopyFill()
+    {
+        Setup(nameof(CopyFill));
+    }
 
     [Benchmark(OperationsPerInvoke = 1)]
     public void CopyFill()
@@ -98,7 +119,10 @@ public class InvokeBenchmarks
     }
 
     [GlobalSetup(Target = nameof(ScanScalar))]
-    public void SetupScanScalar() => Setup(nameof(ScanScalar));
+    public void SetupScanScalar()
+    {
+        Setup(nameof(ScanScalar));
+    }
 
     [Benchmark(OperationsPerInvoke = 1)]
     public void ScanScalar()
@@ -108,7 +132,10 @@ public class InvokeBenchmarks
     }
 
     [GlobalSetup(Target = nameof(ScanSimd))]
-    public void SetupScanSimd() => Setup(nameof(ScanSimd));
+    public void SetupScanSimd()
+    {
+        Setup(nameof(ScanSimd));
+    }
 
     [Benchmark(OperationsPerInvoke = 1)]
     public void ScanSimd()
@@ -118,7 +145,10 @@ public class InvokeBenchmarks
     }
 
     [GlobalSetup(Target = nameof(Matrix))]
-    public void SetupMatrix() => Setup(nameof(Matrix));
+    public void SetupMatrix()
+    {
+        Setup(nameof(Matrix));
+    }
 
     [Benchmark(OperationsPerInvoke = 1)]
     public void Matrix()

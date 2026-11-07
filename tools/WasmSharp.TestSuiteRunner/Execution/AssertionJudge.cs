@@ -85,9 +85,9 @@ internal static class AssertionJudge
                 exception
                 is WasmUnsupportedFeatureException
                     or WasmImportInspectionException
-                    {
-                        Reason: WasmImportInspectionReason.UnsupportedFeature
-                    }
+                {
+                    Reason: WasmImportInspectionReason.UnsupportedFeature
+                }
             )
             {
                 return CaseOutcome.RuntimeUnsupported;
@@ -157,11 +157,11 @@ internal static class AssertionJudge
                 == CaseStage.Instantiate
                 && exception
                     is WasmInstantiateException
-                    {
-                        Reason: WasmInstantiateReason.MissingImport
+                {
+                    Reason: WasmInstantiateReason.MissingImport
                             or WasmInstantiateReason.KindMismatch
                             or WasmInstantiateReason.TypeMismatch
-                    },
+                },
             AssertUninstantiableCommand { ModuleType: ScriptModuleType.Binary } => stage
                 == CaseStage.Instantiate
                 && exception is WasmTrapException,

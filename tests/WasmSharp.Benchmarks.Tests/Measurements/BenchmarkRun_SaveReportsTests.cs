@@ -1,8 +1,8 @@
+using BenchmarkDotNet.Jobs;
+using BenchmarkDotNet.Toolchains.Results;
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text.Json;
-using BenchmarkDotNet.Jobs;
-using BenchmarkDotNet.Toolchains.Results;
 using WasmSharp.Benchmarks.Cases;
 using WasmSharp.Benchmarks.Measurements;
 using WasmSharp.Benchmarks.Results;
@@ -34,7 +34,7 @@ internal class BenchmarkRun_SaveReportsTests
         // Assert
         using (Assert.Multiple())
         {
-            await Assert.That(result.BenchmarkReport!.Processes.Any()).IsTrue();
+            await Assert.That(result.BenchmarkReport!.Processes.Count != 0).IsTrue();
             await Assert
                 .That(result.BenchmarkReport.Processes.All(x => !x.HasResultMeasurements))
                 .IsTrue();
@@ -146,7 +146,7 @@ internal class BenchmarkRun_SaveReportsTests
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task report件数とJob集合の片方だけが予定と異なる_不一致を記録して未完了にする(
+    public async Task Report件数とJob集合の片方だけが予定と異なる_不一致を記録して未完了にする(
         bool duplicated
     )
     {
@@ -190,7 +190,7 @@ internal class BenchmarkRun_SaveReportsTests
     [Test]
     [Arguments(83)]
     [Arguments(null)]
-    public async Task reportと測定行があっても子processが正常終了しない_最後の確認段階を残して未完了になる(
+    public async Task Reportと測定行があっても子processが正常終了しない_最後の確認段階を残して未完了になる(
         int? exitCode
     )
     {
@@ -243,8 +243,8 @@ internal class BenchmarkRun_SaveReportsTests
             true,
             83,
             124,
-            lines.Where(x => !x.StartsWith("//")).ToArray(),
-            lines.Where(x => x.StartsWith("//")).ToArray(),
+            [.. lines.Where(x => !x.StartsWith("//"))],
+            [.. lines.Where(x => x.StartsWith("//"))],
             lines,
             2
         );
@@ -351,7 +351,7 @@ internal class BenchmarkRun_SaveReportsTests
     }
 
     [Test]
-    public async Task process検査にtrapや例外が記録される_例外型とmessageを保って失敗になる()
+    public async Task Process検査にtrapや例外が記録される_例外型とmessageを保って失敗になる()
     {
         // Arrange
         using var fixture = new BenchmarkReportFixture();
@@ -382,7 +382,7 @@ internal class BenchmarkRun_SaveReportsTests
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task buildかvalidationが不成立である_発生段階を保存して失敗になる(bool validation)
+    public async Task Buildかvalidationが不成立である_発生段階を保存して失敗になる(bool validation)
     {
         // Arrange
         using var fixture = new BenchmarkReportFixture(

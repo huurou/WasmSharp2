@@ -8,7 +8,7 @@ namespace WasmSharp.Benchmarks.Tests.Measurements;
 internal class BenchmarkProcess_StartTests
 {
     [Test]
-    public async Task run設定の環境変数がない_理由を示して開始を拒否する()
+    public async Task Run設定の環境変数がない_理由を示して開始を拒否する()
     {
         // Arrange
         using var fixture = new BenchmarkProcessFixture();

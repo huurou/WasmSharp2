@@ -28,7 +28,7 @@ internal partial class WasmFunction_InvokeTests
                     WasmValue.FromFuncRef(instance.GetFunction("init")),
                     WasmValue.FromFuncRef(instance.GetFunction("copy")),
                 }
-                : new[] { firstValue, secondValue };
+                : [firstValue, secondValue];
         var table = instance.GetTable("a");
         var passive = flags is 1 or 5;
         var active = flags is 0 or 2 or 4 or 6;
@@ -106,7 +106,7 @@ internal partial class WasmFunction_InvokeTests
     [Test]
     [Arguments((byte)0x70)]
     [Arguments((byte)0x6F)]
-    public async Task passive要素を別instanceから初期化する_dropは転送済み参照と他instanceに影響しない(
+    public async Task Passive要素を別instanceから初期化する_dropは転送済み参照と他instanceに影響しない(
         byte kind
     )
     {
@@ -348,12 +348,12 @@ internal partial class WasmFunction_InvokeTests
         [
             .. mode,
             .. (
-                flags == 0 || flags == 4
+                flags is 0 or 4
                     ? Array.Empty<byte>()
-                    : new byte[] { flags < 4 ? (byte)0 : kind }
+                    : [flags < 4 ? (byte)0 : kind]
             ),
             2,
-            .. (flags < 4 ? new byte[] { 0, 1 } : new byte[] { 0x23, 0, 0x0B, 0x23, 1, 0x0B }),
+            .. (flags < 4 ? new byte[] { 0, 1 } : [0x23, 0, 0x0B, 0x23, 1, 0x0B]),
         ];
         var module = WasmModule
             .Decode(

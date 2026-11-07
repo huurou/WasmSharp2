@@ -23,12 +23,7 @@ public readonly struct WasmValue
     /// <summary>
     /// 格納されたvalueの種類
     /// </summary>
-    private readonly WasmValueKind kind_;
-
-    /// <summary>
-    /// 格納されたvalueの種類
-    /// </summary>
-    public WasmValueKind Kind => kind_;
+    public WasmValueKind Kind { get; }
 
     /// <summary>
     /// valueの型と対応するビット列または参照先を保持する
@@ -39,7 +34,7 @@ public readonly struct WasmValue
     /// <param name="reference">参照型の参照先またはnull 数値型ではnull</param>
     private WasmValue(WasmValueKind kind, ulong low64, ulong high64, object? reference)
     {
-        kind_ = kind;
+        Kind = kind;
         low64_ = low64;
         high64_ = high64;
         reference_ = reference;
@@ -240,10 +235,10 @@ public readonly struct WasmValue
     /// <exception cref="InvalidOperationException">保持中の型が要求された型と異なる場合</exception>
     private void EnsureKind(WasmValueKind expected)
     {
-        if (kind_ != expected)
+        if (Kind != expected)
         {
             throw new InvalidOperationException(
-                $"{kind_}のvalueを{expected}として取得できません。"
+                $"{Kind}のvalueを{expected}として取得できません。"
             );
         }
     }

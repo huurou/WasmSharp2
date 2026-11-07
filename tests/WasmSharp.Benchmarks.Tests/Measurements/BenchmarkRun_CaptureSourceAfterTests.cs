@@ -171,7 +171,7 @@ internal class BenchmarkRun_CaptureSourceAfterTests
     }
 
     [Test]
-    public async Task runtimeだけを変更する_harness集合のhashは変わらず無変更の実行後照合も成立する()
+    public async Task Runtimeだけを変更する_harness集合のhashは変わらず無変更の実行後照合も成立する()
     {
         // Arrange
         using var fixture = new SourceCaptureFixture();

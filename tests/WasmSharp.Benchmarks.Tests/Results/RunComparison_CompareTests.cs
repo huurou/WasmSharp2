@@ -542,7 +542,7 @@ internal class RunComparison_CompareTests
         {
             "too-few" => request with
             {
-                CurrentRunDirectories = request.CurrentRunDirectories.Take(2).ToList(),
+                CurrentRunDirectories = [.. request.CurrentRunDirectories.Take(2)],
             },
             "empty-current" => request with { CurrentRunDirectories = [] },
             "empty-baseline" => request with { BaselineRunDirectories = [] },
@@ -556,7 +556,7 @@ internal class RunComparison_CompareTests
             },
             "shared" => request with
             {
-                CurrentRunDirectories = request.BaselineRunDirectories.ToList(),
+                CurrentRunDirectories = [.. request.BaselineRunDirectories],
             },
             "missing-run" => request with
             {
@@ -701,7 +701,7 @@ internal class RunComparison_CompareTests
     [Arguments("json")]
     [Arguments("null")]
     [Arguments("absent")]
-    public async Task policyが不足または不整合である_基準を後付けせず理由を保持する(string scenario)
+    public async Task Policyが不足または不整合である_基準を後付けせず理由を保持する(string scenario)
     {
         // Arrange
         using var fixture = new ComparisonFixture();
@@ -898,7 +898,7 @@ internal class RunComparison_CompareTests
         SetGroup(fixture.Current, 100, 8);
         fixture.Policy = fixture.Policy with
         {
-            Cases = fixture
+            Cases = [.. fixture
                 .Policy.Cases.Select(x =>
                     x.CaseId == "invoke.single"
                         ? x
@@ -906,8 +906,7 @@ internal class RunComparison_CompareTests
                         {
                             Allocation = x.Allocation with { ReductionTarget = null },
                         }
-                )
-                .ToList(),
+                )],
         };
         var otherCase = fixture.CaseIds.Last(x => x != "invoke.single");
         foreach (var run in fixture.Current)
@@ -935,7 +934,7 @@ internal class RunComparison_CompareTests
         {
             fixture.Policy = fixture.Policy with
             {
-                Cases = fixture.Policy.Cases.Where(x => x.CaseId != otherCase).ToList(),
+                Cases = [.. fixture.Policy.Cases.Where(x => x.CaseId != otherCase)],
             };
         }
         var request = fixture.Save();
@@ -1126,14 +1125,16 @@ internal class RunComparison_CompareTests
         }
     }
 
-    private static Dictionary<string, string> FileHashes(ComparisonFixture fixture) =>
-        fixture
+    private static Dictionary<string, string> FileHashes(ComparisonFixture fixture)
+    {
+        return fixture
             .Baseline.Concat(fixture.Current)
             .SelectMany(x => Directory.GetFiles(x.DirectoryPath, "*", SearchOption.AllDirectories))
             .ToDictionary(
                 x => x,
                 x => Convert.ToHexStringLower(SHA256.HashData(File.ReadAllBytes(x)))
             );
+    }
 
     private static void SetGroup(
         IEnumerable<RunComparisonFixture> runs,

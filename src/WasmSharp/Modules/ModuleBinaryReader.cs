@@ -25,11 +25,6 @@ internal ref struct ModuleBinaryReader
     private readonly ReadOnlySpan<byte> bytes_;
 
     /// <summary>
-    /// 入力バイナリ上の読み取り範囲の先頭位置
-    /// </summary>
-    private readonly long startOffset_;
-
-    /// <summary>
     /// 宣言範囲を越えるbyteを診断に使用できるかを示す読取りモード
     /// </summary>
     private readonly ModuleReadMode mode_;
@@ -42,7 +37,7 @@ internal ref struct ModuleBinaryReader
     /// <summary>
     /// Decode開始位置を0とした、次の読み取り位置
     /// </summary>
-    internal readonly long Position => startOffset_ + position_;
+    internal readonly long Position => field + position_;
 
     /// <summary>
     /// この範囲に残る未読み取りのバイト数
@@ -98,7 +93,8 @@ internal ref struct ModuleBinaryReader
             sectionId,
             functionIndex,
             mode
-        ) { }
+        )
+    { }
 
     /// <summary>
     /// モードに応じた入力参照と、物理終端・宣言終端を保持する
@@ -121,7 +117,7 @@ internal ref struct ModuleBinaryReader
     )
     {
         bytes_ = bytes;
-        startOffset_ = startOffset;
+        Position = startOffset;
         InputEnd = inputEnd;
         DeclaredEnd = declaredEnd;
         mode_ = mode;
@@ -190,7 +186,7 @@ internal ref struct ModuleBinaryReader
         if (mode_ == ModuleReadMode.Diagnostic)
         {
             // 子は物理終端まで参照し、親は宣言長と物理残量の小さい方だけ進める。
-            var bytes = bytes_.Slice(position_);
+            var bytes = bytes_[position_..];
             position_ += (int)Math.Min((long)length, Remaining);
             return new ModuleBinaryReader(
                 bytes,

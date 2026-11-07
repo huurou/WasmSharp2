@@ -272,7 +272,7 @@ internal class CaseVerifier_VerifyTests
     }
 
     [Test]
-    public async Task funcrefを期待するtableがexternrefである_型の不一致を失敗にする()
+    public async Task Funcrefを期待するtableがexternrefである_型の不一致を失敗にする()
     {
         // Arrange
         var definition = VerificationFixture.Definition(MeasurementStage.Invoke) with
@@ -513,9 +513,8 @@ internal class CaseVerifier_VerifyTests
                 definition,
                 definition.Input with
                 {
-                    Arrays = definition
-                        .Input.Arrays.Select(x => x.Offset == 16 ? x with { FillByte = 0 } : x)
-                        .ToList(),
+                    Arrays = [.. definition
+                        .Input.Arrays.Select(x => x.Offset == 16 ? x with { FillByte = 0 } : x)],
                 }
             );
         }
@@ -534,7 +533,7 @@ internal class CaseVerifier_VerifyTests
             var result = CaseVerifier.Verify(definition, new InvokeObservation(instance, values));
             await Assert.That(result.Succeeded).IsTrue();
             var end = matrix ? 23U : 31U;
-            instance.GetMemory("memory").Write(end, new byte[] { 0x80 });
+            instance.GetMemory("memory").Write(end, [0x80]);
             var changed = CaseVerifier.Verify(definition, new InvokeObservation(instance, values));
             using (Assert.Multiple())
             {
@@ -554,7 +553,7 @@ internal class CaseVerifier_VerifyTests
         var definition = VerificationFixture.MemoryDefinition(matrix: true);
         var instance = VerificationFixture.Instantiate();
         var values = instance.GetFunction("matrix").Invoke([]);
-        instance.GetMemory("memory").Write(7, new byte[] { 0x80 });
+        instance.GetMemory("memory").Write(7, [0x80]);
 
         // Act
         var result = CaseVerifier.Verify(definition, new InvokeObservation(instance, values));
@@ -618,7 +617,7 @@ internal class CaseVerifier_VerifyTests
         switch (difference)
         {
             case "memory":
-                instance.GetMemory("memory").Write(7, new byte[] { 0xff });
+                instance.GetMemory("memory").Write(7, [0xff]);
                 break;
             case "global":
                 instance.GetGlobalResource("start_result").Value = WasmValue.FromI32(-1);
@@ -932,9 +931,11 @@ internal class CaseVerifier_VerifyTests
         await Assert.That(result.Succeeded).IsTrue();
     }
 
-    private static WasmInstance EmptyInstance() =>
-        WasmModule
+    private static WasmInstance EmptyInstance()
+    {
+        return WasmModule
             .Decode([0, 0x61, 0x73, 0x6d, 1, 0, 0, 0])
             .Validate()
             .Instantiate(new WasmImports());
+    }
 }

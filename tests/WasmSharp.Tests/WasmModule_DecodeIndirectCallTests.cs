@@ -49,12 +49,11 @@ internal partial class WasmModule_DecodeTests
                         .Functions[0]
                         .Instructions.Select(x => x.ByteOffset)
                         .SequenceEqual(
-                            new long[]
-                            {
+                            [
                                 bytes.Length - body.Length,
                                 bytes.Length - 6,
                                 bytes.Length - 1,
-                            }
+                            ]
                         )
                 )
                 .IsTrue();

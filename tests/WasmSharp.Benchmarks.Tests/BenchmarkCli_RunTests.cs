@@ -13,7 +13,7 @@ internal class BenchmarkCli_RunTests
     [Arguments("check")]
     [Arguments("run")]
     [Arguments("compare")]
-    public async Task helpを指定する_必要な引数なしで全操作の案内を表示する(string operation)
+    public async Task Helpを指定する_必要な引数なしで全操作の案内を表示する(string operation)
     {
         // Arrange
         using var output = new StringWriter();
@@ -21,7 +21,7 @@ internal class BenchmarkCli_RunTests
         string[] args = operation.Length == 0 ? ["--help"] : [operation, "--help"];
 
         // Act
-        var exitCode = new BenchmarkCli().Run(args, output, error);
+        var exitCode = BenchmarkCli.Run(args, output, error);
 
         // Assert
         using (Assert.Multiple())
@@ -54,10 +54,10 @@ internal class BenchmarkCli_RunTests
         // Arrange
         using var output = new StringWriter();
         using var error = new StringWriter();
-        string[] args = input.Length == 0 ? [] : input.Split('|');
+        var args = input.Length == 0 ? [] : input.Split('|');
 
         // Act
-        var exitCode = new BenchmarkCli().Run(args, output, error);
+        var exitCode = BenchmarkCli.Run(args, output, error);
 
         // Assert
         using (Assert.Multiple())
@@ -80,7 +80,7 @@ internal class BenchmarkCli_RunTests
         using var error = new StringWriter();
 
         // Act
-        var exitCode = new BenchmarkCli().Run(
+        var exitCode = BenchmarkCli.Run(
             [
                 "compare",
                 "--baseline",
@@ -125,7 +125,7 @@ internal class BenchmarkCli_RunTests
             Environment.SetEnvironmentVariable("PATH", assets.DirectoryPath);
 
             // Act
-            var exitCode = new BenchmarkCli().Run(
+            var exitCode = BenchmarkCli.Run(
                 ["run", "--assets", assets.ManifestPath, "--case", caseId, "--output", directory],
                 output,
                 error
@@ -155,7 +155,7 @@ internal class BenchmarkCli_RunTests
         using var error = new StringWriter();
 
         // Act
-        var exitCode = new BenchmarkCli().Run(
+        var exitCode = BenchmarkCli.Run(
             ["check", "--assets", assets.ManifestPath],
             output,
             error
@@ -196,7 +196,7 @@ internal class BenchmarkCli_RunTests
         using var error = new StringWriter();
 
         // Act
-        var exitCode = new BenchmarkCli().Run(
+        var exitCode = BenchmarkCli.Run(
             ["check", "--assets", assets.ManifestPath],
             output,
             error
@@ -255,7 +255,7 @@ internal class BenchmarkCli_RunTests
         };
 
         // Act
-        var exitCode = new BenchmarkCli().Run(args, output, error);
+        var exitCode = BenchmarkCli.Run(args, output, error);
 
         // Assert
         using (Assert.Multiple())
@@ -305,7 +305,7 @@ internal class BenchmarkCli_RunTests
         try
         {
             // Act
-            var exitCode = new BenchmarkCli().Run(
+            var exitCode = BenchmarkCli.Run(
                 [
                     "compare",
                     "--baseline",
@@ -406,7 +406,7 @@ internal class BenchmarkCli_RunTests
         try
         {
             // Act
-            var exitCode = new BenchmarkCli().Run(
+            var exitCode = BenchmarkCli.Run(
                 [
                     "compare",
                     "--baseline",
@@ -462,7 +462,7 @@ internal class BenchmarkCli_RunTests
         ];
 
         // Act
-        var exitCode = new BenchmarkCli().Run(args, output, error);
+        var exitCode = BenchmarkCli.Run(args, output, error);
 
         // Assert
         using (Assert.Multiple())
@@ -496,7 +496,7 @@ internal class BenchmarkCli_RunTests
         try
         {
             // Act
-            var exitCode = new BenchmarkCli().Run(
+            var exitCode = BenchmarkCli.Run(
                 [
                     "compare",
                     "--baseline",

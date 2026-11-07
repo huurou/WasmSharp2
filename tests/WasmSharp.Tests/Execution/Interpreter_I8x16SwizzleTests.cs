@@ -13,7 +13,7 @@ internal class Interpreter_I8x16SwizzleTests
         0x87818E8088008F00UL
     )]
     [Arguments(0xFFFFFFFFFFFFFFFFUL, 0x1010101010101010UL, 0UL, 0UL)]
-    public async Task indexに15と16と255を含む_範囲内のbyteを選択し範囲外をゼロにする(
+    public async Task Indexに15と16と255を含む_範囲内のbyteを選択し範囲外をゼロにする(
         ulong indexLow64,
         ulong indexHigh64,
         ulong expectedLow64,

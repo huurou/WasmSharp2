@@ -38,22 +38,26 @@ internal sealed class AssetLoadingFixture : IDisposable
         SaveManifest();
     }
 
-    internal static List<BenchmarkCase> ReadCases() =>
-        JsonSerializer.Deserialize<List<BenchmarkCase>>(
+    internal static List<BenchmarkCase> ReadCases()
+    {
+        return JsonSerializer.Deserialize<List<BenchmarkCase>>(
             File.ReadAllText(
                 Path.Combine(AppContext.BaseDirectory, "Fixtures", "Data", "cases.json")
             ),
             CaseJson.Options
         )!;
+    }
 
-    internal static BenchmarkCase WithInput(BenchmarkCase definition, CaseInput input) =>
-        definition with
+    internal static BenchmarkCase WithInput(BenchmarkCase definition, CaseInput input)
+    {
+        return definition with
         {
             Input = input,
             InputHash = Convert.ToHexStringLower(
                 SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(input, CaseJson.Options))
             ),
         };
+    }
 
     internal void SaveCases()
     {
@@ -65,11 +69,13 @@ internal sealed class AssetLoadingFixture : IDisposable
         SaveManifest();
     }
 
-    internal void SaveManifest() =>
+    internal void SaveManifest()
+    {
         File.WriteAllBytes(
             ManifestPath,
             JsonSerializer.SerializeToUtf8Bytes(Manifest, CaseJson.Options)
         );
+    }
 
     internal void SaveManifest(AssetManifest manifest)
     {
@@ -77,13 +83,18 @@ internal sealed class AssetLoadingFixture : IDisposable
         SaveManifest();
     }
 
-    private ManifestFile FileDefinition(string path) =>
-        new(
+    private ManifestFile FileDefinition(string path)
+    {
+        return new(
             path,
             Convert.ToHexStringLower(
                 SHA256.HashData(File.ReadAllBytes(Path.Combine(DirectoryPath, path)))
             )
         );
+    }
 
-    public void Dispose() => Directory.Delete(rootDirectory_, recursive: true);
+    public void Dispose()
+    {
+        Directory.Delete(rootDirectory_, recursive: true);
+    }
 }

@@ -8,11 +8,6 @@ namespace WasmSharp.Execution;
 /// </summary>
 internal sealed class InterpreterContext
 {
-    /// <summary>
-    /// 現在のスレッドで同期呼び出しが共有する実行コンテキスト
-    /// </summary>
-    [ThreadStatic]
-    private static InterpreterContext? current_;
 
     /// <summary>
     /// 関数呼び出しのフレームを保持する配列
@@ -27,7 +22,8 @@ internal sealed class InterpreterContext
     /// <summary>
     /// 現在のスレッドの実行コンテキスト 実行中でなければnull
     /// </summary>
-    internal static InterpreterContext? Current => current_;
+    [field: ThreadStatic]
+    internal static InterpreterContext? Current { get; private set; }
 
     /// <summary>
     /// 実行中のフレームの定義関数
@@ -76,8 +72,8 @@ internal sealed class InterpreterContext
     /// <returns>同期呼び出しの間で共有する実行コンテキスト</returns>
     internal static InterpreterContext Enter(WasmExecutionOptions options, out bool isOutermost)
     {
-        isOutermost = current_ is null;
-        return current_ ??= new InterpreterContext(options);
+        isOutermost = Current is null;
+        return Current ??= new InterpreterContext(options);
     }
 
     /// <summary>
@@ -110,7 +106,7 @@ internal sealed class InterpreterContext
     {
         if (isOutermost)
         {
-            current_ = null;
+            Current = null;
         }
     }
 

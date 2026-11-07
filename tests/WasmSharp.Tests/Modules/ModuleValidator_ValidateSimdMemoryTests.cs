@@ -159,11 +159,11 @@ internal partial class ModuleValidator_ValidateTests
     )
     {
         var hasLane = opcode is >= 0x54 and <= 0x5B;
-        var store = opcode == 0x0B || opcode is >= 0x58 and <= 0x5B;
+        var store = opcode is 0x0B or >= 0x58 and <= 0x5B;
         var vectorInput = store || hasLane;
         byte[] address = [0x41, 0];
         byte[] vector = [0xFD, 0x0C, .. new byte[16]];
-        byte[] operands =
+        var operands =
             omitOperands ? []
             : vectorInput ? (reverse ? [.. vector, .. address] : [.. address, .. vector])
             : address;

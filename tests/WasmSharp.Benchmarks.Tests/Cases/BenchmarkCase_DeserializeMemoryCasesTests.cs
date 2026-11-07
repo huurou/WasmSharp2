@@ -8,6 +8,9 @@ namespace WasmSharp.Benchmarks.Tests.Cases;
 
 internal partial class BenchmarkCase_DeserializeTests
 {
+    private static readonly string[] expectedMemoryCaseIds_ = ["memory.copy-fill", "scan.scalar", "scan.simd"];
+    private static readonly string[] expectedFunctionExports_ = ["scalar", "simd"];
+
     [Test]
     public async Task メモリ素材の固定ケースを読む_公開操作数と入力hashを保持する()
     {
@@ -25,7 +28,7 @@ internal partial class BenchmarkCase_DeserializeTests
         {
             await Assert
                 .That(definitions.Select(x => x.CaseId))
-                .IsEquivalentTo(new[] { "memory.copy-fill", "scan.scalar", "scan.simd" });
+                .IsEquivalentTo(expectedMemoryCaseIds_);
             foreach (var definition in definitions)
             {
                 await Assert.That(definition.CaseRevision).IsEqualTo(1U);
@@ -115,11 +118,10 @@ internal partial class BenchmarkCase_DeserializeTests
             await Assert
                 .That(definition.Workload)
                 .IsEquivalentTo(
-                    new[]
-                    {
+                    [
                         new WorkloadQuantity("fill", 65536, WorkloadUnit.Bytes),
                         new WorkloadQuantity("copy", 65536, WorkloadUnit.Bytes),
-                    }
+                    ]
                 );
             // 各出力の末尾1バイトを加算するため、165+255=420
             await Assert
@@ -164,7 +166,7 @@ internal partial class BenchmarkCase_DeserializeTests
             await Assert.That(sum).IsEqualTo(2088960U);
             await Assert
                 .That(definitions.Select(x => x.Input.FunctionExport))
-                .IsEquivalentTo(new[] { "scalar", "simd" });
+                .IsEquivalentTo(expectedFunctionExports_);
             await Assert
                 .That(definitions.Select(x => x.AssetSha256).Distinct().Count())
                 .IsEqualTo(1);

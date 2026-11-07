@@ -137,7 +137,7 @@ internal class SourceCapture_BeforeTests
     [Arguments("clean", false)]
     [Arguments("untracked", true)]
     [Arguments("uninitialized", false)]
-    public async Task submoduleの状態が異なる_revisionと未コミット変更を記録する(
+    public async Task Submoduleの状態が異なる_revisionと未コミット変更を記録する(
         string state,
         bool dirty
     )

@@ -145,7 +145,7 @@ internal class RunStore_LoadTests
     }
 
     [Test]
-    public async Task raw一覧が正常でも時間指標の測定参照が欠落している_未完了として読み込む()
+    public async Task Raw一覧が正常でも時間指標の測定参照が欠落している_未完了として読み込む()
     {
         // Arrange
         using var fixture = new RunStoreFixture();

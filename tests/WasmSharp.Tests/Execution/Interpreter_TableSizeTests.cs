@@ -8,7 +8,7 @@ internal class Interpreter_TableSizeTests
     [Test]
     [Arguments(0U, 0)]
     [Arguments(1U, 3)]
-    public async Task tableを指定する_所属instanceの現在の要素数をi32で積む(
+    public async Task Tableを指定する_所属instanceの現在の要素数をi32で積む(
         uint tableIndex,
         int expected
     )

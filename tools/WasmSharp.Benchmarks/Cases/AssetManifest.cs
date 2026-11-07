@@ -13,7 +13,10 @@ internal sealed record AssetManifest(
     /// <summary>
     /// manifestの相対参照を照合し、計時前に素材と入力を読み込む
     /// </summary>
-    internal static LoadedAssets Load(string path) => LoadedAssets.Load(path);
+    internal static LoadedAssets Load(string path)
+    {
+        return LoadedAssets.Load(path);
+    }
 }
 
 /// <summary>

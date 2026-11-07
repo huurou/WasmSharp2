@@ -1,9 +1,9 @@
-using System.Text.Json;
 using BenchmarkDotNet.Diagnosers;
 using BenchmarkDotNet.Engines;
 using BenchmarkDotNet.Exporters.Csv;
 using BenchmarkDotNet.Exporters.Json;
 using BenchmarkDotNet.Jobs;
+using System.Text.Json;
 using WasmSharp.Benchmarks.Smoke;
 
 namespace WasmSharp.Benchmarks.Tests.Smoke;

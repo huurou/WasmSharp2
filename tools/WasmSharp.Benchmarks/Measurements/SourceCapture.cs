@@ -22,7 +22,7 @@ internal sealed class SourceCapture(string repositoryDirectory)
         var used = runtime.Files.Concat(harness.Files).Select(x => x.RelativePath).ToHashSet();
         var untracked = Git("ls-files", "--others", "--exclude-standard", "-z")
             .Split('\0', StringSplitOptions.RemoveEmptyEntries)
-            .Where(x => used.Contains(x))
+            .Where(used.Contains)
             .Order(StringComparer.Ordinal)
             .Select(x => store.SaveFile(x, File.ReadAllBytes(FullPath(x))))
             .ToList();
@@ -64,9 +64,7 @@ internal sealed class SourceCapture(string repositoryDirectory)
             Submodules(),
             runtime,
             harness,
-            assemblies
-                .Select(x => new AssemblyIdentity(x.Role, Path.GetFullPath(x.Path), Hash(x.Path)))
-                .ToList(),
+            [.. assemblies.Select(x => new AssemblyIdentity(x.Role, Path.GetFullPath(x.Path), Hash(x.Path)))],
             [],
             []
         );
@@ -125,13 +123,15 @@ internal sealed class SourceCapture(string repositoryDirectory)
         };
     }
 
-    private static bool IsProject(string path) =>
-        Path.GetExtension(path) is ".csproj" or ".props" or ".targets"
+    private static bool IsProject(string path)
+    {
+        return Path.GetExtension(path) is ".csproj" or ".props" or ".targets"
         || Path.GetFileName(path)
             is "global.json"
                 or "NuGet.Config"
                 or "nuget.config"
                 or "packages.lock.json";
+    }
 
     private (SourceSet Runtime, SourceSet Harness) Sources(string head, bool allowMissing = false)
     {
@@ -267,8 +267,9 @@ internal sealed class SourceCapture(string repositoryDirectory)
         return new(head, Convert.ToHexStringLower(SHA256.HashData(identity)), files);
     }
 
-    private List<SubmoduleRevision> Submodules() =>
-        Git("submodule", "status", "--recursive")
+    private List<SubmoduleRevision> Submodules()
+    {
+        return [.. Git("submodule", "status", "--recursive")
             .Split('\n', StringSplitOptions.RemoveEmptyEntries)
             .Select(x =>
             {
@@ -290,8 +291,8 @@ internal sealed class SourceCapture(string repositoryDirectory)
                             .Length != 0
                     );
                 return new SubmoduleRevision(path, parts[0], dirty);
-            })
-            .ToList();
+            })];
+    }
 
     private string RelativePath(string path)
     {
@@ -311,11 +312,18 @@ internal sealed class SourceCapture(string repositoryDirectory)
         return relativePath;
     }
 
-    private string FullPath(string path) => Path.Combine(repositoryDirectory_, path);
+    private string FullPath(string path)
+    {
+        return Path.Combine(repositoryDirectory_, path);
+    }
 
-    private string Git(params string[] arguments) =>
-        CaptureCommand.Run("git", repositoryDirectory_, arguments);
+    private string Git(params string[] arguments)
+    {
+        return CaptureCommand.Run("git", repositoryDirectory_, arguments);
+    }
 
-    private static string Hash(string path) =>
-        Convert.ToHexStringLower(SHA256.HashData(File.ReadAllBytes(path)));
+    private static string Hash(string path)
+    {
+        return Convert.ToHexStringLower(SHA256.HashData(File.ReadAllBytes(path)));
+    }
 }

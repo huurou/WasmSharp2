@@ -242,15 +242,14 @@ public class SuiteExecutor_ExecuteTests
         await Assert
             .That(report.Diagnostics)
             .IsEquivalentTo(
-                new[]
-                {
+                [
                     diagnostic,
                     new CorpusDiagnostic(
                         "verify",
                         "manifestに記録されていない素材があります。",
                         "modules/extra.wasm"
                     ),
-                }
+                ]
             );
     }
 
@@ -279,14 +278,13 @@ public class SuiteExecutor_ExecuteTests
             await Assert
                 .That(report.Inputs[0].Issues)
                 .IsEquivalentTo(
-                    new[]
-                    {
+                    [
                         new CorpusDiagnostic(
                             "verify",
                             "manifestに対象入力の記録がありません。",
                             CorpusFixture.A
                         ),
-                    }
+                    ]
                 );
             await Assert.That(report.Inputs[1].Cases[0].Outcome).IsEqualTo(CaseOutcome.Passed);
             await Assert

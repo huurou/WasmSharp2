@@ -207,7 +207,7 @@ internal class InterpreterContext_BranchTests
             }
             foreach (var value in cleared)
             {
-                await Assert.That(value).IsEqualTo(default(WasmValue));
+                await Assert.That(value).IsEqualTo(default);
             }
         }
     }

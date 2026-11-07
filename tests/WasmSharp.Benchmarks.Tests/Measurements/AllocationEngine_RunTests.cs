@@ -1,8 +1,8 @@
-using System.Runtime.CompilerServices;
 using BenchmarkDotNet.Engines;
 using BenchmarkDotNet.Jobs;
 using BenchmarkDotNet.Reports;
 using Perfolizer.Mathematics.OutlierDetection;
+using System.Runtime.CompilerServices;
 using WasmSharp.Benchmarks.Measurements;
 using WasmSharp.Benchmarks.Tests.Fixtures;
 
@@ -64,7 +64,7 @@ internal class AllocationEngine_RunTests
         {
             // Act & Assert
             var actual = await Assert
-                .That(() => engine.Run())
+                .That(engine.Run)
                 .ThrowsExactly<InvalidOperationException>();
             using (Assert.Multiple())
             {
@@ -110,7 +110,7 @@ internal class AllocationEngine_RunTests
 
         // Act & Assert
         var actual = await Assert
-            .That(() => engine.Run())
+            .That(engine.Run)
             .ThrowsExactly<InvalidOperationException>();
         using (Assert.Multiple())
         {
@@ -120,7 +120,7 @@ internal class AllocationEngine_RunTests
     }
 
     [Test]
-    public async Task workload内で例外を捕捉する_追加反復の操作数で例外頻度を返す()
+    public async Task Workload内で例外を捕捉する_追加反復の操作数で例外頻度を返す()
     {
         // Arrange
         var timing = new AllocationEngineFixture

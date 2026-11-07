@@ -61,11 +61,10 @@ internal partial class BenchmarkCase_DeserializeTests
             await Assert
                 .That(definition.Workload)
                 .IsEquivalentTo(
-                    new[]
-                    {
+                    [
                         new WorkloadQuantity("matrix_output", 1024, WorkloadUnit.Elements),
                         new WorkloadQuantity("multiply_accumulate", 32768, WorkloadUnit.Iterations),
-                    }
+                    ]
                 );
             await Assert
                 .That(definition.InputHash)

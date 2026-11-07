@@ -101,15 +101,22 @@ internal sealed class CaseCatalog
         }
     }
 
-    internal BenchmarkCase Get(string caseId) =>
-        definitions_.TryGetValue(caseId, out var definition)
+    internal BenchmarkCase Get(string caseId)
+    {
+        return definitions_.TryGetValue(caseId, out var definition)
             ? definition
             : throw new InvalidDataException($"ケース'{caseId}'は未登録です。");
+    }
 
-    internal string GetMeasurementMethod(string caseId) => methods_[Get(caseId).CaseId];
+    internal string GetMeasurementMethod(string caseId)
+    {
+        return methods_[Get(caseId).CaseId];
+    }
 
-    internal static string GetCaseId(string measurementMethod) =>
-        methods_.Single(x => x.Value == measurementMethod).Key;
+    internal static string GetCaseId(string measurementMethod)
+    {
+        return methods_.Single(x => x.Value == measurementMethod).Key;
+    }
 
     private static void CheckEqual(
         BenchmarkCase first,

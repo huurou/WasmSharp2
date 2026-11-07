@@ -19,9 +19,9 @@ internal class DecodedInstruction_WithoutImmediateTests
         {
             await Assert.That(instruction.Opcode).IsEqualTo(opcode);
             await Assert.That(instruction.ByteOffset).IsEqualTo(12345678901L);
-            await Assert.That(instruction.Immediate).IsEqualTo(default(WasmValue));
+            await Assert.That(instruction.Immediate).IsEqualTo(default);
             await Assert.That(instruction.Index).IsEqualTo(0u);
-            await Assert.That(instruction.BlockType).IsEqualTo(default(BlockType));
+            await Assert.That(instruction.BlockType).IsEqualTo(default);
             await Assert.That(instruction.Labels.IsDefault).IsFalse();
             await Assert.That(instruction.Labels).IsEmpty();
             await Assert.That(instruction.SelectTypes.IsDefault).IsFalse();
@@ -48,7 +48,7 @@ internal class DecodedInstruction_WithImmediateTests
         {
             await Assert.That(instruction.Immediate.AsF32Bits()).IsEqualTo(0xFFC12345u);
             await Assert.That(instruction.Index).IsEqualTo(0u);
-            await Assert.That(instruction.BlockType).IsEqualTo(default(BlockType));
+            await Assert.That(instruction.BlockType).IsEqualTo(default);
             await Assert.That(instruction.Labels.IsDefault).IsFalse();
             await Assert.That(instruction.Labels).IsEmpty();
             await Assert.That(instruction.SelectTypes.IsDefault).IsFalse();
@@ -72,8 +72,8 @@ internal class DecodedInstruction_WithIndexTests
         using (Assert.Multiple())
         {
             await Assert.That(instruction.Index).IsEqualTo(uint.MaxValue);
-            await Assert.That(instruction.Immediate).IsEqualTo(default(WasmValue));
-            await Assert.That(instruction.BlockType).IsEqualTo(default(BlockType));
+            await Assert.That(instruction.Immediate).IsEqualTo(default);
+            await Assert.That(instruction.BlockType).IsEqualTo(default);
             await Assert.That(instruction.Labels.IsDefault).IsFalse();
             await Assert.That(instruction.Labels).IsEmpty();
             await Assert.That(instruction.SelectTypes.IsDefault).IsFalse();
@@ -98,7 +98,7 @@ internal class DecodedInstruction_WithBlockTypeTests
         {
             await Assert.That(instruction.BlockType.Kind).IsEqualTo(BlockTypeKind.TypeIndex);
             await Assert.That(instruction.BlockType.TypeIndex).IsEqualTo(uint.MaxValue);
-            await Assert.That(instruction.Immediate).IsEqualTo(default(WasmValue));
+            await Assert.That(instruction.Immediate).IsEqualTo(default);
             await Assert.That(instruction.Index).IsEqualTo(0u);
             await Assert.That(instruction.Labels.IsDefault).IsFalse();
             await Assert.That(instruction.Labels).IsEmpty();
@@ -127,9 +127,9 @@ internal class DecodedInstruction_WithBranchTableTests
                 .That(instruction.Labels.SequenceEqual([2u, 0u, uint.MaxValue, 5u]))
                 .IsTrue();
             await Assert.That(instruction.Labels.IsDefault).IsFalse();
-            await Assert.That(instruction.Immediate).IsEqualTo(default(WasmValue));
+            await Assert.That(instruction.Immediate).IsEqualTo(default);
             await Assert.That(instruction.Index).IsEqualTo(0u);
-            await Assert.That(instruction.BlockType).IsEqualTo(default(BlockType));
+            await Assert.That(instruction.BlockType).IsEqualTo(default);
             await Assert.That(instruction.SelectTypes.IsDefault).IsFalse();
             await Assert.That(instruction.SelectTypes).IsEmpty();
         }
@@ -180,9 +180,9 @@ internal class DecodedInstruction_WithSelectTypesTests
         {
             await Assert.That(instruction.SelectTypes.SequenceEqual(expected)).IsTrue();
             await Assert.That(instruction.SelectTypes.IsDefault).IsFalse();
-            await Assert.That(instruction.Immediate).IsEqualTo(default(WasmValue));
+            await Assert.That(instruction.Immediate).IsEqualTo(default);
             await Assert.That(instruction.Index).IsEqualTo(0u);
-            await Assert.That(instruction.BlockType).IsEqualTo(default(BlockType));
+            await Assert.That(instruction.BlockType).IsEqualTo(default);
             await Assert.That(instruction.Labels.IsDefault).IsFalse();
             await Assert.That(instruction.Labels).IsEmpty();
         }

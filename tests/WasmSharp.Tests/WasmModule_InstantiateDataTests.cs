@@ -159,7 +159,7 @@ internal partial class WasmModule_InstantiateTests
 
         // Act
         var instance = module.Instantiate([]);
-        byte[] actual = new byte[5];
+        var actual = new byte[5];
         instance.GetMemory("memory").Read(0, actual);
 
         // Assert

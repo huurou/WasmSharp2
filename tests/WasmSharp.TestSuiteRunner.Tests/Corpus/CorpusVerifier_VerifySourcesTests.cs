@@ -91,7 +91,7 @@ internal class CorpusVerifier_VerifySourcesTests
         await Assert
             .That(diagnostics)
             .IsEquivalentTo(
-                new[] { new CorpusDiagnostic("verify", "元入力がありません。", "a.wast") }
+                [new CorpusDiagnostic("verify", "元入力がありません。", "a.wast")]
             );
     }
 

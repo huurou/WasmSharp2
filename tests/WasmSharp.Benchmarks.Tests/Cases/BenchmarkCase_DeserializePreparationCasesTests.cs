@@ -46,11 +46,10 @@ internal partial class BenchmarkCase_DeserializeTests
                 await Assert
                     .That(definition.Workload)
                     .IsEquivalentTo(
-                        new[]
-                        {
+                        [
                             new WorkloadQuantity("defined_functions", 256, WorkloadUnit.Functions),
                             new WorkloadQuantity("data", 65536, WorkloadUnit.Bytes),
-                        }
+                        ]
                     );
                 await Assert.That(definition.Input.FunctionExport).IsEqualTo("f254");
                 await Assert
@@ -106,8 +105,7 @@ internal partial class BenchmarkCase_DeserializeTests
                 await Assert
                     .That(definition.ExpectedResult.Globals)
                     .IsEquivalentTo(
-                        new[]
-                        {
+                        [
                             new GlobalExpectation(
                                 "seed",
                                 new NumericValue(NumericType.I32, 41.ToString("x8"))
@@ -116,7 +114,7 @@ internal partial class BenchmarkCase_DeserializeTests
                                 "start_result",
                                 new NumericValue(NumericType.I32, (41 + 1).ToString("x8"))
                             ),
-                        }
+                        ]
                     );
                 var table = definition.ExpectedResult.Tables.Single();
                 await Assert.That(table.ExportName).IsEqualTo("functions");
@@ -124,13 +122,12 @@ internal partial class BenchmarkCase_DeserializeTests
                 await Assert
                     .That(table.Elements)
                     .IsEquivalentTo(
-                        new[]
-                        {
+                        [
                             new TableElementExpectation(0, "f000"),
                             new TableElementExpectation(1, "f127"),
                             new TableElementExpectation(2, "f254"),
                             new TableElementExpectation(3, null),
-                        }
+                        ]
                     );
             }
         }

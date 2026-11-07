@@ -8,28 +8,20 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="TUnit" Version="1.66.16" />
+    <PackageReference Include="TUnit" Version="1.81.10" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\tools\WasmSharp.TestSuiteRunner\WasmSharp.TestSuiteRunner.csproj" />
     <!-- Linuxのapphostと同名の配置先ディレクトリが衝突しないよう、コピーはCopyConverterFixtureで行う。 -->
-    <ProjectReference
-      Include="Fixtures\ConverterFixture\ConverterFixture.csproj"
-      ReferenceOutputAssembly="false"
-      Private="false"
-    />
+    <ProjectReference Include="Fixtures\ConverterFixture\ConverterFixture.csproj" ReferenceOutputAssembly="false" Private="false" />
     <Compile Remove="Fixtures\ConverterFixture\**\*.cs" />
     <None Remove="Fixtures\ConverterFixture\**\*" />
     <None Update="Fixtures\Data\**\*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <Target Name="CopyConverterFixture" AfterTargets="Build">
-    <MSBuild
-      Projects="Fixtures\ConverterFixture\ConverterFixture.csproj"
-      Targets="GetTargetPath"
-      Properties="Configuration=$(Configuration);TargetFramework=$(TargetFramework)"
-    >
+    <MSBuild Projects="Fixtures\ConverterFixture\ConverterFixture.csproj" Targets="GetTargetPath" Properties="Configuration=$(Configuration);TargetFramework=$(TargetFramework)">
       <Output TaskParameter="TargetOutputs" ItemName="ConverterFixtureAssembly" />
     </MSBuild>
     <PropertyGroup>
@@ -38,11 +30,7 @@
     <ItemGroup>
       <ConverterFixtureFiles Include="$(ConverterFixtureOutput)**/*" />
     </ItemGroup>
-    <Copy
-      SourceFiles="@(ConverterFixtureFiles)"
-      DestinationFiles="@(ConverterFixtureFiles->'$(OutDir)ConverterFixture/%(RecursiveDir)%(Filename)%(Extension)')"
-      SkipUnchangedFiles="true"
-    >
+    <Copy SourceFiles="@(ConverterFixtureFiles)" DestinationFiles="@(ConverterFixtureFiles->'$(OutDir)ConverterFixture/%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true">
       <Output TaskParameter="CopiedFiles" ItemName="FileWrites" />
     </Copy>
   </Target>

@@ -839,6 +839,8 @@ internal class CorpusVerifier_VerifyTests
         }
     }
 
+    private static readonly int[] expectedCommandIndices_ = [0, 2];
+
     [Test]
     public async Task 同じ素材を複数commandが参照する_両方のcommandに参照数の理由を残す()
     {
@@ -860,7 +862,7 @@ internal class CorpusVerifier_VerifyTests
         using (Assert.Multiple())
         {
             await Assert.That(input.Modules).IsEmpty();
-            await Assert.That(input.ModuleIssues.Keys).IsEquivalentTo(new[] { 0, 2 });
+            await Assert.That(input.ModuleIssues.Keys).IsEquivalentTo(expectedCommandIndices_);
             foreach (var issue in input.ModuleIssues.Values)
             {
                 await Assert.That(issue.Path).IsEqualTo("modules/a.0.wasm");
@@ -918,8 +920,7 @@ internal class CorpusVerifier_VerifyTests
         await Assert
             .That(result.Diagnostics)
             .IsEquivalentTo(
-                new[]
-                {
+                [
                     new CorpusDiagnostic(
                         "verify",
                         "manifestに記録されていないリンクがあります。",
@@ -930,7 +931,7 @@ internal class CorpusVerifier_VerifyTests
                         "manifestに記録されていないリンクがあります。",
                         "modules/extra.wasm"
                     ),
-                }
+                ]
             );
     }
 

@@ -4,7 +4,7 @@ using WasmSharp.Tests.Fixtures;
 
 namespace WasmSharp.Tests.Instructions;
 
-internal class InstructionSet_TryGetTests
+internal partial class InstructionSet_TryGetTests
 {
     [Test]
     public async Task SIMD接続の固定付録にあるlane論理比較群_85命令の型効果と即値とhandlerが一致する()
@@ -13,10 +13,7 @@ internal class InstructionSet_TryGetTests
         var expected = Core2InstructionFixture
             .Read(0xFD)
             .Where(x =>
-                System.Text.RegularExpressions.Regex.IsMatch(
-                    x.Value,
-                    @"^(?:[if]\d+x\d+)\.(?:splat|extract_lane(?:_[su])?|replace_lane|eq|ne|lt(?:_[su])?|gt(?:_[su])?|le(?:_[su])?|ge(?:_[su])?|all_true|bitmask)$|^i8x16\.(?:shuffle|swizzle)$|^v128\.(?:not|and|andnot|or|xor|bitselect|any_true)$"
-                )
+                SimdInstructionRegex().IsMatch(x.Value)
             )
             .ToArray();
         var declarations = typeof(InstructionSet)
@@ -235,7 +232,7 @@ internal class InstructionSet_TryGetTests
             var width =
                 operation is "load" or "store" ? 16
                 : operation.Contains('x') ? 8
-                : int.Parse(System.Text.RegularExpressions.Regex.Match(operation, @"\d+").Value)
+                : int.Parse(DigitsRegex().Match(operation).Value)
                     / 8;
             var handler =
                 lane ? (store ? "V128StoreLane" : "V128LoadLane")
@@ -568,18 +565,12 @@ internal class InstructionSet_TryGetTests
 
     private static bool IsFloatSimd(string name)
     {
-        return System.Text.RegularExpressions.Regex.IsMatch(
-            name,
-            @"^f(?:32x4|64x2)\.(?:abs|neg|sqrt|add|sub|mul|div|ceil|floor|trunc|nearest|min|max|pmin|pmax|convert_.*|demote_.*|promote_.*)$|^i32x4\.trunc_sat_f(?:32x4|64x2)_[su](?:_zero)?$"
-        );
+        return FloatSimdRegex().IsMatch(name);
     }
 
     private static bool IsIntegerSimd(string name)
     {
-        return System.Text.RegularExpressions.Regex.IsMatch(
-            name,
-            @"^i(?:8x16|16x8|32x4|64x2)\.(?:abs|neg|popcnt|narrow_.*|shl|shr_[su]|add(?:_sat_[su])?|sub(?:_sat_[su])?|mul|min_[su]|max_[su]|avgr_u|extend_.*|extmul_.*|extadd_pairwise_.*|dot_.*|q15mulr_sat_s)$"
-        );
+        return IntegerSimdRegex().IsMatch(name);
     }
 
     // 固定Core2の型規則とopcode割当から求める期待値 製品の宣言は参照しない
@@ -622,4 +613,19 @@ internal class InstructionSet_TryGetTests
             _ => throw new ArgumentOutOfRangeException(nameof(code)),
         };
     }
+
+    [System.Text.RegularExpressions.GeneratedRegex(@"^(?:[if]\d+x\d+)\.(?:splat|extract_lane(?:_[su])?|replace_lane|eq|ne|lt(?:_[su])?|gt(?:_[su])?|le(?:_[su])?|ge(?:_[su])?|all_true|bitmask)$|^i8x16\.(?:shuffle|swizzle)$|^v128\.(?:not|and|andnot|or|xor|bitselect|any_true)$"
+    )]
+    private static partial System.Text.RegularExpressions.Regex SimdInstructionRegex();
+
+    [System.Text.RegularExpressions.GeneratedRegex(@"\d+")]
+    private static partial System.Text.RegularExpressions.Regex DigitsRegex();
+
+    [System.Text.RegularExpressions.GeneratedRegex(@"^f(?:32x4|64x2)\.(?:abs|neg|sqrt|add|sub|mul|div|ceil|floor|trunc|nearest|min|max|pmin|pmax|convert_.*|demote_.*|promote_.*)$|^i32x4\.trunc_sat_f(?:32x4|64x2)_[su](?:_zero)?$"
+    )]
+    private static partial System.Text.RegularExpressions.Regex FloatSimdRegex();
+
+    [System.Text.RegularExpressions.GeneratedRegex(@"^i(?:8x16|16x8|32x4|64x2)\.(?:abs|neg|popcnt|narrow_.*|shl|shr_[su]|add(?:_sat_[su])?|sub(?:_sat_[su])?|mul|min_[su]|max_[su]|avgr_u|extend_.*|extmul_.*|extadd_pairwise_.*|dot_.*|q15mulr_sat_s)$"
+    )]
+    private static partial System.Text.RegularExpressions.Regex IntegerSimdRegex();
 }

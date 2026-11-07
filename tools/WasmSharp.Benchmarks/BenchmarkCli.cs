@@ -11,13 +11,13 @@ namespace WasmSharp.Benchmarks;
 /// <summary>
 /// 素材確認・測定・保存結果比較の引数と終了値を扱う
 /// </summary>
-internal sealed class BenchmarkCli
+internal static class BenchmarkCli
 {
-    internal int Run(string[] args, TextWriter output, TextWriter error)
+    internal static int Run(string[] args, TextWriter output, TextWriter error)
     {
         try
         {
-            if (args is ["--help"] || args is ["check" or "run" or "compare", "--help"])
+            if (args is (["--help"]) or (["check" or "run" or "compare", "--help"]))
             {
                 WriteHelp(output);
                 return 0;
@@ -62,7 +62,7 @@ internal sealed class BenchmarkCli
         var assets = AssetManifest.Load(manifestPath);
         var caseIds =
             options["--case"] == "all"
-                ? assets.Catalog.Cases.Select(x => x.CaseId).Order(StringComparer.Ordinal).ToList()
+                ? [.. assets.Catalog.Cases.Select(x => x.CaseId).Order(StringComparer.Ordinal)]
                 : new List<string> { assets.Catalog.Get(options["--case"]).CaseId };
         var executable = Environment.ProcessPath!;
         var arguments = Environment.GetCommandLineArgs();
@@ -70,8 +70,8 @@ internal sealed class BenchmarkCli
             executable,
             Path.GetFileNameWithoutExtension(executable)
                 .Equals("dotnet", StringComparison.OrdinalIgnoreCase)
-                ? arguments.ToList()
-                : arguments.Skip(1).ToList(),
+                ? [.. arguments]
+                : [.. arguments.Skip(1)],
             Environment.CurrentDirectory
         );
         var repository = CaptureCommand
@@ -162,11 +162,10 @@ internal sealed class BenchmarkCli
                 current,
                 policyPath,
                 Convert.ToHexStringLower(SHA256.HashData(policyBytes)),
-                runs.SelectMany(x => x.PlannedCaseIds)
+                [.. runs.SelectMany(x => x.PlannedCaseIds)
                     .Concat(policy.Cases.Select(x => x.CaseId))
                     .Distinct(StringComparer.Ordinal)
-                    .Order(StringComparer.Ordinal)
-                    .ToList()
+                    .Order(StringComparer.Ordinal)]
             )
         );
         Directory.CreateDirectory(directory);
@@ -202,7 +201,7 @@ internal sealed class BenchmarkCli
                 "run一覧は空要素を含まないカンマ区切りで指定してください。"
             );
         }
-        return paths.Select(Path.GetFullPath).ToList();
+        return [.. paths.Select(Path.GetFullPath)];
     }
 
     private static void EnsureNewOutput(string directory)

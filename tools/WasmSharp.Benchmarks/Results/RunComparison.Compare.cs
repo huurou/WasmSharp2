@@ -31,13 +31,12 @@ internal static partial class RunComparison
         }
         return new(
             1,
-            baseline.Select(x => x.Reference).ToList(),
-            current.Select(x => x.Reference).ToList(),
+            [.. baseline.Select(x => x.Reference)],
+            [.. current.Select(x => x.Reference)],
             new(request.PolicyPath, request.PolicySha256),
-            request
+            [.. request
                 .CaseIds.Distinct(StringComparer.Ordinal)
-                .Select(x => CompareCase(x, baseline, current, policy, reasons))
-                .ToList()
+                .Select(x => CompareCase(x, baseline, current, policy, reasons))]
         );
     }
 
@@ -224,7 +223,7 @@ internal static partial class RunComparison
         );
         reasons.AddRange(time.Reasons);
         reasons.AddRange(allocation.Reasons);
-        reasons = reasons.Distinct().ToList();
+        reasons = [.. reasons.Distinct()];
         var blocked = reasons.Any(x => IsBlocking(x.Kind));
         var decision =
             blocked ? ComparisonDecision.Indeterminate
@@ -313,22 +312,26 @@ internal static partial class RunComparison
         return values;
     }
 
-    private static bool IsBlocking(ComparisonReasonKind kind) =>
-        kind
+    private static bool IsBlocking(ComparisonReasonKind kind)
+    {
+        return kind
             is ComparisonReasonKind.ConditionMismatch
                 or ComparisonReasonKind.CorrectnessFailure
                 or ComparisonReasonKind.InsufficientMeasurements
                 or ComparisonReasonKind.ExcessiveVariation
                 or ComparisonReasonKind.MissingPolicy;
+    }
 
-    private static bool IsReadFailure(Exception exception) =>
-        exception
+    private static bool IsReadFailure(Exception exception)
+    {
+        return exception
             is IOException
                 or InvalidDataException
                 or JsonException
                 or InvalidOperationException
                 or ArgumentException
                 or UnauthorizedAccessException;
+    }
 
     private sealed record ComparisonRun(
         string Directory,

@@ -45,7 +45,7 @@ internal sealed class RunStore
         {
             return [];
         }
-        return Directory
+        return [.. Directory
             .GetFiles(directory, "*.json")
             .Select(x =>
             {
@@ -57,8 +57,7 @@ internal sealed class RunStore
                     ),
                     JsonSerializer.Deserialize<ProcessCheck>(bytes, CaseJson.Options)!
                 );
-            })
-            .ToList();
+            })];
     }
 
     /// <summary>
@@ -78,7 +77,7 @@ internal sealed class RunStore
             {
                 CompletedAtUtc = null,
                 Status = ResultStatus.Incomplete,
-                PlannedCaseIds = manifest.PlannedCaseIds.ToList(),
+                PlannedCaseIds = [.. manifest.PlannedCaseIds],
                 Cases = [],
                 EnvironmentFile = null,
                 SourceFile = null,
@@ -157,7 +156,8 @@ internal sealed class RunStore
     /// <summary>
     /// run内に保存した素材一覧・ケース定義・Job設定のコピーを対応付ける
     /// </summary>
-    internal void SaveInputs(ManifestFile assets, ManifestFile cases, ManifestFile job) =>
+    internal void SaveInputs(ManifestFile assets, ManifestFile cases, ManifestFile job)
+    {
         SaveManifest(
             manifest_ with
             {
@@ -166,6 +166,7 @@ internal sealed class RunStore
                 JobSettingsFile = job,
             }
         );
+    }
 
     /// <summary>
     /// 収集済みの環境を保存してrunへ対応付ける
@@ -214,14 +215,18 @@ internal sealed class RunStore
     /// <summary>
     /// ケースごとの最終結果とraw・process検査の参照を追記する
     /// </summary>
-    internal void SaveCase(CaseRunResult result) =>
+    internal void SaveCase(CaseRunResult result)
+    {
         SaveManifest(manifest_ with { Cases = [.. manifest_.Cases, result] });
+    }
 
     /// <summary>
     /// runが未完了のまま終了するときも観測した原因を保持する
     /// </summary>
-    internal void SaveFailure(RunFailure failure) =>
+    internal void SaveFailure(RunFailure failure)
+    {
         SaveManifest(manifest_ with { Failures = [.. manifest_.Failures, failure] });
+    }
 
     /// <summary>
     /// 全予定ケースと保存参照を照合した後に、呼出元が判定した状態で完了を確定する
@@ -258,13 +263,16 @@ internal sealed class RunStore
         }
     }
 
-    private static bool HasCompletedCases(RunManifest manifest) =>
-        manifest.Cases.Count == manifest.PlannedCaseIds.Count
+    private static bool HasCompletedCases(RunManifest manifest)
+    {
+        return manifest.Cases.Count == manifest.PlannedCaseIds.Count
         && manifest.Cases.All(x => x.Status != ResultStatus.Incomplete)
         && manifest.Cases.Select(x => x.CaseId).ToHashSet().SetEquals(manifest.PlannedCaseIds);
+    }
 
-    private static RunManifest AsIncomplete(RunManifest manifest, string reason) =>
-        manifest with
+    private static RunManifest AsIncomplete(RunManifest manifest, string reason)
+    {
+        return manifest with
         {
             Status = ResultStatus.Incomplete,
             CompletedAtUtc = null,
@@ -282,6 +290,7 @@ internal sealed class RunStore
                 ),
             ],
         };
+    }
 
     private void VerifyReferences()
     {

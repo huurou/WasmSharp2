@@ -11,7 +11,7 @@ internal class Interpreter_TableGetTests
     [Arguments(WasmValueKind.FuncRef, true, 1U)]
     [Arguments(WasmValueKind.ExternRef, false, 1U)]
     [Arguments(WasmValueKind.ExternRef, true, 0U)]
-    public async Task tableと要素を指定する_所属instanceから型と参照同一性を保って取得する(
+    public async Task Tableと要素を指定する_所属instanceから型と参照同一性を保って取得する(
         WasmValueKind kind,
         bool isNull,
         uint tableIndex

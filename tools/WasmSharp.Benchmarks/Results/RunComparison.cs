@@ -206,19 +206,23 @@ internal static partial class RunComparison
         return checks;
     }
 
-    private static bool AssembliesUnchanged(RunSource source) =>
-        source.AssembliesBefore.Count == source.AssembliesAfter.Count
+    private static bool AssembliesUnchanged(RunSource source)
+    {
+        return source.AssembliesBefore.Count == source.AssembliesAfter.Count
         && source.AssembliesBefore.All(x =>
             source.AssembliesAfter.Any(y =>
                 y.Role == x.Role && y.Path == x.Path && y.Sha256 == x.Sha256
             )
         );
+    }
 
-    private static T Read<T>(string directory, ManifestFile file) =>
-        JsonSerializer.Deserialize<T>(
+    private static T Read<T>(string directory, ManifestFile file)
+    {
+        return JsonSerializer.Deserialize<T>(
             File.ReadAllBytes(Path.Combine(directory, file.RelativePath)),
             CaseJson.Options
         )!;
+    }
 }
 
 /// <summary>

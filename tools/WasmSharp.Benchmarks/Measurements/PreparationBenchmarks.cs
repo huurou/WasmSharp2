@@ -1,5 +1,5 @@
-using System.Collections.Immutable;
 using BenchmarkDotNet.Attributes;
+using System.Collections.Immutable;
 using WasmSharp.Benchmarks.Cases;
 
 namespace WasmSharp.Benchmarks.Measurements;
@@ -18,37 +18,64 @@ public class PreparationBenchmarks
     private WasmInstance lastInstance_ = null!;
 
     [GlobalSetup(Target = nameof(DecodeSmall))]
-    public void SetupDecodeSmall() => Setup(nameof(DecodeSmall));
+    public void SetupDecodeSmall()
+    {
+        Setup(nameof(DecodeSmall));
+    }
 
     [Benchmark(OperationsPerInvoke = 1)]
-    public WasmModule DecodeSmall() => lastModule_ = WasmModule.Decode(moduleBytes_.AsSpan());
+    public WasmModule DecodeSmall()
+    {
+        return lastModule_ = WasmModule.Decode(moduleBytes_.AsSpan());
+    }
 
     [GlobalSetup(Target = nameof(DecodeLarge))]
-    public void SetupDecodeLarge() => Setup(nameof(DecodeLarge));
+    public void SetupDecodeLarge()
+    {
+        Setup(nameof(DecodeLarge));
+    }
 
     [Benchmark(OperationsPerInvoke = 1)]
-    public WasmModule DecodeLarge() => lastModule_ = WasmModule.Decode(moduleBytes_.AsSpan());
+    public WasmModule DecodeLarge()
+    {
+        return lastModule_ = WasmModule.Decode(moduleBytes_.AsSpan());
+    }
 
     [GlobalSetup(Target = nameof(DecodeValidateSmall))]
-    public void SetupDecodeValidateSmall() => Setup(nameof(DecodeValidateSmall));
+    public void SetupDecodeValidateSmall()
+    {
+        Setup(nameof(DecodeValidateSmall));
+    }
 
     [Benchmark(OperationsPerInvoke = 1)]
-    public WasmModule DecodeValidateSmall() =>
-        lastModule_ = WasmModule.Decode(moduleBytes_.AsSpan()).Validate();
+    public WasmModule DecodeValidateSmall()
+    {
+        return lastModule_ = WasmModule.Decode(moduleBytes_.AsSpan()).Validate();
+    }
 
     [GlobalSetup(Target = nameof(DecodeValidateLarge))]
-    public void SetupDecodeValidateLarge() => Setup(nameof(DecodeValidateLarge));
+    public void SetupDecodeValidateLarge()
+    {
+        Setup(nameof(DecodeValidateLarge));
+    }
 
     [Benchmark(OperationsPerInvoke = 1)]
-    public WasmModule DecodeValidateLarge() =>
-        lastModule_ = WasmModule.Decode(moduleBytes_.AsSpan()).Validate();
+    public WasmModule DecodeValidateLarge()
+    {
+        return lastModule_ = WasmModule.Decode(moduleBytes_.AsSpan()).Validate();
+    }
 
     [GlobalSetup(Target = nameof(InstantiateLarge))]
-    public void SetupInstantiateLarge() => Setup(nameof(InstantiateLarge));
+    public void SetupInstantiateLarge()
+    {
+        Setup(nameof(InstantiateLarge));
+    }
 
     [Benchmark(OperationsPerInvoke = 1)]
-    public WasmInstance InstantiateLarge() =>
-        lastInstance_ = validatedModule_.Instantiate(imports_);
+    public WasmInstance InstantiateLarge()
+    {
+        return lastInstance_ = validatedModule_.Instantiate(imports_);
+    }
 
     [GlobalCleanup]
     public void Cleanup()
@@ -61,12 +88,14 @@ public class PreparationBenchmarks
         process_.Cleanup(CheckLastResult);
     }
 
-    private void CheckLastResult() =>
+    private void CheckLastResult()
+    {
         Verify(
             definition_.MeasurementStage == MeasurementStage.Instantiate
                 ? new InstanceObservation(lastInstance_)
                 : new ModuleObservation(lastModule_)
         );
+    }
 
     internal void Initialize(LoadedAssets assets, string caseId)
     {

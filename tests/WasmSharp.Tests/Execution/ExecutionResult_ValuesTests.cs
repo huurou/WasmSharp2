@@ -102,7 +102,7 @@ internal class ExecutionResult_TrapTests
     }
 
     [Test]
-    public async Task trapの診断種別と要素添字を指定する_原因と位置に加えて診断情報を保持する()
+    public async Task Trapの診断種別と要素添字を指定する_原因と位置に加えて診断情報を保持する()
     {
         // Act
         var result = ExecutionResult.Trap(

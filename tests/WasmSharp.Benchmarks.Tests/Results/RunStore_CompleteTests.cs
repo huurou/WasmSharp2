@@ -14,7 +14,7 @@ internal class RunStore_CompleteTests
     [Arguments("source/worktree.patch", true)]
     [Arguments("tools/WasmSharp.Benchmarks/New.cs", false)]
     [Arguments("tools/WasmSharp.Benchmarks/New.cs", true)]
-    public async Task sourceの保存参照が欠落または変更される_完了を拒否して未完了を保持する(
+    public async Task Sourceの保存参照が欠落または変更される_完了を拒否して未完了を保持する(
         string relativePath,
         bool changed
     )

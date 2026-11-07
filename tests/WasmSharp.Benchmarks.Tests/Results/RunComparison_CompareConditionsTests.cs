@@ -1,6 +1,6 @@
+using BenchmarkDotNet.Jobs;
 using System.Security.Cryptography;
 using System.Text.Json;
-using BenchmarkDotNet.Jobs;
 using WasmSharp.Benchmarks.Cases;
 using WasmSharp.Benchmarks.Measurements;
 using WasmSharp.Benchmarks.Results;
@@ -298,7 +298,7 @@ internal class RunComparison_CompareConditionsTests
     }
 
     [Test]
-    public async Task repository名の接頭辞だけを共有する外部pathを渡す_未知のbuild引数の差を保持する()
+    public async Task Repository名の接頭辞だけを共有する外部pathを渡す_未知のbuild引数の差を保持する()
     {
         // Arrange
         using var baseline = new RunComparisonFixture("before", "before");
@@ -700,7 +700,7 @@ internal class RunComparison_CompareConditionsTests
             {
                 Revision = "new-runtime",
                 Sha256 = "new-runtime-hash",
-                Files = current
+                Files = [.. current
                     .Source.Runtime.Files.Select(x =>
                         x.RelativePath.EndsWith(".cs", StringComparison.Ordinal)
                             ? x with
@@ -708,8 +708,7 @@ internal class RunComparison_CompareConditionsTests
                                 Sha256 = "changed-code",
                             }
                             : x
-                    )
-                    .ToList(),
+                    )],
             },
             Harness = current.Source.Harness with { Revision = "new-head" },
         };
@@ -988,7 +987,7 @@ internal class RunComparison_CompareConditionsTests
     [Arguments(ResultStatus.Failed)]
     [Arguments(ResultStatus.Unavailable)]
     [Arguments(ResultStatus.Incomplete)]
-    public async Task runまたはcaseが成功していない_正常性能runと比較できない(ResultStatus status)
+    public async Task Runまたはcaseが成功していない_正常性能runと比較できない(ResultStatus status)
     {
         // Arrange
         using var baseline = new RunComparisonFixture("before", "before");
@@ -1052,11 +1051,10 @@ internal class RunComparison_CompareConditionsTests
             Changes = listed ? [new(kind, "changed", "before", "after")] : [],
             AssembliesAfter = listed
                 ? current.Source.AssembliesAfter
-                : current
+                : [.. current
                     .Source.AssembliesAfter.Select(x =>
                         x.Role == AssemblyRole.Runtime ? x with { Sha256 = "changed-runtime" } : x
-                    )
-                    .ToList(),
+                    )],
         };
         baseline.Save();
         current.Save();
@@ -1136,13 +1134,12 @@ internal class RunComparison_CompareConditionsTests
             {
                 Command = current.Environment.Command with
                 {
-                    Arguments = current
+                    Arguments = [.. current
                         .Environment.Command.Arguments.Select(x =>
                             x.EndsWith(".csproj", StringComparison.Ordinal)
                                 ? "tools/WasmSharp.Benchmarks/WasmSharp.Benchmarks.csproj"
                                 : x
-                        )
-                        .ToList(),
+                        )],
                 },
             };
         }
@@ -1164,7 +1161,7 @@ internal class RunComparison_CompareConditionsTests
     [Test]
     [Arguments("WasmSharp.Benchmarks.csproj", true)]
     [Arguments("Other.csproj", false)]
-    public async Task project配下のcwdから相対指定する_同じprojectだけを同条件として扱う(
+    public async Task Project配下のcwdから相対指定する_同じprojectだけを同条件として扱う(
         string project,
         bool comparable
     )
@@ -1180,11 +1177,10 @@ internal class RunComparison_CompareConditionsTests
                     current.RepositoryDirectory,
                     "tools/WasmSharp.Benchmarks"
                 ),
-                Arguments = current
+                Arguments = [.. current
                     .Environment.Command.Arguments.Select(x =>
                         x.EndsWith(".csproj", StringComparison.Ordinal) ? project : x
-                    )
-                    .ToList(),
+                    )],
             },
         };
         baseline.Save();
@@ -1293,7 +1289,7 @@ internal class RunComparison_CompareConditionsTests
                 {
                     Harness = fixture.Source.Harness with
                     {
-                        Files = fixture
+                        Files = [.. fixture
                             .Source.Harness.Files.Select(x =>
                                 x.RelativePath == harnessPath
                                     ? x with
@@ -1301,8 +1297,7 @@ internal class RunComparison_CompareConditionsTests
                                         Sha256 = "different-harness",
                                     }
                                     : x
-                            )
-                            .ToList(),
+                            )],
                     },
                 };
                 break;
@@ -1316,11 +1311,10 @@ internal class RunComparison_CompareConditionsTests
                 {
                     Runtime = fixture.Source.Runtime with
                     {
-                        Files = fixture
+                        Files = [.. fixture
                             .Source.Runtime.Files.Select(x =>
                                 x.RelativePath == path ? x with { Sha256 = "different-build" } : x
-                            )
-                            .ToList(),
+                            )],
                     },
                 };
                 break;
@@ -1411,9 +1405,8 @@ internal class RunComparison_CompareConditionsTests
                 {
                     Command = environment.Command with
                     {
-                        Arguments = environment
-                            .Command.Arguments.Select(x => x == "-c" ? "--verbosity" : x)
-                            .ToList(),
+                        Arguments = [.. environment
+                            .Command.Arguments.Select(x => x == "-c" ? "--verbosity" : x)],
                     },
                 };
                 break;
@@ -1422,7 +1415,7 @@ internal class RunComparison_CompareConditionsTests
                 {
                     Command = environment.Command with
                     {
-                        Arguments = environment
+                        Arguments = [.. environment
                             .Command.Arguments.Select(x =>
                                 x.EndsWith(".csproj", StringComparison.Ordinal)
                                     ? Path.Combine(
@@ -1430,8 +1423,7 @@ internal class RunComparison_CompareConditionsTests
                                         "alternate/Benchmarks.csproj"
                                     )
                                     : x
-                            )
-                            .ToList(),
+                            )],
                     },
                 };
                 break;

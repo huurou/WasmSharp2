@@ -6,7 +6,7 @@ namespace WasmSharp.Benchmarks.Tests.Results;
 internal class RunStore_SaveFileTests
 {
     [Test]
-    public async Task runの外を保存先に指定する_書き込みを拒否する()
+    public async Task Runの外を保存先に指定する_書き込みを拒否する()
     {
         // Arrange
         using var fixture = new RunStoreFixture();

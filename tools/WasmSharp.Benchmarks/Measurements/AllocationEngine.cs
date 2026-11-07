@@ -1,9 +1,9 @@
-using System.Runtime.CompilerServices;
-using System.Runtime.ExceptionServices;
 using BenchmarkDotNet.Characteristics;
 using BenchmarkDotNet.Engines;
 using BenchmarkDotNet.Jobs;
 using BenchmarkDotNet.Reports;
+using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 
 namespace WasmSharp.Benchmarks.Measurements;
 
@@ -76,8 +76,10 @@ internal sealed class AllocationEngine(
         }
     }
 
-    private void OnFirstChanceException(object? sender, FirstChanceExceptionEventArgs arguments) =>
+    private void OnFirstChanceException(object? sender, FirstChanceExceptionEventArgs arguments)
+    {
         Interlocked.Increment(ref exceptionCount_);
+    }
 
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
     private GcStats MeasureAllocations(long invokeCount)
@@ -88,11 +90,23 @@ internal sealed class AllocationEngine(
         return final - initial;
     }
 
-    public Measurement RunIteration(IterationData data) => timingEngine.RunIteration(data);
+    public Measurement RunIteration(IterationData data)
+    {
+        return timingEngine.RunIteration(data);
+    }
 
-    public void WriteLine() => timingEngine.WriteLine();
+    public void WriteLine()
+    {
+        timingEngine.WriteLine();
+    }
 
-    public void WriteLine(string line) => timingEngine.WriteLine(line);
+    public void WriteLine(string line)
+    {
+        timingEngine.WriteLine(line);
+    }
 
-    public void Dispose() => timingEngine.Dispose();
+    public void Dispose()
+    {
+        timingEngine.Dispose();
+    }
 }

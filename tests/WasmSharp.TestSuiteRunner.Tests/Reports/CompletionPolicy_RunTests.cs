@@ -5,6 +5,12 @@ namespace WasmSharp.TestSuiteRunner.Tests.Reports;
 
 internal class CompletionPolicy_RunTests
 {
+    private static readonly string[] expectedReasons_ =
+                    [
+                        "入力単位のrunner_errorが2件あります。",
+                        "操作全体の診断が1件あります。",
+                    ];
+
     [Test]
     public async Task 複数入力の異常と操作全体の診断がある_各種類の合計件数を報告する()
     {
@@ -28,11 +34,7 @@ internal class CompletionPolicy_RunTests
             await Assert
                 .That(decision.Reasons)
                 .IsEquivalentTo(
-                    new[]
-                    {
-                        "入力単位のrunner_errorが2件あります。",
-                        "操作全体の診断が1件あります。",
-                    }
+                    expectedReasons_
                 );
         }
     }

@@ -36,13 +36,6 @@ public delegate WasmResults WasmHostInstanceCallback(
 /// <remarks>module名とitem名は大文字・小文字を区別して完全一致で照合する。登録した実体は複製せず共有する</remarks>
 public sealed class WasmHostModule
 {
-    /// <summary>
-    /// item名から共有する外部実体への対応
-    /// </summary>
-    private ImmutableDictionary<string, ExternalValue> items_ = ImmutableDictionary.Create<
-        string,
-        ExternalValue
-    >(StringComparer.Ordinal);
 
     /// <summary>
     /// importの名前解決で使うmodule名
@@ -52,7 +45,10 @@ public sealed class WasmHostModule
     /// <summary>
     /// 現在の名前と実体の対応を、後続の定義変更に影響されない形で取得する
     /// </summary>
-    internal ImmutableDictionary<string, ExternalValue> Snapshot => items_;
+    internal ImmutableDictionary<string, ExternalValue> Snapshot { get; private set; } = ImmutableDictionary.Create<
+        string,
+        ExternalValue
+    >(StringComparer.Ordinal);
 
     /// <summary>
     /// 空のmodule名を持つ提供元を構築する
@@ -133,6 +129,6 @@ public sealed class WasmHostModule
     private void Define(string name, ExternalValue value)
     {
         ArgumentNullException.ThrowIfNull(name);
-        items_ = items_.Add(name, value);
+        Snapshot = Snapshot.Add(name, value);
     }
 }

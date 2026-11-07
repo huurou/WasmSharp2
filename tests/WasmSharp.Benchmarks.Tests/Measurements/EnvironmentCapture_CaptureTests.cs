@@ -12,7 +12,7 @@ using WasmSharp.Benchmarks.Tests.Fixtures;
 
 namespace WasmSharp.Benchmarks.Tests.Measurements;
 
-internal class EnvironmentCapture_CaptureTests
+internal partial class EnvironmentCapture_CaptureTests
 {
     [Test]
     public async Task 現在の採取processを記録する_GCとJITと保存したruntimeconfigの識別情報を保持する()
@@ -46,10 +46,7 @@ internal class EnvironmentCapture_CaptureTests
                 await Assert.That(windowsBefore.CpuNames).Contains(captured.Cpu);
                 if (windowsBefore.PowerPlan == windowsAfter.PowerPlan)
                 {
-                    var plan = Regex.Match(
-                        windowsBefore.PowerPlan,
-                        @"(?<id>[0-9a-fA-F-]{36})\s+\((?<name>.*)\)$"
-                    );
+                    var plan = PowerPlanRegex().Match(windowsBefore.PowerPlan);
                     await Assert.That(plan.Success).IsTrue();
                     await Assert
                         .That(captured.Power.PlanId)
@@ -209,4 +206,8 @@ internal class EnvironmentCapture_CaptureTests
     }
 
     private sealed record WindowsEnvironment(List<string> CpuNames, string PowerPlan);
+
+    [GeneratedRegex(@"(?<id>[0-9a-fA-F-]{36})\s+\((?<name>.*)\)$"
+    )]
+    private static partial Regex PowerPlanRegex();
 }

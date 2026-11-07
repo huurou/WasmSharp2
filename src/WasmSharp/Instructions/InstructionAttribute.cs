@@ -176,5 +176,6 @@ internal sealed class InstructionAttribute(
             StackEffectKind.Unsupported,
             ValidationRule.Unsupported,
             null
-        ) { }
+        )
+    { }
 }

@@ -43,7 +43,7 @@ internal partial class WasmModule_ValidateTests
     [Test]
     [Arguments(1)]
     [Arguments(2)]
-    public async Task passiveまたはdeclarativeの要素列が空_テーブルなしでも検証に成功する(int mode)
+    public async Task Passiveまたはdeclarativeの要素列が空_テーブルなしでも検証に成功する(int mode)
     {
         // Arrange
         var module = CreateElementValidationModule(
@@ -127,7 +127,7 @@ internal partial class WasmModule_ValidateTests
     }
 
     [Test]
-    public async Task activeの後続要素式と対象tableがともに不正_全要素式の検証をtable検査より優先する()
+    public async Task Activeの後続要素式と対象tableがともに不正_全要素式の検証をtable検査より優先する()
     {
         // Arrange
         var module = CreateElementValidationModule(
@@ -170,7 +170,7 @@ internal partial class WasmModule_ValidateTests
     [Test]
     [Arguments(0u)]
     [Arguments(uint.MaxValue)]
-    public async Task activeのtableとoffsetがともに不正_tableの存在を先に検査する(uint tableIndex)
+    public async Task Activeのtableとoffsetがともに不正_tableの存在を先に検査する(uint tableIndex)
     {
         // Arrange
         var module = CreateElementValidationModule(
@@ -217,7 +217,7 @@ internal partial class WasmModule_ValidateTests
     }
 
     [Test]
-    public async Task activeのtable参照型とoffsetがともに不正_参照型の照合を先に行う()
+    public async Task Activeのtable参照型とoffsetがともに不正_参照型の照合を先に行う()
     {
         // Arrange
         var module = CreateElementValidationModule(
@@ -259,7 +259,7 @@ internal partial class WasmModule_ValidateTests
     }
 
     [Test]
-    public async Task activeのoffsetがI64を返す_要素セクションのoffset終端で型不一致になる()
+    public async Task ActiveのoffsetがI64を返す_要素セクションのoffset終端で型不一致になる()
     {
         // Arrange
         var module = CreateElementValidationModule(
@@ -303,7 +303,7 @@ internal partial class WasmModule_ValidateTests
     [Test]
     [Arguments(0u, WasmValueKind.ExternRef)]
     [Arguments(1u, WasmValueKind.FuncRef)]
-    public async Task activeがimportまたは定義tableを参照する_importを先頭とした型列で検証する(
+    public async Task Activeがimportまたは定義tableを参照する_importを先頭とした型列で検証する(
         uint tableIndex,
         WasmValueKind kind
     )

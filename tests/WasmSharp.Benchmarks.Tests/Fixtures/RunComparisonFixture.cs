@@ -109,7 +109,7 @@ internal sealed class RunComparisonFixture : IDisposable
                 ],
             },
         };
-        Cases = JsonSerializer
+        Cases = [.. JsonSerializer
             .Deserialize<List<BenchmarkCase>>(
                 File.ReadAllBytes(
                     Path.Combine(AppContext.BaseDirectory, "Fixtures", "Data", "cases.json")
@@ -117,8 +117,7 @@ internal sealed class RunComparisonFixture : IDisposable
                 CaseJson.Options
             )!
             .Where(x => x.CaseId == "invoke.single")
-            .Select(x => x with { Workload = [new("calls", 1, WorkloadUnit.Iterations)] })
-            .ToList();
+            .Select(x => x with { Workload = [new("calls", 1, WorkloadUnit.Iterations)] })];
         Assets = new(
             1,
             new("core2-profile.json", "profile-hash"),
@@ -144,7 +143,7 @@ internal sealed class RunComparisonFixture : IDisposable
                 ),
             ]
         );
-        Jobs = Environment.Processes.ToList();
+        Jobs = [.. Environment.Processes];
     }
 
     internal void SetCases(List<BenchmarkCase> cases)
@@ -152,14 +151,12 @@ internal sealed class RunComparisonFixture : IDisposable
         Cases = cases;
         Manifest = Manifest with
         {
-            PlannedCaseIds = cases.Select(x => x.CaseId).ToList(),
-            Cases = cases
-                .Select(x => template_.Manifest.Cases.Single() with { CaseId = x.CaseId })
-                .ToList(),
+            PlannedCaseIds = [.. cases.Select(x => x.CaseId)],
+            Cases = [.. cases.Select(x => template_.Manifest.Cases.Single() with { CaseId = x.CaseId })],
         };
         Assets = Assets with
         {
-            Assets = cases
+            Assets = [.. cases
                 .DistinctBy(x => x.AssetId)
                 .Select(x =>
                     Assets.Assets.Single() with
@@ -167,8 +164,7 @@ internal sealed class RunComparisonFixture : IDisposable
                         AssetId = x.AssetId,
                         Binary = new("wasm/" + x.AssetId + ".wasm", x.AssetSha256),
                     }
-                )
-                .ToList(),
+                )],
         };
     }
 
@@ -246,8 +242,13 @@ internal sealed class RunComparisonFixture : IDisposable
         }
     }
 
-    private static ManifestFile SaveJson<T>(RunStore store, string path, T value) =>
-        store.SaveFile(path, JsonSerializer.SerializeToUtf8Bytes(value, CaseJson.Options));
+    private static ManifestFile SaveJson<T>(RunStore store, string path, T value)
+    {
+        return store.SaveFile(path, JsonSerializer.SerializeToUtf8Bytes(value, CaseJson.Options));
+    }
 
-    public void Dispose() => template_.Dispose();
+    public void Dispose()
+    {
+        template_.Dispose();
+    }
 }

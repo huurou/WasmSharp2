@@ -75,7 +75,7 @@ internal class ReferenceValidationContext_CreateTests
     }
 
     [Test]
-    public async Task global式と関数exportがある_重複を除いて未検証の関数添字を宣言する()
+    public async Task Global式と関数exportがある_重複を除いて未検証の関数添字を宣言する()
     {
         // Arrange
         var module = new WasmModule(
@@ -133,20 +133,20 @@ internal class ReferenceValidationContext_CreateTests
                 ElementDefinition.Active(
                     WasmValueKind.FuncRef,
                     [
-                        new[] { DecodedInstruction.WithIndex(new(0, 0xD2), 1, 21) },
-                        new[] { DecodedInstruction.WithIndex(new(0, 0xD2), 2, 23) },
+                        [DecodedInstruction.WithIndex(new(0, 0xD2), 1, 21)],
+                        [DecodedInstruction.WithIndex(new(0, 0xD2), 2, 23)],
                     ],
                     new(uint.MaxValue, [DecodedInstruction.WithIndex(new(0, 0xD2), 3, 25)]),
                     20
                 ),
                 ElementDefinition.Passive(
                     WasmValueKind.FuncRef,
-                    [new[] { DecodedInstruction.WithIndex(new(0, 0xD2), 4, 41) }],
+                    [[DecodedInstruction.WithIndex(new(0, 0xD2), 4, 41)]],
                     40
                 ),
                 ElementDefinition.Declarative(
                     WasmValueKind.FuncRef,
-                    [new[] { DecodedInstruction.WithIndex(new(0, 0xD2), 5, 61) }],
+                    [[DecodedInstruction.WithIndex(new(0, 0xD2), 5, 61)]],
                     60
                 ),
             ]
@@ -203,7 +203,7 @@ internal class ReferenceValidationContext_CreateTests
             [
                 ElementDefinition.Active(
                     WasmValueKind.ExternRef,
-                    [new[] { DecodedInstruction.WithIndex(new(0, 0x10), 7, 61) }],
+                    [[DecodedInstruction.WithIndex(new(0, 0x10), 7, 61)]],
                     new(0, [DecodedInstruction.WithIndex(new(0, 0x10), 8, 63)]),
                     60
                 ),
@@ -258,7 +258,7 @@ internal class ReferenceValidationContext_CreateTests
     }
 
     [Test]
-    public async Task moduleが空である_既定値でない空の不変情報を返す()
+    public async Task Moduleが空である_既定値でない空の不変情報を返す()
     {
         // Arrange
         var module = new WasmModule([], [], [], 8, [], [], [], [], null);

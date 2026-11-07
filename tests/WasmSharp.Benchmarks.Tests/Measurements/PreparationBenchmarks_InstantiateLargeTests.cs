@@ -12,7 +12,7 @@ internal class PreparationBenchmarks_InstantiateLargeTests
         var benchmark = new PreparationBenchmarks();
         benchmark.Initialize(PreparationFixture.CreateAssets(), "instantiate.large");
         var first = benchmark.InstantiateLarge();
-        first.GetMemory("memory").Write(0, new byte[] { 0xff });
+        first.GetMemory("memory").Write(0, [0xff]);
         first.GetTable("functions").Set(0, WasmValue.FromFuncRef(null));
         first.GetGlobalResource("start_result").Value = WasmValue.FromI32(-1);
 

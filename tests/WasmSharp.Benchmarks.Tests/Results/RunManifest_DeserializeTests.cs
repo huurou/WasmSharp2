@@ -10,7 +10,7 @@ internal class RunManifest_DeserializeTests
     [Test]
     [Arguments("run-succeeded.json")]
     [Arguments("run-failed.json")]
-    public async Task runのfixtureを往復保存する_成否と指標と同定情報を保持する(string name)
+    public async Task Runのfixtureを往復保存する_成否と指標と同定情報を保持する(string name)
     {
         // Arrange
         var json = await ReadFixtureAsync(name);

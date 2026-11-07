@@ -55,13 +55,12 @@ internal partial class BenchmarkCase_DeserializeTests
             await Assert
                 .That(
                     restored.ExpectedResult.Values.SequenceEqual(
-                        new NumericValue[]
-                        {
+                        [
                             new(NumericType.I32, "ffffffff"),
                             new(NumericType.I64, "ffffffffffffffff"),
                             new(NumericType.F32, "80000000"),
                             new(NumericType.F64, "7ff8000000000042"),
-                        }
+                        ]
                     )
                 )
                 .IsTrue();
@@ -118,7 +117,7 @@ internal partial class BenchmarkCase_DeserializeTests
     }
 
     [Test]
-    public async Task bit列がnullである_値のない期待値を拒否する()
+    public async Task Bit列がnullである_値のない期待値を拒否する()
     {
         // Arrange
         var fixture = JsonNode.Parse(await ReadFixtureAsync())!;

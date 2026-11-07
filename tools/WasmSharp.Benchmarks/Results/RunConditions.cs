@@ -32,9 +32,8 @@ internal sealed class RunConditions(string runId)
             "case",
             definition with
             {
-                Workload = definition
-                    .Workload.OrderBy(x => x.Name, StringComparer.Ordinal)
-                    .ToList(),
+                Workload = [.. definition
+                    .Workload.OrderBy(x => x.Name, StringComparer.Ordinal)],
             }
         );
         conditions.Add("assets.schema_version", assets.SchemaVersion);
@@ -44,7 +43,7 @@ internal sealed class RunConditions(string runId)
             "asset.binary",
             new
             {
-                Path = "binary:" + paths.AssetPath(asset.Binary.RelativePath),
+                Path = "binary:" + ConditionPaths.AssetPath(asset.Binary.RelativePath),
                 asset.Binary.Sha256,
             }
         );
@@ -117,10 +116,10 @@ internal sealed class RunConditions(string runId)
         conditions.Add(
             "process.affinity",
             jobs.Select(x => new
-                {
-                    Configuration = Processes([x], paths).Single(),
-                    Mask = checks.First(y => y.JobId == x.JobId).AffinityBefore,
-                })
+            {
+                Configuration = Processes([x], paths).Single(),
+                Mask = checks.First(y => y.JobId == x.JobId).AffinityBefore,
+            })
                 .OrderBy(x => JsonSerializer.Serialize(x, CaseJson.Options), StringComparer.Ordinal)
                 .ToArray()
         );
@@ -128,10 +127,10 @@ internal sealed class RunConditions(string runId)
         conditions.Add(
             "process.runtime",
             jobs.Select(x => new
-                {
-                    Configuration = Processes([x], paths).Single(),
-                    Version = checks.First(y => y.JobId == x.JobId).RuntimeVersion,
-                })
+            {
+                Configuration = Processes([x], paths).Single(),
+                Version = checks.First(y => y.JobId == x.JobId).RuntimeVersion,
+            })
                 .OrderBy(x => JsonSerializer.Serialize(x, CaseJson.Options), StringComparer.Ordinal)
                 .ToArray()
         );
@@ -142,8 +141,9 @@ internal sealed class RunConditions(string runId)
     private static SortedDictionary<string, string> Settings(
         IEnumerable<NamedSetting> settings,
         ConditionPaths paths
-    ) =>
-        new(
+    )
+    {
+        return new(
             settings
                 .Where(x =>
                     x.Name
@@ -159,12 +159,14 @@ internal sealed class RunConditions(string runId)
                 ),
             StringComparer.Ordinal
         );
+    }
 
     private static object[] Processes(
         IEnumerable<ProcessConfiguration> processes,
         ConditionPaths paths
-    ) =>
-        processes
+    )
+    {
+        return [.. processes
             .Select(x => new
             {
                 x.Role,
@@ -174,11 +176,13 @@ internal sealed class RunConditions(string runId)
                 EnvironmentVariables = Settings(x.EnvironmentVariables, paths),
             })
             .OrderBy(x => JsonSerializer.Serialize(x, CaseJson.Options), StringComparer.Ordinal)
-            .Cast<object>()
-            .ToArray();
+            .Cast<object>()];
+    }
 
-    private void Add<T>(string name, T value) =>
+    private void Add<T>(string name, T value)
+    {
         Flatten(name, JsonSerializer.SerializeToElement(value, CaseJson.Options));
+    }
 
     private void Flatten(string name, JsonElement value)
     {
@@ -285,7 +289,7 @@ internal sealed class ConditionPaths
             }
             values.Add(parts.Length == 2 ? parts[0] + "=" + Value(parts[1]) : Value(argument));
         }
-        return values.ToArray();
+        return [.. values];
     }
 
     internal string Value(string value)
@@ -314,7 +318,10 @@ internal sealed class ConditionPaths
         return path;
     }
 
-    internal string AssetPath(string value) => Normalize(value);
+    internal static string AssetPath(string value)
+    {
+        return Normalize(value);
+    }
 
     internal string AssetArgument(string value)
     {
@@ -338,12 +345,20 @@ internal sealed class ConditionPaths
         return Value(value);
     }
 
-    private static string Normalize(string path) => path.Replace('\\', '/');
+    private static string Normalize(string path)
+    {
+        return path.Replace('\\', '/');
+    }
 
-    private string ProjectPath(string path) =>
-        path.EndsWith(".csproj", StringComparison.OrdinalIgnoreCase)
+    private string ProjectPath(string path)
+    {
+        return path.EndsWith(".csproj", StringComparison.OrdinalIgnoreCase)
             ? Normalize(Path.GetFullPath(path, command_.WorkingDirectory))
             : Normalize(path);
+    }
 
-    private static string FileName(string path) => Normalize(path).Split('/')[^1];
+    private static string FileName(string path)
+    {
+        return Normalize(path).Split('/')[^1];
+    }
 }

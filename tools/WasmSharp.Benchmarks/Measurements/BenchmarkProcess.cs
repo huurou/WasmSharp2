@@ -61,7 +61,7 @@ internal sealed class BenchmarkProcess
                 CaptureAffinity(after: false);
                 check_ = check_ with
                 {
-                    LoadedAssemblies = new[]
+                    LoadedAssemblies = [.. new[]
                     {
                         (AssemblyRole.Runtime, typeof(WasmModule).Assembly.Location),
                         (AssemblyRole.Harness, typeof(InvokeBenchmarks).Assembly.Location),
@@ -70,8 +70,7 @@ internal sealed class BenchmarkProcess
                             x.Item1,
                             x.Location,
                             Convert.ToHexStringLower(SHA256.HashData(File.ReadAllBytes(x.Location)))
-                        ))
-                        .ToList(),
+                        ))],
                 };
             }
         );
@@ -118,8 +117,10 @@ internal sealed class BenchmarkProcess
         }
     }
 
-    private static CorrectnessCheck Success() =>
-        new(ResultStatus.Succeeded, [new("固定期待値との照合", "全項目一致", "全項目一致", true)]);
+    private static CorrectnessCheck Success()
+    {
+        return new(ResultStatus.Succeeded, [new("固定期待値との照合", "全項目一致", "全項目一致", true)]);
+    }
 
     private void CaptureAffinity(bool after)
     {

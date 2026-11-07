@@ -158,7 +158,7 @@ internal partial class WasmFunction_InvokeTests
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task tableからinstance必須hostを間接callする_呼び出し元instanceを渡し例外後も状態を復元する(
+    public async Task Tableからinstance必須hostを間接callする_呼び出し元instanceを渡し例外後も状態を復元する(
         bool throws
     )
     {
@@ -264,7 +264,7 @@ internal partial class WasmFunction_InvokeTests
     [Arguments(2)]
     [Arguments(3)]
     [Arguments(5)]
-    public async Task host同期再入の間接callが失敗する_外側の上限と状態を復元して同じcallbackから再呼び出しできる(
+    public async Task Host同期再入の間接callが失敗する_外側の上限と状態を復元して同じcallbackから再呼び出しできる(
         int selector
     )
     {

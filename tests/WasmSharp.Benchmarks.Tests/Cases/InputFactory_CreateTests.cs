@@ -131,7 +131,7 @@ internal class InputFactory_CreateTests
     }
 
     [Test]
-    public async Task memoryとscanの固定入力を復元する_全領域の固定digestとlittleEndianが一致する()
+    public async Task Memoryとscanの固定入力を復元する_全領域の固定digestとlittleEndianが一致する()
     {
         // Arrange
         var definitions = AssetLoadingFixture.ReadCases();

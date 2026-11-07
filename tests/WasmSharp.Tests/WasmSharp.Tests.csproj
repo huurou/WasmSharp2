@@ -8,18 +8,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="TUnit" Version="1.66.16" />
+    <PackageReference Include="TUnit" Version="1.81.10" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\WasmSharp\WasmSharp.csproj" />
-    <EmbeddedResource
-      Include="..\..\thirdParties\WebAssembly-spec\document\core\appendix\index-instructions.py"
-      LogicalName="Core2.Instructions"
-    />
-    <EmbeddedResource
-      Include="..\..\thirdParties\WebAssembly-spec\document\core\util\macros.def"
-      LogicalName="Core2.Macros"
-    />
+    <EmbeddedResource Include="..\..\thirdParties\WebAssembly-spec\document\core\appendix\index-instructions.py" LogicalName="Core2.Instructions" />
+    <EmbeddedResource Include="..\..\thirdParties\WebAssembly-spec\document\core\util\macros.def" LogicalName="Core2.Macros" />
   </ItemGroup>
 </Project>

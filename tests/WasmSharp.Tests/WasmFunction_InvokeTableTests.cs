@@ -10,7 +10,7 @@ internal partial class WasmFunction_InvokeTests
     [Arguments((byte)0x70, (byte)1, true)]
     [Arguments((byte)0x6F, (byte)0, true)]
     [Arguments((byte)0x6F, (byte)1, false)]
-    public async Task importと定義tableを読み書きする_指定添字と参照型とnullと同一性を保つ(
+    public async Task Importと定義tableを読み書きする_指定添字と参照型とnullと同一性を保つ(
         byte kind,
         byte tableIndex,
         bool isNull

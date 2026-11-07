@@ -1,9 +1,9 @@
-using System.Globalization;
 using BenchmarkDotNet.Environments;
 using BenchmarkDotNet.Reports;
 using BenchmarkDotNet.Running;
 using BenchmarkDotNet.Toolchains.Results;
 using BenchmarkDotNet.Validators;
+using System.Globalization;
 using WasmSharp.Benchmarks.Cases;
 using WasmSharp.Benchmarks.Measurements;
 using WasmSharp.Benchmarks.Results;
@@ -46,8 +46,8 @@ internal sealed class BenchmarkReportFixture : IDisposable
             true,
             exitCode,
             123,
-            output.Where(x => !x.StartsWith("//")).ToArray(),
-            output.Where(x => x.StartsWith("//")).ToArray(),
+            [.. output.Where(x => !x.StartsWith("//"))],
+            [.. output.Where(x => x.StartsWith("//"))],
             output,
             1
         );
@@ -101,20 +101,30 @@ internal sealed class BenchmarkReportFixture : IDisposable
         );
     }
 
-    internal static string[] ReadLines() =>
-        File.ReadAllLines(
+    internal static string[] ReadLines()
+    {
+        return File.ReadAllLines(
             Path.Combine(AppContext.BaseDirectory, "Fixtures", "Data", "bdn-0.15.8-metrics.txt")
         );
+    }
 
-    internal void SaveConditions() => run_.SaveConditions(Prepared.Store);
+    internal void SaveConditions()
+    {
+        run_.SaveConditions(Prepared.Store);
+    }
 
-    internal ProcessCheck SuccessfulCheck(int processId = 123) =>
-        run_.Check with
+    internal ProcessCheck SuccessfulCheck(int processId = 123)
+    {
+        return run_.Check with
         {
             CaseId = caseId_,
             JobId = Prepared.Jobs.Single().Id,
             ProcessId = processId,
         };
+    }
 
-    public void Dispose() => run_.Dispose();
+    public void Dispose()
+    {
+        run_.Dispose();
+    }
 }

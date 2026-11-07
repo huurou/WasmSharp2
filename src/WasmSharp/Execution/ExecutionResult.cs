@@ -8,10 +8,6 @@ namespace WasmSharp.Execution;
 /// </summary>
 internal readonly struct ExecutionResult
 {
-    /// <summary>
-    /// 正常終了時の戻り値
-    /// </summary>
-    private readonly ImmutableArray<WasmValue> values_;
 
     /// <summary>
     /// 正常終了、trapまたは実行資源の上限到達の区分
@@ -21,7 +17,7 @@ internal readonly struct ExecutionResult
     /// <summary>
     /// 正常終了時の戻り値 defaultの実行結果または失敗時は空配列を返す
     /// </summary>
-    internal ImmutableArray<WasmValue> Values => values_.IsDefault ? [] : values_;
+    internal ImmutableArray<WasmValue> Values => field.IsDefault ? [] : field;
 
     /// <summary>
     /// trapの原因 trap以外ではnull
@@ -90,7 +86,7 @@ internal readonly struct ExecutionResult
     )
     {
         Status = status;
-        values_ = values;
+        Values = values;
         TrapReason = trapReason;
         ExhaustionReason = exhaustionReason;
         Limit = limit;

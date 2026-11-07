@@ -5,9 +5,7 @@ namespace WasmSharp.Tests.Fixtures;
 
 internal static class NumericHandlerFixture
 {
-    private static readonly WasmValue sentinel_ = WasmValue.FromF64Bits(0xFFF8123456789ABC);
-
-    public static WasmValue Sentinel => sentinel_;
+    public static WasmValue Sentinel { get; } = WasmValue.FromF64Bits(0xFFF8123456789ABC);
 
     public delegate ExecutionResult Handler(InterpreterContext context, in Instruction instruction);
 
@@ -25,7 +23,7 @@ internal static class NumericHandlerFixture
             context.Stage = WasmProcessingStage.Invoke;
             context.EnsureCapacity(0, function.Code.MaxOperandStack, function);
             context.PushFrame(new(function, 0, 0));
-            context.PushValue(sentinel_);
+            context.PushValue(Sentinel);
             foreach (var operand in operands)
             {
                 context.PushValue(operand);

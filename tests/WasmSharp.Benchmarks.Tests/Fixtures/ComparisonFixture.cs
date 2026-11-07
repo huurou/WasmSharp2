@@ -17,21 +17,20 @@ internal sealed class ComparisonFixture : IDisposable
         var cases = AssetLoadingFixture.ReadCases();
         if (!allCases)
         {
-            cases = cases.Where(x => x.CaseId == "invoke.single").ToList();
+            cases = [.. cases.Where(x => x.CaseId == "invoke.single")];
         }
-        CaseIds = cases.Select(x => x.CaseId).ToList();
+        CaseIds = [.. cases.Select(x => x.CaseId)];
         Policy = new(
             1,
             "before-change",
             DateTimeOffset.Parse("2026-10-21T12:00:00Z"),
-            CaseIds
+            [.. CaseIds
                 .Select(x => new CaseComparisonPolicy(
                     x,
                     3,
                     Metric(null),
                     Metric(new AbsoluteThreshold(4))
-                ))
-                .ToList()
+                ))]
         );
         for (var index = 0; index < 3; index++)
         {
@@ -46,14 +45,16 @@ internal sealed class ComparisonFixture : IDisposable
         }
     }
 
-    internal static MetricPolicy Metric(MetricThreshold? target) =>
-        new(
+    internal static MetricPolicy Metric(MetricThreshold? target)
+    {
+        return new(
             new AbsoluteThreshold(5),
             target,
             new(new AbsoluteThreshold(2), new AbsoluteThreshold(2)),
             new AbsoluteThreshold(0.5),
             new AbsoluteThreshold(2)
         );
+    }
 
     internal static void SetValues(
         RunComparisonFixture fixture,
@@ -64,7 +65,7 @@ internal sealed class ComparisonFixture : IDisposable
     {
         fixture.Manifest = fixture.Manifest with
         {
-            Cases = fixture
+            Cases = [.. fixture
                 .Manifest.Cases.Select(x =>
                     caseId is not null && x.CaseId != caseId
                         ? x
@@ -89,8 +90,7 @@ internal sealed class ComparisonFixture : IDisposable
                                 },
                             },
                         }
-                )
-                .ToList(),
+                )],
         };
     }
 
@@ -104,11 +104,11 @@ internal sealed class ComparisonFixture : IDisposable
         var content = JsonSerializer.SerializeToUtf8Bytes(Policy, CaseJson.Options);
         File.WriteAllBytes(path, content);
         return new(
-            Baseline.Select(x => x.DirectoryPath).ToList(),
-            Current.Select(x => x.DirectoryPath).ToList(),
+            [.. Baseline.Select(x => x.DirectoryPath)],
+            [.. Current.Select(x => x.DirectoryPath)],
             path,
             Convert.ToHexStringLower(SHA256.HashData(content)),
-            CaseIds.ToList()
+            [.. CaseIds]
         );
     }
 

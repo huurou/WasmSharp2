@@ -59,7 +59,10 @@ internal sealed class AllocationEngineFixture : IEngineFactory, IEngine
         GlobalCleanupAction?.Invoke();
     }
 
-    public Measurement RunIteration(IterationData data) => throw new NotSupportedException();
+    public Measurement RunIteration(IterationData data)
+    {
+        throw new NotSupportedException();
+    }
 
     public void WriteLine() { }
 

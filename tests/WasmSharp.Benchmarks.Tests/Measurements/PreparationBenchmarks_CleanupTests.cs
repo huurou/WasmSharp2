@@ -21,7 +21,7 @@ internal class PreparationBenchmarks_CleanupTests
         switch (exportName)
         {
             case "memory":
-                last.GetMemory(exportName).Write(7, new byte[] { 0xff });
+                last.GetMemory(exportName).Write(7, [0xff]);
                 break;
             case "start_result":
                 last.GetGlobalResource(exportName).Value = WasmValue.FromI32(-1);

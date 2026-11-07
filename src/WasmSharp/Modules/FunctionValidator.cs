@@ -161,8 +161,9 @@ internal static class FunctionValidator
                 case ValidationRule.RefIsNull:
                     var referenceType = Pop(null, instruction.ByteOffset);
                     if (
-                        referenceType is { }
-                        && referenceType is not (WasmValueKind.FuncRef or WasmValueKind.ExternRef)
+                        referenceType is
+                    { }
+                        and not (WasmValueKind.FuncRef or WasmValueKind.ExternRef)
                     )
                     {
                         throw CreateException(

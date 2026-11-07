@@ -329,8 +329,9 @@ internal static class CaseVerifier
         return new(true, definition.CaseId, "Invoke", null, null, null);
     }
 
-    private static string Describe(WasmValue value) =>
-        value.Kind switch
+    private static string Describe(WasmValue value)
+    {
+        return value.Kind switch
         {
             WasmValueKind.I32 => $"I32:{unchecked((uint)value.AsI32()):x8}",
             WasmValueKind.I64 => $"I64:{unchecked((ulong)value.AsI64()):x16}",
@@ -338,4 +339,5 @@ internal static class CaseVerifier
             WasmValueKind.F64 => $"F64:{value.AsF64Bits():x16}",
             _ => value.Kind.ToString(),
         };
+    }
 }

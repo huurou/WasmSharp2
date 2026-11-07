@@ -45,14 +45,13 @@ internal sealed class RunStoreFixture : IDisposable
                 Source.WorktreeDiff.RelativePath,
                 "fixture worktree diff\n"u8
             ),
-            UntrackedFiles = Source
+            UntrackedFiles = [.. Source
                 .UntrackedFiles.Select(x =>
                     store.SaveFile(
                         x.RelativePath,
                         "namespace Fixture;\ninternal sealed class NewType;\n"u8
                     )
-                )
-                .ToList(),
+                )],
         };
         store.SaveSource(Source);
     }

@@ -1,3 +1,8 @@
+using BenchmarkDotNet.Characteristics;
+using BenchmarkDotNet.Configs;
+using BenchmarkDotNet.Environments;
+using BenchmarkDotNet.Jobs;
+using Microsoft.Win32;
 using System.Collections;
 using System.ComponentModel;
 using System.Reflection;
@@ -5,11 +10,6 @@ using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text.Json;
-using BenchmarkDotNet.Characteristics;
-using BenchmarkDotNet.Configs;
-using BenchmarkDotNet.Environments;
-using BenchmarkDotNet.Jobs;
-using Microsoft.Win32;
 using WasmSharp.Benchmarks.Results;
 
 namespace WasmSharp.Benchmarks.Measurements;
@@ -17,10 +17,42 @@ namespace WasmSharp.Benchmarks.Measurements;
 /// <summary>
 /// 採取processの環境と指定された測定・診断構成を記録する
 /// </summary>
-internal static class EnvironmentCapture
+internal static partial class EnvironmentCapture
 {
     internal static string CurrentRuntimeVersion =>
         RuntimeInformation.FrameworkDescription + "; " + Version(typeof(object).Assembly);
+
+    private static readonly string[] runtimeSettingPrefixes_ =
+    [
+        "GC",
+        "Jit",
+        "AltJit",
+        "Tiered",
+        "TC_",
+        "ReadyToRun",
+        "EnableHWIntrinsic",
+        "EnableSSE",
+        "EnableSSSE",
+        "EnableAVX",
+        "EnableBMI",
+        "EnableFMA",
+        "EnableLZCNT",
+        "EnablePOPCNT",
+        "EnableArm",
+        "EnableAdvSimd",
+        "EnableAES",
+        "EnablePCLMULQDQ",
+        "EnableSHA",
+        "EnableCRC32",
+        "EnableF16C",
+        "EnableGFNI",
+        "EnableMOVBE",
+        "EnableVPCLMULQDQ",
+        "EnableVector",
+        "EnableSVE",
+        "EnableDiagnostics",
+        "EnableEventPipe",
+    ];
 
     internal static RunEnvironment Capture(
         RunStore store,
@@ -37,7 +69,7 @@ internal static class EnvironmentCapture
             .ToList();
         var configurations = processes.Select(SnapshotProcess).ToList();
         configurations.Add(
-            new("Collector", "", 1, [], RuntimeConfiguration(store), variables.ToList())
+            new("Collector", "", 1, [], RuntimeConfiguration(store), [.. variables])
         );
         var gc = GC.GetConfigurationVariables()
             .Select(x => new NamedSetting(
@@ -96,28 +128,30 @@ internal static class EnvironmentCapture
             Power(),
             command with
             {
-                Arguments = command.Arguments.ToList(),
+                Arguments = [.. command.Arguments],
             },
             configurations
         );
     }
 
-    internal static ProcessConfiguration SnapshotProcess(ProcessConfiguration process) =>
-        process with
+    internal static ProcessConfiguration SnapshotProcess(ProcessConfiguration process)
+    {
+        return process with
         {
-            JobSettings = process.JobSettings.ToList(),
-            RuntimeConfiguration = process.RuntimeConfiguration.ToList(),
-            EnvironmentVariables = process
-                .EnvironmentVariables.Where(x => IsProcessVariable(x.Name))
-                .ToList(),
+            JobSettings = [.. process.JobSettings],
+            RuntimeConfiguration = [.. process.RuntimeConfiguration],
+            EnvironmentVariables = [.. process
+                .EnvironmentVariables.Where(x => IsProcessVariable(x.Name))],
         };
+    }
 
-    internal static ProcessConfiguration DescribeProcess(string role, Job job) =>
-        new(
+    internal static ProcessConfiguration DescribeProcess(string role, Job job)
+    {
+        return new(
             role,
             job.Id,
             job.Run.LaunchCount,
-            CharacteristicHelper
+            [.. CharacteristicHelper
                 .GetAllCharacteristics(job)
                 .Where(x =>
                     !x.HasChildCharacteristics && x.Id is not "Id" and not "EnvironmentVariables"
@@ -131,14 +165,13 @@ internal static class EnvironmentCapture
                             System.Globalization.CultureInfo.InvariantCulture
                         ) ?? "null"
                         : "Default"
-                ))
-                .ToList(),
+                ))],
             [],
-            (job.Environment.EnvironmentVariables ?? [])
+            [.. (job.Environment.EnvironmentVariables ?? [])
                 .Where(x => IsProcessVariable(x.Key))
-                .Select(x => new NamedSetting(x.Key, x.Value))
-                .ToList()
+                .Select(x => new NamedSetting(x.Key, x.Value))]
         );
+    }
 
     private static List<NamedSetting> RuntimeConfiguration(RunStore store)
     {
@@ -200,37 +233,7 @@ internal static class EnvironmentCapture
             }
 
             var setting = name[prefix.Length..];
-            return new[]
-                {
-                    "GC",
-                    "Jit",
-                    "AltJit",
-                    "Tiered",
-                    "TC_",
-                    "ReadyToRun",
-                    "EnableHWIntrinsic",
-                    "EnableSSE",
-                    "EnableSSSE",
-                    "EnableAVX",
-                    "EnableBMI",
-                    "EnableFMA",
-                    "EnableLZCNT",
-                    "EnablePOPCNT",
-                    "EnableArm",
-                    "EnableAdvSimd",
-                    "EnableAES",
-                    "EnablePCLMULQDQ",
-                    "EnableSHA",
-                    "EnableCRC32",
-                    "EnableF16C",
-                    "EnableGFNI",
-                    "EnableMOVBE",
-                    "EnableVPCLMULQDQ",
-                    "EnableVector",
-                    "EnableSVE",
-                    "EnableDiagnostics",
-                    "EnableEventPipe",
-                }.Any(x => setting.StartsWith(x, StringComparison.OrdinalIgnoreCase))
+            return runtimeSettingPrefixes_.Any(x => setting.StartsWith(x, StringComparison.OrdinalIgnoreCase))
                 || setting
                     is "gcServer"
                         or "gcConcurrent"
@@ -249,12 +252,16 @@ internal static class EnvironmentCapture
         return false;
     }
 
-    private static bool IsProcessVariable(string name) =>
-        IsRelevantVariable(name) || name == "WASMSHARP_BENCHMARK_RUN_CONFIG";
+    private static bool IsProcessVariable(string name)
+    {
+        return IsRelevantVariable(name) || name == "WASMSHARP_BENCHMARK_RUN_CONFIG";
+    }
 
-    private static string Version(Assembly assembly) =>
-        assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion
+    private static string Version(Assembly assembly)
+    {
+        return assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion
         ?? "Unavailable: assemblyに完全版がありません。";
+    }
 
     private static string ReadCommand(
         string executable,
@@ -356,15 +363,15 @@ internal static class EnvironmentCapture
         internal uint BatteryFullLifeTime;
     }
 
-    [DllImport("kernel32.dll")]
+    [LibraryImport("kernel32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool GetSystemPowerStatus(out SystemPowerStatus status);
+    private static partial bool GetSystemPowerStatus(out SystemPowerStatus status);
 
-    [DllImport("powrprof.dll")]
-    private static extern uint PowerGetActiveScheme(IntPtr rootPowerKey, out IntPtr scheme);
+    [LibraryImport("powrprof.dll")]
+    private static partial uint PowerGetActiveScheme(IntPtr rootPowerKey, out IntPtr scheme);
 
-    [DllImport("powrprof.dll")]
-    private static extern uint PowerReadFriendlyName(
+    [LibraryImport("powrprof.dll")]
+    private static partial uint PowerReadFriendlyName(
         IntPtr rootPowerKey,
         ref Guid scheme,
         IntPtr subgroup,
@@ -373,6 +380,6 @@ internal static class EnvironmentCapture
         ref uint size
     );
 
-    [DllImport("kernel32.dll")]
-    private static extern IntPtr LocalFree(IntPtr memory);
+    [LibraryImport("kernel32.dll")]
+    private static partial IntPtr LocalFree(IntPtr memory);
 }

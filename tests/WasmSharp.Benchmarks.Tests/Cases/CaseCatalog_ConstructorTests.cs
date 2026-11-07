@@ -22,7 +22,7 @@ internal class CaseCatalog_ConstructorTests
     }
 
     [Test]
-    public async Task scalarとSIMDの比較groupが違う_組の不一致を示して拒否する()
+    public async Task ScalarとSIMDの比較groupが違う_組の不一致を示して拒否する()
     {
         // Arrange
         var definitions = AssetLoadingFixture.ReadCases();
@@ -126,7 +126,7 @@ internal class CaseCatalog_ConstructorTests
     [Arguments("state-restoration")]
     [Arguments("measurement-stage")]
     [Arguments("state-policy")]
-    public async Task scalarとSIMDの比較条件が違う_組と条件名を示して拒否する(string condition)
+    public async Task ScalarとSIMDの比較条件が違う_組と条件名を示して拒否する(string condition)
     {
         // Arrange
         var definitions = AssetLoadingFixture.ReadCases();

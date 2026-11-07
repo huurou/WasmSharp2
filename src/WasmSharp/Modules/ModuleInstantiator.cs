@@ -264,10 +264,9 @@ internal static class ModuleInstantiator
         int ordinal
     )
     {
-        ExternalValue? value = null;
         if (
             !providers.TryGetValue(import.ModuleName, out var items)
-            || !items.TryGetValue(import.Name, out value)
+            || !items.TryGetValue(import.Name, out var value)
         )
         {
             throw LinkFailure(

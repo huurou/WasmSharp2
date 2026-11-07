@@ -37,8 +37,9 @@ internal static class VerificationFixture
         );
     }
 
-    internal static WasmModule Decode() =>
-        WasmModule.Decode(
+    internal static WasmModule Decode()
+    {
+        return WasmModule.Decode(
             File.ReadAllBytes(
                 Path.Combine(
                     AppContext.BaseDirectory,
@@ -49,9 +50,12 @@ internal static class VerificationFixture
                 )
             )
         );
+    }
 
-    internal static WasmInstance Instantiate() =>
-        Decode().Validate().Instantiate(CaseVerifier.CreateImports());
+    internal static WasmInstance Instantiate()
+    {
+        return Decode().Validate().Instantiate(CaseVerifier.CreateImports());
+    }
 
     internal static BenchmarkCase MemoryDefinition(bool matrix)
     {

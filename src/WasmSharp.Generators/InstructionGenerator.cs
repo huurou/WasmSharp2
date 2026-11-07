@@ -1,10 +1,10 @@
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
 
 namespace WasmSharp.Generators;
 
@@ -189,16 +189,14 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
             arguments.Length == 9
                     ? new NumericSignatureDeclaration(
                         arguments[7].IsNull
-                            ? ImmutableArray<string>.Empty
-                            : arguments[7].Values.Select(GetEnumName).ToImmutableArray(),
+                            ? []
+                            : [.. arguments[7].Values.Select(GetEnumName)],
                         GetEnumName(arguments[8])
                     )
                 : arguments.Length == 10
                 && arguments[7].Type?.SpecialType == SpecialType.System_Byte
                     ? new NumericSignatureDeclaration(
-                        Enumerable
-                            .Repeat(GetEnumName(arguments[8]), (byte)arguments[7].Value!)
-                            .ToImmutableArray(),
+                        [.. Enumerable.Repeat(GetEnumName(arguments[8]), (byte)arguments[7].Value!)],
                         GetEnumName(arguments[9])
                     )
                 : null,

@@ -5,6 +5,8 @@ namespace WasmSharp.Benchmarks.Tests.Cases;
 
 internal class AssetManifest_DeserializeTests
 {
+    private static readonly string[] expectedArguments_ = ["sources/fixture.wat", "-o", "wasm/fixture.wasm"];
+
     [Test]
     public async Task 小さい素材fixtureを読む_相対pathと生成条件のhashを復元する()
     {
@@ -50,7 +52,7 @@ internal class AssetManifest_DeserializeTests
             await Assert
                 .That(
                     step.Arguments.SequenceEqual(
-                        new[] { "sources/fixture.wat", "-o", "wasm/fixture.wasm" }
+                        expectedArguments_
                     )
                 )
                 .IsTrue();

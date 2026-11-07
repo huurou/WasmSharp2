@@ -223,7 +223,7 @@ internal partial class WasmModule_InstantiateTests
             .ThrowsExactly<WasmTrapException>();
         var stored = table.Get(0).AsFuncRef()!;
         var result = stored.Invoke([]).Values[0].AsI32();
-        byte[] actual = new byte[1];
+        var actual = new byte[1];
         memory.Read(0, actual);
         using (Assert.Multiple())
         {
@@ -362,7 +362,7 @@ internal partial class WasmModule_InstantiateTests
         }
 
         // Assert
-        byte[] actual = new byte[1];
+        var actual = new byte[1];
         memory.Read(0, actual);
         using (Assert.Multiple())
         {
@@ -460,7 +460,7 @@ internal partial class WasmModule_InstantiateTests
         var exception = await Assert
             .That(() => module.Instantiate([host]))
             .ThrowsExactly<WasmInstantiateException>();
-        byte[] actual = new byte[1];
+        var actual = new byte[1];
         memory.Read(0, actual);
         using (Assert.Multiple())
         {

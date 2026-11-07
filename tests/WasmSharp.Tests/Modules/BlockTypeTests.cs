@@ -20,7 +20,7 @@ internal class BlockType_EmptyTests
             await Assert.That(empty.Kind).IsEqualTo(BlockTypeKind.Empty);
             await Assert.That(value.Kind).IsEqualTo(BlockTypeKind.Value);
             await Assert.That(indexed.Kind).IsEqualTo(BlockTypeKind.TypeIndex);
-            await Assert.That(empty.ValueType).IsEqualTo(default(WasmValueKind));
+            await Assert.That(empty.ValueType).IsEqualTo(default);
             await Assert.That(empty.TypeIndex).IsEqualTo(0u);
         }
     }
@@ -72,7 +72,7 @@ internal class BlockType_FromTypeIndexTests
         {
             await Assert.That(blockType.Kind).IsEqualTo(BlockTypeKind.TypeIndex);
             await Assert.That(blockType.TypeIndex).IsEqualTo(expected);
-            await Assert.That(blockType.ValueType).IsEqualTo(default(WasmValueKind));
+            await Assert.That(blockType.ValueType).IsEqualTo(default);
         }
     }
 }

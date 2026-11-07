@@ -17,7 +17,7 @@ internal partial class WasmFunction_InvokeTests
         var provider = new WasmHostModule("env");
         provider.Define("state", state);
 
-        byte[] Body(byte next)
+        static byte[] Body(byte next)
         {
             return
             [

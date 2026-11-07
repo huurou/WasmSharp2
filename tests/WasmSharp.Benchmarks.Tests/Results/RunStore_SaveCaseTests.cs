@@ -6,7 +6,7 @@ namespace WasmSharp.Benchmarks.Tests.Results;
 internal class RunStore_SaveCaseTests
 {
     [Test]
-    public async Task manifest保存に失敗した後に保存先を復旧する_同じstoreは完了できない()
+    public async Task Manifest保存に失敗した後に保存先を復旧する_同じstoreは完了できない()
     {
         // Arrange
         using var fixture = new RunStoreFixture();

@@ -17,15 +17,19 @@ internal sealed class LoadedAssets(
     internal AssetManifest Manifest { get; } = manifest;
     internal CaseCatalog Catalog { get; } = catalog;
 
-    internal ImmutableArray<byte> GetBinary(string assetId) =>
-        binaries.TryGetValue(assetId, out var bytes)
+    internal ImmutableArray<byte> GetBinary(string assetId)
+    {
+        return binaries.TryGetValue(assetId, out var bytes)
             ? bytes
             : throw new InvalidDataException($"素材'{assetId}'は未登録です。");
+    }
 
-    internal PreparedInput GetInput(string caseId) =>
-        inputs.TryGetValue(caseId, out var input)
+    internal PreparedInput GetInput(string caseId)
+    {
+        return inputs.TryGetValue(caseId, out var input)
             ? input
             : throw new InvalidDataException($"ケース'{caseId}'は未登録です。");
+    }
 
     internal static LoadedAssets Load(string path)
     {
@@ -57,7 +61,7 @@ internal sealed class LoadedAssets(
             if (
                 !binaries.TryAdd(
                     asset.AssetId,
-                    ReadVerified(directory, asset.Binary).ToImmutableArray()
+                    [.. ReadVerified(directory, asset.Binary)]
                 )
             )
             {

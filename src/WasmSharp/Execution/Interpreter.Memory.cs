@@ -158,7 +158,7 @@ internal static partial class Interpreter
             );
         }
 
-        ulong bits = signature.ByteWidth switch
+        var bits = signature.ByteWidth switch
         {
             1 => bytes[0],
             2 => BinaryPrimitives.ReadUInt16LittleEndian(bytes),

@@ -6,6 +6,16 @@ namespace WasmSharp.Benchmarks.Tests.Cases;
 
 internal partial class BenchmarkCase_DeserializeTests
 {
+    private static readonly string[] expectedCallCaseIds_ =
+                    [
+                        "invoke.empty",
+                        "invoke.single",
+                        "invoke.multi",
+                        "loop.integer-direct",
+                        "loop.float-host",
+                        "loop.indirect",
+                    ];
+
     [Test]
     public async Task 呼び出し素材の固定ケースを読む_公開操作数とguest仕事量を分けて保持する()
     {
@@ -26,15 +36,7 @@ internal partial class BenchmarkCase_DeserializeTests
             await Assert
                 .That(definitions.Select(x => x.CaseId))
                 .IsEquivalentTo(
-                    new[]
-                    {
-                        "invoke.empty",
-                        "invoke.single",
-                        "invoke.multi",
-                        "loop.integer-direct",
-                        "loop.float-host",
-                        "loop.indirect",
-                    }
+                    expectedCallCaseIds_
                 );
             foreach (var definition in definitions)
             {
@@ -162,7 +164,7 @@ internal partial class BenchmarkCase_DeserializeTests
             await Assert
                 .That(
                     table.Elements.SequenceEqual(
-                        new TableElementExpectation[] { new(0, "add_one"), new(1, "add_three") }
+                        [new(0, "add_one"), new(1, "add_three")]
                     )
                 )
                 .IsTrue();

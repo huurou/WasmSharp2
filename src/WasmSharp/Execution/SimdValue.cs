@@ -38,7 +38,10 @@ internal readonly struct SimdValue
     /// <summary>
     /// 保持する128ビット列からv128のvalueを構築する
     /// </summary>
-    internal WasmValue ToValue() => WasmValue.FromV128(low64_, high64_);
+    internal WasmValue ToValue()
+    {
+        return WasmValue.FromV128(low64_, high64_);
+    }
 
     /// <summary>
     /// little-endianの16バイトから128ビット列を構築する

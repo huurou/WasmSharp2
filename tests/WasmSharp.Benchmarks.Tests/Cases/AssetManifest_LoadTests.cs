@@ -10,7 +10,7 @@ internal class AssetManifest_LoadTests
     [Arguments("duplicate", "重複")]
     [Arguments("missing", "存在しない")]
     [Arguments("rooted", "相対path")]
-    public async Task manifestの版や素材参照が不正_理由を示して読み込みを拒否する(
+    public async Task Manifestの版や素材参照が不正_理由を示して読み込みを拒否する(
         string scenario,
         string reason
     )
@@ -47,7 +47,7 @@ internal class AssetManifest_LoadTests
     [Test]
     [Arguments("null", "JSONがnull")]
     [Arguments("{", "JSON形式が不正")]
-    public async Task manifestのJSONがnullまたは破損している_対象pathと理由を示して拒否する(
+    public async Task ManifestのJSONがnullまたは破損している_対象pathと理由を示して拒否する(
         string json,
         string reason
     )

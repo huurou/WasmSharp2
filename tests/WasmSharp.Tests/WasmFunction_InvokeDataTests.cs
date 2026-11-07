@@ -130,7 +130,7 @@ internal partial class WasmFunction_InvokeTests
     [Arguments(true, 65537, 0, 0, false)]
     [Arguments(true, 0, 1, 0, false)]
     [Arguments(true, 0, 0, 1, false)]
-    public async Task memory_initの全範囲と破棄状態を検査する_空範囲の境界を認め不正なら変更前に元位置でtrapする(
+    public async Task Memory_initの全範囲と破棄状態を検査する_空範囲の境界を認め不正なら変更前に元位置でtrapする(
         bool dropped,
         int destination,
         int source,

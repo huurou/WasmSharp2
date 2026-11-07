@@ -186,7 +186,7 @@ internal class ExecutionBoundary_ThrowIfFailedTests
     [Test]
     [Arguments(WasmProcessingStage.Invoke)]
     [Arguments(WasmProcessingStage.Instantiate)]
-    public async Task table系trapの結果を受け取る_診断と段階と原因と命令位置を保ったtrap例外にする(
+    public async Task Table系trapの結果を受け取る_診断と段階と原因と命令位置を保ったtrap例外にする(
         WasmProcessingStage stage
     )
     {

@@ -1,6 +1,6 @@
-using System.Runtime.CompilerServices;
 using BenchmarkDotNet.Engines;
 using BenchmarkDotNet.Reports;
+using System.Runtime.CompilerServices;
 
 namespace WasmSharp.Benchmarks.Measurements;
 
@@ -11,19 +11,22 @@ internal static class BenchmarkStack
 {
     private const int ALIGNMENT_BYTES = 4096;
 
-    internal static RunResults Run(IEngine engine) => Run(engine, 16);
+    internal static RunResults Run(IEngine engine)
+    {
+        return Run(engine, 16);
+    }
 
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
     private static unsafe RunResults Run(IEngine engine, int markerBytes)
     {
         // 非inlineの引数でサイズを渡し、両領域を同じ可変stackallocで確保する。
-        byte* marker = stackalloc byte[markerBytes];
+        var marker = stackalloc byte[markerBytes];
         var paddingBytes = (int)((nuint)marker % ALIGNMENT_BYTES);
         if (paddingBytes == 0)
         {
             paddingBytes = ALIGNMENT_BYTES;
         }
-        byte* anchor = stackalloc byte[paddingBytes];
+        var anchor = stackalloc byte[paddingBytes];
         new Span<byte>(anchor, paddingBytes).Clear();
         if ((nuint)anchor % ALIGNMENT_BYTES != 0)
         {

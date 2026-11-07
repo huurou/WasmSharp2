@@ -43,12 +43,11 @@ internal class BaselineComparer_CompareRunTests
                     comparison
                         .Cases.Select(x => x.Id)
                         .SequenceEqual(
-                            new[]
-                            {
+                            [
                                 new CaseId("a.wast", 0),
                                 new CaseId("a.wast", 1),
                                 new CaseId("b.wast", 0),
-                            }
+                            ]
                         )
                 )
                 .IsTrue();
@@ -704,7 +703,7 @@ internal class BaselineComparer_CompareRunTests
             await Assert.That(comparison.Complete).IsFalse();
             await Assert
                 .That(comparison.Uncompared.Select(x => x.Target).Distinct())
-                .IsEquivalentTo(new[] { baselineIncomplete ? "baseline" : "current" });
+                .IsEquivalentTo([baselineIncomplete ? "baseline" : "current"]);
         }
     }
 

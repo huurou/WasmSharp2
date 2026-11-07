@@ -206,11 +206,13 @@ internal static partial class RunComparison
         return double.IsFinite(value) && (positive ? value > 0 : value >= 0);
     }
 
-    private static double Width(MetricThreshold threshold, double value) =>
-        threshold switch
+    private static double Width(MetricThreshold threshold, double value)
+    {
+        return threshold switch
         {
             AbsoluteThreshold x => x.Difference,
             RatioThreshold x => x.Fraction * value,
             _ => double.NaN,
         };
+    }
 }

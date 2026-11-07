@@ -384,7 +384,7 @@ internal class BaselineComparer_CompareConversionTests
             await Assert.That(comparison.Complete).IsFalse();
             await Assert
                 .That(comparison.Uncompared.Select(x => x.Target).Distinct())
-                .IsEquivalentTo(new[] { baselineIncomplete ? "baseline" : "current" });
+                .IsEquivalentTo([baselineIncomplete ? "baseline" : "current"]);
         }
     }
 
@@ -447,6 +447,8 @@ internal class BaselineComparer_CompareConversionTests
         }
     }
 
+    private static readonly string[] expectedInputPaths_ = ["modules/a.json", "modules/b.json"];
+
     [Test]
     public async Task 複数入力の素材が変化する_入力と生成物をそれぞれpath順に報告する()
     {
@@ -467,7 +469,7 @@ internal class BaselineComparer_CompareConversionTests
             .That(
                 comparison
                     .EntryDifferences.Select(x => x.Path)
-                    .SequenceEqual(new[] { "modules/a.json", "modules/b.json" })
+                    .SequenceEqual(expectedInputPaths_)
             )
             .IsTrue();
     }

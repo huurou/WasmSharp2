@@ -6,11 +6,8 @@ namespace WasmSharp.Tests.Fixtures;
 
 internal static class ControlHandlerFixture
 {
-    private static readonly WasmValue local_ = WasmValue.FromI64(73);
-    private static readonly WasmValue sentinel_ = WasmValue.FromF64Bits(0xFFF8123456789ABC);
-
-    public static WasmValue Local => local_;
-    public static WasmValue Sentinel => sentinel_;
+    public static WasmValue Local { get; } = WasmValue.FromI64(73);
+    public static WasmValue Sentinel { get; } = WasmValue.FromF64Bits(0xFFF8123456789ABC);
 
     public delegate ExecutionResult Handler(InterpreterContext context, in Instruction instruction);
 
@@ -44,8 +41,8 @@ internal static class ControlHandlerFixture
             context.EnsureCapacity(1, function.Code.MaxOperandStack, function);
             context.TryEnterCall();
             context.PushFrame(frame);
-            context.PushValue(local_);
-            context.PushValue(sentinel_);
+            context.PushValue(Local);
+            context.PushValue(Sentinel);
             foreach (var operand in operands)
             {
                 context.PushValue(operand);

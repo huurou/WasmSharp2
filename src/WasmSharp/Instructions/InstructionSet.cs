@@ -2452,7 +2452,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.I8x16Shuffle),
-    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    [WasmValueKind.V128, WasmValueKind.V128],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -2463,7 +2463,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.I8x16Swizzle),
-    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    [WasmValueKind.V128, WasmValueKind.V128],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -2474,7 +2474,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.I8x16Splat),
-    new[] { WasmValueKind.I32 },
+    [WasmValueKind.I32],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -2485,7 +2485,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.I16x8Splat),
-    new[] { WasmValueKind.I32 },
+    [WasmValueKind.I32],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -2496,7 +2496,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.I32x4Splat),
-    new[] { WasmValueKind.I32 },
+    [WasmValueKind.I32],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -2507,7 +2507,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.I64x2Splat),
-    new[] { WasmValueKind.I64 },
+    [WasmValueKind.I64],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -2518,7 +2518,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.F32x4Splat),
-    new[] { WasmValueKind.F32 },
+    [WasmValueKind.F32],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -2529,7 +2529,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.F64x2Splat),
-    new[] { WasmValueKind.F64 },
+    [WasmValueKind.F64],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -2540,7 +2540,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.I8x16ExtractLaneS),
-    new[] { WasmValueKind.V128 },
+    [WasmValueKind.V128],
     WasmValueKind.I32,
     LaneCount = 16
 )]
@@ -2552,7 +2552,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.I8x16ExtractLaneU),
-    new[] { WasmValueKind.V128 },
+    [WasmValueKind.V128],
     WasmValueKind.I32,
     LaneCount = 16
 )]
@@ -2564,7 +2564,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.I8x16ReplaceLane),
-    new[] { WasmValueKind.V128, WasmValueKind.I32 },
+    [WasmValueKind.V128, WasmValueKind.I32],
     WasmValueKind.V128,
     LaneCount = 16
 )]
@@ -2576,7 +2576,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.I16x8ExtractLaneS),
-    new[] { WasmValueKind.V128 },
+    [WasmValueKind.V128],
     WasmValueKind.I32,
     LaneCount = 8
 )]
@@ -2588,7 +2588,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.I16x8ExtractLaneU),
-    new[] { WasmValueKind.V128 },
+    [WasmValueKind.V128],
     WasmValueKind.I32,
     LaneCount = 8
 )]
@@ -2600,7 +2600,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.I16x8ReplaceLane),
-    new[] { WasmValueKind.V128, WasmValueKind.I32 },
+    [WasmValueKind.V128, WasmValueKind.I32],
     WasmValueKind.V128,
     LaneCount = 8
 )]
@@ -2612,7 +2612,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.I32x4ExtractLane),
-    new[] { WasmValueKind.V128 },
+    [WasmValueKind.V128],
     WasmValueKind.I32,
     LaneCount = 4
 )]
@@ -2624,7 +2624,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.I32x4ReplaceLane),
-    new[] { WasmValueKind.V128, WasmValueKind.I32 },
+    [WasmValueKind.V128, WasmValueKind.I32],
     WasmValueKind.V128,
     LaneCount = 4
 )]
@@ -2636,7 +2636,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.I64x2ExtractLane),
-    new[] { WasmValueKind.V128 },
+    [WasmValueKind.V128],
     WasmValueKind.I64,
     LaneCount = 2
 )]
@@ -2648,7 +2648,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.I64x2ReplaceLane),
-    new[] { WasmValueKind.V128, WasmValueKind.I64 },
+    [WasmValueKind.V128, WasmValueKind.I64],
     WasmValueKind.V128,
     LaneCount = 2
 )]
@@ -2660,7 +2660,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.F32x4ExtractLane),
-    new[] { WasmValueKind.V128 },
+    [WasmValueKind.V128],
     WasmValueKind.F32,
     LaneCount = 4
 )]
@@ -2672,7 +2672,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.F32x4ReplaceLane),
-    new[] { WasmValueKind.V128, WasmValueKind.F32 },
+    [WasmValueKind.V128, WasmValueKind.F32],
     WasmValueKind.V128,
     LaneCount = 4
 )]
@@ -2684,7 +2684,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.F64x2ExtractLane),
-    new[] { WasmValueKind.V128 },
+    [WasmValueKind.V128],
     WasmValueKind.F64,
     LaneCount = 2
 )]
@@ -2696,7 +2696,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.F64x2ReplaceLane),
-    new[] { WasmValueKind.V128, WasmValueKind.F64 },
+    [WasmValueKind.V128, WasmValueKind.F64],
     WasmValueKind.V128,
     LaneCount = 2
 )]
@@ -2708,7 +2708,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.I8x16Eq),
-    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    [WasmValueKind.V128, WasmValueKind.V128],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -2719,7 +2719,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.I8x16Ne),
-    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    [WasmValueKind.V128, WasmValueKind.V128],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -2730,7 +2730,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.I8x16LtS),
-    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    [WasmValueKind.V128, WasmValueKind.V128],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -2741,7 +2741,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.I8x16LtU),
-    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    [WasmValueKind.V128, WasmValueKind.V128],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -2752,7 +2752,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.I8x16GtS),
-    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    [WasmValueKind.V128, WasmValueKind.V128],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -2763,7 +2763,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.I8x16GtU),
-    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    [WasmValueKind.V128, WasmValueKind.V128],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -2774,7 +2774,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.I8x16LeS),
-    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    [WasmValueKind.V128, WasmValueKind.V128],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -2785,7 +2785,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.I8x16LeU),
-    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    [WasmValueKind.V128, WasmValueKind.V128],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -2796,7 +2796,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.I8x16GeS),
-    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    [WasmValueKind.V128, WasmValueKind.V128],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -2807,7 +2807,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.I8x16GeU),
-    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    [WasmValueKind.V128, WasmValueKind.V128],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -2818,7 +2818,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.I16x8Eq),
-    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    [WasmValueKind.V128, WasmValueKind.V128],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -2829,7 +2829,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.I16x8Ne),
-    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    [WasmValueKind.V128, WasmValueKind.V128],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -2840,7 +2840,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.I16x8LtS),
-    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    [WasmValueKind.V128, WasmValueKind.V128],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -2851,7 +2851,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.I16x8LtU),
-    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    [WasmValueKind.V128, WasmValueKind.V128],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -2862,7 +2862,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.I16x8GtS),
-    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    [WasmValueKind.V128, WasmValueKind.V128],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -2873,7 +2873,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.I16x8GtU),
-    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    [WasmValueKind.V128, WasmValueKind.V128],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -2884,7 +2884,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.I16x8LeS),
-    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    [WasmValueKind.V128, WasmValueKind.V128],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -2895,7 +2895,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.I16x8LeU),
-    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    [WasmValueKind.V128, WasmValueKind.V128],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -2906,7 +2906,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.I16x8GeS),
-    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    [WasmValueKind.V128, WasmValueKind.V128],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -2917,7 +2917,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.I16x8GeU),
-    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    [WasmValueKind.V128, WasmValueKind.V128],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -2928,7 +2928,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.I32x4Eq),
-    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    [WasmValueKind.V128, WasmValueKind.V128],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -2939,7 +2939,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.I32x4Ne),
-    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    [WasmValueKind.V128, WasmValueKind.V128],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -2950,7 +2950,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.I32x4LtS),
-    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    [WasmValueKind.V128, WasmValueKind.V128],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -2961,7 +2961,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.I32x4LtU),
-    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    [WasmValueKind.V128, WasmValueKind.V128],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -2972,7 +2972,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.I32x4GtS),
-    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    [WasmValueKind.V128, WasmValueKind.V128],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -2983,7 +2983,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.I32x4GtU),
-    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    [WasmValueKind.V128, WasmValueKind.V128],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -2994,7 +2994,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.I32x4LeS),
-    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    [WasmValueKind.V128, WasmValueKind.V128],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -3005,7 +3005,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.I32x4LeU),
-    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    [WasmValueKind.V128, WasmValueKind.V128],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -3016,7 +3016,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.I32x4GeS),
-    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    [WasmValueKind.V128, WasmValueKind.V128],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -3027,7 +3027,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.I32x4GeU),
-    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    [WasmValueKind.V128, WasmValueKind.V128],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -3038,7 +3038,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.F32x4Eq),
-    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    [WasmValueKind.V128, WasmValueKind.V128],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -3049,7 +3049,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.F32x4Ne),
-    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    [WasmValueKind.V128, WasmValueKind.V128],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -3060,7 +3060,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.F32x4Lt),
-    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    [WasmValueKind.V128, WasmValueKind.V128],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -3071,7 +3071,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.F32x4Gt),
-    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    [WasmValueKind.V128, WasmValueKind.V128],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -3082,7 +3082,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.F32x4Le),
-    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    [WasmValueKind.V128, WasmValueKind.V128],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -3093,7 +3093,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.F32x4Ge),
-    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    [WasmValueKind.V128, WasmValueKind.V128],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -3104,7 +3104,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.F64x2Eq),
-    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    [WasmValueKind.V128, WasmValueKind.V128],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -3115,7 +3115,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.F64x2Ne),
-    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    [WasmValueKind.V128, WasmValueKind.V128],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -3126,7 +3126,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.F64x2Lt),
-    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    [WasmValueKind.V128, WasmValueKind.V128],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -3137,7 +3137,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.F64x2Gt),
-    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    [WasmValueKind.V128, WasmValueKind.V128],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -3148,7 +3148,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.F64x2Le),
-    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    [WasmValueKind.V128, WasmValueKind.V128],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -3159,7 +3159,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.F64x2Ge),
-    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    [WasmValueKind.V128, WasmValueKind.V128],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -3170,7 +3170,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.V128Not),
-    new[] { WasmValueKind.V128 },
+    [WasmValueKind.V128],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -3181,7 +3181,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.V128And),
-    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    [WasmValueKind.V128, WasmValueKind.V128],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -3192,7 +3192,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.V128AndNot),
-    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    [WasmValueKind.V128, WasmValueKind.V128],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -3203,7 +3203,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.V128Or),
-    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    [WasmValueKind.V128, WasmValueKind.V128],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -3214,7 +3214,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.V128Xor),
-    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    [WasmValueKind.V128, WasmValueKind.V128],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -3225,7 +3225,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.V128Bitselect),
-    new[] { WasmValueKind.V128, WasmValueKind.V128, WasmValueKind.V128 },
+    [WasmValueKind.V128, WasmValueKind.V128, WasmValueKind.V128],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -3236,7 +3236,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.V128AnyTrue),
-    new[] { WasmValueKind.V128 },
+    [WasmValueKind.V128],
     WasmValueKind.I32
 )]
 [Instruction(
@@ -3435,7 +3435,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.I8x16AllTrue),
-    new[] { WasmValueKind.V128 },
+    [WasmValueKind.V128],
     WasmValueKind.I32
 )]
 [Instruction(
@@ -3446,7 +3446,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.I8x16Bitmask),
-    new[] { WasmValueKind.V128 },
+    [WasmValueKind.V128],
     WasmValueKind.I32
 )]
 [Instruction(
@@ -3529,7 +3529,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.I8x16Shl),
-    new[] { WasmValueKind.V128, WasmValueKind.I32 },
+    [WasmValueKind.V128, WasmValueKind.I32],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -3540,7 +3540,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.I8x16ShrS),
-    new[] { WasmValueKind.V128, WasmValueKind.I32 },
+    [WasmValueKind.V128, WasmValueKind.I32],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -3551,7 +3551,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.I8x16ShrU),
-    new[] { WasmValueKind.V128, WasmValueKind.I32 },
+    [WasmValueKind.V128, WasmValueKind.I32],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -3814,7 +3814,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.I16x8AllTrue),
-    new[] { WasmValueKind.V128 },
+    [WasmValueKind.V128],
     WasmValueKind.I32
 )]
 [Instruction(
@@ -3825,7 +3825,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.I16x8Bitmask),
-    new[] { WasmValueKind.V128 },
+    [WasmValueKind.V128],
     WasmValueKind.I32
 )]
 [Instruction(
@@ -3908,7 +3908,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.I16x8Shl),
-    new[] { WasmValueKind.V128, WasmValueKind.I32 },
+    [WasmValueKind.V128, WasmValueKind.I32],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -3919,7 +3919,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.I16x8ShrS),
-    new[] { WasmValueKind.V128, WasmValueKind.I32 },
+    [WasmValueKind.V128, WasmValueKind.I32],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -3930,7 +3930,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.I16x8ShrU),
-    new[] { WasmValueKind.V128, WasmValueKind.I32 },
+    [WasmValueKind.V128, WasmValueKind.I32],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -4169,7 +4169,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.I32x4AllTrue),
-    new[] { WasmValueKind.V128 },
+    [WasmValueKind.V128],
     WasmValueKind.I32
 )]
 [Instruction(
@@ -4180,7 +4180,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.I32x4Bitmask),
-    new[] { WasmValueKind.V128 },
+    [WasmValueKind.V128],
     WasmValueKind.I32
 )]
 [Instruction(
@@ -4239,7 +4239,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.I32x4Shl),
-    new[] { WasmValueKind.V128, WasmValueKind.I32 },
+    [WasmValueKind.V128, WasmValueKind.I32],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -4250,7 +4250,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.I32x4ShrS),
-    new[] { WasmValueKind.V128, WasmValueKind.I32 },
+    [WasmValueKind.V128, WasmValueKind.I32],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -4261,7 +4261,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.I32x4ShrU),
-    new[] { WasmValueKind.V128, WasmValueKind.I32 },
+    [WasmValueKind.V128, WasmValueKind.I32],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -4440,7 +4440,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.I64x2AllTrue),
-    new[] { WasmValueKind.V128 },
+    [WasmValueKind.V128],
     WasmValueKind.I32
 )]
 [Instruction(
@@ -4451,7 +4451,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.I64x2Bitmask),
-    new[] { WasmValueKind.V128 },
+    [WasmValueKind.V128],
     WasmValueKind.I32
 )]
 [Instruction(
@@ -4510,7 +4510,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.I64x2Shl),
-    new[] { WasmValueKind.V128, WasmValueKind.I32 },
+    [WasmValueKind.V128, WasmValueKind.I32],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -4521,7 +4521,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.I64x2ShrS),
-    new[] { WasmValueKind.V128, WasmValueKind.I32 },
+    [WasmValueKind.V128, WasmValueKind.I32],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -4532,7 +4532,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.I64x2ShrU),
-    new[] { WasmValueKind.V128, WasmValueKind.I32 },
+    [WasmValueKind.V128, WasmValueKind.I32],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -4579,7 +4579,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.I64x2Eq),
-    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    [WasmValueKind.V128, WasmValueKind.V128],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -4590,7 +4590,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.I64x2Ne),
-    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    [WasmValueKind.V128, WasmValueKind.V128],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -4601,7 +4601,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.I64x2LtS),
-    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    [WasmValueKind.V128, WasmValueKind.V128],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -4612,7 +4612,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.I64x2GtS),
-    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    [WasmValueKind.V128, WasmValueKind.V128],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -4623,7 +4623,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.I64x2LeS),
-    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    [WasmValueKind.V128, WasmValueKind.V128],
     WasmValueKind.V128
 )]
 [Instruction(
@@ -4634,7 +4634,7 @@ namespace WasmSharp.Instructions;
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
     nameof(Interpreter.I64x2GeS),
-    new[] { WasmValueKind.V128, WasmValueKind.V128 },
+    [WasmValueKind.V128, WasmValueKind.V128],
     WasmValueKind.V128
 )]
 [Instruction(

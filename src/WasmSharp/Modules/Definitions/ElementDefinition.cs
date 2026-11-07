@@ -75,7 +75,7 @@ internal sealed class ElementDefinition
         );
         foreach (var initializer in initializers)
         {
-            expressions.Add(ImmutableArray.CreateRange(initializer));
+            expressions.Add([.. initializer]);
         }
         Initializers = expressions.MoveToImmutable();
         Mode = mode;
