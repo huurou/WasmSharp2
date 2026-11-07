@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text.Json;
+using BenchmarkDotNet.Jobs;
 using BenchmarkDotNet.Toolchains.Results;
 using WasmSharp.Benchmarks.Cases;
 using WasmSharp.Benchmarks.Measurements;
@@ -11,6 +12,181 @@ namespace WasmSharp.Benchmarks.Tests.Measurements;
 
 internal class BenchmarkRun_SaveReportsTests
 {
+    [Test]
+    public async Task Result行があっても操作数が0である_測定結果ありとして保存しない()
+    {
+        // Arrange
+        // validation失敗と複数reportにより統計を作らず、0操作を含むprocessの記録を保存する
+        using var fixture = new BenchmarkReportFixture(
+            ["WorkloadResult 1: 0 op, 0.00 ns"],
+            validationSucceeded: false
+        );
+        fixture.SaveConditions();
+
+        // Act
+        BenchmarkRun.SaveReports(
+            fixture.Request,
+            fixture.Prepared,
+            [fixture.Summary, fixture.Summary]
+        );
+        var result = RunStore.Load(fixture.DirectoryPath).Cases.Single();
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(result.BenchmarkReport!.Processes.Any()).IsTrue();
+            await Assert
+                .That(result.BenchmarkReport.Processes.All(x => !x.HasResultMeasurements))
+                .IsTrue();
+        }
+    }
+
+    [Test]
+    [Arguments(false)]
+    [Arguments(true)]
+    public async Task 成功reportにbuildまたはvalidationの失敗が混在する_成功記録だけで採用しない(
+        bool validation
+    )
+    {
+        // Arrange
+        using var fixture = new BenchmarkReportFixture();
+        using var failed = new BenchmarkReportFixture(
+            buildSucceeded: validation,
+            validationSucceeded: !validation
+        );
+        fixture.SaveConditions();
+        fixture.Prepared.Store.SaveCheck(fixture.SuccessfulCheck());
+
+        // Act
+        BenchmarkRun.SaveReports(
+            fixture.Request,
+            fixture.Prepared,
+            [fixture.Summary, failed.Summary]
+        );
+        var result = RunStore.Load(fixture.DirectoryPath).Cases.Single();
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(result.Status).IsEqualTo(ResultStatus.Failed);
+            await Assert.That(result.BenchmarkReport!.BuildSucceeded).IsEqualTo(validation);
+            await Assert.That(result.BenchmarkReport.ValidationSucceeded).IsEqualTo(!validation);
+            await Assert
+                .That(
+                    result
+                        .Failures.Single(x =>
+                            x.Stage == (validation ? RunStage.Validation : RunStage.Build)
+                        )
+                        .Message
+                )
+                .Contains(validation ? "fixture validation failure" : "fixture build failure");
+        }
+    }
+
+    [Test]
+    [Arguments(ResultStatus.Failed)]
+    [Arguments(ResultStatus.Unavailable)]
+    public async Task 成功caseと失敗または取得不能caseが混在する_全体の状態へ反映して保存する(
+        ResultStatus otherStatus
+    )
+    {
+        // Arrange
+        using var fixture = new BenchmarkReportFixture(
+            plannedCaseIds: ["invoke.single", "invoke.multi"]
+        );
+        using var other = new BenchmarkReportFixture(
+            BenchmarkReportFixture.ReadLines().Where(x => !x.StartsWith("// GC:")),
+            benchmarkMethod: nameof(InvokeBenchmarks.Multi)
+        );
+        fixture.SaveConditions();
+        fixture.Prepared.Store.SaveCheck(fixture.SuccessfulCheck());
+        var check = other.SuccessfulCheck();
+        if (otherStatus == ResultStatus.Failed)
+        {
+            check = check with
+            {
+                Failures =
+                [
+                    new(
+                        "invoke.multi",
+                        RunStage.Postcheck,
+                        RunStage.ExecutionStarted,
+                        "後検査の失敗",
+                        null,
+                        null,
+                        null
+                    ),
+                ],
+            };
+        }
+        fixture.Prepared.Store.SaveCheck(check);
+
+        // Act
+        BenchmarkRun.SaveReports(
+            fixture.Request,
+            fixture.Prepared,
+            [fixture.Summary, other.Summary]
+        );
+        var manifest = RunStore.Load(fixture.DirectoryPath);
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(manifest.Status).IsEqualTo(otherStatus);
+            await Assert.That(manifest.CompletedAtUtc).IsNotNull();
+            await Assert
+                .That(manifest.Cases.Single(x => x.CaseId == "invoke.single").Status)
+                .IsEqualTo(ResultStatus.Succeeded);
+            await Assert
+                .That(manifest.Cases.Single(x => x.CaseId == "invoke.multi").Status)
+                .IsEqualTo(otherStatus);
+        }
+    }
+
+    [Test]
+    [Arguments(false)]
+    [Arguments(true)]
+    public async Task report件数とJob集合の片方だけが予定と異なる_不一致を記録して未完了にする(
+        bool duplicated
+    )
+    {
+        // Arrange
+        using var fixture = new BenchmarkReportFixture();
+        fixture.SaveConditions();
+        fixture.Prepared.Store.SaveCheck(fixture.SuccessfulCheck());
+        var prepared = duplicated
+            ? fixture.Prepared
+            : fixture.Prepared with
+            {
+                Jobs = [fixture.Prepared.Jobs.Single().WithId("OtherJob")],
+            };
+
+        // Act
+        BenchmarkRun.SaveReports(
+            fixture.Request,
+            prepared,
+            duplicated ? [fixture.Summary, fixture.Summary] : [fixture.Summary]
+        );
+        var manifest = RunStore.Load(fixture.DirectoryPath);
+        var result = manifest.Cases.Single();
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(manifest.Status).IsEqualTo(ResultStatus.Incomplete);
+            await Assert.That(manifest.CompletedAtUtc).IsNull();
+            await Assert.That(result.Status).IsEqualTo(ResultStatus.Incomplete);
+            await Assert
+                .That(
+                    result.Failures.Any(x =>
+                        x.Stage == RunStage.BenchmarkProcessExit
+                        && x.Reason.Contains("case/JobのBDN reportが揃っていません")
+                    )
+                )
+                .IsTrue();
+        }
+    }
+
     [Test]
     [Arguments(83)]
     [Arguments(null)]
@@ -49,7 +225,8 @@ internal class BenchmarkRun_SaveReportsTests
                 .That(
                     result.Failures.Any(x =>
                         x.Stage == RunStage.BenchmarkProcessExit
-                        && x.InterruptionReason!.Contains("PID=123")
+                        && x.InterruptionReason
+                            == $"Job={fixture.Prepared.Jobs.Single().Id}; PID=123; 終了値={exitCode?.ToString() ?? "取得不能"}"
                     )
                 )
                 .IsTrue();
@@ -122,15 +299,28 @@ internal class BenchmarkRun_SaveReportsTests
     }
 
     [Test]
-    [Arguments(false)]
-    [Arguments(true)]
-    public async Task 前後検査のどちらかが不一致である_成功したreportでも失敗になる(bool postcheck)
+    [Arguments(false, "both")]
+    [Arguments(true, "both")]
+    [Arguments(false, "status")]
+    [Arguments(true, "observations")]
+    public async Task 前後検査のどちらかが不一致である_成功したreportでも失敗になる(
+        bool postcheck,
+        string failureSource
+    )
     {
         // Arrange
         using var fixture = new BenchmarkReportFixture();
         fixture.SaveConditions();
         var check = fixture.SuccessfulCheck();
-        var failed = new CorrectnessCheck(ResultStatus.Failed, [new("result", "1", "2", false)]);
+        var failed = new CorrectnessCheck(
+            failureSource == "observations" ? ResultStatus.Succeeded : ResultStatus.Failed,
+            failureSource switch
+            {
+                "status" => [new("result", "1", "1", true)],
+                "observations" => [new("first", "1", "1", true), new("second", "1", "2", false)],
+                _ => [new("result", "1", "2", false)],
+            }
+        );
         fixture.Prepared.Store.SaveCheck(
             check with
             {
@@ -219,6 +409,15 @@ internal class BenchmarkRun_SaveReportsTests
                         )
                 )
                 .IsTrue();
+            var failure = manifest
+                .Cases.Single()
+                .Failures.Single(x =>
+                    x.Stage == (validation ? RunStage.Validation : RunStage.Build)
+                );
+            await Assert
+                .That(failure.Message)
+                .Contains(validation ? "fixture validation failure" : "fixture build failure");
+            await Assert.That(failure.Reason).Contains(validation ? "validation" : "build");
         }
     }
 
@@ -301,6 +500,11 @@ internal class BenchmarkRun_SaveReportsTests
                 .That(manifest.Cases.Single(x => x.CaseId == "invoke.single").Status)
                 .IsEqualTo(ResultStatus.Succeeded);
             await Assert.That(missing.Status).IsEqualTo(ResultStatus.Incomplete);
+            await Assert.That(missing.BenchmarkReport!.BuildSucceeded).IsFalse();
+            await Assert.That(missing.RawFiles.Any(x => x is null)).IsFalse();
+            await Assert
+                .That(missing.Failures.Any(x => x.Reason.Contains("processの実行記録がありません")))
+                .IsTrue();
             await Assert
                 .That(missing.Failures.Any(x => x.Reason.Contains("reportが揃っていません")))
                 .IsTrue();

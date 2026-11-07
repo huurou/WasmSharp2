@@ -110,6 +110,43 @@ internal partial class FunctionValidator_ValidateTests
     }
 
     [Test]
+    public async Task 分岐表の複数結果の後方だけが型不一致_分岐表の位置で拒否する()
+    {
+        // Arrange
+        var module = WasmModule.Decode(
+            HostLinkingModuleBinary.Create(
+                HostLinkingModuleBinary.Types(([], []), ([], [0x7F, 0x7E])),
+                HostLinkingModuleBinary.Functions(0),
+                HostLinkingModuleBinary.Code(
+                    ([], Convert.FromHexString("02014107410941000E00000B1A1A0B"))
+                )
+            )
+        );
+
+        // Act & Assert
+        var exception = await Assert
+            .That(() => module.Validate())
+            .ThrowsExactly<WasmValidateException>();
+        using (Assert.Multiple())
+        {
+            await Assert
+                .That(exception!.Message.StartsWith("type mismatch", StringComparison.Ordinal))
+                .IsTrue();
+            await Assert
+                .That(exception.Location)
+                .IsEqualTo(
+                    new(
+                        WasmProcessingStage.Validate,
+                        module.Functions[0].Instructions[4].ByteOffset,
+                        0,
+                        10
+                    )
+                );
+            await Assert.That(module.FunctionCodes.IsEmpty).IsTrue();
+        }
+    }
+
+    [Test]
     [Arguments("7C", "7D")]
     [Arguments("7E7C", "7F7D")]
     public async Task 到達不能の分岐値が全てUnknown_具体型の異なるラベルへ同じ列を照合して許可する(

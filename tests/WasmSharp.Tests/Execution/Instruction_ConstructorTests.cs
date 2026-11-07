@@ -23,6 +23,7 @@ internal class Instruction_ConstructorTests
             await Assert.That(instruction.Index).IsEqualTo(7u);
             await Assert.That(instruction.SecondaryIndex).IsEqualTo(0u);
             await Assert.That(instruction.TargetCount).IsEqualTo(0);
+            await Assert.That(instruction.ShuffleLanes.IsEmpty).IsTrue();
         }
     }
 

@@ -21,6 +21,7 @@ internal sealed class RunComparisonFixture : IDisposable
     internal string? AffinityUnavailableReason { get; set; }
     internal string? ProcessRuntimeVersion { get; set; }
     internal Dictionary<string, string?> ProcessRuntimeVersionsByCase { get; } = [];
+    internal Dictionary<string, long> ProcessAffinitiesByCase { get; } = [];
 
     internal RunComparisonFixture(string runId, string repositoryName)
     {
@@ -193,6 +194,7 @@ internal sealed class RunComparisonFixture : IDisposable
         var processId = Manifest.RunId == "before" ? 4321 : 8765;
         foreach (var result in Manifest.Cases)
         {
+            var hasAffinity = ProcessAffinitiesByCase.TryGetValue(result.CaseId, out var affinity);
             var check = store.SaveCheck(
                 template_.Check with
                 {
@@ -200,8 +202,8 @@ internal sealed class RunComparisonFixture : IDisposable
                     CaseId = result.CaseId,
                     JobId = Jobs.Single().JobId,
                     ProcessId = processId,
-                    AffinityBefore = AffinityBefore,
-                    AffinityAfter = AffinityAfter,
+                    AffinityBefore = hasAffinity ? affinity : AffinityBefore,
+                    AffinityAfter = hasAffinity ? affinity : AffinityAfter,
                     AffinityUnavailableReason = AffinityUnavailableReason,
                     RuntimeVersion = ProcessRuntimeVersionsByCase.GetValueOrDefault(
                         result.CaseId,

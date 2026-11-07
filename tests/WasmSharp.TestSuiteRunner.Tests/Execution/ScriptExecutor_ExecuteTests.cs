@@ -148,6 +148,9 @@ public partial class ScriptExecutor_ExecuteTests
                 .IsTrue();
             await Assert.That(state.LastModule!.Cause).IsNull();
             await Assert.That(results[1].LastStage).IsEqualTo(CaseStage.Instantiate);
+            await Assert.That(results[1].Diagnostics[0].Operation).IsEqualTo("instantiate");
+            await Assert.That(results[2].Diagnostics[0].Operation).IsEqualTo("decode");
+            await Assert.That(results[3].Diagnostics[0].Operation).IsEqualTo("validate");
         }
     }
 
@@ -182,6 +185,55 @@ public partial class ScriptExecutor_ExecuteTests
             await Assert.That(results[0].LastStage).IsNull();
             await Assert.That(results[0].Diagnostics[0].Operation).IsEqualTo("verify");
             await Assert.That(results[0].Diagnostics[0].Path).IsEqualTo("a.0.wasm");
+            await Assert.That(results[0].Diagnostics.Count).IsEqualTo(1);
+        }
+    }
+
+    [Test]
+    [Arguments("assert_malformed")]
+    [Arguments("assert_invalid")]
+    public async Task 否定moduleの対象段階が正常終了する_不一致として止まりstartを実行しない(
+        string type
+    )
+    {
+        // Arrange
+        var stage = type == "assert_malformed" ? CaseStage.Decode : CaseStage.Validate;
+        var state = new ScriptState("a.wast");
+        var global = new WasmGlobal(new(WasmValueKind.I32, true), WasmValue.FromI32(0));
+        var host = new WasmHostModule("shared");
+        host.Define("g", global);
+        state.Register(host);
+        var binary = ScriptExecutionFixture.Binary(
+            (1, [1, 0x60, 0, 0]),
+            (
+                2,
+                [
+                    1,
+                    .. ScriptExecutionFixture.Name("shared"),
+                    .. ScriptExecutionFixture.Name("g"),
+                    3,
+                    0x7F,
+                    1,
+                ]
+            ),
+            (3, [1, 0]),
+            (8, [0]),
+            (10, [1, 6, 0, 0x41, 7, 0x24, 0, 0x0B])
+        );
+        var commands =
+            $$"""{"type":"{{type}}","line":1,"filename":"a.0.wasm","module_type":"binary","text":"expected"}""";
+
+        // Act
+        var results = ScriptExecutionFixture.Execute(commands, state, (0, binary));
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(results[0].Outcome).IsEqualTo(CaseOutcome.Failed);
+            await Assert.That(results[0].LastStage).IsEqualTo(stage);
+            await Assert.That(results[0].Diagnostics).IsEmpty();
+            await Assert.That(global.Value.AsI32()).IsEqualTo(0);
+            await Assert.That(state.LastModule).IsNull();
         }
     }
 
@@ -295,6 +347,9 @@ public partial class ScriptExecutor_ExecuteTests
         using (Assert.Multiple())
         {
             await Assert.That(results.Length).IsEqualTo(3);
+            await Assert.That(results[0].Outcome).IsEqualTo(CaseOutcome.RunnerError);
+            await Assert.That(results[0].Diagnostics[0].Operation).IsEqualTo("resolve_module");
+            await Assert.That(results[0].Diagnostics[0].Message).Contains("(直近)");
             await Assert.That(results[1].Outcome).IsEqualTo(CaseOutcome.Failed);
             await Assert.That(results[1].LastStage).IsEqualTo(CaseStage.Decode);
             await Assert.That(results[2].Outcome).IsEqualTo(CaseOutcome.Failed);

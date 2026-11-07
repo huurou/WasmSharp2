@@ -13,6 +13,7 @@ internal class Interpreter_I32RemSTests
     [Arguments(-7, -3, -1)]
     [Arguments(3, 11, 3)]
     [Arguments(int.MinValue, 1, 0)]
+    [Arguments(int.MinValue, 3, -2)]
     [Arguments(int.MinValue, -1, 0)]
     [Arguments(0, -1, 0)]
     public async Task 正負と左右が異なる値や符号付き最小値を割る_被除数の符号を保つ剰余を返す(

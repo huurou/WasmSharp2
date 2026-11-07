@@ -32,4 +32,44 @@ internal class ProfileSnapshot_MatchesTests
         // Assert
         await Assert.That(matches).IsFalse();
     }
+
+    [Test]
+    [Arguments("id")]
+    [Arguments("spec")]
+    [Arguments("wabt")]
+    [Arguments("working_directory")]
+    [Arguments("conversion")]
+    [Arguments("features")]
+    [Arguments("logical_arguments")]
+    public async Task 入力集合が同じでも生成条件の1項目が異なる_一致しないと判定する(
+        string condition
+    )
+    {
+        // Arrange
+        var profile = Core2Profile.Load();
+        var snapshot = ProfileSnapshot.FromProfile(profile);
+        snapshot = condition switch
+        {
+            "id" => snapshot with { Id = "different-profile" },
+            "spec" => snapshot with { Spec = snapshot.Spec with { Commit = new string('a', 40) } },
+            "wabt" => snapshot with { Wabt = snapshot.Wabt with { Commit = new string('b', 40) } },
+            "working_directory" => snapshot with { WorkingDirectory = "different-directory" },
+            "conversion" => snapshot with
+            {
+                Conversion = snapshot.Conversion with { Check = !snapshot.Conversion.Check },
+            },
+            "features" => snapshot with { Features = [.. snapshot.Features.Skip(1)] },
+            "logical_arguments" => snapshot with
+            {
+                LogicalArguments = [.. snapshot.LogicalArguments, "--debug-names"],
+            },
+            _ => throw new ArgumentOutOfRangeException(nameof(condition)),
+        };
+
+        // Act
+        var matches = snapshot.Matches(profile);
+
+        // Assert
+        await Assert.That(matches).IsFalse();
+    }
 }

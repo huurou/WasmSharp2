@@ -1,3 +1,5 @@
+using System.Collections.Immutable;
+using WasmSharp.Benchmarks.Cases;
 using WasmSharp.Benchmarks.Measurements;
 using WasmSharp.Benchmarks.Tests.Fixtures;
 
@@ -5,6 +7,32 @@ namespace WasmSharp.Benchmarks.Tests.Measurements;
 
 internal class InvokeBenchmarks_InitializeTests
 {
+    [Test]
+    public async Task 固定入力がdataセグメントと異なる_検査用と測定用の両instanceへ同じ入力を書き込む()
+    {
+        // Arrange
+        var definition = VerificationFixture.ChangedMemoryInputDefinition(MeasurementStage.Invoke);
+        var bytes = File.ReadAllBytes(
+                Path.Combine(
+                    AppContext.BaseDirectory,
+                    "Fixtures",
+                    "Data",
+                    "Verification",
+                    "state.wasm"
+                )
+            )
+            .ToImmutableArray();
+        var assets = InvokeFixture.BuildAssets(definition, bytes);
+        var benchmark = new InvokeBenchmarks();
+
+        // Act
+        benchmark.Initialize(assets, definition.CaseId);
+        benchmark.Single();
+
+        // Assert
+        await Assert.That(benchmark.Cleanup).ThrowsNothing();
+    }
+
     [Test]
     [Arguments("invoke.single")]
     [Arguments("memory.copy-fill")]

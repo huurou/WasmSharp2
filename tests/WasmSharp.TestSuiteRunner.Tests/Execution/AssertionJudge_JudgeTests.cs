@@ -252,6 +252,10 @@ internal class AssertionJudge_JudgeTests
                 .That(result.ActualValues[0].Bits)
                 .IsEqualTo(differs ? "00000002" : "00000001");
             await Assert.That(result.Diagnostics.Count).IsEqualTo(differs ? 1 : 0);
+            if (differs)
+            {
+                await Assert.That(result.Diagnostics[0].Stage).IsEqualTo(CaseStage.Invoke);
+            }
         }
     }
 

@@ -57,7 +57,8 @@ internal static class ModuleValidator
                     9
                 );
             }
-            if (element.ActiveTarget is not { } target)
+            var target = element.ActiveTarget;
+            if (target is null)
             {
                 continue;
             }
@@ -110,7 +111,8 @@ internal static class ModuleValidator
         var importedGlobals = module.Imports.OfType<GlobalImport>().Select(x => x.Type).ToArray();
         foreach (var data in module.DataSegments)
         {
-            if (data.ActiveTarget is not { } target)
+            var target = data.ActiveTarget;
+            if (target is null)
             {
                 continue;
             }
@@ -202,11 +204,12 @@ internal static class ModuleValidator
     /// <param name="module">デコード済みの静的定義</param>
     private static void ValidateStart(WasmModule module)
     {
-        if (module.Start is not { } start)
+        if (module.Start is null)
         {
             return;
         }
 
+        var start = module.Start.Value;
         var imports = module.Imports.OfType<FunctionImport>().ToArray();
         var location = new WasmFailureLocation(
             WasmProcessingStage.Validate,

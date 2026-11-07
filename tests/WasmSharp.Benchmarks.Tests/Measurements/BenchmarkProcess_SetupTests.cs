@@ -33,6 +33,7 @@ internal class BenchmarkProcess_SetupTests
             await Assert.That(failed.Precheck!.Status).IsEqualTo(ResultStatus.Succeeded);
             await Assert.That(failed.ExecutionStarted).IsFalse();
             await Assert.That(failed.Failures.Single().Stage).IsEqualTo(RunStage.Saving);
+            await Assert.That(failed.Failures.Single().Reason).IsNotEmpty();
             await Assert
                 .That(failed.Failures.Single().LastConfirmedStage)
                 .IsEqualTo(RunStage.Precheck);
@@ -74,7 +75,7 @@ internal class BenchmarkProcess_SetupTests
         var process = BenchmarkProcess.Start("InvokeBenchmarks.Single");
 
         // Act & Assert
-        await Assert
+        var exception = await Assert
             .That(() =>
                 process.Setup(
                     (_, id) =>
@@ -92,9 +93,16 @@ internal class BenchmarkProcess_SetupTests
         using (Assert.Multiple())
         {
             await Assert.That(failed.Precheck!.Status).IsEqualTo(ResultStatus.Failed);
+            var observation = failed.Precheck!.Observations.Single();
+            await Assert.That(observation.Name).IsNotEmpty();
+            await Assert.That(observation.Expected).IsNotEmpty();
+            await Assert.That(observation.Actual).IsEqualTo(exception!.Message);
+            await Assert.That(observation.Matches).IsFalse();
+            await Assert.That(failed.Postcheck).IsNull();
             await Assert.That(failed.ExecutionStarted).IsFalse();
             await Assert.That(failed.Failures.Single().CaseId).IsEqualTo("invoke.single");
             await Assert.That(failed.Failures.Single().Stage).IsEqualTo(RunStage.Precheck);
+            await Assert.That(failed.Failures.Single().Reason).IsNotEmpty();
             await Assert
                 .That(failed.Failures.Single().ExceptionType)
                 .IsEqualTo(typeof(InvalidOperationException).FullName);
@@ -133,8 +141,23 @@ internal class BenchmarkProcess_SetupTests
 
             // Assert
             var checks = RunStore.ReadChecks(run.DirectoryPath).Select(x => x.Check).ToList();
+            var prechecked = checks.Single(x =>
+                x.Precheck?.Status == ResultStatus.Succeeded && !x.ExecutionStarted
+            );
+            var completed = checks.Single(x => x.Postcheck is not null);
             using (Assert.Multiple())
             {
+                await Assert.That(prechecked.LastConfirmedStage).IsEqualTo(RunStage.Precheck);
+                await Assert.That(prechecked.Postcheck).IsNull();
+                await Assert.That(prechecked.AffinityAfter).IsNull();
+                foreach (var check in new[] { prechecked.Precheck!, completed.Postcheck! })
+                {
+                    var observation = check.Observations.Single();
+                    await Assert.That(observation.Name).IsNotEmpty();
+                    await Assert.That(observation.Expected).IsNotEmpty();
+                    await Assert.That(observation.Actual).IsEqualTo(observation.Expected);
+                    await Assert.That(observation.Matches).IsTrue();
+                }
                 await Assert
                     .That(checks.Any(x => x.Precheck?.Status == ResultStatus.Succeeded))
                     .IsTrue();
@@ -163,7 +186,6 @@ internal class BenchmarkProcess_SetupTests
                 if (OperatingSystem.IsWindows() || OperatingSystem.IsLinux())
                 {
                     using var current = Process.GetCurrentProcess();
-                    var completed = checks.Single(x => x.Postcheck is not null);
                     await Assert
                         .That(completed.AffinityBefore)
                         .IsEqualTo(current.ProcessorAffinity.ToInt64());

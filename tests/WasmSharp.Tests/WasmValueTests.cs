@@ -48,7 +48,11 @@ internal class WasmValue_AsI32Tests
         {
             foreach (var value in values)
             {
-                await Assert.That(value.AsI32).ThrowsExactly<InvalidOperationException>();
+                var exception = await Assert
+                    .That(value.AsI32)
+                    .ThrowsExactly<InvalidOperationException>();
+                await Assert.That(exception!.Message).Contains(value.Kind.ToString());
+                await Assert.That(exception.Message).Contains("I32");
             }
         }
     }

@@ -34,6 +34,8 @@ dotnet csharpier check .
 
 生成器テストは、命令宣言、値表現、実行コード、デコード結果に関するランタイムのソースを埋め込み、テスト内のRoslynコンパイルに使用します。埋め込み対象は[生成器テストのプロジェクト設定](tests/WasmSharp.Generators.Tests/WasmSharp.Generators.Tests.csproj)の`EmbeddedResource`で管理します。対象ファイルを移動・改名する場合は、この設定も更新してください。
 
+Stryker.NETによるテストの検出力の測定は[ミューテーションテストの手順](docs/mutation-testing.md)を参照してください。
+
 ## 公式スイートの検証
 
 [Test Suite Runnerの操作ガイド](tools/WasmSharp.TestSuiteRunner/README.md)を参照してください。固定Core 2.0素材の生成、全commandの実行、baselineの保存・比較、最終判定を個別のコマンドで行えます。

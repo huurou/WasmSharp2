@@ -75,6 +75,34 @@ public class SuiteExecutor_ExecuteInputTests
             await Assert
                 .That(interruption!.ExceptionType)
                 .IsEqualTo(typeof(OperationCanceledException).FullName);
+            await Assert.That(interruption.Operation).IsEqualTo("execute_input");
+            await Assert.That(interruption.Path).IsEqualTo("a.wast");
+        }
+    }
+
+    [Test]
+    public async Task 列挙できない入力の実行前に中断する_処理済みにせず件数未確定のまま保持する()
+    {
+        // Arrange
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+        var input = new InputVerification(new("a.wast", new string('a', 64)), null, [], [], []);
+        var state = new ScriptState("a.wast");
+
+        // Act
+        var (result, interruption) = SuiteExecutor.ExecuteInput(input, state, cancellation.Token);
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(result.Status).IsEqualTo(InputRunStatus.Incomplete);
+            await Assert.That(result.CommandCount).IsNull();
+            await Assert.That(result.Cases).IsEmpty();
+            await Assert.That(result.UnprocessedCount).IsEqualTo(0);
+            await Assert.That(interruption!.Operation).IsEqualTo("execute_input");
+            await Assert
+                .That(interruption.ExceptionType)
+                .IsEqualTo(typeof(OperationCanceledException).FullName);
         }
     }
 }

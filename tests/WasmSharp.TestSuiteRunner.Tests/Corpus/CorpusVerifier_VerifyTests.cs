@@ -84,6 +84,7 @@ internal class CorpusVerifier_VerifyTests
             await Assert.That(a.ModuleIssues.Keys.Order().SequenceEqual([0, 2])).IsTrue();
             await Assert.That(a.ModuleIssues[0].Path).IsEqualTo("modules/a.0.wasm");
             await Assert.That(a.ModuleIssues[0].Operation).IsEqualTo("verify");
+            await Assert.That(a.ModuleIssues[0].Message).IsEqualTo("素材がありません。");
             await Assert.That(a.ModuleIssues[2].Path).IsEqualTo("modules/a.2.wasm");
             await Assert.That(a.ModuleIssues[2].Message).Contains("SHA-256");
             await Assert
@@ -224,11 +225,15 @@ internal class CorpusVerifier_VerifyTests
     }
 
     [Test]
-    [Arguments("../../outside.wasm")]
-    [Arguments("/outside.wasm")]
-    [Arguments("..\\outside.wasm")]
-    [Arguments("b.0.wasm")]
-    public async Task JSONの参照名が入力の素材を指さない_利用commandに理由を残す(string filename)
+    [Arguments("../../outside.wasm", "../../outside.wasm")]
+    [Arguments("/outside.wasm", "/outside.wasm")]
+    [Arguments("..\\outside.wasm", "..\\outside.wasm")]
+    [Arguments("b.0.wasm", CorpusFixture.B)]
+    [Arguments("unrecorded.wasm", "manifestに記録されていない")]
+    public async Task JSONの参照名が入力の素材を指さない_利用commandに理由を残す(
+        string filename,
+        string expectedReason
+    )
     {
         // Arrange
         using var fixture = CorpusFixture.Create();
@@ -279,6 +284,7 @@ internal class CorpusVerifier_VerifyTests
             await Assert.That(a.Document).IsNotNull();
             await Assert.That(a.Modules.ContainsKey(0)).IsFalse();
             await Assert.That(a.ModuleIssues.ContainsKey(0)).IsTrue();
+            await Assert.That(a.ModuleIssues[0].Message).Contains(expectedReason);
             await Assert.That(a.Modules.ContainsKey(2)).IsTrue();
             await Assert.That(a.Issues.Any(x => x.Path == "modules/a.0.wasm")).IsTrue();
         }
@@ -347,6 +353,7 @@ internal class CorpusVerifier_VerifyTests
         using (Assert.Multiple())
         {
             await Assert.That(a.ModuleIssues[0].Path).IsEqualTo("modules/a.0.wasm");
+            await Assert.That(a.ModuleIssues[0].Message).Contains("2件");
             await Assert.That(b.Issues.Any(x => x.Path == "modules/a.0.wasm")).IsTrue();
             await Assert.That(b.Modules.ContainsKey(0)).IsTrue();
         }
@@ -404,12 +411,23 @@ internal class CorpusVerifier_VerifyTests
         {
             await Assert.That(a.Issues.Length).IsEqualTo(1);
             await Assert.That(a.Issues[0].Path).IsEqualTo("modules/a.9.wasm");
+            await Assert
+                .That(a.Issues[0].Message)
+                .IsEqualTo("どのcommandからも参照されていない素材です。");
             await Assert.That(a.Modules.Keys.Order().SequenceEqual([0, 2])).IsTrue();
         }
     }
 
     [Test]
-    public async Task Manifestのcommand一覧が生成JSONと一致しない_documentを返さない()
+    [Arguments("source_filename")]
+    [Arguments("enumeration_complete")]
+    [Arguments("command_count")]
+    [Arguments("commands")]
+    [Arguments("references")]
+    [Arguments("missing")]
+    public async Task Manifestの列挙記録の1項目が生成JSONと一致しない_documentを返さない(
+        string field
+    )
     {
         // Arrange
         using var fixture = CorpusFixture.Create();
@@ -424,10 +442,27 @@ internal class CorpusVerifier_VerifyTests
                             y.Script is { } script
                                 ? y with
                                 {
-                                    Script = script with
+                                    Script = field switch
                                     {
-                                        CommandCount = 3,
-                                        Commands = [.. script.Commands.Take(3)],
+                                        "source_filename" => script with
+                                        {
+                                            SourceFilename = "other.wast",
+                                        },
+                                        "enumeration_complete" => script with
+                                        {
+                                            EnumerationComplete = false,
+                                        },
+                                        "command_count" => script with { CommandCount = 3 },
+                                        "commands" => script with
+                                        {
+                                            Commands = [.. script.Commands.Take(3)],
+                                        },
+                                        "references" => script with
+                                        {
+                                            References = [.. script.References.Skip(1)],
+                                        },
+                                        "missing" => null,
+                                        _ => throw new ArgumentOutOfRangeException(nameof(field)),
                                     },
                                 }
                                 : y
@@ -446,6 +481,9 @@ internal class CorpusVerifier_VerifyTests
             await Assert.That(a.Document).IsNull();
             await Assert.That(a.Modules).IsEmpty();
             await Assert.That(a.Issues.Any(x => x.Path == "modules/a.json")).IsTrue();
+            await Assert
+                .That(a.Issues.Single(x => x.Path == "modules/a.json").Message)
+                .IsEqualTo("manifestに記録したcommand一覧または素材参照が生成JSONと一致しません。");
         }
     }
 
@@ -553,8 +591,13 @@ internal class CorpusVerifier_VerifyTests
         {
             await Assert.That(a.Modules.ContainsKey(0)).IsFalse();
             await Assert.That(a.ModuleIssues[0].Path).IsEqualTo("modules/a.json");
+            await Assert.That(a.ModuleIssues[0].Message).Contains("wasm");
+            await Assert.That(a.ModuleIssues[0].Message).Contains("json");
             await Assert.That(a.ModuleIssues.ContainsKey(1)).IsFalse();
             await Assert.That(a.Issues.Any(x => x.Path == "modules/a.1.wat")).IsTrue();
+            await Assert
+                .That(a.Issues.Single(x => x.Path == "modules/a.1.wat").Message)
+                .Contains("wat");
             await Assert.That(a.Modules.ContainsKey(2)).IsTrue();
         }
     }
@@ -617,6 +660,7 @@ internal class CorpusVerifier_VerifyTests
             x => x with { Artifacts = [.. x.Artifacts.Where(y => y.Kind != ArtifactKind.Json)] }
         );
         File.Delete(fixture.GetPath("modules/a.json"));
+        File.Delete(fixture.GetPath("modules/a.0.wasm"));
 
         // Act
         var result = Verify(fixture);
@@ -628,17 +672,36 @@ internal class CorpusVerifier_VerifyTests
             await Assert.That(a.Document).IsNull();
             await Assert.That(a.Issues).IsNotEmpty();
             await Assert.That(a.Issues.All(x => x.Operation == "verify")).IsTrue();
+            await Assert
+                .That(a.Issues.Select(x => (x.Path, x.Message)))
+                .IsEquivalentTo(
+                    new (string? Path, string Message)[]
+                    {
+                        (CorpusFixture.A, "JSONの生成物がありません。"),
+                        ("modules/a.0.wasm", "素材がありません。"),
+                    }
+                );
         }
     }
 
     [Test]
-    public async Task 実行モードで変換に成功していない入力を照合する_変換状態を入力異常として残す()
+    [Arguments(ConversionStatus.RunnerError, "runner_error")]
+    [Arguments(ConversionStatus.Unprocessed, "unprocessed")]
+    public async Task 実行モードで変換に成功していない入力を照合する_変換状態を入力異常として残す(
+        ConversionStatus status,
+        string statusName
+    )
     {
         // Arrange
         using var fixture = CorpusFixture.Create();
         fixture.UpdateInput(
             CorpusFixture.A,
-            x => x with { Status = ConversionStatus.RunnerError, ExitCode = 1 }
+            x =>
+                x with
+                {
+                    Status = status,
+                    ExitCode = status == ConversionStatus.RunnerError ? 1 : null,
+                }
         );
 
         // Act
@@ -650,7 +713,7 @@ internal class CorpusVerifier_VerifyTests
         {
             await Assert.That(a.Issues.Length).IsEqualTo(1);
             await Assert.That(a.Issues[0].Path).IsEqualTo(CorpusFixture.A);
-            await Assert.That(a.Issues[0].Message).Contains("runner_error");
+            await Assert.That(a.Issues[0].Message).Contains(statusName);
             await Assert.That(a.Document).IsNotNull();
             await Assert.That(Get(result, CorpusFixture.B).Issues).IsEmpty();
         }
@@ -709,6 +772,184 @@ internal class CorpusVerifier_VerifyTests
             await Assert
                 .That(result.Diagnostics.Select(x => x.Path).SequenceEqual(["simd/c.wast"]))
                 .IsTrue();
+        }
+    }
+
+    [Test]
+    public async Task JSONの生成物が複数記録されている_件数を診断して実行対象を選ばない()
+    {
+        // Arrange
+        using var fixture = CorpusFixture.Create();
+        fixture.WriteArtifact(
+            CorpusFixture.A,
+            "modules/extra.json",
+            Encoding.UTF8.GetBytes(CorpusFixture.A_JSON)
+        );
+
+        // Act
+        var result = Verify(fixture);
+
+        // Assert
+        var input = Get(result, CorpusFixture.A);
+        using (Assert.Multiple())
+        {
+            await Assert.That(input.Document).IsNull();
+            await Assert.That(input.Modules).IsEmpty();
+            await Assert
+                .That(input.Issues)
+                .Contains(
+                    new CorpusDiagnostic(
+                        "verify",
+                        "JSONの生成物が2件記録されています。",
+                        CorpusFixture.A
+                    )
+                );
+        }
+    }
+
+    [Test]
+    public async Task JSONの列挙は完了したが未知のルート項目がある_列挙時の診断を入力異常として残す()
+    {
+        // Arrange
+        using var fixture = CorpusFixture.Create();
+        fixture.WriteArtifact(
+            CorpusFixture.A,
+            "modules/a.json",
+            Encoding.UTF8.GetBytes(CorpusFixture.A_JSON.Insert(1, "\"extra\":{},"))
+        );
+
+        // Act
+        var result = Verify(fixture);
+
+        // Assert
+        var input = Get(result, CorpusFixture.A);
+        using (Assert.Multiple())
+        {
+            await Assert.That(input.Document).IsNotNull();
+            await Assert.That(input.Document!.EnumerationComplete).IsTrue();
+            await Assert
+                .That(input.Issues)
+                .Contains(
+                    new CorpusDiagnostic(
+                        "enumerate",
+                        "固定形式にないextraがあります。",
+                        "modules/a.json"
+                    )
+                );
+        }
+    }
+
+    [Test]
+    public async Task 同じ素材を複数commandが参照する_両方のcommandに参照数の理由を残す()
+    {
+        // Arrange
+        using var fixture = CorpusFixture.Create();
+        fixture.WriteArtifact(
+            CorpusFixture.A,
+            "modules/a.json",
+            Encoding.UTF8.GetBytes(
+                CorpusFixture.A_JSON.Replace("a.2.wasm", "a.0.wasm", StringComparison.Ordinal)
+            )
+        );
+
+        // Act
+        var result = Verify(fixture);
+
+        // Assert
+        var input = Get(result, CorpusFixture.A);
+        using (Assert.Multiple())
+        {
+            await Assert.That(input.Modules).IsEmpty();
+            await Assert.That(input.ModuleIssues.Keys).IsEquivalentTo(new[] { 0, 2 });
+            foreach (var issue in input.ModuleIssues.Values)
+            {
+                await Assert.That(issue.Path).IsEqualTo("modules/a.0.wasm");
+                await Assert
+                    .That(issue.Message)
+                    .IsEqualTo("2件のcommandから参照されており、commandと1対1に対応しません。");
+            }
+        }
+    }
+
+    [Test]
+    public async Task 素材が排他的に開かれている_利用commandに読取例外を残す()
+    {
+        // Arrange
+        using var fixture = CorpusFixture.Create();
+        using var stream = File.Open(
+            fixture.GetPath("modules/a.0.wasm"),
+            FileMode.Open,
+            FileAccess.Read,
+            FileShare.None
+        );
+
+        // Act
+        var result = Verify(fixture);
+
+        // Assert
+        var input = Get(result, CorpusFixture.A);
+        using (Assert.Multiple())
+        {
+            await Assert.That(input.Modules.ContainsKey(0)).IsFalse();
+            await Assert.That(input.ModuleIssues[0].Path).IsEqualTo("modules/a.0.wasm");
+            await Assert
+                .That(input.ModuleIssues[0].ExceptionType)
+                .IsEqualTo(typeof(IOException).FullName);
+            await Assert.That(input.ModuleIssues[0].Message).StartsWith("素材を読み取れません: ");
+        }
+    }
+
+    [Test]
+    public async Task 未記録のリンクが素材領域にある_リンク先を列挙せずリンク自体を報告する()
+    {
+        // Arrange
+        using var fixture = CorpusFixture.Create();
+        var outsideDirectory = Path.Combine(fixture.Root, "outside");
+        Directory.CreateDirectory(outsideDirectory);
+        var outsideFile = Path.Combine(outsideDirectory, "outside.wasm");
+        await File.WriteAllBytesAsync(outsideFile, CorpusFixture.FirstModule);
+        Directory.CreateSymbolicLink(fixture.GetPath("modules/extra-directory"), outsideDirectory);
+        File.CreateSymbolicLink(fixture.GetPath("modules/extra.wasm"), outsideFile);
+
+        // Act
+        var result = Verify(fixture);
+
+        // Assert
+        await Assert
+            .That(result.Diagnostics)
+            .IsEquivalentTo(
+                new[]
+                {
+                    new CorpusDiagnostic(
+                        "verify",
+                        "manifestに記録されていないリンクがあります。",
+                        "modules/extra-directory"
+                    ),
+                    new CorpusDiagnostic(
+                        "verify",
+                        "manifestに記録されていないリンクがあります。",
+                        "modules/extra.wasm"
+                    ),
+                }
+            );
+    }
+
+    [Test]
+    public async Task 素材領域がない_素材の欠落を入力に記録し列挙失敗を重ねない()
+    {
+        // Arrange
+        using var fixture = CorpusFixture.Create();
+        Directory.Move(fixture.GetPath("modules"), Path.Combine(fixture.Root, "moved-materials"));
+
+        // Act
+        var result = Verify(fixture);
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(result.Diagnostics).IsEmpty();
+            await Assert.That(result.Inputs.All(x => x.Document is null)).IsTrue();
+            await Assert.That(result.Inputs.All(x => !x.Issues.IsEmpty)).IsTrue();
         }
     }
 

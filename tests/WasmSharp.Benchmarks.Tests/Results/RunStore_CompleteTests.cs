@@ -25,6 +25,7 @@ internal class RunStore_CompleteTests
         fixture.SaveConditions(store);
         fixture.SaveSucceededCase(store);
         var path = Path.Combine(fixture.DirectoryPath, relativePath);
+        var original = File.ReadAllBytes(path);
         if (changed)
         {
             File.WriteAllText(path, "保存後の変更");
@@ -39,6 +40,11 @@ internal class RunStore_CompleteTests
         var actual = RunStore.Load(fixture.DirectoryPath);
         await Assert.That(actual.Status).IsEqualTo(ResultStatus.Incomplete);
         await Assert.That(actual.CompletedAtUtc).IsNull();
+        File.WriteAllBytes(path, original);
+        var failure = await Assert
+            .That(() => store.Complete(ResultStatus.Succeeded))
+            .ThrowsExactly<InvalidOperationException>();
+        await Assert.That(failure!.Message).Contains("保存に失敗したrunは完了できません");
     }
 
     [Test]
@@ -125,13 +131,29 @@ internal class RunStore_CompleteTests
     }
 
     [Test]
-    public async Task 結果と検査のprocessが異なる_対応しない検査を完了へ採用しない()
+    [Arguments("run")]
+    [Arguments("case")]
+    [Arguments("job")]
+    [Arguments("process")]
+    public async Task 結果と検査の識別情報が異なる_対応しない検査を完了へ採用しない(
+        string different
+    )
     {
         // Arrange
         using var fixture = new RunStoreFixture();
         var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest);
         fixture.SaveConditions(store);
-        var check = store.SaveCheck(fixture.Check with { ProcessId = 9999 });
+        var mismatched = different switch
+        {
+            "run" => fixture.Check with { RunId = "other-run" },
+            "case" => fixture.Check with { CaseId = "other-case" },
+            "job" => fixture.Check with { JobId = "other-job" },
+            _ => fixture.Check with { ProcessId = 9999 },
+        };
+        var check = store.SaveFile(
+            "checks/mismatched.json",
+            JsonSerializer.SerializeToUtf8Bytes(mismatched, CaseJson.Options)
+        );
         var result = fixture.Manifest.Cases.Single() with
         {
             Metrics = new(null, "未取得", null, "未取得", null, "未取得"),
@@ -287,6 +309,50 @@ internal class RunStore_CompleteTests
         var actual = RunStore.Load(fixture.DirectoryPath);
         await Assert.That(actual.Status).IsEqualTo(ResultStatus.Incomplete);
         await Assert.That(actual.CompletedAtUtc).IsNull();
+    }
+
+    [Test]
+    public async Task 予定した2caseの記録が揃っても片方が未完了である_runの完了を拒否する()
+    {
+        // Arrange
+        using var fixture = new RunStoreFixture();
+        var store = RunStore.Create(
+            fixture.DirectoryPath,
+            fixture.Manifest with
+            {
+                PlannedCaseIds = ["invoke.single", "invoke.empty"],
+            }
+        );
+        fixture.SaveConditions(store);
+        fixture.SaveSucceededCase(store);
+        store.SaveCase(
+            new(
+                "invoke.empty",
+                ResultStatus.Incomplete,
+                new(null, "未完了", null, "未完了", null, "未完了"),
+                null,
+                [],
+                []
+            )
+        );
+
+        // Act & Assert
+        await Assert
+            .That(() => store.Complete(ResultStatus.Succeeded))
+            .ThrowsExactly<InvalidOperationException>();
+        var actual = RunStore.Load(fixture.DirectoryPath);
+        using (Assert.Multiple())
+        {
+            await Assert.That(actual.Status).IsEqualTo(ResultStatus.Incomplete);
+            await Assert.That(actual.CompletedAtUtc).IsNull();
+            await Assert.That(actual.Cases).Count().IsEqualTo(2);
+            await Assert
+                .That(actual.Cases.Single(x => x.CaseId == "invoke.single").Status)
+                .IsEqualTo(ResultStatus.Succeeded);
+            await Assert
+                .That(actual.Cases.Single(x => x.CaseId == "invoke.empty").Status)
+                .IsEqualTo(ResultStatus.Incomplete);
+        }
     }
 
     [Test]

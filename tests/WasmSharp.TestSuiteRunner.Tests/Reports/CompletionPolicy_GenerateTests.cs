@@ -7,6 +7,28 @@ namespace WasmSharp.TestSuiteRunner.Tests.Reports;
 internal class CompletionPolicy_GenerateTests
 {
     [Test]
+    public async Task 全入力を処理したが操作全体の診断がある_診断件数を不合格理由にする()
+    {
+        // Arrange
+        var manifest = RunReportFixture.CreateManifest(("a.wast", 1));
+        manifest.Diagnostics.Add(new("conversion", "変換器の確認に失敗しました。"));
+
+        // Act
+        var decision = CompletionPolicy.Generate(
+            manifest,
+            ReportStore.Validate(manifest),
+            saved: true
+        );
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(decision.ExitCode).IsEqualTo(1);
+            await Assert.That(decision.Reasons.Single()).IsEqualTo("操作全体の診断が1件あります。");
+        }
+    }
+
+    [Test]
     public async Task 全入力の変換と照合と保存が完了した_成功の0を返す()
     {
         // Arrange

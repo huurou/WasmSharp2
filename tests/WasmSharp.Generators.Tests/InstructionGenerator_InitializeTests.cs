@@ -83,6 +83,7 @@ internal partial class InstructionGenerator_InitializeTests
     [Arguments("WasmValueKind.V128, WasmValueKind.F32", "V128", "LaneIndex", 4)]
     [Arguments("WasmValueKind.V128", "I32", "LaneIndex", 16)]
     [Arguments("WasmValueKind.V128", "I32", "LaneIndex", 8)]
+    [Arguments("WasmValueKind.V128", "I64", "LaneIndex", 2)]
     [Arguments("WasmValueKind.V128", "F64", "LaneIndex", 2)]
     [Arguments("WasmValueKind.V128, WasmValueKind.V128", "V128", "Shuffle", 0)]
     [Arguments("WasmValueKind.V128, WasmValueKind.V128, WasmValueKind.V128", "V128", "None", 0)]
@@ -205,11 +206,30 @@ internal partial class InstructionGenerator_InitializeTests
         0
     )]
     [Arguments("new WasmValueKind[] { WasmValueKind.FuncRef }", "V128", "None", 0)]
+    [Arguments(
+        "new WasmValueKind[] { WasmValueKind.V128, WasmValueKind.FuncRef }",
+        "V128",
+        "None",
+        0
+    )]
     [Arguments("new WasmValueKind[] { (WasmValueKind)999 }", "V128", "None", 0)]
     [Arguments("new WasmValueKind[] { WasmValueKind.V128 }", "ExternRef", "None", 0)]
     [Arguments("new WasmValueKind[] { WasmValueKind.V128 }", "I32", "LaneIndex", 0)]
     [Arguments("new WasmValueKind[] { WasmValueKind.V128 }", "I32", "LaneIndex", 3)]
     [Arguments("new WasmValueKind[] { WasmValueKind.V128 }", "F64", "LaneIndex", 4)]
+    [Arguments("new WasmValueKind[] { WasmValueKind.V128 }", "V128", "LaneIndex", 16)]
+    [Arguments(
+        "new WasmValueKind[] { WasmValueKind.V128, WasmValueKind.I32 }",
+        "I32",
+        "LaneIndex",
+        4
+    )]
+    [Arguments(
+        "new WasmValueKind[] { WasmValueKind.V128, WasmValueKind.I32, WasmValueKind.I32 }",
+        "V128",
+        "LaneIndex",
+        4
+    )]
     [Arguments("new WasmValueKind[] { WasmValueKind.V128 }", "I32", "None", 16)]
     [Arguments("new WasmValueKind[] { WasmValueKind.V128 }", "V128", "Shuffle", 0)]
     [Arguments(
@@ -850,6 +870,9 @@ internal partial class InstructionGenerator_InitializeTests
     [Arguments("ImmediateKind.I32, StackEffectKind.PushI32, ValidationRule.Constant, \"\"")]
     [Arguments("(ImmediateKind)999, StackEffectKind.PushI32, ValidationRule.Constant, \"Handler\"")]
     [Arguments(
+        "ImmediateKind.LaneIndex, StackEffectKind.PushI32, ValidationRule.Constant, \"Handler\", LaneCount = 4"
+    )]
+    [Arguments(
         "ImmediateKind.Unsupported, StackEffectKind.Numeric, ValidationRule.Numeric, \"Handler\", 1, WasmValueKind.I32, WasmValueKind.I32"
     )]
     [Arguments(
@@ -1094,12 +1117,10 @@ internal partial class InstructionGenerator_InitializeTests
         driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out _, out var diagnostics);
 
         // Assert
-        await Assert.That(diagnostics.Length).IsEqualTo(1);
+        await GeneratorTestSource.AssertDiagnostic(driver, diagnostics, "WSIG001");
         using (Assert.Multiple())
         {
-            await Assert.That(diagnostics[0].Id).IsEqualTo("WSIG001");
-            await Assert.That(diagnostics[0].Severity).IsEqualTo(DiagnosticSeverity.Error);
-            await Assert.That(diagnostics[0].Location.IsInSource).IsTrue();
+            await Assert.That(diagnostics[0].GetMessage()).Contains("'second'");
             await Assert
                 .That(
                     diagnostics[0]
@@ -1107,7 +1128,6 @@ internal partial class InstructionGenerator_InitializeTests
                         .ToString(diagnostics[0].Location.SourceSpan)
                 )
                 .Contains("second");
-            await Assert.That(driver.GetRunResult().GeneratedTrees).IsEmpty();
         }
     }
 
@@ -1276,6 +1296,10 @@ internal partial class InstructionGenerator_InitializeTests
             {
                 [Instruction(0, 0x41, "i32.const", ImmediateKind.I32, StackEffectKind.PushI32,
                     ValidationRule.Constant, nameof(Execution.Interpreter.PushConstant))]
+                [Instruction(0xFC, 0x41, "extended.fc", ImmediateKind.I32, StackEffectKind.PushI32,
+                    ValidationRule.Constant, nameof(Execution.Interpreter.PushConstant))]
+                [Instruction(0xFD, 0x41, "extended.fd", ImmediateKind.I32, StackEffectKind.PushI32,
+                    ValidationRule.Constant, nameof(Execution.Interpreter.PushConstant))]
                 [Instruction(0xFC, 0, "i32.trunc_sat_f32_s")]
                 internal static partial class InstructionSet;
             }
@@ -1285,6 +1309,7 @@ internal partial class InstructionGenerator_InitializeTests
                 {
                     internal static ExecutionResult PushConstant(InterpreterContext context, in Instruction instruction)
                         => default;
+                    internal static int PushConstant(int value) => value;
                 }
             }
             """,
@@ -1306,6 +1331,8 @@ internal partial class InstructionGenerator_InitializeTests
             output,
             """
             var found = WasmSharp.Instructions.InstructionSet.TryGet(new(0, 0x41), out var constant);
+            var fcFound = WasmSharp.Instructions.InstructionSet.TryGet(new(0xFC, 0x41), out var fc);
+            var fdFound = WasmSharp.Instructions.InstructionSet.TryGet(new(0xFD, 0x41), out var fd);
             var unsupportedFound = WasmSharp.Instructions.InstructionSet.TryGet(new(0xFC, 0), out var unsupported);
             return found && constant.Name == "i32.const"
                 && constant.Immediate == WasmSharp.Instructions.ImmediateKind.I32
@@ -1313,13 +1340,17 @@ internal partial class InstructionGenerator_InitializeTests
                 && constant.Validation == WasmSharp.Instructions.ValidationRule.Constant
                 && constant.NumericSignature == null
                 && constant.ExecutionOpcode.HasValue
+                && fcFound && fc.Name == "extended.fc" && fc.ExecutionOpcode.HasValue
+                && fdFound && fd.Name == "extended.fd" && fd.ExecutionOpcode.HasValue
+                && constant.ExecutionOpcode != fc.ExecutionOpcode && constant.ExecutionOpcode != fd.ExecutionOpcode
+                && fc.ExecutionOpcode != fd.ExecutionOpcode
                 && unsupportedFound && unsupported.Name == "i32.trunc_sat_f32_s"
                 && unsupported.Immediate == WasmSharp.Instructions.ImmediateKind.Unsupported
                 && unsupported.StackEffect == WasmSharp.Instructions.StackEffectKind.Unsupported
                 && unsupported.Validation == WasmSharp.Instructions.ValidationRule.Unsupported
                 && unsupported.ExecutionOpcode == null
                 && unsupported.NumericSignature == null
-                && System.Enum.GetValues<WasmSharp.Instructions.ExecutionOpcode>().Length == 1
+                && System.Enum.GetValues<WasmSharp.Instructions.ExecutionOpcode>().Length == 3
                 && !WasmSharp.Instructions.InstructionSet.TryGet(new(0, 0), out _)
                 && !WasmSharp.Instructions.InstructionSet.TryGet(new(0xFD, 0), out _);
             """

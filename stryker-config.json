@@ -1,0 +1,10 @@
+{
+  "stryker-config": {
+    "configuration": "Release",
+    "test-runner": "mtp",
+    "mutation-level": "Standard",
+    "mutate": ["**/*.cs"],
+    "reporters": ["html", "json", "progress"],
+    "coverage-analysis": "perTest"
+  }
+}

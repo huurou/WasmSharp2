@@ -285,7 +285,8 @@ internal static class CorpusGenerator
                 : [];
             foreach (var path in created)
             {
-                if (CorpusVerifier.GetKind(path) is not { } kind)
+                var kind = CorpusVerifier.GetKind(path);
+                if (kind is null)
                 {
                     diagnostics.Add(new(RECORD, "素材として扱わない種類の生成物です。", path));
                     continue;
@@ -295,7 +296,7 @@ internal static class CorpusGenerator
                 artifacts.Add(
                     new(
                         path,
-                        kind,
+                        kind.Value,
                         System.Convert.ToHexStringLower(SHA256.HashData(content)),
                         input.Input.Path
                     )

@@ -878,6 +878,30 @@ internal class ModuleBinaryReader_ReadS7Tests
 internal class ModuleBinaryReader_ReadRangeTests
 {
     [Test]
+    [Arguments(ModuleReadMode.Bounded, null, 7u)]
+    [Arguments(ModuleReadMode.Bounded, 3u, 3u)]
+    [Arguments(ModuleReadMode.Diagnostic, null, 7u)]
+    [Arguments(ModuleReadMode.Diagnostic, 3u, 3u)]
+    public async Task 親が関数indexを持つ_子への指定を優先し省略時だけ継承する(
+        ModuleReadMode mode,
+        uint? functionIndex,
+        uint expectedFunctionIndex
+    )
+    {
+        // Arrange
+        var parent = new ModuleBinaryReader([0x11], 100, 10, 7, mode);
+
+        // Act
+        var child = parent.ReadRange(1, functionIndex);
+        var location = child.Location();
+
+        // Assert
+        await Assert
+            .That(location)
+            .IsEqualTo(new(WasmProcessingStage.Decode, 100, expectedFunctionIndex, 10));
+    }
+
+    [Test]
     public async Task 診断用モードの整数が宣言境界を越える_物理byteと独立した宣言終端を保持する()
     {
         // Arrange

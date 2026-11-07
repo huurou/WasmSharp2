@@ -268,17 +268,18 @@ internal class ValueCodec_CreateArgumentsTests
     }
 
     [Test]
-    [Arguments(LaneType.I8, 15)]
-    [Arguments(LaneType.I8, 17)]
-    [Arguments(LaneType.I16, 16)]
-    [Arguments(LaneType.I32, 2)]
-    [Arguments(LaneType.I64, 4)]
-    [Arguments(LaneType.I64, 0)]
-    [Arguments(LaneType.F32, 8)]
-    [Arguments(LaneType.F64, 1)]
+    [Arguments(LaneType.I8, 15, 16)]
+    [Arguments(LaneType.I8, 17, 16)]
+    [Arguments(LaneType.I16, 16, 8)]
+    [Arguments(LaneType.I32, 2, 4)]
+    [Arguments(LaneType.I64, 4, 2)]
+    [Arguments(LaneType.I64, 0, 2)]
+    [Arguments(LaneType.F32, 8, 4)]
+    [Arguments(LaneType.F64, 1, 2)]
     public async Task V128のlane数がlane型と一致しない_位置を示して拒否する(
         LaneType laneType,
-        int count
+        int count,
+        int expectedCount
     )
     {
         // Arrange
@@ -290,6 +291,7 @@ internal class ValueCodec_CreateArgumentsTests
             .That(() => ValueCodec.CreateArguments([Vector(laneType, lanes)], state))
             .ThrowsExactly<ScriptFormatException>();
         await Assert.That(exception!.Message).Contains("action.args[0].value");
+        await Assert.That(exception.Message).Contains($"の{expectedCount}個と一致しません。");
     }
 
     private static ArgumentValue Scalar(WasmValueKind kind, string value)

@@ -66,9 +66,10 @@ internal class CorpusGenerator_GenerateTests
         // Arrange
         using var workspace = await SuiteWorkspace.CreateAsync();
         var request = workspace.CreateRequest(workspace.CreateProfile());
+        List<string> progress = [];
 
         // Act
-        var result = CorpusGenerator.Generate(request);
+        var result = CorpusGenerator.Generate(request, progress.Add);
 
         // Assert
         var manifest = result.Manifest;
@@ -80,6 +81,16 @@ internal class CorpusGenerator_GenerateTests
         using (Assert.Multiple())
         {
             await Assert.That(result.SaveFailure).IsNull();
+            await Assert
+                .That(
+                    progress.SequenceEqual([
+                        "failure.wast",
+                        "partial-failure.wast",
+                        "partial.wast",
+                        "success.wast",
+                    ])
+                )
+                .IsTrue();
             await Assert.That(manifest.Diagnostics).IsEmpty();
             await Assert.That(success.Status).IsEqualTo(ConversionStatus.Succeeded);
             await Assert.That(success.Diagnostics).IsEmpty();
@@ -93,6 +104,7 @@ internal class CorpusGenerator_GenerateTests
                         ])
                 )
                 .IsTrue();
+            await Assert.That(success.Artifacts[0].Script).IsNull();
             await Assert.That(success.Artifacts[1].Script!.CommandCount).IsEqualTo(1);
             await Assert
                 .That(success.Artifacts[1].Script!.References[0].ArtifactPath)
@@ -229,6 +241,84 @@ internal class CorpusGenerator_GenerateTests
             await Assert.That(result.Manifest.Completion.OutputComplete).IsFalse();
             await Assert.That(result.Manifest.Completion.ProcessingComplete).IsTrue();
             await Assert.That(await File.ReadAllTextAsync(manifestPath)).IsEqualTo("既存の結果");
+        }
+    }
+
+    [Test]
+    public async Task 変換に成功しても未対応の生成物が混在する_診断を残して成功扱いしない()
+    {
+        // Arrange
+        using var workspace = await SuiteWorkspace.CreateAsync();
+        var request = workspace.CreateRequest(workspace.CreateProfile());
+
+        // Act
+        var result = CorpusGenerator.Generate(
+            request,
+            path =>
+            {
+                if (path == "partial.wast")
+                {
+                    File.WriteAllText(
+                        Path.Combine(workspace.OutputRoot, "modules", "extra.txt"),
+                        "未対応の生成物"
+                    );
+                }
+            }
+        );
+
+        // Assert
+        var input = Get(result.Manifest, "success.wast");
+        using (Assert.Multiple())
+        {
+            await Assert.That(input.ExitCode).IsEqualTo(0);
+            await Assert.That(input.Status).IsEqualTo(ConversionStatus.RunnerError);
+            await Assert.That(input.Artifacts.Count).IsEqualTo(2);
+            await Assert
+                .That(input.Diagnostics)
+                .Contains(
+                    new CorpusDiagnostic(
+                        "record",
+                        "素材として扱わない種類の生成物です。",
+                        "modules/extra.txt"
+                    )
+                );
+        }
+    }
+
+    [Test]
+    public async Task 出力rootがファイルである_保存先の作成失敗と原因を返す()
+    {
+        // Arrange
+        using var workspace = await SuiteWorkspace.CreateAsync();
+        var outputRoot = Path.Combine(workspace.OutputRoot, "file");
+        await File.WriteAllTextAsync(outputRoot, "既存のファイル");
+        var request = workspace.CreateRequest(workspace.CreateProfile()) with
+        {
+            OutputRoot = outputRoot,
+        };
+
+        // Act
+        var result = CorpusGenerator.Generate(request);
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(result.SaveFailure).IsNotNull();
+            await Assert
+                .That(result.SaveFailure!.Path)
+                .IsEqualTo(Path.Combine(outputRoot, "manifest.json"));
+            await Assert.That(result.SaveFailure.InnerException).IsTypeOf<IOException>();
+            await Assert.That(result.SaveFailure.Message).Contains("保存先を用意できません");
+            await Assert.That(result.Manifest.Completion.OutputComplete).IsFalse();
+            await Assert.That(result.Manifest.Inputs.SelectMany(x => x.Artifacts)).IsEmpty();
+            await Assert
+                .That(
+                    result
+                        .Manifest.Inputs.SelectMany(x => x.Diagnostics)
+                        .Any(x => x.Operation == "record")
+                )
+                .IsFalse();
+            await Assert.That(await File.ReadAllTextAsync(outputRoot)).IsEqualTo("既存のファイル");
         }
     }
 

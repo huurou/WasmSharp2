@@ -173,10 +173,21 @@ internal static class ReportStore
     internal static StoredReport Read(string path)
     {
         var fullPath = Path.GetFullPath(path);
-        byte[] content;
+        var content = ReadFileBytes(fullPath);
+        return ReadDocument(content, fullPath);
+    }
+
+    /// <summary>
+    /// 保存済みファイルのバイト列を取得し、ファイル操作の異常を保存結果の読取異常へ変換する。
+    /// </summary>
+    /// <param name="fullPath">読み取るファイルの絶対path</param>
+    /// <returns>保存済みファイルのバイト列</returns>
+    /// <exception cref="ReportStoreException">ファイルを読み取れない場合</exception>
+    private static byte[] ReadFileBytes(string fullPath)
+    {
         try
         {
-            content = File.ReadAllBytes(fullPath);
+            return File.ReadAllBytes(fullPath);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
@@ -186,20 +197,21 @@ internal static class ReportStore
                 ex
             );
         }
+    }
 
+    /// <summary>
+    /// JSON文書を開いて保存済み結果を復元し、JSONの異常を保存結果の読取異常へ変換する。
+    /// </summary>
+    /// <param name="content">保存済みJSONのバイト列</param>
+    /// <param name="fullPath">読み取ったファイルの絶対path</param>
+    /// <returns>元のバイト列と検証結果を保持する保存済み結果</returns>
+    /// <exception cref="ReportStoreException">schema・kind・JSON構造・ケース識別を読み取れない場合</exception>
+    private static StoredReport ReadDocument(byte[] content, string fullPath)
+    {
         try
         {
             using var document = JsonDocument.Parse(content, documentOptions_);
-            var root = document.RootElement;
-            if (ReadKind(root, fullPath) == MANIFEST_KIND)
-            {
-                var manifest = Deserialize<CorpusManifest>(root);
-                return new StoredManifest(manifest, content, Validate(manifest));
-            }
-
-            var report = Deserialize<RunReport>(root);
-            EnsureCaseIds(report, fullPath);
-            return new StoredRunReport(report, content, Validate(report));
+            return ReadResult(document.RootElement, content, fullPath);
         }
         catch (JsonException ex)
         {
@@ -209,6 +221,28 @@ internal static class ReportStore
                 ex
             );
         }
+    }
+
+    /// <summary>
+    /// 保存形式の種類に応じて結果を復元し、記録の完全性を検証する。
+    /// </summary>
+    /// <param name="root">保存済みJSONのルート要素</param>
+    /// <param name="content">保存済みJSONの元のバイト列</param>
+    /// <param name="fullPath">読み取ったファイルの絶対path</param>
+    /// <returns>復元した内容、元のバイト列、記録の問題を保持する結果</returns>
+    /// <exception cref="ReportStoreException">schema・kind・ケース識別を読み取れない場合</exception>
+    /// <exception cref="JsonException">記録のJSON構造が保存形式に従わない場合</exception>
+    private static StoredReport ReadResult(JsonElement root, byte[] content, string fullPath)
+    {
+        if (ReadKind(root, fullPath) == MANIFEST_KIND)
+        {
+            var manifest = Deserialize<CorpusManifest>(root);
+            return new StoredManifest(manifest, content, Validate(manifest));
+        }
+
+        var report = Deserialize<RunReport>(root);
+        EnsureCaseIds(report, fullPath);
+        return new StoredRunReport(report, content, Validate(report));
     }
 
     /// <summary>

@@ -26,6 +26,8 @@ internal class DecodedInstruction_WithoutImmediateTests
             await Assert.That(instruction.Labels).IsEmpty();
             await Assert.That(instruction.SelectTypes.IsDefault).IsFalse();
             await Assert.That(instruction.SelectTypes).IsEmpty();
+            await Assert.That(instruction.ShuffleLanes.IsDefault).IsFalse();
+            await Assert.That(instruction.ShuffleLanes).IsEmpty();
         }
     }
 }

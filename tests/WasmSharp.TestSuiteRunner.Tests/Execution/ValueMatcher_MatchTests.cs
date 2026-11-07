@@ -177,6 +177,7 @@ internal class ValueMatcher_MatchTests
                 .IsTrue();
             await Assert.That(mismatches[0].Message).Contains("0x8000000000000000");
             await Assert.That(mismatches[0].Message).Contains("0x7fffffffffffffff");
+            await Assert.That(mismatches[0].Message).StartsWith("結果1の値が");
         }
     }
 
@@ -243,6 +244,16 @@ internal class ValueMatcher_MatchTests
 
         // Assert
         await Assert.That(Positions(mismatches).SequenceEqual(Expected(matched))).IsTrue();
+        if (!matched)
+        {
+            var actualDescription = actual switch
+            {
+                "null" => "null",
+                "unknown" => "割り当てていない非nullのexternref",
+                _ => $"番号{actual}のexternref",
+            };
+            await Assert.That(mismatches[0].Message).Contains($"ではなく{actualDescription}です。");
+        }
     }
 
     [Test]

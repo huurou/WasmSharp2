@@ -13,7 +13,11 @@ internal ref struct ModuleBinaryReader
     /// <summary>
     /// 不正なバイト列を置換せず、診断として扱う名前読み取り用のUTF-8符号化
     /// </summary>
-    private static readonly UTF8Encoding utf8_ = new(false, true);
+    private static readonly UTF8Encoding utf8_ = new(
+        // Stryker disable once Boolean: GetStringだけを使用するため、BOM発行設定は名前の読取り結果に影響しない
+        false,
+        true
+    );
 
     /// <summary>
     /// この読み取り範囲の入力バイト列

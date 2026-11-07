@@ -30,6 +30,9 @@ internal class ReportStore_ReadTests
             await Assert.That(run).IsTypeOf<StoredRunReport>();
             await Assert.That(run.Issues).IsEmpty();
             await Assert
+                .That(Convert.ToHexString(run.Content))
+                .IsEqualTo(Convert.ToHexString(await File.ReadAllBytesAsync(reportPath)));
+            await Assert
                 .That(JsonSerializer.Serialize(((StoredRunReport)run).Report))
                 .IsEqualTo(JsonSerializer.Serialize(report));
         }
@@ -51,6 +54,12 @@ internal class ReportStore_ReadTests
     [Arguments(
         """
             "schema_version":1,"kind":"comparison_report"
+            """,
+        "kind"
+    )]
+    [Arguments(
+        """
+            "schema_version":1,"kind":1
             """,
         "kind"
     )]
@@ -138,6 +147,34 @@ internal class ReportStore_ReadTests
     }
 
     [Test]
+    [Arguments("\"max_call_depth\":1024", "", "max_call_depth")]
+    [Arguments(
+        "\"execution_policy\":{\"max_call_depth\":1024}",
+        "\"execution_policy\":null",
+        "execution_policy"
+    )]
+    public async Task 実行ポリシーがnullまたは必須項目を欠く_構造不正として読取を拒否する(
+        string original,
+        string replacement,
+        string expectedProperty
+    )
+    {
+        // Arrange
+        using var directory = new TemporaryDirectory();
+        var path = await WriteModifiedSampleAsync(directory, original, replacement);
+
+        // Act & Assert
+        var exception = await Assert
+            .That(() => ReportStore.Read(path))
+            .ThrowsExactly<ReportStoreException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.InnerException).IsTypeOf<JsonException>();
+            await Assert.That(exception.InnerException!.Message).Contains(expectedProperty);
+        }
+    }
+
+    [Test]
     [Arguments(
         """
             "cases":[
@@ -164,6 +201,7 @@ internal class ReportStore_ReadTests
         {
             await Assert.That(exception!.Message).Contains(path);
             await Assert.That(exception.InnerException).IsTypeOf<JsonException>();
+            await Assert.That(exception.InnerException!.Message).Contains("null");
         }
     }
 
@@ -180,7 +218,38 @@ internal class ReportStore_ReadTests
         var exception = await Assert
             .That(() => ReportStore.Read(path))
             .ThrowsExactly<ReportStoreException>();
-        await Assert.That(exception!.InnerException).IsTypeOf<JsonException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.InnerException).IsTypeOf<JsonException>();
+            await Assert.That(exception.Path).IsEqualTo(path);
+            await Assert
+                .That(exception.Message)
+                .IsEqualTo(
+                    $"{path}を保存済み結果のJSONとして読み取れません: {exception.InnerException!.Message}"
+                );
+        }
+    }
+
+    [Test]
+    public async Task 存在しない結果を相対pathで読む_絶対pathと読取失敗の原因を保持する()
+    {
+        // Arrange
+        using var directory = new TemporaryDirectory();
+        var fullPath = directory.Combine("missing.json");
+        var relativePath = Path.GetRelativePath(Environment.CurrentDirectory, fullPath);
+
+        // Act & Assert
+        var exception = await Assert
+            .That(() => ReportStore.Read(relativePath))
+            .ThrowsExactly<ReportStoreException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.Path).IsEqualTo(fullPath);
+            await Assert.That(exception.InnerException).IsTypeOf<FileNotFoundException>();
+            await Assert
+                .That(exception.Message)
+                .IsEqualTo($"{fullPath}を読み取れません: {exception.InnerException!.Message}");
+        }
     }
 
     [Test]

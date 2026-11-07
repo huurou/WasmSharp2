@@ -234,6 +234,41 @@ internal partial class ModuleValidator_ValidateTests
     [Test]
     [Arguments(1u)]
     [Arguments(uint.MaxValue)]
+    public async Task 定義memoryの後ろをexportする_定義数を含む添字上限で拒否する(uint index)
+    {
+        // Arrange
+        var module = WasmModule.Decode(
+            HostLinkingModuleBinary.Create(
+                HostLinkingModuleBinary.Memories((0, null)),
+                HostLinkingModuleBinary.Exports(("memory", 2, index))
+            )
+        );
+
+        // Act & Assert
+        var exception = await Assert
+            .That(() => ModuleValidator.Validate(module))
+            .ThrowsExactly<WasmValidateException>();
+        using (Assert.Multiple())
+        {
+            await Assert
+                .That(
+                    exception!.Message.StartsWith(
+                        $"unknown memory {index}",
+                        StringComparison.Ordinal
+                    )
+                )
+                .IsTrue();
+            await Assert
+                .That(exception.Location)
+                .IsEqualTo(
+                    new(WasmProcessingStage.Validate, module.Exports[0].ByteOffset, null, 7)
+                );
+        }
+    }
+
+    [Test]
+    [Arguments(1u)]
+    [Arguments(uint.MaxValue)]
     public async Task Importの関数型添字が範囲外_関数添字とimport位置付きで拒否する(uint typeIndex)
     {
         // Arrange

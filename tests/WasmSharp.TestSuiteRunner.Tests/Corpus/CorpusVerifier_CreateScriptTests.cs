@@ -61,6 +61,44 @@ internal class CorpusVerifier_CreateScriptTests
     }
 
     [Test]
+    [Arguments("")]
+    [Arguments("a\u0001.wasm")]
+    [Arguments("a\\b.wasm")]
+    [Arguments("a:b.wasm")]
+    [Arguments("./a.wasm")]
+    [Arguments("a//b.wasm")]
+    public async Task 禁止文字や空の要素を含む参照名を読む_参照一覧へ追加しない(string filename)
+    {
+        // Arrange
+        var json = System.Text.Json.JsonSerializer.Serialize(
+            new
+            {
+                source_filename = "a.wast",
+                commands = new[]
+                {
+                    new
+                    {
+                        type = "module",
+                        line = 1,
+                        filename,
+                    },
+                },
+            }
+        );
+        var document = ScriptDocument.Parse(Encoding.UTF8.GetBytes(json), "modules/a.json");
+
+        // Act
+        var script = CorpusVerifier.CreateScript(document, "modules/a.json");
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(script.Commands.Single().Filename).IsEqualTo(filename);
+            await Assert.That(script.References).IsEmpty();
+        }
+    }
+
+    [Test]
     public async Task 構文破損したJSONから作る_確定済みcommandと未確定の総数を保持する()
     {
         // Arrange

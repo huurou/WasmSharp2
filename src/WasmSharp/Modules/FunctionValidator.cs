@@ -365,9 +365,10 @@ internal static class FunctionValidator
                                 instruction.ByteOffset
                             );
                         }
+                        var currentPc = instructions.Count;
                         PatchTarget(
                             endedFrame.IfFalseTarget,
-                            endedFrame.HasElse ? endedFrame.ElsePc : instructions.Count
+                            endedFrame.HasElse ? endedFrame.ElsePc : currentPc
                         );
                     }
                     // 関数frameの前方参照も、配列末尾ではなく末尾ReturnのPcへ接続する。

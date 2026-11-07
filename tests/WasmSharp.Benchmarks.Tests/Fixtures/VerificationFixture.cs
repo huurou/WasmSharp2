@@ -4,6 +4,39 @@ namespace WasmSharp.Benchmarks.Tests.Fixtures;
 
 internal static class VerificationFixture
 {
+    internal static BenchmarkCase ChangedMemoryInputDefinition(MeasurementStage stage)
+    {
+        var definition = Definition(stage);
+        return AssetLoadingFixture.WithInput(
+            definition with
+            {
+                CaseId = stage == MeasurementStage.Invoke ? "invoke.single" : definition.CaseId,
+                ExpectedResult = definition.ExpectedResult with
+                {
+                    Arrays =
+                        stage == MeasurementStage.Invoke ? [] : definition.ExpectedResult.Arrays,
+                    Globals = [],
+                    Tables = [],
+                },
+            },
+            definition.Input with
+            {
+                Arrays =
+                [
+                    new(
+                        "memory",
+                        0,
+                        ArrayElementType.U8,
+                        8,
+                        ArrayInputPattern.RepeatedByte,
+                        null,
+                        165
+                    ),
+                ],
+            }
+        );
+    }
+
     internal static WasmModule Decode() =>
         WasmModule.Decode(
             File.ReadAllBytes(

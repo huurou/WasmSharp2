@@ -9,8 +9,110 @@ namespace WasmSharp.Benchmarks.Tests;
 internal class BenchmarkCli_RunTests
 {
     [Test]
+    [Arguments("")]
+    [Arguments("check")]
+    [Arguments("run")]
+    [Arguments("compare")]
+    public async Task helpを指定する_必要な引数なしで全操作の案内を表示する(string operation)
+    {
+        // Arrange
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        string[] args = operation.Length == 0 ? ["--help"] : [operation, "--help"];
+
+        // Act
+        var exitCode = new BenchmarkCli().Run(args, output, error);
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(exitCode).IsEqualTo(0);
+            await Assert.That(error.ToString()).IsEqualTo("");
+            await Assert.That(output.ToString()).Contains("check --assets <manifest>");
+            await Assert
+                .That(output.ToString())
+                .Contains("run --assets <manifest> --case <id|all>");
+            await Assert.That(output.ToString()).Contains("compare --baseline <run-directory,...>");
+        }
+    }
+
+    [Test]
+    [Arguments("", "check、run、compare")]
+    [Arguments("unknown", "check、run、compare")]
+    [Arguments("run|--unknown|value", "未知の引数です: --unknown")]
+    [Arguments("check|--kind|smoke", "未知の引数です: --kind")]
+    [Arguments("check|--assets", "--assetsの値が不足")]
+    [Arguments("check|--assets| ", "--assetsの値が不足")]
+    [Arguments("check|--assets|--next", "--assetsの値が不足")]
+    [Arguments("check", "必須引数が不足しています: --assets")]
+    [Arguments("check|--assets|a|--assets|b", "引数が重複しています: --assets")]
+    public async Task 操作または引数が不正_不足や重複を識別できる理由と終了値2を返す(
+        string input,
+        string reason
+    )
+    {
+        // Arrange
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        string[] args = input.Length == 0 ? [] : input.Split('|');
+
+        // Act
+        var exitCode = new BenchmarkCli().Run(args, output, error);
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(exitCode).IsEqualTo(2);
+            await Assert.That(output.ToString()).IsEqualTo("");
+            await Assert.That(error.ToString()).Contains(reason);
+        }
+    }
+
+    [Test]
+    [Arguments(",baseline")]
+    [Arguments("baseline,")]
+    [Arguments("baseline,,second")]
+    public async Task 比較run一覧に空要素がある_出力を作らず理由と終了値2を返す(string baseline)
+    {
+        // Arrange
+        using var fixture = new RunStoreFixture();
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+
+        // Act
+        var exitCode = new BenchmarkCli().Run(
+            [
+                "compare",
+                "--baseline",
+                baseline,
+                "--current",
+                "current",
+                "--policy",
+                "policy.json",
+                "--output",
+                fixture.DirectoryPath,
+            ],
+            output,
+            error
+        );
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(exitCode).IsEqualTo(2);
+            await Assert.That(output.ToString()).IsEqualTo("");
+            await Assert.That(error.ToString()).Contains("run一覧は空要素を含まない");
+            await Assert.That(Directory.Exists(fixture.DirectoryPath)).IsFalse();
+        }
+    }
+
+    [Test]
     [NotInParallel]
-    public async Task Gitを起動できない_測定を開始せず理由と終了値2を返す()
+    [Arguments("invoke.single")]
+    [Arguments("all")]
+    public async Task Gitを起動できない_単一または全caseの要求を受け付けてから理由と終了値2を返す(
+        string caseId
+    )
     {
         // Arrange
         using var assets = new AssetLoadingFixture();
@@ -24,15 +126,7 @@ internal class BenchmarkCli_RunTests
 
             // Act
             var exitCode = new BenchmarkCli().Run(
-                [
-                    "run",
-                    "--assets",
-                    assets.ManifestPath,
-                    "--case",
-                    "invoke.single",
-                    "--output",
-                    directory,
-                ],
+                ["run", "--assets", assets.ManifestPath, "--case", caseId, "--output", directory],
                 output,
                 error
             );
@@ -71,7 +165,7 @@ internal class BenchmarkCli_RunTests
         using (Assert.Multiple())
         {
             await Assert.That(exitCode).IsEqualTo(0);
-            await Assert.That(output.ToString()).Contains("invoke.single");
+            await Assert.That(output.ToString()).Contains("invoke.single: Succeeded (Invoke)");
             await Assert.That(error.ToString()).IsEqualTo("");
         }
     }
@@ -113,6 +207,12 @@ internal class BenchmarkCli_RunTests
         {
             await Assert.That(exitCode).IsEqualTo(expectedExit);
             await Assert.That(error.ToString().Length > 0).IsTrue();
+            if (!brokenHash)
+            {
+                await Assert.That(output.ToString()).Contains("invoke.single: Failed (Invoke)");
+                await Assert.That(error.ToString()).Contains("invoke.single/Invoke/results[0]");
+                await Assert.That(error.ToString()).Contains("期待=I32:00000000");
+            }
         }
     }
 
@@ -163,6 +263,10 @@ internal class BenchmarkCli_RunTests
             await Assert.That(exitCode).IsEqualTo(2);
             await Assert.That(File.ReadAllBytes(assets.ManifestPath)).IsEquivalentTo(before);
             await Assert.That(error.ToString().Length > 0).IsTrue();
+            if (operation is "run" or "compare")
+            {
+                await Assert.That(error.ToString()).Contains("出力先は既に存在します");
+            }
         }
     }
 
@@ -419,6 +523,9 @@ internal class BenchmarkCli_RunTests
                 await Assert.That(error.ToString()).IsEqualTo("");
                 await Assert.That(report.Cases.Count).IsEqualTo(15);
                 await Assert.That(report.IsAccepted).IsTrue();
+                await Assert.That(output.ToString()).Contains("invoke.single: Improved");
+                await Assert.That(output.ToString()).Contains($"受入: True; 保存先: {directory}");
+                await Assert.That(output.ToString()).Contains("  ReductionTargetReached:");
                 await Assert.That(report.BaselineRuns[0].RunId).IsEqualTo("before-0");
                 await Assert
                     .That(report.BaselineRuns[0].Manifest.Sha256)

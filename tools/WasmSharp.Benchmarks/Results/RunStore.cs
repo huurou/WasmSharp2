@@ -324,7 +324,8 @@ internal sealed class RunStore
 
             foreach (var process in result.BenchmarkReport?.Processes ?? [])
             {
-                if (process.CheckFile is not { } file)
+                var file = process.CheckFile;
+                if (file is null)
                 {
                     continue;
                 }

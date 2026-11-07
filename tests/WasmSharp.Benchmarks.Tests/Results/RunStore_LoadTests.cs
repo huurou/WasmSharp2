@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using System.Text.Json;
 using WasmSharp.Benchmarks.Cases;
 using WasmSharp.Benchmarks.Results;
@@ -7,6 +8,76 @@ namespace WasmSharp.Benchmarks.Tests.Results;
 
 internal class RunStore_LoadTests
 {
+    [Test]
+    public async Task 完了時刻があっても予定ケースが欠落している_未完了と原因を返す()
+    {
+        // Arrange
+        using var fixture = new RunStoreFixture();
+        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest);
+        fixture.SaveConditions(store);
+        fixture.SaveSucceededCase(store);
+        store.Complete(ResultStatus.Succeeded);
+        var completed = RunStore.Load(fixture.DirectoryPath);
+        File.WriteAllBytes(
+            Path.Combine(fixture.DirectoryPath, "run.json"),
+            JsonSerializer.SerializeToUtf8Bytes(completed with { Cases = [] }, CaseJson.Options)
+        );
+
+        // Act
+        var actual = RunStore.Load(fixture.DirectoryPath);
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(actual.Status).IsEqualTo(ResultStatus.Incomplete);
+            await Assert.That(actual.CompletedAtUtc).IsNull();
+            await Assert
+                .That(actual.Failures.Single().InterruptionReason)
+                .Contains("予定ケースが完了していません");
+        }
+    }
+
+    [Test]
+    public async Task 保存hashが一致してもsourceのJSONがnullである_未完了と原因を返す()
+    {
+        // Arrange
+        using var fixture = new RunStoreFixture();
+        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest);
+        fixture.SaveConditions(store);
+        fixture.SaveSucceededCase(store);
+        store.Complete(ResultStatus.Succeeded);
+        var completed = RunStore.Load(fixture.DirectoryPath);
+        var content = "null"u8.ToArray();
+        var source = completed.SourceFile! with
+        {
+            Sha256 = Convert.ToHexStringLower(SHA256.HashData(content)),
+        };
+        File.WriteAllBytes(Path.Combine(fixture.DirectoryPath, source.RelativePath), content);
+        File.WriteAllBytes(
+            Path.Combine(fixture.DirectoryPath, "run.json"),
+            JsonSerializer.SerializeToUtf8Bytes(
+                completed with
+                {
+                    SourceFile = source,
+                },
+                CaseJson.Options
+            )
+        );
+
+        // Act
+        var actual = RunStore.Load(fixture.DirectoryPath);
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(actual.Status).IsEqualTo(ResultStatus.Incomplete);
+            await Assert.That(actual.CompletedAtUtc).IsNull();
+            await Assert
+                .That(actual.Failures.Single().InterruptionReason)
+                .Contains("source情報が保存されていません");
+        }
+    }
+
     [Test]
     [Arguments("source/index.patch", false)]
     [Arguments("source/index.patch", true)]
@@ -71,6 +142,53 @@ internal class RunStore_LoadTests
         await Assert
             .That(actual.Failures.Single().InterruptionReason)
             .Contains("保存参照の照合に失敗");
+    }
+
+    [Test]
+    public async Task raw一覧が正常でも時間指標の測定参照が欠落している_未完了として読み込む()
+    {
+        // Arrange
+        using var fixture = new RunStoreFixture();
+        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest);
+        fixture.SaveConditions(store);
+        var result = fixture.SaveSucceededCase(store);
+        store.Complete(ResultStatus.Succeeded);
+        var completed = RunStore.Load(fixture.DirectoryPath);
+        var missing = new ManifestFile("raw/missing-measurements.csv", "missing-hash");
+        var changed = completed with
+        {
+            Cases =
+            [
+                result with
+                {
+                    Metrics = result.Metrics with
+                    {
+                        Time = result.Metrics.Time! with { RawMeasurements = missing },
+                    },
+                },
+            ],
+        };
+        File.WriteAllBytes(
+            Path.Combine(fixture.DirectoryPath, "run.json"),
+            JsonSerializer.SerializeToUtf8Bytes(changed, CaseJson.Options)
+        );
+
+        // Act
+        var actual = RunStore.Load(fixture.DirectoryPath);
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(actual.Status).IsEqualTo(ResultStatus.Incomplete);
+            await Assert.That(actual.CompletedAtUtc).IsNull();
+            await Assert.That(actual.Cases.Single().RawFiles).IsEquivalentTo(result.RawFiles);
+            await Assert
+                .That(actual.Cases.Single().Metrics.Time!.RawMeasurements)
+                .IsEqualTo(missing);
+            await Assert
+                .That(actual.Failures.Single().InterruptionReason)
+                .Contains("保存参照の照合に失敗");
+        }
     }
 
     [Test]

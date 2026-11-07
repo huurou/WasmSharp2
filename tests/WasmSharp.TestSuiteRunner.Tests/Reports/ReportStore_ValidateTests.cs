@@ -80,6 +80,9 @@ internal class ReportStore_ValidateTests
             await Assert.That(HasIssue(issues, RecordIssueKind.Duplicate, "a.wast#2")).IsTrue();
             await Assert.That(HasIssue(issues, RecordIssueKind.Unexpected, "a.wast#4")).IsTrue();
             await Assert.That(HasIssue(issues, RecordIssueKind.Inconsistent, "b.wast")).IsTrue();
+            await Assert
+                .That(issues.Single(x => x.Message.StartsWith("b.wastのcommand件数")).Message)
+                .Contains("素材のcommand件数2");
             await Assert.That(HasIssue(issues, RecordIssueKind.Missing, "b.wast#2")).IsTrue();
         }
     }
@@ -117,9 +120,12 @@ internal class ReportStore_ValidateTests
         var issues = ReportStore.Validate(report);
 
         // Assert
-        await Assert
-            .That(HasIssue(issues, RecordIssueKind.Inconsistent, "a.wastのcommand件数"))
-            .IsTrue();
+        var issue = issues.Single(x => x.Message.StartsWith("a.wastのcommand件数"));
+        using (Assert.Multiple())
+        {
+            await Assert.That(issue.Kind).IsEqualTo(RecordIssueKind.Inconsistent);
+            await Assert.That(issue.Message).Contains("素材のcommand件数未確定");
+        }
     }
 
     [Test]
@@ -257,6 +263,83 @@ internal class ReportStore_ValidateTests
             await Assert.That(HasIssue(issues, RecordIssueKind.Inconsistent, "集計")).IsTrue();
             await Assert.That(issues.Any(x => x.Kind == RecordIssueKind.OutputFailed)).IsTrue();
         }
+    }
+
+    [Test]
+    public async Task 未処理の入力が残るのにmanifestの処理完了を記録する_入力と完了状態の矛盾を報告する()
+    {
+        // Arrange
+        var manifest = CorpusManifestFixture.Create() with
+        {
+            Completion = new ConversionCompletion(true, true),
+        };
+
+        // Act
+        var issues = ReportStore.Validate(manifest);
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert
+                .That(HasIssue(issues, RecordIssueKind.Unprocessed, "unprocessed.wast"))
+                .IsTrue();
+            await Assert
+                .That(
+                    HasIssue(issues, RecordIssueKind.Inconsistent, "処理の完了が記録されています")
+                )
+                .IsTrue();
+            await Assert.That(issues.Length).IsEqualTo(2);
+        }
+    }
+
+    [Test]
+    public async Task 実行されていない入力を含む_入力の未処理状態を明示する()
+    {
+        // Arrange
+        var report = RunReportFixture.CreateSample();
+        report.Inputs[1] = new InputRunResult("b.wast");
+        report = report with { Summary = report.Summarize(), Completion = new(false, true) };
+
+        // Act
+        var issues = ReportStore.Validate(report);
+
+        // Assert
+        await Assert
+            .That(issues)
+            .Contains(new RecordIssue(RecordIssueKind.Unprocessed, "b.wastは未処理です。"));
+    }
+
+    [Test]
+    [Arguments(-1)]
+    [Arguments(5)]
+    public async Task 未処理command数が列挙済み範囲を外れる_件数の不整合を報告し欠落件数を推測しない(
+        int unprocessedCount
+    )
+    {
+        // Arrange
+        var report = RunReportFixture.CreateSample();
+        report.Inputs[0] = report.Inputs[0] with { UnprocessedCount = unprocessedCount };
+        report = report with { Summary = report.Summarize() };
+
+        // Act
+        var issues = ReportStore.Validate(report);
+
+        // Assert
+        await Assert
+            .That(issues)
+            .IsEquivalentTo(
+                new RecordIssue[]
+                {
+                    new(
+                        RecordIssueKind.Inconsistent,
+                        $"処理済みのa.wastに未処理commandが{unprocessedCount}件記録されています。"
+                    ),
+                    new(
+                        RecordIssueKind.Inconsistent,
+                        $"a.wastの未処理command数{unprocessedCount}が列挙済み数4と整合しません。"
+                    ),
+                }
+            );
     }
 
     private static bool HasIssue(IEnumerable<RecordIssue> issues, RecordIssueKind kind, string text)

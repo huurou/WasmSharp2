@@ -6,6 +6,64 @@ namespace WasmSharp.Benchmarks.Tests.Cases;
 internal class AssetManifest_LoadTests
 {
     [Test]
+    [Arguments("schema", "schema版2")]
+    [Arguments("duplicate", "重複")]
+    [Arguments("missing", "存在しない")]
+    [Arguments("rooted", "相対path")]
+    public async Task manifestの版や素材参照が不正_理由を示して読み込みを拒否する(
+        string scenario,
+        string reason
+    )
+    {
+        // Arrange
+        using var fixture = new AssetLoadingFixture();
+        var manifest = fixture.Manifest;
+        fixture.SaveManifest(
+            scenario switch
+            {
+                "schema" => manifest with { SchemaVersion = 2 },
+                "duplicate" => manifest with { Assets = [manifest.Assets[0], manifest.Assets[0]] },
+                "missing" => manifest with { Assets = [] },
+                _ => manifest with
+                {
+                    Profile = manifest.Profile with
+                    {
+                        RelativePath = Path.Combine(
+                            fixture.DirectoryPath,
+                            manifest.Profile.RelativePath
+                        ),
+                    },
+                },
+            }
+        );
+
+        // Act & Assert
+        var exception = await Assert
+            .That(() => AssetManifest.Load(fixture.ManifestPath))
+            .ThrowsExactly<InvalidDataException>();
+        await Assert.That(exception!.Message).Contains(reason);
+    }
+
+    [Test]
+    [Arguments("null", "JSONがnull")]
+    [Arguments("{", "JSON形式が不正")]
+    public async Task manifestのJSONがnullまたは破損している_対象pathと理由を示して拒否する(
+        string json,
+        string reason
+    )
+    {
+        // Arrange
+        using var fixture = new AssetLoadingFixture();
+        File.WriteAllText(fixture.ManifestPath, json);
+
+        // Act & Assert
+        var exception = await Assert
+            .That(() => AssetManifest.Load(fixture.ManifestPath))
+            .ThrowsExactly<InvalidDataException>();
+        await Assert.That(exception!.Message).Contains(fixture.ManifestPath).And.Contains(reason);
+    }
+
+    [Test]
     public async Task 正常な素材fixtureを読む_相対参照と読込済みバイト列から公開Invokeを準備できる()
     {
         // Arrange

@@ -9,6 +9,40 @@ namespace WasmSharp.Benchmarks.Tests.Measurements;
 internal class BenchmarkRun_PrepareTests
 {
     [Test]
+    [Arguments(false)]
+    [Arguments(true)]
+    public async Task 予定ケースが空または重複する_準備失敗を保存して測定を開始しない(
+        bool duplicated
+    )
+    {
+        // Arrange
+        using var assets = new AssetLoadingFixture();
+        using var run = new RunStoreFixture();
+        var request = new RunRequest(
+            run.DirectoryPath,
+            assets.ManifestPath,
+            duplicated ? ["invoke.single", "invoke.single"] : [],
+            RunKind.Smoke,
+            BenchmarkConfig.Create(),
+            "",
+            new("dotnet", [], "")
+        );
+
+        // Act & Assert
+        await Assert.That(() => BenchmarkRun.Prepare(request)).ThrowsExactly<ArgumentException>();
+        var manifest = RunStore.Load(run.DirectoryPath);
+        using (Assert.Multiple())
+        {
+            await Assert.That(manifest.Status).IsEqualTo(ResultStatus.Incomplete);
+            await Assert.That(manifest.CompletedAtUtc).IsNull();
+            await Assert
+                .That(manifest.Failures.Single(x => x.Stage == RunStage.Preparation).Message)
+                .Contains("重複のない1件以上");
+            await Assert.That(Directory.Exists(Path.Combine(run.DirectoryPath, "raw"))).IsFalse();
+        }
+    }
+
+    [Test]
     public async Task 予定ケースの準備が失敗_予定を保存したrunへ理由を残して未完了にする()
     {
         // Arrange

@@ -1,3 +1,5 @@
+using System.Text.Json;
+using WasmSharp.Benchmarks.Cases;
 using WasmSharp.Benchmarks.Measurements;
 using WasmSharp.Benchmarks.Results;
 using WasmSharp.Benchmarks.Tests.Fixtures;
@@ -7,10 +9,27 @@ namespace WasmSharp.Benchmarks.Tests.Measurements;
 internal class BenchmarkRun_CaptureSourceAfterTests
 {
     [Test]
-    public async Task 使用ファイルを追加変更削除する_sourceとprojectとassemblyの途中変更を記録する()
+    [Arguments("NuGet.Config")]
+    [Arguments("nuget.config")]
+    public async Task 使用ファイルを追加変更削除する_sourceとprojectとassemblyの途中変更を記録する(
+        string nuGetConfigName
+    )
     {
         // Arrange
         using var fixture = new SourceCaptureFixture();
+        Dictionary<string, string> settings = new()
+        {
+            ["Directory.Build.props"] = "<Project />",
+            ["Directory.Build.targets"] = "<Project />",
+            ["Directory.Packages.props"] = "<Project />",
+            ["global.json"] = "{}",
+            [nuGetConfigName] = "<configuration />",
+            ["packages.lock.json"] = "{}",
+        };
+        foreach (var setting in settings)
+        {
+            fixture.Write(setting.Key, setting.Value);
+        }
         var assembly = fixture.Write("output/runtime.dll", "runtime assembly");
         var deletedAssembly = fixture.Write("output/harness.dll", "harness assembly");
         var store = RunStore.Create(fixture.Run.DirectoryPath, fixture.Run.Manifest);
@@ -19,6 +38,11 @@ internal class BenchmarkRun_CaptureSourceAfterTests
             store,
             [(AssemblyRole.Runtime, assembly), (AssemblyRole.Harness, deletedAssembly)]
         );
+        var beforeFile = RunStore.Load(fixture.Run.DirectoryPath).SourceFile!;
+        foreach (var setting in settings)
+        {
+            fixture.Write(setting.Key, setting.Value + "\n");
+        }
         fixture.Write("src/WasmSharp/Runtime.cs", "class Runtime { int changed; }\n");
         fixture.Write("tools/WasmSharp.Benchmarks/New.cs", "class New {}\n");
         File.Delete(
@@ -54,8 +78,25 @@ internal class BenchmarkRun_CaptureSourceAfterTests
         var after = BenchmarkRun.CaptureSourceAfter(fixture.RepositoryDirectory, store, before);
 
         // Assert
+        var afterFile = RunStore.Load(fixture.Run.DirectoryPath).SourceFile!;
+        var savedSource = JsonSerializer.Deserialize<RunSource>(
+            File.ReadAllBytes(Path.Combine(fixture.Run.DirectoryPath, afterFile.RelativePath)),
+            CaseJson.Options
+        )!;
         using (Assert.Multiple())
         {
+            foreach (var setting in settings)
+            {
+                var change = after.Changes.Single(x => x.Path == setting.Key);
+                await Assert.That(change.Kind).IsEqualTo(ContentKind.Project);
+                await Assert
+                    .That(change.BeforeSha256)
+                    .IsEqualTo(
+                        before.Runtime.Files.Single(x => x.RelativePath == setting.Key).Sha256
+                    );
+                await Assert.That(change.AfterSha256).IsNotNull();
+                await Assert.That(change.AfterSha256).IsNotEqualTo(change.BeforeSha256);
+            }
             await Assert
                 .That(after.Changes.Single(x => x.Path == "src/WasmSharp/Runtime.cs").Kind)
                 .IsEqualTo(ContentKind.Source);
@@ -117,9 +158,15 @@ internal class BenchmarkRun_CaptureSourceAfterTests
                 .IsNull();
             await Assert.That(after.Changes.Any(x => x.Path == "unrelated.cs")).IsFalse();
             await Assert
+                .That(after.Changes.Any(x => x.Path == "src/WasmSharp.Generators/Releases.md"))
+                .IsFalse();
+            await Assert
                 .That(after.AssembliesAfter.Single().Sha256)
                 .IsNotEqualTo(before.AssembliesBefore.First().Sha256);
             await Assert.That(after.Runtime.Sha256).IsEqualTo(before.Runtime.Sha256);
+            await Assert.That(afterFile.RelativePath).IsNotEqualTo(beforeFile.RelativePath);
+            await Assert.That(savedSource.Changes).IsEquivalentTo(after.Changes);
+            await Assert.That(savedSource.AssembliesAfter).IsEquivalentTo(after.AssembliesAfter);
         }
     }
 

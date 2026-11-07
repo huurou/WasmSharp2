@@ -7,6 +7,42 @@ namespace WasmSharp.TestSuiteRunner.Tests.Reports;
 internal class CompletionPolicy_VerifyTests
 {
     [Test]
+    public async Task 全ケースpassedでも複数入力の異常と操作診断がある_合計件数を不合格理由にする()
+    {
+        // Arrange
+        var report = RunReportFixture.Create(
+            RunReportFixture.Case("a.wast", 0, CaseCategory.Setup, CaseOutcome.Passed),
+            RunReportFixture.Case("b.wast", 0, CaseCategory.Setup, CaseOutcome.Passed)
+        );
+        report.Inputs[0].Issues.Add(new("read", "aの異常"));
+        report.Inputs[1].Issues.Add(new("read", "bの異常"));
+        report.Diagnostics.Add(new("run", "操作の異常"));
+        report = report with { Summary = report.Summarize() };
+
+        // Act
+        var decision = CompletionPolicy.Verify(
+            report,
+            ReportStore.Validate(report),
+            report.Corpus.Profile.ToProfile()
+        );
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(decision.ExitCode).IsEqualTo(1);
+            await Assert
+                .That(decision.Reasons)
+                .IsEquivalentTo(
+                    new[]
+                    {
+                        "入力単位のrunner_errorが2件あります。",
+                        "操作全体の診断が1件あります。",
+                    }
+                );
+        }
+    }
+
+    [Test]
     public async Task 固定全入力と全commandを記録し対象外以外が全てpassed_成功の0を返す()
     {
         // Arrange

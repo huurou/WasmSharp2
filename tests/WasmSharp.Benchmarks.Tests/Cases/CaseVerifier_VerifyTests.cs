@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using WasmSharp.Benchmarks.Cases;
 using WasmSharp.Benchmarks.Tests.Fixtures;
 
@@ -5,6 +6,416 @@ namespace WasmSharp.Benchmarks.Tests.Cases;
 
 internal class CaseVerifier_VerifyTests
 {
+    [Test]
+    [Arguments("Decode")]
+    [Arguments("Validate")]
+    [Arguments("Instantiate")]
+    public async Task 読込済み素材が公開操作で失敗する_ケースと失敗段階と例外を保持する(
+        string failedStage
+    )
+    {
+        // Arrange
+        var definition = AssetLoadingFixture.ReadCases().Single(x => x.CaseId == "invoke.single");
+        // Decodeは空入力、Validateはi32結果の欠落、Instantiateは未提供importで失敗する
+        ImmutableArray<byte> bytes = failedStage switch
+        {
+            "Decode" => [],
+            "Validate" =>
+            [
+                0,
+                0x61,
+                0x73,
+                0x6d,
+                1,
+                0,
+                0,
+                0,
+                1,
+                5,
+                1,
+                0x60,
+                0,
+                1,
+                0x7f,
+                3,
+                2,
+                1,
+                0,
+                10,
+                4,
+                1,
+                2,
+                0,
+                0x0b,
+            ],
+            _ =>
+            [
+                0,
+                0x61,
+                0x73,
+                0x6d,
+                1,
+                0,
+                0,
+                0,
+                1,
+                4,
+                1,
+                0x60,
+                0,
+                0,
+                2,
+                7,
+                1,
+                1,
+                0x78,
+                1,
+                0x78,
+                0,
+                0,
+            ],
+        };
+        var assets = InvokeFixture.BuildAssets(definition, bytes);
+
+        // Act
+        var result = CaseVerifier.Verify(assets, definition.CaseId);
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(result.Succeeded).IsFalse();
+            await Assert.That(result.CaseId).IsEqualTo(definition.CaseId);
+            await Assert.That(result.Stage).IsEqualTo(failedStage);
+            await Assert.That(result.Subject).IsEqualTo("exception");
+            await Assert.That(result.Expected).IsEqualTo("正常終了");
+            await Assert.That(result.Observed).Contains("Exception");
+        }
+    }
+
+    [Test]
+    public async Task 読込済み素材の入力がdataセグメントと異なる_Invoke前に固定入力をmemoryへ書き込む()
+    {
+        // Arrange
+        var definition = VerificationFixture.ChangedMemoryInputDefinition(MeasurementStage.Invoke);
+        var bytes = File.ReadAllBytes(
+                Path.Combine(
+                    AppContext.BaseDirectory,
+                    "Fixtures",
+                    "Data",
+                    "Verification",
+                    "state.wasm"
+                )
+            )
+            .ToImmutableArray();
+        var assets = InvokeFixture.BuildAssets(definition, bytes);
+
+        // Act
+        var result = CaseVerifier.Verify(assets, definition.CaseId);
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(result.Succeeded).IsTrue();
+            await Assert.That(result.CaseId).IsEqualTo(definition.CaseId);
+            await Assert.That(result.Stage).IsEqualTo("Invoke");
+        }
+    }
+
+    [Test]
+    public async Task 追加Invoke用の入力が初期memoryと異なる_書込後の状態不一致を報告する()
+    {
+        // Arrange
+        var definition = VerificationFixture.ChangedMemoryInputDefinition(
+            MeasurementStage.Instantiate
+        );
+        var instance = VerificationFixture.Instantiate();
+
+        // Act
+        var result = CaseVerifier.Verify(definition, new InstanceObservation(instance));
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(result.Succeeded).IsFalse();
+            await Assert.That(result.Stage).IsEqualTo("Invoke");
+            await Assert.That(result.Subject).IsEqualTo("memory.memory[0..8]");
+            await Assert
+                .That(result.Expected)
+                .IsEqualTo("8a851ff82ee7048ad09ec3847f1ddf44944104d2cbd17ef4e3db22c6785a0d45");
+            await Assert
+                .That(result.Observed)
+                .IsEqualTo("ed0b4dd158a46dc424a660c0e9aaa52558406cb7c106391897bb07fd8dc3ba99");
+        }
+    }
+
+    [Test]
+    public async Task 期待配列のbyte数がuintの範囲を超える_空配列へ折り返して一致にしない()
+    {
+        // Arrange
+        var definition = VerificationFixture.Definition(MeasurementStage.Invoke) with
+        {
+            ExpectedResult = new(
+                [],
+                [
+                    new(
+                        "memory",
+                        0,
+                        ArrayElementType.U32,
+                        1U << 30,
+                        "sha256",
+                        "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+                    ),
+                ],
+                [],
+                []
+            ),
+        };
+        var observation = new InvokeObservation(
+            VerificationFixture.Instantiate(),
+            new WasmResults([])
+        );
+
+        // Act
+        var result = CaseVerifier.Verify(definition, observation);
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(result.Succeeded).IsFalse();
+            await Assert.That(result.Stage).IsEqualTo("Invoke");
+            await Assert.That(result.Subject).IsEqualTo("exception");
+            await Assert.That(result.Observed).Contains("System.OverflowException");
+        }
+    }
+
+    [Test]
+    [Arguments(MeasurementStage.Invoke)]
+    [Arguments(MeasurementStage.Instantiate)]
+    public async Task Invokeの戻り値と状態がともに異なる_戻り値の不一致を先に報告する(
+        MeasurementStage stage
+    )
+    {
+        // Arrange
+        var definition = VerificationFixture.Definition(stage);
+        definition = AssetLoadingFixture.WithInput(
+            definition with
+            {
+                ExpectedResult = definition.ExpectedResult with
+                {
+                    Values = [new(NumericType.I32, "00000012")],
+                    Globals = [new("start_result", new(NumericType.I32, "ffffffff"))],
+                },
+            },
+            definition.Input with
+            {
+                FunctionExport = "repair",
+            }
+        );
+        var instance = VerificationFixture.Instantiate();
+        instance.GetGlobalResource("start_result").Value = WasmValue.FromI32(-1);
+        CaseObservation observation =
+            stage == MeasurementStage.Invoke
+                ? new InvokeObservation(
+                    instance,
+                    instance.GetFunction("repair").Invoke([WasmValue.FromI32(17)])
+                )
+                : new InstanceObservation(instance);
+
+        // Act
+        var result = CaseVerifier.Verify(definition, observation);
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(result.Succeeded).IsFalse();
+            await Assert.That(result.Stage).IsEqualTo("Invoke");
+            await Assert.That(result.Subject).IsEqualTo("results[0]");
+            await Assert.That(result.Expected).IsEqualTo("I32:00000012");
+            await Assert.That(result.Observed).IsEqualTo("I32:00000011");
+            await Assert.That(instance.GetGlobal("start_result").AsI32()).IsEqualTo(42);
+        }
+    }
+
+    [Test]
+    public async Task 追加Invokeの戻り値は正しいが状態が変わる_Invoke後の状態不一致を報告する()
+    {
+        // Arrange
+        var definition = VerificationFixture.Definition(MeasurementStage.Instantiate);
+        definition = AssetLoadingFixture.WithInput(
+            definition with
+            {
+                ExpectedResult = definition.ExpectedResult with
+                {
+                    Globals = [new("start_result", new(NumericType.I32, "ffffffff"))],
+                },
+            },
+            definition.Input with
+            {
+                FunctionExport = "repair",
+            }
+        );
+        var instance = VerificationFixture.Instantiate();
+        instance.GetGlobalResource("start_result").Value = WasmValue.FromI32(-1);
+
+        // Act
+        var result = CaseVerifier.Verify(definition, new InstanceObservation(instance));
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(result.Succeeded).IsFalse();
+            await Assert.That(result.Stage).IsEqualTo("Invoke");
+            await Assert.That(result.Subject).IsEqualTo("global.start_result");
+            await Assert.That(result.Expected).IsEqualTo("I32:ffffffff");
+            await Assert.That(result.Observed).IsEqualTo("I32:0000002a");
+        }
+    }
+
+    [Test]
+    public async Task funcrefを期待するtableがexternrefである_型の不一致を失敗にする()
+    {
+        // Arrange
+        var definition = VerificationFixture.Definition(MeasurementStage.Invoke) with
+        {
+            ExpectedResult = new([], [], [], [new("functions", 1, [])]),
+        };
+        // 要素数1のexternref tableだけをfunctionsとしてexportするmodule
+        var instance = WasmModule
+            .Decode([
+                0,
+                0x61,
+                0x73,
+                0x6d,
+                1,
+                0,
+                0,
+                0,
+                4,
+                4,
+                1,
+                0x6f,
+                0,
+                1,
+                7,
+                13,
+                1,
+                9,
+                0x66,
+                0x75,
+                0x6e,
+                0x63,
+                0x74,
+                0x69,
+                0x6f,
+                0x6e,
+                0x73,
+                1,
+                0,
+            ])
+            .Validate()
+            .Instantiate(new WasmImports());
+
+        // Act
+        var result = CaseVerifier.Verify(
+            definition,
+            new InvokeObservation(instance, new WasmResults([]))
+        );
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(result.Succeeded).IsFalse();
+            await Assert.That(result.Stage).IsEqualTo("Invoke");
+            await Assert.That(result.Subject).IsEqualTo("table.functions.type");
+            await Assert.That(result.Expected).IsEqualTo("FuncRef");
+            await Assert.That(result.Observed).IsEqualTo("ExternRef");
+        }
+    }
+
+    [Test]
+    [Arguments(MeasurementStage.Decode)]
+    [Arguments(MeasurementStage.DecodeValidate)]
+    [Arguments(MeasurementStage.Instantiate)]
+    public async Task 読み込んだ素材の準備段階を検証する_指定段階から追加操作して固定値と照合する(
+        MeasurementStage stage
+    )
+    {
+        // Arrange
+        using var fixture = new AssetLoadingFixture();
+        fixture.Definitions[0] = fixture.Definitions[0] with { MeasurementStage = stage };
+        fixture.SaveCases();
+        var assets = AssetManifest.Load(fixture.ManifestPath);
+
+        // Act
+        var result = CaseVerifier.Verify(assets, "invoke.single");
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(result.Succeeded).IsTrue();
+            await Assert.That(result.CaseId).IsEqualTo("invoke.single");
+            await Assert.That(result.Stage).IsEqualTo("Invoke");
+        }
+    }
+
+    [Test]
+    [Arguments(MeasurementStage.Decode, nameof(ModuleObservation))]
+    [Arguments(MeasurementStage.Instantiate, nameof(InstanceObservation))]
+    [Arguments(MeasurementStage.Invoke, nameof(InvokeObservation))]
+    public async Task 測定段階と観測型が対応しない_必要な観測型を示して失敗にする(
+        MeasurementStage stage,
+        string expectedType
+    )
+    {
+        // Arrange
+        var definition = VerificationFixture.Definition(stage);
+        CaseObservation observation =
+            stage == MeasurementStage.Decode
+                ? new InstanceObservation(VerificationFixture.Instantiate())
+                : new ModuleObservation(VerificationFixture.Decode());
+
+        // Act
+        var result = CaseVerifier.Verify(definition, observation);
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(result.Succeeded).IsFalse();
+            await Assert.That(result.Stage).IsEqualTo(stage.ToString());
+            await Assert.That(result.Subject).IsEqualTo("observation");
+            await Assert.That(result.Expected).IsEqualTo(expectedType);
+            await Assert.That(result.Observed).IsEqualTo(observation.GetType().Name);
+        }
+    }
+
+    [Test]
+    public async Task 配列digestの方式が未対応である_方式を示して照合失敗にする()
+    {
+        // Arrange
+        var definition = VerificationFixture.Definition(MeasurementStage.Instantiate);
+        definition = definition with
+        {
+            ExpectedResult = definition.ExpectedResult with
+            {
+                Arrays = [definition.ExpectedResult.Arrays[0] with { HashAlgorithm = "sha512" }],
+            },
+        };
+        var observation = new InstanceObservation(VerificationFixture.Instantiate());
+
+        // Act
+        var result = CaseVerifier.Verify(definition, observation);
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(result.Succeeded).IsFalse();
+            await Assert.That(result.Stage).IsEqualTo("Instantiate");
+            await Assert.That(result.Subject).IsEqualTo("hash_algorithm");
+            await Assert.That(result.Expected).IsEqualTo("sha256");
+            await Assert.That(result.Observed).IsEqualTo("sha512");
+        }
+    }
+
     [Test]
     public async Task 入力配列のmemoryが存在しない_入力準備の失敗をInvoke段階として保持する()
     {
@@ -96,6 +507,18 @@ internal class CaseVerifier_VerifyTests
     {
         // Arrange
         var definition = VerificationFixture.MemoryDefinition(matrix);
+        if (!matrix)
+        {
+            definition = AssetLoadingFixture.WithInput(
+                definition,
+                definition.Input with
+                {
+                    Arrays = definition
+                        .Input.Arrays.Select(x => x.Offset == 16 ? x with { FillByte = 0 } : x)
+                        .ToList(),
+                }
+            );
+        }
         var input = InputFactory.Create(definition);
         var instance = VerificationFixture.Instantiate();
         foreach (var array in input.Arrays)
@@ -178,13 +601,15 @@ internal class CaseVerifier_VerifyTests
     }
 
     [Test]
-    [Arguments("memory")]
-    [Arguments("global")]
-    [Arguments("table-null")]
-    [Arguments("table-function")]
-    [Arguments("table-count")]
+    [Arguments("memory", "memory.memory[0..8]")]
+    [Arguments("global", "global.start_result")]
+    [Arguments("table-null", "table.functions[2]")]
+    [Arguments("table-function", "table.functions[0]")]
+    [Arguments("table-missing-function", "table.functions[0]")]
+    [Arguments("table-count", "table.functions.count")]
     public async Task 反復後の資源を変える_期待値と異なるmemoryとglobalとtableを失敗にする(
-        string difference
+        string difference,
+        string expectedSubject
     )
     {
         // Arrange
@@ -213,6 +638,9 @@ internal class CaseVerifier_VerifyTests
                         )
                     );
                 break;
+            case "table-missing-function":
+                instance.GetTable("functions").Set(0, WasmValue.FromFuncRef(null));
+                break;
             case "table-count":
                 instance.GetTable("functions").TryGrow(1, WasmValue.FromFuncRef(null), out _);
                 break;
@@ -230,8 +658,17 @@ internal class CaseVerifier_VerifyTests
             await Assert.That(result.Succeeded).IsFalse();
             await Assert.That(result.CaseId).IsEqualTo(definition.CaseId);
             await Assert.That(result.Stage).IsEqualTo("Invoke");
-            await Assert.That(result.Subject).IsNotNull();
+            await Assert.That(result.Subject).IsEqualTo(expectedSubject);
             await Assert.That(result.Expected == result.Observed).IsFalse();
+            if (difference is "table-null" or "table-function" or "table-missing-function")
+            {
+                await Assert
+                    .That(result.Expected)
+                    .IsEqualTo(difference == "table-null" ? "null" : "probe");
+                await Assert
+                    .That(result.Observed)
+                    .IsEqualTo(difference == "table-missing-function" ? "null" : "異なる関数実体");
+            }
         }
     }
 
@@ -364,12 +801,13 @@ internal class CaseVerifier_VerifyTests
     }
 
     [Test]
-    [Arguments("count")]
-    [Arguments("order")]
-    [Arguments("type")]
-    [Arguments("bits")]
+    [Arguments("count", "results.count")]
+    [Arguments("order", "results[0]")]
+    [Arguments("type", "results[2]")]
+    [Arguments("bits", "results[2]")]
     public async Task 結果を意図的に変える_ケースと段階と期待と観測を持つ失敗になる(
-        string difference
+        string difference,
+        string expectedSubject
     )
     {
         // Arrange
@@ -409,7 +847,7 @@ internal class CaseVerifier_VerifyTests
             await Assert.That(result.Succeeded).IsFalse();
             await Assert.That(result.CaseId).IsEqualTo("invoke.multi");
             await Assert.That(result.Stage).IsEqualTo("Invoke");
-            await Assert.That(result.Subject).IsNotNull();
+            await Assert.That(result.Subject).IsEqualTo(expectedSubject);
             await Assert.That(result.Expected).IsNotNull();
             await Assert.That(result.Observed).IsNotNull();
             await Assert.That(result.Expected == result.Observed).IsFalse();

@@ -151,10 +151,20 @@ internal class BaselineStore_SaveTests
         await File.WriteAllTextAsync(outputPath, "旧baseline");
 
         // Act & Assert
-        await Assert
+        var exception = await Assert
             .That(() => BaselineStore.Save(inputPath, outputPath))
             .Throws<ReportStoreException>();
-        await Assert.That(await File.ReadAllTextAsync(outputPath)).IsEqualTo("旧baseline");
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.Path).IsEqualTo(inputPath);
+            await Assert.That(exception.Message).Contains(inputPath);
+            await Assert
+                .That(exception.Message)
+                .Contains(
+                    outputFailure ? "出力の完了が記録されていません。" : "a.wastは未処理です。"
+                );
+            await Assert.That(await File.ReadAllTextAsync(outputPath)).IsEqualTo("旧baseline");
+        }
     }
 
     [Test]
@@ -212,11 +222,63 @@ internal class BaselineStore_SaveTests
         var original = await File.ReadAllBytesAsync(path);
 
         // Act & Assert
-        await Assert
+        var exception = await Assert
             .That(() => BaselineStore.Save(path, directory.Combine("./input.json")))
             .Throws<ReportStoreException>();
-        await Assert
-            .That(Convert.ToHexString(await File.ReadAllBytesAsync(path)))
-            .IsEqualTo(Convert.ToHexString(original));
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.Path).IsEqualTo(path);
+            await Assert
+                .That(exception.Message)
+                .IsEqualTo("入力自身をbaselineの保存先には指定できません。");
+            await Assert
+                .That(Convert.ToHexString(await File.ReadAllBytesAsync(path)))
+                .IsEqualTo(Convert.ToHexString(original));
+        }
+    }
+
+    [Test]
+    public async Task 保存先の大文字小文字だけが異なる_OSのpath規則に従って同一入力を拒否する()
+    {
+        // Arrange
+        using var directory = new TemporaryDirectory();
+        var inputPath = directory.Combine("input.json");
+        var outputPath = directory.Combine("INPUT.json");
+        ReportStore.Save(RunReportFixture.CreateSample(), inputPath);
+        var original = await File.ReadAllBytesAsync(inputPath);
+
+        if (OperatingSystem.IsWindows())
+        {
+            // Act & Assert
+            var exception = await Assert
+                .That(() => BaselineStore.Save(inputPath, outputPath))
+                .ThrowsExactly<ReportStoreException>();
+            using (Assert.Multiple())
+            {
+                await Assert.That(exception!.Path).IsEqualTo(outputPath);
+                await Assert
+                    .That(exception.Message)
+                    .IsEqualTo("入力自身をbaselineの保存先には指定できません。");
+                await Assert
+                    .That(Convert.ToHexString(await File.ReadAllBytesAsync(inputPath)))
+                    .IsEqualTo(Convert.ToHexString(original));
+            }
+        }
+        else
+        {
+            // Act
+            BaselineStore.Save(inputPath, outputPath);
+
+            // Assert
+            using (Assert.Multiple())
+            {
+                await Assert
+                    .That(Convert.ToHexString(await File.ReadAllBytesAsync(inputPath)))
+                    .IsEqualTo(Convert.ToHexString(original));
+                await Assert
+                    .That(Convert.ToHexString(await File.ReadAllBytesAsync(outputPath)))
+                    .IsEqualTo(Convert.ToHexString(original));
+            }
+        }
     }
 }

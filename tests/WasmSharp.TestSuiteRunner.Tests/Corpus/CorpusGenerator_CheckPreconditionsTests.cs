@@ -166,6 +166,9 @@ internal class CorpusGenerator_CheckPreconditionsTests
         {
             await Assert.That(preconditions.Diagnostics.Length).IsEqualTo(1);
             await Assert.That(preconditions.Diagnostics[0].Operation).IsEqualTo("prepare");
+            await Assert
+                .That(preconditions.Diagnostics[0].Message)
+                .Contains(spec ? "spec" : "WABT");
             await Assert.That(preconditions.Diagnostics[0].Message).Contains(OTHER_COMMIT);
             await Assert.That(preconditions.Diagnostics[0].Message).Contains(workspace.Commit);
         }
@@ -216,6 +219,33 @@ internal class CorpusGenerator_CheckPreconditionsTests
             await Assert.That(preconditions.Diagnostics.Length).IsEqualTo(1);
             await Assert.That(preconditions.Diagnostics[0].Path).IsEqualTo("success.wast");
             await Assert.That(preconditions.Diagnostics[0].Message).Contains("SHA-256");
+        }
+    }
+
+    [Test]
+    public async Task Git情報が破損したWABT配置で前提を確認する_HEAD取得失敗の終了値と配置を診断に残す()
+    {
+        // Arrange
+        using var workspace = await SuiteWorkspace.CreateAsync();
+        var wabtRoot = Path.Combine(workspace.OutputRoot, "broken-wabt");
+        Directory.CreateDirectory(Path.Combine(wabtRoot, ".git"));
+        var request = workspace.CreateRequest(workspace.CreateProfile()) with
+        {
+            WabtRoot = wabtRoot,
+        };
+
+        // Act
+        var preconditions = CorpusGenerator.CheckPreconditions(request);
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(preconditions.Provenance.WabtHead).IsNull();
+            await Assert.That(preconditions.Diagnostics.Length).IsEqualTo(1);
+            await Assert.That(preconditions.Diagnostics[0].Message).Contains(wabtRoot);
+            await Assert
+                .That(preconditions.Diagnostics[0].Message)
+                .Contains("HEADを取得できません。終了値: 128");
         }
     }
 

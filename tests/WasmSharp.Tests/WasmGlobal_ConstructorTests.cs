@@ -21,20 +21,31 @@ internal class WasmGlobal_ConstructorTests
     }
 
     [Test]
-    [Arguments(WasmValueKind.I64)]
+    public async Task 型が初期値と一致しない_初期値の引数名を示して拒否する()
+    {
+        // Arrange
+        var type = new WasmGlobalType(WasmValueKind.I64, true);
+
+        // Act & Assert
+        var exception = await Assert
+            .That(() => new WasmGlobal(type, WasmValue.FromI32(1)))
+            .ThrowsExactly<ArgumentException>();
+        await Assert.That(exception!.ParamName).IsEqualTo("initialValue");
+    }
+
+    [Test]
     [Arguments(WasmValueKind.ExnRef)]
     [Arguments((WasmValueKind)255)]
-    public async Task 型が初期値と一致しないか未対応である_契約違反として拒否する(
-        WasmValueKind kind
-    )
+    public async Task 型が未対応である_型の引数名を示して拒否する(WasmValueKind kind)
     {
         // Arrange
         var type = new WasmGlobalType(kind, true);
 
         // Act & Assert
-        await Assert
+        var exception = await Assert
             .That(() => new WasmGlobal(type, WasmValue.FromI32(1)))
-            .Throws<ArgumentException>();
+            .ThrowsExactly<ArgumentException>();
+        await Assert.That(exception!.ParamName).IsEqualTo("type");
     }
 
     [Test]

@@ -10,15 +10,19 @@ namespace WasmSharp.TestSuiteRunner.Tests;
 internal class RunnerCli_RunTests
 {
     [Test]
-    [Arguments("")]
-    [Arguments("unknown")]
-    [Arguments("run --manifest a")]
-    [Arguments("run --manifest a --output b --output c")]
-    [Arguments("run --manifest a --output b --select c")]
-    [Arguments("verify --input")]
-    [Arguments("verify --input a --output b")]
-    [Arguments("verify --input a --profile b")]
-    public async Task 未知か重複か不足の引数_使用法を標準エラーへ出して終了2になる(string arguments)
+    [Arguments("", "有効な操作")]
+    [Arguments("unknown", "有効な操作")]
+    [Arguments("unknown --help", "有効な操作")]
+    [Arguments("run --manifest a", "必須引数が不足しています: --output")]
+    [Arguments("run --manifest a --output b --output c", "引数が重複しています: --output")]
+    [Arguments("run --manifest a --output b --select c", "未知の引数です: --select")]
+    [Arguments("verify --input", "--inputのpathが不足")]
+    [Arguments("verify --input a --output b", "未知の引数です: --output")]
+    [Arguments("verify --input a --profile b", "未知の引数です: --profile")]
+    public async Task 未知か重複か不足の引数_使用法を標準エラーへ出して終了2になる(
+        string arguments,
+        string reason
+    )
     {
         // Arrange
         var args = arguments.Split(' ', StringSplitOptions.RemoveEmptyEntries);
@@ -31,6 +35,7 @@ internal class RunnerCli_RunTests
         {
             await Assert.That(result.ExitCode).IsEqualTo(2);
             await Assert.That(result.Error).Contains("使用法");
+            await Assert.That(result.Error).Contains(reason);
             await Assert.That(result.Output).IsEqualTo(string.Empty);
         }
     }
@@ -67,6 +72,13 @@ internal class RunnerCli_RunTests
             }
             await Assert.That(result.Output).Contains("初回");
             await Assert.That(result.Output).Contains("後続");
+            await Assert
+                .That(result.Output)
+                .Contains(
+                    OperatingSystem.IsWindows()
+                        ? "--wast2json artifacts/wabt-core2-1.0.42-datacount/Release/wast2json.exe"
+                        : "--wast2json artifacts/wabt-core2-1.0.42-datacount/wast2json"
+                );
             await Assert.That(result.Error).IsEqualTo(string.Empty);
         }
     }
@@ -94,6 +106,13 @@ internal class RunnerCli_RunTests
             await Assert.That(result.Output).Contains("対象入力: 4件");
             await Assert.That(result.Output).Contains("変換成功: 1件");
             await Assert.That(result.Output).Contains("入力異常: 3件");
+            await Assert.That(result.Output).Contains("処理済み: 4件、未処理: 0件");
+            await Assert.That(result.Output).Contains("command件数未確定: 1入力");
+            await Assert.That(result.Output).Contains("生成判定: 条件不成立（終了値1）");
+            await Assert.That(result.Output).Contains("変換・照合に失敗した入力が3件");
+            await Assert.That(result.Error).DoesNotContain("変換・照合に失敗した入力が3件");
+            await Assert.That(result.Error).Contains("failure.wast:");
+            await Assert.That(result.Error).Contains("変換");
             await Assert.That(result.Output).Contains("[4/4]");
             await Assert.That(result.Output).Contains("保存先:");
             await Assert
@@ -133,6 +152,8 @@ internal class RunnerCli_RunTests
                 .That(manifest.Inputs[0].Arguments[2])
                 .IsEqualTo(Path.Combine(workspace.OutputRoot, "modules", "success.json"));
             await Assert.That(result.Error).IsEqualTo(string.Empty);
+            await Assert.That(result.Output).Contains("生成判定: 成立（終了値0）");
+            await Assert.That(result.Output).Contains("command件数未確定: 0入力");
         }
     }
 
@@ -166,6 +187,11 @@ internal class RunnerCli_RunTests
         {
             await Assert.That(result.ExitCode).IsEqualTo(2);
             await Assert.That(result.Error).IsNotEqualTo(string.Empty);
+            if (placement == "nonempty")
+            {
+                await Assert.That(result.Error).Contains(output);
+                await Assert.That(result.Error).Contains("既存");
+            }
             await Assert.That(File.ReadAllText(marker)).IsEqualTo("保持する内容");
             await Assert
                 .That(File.ReadAllBytes(Path.Combine(workspace.InputRoot, "success.wast")))
@@ -178,6 +204,7 @@ internal class RunnerCli_RunTests
     [Arguments("passed", 0)]
     [Arguments("diagnostic", 1)]
     [Arguments("broken", 1)]
+    [Arguments("operation", 1)]
     public async Task 保存済み素材の実行_元ソースを使わず分類と集計を保存する(
         string scenario,
         int expectedExit
@@ -187,6 +214,10 @@ internal class RunnerCli_RunTests
         using var fixture = CorpusFixture.Create();
         PrepareScript(fixture, scenario);
         var manifest = Complete(fixture.Manifest);
+        if (scenario == "operation")
+        {
+            manifest.Diagnostics.Add(new("generate", "生成時に記録された操作全体の異常"));
+        }
         ReportStore.Save(manifest, fixture.ManifestPath);
         Directory.Delete(fixture.SourceRoot, recursive: true);
         var outputPath = Path.Combine(fixture.Root, "run.json");
@@ -221,6 +252,11 @@ internal class RunnerCli_RunTests
             await Assert.That(result.Output).Contains("assertion:");
             await Assert.That(result.Output).Contains("種類未確定command:");
             await Assert.That(result.Output).Contains("[2/2]");
+            await Assert
+                .That(result.Output)
+                .Contains(
+                    $"実行判定: {(expectedExit == 0 ? "成立" : "条件不成立")}（終了値{expectedExit}）"
+                );
             if (scenario == "diagnostic")
             {
                 await Assert.That(report.Summary.Assertion.Failed).IsEqualTo(1);
@@ -232,6 +268,11 @@ internal class RunnerCli_RunTests
             {
                 await Assert.That(report.Summary.UndeterminedInputCount).IsEqualTo(1);
                 await Assert.That(result.Output).Contains("件数未確定: 1件");
+            }
+            if (scenario == "operation")
+            {
+                await Assert.That(result.Error).Contains("生成時に記録された操作全体の異常");
+                await Assert.That(result.Output).Contains("操作全体の診断が1件");
             }
         }
     }
@@ -261,6 +302,9 @@ internal class RunnerCli_RunTests
         {
             await Assert.That(result.ExitCode).IsEqualTo(operation == "verify" ? 1 : 2);
             await Assert.That(File.Exists(outputPath)).IsFalse();
+            await Assert
+                .That(operation == "run" ? result.Error : result.Output)
+                .Contains("固定profile");
         }
     }
 
@@ -291,6 +335,7 @@ internal class RunnerCli_RunTests
             await Assert.That(result.ExitCode).IsEqualTo(0);
             await Assert.That(File.ReadAllBytes(baseline)).IsEquivalentTo(File.ReadAllBytes(input));
             await Assert.That(result.Output).Contains("baseline保存");
+            await Assert.That(result.Output).Contains($"保存先: {baseline}");
             await Assert.That(result.Error).IsEqualTo(string.Empty);
         }
     }
@@ -417,6 +462,32 @@ internal class RunnerCli_RunTests
                 .IsEqualTo("comparison_report");
             await Assert.That(File.ReadAllBytes(baselinePath)).IsEquivalentTo(original);
             await Assert.That(result.Output).Contains("保存先:");
+            var established = operation != "compare-run" || scenario != "condition";
+            await Assert
+                .That(result.Output)
+                .Contains($"比較成立: {(established ? "成立" : "未成立")}");
+            await Assert
+                .That(result.Output)
+                .Contains($"比較完了: {(expectedExit == 2 ? "未完了" : "完了")}");
+            await Assert
+                .That(result.Output)
+                .Contains(
+                    $"条件差: {(scenario == "condition" ? 1 : 0)}件、出典差: 0件、入力・素材差: 0件"
+                );
+            await Assert
+                .That(result.Output)
+                .Contains(
+                    $"現結果のfailed: {(scenario is "failed" or "regression" ? 1 : 0)}件、現結果のrunner_error: 0件"
+                );
+            await Assert
+                .That(result.Output)
+                .Contains(
+                    $"比較判定: {(expectedExit == 0 ? "成立" : expectedExit == 1 ? "条件不成立" : "未完了")}（終了値{expectedExit}）"
+                );
+            if (operation == "compare-run" && scenario == "condition")
+            {
+                await Assert.That(result.Error).Contains("比較成立の条件が一致しない");
+            }
             if (scenario == "regression")
             {
                 await Assert
@@ -511,7 +582,7 @@ internal class RunnerCli_RunTests
         {
             await Assert.That(result.ExitCode).IsEqualTo(2);
             await Assert.That(File.ReadAllBytes(input)).IsEquivalentTo(original);
-            await Assert.That(result.Error).Contains("入力");
+            await Assert.That(result.Error).Contains("入力自身");
         }
     }
 
@@ -668,6 +739,11 @@ internal class RunnerCli_RunTests
             await Assert.That(manifest.Summary.ArtifactCount).IsEqualTo(0);
             await Assert.That(result.Error).IsNotEqualTo(string.Empty);
             await Assert.That(result.Output).Contains("未処理: 4件");
+            await Assert.That(result.Output).Contains("command件数未確定: 0入力");
+            await Assert.That(result.Output).Contains("生成判定: 未完了（終了値2）");
+            await Assert.That(result.Error).Contains("SHA-256");
+            await Assert.That(result.Error).Contains("操作全体の診断が1件");
+            await Assert.That(result.Output).DoesNotContain("操作全体の診断が1件");
         }
     }
 
@@ -700,6 +776,186 @@ internal class RunnerCli_RunTests
             await Assert.That(result.ExitCode).IsEqualTo(2);
             await Assert.That(result.Error).Contains(input);
             await Assert.That(File.Exists(output)).IsFalse();
+        }
+    }
+
+    [Test]
+    [Arguments("")]
+    [Arguments(" ")]
+    [Arguments("--output")]
+    public async Task Path引数が空白か次のoption_不足した引数名を示して終了2になる(string path)
+    {
+        // Arrange
+        var profile = Core2Profile.Load();
+
+        // Act
+        var result = Run(profile, "verify", "--input", path);
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(result.ExitCode).IsEqualTo(2);
+            await Assert.That(result.Error).Contains("--inputのpathが不足");
+            await Assert.That(result.Error).Contains("使用法");
+        }
+    }
+
+    [Test]
+    [Arguments("--baseline")]
+    [Arguments("--current")]
+    public async Task 比較の片側を出力に指定する_入力自身の保護を理由に拒否する(
+        string protectedOption
+    )
+    {
+        // Arrange
+        using var directory = new TemporaryDirectory();
+        var baseline = directory.Combine("baseline.json");
+        var current = directory.Combine("current.json");
+        ReportStore.Save(RunReportFixture.CreateSample(), baseline);
+        ReportStore.Save(RunReportFixture.CreateSample(), current);
+
+        // Act
+        var result = Run(
+            Core2Profile.Load(),
+            "compare-run",
+            "--baseline",
+            baseline,
+            "--current",
+            current,
+            "--output",
+            protectedOption == "--baseline" ? baseline : current
+        );
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(result.ExitCode).IsEqualTo(2);
+            await Assert.That(result.Error).Contains("入力自身");
+        }
+    }
+
+    [Test]
+    public async Task 出力名が入力名の接頭辞だが別ファイル_入力を保ってbaselineを保存する()
+    {
+        // Arrange
+        using var directory = new TemporaryDirectory();
+        var input = directory.Combine("result.json");
+        var output = directory.Combine("result");
+        ReportStore.Save(RunReportFixture.CreateSample(), input);
+        var original = File.ReadAllBytes(input);
+
+        // Act
+        var result = Run(
+            Core2Profile.Load(),
+            "baseline-save",
+            "--input",
+            input,
+            "--output",
+            output
+        );
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(result.ExitCode).IsEqualTo(0);
+            await Assert.That(File.ReadAllBytes(input)).IsEquivalentTo(original);
+            await Assert.That(File.ReadAllBytes(output)).IsEquivalentTo(original);
+        }
+    }
+
+    [Test]
+    [Arguments(false)]
+    [Arguments(true)]
+    public async Task 多段のリンクを経由して入力自身へ出力する_最終リンク先で同一性を判定して拒否する(
+        bool directoryLink
+    )
+    {
+        // Arrange
+        using var directory = new TemporaryDirectory();
+        var actualDirectory = Directory.CreateDirectory(directory.Combine("actual")).FullName;
+        var input = Path.Combine(actualDirectory, "run.json");
+        ReportStore.Save(RunReportFixture.CreateSample(), input);
+        var original = File.ReadAllBytes(input);
+        var firstLink = directory.Combine("first");
+        var secondLink = directory.Combine("second");
+        string alias;
+        if (directoryLink)
+        {
+            Directory.CreateSymbolicLink(secondLink, actualDirectory);
+            Directory.CreateSymbolicLink(firstLink, secondLink);
+            alias = Path.Combine(firstLink, "run.json");
+        }
+        else
+        {
+            File.CreateSymbolicLink(secondLink, input);
+            File.CreateSymbolicLink(firstLink, secondLink);
+            alias = firstLink;
+        }
+
+        // Act
+        var result = Run(Core2Profile.Load(), "baseline-save", "--input", alias, "--output", input);
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(result.ExitCode).IsEqualTo(2);
+            await Assert.That(result.Error).Contains("入力自身");
+            await Assert.That(File.ReadAllBytes(input)).IsEquivalentTo(original);
+        }
+    }
+
+    [Test]
+    public async Task Windowsでは大小文字が異なっても同じソース配下_生成前に保護する()
+    {
+        // Arrange
+        using var workspace = await SuiteWorkspace.CreateAsync();
+        var output = Path.Combine(workspace.SourceRoot, "generated");
+        var source = OperatingSystem.IsWindows()
+            ? workspace.SourceRoot.ToUpperInvariant()
+            : workspace.SourceRoot;
+        var args = GenerateArguments(workspace, output);
+        args[2] = source;
+        args[4] = source;
+
+        // Act
+        var result = Run(workspace.CreateProfile(), args);
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(result.ExitCode).IsEqualTo(2);
+            await Assert.That(result.Error).Contains("--spec-root");
+            await Assert.That(Directory.Exists(output)).IsFalse();
+        }
+    }
+
+    [Test]
+    public async Task ソースrootがファイルシステムのroot_その配下の生成先を準備前に拒否する()
+    {
+        // Arrange
+        using var directory = new TemporaryDirectory();
+        var output = directory.Combine("generated");
+
+        // Act
+        var result = Run(
+            Core2Profile.Load(),
+            "generate",
+            "--spec-root",
+            Path.GetPathRoot(directory.Root)!,
+            "--wabt-root",
+            directory.Combine("wabt"),
+            "--wast2json",
+            directory.Combine("converter"),
+            "--output",
+            output
+        );
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(result.ExitCode).IsEqualTo(2);
+            await Assert.That(result.Error).Contains("--spec-root");
+            await Assert.That(Directory.Exists(output)).IsFalse();
         }
     }
 

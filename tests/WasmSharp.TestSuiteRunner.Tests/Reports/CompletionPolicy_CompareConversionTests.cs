@@ -23,13 +23,14 @@ internal class CompletionPolicy_CompareConversionTests
     }
 
     [Test]
-    [Arguments(1, 0, 0)]
-    [Arguments(0, 1, 0)]
-    [Arguments(0, 0, 1)]
+    [Arguments(1, 0, 0, "比較対象の条件差")]
+    [Arguments(0, 1, 0, "入力・生成物の差")]
+    [Arguments(0, 0, 1, "現結果のrunner_error")]
     public async Task 条件差や生成物差や現結果のrunner_errorがある_用途不合格の1を返す(
         int conditionDifferenceCount,
         int entryDifferenceCount,
-        int currentRunnerErrorCount
+        int currentRunnerErrorCount,
+        string reason
     )
     {
         // Arrange
@@ -55,7 +56,7 @@ internal class CompletionPolicy_CompareConversionTests
         using (Assert.Multiple())
         {
             await Assert.That(decision.ExitCode).IsEqualTo(1);
-            await Assert.That(decision.Reasons.Single()).Contains("1件");
+            await Assert.That(decision.Reasons.Single()).IsEqualTo($"{reason}が1件あります。");
         }
     }
 

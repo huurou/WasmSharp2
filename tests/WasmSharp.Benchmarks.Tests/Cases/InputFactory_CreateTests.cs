@@ -8,6 +8,101 @@ namespace WasmSharp.Benchmarks.Tests.Cases;
 internal class InputFactory_CreateTests
 {
     [Test]
+    [Arguments("repeated-type")]
+    [Arguments("repeated-no-fill")]
+    [Arguments("repeated-seed")]
+    [Arguments("indexed-seed")]
+    [Arguments("indexed-fill")]
+    [Arguments("seeded-type")]
+    [Arguments("seeded-fill")]
+    public async Task 配列生成方式と型や追加設定が対応しない_設定の不一致を拒否する(string scenario)
+    {
+        // Arrange
+        var original = AssetLoadingFixture.ReadCases().Single(x => x.CaseId == "kernel.matrix");
+        var array = new ArrayInput(
+            "memory",
+            0,
+            ArrayElementType.U8,
+            1,
+            ArrayInputPattern.RepeatedByte,
+            null,
+            1
+        );
+        array = scenario switch
+        {
+            "repeated-type" => array with { ElementType = ArrayElementType.U32 },
+            "repeated-no-fill" => array with { FillByte = null },
+            "repeated-seed" => array with { Seed = 1 },
+            "indexed-seed" => array with
+            {
+                Pattern = ArrayInputPattern.IndexModulo256,
+                Seed = 1,
+                FillByte = null,
+            },
+            "indexed-fill" => array with { Pattern = ArrayInputPattern.IndexModulo256 },
+            "seeded-type" => array with
+            {
+                Pattern = ArrayInputPattern.SeededU32,
+                Seed = 1,
+                FillByte = null,
+            },
+            _ => array with
+            {
+                Pattern = ArrayInputPattern.SeededU32,
+                ElementType = ArrayElementType.U32,
+                Seed = 1,
+            },
+        };
+        var definition = AssetLoadingFixture.WithInput(
+            original,
+            original.Input with
+            {
+                Arrays = [array],
+            }
+        );
+
+        // Act & Assert
+        var exception = await Assert
+            .That(() => InputFactory.Create(definition))
+            .ThrowsExactly<InvalidDataException>();
+        await Assert
+            .That(exception!.Message)
+            .Contains("kernel.matrix")
+            .And.Contains("一致しません");
+    }
+
+    [Test]
+    public async Task 配列長が入力生成の上限を超える_配列を確保せずケースと上限超過を示して拒否する()
+    {
+        // Arrange
+        var original = AssetLoadingFixture.ReadCases().Single(x => x.CaseId == "memory.copy-fill");
+        var definition = AssetLoadingFixture.WithInput(
+            original,
+            original.Input with
+            {
+                Arrays =
+                [
+                    new(
+                        "memory",
+                        0,
+                        ArrayElementType.U8,
+                        uint.MaxValue,
+                        ArrayInputPattern.IndexModulo256,
+                        null,
+                        null
+                    ),
+                ],
+            }
+        );
+
+        // Act & Assert
+        var exception = await Assert
+            .That(() => InputFactory.Create(definition))
+            .ThrowsExactly<InvalidDataException>();
+        await Assert.That(exception!.Message).Contains("memory.copy-fill").And.Contains("上限");
+    }
+
+    [Test]
     public async Task 明示型の数値引数を復元する_整数とNaNと負のゼロのbit列を保つ()
     {
         // Arrange

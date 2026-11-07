@@ -6,10 +6,13 @@ namespace WasmSharp.Tests.Execution;
 internal class Interpreter_InvokeHostTests
 {
     [Test]
-    [Arguments(0)]
-    [Arguments(1)]
-    [Arguments(2)]
-    public async Task Callback結果がnullまたは個数か型が異なる_呼出しを中断する(int invalidResult)
+    [Arguments(0, "結果の個数")]
+    [Arguments(1, "結果の個数")]
+    [Arguments(2, "結果の型")]
+    public async Task Callback結果がnullまたは個数か型が異なる_原因を示して呼出しを中断する(
+        int invalidResult,
+        string expectedReason
+    )
     {
         // Arrange
         var function = WasmFunction.CreateHost(
@@ -24,9 +27,10 @@ internal class Interpreter_InvokeHostTests
         );
 
         // Act & Assert
-        await Assert
+        var exception = await Assert
             .That(() => Interpreter.InvokeHost(function, null, []))
             .ThrowsExactly<InvalidOperationException>();
+        await Assert.That(exception!.Message).Contains(expectedReason);
     }
 
     [Test]

@@ -121,6 +121,9 @@ internal class CorpusGenerator_ConvertTests
             await Assert.That(result.Diagnostics.Count).IsEqualTo(1);
             await Assert.That(result.Diagnostics[0].Operation).IsEqualTo("convert");
             await Assert.That(result.Diagnostics[0].Path).IsEqualTo("failure.wast");
+            await Assert
+                .That(result.Diagnostics[0].Message)
+                .IsEqualTo("変換器が終了値1で終了しました。");
         }
     }
 

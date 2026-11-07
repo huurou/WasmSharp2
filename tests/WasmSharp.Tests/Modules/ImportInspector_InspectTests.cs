@@ -21,6 +21,9 @@ internal class ImportInspector_InspectTests
         await Assert.That(result.UnverifiedRanges[0].Stage).IsEqualTo(WasmProcessingStage.Decode);
         await Assert.That(result.UnverifiedRanges[0].StartOffset).IsEqualTo(10L);
         await Assert.That(result.UnverifiedRanges[0].EndOffset).IsEqualTo(10L);
+        await Assert
+            .That(result.UnverifiedRanges[0].Description)
+            .IsEqualTo("このpayloadの構文は未確認です。");
     }
 
     [Test]
@@ -77,7 +80,36 @@ internal class ImportInspector_InspectTests
         );
 
         // Act & Assert
-        await Assert.That(() => ImportInspector.Inspect(bytes)).Throws<WasmException>();
+        var exception = await Assert
+            .That(() => ImportInspector.Inspect(bytes))
+            .ThrowsExactly<WasmImportInspectionException>();
+        using (Assert.Multiple())
+        {
+            await Assert
+                .That(exception!.Reason)
+                .IsEqualTo(WasmImportInspectionReason.UnresolvedType);
+            await Assert.That(exception.Message).IsEqualTo("importの関数型添字を解決できません。");
+            await Assert
+                .That(exception.UnverifiedRanges[0])
+                .IsEqualTo(
+                    new WasmUnverifiedRange(
+                        WasmProcessingStage.Decode,
+                        11,
+                        bytes.Length,
+                        "この位置以降のimport調査が未完了です。"
+                    )
+                );
+            await Assert
+                .That(exception.UnverifiedRanges[1])
+                .IsEqualTo(
+                    new WasmUnverifiedRange(
+                        WasmProcessingStage.Validate,
+                        0,
+                        bytes.Length,
+                        "入力全体の検証が未実施です。"
+                    )
+                );
+        }
     }
 
     [Test]

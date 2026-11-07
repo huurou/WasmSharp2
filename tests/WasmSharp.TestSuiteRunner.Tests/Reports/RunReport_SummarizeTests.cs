@@ -87,4 +87,37 @@ internal class RunReport_SummarizeTests
                 )
             );
     }
+
+    [Test]
+    public async Task 複数入力に未処理commandと異常がある_入力ごとの件数を合計する()
+    {
+        // Arrange
+        var report = RunReportFixture.CreateSample();
+        report.Inputs[0] = report.Inputs[0] with
+        {
+            Status = InputRunStatus.Incomplete,
+            UnprocessedCount = 2,
+            Cases = [.. report.Inputs[0].Cases.Take(2)],
+            Issues = [new("verify", "aの入力異常")],
+        };
+        report.Inputs[1] = report.Inputs[1] with
+        {
+            Status = InputRunStatus.Incomplete,
+            UnprocessedCount = 1,
+            Cases = [report.Inputs[1].Cases[0] with { Outcome = CaseOutcome.RunnerError }],
+            Issues = [new("verify", "bの入力異常1"), new("verify", "bの入力異常2")],
+        };
+
+        // Act
+        var summary = report.Summarize();
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(summary.InputIssueCount).IsEqualTo(3);
+            await Assert.That(summary.UnprocessedCommandCount).IsEqualTo(3);
+            await Assert.That(summary.Setup.RunnerError).IsEqualTo(1);
+            await Assert.That(summary.UncategorizedRunnerErrorCount).IsEqualTo(0);
+        }
+    }
 }

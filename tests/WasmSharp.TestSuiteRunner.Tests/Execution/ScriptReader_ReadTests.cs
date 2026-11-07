@@ -506,6 +506,11 @@ internal class ScriptReader_ReadTests
     [Test]
     [Arguments("""{"type": "module", "line": 1, "name": "$M"}""", "$M", null)]
     [Arguments(
+        """{"type":"module","line":1,"name":"$M","\uD800abc":"$other","filename":"a.0.wasm"}""",
+        "$M",
+        null
+    )]
+    [Arguments(
         """{"type": "module", "line": 1, "name": 1, "filename": "a.0.wasm", "x": 0}""",
         null,
         null
@@ -568,6 +573,121 @@ internal class ScriptReader_ReadTests
             await Assert.That(result.Commands[0]).IsTypeOf<ModuleCommand>();
             await Assert.That(result.Commands[1]).IsTypeOf<ActionCommand>();
         }
+    }
+
+    [Test]
+    [Arguments("""{"type":"module","line":1,"filename":"a.0.wasm","extra":0}""", "extra")]
+    [Arguments(
+        """{"type":"action","line":1,"action":{"type":"invoke","field":"f","args":[]},"expected":[],"extra":0}""",
+        "extra"
+    )]
+    [Arguments(
+        """{"type":"assert_return","line":1,"action":{"type":"invoke","field":"f","args":[]},"expected":[],"extra":0}""",
+        "extra"
+    )]
+    [Arguments(
+        """{"type":"assert_trap","line":1,"action":{"type":"invoke","field":"f","args":[]},"expected":[],"text":"trap","extra":0}""",
+        "extra"
+    )]
+    [Arguments(
+        """{"type":"assert_invalid","line":1,"filename":"a.0.wasm","text":"invalid","module_type":"binary","extra":0}""",
+        "extra"
+    )]
+    [Arguments("""{"type":"register","line":1,"as":"M","extra":0}""", "extra")]
+    [Arguments(
+        """{"type":"action","line":1,"action":{"type":"invoke","field":"f","args":[],"extra":0},"expected":[]}""",
+        "action.extra"
+    )]
+    [Arguments(
+        """{"type":"action","line":1,"action":{"type":"invoke","field":"f","args":[{"type":"v128","lane_type":"i32","value":["1","2","3","4"],"extra":0}]},"expected":[]}""",
+        "action.args[0].extra"
+    )]
+    public async Task 固定形式にない項目を各階層に含む_項目の位置を診断してcommandを拒否する(
+        string json,
+        string path
+    )
+    {
+        // Arrange
+        var document = Parse(json);
+
+        // Act
+        var result = ScriptReader.Read(document, INPUT_PATH);
+
+        // Assert
+        var command = await Assert.That(result.Commands[0]).IsTypeOf<InvalidCommand>();
+        await Assert
+            .That(command!.Diagnostic.Message)
+            .IsEqualTo($"固定形式にない{path}があります。");
+    }
+
+    [Test]
+    [Arguments(
+        """{"type":"action","line":1,"action":null,"expected":[]}""",
+        "actionがobjectではありません。"
+    )]
+    [Arguments("""{"line":1}""", "typeがありません。")]
+    [Arguments("""{"type":"module","line":1}""", "filenameがありません。")]
+    [Arguments(
+        """{"type":"module","line":1,"name":null,"filename":"a.0.wasm"}""",
+        "nameが文字列ではありません。"
+    )]
+    [Arguments(
+        """{"type":"module","line":1,"filename":"a.0.wasm","module_type":null}""",
+        "module_typeが文字列ではありません。"
+    )]
+    [Arguments(
+        """{"type":"register","line":1,"name":null,"as":"M"}""",
+        "nameが文字列ではありません。"
+    )]
+    [Arguments("""{"type":"register","line":1}""", "asがありません。")]
+    [Arguments("""{"type":"action","line":1,"expected":[]}""", "actionがありません。")]
+    [Arguments(
+        """{"type":"action","line":1,"action":{"type":"invoke","field":"f","args":[]}}""",
+        "expectedがありません。"
+    )]
+    [Arguments(
+        """{"type":"assert_return","line":1,"action":{"type":"invoke","field":"f","args":[]}}""",
+        "expectedがありません。"
+    )]
+    [Arguments(
+        """{"type":"assert_trap","line":1,"action":{"type":"invoke","field":"f","args":[]},"expected":[]}""",
+        "textがありません。"
+    )]
+    [Arguments(
+        """{"type":"assert_invalid","line":1,"text":"invalid","module_type":"binary"}""",
+        "filenameがありません。"
+    )]
+    [Arguments(
+        """{"type":"assert_invalid","line":1,"filename":"a.0.wasm","module_type":"binary"}""",
+        "textがありません。"
+    )]
+    [Arguments(
+        """{"type":"assert_invalid","line":1,"filename":"a.0.wasm","text":"invalid"}""",
+        "module_typeがありません。"
+    )]
+    [Arguments("""{"type":"module","filename":"a.0.wasm"}""", "lineがありません。")]
+    [Arguments(
+        """{"type":"module","line":1,"filename":"\uD800"}""",
+        "filenameを文字列として取得できません。"
+    )]
+    [Arguments(
+        """{"type":"module","line":1,"filename":"a.0.wasm","\uD800":0}""",
+        "commandに文字列として取得できない項目名があります。"
+    )]
+    public async Task 項目が欠落または取得できないcommandを読む_ルートからの正確な位置と理由を残す(
+        string json,
+        string message
+    )
+    {
+        // Arrange
+        var document = Parse(json);
+
+        // Act
+        var result = ScriptReader.Read(document, INPUT_PATH);
+
+        // Assert
+        var command = await Assert.That(result.Commands[0]).IsTypeOf<InvalidCommand>();
+        await Assert.That(command!.Diagnostic.Message).IsEqualTo(message);
     }
 
     private static ScriptDocument Parse(string commands)

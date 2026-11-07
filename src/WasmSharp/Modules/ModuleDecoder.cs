@@ -261,12 +261,12 @@ internal static class ModuleDecoder
             throw reader.Error(FUNCTION_CODE_LENGTH_MESSAGE);
         }
 
-        if (segmentCount is not { } count)
+        if (segmentCount is null)
         {
             return;
         }
 
-        RequireDataCountMatch(ref reader, dataCount, count);
+        RequireDataCountMatch(ref reader, dataCount, segmentCount.Value);
         if (
             dataCount is null
             && functions.Any(x =>

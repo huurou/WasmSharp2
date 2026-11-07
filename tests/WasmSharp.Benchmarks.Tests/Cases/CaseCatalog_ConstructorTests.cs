@@ -1,15 +1,56 @@
+using System.Reflection;
 using WasmSharp.Benchmarks.Cases;
+using WasmSharp.Benchmarks.Measurements;
 using WasmSharp.Benchmarks.Tests.Fixtures;
+using BenchmarkAttribute = BenchmarkDotNet.Attributes.BenchmarkAttribute;
 
 namespace WasmSharp.Benchmarks.Tests.Cases;
 
 internal class CaseCatalog_ConstructorTests
 {
     [Test]
+    public async Task 同じケースIDが重複する_識別子を示して拒否する()
+    {
+        // Arrange
+        var definition = AssetLoadingFixture.ReadCases()[0];
+
+        // Act & Assert
+        var exception = await Assert
+            .That(() => new CaseCatalog([definition, definition]))
+            .ThrowsExactly<InvalidDataException>();
+        await Assert.That(exception!.Message).Contains(definition.CaseId).And.Contains("重複");
+    }
+
+    [Test]
+    public async Task scalarとSIMDの比較groupが違う_組の不一致を示して拒否する()
+    {
+        // Arrange
+        var definitions = AssetLoadingFixture.ReadCases();
+        var scalar = definitions.Single(x => x.CaseId == "scan.scalar");
+        var simd = definitions.Single(x => x.CaseId == "scan.simd") with
+        {
+            ComparisonGroup = "other-group",
+        };
+
+        // Act & Assert
+        var exception = await Assert
+            .That(() => new CaseCatalog([scalar, simd]))
+            .ThrowsExactly<InvalidDataException>();
+        await Assert.That(exception!.Message).Contains("comparison_group");
+    }
+
+    [Test]
     public async Task 固定15ケースを読む_操作数と仕事量と状態方針をそのまま保持する()
     {
         // Arrange
         var definitions = AssetLoadingFixture.ReadCases();
+        var measurementMethods = new[] { typeof(InvokeBenchmarks), typeof(PreparationBenchmarks) }
+            .SelectMany(x =>
+                x.GetMethods()
+                    .Where(y => y.GetCustomAttribute<BenchmarkAttribute>() is not null)
+                    .Select(y => $"{x.Name}.{y.Name}")
+            )
+            .ToArray();
 
         // Act
         var catalog = new CaseCatalog(definitions);
@@ -19,6 +60,12 @@ internal class CaseCatalog_ConstructorTests
         using (Assert.Multiple())
         {
             await Assert.That(catalog.Cases.Count()).IsEqualTo(15);
+            foreach (var definition in catalog.Cases)
+            {
+                var method = catalog.GetMeasurementMethod(definition.CaseId);
+                await Assert.That(measurementMethods).Contains(method);
+                await Assert.That(CaseCatalog.GetCaseId(method)).IsEqualTo(definition.CaseId);
+            }
             await Assert
                 .That(
                     catalog
@@ -75,6 +122,10 @@ internal class CaseCatalog_ConstructorTests
     [Arguments("arrays")]
     [Arguments("workload")]
     [Arguments("expected")]
+    [Arguments("operation-count")]
+    [Arguments("state-restoration")]
+    [Arguments("measurement-stage")]
+    [Arguments("state-policy")]
     public async Task scalarとSIMDの比較条件が違う_組と条件名を示して拒否する(string condition)
     {
         // Arrange
@@ -98,6 +149,19 @@ internal class CaseCatalog_ConstructorTests
                 }
             ),
             "workload" => simd with { Workload = [new("scan", 4, WorkloadUnit.Elements)] },
+            "operation-count" => simd with
+            {
+                OperationDefinition = simd.OperationDefinition with { OperationsPerInvoke = 2 },
+            },
+            "state-restoration" => simd with
+            {
+                OperationDefinition = simd.OperationDefinition with
+                {
+                    IncludesStateRestoration = true,
+                },
+            },
+            "measurement-stage" => simd with { MeasurementStage = MeasurementStage.Instantiate },
+            "state-policy" => simd with { StatePolicy = StatePolicy.OverwriteOutput },
             _ => simd with
             {
                 ExpectedResult = simd.ExpectedResult with
@@ -111,6 +175,16 @@ internal class CaseCatalog_ConstructorTests
         var exception = await Assert
             .That(() => new CaseCatalog([scalar, simd]))
             .Throws<InvalidDataException>();
-        await Assert.That(exception!.Message).Contains("scan.sum-u32").And.Contains(condition);
+        var expectedCondition = condition
+            is "operation-count"
+                or "state-restoration"
+                or "measurement-stage"
+                or "state-policy"
+            ? "operation/state"
+            : condition;
+        await Assert
+            .That(exception!.Message)
+            .Contains("scan.sum-u32")
+            .And.Contains(expectedCondition);
     }
 }

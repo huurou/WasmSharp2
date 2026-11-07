@@ -68,6 +68,9 @@ internal class BaselineComparer_CompareConversionTests
                 .That(comparison.ProvenanceDifferences.Single().Baseline)
                 .IsEqualTo(baseline.Provenance.ExecutableSha256);
             await Assert
+                .That(comparison.ProvenanceDifferences.Single().Name)
+                .IsEqualTo("executable_sha256");
+            await Assert
                 .That(comparison.ProvenanceDifferences.Single().Current)
                 .IsEqualTo(current.Provenance.ExecutableSha256);
             await Assert.That(comparison.Summary.ProvenanceDifferenceCount).IsEqualTo(1);
@@ -104,11 +107,27 @@ internal class BaselineComparer_CompareConversionTests
         var comparison = BaselineComparer.CompareConversion(baseline, current);
 
         // Assert
+        var featureName =
+            condition == "feature.added" ? "changed" : baseline.Profile.Features[0].Name;
+        string[] expectedNames = condition switch
+        {
+            "feature.default_enabled" => [$"features.{featureName}.default_enabled"],
+            "feature.enabled" => [$"features.{featureName}.enabled"],
+            "feature.added" or "feature.missing" =>
+            [
+                $"features.{featureName}.default_enabled",
+                $"features.{featureName}.enabled",
+            ],
+            _ => [condition],
+        };
         using (Assert.Multiple())
         {
             await Assert.That(comparison.Established).IsTrue();
             await Assert.That(comparison.Complete).IsTrue();
             await Assert.That(comparison.ConditionDifferences).IsNotEmpty();
+            await Assert
+                .That(comparison.ConditionDifferences.Select(x => x.Name))
+                .IsEquivalentTo(expectedNames);
             await Assert
                 .That(comparison.ConditionDifferences.All(x => x.Baseline != x.Current))
                 .IsTrue();
@@ -335,6 +354,122 @@ internal class BaselineComparer_CompareConversionTests
                 .That(document.RootElement.GetProperty("kind").GetString())
                 .IsEqualTo("comparison_report");
         }
+    }
+
+    [Test]
+    [Arguments(true)]
+    [Arguments(false)]
+    public async Task 片側だけの記録が未完了_問題のある比較側を未比較理由に残す(
+        bool baselineIncomplete
+    )
+    {
+        // Arrange
+        var baseline = CreateManifest();
+        var current = CreateManifest();
+        if (baselineIncomplete)
+        {
+            baseline = baseline with { Completion = new(false, true) };
+        }
+        else
+        {
+            current = current with { Completion = new(false, true) };
+        }
+
+        // Act
+        var comparison = BaselineComparer.CompareConversion(baseline, current);
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(comparison.Complete).IsFalse();
+            await Assert
+                .That(comparison.Uncompared.Select(x => x.Target).Distinct())
+                .IsEquivalentTo(new[] { baselineIncomplete ? "baseline" : "current" });
+        }
+    }
+
+    [Test]
+    [Arguments("profileの入力", true)]
+    [Arguments("profileの入力", false)]
+    [Arguments("入力の変換記録", true)]
+    [Arguments("入力の変換記録", false)]
+    [Arguments("生成物", true)]
+    [Arguments("生成物", false)]
+    [Arguments("feature", true)]
+    [Arguments("feature", false)]
+    public async Task 片側の同名項目が重複する_種類と比較側の件数を含む未比較理由を残す(
+        string kind,
+        bool baselineDuplicate
+    )
+    {
+        // Arrange
+        var baseline = CreateManifest();
+        var current = CreateManifest();
+        var target = baselineDuplicate ? baseline : current;
+        string name;
+        switch (kind)
+        {
+            case "profileの入力":
+                name = target.Profile.Inputs[0].Path;
+                target.Profile.Inputs.Add(target.Profile.Inputs[0]);
+                break;
+            case "入力の変換記録":
+                name = target.Inputs[0].Input.Path;
+                target.Inputs.Add(target.Inputs[0]);
+                break;
+            case "生成物":
+                name = target.Inputs[0].Artifacts[0].Path;
+                target.Inputs[0].Artifacts.Add(target.Inputs[0].Artifacts[0]);
+                break;
+            default:
+                name = target.Profile.Features[0].Name;
+                target.Profile.Features.Add(target.Profile.Features[0]);
+                break;
+        }
+
+        // Act
+        var comparison = BaselineComparer.CompareConversion(baseline, current);
+
+        // Assert
+        var reason = comparison
+            .Uncompared.Single(x =>
+                x.Target == name && x.Reason.StartsWith(kind, StringComparison.Ordinal)
+            )
+            .Reason;
+        using (Assert.Multiple())
+        {
+            await Assert.That(comparison.Complete).IsFalse();
+            await Assert
+                .That(reason)
+                .Contains(
+                    baselineDuplicate ? "baseline=2件、current=1件" : "baseline=1件、current=2件"
+                );
+        }
+    }
+
+    [Test]
+    public async Task 複数入力の素材が変化する_入力と生成物をそれぞれpath順に報告する()
+    {
+        // Arrange
+        var baseline = CreateManifest();
+        var current = baseline.CreateSnapshot();
+        current.Inputs.Reverse();
+        foreach (var input in current.Inputs)
+        {
+            input.Artifacts[0] = input.Artifacts[0] with { Sha256 = new string('f', 64) };
+        }
+
+        // Act
+        var comparison = BaselineComparer.CompareConversion(baseline, current);
+
+        // Assert
+        await Assert
+            .That(
+                comparison
+                    .EntryDifferences.Select(x => x.Path)
+                    .SequenceEqual(new[] { "modules/a.json", "modules/b.json" })
+            )
+            .IsTrue();
     }
 
     private static CorpusManifest CreateManifest()

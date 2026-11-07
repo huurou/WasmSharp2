@@ -24,6 +24,7 @@ internal partial class ModuleDecoder_DecodeTests
         (byte)10
     )]
     [Arguments("030201000A0C010A02FFFFFFFF0F7F017E0B", "too many locals", 23L, 0u, (byte)10)]
+    [Arguments("030201000A0E010C03FFFFFFFF0F7F017E017F0B", "too many locals", 23L, 0u, (byte)10)]
     [Arguments(
         "03020100",
         "function and code section have inconsistent lengths",
@@ -235,6 +236,42 @@ internal partial class ModuleDecoder_DecodeTests
             await Assert.That(module.Functions[1].Instructions[0].Immediate.AsI64()).IsEqualTo(-1L);
             await Assert.That(module.Exports[0].Name).IsEqualTo("先頭");
             await Assert.That(module.Exports[1].Name).IsEqualTo("末尾");
+        }
+    }
+
+    [Test]
+    [Arguments("FF0B", "illegal opcode ff", 2)]
+    [Arguments("4180", "unexpected end of section or function", 0)]
+    public async Task Import後の二つ目の定義関数が破損_関数全体の添字と入力位置を報告する(
+        string instructions,
+        string prefix,
+        int distanceFromEnd
+    )
+    {
+        // Arrange
+        var bytes = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Types(([], [])),
+            HostLinkingModuleBinary.Imports(
+                ("env", "g", 3, [0x7F, 0]),
+                ("env", "first", 0, [0]),
+                ("env", "second", 0, [0])
+            ),
+            HostLinkingModuleBinary.Functions(0, 0),
+            HostLinkingModuleBinary.Code(([], [0x0B]), ([], Convert.FromHexString(instructions)))
+        );
+
+        // Act & Assert
+        var exception = await Assert
+            .That(() => ModuleDecoder.Decode(bytes))
+            .ThrowsExactly<WasmDecodeException>();
+        using (Assert.Multiple())
+        {
+            await Assert
+                .That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal))
+                .IsTrue();
+            await Assert
+                .That(exception.Location)
+                .IsEqualTo(new(WasmProcessingStage.Decode, bytes.Length - distanceFromEnd, 3, 10));
         }
     }
 

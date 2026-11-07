@@ -226,6 +226,110 @@ public class SuiteExecutor_ExecuteTests
         }
     }
 
+    [Test]
+    public async Task 素材の全体診断と変換時の診断がある_双方を重複なく実行結果に保持する()
+    {
+        // Arrange
+        using var fixture = CorpusFixture.Create();
+        var diagnostic = new CorpusDiagnostic("generate", "変換時の診断");
+        fixture.Manifest = fixture.Manifest with { Diagnostics = [diagnostic, diagnostic] };
+        File.WriteAllBytes(fixture.GetPath("modules/extra.wasm"), ScriptExecutionFixture.Empty);
+
+        // Act
+        var report = SuiteExecutor.Execute(Complete(fixture.Manifest), fixture.ManifestPath);
+
+        // Assert
+        await Assert
+            .That(report.Diagnostics)
+            .IsEquivalentTo(
+                new[]
+                {
+                    diagnostic,
+                    new CorpusDiagnostic(
+                        "verify",
+                        "manifestに記録されていない素材があります。",
+                        "modules/extra.wasm"
+                    ),
+                }
+            );
+    }
+
+    [Test]
+    public async Task 対象入力の変換記録が欠落する_入力異常と進捗を残して独立入力を続行する()
+    {
+        // Arrange
+        using var fixture = CorpusFixture.Create();
+        fixture.Manifest.Inputs.RemoveAll(x => x.Input.Path == CorpusFixture.A);
+        List<string> progress = [];
+
+        // Act
+        var report = SuiteExecutor.Execute(
+            Complete(fixture.Manifest),
+            fixture.ManifestPath,
+            progress.Add
+        );
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(progress.SequenceEqual([CorpusFixture.A, CorpusFixture.B])).IsTrue();
+            await Assert.That(report.Inputs[0].Status).IsEqualTo(InputRunStatus.Processed);
+            await Assert.That(report.Inputs[0].CommandCount).IsNull();
+            await Assert.That(report.Inputs[0].Cases).IsEmpty();
+            await Assert
+                .That(report.Inputs[0].Issues)
+                .IsEquivalentTo(
+                    new[]
+                    {
+                        new CorpusDiagnostic(
+                            "verify",
+                            "manifestに対象入力の記録がありません。",
+                            CorpusFixture.A
+                        ),
+                    }
+                );
+            await Assert.That(report.Inputs[1].Cases[0].Outcome).IsEqualTo(CaseOutcome.Passed);
+            await Assert
+                .That(report.Diagnostics.Any(x => x.Operation == "execute_suite"))
+                .IsFalse();
+        }
+    }
+
+    [Test]
+    public async Task 入力の処理後に中断する_完了済み入力を保持して後続入力を未処理にする()
+    {
+        // Arrange
+        using var fixture = CorpusFixture.Create();
+        using var cancellation = new CancellationTokenSource();
+        List<string> progress = [];
+
+        // Act
+        var report = SuiteExecutor.Execute(
+            Complete(fixture.Manifest),
+            fixture.ManifestPath,
+            path =>
+            {
+                progress.Add(path);
+                cancellation.Cancel();
+            },
+            cancellation.Token
+        );
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(progress.SequenceEqual([CorpusFixture.A])).IsTrue();
+            await Assert.That(report.Inputs[0].Status).IsEqualTo(InputRunStatus.Processed);
+            await Assert.That(report.Inputs[1].Status).IsEqualTo(InputRunStatus.Unprocessed);
+            await Assert.That(report.Inputs[1].Cases).IsEmpty();
+            await Assert.That(report.Completion.ProcessingComplete).IsFalse();
+            await Assert.That(report.Diagnostics.Single().Operation).IsEqualTo("execute_suite");
+            await Assert
+                .That(report.Diagnostics.Single().ExceptionType)
+                .IsEqualTo(typeof(OperationCanceledException).FullName);
+        }
+    }
+
     internal static CorpusManifest Complete(CorpusManifest manifest)
     {
         return manifest with { Summary = manifest.Summarize(), Completion = new(true, true) };

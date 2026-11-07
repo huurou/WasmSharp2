@@ -151,7 +151,8 @@ internal static class ModuleInstantiator
         for (var index = 0; index < instance.Module.DataSegments.Length; index++)
         {
             var definition = instance.Module.DataSegments[index];
-            if (definition.ActiveTarget is not { } target)
+            var target = definition.ActiveTarget;
+            if (target is null)
             {
                 continue;
             }
@@ -263,9 +264,10 @@ internal static class ModuleInstantiator
         int ordinal
     )
     {
+        ExternalValue? value = null;
         if (
             !providers.TryGetValue(import.ModuleName, out var items)
-            || !items.TryGetValue(import.Name, out var value)
+            || !items.TryGetValue(import.Name, out value)
         )
         {
             throw LinkFailure(

@@ -532,19 +532,7 @@ internal static class ScriptReader
         var properties = new Dictionary<string, JsonElement>(StringComparer.Ordinal);
         foreach (var property in element.EnumerateObject())
         {
-            string name;
-            try
-            {
-                name = property.Name;
-            }
-            catch (InvalidOperationException)
-            {
-                // 対になるサロゲートを欠くエスケープ等を含む名前は、固定形式のどの項目名とも一致しない。
-                throw new ScriptFormatException(
-                    $"{target}に文字列として取得できない項目名があります。"
-                );
-            }
-
+            var name = ReadPropertyName(property, target);
             if (!properties.TryAdd(name, property.Value))
             {
                 // どちらの値を採用するか決められないため、構造不正とする。
@@ -553,6 +541,28 @@ internal static class ScriptReader
         }
 
         return properties;
+    }
+
+    /// <summary>
+    /// JSONの項目名を取得し、取得できない名前を位置付きの読み取り異常にする。
+    /// </summary>
+    /// <param name="property">名前を取得するJSONの項目</param>
+    /// <param name="target">項目名の異常を報告するobjectの位置</param>
+    /// <returns>JSONのエスケープを解釈して取得した項目名</returns>
+    /// <exception cref="ScriptFormatException">項目名を文字列として取得できない場合</exception>
+    private static string ReadPropertyName(JsonProperty property, string target)
+    {
+        try
+        {
+            return property.Name;
+        }
+        catch (InvalidOperationException)
+        {
+            // 対になるサロゲートを欠くエスケープ等を含む名前は、固定形式のどの項目名とも一致しない。
+            throw new ScriptFormatException(
+                $"{target}に文字列として取得できない項目名があります。"
+            );
+        }
     }
 
     /// <summary>

@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using System.Text.Json;
 using WasmSharp.Benchmarks.Cases;
 using WasmSharp.Benchmarks.Measurements;
@@ -13,6 +14,28 @@ internal class BenchmarkRun_CaptureInputsTests
     {
         // Arrange
         using var fixture = new AssetLoadingFixture();
+        var sourceBytes = "(module)"u8.ToArray();
+        File.WriteAllBytes(Path.Combine(fixture.DirectoryPath, "invoke.wat"), sourceBytes);
+        var asset = fixture.Manifest.Assets.Single();
+        fixture.SaveManifest(
+            fixture.Manifest with
+            {
+                Assets =
+                [
+                    asset with
+                    {
+                        Sources =
+                        [
+                            new(
+                                "invoke.wat",
+                                "fixed-revision",
+                                Convert.ToHexStringLower(SHA256.HashData(sourceBytes))
+                            ),
+                        ],
+                    },
+                ],
+            }
+        );
         using var run = new RunStoreFixture();
         var store = RunStore.Create(run.DirectoryPath, run.Manifest);
         var processes = new List<ProcessConfiguration>
@@ -37,6 +60,13 @@ internal class BenchmarkRun_CaptureInputsTests
                 .That(copied.Manifest.Cases.Sha256)
                 .IsEqualTo(fixture.Manifest.Cases.Sha256);
             await Assert.That(copied.GetBinary("invoke").Length > 0).IsTrue();
+            await Assert
+                .That(
+                    File.ReadAllBytes(
+                        Path.Combine(run.DirectoryPath, "inputs", "assets", "invoke.wat")
+                    )
+                )
+                .IsEquivalentTo(sourceBytes);
             await Assert.That(manifest.CasesFile!.Sha256).IsEqualTo(fixture.Manifest.Cases.Sha256);
             await Assert
                 .That(

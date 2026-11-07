@@ -151,7 +151,10 @@ internal static class InvokeFixture
         return BuildAssets(definition, bytes);
     }
 
-    private static LoadedAssets BuildAssets(BenchmarkCase definition, ImmutableArray<byte> bytes) =>
+    internal static LoadedAssets BuildAssets(
+        BenchmarkCase definition,
+        ImmutableArray<byte> bytes
+    ) =>
         new(
             new(1, new("profile.json", ""), new("cases.json", ""), []),
             new CaseCatalog([definition]),

@@ -39,6 +39,9 @@ public partial class ScriptExecutor_ExecuteTests
             await Assert.That(results[3].Outcome).IsEqualTo(CaseOutcome.Blocked);
             await Assert.That(results[3].Cause!.Origins).IsEquivalentTo([new CaseId("a.wast", 1)]);
             await Assert.That(results[4].Outcome).IsEqualTo(CaseOutcome.RunnerError);
+            await Assert
+                .That(results[4].Diagnostics[0].Message)
+                .IsEqualTo("対象module $missingがありません。");
             await Assert.That(results[5].Outcome).IsEqualTo(CaseOutcome.RunnerError);
             await Assert.That(results[5].Diagnostics[0].Operation).IsEqualTo("invoke");
             await Assert.That(results[6].Outcome).IsEqualTo(CaseOutcome.Passed);
@@ -183,6 +186,7 @@ public partial class ScriptExecutor_ExecuteTests
         {
             await Assert.That(results[1].Outcome).IsEqualTo(CaseOutcome.Passed);
             await Assert.That(results[1].ActualValues[0].Bits).IsEqualTo("00000007");
+            await Assert.That(results[1].Diagnostics).IsEmpty();
             await Assert.That(results[2].Outcome).IsEqualTo(CaseOutcome.Failed);
             await Assert.That(results[2].Diagnostics[0].Operation).IsEqualTo("match_values");
             await Assert.That(results[3].Outcome).IsEqualTo(CaseOutcome.Passed);
@@ -240,8 +244,65 @@ public partial class ScriptExecutor_ExecuteTests
             await Assert.That(count).IsEqualTo(0);
             await Assert.That(results[1].Outcome).IsEqualTo(CaseOutcome.RunnerError);
             await Assert.That(results[1].Diagnostics[0].Message).Contains("expected[0].value");
+            await Assert.That(results[1].Diagnostics[0].Operation).IsEqualTo("parse_expected");
             await Assert.That(results[2].Diagnostics[0].Message).Contains("action.args[0].value");
+            await Assert.That(results[2].Diagnostics[0].Operation).IsEqualTo("create_arguments");
             await Assert.That(results[2].LastStage).IsNull();
+        }
+    }
+
+    [Test]
+    [Arguments("assert_trap")]
+    [Arguments("assert_exhaustion")]
+    public async Task 否定actionが値を返して正常終了する_値比較を追加せず不一致とする(string type)
+    {
+        // Arrange
+        var state = new ScriptState("a.wast");
+        var commands =
+            ScriptExecutionFixture.Module(0)
+            + ","
+            + $$"""{"type":"{{type}}","line":1,"action":{"type":"invoke","field":"f","args":[]},"text":"expected","expected":[]}""";
+
+        // Act
+        var results = ScriptExecutionFixture.Execute(
+            commands,
+            state,
+            (0, ScriptExecutionFixture.Exports())
+        );
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(results[1].Outcome).IsEqualTo(CaseOutcome.Failed);
+            await Assert.That(results[1].LastStage).IsEqualTo(CaseStage.Invoke);
+            await Assert.That(results[1].ActualValues[0].Bits).IsEqualTo("00000007");
+            await Assert.That(results[1].Diagnostics).IsEmpty();
+        }
+    }
+
+    [Test]
+    public async Task 存在しないglobalを取得する_Get段階と操作名を診断に残す()
+    {
+        // Arrange
+        var state = new ScriptState("a.wast");
+        var commands =
+            ScriptExecutionFixture.Module(0)
+            + ","
+            + """{"type":"action","line":1,"action":{"type":"get","field":"missing"},"expected":[]}""";
+
+        // Act
+        var results = ScriptExecutionFixture.Execute(
+            commands,
+            state,
+            (0, ScriptExecutionFixture.Exports())
+        );
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(results[1].Outcome).IsEqualTo(CaseOutcome.RunnerError);
+            await Assert.That(results[1].LastStage).IsEqualTo(CaseStage.Get);
+            await Assert.That(results[1].Diagnostics[0].Operation).IsEqualTo("get");
         }
     }
 

@@ -459,16 +459,7 @@ internal static class BenchmarkRun
                 x.Check.RunId == runId && x.Check.CaseId == caseId && x.Check.JobId == jobId
             )
             .GroupBy(x => x.Check.ProcessId)
-            .Select(x =>
-                x.OrderByDescending(y =>
-                        y.Check.Postcheck is not null ? 3
-                        : y.Check.ExecutionStarted ? 2
-                        : y.Check.Precheck is not null ? 1
-                        : 0
-                    )
-                    .ThenByDescending(y => y.Check.Failures.Count)
-                    .First()
-            )
+            .Select(x => x.OrderByDescending(y => GetCheckPriority(y.Check)).First())
             .ToDictionary(x => x.Check.ProcessId);
         var results = processes
             .Select(x =>
@@ -490,6 +481,20 @@ internal static class BenchmarkRun
             results.Add(new(jobId, check.Check.ProcessId, null, [], false, check.File));
         }
         return results;
+    }
+
+    /// <summary>
+    /// 検査snapshotの進行段階と失敗件数から採用優先順位を返す
+    /// </summary>
+    private static (int Stage, int Failures) GetCheckPriority(ProcessCheck check)
+    {
+        var stage =
+            check.Postcheck is not null ? 3
+            : check.ExecutionStarted ? 2
+            : check.Precheck is not null ? 1
+            : 0;
+        var failures = check.Failures.Count;
+        return (stage, failures);
     }
 
     /// <summary>

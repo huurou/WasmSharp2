@@ -1,3 +1,5 @@
+using System.Text.Json;
+using WasmSharp.Benchmarks.Cases;
 using WasmSharp.Benchmarks.Measurements;
 using WasmSharp.Benchmarks.Results;
 using WasmSharp.Benchmarks.Tests.Fixtures;
@@ -152,8 +154,28 @@ internal class BenchmarkRun_CaptureSourceBeforeTests
         );
 
         // Assert
+        var sourceFile = RunStore.Load(fixture.Run.DirectoryPath).SourceFile!;
+        var savedSource = JsonSerializer.Deserialize<RunSource>(
+            File.ReadAllBytes(Path.Combine(fixture.Run.DirectoryPath, sourceFile.RelativePath)),
+            CaseJson.Options
+        )!;
         using (Assert.Multiple())
         {
+            foreach (var set in new[] { source.Runtime, source.Harness })
+            {
+                var paths = set.Files.Select(x => x.RelativePath);
+                await Assert
+                    .That(paths.SequenceEqual(paths.Order(StringComparer.Ordinal)))
+                    .IsTrue();
+            }
+            await Assert.That(savedSource.Head).IsEqualTo(source.Head);
+            await Assert.That(savedSource.Runtime.Revision).IsEqualTo(source.Runtime.Revision);
+            await Assert.That(savedSource.Runtime.Sha256).IsEqualTo(source.Runtime.Sha256);
+            await Assert.That(savedSource.Runtime.Files).IsEquivalentTo(source.Runtime.Files);
+            await Assert.That(savedSource.Harness.Revision).IsEqualTo(source.Harness.Revision);
+            await Assert.That(savedSource.Harness.Sha256).IsEqualTo(source.Harness.Sha256);
+            await Assert.That(savedSource.Harness.Files).IsEquivalentTo(source.Harness.Files);
+            await Assert.That(savedSource.AssembliesBefore).IsEquivalentTo(source.AssembliesBefore);
             await Assert.That(source.Head).IsEqualTo(fixture.Git("rev-parse", "HEAD"));
             await Assert
                 .That(source.Runtime.Files.Select(x => x.RelativePath))

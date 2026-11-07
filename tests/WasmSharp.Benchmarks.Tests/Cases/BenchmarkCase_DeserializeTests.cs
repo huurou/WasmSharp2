@@ -133,6 +133,21 @@ internal partial class BenchmarkCase_DeserializeTests
     }
 
     [Test]
+    public async Task 測定区間がenumの整数値で記録される_文字列による区間指定を要求する()
+    {
+        // Arrange
+        var fixture = JsonNode.Parse(await ReadFixtureAsync())!;
+        fixture["measurement_stage"] = (int)MeasurementStage.Invoke;
+
+        // Act & Assert
+        await Assert
+            .That(() =>
+                JsonSerializer.Deserialize<BenchmarkCase>(fixture.ToJsonString(), CaseJson.Options)
+            )
+            .ThrowsExactly<JsonException>();
+    }
+
+    [Test]
     [Arguments("decode", MeasurementStage.Decode, "fresh_module", StatePolicy.FreshModule)]
     [Arguments(
         "decode_validate",

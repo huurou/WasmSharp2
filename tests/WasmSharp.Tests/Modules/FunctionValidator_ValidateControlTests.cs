@@ -285,6 +285,7 @@ internal partial class FunctionValidator_ValidateTests
     [Arguments("02400020000B0B", "", 2, "unknown local 0")]
     [Arguments("420004400B0B", "", 1, "type mismatch")]
     [Arguments("4100047F41010B1A0B", "", 3, "type mismatch")]
+    [Arguments("4100047F4101050B1A0B", "", 4, "type mismatch")]
     [Arguments("4100047F41010542010B1A0B", "", 5, "type mismatch")]
     [Arguments("4101047F42010541010B1A0B", "", 3, "type mismatch")]
     [Arguments("02010B0B", "", 0, "unknown type 1")]

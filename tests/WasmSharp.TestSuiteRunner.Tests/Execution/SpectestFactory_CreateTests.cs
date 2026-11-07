@@ -295,6 +295,9 @@ internal class SpectestFactory_CreateTests
             .ThrowsExactly<InvalidOperationException>();
         using (Assert.Multiple())
         {
+            await Assert
+                .That(exception!.Message)
+                .IsEqualTo("printの記録には処理中のcommandが必要です。");
             await Assert.That(state.CallbackException).IsSameReferenceAs(exception);
             await Assert.That(state.Prints.IsEmpty).IsTrue();
         }

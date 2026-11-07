@@ -51,6 +51,7 @@ internal class CorpusVerifier_VerifySourcesTests
         File.Delete(Path.Combine(fixture.InputRoot, CorpusFixture.A));
         fixture.WriteSource("extra.wast", "(module)\n");
         fixture.WriteSource("simd/note.txt", "対象外の拡張子");
+        fixture.WriteSource("simd/note.WAST", "対象外の拡張子");
 
         // Act
         var diagnostics = CorpusVerifier.VerifySources(
@@ -67,6 +68,58 @@ internal class CorpusVerifier_VerifySourcesTests
                 )
                 .IsTrue();
             await Assert.That(diagnostics.All(x => x.Operation == "verify")).IsTrue();
+            await Assert.That(diagnostics[0].Message).IsEqualTo("元入力がありません。");
+            await Assert
+                .That(diagnostics[1].Message)
+                .IsEqualTo("固定profileにない元入力があります。");
+        }
+    }
+
+    [Test]
+    public async Task 元入力rootが存在しない_入力欠落だけを返し余剰列挙の例外を追加しない()
+    {
+        // Arrange
+        using var directory = new TemporaryDirectory();
+
+        // Act
+        var diagnostics = CorpusVerifier.VerifySources(
+            [new SourceInput("a.wast", new string('a', 64))],
+            directory.Combine("missing")
+        );
+
+        // Assert
+        await Assert
+            .That(diagnostics)
+            .IsEquivalentTo(
+                new[] { new CorpusDiagnostic("verify", "元入力がありません。", "a.wast") }
+            );
+    }
+
+    [Test]
+    public async Task 元入力が排他的に開かれている_読取例外を入力path付き診断として返す()
+    {
+        // Arrange
+        using var fixture = CorpusFixture.Create();
+        using var stream = File.Open(
+            Path.Combine(fixture.InputRoot, CorpusFixture.A),
+            FileMode.Open,
+            FileAccess.Read,
+            FileShare.None
+        );
+
+        // Act
+        var diagnostics = CorpusVerifier.VerifySources(
+            fixture.Manifest.Profile.Inputs,
+            fixture.InputRoot
+        );
+
+        // Assert
+        var diagnostic = diagnostics.Single();
+        using (Assert.Multiple())
+        {
+            await Assert.That(diagnostic.Path).IsEqualTo(CorpusFixture.A);
+            await Assert.That(diagnostic.ExceptionType).IsEqualTo(typeof(IOException).FullName);
+            await Assert.That(diagnostic.Message).StartsWith("元入力を読み取れません: ");
         }
     }
 }

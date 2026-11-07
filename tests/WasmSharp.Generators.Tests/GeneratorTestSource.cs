@@ -104,6 +104,12 @@ internal static class GeneratorTestSource
         {
             await Assert.That(diagnostics[0].Id).IsEqualTo(expectedId);
             await Assert.That(diagnostics[0].Severity).IsEqualTo(DiagnosticSeverity.Error);
+            await Assert.That(diagnostics[0].Descriptor.IsEnabledByDefault).IsTrue();
+            await Assert.That(diagnostics[0].Descriptor.Title.ToString()).IsNotEmpty();
+            await Assert
+                .That(diagnostics[0].Descriptor.Category)
+                .IsEqualTo("InstructionGeneration");
+            await Assert.That(diagnostics[0].GetMessage()).IsNotEmpty();
             await Assert.That(diagnostics[0].Location.IsInSource).IsTrue();
             await Assert.That(driver.GetRunResult().GeneratedTrees).IsEmpty();
         }

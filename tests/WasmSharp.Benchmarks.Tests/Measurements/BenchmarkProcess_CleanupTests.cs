@@ -31,6 +31,7 @@ internal class BenchmarkProcess_CleanupTests
             await Assert.That(failed.Postcheck!.Status).IsEqualTo(ResultStatus.Succeeded);
             await Assert.That(failed.ExecutionStarted).IsTrue();
             await Assert.That(failed.Failures.Single().Stage).IsEqualTo(RunStage.Saving);
+            await Assert.That(failed.Failures.Single().Reason).IsNotEmpty();
             await Assert
                 .That(failed.Failures.Single().LastConfirmedStage)
                 .IsEqualTo(RunStage.Postcheck);
@@ -74,7 +75,7 @@ internal class BenchmarkProcess_CleanupTests
         benchmark.Single();
 
         // Act & Assert
-        await Assert
+        var exception = await Assert
             .That(() => process.Cleanup(benchmark.Cleanup))
             .Throws<InvalidOperationException>();
         var failed = RunStore
@@ -85,8 +86,14 @@ internal class BenchmarkProcess_CleanupTests
         {
             await Assert.That(failed.Precheck!.Status).IsEqualTo(ResultStatus.Succeeded);
             await Assert.That(failed.Postcheck!.Status).IsEqualTo(ResultStatus.Failed);
+            var observation = failed.Postcheck!.Observations.Single();
+            await Assert.That(observation.Name).IsNotEmpty();
+            await Assert.That(observation.Expected).IsNotEmpty();
+            await Assert.That(observation.Actual).IsEqualTo(exception!.Message);
+            await Assert.That(observation.Matches).IsFalse();
             await Assert.That(failed.LastConfirmedStage).IsEqualTo(RunStage.ExecutionStarted);
             await Assert.That(failed.Failures.Single().Stage).IsEqualTo(RunStage.Postcheck);
+            await Assert.That(failed.Failures.Single().Reason).IsNotEmpty();
             await Assert.That(failed.Failures.Single().Message!).Contains("観測=I32:00000001");
         }
     }

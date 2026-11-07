@@ -28,6 +28,8 @@ internal class CorpusManifest_CreateTests
                         && x.Artifacts.Count == 0
                         && x.Diagnostics.Count == 0
                         && x.ExitCode is null
+                        && x.StandardOutput == string.Empty
+                        && x.StandardError == string.Empty
                     )
                 )
                 .IsTrue();

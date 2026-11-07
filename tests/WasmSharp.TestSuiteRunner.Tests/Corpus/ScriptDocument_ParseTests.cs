@@ -76,7 +76,7 @@ internal class ScriptDocument_ParseTests
             await Assert
                 .That(document.Diagnostics[0].ExceptionType)
                 .StartsWith("System.Text.Json.");
-            await Assert.That(document.Diagnostics[0].Message).Contains("6行目");
+            await Assert.That(document.Diagnostics[0].Message).Contains("6行目の2バイト目");
             await Assert.That(document.Diagnostics[0].Message).Contains("2件");
         }
     }
@@ -302,5 +302,56 @@ internal class ScriptDocument_ParseTests
 
         // Assert
         await Assert.That(Encoding.UTF8.GetString(document.Content.AsSpan())).IsEqualTo(JSON);
+    }
+
+    [Test]
+    [Arguments("\"source_filename\":{\"nested\":[1,2]},", "source_filename", null)]
+    [Arguments("\"extra\":{\"nested\":[1,2]},\"source_filename\":\"a.wast\",", "extra", "a.wast")]
+    public async Task ルートの不正な複合値の後にcommandsがある_不正値を読み飛ばして後続commandを列挙する(
+        string prefix,
+        string reason,
+        string? sourceFilename
+    )
+    {
+        // Arrange
+        var json = "{" + prefix + "\"commands\":[{\"type\":\"module\",\"line\":1}]}";
+
+        // Act
+        var document = ScriptDocument.Parse(Encoding.UTF8.GetBytes(json), PATH);
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(document.SourceFilename).IsEqualTo(sourceFilename);
+            await Assert.That(document.EnumerationComplete).IsTrue();
+            await Assert.That(document.CommandCount).IsEqualTo(1);
+            await Assert.That(document.Commands[0].Type).IsEqualTo("module");
+            await Assert.That(document.Diagnostics.Length).IsEqualTo(1);
+            await Assert.That(document.Diagnostics[0].Message).Contains(reason);
+        }
+    }
+
+    [Test]
+    [Arguments("""{"nested":[1,2]}""")]
+    [Arguments("""[{"type":"module","line":1}],"commands":[{"nested":[1,2]}]""")]
+    public async Task Commandsが配列でないか重複する_後続の出典を読み取り総数は未確定にする(
+        string commands
+    )
+    {
+        // Arrange
+        var json = "{\"commands\":" + commands + ",\"source_filename\":\"a.wast\"}";
+
+        // Act
+        var document = ScriptDocument.Parse(Encoding.UTF8.GetBytes(json), PATH);
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(document.SourceFilename).IsEqualTo("a.wast");
+            await Assert.That(document.EnumerationComplete).IsFalse();
+            await Assert.That(document.CommandCount).IsNull();
+            await Assert.That(document.Diagnostics.Length).IsEqualTo(1);
+            await Assert.That(document.Diagnostics[0].Message).Contains("commands");
+        }
     }
 }

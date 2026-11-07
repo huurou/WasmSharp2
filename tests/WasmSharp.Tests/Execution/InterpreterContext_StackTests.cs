@@ -10,6 +10,7 @@ internal class InterpreterContext_CalculateCapacityTests
     [Arguments(0, 0UL, 0)]
     [Arguments(0, 3UL, 3)]
     [Arguments(8, 4UL, 8)]
+    [Arguments(8, 8UL, 8)]
     [Arguments(8, 9UL, 16)]
     [Arguments(8, 20UL, 20)]
     public async Task 必要数と現在容量を指定する_不足時だけ必要数か倍増後の大きい方を返す(

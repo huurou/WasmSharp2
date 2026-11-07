@@ -133,7 +133,10 @@ internal class AllocationEngine_RunTests
                 }
             },
             Results = new RunResults(
-                [new Measurement(0, IterationMode.Workload, IterationStage.Actual, 1, 4, 100)],
+                [
+                    new Measurement(0, IterationMode.Workload, IterationStage.Actual, 1, 2, 50),
+                    new Measurement(0, IterationMode.Workload, IterationStage.Actual, 2, 4, 100),
+                ],
                 OutlierMode.RemoveUpper,
                 default,
                 default,
@@ -152,7 +155,11 @@ internal class AllocationEngine_RunTests
         var result = engine.Run();
 
         // Assert
-        await Assert.That(result.ExceptionFrequency).IsEqualTo(1d);
+        using (Assert.Multiple())
+        {
+            await Assert.That(result.ExceptionFrequency).IsEqualTo(1d);
+            await Assert.That(result.GCStats.TotalOperations).IsEqualTo(4);
+        }
     }
 
     [Test]

@@ -71,7 +71,26 @@ internal class RunComparison_CompareTests
                 .IsEqualTo(new ConfidenceInterval(100.5, 101.5, 0.999));
             await Assert.That(actual.Time.Current!.Median).IsEqualTo(99);
             await Assert.That(actual.Time.Change).IsEqualTo(new MetricChange(-1, 0.99));
+            await Assert
+                .That(
+                    actual
+                        .Time.Reasons.Single(x => x.Kind == ComparisonReasonKind.WithinEquivalence)
+                        .Description
+                )
+                .Contains("時間: 事前の同等範囲内");
+            await Assert
+                .That(
+                    actual.Time.Reasons.Any(x =>
+                        x.Kind == ComparisonReasonKind.OutsideEquivalenceWithinAllowance
+                    )
+                )
+                .IsFalse();
             await Assert.That(actual.Allocation.Change).IsEqualTo(new MetricChange(-4, 0.5));
+            var allocationReason = actual.Allocation.Reasons.Single(x =>
+                x.Kind == ComparisonReasonKind.ReductionTargetReached
+            );
+            await Assert.That(allocationReason.Description).Contains("割り当て: 事前の削減目標");
+            await Assert.That(actual.Reasons).Contains(allocationReason);
             await Assert
                 .That(actual.Allocation.Current!.Runs.All(x => x.ConfidenceInterval is null))
                 .IsTrue();
@@ -88,6 +107,7 @@ internal class RunComparison_CompareTests
     [Arguments("noise-boundary", ComparisonDecision.Indeterminate, false, false)]
     [Arguments("beyond-noise", ComparisonDecision.Improved, true, false)]
     [Arguments("untargeted", ComparisonDecision.Improved, false, false)]
+    [Arguments("untargeted-equivalence-boundary", ComparisonDecision.Equivalent, false, false)]
     [Arguments("untargeted-noise", ComparisonDecision.Indeterminate, false, false)]
     [Arguments("other-metric-only", ComparisonDecision.Indeterminate, false, false)]
     [Arguments("time-target", ComparisonDecision.Improved, true, false)]
@@ -140,12 +160,17 @@ internal class RunComparison_CompareTests
                 break;
             case "untargeted":
             case "untargeted-noise":
-                SetGroup(fixture.Current, 97, 8);
+            case "untargeted-equivalence-boundary":
+                SetGroup(
+                    fixture.Current,
+                    scenario == "untargeted-equivalence-boundary" ? 98 : 97,
+                    8
+                );
                 policy = policy with
                 {
                     Time = policy.Time with
                     {
-                        Noise = new AbsoluteThreshold(scenario == "untargeted" ? 0.5 : 3),
+                        Noise = new AbsoluteThreshold(scenario == "untargeted-noise" ? 3 : 0.5),
                     },
                     Allocation = policy.Allocation with { ReductionTarget = null },
                 };
@@ -195,6 +220,164 @@ internal class RunComparison_CompareTests
             await Assert.That(actual.BlocksCompletion).IsEqualTo(blocks);
             await Assert.That(report.IsAccepted).IsEqualTo(targetAchieved && !blocks);
             await Assert.That(actual.Reasons).IsNotEmpty();
+            if (scenario == "untargeted")
+            {
+                await Assert
+                    .That(
+                        actual
+                            .Time.Reasons.Single(x =>
+                                x.Kind == ComparisonReasonKind.ImprovementBeyondNoise
+                            )
+                            .Description
+                    )
+                    .Contains("時間: 非対象caseで同等範囲と基準ノイズ幅を超えて");
+            }
+            if (scenario == "target-shortfall")
+            {
+                await Assert
+                    .That(
+                        actual.Allocation.Reasons.Any(x =>
+                            x.Kind == ComparisonReasonKind.TargetNotReached
+                        )
+                    )
+                    .IsTrue();
+                await Assert
+                    .That(
+                        actual.Time.Reasons.Any(x =>
+                            x.Kind == ComparisonReasonKind.TargetNotReached
+                        )
+                    )
+                    .IsFalse();
+            }
+            if (scenario == "allowed-exceeded")
+            {
+                await Assert.That(actual.Time.TargetAchieved).IsFalse();
+                await Assert
+                    .That(
+                        actual
+                            .Time.Reasons.Single(x =>
+                                x.Kind == ComparisonReasonKind.AllowedIncreaseExceeded
+                            )
+                            .Description
+                    )
+                    .Contains("時間: 事前の許容増加幅");
+            }
+            if (scenario == "outside-equivalence")
+            {
+                await Assert
+                    .That(
+                        actual
+                            .Time.Reasons.Single(x =>
+                                x.Kind == ComparisonReasonKind.OutsideEquivalenceWithinAllowance
+                            )
+                            .Description
+                    )
+                    .Contains("時間: 同等範囲外");
+            }
+        }
+    }
+
+    [Test]
+    [Arguments(true)]
+    [Arguments(false)]
+    public async Task 必要な独立run数が4で片群だけ3件である_policyの必要数と両群の有効数を報告する(
+        bool baselineShortage
+    )
+    {
+        // Arrange
+        using var fixture = new ComparisonFixture();
+        var completeGroup = baselineShortage ? fixture.Current : fixture.Baseline;
+        var extra = new RunComparisonFixture(
+            baselineShortage ? "after-3" : "before-3",
+            baselineShortage ? "after" : "before"
+        );
+        extra.SetCases(completeGroup[0].Cases);
+        completeGroup.Add(extra);
+        SetGroup(fixture.Baseline, 100, 8);
+        SetGroup(fixture.Current, 100, 4);
+        fixture.Policy = fixture.Policy with
+        {
+            Cases = [fixture.Policy.Cases.Single() with { MinimumIndependentRuns = 4 }],
+        };
+        var request = fixture.Save();
+
+        // Act
+        var actual = RunComparison.Compare(request).Cases.Single();
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(actual.Decision).IsEqualTo(ComparisonDecision.Indeterminate);
+            await Assert.That(actual.BlocksCompletion).IsTrue();
+            await Assert
+                .That(
+                    actual
+                        .Time.Reasons.Single(x =>
+                            x.Kind == ComparisonReasonKind.InsufficientMeasurements
+                        )
+                        .Description
+                )
+                .Contains(
+                    $"必要な独立run数=4、有効な基準run={(baselineShortage ? 3 : 4)}、候補run={(baselineShortage ? 4 : 3)}"
+                );
+        }
+    }
+
+    [Test]
+    public async Task 時間が0で信頼区間の両端も0である_欠落へ置き換えず比較へ採用する()
+    {
+        // Arrange
+        using var fixture = new ComparisonFixture();
+        SetGroup(fixture.Baseline, 100, 8);
+        SetGroup(fixture.Current, 0, 4);
+        foreach (var run in fixture.Current)
+        {
+            var result = run.Manifest.Cases.Single();
+            run.Manifest = run.Manifest with
+            {
+                Cases =
+                [
+                    result with
+                    {
+                        Metrics = result.Metrics with
+                        {
+                            Time = result.Metrics.Time! with
+                            {
+                                MedianNanosecondsPerOperation = 0,
+                                StandardDeviationNanosecondsPerOperation = 0,
+                                ConfidenceInterval = new(0, 0, 0.999),
+                            },
+                        },
+                    },
+                ],
+            };
+        }
+        var request = fixture.Save();
+
+        // Act
+        var report = RunComparison.Compare(request);
+        var actual = report.Cases.Single();
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(report.IsAccepted).IsTrue();
+            await Assert.That(actual.Time.Current!.Median).IsEqualTo(0);
+            await Assert.That(actual.Time.Current.Runs.Count).IsEqualTo(3);
+            await Assert
+                .That(
+                    actual.Time.Current.Runs.All(x =>
+                        x.ConfidenceInterval == new ConfidenceInterval(0, 0, 0.999)
+                    )
+                )
+                .IsTrue();
+            await Assert
+                .That(
+                    actual.Time.Reasons.Any(x =>
+                        x.Kind == ComparisonReasonKind.InsufficientMeasurements
+                    )
+                )
+                .IsFalse();
         }
     }
 
@@ -293,6 +476,7 @@ internal class RunComparison_CompareTests
     [Arguments("missing-case", ComparisonReasonKind.InsufficientMeasurements)]
     [Arguments("too-few", ComparisonReasonKind.InsufficientMeasurements)]
     [Arguments("empty-current", ComparisonReasonKind.InsufficientMeasurements)]
+    [Arguments("empty-baseline", ComparisonReasonKind.InsufficientMeasurements)]
     [Arguments("duplicate", ComparisonReasonKind.InsufficientMeasurements)]
     [Arguments("shared", ComparisonReasonKind.InsufficientMeasurements)]
     [Arguments("corrupt", ComparisonReasonKind.InsufficientMeasurements)]
@@ -361,6 +545,7 @@ internal class RunComparison_CompareTests
                 CurrentRunDirectories = request.CurrentRunDirectories.Take(2).ToList(),
             },
             "empty-current" => request with { CurrentRunDirectories = [] },
+            "empty-baseline" => request with { BaselineRunDirectories = [] },
             "duplicate" => request with
             {
                 CurrentRunDirectories =
@@ -398,8 +583,56 @@ internal class RunComparison_CompareTests
             await Assert.That(actual.Decision).IsEqualTo(ComparisonDecision.Indeterminate);
             await Assert.That(actual.BlocksCompletion).IsTrue();
             await Assert.That(actual.TargetAchieved).IsFalse();
+            await Assert.That(actual.Time.TargetAchieved).IsFalse();
+            await Assert.That(actual.Allocation.TargetAchieved).IsFalse();
             await Assert.That(actual.Reasons.Any(x => x.Kind == expectedReason)).IsTrue();
             await Assert.That(report.IsAccepted).IsFalse();
+            if (scenario == "empty-baseline")
+            {
+                foreach (var metric in new[] { actual.Time, actual.Allocation })
+                {
+                    await Assert
+                        .That(
+                            metric.Reasons.Any(x =>
+                                x.Kind == ComparisonReasonKind.InsufficientMeasurements
+                            )
+                        )
+                        .IsTrue();
+                    await Assert
+                        .That(metric.Reasons.Any(x => x.Kind == ComparisonReasonKind.MissingPolicy))
+                        .IsFalse();
+                }
+            }
+            if (scenario == "missing-case")
+            {
+                await Assert
+                    .That(actual.Reasons.Any(x => x.Kind == ComparisonReasonKind.ConditionMismatch))
+                    .IsFalse();
+            }
+            if (scenario is "current-condition" or "baseline-condition")
+            {
+                await Assert
+                    .That(actual.ConditionDifferences.Any(x => x.Condition == "environment.cpu"))
+                    .IsTrue();
+                await Assert
+                    .That(
+                        actual
+                            .Reasons.Single(x => x.Kind == ComparisonReasonKind.ConditionMismatch)
+                            .Description
+                    )
+                    .Contains("比較条件が異なります");
+            }
+            if (scenario == "failure-record")
+            {
+                await Assert
+                    .That(
+                        actual
+                            .Reasons.Single(x => x.Kind == ComparisonReasonKind.CorrectnessFailure)
+                            .Description
+                    )
+                    .Contains("after-2")
+                    .And.Contains("保存された失敗");
+            }
         }
     }
 
@@ -459,6 +692,7 @@ internal class RunComparison_CompareTests
     [Arguments("duplicate")]
     [Arguments("minimum")]
     [Arguments("negative")]
+    [Arguments("negative-noise")]
     [Arguments("target-zero")]
     [Arguments("equivalence")]
     [Arguments("mixed-equivalence")]
@@ -489,6 +723,9 @@ internal class RunComparison_CompareTests
                 break;
             case "negative":
                 time = time with { AllowedIncrease = new AbsoluteThreshold(-1) };
+                break;
+            case "negative-noise":
+                time = time with { Noise = new AbsoluteThreshold(-1) };
                 break;
             case "target-zero":
                 time = time with { ReductionTarget = new AbsoluteThreshold(0) };
@@ -546,6 +783,12 @@ internal class RunComparison_CompareTests
                 .That(actual.Reasons.Any(x => x.Kind == ComparisonReasonKind.MissingPolicy))
                 .IsTrue();
             await Assert.That(report.IsAccepted).IsFalse();
+            if (scenario is "hash" or "schema" or "json" or "null" or "absent")
+            {
+                await Assert
+                    .That(actual.Reasons.Any(x => x.Description.Contains(request.PolicyPath)))
+                    .IsTrue();
+            }
         }
     }
 
