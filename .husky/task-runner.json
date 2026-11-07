@@ -2,19 +2,14 @@
   "$schema": "https://alirezanet.github.io/Husky.Net/schema.json",
   "tasks": [
     {
-      "name": "csharpier",
+      "name": "auto-format",
       "group": "pre-commit",
       "command": "dotnet",
-      "args": ["csharpier", "format", "${staged}"],
+      "args": ["format", "WasmSharp2.slnx", "--severity", "info", "--include", "${staged}"],
       "include": [
-        "**/*.cs",
-        "**/*.csx",
-        "**/*.csproj",
-        "**/*.slnx",
-        "**/*.props",
-        "**/*.targets",
-        "**/*.xml",
-        "**/*.config"
+        "src/**/*.cs",
+        "tests/**/*.cs",
+        "tools/**/*.cs"
       ]
     }
   ]
