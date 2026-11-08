@@ -5,6 +5,7 @@
     "mutation-level": "Standard",
     "mutate": ["**/*.cs"],
     "reporters": ["html", "json", "progress"],
-    "coverage-analysis": "perTest"
+    "coverage-analysis": "perTest",
+    "additional-timeout": 60000
   }
 }

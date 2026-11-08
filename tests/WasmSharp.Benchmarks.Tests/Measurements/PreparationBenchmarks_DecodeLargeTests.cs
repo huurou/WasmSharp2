@@ -6,12 +6,17 @@ namespace WasmSharp.Benchmarks.Tests.Measurements;
 
 internal class PreparationBenchmarks_DecodeLargeTests
 {
+    private readonly WasmExecutionContext context_ = new WasmExecutionContext();
+
+    private readonly CaseJson json_ = new CaseJson();
+    private readonly MeasurementMethods methods_ = new MeasurementMethods();
+
     [Test]
     public async Task 固定素材から反復する_毎回新しい未検証moduleを返す()
     {
         // Arrange
         var benchmark = new PreparationBenchmarks();
-        benchmark.Initialize(PreparationFixture.CreateAssets(), "decode.large");
+        benchmark.Initialize(PreparationFixture.CreateAssets(json_, methods_), "decode.large", json_);
 
         // Act
         var first = benchmark.DecodeLarge();
@@ -23,11 +28,11 @@ internal class PreparationBenchmarks_DecodeLargeTests
             await Assert.That(ReferenceEquals(first, second)).IsFalse();
             await Assert.That(benchmark.Cleanup).ThrowsNothing();
             await Assert
-                .That(() => second.Instantiate(CaseVerifier.CreateImports()))
+                .That(() => second.Instantiate(context_, CaseVerifier.CreateImports()))
                 .ThrowsNothing();
             // Act & Assert
             await Assert
-                .That(() => first.Instantiate(CaseVerifier.CreateImports()))
+                .That(() => first.Instantiate(context_, CaseVerifier.CreateImports()))
                 .Throws<InvalidOperationException>();
         }
     }

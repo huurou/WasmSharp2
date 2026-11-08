@@ -20,12 +20,13 @@ internal partial class WasmFunction_InvokeTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         byte[] allKinds = [0x7F, 0x7E, 0x7D, 0x7C, 0x7B, 0x70, 0x6F];
         var functionReference = nullReferences
             ? null
-            : WasmFunction.CreateHost(new([], []), _ => new([]));
+            : WasmFunction.CreateHost(new([], []), (callbackContext, _) => new([]));
         var reference = nullReferences ? null : new object();
-        var otherFunctionReference = WasmFunction.CreateHost(new([], []), _ => new([]));
+        var otherFunctionReference = WasmFunction.CreateHost(new([], []), (callbackContext, _) => new([]));
         var otherReference = new object();
         WasmValue[] allValues =
         [
@@ -93,12 +94,12 @@ internal partial class WasmFunction_InvokeTests
                 )
             )
             .Validate()
-            .Instantiate([])
+            .Instantiate(executionContext, [])
             .GetFunction("run");
 
         // Act
-        var first = function.Invoke(values);
-        var second = function.Invoke(otherValues);
+        var first = function.Invoke(executionContext, values);
+        var second = function.Invoke(executionContext, otherValues);
 
         // Assert
         using (Assert.Multiple())
@@ -145,6 +146,7 @@ internal partial class WasmFunction_InvokeTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var function = WasmModule
             .Decode(
                 HostLinkingModuleBinary.Create(
@@ -215,11 +217,11 @@ internal partial class WasmFunction_InvokeTests
                 )
             )
             .Validate()
-            .Instantiate([])
+            .Instantiate(executionContext, [])
             .GetFunction("run");
 
         // Act
-        var result = function.Invoke([WasmValue.FromI32(argument)]);
+        var result = function.Invoke(executionContext, [WasmValue.FromI32(argument)]);
 
         // Assert
         await Assert

@@ -28,6 +28,7 @@ internal partial class WasmModule_ValidateTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var data = HostLinkingModuleBinary.Section(11, [1, 1, 0]);
         var bytes = HostLinkingModuleBinary.Create(
             HostLinkingModuleBinary.Types(([], [])),
@@ -59,7 +60,7 @@ internal partial class WasmModule_ValidateTests
                     )
                 );
             await Assert
-                .That(() => module.Instantiate([]))
+                .That(() => module.Instantiate(executionContext, []))
                 .ThrowsExactly<InvalidOperationException>();
         }
     }
@@ -75,6 +76,7 @@ internal partial class WasmModule_ValidateTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var bytes = HostLinkingModuleBinary.Create(
             HostLinkingModuleBinary.Types(([], [])),
             HostLinkingModuleBinary.Functions(0),
@@ -87,7 +89,7 @@ internal partial class WasmModule_ValidateTests
 
         // Act
         var validated = module.Validate();
-        var instance = validated.Instantiate([]);
+        var instance = validated.Instantiate(executionContext, []);
 
         // Assert
         using (Assert.Multiple())

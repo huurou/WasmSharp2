@@ -6,6 +6,8 @@ namespace WasmSharp.TestSuiteRunner.Tests.Reports;
 
 internal class CompletionPolicy_VerifyTests
 {
+    private readonly Core2ProfileLoader profileLoader_ = new Core2ProfileLoader();
+
     private static readonly string[] expectedReasons_ =
                     [
                         "入力単位のrunner_errorが2件あります。",
@@ -144,7 +146,7 @@ internal class CompletionPolicy_VerifyTests
         var decision = CompletionPolicy.Verify(
             report,
             ReportStore.Validate(report),
-            Core2Profile.Load()
+            profileLoader_.Load()
         );
 
         // Assert

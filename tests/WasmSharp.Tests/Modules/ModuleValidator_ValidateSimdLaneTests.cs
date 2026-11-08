@@ -17,6 +17,7 @@ internal partial class ModuleValidator_ValidateTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var bytes = HostLinkingModuleBinary.Create(
             HostLinkingModuleBinary.Types(([], [])),
             HostLinkingModuleBinary.Functions(0),
@@ -51,7 +52,7 @@ internal partial class ModuleValidator_ValidateTests
                         .IsEqualTo(new(WasmProcessingStage.Validate, offset, 0, 10));
                     await Assert.That(module.FunctionCodes.IsEmpty).IsTrue();
                     await Assert
-                        .That(() => module.Instantiate([]))
+                        .That(() => module.Instantiate(executionContext, []))
                         .ThrowsExactly<InvalidOperationException>();
                 }
             }
@@ -138,6 +139,7 @@ internal partial class ModuleValidator_ValidateTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var bytes = HostLinkingModuleBinary.Create(
             HostLinkingModuleBinary.Globals(
                 (
@@ -166,7 +168,7 @@ internal partial class ModuleValidator_ValidateTests
             await Assert.That(exception!.Location!.Stage).IsEqualTo(WasmProcessingStage.Validate);
             await Assert.That(exception!.Location!.SectionId).IsEqualTo((byte?)6);
             await Assert
-                .That(() => module.Instantiate([]))
+                .That(() => module.Instantiate(executionContext, []))
                 .ThrowsExactly<InvalidOperationException>();
         }
     }

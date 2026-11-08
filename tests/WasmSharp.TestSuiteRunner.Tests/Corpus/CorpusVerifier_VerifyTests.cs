@@ -36,6 +36,32 @@ internal class CorpusVerifier_VerifyTests
     }
 
     [Test]
+    public async Task 素材領域の下位ディレクトリを列挙できない_照合済み入力を保ち全体の診断へ理由を返す()
+    {
+        // Arrange
+        using var fixture = CorpusFixture.Create();
+        var restricted = Directory.CreateDirectory(fixture.GetPath("modules/restricted"));
+        using var restriction = new DirectoryReadRestriction(restricted.FullName);
+
+        // Act
+        var result = Verify(fixture);
+
+        // Assert
+        var diagnostic = result.Diagnostics.Single();
+        using (Assert.Multiple())
+        {
+            await Assert.That(diagnostic.Operation).IsEqualTo("verify");
+            await Assert.That(diagnostic.Path).IsEqualTo("modules");
+            await Assert.That(diagnostic.Message).StartsWith("素材領域を列挙できません: ");
+            await Assert
+                .That(diagnostic.ExceptionType)
+                .IsEqualTo(typeof(UnauthorizedAccessException).FullName);
+            await Assert.That(result.Inputs.All(x => x.Issues.IsEmpty && x.ModuleIssues.IsEmpty)).IsTrue();
+            await Assert.That(Get(result, CorpusFixture.A).Modules.Count).IsEqualTo(2);
+        }
+    }
+
+    [Test]
     public async Task 相対配置を保って移動した素材を照合する_元入力と生成時のrootなしで同じ結果を返す()
     {
         // Arrange
@@ -360,7 +386,7 @@ internal class CorpusVerifier_VerifyTests
     }
 
     [Test]
-    public async Task 素材がリンクを経由して素材root外を指す_同じ内容でも利用せず理由を残す()
+    public async Task 素材がリンクを経由して素材root外を指す_同じ内容でも利用せず最初のリンクを示す()
     {
         // Arrange
         using var fixture = CorpusFixture.Create();
@@ -370,6 +396,9 @@ internal class CorpusVerifier_VerifyTests
         File.CreateSymbolicLink(fixture.GetPath("modules/a.0.wasm"), outsideFile);
         var outsideDirectory = Path.Combine(fixture.Root, "outside-simd");
         Directory.Move(fixture.GetPath("modules/simd"), outsideDirectory);
+        var outsideJson = Path.Combine(fixture.Root, "outside-b.json");
+        File.Move(Path.Combine(outsideDirectory, "b.json"), outsideJson);
+        File.CreateSymbolicLink(Path.Combine(outsideDirectory, "b.json"), outsideJson);
         Directory.CreateSymbolicLink(fixture.GetPath("modules/simd"), outsideDirectory);
 
         // Act
@@ -387,7 +416,8 @@ internal class CorpusVerifier_VerifyTests
             await Assert
                 .That(
                     b.Issues.Any(x =>
-                        x.Path == "modules/simd/b.json" && x.Message.Contains("リンク")
+                        x.Path == "modules/simd/b.json" &&
+                        x.Message.Contains("リンクmodules/simdを")
                     )
                 )
                 .IsTrue();

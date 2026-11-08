@@ -12,14 +12,28 @@ namespace WasmSharp.Benchmarks.Measurements;
 /// </summary>
 internal sealed class BenchmarkProcess
 {
+    private readonly CaseJson json_ = new CaseJson();
+    private readonly MeasurementMethods methods_ = new MeasurementMethods();
     private readonly RunConfiguration configuration_;
     private readonly RunStore store_;
     private ProcessCheck check_;
 
-    private BenchmarkProcess(RunConfiguration configuration, string caseId)
+    private BenchmarkProcess(string measurementMethod)
     {
+        var path =
+            Environment.GetEnvironmentVariable(RunConfiguration.ENVIRONMENT_VARIABLE)
+            ?? throw new InvalidOperationException("run設定の環境変数がありません。");
+        var configuration = JsonSerializer.Deserialize<RunConfiguration>(
+            File.ReadAllBytes(path),
+            json_.Options
+        )!;
+        var caseId = methods_.GetCaseId(measurementMethod);
+        if (!configuration.PlannedCaseIds.Contains(caseId))
+        {
+            throw new InvalidDataException("測定メソッドがrunの予定ケースにありません。");
+        }
         configuration_ = configuration;
-        store_ = RunStore.OpenChecks(configuration.OutputDirectory, configuration.RunId);
+        store_ = RunStore.OpenChecks(configuration.OutputDirectory, configuration.RunId, json_);
         check_ = new(
             configuration.RunId,
             caseId,
@@ -37,22 +51,10 @@ internal sealed class BenchmarkProcess
 
     internal static BenchmarkProcess Start(string measurementMethod)
     {
-        var path =
-            Environment.GetEnvironmentVariable(RunConfiguration.ENVIRONMENT_VARIABLE)
-            ?? throw new InvalidOperationException("run設定の環境変数がありません。");
-        var configuration = JsonSerializer.Deserialize<RunConfiguration>(
-            File.ReadAllBytes(path),
-            CaseJson.Options
-        )!;
-        var caseId = CaseCatalog.GetCaseId(measurementMethod);
-        if (!configuration.PlannedCaseIds.Contains(caseId))
-        {
-            throw new InvalidDataException("測定メソッドがrunの予定ケースにありません。");
-        }
-        return new(configuration, caseId);
+        return new BenchmarkProcess(measurementMethod);
     }
 
-    internal void Setup(Action<LoadedAssets, string> initialize)
+    internal void Setup(Action<LoadedAssets, string, CaseJson> initialize)
     {
         RunChecked(
             RunStage.Precheck,
@@ -77,7 +79,11 @@ internal sealed class BenchmarkProcess
         Save();
         RunChecked(
             RunStage.Precheck,
-            () => initialize(AssetManifest.Load(configuration_.AssetManifestPath), check_.CaseId)
+            () => initialize(
+                AssetManifest.Load(configuration_.AssetManifestPath, json_, methods_),
+                check_.CaseId,
+                json_
+            )
         );
         check_ = check_ with { Precheck = Success(), LastConfirmedStage = RunStage.Precheck };
         Save();

@@ -6,6 +6,8 @@ namespace WasmSharp.TestSuiteRunner.Tests.Reports;
 
 internal class ReportStore_ReadTests
 {
+    private readonly ReportStore reportStore_ = new ReportStore();
+
     [Test]
     public async Task 保存済みmanifestと実行結果を読む_種類に応じた内容と元のバイト列を返す()
     {
@@ -16,8 +18,8 @@ internal class ReportStore_ReadTests
         var reportPath = await directory.WriteJsonAsync("run.json", report);
 
         // Act
-        var manifest = ReportStore.Read(manifestPath);
-        var run = ReportStore.Read(reportPath);
+        var manifest = reportStore_.Read(manifestPath);
+        var run = reportStore_.Read(reportPath);
 
         // Assert
         using (Assert.Multiple())
@@ -53,6 +55,12 @@ internal class ReportStore_ReadTests
     )]
     [Arguments(
         """
+            "schema_version":1
+            """,
+        "kind"
+    )]
+    [Arguments(
+        """
             "schema_version":1,"kind":"comparison_report"
             """,
         "kind"
@@ -80,7 +88,7 @@ internal class ReportStore_ReadTests
 
         // Act & Assert
         var exception = await Assert
-            .That(() => ReportStore.Read(path))
+            .That(() => reportStore_.Read(path))
             .ThrowsExactly<ReportStoreException>();
         using (Assert.Multiple())
         {
@@ -141,7 +149,7 @@ internal class ReportStore_ReadTests
 
         // Act & Assert
         var exception = await Assert
-            .That(() => ReportStore.Read(path))
+            .That(() => reportStore_.Read(path))
             .ThrowsExactly<ReportStoreException>();
         await Assert.That(exception!.InnerException).IsTypeOf<JsonException>();
     }
@@ -165,7 +173,7 @@ internal class ReportStore_ReadTests
 
         // Act & Assert
         var exception = await Assert
-            .That(() => ReportStore.Read(path))
+            .That(() => reportStore_.Read(path))
             .ThrowsExactly<ReportStoreException>();
         using (Assert.Multiple())
         {
@@ -195,7 +203,7 @@ internal class ReportStore_ReadTests
 
         // Act & Assert
         var exception = await Assert
-            .That(() => ReportStore.Read(path))
+            .That(() => reportStore_.Read(path))
             .ThrowsExactly<ReportStoreException>();
         using (Assert.Multiple())
         {
@@ -216,7 +224,7 @@ internal class ReportStore_ReadTests
 
         // Act & Assert
         var exception = await Assert
-            .That(() => ReportStore.Read(path))
+            .That(() => reportStore_.Read(path))
             .ThrowsExactly<ReportStoreException>();
         using (Assert.Multiple())
         {
@@ -240,7 +248,7 @@ internal class ReportStore_ReadTests
 
         // Act & Assert
         var exception = await Assert
-            .That(() => ReportStore.Read(relativePath))
+            .That(() => reportStore_.Read(relativePath))
             .ThrowsExactly<ReportStoreException>();
         using (Assert.Multiple())
         {
@@ -265,7 +273,7 @@ internal class ReportStore_ReadTests
 
         // Act & Assert
         var exception = await Assert
-            .That(() => ReportStore.Read(path))
+            .That(() => reportStore_.Read(path))
             .ThrowsExactly<ReportStoreException>();
         await Assert.That(exception!.InnerException).IsTypeOf<JsonException>();
     }
@@ -286,7 +294,7 @@ internal class ReportStore_ReadTests
 
         // Act & Assert
         var exception = await Assert
-            .That(() => ReportStore.Read(path))
+            .That(() => reportStore_.Read(path))
             .ThrowsExactly<ReportStoreException>();
         await Assert.That(exception!.Message).Contains($"{inputPath}#{commandIndex}");
     }
@@ -306,7 +314,7 @@ internal class ReportStore_ReadTests
         var path = await directory.WriteJsonAsync("run.json", report);
 
         // Act
-        var stored = (StoredRunReport)ReportStore.Read(path);
+        var stored = (StoredRunReport)reportStore_.Read(path);
 
         // Assert
         using (Assert.Multiple())

@@ -20,6 +20,7 @@ internal partial class ModuleValidator_ValidateTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var module = WasmModule.Decode(
             HostLinkingModuleBinary.Create(
                 HostLinkingModuleBinary.Types(([], [0x7F])),
@@ -30,7 +31,7 @@ internal partial class ModuleValidator_ValidateTests
         );
 
         // Act
-        var result = module.Validate().Instantiate([]).GetFunction("run").Invoke([]);
+        var result = module.Validate().Instantiate(executionContext, []).GetFunction("run").Invoke(executionContext, []);
 
         // Assert
         await Assert.That(result.Values[0].AsI32()).IsEqualTo(expected);
@@ -40,6 +41,7 @@ internal partial class ModuleValidator_ValidateTests
     public async Task 複数の入れ子を越えて分岐する_外側operandと複数結果の順序を保持する()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var module = WasmModule.Decode(
             HostLinkingModuleBinary.Create(
                 HostLinkingModuleBinary.Types(([], [0x7F, 0x7F, 0x7E]), ([], [0x7F, 0x7E])),
@@ -52,7 +54,7 @@ internal partial class ModuleValidator_ValidateTests
         );
 
         // Act
-        var result = module.Validate().Instantiate([]).GetFunction("run").Invoke([]);
+        var result = module.Validate().Instantiate(executionContext, []).GetFunction("run").Invoke(executionContext, []);
 
         // Assert
         await Assert
@@ -70,6 +72,7 @@ internal partial class ModuleValidator_ValidateTests
     public async Task Loop引数を持つ後方分岐を多数回実行_値や関数frameや深さを蓄積しない()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var module = WasmModule
             .Decode(
                 HostLinkingModuleBinary.Create(
@@ -81,8 +84,8 @@ internal partial class ModuleValidator_ValidateTests
                 )
             )
             .Validate();
-        var function = (DefinedFunction)module.Instantiate([], new(1)).Functions[0];
-        var context = InterpreterContext.Enter(new(1), out var isOutermost);
+        var function = (DefinedFunction)module.Instantiate(executionContext, [], new(1)).Functions[0];
+        var context = executionContext.Enter(new(1), out var isOutermost);
         ExecutionResult result;
         (int Frames, int Values, int Depth) state;
 
@@ -99,8 +102,8 @@ internal partial class ModuleValidator_ValidateTests
         }
         finally
         {
+            executionContext.Exit(isOutermost);
             context.Restore(0, 0, 0);
-            InterpreterContext.Exit(isOutermost);
         }
 
         // Assert
@@ -122,6 +125,7 @@ internal partial class ModuleValidator_ValidateTests
     public async Task 呼出し先が関数ラベルまたはreturnで終了する_呼出し元へ一度だけ戻る(string body)
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var module = WasmModule
             .Decode(
                 HostLinkingModuleBinary.Create(
@@ -134,8 +138,8 @@ internal partial class ModuleValidator_ValidateTests
                 )
             )
             .Validate();
-        var function = (DefinedFunction)module.Instantiate([], new(2)).Functions[0];
-        var context = InterpreterContext.Enter(new(2), out var isOutermost);
+        var function = (DefinedFunction)module.Instantiate(executionContext, [], new(2)).Functions[0];
+        var context = executionContext.Enter(new(2), out var isOutermost);
         ExecutionResult result;
         (int Frames, int Values, int Depth) state;
 
@@ -147,8 +151,8 @@ internal partial class ModuleValidator_ValidateTests
         }
         finally
         {
+            executionContext.Exit(isOutermost);
             context.Restore(0, 0, 0);
-            InterpreterContext.Exit(isOutermost);
         }
 
         // Assert

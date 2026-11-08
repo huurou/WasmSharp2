@@ -24,7 +24,7 @@ internal partial class BenchmarkCase_DeserializeTests
 
         // Act
         var definitions = JsonSerializer
-            .Deserialize<List<BenchmarkCase>>(json, CaseJson.Options)!
+            .Deserialize<List<BenchmarkCase>>(json, json_.Options)!
             .Where(x =>
                 x.MeasurementStage == MeasurementStage.Invoke && x.AssetId is "invoke" or "calls"
             )
@@ -81,7 +81,7 @@ internal partial class BenchmarkCase_DeserializeTests
 
         // Act
         var definitions = JsonSerializer
-            .Deserialize<List<BenchmarkCase>>(json, CaseJson.Options)!
+            .Deserialize<List<BenchmarkCase>>(json, json_.Options)!
             .ToDictionary(x => x.CaseId);
 
         // Assert
@@ -152,7 +152,7 @@ internal partial class BenchmarkCase_DeserializeTests
 
         // Act
         var definition = JsonSerializer
-            .Deserialize<List<BenchmarkCase>>(json, CaseJson.Options)!
+            .Deserialize<List<BenchmarkCase>>(json, json_.Options)!
             .Single(x => x.CaseId == "loop.indirect");
 
         // Assert

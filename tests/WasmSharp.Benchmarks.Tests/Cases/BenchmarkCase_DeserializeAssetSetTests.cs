@@ -29,7 +29,7 @@ internal partial class BenchmarkCase_DeserializeTests
         };
 
         // Act
-        var definitions = JsonSerializer.Deserialize<List<BenchmarkCase>>(json, CaseJson.Options)!;
+        var definitions = JsonSerializer.Deserialize<List<BenchmarkCase>>(json, json_.Options)!;
 
         // Assert
         using (Assert.Multiple())
@@ -71,7 +71,7 @@ internal partial class BenchmarkCase_DeserializeTests
                             SHA256.HashData(
                                 JsonSerializer.SerializeToUtf8Bytes(
                                     definition.Input,
-                                    CaseJson.Options
+                                    json_.Options
                                 )
                             )
                         )
@@ -88,7 +88,7 @@ internal partial class BenchmarkCase_DeserializeTests
 
         // Act
         var definitions = JsonSerializer
-            .Deserialize<List<BenchmarkCase>>(json, CaseJson.Options)!
+            .Deserialize<List<BenchmarkCase>>(json, json_.Options)!
             .Where(x => x.CaseId is "decode.small" or "decode-validate.small")
             .ToArray();
 

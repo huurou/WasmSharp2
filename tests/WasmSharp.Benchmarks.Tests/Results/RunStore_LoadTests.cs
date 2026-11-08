@@ -8,23 +8,25 @@ namespace WasmSharp.Benchmarks.Tests.Results;
 
 internal class RunStore_LoadTests
 {
+    private readonly CaseJson json_ = new CaseJson();
+
     [Test]
     public async Task 完了時刻があっても予定ケースが欠落している_未完了と原因を返す()
     {
         // Arrange
         using var fixture = new RunStoreFixture();
-        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest);
+        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, json_);
         fixture.SaveConditions(store);
         fixture.SaveSucceededCase(store);
         store.Complete(ResultStatus.Succeeded);
-        var completed = RunStore.Load(fixture.DirectoryPath);
+        var completed = RunStore.Load(fixture.DirectoryPath, json_);
         File.WriteAllBytes(
             Path.Combine(fixture.DirectoryPath, "run.json"),
-            JsonSerializer.SerializeToUtf8Bytes(completed with { Cases = [] }, CaseJson.Options)
+            JsonSerializer.SerializeToUtf8Bytes(completed with { Cases = [] }, json_.Options)
         );
 
         // Act
-        var actual = RunStore.Load(fixture.DirectoryPath);
+        var actual = RunStore.Load(fixture.DirectoryPath, json_);
 
         // Assert
         using (Assert.Multiple())
@@ -42,11 +44,11 @@ internal class RunStore_LoadTests
     {
         // Arrange
         using var fixture = new RunStoreFixture();
-        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest);
+        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, json_);
         fixture.SaveConditions(store);
         fixture.SaveSucceededCase(store);
         store.Complete(ResultStatus.Succeeded);
-        var completed = RunStore.Load(fixture.DirectoryPath);
+        var completed = RunStore.Load(fixture.DirectoryPath, json_);
         var content = "null"u8.ToArray();
         var source = completed.SourceFile! with
         {
@@ -60,12 +62,12 @@ internal class RunStore_LoadTests
                 {
                     SourceFile = source,
                 },
-                CaseJson.Options
+                json_.Options
             )
         );
 
         // Act
-        var actual = RunStore.Load(fixture.DirectoryPath);
+        var actual = RunStore.Load(fixture.DirectoryPath, json_);
 
         // Assert
         using (Assert.Multiple())
@@ -92,7 +94,7 @@ internal class RunStore_LoadTests
     {
         // Arrange
         using var fixture = new RunStoreFixture();
-        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest);
+        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, json_);
         fixture.SaveConditions(store);
         fixture.SaveSucceededCase(store);
         store.Complete(ResultStatus.Succeeded);
@@ -107,7 +109,7 @@ internal class RunStore_LoadTests
         }
 
         // Act
-        var actual = RunStore.Load(fixture.DirectoryPath);
+        var actual = RunStore.Load(fixture.DirectoryPath, json_);
 
         // Assert
         using (Assert.Multiple())
@@ -127,21 +129,23 @@ internal class RunStore_LoadTests
     {
         // Arrange
         using var fixture = new RunStoreFixture();
-        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest);
+        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, json_);
         fixture.SaveConditions(store);
         fixture.SaveSucceededCase(store);
         store.Complete(ResultStatus.Succeeded);
         File.WriteAllText(Path.Combine(fixture.DirectoryPath, relativePath), "破損");
 
         // Act
-        var actual = RunStore.Load(fixture.DirectoryPath);
+        var actual = RunStore.Load(fixture.DirectoryPath, json_);
 
         // Assert
         await Assert.That(actual.Status).IsEqualTo(ResultStatus.Incomplete);
         await Assert.That(actual.CompletedAtUtc).IsNull();
         await Assert
             .That(actual.Failures.Single().InterruptionReason)
-            .Contains("保存参照の照合に失敗");
+            .Contains("保存参照の照合に失敗")
+            .And.Contains("SHA-256")
+            .And.Contains(relativePath);
     }
 
     [Test]
@@ -149,11 +153,11 @@ internal class RunStore_LoadTests
     {
         // Arrange
         using var fixture = new RunStoreFixture();
-        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest);
+        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, json_);
         fixture.SaveConditions(store);
         var result = fixture.SaveSucceededCase(store);
         store.Complete(ResultStatus.Succeeded);
-        var completed = RunStore.Load(fixture.DirectoryPath);
+        var completed = RunStore.Load(fixture.DirectoryPath, json_);
         var missing = new ManifestFile("raw/missing-measurements.csv", "missing-hash");
         var changed = completed with
         {
@@ -170,11 +174,11 @@ internal class RunStore_LoadTests
         };
         File.WriteAllBytes(
             Path.Combine(fixture.DirectoryPath, "run.json"),
-            JsonSerializer.SerializeToUtf8Bytes(changed, CaseJson.Options)
+            JsonSerializer.SerializeToUtf8Bytes(changed, json_.Options)
         );
 
         // Act
-        var actual = RunStore.Load(fixture.DirectoryPath);
+        var actual = RunStore.Load(fixture.DirectoryPath, json_);
 
         // Assert
         using (Assert.Multiple())
@@ -204,12 +208,12 @@ internal class RunStore_LoadTests
                 {
                     CompletedAtUtc = null,
                 },
-                CaseJson.Options
+                json_.Options
             )
         );
 
         // Act
-        var actual = RunStore.Load(fixture.DirectoryPath);
+        var actual = RunStore.Load(fixture.DirectoryPath, json_);
 
         // Assert
         using (Assert.Multiple())
@@ -217,7 +221,14 @@ internal class RunStore_LoadTests
             await Assert.That(actual.Status).IsEqualTo(ResultStatus.Incomplete);
             await Assert.That(actual.CompletedAtUtc).IsNull();
             await Assert.That(actual.Cases.Single().Metrics.Time).IsNotNull();
-            await Assert.That(actual.Failures.Any(x => x.InterruptionReason is not null)).IsTrue();
+            await Assert
+                .That(actual.Failures.Single().Reason)
+                .Contains("runの完了")
+                .And.Contains("確定していません");
+            await Assert
+                .That(actual.Failures.Single().InterruptionReason)
+                .Contains("完了記録")
+                .And.Contains("ありません");
         }
     }
 
@@ -226,7 +237,7 @@ internal class RunStore_LoadTests
     {
         // Arrange
         using var fixture = new RunStoreFixture();
-        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest);
+        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, json_);
         var precheck = fixture.Check with
         {
             ExecutionStarted = false,
@@ -236,10 +247,10 @@ internal class RunStore_LoadTests
 
         // Act
         var file = store.SaveCheck(precheck);
-        var actual = RunStore.Load(fixture.DirectoryPath);
+        var actual = RunStore.Load(fixture.DirectoryPath, json_);
         var saved = JsonSerializer.Deserialize<ProcessCheck>(
             File.ReadAllBytes(Path.Combine(fixture.DirectoryPath, file.RelativePath)),
-            CaseJson.Options
+            json_.Options
         )!;
 
         // Assert

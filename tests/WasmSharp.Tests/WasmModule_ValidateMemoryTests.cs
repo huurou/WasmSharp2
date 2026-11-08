@@ -56,6 +56,7 @@ internal partial class WasmModule_ValidateTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var bytes = HostLinkingModuleBinary.Create(
             HostLinkingModuleBinary.Types(([], [])),
             HostLinkingModuleBinary.Functions(0),
@@ -77,7 +78,7 @@ internal partial class WasmModule_ValidateTests
                 .That(exception.Location)
                 .IsEqualTo(new(WasmProcessingStage.Validate, bytes.Length - offsetFromEnd, 0, 10));
             await Assert
-                .That(() => module.Instantiate([]))
+                .That(() => module.Instantiate(executionContext, []))
                 .ThrowsExactly<InvalidOperationException>();
         }
     }
@@ -96,6 +97,7 @@ internal partial class WasmModule_ValidateTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var bytes = HostLinkingModuleBinary.Create(
             HostLinkingModuleBinary.Types(([], [])),
             HostLinkingModuleBinary.Functions(0),
@@ -106,7 +108,7 @@ internal partial class WasmModule_ValidateTests
 
         // Act
         var validated = module.Validate();
-        var instance = validated.Instantiate([]);
+        var instance = validated.Instantiate(executionContext, []);
 
         // Assert
         await Assert.That(validated).IsSameReferenceAs(module);
@@ -117,6 +119,7 @@ internal partial class WasmModule_ValidateTests
     public async Task 後半関数のメモリ命令が不正_検証済みの命令を部分公開せず再試行でも拒否する()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var module = WasmModule.Decode(
             HostLinkingModuleBinary.Create(
                 HostLinkingModuleBinary.Types(([], [])),
@@ -137,7 +140,7 @@ internal partial class WasmModule_ValidateTests
                 .ThrowsExactly<WasmValidateException>();
             await Assert.That(exception!.Location!.FunctionIndex).IsEqualTo(1u);
             await Assert
-                .That(() => module.Instantiate([]))
+                .That(() => module.Instantiate(executionContext, []))
                 .ThrowsExactly<InvalidOperationException>();
         }
     }

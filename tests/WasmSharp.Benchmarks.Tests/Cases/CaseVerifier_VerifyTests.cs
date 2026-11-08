@@ -6,6 +6,11 @@ namespace WasmSharp.Benchmarks.Tests.Cases;
 
 internal class CaseVerifier_VerifyTests
 {
+    private readonly WasmExecutionContext context_ = new WasmExecutionContext();
+
+    private readonly CaseJson json_ = new CaseJson();
+    private readonly MeasurementMethods methods_ = new MeasurementMethods();
+
     [Test]
     [Arguments("Decode")]
     [Arguments("Validate")]
@@ -15,7 +20,7 @@ internal class CaseVerifier_VerifyTests
     )
     {
         // Arrange
-        var definition = AssetLoadingFixture.ReadCases().Single(x => x.CaseId == "invoke.single");
+        var definition = AssetLoadingFixture.ReadCases(json_).Single(x => x.CaseId == "invoke.single");
         // Decodeは空入力、Validateはi32結果の欠落、Instantiateは未提供importで失敗する
         ImmutableArray<byte> bytes = failedStage switch
         {
@@ -75,10 +80,10 @@ internal class CaseVerifier_VerifyTests
                 0,
             ],
         };
-        var assets = InvokeFixture.BuildAssets(definition, bytes);
+        var assets = InvokeFixture.BuildAssets(definition, bytes, json_, methods_);
 
         // Act
-        var result = CaseVerifier.Verify(assets, definition.CaseId);
+        var result = CaseVerifier.Verify(context_, assets, definition.CaseId, json_);
 
         // Assert
         using (Assert.Multiple())
@@ -96,7 +101,7 @@ internal class CaseVerifier_VerifyTests
     public async Task 読込済み素材の入力がdataセグメントと異なる_Invoke前に固定入力をmemoryへ書き込む()
     {
         // Arrange
-        var definition = VerificationFixture.ChangedMemoryInputDefinition(MeasurementStage.Invoke);
+        var definition = VerificationFixture.ChangedMemoryInputDefinition(MeasurementStage.Invoke, json_);
         var bytes = File.ReadAllBytes(
                 Path.Combine(
                     AppContext.BaseDirectory,
@@ -107,10 +112,10 @@ internal class CaseVerifier_VerifyTests
                 )
             )
             .ToImmutableArray();
-        var assets = InvokeFixture.BuildAssets(definition, bytes);
+        var assets = InvokeFixture.BuildAssets(definition, bytes, json_, methods_);
 
         // Act
-        var result = CaseVerifier.Verify(assets, definition.CaseId);
+        var result = CaseVerifier.Verify(context_, assets, definition.CaseId, json_);
 
         // Assert
         using (Assert.Multiple())
@@ -126,12 +131,13 @@ internal class CaseVerifier_VerifyTests
     {
         // Arrange
         var definition = VerificationFixture.ChangedMemoryInputDefinition(
-            MeasurementStage.Instantiate
+            MeasurementStage.Instantiate,
+            json_
         );
-        var instance = VerificationFixture.Instantiate();
+        var instance = VerificationFixture.Instantiate(context_);
 
         // Act
-        var result = CaseVerifier.Verify(definition, new InstanceObservation(instance));
+        var result = CaseVerifier.Verify(context_, definition, new InstanceObservation(instance), json_);
 
         // Assert
         using (Assert.Multiple())
@@ -152,7 +158,7 @@ internal class CaseVerifier_VerifyTests
     public async Task 期待配列のbyte数がuintの範囲を超える_空配列へ折り返して一致にしない()
     {
         // Arrange
-        var definition = VerificationFixture.Definition(MeasurementStage.Invoke) with
+        var definition = VerificationFixture.Definition(MeasurementStage.Invoke, json_) with
         {
             ExpectedResult = new(
                 [],
@@ -171,12 +177,12 @@ internal class CaseVerifier_VerifyTests
             ),
         };
         var observation = new InvokeObservation(
-            VerificationFixture.Instantiate(),
+            VerificationFixture.Instantiate(context_),
             new WasmResults([])
         );
 
         // Act
-        var result = CaseVerifier.Verify(definition, observation);
+        var result = CaseVerifier.Verify(context_, definition, observation, json_);
 
         // Assert
         using (Assert.Multiple())
@@ -196,7 +202,7 @@ internal class CaseVerifier_VerifyTests
     )
     {
         // Arrange
-        var definition = VerificationFixture.Definition(stage);
+        var definition = VerificationFixture.Definition(stage, json_);
         definition = AssetLoadingFixture.WithInput(
             definition with
             {
@@ -209,20 +215,21 @@ internal class CaseVerifier_VerifyTests
             definition.Input with
             {
                 FunctionExport = "repair",
-            }
+            },
+            json_
         );
-        var instance = VerificationFixture.Instantiate();
+        var instance = VerificationFixture.Instantiate(context_);
         instance.GetGlobalResource("start_result").Value = WasmValue.FromI32(-1);
         CaseObservation observation =
             stage == MeasurementStage.Invoke
                 ? new InvokeObservation(
                     instance,
-                    instance.GetFunction("repair").Invoke([WasmValue.FromI32(17)])
+                    instance.GetFunction("repair").Invoke(context_, [WasmValue.FromI32(17)])
                 )
                 : new InstanceObservation(instance);
 
         // Act
-        var result = CaseVerifier.Verify(definition, observation);
+        var result = CaseVerifier.Verify(context_, definition, observation, json_);
 
         // Assert
         using (Assert.Multiple())
@@ -240,7 +247,7 @@ internal class CaseVerifier_VerifyTests
     public async Task 追加Invokeの戻り値は正しいが状態が変わる_Invoke後の状態不一致を報告する()
     {
         // Arrange
-        var definition = VerificationFixture.Definition(MeasurementStage.Instantiate);
+        var definition = VerificationFixture.Definition(MeasurementStage.Instantiate, json_);
         definition = AssetLoadingFixture.WithInput(
             definition with
             {
@@ -252,13 +259,14 @@ internal class CaseVerifier_VerifyTests
             definition.Input with
             {
                 FunctionExport = "repair",
-            }
+            },
+            json_
         );
-        var instance = VerificationFixture.Instantiate();
+        var instance = VerificationFixture.Instantiate(context_);
         instance.GetGlobalResource("start_result").Value = WasmValue.FromI32(-1);
 
         // Act
-        var result = CaseVerifier.Verify(definition, new InstanceObservation(instance));
+        var result = CaseVerifier.Verify(context_, definition, new InstanceObservation(instance), json_);
 
         // Assert
         using (Assert.Multiple())
@@ -275,7 +283,7 @@ internal class CaseVerifier_VerifyTests
     public async Task Funcrefを期待するtableがexternrefである_型の不一致を失敗にする()
     {
         // Arrange
-        var definition = VerificationFixture.Definition(MeasurementStage.Invoke) with
+        var definition = VerificationFixture.Definition(MeasurementStage.Invoke, json_) with
         {
             ExpectedResult = new([], [], [], [new("functions", 1, [])]),
         };
@@ -313,12 +321,14 @@ internal class CaseVerifier_VerifyTests
                 0,
             ])
             .Validate()
-            .Instantiate(new WasmImports());
+            .Instantiate(context_, new WasmImports());
 
         // Act
         var result = CaseVerifier.Verify(
+            context_,
             definition,
-            new InvokeObservation(instance, new WasmResults([]))
+            new InvokeObservation(instance, new WasmResults([])),
+            json_
         );
 
         // Assert
@@ -344,10 +354,10 @@ internal class CaseVerifier_VerifyTests
         using var fixture = new AssetLoadingFixture();
         fixture.Definitions[0] = fixture.Definitions[0] with { MeasurementStage = stage };
         fixture.SaveCases();
-        var assets = AssetManifest.Load(fixture.ManifestPath);
+        var assets = AssetManifest.Load(fixture.ManifestPath, json_, methods_);
 
         // Act
-        var result = CaseVerifier.Verify(assets, "invoke.single");
+        var result = CaseVerifier.Verify(context_, assets, "invoke.single", json_);
 
         // Assert
         using (Assert.Multiple())
@@ -368,14 +378,14 @@ internal class CaseVerifier_VerifyTests
     )
     {
         // Arrange
-        var definition = VerificationFixture.Definition(stage);
+        var definition = VerificationFixture.Definition(stage, json_);
         CaseObservation observation =
             stage == MeasurementStage.Decode
-                ? new InstanceObservation(VerificationFixture.Instantiate())
+                ? new InstanceObservation(VerificationFixture.Instantiate(context_))
                 : new ModuleObservation(VerificationFixture.Decode());
 
         // Act
-        var result = CaseVerifier.Verify(definition, observation);
+        var result = CaseVerifier.Verify(context_, definition, observation, json_);
 
         // Assert
         using (Assert.Multiple())
@@ -392,7 +402,7 @@ internal class CaseVerifier_VerifyTests
     public async Task 配列digestの方式が未対応である_方式を示して照合失敗にする()
     {
         // Arrange
-        var definition = VerificationFixture.Definition(MeasurementStage.Instantiate);
+        var definition = VerificationFixture.Definition(MeasurementStage.Instantiate, json_);
         definition = definition with
         {
             ExpectedResult = definition.ExpectedResult with
@@ -400,10 +410,10 @@ internal class CaseVerifier_VerifyTests
                 Arrays = [definition.ExpectedResult.Arrays[0] with { HashAlgorithm = "sha512" }],
             },
         };
-        var observation = new InstanceObservation(VerificationFixture.Instantiate());
+        var observation = new InstanceObservation(VerificationFixture.Instantiate(context_));
 
         // Act
-        var result = CaseVerifier.Verify(definition, observation);
+        var result = CaseVerifier.Verify(context_, definition, observation, json_);
 
         // Assert
         using (Assert.Multiple())
@@ -438,13 +448,14 @@ internal class CaseVerifier_VerifyTests
                         null
                     ),
                 ],
-            }
+            },
+            json_
         );
         fixture.SaveCases();
-        var loaded = AssetManifest.Load(fixture.ManifestPath);
+        var loaded = AssetManifest.Load(fixture.ManifestPath, json_, methods_);
 
         // Act
-        var result = CaseVerifier.Verify(loaded, definition.CaseId);
+        var result = CaseVerifier.Verify(context_, loaded, definition.CaseId, json_);
 
         // Assert
         using (Assert.Multiple())
@@ -466,13 +477,14 @@ internal class CaseVerifier_VerifyTests
     )
     {
         // Arrange
-        var definition = VerificationFixture.Definition(stage);
+        var definition = VerificationFixture.Definition(stage, json_);
         definition = AssetLoadingFixture.WithInput(
             definition,
             definition.Input with
             {
                 Arguments = [new(NumericType.I32, "invalid")],
-            }
+            },
+            json_
         );
         var module = VerificationFixture.Decode();
         CaseObservation observation = stage switch
@@ -480,12 +492,12 @@ internal class CaseVerifier_VerifyTests
             MeasurementStage.Decode => new ModuleObservation(module),
             MeasurementStage.DecodeValidate => new ModuleObservation(module.Validate()),
             _ => new InstanceObservation(
-                module.Validate().Instantiate(CaseVerifier.CreateImports())
+                module.Validate().Instantiate(context_, CaseVerifier.CreateImports())
             ),
         };
 
         // Act
-        var result = CaseVerifier.Verify(definition, observation);
+        var result = CaseVerifier.Verify(context_, definition, observation, json_);
 
         // Assert
         using (Assert.Multiple())
@@ -506,7 +518,7 @@ internal class CaseVerifier_VerifyTests
     )
     {
         // Arrange
-        var definition = VerificationFixture.MemoryDefinition(matrix);
+        var definition = VerificationFixture.MemoryDefinition(matrix, json_);
         if (!matrix)
         {
             definition = AssetLoadingFixture.WithInput(
@@ -515,11 +527,12 @@ internal class CaseVerifier_VerifyTests
                 {
                     Arrays = [.. definition
                         .Input.Arrays.Select(x => x.Offset == 16 ? x with { FillByte = 0 } : x)],
-                }
+                },
+                json_
             );
         }
-        var input = InputFactory.Create(definition);
-        var instance = VerificationFixture.Instantiate();
+        var input = InputFactory.Create(definition, json_);
+        var instance = VerificationFixture.Instantiate(context_);
         foreach (var array in input.Arrays)
         {
             instance.GetMemory(array.MemoryExport).Write(array.Offset, array.Bytes.AsSpan());
@@ -529,12 +542,22 @@ internal class CaseVerifier_VerifyTests
         // Act & Assert
         for (var iteration = 0; iteration < 8; iteration++)
         {
-            var values = function.Invoke(input.Arguments.AsSpan());
-            var result = CaseVerifier.Verify(definition, new InvokeObservation(instance, values));
+            var values = function.Invoke(context_, input.Arguments.AsSpan());
+            var result = CaseVerifier.Verify(
+                context_,
+                definition,
+                new InvokeObservation(instance, values),
+                json_
+            );
             await Assert.That(result.Succeeded).IsTrue();
             var end = matrix ? 23U : 31U;
             instance.GetMemory("memory").Write(end, [0x80]);
-            var changed = CaseVerifier.Verify(definition, new InvokeObservation(instance, values));
+            var changed = CaseVerifier.Verify(
+                context_,
+                definition,
+                new InvokeObservation(instance, values),
+                json_
+            );
             using (Assert.Multiple())
             {
                 await Assert.That(changed.Succeeded).IsFalse();
@@ -550,13 +573,18 @@ internal class CaseVerifier_VerifyTests
     public async Task 行列の出力は正しいが固定入力が変わる_入力を復元せず反復条件の不一致を返す()
     {
         // Arrange
-        var definition = VerificationFixture.MemoryDefinition(matrix: true);
-        var instance = VerificationFixture.Instantiate();
-        var values = instance.GetFunction("matrix").Invoke([]);
+        var definition = VerificationFixture.MemoryDefinition(matrix: true, json_);
+        var instance = VerificationFixture.Instantiate(context_);
+        var values = instance.GetFunction("matrix").Invoke(context_, []);
         instance.GetMemory("memory").Write(7, [0x80]);
 
         // Act
-        var result = CaseVerifier.Verify(definition, new InvokeObservation(instance, values));
+        var result = CaseVerifier.Verify(
+            context_,
+            definition,
+            new InvokeObservation(instance, values),
+            json_
+        );
 
         // Assert
         using (Assert.Multiple())
@@ -581,19 +609,19 @@ internal class CaseVerifier_VerifyTests
     )
     {
         // Arrange
-        var definition = VerificationFixture.Definition(stage);
+        var definition = VerificationFixture.Definition(stage, json_);
         var module = VerificationFixture.Decode();
         CaseObservation observation = stage switch
         {
             MeasurementStage.Decode => new ModuleObservation(module),
             MeasurementStage.DecodeValidate => new ModuleObservation(module.Validate()),
             _ => new InstanceObservation(
-                module.Validate().Instantiate(CaseVerifier.CreateImports())
+                module.Validate().Instantiate(context_, CaseVerifier.CreateImports())
             ),
         };
 
         // Act
-        var result = CaseVerifier.Verify(definition, observation);
+        var result = CaseVerifier.Verify(context_, definition, observation, json_);
 
         // Assert
         await Assert.That(result.Succeeded).IsTrue();
@@ -612,8 +640,8 @@ internal class CaseVerifier_VerifyTests
     )
     {
         // Arrange
-        var definition = VerificationFixture.Definition(MeasurementStage.Invoke);
-        var instance = VerificationFixture.Instantiate();
+        var definition = VerificationFixture.Definition(MeasurementStage.Invoke, json_);
+        var instance = VerificationFixture.Instantiate(context_);
         switch (difference)
         {
             case "memory":
@@ -633,7 +661,7 @@ internal class CaseVerifier_VerifyTests
                     .Set(
                         0,
                         WasmValue.FromFuncRef(
-                            VerificationFixture.Instantiate().GetFunction("probe")
+                            VerificationFixture.Instantiate(context_).GetFunction("probe")
                         )
                     );
                 break;
@@ -647,8 +675,10 @@ internal class CaseVerifier_VerifyTests
 
         // Act
         var result = CaseVerifier.Verify(
+            context_,
             definition,
-            new InvokeObservation(instance, new([WasmValue.FromI32(17)]))
+            new InvokeObservation(instance, new([WasmValue.FromI32(17)])),
+            json_
         );
 
         // Assert
@@ -675,19 +705,20 @@ internal class CaseVerifier_VerifyTests
     public async Task Instantiate後のstart結果が壊れている_追加Invokeで修復する前に失敗を返す()
     {
         // Arrange
-        var definition = VerificationFixture.Definition(MeasurementStage.Instantiate);
+        var definition = VerificationFixture.Definition(MeasurementStage.Instantiate, json_);
         definition = AssetLoadingFixture.WithInput(
             definition,
             definition.Input with
             {
                 FunctionExport = "repair",
-            }
+            },
+            json_
         );
-        var instance = VerificationFixture.Instantiate();
+        var instance = VerificationFixture.Instantiate(context_);
         instance.GetGlobalResource("start_result").Value = WasmValue.FromI32(-1);
 
         // Act
-        var result = CaseVerifier.Verify(definition, new InstanceObservation(instance));
+        var result = CaseVerifier.Verify(context_, definition, new InstanceObservation(instance), json_);
 
         // Assert
         using (Assert.Multiple())
@@ -710,7 +741,7 @@ internal class CaseVerifier_VerifyTests
     )
     {
         // Arrange
-        var definition = VerificationFixture.Definition(stage);
+        var definition = VerificationFixture.Definition(stage, json_);
         var bytes = new byte[]
         {
             0,
@@ -745,7 +776,7 @@ internal class CaseVerifier_VerifyTests
                 : VerificationFixture.Decode();
 
         // Act
-        var result = CaseVerifier.Verify(definition, new ModuleObservation(module));
+        var result = CaseVerifier.Verify(context_, definition, new ModuleObservation(module), json_);
 
         // Assert
         using (Assert.Multiple())
@@ -763,13 +794,15 @@ internal class CaseVerifier_VerifyTests
     public async Task 追加Invokeでtrapになる_ケースとInvoke段階とtrapを保持する()
     {
         // Arrange
-        var definition = VerificationFixture.Definition(MeasurementStage.Instantiate);
-        definition = AssetLoadingFixture.WithInput(definition, new("trap", [], []));
+        var definition = VerificationFixture.Definition(MeasurementStage.Instantiate, json_);
+        definition = AssetLoadingFixture.WithInput(definition, new("trap", [], []), json_);
 
         // Act
         var result = CaseVerifier.Verify(
+            context_,
             definition,
-            new InstanceObservation(VerificationFixture.Instantiate())
+            new InstanceObservation(VerificationFixture.Instantiate(context_)),
+            json_
         );
 
         // Assert
@@ -785,7 +818,7 @@ internal class CaseVerifier_VerifyTests
     public async Task Decodeしたmoduleを渡す_計時外の追加操作で固定結果を照合する()
     {
         // Arrange
-        var definition = AssetLoadingFixture.ReadCases().Single(x => x.CaseId == "decode.small");
+        var definition = AssetLoadingFixture.ReadCases(json_).Single(x => x.CaseId == "decode.small");
         var module = WasmModule.Decode(
             File.ReadAllBytes(
                 Path.Combine(AppContext.BaseDirectory, "Fixtures", "Data", "Loading", "invoke.wasm")
@@ -793,7 +826,7 @@ internal class CaseVerifier_VerifyTests
         );
 
         // Act
-        var result = CaseVerifier.Verify(definition, new ModuleObservation(module));
+        var result = CaseVerifier.Verify(context_, definition, new ModuleObservation(module), json_);
 
         // Assert
         await Assert.That(result.Succeeded).IsTrue();
@@ -804,13 +837,15 @@ internal class CaseVerifier_VerifyTests
     [Arguments("order", "results[0]")]
     [Arguments("type", "results[2]")]
     [Arguments("bits", "results[2]")]
+    [Arguments("funcref", "results[2]")]
+    [Arguments("externref", "results[2]")]
     public async Task 結果を意図的に変える_ケースと段階と期待と観測を持つ失敗になる(
         string difference,
         string expectedSubject
     )
     {
         // Arrange
-        var definition = AssetLoadingFixture.ReadCases().Single(x => x.CaseId == "invoke.multi");
+        var definition = AssetLoadingFixture.ReadCases(json_).Single(x => x.CaseId == "invoke.multi");
         var values = new List<WasmValue>
         {
             WasmValue.FromI32(unchecked((int)0x89abcdef)),
@@ -831,13 +866,21 @@ internal class CaseVerifier_VerifyTests
             case "bits":
                 values[2] = WasmValue.FromF64Bits(0);
                 break;
+            case "funcref":
+                values[2] = WasmValue.FromFuncRef(null);
+                break;
+            case "externref":
+                values[2] = WasmValue.FromExternRef(new object());
+                break;
         }
         var instance = EmptyInstance();
 
         // Act
         var result = CaseVerifier.Verify(
+            context_,
             definition,
-            new InvokeObservation(instance, new WasmResults(values.ToArray()))
+            new InvokeObservation(instance, new WasmResults(values.ToArray())),
+            json_
         );
 
         // Assert
@@ -850,6 +893,14 @@ internal class CaseVerifier_VerifyTests
             await Assert.That(result.Expected).IsNotNull();
             await Assert.That(result.Observed).IsNotNull();
             await Assert.That(result.Expected == result.Observed).IsFalse();
+            if (difference is "funcref" or "externref")
+            {
+                await Assert.That(result.Observed).IsEqualTo(
+                    difference == "funcref"
+                        ? nameof(WasmValueKind.FuncRef)
+                        : nameof(WasmValueKind.ExternRef)
+                );
+            }
         }
     }
 
@@ -857,7 +908,7 @@ internal class CaseVerifier_VerifyTests
     public async Task ゼロ結果と浮動小数点の特殊bit列を渡す_個数とNaNのpayloadを厳密に照合する()
     {
         // Arrange
-        var definition = AssetLoadingFixture.ReadCases().Single(x => x.CaseId == "invoke.empty");
+        var definition = AssetLoadingFixture.ReadCases(json_).Single(x => x.CaseId == "invoke.empty");
         var instance = EmptyInstance();
         var special = definition with
         {
@@ -871,10 +922,13 @@ internal class CaseVerifier_VerifyTests
 
         // Act
         var empty = CaseVerifier.Verify(
+            context_,
             definition,
-            new InvokeObservation(instance, new WasmResults([]))
+            new InvokeObservation(instance, new WasmResults([])),
+            json_
         );
         var same = CaseVerifier.Verify(
+            context_,
             special,
             new InvokeObservation(
                 instance,
@@ -882,9 +936,11 @@ internal class CaseVerifier_VerifyTests
                     WasmValue.FromF32Bits(0x7fc12345),
                     WasmValue.FromF64Bits(0xfff8000000000042),
                 ])
-            )
+            ),
+            json_
         );
         var different = CaseVerifier.Verify(
+            context_,
             special,
             new InvokeObservation(
                 instance,
@@ -892,7 +948,8 @@ internal class CaseVerifier_VerifyTests
                     WasmValue.FromF32Bits(0x7fc12346),
                     WasmValue.FromF64Bits(0xfff8000000000042),
                 ])
-            )
+            ),
+            json_
         );
 
         // Assert
@@ -910,11 +967,11 @@ internal class CaseVerifier_VerifyTests
     public async Task 固定Invokeの観測を渡す_期待する結果の個数と順序とbit列が一致する()
     {
         // Arrange
-        var definition = AssetLoadingFixture.ReadCases().Single(x => x.CaseId == "invoke.multi");
+        var definition = AssetLoadingFixture.ReadCases(json_).Single(x => x.CaseId == "invoke.multi");
         var instance = WasmModule
             .Decode([0, 0x61, 0x73, 0x6d, 1, 0, 0, 0])
             .Validate()
-            .Instantiate(new WasmImports());
+            .Instantiate(context_, new WasmImports());
         var observation = new InvokeObservation(
             instance,
             new WasmResults([
@@ -925,17 +982,17 @@ internal class CaseVerifier_VerifyTests
         );
 
         // Act
-        var result = CaseVerifier.Verify(definition, observation);
+        var result = CaseVerifier.Verify(context_, definition, observation, json_);
 
         // Assert
         await Assert.That(result.Succeeded).IsTrue();
     }
 
-    private static WasmInstance EmptyInstance()
+    private WasmInstance EmptyInstance()
     {
         return WasmModule
             .Decode([0, 0x61, 0x73, 0x6d, 1, 0, 0, 0])
             .Validate()
-            .Instantiate(new WasmImports());
+            .Instantiate(context_, new WasmImports());
     }
 }

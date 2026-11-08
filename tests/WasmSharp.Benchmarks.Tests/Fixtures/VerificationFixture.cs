@@ -4,9 +4,9 @@ namespace WasmSharp.Benchmarks.Tests.Fixtures;
 
 internal static class VerificationFixture
 {
-    internal static BenchmarkCase ChangedMemoryInputDefinition(MeasurementStage stage)
+    internal static BenchmarkCase ChangedMemoryInputDefinition(MeasurementStage stage, CaseJson json)
     {
-        var definition = Definition(stage);
+        var definition = Definition(stage, json);
         return AssetLoadingFixture.WithInput(
             definition with
             {
@@ -33,7 +33,8 @@ internal static class VerificationFixture
                         165
                     ),
                 ],
-            }
+            },
+            json
         );
     }
 
@@ -52,15 +53,15 @@ internal static class VerificationFixture
         );
     }
 
-    internal static WasmInstance Instantiate()
+    internal static WasmInstance Instantiate(WasmExecutionContext context)
     {
-        return Decode().Validate().Instantiate(CaseVerifier.CreateImports());
+        return Decode().Validate().Instantiate(context, CaseVerifier.CreateImports());
     }
 
-    internal static BenchmarkCase MemoryDefinition(bool matrix)
+    internal static BenchmarkCase MemoryDefinition(bool matrix, CaseJson json)
     {
         var original = AssetLoadingFixture
-            .ReadCases()
+            .ReadCases(json)
             .Single(x => x.CaseId == (matrix ? "kernel.matrix" : "memory.copy-fill"));
         var input = matrix
             ? new CaseInput(
@@ -158,12 +159,12 @@ internal static class VerificationFixture
                 [],
                 []
             );
-        return AssetLoadingFixture.WithInput(original with { ExpectedResult = expected }, input);
+        return AssetLoadingFixture.WithInput(original with { ExpectedResult = expected }, input, json);
     }
 
-    internal static BenchmarkCase Definition(MeasurementStage stage)
+    internal static BenchmarkCase Definition(MeasurementStage stage, CaseJson json)
     {
-        var original = AssetLoadingFixture.ReadCases().Single(x => x.CaseId == "instantiate.large");
+        var original = AssetLoadingFixture.ReadCases(json).Single(x => x.CaseId == "instantiate.large");
         return AssetLoadingFixture.WithInput(
             original with
             {
@@ -187,7 +188,8 @@ internal static class VerificationFixture
                     [new("functions", 3, [new(0, "probe"), new(1, "add_one"), new(2, null)])]
                 ),
             },
-            new("probe", [new(NumericType.I32, "00000011")], [])
+            new("probe", [new(NumericType.I32, "00000011")], []),
+            json
         );
     }
 }

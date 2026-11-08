@@ -15,7 +15,8 @@ internal class Interpreter_RefFuncTests
     )
     {
         // Arrange
-        var host = WasmFunction.CreateHost(new([], []), _ => new([]));
+        var executionContext = new WasmExecutionContext();
+        var host = WasmFunction.CreateHost(new([], []), (_, _) => new([]));
         var provider = ExecutionInstanceFixture.Create([new([], [])], [(0, [], [], 1)], [], []);
         var source = ExecutionInstanceFixture.Create(
             [new([], [])],
@@ -31,7 +32,7 @@ internal class Interpreter_RefFuncTests
             []
         );
         var instruction = new Instruction(default, default, 1001, index);
-        var context = InterpreterContext.Enter(new(10), out var isOutermost);
+        var context = executionContext.Enter(new(10), out var isOutermost);
         ExecutionResult result;
         WasmValue actual;
         int valueCount;
@@ -51,8 +52,8 @@ internal class Interpreter_RefFuncTests
         }
         finally
         {
+            executionContext.Exit(isOutermost);
             context.Restore(0, 0, 0);
-            InterpreterContext.Exit(isOutermost);
         }
 
         // Assert

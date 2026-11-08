@@ -17,7 +17,7 @@ internal class WasmInstance_ConstructorTests
             new(WasmValueKind.ExternRef, false),
             WasmValue.FromExternRef(external)
         );
-        var importedFunction = WasmFunction.CreateHost(new([], []), _ => new([]));
+        var importedFunction = WasmFunction.CreateHost(new([], []), (callbackContext, _) => new([]));
         var end = DecodedInstruction.WithoutImmediate(new(0, 0x0B), 1);
         DecodedInstruction[] definedReference =
         [

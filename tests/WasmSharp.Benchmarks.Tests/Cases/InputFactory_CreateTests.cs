@@ -7,6 +7,8 @@ namespace WasmSharp.Benchmarks.Tests.Cases;
 
 internal class InputFactory_CreateTests
 {
+    private readonly CaseJson json_ = new CaseJson();
+
     [Test]
     [Arguments("repeated-type")]
     [Arguments("repeated-no-fill")]
@@ -18,7 +20,7 @@ internal class InputFactory_CreateTests
     public async Task 配列生成方式と型や追加設定が対応しない_設定の不一致を拒否する(string scenario)
     {
         // Arrange
-        var original = AssetLoadingFixture.ReadCases().Single(x => x.CaseId == "kernel.matrix");
+        var original = AssetLoadingFixture.ReadCases(json_).Single(x => x.CaseId == "kernel.matrix");
         var array = new ArrayInput(
             "memory",
             0,
@@ -58,12 +60,13 @@ internal class InputFactory_CreateTests
             original.Input with
             {
                 Arrays = [array],
-            }
+            },
+            json_
         );
 
         // Act & Assert
         var exception = await Assert
-            .That(() => InputFactory.Create(definition))
+            .That(() => InputFactory.Create(definition, json_))
             .ThrowsExactly<InvalidDataException>();
         await Assert
             .That(exception!.Message)
@@ -75,7 +78,7 @@ internal class InputFactory_CreateTests
     public async Task 配列長が入力生成の上限を超える_配列を確保せずケースと上限超過を示して拒否する()
     {
         // Arrange
-        var original = AssetLoadingFixture.ReadCases().Single(x => x.CaseId == "memory.copy-fill");
+        var original = AssetLoadingFixture.ReadCases(json_).Single(x => x.CaseId == "memory.copy-fill");
         var definition = AssetLoadingFixture.WithInput(
             original,
             original.Input with
@@ -92,12 +95,13 @@ internal class InputFactory_CreateTests
                         null
                     ),
                 ],
-            }
+            },
+            json_
         );
 
         // Act & Assert
         var exception = await Assert
-            .That(() => InputFactory.Create(definition))
+            .That(() => InputFactory.Create(definition, json_))
             .ThrowsExactly<InvalidDataException>();
         await Assert.That(exception!.Message).Contains("memory.copy-fill").And.Contains("上限");
     }
@@ -106,17 +110,18 @@ internal class InputFactory_CreateTests
     public async Task 明示型の数値引数を復元する_整数とNaNと負のゼロのbit列を保つ()
     {
         // Arrange
-        var original = AssetLoadingFixture.ReadCases().Single(x => x.CaseId == "invoke.multi");
+        var original = AssetLoadingFixture.ReadCases(json_).Single(x => x.CaseId == "invoke.multi");
         var definition = AssetLoadingFixture.WithInput(
             original,
             original.Input with
             {
                 Arguments = [.. original.Input.Arguments, new(NumericType.F32, "7fc12345")],
-            }
+            },
+            json_
         );
 
         // Act
-        var input = InputFactory.Create(definition);
+        var input = InputFactory.Create(definition, json_);
 
         // Assert
         using (Assert.Multiple())
@@ -134,7 +139,7 @@ internal class InputFactory_CreateTests
     public async Task Memoryとscanの固定入力を復元する_全領域の固定digestとlittleEndianが一致する()
     {
         // Arrange
-        var definitions = AssetLoadingFixture.ReadCases();
+        var definitions = AssetLoadingFixture.ReadCases(json_);
 
         // Act & Assert
         foreach (
@@ -143,7 +148,7 @@ internal class InputFactory_CreateTests
             )
         )
         {
-            var input = InputFactory.Create(definition);
+            var input = InputFactory.Create(definition, json_);
             using (Assert.Multiple())
             {
                 await Assert
@@ -167,11 +172,11 @@ internal class InputFactory_CreateTests
     public async Task 行列の固定seedを復元する_既知の先頭列と入力領域と再生成結果が一致する()
     {
         // Arrange
-        var definition = AssetLoadingFixture.ReadCases().Single(x => x.CaseId == "kernel.matrix");
+        var definition = AssetLoadingFixture.ReadCases(json_).Single(x => x.CaseId == "kernel.matrix");
 
         // Act
-        var input = InputFactory.Create(definition);
-        var repeated = InputFactory.Create(definition);
+        var input = InputFactory.Create(definition, json_);
+        var repeated = InputFactory.Create(definition, json_);
 
         // Assert
         using (Assert.Multiple())
@@ -206,18 +211,19 @@ internal class InputFactory_CreateTests
     public async Task 数値bit列が固定形式に合わない_ケースと数値型を示して拒否する(string bits)
     {
         // Arrange
-        var original = AssetLoadingFixture.ReadCases().Single(x => x.CaseId == "invoke.single");
+        var original = AssetLoadingFixture.ReadCases(json_).Single(x => x.CaseId == "invoke.single");
         var definition = AssetLoadingFixture.WithInput(
             original,
             original.Input with
             {
                 Arguments = [new(NumericType.I32, bits)],
-            }
+            },
+            json_
         );
 
         // Act & Assert
         var exception = await Assert
-            .That(() => InputFactory.Create(definition))
+            .That(() => InputFactory.Create(definition, json_))
             .Throws<InvalidDataException>();
         await Assert.That(exception!.Message).Contains("invoke.single").And.Contains("I32");
     }
@@ -226,18 +232,19 @@ internal class InputFactory_CreateTests
     public async Task 配列生成方式に必要なseedがない_ケースと生成方式を示して拒否する()
     {
         // Arrange
-        var original = AssetLoadingFixture.ReadCases().Single(x => x.CaseId == "kernel.matrix");
+        var original = AssetLoadingFixture.ReadCases(json_).Single(x => x.CaseId == "kernel.matrix");
         var definition = AssetLoadingFixture.WithInput(
             original,
             original.Input with
             {
                 Arrays = [original.Input.Arrays[0] with { Seed = null }],
-            }
+            },
+            json_
         );
 
         // Act & Assert
         var exception = await Assert
-            .That(() => InputFactory.Create(definition))
+            .That(() => InputFactory.Create(definition, json_))
             .Throws<InvalidDataException>();
         await Assert.That(exception!.Message).Contains("kernel.matrix").And.Contains("SeededU32");
     }

@@ -7,6 +7,8 @@ namespace WasmSharp.Benchmarks.Tests.Fixtures;
 
 internal sealed class ComparisonFixture : IDisposable
 {
+    private readonly CaseJson json_ = new CaseJson();
+
     internal List<RunComparisonFixture> Baseline { get; } = [];
     internal List<RunComparisonFixture> Current { get; } = [];
     internal ComparisonPolicy Policy { get; set; }
@@ -14,7 +16,7 @@ internal sealed class ComparisonFixture : IDisposable
 
     internal ComparisonFixture(bool allCases = false)
     {
-        var cases = AssetLoadingFixture.ReadCases();
+        var cases = AssetLoadingFixture.ReadCases(json_);
         if (!allCases)
         {
             cases = [.. cases.Where(x => x.CaseId == "invoke.single")];
@@ -101,7 +103,7 @@ internal sealed class ComparisonFixture : IDisposable
             run.Save();
         }
         var path = Path.Combine(Baseline[0].DirectoryPath, "policy.json");
-        var content = JsonSerializer.SerializeToUtf8Bytes(Policy, CaseJson.Options);
+        var content = JsonSerializer.SerializeToUtf8Bytes(Policy, json_.Options);
         File.WriteAllBytes(path, content);
         return new(
             [.. Baseline.Select(x => x.DirectoryPath)],

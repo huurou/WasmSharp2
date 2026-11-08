@@ -12,8 +12,9 @@ internal static class BaselineStore
     /// </summary>
     /// <param name="inputPath">完了したmanifestまたは実行結果のJSONファイル</param>
     /// <param name="outputPath">置換するbaselineの保存先 入力と同じ絶対pathになる指定は受け付けない</param>
+    /// <param name="reportStore">baseline候補の復元に使用する読取処理</param>
     /// <exception cref="ReportStoreException">入力と保存先の絶対pathが同じ場合、入力を読み取れない場合、記録が未完了または不整合の場合、あるいは保存に失敗した場合</exception>
-    internal static void Save(string inputPath, string outputPath)
+    internal static void Save(string inputPath, string outputPath, ReportStore reportStore)
     {
         var input = Path.GetFullPath(inputPath);
         var output = Path.GetFullPath(outputPath);
@@ -33,7 +34,7 @@ internal static class BaselineStore
             );
         }
 
-        var stored = ReportStore.Read(input);
+        var stored = reportStore.Read(input);
         var decision = CompletionPolicy.BaselineSave(stored.Issues, saved: true);
         if (decision.ExitCode != 0)
         {

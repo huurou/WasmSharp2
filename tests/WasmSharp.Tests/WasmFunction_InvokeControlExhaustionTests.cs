@@ -13,6 +13,7 @@ internal partial class WasmFunction_InvokeTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var state = new WasmGlobal(new(WasmValueKind.I32, true), WasmValue.FromI32(0));
         var provider = new WasmHostModule("env");
         provider.Define("state", state);
@@ -44,12 +45,12 @@ internal partial class WasmFunction_InvokeTests
                 )
             )
             .Validate()
-            .Instantiate([provider], new(4));
+            .Instantiate(executionContext, [provider], new(4));
         var function = instance.GetFunction("run");
         var savedReference = new object();
         var failedReference = new object();
         var nextReference = new object();
-        var saved = function.Invoke([
+        var saved = function.Invoke(executionContext, [
             WasmValue.FromI32(0),
             WasmValue.FromExternRef(savedReference),
         ]);
@@ -57,11 +58,11 @@ internal partial class WasmFunction_InvokeTests
         // Act & Assert
         var exception = await Assert
             .That(() =>
-                function.Invoke([WasmValue.FromI32(10), WasmValue.FromExternRef(failedReference)])
+                function.Invoke(executionContext, [WasmValue.FromI32(10), WasmValue.FromExternRef(failedReference)])
             )
             .ThrowsExactly<WasmExhaustionException>();
         var afterFailure = instance.GetGlobal("state").AsI32();
-        var next = function.Invoke([WasmValue.FromI32(1), WasmValue.FromExternRef(nextReference)]);
+        var next = function.Invoke(executionContext, [WasmValue.FromI32(1), WasmValue.FromExternRef(nextReference)]);
         using (Assert.Multiple())
         {
             await Assert.That(exception!.Reason).IsEqualTo(WasmExhaustionReason.CallDepthLimit);
@@ -91,6 +92,7 @@ internal partial class WasmFunction_InvokeTests
     public async Task Loop内で定義関数とhostを繰り返し呼ぶ_終了済みcallと反復が深さへ蓄積せず参照を保つ()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var reference = new object();
         List<(WasmInstance Instance, object? Reference)> observed = [];
         var provider = new WasmHostModule("env");
@@ -98,7 +100,7 @@ internal partial class WasmFunction_InvokeTests
             "host",
             WasmFunction.CreateHost(
                 new([WasmValueKind.ExternRef], [WasmValueKind.ExternRef]),
-                (instance, values) =>
+                (callbackContext, instance, values) =>
                 {
                     observed.Add((instance, values[0].AsExternRef()));
                     return new(values);
@@ -126,12 +128,12 @@ internal partial class WasmFunction_InvokeTests
                 )
             )
             .Validate()
-            .Instantiate([provider], new(2));
+            .Instantiate(executionContext, [provider], new(2));
 
         // Act
         var result = instance
             .GetFunction("run")
-            .Invoke([WasmValue.FromI32(8), WasmValue.FromExternRef(reference)]);
+            .Invoke(executionContext, [WasmValue.FromI32(8), WasmValue.FromExternRef(reference)]);
 
         // Assert
         using (Assert.Multiple())
@@ -160,13 +162,14 @@ internal partial class WasmFunction_InvokeTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var state = new WasmGlobal(new(WasmValueKind.I32, true), WasmValue.FromI32(0));
         var expected = new InvalidOperationException("ホスト由来の例外");
         var fail = true;
         var remaining = 10;
         WasmFunction inner = null!;
         List<WasmInstance> callers = [];
-        WasmResults Callback(ReadOnlySpan<WasmValue> values)
+        WasmResults Callback(WasmExecutionContext callbackContext, ReadOnlySpan<WasmValue> values)
         {
             if (fail && failure == 2)
             {
@@ -175,7 +178,7 @@ internal partial class WasmFunction_InvokeTests
             if (remaining > 0)
             {
                 remaining--;
-                inner.Invoke(values);
+                inner.Invoke(callbackContext, values);
             }
             return new(values);
         }
@@ -186,10 +189,10 @@ internal partial class WasmFunction_InvokeTests
         var host = withInstance
             ? WasmFunction.CreateHost(
                 type,
-                (instance, values) =>
+                (callbackContext, instance, values) =>
                 {
                     callers.Add(instance);
-                    return Callback(values);
+                    return Callback(callbackContext, values);
                 }
             )
             : WasmFunction.CreateHost(type, Callback);
@@ -225,19 +228,19 @@ internal partial class WasmFunction_InvokeTests
                 )
             )
             .Validate();
-        var outerInstance = module.Instantiate([provider], new(4));
-        var innerInstance = module.Instantiate([provider], new(20));
+        var outerInstance = module.Instantiate(executionContext, [provider], new(4));
+        var innerInstance = module.Instantiate(executionContext, [provider], new(20));
         var outer = outerInstance.GetFunction("run");
         inner = innerInstance.GetFunction("run");
         var savedReference = new object();
         var failedReference = new object();
         var nextReference = new object();
-        var saved = outer.Invoke([WasmValue.FromI32(0), WasmValue.FromExternRef(savedReference)]);
+        var saved = outer.Invoke(executionContext, [WasmValue.FromI32(0), WasmValue.FromExternRef(savedReference)]);
 
         // Act & Assert
         var actual = await Assert
             .That(() =>
-                outer.Invoke([
+                outer.Invoke(executionContext, [
                     WasmValue.FromI32(failure == 0 ? 1 : 2),
                     WasmValue.FromExternRef(failedReference),
                 ])
@@ -246,9 +249,9 @@ internal partial class WasmFunction_InvokeTests
         var afterFailure = outerInstance.GetGlobal("state").AsI32();
         fail = false;
         remaining = 0;
-        var next = outer.Invoke([WasmValue.FromI32(2), WasmValue.FromExternRef(nextReference)]);
+        var next = outer.Invoke(executionContext, [WasmValue.FromI32(2), WasmValue.FromExternRef(nextReference)]);
         remaining = 5;
-        var independent = inner.Invoke([
+        var independent = inner.Invoke(executionContext, [
             WasmValue.FromI32(2),
             WasmValue.FromExternRef(nextReference),
         ]);

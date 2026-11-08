@@ -92,7 +92,7 @@ internal sealed class ScriptDocument
         var commands = ImmutableArray.CreateBuilder<EnumeratedCommand>();
         var diagnostics = ImmutableArray.CreateBuilder<CorpusDiagnostic>();
         string? sourceFilename = null;
-        var complete = false;
+        bool complete;
         var reader = new Utf8JsonReader(owned.AsSpan());
         try
         {
@@ -102,9 +102,7 @@ internal sealed class ScriptDocument
         {
             // 破損位置より後は境界を確定できないため、確定済みのcommandだけを残して総数を未確定にする。
             complete = false;
-            var position = ex.LineNumber is { } line
-                ? $"{line + 1}行目の{ex.BytePositionInLine + 1}バイト目"
-                : "位置不明の箇所";
+            var position = $"{ex.LineNumber + 1}行目の{ex.BytePositionInLine + 1}バイト目";
             diagnostics.Add(
                 new(
                     OPERATION,

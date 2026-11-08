@@ -8,6 +8,7 @@ internal class WasmInstance_GetGlobalResourceTests
     public async Task 別名と再exportから取得する_定義の独立性とimportの共有を保つ()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var shared = new WasmGlobal(new(WasmValueKind.I32, true), WasmValue.FromI32(7));
         var host = new WasmHostModule("env");
         host.Define("g", shared);
@@ -20,8 +21,8 @@ internal class WasmInstance_GetGlobalResourceTests
                 )
             )
             .Validate();
-        var first = module.Instantiate([host]);
-        var second = module.Instantiate([host]);
+        var first = module.Instantiate(executionContext, [host]);
+        var second = module.Instantiate(executionContext, [host]);
 
         // Act
         var resource = first.GetGlobalResource("g");
@@ -35,7 +36,7 @@ internal class WasmInstance_GetGlobalResourceTests
                 )
             )
             .Validate()
-            .Instantiate([relayHost]);
+            .Instantiate(executionContext, [relayHost]);
         relay.GetGlobalResource("g").Value = WasmValue.FromI32(99);
         first.GetGlobalResource("shared").Value = WasmValue.FromI32(17);
 
@@ -60,10 +61,11 @@ internal class WasmInstance_GetGlobalResourceTests
     public async Task 名前が存在しないか種類が違う_名前の引数例外で拒否する(string name)
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var instance = WasmModule
             .Decode(ConstantModuleBinary.Create(0x7F, 0x41, 1, 0x0B))
             .Validate()
-            .Instantiate([]);
+            .Instantiate(executionContext, []);
 
         // Act & Assert
         var exception = await Assert
@@ -76,10 +78,11 @@ internal class WasmInstance_GetGlobalResourceTests
     public async Task 名前がnullである_名前のnull引数例外で拒否する()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var instance = WasmModule
             .Decode(HostLinkingModuleBinary.Create())
             .Validate()
-            .Instantiate([]);
+            .Instantiate(executionContext, []);
 
         // Act & Assert
         var exception = await Assert

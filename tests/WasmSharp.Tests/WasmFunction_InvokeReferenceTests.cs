@@ -13,6 +13,7 @@ internal partial class WasmFunction_InvokeTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var module = WasmModule.Decode(
             HostLinkingModuleBinary.Create(
                 HostLinkingModuleBinary.Types(([], [kind, kind, kind, 0x7F])),
@@ -26,7 +27,7 @@ internal partial class WasmFunction_InvokeTests
         );
 
         // Act
-        var values = module.Validate().Instantiate([]).GetFunction("run").Invoke([]).Values;
+        var values = module.Validate().Instantiate(executionContext, []).GetFunction("run").Invoke(executionContext, []).Values;
 
         // Assert
         var expectedNull =
@@ -49,6 +50,7 @@ internal partial class WasmFunction_InvokeTests
     public async Task Globalと命令で同じ関数を参照する_所属instanceごとの関数同一性と非null判定を保つ()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var module = WasmModule
             .Decode(
                 HostLinkingModuleBinary.Create(
@@ -65,10 +67,10 @@ internal partial class WasmFunction_InvokeTests
             .Validate();
 
         // Act
-        var first = module.Instantiate([]);
-        var second = module.Instantiate([]);
-        var firstValues = first.GetFunction("run").Invoke([]).Values;
-        var secondValues = second.GetFunction("run").Invoke([]).Values;
+        var first = module.Instantiate(executionContext, []);
+        var second = module.Instantiate(executionContext, []);
+        var firstValues = first.GetFunction("run").Invoke(executionContext, []).Values;
+        var secondValues = second.GetFunction("run").Invoke(executionContext, []).Values;
 
         // Assert
         using (Assert.Multiple())
@@ -111,6 +113,7 @@ internal partial class WasmFunction_InvokeTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var module = WasmModule
             .Decode(
                 HostLinkingModuleBinary.Create(
@@ -154,16 +157,16 @@ internal partial class WasmFunction_InvokeTests
             .Validate();
         var first =
             kind == 0x70
-                ? WasmValue.FromFuncRef(WasmFunction.CreateHost(new([], []), _ => new([])))
+                ? WasmValue.FromFuncRef(WasmFunction.CreateHost(new([], []), (callbackContext, _) => new([])))
                 : WasmValue.FromExternRef(new object());
         var second = kind == 0x70 ? WasmValue.FromFuncRef(null) : WasmValue.FromExternRef(null);
         var selected = condition != 0 ? first : second;
 
         // Act
         var values = module
-            .Instantiate([])
+            .Instantiate(executionContext, [])
             .GetFunction("run")
-            .Invoke([first, second, WasmValue.FromI32(condition)])
+            .Invoke(executionContext, [first, second, WasmValue.FromI32(condition)])
             .Values;
 
         // Assert

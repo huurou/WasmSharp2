@@ -250,6 +250,7 @@ internal partial class FunctionValidator_ValidateTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var module = DecodeControl([], Convert.FromHexString(results), Convert.FromHexString(body));
 
         // Act & Assert
@@ -273,7 +274,7 @@ internal partial class FunctionValidator_ValidateTests
                 );
             await Assert.That(module.FunctionCodes.IsEmpty).IsTrue();
             await Assert
-                .That(() => module.Instantiate([]))
+                .That(() => module.Instantiate(executionContext, []))
                 .ThrowsExactly<InvalidOperationException>();
         }
     }

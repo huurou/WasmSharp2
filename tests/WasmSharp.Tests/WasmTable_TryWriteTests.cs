@@ -12,12 +12,13 @@ internal class WasmTable_TryWriteTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var reference =
             kind == WasmValueKind.FuncRef
                 ? WasmModule
                     .Decode(ConstantModuleBinary.Create(0x7F, 0x41, 0x01, 0x0B))
                     .Validate()
-                    .Instantiate([])
+                    .Instantiate(executionContext, [])
                     .GetFunction("run")
                 : new object();
         var value =

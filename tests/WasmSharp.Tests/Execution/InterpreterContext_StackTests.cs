@@ -60,8 +60,9 @@ internal class InterpreterContext_CalculateCapacityTests
 
     private static int CalculateCapacity(int capacity, ulong requiredCount)
     {
+        var executionContext = new WasmExecutionContext();
         var function = FunctionFixture.Create();
-        var context = InterpreterContext.Enter(new(10), out var isOutermost);
+        var context = executionContext.Enter(new(10), out var isOutermost);
         try
         {
             context.Stage = WasmProcessingStage.Invoke;
@@ -69,7 +70,7 @@ internal class InterpreterContext_CalculateCapacityTests
         }
         finally
         {
-            InterpreterContext.Exit(isOutermost);
+            executionContext.Exit(isOutermost);
         }
     }
 }
@@ -80,6 +81,7 @@ internal class InterpreterContext_EnsureCapacityTests
     public async Task 必要数の加算がintの上限を超える_位置付き保持上限を伝播して外側の状態を保つ()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var function = FunctionFixture.Create();
         var location = new WasmFailureLocation(WasmProcessingStage.Instantiate, 30, 0);
         WasmValue value = default;
@@ -91,7 +93,7 @@ internal class InterpreterContext_EnsureCapacityTests
         var exception = await Assert
             .That(() =>
             {
-                var context = InterpreterContext.Enter(new(10), out var isOutermost);
+                var context = executionContext.Enter(new(10), out var isOutermost);
                 try
                 {
                     context.Stage = WasmProcessingStage.Instantiate;
@@ -112,13 +114,13 @@ internal class InterpreterContext_EnsureCapacityTests
                 }
                 finally
                 {
+                    executionContext.Exit(isOutermost);
                     context.Restore(0, 0, 0);
-                    InterpreterContext.Exit(isOutermost);
                     restored =
                         context.FrameCount == 0
                         && context.ValueCount == 0
                         && context.CallDepth == 0
-                        && InterpreterContext.Current is null;
+                        && executionContext.Current is null;
                 }
             })
             .ThrowsExactly<WasmImplementationLimitException>();
@@ -143,6 +145,7 @@ internal class InterpreterContext_RestoreTests
     public async Task 内側で領域を拡張して復元する_外側の値とフレームを保ち除いた参照を解除する()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var module = new WasmModule(
             [
                 new([WasmValueKind.I64], [WasmValueKind.ExternRef]),
@@ -164,7 +167,7 @@ internal class InterpreterContext_RestoreTests
         var function = (DefinedFunction)instance.Functions[0];
         var innerFunction = (DefinedFunction)instance.Functions[1];
         var reference = new object();
-        var context = InterpreterContext.Enter(new(10), out var isOutermost);
+        var context = executionContext.Enter(new(10), out var isOutermost);
         ExecutionFrame outerFrame;
         ExecutionFrame innerFrame;
         ExecutionFrame removedFrame;
@@ -218,7 +221,7 @@ internal class InterpreterContext_RestoreTests
             context.Restore(0, 0, 0);
             fullyRestored =
                 context.FrameCount == 0 && context.ValueCount == 0 && context.CallDepth == 0;
-            InterpreterContext.Exit(isOutermost);
+            executionContext.Exit(isOutermost);
         }
 
         // Assert
@@ -254,6 +257,7 @@ internal class InterpreterContext_EnterFrameTests
     public async Task 七種の追加localsを持つ関数へ入る_引数に続けて型別のゼロとnullを積みoperand開始位置を設定する()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var function = ExecutionFunctionFixture.Create(
             [],
             new([WasmValueKind.ExternRef], []),
@@ -271,7 +275,7 @@ internal class InterpreterContext_EnterFrameTests
         );
         var reference = new object();
         var outerFunction = FunctionFixture.Create();
-        var context = InterpreterContext.Enter(new(10), out var isOutermost);
+        var context = executionContext.Enter(new(10), out var isOutermost);
         ExecutionFrame frame;
         WasmValue[] values;
 
@@ -290,8 +294,8 @@ internal class InterpreterContext_EnterFrameTests
         }
         finally
         {
+            executionContext.Exit(isOutermost);
             context.Restore(0, 0, 0);
-            InterpreterContext.Exit(isOutermost);
         }
 
         // Assert
@@ -319,13 +323,14 @@ internal class InterpreterContext_EnterFrameTests
     public async Task 同じ関数へ入れ子で入り結果を返す_内側を外側のoperandの後に置き外側の引数とlocalsを保つ()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var function = ExecutionFunctionFixture.Create(
             [],
             new([WasmValueKind.I64], [WasmValueKind.F32]),
             [new(1, WasmValueKind.F32)],
             1
         );
-        var context = InterpreterContext.Enter(new(10), out var isOutermost);
+        var context = executionContext.Enter(new(10), out var isOutermost);
         ExecutionFrame outerFrame;
         ExecutionFrame innerFrame;
         WasmValue innerLocal;
@@ -353,8 +358,8 @@ internal class InterpreterContext_EnterFrameTests
         }
         finally
         {
+            executionContext.Exit(isOutermost);
             context.Restore(0, 0, 0);
-            InterpreterContext.Exit(isOutermost);
         }
 
         // Assert

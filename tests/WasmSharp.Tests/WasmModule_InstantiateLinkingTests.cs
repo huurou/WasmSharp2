@@ -13,6 +13,7 @@ internal partial class WasmModule_InstantiateTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var module = WasmModule
             .Decode(
                 HostLinkingModuleBinary.Create(
@@ -32,7 +33,7 @@ internal partial class WasmModule_InstantiateTests
             "f",
             WasmFunction.CreateHost(
                 new([], []),
-                _ =>
+                (callbackContext, _) =>
                 {
                     calls++;
                     return new([]);
@@ -48,7 +49,7 @@ internal partial class WasmModule_InstantiateTests
         if (provideGlobal)
         {
             var exception = await Assert
-                .That(() => module.Instantiate([host]))
+                .That(() => module.Instantiate(executionContext, [host]))
                 .ThrowsExactly<WasmImplementationLimitException>();
             using (Assert.Multiple())
             {
@@ -67,7 +68,7 @@ internal partial class WasmModule_InstantiateTests
         else
         {
             var exception = await Assert
-                .That(() => module.Instantiate([host]))
+                .That(() => module.Instantiate(executionContext, [host]))
                 .ThrowsExactly<WasmInstantiateException>();
             using (Assert.Multiple())
             {
@@ -82,6 +83,7 @@ internal partial class WasmModule_InstantiateTests
     public async Task ホストstartを持つ_Instantiateごとに一回実行して別のinstanceを返す()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var calls = 0;
         var module = WasmModule
             .Decode(
@@ -97,7 +99,7 @@ internal partial class WasmModule_InstantiateTests
             "start",
             WasmFunction.CreateHost(
                 new([], []),
-                _ =>
+                (callbackContext, _) =>
                 {
                     calls++;
                     return new([]);
@@ -106,9 +108,9 @@ internal partial class WasmModule_InstantiateTests
         );
 
         // Act
-        var first = module.Instantiate([host], new(1));
+        var first = module.Instantiate(executionContext, [host], new(1));
         var firstCalls = calls;
-        var second = module.Instantiate([host], new(1));
+        var second = module.Instantiate(executionContext, [host], new(1));
 
         // Assert
         using (Assert.Multiple())
@@ -123,6 +125,7 @@ internal partial class WasmModule_InstantiateTests
     public async Task 提供登録が重複する_リンク前に契約違反で拒否する()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var module = WasmModule
             .Decode(
                 HostLinkingModuleBinary.Create(
@@ -132,23 +135,24 @@ internal partial class WasmModule_InstantiateTests
             .Validate();
         var first = new WasmHostModule("env");
         var second = new WasmHostModule("env");
-        first.Define("f", WasmFunction.CreateHost(new([], []), _ => new([])));
+        first.Define("f", WasmFunction.CreateHost(new([], []), (callbackContext, _) => new([])));
         second.Define("f", new WasmMemory(new(0)));
 
         // Act & Assert
         await Assert
-            .That(() => module.Instantiate([first, second]))
+            .That(() => module.Instantiate(executionContext, [first, second]))
             .ThrowsExactly<ArgumentException>();
         await Assert
-            .That(() => module.Instantiate((WasmImports)null!))
+            .That(() => module.Instantiate(executionContext, (WasmImports)null!))
             .ThrowsExactly<ArgumentNullException>();
-        await Assert.That(() => module.Instantiate([null!])).ThrowsExactly<ArgumentNullException>();
+        await Assert.That(() => module.Instantiate(executionContext, [null!])).ThrowsExactly<ArgumentNullException>();
     }
 
     [Test]
     public async Task 未検証で提供登録を指定する_解決やcallbackより前に拒否する()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var module = WasmModule.Decode(
             HostLinkingModuleBinary.Create(
                 HostLinkingModuleBinary.Imports(("missing", "g", 3, [0x7F, 0]))
@@ -157,7 +161,7 @@ internal partial class WasmModule_InstantiateTests
 
         // Act & Assert
         await Assert
-            .That(() => module.Instantiate(new WasmImports()))
+            .That(() => module.Instantiate(executionContext, new WasmImports()))
             .ThrowsExactly<InvalidOperationException>();
     }
 
@@ -174,7 +178,8 @@ internal partial class WasmModule_InstantiateTests
     )
     {
         // Arrange
-        var function = WasmFunction.CreateHost(new([], []), _ => new([]));
+        var executionContext = new WasmExecutionContext();
+        var function = WasmFunction.CreateHost(new([], []), (callbackContext, _) => new([]));
         var value = kind switch
         {
             0x7F => WasmValue.FromI32(-42),
@@ -220,8 +225,8 @@ internal partial class WasmModule_InstantiateTests
             .Validate();
 
         // Act
-        var first = module.Instantiate([host]);
-        var second = module.Instantiate([host]);
+        var first = module.Instantiate(executionContext, [host]);
+        var second = module.Instantiate(executionContext, [host]);
         shared.Value = WasmValue.FromI32(77);
         first.GetTable("t").Set(0, WasmValue.FromFuncRef(function));
 
@@ -255,6 +260,7 @@ internal partial class WasmModule_InstantiateTests
     public async Task 定義リソースを持つ_初期化してinstanceごとに独立させる(bool useStream)
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var bytes = HostLinkingModuleBinary.Create(
             HostLinkingModuleBinary.Tables((0x70, 1, 2), (0x6F, 1, null)),
             HostLinkingModuleBinary.Memories((1, 2)),
@@ -278,8 +284,8 @@ internal partial class WasmModule_InstantiateTests
         var module = (useStream ? WasmModule.Decode(stream) : WasmModule.Decode(bytes)).Validate();
 
         // Act
-        var first = module.Instantiate([]);
-        var second = module.Instantiate(new WasmImports());
+        var first = module.Instantiate(executionContext, []);
+        var second = module.Instantiate(executionContext, new WasmImports());
         var initial = new byte[4];
         first.GetMemory("m").Read(65532, initial);
         first.GetMemory("m").Write(0, [42]);
@@ -317,6 +323,7 @@ internal partial class WasmModule_InstantiateTests
     public async Task Importと定義関数を持つ_型とmodule全体添字を保って構築する(bool useSpan)
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var module = WasmModule
             .Decode(
                 HostLinkingModuleBinary.Create(
@@ -331,7 +338,7 @@ internal partial class WasmModule_InstantiateTests
         var calls = 0;
         var function = WasmFunction.CreateHost(
             new([], []),
-            _ =>
+            (callbackContext, _) =>
             {
                 calls++;
                 return new([]);
@@ -345,9 +352,9 @@ internal partial class WasmModule_InstantiateTests
 
         // Act
         var instance = useSpan
-            ? module.Instantiate([host], options)
-            : module.Instantiate(imports, options);
-        var result = instance.GetFunction("defined").Invoke([]);
+            ? module.Instantiate(executionContext, [host], options)
+            : module.Instantiate(executionContext, imports, options);
+        var result = instance.GetFunction("defined").Invoke(executionContext, []);
 
         // Assert
         await Assert.That(instance.GetFunction("imported")).IsSameReferenceAs(function);

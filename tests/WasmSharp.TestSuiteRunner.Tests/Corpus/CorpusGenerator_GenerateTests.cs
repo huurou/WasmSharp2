@@ -7,6 +7,8 @@ namespace WasmSharp.TestSuiteRunner.Tests.Corpus;
 
 internal class CorpusGenerator_GenerateTests
 {
+    private readonly ReportStore reportStore_ = new ReportStore();
+
     [Test]
     public async Task 生成の前提が揃わない_変換を開始せず全入力を未処理のまま診断を保存する()
     {
@@ -19,11 +21,11 @@ internal class CorpusGenerator_GenerateTests
         };
 
         // Act
-        var result = CorpusGenerator.Generate(workspace.CreateRequest(profile));
+        var result = CorpusGenerator.Generate(workspace.CreateRequest(profile), reportStore_);
 
         // Assert
         var manifest = result.Manifest;
-        var stored = ReportStore.ReadManifest(result.ManifestPath);
+        var stored = reportStore_.ReadManifest(result.ManifestPath);
         using (Assert.Multiple())
         {
             await Assert.That(result.SaveFailure).IsNull();
@@ -69,11 +71,11 @@ internal class CorpusGenerator_GenerateTests
         List<string> progress = [];
 
         // Act
-        var result = CorpusGenerator.Generate(request, progress.Add);
+        var result = CorpusGenerator.Generate(request, reportStore_, progress.Add);
 
         // Assert
         var manifest = result.Manifest;
-        var stored = ReportStore.ReadManifest(result.ManifestPath);
+        var stored = reportStore_.ReadManifest(result.ManifestPath);
         var success = Get(manifest, "success.wast");
         var failure = Get(manifest, "failure.wast");
         var partial = Get(manifest, "partial.wast");
@@ -156,10 +158,10 @@ internal class CorpusGenerator_GenerateTests
         var request = workspace.CreateRequest(profile) with { SpecRoot = specRoot };
 
         // Act
-        var result = CorpusGenerator.Generate(request);
+        var result = CorpusGenerator.Generate(request, reportStore_);
 
         // Assert
-        var stored = ReportStore.ReadManifest(result.ManifestPath);
+        var stored = reportStore_.ReadManifest(result.ManifestPath);
         using (Assert.Multiple())
         {
             await Assert.That(result.SaveFailure).IsNull();
@@ -170,6 +172,86 @@ internal class CorpusGenerator_GenerateTests
             await Assert
                 .That(CompletionPolicy.Generate(stored.Manifest, stored.Issues, true).ExitCode)
                 .IsEqualTo(0);
+        }
+    }
+
+    [Test]
+    public async Task 複数のmodule素材が生成されない_参照元commandの順に失敗理由を保存する()
+    {
+        // Arrange
+        using var workspace = await SuiteWorkspace.CreateAsync();
+        await File.WriteAllTextAsync(
+            Path.Combine(workspace.InputRoot, "partial-modules.wast"),
+            "(module)\n(module)\n"
+        );
+        var profile = workspace.CreateProfile() with
+        {
+            Inputs =
+            [
+                .. workspace.CreateProfile().Inputs.Where(x => x.Path == "partial-modules.wast"),
+            ],
+        };
+        var request = workspace.CreateRequest(profile) with
+        {
+            SpecRoot = CopySpec(workspace, "partial-spec", "partial-modules.wast"),
+        };
+
+        // Act
+        var result = CorpusGenerator.Generate(request, reportStore_);
+
+        // Assert
+        var input = result.Manifest.Inputs.Single();
+        var stored = reportStore_.ReadManifest(result.ManifestPath);
+        using (Assert.Multiple())
+        {
+            await Assert.That(result.SaveFailure).IsNull();
+            await Assert.That(input.ExitCode).IsEqualTo(0);
+            await Assert.That(input.Status).IsEqualTo(ConversionStatus.RunnerError);
+            await Assert.That(input.Artifacts.Single().Script!.CommandCount).IsEqualTo(2);
+            await Assert
+                .That(input.Diagnostics.Select(x => x.Path).SequenceEqual([
+                    "modules/partial-modules.0.wasm",
+                    "modules/partial-modules.1.wasm",
+                ]))
+                .IsTrue();
+            await Assert.That(input.Diagnostics[0].Message).StartsWith("#0");
+            await Assert.That(input.Diagnostics[1].Message).StartsWith("#1");
+            await Assert
+                .That(stored.Manifest.Inputs.Single().Diagnostics.SequenceEqual(input.Diagnostics))
+                .IsTrue();
+        }
+    }
+
+    [Test]
+    public async Task 入力を含まないprofileで生成する_変換せず処理と出力を完了として保存する()
+    {
+        // Arrange
+        using var workspace = await SuiteWorkspace.CreateAsync();
+        var profile = workspace.CreateProfile() with { Inputs = [] };
+        var request = workspace.CreateRequest(profile) with
+        {
+            SpecRoot = CopySpec(workspace, "empty-spec"),
+        };
+        List<string> progress = [];
+
+        // Act
+        var result = CorpusGenerator.Generate(request, reportStore_, progress.Add);
+
+        // Assert
+        var stored = reportStore_.ReadManifest(result.ManifestPath);
+        using (Assert.Multiple())
+        {
+            await Assert.That(result.SaveFailure).IsNull();
+            await Assert.That(result.Manifest.Inputs).IsEmpty();
+            await Assert.That(result.Manifest.Diagnostics).IsEmpty();
+            await Assert
+                .That(result.Manifest.Summary)
+                .IsEqualTo(new ConversionSummary(0, 0, 0, 0, 0));
+            await Assert
+                .That(result.Manifest.Completion)
+                .IsEqualTo(new ConversionCompletion(true, true));
+            await Assert.That(stored.Manifest.Completion).IsEqualTo(result.Manifest.Completion);
+            await Assert.That(progress).IsEmpty();
         }
     }
 
@@ -194,8 +276,8 @@ internal class CorpusGenerator_GenerateTests
         };
 
         // Act
-        var firstResult = CorpusGenerator.Generate(first);
-        var secondResult = CorpusGenerator.Generate(second);
+        var firstResult = CorpusGenerator.Generate(first, reportStore_);
+        var secondResult = CorpusGenerator.Generate(second, reportStore_);
 
         // Assert
         var firstArtifacts = firstResult
@@ -231,7 +313,10 @@ internal class CorpusGenerator_GenerateTests
         await File.WriteAllTextAsync(manifestPath, "既存の結果");
 
         // Act
-        var result = CorpusGenerator.Generate(workspace.CreateRequest(workspace.CreateProfile()));
+        var result = CorpusGenerator.Generate(
+            workspace.CreateRequest(workspace.CreateProfile()),
+            reportStore_
+        );
 
         // Assert
         using (Assert.Multiple())
@@ -254,6 +339,7 @@ internal class CorpusGenerator_GenerateTests
         // Act
         var result = CorpusGenerator.Generate(
             request,
+            reportStore_,
             path =>
             {
                 if (path == "partial.wast")
@@ -286,6 +372,65 @@ internal class CorpusGenerator_GenerateTests
     }
 
     [Test]
+    public async Task 生成物の一つを読み取れない_先に記録した素材を保持して失敗理由と処理完了を保存する()
+    {
+        // Arrange
+        using var workspace = await SuiteWorkspace.CreateAsync();
+        var request = workspace.CreateRequest(workspace.CreateProfile());
+        FileStream? locked = null;
+        try
+        {
+            // Act
+            var result = CorpusGenerator.Generate(
+                request,
+                reportStore_,
+                path =>
+                {
+                    if (path == "partial.wast")
+                    {
+                        locked = File.Open(
+                            Path.Combine(workspace.OutputRoot, "modules", "zz-locked.wasm"),
+                            FileMode.CreateNew,
+                            FileAccess.ReadWrite,
+                            FileShare.None
+                        );
+                    }
+                }
+            );
+
+            // Assert
+            var input = Get(result.Manifest, "success.wast");
+            var diagnostic = input.Diagnostics.Single(x => x.Operation == "record");
+            var stored = reportStore_.ReadManifest(result.ManifestPath);
+            using (Assert.Multiple())
+            {
+                await Assert.That(result.SaveFailure).IsNull();
+                await Assert.That(input.ExitCode).IsEqualTo(0);
+                await Assert.That(input.Status).IsEqualTo(ConversionStatus.RunnerError);
+                await Assert
+                    .That(input.Artifacts.Select(x => x.Path).SequenceEqual([
+                        "modules/success.0.wasm",
+                        "modules/success.json",
+                    ]))
+                    .IsTrue();
+                await Assert.That(diagnostic.Path).IsEqualTo("success.wast");
+                await Assert.That(diagnostic.ExceptionType).IsEqualTo(typeof(IOException).FullName);
+                await Assert.That(diagnostic.Message).StartsWith("生成物を記録できません: ");
+                await Assert
+                    .That(stored.Manifest.Completion)
+                    .IsEqualTo(new ConversionCompletion(true, true));
+                await Assert
+                    .That(Get(stored.Manifest, "success.wast").Diagnostics)
+                    .Contains(diagnostic);
+            }
+        }
+        finally
+        {
+            locked?.Dispose();
+        }
+    }
+
+    [Test]
     public async Task 出力rootがファイルである_保存先の作成失敗と原因を返す()
     {
         // Arrange
@@ -298,7 +443,7 @@ internal class CorpusGenerator_GenerateTests
         };
 
         // Act
-        var result = CorpusGenerator.Generate(request);
+        var result = CorpusGenerator.Generate(request, reportStore_);
 
         // Assert
         using (Assert.Multiple())

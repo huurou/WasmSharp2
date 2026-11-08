@@ -17,7 +17,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
     /// <summary>
     /// prefixと命令番号が重複する命令宣言の診断
     /// </summary>
-    private static readonly DiagnosticDescriptor duplicateOpcode_ = new(
+    private readonly DiagnosticDescriptor duplicateOpcode_ = new DiagnosticDescriptor(
         "WSIG001",
         "命令番号の重複",
         "命令 '{0}' のprefixと命令番号が重複しています。",
@@ -29,7 +29,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
     /// <summary>
     /// 命令の名前または実行に必要な宣言情報が不足する場合の診断
     /// </summary>
-    private static readonly DiagnosticDescriptor incompleteDeclaration_ = new(
+    private readonly DiagnosticDescriptor incompleteDeclaration_ = new DiagnosticDescriptor(
         "WSIG002",
         "命令宣言の不足",
         "命令 '{0}' の名前・即値・スタック効果・検証規則・handlerを確認してください。",
@@ -41,7 +41,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
     /// <summary>
     /// 宣言で指定したhandlerがInterpreterに存在しない場合の診断
     /// </summary>
-    private static readonly DiagnosticDescriptor missingHandler_ = new(
+    private readonly DiagnosticDescriptor missingHandler_ = new DiagnosticDescriptor(
         "WSIG003",
         "命令handlerの不在",
         "命令 '{0}' のhandlerがInterpreterに存在しません。",
@@ -53,7 +53,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
     /// <summary>
     /// 指定したhandlerが生成する呼び出しの契約を満たさない場合の診断
     /// </summary>
-    private static readonly DiagnosticDescriptor invalidHandler_ = new(
+    private readonly DiagnosticDescriptor invalidHandler_ = new DiagnosticDescriptor(
         "WSIG004",
         "命令handlerの契約不一致",
         "命令 '{0}' のhandlerは static ExecutionResult Handler(InterpreterContext context, in Instruction instruction) にしてください。",
@@ -65,7 +65,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
     /// <summary>
     /// ロード命令・ストア命令のアクセス情報が規則や値型と整合しない場合の診断
     /// </summary>
-    private static readonly DiagnosticDescriptor invalidMemoryAccess_ = new(
+    private readonly DiagnosticDescriptor invalidMemoryAccess_ = new DiagnosticDescriptor(
         "WSIG005",
         "メモリアクセス情報の不整合",
         "命令 '{0}' のメモリアクセス情報・即値・スタック効果・検証規則を確認してください。",
@@ -83,40 +83,31 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
         var declarations = context.SyntaxProvider.ForAttributeWithMetadataName(
             "WasmSharp.Instructions.InstructionAttribute",
             static (node, _) => node is Microsoft.CodeAnalysis.CSharp.Syntax.ClassDeclarationSyntax,
-            static (context, _) =>
+            (context, _) =>
                 context
                     .Attributes.Select(x => ParseDeclaration(x, context.SemanticModel.Compilation))
                     .ToImmutableArray()
         );
         context.RegisterSourceOutput(
             declarations.Collect(),
-            static (context, declarations) =>
+            (context, declarations) =>
             {
-                var instructions = declarations
-                    .SelectMany(x => x)
-                    .OrderBy(x => x.Prefix)
-                    .ThenBy(x => x.Code)
-                    .ToImmutableArray();
-                if (instructions.IsEmpty)
+                var parsedDeclarations = declarations.SelectMany(x => x).ToImmutableArray();
+                if (parsedDeclarations.IsEmpty)
                 {
                     return;
                 }
                 var keys = new HashSet<(byte, uint)>();
                 var hasErrors = false;
-                foreach (var instruction in instructions)
+                foreach (var parsedDeclaration in parsedDeclarations)
                 {
-                    if (instruction.Error != null)
+                    if (parsedDeclaration.Diagnostic != null)
                     {
-                        context.ReportDiagnostic(
-                            Diagnostic.Create(
-                                instruction.Error,
-                                instruction.Location,
-                                instruction.Name
-                            )
-                        );
+                        context.ReportDiagnostic(parsedDeclaration.Diagnostic);
                         hasErrors = true;
                         continue;
                     }
+                    var instruction = parsedDeclaration.Declaration!;
                     if (!keys.Add((instruction.Prefix, instruction.Code)))
                     {
                         context.ReportDiagnostic(
@@ -133,6 +124,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
                 {
                     return;
                 }
+                var instructions = parsedDeclarations.Select(x => x.Declaration!).ToImmutableArray();
                 context.AddSource("InstructionSet.g.cs", GenerateInstructionSet(instructions));
                 if (instructions.Any(x => x.Handler != null))
                 {
@@ -143,13 +135,13 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
     }
 
     /// <summary>
-    /// 命令属性を生成用の宣言へ変換し、必要情報とhandler契約の診断を付ける
+    /// 命令属性の必要情報とhandler契約を検証し、有効な宣言または診断を返す
     /// </summary>
     /// <remarks>3引数は未対応、9引数は入力型列、10引数は引数の型で同型数値用とメモリ用を区別する</remarks>
     /// <param name="attribute">ソース上のInstructionAttributeの属性情報</param>
     /// <param name="compilation">Interpreterとhandlerの宣言を照合するコンパイル情報</param>
-    /// <returns>生成用の命令宣言 不完全な宣言やhandler契約違反はErrorに診断を保持する</returns>
-    private static InstructionDeclaration ParseDeclaration(
+    /// <returns>有効な場合はDeclaration、宣言に不備がある場合はDiagnosticのみが設定された結果</returns>
+    private (InstructionDeclaration? Declaration, Diagnostic? Diagnostic) ParseDeclaration(
         AttributeData attribute,
         Compilation compilation
     )
@@ -163,20 +155,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
             || attribute.NamedArguments.Count(x => x.Key == "LaneCount") > 1
         )
         {
-            return new InstructionDeclaration(
-                0,
-                0,
-                "",
-                "Unsupported",
-                "Unsupported",
-                "Unsupported",
-                null,
-                null,
-                null,
-                0,
-                location,
-                incompleteDeclaration_
-            );
+            return (null, Diagnostic.Create(incompleteDeclaration_, location, ""));
         }
         var declaration = new InstructionDeclaration(
             (byte)arguments[0].Value!,
@@ -194,14 +173,14 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
                         GetEnumName(arguments[8])
                     )
                 : arguments.Length == 10
-                && arguments[7].Type?.SpecialType == SpecialType.System_Byte
+                && arguments[7].Type!.SpecialType == SpecialType.System_Byte
                     ? new NumericSignatureDeclaration(
                         [.. Enumerable.Repeat(GetEnumName(arguments[8]), (byte)arguments[7].Value!)],
                         GetEnumName(arguments[9])
                     )
                 : null,
             arguments.Length == 10
-            && arguments[7].Type?.ToDisplayString() == "WasmSharp.WasmValueKind"
+            && arguments[7].Type!.ToDisplayString() == "WasmSharp.WasmValueKind"
                 ? new MemoryAccessSignatureDeclaration(
                     GetEnumName(arguments[7]),
                     (byte)arguments[8].Value!,
@@ -210,10 +189,9 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
                 : null,
             attribute
                 .NamedArguments.Where(x => x.Key == "LaneCount")
-                .Select(x => x.Value.Value is byte count ? count : (byte)0)
+                .Select(x => (byte)x.Value.Value!)
                 .SingleOrDefault(),
-            location,
-            null
+            location
         );
         if (
             string.IsNullOrWhiteSpace(declaration.Name)
@@ -228,11 +206,11 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
             )
         )
         {
-            return declaration with { Error = incompleteDeclaration_ };
+            return (null, Diagnostic.Create(incompleteDeclaration_, location, declaration.Name));
         }
         if (!HasValidMemoryAccess(declaration))
         {
-            return declaration with { Error = invalidMemoryAccess_ };
+            return (null, Diagnostic.Create(invalidMemoryAccess_, location, declaration.Name));
         }
         var numericStackEffect = declaration.StackEffect == "Numeric";
         var numericValidation = declaration.Validation == "Numeric";
@@ -251,11 +229,11 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
             || !HasValidSimdImmediate(declaration)
         )
         {
-            return declaration with { Error = incompleteDeclaration_ };
+            return (null, Diagnostic.Create(incompleteDeclaration_, location, declaration.Name));
         }
         if (declaration.Handler == null)
         {
-            return declaration;
+            return (declaration, null);
         }
 
         var interpreter = compilation.GetTypeByMetadataName("WasmSharp.Execution.Interpreter");
@@ -265,9 +243,11 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
             .ToArray();
         if (methods == null || methods.Length == 0)
         {
-            return declaration with { Error = missingHandler_ };
+            return (null, Diagnostic.Create(missingHandler_, location, declaration.Name));
         }
-        return methods.Any(IsHandler) ? declaration : declaration with { Error = invalidHandler_ };
+        return methods.Any(IsHandler)
+            ? (declaration, null)
+            : (null, Diagnostic.Create(invalidHandler_, location, declaration.Name));
     }
 
     /// <summary>
@@ -609,7 +589,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
     }
 
     /// <summary>
-    /// 命令情報と実行分岐の生成に必要な属性値および宣言の診断
+    /// 命令情報と実行分岐の生成に必要な属性値
     /// </summary>
     /// <param name="Prefix">通常命令では0、拡張命令ではprefix</param>
     /// <param name="Code">prefix内の命令番号</param>
@@ -622,7 +602,6 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
     /// <param name="MemoryAccessSignature">ロード命令・ストア命令のアクセス情報 それ以外の宣言ではnull</param>
     /// <param name="LaneCount">lane即値の上限 lane即値を持たない場合は0</param>
     /// <param name="Location">属性宣言のソース上の位置</param>
-    /// <param name="Error">宣言の不備を報告する診断 宣言が有効な場合はnull</param>
     private sealed record InstructionDeclaration(
         byte Prefix,
         uint Code,
@@ -634,8 +613,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
         NumericSignatureDeclaration? NumericSignature,
         MemoryAccessSignatureDeclaration? MemoryAccessSignature,
         byte LaneCount,
-        Location Location,
-        DiagnosticDescriptor? Error
+        Location Location
     )
     {
         /// <summary>

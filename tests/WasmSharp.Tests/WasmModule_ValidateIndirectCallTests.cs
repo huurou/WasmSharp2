@@ -6,22 +6,24 @@ namespace WasmSharp.Tests;
 internal partial class WasmModule_ValidateTests
 {
     [Test]
-    [Arguments("1101010B", (byte)0x70, "unknown table 1", 0)]
-    [Arguments("1101000B", (byte)0x6F, "unknown type 1", 0)]
-    [Arguments("1100000B", (byte)0x6F, "type mismatch", 0)]
-    [Arguments("001101010B", (byte)0x70, "unknown table 1", 1)]
-    [Arguments("001101000B", (byte)0x6F, "unknown type 1", 1)]
-    [Arguments("001100000B", (byte)0x6F, "type mismatch", 1)]
-    [Arguments("1100000B", (byte)0x70, "type mismatch", 0)]
-    [Arguments("42001100000B", (byte)0x70, "type mismatch", 1)]
+    [Arguments("1101010B", (byte)0x70, "unknown table 1", 0, null)]
+    [Arguments("1101000B", (byte)0x6F, "unknown type 1", 0, null)]
+    [Arguments("1100000B", (byte)0x6F, "type mismatch", 0, "funcref")]
+    [Arguments("001101010B", (byte)0x70, "unknown table 1", 1, null)]
+    [Arguments("001101000B", (byte)0x6F, "unknown type 1", 1, null)]
+    [Arguments("001100000B", (byte)0x6F, "type mismatch", 1, null)]
+    [Arguments("1100000B", (byte)0x70, "type mismatch", 0, null)]
+    [Arguments("42001100000B", (byte)0x70, "type mismatch", 1, null)]
     public async Task 間接callに複合不正がある_到達不能でもtableと型とfuncref制約をoperandより先に検証する(
         string body,
         byte tableType,
         string prefix,
-        int instructionIndex
+        int instructionIndex,
+        string? expectedDetail
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var module = WasmModule.Decode(
             HostLinkingModuleBinary.Create(
                 HostLinkingModuleBinary.Types(([], [])),
@@ -40,6 +42,10 @@ internal partial class WasmModule_ValidateTests
             await Assert
                 .That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal))
                 .IsTrue();
+            if (expectedDetail is not null)
+            {
+                await Assert.That(exception.Message).Contains(expectedDetail);
+            }
             await Assert
                 .That(exception.Location)
                 .IsEqualTo(
@@ -52,7 +58,7 @@ internal partial class WasmModule_ValidateTests
                 );
             await Assert.That(module.FunctionCodes.IsEmpty).IsTrue();
             await Assert
-                .That(() => module.Instantiate([]))
+                .That(() => module.Instantiate(executionContext, []))
                 .ThrowsExactly<InvalidOperationException>();
         }
     }

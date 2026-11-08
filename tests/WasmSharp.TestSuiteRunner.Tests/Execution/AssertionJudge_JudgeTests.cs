@@ -9,6 +9,8 @@ namespace WasmSharp.TestSuiteRunner.Tests.Execution;
 
 internal class AssertionJudge_JudgeTests
 {
+    private readonly ReportStore reportStore_ = new ReportStore();
+
     [Test]
     [Arguments("assert_malformed", CaseStage.Decode, "decode")]
     [Arguments("assert_invalid", CaseStage.Validate, "validate")]
@@ -503,7 +505,7 @@ internal class AssertionJudge_JudgeTests
 
         // Act
         var result = AssertionJudge.Judge(command, observation);
-        ReportStore.Save(
+        reportStore_.Save(
             RunReportFixture.Create(
                 RunReportFixture.Case("a.wast", 0, CaseCategory.Setup, CaseOutcome.Passed),
                 RunReportFixture.Case("a.wast", 1, CaseCategory.Setup, CaseOutcome.Passed),
@@ -511,7 +513,7 @@ internal class AssertionJudge_JudgeTests
             ),
             path
         );
-        var stored = ReportStore.ReadRunReport(path);
+        var stored = reportStore_.ReadRunReport(path);
         var saved = stored.Report.Inputs[0].Cases[2];
 
         // Assert

@@ -19,6 +19,7 @@ internal partial class WasmModule_ValidateTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var module = WasmModule.Decode(
             HostLinkingModuleBinary.Create(
                 HostLinkingModuleBinary.Types(([], [])),
@@ -60,7 +61,7 @@ internal partial class WasmModule_ValidateTests
                 await Assert.That(module.FunctionCodes.IsEmpty).IsTrue();
                 await Assert.That(module.FunctionExportIndices.IsEmpty).IsTrue();
                 await Assert
-                    .That(() => module.Instantiate([]))
+                    .That(() => module.Instantiate(executionContext, []))
                     .ThrowsExactly<InvalidOperationException>();
             }
         }
@@ -75,6 +76,7 @@ internal partial class WasmModule_ValidateTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var module = WasmModule.Decode(
             HostLinkingModuleBinary.Create(
                 HostLinkingModuleBinary.Types(([], [])),
@@ -109,7 +111,7 @@ internal partial class WasmModule_ValidateTests
             await Assert.That(module.FunctionCodes.IsEmpty).IsTrue();
             await Assert.That(module.FunctionExportIndices.IsEmpty).IsTrue();
             await Assert
-                .That(() => module.Instantiate([]))
+                .That(() => module.Instantiate(executionContext, []))
                 .ThrowsExactly<InvalidOperationException>();
         }
     }
@@ -122,19 +124,20 @@ internal partial class WasmModule_ValidateTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var calls = 0;
         var host = new WasmHostModule("env");
         host.Define("g", new WasmGlobal(new(WasmValueKind.I32, false), WasmValue.FromI32(0)));
         host.Define(
             "other",
-            WasmFunction.CreateHost(new([WasmValueKind.I32], [WasmValueKind.I32]), _ => new([]))
+            WasmFunction.CreateHost(new([WasmValueKind.I32], [WasmValueKind.I32]), (callbackContext, _) => new([]))
         );
         host.Define("t", new WasmTable(WasmValueKind.FuncRef, new(0)));
         host.Define(
             "start",
             WasmFunction.CreateHost(
                 new([], []),
-                _ =>
+                (callbackContext, _) =>
                 {
                     calls++;
                     return new([]);
@@ -162,7 +165,7 @@ internal partial class WasmModule_ValidateTests
         var validated = module.Validate();
         var repeated = module.Validate();
         var callsAfterValidation = calls;
-        module.Instantiate([host]);
+        module.Instantiate(executionContext, [host]);
 
         // Assert
         using (Assert.Multiple())
@@ -186,6 +189,7 @@ internal partial class WasmModule_ValidateTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var module = WasmModule.Decode(
             HostLinkingModuleBinary.Create(
                 HostLinkingModuleBinary.Types(
@@ -209,7 +213,7 @@ internal partial class WasmModule_ValidateTests
                 .That(exception!.Location)
                 .IsEqualTo(new(WasmProcessingStage.Validate, module.Start!.Value.ByteOffset, 0, 8));
             await Assert
-                .That(() => module.Instantiate([]))
+                .That(() => module.Instantiate(executionContext, []))
                 .ThrowsExactly<InvalidOperationException>();
         }
     }
@@ -224,6 +228,7 @@ internal partial class WasmModule_ValidateTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var sections = hasFunctions
             ? new[]
             {
@@ -261,7 +266,7 @@ internal partial class WasmModule_ValidateTests
                 await Assert.That(module.FunctionCodes.IsEmpty).IsTrue();
                 await Assert.That(module.FunctionExportIndices.IsEmpty).IsTrue();
                 await Assert
-                    .That(() => module.Instantiate([]))
+                    .That(() => module.Instantiate(executionContext, []))
                     .ThrowsExactly<InvalidOperationException>();
             }
         }

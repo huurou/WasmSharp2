@@ -25,14 +25,12 @@ internal static class ImportInspector
             {
                 break;
             }
-            if (count > Array.MaxLength - buffer.Length)
+            try
             {
-                var diagnostic = new WasmImplementationLimitException(
-                    "入力バイナリが保持上限を超えています。",
-                    WasmImplementationLimitReason.InputSize,
-                    Array.MaxLength,
-                    new WasmFailureLocation(WasmProcessingStage.Decode, buffer.Length)
-                );
+                ModuleBinaryFormat.EnsureInputSize(buffer.Length, count);
+            }
+            catch (WasmImplementationLimitException diagnostic)
+            {
                 throw new WasmImportInspectionException(
                     diagnostic.Message,
                     WasmImportInspectionReason.ImplementationLimit,

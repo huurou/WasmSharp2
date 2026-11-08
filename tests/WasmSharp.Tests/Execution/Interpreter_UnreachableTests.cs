@@ -11,6 +11,7 @@ internal class Interpreter_UnreachableTests
     public async Task 後続命令がある_元の関数indexと命令位置のtrapを返し後続を実行せず外側を復元する()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var found = InstructionSet.TryGet(new(0, 0x00), out var descriptor);
         var function = ExecutionFunctionFixture.Create([
             InstructionFixture.Create(0x41, 81, immediate: WasmValue.FromI32(1)),
@@ -20,7 +21,7 @@ internal class Interpreter_UnreachableTests
         ]);
         var frame = new ExecutionFrame(FunctionFixture.Create(), 0, 0) { Pc = 17 };
         var value = WasmValue.FromExternRef(new object());
-        var context = InterpreterContext.Enter(new(10), out var isOutermost);
+        var context = executionContext.Enter(new(10), out var isOutermost);
         ExecutionResult result;
         ExecutionFrame actualFrame;
         WasmValue actualValue;
@@ -43,8 +44,8 @@ internal class Interpreter_UnreachableTests
         }
         finally
         {
+            executionContext.Exit(isOutermost);
             context.Restore(0, 0, 0);
-            InterpreterContext.Exit(isOutermost);
         }
 
         // Assert

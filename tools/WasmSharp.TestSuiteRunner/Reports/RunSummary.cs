@@ -35,8 +35,8 @@ internal sealed record RunSummary(
     /// <summary>
     /// 全件数が0の集計
     /// </summary>
-    internal static RunSummary Empty { get; } =
-        new(
+    internal static RunSummary Empty =>
+        new RunSummary(
             0,
             0,
             0,

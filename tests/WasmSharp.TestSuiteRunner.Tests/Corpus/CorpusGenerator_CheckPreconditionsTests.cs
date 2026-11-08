@@ -70,7 +70,11 @@ internal class CorpusGenerator_CheckPreconditionsTests
     }
 
     [Test]
-    public async Task Spec_rootが無関係なGitの中にある管理外のコピーである_入力の一致だけで受け付ける()
+    [Arguments(false)]
+    [Arguments(true)]
+    public async Task Spec_rootがcheckoutではないコピーである_入力の一致だけで受け付け版とoriginを取得しない(
+        bool bareRepository
+    )
     {
         // Arrange
         using var workspace = await SuiteWorkspace.CreateAsync();
@@ -80,6 +84,14 @@ internal class CorpusGenerator_CheckPreconditionsTests
         foreach (var file in Directory.GetFiles(workspace.InputRoot))
         {
             File.Copy(file, Path.Combine(copyInputRoot, Path.GetFileName(file)));
+        }
+
+        if (bareRepository)
+        {
+            await workspace.GitAsync("init", "--bare", copyRoot);
+            await workspace.GitAsync(
+                "-C", copyRoot, "remote", "add", "origin", "https://unrelated.invalid/spec.git"
+            );
         }
 
         var profile = workspace.CreateProfile() with
@@ -196,6 +208,104 @@ internal class CorpusGenerator_CheckPreconditionsTests
             await Assert.That(preconditions.Diagnostics[0].Path).IsNull();
             await Assert.That(preconditions.Diagnostics[0].Message).Contains(wabtRoot);
             await Assert.That(preconditions.Provenance.WabtHead).IsNull();
+        }
+    }
+
+    [Test]
+    public async Task WABTのcheckoutにcommitがなくoriginだけがある_取得失敗を記録しoriginを出典に採用しない()
+    {
+        // Arrange
+        using var workspace = await SuiteWorkspace.CreateAsync();
+        var wabtRoot = Path.Combine(workspace.OutputRoot, "unborn-wabt");
+        await workspace.GitAsync("init", wabtRoot);
+        await workspace.GitAsync(
+            "-C", wabtRoot, "remote", "add", "origin", "https://unrelated.invalid/wabt.git"
+        );
+        var request = workspace.CreateRequest(workspace.CreateProfile()) with { WabtRoot = wabtRoot };
+
+        // Act
+        var preconditions = CorpusGenerator.CheckPreconditions(request);
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(preconditions.Provenance.WabtHead).IsNull();
+            await Assert.That(preconditions.Provenance.WabtOrigin).IsNull();
+            await Assert.That(preconditions.Provenance.SpecHead).IsEqualTo(workspace.Commit);
+            await Assert.That(preconditions.Diagnostics.Length).IsEqualTo(1);
+            await Assert.That(preconditions.Diagnostics[0].Message).Contains("HEADを取得できません");
+        }
+    }
+
+    [Test]
+    [NotInParallel]
+    public async Task 呼出し元が別のGit配置を環境変数に指定している_要求されたcheckoutの出典を取得する()
+    {
+        // Arrange
+        using var workspace = await SuiteWorkspace.CreateAsync();
+        var request = workspace.CreateRequest(workspace.CreateProfile());
+        var previousGitDir = Environment.GetEnvironmentVariable("GIT_DIR");
+        var previousWorkTree = Environment.GetEnvironmentVariable("GIT_WORK_TREE");
+        try
+        {
+            Environment.SetEnvironmentVariable(
+                "GIT_DIR", Path.Combine(workspace.OutputRoot, "other-git")
+            );
+            Environment.SetEnvironmentVariable(
+                "GIT_WORK_TREE", Path.Combine(workspace.OutputRoot, "other-tree", "missing")
+            );
+
+            // Act
+            var preconditions = CorpusGenerator.CheckPreconditions(request);
+
+            // Assert
+            using (Assert.Multiple())
+            {
+                await Assert.That(preconditions.Diagnostics).IsEmpty();
+                await Assert.That(preconditions.Provenance.SpecHead).IsEqualTo(workspace.Commit);
+                await Assert.That(preconditions.Provenance.WabtHead).IsEqualTo(workspace.Commit);
+            }
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("GIT_DIR", previousGitDir);
+            Environment.SetEnvironmentVariable("GIT_WORK_TREE", previousWorkTree);
+        }
+    }
+
+    [Test]
+    [NotInParallel]
+    public async Task Gitを起動できない_終了値がないことと起動失敗の原因を記録する()
+    {
+        // Arrange
+        using var workspace = await SuiteWorkspace.CreateAsync();
+        var request = workspace.CreateRequest(workspace.CreateProfile());
+        var previousPath = Environment.GetEnvironmentVariable("PATH");
+        try
+        {
+            Environment.SetEnvironmentVariable("PATH", workspace.OutputRoot);
+
+            // Act
+            var preconditions = CorpusGenerator.CheckPreconditions(request);
+
+            // Assert
+            using (Assert.Multiple())
+            {
+                await Assert.That(preconditions.Provenance.SpecHead).IsNull();
+                await Assert.That(preconditions.Provenance.WabtHead).IsNull();
+                await Assert.That(preconditions.Diagnostics.Length).IsEqualTo(2);
+                await Assert
+                    .That(preconditions.Diagnostics.All(x =>
+                        x.Operation == "prepare" &&
+                        x.Message.Contains("終了値: なし", StringComparison.Ordinal) &&
+                        x.Message.Contains("gitを起動できません", StringComparison.Ordinal)
+                    ))
+                    .IsTrue();
+            }
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("PATH", previousPath);
         }
     }
 

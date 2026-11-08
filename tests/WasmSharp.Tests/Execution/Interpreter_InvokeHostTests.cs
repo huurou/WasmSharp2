@@ -15,9 +15,10 @@ internal class Interpreter_InvokeHostTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var function = WasmFunction.CreateHost(
             new([], [WasmValueKind.I32]),
-            _ =>
+            (_, _) =>
                 invalidResult switch
                 {
                     0 => null!,
@@ -28,7 +29,7 @@ internal class Interpreter_InvokeHostTests
 
         // Act & Assert
         var exception = await Assert
-            .That(() => Interpreter.InvokeHost(function, null, []))
+            .That(() => Interpreter.InvokeHost(executionContext, function, null, []))
             .ThrowsExactly<InvalidOperationException>();
         await Assert.That(exception!.Message).Contains(expectedReason);
     }
@@ -37,15 +38,16 @@ internal class Interpreter_InvokeHostTests
     public async Task Callbackが例外を投げる_元の例外実体を伝播する()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var expected = new InvalidOperationException("ホストの失敗");
         var function = WasmFunction.CreateHost(
             new([], []),
-            (WasmHostCallback)(_ => throw expected)
+            (WasmHostCallback)((_, _) => throw expected)
         );
 
         // Act & Assert
         var actual = await Assert
-            .That(() => Interpreter.InvokeHost(function, null, []))
+            .That(() => Interpreter.InvokeHost(executionContext, function, null, []))
             .ThrowsExactly<InvalidOperationException>();
         await Assert.That(actual).IsSameReferenceAs(expected);
     }
@@ -58,15 +60,18 @@ internal class Interpreter_InvokeHostTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var instance = WasmModule
             .Decode(HostLinkingModuleBinary.Create())
             .Validate()
-            .Instantiate([]);
+            .Instantiate(executionContext, []);
         var reference = new object();
         WasmValue[] arguments = [WasmValue.FromI32(42), WasmValue.FromExternRef(reference)];
         WasmInstance? observedInstance = null;
-        WasmResults Callback(ReadOnlySpan<WasmValue> values)
+        WasmExecutionContext? observedContext = null;
+        WasmResults Callback(WasmExecutionContext callbackContext, ReadOnlySpan<WasmValue> values)
         {
+            observedContext = callbackContext;
             arguments[0] = WasmValue.FromI32(-1);
             return new([values[1], values[0]]);
         }
@@ -77,16 +82,16 @@ internal class Interpreter_InvokeHostTests
         var function = withInstance
             ? WasmFunction.CreateHost(
                 type,
-                (target, values) =>
+                (callbackContext, target, values) =>
                 {
                     observedInstance = target;
-                    return Callback(values);
+                    return Callback(callbackContext, values);
                 }
             )
             : WasmFunction.CreateHost(type, Callback);
 
         // Act
-        var result = Interpreter.InvokeHost(function, instance, arguments);
+        var result = Interpreter.InvokeHost(executionContext, function, instance, arguments);
 
         // Assert
         using (Assert.Multiple())
@@ -94,6 +99,7 @@ internal class Interpreter_InvokeHostTests
             await Assert.That(result.Values[0].AsExternRef()).IsSameReferenceAs(reference);
             await Assert.That(result.Values[1].AsI32()).IsEqualTo(42);
             await Assert.That(observedInstance).IsSameReferenceAs(withInstance ? instance : null);
+            await Assert.That(observedContext).IsSameReferenceAs(executionContext);
         }
     }
 }

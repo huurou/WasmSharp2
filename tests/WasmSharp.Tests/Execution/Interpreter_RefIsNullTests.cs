@@ -17,12 +17,13 @@ internal class Interpreter_RefIsNullTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var value =
             kind == WasmValueKind.FuncRef
                 ? WasmValue.FromFuncRef(isNull ? null : FunctionFixture.Create())
                 : WasmValue.FromExternRef(isNull ? null : new object());
         var instruction = new Instruction(default, default, 1001, 0);
-        var context = InterpreterContext.Enter(new(10), out var isOutermost);
+        var context = executionContext.Enter(new(10), out var isOutermost);
         ExecutionResult result;
         WasmValue actual;
         int valueCount;
@@ -40,8 +41,8 @@ internal class Interpreter_RefIsNullTests
         }
         finally
         {
+            executionContext.Exit(isOutermost);
             context.Restore(0, 0, 0);
-            InterpreterContext.Exit(isOutermost);
         }
 
         // Assert

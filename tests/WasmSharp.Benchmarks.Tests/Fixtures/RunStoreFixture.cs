@@ -7,6 +7,8 @@ namespace WasmSharp.Benchmarks.Tests.Fixtures;
 
 internal sealed class RunStoreFixture : IDisposable
 {
+    private readonly CaseJson json_ = new CaseJson();
+
     internal string DirectoryPath { get; } =
         Path.Combine(Path.GetTempPath(), "wasm-benchmark-run-" + Guid.NewGuid().ToString("N"));
 
@@ -22,10 +24,10 @@ internal sealed class RunStoreFixture : IDisposable
                 Path.Combine(AppContext.BaseDirectory, "Fixtures", "Data", "run-succeeded.json")
             )
         )!;
-        Manifest = fixture["run"]!.Deserialize<RunManifest>(CaseJson.Options)!;
-        Environment = fixture["environment"]!.Deserialize<RunEnvironment>(CaseJson.Options)!;
-        Source = fixture["source"]!.Deserialize<RunSource>(CaseJson.Options)!;
-        Check = fixture["checks"]![0]!.Deserialize<ProcessCheck>(CaseJson.Options)! with
+        Manifest = fixture["run"]!.Deserialize<RunManifest>(json_.Options)!;
+        Environment = fixture["environment"]!.Deserialize<RunEnvironment>(json_.Options)!;
+        Source = fixture["source"]!.Deserialize<RunSource>(json_.Options)!;
+        Check = fixture["checks"]![0]!.Deserialize<ProcessCheck>(json_.Options)! with
         {
             RuntimeVersion = Environment.RuntimeVersion,
         };

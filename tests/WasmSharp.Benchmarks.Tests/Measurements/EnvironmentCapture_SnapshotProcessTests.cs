@@ -5,6 +5,8 @@ namespace WasmSharp.Benchmarks.Tests.Measurements;
 
 internal class EnvironmentCapture_SnapshotProcessTests
 {
+    private readonly EnvironmentCapture environmentCapture_ = new EnvironmentCapture();
+
     [Test]
     public async Task 関連設定と同じ接頭辞の無関係な変数を含む_測定条件だけを値とともに保持する()
     {
@@ -73,7 +75,7 @@ internal class EnvironmentCapture_SnapshotProcessTests
         var process = new ProcessConfiguration("Diagnostic", "job", 2, [], [], variables);
 
         // Act
-        var snapshot = EnvironmentCapture.SnapshotProcess(process);
+        var snapshot = environmentCapture_.SnapshotProcess(process);
 
         // Assert
         await Assert.That(snapshot.EnvironmentVariables).IsEquivalentTo(expected);

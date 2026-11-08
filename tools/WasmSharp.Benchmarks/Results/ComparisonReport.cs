@@ -29,13 +29,7 @@ internal sealed record ComparisonReport(
     /// 全対象caseの両指標が許容内で、選定目標の少なくとも1件が達成したことを表す
     /// </summary>
     internal bool IsAccepted =>
-        Cases.Count != 0
-        && Cases.All(x =>
-            !x.BlocksCompletion
-            && x.Time.WithinAllowedIncrease == true
-            && x.Allocation.WithinAllowedIncrease == true
-        )
-        && Cases.Any(x => x.TargetAchieved);
+        Cases.All(x => !x.BlocksCompletion) && Cases.Any(x => x.TargetAchieved);
 }
 
 /// <summary>

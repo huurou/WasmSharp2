@@ -411,6 +411,7 @@ internal partial class ModuleValidator_ValidateTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var module = new WasmModule(
             [new([], [])],
             [new(0, 40, [], [DecodedInstruction.WithoutImmediate(new(0, 0x0B), 41)])],
@@ -462,7 +463,7 @@ internal partial class ModuleValidator_ValidateTests
                 await Assert.That(module.FunctionCodes.IsEmpty).IsTrue();
                 await Assert.That(module.FunctionExportIndices.IsEmpty).IsTrue();
                 await Assert
-                    .That(() => module.Instantiate([]))
+                    .That(() => module.Instantiate(executionContext, []))
                     .ThrowsExactly<InvalidOperationException>();
             }
         }

@@ -5,14 +5,18 @@ namespace WasmSharp.Benchmarks.Tests.Fixtures;
 
 internal static class PreparationFixture
 {
-    internal static LoadedAssets CreateAssets(bool invalidStart = false)
+    internal static LoadedAssets CreateAssets(
+        CaseJson json,
+        MeasurementMethods methods,
+        bool invalidStart = false
+    )
     {
         var definitions = AssetLoadingFixture
-            .ReadCases()
+            .ReadCases(json)
             .Where(x => x.MeasurementStage != MeasurementStage.Invoke)
             .Select(x =>
             {
-                var expected = VerificationFixture.Definition(x.MeasurementStage);
+                var expected = VerificationFixture.Definition(x.MeasurementStage, json);
                 if (invalidStart)
                 {
                     expected = expected with
@@ -28,7 +32,8 @@ internal static class PreparationFixture
                     {
                         ExpectedResult = expected.ExpectedResult,
                     },
-                    expected.Input
+                    expected.Input,
+                    json
                 );
             })
             .ToList();
@@ -44,13 +49,13 @@ internal static class PreparationFixture
             .ToImmutableArray();
         return new(
             new(1, new("profile.json", ""), new("cases.json", ""), []),
-            new CaseCatalog(definitions),
+            new CaseCatalog(definitions, json, methods),
             new Dictionary<string, ImmutableArray<byte>>
             {
                 ["invoke"] = bytes,
                 ["preparation-large"] = bytes,
             }.ToImmutableDictionary(),
-            definitions.ToImmutableDictionary(x => x.CaseId, InputFactory.Create)
+            definitions.ToImmutableDictionary(x => x.CaseId, x => InputFactory.Create(x, json))
         );
     }
 }

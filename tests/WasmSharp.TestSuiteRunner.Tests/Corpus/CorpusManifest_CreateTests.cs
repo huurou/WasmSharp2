@@ -4,11 +4,13 @@ namespace WasmSharp.TestSuiteRunner.Tests.Corpus;
 
 internal class CorpusManifest_CreateTests
 {
+    private readonly Core2ProfileLoader profileLoader_ = new Core2ProfileLoader();
+
     [Test]
     public async Task 生成開始時のmanifestを作る_生成物がなくても全対象を未処理で保持する()
     {
         // Arrange
-        var profile = Core2Profile.Load();
+        var profile = profileLoader_.Load();
         var provenance = new ConversionProvenance { ExecutableSha256 = new string('a', 64) };
 
         // Act

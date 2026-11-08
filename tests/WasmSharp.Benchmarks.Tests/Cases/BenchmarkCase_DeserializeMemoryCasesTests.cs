@@ -19,7 +19,7 @@ internal partial class BenchmarkCase_DeserializeTests
 
         // Act
         var definitions = JsonSerializer
-            .Deserialize<List<BenchmarkCase>>(json, CaseJson.Options)!
+            .Deserialize<List<BenchmarkCase>>(json, json_.Options)!
             .Where(x => x.AssetId is "memory" or "scan")
             .ToArray();
 
@@ -47,7 +47,7 @@ internal partial class BenchmarkCase_DeserializeTests
                             SHA256.HashData(
                                 JsonSerializer.SerializeToUtf8Bytes(
                                     definition.Input,
-                                    CaseJson.Options
+                                    json_.Options
                                 )
                             )
                         )
@@ -104,7 +104,7 @@ internal partial class BenchmarkCase_DeserializeTests
 
         // Act
         var definition = JsonSerializer
-            .Deserialize<List<BenchmarkCase>>(json, CaseJson.Options)!
+            .Deserialize<List<BenchmarkCase>>(json, json_.Options)!
             .Single(x => x.CaseId == "memory.copy-fill");
 
         // Assert
@@ -154,7 +154,7 @@ internal partial class BenchmarkCase_DeserializeTests
 
         // Act
         var definitions = JsonSerializer
-            .Deserialize<List<BenchmarkCase>>(json, CaseJson.Options)!
+            .Deserialize<List<BenchmarkCase>>(json, json_.Options)!
             .Where(x => x.CaseId is "scan.scalar" or "scan.simd")
             .OrderBy(x => x.CaseId)
             .ToArray();

@@ -59,7 +59,7 @@ public partial class ScriptExecutor_ExecuteTests
             "f",
             WasmFunction.CreateHost(
                 new([], []),
-                _ =>
+                (_, _) =>
                 {
                     state.CallbackException = exception;
                     throw exception;
@@ -205,7 +205,7 @@ public partial class ScriptExecutor_ExecuteTests
             "f",
             WasmFunction.CreateHost(
                 new([WasmValueKind.I32], [WasmValueKind.I32]),
-                x =>
+                (_, x) =>
                 {
                     count++;
                     return new([x[0]]);

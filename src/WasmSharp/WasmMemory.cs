@@ -47,9 +47,8 @@ public sealed class WasmMemory
     {
         ArgumentNullException.ThrowIfNull(limits);
         if (
-            limits.Minimum > MAX_PAGE_COUNT
-            || limits.Maximum > MAX_PAGE_COUNT
-            || limits.Minimum > limits.Maximum
+            limits.Maximum > MAX_PAGE_COUNT ||
+            ExceedsPageLimit(limits.Minimum, limits.Maximum)
         )
         {
             throw new ArgumentException(
@@ -106,7 +105,7 @@ public sealed class WasmMemory
     {
         previousPageCount = PageCount;
         var nextPageCount = (ulong)previousPageCount + deltaPages;
-        if (nextPageCount > MAX_PAGE_COUNT || nextPageCount > MaximumPages)
+        if (ExceedsPageLimit(nextPageCount, MaximumPages))
         {
             return false;
         }
@@ -126,6 +125,17 @@ public sealed class WasmMemory
 
         pages_ = pages;
         return true;
+    }
+
+    /// <summary>
+    /// ページ数が仕様上限または宣言された最大値を超えるかを返す
+    /// </summary>
+    /// <param name="pageCount">割当前に判定するページ数</param>
+    /// <param name="maximumPages">宣言された最大ページ数 指定がなければnull</param>
+    /// <returns>いずれかの上限を超える場合はtrue</returns>
+    internal static bool ExceedsPageLimit(ulong pageCount, uint? maximumPages)
+    {
+        return pageCount > MAX_PAGE_COUNT || pageCount > maximumPages;
     }
 
     /// <summary>
@@ -204,7 +214,7 @@ public sealed class WasmMemory
             return false;
         }
 
-        if (destination > source && destination - source < length)
+        if (destination > source)
         {
             // 未転送のコピー元を上書きしないよう、後ろから転送する。
             var destinationEnd = destination + length;

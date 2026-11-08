@@ -8,14 +8,49 @@ internal partial class WasmFunction_InvokeTests
     [Test]
     [Arguments(false)]
     [Arguments(true)]
+    public async Task Contextがnullのhost呼出し_両形式でcallbackより先に拒否する(bool withInstance)
+    {
+        // Arrange
+        var executionContext = new WasmExecutionContext();
+        var called = false;
+        var function = WasmFunction.CreateHost(
+            new WasmFunctionType([], []),
+            (_, _) =>
+            {
+                called = true;
+                return new WasmResults([]);
+            }
+        );
+        var instance = WasmModule
+            .Decode(ConstantModuleBinary.Create(0x7F, 0x41, 0x2A, 0x0B))
+            .Validate()
+            .Instantiate(executionContext, []);
+
+        // Act & Assert
+        var exception = await Assert
+            .That(() =>
+                withInstance ? function.Invoke(null!, instance, []) : function.Invoke(null!, [])
+            )
+            .ThrowsExactly<ArgumentNullException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.ParamName).IsEqualTo("context");
+            await Assert.That(called).IsFalse();
+        }
+    }
+
+    [Test]
+    [Arguments(false)]
+    [Arguments(true)]
     public async Task Instance必須hostへ省略またはnullを渡す_callbackの実行前に拒否する(
         bool explicitNull
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var called = false;
         var type = new WasmFunctionType([], []);
-        WasmHostInstanceCallback instanceCallback = (_, _) =>
+        WasmHostInstanceCallback instanceCallback = (callbackContext, _, _) =>
         {
             called = true;
             return new([]);
@@ -24,7 +59,7 @@ internal partial class WasmFunction_InvokeTests
 
         // Act & Assert
         await Assert
-            .That(() => explicitNull ? function.Invoke(null!, []) : function.Invoke([]))
+            .That(() => explicitNull ? function.Invoke(executionContext, null!, []) : function.Invoke(executionContext, []))
             .ThrowsExactly<ArgumentNullException>();
         await Assert.That(called).IsFalse();
     }
@@ -37,6 +72,7 @@ internal partial class WasmFunction_InvokeTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         // section長・型index・i32即値は合法な非最短LEB customの名前以降は任意バイト
         var bytes = Convert.FromHexString(
             "0061736D01000000"
@@ -57,8 +93,8 @@ internal partial class WasmFunction_InvokeTests
         foreach (var module in modules)
         {
             module.Validate();
-            var instance = module.Instantiate([]);
-            var result = instance.GetFunction("run").Invoke([]);
+            var instance = module.Instantiate(executionContext, []);
+            var result = instance.GetFunction("run").Invoke(executionContext, []);
 
             // Assert
             using (Assert.Multiple())
@@ -95,6 +131,7 @@ internal partial class WasmFunction_InvokeTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var bytes = ConstantModuleBinary.Create(
             (byte)resultType,
             Convert.FromHexString(instructions)
@@ -109,9 +146,9 @@ internal partial class WasmFunction_InvokeTests
         foreach (var module in new[] { fromBytes, fromStream })
         {
             module.Validate();
-            var instance = module.Instantiate([]);
+            var instance = module.Instantiate(executionContext, []);
             var function = instance.GetFunction("run");
-            var result = function.Invoke([]);
+            var result = function.Invoke(executionContext, []);
 
             // Assert
             using (Assert.Multiple())
@@ -138,6 +175,7 @@ internal partial class WasmFunction_InvokeTests
     public async Task 定数関数を反復し別の関数も呼ぶ_先に取得した結果と反復結果を保持する()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var instance = WasmModule
             .Decode(
                 ConstantModuleBinary.Create(
@@ -146,13 +184,13 @@ internal partial class WasmFunction_InvokeTests
                 )
             )
             .Validate()
-            .Instantiate([], new(1));
+            .Instantiate(executionContext, [], new(1));
         var function = instance.GetFunction("first");
 
         // Act
-        var first = function.Invoke([]);
-        var other = instance.GetFunction("second").Invoke([]);
-        var repeated = function.Invoke([]);
+        var first = function.Invoke(executionContext, []);
+        var other = instance.GetFunction("second").Invoke(executionContext, []);
+        var repeated = function.Invoke(executionContext, []);
 
         // Assert
         using (Assert.Multiple())
@@ -167,6 +205,7 @@ internal partial class WasmFunction_InvokeTests
     public async Task 引数の個数は合うが後続の型が異なる_実行前に引数不正として拒否する()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var instance = WasmModule
             .Decode(
                 HostLinkingModuleBinary.Create(
@@ -178,16 +217,17 @@ internal partial class WasmFunction_InvokeTests
                 )
             )
             .Validate()
-            .Instantiate([]);
+            .Instantiate(executionContext, []);
         var function = instance.GetFunction("run");
 
         // Act & Assert
         var exception = await Assert
-            .That(() => function.Invoke([WasmValue.FromI32(7), WasmValue.FromF32(1)]))
+            .That(() => function.Invoke(executionContext, [WasmValue.FromI32(7), WasmValue.FromF32(1)]))
             .ThrowsExactly<ArgumentException>();
         using (Assert.Multiple())
         {
             await Assert.That(exception!.ParamName).IsEqualTo("arguments");
+            await Assert.That(exception.Message).Contains("引数の型");
             await Assert.That(instance.GetGlobal("g").AsI32()).IsEqualTo(0);
         }
     }
@@ -196,31 +236,37 @@ internal partial class WasmFunction_InvokeTests
     public async Task 引数なし関数に値を渡す_引数不正として拒否する()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var function = WasmModule
             .Decode(ConstantModuleBinary.Create(0x7F, 0x41, 0x2A, 0x0B))
             .Validate()
-            .Instantiate([])
+            .Instantiate(executionContext, [])
             .GetFunction("run");
 
         // Act & Assert
         var exception = await Assert
-            .That(() => function.Invoke([WasmValue.FromI32(7)]))
+            .That(() => function.Invoke(executionContext, [WasmValue.FromI32(7)]))
             .ThrowsExactly<ArgumentException>();
-        await Assert.That(exception!.ParamName).IsEqualTo("arguments");
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.ParamName).IsEqualTo("arguments");
+            await Assert.That(exception.Message).Contains("引数の個数");
+        }
     }
 
     [Test]
     public async Task 定数関数を空の引数で呼び出す_宣言した型の結果を1個返す()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var function = WasmModule
             .Decode(ConstantModuleBinary.Create(0x7F, 0x41, 0x7F, 0x0B))
             .Validate()
-            .Instantiate([], new(1))
+            .Instantiate(executionContext, [], new(1))
             .GetFunction("run");
 
         // Act
-        var result = function.Invoke([]);
+        var result = function.Invoke(executionContext, []);
 
         // Assert
         using (Assert.Multiple())

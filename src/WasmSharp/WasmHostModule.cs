@@ -10,9 +10,13 @@ namespace WasmSharp;
 /// 引数は呼び出し専用のコピーで、同期再入による作業スタックの変化に影響されない。callback終了後も値を保持する場合はコピーする。
 /// 結果のnull・個数・型の不一致はランタイムがInvalidOperationExceptionで拒否する。callbackが投げた例外は型と実体を変えずに伝播する。
 /// </remarks>
+/// <param name="context">呼び出し元が渡したコンテキスト 同期再入するInvokeやInstantiateにも同じオブジェクトを渡す</param>
 /// <param name="arguments">宣言された引数型と順序に従う値 利用を保証する期間は同期callbackの実行中</param>
 /// <returns>宣言された結果の個数・型・順序に一致する所有済みの値 nullは不可</returns>
-public delegate WasmResults WasmHostCallback(ReadOnlySpan<WasmValue> arguments);
+public delegate WasmResults WasmHostCallback(
+    WasmExecutionContext context,
+    ReadOnlySpan<WasmValue> arguments
+);
 
 /// <summary>
 /// 呼び出し時のinstanceを受け取るホスト関数の処理を定義するデリゲート
@@ -22,10 +26,12 @@ public delegate WasmResults WasmHostCallback(ReadOnlySpan<WasmValue> arguments);
 /// 引数は呼び出し専用のコピーで、同期再入による作業スタックの変化に影響されない。callback終了後も値を保持する場合はコピーする。
 /// 結果のnull・個数・型の不一致はランタイムがInvalidOperationExceptionで拒否する。callbackが投げた例外は型と実体を変えずに伝播する。
 /// </remarks>
+/// <param name="context">呼び出し元が渡したコンテキスト 同期再入するInvokeやInstantiateにも同じオブジェクトを渡す</param>
 /// <param name="instance">Wasmからは呼び出し中の定義関数の所属instance、host startではstartを持つinstance、C#からは明示指定したinstance</param>
 /// <param name="arguments">宣言された引数型と順序に従う値 利用を保証する期間は同期callbackの実行中</param>
 /// <returns>宣言された結果の個数・型・順序に一致する所有済みの値 nullは不可</returns>
 public delegate WasmResults WasmHostInstanceCallback(
+    WasmExecutionContext context,
     WasmInstance instance,
     ReadOnlySpan<WasmValue> arguments
 );

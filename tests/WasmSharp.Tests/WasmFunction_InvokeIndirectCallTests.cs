@@ -9,6 +9,7 @@ internal partial class WasmFunction_InvokeTests
     public async Task 別moduleの同じ構造の型を間接callする_複数引数結果の順序と元instanceのリソースを保つ()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var callee = WasmModule
             .Decode(
                 HostLinkingModuleBinary.Create(
@@ -27,8 +28,8 @@ internal partial class WasmFunction_InvokeTests
                 )
             )
             .Validate()
-            .Instantiate([]);
-        var marker = WasmFunction.CreateHost(new([], []), _ => new([]));
+            .Instantiate(executionContext, []);
+        var marker = WasmFunction.CreateHost(new([], []), (callbackContext, _) => new([]));
         callee.GetTable("t").Set(0, WasmValue.FromFuncRef(marker));
         callee.GetMemory("m").Write(0, [77]);
         var table = new WasmTable(WasmValueKind.FuncRef, new(1));
@@ -58,12 +59,12 @@ internal partial class WasmFunction_InvokeTests
             )
             .Validate();
         host.Define("unused", new WasmTable(WasmValueKind.ExternRef, new(1)));
-        var caller = callerModule.Instantiate([host]);
+        var caller = callerModule.Instantiate(executionContext, [host]);
 
         // Act
         var values = caller
             .GetFunction("run")
-            .Invoke([WasmValue.FromI32(7), WasmValue.FromI64(9), WasmValue.FromI32(0)])
+            .Invoke(executionContext, [WasmValue.FromI32(7), WasmValue.FromI64(9), WasmValue.FromI32(0)])
             .Values;
 
         // Assert
@@ -100,6 +101,7 @@ internal partial class WasmFunction_InvokeTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var calls = 0;
         var table = new WasmTable(WasmValueKind.FuncRef, new(3));
         table.Set(
@@ -107,7 +109,7 @@ internal partial class WasmFunction_InvokeTests
             WasmValue.FromFuncRef(
                 WasmFunction.CreateHost(
                     new([WasmValueKind.I32], []),
-                    _ =>
+                    (callbackContext, _) =>
                     {
                         calls++;
                         return new([]);
@@ -120,7 +122,7 @@ internal partial class WasmFunction_InvokeTests
             WasmValue.FromFuncRef(
                 WasmFunction.CreateHost(
                     new([], [WasmValueKind.I32]),
-                    _ =>
+                    (callbackContext, _) =>
                     {
                         calls++;
                         return new([WasmValue.FromI32(1)]);
@@ -128,12 +130,12 @@ internal partial class WasmFunction_InvokeTests
                 )
             )
         );
-        var (module, instance) = CreateIndirectVoidCaller(table, maxCallDepth: 1);
+        var (module, instance) = CreateIndirectVoidCaller(executionContext, table, maxCallDepth: 1);
         var run = instance.GetFunction("run");
 
         // Act & Assert
         var exception = await Assert
-            .That(() => run.Invoke([WasmValue.FromI32(selector)]))
+            .That(() => run.Invoke(executionContext, [WasmValue.FromI32(selector)]))
             .ThrowsExactly<WasmTrapException>();
         using (Assert.Multiple())
         {
@@ -152,7 +154,7 @@ internal partial class WasmFunction_InvokeTests
                 );
             await Assert.That(calls).IsEqualTo(0);
         }
-        await Assert.That(() => instance.GetFunction("ok").Invoke([])).ThrowsNothing();
+        await Assert.That(() => instance.GetFunction("ok").Invoke(executionContext, [])).ThrowsNothing();
     }
 
     [Test]
@@ -163,8 +165,9 @@ internal partial class WasmFunction_InvokeTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var table = new WasmTable(WasmValueKind.FuncRef, new(1));
-        var (_, instance) = CreateIndirectVoidCaller(table);
+        var (_, instance) = CreateIndirectVoidCaller(executionContext, table);
         WasmInstance? observed = null;
         var expected = new InvalidOperationException("host failure");
         table.Set(
@@ -172,7 +175,7 @@ internal partial class WasmFunction_InvokeTests
             WasmValue.FromFuncRef(
                 WasmFunction.CreateHost(
                     new([], []),
-                    (caller, _) =>
+                    (callbackContext, caller, _) =>
                     {
                         observed = caller;
                         if (throws)
@@ -189,19 +192,19 @@ internal partial class WasmFunction_InvokeTests
         {
             // Act & Assert
             var actual = await Assert
-                .That(() => instance.GetFunction("run").Invoke([WasmValue.FromI32(0)]))
+                .That(() => instance.GetFunction("run").Invoke(executionContext, [WasmValue.FromI32(0)]))
                 .ThrowsExactly<InvalidOperationException>();
             await Assert.That(actual).IsSameReferenceAs(expected);
         }
         else
         {
             // Act
-            instance.GetFunction("run").Invoke([WasmValue.FromI32(0)]);
+            instance.GetFunction("run").Invoke(executionContext, [WasmValue.FromI32(0)]);
         }
 
         // Assert
         await Assert.That(observed).IsSameReferenceAs(instance);
-        await Assert.That(() => instance.GetFunction("ok").Invoke([])).ThrowsNothing();
+        await Assert.That(() => instance.GetFunction("ok").Invoke(executionContext, [])).ThrowsNothing();
     }
 
     [Test]
@@ -212,6 +215,7 @@ internal partial class WasmFunction_InvokeTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var table = new WasmTable(WasmValueKind.FuncRef, new(1));
         var host = new WasmHostModule("env");
         host.Define("t", table);
@@ -226,7 +230,7 @@ internal partial class WasmFunction_InvokeTests
                 )
             )
             .Validate();
-        var instance = module.Instantiate([host], new(3));
+        var instance = module.Instantiate(executionContext, [host], new(3));
         var calls = 0;
         var run = instance.GetFunction("run");
         table.Set(
@@ -235,10 +239,10 @@ internal partial class WasmFunction_InvokeTests
                 hostReentry
                     ? WasmFunction.CreateHost(
                         new([], []),
-                        _ =>
+                        (callbackContext, _) =>
                         {
                             calls++;
-                            return run.Invoke([]);
+                            return run.Invoke(callbackContext, []);
                         }
                     )
                     : run
@@ -247,7 +251,7 @@ internal partial class WasmFunction_InvokeTests
 
         // Act & Assert
         var exception = await Assert
-            .That(() => run.Invoke([]))
+            .That(() => run.Invoke(executionContext, []))
             .ThrowsExactly<WasmExhaustionException>();
         using (Assert.Multiple())
         {
@@ -255,8 +259,8 @@ internal partial class WasmFunction_InvokeTests
             await Assert.That(calls).IsEqualTo(hostReentry ? 1 : 0);
         }
         table.Set(0, WasmValue.FromFuncRef(instance.GetFunction("ok")));
-        await Assert.That(() => run.Invoke([])).ThrowsNothing();
-        await Assert.That(() => run.Invoke([])).ThrowsNothing();
+        await Assert.That(() => run.Invoke(executionContext, [])).ThrowsNothing();
+        await Assert.That(() => run.Invoke(executionContext, [])).ThrowsNothing();
     }
 
     [Test]
@@ -269,6 +273,7 @@ internal partial class WasmFunction_InvokeTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var table = new WasmTable(WasmValueKind.FuncRef, new(6));
         var host = new WasmHostModule("env");
         host.Define("t", table);
@@ -287,8 +292,8 @@ internal partial class WasmFunction_InvokeTests
                 )
             )
             .Validate();
-        var outer = module.Instantiate([host], new(4));
-        var inner = module.Instantiate([host], new(1));
+        var outer = module.Instantiate(executionContext, [host], new(4));
+        var inner = module.Instantiate(executionContext, [host], new(1));
         var expected = new InvalidOperationException("nested host failure");
         Exception? caught = null;
         WasmInstance? observed = null;
@@ -298,17 +303,17 @@ internal partial class WasmFunction_InvokeTests
             WasmValue.FromFuncRef(
                 WasmFunction.CreateHost(
                     new([], []),
-                    _ =>
+                    (callbackContext, _) =>
                     {
                         try
                         {
-                            inner.GetFunction("run").Invoke([WasmValue.FromI32(selector)]);
+                            inner.GetFunction("run").Invoke(callbackContext, [WasmValue.FromI32(selector)]);
                         }
                         catch (Exception exception)
                         {
                             caught = exception;
                         }
-                        inner.GetFunction("run").Invoke([WasmValue.FromI32(4)]);
+                        inner.GetFunction("run").Invoke(callbackContext, [WasmValue.FromI32(4)]);
                         return new([]);
                     }
                 )
@@ -317,14 +322,14 @@ internal partial class WasmFunction_InvokeTests
         table.Set(2, WasmValue.FromFuncRef(inner.GetFunction("trap")));
         table.Set(
             3,
-            WasmValue.FromFuncRef(WasmFunction.CreateHost(new([], []), _ => throw expected))
+            WasmValue.FromFuncRef(WasmFunction.CreateHost(new([], []), (callbackContext, _) => throw expected))
         );
         table.Set(
             4,
             WasmValue.FromFuncRef(
                 WasmFunction.CreateHost(
                     new([], []),
-                    (caller, _) =>
+                    (callbackContext, caller, _) =>
                     {
                         observed = caller;
                         successes++;
@@ -336,7 +341,7 @@ internal partial class WasmFunction_InvokeTests
         table.Set(5, WasmValue.FromFuncRef(inner.GetFunction("loop")));
 
         // Act
-        outer.GetFunction("run").Invoke([WasmValue.FromI32(0)]);
+        outer.GetFunction("run").Invoke(executionContext, [WasmValue.FromI32(0)]);
 
         // Assert
         using (Assert.Multiple())
@@ -359,17 +364,18 @@ internal partial class WasmFunction_InvokeTests
             }
         }
         await Assert
-            .That(() => inner.GetFunction("run").Invoke([WasmValue.FromI32(4)]))
+            .That(() => inner.GetFunction("run").Invoke(executionContext, [WasmValue.FromI32(4)]))
             .ThrowsExactly<WasmExhaustionException>();
         await Assert.That(successes).IsEqualTo(1);
         await Assert
-            .That(() => outer.GetFunction("run").Invoke([WasmValue.FromI32(4)]))
+            .That(() => outer.GetFunction("run").Invoke(executionContext, [WasmValue.FromI32(4)]))
             .ThrowsNothing();
         await Assert.That(successes).IsEqualTo(2);
         await Assert.That(observed).IsSameReferenceAs(outer);
     }
 
     private static (WasmModule Module, WasmInstance Instance) CreateIndirectVoidCaller(
+        WasmExecutionContext executionContext,
         WasmTable table,
         int maxCallDepth = 8
     )
@@ -389,6 +395,6 @@ internal partial class WasmFunction_InvokeTests
                 )
             )
             .Validate();
-        return (module, module.Instantiate([host], new(maxCallDepth)));
+        return (module, module.Instantiate(executionContext, [host], new(maxCallDepth)));
     }
 }

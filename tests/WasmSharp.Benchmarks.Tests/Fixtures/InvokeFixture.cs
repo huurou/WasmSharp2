@@ -5,9 +5,14 @@ namespace WasmSharp.Benchmarks.Tests.Fixtures;
 
 internal static class InvokeFixture
 {
-    internal static LoadedAssets CreateAssets(string caseId, bool invalidResult = false)
+    internal static LoadedAssets CreateAssets(
+        string caseId,
+        CaseJson json,
+        MeasurementMethods methods,
+        bool invalidResult = false
+    )
     {
-        var original = AssetLoadingFixture.ReadCases().Single(x => x.CaseId == caseId);
+        var original = AssetLoadingFixture.ReadCases(json).Single(x => x.CaseId == caseId);
         BenchmarkCase definition;
         var shortInvoke = caseId.StartsWith("invoke.", StringComparison.Ordinal);
         if (shortInvoke)
@@ -16,11 +21,11 @@ internal static class InvokeFixture
         }
         else if (caseId is "memory.copy-fill" or "kernel.matrix")
         {
-            definition = VerificationFixture.MemoryDefinition(caseId == "kernel.matrix");
+            definition = VerificationFixture.MemoryDefinition(caseId == "kernel.matrix", json);
         }
         else
         {
-            var expected = VerificationFixture.Definition(MeasurementStage.Invoke);
+            var expected = VerificationFixture.Definition(MeasurementStage.Invoke, json);
             var input = expected.Input;
             if (caseId == "loop.float-host")
             {
@@ -56,7 +61,8 @@ internal static class InvokeFixture
                 {
                     ExpectedResult = expected.ExpectedResult,
                 },
-                input
+                input,
+                json
             );
         }
         if (invalidResult)
@@ -79,18 +85,19 @@ internal static class InvokeFixture
                 )
             )
             .ToImmutableArray();
-        return BuildAssets(definition, bytes);
+        return BuildAssets(definition, bytes, json, methods);
     }
 
-    internal static LoadedAssets CreateDriftingAssets()
+    internal static LoadedAssets CreateDriftingAssets(CaseJson json, MeasurementMethods methods)
     {
-        var definition = AssetLoadingFixture.ReadCases().Single(x => x.CaseId == "invoke.single");
+        var definition = AssetLoadingFixture.ReadCases(json).Single(x => x.CaseId == "invoke.single");
         definition = AssetLoadingFixture.WithInput(
             definition with
             {
                 ExpectedResult = new([new(NumericType.I32, "00000000")], [], [], []),
             },
-            new("next", [], [])
+            new("next", [], []),
+            json
         );
         // 呼び出すたびに増えるglobalの変更前の値を返す 最後の結果の保持を確認する小型module
         ImmutableArray<byte> bytes =
@@ -148,24 +155,26 @@ internal static class InvokeFixture
             0,
             0x0b,
         ];
-        return BuildAssets(definition, bytes);
+        return BuildAssets(definition, bytes, json, methods);
     }
 
     internal static LoadedAssets BuildAssets(
         BenchmarkCase definition,
-        ImmutableArray<byte> bytes
+        ImmutableArray<byte> bytes,
+        CaseJson json,
+        MeasurementMethods methods
     )
     {
         return new(
             new(1, new("profile.json", ""), new("cases.json", ""), []),
-            new CaseCatalog([definition]),
+            new CaseCatalog([definition], json, methods),
             new Dictionary<string, ImmutableArray<byte>>
             {
                 [definition.AssetId] = bytes,
             }.ToImmutableDictionary(),
             new Dictionary<string, PreparedInput>
             {
-                [definition.CaseId] = InputFactory.Create(definition),
+                [definition.CaseId] = InputFactory.Create(definition, json),
             }.ToImmutableDictionary()
         );
     }

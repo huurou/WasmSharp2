@@ -21,6 +21,7 @@ internal partial class WasmModule_ValidateTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         byte[][] declarations = import
             ? [HostLinkingModuleBinary.Imports(("env", "f", 0, [0]))]
             : [];
@@ -55,25 +56,26 @@ internal partial class WasmModule_ValidateTests
                 );
             await Assert.That(module.FunctionCodes.IsEmpty).IsTrue();
             await Assert
-                .That(() => module.Instantiate([]))
+                .That(() => module.Instantiate(executionContext, []))
                 .ThrowsExactly<InvalidOperationException>();
         }
     }
 
     [Test]
-    [Arguments("4100D10B", "type mismatch", 1)]
-    [Arguments("4200D10B", "type mismatch", 1)]
-    [Arguments("D070D07041001B1A0B", "type mismatch", 3)]
-    [Arguments("D070D07041001C001A0B", "invalid result arity", 3)]
-    [Arguments("00001C02706F1A0B", "invalid result arity", 2)]
-    [Arguments("D070D06F41001C01701A0B", "type mismatch", 3)]
-    [Arguments("D070D07042001C01701A0B", "type mismatch", 3)]
-    [Arguments("D07041001C01701A0B", "type mismatch", 2)]
-    [Arguments("00D07041001B1A0B", "type mismatch", 3)]
+    [Arguments("4100D10B", "type mismatch", 1, "参照型が必要")]
+    [Arguments("4200D10B", "type mismatch", 1, null)]
+    [Arguments("D070D07041001B1A0B", "type mismatch", 3, "参照型を使えません")]
+    [Arguments("D070D07041001C001A0B", "invalid result arity", 3, "結果型は1個")]
+    [Arguments("00001C02706F1A0B", "invalid result arity", 2, null)]
+    [Arguments("D070D06F41001C01701A0B", "type mismatch", 3, null)]
+    [Arguments("D070D07042001C01701A0B", "type mismatch", 3, null)]
+    [Arguments("D07041001C01701A0B", "type mismatch", 2, "入力値が不足")]
+    [Arguments("00D07041001B1A0B", "type mismatch", 3, null)]
     public async Task 参照命令とselectの型や注釈が不正_元命令位置のValidate失敗として拒否する(
         string body,
         string prefix,
-        int instructionIndex
+        int instructionIndex,
+        string? expectedDetail
     )
     {
         // Arrange
@@ -94,6 +96,10 @@ internal partial class WasmModule_ValidateTests
             await Assert
                 .That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal))
                 .IsTrue();
+            if (expectedDetail is not null)
+            {
+                await Assert.That(exception.Message).Contains(expectedDetail);
+            }
             await Assert
                 .That(exception.Location)
                 .IsEqualTo(
@@ -150,6 +156,7 @@ internal partial class WasmModule_ValidateTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var module = WasmModule.Decode(
             HostLinkingModuleBinary.Create(
                 HostLinkingModuleBinary.Types(([], [])),
@@ -183,7 +190,7 @@ internal partial class WasmModule_ValidateTests
                 );
             await Assert.That(module.FunctionCodes.IsEmpty).IsTrue();
             await Assert
-                .That(() => module.Instantiate([]))
+                .That(() => module.Instantiate(executionContext, []))
                 .ThrowsExactly<InvalidOperationException>();
         }
     }

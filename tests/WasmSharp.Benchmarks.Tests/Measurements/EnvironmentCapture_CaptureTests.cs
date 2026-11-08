@@ -6,6 +6,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using WasmSharp.Benchmarks.Cases;
 using WasmSharp.Benchmarks.Measurements;
 using WasmSharp.Benchmarks.Results;
 using WasmSharp.Benchmarks.Tests.Fixtures;
@@ -14,12 +15,57 @@ namespace WasmSharp.Benchmarks.Tests.Measurements;
 
 internal partial class EnvironmentCapture_CaptureTests
 {
+    private readonly CaseJson json_ = new CaseJson();
+    private readonly EnvironmentCapture environmentCapture_ = new EnvironmentCapture();
+
+    [Test]
+    [NotInParallel]
+    public async Task 環境変数を逆順に追加する_保存する設定を名前順に並べる()
+    {
+        // Arrange
+        const string FIRST_VARIABLE = "DOTNET_GC_CUSTOM_A";
+        const string LAST_VARIABLE = "DOTNET_GC_CUSTOM_Z";
+        using var fixture = new RunStoreFixture();
+        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, json_);
+        var command = new CommandInvocation(
+            Environment.ProcessPath!, [], Environment.CurrentDirectory
+        );
+        var previousFirst = Environment.GetEnvironmentVariable(FIRST_VARIABLE);
+        var previousLast = Environment.GetEnvironmentVariable(LAST_VARIABLE);
+        try
+        {
+            Environment.SetEnvironmentVariable(LAST_VARIABLE, "z");
+            Environment.SetEnvironmentVariable(FIRST_VARIABLE, "a");
+
+            // Act
+            var captured = environmentCapture_.Capture(store, command, []);
+
+            // Assert
+            var names = captured.EnvironmentVariables.Select(x => x.Name);
+            using (Assert.Multiple())
+            {
+                await Assert.That(names.SequenceEqual(names.Order(StringComparer.Ordinal))).IsTrue();
+                await Assert
+                    .That(captured.EnvironmentVariables.Single(x => x.Name == FIRST_VARIABLE).Value)
+                    .IsEqualTo("a");
+                await Assert
+                    .That(captured.EnvironmentVariables.Single(x => x.Name == LAST_VARIABLE).Value)
+                    .IsEqualTo("z");
+            }
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(FIRST_VARIABLE, previousFirst);
+            Environment.SetEnvironmentVariable(LAST_VARIABLE, previousLast);
+        }
+    }
+
     [Test]
     public async Task 現在の採取processを記録する_GCとJITと保存したruntimeconfigの識別情報を保持する()
     {
         // Arrange
         using var fixture = new RunStoreFixture();
-        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest);
+        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, json_);
         var command = new CommandInvocation(
             Environment.ProcessPath!,
             [],
@@ -28,11 +74,14 @@ internal partial class EnvironmentCapture_CaptureTests
         var windowsBefore = OperatingSystem.IsWindows() ? await ReadWindowsEnvironment() : null;
 
         // Act
-        var captured = EnvironmentCapture.Capture(store, command, []);
+        var captured = environmentCapture_.Capture(store, command, []);
         var windowsAfter = OperatingSystem.IsWindows() ? await ReadWindowsEnvironment() : null;
 
         // Assert
         var collector = captured.Processes.Single();
+        var gcNames = captured.GcSettings
+            .Where(x => x.Name.StartsWith("GC.", StringComparison.Ordinal))
+            .Select(x => x.Name);
         var runtimeConfig = File.ReadAllBytes(
             Path.ChangeExtension(
                 System.Reflection.Assembly.GetEntryAssembly()!.Location,
@@ -41,6 +90,7 @@ internal partial class EnvironmentCapture_CaptureTests
         );
         using (Assert.Multiple())
         {
+            await Assert.That(gcNames.SequenceEqual(gcNames.Order(StringComparer.Ordinal))).IsTrue();
             if (windowsBefore is not null && windowsAfter is not null)
             {
                 await Assert.That(windowsBefore.CpuNames).Contains(captured.Cpu);
@@ -146,7 +196,7 @@ internal partial class EnvironmentCapture_CaptureTests
     {
         // Arrange
         using var fixture = new RunStoreFixture();
-        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest);
+        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, json_);
         var command = new CommandInvocation(
             Environment.ProcessPath!,
             [],
@@ -154,7 +204,7 @@ internal partial class EnvironmentCapture_CaptureTests
         );
 
         // Act
-        var captured = EnvironmentCapture.Capture(store, command, []);
+        var captured = environmentCapture_.Capture(store, command, []);
 
         // Assert
         await Assert.That(captured.SdkVersion).StartsWith("Unavailable: ");

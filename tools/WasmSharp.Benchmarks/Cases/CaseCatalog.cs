@@ -8,38 +8,22 @@ namespace WasmSharp.Benchmarks.Cases;
 /// </summary>
 internal sealed class CaseCatalog
 {
-    private static readonly FrozenDictionary<string, string> methods_ = new Dictionary<
-        string,
-        string
-    >(StringComparer.Ordinal)
-    {
-        ["invoke.empty"] = "InvokeBenchmarks.Empty",
-        ["invoke.single"] = "InvokeBenchmarks.Single",
-        ["invoke.multi"] = "InvokeBenchmarks.Multi",
-        ["loop.integer-direct"] = "InvokeBenchmarks.IntegerDirect",
-        ["loop.float-host"] = "InvokeBenchmarks.FloatHost",
-        ["loop.indirect"] = "InvokeBenchmarks.Indirect",
-        ["memory.copy-fill"] = "InvokeBenchmarks.CopyFill",
-        ["scan.scalar"] = "InvokeBenchmarks.ScanScalar",
-        ["scan.simd"] = "InvokeBenchmarks.ScanSimd",
-        ["kernel.matrix"] = "InvokeBenchmarks.Matrix",
-        ["decode.small"] = "PreparationBenchmarks.DecodeSmall",
-        ["decode.large"] = "PreparationBenchmarks.DecodeLarge",
-        ["decode-validate.small"] = "PreparationBenchmarks.DecodeValidateSmall",
-        ["decode-validate.large"] = "PreparationBenchmarks.DecodeValidateLarge",
-        ["instantiate.large"] = "PreparationBenchmarks.InstantiateLarge",
-    }.ToFrozenDictionary(StringComparer.Ordinal);
-
+    private readonly MeasurementMethods methods_;
     private readonly FrozenDictionary<string, BenchmarkCase> definitions_;
 
     internal IEnumerable<BenchmarkCase> Cases => definitions_.Values;
 
-    internal CaseCatalog(IEnumerable<BenchmarkCase> definitions)
+    internal CaseCatalog(
+        IEnumerable<BenchmarkCase> definitions,
+        CaseJson json,
+        MeasurementMethods methods
+    )
     {
+        methods_ = methods;
         var cases = new Dictionary<string, BenchmarkCase>(StringComparer.Ordinal);
         foreach (var definition in definitions)
         {
-            if (!methods_.ContainsKey(definition.CaseId))
+            if (!methods_.ContainsCase(definition.CaseId))
             {
                 throw new InvalidDataException($"ケース'{definition.CaseId}'は未登録です。");
             }
@@ -83,8 +67,8 @@ internal sealed class CaseCatalog
                     first,
                     other,
                     "expected",
-                    JsonSerializer.Serialize(first.ExpectedResult, CaseJson.Options)
-                        == JsonSerializer.Serialize(other.ExpectedResult, CaseJson.Options)
+                    JsonSerializer.Serialize(first.ExpectedResult, json.Options)
+                        == JsonSerializer.Serialize(other.ExpectedResult, json.Options)
                 );
                 CheckEqual(
                     first,
@@ -110,12 +94,7 @@ internal sealed class CaseCatalog
 
     internal string GetMeasurementMethod(string caseId)
     {
-        return methods_[Get(caseId).CaseId];
-    }
-
-    internal static string GetCaseId(string measurementMethod)
-    {
-        return methods_.Single(x => x.Value == measurementMethod).Key;
+        return methods_.GetMeasurementMethod(Get(caseId).CaseId);
     }
 
     private static void CheckEqual(

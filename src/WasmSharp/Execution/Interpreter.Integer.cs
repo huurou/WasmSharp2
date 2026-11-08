@@ -639,9 +639,9 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult I32ShrU(InterpreterContext context, in Instruction instruction)
     {
-        var right = context.PopValue().AsI32() & 31;
-        var left = unchecked((uint)context.PopValue().AsI32());
-        context.PushValue(WasmValue.FromI32(unchecked((int)(left >> right))));
+        var right = context.PopValue().AsI32();
+        var left = context.PopValue().AsI32();
+        context.PushValue(WasmValue.FromI32(left >>> right));
         return default;
     }
 
@@ -795,9 +795,9 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult I64ShrU(InterpreterContext context, in Instruction instruction)
     {
-        var right = (int)(context.PopValue().AsI64() & 63);
-        var left = unchecked((ulong)context.PopValue().AsI64());
-        context.PushValue(WasmValue.FromI64(unchecked((long)(left >> right))));
+        var right = unchecked((int)context.PopValue().AsI64());
+        var left = context.PopValue().AsI64();
+        context.PushValue(WasmValue.FromI64(left >>> right));
         return default;
     }
 

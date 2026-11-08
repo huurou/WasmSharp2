@@ -23,7 +23,7 @@ internal class ModuleInstantiator_LinkTests
             "function",
             WasmFunction.CreateHost(
                 new([WasmValueKind.I64, WasmValueKind.I32], [WasmValueKind.F64, WasmValueKind.F32]),
-                _ => new([])
+                (_, _) => new([])
             )
         );
         var imports = new WasmImports();

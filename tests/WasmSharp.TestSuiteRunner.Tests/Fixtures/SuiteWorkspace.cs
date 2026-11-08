@@ -6,6 +6,8 @@ namespace WasmSharp.TestSuiteRunner.Tests.Fixtures;
 
 internal sealed class SuiteWorkspace : IDisposable
 {
+    private readonly Core2ProfileLoader profileLoader_ = new Core2ProfileLoader();
+
     private readonly DirectoryInfo root_;
 
     internal string SourceRoot => Path.Combine(root_.FullName, "source");
@@ -106,7 +108,7 @@ internal sealed class SuiteWorkspace : IDisposable
 
     internal Core2Profile CreateProfile()
     {
-        return Core2Profile.Load() with
+        return profileLoader_.Load() with
         {
             Id = "fixture",
             Spec = new("https://github.com/WebAssembly/spec.git", Commit),

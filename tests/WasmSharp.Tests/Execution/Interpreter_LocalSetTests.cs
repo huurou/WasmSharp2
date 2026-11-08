@@ -11,6 +11,7 @@ internal class Interpreter_LocalSetTests
     public async Task 外側の値の後で引数と追加localsへ設定する_最上位の値を除き後続の取得で設定値を返し外側を変えない()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var found = InstructionSet.TryGet(new(0, 0x21), out var descriptor);
         var function = ExecutionFunctionFixture.Create(
             [
@@ -33,7 +34,7 @@ internal class Interpreter_LocalSetTests
         );
         var frame = new ExecutionFrame(FunctionFixture.Create(), 0, 0) { Pc = 17 };
         var outer = WasmValue.FromI64(99);
-        var context = InterpreterContext.Enter(new(10), out var isOutermost);
+        var context = executionContext.Enter(new(10), out var isOutermost);
         ExecutionResult result;
         WasmValue actualOuter;
 
@@ -55,8 +56,8 @@ internal class Interpreter_LocalSetTests
         }
         finally
         {
+            executionContext.Exit(isOutermost);
             context.Restore(0, 0, 0);
-            InterpreterContext.Exit(isOutermost);
         }
 
         // Assert

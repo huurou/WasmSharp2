@@ -13,9 +13,10 @@ internal partial class WasmFunction_InvokeTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         byte[] kinds = [0x7F, 0x7E, 0x7D, 0x7C, 0x7B, 0x70, 0x6F];
         var reference = new object();
-        var functionReference = WasmFunction.CreateHost(new([], []), _ => new([]));
+        var functionReference = WasmFunction.CreateHost(new([], []), (callbackContext, _) => new([]));
         WasmValue[] values =
         [
             WasmValue.FromI32(-1),
@@ -61,9 +62,9 @@ internal partial class WasmFunction_InvokeTests
         var result = WasmModule
             .Decode(stream)
             .Validate()
-            .Instantiate([])
+            .Instantiate(executionContext, [])
             .GetFunction("run")
-            .Invoke(values);
+            .Invoke(executionContext, values);
 
         // Assert
         using (Assert.Multiple())
@@ -84,6 +85,7 @@ internal partial class WasmFunction_InvokeTests
     public async Task 定義関数を直接callする_global更新とreturnの複数結果を反映する()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var bytes = HostLinkingModuleBinary.Create(
             HostLinkingModuleBinary.Types(([0x7F, 0x7E], [0x7E, 0x7F])),
             HostLinkingModuleBinary.Functions(0, 0),
@@ -96,10 +98,10 @@ internal partial class WasmFunction_InvokeTests
         );
 
         // Act
-        var instance = WasmModule.Decode(bytes).Validate().Instantiate([]);
+        var instance = WasmModule.Decode(bytes).Validate().Instantiate(executionContext, []);
         var result = instance
             .GetFunction("run")
-            .Invoke([WasmValue.FromI32(42), WasmValue.FromI64(73)]);
+            .Invoke(executionContext, [WasmValue.FromI32(42), WasmValue.FromI64(73)]);
 
         // Assert
         using (Assert.Multiple())
@@ -115,6 +117,7 @@ internal partial class WasmFunction_InvokeTests
     public async Task 引数をlocalへ設定して複数結果を返す_値と順序を保ち呼出しごとに分離する()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var module = WasmModule.Decode(
             HostLinkingModuleBinary.Create(
                 HostLinkingModuleBinary.Types(([0x7F, 0x7E], [0x7F, 0x7E])),
@@ -127,9 +130,9 @@ internal partial class WasmFunction_InvokeTests
         );
 
         // Act
-        var function = module.Validate().Instantiate([]).GetFunction("run");
-        var first = function.Invoke([WasmValue.FromI32(42), WasmValue.FromI64(73)]);
-        var second = function.Invoke([WasmValue.FromI32(-1), WasmValue.FromI64(-2)]);
+        var function = module.Validate().Instantiate(executionContext, []).GetFunction("run");
+        var first = function.Invoke(executionContext, [WasmValue.FromI32(42), WasmValue.FromI64(73)]);
+        var second = function.Invoke(executionContext, [WasmValue.FromI32(-1), WasmValue.FromI64(-2)]);
 
         // Assert
         using (Assert.Multiple())

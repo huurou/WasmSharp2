@@ -11,6 +11,7 @@ internal class Interpreter_LocalTeeTests
     public async Task 最上位の値をlocalへ設定する_同じ参照をoperandに残し後続の取得でも返す()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var reference = new object();
         var found = InstructionSet.TryGet(new(0, 0x22), out var descriptor);
         var function = ExecutionFunctionFixture.Create(
@@ -30,7 +31,7 @@ internal class Interpreter_LocalTeeTests
         );
         var frame = new ExecutionFrame(FunctionFixture.Create(), 0, 0) { Pc = 17 };
         var outer = WasmValue.FromI64(99);
-        var context = InterpreterContext.Enter(new(10), out var isOutermost);
+        var context = executionContext.Enter(new(10), out var isOutermost);
         ExecutionResult result;
         WasmValue actualOuter;
 
@@ -52,8 +53,8 @@ internal class Interpreter_LocalTeeTests
         }
         finally
         {
+            executionContext.Exit(isOutermost);
             context.Restore(0, 0, 0);
-            InterpreterContext.Exit(isOutermost);
         }
 
         // Assert

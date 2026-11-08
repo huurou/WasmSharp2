@@ -8,8 +8,9 @@ internal class WasmInstance_GetFunctionTests
     public async Task Importを持つ定義関数を再exportする_元instanceと関数添字を維持する()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var host = new WasmHostModule("env");
-        host.Define("f", WasmFunction.CreateHost(new([], []), _ => new([])));
+        host.Define("f", WasmFunction.CreateHost(new([], []), (callbackContext, _) => new([])));
         var source = WasmModule
             .Decode(
                 HostLinkingModuleBinary.Create(
@@ -21,7 +22,7 @@ internal class WasmInstance_GetFunctionTests
                 )
             )
             .Validate()
-            .Instantiate([host]);
+            .Instantiate(executionContext, [host]);
         var original = source.GetFunction("run");
         var provider = new WasmHostModule("source");
         provider.Define("run", original);
@@ -38,10 +39,10 @@ internal class WasmInstance_GetFunctionTests
             .Validate();
 
         // Act
-        var first = module.Instantiate([provider]);
-        var second = module.Instantiate([provider]);
+        var first = module.Instantiate(executionContext, [provider]);
+        var second = module.Instantiate(executionContext, [provider]);
         var reexported = first.GetFunction("run");
-        var result = reexported.Invoke([]);
+        var result = reexported.Invoke(executionContext, []);
 
         // Assert
         using (Assert.Multiple())
@@ -50,7 +51,7 @@ internal class WasmInstance_GetFunctionTests
             await Assert.That(first.GetFunction("")).IsSameReferenceAs(original);
             await Assert.That(second.GetFunction("run")).IsSameReferenceAs(original);
             await Assert.That(result.Values[0].AsI32()).IsEqualTo(42);
-            await Assert.That(first.GetFunction("own").Invoke([]).Values[0].AsI32()).IsEqualTo(7);
+            await Assert.That(first.GetFunction("own").Invoke(executionContext, []).Values[0].AsI32()).IsEqualTo(7);
             await Assert
                 .That(ReferenceEquals(first.GetFunction("own"), second.GetFunction("own")))
                 .IsFalse();
@@ -68,10 +69,11 @@ internal class WasmInstance_GetFunctionTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var type = new WasmFunctionType([], []);
         var function = receivesInstance
-            ? WasmFunction.CreateHost(type, (_, _) => new([]))
-            : WasmFunction.CreateHost(type, _ => new([]));
+            ? WasmFunction.CreateHost(type, (callbackContext, _, _) => new([]))
+            : WasmFunction.CreateHost(type, (callbackContext, _) => new([]));
         var host = new WasmHostModule("env");
         host.Define("f", function);
         var module = WasmModule
@@ -83,12 +85,12 @@ internal class WasmInstance_GetFunctionTests
                 )
             )
             .Validate();
-        var source = module.Instantiate([host]);
+        var source = module.Instantiate(executionContext, [host]);
         var provider = new WasmHostModule("env");
         provider.Define("f", source.GetFunction("f"));
 
         // Act
-        var destination = module.Instantiate([provider]);
+        var destination = module.Instantiate(executionContext, [provider]);
 
         // Assert
         await Assert.That(destination.GetFunction("f")).IsSameReferenceAs(function);
@@ -100,10 +102,11 @@ internal class WasmInstance_GetFunctionTests
     public async Task 名前がnullである_名前のnull引数例外で拒否する()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var instance = WasmModule
             .Decode(HostLinkingModuleBinary.Create())
             .Validate()
-            .Instantiate([]);
+            .Instantiate(executionContext, []);
 
         // Act & Assert
         var exception = await Assert
@@ -116,6 +119,7 @@ internal class WasmInstance_GetFunctionTests
     public async Task 名前が別種類のexportである_名前の引数例外で拒否する()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var instance = WasmModule
             .Decode(
                 HostLinkingModuleBinary.Create(
@@ -124,7 +128,7 @@ internal class WasmInstance_GetFunctionTests
                 )
             )
             .Validate()
-            .Instantiate([]);
+            .Instantiate(executionContext, []);
 
         // Act & Assert
         var exception = await Assert
@@ -137,6 +141,7 @@ internal class WasmInstance_GetFunctionTests
     public async Task 複数の名前とインスタンスから関数を取得する_型と関数実体の同一性を保つ()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var module = WasmModule
             .Decode(
                 ConstantModuleBinary.Create(
@@ -145,8 +150,8 @@ internal class WasmInstance_GetFunctionTests
                 )
             )
             .Validate();
-        var first = module.Instantiate([]);
-        var second = module.Instantiate([new WasmHostModule()]);
+        var first = module.Instantiate(executionContext, []);
+        var second = module.Instantiate(executionContext, [new WasmHostModule()]);
 
         // Act
         var function = first.GetFunction("run");
@@ -154,10 +159,10 @@ internal class WasmInstance_GetFunctionTests
         var alias = first.GetFunction("alias");
         var otherFunction = first.GetFunction("Run");
         var otherInstance = second.GetFunction("run");
-        var result = function.Invoke([]);
-        var aliasResult = alias.Invoke([]);
-        var otherFunctionResult = otherFunction.Invoke([]);
-        var otherInstanceResult = otherInstance.Invoke([]);
+        var result = function.Invoke(executionContext, []);
+        var aliasResult = alias.Invoke(executionContext, []);
+        var otherFunctionResult = otherFunction.Invoke(executionContext, []);
+        var otherInstanceResult = otherInstance.Invoke(executionContext, []);
 
         // Assert
         using (Assert.Multiple())
@@ -183,10 +188,11 @@ internal class WasmInstance_GetFunctionTests
     public async Task 関数名が存在しない_名前の引数不正として拒否する(string name)
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var instance = WasmModule
             .Decode(ConstantModuleBinary.Create(0x7F, 0x41, 0x01, 0x0B))
             .Validate()
-            .Instantiate([]);
+            .Instantiate(executionContext, []);
 
         // Act & Assert
         var exception = await Assert

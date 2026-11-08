@@ -6,6 +6,8 @@ namespace WasmSharp.Benchmarks.Tests.Fixtures;
 
 internal sealed class RunComparisonFixture : IDisposable
 {
+    private readonly CaseJson json_ = new CaseJson();
+
     private readonly RunStoreFixture template_ = new();
 
     internal string DirectoryPath => template_.DirectoryPath;
@@ -20,8 +22,8 @@ internal sealed class RunComparisonFixture : IDisposable
     internal long? AffinityAfter { get; set; } = 16384;
     internal string? AffinityUnavailableReason { get; set; }
     internal string? ProcessRuntimeVersion { get; set; }
-    internal Dictionary<string, string?> ProcessRuntimeVersionsByCase { get; } = [];
-    internal Dictionary<string, long> ProcessAffinitiesByCase { get; } = [];
+    internal Dictionary<(string JobId, string CaseId), string?> ProcessRuntimeVersions { get; } = [];
+    internal Dictionary<(string JobId, string CaseId), long> ProcessAffinities { get; } = [];
 
     internal RunComparisonFixture(string runId, string repositoryName)
     {
@@ -114,7 +116,7 @@ internal sealed class RunComparisonFixture : IDisposable
                 File.ReadAllBytes(
                     Path.Combine(AppContext.BaseDirectory, "Fixtures", "Data", "cases.json")
                 ),
-                CaseJson.Options
+                json_.Options
             )!
             .Where(x => x.CaseId == "invoke.single")
             .Select(x => x with { Workload = [new("calls", 1, WorkloadUnit.Iterations)] })];
@@ -170,7 +172,7 @@ internal sealed class RunComparisonFixture : IDisposable
 
     internal void Save()
     {
-        var store = RunStore.Create(DirectoryPath, Manifest);
+        var store = RunStore.Create(DirectoryPath, Manifest, json_);
         store.SaveInputs(
             SaveJson(store, "assets/asset-manifest.json", Assets),
             SaveJson(store, "cases.json", Cases),
@@ -190,23 +192,37 @@ internal sealed class RunComparisonFixture : IDisposable
         var processId = Manifest.RunId == "before" ? 4321 : 8765;
         foreach (var result in Manifest.Cases)
         {
-            var hasAffinity = ProcessAffinitiesByCase.TryGetValue(result.CaseId, out var affinity);
-            var check = store.SaveCheck(
-                template_.Check with
-                {
-                    RunId = Manifest.RunId,
-                    CaseId = result.CaseId,
-                    JobId = Jobs.Single().JobId,
-                    ProcessId = processId,
-                    AffinityBefore = hasAffinity ? affinity : AffinityBefore,
-                    AffinityAfter = hasAffinity ? affinity : AffinityAfter,
-                    AffinityUnavailableReason = AffinityUnavailableReason,
-                    RuntimeVersion = ProcessRuntimeVersionsByCase.GetValueOrDefault(
-                        result.CaseId,
-                        ProcessRuntimeVersion
-                    ),
-                }
-            );
+            List<BenchmarkProcessResult> processes = [];
+            foreach (var job in Jobs)
+            {
+                var key = (job.JobId, result.CaseId);
+                var hasAffinity = ProcessAffinities.TryGetValue(key, out var affinity);
+                var check = store.SaveCheck(
+                    template_.Check with
+                    {
+                        RunId = Manifest.RunId,
+                        CaseId = result.CaseId,
+                        JobId = job.JobId,
+                        ProcessId = processId,
+                        AffinityBefore = hasAffinity ? affinity : AffinityBefore,
+                        AffinityAfter = hasAffinity ? affinity : AffinityAfter,
+                        AffinityUnavailableReason = AffinityUnavailableReason,
+                        RuntimeVersion = ProcessRuntimeVersions.GetValueOrDefault(
+                            key,
+                            ProcessRuntimeVersion
+                        ),
+                    }
+                );
+                processes.Add(
+                    result.BenchmarkReport!.Processes.Single() with
+                    {
+                        JobId = job.JobId,
+                        ProcessId = processId,
+                        CheckFile = check,
+                    }
+                );
+                processId++;
+            }
             store.SaveCase(
                 result with
                 {
@@ -222,19 +238,10 @@ internal sealed class RunComparisonFixture : IDisposable
                     },
                     BenchmarkReport = result.BenchmarkReport! with
                     {
-                        Processes =
-                        [
-                            result.BenchmarkReport.Processes.Single() with
-                            {
-                                JobId = Jobs.Single().JobId,
-                                ProcessId = processId,
-                                CheckFile = check,
-                            },
-                        ],
+                        Processes = processes,
                     },
                 }
             );
-            processId++;
         }
         if (Manifest.Status != ResultStatus.Incomplete)
         {
@@ -242,9 +249,9 @@ internal sealed class RunComparisonFixture : IDisposable
         }
     }
 
-    private static ManifestFile SaveJson<T>(RunStore store, string path, T value)
+    private ManifestFile SaveJson<T>(RunStore store, string path, T value)
     {
-        return store.SaveFile(path, JsonSerializer.SerializeToUtf8Bytes(value, CaseJson.Options));
+        return store.SaveFile(path, JsonSerializer.SerializeToUtf8Bytes(value, json_.Options));
     }
 
     public void Dispose()

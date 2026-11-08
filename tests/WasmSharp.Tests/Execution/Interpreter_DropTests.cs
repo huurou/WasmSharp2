@@ -11,6 +11,7 @@ internal class Interpreter_DropTests
     public async Task 最上位の値を破棄する_残る値の順序と参照同一性を変えない()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var reference = new object();
         var found = InstructionSet.TryGet(new(0, 0x1A), out var descriptor);
         var function = ExecutionFunctionFixture.Create(
@@ -25,7 +26,7 @@ internal class Interpreter_DropTests
             [],
             3
         );
-        var context = InterpreterContext.Enter(new(10), out var isOutermost);
+        var context = executionContext.Enter(new(10), out var isOutermost);
         ExecutionResult result;
 
         // Act
@@ -40,8 +41,8 @@ internal class Interpreter_DropTests
         }
         finally
         {
+            executionContext.Exit(isOutermost);
             context.Restore(0, 0, 0);
-            InterpreterContext.Exit(isOutermost);
         }
 
         // Assert

@@ -16,8 +16,9 @@ internal static class NumericHandlerFixture
         int ValueCount
     ) Execute(Handler handler, ReadOnlySpan<WasmValue> operands)
     {
+        var executionContext = new WasmExecutionContext();
         var function = ExecutionFunctionFixture.Create([], maxOperandStack: operands.Length + 1);
-        var context = InterpreterContext.Enter(WasmExecutionOptions.Default, out var isOutermost);
+        var context = executionContext.Enter(WasmExecutionOptions.Default, out var isOutermost);
         try
         {
             context.Stage = WasmProcessingStage.Invoke;
@@ -35,8 +36,8 @@ internal static class NumericHandlerFixture
         }
         finally
         {
+            executionContext.Exit(isOutermost);
             context.Restore(0, 0, 0);
-            InterpreterContext.Exit(isOutermost);
         }
     }
 }

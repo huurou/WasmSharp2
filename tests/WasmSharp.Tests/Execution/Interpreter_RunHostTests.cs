@@ -10,10 +10,11 @@ internal class Interpreter_RunHostTests
     public async Task CLRスタックの余裕がない_hostを実行せず未計測上限の結果を返し深さを復元する()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var called = false;
         var host = WasmFunction.CreateHost(
             new([], []),
-            _ =>
+            (_, _) =>
             {
                 called = true;
                 return new([]);
@@ -23,19 +24,19 @@ internal class Interpreter_RunHostTests
         // Act
         var observed = ExecutionStackFixture.RunAtLimit(() =>
         {
-            var context = InterpreterContext.Enter(new(10), out var outermost);
+            var context = executionContext.Enter(new(10), out var outermost);
             try
             {
-                var result = Interpreter.RunHost(context, host, null, []);
+                var result = Interpreter.RunHost(executionContext, host, null, []);
                 return (
                     Result: result,
                     context.CallDepth,
-                    ContextPreserved: ReferenceEquals(context, InterpreterContext.Current)
+                    ContextPreserved: ReferenceEquals(context, executionContext.Current)
                 );
             }
             finally
             {
-                InterpreterContext.Exit(outermost);
+                executionContext.Exit(outermost);
             }
         });
 

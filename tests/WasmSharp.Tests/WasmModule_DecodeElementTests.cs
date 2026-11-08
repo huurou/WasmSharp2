@@ -15,6 +15,7 @@ internal partial class WasmModule_DecodeTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var bytes = HostLinkingModuleBinary.Create(
             HostLinkingModuleBinary.Section(9, Convert.FromHexString(payload))
         );
@@ -30,7 +31,7 @@ internal partial class WasmModule_DecodeTests
             if (payload == "00")
             {
                 await Assert
-                    .That(module.Validate().Instantiate([]).ElementSegments.IsEmpty)
+                    .That(module.Validate().Instantiate(executionContext, []).ElementSegments.IsEmpty)
                     .IsTrue();
             }
             else

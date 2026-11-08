@@ -69,7 +69,7 @@ internal static class RunReportFixture
 
     internal static CorpusManifest CreateManifest(params (string Path, int CommandCount)[] inputs)
     {
-        var profile = Core2Profile.Load() with
+        var profile = new Core2ProfileLoader().Load() with
         {
             Id = "fixture",
             Inputs = [.. inputs.Select(x => new SourceInput(x.Path, Sha256(x.Path)))],

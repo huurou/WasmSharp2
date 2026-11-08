@@ -11,11 +11,11 @@ namespace WasmSharp.Benchmarks.Cases;
 /// </summary>
 internal static class InputFactory
 {
-    internal static PreparedInput Create(BenchmarkCase definition)
+    internal static PreparedInput Create(BenchmarkCase definition, CaseJson json)
     {
         var input = definition.Input;
         var hash = Convert.ToHexStringLower(
-            SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(input, CaseJson.Options))
+            SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(input, json.Options))
         );
         if (hash != definition.InputHash)
         {
@@ -58,10 +58,7 @@ internal static class InputFactory
             NumericType.I32 => WasmValue.FromI32(unchecked((int)bits)),
             NumericType.I64 => WasmValue.FromI64(unchecked((long)bits)),
             NumericType.F32 => WasmValue.FromF32Bits((uint)bits),
-            NumericType.F64 => WasmValue.FromF64Bits(bits),
-            _ => throw new InvalidDataException(
-                $"ケース'{caseId}'の数値型'{value.Type}'は未対応です。"
-            ),
+            _ => WasmValue.FromF64Bits(bits),
         };
     }
 

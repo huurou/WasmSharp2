@@ -17,6 +17,7 @@ internal partial class WasmFunction_InvokeTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var state = new WasmGlobal(new(WasmValueKind.I32, true), WasmValue.FromI32(0));
         List<(int Argument, int State)> observed = [];
         var host = new WasmHostModule("env");
@@ -25,7 +26,7 @@ internal partial class WasmFunction_InvokeTests
             "observe",
             WasmFunction.CreateHost(
                 new([WasmValueKind.I32], [WasmValueKind.I32]),
-                (instance, arguments) =>
+                (callbackContext, instance, arguments) =>
                 {
                     var shared = instance.GetGlobalResource("state");
                     observed.Add((arguments[0].AsI32(), shared.Value.AsI32()));
@@ -62,12 +63,12 @@ internal partial class WasmFunction_InvokeTests
                 )
             )
             .Validate();
-        var instance = module.Instantiate([host]);
-        var other = module.Instantiate([host]);
+        var instance = module.Instantiate(executionContext, [host]);
+        var other = module.Instantiate(executionContext, [host]);
 
         // Act
-        var result = instance.GetFunction("run").Invoke([WasmValue.FromI32(condition)]);
-        var later = other.GetFunction("read").Invoke([]);
+        var result = instance.GetFunction("run").Invoke(executionContext, [WasmValue.FromI32(condition)]);
+        var later = other.GetFunction("read").Invoke(executionContext, []);
 
         // Assert
         using (Assert.Multiple())
@@ -94,6 +95,7 @@ internal partial class WasmFunction_InvokeTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var state = new WasmGlobal(new(WasmValueKind.I32, true), WasmValue.FromI32(1));
         var constant = new WasmGlobal(new(WasmValueKind.I64, false), WasmValue.FromI64(5));
         List<(int Marker, int State)> observed = [];
@@ -104,7 +106,7 @@ internal partial class WasmFunction_InvokeTests
             "observe",
             WasmFunction.CreateHost(
                 new([WasmValueKind.I32], []),
-                arguments =>
+                (callbackContext, arguments) =>
                 {
                     observed.Add((arguments[0].AsI32(), state.Value.AsI32()));
                     return new([]);
@@ -144,12 +146,12 @@ internal partial class WasmFunction_InvokeTests
                 )
             )
             .Validate();
-        var instance = module.Instantiate([host]);
-        var other = module.Instantiate([host]);
+        var instance = module.Instantiate(executionContext, [host]);
+        var other = module.Instantiate(executionContext, [host]);
 
         // Act
-        instance.GetFunction("run").Invoke([WasmValue.FromI32(condition)]);
-        var later = other.GetFunction("read").Invoke([]);
+        instance.GetFunction("run").Invoke(executionContext, [WasmValue.FromI32(condition)]);
+        var later = other.GetFunction("read").Invoke(executionContext, []);
 
         // Assert
         using (Assert.Multiple())
@@ -172,10 +174,11 @@ internal partial class WasmFunction_InvokeTests
     public async Task 数値条件の制御からimport定義関数と再exportしたhostを呼ぶ_同じ関数実体と所属instanceを保つ()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         List<(WasmInstance Instance, int Argument, int State)> observed = [];
         var callback = WasmFunction.CreateHost(
             new([WasmValueKind.I32], [WasmValueKind.I32]),
-            (instance, arguments) =>
+            (callbackContext, instance, arguments) =>
             {
                 var state = instance.GetGlobalResource("state");
                 observed.Add((instance, arguments[0].AsI32(), state.Value.AsI32()));
@@ -203,7 +206,7 @@ internal partial class WasmFunction_InvokeTests
                 )
             )
             .Validate()
-            .Instantiate([host]);
+            .Instantiate(executionContext, [host]);
         var provider = new WasmHostModule("source");
         provider.Define("f", source.GetFunction("f"));
         provider.Define("h", source.GetFunction("h"));
@@ -237,10 +240,10 @@ internal partial class WasmFunction_InvokeTests
                 )
             )
             .Validate()
-            .Instantiate([provider]);
+            .Instantiate(executionContext, [provider]);
 
         // Act
-        var result = destination.GetFunction("run").Invoke([]);
+        var result = destination.GetFunction("run").Invoke(executionContext, []);
 
         // Assert
         using (Assert.Multiple())
@@ -274,6 +277,7 @@ internal partial class WasmFunction_InvokeTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         Exception expected = runtimeTrap
             ? new WasmTrapException(
                 "host側のtrap",
@@ -290,7 +294,7 @@ internal partial class WasmFunction_InvokeTests
             "fail",
             WasmFunction.CreateHost(
                 new([], []),
-                (instance, _) =>
+                (callbackContext, instance, _) =>
                 {
                     observed = instance;
                     throw expected;
@@ -301,7 +305,7 @@ internal partial class WasmFunction_InvokeTests
             "after",
             WasmFunction.CreateHost(
                 new([], []),
-                _ =>
+                (callbackContext, _) =>
                 {
                     afterCalled = true;
                     return new([]);
@@ -332,23 +336,23 @@ internal partial class WasmFunction_InvokeTests
                 )
             )
             .Validate()
-            .Instantiate([host]);
+            .Instantiate(executionContext, [host]);
         var function = instance.GetFunction("run");
 
         // Act & Assert
         Exception? actual = runtimeTrap
             ? await Assert
-                .That(() => function.Invoke([WasmValue.FromI32(0)]))
+                .That(() => function.Invoke(executionContext, [WasmValue.FromI32(0)]))
                 .ThrowsExactly<WasmTrapException>()
             : await Assert
-                .That(() => function.Invoke([WasmValue.FromI32(0)]))
+                .That(() => function.Invoke(executionContext, [WasmValue.FromI32(0)]))
                 .ThrowsExactly<InvalidOperationException>();
         using (Assert.Multiple())
         {
             await Assert.That(actual).IsSameReferenceAs(expected);
             await Assert.That(observed).IsSameReferenceAs(instance);
             await Assert
-                .That(instance.GetFunction("read").Invoke([]).Values[0].AsI32())
+                .That(instance.GetFunction("read").Invoke(executionContext, []).Values[0].AsI32())
                 .IsEqualTo(9);
             await Assert.That(afterCalled).IsFalse();
         }
@@ -364,6 +368,7 @@ internal partial class WasmFunction_InvokeTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var state = new WasmGlobal(new(WasmValueKind.I32, true), WasmValue.FromI32(0));
         List<int> observed = [];
         var host = new WasmHostModule("env");
@@ -372,7 +377,7 @@ internal partial class WasmFunction_InvokeTests
             "observe",
             WasmFunction.CreateHost(
                 new([WasmValueKind.I32], [WasmValueKind.I32]),
-                arguments =>
+                (callbackContext, arguments) =>
                 {
                     var marker = arguments[0].AsI32();
                     observed.Add(marker);
@@ -403,12 +408,12 @@ internal partial class WasmFunction_InvokeTests
                 )
             )
         );
-        var instance = WasmModule.Decode(bytes).Validate().Instantiate([host]);
+        var instance = WasmModule.Decode(bytes).Validate().Instantiate(executionContext, [host]);
         var expectedOffset = bytes.Length - afterTrap.Length - 1;
 
         // Act & Assert
         var exception = await Assert
-            .That(() => instance.GetFunction("run").Invoke([]))
+            .That(() => instance.GetFunction("run").Invoke(executionContext, []))
             .ThrowsExactly<WasmTrapException>();
         using (Assert.Multiple())
         {
@@ -421,7 +426,7 @@ internal partial class WasmFunction_InvokeTests
                 .IsEqualTo(new WasmFailureLocation(WasmProcessingStage.Invoke, expectedOffset, 2));
             await Assert.That(observed.SequenceEqual([1, 2])).IsTrue();
             await Assert
-                .That(instance.GetFunction("read").Invoke([]).Values[0].AsI32())
+                .That(instance.GetFunction("read").Invoke(executionContext, []).Values[0].AsI32())
                 .IsEqualTo(3);
         }
     }
@@ -441,6 +446,7 @@ internal partial class WasmFunction_InvokeTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         byte[] f32Select = typed ? [0x1C, 1, 0x7D] : [0x1B];
         byte[] f64Select = typed ? [0x1C, 1, 0x7C] : [0x1B];
         var function = WasmModule
@@ -474,18 +480,18 @@ internal partial class WasmFunction_InvokeTests
                 )
             )
             .Validate()
-            .Instantiate([])
+            .Instantiate(executionContext, [])
             .GetFunction("run");
 
         // Act
-        var nan = function.Invoke([
+        var nan = function.Invoke(executionContext, [
             WasmValue.FromF32Bits(0xFF812345),
             WasmValue.FromF32Bits(0x7FC54321),
             WasmValue.FromF64Bits(0xFFF0123456789ABC),
             WasmValue.FromF64Bits(0x7FF8ABCDEF012345),
             WasmValue.FromI32(condition),
         ]);
-        var zero = function.Invoke([
+        var zero = function.Invoke(executionContext, [
             WasmValue.FromF32Bits(0x80000000),
             WasmValue.FromF32Bits(0),
             WasmValue.FromF64Bits(0x8000000000000000),

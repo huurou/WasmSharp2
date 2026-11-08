@@ -20,6 +20,7 @@ internal partial class WasmModule_InstantiateTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var afterCalled = false;
         var saveCalls = 0;
         var shared = new WasmGlobal(new(WasmValueKind.I32, true), WasmValue.FromI32(0));
@@ -36,7 +37,7 @@ internal partial class WasmModule_InstantiateTests
             "save",
             WasmFunction.CreateHost(
                 new([], []),
-                (instance, _) =>
+                (callbackContext, instance, _) =>
                 {
                     saveCalls++;
                     savedInstance = instance;
@@ -54,7 +55,7 @@ internal partial class WasmModule_InstantiateTests
             "after",
             WasmFunction.CreateHost(
                 new([], []),
-                _ =>
+                (callbackContext, _) =>
                 {
                     afterCalled = true;
                     return new([]);
@@ -119,14 +120,14 @@ internal partial class WasmModule_InstantiateTests
 
         // Act & Assert
         var exception = await Assert
-            .That(() => returned = module.Instantiate([host]))
+            .That(() => returned = module.Instantiate(executionContext, [host]))
             .ThrowsExactly<WasmTrapException>();
         await Assert.That(savedInstance).IsNotNull();
 
         // Act
-        var valueAfterTrap = savedFunction!.Invoke([]).Values[0].AsI32();
+        var valueAfterTrap = savedFunction!.Invoke(executionContext, []).Values[0].AsI32();
         savedGlobal!.Value = WasmValue.FromI32(44);
-        var updatedValue = savedInstance!.GetFunction("read").Invoke([]).Values[0].AsI32();
+        var updatedValue = savedInstance!.GetFunction("read").Invoke(executionContext, []).Values[0].AsI32();
         byte[] written = [0];
         savedMemory!.Read(0, written);
         savedMemory.Write(0, [10]);

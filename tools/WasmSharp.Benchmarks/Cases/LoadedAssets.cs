@@ -31,10 +31,10 @@ internal sealed class LoadedAssets(
             : throw new InvalidDataException($"ケース'{caseId}'は未登録です。");
     }
 
-    internal static LoadedAssets Load(string path)
+    internal static LoadedAssets Load(string path, CaseJson json, MeasurementMethods methods)
     {
         var directory = Path.GetDirectoryName(Path.GetFullPath(path))!;
-        var manifest = ReadJson<AssetManifest>(File.ReadAllBytes(path), path);
+        var manifest = ReadJson<AssetManifest>(File.ReadAllBytes(path), path, json);
         if (manifest.SchemaVersion != 1)
         {
             throw new InvalidDataException(
@@ -46,8 +46,11 @@ internal sealed class LoadedAssets(
         var catalog = new CaseCatalog(
             ReadJson<List<BenchmarkCase>>(
                 ReadVerified(directory, manifest.Cases),
-                manifest.Cases.RelativePath
-            )
+                manifest.Cases.RelativePath,
+                json
+            ),
+            json,
+            methods
         );
         var binaries = ImmutableDictionary.CreateBuilder<string, ImmutableArray<byte>>(
             StringComparer.Ordinal
@@ -81,7 +84,7 @@ internal sealed class LoadedAssets(
                     $"ケース'{definition.CaseId}'の素材'{definition.AssetId}'が存在しないか、素材hashが一致しません。"
                 );
             }
-            inputs.Add(definition.CaseId, InputFactory.Create(definition));
+            inputs.Add(definition.CaseId, InputFactory.Create(definition, json));
         }
 
         return new LoadedAssets(manifest, catalog, binaries.ToImmutable(), inputs.ToImmutable());
@@ -123,11 +126,11 @@ internal sealed class LoadedAssets(
         return path;
     }
 
-    private static T ReadJson<T>(byte[] bytes, string path)
+    private static T ReadJson<T>(byte[] bytes, string path, CaseJson json)
     {
         try
         {
-            return JsonSerializer.Deserialize<T>(bytes, CaseJson.Options)
+            return JsonSerializer.Deserialize<T>(bytes, json.Options)
                 ?? throw new InvalidDataException($"'{path}'のJSONがnullです。");
         }
         catch (JsonException exception)

@@ -16,8 +16,8 @@ internal class WasmFunction_CreateHostTests
     {
         // Arrange
         var type = nullType ? null! : new WasmFunctionType([], []);
-        WasmHostCallback callback = nullType ? _ => new([]) : null!;
-        WasmHostInstanceCallback instanceCallback = nullType ? (_, _) => new([]) : null!;
+        WasmHostCallback callback = nullType ? (callbackContext, _) => new([]) : null!;
+        WasmHostInstanceCallback instanceCallback = nullType ? (callbackContext, _, _) => new([]) : null!;
 
         // Act & Assert
         var exception = await Assert
@@ -37,8 +37,8 @@ internal class WasmFunction_CreateHostTests
     {
         // Arrange
         var type = new WasmFunctionType([WasmValueKind.I32], [WasmValueKind.ExternRef]);
-        WasmHostCallback callback = _ => new([]);
-        WasmHostInstanceCallback instanceCallback = (_, _) => new([]);
+        WasmHostCallback callback = (callbackContext, _) => new([]);
+        WasmHostInstanceCallback instanceCallback = (callbackContext, _, _) => new([]);
 
         // Act
         var function = withInstance

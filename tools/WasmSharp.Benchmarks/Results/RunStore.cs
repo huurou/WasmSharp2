@@ -10,35 +10,40 @@ namespace WasmSharp.Benchmarks.Results;
 internal sealed class RunStore
 {
     private readonly string outputDirectory_;
+    private readonly CaseJson json_;
     private RunManifest manifest_;
     private bool savingFailed_;
 
-    private RunStore(string outputDirectory, RunManifest manifest)
+    private RunStore(string outputDirectory, RunManifest manifest, CaseJson json)
     {
         outputDirectory_ = Path.TrimEndingDirectorySeparator(Path.GetFullPath(outputDirectory));
+        json_ = json;
         manifest_ = manifest;
     }
 
     /// <summary>
     /// 子processが未完了runへ検査snapshotを追記するために開く
     /// </summary>
-    internal static RunStore OpenChecks(string outputDirectory, string runId)
+    internal static RunStore OpenChecks(string outputDirectory, string runId, CaseJson json)
     {
         var manifest = JsonSerializer.Deserialize<RunManifest>(
             File.ReadAllBytes(Path.Combine(outputDirectory, "run.json")),
-            CaseJson.Options
+            json.Options
         )!;
         if (manifest.RunId != runId || manifest.CompletedAtUtc is not null)
         {
             throw new InvalidDataException("検査の保存先runが一致しないか完了しています。");
         }
-        return new(outputDirectory, manifest);
+        return new RunStore(outputDirectory, manifest, json);
     }
 
     /// <summary>
     /// 追記した検査snapshotを保存参照とともに読み出す
     /// </summary>
-    internal static List<(ManifestFile File, ProcessCheck Check)> ReadChecks(string outputDirectory)
+    internal static List<(ManifestFile File, ProcessCheck Check)> ReadChecks(
+        string outputDirectory,
+        CaseJson json
+    )
     {
         var directory = Path.Combine(outputDirectory, "checks");
         if (!Directory.Exists(directory))
@@ -55,7 +60,7 @@ internal sealed class RunStore
                         Path.GetRelativePath(outputDirectory, x).Replace('\\', '/'),
                         Convert.ToHexStringLower(SHA256.HashData(bytes))
                     ),
-                    JsonSerializer.Deserialize<ProcessCheck>(bytes, CaseJson.Options)!
+                    JsonSerializer.Deserialize<ProcessCheck>(bytes, json.Options)!
                 );
             })];
     }
@@ -63,7 +68,7 @@ internal sealed class RunStore
     /// <summary>
     /// 予定ケースと識別情報を持つ未完了runを新規作成する
     /// </summary>
-    internal static RunStore Create(string outputDirectory, RunManifest manifest)
+    internal static RunStore Create(string outputDirectory, RunManifest manifest, CaseJson json)
     {
         if (Path.Exists(outputDirectory))
         {
@@ -85,7 +90,8 @@ internal sealed class RunStore
                 CasesFile = null,
                 JobSettingsFile = null,
                 Failures = [],
-            }
+            },
+            json
         );
         store.SaveManifest(store.manifest_, overwrite: false);
         return store;
@@ -94,11 +100,11 @@ internal sealed class RunStore
     /// <summary>
     /// 完了記録と保存参照を照合し、未確定または不整合なrunを未完了で返す
     /// </summary>
-    internal static RunManifest Load(string outputDirectory)
+    internal static RunManifest Load(string outputDirectory, CaseJson json)
     {
         var manifest = JsonSerializer.Deserialize<RunManifest>(
             File.ReadAllBytes(Path.Combine(outputDirectory, "run.json")),
-            CaseJson.Options
+            json.Options
         )!;
         if (manifest.CompletedAtUtc is null)
         {
@@ -112,7 +118,7 @@ internal sealed class RunStore
                 return AsIncomplete(manifest, "予定ケースが完了していません。");
             }
 
-            new RunStore(Path.GetFullPath(outputDirectory), manifest).VerifyReferences();
+            new RunStore(Path.GetFullPath(outputDirectory), manifest, json).VerifyReferences();
             return manifest;
         }
         catch (Exception exception)
@@ -175,7 +181,7 @@ internal sealed class RunStore
     {
         var file = SaveFile(
             "environment.json",
-            JsonSerializer.SerializeToUtf8Bytes(environment, CaseJson.Options)
+            JsonSerializer.SerializeToUtf8Bytes(environment, json_.Options)
         );
         SaveManifest(manifest_ with { EnvironmentFile = file });
     }
@@ -187,8 +193,8 @@ internal sealed class RunStore
     internal void SaveSource(RunSource source)
     {
         var file = SaveFile(
-            "source/source-" + Guid.NewGuid().ToString("N") + ".json",
-            JsonSerializer.SerializeToUtf8Bytes(source, CaseJson.Options)
+            "source/source-" + Guid.NewGuid().ToString() + ".json",
+            JsonSerializer.SerializeToUtf8Bytes(source, json_.Options)
         );
         SaveManifest(manifest_ with { SourceFile = file });
     }
@@ -207,8 +213,8 @@ internal sealed class RunStore
         }
 
         return SaveFile(
-            "checks/" + Guid.NewGuid().ToString("N") + ".json",
-            JsonSerializer.SerializeToUtf8Bytes(check, CaseJson.Options)
+            "checks/" + Guid.NewGuid().ToString() + ".json",
+            JsonSerializer.SerializeToUtf8Bytes(check, json_.Options)
         );
     }
 
@@ -310,7 +316,7 @@ internal sealed class RunStore
         var source =
             JsonSerializer.Deserialize<RunSource>(
                 ReadSavedFile(manifest_.SourceFile),
-                CaseJson.Options
+                json_.Options
             ) ?? throw new InvalidDataException("source情報が保存されていません。");
         ReadSavedFile(source.IndexDiff);
         ReadSavedFile(source.WorktreeDiff);
@@ -341,7 +347,7 @@ internal sealed class RunStore
 
                 var check = JsonSerializer.Deserialize<ProcessCheck>(
                     ReadSavedFile(file),
-                    CaseJson.Options
+                    json_.Options
                 )!;
                 if (
                     check.RunId != manifest_.RunId
@@ -405,13 +411,10 @@ internal sealed class RunStore
         EnsureOpen();
         try
         {
-            var temporaryPath = Path.Combine(
-                outputDirectory_,
-                Guid.NewGuid().ToString("N") + ".tmp"
-            );
-            var content = JsonSerializer.SerializeToUtf8Bytes(manifest, CaseJson.Options);
+            var temporaryPath = Path.Combine(outputDirectory_, Guid.NewGuid().ToString());
+            var content = JsonSerializer.SerializeToUtf8Bytes(manifest, json_.Options);
             // 呼出元がDTOの一覧を変更しても、保存済みの対応を変えない
-            var snapshot = JsonSerializer.Deserialize<RunManifest>(content, CaseJson.Options)!;
+            var snapshot = JsonSerializer.Deserialize<RunManifest>(content, json_.Options)!;
             File.WriteAllBytes(temporaryPath, content);
             File.Move(temporaryPath, Path.Combine(outputDirectory_, "run.json"), overwrite);
             manifest_ = snapshot;

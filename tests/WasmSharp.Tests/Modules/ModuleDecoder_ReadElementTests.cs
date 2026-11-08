@@ -415,6 +415,7 @@ internal class ModuleDecoder_ReadElementTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         byte[] prefix = initializer ? [1, 5, 0x70, 1] : [1, 0];
         byte[] suffix = initializer ? [] : [0];
         byte[] payload = [.. prefix, 0xFD, 0x0C, .. new byte[16], 0x0B, .. suffix];
@@ -459,7 +460,7 @@ internal class ModuleDecoder_ReadElementTests
                 .That(failure.Location)
                 .IsEqualTo(new(WasmProcessingStage.Validate, expectedOffset, null, 9));
             await Assert
-                .That(() => module.Instantiate([]))
+                .That(() => module.Instantiate(executionContext, []))
                 .ThrowsExactly<InvalidOperationException>();
         }
     }

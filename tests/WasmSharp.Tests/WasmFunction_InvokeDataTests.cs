@@ -9,6 +9,7 @@ internal partial class WasmFunction_InvokeTests
     public async Task メモリのないmoduleでパッシブデータを繰り返し破棄する_引数も結果もなく成功する()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var bytes = HostLinkingModuleBinary.Create(
             HostLinkingModuleBinary.Types(([], [])),
             HostLinkingModuleBinary.Functions(0),
@@ -17,11 +18,11 @@ internal partial class WasmFunction_InvokeTests
             HostLinkingModuleBinary.Code(([], [0xFC, 9, 0, 0x0B])),
             HostLinkingModuleBinary.Section(11, [1, 1, 2, 0xAB, 0xCD])
         );
-        var instance = WasmModule.Decode(bytes).Validate().Instantiate([]);
+        var instance = WasmModule.Decode(bytes).Validate().Instantiate(executionContext, []);
 
         // Act
-        var first = instance.GetFunction("drop").Invoke([]);
-        var second = instance.GetFunction("drop").Invoke([]);
+        var first = instance.GetFunction("drop").Invoke(executionContext, []);
+        var second = instance.GetFunction("drop").Invoke(executionContext, []);
 
         // Assert
         using (Assert.Multiple())
@@ -39,6 +40,7 @@ internal partial class WasmFunction_InvokeTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var bytes = HostLinkingModuleBinary.Create(
             HostLinkingModuleBinary.Types(([0x7F, 0x7F, 0x7F], [])),
             imported ? HostLinkingModuleBinary.Imports(("env", "m", 2, [0, 1])) : [],
@@ -52,7 +54,7 @@ internal partial class WasmFunction_InvokeTests
         var hostMemory = new WasmMemory(new(1, null));
         var host = new WasmHostModule("env");
         host.Define("m", hostMemory);
-        var instance = WasmModule.Decode(bytes).Validate().Instantiate(imported ? [host] : []);
+        var instance = WasmModule.Decode(bytes).Validate().Instantiate(executionContext, imported ? [host] : []);
         var memory = instance.GetMemory("memory");
         var original = new byte[8];
         memory.Read(0, original);
@@ -61,10 +63,10 @@ internal partial class WasmFunction_InvokeTests
         // Act
         var first = instance
             .GetFunction("init")
-            .Invoke([WasmValue.FromI32(1), WasmValue.FromI32(1), WasmValue.FromI32(2)]);
+            .Invoke(executionContext, [WasmValue.FromI32(1), WasmValue.FromI32(1), WasmValue.FromI32(2)]);
         var second = instance
             .GetFunction("init")
-            .Invoke([WasmValue.FromI32(4), WasmValue.FromI32(0), WasmValue.FromI32(4)]);
+            .Invoke(executionContext, [WasmValue.FromI32(4), WasmValue.FromI32(0), WasmValue.FromI32(4)]);
         var actual = new byte[8];
         memory.Read(0, actual);
 
@@ -86,19 +88,20 @@ internal partial class WasmFunction_InvokeTests
     public async Task 同じmoduleの一方のinstanceだけでデータを破棄する_他方の内容を保ち破棄済みデータは空として扱う()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var module = WasmModule.Decode(CreateDataInitializationModule()).Validate();
-        var first = module.Instantiate([]);
-        var second = module.Instantiate([]);
+        var first = module.Instantiate(executionContext, []);
+        var second = module.Instantiate(executionContext, []);
 
         // Act
-        first.GetFunction("drop").Invoke([]);
-        first.GetFunction("drop").Invoke([]);
+        first.GetFunction("drop").Invoke(executionContext, []);
+        first.GetFunction("drop").Invoke(executionContext, []);
         first
             .GetFunction("init")
-            .Invoke([WasmValue.FromI32(65536), WasmValue.FromI32(0), WasmValue.FromI32(0)]);
+            .Invoke(executionContext, [WasmValue.FromI32(65536), WasmValue.FromI32(0), WasmValue.FromI32(0)]);
         second
             .GetFunction("init")
-            .Invoke([WasmValue.FromI32(0), WasmValue.FromI32(0), WasmValue.FromI32(4)]);
+            .Invoke(executionContext, [WasmValue.FromI32(0), WasmValue.FromI32(0), WasmValue.FromI32(4)]);
         var actual = new byte[4];
         second.GetMemory("memory").Read(0, actual);
 
@@ -110,7 +113,7 @@ internal partial class WasmFunction_InvokeTests
             .That(() =>
                 first
                     .GetFunction("init")
-                    .Invoke([WasmValue.FromI32(0), WasmValue.FromI32(0), WasmValue.FromI32(1)])
+                    .Invoke(executionContext, [WasmValue.FromI32(0), WasmValue.FromI32(0), WasmValue.FromI32(1)])
             )
             .ThrowsExactly<WasmTrapException>();
     }
@@ -139,14 +142,15 @@ internal partial class WasmFunction_InvokeTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var bytes = CreateDataInitializationModule();
-        var instance = WasmModule.Decode(bytes).Validate().Instantiate([]);
+        var instance = WasmModule.Decode(bytes).Validate().Instantiate(executionContext, []);
         var memory = instance.GetMemory("memory");
         var original = Enumerable.Range(0, 65536).Select(x => (byte)(x % 251 + 1)).ToArray();
         memory.Write(0, original);
         if (dropped)
         {
-            instance.GetFunction("drop").Invoke([]);
+            instance.GetFunction("drop").Invoke(executionContext, []);
         }
         var arguments = new[]
         {
@@ -158,7 +162,7 @@ internal partial class WasmFunction_InvokeTests
         if (succeeds)
         {
             // Act
-            var result = instance.GetFunction("init").Invoke(arguments);
+            var result = instance.GetFunction("init").Invoke(executionContext, arguments);
 
             // Assert
             await Assert.That(result.Values.IsEmpty).IsTrue();
@@ -167,7 +171,7 @@ internal partial class WasmFunction_InvokeTests
         {
             // Act & Assert
             var exception = await Assert
-                .That(() => instance.GetFunction("init").Invoke(arguments))
+                .That(() => instance.GetFunction("init").Invoke(executionContext, arguments))
                 .ThrowsExactly<WasmTrapException>();
             using (Assert.Multiple())
             {
@@ -198,10 +202,11 @@ internal partial class WasmFunction_InvokeTests
     public async Task アクティブデータは初期化後も同じインデックスで参照できる_空データとして扱い繰り返し破棄できる()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var instance = WasmModule
             .Decode(CreateDataInitializationModule(true))
             .Validate()
-            .Instantiate([]);
+            .Instantiate(executionContext, []);
         var memory = instance.GetMemory("memory");
         var actual = new byte[4];
         memory.Read(2, actual);
@@ -209,9 +214,9 @@ internal partial class WasmFunction_InvokeTests
         // Act
         instance
             .GetFunction("init")
-            .Invoke([WasmValue.FromI32(65536), WasmValue.FromI32(0), WasmValue.FromI32(0)]);
-        instance.GetFunction("drop").Invoke([]);
-        instance.GetFunction("drop").Invoke([]);
+            .Invoke(executionContext, [WasmValue.FromI32(65536), WasmValue.FromI32(0), WasmValue.FromI32(0)]);
+        instance.GetFunction("drop").Invoke(executionContext, []);
+        instance.GetFunction("drop").Invoke(executionContext, []);
 
         // Assert
         await Assert.That(Convert.ToHexString(actual)).IsEqualTo("11223344");
@@ -221,7 +226,7 @@ internal partial class WasmFunction_InvokeTests
             .That(() =>
                 instance
                     .GetFunction("init")
-                    .Invoke([WasmValue.FromI32(0), WasmValue.FromI32(0), WasmValue.FromI32(1)])
+                    .Invoke(executionContext, [WasmValue.FromI32(0), WasmValue.FromI32(0), WasmValue.FromI32(1)])
             )
             .ThrowsExactly<WasmTrapException>();
     }

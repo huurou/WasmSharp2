@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.Json;
 using WasmSharp.TestSuiteRunner.Baselines;
 using WasmSharp.TestSuiteRunner.Reports;
@@ -7,6 +8,8 @@ namespace WasmSharp.TestSuiteRunner.Tests.Reports;
 
 internal class ReportStore_SaveTests
 {
+    private readonly ReportStore reportStore_ = new ReportStore();
+
     [Test]
     public async Task 実行結果とmanifestを保存する_schemaとkindを持つsnake_caseのUTF8JSONとして読み戻せる()
     {
@@ -17,18 +20,19 @@ internal class ReportStore_SaveTests
         var manifestPath = directory.Combine("manifest.json");
 
         // Act
-        ReportStore.Save(report, reportPath);
-        ReportStore.Save(report.Corpus, manifestPath);
+        reportStore_.Save(report, reportPath);
+        reportStore_.Save(report.Corpus, manifestPath);
 
         // Assert
         var content = await File.ReadAllBytesAsync(reportPath);
         using var document = JsonDocument.Parse(content);
         var root = document.RootElement;
         var cases = root.GetProperty("inputs")[0].GetProperty("cases");
-        var stored = ReportStore.ReadRunReport(reportPath);
+        var stored = reportStore_.ReadRunReport(reportPath);
         using (Assert.Multiple())
         {
             await Assert.That(content[0]).IsEqualTo((byte)'{');
+            await Assert.That(Encoding.UTF8.GetString(content)).Contains("\n  \"schema_version\": 1");
             await Assert.That(root.GetProperty("schema_version").GetInt32()).IsEqualTo(1);
             await Assert.That(root.GetProperty("kind").GetString()).IsEqualTo("run_report");
             await Assert
@@ -50,7 +54,7 @@ internal class ReportStore_SaveTests
             await Assert
                 .That(JsonSerializer.Serialize(stored.Report))
                 .IsEqualTo(JsonSerializer.Serialize(report));
-            await Assert.That(ReportStore.ReadManifest(manifestPath).Issues).IsEmpty();
+            await Assert.That(reportStore_.ReadManifest(manifestPath).Issues).IsEmpty();
             await Assert.That(Directory.GetFiles(directory.Root, "*.tmp")).IsEmpty();
         }
     }
@@ -86,7 +90,7 @@ internal class ReportStore_SaveTests
         var path = directory.Combine("comparison.json");
 
         // Act
-        ReportStore.Save(report, path);
+        reportStore_.Save(report, path);
 
         // Assert
         using var document = JsonDocument.Parse(await File.ReadAllBytesAsync(path));
@@ -126,10 +130,10 @@ internal class ReportStore_SaveTests
         var report = RunReportFixture.CreateSample();
         Action save = kind switch
         {
-            "corpus_manifest" => () => ReportStore.Save(report.Corpus, path),
-            "run_report" => () => ReportStore.Save(report, path),
+            "corpus_manifest" => () => reportStore_.Save(report.Corpus, path),
+            "run_report" => () => reportStore_.Save(report, path),
             _ => () =>
-                ReportStore.Save(
+                reportStore_.Save(
                     new ComparisonReport(ComparisonType.Run, new("/baseline.json"), new(path)),
                     path
                 ),
@@ -156,7 +160,7 @@ internal class ReportStore_SaveTests
 
         // Act & Assert
         var exception = await Assert
-            .That(() => ReportStore.Save(RunReportFixture.CreateSample(), path))
+            .That(() => reportStore_.Save(RunReportFixture.CreateSample(), path))
             .ThrowsExactly<ReportStoreException>();
         using (Assert.Multiple())
         {

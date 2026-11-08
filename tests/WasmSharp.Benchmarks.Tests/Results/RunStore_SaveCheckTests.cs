@@ -7,6 +7,8 @@ namespace WasmSharp.Benchmarks.Tests.Results;
 
 internal class RunStore_SaveCheckTests
 {
+    private readonly CaseJson json_ = new CaseJson();
+
     [Test]
     [Arguments("other-run", "invoke.single")]
     [Arguments("fixture-success", "other-case")]
@@ -17,11 +19,16 @@ internal class RunStore_SaveCheckTests
     {
         // Arrange
         using var fixture = new RunStoreFixture();
-        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest);
+        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, json_);
         var check = fixture.Check with { RunId = runId, CaseId = caseId };
 
         // Act & Assert
-        await Assert.That(() => store.SaveCheck(check)).ThrowsExactly<ArgumentException>();
+        var failure = await Assert.That(() => store.SaveCheck(check)).ThrowsExactly<ArgumentException>();
+        await Assert
+            .That(failure!.Message)
+            .Contains("run")
+            .And.Contains("ケース")
+            .And.Contains("一致しません");
     }
 
     [Test]
@@ -29,7 +36,7 @@ internal class RunStore_SaveCheckTests
     {
         // Arrange
         using var fixture = new RunStoreFixture();
-        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest);
+        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, json_);
         var precheck = fixture.Check with
         {
             ExecutionStarted = false,
@@ -49,8 +56,10 @@ internal class RunStore_SaveCheckTests
         var last = store.SaveCheck(fixture.Check);
         var restored = JsonSerializer.Deserialize<ProcessCheck>(
             File.ReadAllBytes(Path.Combine(fixture.DirectoryPath, first.RelativePath)),
-            CaseJson.Options
+            json_.Options
         )!;
+        File.WriteAllText(Path.Combine(fixture.DirectoryPath, "checks", "notes.txt"), "検査JSONではないファイル");
+        var checks = RunStore.ReadChecks(fixture.DirectoryPath, json_);
 
         // Assert
         using (Assert.Multiple())
@@ -65,6 +74,7 @@ internal class RunStore_SaveCheckTests
             await Assert.That(restored.LastConfirmedStage).IsEqualTo(RunStage.Precheck);
             await Assert.That(restored.ExecutionStarted).IsFalse();
             await Assert.That(restored.Postcheck).IsNull();
+            await Assert.That(checks.Select(x => x.File)).IsEquivalentTo([first, second, last]);
         }
     }
 }

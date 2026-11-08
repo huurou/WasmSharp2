@@ -12,10 +12,11 @@ internal class WasmTable_TrySetTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var function = WasmModule
             .Decode(ConstantModuleBinary.Create(0x7F, 0x41, 0x01, 0x0B))
             .Validate()
-            .Instantiate([])
+            .Instantiate(executionContext, [])
             .GetFunction("run");
         var external = new object();
         var value =

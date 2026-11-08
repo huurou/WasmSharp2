@@ -252,6 +252,7 @@ internal partial class WasmModule_ValidateTests
             await Assert
                 .That(exception!.Message.StartsWith("type mismatch", StringComparison.Ordinal))
                 .IsTrue();
+            await Assert.That(exception.Message).Contains("要素セグメントの参照型と対象テーブル");
             await Assert
                 .That(exception.Location)
                 .IsEqualTo(new(WasmProcessingStage.Validate, 50, null, 9));
@@ -341,6 +342,7 @@ internal partial class WasmModule_ValidateTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var module = CreateElementValidationModule(
             [
                 CreateValidationElement(
@@ -389,7 +391,7 @@ internal partial class WasmModule_ValidateTests
                 await Assert.That(module.FunctionCodes.IsEmpty).IsTrue();
                 await Assert.That(module.FunctionExportIndices.IsEmpty).IsTrue();
                 await Assert
-                    .That(() => module.Instantiate([]))
+                    .That(() => module.Instantiate(executionContext, []))
                     .ThrowsExactly<InvalidOperationException>();
             }
         }

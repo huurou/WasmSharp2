@@ -8,6 +8,7 @@ internal class WasmInstance_GetGlobalTests
     public async Task 共有globalを更新する_反復取得で現在値を返す()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var instance = WasmModule
             .Decode(
                 HostLinkingModuleBinary.Create(
@@ -16,7 +17,7 @@ internal class WasmInstance_GetGlobalTests
                 )
             )
             .Validate()
-            .Instantiate([]);
+            .Instantiate(executionContext, []);
         var before = instance.GetGlobal("g");
 
         // Act
@@ -41,10 +42,11 @@ internal class WasmInstance_GetGlobalTests
     public async Task 指定した種類のexportがない_名前の引数不正として拒否する(string name)
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var instance = WasmModule
             .Decode(ConstantModuleBinary.Create(0x7F, 0x41, 0x01, 0x0B))
             .Validate()
-            .Instantiate([]);
+            .Instantiate(executionContext, []);
 
         // Act & Assert
         var exception = await Assert

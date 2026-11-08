@@ -199,6 +199,7 @@ internal partial class ModuleValidator_ValidateTests
         string diagnostic
     )
     {
+        var executionContext = new WasmExecutionContext();
         var instruction = module.Functions[0].Instructions.Last(x => x.Opcode.Prefix == 0xFD);
         for (var attempt = 0; attempt < 2; attempt++)
         {
@@ -216,7 +217,7 @@ internal partial class ModuleValidator_ValidateTests
                     .IsEqualTo(new(WasmProcessingStage.Validate, instruction.ByteOffset, 0, 10));
                 await Assert.That(module.FunctionCodes).IsEmpty();
                 await Assert
-                    .That(() => module.Instantiate([]))
+                    .That(() => module.Instantiate(executionContext, []))
                     .ThrowsExactly<InvalidOperationException>();
             }
         }

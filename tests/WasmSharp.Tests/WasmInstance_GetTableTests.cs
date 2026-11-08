@@ -10,6 +10,7 @@ internal class WasmInstance_GetTableTests
     public async Task 別名と再exportから取得する_更新と増大を同じtableで共有する(byte kind)
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var source = WasmModule
             .Decode(
                 HostLinkingModuleBinary.Create(
@@ -18,7 +19,7 @@ internal class WasmInstance_GetTableTests
                 )
             )
             .Validate()
-            .Instantiate([]);
+            .Instantiate(executionContext, []);
         var original = source.GetTable("t");
         var host = new WasmHostModule("env");
         host.Define("t", original);
@@ -30,11 +31,11 @@ internal class WasmInstance_GetTableTests
                 )
             )
             .Validate();
-        var first = module.Instantiate([host]);
-        var second = module.Instantiate([host]);
+        var first = module.Instantiate(executionContext, [host]);
+        var second = module.Instantiate(executionContext, [host]);
         var value =
             kind == 0x70
-                ? WasmValue.FromFuncRef(WasmFunction.CreateHost(new([], []), _ => new([])))
+                ? WasmValue.FromFuncRef(WasmFunction.CreateHost(new([], []), (callbackContext, _) => new([])))
                 : WasmValue.FromExternRef(new object());
 
         // Act
@@ -69,10 +70,11 @@ internal class WasmInstance_GetTableTests
     public async Task 指定した種類のexportがない_名前の引数不正として拒否する(string name)
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var instance = WasmModule
             .Decode(ConstantModuleBinary.Create(0x7F, 0x41, 0x01, 0x0B))
             .Validate()
-            .Instantiate([]);
+            .Instantiate(executionContext, []);
 
         // Act & Assert
         var exception = await Assert

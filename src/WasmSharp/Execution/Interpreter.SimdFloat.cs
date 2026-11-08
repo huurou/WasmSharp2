@@ -141,7 +141,7 @@ internal static partial class Interpreter
             static x =>
             {
                 var operand = BitConverter.UInt32BitsToSingle((uint)x);
-                return F32RoundedResult(MathF.Ceiling(operand), operand).AsF32Bits();
+                return F32ArithmeticResult(MathF.Ceiling(operand)).AsF32Bits();
             }
         );
     }
@@ -163,7 +163,7 @@ internal static partial class Interpreter
             static x =>
             {
                 var operand = BitConverter.UInt32BitsToSingle((uint)x);
-                return F32RoundedResult(MathF.Floor(operand), operand).AsF32Bits();
+                return F32ArithmeticResult(MathF.Floor(operand)).AsF32Bits();
             }
         );
     }
@@ -185,7 +185,7 @@ internal static partial class Interpreter
             static x =>
             {
                 var operand = BitConverter.UInt32BitsToSingle((uint)x);
-                return F32RoundedResult(MathF.Truncate(operand), operand).AsF32Bits();
+                return F32ArithmeticResult(MathF.Truncate(operand)).AsF32Bits();
             }
         );
     }
@@ -207,7 +207,7 @@ internal static partial class Interpreter
             static x =>
             {
                 var operand = BitConverter.UInt32BitsToSingle((uint)x);
-                return F32RoundedResult(MathF.Round(operand, MidpointRounding.ToEven), operand)
+                return F32ArithmeticResult(MathF.Round(operand, MidpointRounding.ToEven))
                     .AsF32Bits();
             }
         );
@@ -429,7 +429,7 @@ internal static partial class Interpreter
             static x =>
             {
                 var operand = BitConverter.UInt64BitsToDouble(x);
-                return F64RoundedResult(Math.Ceiling(operand), operand).AsF64Bits();
+                return F64ArithmeticResult(Math.Ceiling(operand)).AsF64Bits();
             }
         );
     }
@@ -451,7 +451,7 @@ internal static partial class Interpreter
             static x =>
             {
                 var operand = BitConverter.UInt64BitsToDouble(x);
-                return F64RoundedResult(Math.Floor(operand), operand).AsF64Bits();
+                return F64ArithmeticResult(Math.Floor(operand)).AsF64Bits();
             }
         );
     }
@@ -473,7 +473,7 @@ internal static partial class Interpreter
             static x =>
             {
                 var operand = BitConverter.UInt64BitsToDouble(x);
-                return F64RoundedResult(Math.Truncate(operand), operand).AsF64Bits();
+                return F64ArithmeticResult(Math.Truncate(operand)).AsF64Bits();
             }
         );
     }
@@ -495,7 +495,7 @@ internal static partial class Interpreter
             static x =>
             {
                 var operand = BitConverter.UInt64BitsToDouble(x);
-                return F64RoundedResult(Math.Round(operand, MidpointRounding.ToEven), operand)
+                return F64ArithmeticResult(Math.Round(operand, MidpointRounding.ToEven))
                     .AsF64Bits();
             }
         );

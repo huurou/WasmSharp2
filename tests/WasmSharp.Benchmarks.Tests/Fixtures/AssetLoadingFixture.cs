@@ -6,6 +6,8 @@ namespace WasmSharp.Benchmarks.Tests.Fixtures;
 
 internal sealed class AssetLoadingFixture : IDisposable
 {
+    private readonly CaseJson json_ = new CaseJson();
+
     private readonly string rootDirectory_ = Path.Combine(
         Path.GetTempPath(),
         "wasm-benchmark-assets-" + Guid.NewGuid().ToString("N")
@@ -24,10 +26,10 @@ internal sealed class AssetLoadingFixture : IDisposable
             Path.Combine(DirectoryPath, "wasm", "invoke.wasm")
         );
         File.WriteAllText(Path.Combine(DirectoryPath, "profile.json"), "{}");
-        Definitions = [ReadCases().Single(x => x.CaseId == "invoke.single")];
+        Definitions = [ReadCases(json_).Single(x => x.CaseId == "invoke.single")];
         File.WriteAllBytes(
             Path.Combine(DirectoryPath, "cases.json"),
-            JsonSerializer.SerializeToUtf8Bytes(Definitions, CaseJson.Options)
+            JsonSerializer.SerializeToUtf8Bytes(Definitions, json_.Options)
         );
         Manifest = new(
             1,
@@ -38,23 +40,27 @@ internal sealed class AssetLoadingFixture : IDisposable
         SaveManifest();
     }
 
-    internal static List<BenchmarkCase> ReadCases()
+    internal static List<BenchmarkCase> ReadCases(CaseJson json)
     {
         return JsonSerializer.Deserialize<List<BenchmarkCase>>(
             File.ReadAllText(
                 Path.Combine(AppContext.BaseDirectory, "Fixtures", "Data", "cases.json")
             ),
-            CaseJson.Options
+            json.Options
         )!;
     }
 
-    internal static BenchmarkCase WithInput(BenchmarkCase definition, CaseInput input)
+    internal static BenchmarkCase WithInput(
+        BenchmarkCase definition,
+        CaseInput input,
+        CaseJson json
+    )
     {
         return definition with
         {
             Input = input,
             InputHash = Convert.ToHexStringLower(
-                SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(input, CaseJson.Options))
+                SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(input, json.Options))
             ),
         };
     }
@@ -63,17 +69,52 @@ internal sealed class AssetLoadingFixture : IDisposable
     {
         File.WriteAllBytes(
             Path.Combine(DirectoryPath, "cases.json"),
-            JsonSerializer.SerializeToUtf8Bytes(Definitions, CaseJson.Options)
+            JsonSerializer.SerializeToUtf8Bytes(Definitions, json_.Options)
         );
         Manifest = Manifest with { Cases = FileDefinition("cases.json") };
         SaveManifest();
+    }
+
+    internal void SaveAssets(LoadedAssets assets)
+    {
+        var binaries = assets.Catalog.Cases
+            .Select(x => x.AssetId)
+            .Distinct()
+            .ToDictionary(x => x, assets.GetBinary);
+        Definitions.Clear();
+        foreach (var definition in assets.Catalog.Cases)
+        {
+            Definitions.Add(definition with
+            {
+                AssetSha256 = Convert.ToHexStringLower(
+                    SHA256.HashData(binaries[definition.AssetId].AsSpan())
+                ),
+            });
+        }
+        foreach (var binary in binaries)
+        {
+            File.WriteAllBytes(
+                Path.Combine(DirectoryPath, "wasm", binary.Key + ".wasm"),
+                binary.Value.AsSpan()
+            );
+        }
+        SaveCases();
+        SaveManifest(Manifest with
+        {
+            Assets = [.. binaries.Keys.Select(x => new AssetDefinition(
+                x,
+                FileDefinition("wasm/" + x + ".wasm"),
+                [],
+                []
+            ))],
+        });
     }
 
     internal void SaveManifest()
     {
         File.WriteAllBytes(
             ManifestPath,
-            JsonSerializer.SerializeToUtf8Bytes(Manifest, CaseJson.Options)
+            JsonSerializer.SerializeToUtf8Bytes(Manifest, json_.Options)
         );
     }
 

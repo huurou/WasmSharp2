@@ -6,8 +6,10 @@ namespace WasmSharp.Benchmarks.Results;
 /// <summary>
 /// run固有情報を取り除き、意味のある値を条件名へ対応付ける
 /// </summary>
-internal sealed class RunConditions(string runId)
+internal sealed class RunConditions(string runId, CaseJson json)
 {
+    private readonly CaseJson json_ = json;
+
     internal string RunId { get; } = runId;
     internal Dictionary<string, string> Values { get; } = new(StringComparer.Ordinal);
 
@@ -18,10 +20,11 @@ internal sealed class RunConditions(string runId)
         RunEnvironment environment,
         RunSource source,
         List<ProcessConfiguration> jobs,
-        List<ProcessCheck> checks
+        List<ProcessCheck> checks,
+        CaseJson json
     )
     {
-        var conditions = new RunConditions(run.RunId);
+        var conditions = new RunConditions(run.RunId, json);
         var paths = new ConditionPaths(environment.Command, source, assets);
         conditions.Add("run.schema_version", run.SchemaVersion);
         conditions.Add(
@@ -80,7 +83,6 @@ internal sealed class RunConditions(string runId)
                     )
                 )
                 .DistinctBy(x => x.RelativePath)
-                .OrderBy(x => x.RelativePath, StringComparer.Ordinal)
         )
         {
             conditions.Add(
@@ -111,27 +113,37 @@ internal sealed class RunConditions(string runId)
         conditions.Add("environment.gc", Settings(environment.GcSettings, paths));
         conditions.Add("environment.jit", Settings(environment.JitSettings, paths));
         conditions.Add("environment.variables", Settings(environment.EnvironmentVariables, paths));
-        conditions.Add("environment.processes", Processes(environment.Processes, paths));
-        conditions.Add("job.processes", Processes(jobs, paths));
+        conditions.Add("environment.processes", conditions.Processes(environment.Processes, paths));
+        var jobConditions = jobs.Select(x => new
+        {
+            Configuration = Process(x, paths),
+            Check = checks.First(y => y.JobId == x.JobId),
+        }).ToArray();
+        conditions.Add(
+            "job.processes",
+            jobConditions.Select(x => x.Configuration)
+                .OrderBy(x => JsonSerializer.Serialize(x, json.Options), StringComparer.Ordinal)
+                .ToArray()
+        );
         conditions.Add(
             "process.affinity",
-            jobs.Select(x => new
+            jobConditions.Select(x => new
             {
-                Configuration = Processes([x], paths).Single(),
-                Mask = checks.First(y => y.JobId == x.JobId).AffinityBefore,
+                x.Configuration,
+                Mask = x.Check.AffinityBefore,
             })
-                .OrderBy(x => JsonSerializer.Serialize(x, CaseJson.Options), StringComparer.Ordinal)
+                .OrderBy(x => JsonSerializer.Serialize(x, json.Options), StringComparer.Ordinal)
                 .ToArray()
         );
         conditions.Add("command.executable", paths.CommandExecutable());
         conditions.Add(
             "process.runtime",
-            jobs.Select(x => new
+            jobConditions.Select(x => new
             {
-                Configuration = Processes([x], paths).Single(),
-                Version = checks.First(y => y.JobId == x.JobId).RuntimeVersion,
+                x.Configuration,
+                Version = x.Check.RuntimeVersion,
             })
-                .OrderBy(x => JsonSerializer.Serialize(x, CaseJson.Options), StringComparer.Ordinal)
+                .OrderBy(x => JsonSerializer.Serialize(x, json.Options), StringComparer.Ordinal)
                 .ToArray()
         );
         conditions.Add("command.arguments", paths.CommandArguments());
@@ -161,27 +173,31 @@ internal sealed class RunConditions(string runId)
         );
     }
 
-    private static object[] Processes(
+    private static object Process(ProcessConfiguration process, ConditionPaths paths)
+    {
+        return new
+        {
+            process.Role,
+            process.LaunchCount,
+            JobSettings = Settings(process.JobSettings, paths),
+            RuntimeConfiguration = Settings(process.RuntimeConfiguration, paths),
+            EnvironmentVariables = Settings(process.EnvironmentVariables, paths),
+        };
+    }
+
+    private object[] Processes(
         IEnumerable<ProcessConfiguration> processes,
         ConditionPaths paths
     )
     {
         return [.. processes
-            .Select(x => new
-            {
-                x.Role,
-                x.LaunchCount,
-                JobSettings = Settings(x.JobSettings, paths),
-                RuntimeConfiguration = Settings(x.RuntimeConfiguration, paths),
-                EnvironmentVariables = Settings(x.EnvironmentVariables, paths),
-            })
-            .OrderBy(x => JsonSerializer.Serialize(x, CaseJson.Options), StringComparer.Ordinal)
-            .Cast<object>()];
+            .Select(x => Process(x, paths))
+            .OrderBy(x => JsonSerializer.Serialize(x, json_.Options), StringComparer.Ordinal)];
     }
 
     private void Add<T>(string name, T value)
     {
-        Flatten(name, JsonSerializer.SerializeToElement(value, CaseJson.Options));
+        Flatten(name, JsonSerializer.SerializeToElement(value, json_.Options));
     }
 
     private void Flatten(string name, JsonElement value)
@@ -251,14 +267,18 @@ internal sealed class ConditionPaths
             return "tool:dotnet";
         }
         var harness = source_.AssembliesBefore.FirstOrDefault(x => x.Role == AssemblyRole.Harness);
-        if (
-            harness is not null
-            && Path.GetExtension(name) is "" or ".exe" or ".dll"
-            && Path.GetFileNameWithoutExtension(name)
-                == Path.GetFileNameWithoutExtension(FileName(harness.Path))
-        )
+        if (harness is not null)
         {
-            return "assembly:Harness";
+            // 名前に含まれるドットと、実行形式の拡張子を区別する。
+            var harnessName = Path.GetFileNameWithoutExtension(FileName(harness.Path));
+            if (
+                name == harnessName ||
+                name == $"{harnessName}.exe" ||
+                name == $"{harnessName}.dll"
+            )
+            {
+                return "assembly:Harness";
+            }
         }
         return Value(command_.ExecutablePath);
     }

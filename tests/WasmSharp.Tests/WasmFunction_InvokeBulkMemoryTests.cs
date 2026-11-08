@@ -16,7 +16,8 @@ internal partial class WasmFunction_InvokeTests
     )
     {
         // Arrange
-        var instance = WasmModule.Decode(CreateBulkMemoryModule(10)).Validate().Instantiate([]);
+        var executionContext = new WasmExecutionContext();
+        var instance = WasmModule.Decode(CreateBulkMemoryModule(10)).Validate().Instantiate(executionContext, []);
         var memory = instance.GetMemory("memory");
         memory.Write(65532, [1, 2, 3, 4, 5, 6, 7, 8]);
         var actual = new byte[8];
@@ -24,7 +25,7 @@ internal partial class WasmFunction_InvokeTests
         // Act
         var result = instance
             .GetFunction("bulk")
-            .Invoke([
+            .Invoke(executionContext, [
                 WasmValue.FromI32(65532 + destination),
                 WasmValue.FromI32(65532 + source),
                 WasmValue.FromI32(6),
@@ -49,7 +50,8 @@ internal partial class WasmFunction_InvokeTests
     )
     {
         // Arrange
-        var instance = WasmModule.Decode(CreateBulkMemoryModule(11)).Validate().Instantiate([]);
+        var executionContext = new WasmExecutionContext();
+        var instance = WasmModule.Decode(CreateBulkMemoryModule(11)).Validate().Instantiate(executionContext, []);
         var memory = instance.GetMemory("memory");
         memory.Write(65532, [0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC]);
         var actual = new byte[8];
@@ -57,7 +59,7 @@ internal partial class WasmFunction_InvokeTests
         // Act
         var result = instance
             .GetFunction("bulk")
-            .Invoke([WasmValue.FromI32(65534), WasmValue.FromI32(value), WasmValue.FromI32(4)]);
+            .Invoke(executionContext, [WasmValue.FromI32(65534), WasmValue.FromI32(value), WasmValue.FromI32(4)]);
         memory.Read(65532, actual);
 
         // Assert
@@ -98,8 +100,9 @@ internal partial class WasmFunction_InvokeTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var bytes = CreateBulkMemoryModule(opcode);
-        var instance = WasmModule.Decode(bytes).Validate().Instantiate([]);
+        var instance = WasmModule.Decode(bytes).Validate().Instantiate(executionContext, []);
         var memory = instance.GetMemory("memory");
         var original = Enumerable.Range(0, 131072).Select(x => (byte)(x % 251 + 1)).ToArray();
         memory.Write(0, original);
@@ -113,7 +116,7 @@ internal partial class WasmFunction_InvokeTests
         if (succeeds)
         {
             // Act
-            var result = instance.GetFunction("bulk").Invoke(arguments);
+            var result = instance.GetFunction("bulk").Invoke(executionContext, arguments);
 
             // Assert
             await Assert.That(result.Values.IsEmpty).IsTrue();
@@ -122,7 +125,7 @@ internal partial class WasmFunction_InvokeTests
         {
             // Act & Assert
             var exception = await Assert
-                .That(() => instance.GetFunction("bulk").Invoke(arguments))
+                .That(() => instance.GetFunction("bulk").Invoke(executionContext, arguments))
                 .ThrowsExactly<WasmTrapException>();
             using (Assert.Multiple())
             {
@@ -155,15 +158,16 @@ internal partial class WasmFunction_InvokeTests
     public async Task 空メモリに長さ0の一括操作を行う_各開始点0だけが成功する(byte opcode)
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var instance = WasmModule
             .Decode(CreateBulkMemoryModule(opcode, 0))
             .Validate()
-            .Instantiate([]);
+            .Instantiate(executionContext, []);
 
         // Act
         var result = instance
             .GetFunction("bulk")
-            .Invoke([WasmValue.FromI32(0), WasmValue.FromI32(0), WasmValue.FromI32(0)]);
+            .Invoke(executionContext, [WasmValue.FromI32(0), WasmValue.FromI32(0), WasmValue.FromI32(0)]);
 
         // Assert
         await Assert.That(result.Values.IsEmpty).IsTrue();
@@ -173,7 +177,7 @@ internal partial class WasmFunction_InvokeTests
             .That(() =>
                 instance
                     .GetFunction("bulk")
-                    .Invoke([WasmValue.FromI32(1), WasmValue.FromI32(0), WasmValue.FromI32(0)])
+                    .Invoke(executionContext, [WasmValue.FromI32(1), WasmValue.FromI32(0), WasmValue.FromI32(0)])
             )
             .ThrowsExactly<WasmTrapException>();
         if (opcode == 10)
@@ -183,7 +187,7 @@ internal partial class WasmFunction_InvokeTests
                 .That(() =>
                     instance
                         .GetFunction("bulk")
-                        .Invoke([WasmValue.FromI32(0), WasmValue.FromI32(1), WasmValue.FromI32(0)])
+                        .Invoke(executionContext, [WasmValue.FromI32(0), WasmValue.FromI32(1), WasmValue.FromI32(0)])
                 )
                 .ThrowsExactly<WasmTrapException>();
         }

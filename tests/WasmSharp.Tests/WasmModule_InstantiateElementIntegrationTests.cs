@@ -21,6 +21,7 @@ internal partial class WasmModule_InstantiateTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var bytes = HostLinkingModuleBinary.Create(
             HostLinkingModuleBinary.Types(([], [0x7F])),
             HostLinkingModuleBinary.Functions(0),
@@ -33,7 +34,7 @@ internal partial class WasmModule_InstantiateTests
         var module = WasmModule.Decode(stream).Validate();
 
         // Act
-        var instance = module.Instantiate([]);
+        var instance = module.Instantiate(executionContext, []);
 
         // Assert
         using (Assert.Multiple())
@@ -61,7 +62,7 @@ internal partial class WasmModule_InstantiateTests
                     .IsSameReferenceAs(instance.GetFunction("f"));
                 await Assert.That(instance.ElementSegments[0].Length).IsEqualTo(1u);
                 instance.ElementSegments[0].Drop();
-                var other = module.Instantiate([]);
+                var other = module.Instantiate(executionContext, []);
                 await Assert.That(other.ElementSegments[0].Length).IsEqualTo(1u);
                 await Assert
                     .That(table.Get(1).AsFuncRef())
@@ -74,6 +75,7 @@ internal partial class WasmModule_InstantiateTests
     public async Task Import参照globalと関数参照を要素で使う_完成した関数表と同じ参照を初期化する()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var value = WasmValue.FromExternRef(new object());
         var host = new WasmHostModule("env");
         host.Define("g", new WasmGlobal(new(WasmValueKind.ExternRef, false), value));
@@ -105,7 +107,7 @@ internal partial class WasmModule_InstantiateTests
             .Validate();
 
         // Act
-        var instance = module.Instantiate([host]);
+        var instance = module.Instantiate(executionContext, [host]);
 
         // Assert
         using (Assert.Multiple())
@@ -130,8 +132,9 @@ internal partial class WasmModule_InstantiateTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var table = new WasmTable(WasmValueKind.FuncRef, new(2));
-        var original = WasmValue.FromFuncRef(WasmFunction.CreateHost(new([], []), _ => new([])));
+        var original = WasmValue.FromFuncRef(WasmFunction.CreateHost(new([], []), (callbackContext, _) => new([])));
         table.Set(0, original);
         table.Set(1, original);
         var memory = new WasmMemory(new(1));
@@ -145,7 +148,7 @@ internal partial class WasmModule_InstantiateTests
             "observe",
             WasmFunction.CreateHost(
                 new([], []),
-                (instance, _) =>
+                (callbackContext, instance, _) =>
                 {
                     retained = instance;
                     return new([]);
@@ -156,7 +159,7 @@ internal partial class WasmModule_InstantiateTests
             "start",
             WasmFunction.CreateHost(
                 new([], []),
-                _ =>
+                (callbackContext, _) =>
                 {
                     starts++;
                     return new([]);
@@ -219,10 +222,10 @@ internal partial class WasmModule_InstantiateTests
 
         // Act & Assert
         var exception = await Assert
-            .That(() => module.Instantiate([host]))
+            .That(() => module.Instantiate(executionContext, [host]))
             .ThrowsExactly<WasmTrapException>();
         var stored = table.Get(0).AsFuncRef()!;
-        var result = stored.Invoke([]).Values[0].AsI32();
+        var result = stored.Invoke(executionContext, []).Values[0].AsI32();
         var actual = new byte[1];
         memory.Read(0, actual);
         using (Assert.Multiple())
@@ -264,6 +267,7 @@ internal partial class WasmModule_InstantiateTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var table = new WasmTable(WasmValueKind.FuncRef, new(1));
         var memory = new WasmMemory(new(1));
         memory.Write(0, [99]);
@@ -280,7 +284,7 @@ internal partial class WasmModule_InstantiateTests
             "observe",
             WasmFunction.CreateHost(
                 new([], []),
-                (instance, _) =>
+                (callbackContext, instance, _) =>
                 {
                     observed = instance;
                     return new([]);
@@ -291,7 +295,7 @@ internal partial class WasmModule_InstantiateTests
             "start",
             WasmFunction.CreateHost(
                 new([], []),
-                (instance, _) =>
+                (callbackContext, instance, _) =>
                 {
                     starts++;
                     observed = instance;
@@ -341,16 +345,16 @@ internal partial class WasmModule_InstantiateTests
         {
             // Act & Assert
             var exception = await Assert
-                .That(() => module.Instantiate([host]))
+                .That(() => module.Instantiate(executionContext, [host]))
                 .ThrowsExactly<WasmTrapException>();
             await Assert.That(exception!.Reason).IsEqualTo(WasmTrapReason.MemoryOutOfBounds);
             await Assert.That(starts).IsEqualTo(0);
-            table.Get(0).AsFuncRef()!.Invoke([]);
+            table.Get(0).AsFuncRef()!.Invoke(executionContext, []);
         }
         else
         {
             // Act
-            var instance = module.Instantiate([host]);
+            var instance = module.Instantiate(executionContext, [host]);
 
             // Assert
             await Assert.That(observed).IsSameReferenceAs(instance);
@@ -388,6 +392,7 @@ internal partial class WasmModule_InstantiateTests
     public async Task 空activeの開始位置が末尾にある_初期化に成功する(int count)
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var module = WasmModule
             .Decode(
                 HostLinkingModuleBinary.Create(
@@ -398,7 +403,7 @@ internal partial class WasmModule_InstantiateTests
             .Validate();
 
         // Act
-        var instance = module.Instantiate([]);
+        var instance = module.Instantiate(executionContext, []);
 
         // Assert
         await Assert.That(instance.ElementSegments[0].Length).IsEqualTo(0u);
@@ -412,8 +417,9 @@ internal partial class WasmModule_InstantiateTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var table = new WasmTable(WasmValueKind.FuncRef, new(1));
-        var original = WasmValue.FromFuncRef(WasmFunction.CreateHost(new([], []), _ => new([])));
+        var original = WasmValue.FromFuncRef(WasmFunction.CreateHost(new([], []), (callbackContext, _) => new([])));
         table.Set(0, original);
         var memory = new WasmMemory(new(1));
         memory.Write(0, [99]);
@@ -432,7 +438,7 @@ internal partial class WasmModule_InstantiateTests
             "start",
             WasmFunction.CreateHost(
                 new([], []),
-                _ =>
+                (callbackContext, _) =>
                 {
                     calls++;
                     return new([]);
@@ -458,7 +464,7 @@ internal partial class WasmModule_InstantiateTests
 
         // Act & Assert
         var exception = await Assert
-            .That(() => module.Instantiate([host]))
+            .That(() => module.Instantiate(executionContext, [host]))
             .ThrowsExactly<WasmInstantiateException>();
         var actual = new byte[1];
         memory.Read(0, actual);

@@ -5,6 +5,8 @@ namespace WasmSharp.TestSuiteRunner.Tests.Execution;
 
 internal class ScriptState_RegisterTests
 {
+    private readonly WasmExecutionContext context_ = new WasmExecutionContext();
+
     [Test]
     public async Task 同じ登録名へ再登録する_後の提供元へ置換する()
     {
@@ -46,7 +48,7 @@ internal class ScriptState_RegisterTests
     {
         // Arrange
         var state = new ScriptState("a.wast");
-        var module = ModuleFixture.Instantiate();
+        var module = ModuleFixture.Instantiate(context_);
         state.SetModule(ModuleFixture.CreateCommand(0, "$M"), module);
 
         // Act

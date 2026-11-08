@@ -17,6 +17,7 @@ internal partial class WasmFunction_InvokeTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var module = CreateBasicTableModule(kind, tableIndex);
         var importedKind = tableIndex == 0 ? kind : (byte)(kind == 0x70 ? 0x6F : 0x70);
         var imported = new WasmTable(
@@ -25,7 +26,7 @@ internal partial class WasmFunction_InvokeTests
         );
         var host = new WasmHostModule("env");
         host.Define("t", imported);
-        var instance = module.Instantiate([host]);
+        var instance = module.Instantiate(executionContext, [host]);
         var selected = instance.GetTable(tableIndex == 0 ? "imported" : "defined");
         var other = instance.GetTable(tableIndex == 0 ? "defined" : "imported");
         var before = TableHandlerFixture.CreateReference(
@@ -39,7 +40,7 @@ internal partial class WasmFunction_InvokeTests
         var untouched = other.Get(0);
 
         // Act
-        var values = instance.GetFunction("set-get").Invoke([WasmValue.FromI32(0), value]).Values;
+        var values = instance.GetFunction("set-get").Invoke(executionContext, [WasmValue.FromI32(0), value]).Values;
 
         // Assert
         using (Assert.Multiple())
@@ -59,6 +60,7 @@ internal partial class WasmFunction_InvokeTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var module = CreateBasicTableModule(kind, 0);
         var table = new WasmTable(
             (kind == 0x70 ? WasmValueKind.FuncRef : WasmValueKind.ExternRef),
@@ -66,8 +68,8 @@ internal partial class WasmFunction_InvokeTests
         );
         var host = new WasmHostModule("env");
         host.Define("t", table);
-        var first = module.Instantiate([host]);
-        var second = module.Instantiate([host]);
+        var first = module.Instantiate(executionContext, [host]);
+        var second = module.Instantiate(executionContext, [host]);
         var original = TableHandlerFixture.CreateReference(
             (kind == 0x70 ? WasmValueKind.FuncRef : WasmValueKind.ExternRef)
         );
@@ -77,12 +79,12 @@ internal partial class WasmFunction_InvokeTests
         table.Set(0, original);
 
         // Act
-        var firstValues = first.GetFunction("set-get").Invoke([WasmValue.FromI32(0), added]).Values;
-        var grown = second.GetFunction("grow-size").Invoke([original, WasmValue.FromI32(2)]).Values;
-        var zero = first.GetFunction("grow-size").Invoke([added, WasmValue.FromI32(0)]).Values;
+        var firstValues = first.GetFunction("set-get").Invoke(executionContext, [WasmValue.FromI32(0), added]).Values;
+        var grown = second.GetFunction("grow-size").Invoke(executionContext, [original, WasmValue.FromI32(2)]).Values;
+        var zero = first.GetFunction("grow-size").Invoke(executionContext, [added, WasmValue.FromI32(0)]).Values;
         var secondValues = second
             .GetFunction("set-get")
-            .Invoke([WasmValue.FromI32(2), added])
+            .Invoke(executionContext, [WasmValue.FromI32(2), added])
             .Values;
 
         // Assert
@@ -121,6 +123,7 @@ internal partial class WasmFunction_InvokeTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var module = CreateBasicTableModule(kind, 0, delta < 0 ? null : 4);
         var table = new WasmTable(
             (kind == 0x70 ? WasmValueKind.FuncRef : WasmValueKind.ExternRef),
@@ -128,7 +131,7 @@ internal partial class WasmFunction_InvokeTests
         );
         var host = new WasmHostModule("env");
         host.Define("t", table);
-        var instance = module.Instantiate([host]);
+        var instance = module.Instantiate(executionContext, [host]);
         var original = TableHandlerFixture.CreateReference(
             (kind == 0x70 ? WasmValueKind.FuncRef : WasmValueKind.ExternRef)
         );
@@ -137,7 +140,7 @@ internal partial class WasmFunction_InvokeTests
         // Act
         var values = instance
             .GetFunction("grow-size")
-            .Invoke([
+            .Invoke(executionContext, [
                 TableHandlerFixture.CreateReference(
                     (kind == 0x70 ? WasmValueKind.FuncRef : WasmValueKind.ExternRef),
                     true
@@ -168,6 +171,7 @@ internal partial class WasmFunction_InvokeTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         byte[] operation = write ? [0x20, 0, 0x20, 1, 0x26, 0] : [0x20, 0, 0x25, 0, 0x1A];
         var module = WasmModule.Decode(
             HostLinkingModuleBinary.Create(
@@ -181,8 +185,8 @@ internal partial class WasmFunction_InvokeTests
         );
         var expectedOffset = module.Functions[0].Instructions[write ? 2 : 1].ByteOffset;
         var host = new WasmHostModule("env");
-        host.Define("f", WasmFunction.CreateHost(new([], []), _ => new([])));
-        var instance = module.Validate().Instantiate([host]);
+        host.Define("f", WasmFunction.CreateHost(new([], []), (callbackContext, _) => new([])));
+        var instance = module.Validate().Instantiate(executionContext, [host]);
         var original = WasmValue.FromExternRef(new object());
         instance.GetTable("t").Set(0, original);
 
@@ -191,7 +195,7 @@ internal partial class WasmFunction_InvokeTests
             .That(() =>
                 instance
                     .GetFunction("run")
-                    .Invoke([WasmValue.FromI32(index), WasmValue.FromExternRef(null)])
+                    .Invoke(executionContext, [WasmValue.FromI32(index), WasmValue.FromExternRef(null)])
             )
             .ThrowsExactly<WasmTrapException>();
         using (Assert.Multiple())
@@ -216,9 +220,10 @@ internal partial class WasmFunction_InvokeTests
     public async Task ホスト操作が不正またはcallbackがOOMを投げる_API例外と同じホスト例外を伝播する()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var failure = new OutOfMemoryException("host callback");
         var host = new WasmHostModule("env");
-        host.Define("f", WasmFunction.CreateHost(new([], []), _ => throw failure));
+        host.Define("f", WasmFunction.CreateHost(new([], []), (callbackContext, _) => throw failure));
         var instance = WasmModule
             .Decode(
                 HostLinkingModuleBinary.Create(
@@ -233,7 +238,7 @@ internal partial class WasmFunction_InvokeTests
                 )
             )
             .Validate()
-            .Instantiate([host]);
+            .Instantiate(executionContext, [host]);
         var table = instance.GetTable("t");
 
         // Act & Assert
@@ -247,7 +252,7 @@ internal partial class WasmFunction_InvokeTests
             .That(() => table.TryGrow(0, WasmValue.FromFuncRef(null), out _))
             .ThrowsExactly<ArgumentException>();
         var exception = await Assert
-            .That(() => instance.GetFunction("run").Invoke([]))
+            .That(() => instance.GetFunction("run").Invoke(executionContext, []))
             .ThrowsExactly<OutOfMemoryException>();
         await Assert.That(exception).IsSameReferenceAs(failure);
         await Assert.That(table.Count).IsEqualTo(1u);

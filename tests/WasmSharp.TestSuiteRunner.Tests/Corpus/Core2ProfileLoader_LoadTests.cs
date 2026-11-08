@@ -1,10 +1,28 @@
 using System.Text;
+using System.Text.Json;
 using WasmSharp.TestSuiteRunner.Corpus;
 
 namespace WasmSharp.TestSuiteRunner.Tests.Corpus;
 
-internal class Core2Profile_LoadTests
+internal class Core2ProfileLoader_LoadTests
 {
+    private readonly Core2ProfileLoader profileLoader_ = new Core2ProfileLoader();
+
+    [Test]
+    public async Task Nullを表すJSONを読む_profileを作らず理由付きで拒否する()
+    {
+        // Arrange
+        using var stream = new MemoryStream("null"u8.ToArray());
+
+        // Act & Assert
+        var exception = await Assert.That(() => profileLoader_.Load(stream)).Throws<JsonException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.Message).Contains("profileがnull");
+            await Assert.That(stream.CanRead).IsTrue();
+        }
+    }
+
     [Test]
     public async Task 埋込みprofileを読む_固定版とSIMDを含む全入力を取得する()
     {
@@ -13,7 +31,7 @@ internal class Core2Profile_LoadTests
         const string WABT_COMMIT = "c8dc7b6eae42b3aa3e95b9014dc02b71f8e0e1db";
 
         // Act
-        var profile = Core2Profile.Load();
+        var profile = profileLoader_.Load();
 
         // Assert
         using (Assert.Multiple())
@@ -100,7 +118,7 @@ internal class Core2Profile_LoadTests
         ];
 
         // Act
-        var profile = Core2Profile.Load();
+        var profile = profileLoader_.Load();
 
         // Assert
         using (Assert.Multiple())
@@ -166,7 +184,7 @@ internal class Core2Profile_LoadTests
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(JSON));
 
         // Act
-        var profile = Core2Profile.Load(stream);
+        var profile = profileLoader_.Load(stream);
         var changedInputs = profile.Inputs.Add(new SourceInput("other.wast", "other-hash"));
 
         // Assert

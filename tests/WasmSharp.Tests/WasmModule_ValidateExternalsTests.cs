@@ -13,6 +13,7 @@ internal partial class WasmModule_ValidateTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var bytes = HostLinkingModuleBinary.Create(
             HostLinkingModuleBinary.Types(([], []), ([], [0x7F])),
             HostLinkingModuleBinary.Imports(("", "", 0, [0]), ("", "", 3, [0x7B, 0])),
@@ -48,7 +49,7 @@ internal partial class WasmModule_ValidateTests
         }
         // Act & Assert
         var exception = await Assert
-            .That(() => module.Instantiate([]))
+            .That(() => module.Instantiate(executionContext, []))
             .ThrowsExactly<WasmInstantiateException>();
         await Assert.That(exception!.Reason).IsEqualTo(WasmInstantiateReason.MissingImport);
         await Assert.That(exception.Location!.Stage).IsEqualTo(WasmProcessingStage.Instantiate);
@@ -60,6 +61,7 @@ internal partial class WasmModule_ValidateTests
     public async Task 資源定義の検証に成功_Instantiateで構築できる(byte id, string hex)
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var module = WasmModule.Decode(
             HostLinkingModuleBinary.Create(
                 HostLinkingModuleBinary.Section(id, Convert.FromHexString(hex))
@@ -72,13 +74,14 @@ internal partial class WasmModule_ValidateTests
         // Assert
         await Assert.That(module.FunctionExportIndices.IsEmpty).IsTrue();
         // Act & Assert
-        await Assert.That(() => module.Instantiate([])).ThrowsNothing();
+        await Assert.That(() => module.Instantiate(executionContext, [])).ThrowsNothing();
     }
 
     [Test]
     public async Task Import後の後半関数が検証失敗_再試行してもコードとexport索引を反映しない()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var module = WasmModule.Decode(
             HostLinkingModuleBinary.Create(
                 HostLinkingModuleBinary.Types(([], [0x7F])),
@@ -99,7 +102,7 @@ internal partial class WasmModule_ValidateTests
             await Assert.That(module.FunctionCodes.IsEmpty).IsTrue();
             await Assert.That(module.FunctionExportIndices.IsEmpty).IsTrue();
             await Assert
-                .That(() => module.Instantiate([]))
+                .That(() => module.Instantiate(executionContext, []))
                 .ThrowsExactly<InvalidOperationException>();
         }
     }

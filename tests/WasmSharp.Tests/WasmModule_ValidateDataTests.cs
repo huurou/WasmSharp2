@@ -30,6 +30,7 @@ internal partial class WasmModule_ValidateTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var bytes = HostLinkingModuleBinary.Create(
             Convert.FromHexString(imports),
             hasMemory ? HostLinkingModuleBinary.Memories((1, null)) : [],
@@ -53,7 +54,7 @@ internal partial class WasmModule_ValidateTests
                     new(WasmProcessingStage.Validate, bytes.Length - offsetFromEnd, null, 11)
                 );
             await Assert
-                .That(() => module.Instantiate([]))
+                .That(() => module.Instantiate(executionContext, []))
                 .ThrowsExactly<InvalidOperationException>();
         }
     }

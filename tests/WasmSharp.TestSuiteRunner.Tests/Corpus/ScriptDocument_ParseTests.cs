@@ -82,6 +82,34 @@ internal class ScriptDocument_ParseTests
     }
 
     [Test]
+    public async Task 未知項目の値が途切れたJSONを読む_確定済みcommandと構文破損の診断だけを保持する()
+    {
+        // Arrange
+        const string JSON = """
+            {"source_filename":"a.wast","commands":[{"type":"module","line":1,"filename":"a.0.wasm"}],"extra":
+            """;
+
+        // Act
+        var document = ScriptDocument.Parse(Encoding.UTF8.GetBytes(JSON), PATH);
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(document.Commands.Length).IsEqualTo(1);
+            await Assert.That(document.Commands[0].Filename).IsEqualTo("a.0.wasm");
+            await Assert.That(document.EnumerationComplete).IsFalse();
+            await Assert.That(document.CommandCount).IsNull();
+            await Assert.That(document.Diagnostics.Length).IsEqualTo(1);
+            await Assert.That(document.Diagnostics[0].Operation).IsEqualTo("enumerate");
+            await Assert.That(document.Diagnostics[0].Path).IsEqualTo(PATH);
+            await Assert
+                .That(document.Diagnostics[0].ExceptionType)
+                .StartsWith("System.Text.Json.");
+            await Assert.That(document.Diagnostics[0].Message).Contains("JSONの構文");
+        }
+    }
+
+    [Test]
     public async Task Root後に余分な内容があるJSONを読む_列挙済みcommandを残して総数を未確定にする()
     {
         // Arrange
@@ -283,6 +311,33 @@ internal class ScriptDocument_ParseTests
             await Assert.That(document.CommandCount).IsEqualTo(0);
             await Assert.That(document.Diagnostics.Length).IsEqualTo(1);
             await Assert.That(document.Diagnostics[0].Message).Contains(expected);
+            await Assert.That(document.Diagnostics[0].ExceptionType).IsNull();
+        }
+    }
+
+    [Test]
+    public async Task Source_filenameに対を欠くサロゲートを含む_取得不能の診断を残して後続commandを列挙する()
+    {
+        // Arrange
+        const string JSON = """
+            {"source_filename":"\uD800","commands":[{"type":"module","line":1,"filename":"a.0.wasm"}]}
+            """;
+
+        // Act
+        var document = ScriptDocument.Parse(Encoding.UTF8.GetBytes(JSON), PATH);
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(document.SourceFilename).IsNull();
+            await Assert.That(document.EnumerationComplete).IsTrue();
+            await Assert.That(document.CommandCount).IsEqualTo(1);
+            await Assert.That(document.Commands[0].Filename).IsEqualTo("a.0.wasm");
+            await Assert.That(document.Diagnostics.Length).IsEqualTo(1);
+            await Assert.That(document.Diagnostics[0].Path).IsEqualTo(PATH);
+            await Assert
+                .That(document.Diagnostics[0].Message)
+                .IsEqualTo("source_filenameを文字列として取得できません。");
             await Assert.That(document.Diagnostics[0].ExceptionType).IsNull();
         }
     }

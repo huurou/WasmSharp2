@@ -11,6 +11,9 @@ namespace WasmSharp.Benchmarks.Tests.Measurements;
 [NotInParallel]
 internal class BenchmarkProcess_SetupTests
 {
+    private readonly CaseJson json_ = new CaseJson();
+    private readonly MeasurementMethods methods_ = new MeasurementMethods();
+
     [Test]
     public async Task 前検査成功後の保存が失敗_検査成功と未開始を保持して保存失敗を記録する()
     {
@@ -20,12 +23,12 @@ internal class BenchmarkProcess_SetupTests
 
         // Act & Assert
         var exception = await Assert
-            .That(() => process.Setup((_, _) => fixture.BlockCheckWrites()))
+            .That(() => process.Setup((_, _, _) => fixture.BlockCheckWrites()))
             .Throws<IOException>();
         fixture.RestoreCheckWrites();
         process.Cleanup(() => { });
         var failed = RunStore
-            .ReadChecks(fixture.Run.DirectoryPath)
+            .ReadChecks(fixture.Run.DirectoryPath, json_)
             .Single(x => x.Check.Failures.Count > 0)
             .Check;
         using (Assert.Multiple())
@@ -55,7 +58,7 @@ internal class BenchmarkProcess_SetupTests
         var actual = await Assert
             .That(() =>
                 process.Setup(
-                    (_, _) =>
+                    (_, _, _) =>
                     {
                         fixture.BlockCheckWrites();
                         throw expected;
@@ -78,16 +81,17 @@ internal class BenchmarkProcess_SetupTests
         var exception = await Assert
             .That(() =>
                 process.Setup(
-                    (_, id) =>
+                    (_, id, json) =>
                         benchmark.Initialize(
-                            InvokeFixture.CreateAssets("invoke.single", invalidResult: true),
-                            id
+                            InvokeFixture.CreateAssets("invoke.single", json, methods_, invalidResult: true),
+                            id,
+                            json
                         )
                 )
             )
             .Throws<InvalidOperationException>();
         var failed = RunStore
-            .ReadChecks(fixture.Run.DirectoryPath)
+            .ReadChecks(fixture.Run.DirectoryPath, json_)
             .Single(x => x.Check.Failures.Count > 0)
             .Check;
         using (Assert.Multiple())
@@ -110,37 +114,61 @@ internal class BenchmarkProcess_SetupTests
     }
 
     [Test]
-    public async Task 設定から測定を準備する_前後検査と実行開始を同じprocessへ保存する()
+    [Arguments("invoke.empty", nameof(InvokeBenchmarks.Empty))]
+    [Arguments("invoke.single", nameof(InvokeBenchmarks.Single))]
+    [Arguments("invoke.multi", nameof(InvokeBenchmarks.Multi))]
+    [Arguments("loop.integer-direct", nameof(InvokeBenchmarks.IntegerDirect))]
+    [Arguments("loop.float-host", nameof(InvokeBenchmarks.FloatHost))]
+    [Arguments("loop.indirect", nameof(InvokeBenchmarks.Indirect))]
+    [Arguments("memory.copy-fill", nameof(InvokeBenchmarks.CopyFill))]
+    [Arguments("scan.scalar", nameof(InvokeBenchmarks.ScanScalar))]
+    [Arguments("scan.simd", nameof(InvokeBenchmarks.ScanSimd))]
+    [Arguments("kernel.matrix", nameof(InvokeBenchmarks.Matrix))]
+    [Arguments("decode.small", nameof(PreparationBenchmarks.DecodeSmall))]
+    [Arguments("decode.large", nameof(PreparationBenchmarks.DecodeLarge))]
+    [Arguments("decode-validate.small", nameof(PreparationBenchmarks.DecodeValidateSmall))]
+    [Arguments("decode-validate.large", nameof(PreparationBenchmarks.DecodeValidateLarge))]
+    [Arguments("instantiate.large", nameof(PreparationBenchmarks.InstantiateLarge))]
+    public async Task 設定から測定を準備する_前後検査と実行開始を同じprocessへ保存する(
+        string caseId,
+        string method
+    )
     {
         // Arrange
         using var assets = new AssetLoadingFixture();
+        var preparation = caseId.StartsWith("decode", StringComparison.Ordinal) ||
+            caseId == "instantiate.large";
+        assets.SaveAssets(
+            preparation ? PreparationFixture.CreateAssets(json_, methods_) : InvokeFixture.CreateAssets(caseId, json_, methods_)
+        );
         using var run = new RunStoreFixture();
-        RunStore.Create(run.DirectoryPath, run.Manifest);
+        RunStore.Create(run.DirectoryPath, run.Manifest with { PlannedCaseIds = [caseId] }, json_);
         var configuration = new RunConfiguration(
             run.Manifest.RunId,
             run.DirectoryPath,
             assets.ManifestPath,
             "SmokeJob",
-            ["invoke.single"]
+            [caseId]
         );
         var path = Path.Combine(run.DirectoryPath, "config.json");
         File.WriteAllBytes(
             path,
-            JsonSerializer.SerializeToUtf8Bytes(configuration, CaseJson.Options)
+            JsonSerializer.SerializeToUtf8Bytes(configuration, json_.Options)
         );
         var previous = Environment.GetEnvironmentVariable(RunConfiguration.ENVIRONMENT_VARIABLE);
         Environment.SetEnvironmentVariable(RunConfiguration.ENVIRONMENT_VARIABLE, path);
         try
         {
-            var benchmark = new InvokeBenchmarks();
+            object benchmark = preparation ? new PreparationBenchmarks() : new InvokeBenchmarks();
+            var type = benchmark.GetType();
 
             // Act
-            benchmark.SetupSingle();
-            benchmark.Single();
-            benchmark.Cleanup();
+            type.GetMethod("Setup" + method)!.Invoke(benchmark, null);
+            type.GetMethod(method)!.Invoke(benchmark, null);
+            type.GetMethod(nameof(InvokeBenchmarks.Cleanup))!.Invoke(benchmark, null);
 
             // Assert
-            var checks = RunStore.ReadChecks(run.DirectoryPath).Select(x => x.Check).ToList();
+            var checks = RunStore.ReadChecks(run.DirectoryPath, json_).Select(x => x.Check).ToList();
             var prechecked = checks.Single(x =>
                 x.Precheck?.Status == ResultStatus.Succeeded && !x.ExecutionStarted
             );
@@ -169,7 +197,7 @@ internal class BenchmarkProcess_SetupTests
                     .That(
                         checks.All(x =>
                             x.RunId == run.Manifest.RunId
-                            && x.CaseId == "invoke.single"
+                            && x.CaseId == caseId
                             && x.JobId == "SmokeJob"
                             && x.ProcessId == Environment.ProcessId
                         )

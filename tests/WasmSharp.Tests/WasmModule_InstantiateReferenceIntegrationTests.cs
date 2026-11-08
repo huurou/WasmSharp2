@@ -12,6 +12,7 @@ internal partial class WasmModule_InstantiateTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var module = WasmModule
             .Decode(
                 HostLinkingModuleBinary.Create(
@@ -26,14 +27,14 @@ internal partial class WasmModule_InstantiateTests
             .Validate();
         var value =
             kind == 0x70
-                ? WasmValue.FromFuncRef(WasmFunction.CreateHost(new([], []), _ => new([])))
+                ? WasmValue.FromFuncRef(WasmFunction.CreateHost(new([], []), (callbackContext, _) => new([])))
                 : WasmValue.FromExternRef(new object());
         var host = new WasmHostModule("env");
         host.Define("g", new WasmGlobal(new(value.Kind, false), value));
 
         // Act
-        var instance = module.Instantiate([host]);
-        var values = instance.GetFunction("run").Invoke([]).Values;
+        var instance = module.Instantiate(executionContext, [host]);
+        var values = instance.GetFunction("run").Invoke(executionContext, []).Values;
 
         // Assert
         using (Assert.Multiple())
@@ -47,6 +48,7 @@ internal partial class WasmModule_InstantiateTests
     public async Task Globalだけで宣言したimport関数を参照する_関数生成前のglobal評価を行わず同じ実体を返す()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var module = WasmModule
             .Decode(
                 HostLinkingModuleBinary.Create(
@@ -59,19 +61,19 @@ internal partial class WasmModule_InstantiateTests
                 )
             )
             .Validate();
-        var function = WasmFunction.CreateHost(new([], []), _ => new([]));
+        var function = WasmFunction.CreateHost(new([], []), (callbackContext, _) => new([]));
         var host = new WasmHostModule("env");
         host.Define("f", function);
 
         // Act
-        var instance = module.Instantiate([host]);
+        var instance = module.Instantiate(executionContext, [host]);
 
         // Assert
         using (Assert.Multiple())
         {
             await Assert.That(instance.GetGlobal("g").AsFuncRef()).IsSameReferenceAs(function);
             await Assert
-                .That(instance.GetFunction("run").Invoke([]).Values[0].AsFuncRef())
+                .That(instance.GetFunction("run").Invoke(executionContext, []).Values[0].AsFuncRef())
                 .IsSameReferenceAs(function);
         }
     }

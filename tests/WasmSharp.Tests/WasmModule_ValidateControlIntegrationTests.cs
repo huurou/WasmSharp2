@@ -12,6 +12,7 @@ internal partial class WasmModule_ValidateTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var calls = 0;
         var global = new WasmGlobal(new(WasmValueKind.I32, true), WasmValue.FromI32(7));
         var host = new WasmHostModule("env");
@@ -20,7 +21,7 @@ internal partial class WasmModule_ValidateTests
             "callback",
             WasmFunction.CreateHost(
                 new([], []),
-                _ =>
+                (callbackContext, _) =>
                 {
                     calls++;
                     return new([]);
@@ -50,9 +51,9 @@ internal partial class WasmModule_ValidateTests
         var afterDecode = (calls, global.Value.AsI32());
         var validated = module.Validate();
         var afterValidation = (calls, global.Value.AsI32());
-        var instance = module.Instantiate([host]);
+        var instance = module.Instantiate(executionContext, [host]);
         var afterInstantiation = (calls, global.Value.AsI32());
-        var result = instance.GetFunction("run").Invoke([]);
+        var result = instance.GetFunction("run").Invoke(executionContext, []);
 
         // Assert
         using (Assert.Multiple())

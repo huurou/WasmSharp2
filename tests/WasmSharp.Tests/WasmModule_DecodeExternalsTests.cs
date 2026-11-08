@@ -14,6 +14,7 @@ internal partial class WasmModule_DecodeTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var types = HostLinkingModuleBinary.Types(([], [0x7F]));
         var imports = HostLinkingModuleBinary.Imports(
             ("env", "g", 3, [0x7F, 0]),
@@ -88,7 +89,7 @@ internal partial class WasmModule_DecodeTests
             await Assert.That(module.FunctionCodes.IsEmpty).IsTrue();
             await Assert.That(stream.CanRead).IsTrue();
         }
-        await Assert.That(() => module.Instantiate([])).ThrowsExactly<InvalidOperationException>();
+        await Assert.That(() => module.Instantiate(executionContext, [])).ThrowsExactly<InvalidOperationException>();
     }
 
     [Test]
@@ -168,6 +169,7 @@ internal partial class WasmModule_DecodeTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var module = WasmModule.Decode(
             HostLinkingModuleBinary.Create(
                 HostLinkingModuleBinary.Section(id, Convert.FromHexString(hex))
@@ -183,6 +185,6 @@ internal partial class WasmModule_DecodeTests
             await Assert.That(exception!.Location!.Stage).IsEqualTo(WasmProcessingStage.Validate);
             await Assert.That(module.FunctionCodes.IsEmpty).IsTrue();
         }
-        await Assert.That(() => module.Instantiate([])).ThrowsExactly<InvalidOperationException>();
+        await Assert.That(() => module.Instantiate(executionContext, [])).ThrowsExactly<InvalidOperationException>();
     }
 }

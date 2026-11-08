@@ -13,6 +13,7 @@ internal partial class WasmModule_InstantiateTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var module = WasmModule
             .Decode(
                 HostLinkingModuleBinary.Create(
@@ -70,11 +71,11 @@ internal partial class WasmModule_InstantiateTests
             "start",
             WasmFunction.CreateHost(
                 new([], []),
-                (instance, _) =>
+                (callbackContext, instance, _) =>
                 {
                     received = instance;
                     calls++;
-                    value = instance.GetFunction("read").Invoke([]).Values[0].AsI32();
+                    value = instance.GetFunction("read").Invoke(callbackContext, []).Values[0].AsI32();
                     instance.GetMemory("memory").Read(0, initialMemory);
                     initialElement = instance.GetTable("table").Get(0).AsExternRef();
                     instance.GetMemory("memory").Write(0, [9]);
@@ -86,7 +87,7 @@ internal partial class WasmModule_InstantiateTests
         imports.Add(host);
 
         // Act
-        var result = module.Instantiate(imports, new(3));
+        var result = module.Instantiate(executionContext, imports, new(3));
         byte[] written = [0];
         result.GetMemory("memory").Read(0, written);
 
@@ -107,13 +108,14 @@ internal partial class WasmModule_InstantiateTests
     public async Task Importした定義関数がstartになる_元の資源とcallbackのinstanceを保ちstart所有者の上限を使う()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         WasmInstance? received = null;
         var host = new WasmHostModule("env");
         host.Define(
             "observe",
             WasmFunction.CreateHost(
                 new([], []),
-                (instance, _) =>
+                (callbackContext, instance, _) =>
                 {
                     received = instance;
                     return new([]);
@@ -132,7 +134,7 @@ internal partial class WasmModule_InstantiateTests
                 )
             )
             .Validate()
-            .Instantiate([host], new(1));
+            .Instantiate(executionContext, [host], new(1));
         var provider = new WasmHostModule("source");
         provider.Define("start", source.GetFunction("start"));
         var module = WasmModule
@@ -148,7 +150,7 @@ internal partial class WasmModule_InstantiateTests
             .Validate();
 
         // Act
-        var owner = module.Instantiate([provider], new(2));
+        var owner = module.Instantiate(executionContext, [provider], new(2));
 
         // Assert
         using (Assert.Multiple())
@@ -171,6 +173,7 @@ internal partial class WasmModule_InstantiateTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var expected = new InvalidOperationException("ホスト処理の失敗");
         var shared = new WasmGlobal(new(WasmValueKind.I32, true), WasmValue.FromI32(0));
         var element = new object();
@@ -187,7 +190,7 @@ internal partial class WasmModule_InstantiateTests
             "save",
             WasmFunction.CreateHost(
                 new([], []),
-                (instance, _) =>
+                (callbackContext, instance, _) =>
                 {
                     calls++;
                     savedInstance = instance;
@@ -239,14 +242,14 @@ internal partial class WasmModule_InstantiateTests
 
         // Act & Assert
         var exception = await Assert
-            .That(() => returned = module.Instantiate([host], new(2)))
+            .That(() => returned = module.Instantiate(executionContext, [host], new(2)))
             .Throws<Exception>();
         await Assert.That(savedInstance).IsNotNull();
 
         // Act
-        var initialValue = savedFunction!.Invoke([]).Values[0].AsI32();
+        var initialValue = savedFunction!.Invoke(executionContext, []).Values[0].AsI32();
         savedGlobal!.Value = WasmValue.FromI32(43);
-        var updatedValue = savedInstance!.GetFunction("read").Invoke([]).Values[0].AsI32();
+        var updatedValue = savedInstance!.GetFunction("read").Invoke(executionContext, []).Values[0].AsI32();
         byte[] written = [0];
         savedMemory!.Read(0, written);
         savedMemory.Write(0, [10]);
@@ -292,6 +295,7 @@ internal partial class WasmModule_InstantiateTests
     public async Task Startの再帰が上限に達する_Instantiate段階の失敗後に新しい上限で再実行できる()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var module = WasmModule
             .Decode(
                 HostLinkingModuleBinary.Create(
@@ -305,10 +309,10 @@ internal partial class WasmModule_InstantiateTests
 
         // Act & Assert
         var first = await Assert
-            .That(() => module.Instantiate([], new(2)))
+            .That(() => module.Instantiate(executionContext, [], new(2)))
             .ThrowsExactly<WasmExhaustionException>();
         var second = await Assert
-            .That(() => module.Instantiate([], new(3)))
+            .That(() => module.Instantiate(executionContext, [], new(3)))
             .ThrowsExactly<WasmExhaustionException>();
         using (Assert.Multiple())
         {
@@ -325,13 +329,14 @@ internal partial class WasmModule_InstantiateTests
     public async Task 実行中のcallbackからInstantiateする_外側の上限を共有してstart終了後も値を保って継続する()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var calls = 0;
         var innerHost = new WasmHostModule("inner");
         innerHost.Define(
             "observe",
             WasmFunction.CreateHost(
                 new([], []),
-                _ =>
+                (callbackContext, _) =>
                 {
                     calls++;
                     return new([]);
@@ -354,10 +359,10 @@ internal partial class WasmModule_InstantiateTests
             "create",
             WasmFunction.CreateHost(
                 new([], []),
-                _ =>
+                (callbackContext, _) =>
                 {
-                    innerModule.Instantiate([innerHost], new(1));
-                    innerModule.Instantiate([innerHost], new(1));
+                    innerModule.Instantiate(callbackContext, [innerHost], new(1));
+                    innerModule.Instantiate(callbackContext, [innerHost], new(1));
                     return new([]);
                 }
             )
@@ -373,10 +378,10 @@ internal partial class WasmModule_InstantiateTests
                 )
             )
             .Validate()
-            .Instantiate([outerHost], new(4));
+            .Instantiate(executionContext, [outerHost], new(4));
 
         // Act
-        var result = outer.GetFunction("run").Invoke([]);
+        var result = outer.GetFunction("run").Invoke(executionContext, []);
 
         // Assert
         using (Assert.Multiple())

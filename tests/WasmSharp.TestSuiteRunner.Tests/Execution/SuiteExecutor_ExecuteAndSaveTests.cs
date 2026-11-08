@@ -6,6 +6,8 @@ namespace WasmSharp.TestSuiteRunner.Tests.Execution;
 
 public class SuiteExecutor_ExecuteAndSaveTests
 {
+    private readonly ReportStore reportStore_ = new ReportStore();
+
     [Test]
     public async Task Binary素材が欠落する_対象素材のpathと元診断を保存して読み戻せる()
     {
@@ -18,9 +20,10 @@ public class SuiteExecutor_ExecuteAndSaveTests
         var result = SuiteExecutor.ExecuteAndSave(
             SuiteExecutor_ExecuteTests.Complete(fixture.Manifest),
             fixture.ManifestPath,
-            output
+            output,
+            reportStore_
         );
-        var stored = ReportStore.ReadRunReport(output);
+        var stored = reportStore_.ReadRunReport(output);
 
         // Assert
         using (Assert.Multiple())
@@ -57,11 +60,12 @@ public class SuiteExecutor_ExecuteAndSaveTests
         var result = SuiteExecutor.ExecuteAndSave(
             SuiteExecutor_ExecuteTests.Complete(fixture.Manifest),
             fixture.ManifestPath,
-            output
+            output,
+            reportStore_
         );
 
         // Assert
-        var stored = ReportStore.ReadRunReport(output);
+        var stored = reportStore_.ReadRunReport(output);
         using (Assert.Multiple())
         {
             await Assert.That(result.SaveFailure).IsNull();
@@ -93,11 +97,12 @@ public class SuiteExecutor_ExecuteAndSaveTests
             SuiteExecutor_ExecuteTests.Complete(fixture.Manifest),
             fixture.ManifestPath,
             output,
+            reportStore_,
             cancellationToken: cancellation.Token
         );
 
         // Assert
-        var stored = ReportStore.ReadRunReport(output);
+        var stored = reportStore_.ReadRunReport(output);
         using (Assert.Multiple())
         {
             await Assert.That(result.SaveFailure).IsNull();
@@ -128,10 +133,15 @@ public class SuiteExecutor_ExecuteAndSaveTests
         var output = Path.Combine(fixture.OutputRoot, "run.json");
 
         // Act
-        var result = SuiteExecutor.ExecuteAndSave(manifest, fixture.ManifestPath, output);
+        var result = SuiteExecutor.ExecuteAndSave(
+            manifest,
+            fixture.ManifestPath,
+            output,
+            reportStore_
+        );
 
         // Assert
-        var stored = ReportStore.ReadRunReport(output);
+        var stored = reportStore_.ReadRunReport(output);
         using (Assert.Multiple())
         {
             await Assert.That(File.Exists(output)).IsTrue();
@@ -166,7 +176,8 @@ public class SuiteExecutor_ExecuteAndSaveTests
         var result = SuiteExecutor.ExecuteAndSave(
             SuiteExecutor_ExecuteTests.Complete(fixture.Manifest),
             fixture.ManifestPath,
-            output
+            output,
+            reportStore_
         );
 
         // Assert

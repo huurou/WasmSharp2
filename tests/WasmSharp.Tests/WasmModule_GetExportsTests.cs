@@ -8,6 +8,7 @@ internal class WasmModule_GetExportsTests
     public async Task 四種と別名をexportする_検証の前後で同じ宣言順の名前と種類を返す()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var module = WasmModule.Decode(
             HostLinkingModuleBinary.Create(
                 HostLinkingModuleBinary.Types(([], [])),
@@ -38,7 +39,7 @@ internal class WasmModule_GetExportsTests
 
         // Act
         var beforeValidation = module.GetExports();
-        var instance = module.Validate().Instantiate([]);
+        var instance = module.Validate().Instantiate(executionContext, []);
         var afterValidation = module.GetExports();
 
         // Assert
@@ -59,6 +60,7 @@ internal class WasmModule_GetExportsTests
     public async Task Importした四種を再exportする_一覧の名前から提供元と同じ実体を取得できる()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var source = WasmModule
             .Decode(
                 HostLinkingModuleBinary.Create(
@@ -77,7 +79,7 @@ internal class WasmModule_GetExportsTests
                 )
             )
             .Validate()
-            .Instantiate([]);
+            .Instantiate(executionContext, []);
         var host = new WasmHostModule("env");
         host.Define("f", source.GetFunction("f"));
         host.Define("t", source.GetTable("t"));
@@ -102,7 +104,7 @@ internal class WasmModule_GetExportsTests
                 )
             )
             .Validate();
-        var instance = module.Instantiate([host]);
+        var instance = module.Instantiate(executionContext, [host]);
         WasmExportInfo[] expected =
         [
             new("memory", WasmExternalKind.Memory),

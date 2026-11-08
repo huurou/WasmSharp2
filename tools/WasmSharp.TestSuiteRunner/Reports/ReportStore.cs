@@ -10,7 +10,7 @@ namespace WasmSharp.TestSuiteRunner.Reports;
 /// <summary>
 /// 保存済み結果のschemaと記録の完全性を検証し、JSONの確定保存と読取を行う
 /// </summary>
-internal static class ReportStore
+internal sealed class ReportStore
 {
     /// <summary>
     /// 読取りを受け付ける保存形式の版
@@ -30,7 +30,7 @@ internal static class ReportStore
     /// <summary>
     /// 重複キーを構文破損と同様に拒否するJSON読取設定
     /// </summary>
-    private static readonly JsonDocumentOptions documentOptions_ = new()
+    private readonly JsonDocumentOptions documentOptions_ = new JsonDocumentOptions
     {
         AllowDuplicateProperties = false,
     };
@@ -38,7 +38,7 @@ internal static class ReportStore
     /// <summary>
     /// 未知のpropertyや必須項目の欠落、数値や複合表記による未定義の分類を無言で読み替えないDTO読取設定
     /// </summary>
-    private static readonly JsonSerializerOptions readOptions_ = new()
+    private readonly JsonSerializerOptions readOptions_ = new JsonSerializerOptions
     {
         PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
         UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
@@ -50,7 +50,7 @@ internal static class ReportStore
     /// <summary>
     /// OSに依存しない改行で、日本語の診断を読める形のまま書き出す設定
     /// </summary>
-    private static readonly JsonSerializerOptions writeOptions_ = new()
+    private readonly JsonSerializerOptions writeOptions_ = new JsonSerializerOptions
     {
         PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
         WriteIndented = true,
@@ -64,7 +64,7 @@ internal static class ReportStore
     /// <param name="manifest">保存する変換結果 保存前の完全性検証は呼出側で行う</param>
     /// <param name="path">新規作成するJSONファイルの保存先 親ディレクトリは作成済みであること</param>
     /// <exception cref="ReportStoreException">保存を確定できない場合</exception>
-    internal static void Save(CorpusManifest manifest, string path)
+    internal void Save(CorpusManifest manifest, string path)
     {
         Write(
             path,
@@ -79,7 +79,7 @@ internal static class ReportStore
     /// <param name="report">保存する実行結果 保存前の完全性検証は呼出側で行う</param>
     /// <param name="path">新規作成するJSONファイルの保存先 親ディレクトリは作成済みであること</param>
     /// <exception cref="ReportStoreException">保存を確定できない場合</exception>
-    internal static void Save(RunReport report, string path)
+    internal void Save(RunReport report, string path)
     {
         Write(
             path,
@@ -94,7 +94,7 @@ internal static class ReportStore
     /// <param name="report">保存する比較結果</param>
     /// <param name="path">新規作成するJSONファイルの保存先 親ディレクトリは作成済みであること</param>
     /// <exception cref="ReportStoreException">保存を確定できない場合</exception>
-    internal static void Save(ComparisonReport report, string path)
+    internal void Save(ComparisonReport report, string path)
     {
         Write(
             path,
@@ -170,7 +170,7 @@ internal static class ReportStore
     /// <param name="path">読み取る保存済みJSONファイル</param>
     /// <returns>型付きの結果、元のバイト列、記録の完全性に関する問題を保持する記録 問題があっても読取可能なら返す</returns>
     /// <exception cref="ReportStoreException">ファイル・schema・kind・JSON構造・ケース識別を読み取れない場合</exception>
-    internal static StoredReport Read(string path)
+    internal StoredReport Read(string path)
     {
         var fullPath = Path.GetFullPath(path);
         var content = ReadFileBytes(fullPath);
@@ -206,7 +206,7 @@ internal static class ReportStore
     /// <param name="fullPath">読み取ったファイルの絶対path</param>
     /// <returns>元のバイト列と検証結果を保持する保存済み結果</returns>
     /// <exception cref="ReportStoreException">schema・kind・JSON構造・ケース識別を読み取れない場合</exception>
-    private static StoredReport ReadDocument(byte[] content, string fullPath)
+    private StoredReport ReadDocument(byte[] content, string fullPath)
     {
         try
         {
@@ -232,7 +232,7 @@ internal static class ReportStore
     /// <returns>復元した内容、元のバイト列、記録の問題を保持する結果</returns>
     /// <exception cref="ReportStoreException">schema・kind・ケース識別を読み取れない場合</exception>
     /// <exception cref="JsonException">記録のJSON構造が保存形式に従わない場合</exception>
-    private static StoredReport ReadResult(JsonElement root, byte[] content, string fullPath)
+    private StoredReport ReadResult(JsonElement root, byte[] content, string fullPath)
     {
         if (ReadKind(root, fullPath) == MANIFEST_KIND)
         {
@@ -251,7 +251,7 @@ internal static class ReportStore
     /// <param name="path">読み取る変換manifestのJSONファイル</param>
     /// <returns>manifest、元のバイト列、記録の完全性に関する問題を保持する記録</returns>
     /// <exception cref="ReportStoreException">読み取れない場合、またはmanifest以外の場合</exception>
-    internal static StoredManifest ReadManifest(string path)
+    internal StoredManifest ReadManifest(string path)
     {
         return Read(path) as StoredManifest
             ?? throw new ReportStoreException(
@@ -266,7 +266,7 @@ internal static class ReportStore
     /// <param name="path">読み取る実行結果のJSONファイル</param>
     /// <returns>実行結果、元のバイト列、記録の完全性に関する問題を保持する記録</returns>
     /// <exception cref="ReportStoreException">読み取れない場合、または実行結果以外の場合</exception>
-    internal static StoredRunReport ReadRunReport(string path)
+    internal StoredRunReport ReadRunReport(string path)
     {
         return Read(path) as StoredRunReport
             ?? throw new ReportStoreException(
@@ -333,8 +333,8 @@ internal static class ReportStore
             issues
         );
         var materialCommandCounts = report
-            .Corpus.Inputs.GroupBy(x => x.Input.Path, StringComparer.Ordinal)
-            .ToDictionary(x => x.Key, x => GetCommandCount(x.First()), StringComparer.Ordinal);
+            .Corpus.Inputs.DistinctBy(x => x.Input.Path, StringComparer.Ordinal)
+            .ToDictionary(x => x.Input.Path, GetCommandCount, StringComparer.Ordinal);
         foreach (var input in report.Inputs)
         {
             AddInputIssues(input, materialCommandCounts.GetValueOrDefault(input.InputPath), issues);
@@ -414,11 +414,11 @@ internal static class ReportStore
     /// <typeparam name="T">保存記録のDTO型</typeparam>
     /// <param name="root">復元する保存JSONのルート要素</param>
     /// <returns>保存内容から復元したnullでない記録</returns>
-    /// <exception cref="JsonException">JSONが記録の保存形式に従わない場合、または復元結果がnullの場合</exception>
-    private static T Deserialize<T>(JsonElement root)
+    /// <exception cref="JsonException">JSONが記録の保存形式に従わない場合</exception>
+    private T Deserialize<T>(JsonElement root)
     {
         EnsureNoNullElements(root);
-        return root.Deserialize<T>(readOptions_) ?? throw new JsonException("結果がnullです。");
+        return root.Deserialize<T>(readOptions_)!;
     }
 
     /// <summary>

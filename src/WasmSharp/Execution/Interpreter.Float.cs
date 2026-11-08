@@ -27,32 +27,6 @@ internal static partial class Interpreter
     }
 
     /// <summary>
-    /// f32の整数値化結果を保持し、0の符号を入力に揃える
-    /// </summary>
-    /// <param name="value">対象幅の整数値化結果</param>
-    /// <param name="operand">整数値化前の入力</param>
-    /// <returns>0の符号とNaN規則を適用したf32のvalue</returns>
-    private static WasmValue F32RoundedResult(float value, float operand)
-    {
-        return value == 0
-            ? WasmValue.FromF32Bits(BitConverter.SingleToUInt32Bits(operand) & 0x80000000u)
-            : F32ArithmeticResult(value);
-    }
-
-    /// <summary>
-    /// f64の整数値化結果を保持し、0の符号を入力に揃える
-    /// </summary>
-    /// <param name="value">対象幅の整数値化結果</param>
-    /// <param name="operand">整数値化前の入力</param>
-    /// <returns>0の符号とNaN規則を適用したf64のvalue</returns>
-    private static WasmValue F64RoundedResult(double value, double operand)
-    {
-        return value == 0
-            ? WasmValue.FromF64Bits(BitConverter.DoubleToUInt64Bits(operand) & 0x8000000000000000ul)
-            : F64ArithmeticResult(value);
-    }
-
-    /// <summary>
     /// NaNと符号付きゼロの規則を適用してf32の最小値を返す
     /// </summary>
     /// <param name="left">左側のoperand</param>
@@ -60,19 +34,7 @@ internal static partial class Interpreter
     /// <returns>最小値のビット列を持つf32のvalue</returns>
     private static WasmValue F32MinResult(float left, float right)
     {
-        if (float.IsNaN(left) || float.IsNaN(right))
-        {
-            return F32ArithmeticResult(float.NaN);
-        }
-        if (left == right)
-        {
-            // 等値の非NaNでは符号bitだけが異なり得る ±0はORで−0を選ぶ
-            return WasmValue.FromF32Bits(
-                BitConverter.SingleToUInt32Bits(left) | BitConverter.SingleToUInt32Bits(right)
-            );
-        }
-
-        return F32ArithmeticResult(left < right ? left : right);
+        return F32ArithmeticResult(MathF.Min(left, right));
     }
 
     /// <summary>
@@ -83,19 +45,7 @@ internal static partial class Interpreter
     /// <returns>最大値のビット列を持つf32のvalue</returns>
     private static WasmValue F32MaxResult(float left, float right)
     {
-        if (float.IsNaN(left) || float.IsNaN(right))
-        {
-            return F32ArithmeticResult(float.NaN);
-        }
-        if (left == right)
-        {
-            // 等値の非NaNでは符号bitだけが異なり得る ±0はANDで+0を選ぶ
-            return WasmValue.FromF32Bits(
-                BitConverter.SingleToUInt32Bits(left) & BitConverter.SingleToUInt32Bits(right)
-            );
-        }
-
-        return F32ArithmeticResult(left > right ? left : right);
+        return F32ArithmeticResult(MathF.Max(left, right));
     }
 
     /// <summary>
@@ -106,19 +56,7 @@ internal static partial class Interpreter
     /// <returns>最小値のビット列を持つf64のvalue</returns>
     private static WasmValue F64MinResult(double left, double right)
     {
-        if (double.IsNaN(left) || double.IsNaN(right))
-        {
-            return F64ArithmeticResult(double.NaN);
-        }
-        if (left == right)
-        {
-            // 等値の非NaNでは符号bitだけが異なり得る ±0はORで−0を選ぶ
-            return WasmValue.FromF64Bits(
-                BitConverter.DoubleToUInt64Bits(left) | BitConverter.DoubleToUInt64Bits(right)
-            );
-        }
-
-        return F64ArithmeticResult(left < right ? left : right);
+        return F64ArithmeticResult(Math.Min(left, right));
     }
 
     /// <summary>
@@ -129,19 +67,7 @@ internal static partial class Interpreter
     /// <returns>最大値のビット列を持つf64のvalue</returns>
     private static WasmValue F64MaxResult(double left, double right)
     {
-        if (double.IsNaN(left) || double.IsNaN(right))
-        {
-            return F64ArithmeticResult(double.NaN);
-        }
-        if (left == right)
-        {
-            // 等値の非NaNでは符号bitだけが異なり得る ±0はANDで+0を選ぶ
-            return WasmValue.FromF64Bits(
-                BitConverter.DoubleToUInt64Bits(left) & BitConverter.DoubleToUInt64Bits(right)
-            );
-        }
-
-        return F64ArithmeticResult(left > right ? left : right);
+        return F64ArithmeticResult(Math.Max(left, right));
     }
 
     /// <summary>
@@ -302,7 +228,7 @@ internal static partial class Interpreter
     {
         var operand = context.PopValue().AsF32();
         var result = MathF.Ceiling(operand);
-        context.PushValue(F32RoundedResult(result, operand));
+        context.PushValue(F32ArithmeticResult(result));
         return default;
     }
 
@@ -316,7 +242,7 @@ internal static partial class Interpreter
     {
         var operand = context.PopValue().AsF32();
         var result = MathF.Floor(operand);
-        context.PushValue(F32RoundedResult(result, operand));
+        context.PushValue(F32ArithmeticResult(result));
         return default;
     }
 
@@ -330,7 +256,7 @@ internal static partial class Interpreter
     {
         var operand = context.PopValue().AsF32();
         var result = MathF.Truncate(operand);
-        context.PushValue(F32RoundedResult(result, operand));
+        context.PushValue(F32ArithmeticResult(result));
         return default;
     }
 
@@ -347,7 +273,7 @@ internal static partial class Interpreter
     {
         var operand = context.PopValue().AsF32();
         var result = MathF.Round(operand, MidpointRounding.ToEven);
-        context.PushValue(F32RoundedResult(result, operand));
+        context.PushValue(F32ArithmeticResult(result));
         return default;
     }
 
@@ -404,7 +330,7 @@ internal static partial class Interpreter
     {
         var operand = context.PopValue().AsF64();
         var result = Math.Ceiling(operand);
-        context.PushValue(F64RoundedResult(result, operand));
+        context.PushValue(F64ArithmeticResult(result));
         return default;
     }
 
@@ -418,7 +344,7 @@ internal static partial class Interpreter
     {
         var operand = context.PopValue().AsF64();
         var result = Math.Floor(operand);
-        context.PushValue(F64RoundedResult(result, operand));
+        context.PushValue(F64ArithmeticResult(result));
         return default;
     }
 
@@ -432,7 +358,7 @@ internal static partial class Interpreter
     {
         var operand = context.PopValue().AsF64();
         var result = Math.Truncate(operand);
-        context.PushValue(F64RoundedResult(result, operand));
+        context.PushValue(F64ArithmeticResult(result));
         return default;
     }
 
@@ -449,7 +375,7 @@ internal static partial class Interpreter
     {
         var operand = context.PopValue().AsF64();
         var result = Math.Round(operand, MidpointRounding.ToEven);
-        context.PushValue(F64RoundedResult(result, operand));
+        context.PushValue(F64ArithmeticResult(result));
         return default;
     }
 

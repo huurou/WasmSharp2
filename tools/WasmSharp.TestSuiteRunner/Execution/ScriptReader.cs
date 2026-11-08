@@ -690,16 +690,11 @@ internal static class ScriptReader
     /// <summary>
     /// 不正なcommandから更新対象の名前を取得できる場合だけ取り出す。
     /// </summary>
-    /// <param name="element">不正なcommandのJSON要素</param>
+    /// <param name="element">objectであることを確認済みの不正なmoduleまたはregisterのJSON要素</param>
     /// <param name="name">失敗状態を残す対象の項目名</param>
     /// <returns>同名項目が1個だけで取得可能な文字列の場合はその内容 それ以外はnull</returns>
     private static string? GetSingleString(JsonElement element, string name)
     {
-        if (element.ValueKind != JsonValueKind.Object)
-        {
-            return null;
-        }
-
         // 同名の項目が複数ある場合や文字列として取得できない場合は、名前を推定しない。
         var values = element.EnumerateObject().Where(x => NameEquals(x, name)).ToArray();
         if (values is not [{ Value.ValueKind: JsonValueKind.String } property])

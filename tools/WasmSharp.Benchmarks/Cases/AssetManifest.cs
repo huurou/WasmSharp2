@@ -13,9 +13,9 @@ internal sealed record AssetManifest(
     /// <summary>
     /// manifestの相対参照を照合し、計時前に素材と入力を読み込む
     /// </summary>
-    internal static LoadedAssets Load(string path)
+    internal static LoadedAssets Load(string path, CaseJson json, MeasurementMethods methods)
     {
-        return LoadedAssets.Load(path);
+        return LoadedAssets.Load(path, json, methods);
     }
 }
 

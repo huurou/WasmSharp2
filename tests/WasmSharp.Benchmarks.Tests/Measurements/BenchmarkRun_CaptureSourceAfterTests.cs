@@ -8,6 +8,15 @@ namespace WasmSharp.Benchmarks.Tests.Measurements;
 
 internal class BenchmarkRun_CaptureSourceAfterTests
 {
+    private readonly CaseJson json_ = new CaseJson();
+    private readonly MeasurementMethods methods_ = new MeasurementMethods();
+    private readonly BenchmarkRun benchmarkRun_;
+
+    public BenchmarkRun_CaptureSourceAfterTests()
+    {
+        benchmarkRun_ = new BenchmarkRun(json_, methods_);
+    }
+
     [Test]
     [Arguments("NuGet.Config")]
     [Arguments("nuget.config")]
@@ -32,13 +41,13 @@ internal class BenchmarkRun_CaptureSourceAfterTests
         }
         var assembly = fixture.Write("output/runtime.dll", "runtime assembly");
         var deletedAssembly = fixture.Write("output/harness.dll", "harness assembly");
-        var store = RunStore.Create(fixture.Run.DirectoryPath, fixture.Run.Manifest);
-        var before = BenchmarkRun.CaptureSourceBefore(
+        var store = RunStore.Create(fixture.Run.DirectoryPath, fixture.Run.Manifest, json_);
+        var before = benchmarkRun_.CaptureSourceBefore(
             fixture.RepositoryDirectory,
             store,
             [(AssemblyRole.Runtime, assembly), (AssemblyRole.Harness, deletedAssembly)]
         );
-        var beforeFile = RunStore.Load(fixture.Run.DirectoryPath).SourceFile!;
+        var beforeFile = RunStore.Load(fixture.Run.DirectoryPath, json_).SourceFile!;
         foreach (var setting in settings)
         {
             fixture.Write(setting.Key, setting.Value + "\n");
@@ -75,16 +84,20 @@ internal class BenchmarkRun_CaptureSourceAfterTests
         fixture.Write("unrelated.cs", "unrelated");
 
         // Act
-        var after = BenchmarkRun.CaptureSourceAfter(fixture.RepositoryDirectory, store, before);
+        var after = benchmarkRun_.CaptureSourceAfter(fixture.RepositoryDirectory, store, before);
 
         // Assert
-        var afterFile = RunStore.Load(fixture.Run.DirectoryPath).SourceFile!;
+        var afterFile = RunStore.Load(fixture.Run.DirectoryPath, json_).SourceFile!;
         var savedSource = JsonSerializer.Deserialize<RunSource>(
             File.ReadAllBytes(Path.Combine(fixture.Run.DirectoryPath, afterFile.RelativePath)),
-            CaseJson.Options
+            json_.Options
         )!;
+        var changedPaths = savedSource.Changes
+            .Where(x => x.Kind is ContentKind.Source or ContentKind.Project)
+            .Select(x => x.Path);
         using (Assert.Multiple())
         {
+            await Assert.That(changedPaths.SequenceEqual(changedPaths.Order(StringComparer.Ordinal))).IsTrue();
             foreach (var setting in settings)
             {
                 var change = after.Changes.Single(x => x.Path == setting.Key);
@@ -176,14 +189,14 @@ internal class BenchmarkRun_CaptureSourceAfterTests
         // Arrange
         using var fixture = new SourceCaptureFixture();
         using var nextRun = new RunStoreFixture();
-        var store = RunStore.Create(fixture.Run.DirectoryPath, fixture.Run.Manifest);
-        var first = BenchmarkRun.CaptureSourceBefore(fixture.RepositoryDirectory, store, []);
-        var unchanged = BenchmarkRun.CaptureSourceAfter(fixture.RepositoryDirectory, store, first);
+        var store = RunStore.Create(fixture.Run.DirectoryPath, fixture.Run.Manifest, json_);
+        var first = benchmarkRun_.CaptureSourceBefore(fixture.RepositoryDirectory, store, []);
+        var unchanged = benchmarkRun_.CaptureSourceAfter(fixture.RepositoryDirectory, store, first);
         fixture.Write("src/WasmSharp/Runtime.cs", "class Runtime { int changed; }\n");
-        var nextStore = RunStore.Create(nextRun.DirectoryPath, nextRun.Manifest);
+        var nextStore = RunStore.Create(nextRun.DirectoryPath, nextRun.Manifest, json_);
 
         // Act
-        var second = BenchmarkRun.CaptureSourceBefore(fixture.RepositoryDirectory, nextStore, []);
+        var second = benchmarkRun_.CaptureSourceBefore(fixture.RepositoryDirectory, nextStore, []);
 
         // Assert
         using (Assert.Multiple())

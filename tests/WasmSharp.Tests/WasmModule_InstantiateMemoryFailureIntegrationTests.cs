@@ -13,6 +13,7 @@ internal partial class WasmModule_InstantiateTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var expected = new InvalidOperationException("ホスト処理の失敗");
         var memory = new WasmMemory(new(1));
         WasmInstance? savedInstance = null;
@@ -27,7 +28,7 @@ internal partial class WasmModule_InstantiateTests
             "save",
             WasmFunction.CreateHost(
                 new([], []),
-                (instance, _) =>
+                (callbackContext, instance, _) =>
                 {
                     calls++;
                     savedInstance = instance;
@@ -84,16 +85,16 @@ internal partial class WasmModule_InstantiateTests
 
         // Act & Assert
         var exception = await Assert
-            .That(() => returned = module.Instantiate([host]))
+            .That(() => returned = module.Instantiate(executionContext, [host]))
             .Throws<Exception>();
         await Assert.That(savedInstance).IsNotNull();
         await Assert.That(savedFunction).IsNotNull();
         await Assert.That(savedMemory).IsNotNull();
 
         // Act
-        var initializedValue = savedFunction!.Invoke([]).Values[0].AsI32();
+        var initializedValue = savedFunction!.Invoke(executionContext, []).Values[0].AsI32();
         savedMemory!.Write(0, [44]);
-        var updatedValue = savedInstance!.GetFunction("read").Invoke([]).Values[0].AsI32();
+        var updatedValue = savedInstance!.GetFunction("read").Invoke(executionContext, []).Values[0].AsI32();
         var actual = new byte[3];
         memory.Read(0, actual);
 

@@ -14,14 +14,25 @@ internal static class BaselineComparer
     /// </summary>
     /// <param name="baseline">比較基準となる保存済みの実行結果</param>
     /// <param name="current">比較する現在の実行結果</param>
+    /// <param name="baselinePath">比較基準となる実行結果JSONの絶対path</param>
+    /// <param name="currentPath">比較する現在の実行結果JSONの絶対path</param>
     /// <returns>前後のケース詳細、差分、回帰、比較できなかった理由と完了状態を持つ比較結果</returns>
-    internal static ComparisonReport CompareRun(RunReport baseline, RunReport current)
+    internal static ComparisonReport CompareRun(
+        RunReport baseline,
+        RunReport current,
+        string baselinePath,
+        string currentPath
+    )
     {
-        var report = CompareCorpus(baseline.Corpus, current.Corpus, ComparisonType.Run);
+        var report = CompareCorpus(
+            baseline.Corpus,
+            current.Corpus,
+            ComparisonType.Run,
+            new ComparedReport(baselinePath) { RunId = baseline.Provenance.RunId },
+            new ComparedReport(currentPath) { RunId = current.Provenance.RunId }
+        );
         report = report with
         {
-            Baseline = new(string.Empty) { RunId = baseline.Provenance.RunId },
-            Current = new(string.Empty) { RunId = current.Provenance.RunId },
             Established =
                 report.ConditionDifferences.Count == 0
                 && report.EntryDifferences.Count == 0
@@ -163,13 +174,23 @@ internal static class BaselineComparer
     /// </summary>
     /// <param name="baseline">比較基準となる変換manifest</param>
     /// <param name="current">比較する現在の変換manifest</param>
+    /// <param name="baselinePath">比較基準となるmanifestの絶対path</param>
+    /// <param name="currentPath">比較する現在のmanifestの絶対path</param>
     /// <returns>条件、素材、変換状態、参考出典の差と比較できなかった理由を持つ比較結果</returns>
     internal static ComparisonReport CompareConversion(
         CorpusManifest baseline,
-        CorpusManifest current
+        CorpusManifest current,
+        string baselinePath,
+        string currentPath
     )
     {
-        var report = CompareCorpus(baseline, current, ComparisonType.Conversion);
+        var report = CompareCorpus(
+            baseline,
+            current,
+            ComparisonType.Conversion,
+            new ComparedReport(baselinePath),
+            new ComparedReport(currentPath)
+        );
         AddRecordIssues(report, "baseline", ReportStore.Validate(baseline));
         AddRecordIssues(report, "current", ReportStore.Validate(current));
         return Summarize(
@@ -187,14 +208,18 @@ internal static class BaselineComparer
     /// <param name="baseline">比較基準となるmanifest</param>
     /// <param name="current">比較する現在のmanifest</param>
     /// <param name="comparison">変換状態を比較に含めるかどうかを決める比較の種類</param>
+    /// <param name="baselineReport">比較基準となる保存済み結果の識別</param>
+    /// <param name="currentReport">比較する現在の保存済み結果の識別</param>
     /// <returns>条件と素材の差を保持する、ケース比較と集計前の結果</returns>
     private static ComparisonReport CompareCorpus(
         CorpusManifest baseline,
         CorpusManifest current,
-        ComparisonType comparison
+        ComparisonType comparison,
+        ComparedReport baselineReport,
+        ComparedReport currentReport
     )
     {
-        var report = new ComparisonReport(comparison, new(string.Empty), new(string.Empty))
+        var report = new ComparisonReport(comparison, baselineReport, currentReport)
         {
             Established = true,
         };

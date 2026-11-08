@@ -26,6 +26,7 @@ internal static class ControlHandlerFixture
         ImmutableArray<BranchTarget> targets = default
     )
     {
+        var executionContext = new WasmExecutionContext();
         var function = ExecutionFunctionFixture.Create(
             [default, default, default, default],
             new([WasmValueKind.I64], []),
@@ -34,7 +35,7 @@ internal static class ControlHandlerFixture
             targets
         );
         var frame = new ExecutionFrame(function, 0, 1) { Pc = 2 };
-        var context = InterpreterContext.Enter(new(10), out var isOutermost);
+        var context = executionContext.Enter(new(10), out var isOutermost);
         try
         {
             context.Stage = WasmProcessingStage.Invoke;
@@ -61,8 +62,8 @@ internal static class ControlHandlerFixture
         }
         finally
         {
+            executionContext.Exit(isOutermost);
             context.Restore(0, 0, 0);
-            InterpreterContext.Exit(isOutermost);
         }
     }
 }

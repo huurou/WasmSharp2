@@ -36,6 +36,7 @@ internal static class MemoryHandlerFixture
         ReadOnlySpan<WasmValue> operands
     )
     {
+        var executionContext = new WasmExecutionContext();
         var function = ExecutionFunctionFixture.Create(
             [],
             new([], []),
@@ -43,7 +44,7 @@ internal static class MemoryHandlerFixture
             operands.Length + 1,
             memories: [memory]
         );
-        var context = InterpreterContext.Enter(WasmExecutionOptions.Default, out var isOutermost);
+        var context = executionContext.Enter(WasmExecutionOptions.Default, out var isOutermost);
         try
         {
             context.Stage = WasmProcessingStage.Invoke;
@@ -60,8 +61,8 @@ internal static class MemoryHandlerFixture
         }
         finally
         {
+            executionContext.Exit(isOutermost);
             context.Restore(0, 0, 0);
-            InterpreterContext.Exit(isOutermost);
         }
     }
 }

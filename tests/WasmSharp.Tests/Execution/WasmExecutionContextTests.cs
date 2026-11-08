@@ -1,0 +1,135 @@
+using WasmSharp.Execution;
+
+namespace WasmSharp.Tests.Execution;
+
+internal class WasmExecutionContext_EnterTests
+{
+    [Test]
+    public async Task 上限100の深さ50から上限10へ入る_同じコンテキストで51段目へ入る()
+    {
+        // Arrange
+        var executionContext = new WasmExecutionContext();
+        var outer = executionContext.Enter(new WasmExecutionOptions(100), out var isOutermost);
+        InterpreterContext inner;
+        bool isInnerOutermost;
+        bool entered;
+        int depth;
+        int limit;
+        bool outerRemains;
+
+        // Act
+        try
+        {
+            for (var i = 0; i < 50; i++)
+            {
+                outer.TryEnterCall();
+            }
+            inner = executionContext.Enter(new WasmExecutionOptions(10), out isInnerOutermost);
+            try
+            {
+                entered = inner.TryEnterCall();
+                depth = inner.CallDepth;
+                limit = inner.MaxCallDepth;
+                inner.ExitCall();
+            }
+            finally
+            {
+                executionContext.Exit(isInnerOutermost);
+            }
+            outerRemains =
+                ReferenceEquals(executionContext.Current, outer) && outer.CallDepth == 50;
+        }
+        finally
+        {
+            while (outer.CallDepth > 0)
+            {
+                outer.ExitCall();
+            }
+            executionContext.Exit(isOutermost);
+        }
+        var cleared = executionContext.Current is null;
+        var next = executionContext.Enter(new WasmExecutionOptions(10), out var isNextOutermost);
+        var nextDepth = next.CallDepth;
+        executionContext.Exit(isNextOutermost);
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(isOutermost).IsTrue();
+            await Assert.That(isInnerOutermost).IsFalse();
+            await Assert.That(ReferenceEquals(inner, outer)).IsTrue();
+            await Assert.That(entered).IsTrue();
+            await Assert.That(depth).IsEqualTo(51);
+            await Assert.That(limit).IsEqualTo(100);
+            await Assert.That(outerRemains).IsTrue();
+            await Assert.That(cleared).IsTrue();
+            await Assert.That(isNextOutermost).IsTrue();
+            await Assert.That(ReferenceEquals(next, outer)).IsFalse();
+            await Assert.That(next.MaxCallDepth).IsEqualTo(10);
+            await Assert.That(nextDepth).IsEqualTo(0);
+        }
+    }
+}
+
+internal class WasmExecutionContext_ExitTests
+{
+    [Test]
+    public async Task 同期区間で例外が発生する_finallyで深さと現在の参照を戻し元の例外を保つ()
+    {
+        // Arrange
+        var executionContext = new WasmExecutionContext();
+        var expected = new InvalidOperationException("内部入退出の検証");
+        InterpreterContext? outer = null;
+        var innerDepth = -1;
+        var outerRemains = false;
+        var cleared = false;
+        var exitedDepth = -1;
+
+        // Act & Assert
+        var actual = await Assert
+            .That(() =>
+            {
+                outer = executionContext.Enter(new WasmExecutionOptions(100), out var isOutermost);
+                try
+                {
+                    outer.TryEnterCall();
+                    var inner = executionContext.Enter(new WasmExecutionOptions(10), out var isInnerOutermost);
+                    try
+                    {
+                        inner.TryEnterCall();
+                        try
+                        {
+                            throw expected;
+                        }
+                        finally
+                        {
+                            inner.ExitCall();
+                            executionContext.Exit(isInnerOutermost);
+                        }
+                    }
+                    finally
+                    {
+                        innerDepth = outer.CallDepth;
+                        outerRemains = ReferenceEquals(executionContext.Current, outer);
+                    }
+                }
+                finally
+                {
+                    outer.ExitCall();
+                    executionContext.Exit(isOutermost);
+                    cleared = executionContext.Current is null;
+                    exitedDepth = outer.CallDepth;
+                }
+            })
+            .ThrowsExactly<InvalidOperationException>();
+
+        using (Assert.Multiple())
+        {
+            await Assert.That(ReferenceEquals(actual, expected)).IsTrue();
+            await Assert.That(innerDepth).IsEqualTo(1);
+            await Assert.That(outerRemains).IsTrue();
+            await Assert.That(exitedDepth).IsEqualTo(0);
+            await Assert.That(cleared).IsTrue();
+        }
+    }
+}

@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using WasmSharp.Benchmarks.Cases;
 using WasmSharp.Benchmarks.Results;
 using WasmSharp.Benchmarks.Tests.Fixtures;
 
@@ -6,6 +7,14 @@ namespace WasmSharp.Benchmarks.Tests.Results;
 
 internal class RunComparison_CompareTests
 {
+    private readonly CaseJson json_ = new CaseJson();
+    private readonly RunComparison comparison_;
+
+    public RunComparison_CompareTests()
+    {
+        comparison_ = new RunComparison(json_);
+    }
+
     [Test]
     [Arguments(null, null)]
     [Arguments(16384, 1)]
@@ -22,7 +31,7 @@ internal class RunComparison_CompareTests
         var request = fixture.Save();
 
         // Act
-        var report = RunComparison.Compare(request);
+        var report = comparison_.Compare(request);
 
         // Assert
         using (Assert.Multiple())
@@ -50,7 +59,7 @@ internal class RunComparison_CompareTests
         var request = fixture.Save();
 
         // Act
-        var report = RunComparison.Compare(request);
+        var report = comparison_.Compare(request);
         var actual = report.Cases.Single();
 
         // Assert
@@ -209,7 +218,7 @@ internal class RunComparison_CompareTests
         var request = fixture.Save();
 
         // Act
-        var report = RunComparison.Compare(request);
+        var report = comparison_.Compare(request);
         var actual = report.Cases.Single();
 
         // Assert
@@ -218,6 +227,10 @@ internal class RunComparison_CompareTests
             await Assert.That(actual.Decision).IsEqualTo(expected);
             await Assert.That(actual.TargetAchieved).IsEqualTo(targetAchieved);
             await Assert.That(actual.BlocksCompletion).IsEqualTo(blocks);
+            await Assert
+                .That(actual.Time.WithinAllowedIncrease)
+                .IsEqualTo(scenario != "allowed-exceeded");
+            await Assert.That(actual.Allocation.WithinAllowedIncrease).IsTrue();
             await Assert.That(report.IsAccepted).IsEqualTo(targetAchieved && !blocks);
             await Assert.That(actual.Reasons).IsNotEmpty();
             if (scenario == "untargeted")
@@ -236,11 +249,13 @@ internal class RunComparison_CompareTests
             {
                 await Assert
                     .That(
-                        actual.Allocation.Reasons.Any(x =>
+                        actual.Allocation.Reasons.Single(x =>
                             x.Kind == ComparisonReasonKind.TargetNotReached
-                        )
+                        ).Description
                     )
-                    .IsTrue();
+                    .Contains("割り当て")
+                    .And.Contains("削減目標")
+                    .And.Contains("満たしません");
                 await Assert
                     .That(
                         actual.Time.Reasons.Any(x =>
@@ -302,7 +317,7 @@ internal class RunComparison_CompareTests
         var request = fixture.Save();
 
         // Act
-        var actual = RunComparison.Compare(request).Cases.Single();
+        var actual = comparison_.Compare(request).Cases.Single();
 
         // Assert
         using (Assert.Multiple())
@@ -355,7 +370,7 @@ internal class RunComparison_CompareTests
         var request = fixture.Save();
 
         // Act
-        var report = RunComparison.Compare(request);
+        var report = comparison_.Compare(request);
         var actual = report.Cases.Single();
 
         // Assert
@@ -378,6 +393,55 @@ internal class RunComparison_CompareTests
                     )
                 )
                 .IsFalse();
+        }
+    }
+
+    [Test]
+    [Arguments(0d, false)]
+    [Arguments(1d, true)]
+    [Arguments(1.01d, false)]
+    public async Task 信頼区間の水準を検証する_0を除き1までの時間指標だけを比較へ採用する(
+        double level,
+        bool accepted
+    )
+    {
+        // Arrange
+        using var fixture = new ComparisonFixture();
+        foreach (var run in fixture.Current)
+        {
+            run.Manifest = run.Manifest with
+            {
+                Cases = [.. run.Manifest.Cases.Select(x => x with
+                {
+                    Metrics = x.Metrics with
+                    {
+                        Time = x.Metrics.Time! with
+                        {
+                            ConfidenceInterval = x.Metrics.Time!.ConfidenceInterval with
+                            {
+                                Level = level,
+                            },
+                        },
+                    },
+                })],
+            };
+        }
+        var request = fixture.Save();
+
+        // Act
+        var report = comparison_.Compare(request);
+        var actual = report.Cases.Single();
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(report.IsAccepted).IsEqualTo(accepted);
+            await Assert.That(actual.Time.Current?.Runs.Count ?? 0).IsEqualTo(accepted ? 3 : 0);
+            await Assert
+                .That(actual.Time.Reasons.Any(x =>
+                    x.Kind == ComparisonReasonKind.InsufficientMeasurements
+                ))
+                .IsEqualTo(!accepted);
         }
     }
 
@@ -408,7 +472,7 @@ internal class RunComparison_CompareTests
         var request = fixture.Save();
 
         // Act
-        var actual = RunComparison.Compare(request).Cases.Single();
+        var actual = comparison_.Compare(request).Cases.Single();
 
         // Assert
         using (Assert.Multiple())
@@ -448,7 +512,7 @@ internal class RunComparison_CompareTests
         var request = fixture.Save();
 
         // Act
-        var report = RunComparison.Compare(request);
+        var report = comparison_.Compare(request);
         var actual = report.Cases.Single();
 
         // Assert
@@ -458,8 +522,12 @@ internal class RunComparison_CompareTests
             await Assert.That(actual.BlocksCompletion).IsTrue();
             await Assert.That(actual.Allocation.WithinAllowedIncrease).IsNull();
             await Assert
-                .That(actual.Reasons.Any(x => x.Kind == ComparisonReasonKind.MissingPolicy))
-                .IsTrue();
+                .That(actual.Allocation.Reasons.Single(x =>
+                    x.Kind == ComparisonReasonKind.MissingPolicy
+                ).Description)
+                .Contains("割り当て")
+                .And.Contains("0基準")
+                .And.Contains("絶対差");
             await Assert.That(report.IsAccepted).IsFalse();
         }
     }
@@ -572,9 +640,18 @@ internal class RunComparison_CompareTests
         {
             File.WriteAllText(Path.Combine(changed.DirectoryPath, "raw/full.json"), "changed");
         }
+        string[] descriptionParts = scenario switch
+        {
+            "failed" => [changed.Manifest.RunId, "invoke.single", "成功していません"],
+            "missing-case" => [changed.Manifest.RunId, "invoke.single", "Missing"],
+            "duplicate" => ["独立run ID", "重複"],
+            "shared" => ["run ID", "基準群", "候補群", "重複"],
+            "missing-run" => [request.CurrentRunDirectories[^1], "読めません"],
+            _ => [],
+        };
 
         // Act
-        var report = RunComparison.Compare(request);
+        var report = comparison_.Compare(request);
         var actual = report.Cases.Single();
 
         // Assert
@@ -586,6 +663,15 @@ internal class RunComparison_CompareTests
             await Assert.That(actual.Time.TargetAchieved).IsFalse();
             await Assert.That(actual.Allocation.TargetAchieved).IsFalse();
             await Assert.That(actual.Reasons.Any(x => x.Kind == expectedReason)).IsTrue();
+            foreach (var part in descriptionParts)
+            {
+                await Assert
+                    .That(actual.Reasons.Any(x =>
+                        x.Kind == expectedReason &&
+                        x.Description.Contains(part, StringComparison.Ordinal)
+                    ))
+                    .IsTrue();
+            }
             await Assert.That(report.IsAccepted).IsFalse();
             if (scenario == "empty-baseline")
             {
@@ -661,7 +747,7 @@ internal class RunComparison_CompareTests
         var request = fixture.Save();
 
         // Act
-        var actual = RunComparison.Compare(request).Cases.Single();
+        var actual = comparison_.Compare(request).Cases.Single();
 
         // Assert
         using (Assert.Multiple())
@@ -769,9 +855,18 @@ internal class RunComparison_CompareTests
                 PolicyPath = Path.Combine(fixture.Baseline[0].DirectoryPath, "absent.json"),
             };
         }
+        string[] descriptionParts = scenario switch
+        {
+            "missing" or "duplicate" or "minimum" => ["invoke.single", "policy", "独立run数"],
+            "hash" => ["SHA-256", request.PolicySha256],
+            "schema" or "null" => ["版", "識別子"],
+            "negative" or "negative-noise" or "target-zero" or "equivalence" or "mixed-equivalence"
+                => ["時間", "閾値"],
+            _ => [],
+        };
 
         // Act
-        var report = RunComparison.Compare(request);
+        var report = comparison_.Compare(request);
         var actual = report.Cases.Single();
 
         // Assert
@@ -787,6 +882,15 @@ internal class RunComparison_CompareTests
             {
                 await Assert
                     .That(actual.Reasons.Any(x => x.Description.Contains(request.PolicyPath)))
+                    .IsTrue();
+            }
+            foreach (var part in descriptionParts)
+            {
+                await Assert
+                    .That(actual.Reasons.Any(x =>
+                        x.Kind == ComparisonReasonKind.MissingPolicy &&
+                        x.Description.Contains(part, StringComparison.Ordinal)
+                    ))
                     .IsTrue();
             }
         }
@@ -861,7 +965,7 @@ internal class RunComparison_CompareTests
         var request = fixture.Save();
 
         // Act
-        var report = RunComparison.Compare(request);
+        var report = comparison_.Compare(request);
         var actual = report.Cases.Single();
 
         // Assert
@@ -877,6 +981,17 @@ internal class RunComparison_CompareTests
                 .That(actual.Reasons.Any(x => x.Kind == ComparisonReasonKind.ExcessiveVariation))
                 .IsEqualTo(exceeds);
             await Assert.That(report.IsAccepted).IsEqualTo(!exceeds);
+            if (exceeds)
+            {
+                var description = actual.Reasons.Single(x =>
+                    x.Kind == ComparisonReasonKind.ExcessiveVariation
+                ).Description;
+                var metric = scenario.EndsWith("allocation", StringComparison.Ordinal)
+                    ? "割り当て"
+                    : "時間";
+                await Assert.That(description).Contains(metric).And.Contains("反復間判断幅");
+                await Assert.That(description).Contains(string.Join(", ", group.Select(x => x.Manifest.RunId)));
+            }
         }
     }
 
@@ -940,7 +1055,7 @@ internal class RunComparison_CompareTests
         var request = fixture.Save();
 
         // Act
-        var report = RunComparison.Compare(request);
+        var report = comparison_.Compare(request);
         var other = report.Cases.Single(x => x.CaseId == otherCase);
 
         // Assert
@@ -1015,9 +1130,9 @@ internal class RunComparison_CompareTests
         var finalRequest = final.Save();
 
         // Act
-        var firstReport = RunComparison.Compare(firstRequest);
-        var secondReport = RunComparison.Compare(secondRequest);
-        var finalReport = RunComparison.Compare(finalRequest);
+        var firstReport = comparison_.Compare(firstRequest);
+        var secondReport = comparison_.Compare(secondRequest);
+        var finalReport = comparison_.Compare(finalRequest);
 
         // Assert
         using (Assert.Multiple())
@@ -1073,7 +1188,7 @@ internal class RunComparison_CompareTests
         var request = fixture.Save();
 
         // Act
-        var actual = RunComparison.Compare(request).Cases.Single();
+        var actual = comparison_.Compare(request).Cases.Single();
 
         // Assert
         using (Assert.Multiple())
@@ -1097,7 +1212,7 @@ internal class RunComparison_CompareTests
         var before = FileHashes(fixture);
 
         // Act
-        var report = RunComparison.Compare(request);
+        var report = comparison_.Compare(request);
         var after = FileHashes(fixture);
 
         // Assert

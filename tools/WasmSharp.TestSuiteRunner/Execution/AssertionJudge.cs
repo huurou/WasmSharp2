@@ -180,12 +180,7 @@ internal static class AssertionJudge
     /// <returns>invokeでInvoke、getでGetを観測した場合はtrue</returns>
     private static bool MatchesAction(ScriptAction action, CaseStage? stage)
     {
-        return action switch
-        {
-            InvokeAction => stage == CaseStage.Invoke,
-            GetAction => stage == CaseStage.Get,
-            _ => false,
-        };
+        return stage == (action is InvokeAction ? CaseStage.Invoke : CaseStage.Get);
     }
 
     /// <summary>

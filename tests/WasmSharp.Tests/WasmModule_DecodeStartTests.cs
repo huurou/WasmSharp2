@@ -13,6 +13,7 @@ internal partial class WasmModule_DecodeTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var bytes = HostLinkingModuleBinary.Create(
             HostLinkingModuleBinary.Types(([], [])),
             HostLinkingModuleBinary.Imports(("env", "start", 0, [0])),
@@ -25,7 +26,7 @@ internal partial class WasmModule_DecodeTests
             "start",
             WasmFunction.CreateHost(
                 new([], []),
-                _ =>
+                (callbackContext, _) =>
                 {
                     calls++;
                     return new([]);
@@ -76,7 +77,7 @@ internal partial class WasmModule_DecodeTests
         // Act
         foreach (var module in modules)
         {
-            module.Instantiate([host]);
+            module.Instantiate(executionContext, [host]);
         }
 
         // Assert
@@ -89,6 +90,7 @@ internal partial class WasmModule_DecodeTests
     public async Task Startの生の関数添字_両入力で実行や型検証をせず保持する(bool useStream)
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var bytes = HostLinkingModuleBinary.Create(HostLinkingModuleBinary.Start(uint.MaxValue));
         using var stream = new ChunkedReadStream(new MemoryStream(bytes));
 
@@ -103,7 +105,7 @@ internal partial class WasmModule_DecodeTests
             await Assert.That(module.Functions.IsEmpty).IsTrue();
             await Assert.That(module.FunctionCodes.IsEmpty).IsTrue();
         }
-        await Assert.That(() => module.Instantiate([])).ThrowsExactly<InvalidOperationException>();
+        await Assert.That(() => module.Instantiate(executionContext, [])).ThrowsExactly<InvalidOperationException>();
 
         // Act & Assert
         var exception = await Assert
@@ -112,7 +114,7 @@ internal partial class WasmModule_DecodeTests
         await Assert
             .That(exception!.Location)
             .IsEqualTo(new(WasmProcessingStage.Validate, 10, uint.MaxValue, 8));
-        await Assert.That(() => module.Instantiate([])).ThrowsExactly<InvalidOperationException>();
+        await Assert.That(() => module.Instantiate(executionContext, [])).ThrowsExactly<InvalidOperationException>();
     }
 
     [Test]
@@ -153,6 +155,7 @@ internal partial class WasmModule_DecodeTests
     public async Task Startと空要素sectionがある_両入力でDecodeとimport調査を実行してもStartを呼ばない()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var bytes = HostLinkingModuleBinary.Create(
             HostLinkingModuleBinary.Types(([], [])),
             HostLinkingModuleBinary.Imports(("env", "start", 0, [0])),
@@ -165,7 +168,7 @@ internal partial class WasmModule_DecodeTests
             "start",
             WasmFunction.CreateHost(
                 new([], []),
-                _ =>
+                (callbackContext, _) =>
                 {
                     calls++;
                     return new([]);
@@ -192,8 +195,8 @@ internal partial class WasmModule_DecodeTests
         }
 
         // Act
-        fromBytes.Instantiate([host]);
-        fromStream.Instantiate([host]);
+        fromBytes.Instantiate(executionContext, [host]);
+        fromStream.Instantiate(executionContext, [host]);
 
         // Assert
         await Assert.That(calls).IsEqualTo(2);

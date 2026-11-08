@@ -20,13 +20,14 @@ internal partial class WasmFunction_InvokeTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var called = false;
         var host = new WasmHostModule("env");
         host.Define(
             "after",
             WasmFunction.CreateHost(
                 new([], []),
-                _ =>
+                (callbackContext, _) =>
                 {
                     called = true;
                     return new([]);
@@ -47,13 +48,13 @@ internal partial class WasmFunction_InvokeTests
                 )
             )
         );
-        var instance = WasmModule.Decode(bytes).Validate().Instantiate([host]);
+        var instance = WasmModule.Decode(bytes).Validate().Instantiate(executionContext, [host]);
         var function = instance.GetFunction("run");
         var expectedOffset = bytes.Length - afterTrap.Length - 1;
 
         // Act & Assert
         var exception = await Assert
-            .That(() => function.Invoke([]))
+            .That(() => function.Invoke(executionContext, []))
             .ThrowsExactly<WasmTrapException>();
         using (Assert.Multiple())
         {

@@ -13,6 +13,7 @@ internal class InterpreterContext_GetBranchTargetTests
     public async Task 入れ子の関数で分岐情報を取得する_現在の関数の指定添字を参照する(uint index)
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         BranchTarget[] targets = [new(1, 0, 1), new(0, 2, 0)];
         var outer = ExecutionFunctionFixture.Create([], new([], []), [], 0, [new(9, 8, 7)]);
         var inner = ExecutionFunctionFixture.Create(
@@ -22,7 +23,7 @@ internal class InterpreterContext_GetBranchTargetTests
             3,
             [.. targets]
         );
-        var context = InterpreterContext.Enter(new(10), out var isOutermost);
+        var context = executionContext.Enter(new(10), out var isOutermost);
         BranchTarget actual;
         ExecutionFrame frame;
         (int Frames, int Values, int Depth) state;
@@ -44,8 +45,8 @@ internal class InterpreterContext_GetBranchTargetTests
         }
         finally
         {
+            executionContext.Exit(isOutermost);
             context.Restore(0, 0, 0);
-            InterpreterContext.Exit(isOutermost);
         }
 
         // Assert
@@ -72,6 +73,7 @@ internal class InterpreterContext_BranchTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var reference = new object();
         var referencedFunction = FunctionFixture.Create();
         WasmValue[] values =
@@ -112,7 +114,7 @@ internal class InterpreterContext_BranchTests
         );
         var caller = new ExecutionFrame(FunctionFixture.Create(), 0, 2) { Pc = 7 };
         var current = new ExecutionFrame(function, 3, 5) { Pc = 1 };
-        var context = InterpreterContext.Enter(new(10), out var isOutermost);
+        var context = executionContext.Enter(new(10), out var isOutermost);
         WasmValue[] actualPrefix;
         WasmValue[] actualKept;
         WasmValue[] cleared;
@@ -165,13 +167,13 @@ internal class InterpreterContext_BranchTests
         }
         finally
         {
+            executionContext.Exit(isOutermost);
             context.Restore(0, 0, 0);
-            InterpreterContext.Exit(isOutermost);
             restored =
                 context.FrameCount == 0
                 && context.ValueCount == 0
                 && context.CallDepth == 0
-                && InterpreterContext.Current is null;
+                && executionContext.Current is null;
         }
 
         // Assert

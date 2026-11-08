@@ -11,6 +11,7 @@ internal class Interpreter_GlobalGetTests
     public async Task ホストが更新したglobalを取得する_所属instanceの同じ実体から型とビット列と参照同一性を保って積む()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var reference = new object();
         var found = InstructionSet.TryGet(new(0, 0x23), out var descriptor);
         var externGlobal = new WasmGlobal(
@@ -42,7 +43,7 @@ internal class Interpreter_GlobalGetTests
         );
         externGlobal.Value = WasmValue.FromExternRef(reference);
         numberGlobal.Value = WasmValue.FromF32Bits(0x7FC00001);
-        var context = InterpreterContext.Enter(new(10), out var isOutermost);
+        var context = executionContext.Enter(new(10), out var isOutermost);
         ExecutionResult result;
 
         // Act
@@ -57,8 +58,8 @@ internal class Interpreter_GlobalGetTests
         }
         finally
         {
+            executionContext.Exit(isOutermost);
             context.Restore(0, 0, 0);
-            InterpreterContext.Exit(isOutermost);
         }
 
         // Assert
@@ -82,6 +83,7 @@ internal class Interpreter_GlobalGetTests
     public async Task Importした定義関数から取得する_import先ではなく元instanceのglobalを積む()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var source = ExecutionInstanceFixture.Create(
             [new([], [WasmValueKind.I32])],
             [
@@ -114,7 +116,7 @@ internal class Interpreter_GlobalGetTests
             [source.Functions[0]],
             [new(new(WasmValueKind.I32, false), WasmValue.FromI32(2))]
         );
-        var context = InterpreterContext.Enter(new(10), out var isOutermost);
+        var context = executionContext.Enter(new(10), out var isOutermost);
         ExecutionResult result;
 
         // Act
@@ -129,8 +131,8 @@ internal class Interpreter_GlobalGetTests
         }
         finally
         {
+            executionContext.Exit(isOutermost);
             context.Restore(0, 0, 0);
-            InterpreterContext.Exit(isOutermost);
         }
 
         // Assert

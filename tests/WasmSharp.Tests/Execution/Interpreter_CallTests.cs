@@ -11,10 +11,11 @@ internal class Interpreter_CallTests
     public async Task Hostへの入場が深さ上限に達する_呼出し元の関数添字とcall命令の位置を返す()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var called = false;
         var host = WasmFunction.CreateHost(
             new([], []),
-            _ =>
+            (_, _) =>
             {
                 called = true;
                 return new([]);
@@ -36,7 +37,7 @@ internal class Interpreter_CallTests
             [host],
             []
         );
-        var context = InterpreterContext.Enter(new(1), out var outermost);
+        var context = executionContext.Enter(new(1), out var outermost);
         ExecutionResult result;
 
         // Act
@@ -51,7 +52,7 @@ internal class Interpreter_CallTests
         }
         finally
         {
-            InterpreterContext.Exit(outermost);
+            executionContext.Exit(outermost);
         }
 
         // Assert
@@ -71,6 +72,7 @@ internal class Interpreter_CallTests
     public async Task 定義関数を入れ子で呼ぶ_引数と結果を宣言順に受け渡し呼出し側の引数とlocalsを保つ()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var reference = new object();
         var found = InstructionSet.TryGet(new(0, 0x10), out var descriptor);
         var instance = ExecutionInstanceFixture.Create(
@@ -125,7 +127,7 @@ internal class Interpreter_CallTests
             [],
             []
         );
-        var context = InterpreterContext.Enter(new(10), out var isOutermost);
+        var context = executionContext.Enter(new(10), out var isOutermost);
         ExecutionResult result;
         (int Frames, int Values, int Depth) state;
 
@@ -142,8 +144,8 @@ internal class Interpreter_CallTests
         }
         finally
         {
+            executionContext.Exit(isOutermost);
             context.Restore(0, 0, 0);
-            InterpreterContext.Exit(isOutermost);
         }
 
         // Assert
@@ -168,6 +170,7 @@ internal class Interpreter_CallTests
     public async Task 別instanceからimportした定義関数を呼ぶ_元instanceの関数表で呼出し先を解決する()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var source = ExecutionInstanceFixture.Create(
             [new([], [WasmValueKind.I32])],
             [
@@ -218,7 +221,7 @@ internal class Interpreter_CallTests
             [source.Functions[0]],
             []
         );
-        var context = InterpreterContext.Enter(new(10), out var isOutermost);
+        var context = executionContext.Enter(new(10), out var isOutermost);
         ExecutionResult result;
 
         // Act
@@ -233,8 +236,8 @@ internal class Interpreter_CallTests
         }
         finally
         {
+            executionContext.Exit(isOutermost);
             context.Restore(0, 0, 0);
-            InterpreterContext.Exit(isOutermost);
         }
 
         // Assert
@@ -253,6 +256,7 @@ internal class Interpreter_CallTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var instance = ExecutionInstanceFixture.Create(
             [new([], [])],
             [
@@ -269,7 +273,7 @@ internal class Interpreter_CallTests
             [],
             []
         );
-        var context = InterpreterContext.Enter(new(limit), out var isOutermost);
+        var context = executionContext.Enter(new(limit), out var isOutermost);
         ExecutionResult result;
         (int Frames, int Values, int Depth) state;
 
@@ -286,8 +290,8 @@ internal class Interpreter_CallTests
         }
         finally
         {
+            executionContext.Exit(isOutermost);
             context.Restore(0, 0, 0);
-            InterpreterContext.Exit(isOutermost);
         }
 
         // Assert
@@ -310,6 +314,7 @@ internal class Interpreter_CallTests
     public async Task 上限2で呼出しを繰り返す_戻るたびに深さを解放して最後の結果を返す()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var instance = ExecutionInstanceFixture.Create(
             [new([], [WasmValueKind.I32])],
             [
@@ -339,7 +344,7 @@ internal class Interpreter_CallTests
             [],
             []
         );
-        var context = InterpreterContext.Enter(new(2), out var isOutermost);
+        var context = executionContext.Enter(new(2), out var isOutermost);
         ExecutionResult result;
 
         // Act
@@ -354,8 +359,8 @@ internal class Interpreter_CallTests
         }
         finally
         {
+            executionContext.Exit(isOutermost);
             context.Restore(0, 0, 0);
-            InterpreterContext.Exit(isOutermost);
         }
 
         // Assert
@@ -370,6 +375,7 @@ internal class Interpreter_CallTests
     public async Task 呼出し先の必要容量が保持上限を超える_入口の処理段階と呼出し先の位置で実装上限とし外側を復元する()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var instance = ExecutionInstanceFixture.Create(
             [new([], [])],
             [
@@ -393,7 +399,7 @@ internal class Interpreter_CallTests
         var exception = await Assert
             .That(() =>
             {
-                var context = InterpreterContext.Enter(new(10), out var isOutermost);
+                var context = executionContext.Enter(new(10), out var isOutermost);
                 try
                 {
                     context.Stage = WasmProcessingStage.Invoke;
@@ -418,8 +424,8 @@ internal class Interpreter_CallTests
                 }
                 finally
                 {
+                    executionContext.Exit(isOutermost);
                     context.Restore(0, 0, 0);
-                    InterpreterContext.Exit(isOutermost);
                 }
             })
             .ThrowsExactly<WasmImplementationLimitException>();
@@ -450,10 +456,11 @@ internal class Interpreter_CallTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var global = new WasmGlobal(new(WasmValueKind.I32, true), WasmValue.FromI32(0));
         var host = WasmFunction.CreateHost(
             new([], [WasmValueKind.I32]),
-            _ => invalid ? new([]) : new([WasmValue.FromI32(42)])
+            (_, _) => invalid ? new([]) : new([WasmValue.FromI32(42)])
         );
         var instance = ExecutionInstanceFixture.Create(
             [new([], [])],
@@ -475,7 +482,7 @@ internal class Interpreter_CallTests
         (int Frames, int Values, int Depth) state = default;
         void Run()
         {
-            var context = InterpreterContext.Enter(new(10), out var outermost);
+            var context = executionContext.Enter(new(10), out var outermost);
             try
             {
                 try
@@ -494,7 +501,7 @@ internal class Interpreter_CallTests
             }
             finally
             {
-                InterpreterContext.Exit(outermost);
+                executionContext.Exit(outermost);
             }
         }
 

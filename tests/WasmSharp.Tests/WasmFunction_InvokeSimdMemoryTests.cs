@@ -9,6 +9,7 @@ internal partial class WasmFunction_InvokeTests
     public async Task SIMDで共有memoryを読み書きする_data初期化とgrowとscalarとホストの更新を別instanceでも観測する()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var initialBytes = Convert.FromHexString("BC9A78563412F87F0000000000000080");
         var initial = Vector(Convert.ToHexString(initialBytes));
         var vector = Vector("1032547698BADCFEEFCDAB8967452301");
@@ -49,28 +50,28 @@ internal partial class WasmFunction_InvokeTests
             .Validate();
 
         // Act
-        var first = module.Instantiate([host]);
-        var second = module.Instantiate([host]);
-        var initialized = first.GetFunction("load").Invoke([WasmValue.FromI32(15)]).Values[0];
-        var initializedScalar = second.GetFunction("read").Invoke([WasmValue.FromI32(15)]).Values[
+        var first = module.Instantiate(executionContext, [host]);
+        var second = module.Instantiate(executionContext, [host]);
+        var initialized = first.GetFunction("load").Invoke(executionContext, [WasmValue.FromI32(15)]).Values[0];
+        var initializedScalar = second.GetFunction("read").Invoke(executionContext, [WasmValue.FromI32(15)]).Values[
             0
         ];
         var savedBytes = new byte[16];
         memory.Read(15, savedBytes);
-        var grown = first.GetFunction("grow").Invoke([WasmValue.FromI32(1)]).Values[0];
-        var zero = second.GetFunction("load").Invoke([WasmValue.FromI32(65536)]).Values[0];
-        second.GetFunction("store").Invoke([WasmValue.FromI32(65539), vector]);
-        var scalar = first.GetFunction("read").Invoke([WasmValue.FromI32(65539)]).Values[0];
+        var grown = first.GetFunction("grow").Invoke(executionContext, [WasmValue.FromI32(1)]).Values[0];
+        var zero = second.GetFunction("load").Invoke(executionContext, [WasmValue.FromI32(65536)]).Values[0];
+        second.GetFunction("store").Invoke(executionContext, [WasmValue.FromI32(65539), vector]);
+        var scalar = first.GetFunction("read").Invoke(executionContext, [WasmValue.FromI32(65539)]).Values[0];
         var storedBytes = new byte[16];
         memory.Read(65539, storedBytes);
         first
             .GetFunction("write")
-            .Invoke([WasmValue.FromI32(65543), WasmValue.FromI32(unchecked((int)0xFFC00042))]);
-        var afterScalar = second.GetFunction("load").Invoke([WasmValue.FromI32(65539)]).Values[0];
+            .Invoke(executionContext, [WasmValue.FromI32(65543), WasmValue.FromI32(unchecked((int)0xFFC00042))]);
+        var afterScalar = second.GetFunction("load").Invoke(executionContext, [WasmValue.FromI32(65539)]).Values[0];
         memory.Write(65547, Convert.FromHexString("0000000000000080"));
-        var afterHost = first.GetFunction("load").Invoke([WasmValue.FromI32(65539)]).Values[0];
-        var fromSecond = second.GetFunction("load").Invoke([WasmValue.FromI32(65539)]).Values[0];
-        var retained = second.GetFunction("load").Invoke([WasmValue.FromI32(15)]).Values[0];
+        var afterHost = first.GetFunction("load").Invoke(executionContext, [WasmValue.FromI32(65539)]).Values[0];
+        var fromSecond = second.GetFunction("load").Invoke(executionContext, [WasmValue.FromI32(65539)]).Values[0];
+        var retained = second.GetFunction("load").Invoke(executionContext, [WasmValue.FromI32(15)]).Values[0];
         var currentBytes = new byte[16];
         memory.Read(65539, currentBytes);
 
@@ -116,6 +117,7 @@ internal partial class WasmFunction_InvokeTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var bytes = HostLinkingModuleBinary.Create(
             HostLinkingModuleBinary.Types(([0x7F], [0x7B])),
             HostLinkingModuleBinary.Functions(0),
@@ -129,7 +131,7 @@ internal partial class WasmFunction_InvokeTests
         WasmModule[] modules = [WasmModule.Decode(bytes), WasmModule.Decode(stream)];
         foreach (var module in modules)
         {
-            var instance = module.Validate().Instantiate([]);
+            var instance = module.Validate().Instantiate(executionContext, []);
             instance
                 .GetMemory("memory")
                 .Write(
@@ -138,7 +140,7 @@ internal partial class WasmFunction_InvokeTests
                 );
             var actual = instance
                 .GetFunction("run")
-                .Invoke([WasmValue.FromI32(65535 - width)])
+                .Invoke(executionContext, [WasmValue.FromI32(65535 - width)])
                 .Values;
 
             // Assert
@@ -149,7 +151,7 @@ internal partial class WasmFunction_InvokeTests
             }
             // Act & Assert
             var trap = await Assert
-                .That(() => instance.GetFunction("run").Invoke([WasmValue.FromI32(65536 - width)]))
+                .That(() => instance.GetFunction("run").Invoke(executionContext, [WasmValue.FromI32(65536 - width)]))
                 .ThrowsExactly<WasmTrapException>();
             await Assert.That(trap!.Reason).IsEqualTo(WasmTrapReason.MemoryOutOfBounds);
             await Assert
@@ -177,6 +179,7 @@ internal partial class WasmFunction_InvokeTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var bytes = HostLinkingModuleBinary.Create(
             HostLinkingModuleBinary.Types(([0x7F, 0x7B], [0x7B]), ([0x7F, 0x7B], [])),
             HostLinkingModuleBinary.Functions(0, 1),
@@ -187,7 +190,7 @@ internal partial class WasmFunction_InvokeTests
                 ([], [0x20, 0, 0x20, 1, 0xFD, store, 0, 0, lane, 0x0B])
             )
         );
-        var instance = WasmModule.Decode(bytes).Validate().Instantiate([]);
+        var instance = WasmModule.Decode(bytes).Validate().Instantiate(executionContext, []);
         var memory = instance.GetMemory("memory");
         var inputBytes = Enumerable.Range(1, 16).Select(x => (byte)x).ToArray();
         var initial = Enumerable.Repeat((byte)0xA5, 16).ToArray();
@@ -196,11 +199,11 @@ internal partial class WasmFunction_InvokeTests
         // Act
         var loaded = instance
             .GetFunction("load")
-            .Invoke([WasmValue.FromI32(65536 - width), Vector(Convert.ToHexString(inputBytes))])
+            .Invoke(executionContext, [WasmValue.FromI32(65536 - width), Vector(Convert.ToHexString(inputBytes))])
             .Values[0];
         var stored = instance
             .GetFunction("store")
-            .Invoke([WasmValue.FromI32(65536 - width), Vector(Convert.ToHexString(inputBytes))])
+            .Invoke(executionContext, [WasmValue.FromI32(65536 - width), Vector(Convert.ToHexString(inputBytes))])
             .Values;
         var actualMemory = new byte[16];
         memory.Read(65520, actualMemory);
@@ -223,7 +226,7 @@ internal partial class WasmFunction_InvokeTests
             .That(() =>
                 instance
                     .GetFunction("store")
-                    .Invoke([
+                    .Invoke(executionContext, [
                         WasmValue.FromI32(65537 - width),
                         Vector(Convert.ToHexString(inputBytes)),
                     ])
@@ -241,6 +244,7 @@ internal partial class WasmFunction_InvokeTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var memory = new WasmMemory(new(1));
         memory.Write(65535, [0xA5]);
         WasmInstance? saved = null;
@@ -251,7 +255,7 @@ internal partial class WasmFunction_InvokeTests
             "save",
             WasmFunction.CreateHost(
                 new([], []),
-                (instance, _) =>
+                (callbackContext, instance, _) =>
                 {
                     saved = instance;
                     calls++;
@@ -303,15 +307,15 @@ internal partial class WasmFunction_InvokeTests
         var offset = bytes.Length - code.Length + Array.LastIndexOf(code, (byte)0xFD);
         WasmInstance? returned = null;
         Action run = start
-            ? () => returned = module.Instantiate([host])
-            : () => (returned = module.Instantiate([host])).GetFunction("run").Invoke([]);
+            ? () => returned = module.Instantiate(executionContext, [host])
+            : () => (returned = module.Instantiate(executionContext, [host])).GetFunction("run").Invoke(executionContext, []);
 
         // Act & Assert
         var trap = await Assert.That(run).ThrowsExactly<WasmTrapException>();
         await Assert.That(saved).IsNotNull();
 
         // Act
-        var result = saved!.GetFunction("read").Invoke([]).Values[0].AsI32();
+        var result = saved!.GetFunction("read").Invoke(executionContext, []).Values[0].AsI32();
         var last = new byte[1];
         memory.Read(65535, last);
 

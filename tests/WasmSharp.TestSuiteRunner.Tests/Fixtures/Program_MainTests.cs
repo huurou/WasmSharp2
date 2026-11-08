@@ -4,6 +4,8 @@ namespace WasmSharp.TestSuiteRunner.Tests.Fixtures;
 
 internal class Program_MainTests
 {
+    private readonly WasmExecutionContext context_ = new WasmExecutionContext();
+
     [Test]
     public async Task 出力先の親ディレクトリが存在しない_自動作成せず保存失敗を返す()
     {
@@ -156,7 +158,9 @@ internal class Program_MainTests
                 .IsEqualTo("success.wast");
             await Assert.That(Convert.ToHexString(binary)).IsEqualTo("0061736D01000000");
             await Assert
-                .That(() => WasmModule.Decode(binary).Validate().Instantiate(new WasmImports()))
+                .That(() =>
+                    WasmModule.Decode(binary).Validate().Instantiate(context_, new WasmImports())
+                )
                 .ThrowsNothing();
             await Assert
                 .That(await workspace.GitAsync("status", "--porcelain"))

@@ -13,6 +13,7 @@ internal partial class WasmModule_ValidateTests
     public async Task 結果の型や個数が不一致_Validateの失敗を通知する(string sections)
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var bytes = Convert.FromHexString("0061736D01000000" + sections);
         using var stream = new MemoryStream(bytes);
         WasmModule[] modules = [WasmModule.Decode(bytes), WasmModule.Decode(stream)];
@@ -27,7 +28,7 @@ internal partial class WasmModule_ValidateTests
                 .That(exception!.Location)
                 .IsEqualTo(new(WasmProcessingStage.Validate, bytes.Length - 1, 0, 10));
             await Assert
-                .That(() => module.Instantiate([]))
+                .That(() => module.Instantiate(executionContext, []))
                 .ThrowsExactly<InvalidOperationException>();
         }
     }
@@ -36,6 +37,7 @@ internal partial class WasmModule_ValidateTests
     public async Task 後半関数の結果型が不正_再試行しても検証失敗しインスタンス化できない()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var module = WasmModule.Decode(
             ConstantModuleBinary.Create(
                 [(0x7F, [0x41, 0x01, 0x0B]), (0x7F, [0x42, 0x02, 0x0B])],
@@ -52,7 +54,7 @@ internal partial class WasmModule_ValidateTests
             await Assert.That(exception!.Location!.Stage).IsEqualTo(WasmProcessingStage.Validate);
             await Assert.That(exception.Location.FunctionIndex).IsEqualTo(1u);
             await Assert
-                .That(() => module.Instantiate([]))
+                .That(() => module.Instantiate(executionContext, []))
                 .ThrowsExactly<InvalidOperationException>();
         }
     }

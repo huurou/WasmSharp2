@@ -54,38 +54,45 @@ public abstract class WasmFunction
     /// 定義関数は元の所属instanceで実行する。instance必須のホスト関数では、取得元や進行中の呼び出し元でinstanceを補わない。
     /// ホスト処理が投げた例外は、型と実体を変えずに伝播する。
     /// </remarks>
+    /// <param name="context">呼び出し状態の所有者 ホストからの同期再入では受け取った同じコンテキストを渡す</param>
     /// <param name="arguments">関数型の引数列と個数・型・順序が一致する値</param>
     /// <returns>後続の呼び出しに影響されない、宣言された順序の結果</returns>
     /// <exception cref="ArgumentException">引数の個数または型が関数型と一致しない場合</exception>
-    /// <exception cref="ArgumentNullException">instance必須のホスト関数を呼び出した場合</exception>
+    /// <exception cref="ArgumentNullException">contextがnull、またはinstance必須のホスト関数を呼び出した場合</exception>
     /// <exception cref="InvalidOperationException">ホスト処理の結果がnull、または宣言された個数・型と一致しない場合</exception>
     /// <exception cref="WasmTrapException">Wasmの実行規則によるtrapが発生した場合</exception>
     /// <exception cref="WasmExhaustionException">呼び出し深さが上限に達したか、CLRスタックの余裕が不足した場合</exception>
     /// <exception cref="WasmImplementationLimitException">実行に必要なフレーム数または値の数が保持上限を超える場合</exception>
-    public WasmResults Invoke(ReadOnlySpan<WasmValue> arguments)
+    public WasmResults Invoke(WasmExecutionContext context, ReadOnlySpan<WasmValue> arguments)
     {
-        return Invoke(null!, arguments);
+        return Invoke(context, null!, arguments);
     }
 
     /// <summary>
     /// ホスト処理のアクセス先instanceと値引数を指定して関数を呼び出す
     /// </summary>
     /// <remarks>
-    /// 定義関数はinstance引数にかかわらず元の所属instanceで実行し、新しい実行コンテキストの上限も所属instanceから選ぶ。
-    /// ホスト関数へのinstance指定だけでは実行コンテキストを開始せず、進行中のWasm実行への同期再入では既存の深さと上限を共有する。
+    /// 定義関数はinstance引数にかかわらず元の所属instanceで実行し、新しくWasm実行を始めるときの上限も所属instanceから選ぶ。
+    /// ホスト関数へのinstance指定だけではWasm実行を開始せず、同じコンテキストでの同期再入では既存の深さと上限を共有する。
     /// ホスト処理が投げた例外は、型と実体を変えずに伝播する。
     /// </remarks>
+    /// <param name="context">呼び出し状態の所有者 ホストからの同期再入では受け取った同じコンテキストを渡す</param>
     /// <param name="instance">instance必須のホスト処理へ渡す対象 定義関数とinstanceを受け取らないホスト関数では、nullを含め無視する</param>
     /// <param name="arguments">関数型の引数列と個数・型・順序が一致する値</param>
     /// <returns>後続の呼び出しに影響されない、宣言された順序の結果</returns>
     /// <exception cref="ArgumentException">引数の個数または型が関数型と一致しない場合</exception>
-    /// <exception cref="ArgumentNullException">instance必須のホスト関数にnullを指定した場合</exception>
+    /// <exception cref="ArgumentNullException">contextがnull、またはinstance必須のホスト関数にinstanceのnullを指定した場合</exception>
     /// <exception cref="InvalidOperationException">ホスト処理の結果がnull、または宣言された個数・型と一致しない場合</exception>
     /// <exception cref="WasmTrapException">Wasmの実行規則によるtrapが発生した場合</exception>
     /// <exception cref="WasmExhaustionException">呼び出し深さが上限に達したか、CLRスタックの余裕が不足した場合</exception>
     /// <exception cref="WasmImplementationLimitException">実行に必要なフレーム数または値の数が保持上限を超える場合</exception>
-    public WasmResults Invoke(WasmInstance instance, ReadOnlySpan<WasmValue> arguments)
+    public WasmResults Invoke(
+        WasmExecutionContext context,
+        WasmInstance instance,
+        ReadOnlySpan<WasmValue> arguments
+    )
     {
+        ArgumentNullException.ThrowIfNull(context);
         var parameters = Type.Parameters;
         if (arguments.Length != parameters.Length)
         {
@@ -104,6 +111,6 @@ public abstract class WasmFunction
         {
             ArgumentNullException.ThrowIfNull(instance);
         }
-        return ExecutionBoundary.Invoke(this, instance, arguments);
+        return ExecutionBoundary.Invoke(context, this, instance, arguments);
     }
 }

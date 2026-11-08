@@ -8,6 +8,10 @@ namespace WasmSharp.TestSuiteRunner.Tests.Baselines;
 
 internal class BaselineComparer_CompareRunTests
 {
+    private readonly string baselinePath_ = Path.GetFullPath("baseline.json");
+    private readonly string currentPath_ = Path.GetFullPath("current.json");
+    private readonly ReportStore reportStore_ = new ReportStore();
+
     [Test]
     public async Task 内容が同じで実行IDや日時や版が異なる_入力pathとindexで対応付け変化なしとする()
     {
@@ -27,7 +31,12 @@ internal class BaselineComparer_CompareRunTests
         current.Inputs[1].Cases.Reverse();
 
         // Act
-        var comparison = BaselineComparer.CompareRun(baseline, current);
+        var comparison = BaselineComparer.CompareRun(
+            baseline,
+            current,
+            baselinePath_,
+            currentPath_
+        );
 
         // Assert
         using (Assert.Multiple())
@@ -35,6 +44,8 @@ internal class BaselineComparer_CompareRunTests
             await Assert.That(comparison.Comparison).IsEqualTo(ComparisonType.Run);
             await Assert.That(comparison.Established).IsTrue();
             await Assert.That(comparison.Complete).IsTrue();
+            await Assert.That(comparison.Baseline.Path).IsEqualTo(baselinePath_);
+            await Assert.That(comparison.Current.Path).IsEqualTo(currentPath_);
             await Assert.That(comparison.Baseline.RunId).IsEqualTo("fixture-run");
             await Assert.That(comparison.Current.RunId).IsEqualTo("current-run");
             await Assert.That(comparison.Cases.Count).IsEqualTo(3);
@@ -76,7 +87,12 @@ internal class BaselineComparer_CompareRunTests
         current = current with { Summary = current.Summarize() };
 
         // Act
-        var comparison = BaselineComparer.CompareRun(baseline, current);
+        var comparison = BaselineComparer.CompareRun(
+            baseline,
+            current,
+            baselinePath_,
+            currentPath_
+        );
 
         // Assert
         var changed = comparison.Cases.Single(x => x.Id == new CaseId("a.wast", 1));
@@ -148,7 +164,12 @@ internal class BaselineComparer_CompareRunTests
         current.Inputs[0].Cases[1] = item;
 
         // Act
-        var comparison = BaselineComparer.CompareRun(baseline, current);
+        var comparison = BaselineComparer.CompareRun(
+            baseline,
+            current,
+            baselinePath_,
+            currentPath_
+        );
 
         // Assert
         var changed = comparison.Cases.Single(x => x.Id == item.Id);
@@ -187,7 +208,12 @@ internal class BaselineComparer_CompareRunTests
         current = current with { Summary = current.Summarize() };
 
         // Act
-        var comparison = BaselineComparer.CompareRun(baseline, current);
+        var comparison = BaselineComparer.CompareRun(
+            baseline,
+            current,
+            baselinePath_,
+            currentPath_
+        );
 
         // Assert
         var missing = comparison.Cases.Single(x => x.Id == new CaseId("a.wast", 1));
@@ -232,7 +258,12 @@ internal class BaselineComparer_CompareRunTests
         current = current with { Summary = current.Summarize() };
 
         // Act
-        var comparison = BaselineComparer.CompareRun(baseline, current);
+        var comparison = BaselineComparer.CompareRun(
+            baseline,
+            current,
+            baselinePath_,
+            currentPath_
+        );
 
         // Assert
         using (Assert.Multiple())
@@ -256,7 +287,12 @@ internal class BaselineComparer_CompareRunTests
         var current = CreateReport();
 
         // Act
-        var comparison = BaselineComparer.CompareRun(baseline, current);
+        var comparison = BaselineComparer.CompareRun(
+            baseline,
+            current,
+            baselinePath_,
+            currentPath_
+        );
 
         // Assert
         var added = comparison.Cases.Single(x => x.Id == new CaseId("a.wast", 1));
@@ -296,7 +332,12 @@ internal class BaselineComparer_CompareRunTests
         }
 
         // Act
-        var comparison = BaselineComparer.CompareRun(baseline, current);
+        var comparison = BaselineComparer.CompareRun(
+            baseline,
+            current,
+            baselinePath_,
+            currentPath_
+        );
 
         // Assert
         using (Assert.Multiple())
@@ -370,7 +411,12 @@ internal class BaselineComparer_CompareRunTests
         }
 
         // Act
-        var comparison = BaselineComparer.CompareRun(baseline, current);
+        var comparison = BaselineComparer.CompareRun(
+            baseline,
+            current,
+            baselinePath_,
+            currentPath_
+        );
 
         // Assert
         using (Assert.Multiple())
@@ -428,7 +474,12 @@ internal class BaselineComparer_CompareRunTests
         };
 
         // Act
-        var comparison = BaselineComparer.CompareRun(baseline, current);
+        var comparison = BaselineComparer.CompareRun(
+            baseline,
+            current,
+            baselinePath_,
+            currentPath_
+        );
 
         // Assert
         using (Assert.Multiple())
@@ -451,7 +502,12 @@ internal class BaselineComparer_CompareRunTests
         var current = RunReportFixture.CreateSample();
 
         // Act
-        var comparison = BaselineComparer.CompareRun(baseline, current);
+        var comparison = BaselineComparer.CompareRun(
+            baseline,
+            current,
+            baselinePath_,
+            currentPath_
+        );
 
         // Assert
         var failed = comparison.Cases.Single(x => x.Id == new CaseId("a.wast", 2));
@@ -483,7 +539,12 @@ internal class BaselineComparer_CompareRunTests
         var current = CreateReport();
 
         // Act
-        var comparison = BaselineComparer.CompareRun(baseline, current);
+        var comparison = BaselineComparer.CompareRun(
+            baseline,
+            current,
+            baselinePath_,
+            currentPath_
+        );
 
         // Assert
         using (Assert.Multiple())
@@ -508,7 +569,12 @@ internal class BaselineComparer_CompareRunTests
         current = current with { Summary = current.Summarize() };
 
         // Act
-        var comparison = BaselineComparer.CompareRun(baseline, current);
+        var comparison = BaselineComparer.CompareRun(
+            baseline,
+            current,
+            baselinePath_,
+            currentPath_
+        );
 
         // Assert
         using (Assert.Multiple())
@@ -557,7 +623,12 @@ internal class BaselineComparer_CompareRunTests
         }
 
         // Act
-        var comparison = BaselineComparer.CompareRun(baseline, current);
+        var comparison = BaselineComparer.CompareRun(
+            baseline,
+            current,
+            baselinePath_,
+            currentPath_
+        );
 
         // Assert
         using (Assert.Multiple())
@@ -581,10 +652,17 @@ internal class BaselineComparer_CompareRunTests
         var blockedReport = RunReportFixture.CreateSample();
 
         // Act
-        var comparison = BaselineComparer.CompareRun(baseline, current);
+        var comparison = BaselineComparer.CompareRun(
+            baseline,
+            current,
+            baselinePath_,
+            currentPath_
+        );
         var blockedComparison = BaselineComparer.CompareRun(
             blockedReport,
-            RunReportFixture.CreateSample()
+            RunReportFixture.CreateSample(),
+            baselinePath_,
+            currentPath_
         );
         baseline.Inputs[0].Cases[1].ExpectedValues[0].Lanes.Clear();
         source.ExpectedValues.Clear();
@@ -628,16 +706,18 @@ internal class BaselineComparer_CompareRunTests
         var baselinePath = directory.Combine("baseline.json");
         var currentPath = directory.Combine("current.json");
         var outputPath = directory.Combine("comparison.json");
-        ReportStore.Save(baseline, baselinePath);
-        ReportStore.Save(current, currentPath);
+        reportStore_.Save(baseline, baselinePath);
+        reportStore_.Save(current, currentPath);
         var original = await File.ReadAllTextAsync(baselinePath);
 
         // Act
         var comparison = BaselineComparer.CompareRun(
-            ReportStore.ReadRunReport(baselinePath).Report,
-            ReportStore.ReadRunReport(currentPath).Report
+            reportStore_.ReadRunReport(baselinePath).Report,
+            reportStore_.ReadRunReport(currentPath).Report,
+            baselinePath,
+            currentPath
         );
-        ReportStore.Save(comparison, outputPath);
+        reportStore_.Save(comparison, outputPath);
 
         // Assert
         using var document = JsonDocument.Parse(await File.ReadAllTextAsync(outputPath));
@@ -695,7 +775,12 @@ internal class BaselineComparer_CompareRunTests
         }
 
         // Act
-        var comparison = BaselineComparer.CompareRun(baseline, current);
+        var comparison = BaselineComparer.CompareRun(
+            baseline,
+            current,
+            baselinePath_,
+            currentPath_
+        );
 
         // Assert
         using (Assert.Multiple())

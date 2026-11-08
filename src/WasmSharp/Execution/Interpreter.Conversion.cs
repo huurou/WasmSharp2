@@ -432,19 +432,9 @@ internal static partial class Interpreter
             return 0;
         }
 
-        var truncated = Math.Truncate(operand);
-        var lowerBound = signed ? -I32_SIGNED_UPPER_BOUND : 0D;
-        var upperBound = signed ? I32_SIGNED_UPPER_BOUND : I32_UNSIGNED_UPPER_BOUND;
-        if (truncated < lowerBound)
-        {
-            return signed ? int.MinValue : 0;
-        }
-        if (truncated >= upperBound)
-        {
-            return signed ? int.MaxValue : -1;
-        }
-
-        return signed ? (int)truncated : unchecked((int)(uint)truncated);
+        return signed
+            ? int.CreateSaturating(operand)
+            : unchecked((int)uint.CreateSaturating(operand));
     }
 
     /// <summary>
@@ -460,19 +450,9 @@ internal static partial class Interpreter
             return 0;
         }
 
-        var truncated = Math.Truncate(operand);
-        var lowerBound = signed ? -I64_SIGNED_UPPER_BOUND : 0D;
-        var upperBound = signed ? I64_SIGNED_UPPER_BOUND : I64_UNSIGNED_UPPER_BOUND;
-        if (truncated < lowerBound)
-        {
-            return signed ? long.MinValue : 0;
-        }
-        if (truncated >= upperBound)
-        {
-            return signed ? long.MaxValue : -1;
-        }
-
-        return signed ? (long)truncated : unchecked((long)(ulong)truncated);
+        return signed
+            ? long.CreateSaturating(operand)
+            : unchecked((long)ulong.CreateSaturating(operand));
     }
 
     /// <summary>

@@ -443,10 +443,11 @@ internal class WasmValue_FromFuncRefTests
     public async Task 公開操作で取得した関数を往復する_TypedNullと区別して関数実体を保持する()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var function = WasmModule
             .Decode(ConstantModuleBinary.Create(0x7F, 0x41, 0x2A, 0x0B))
             .Validate()
-            .Instantiate([])
+            .Instantiate(executionContext, [])
             .GetFunction("run");
 
         // Act

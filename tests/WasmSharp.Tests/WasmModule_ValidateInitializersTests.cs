@@ -15,6 +15,7 @@ internal partial class WasmModule_ValidateTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var module = WasmModule.Decode(
             HostLinkingModuleBinary.Create(
                 HostLinkingModuleBinary.Globals((0x7F, false, Convert.FromHexString(initializer)))
@@ -46,7 +47,7 @@ internal partial class WasmModule_ValidateTests
                     )
                 );
             await Assert
-                .That(() => module.Instantiate([]))
+                .That(() => module.Instantiate(executionContext, []))
                 .ThrowsExactly<InvalidOperationException>();
         }
     }
@@ -109,6 +110,7 @@ internal partial class WasmModule_ValidateTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var module = WasmModule.Decode(
             HostLinkingModuleBinary.Create(
                 HostLinkingModuleBinary.Globals(
@@ -126,7 +128,7 @@ internal partial class WasmModule_ValidateTests
         await Assert.That(validated).IsSameReferenceAs(module);
         await Assert.That(module.Validate()).IsSameReferenceAs(module);
         await Assert
-            .That(module.Instantiate([]).GetGlobal("g").Kind)
+            .That(module.Instantiate(executionContext, []).GetGlobal("g").Kind)
             .IsEqualTo(module.Globals[1].Type.ValueKind);
     }
 
@@ -174,14 +176,16 @@ internal partial class WasmModule_ValidateTests
     }
 
     [Test]
-    [Arguments("0B")]
-    [Arguments("410041010B")]
-    [Arguments("42000B")]
+    [Arguments("0B", "結果が1個")]
+    [Arguments("410041010B", null)]
+    [Arguments("42000B", null)]
     public async Task Global式の結果の個数や型が不一致_終端位置で拒否して成果を反映しない(
-        string initializer
+        string initializer,
+        string? expectedDetail
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var module = WasmModule.Decode(
             HostLinkingModuleBinary.Create(
                 HostLinkingModuleBinary.Types(([], [0x7F])),
@@ -206,6 +210,10 @@ internal partial class WasmModule_ValidateTests
                 await Assert
                     .That(exception!.Message.StartsWith("type mismatch", StringComparison.Ordinal))
                     .IsTrue();
+                if (expectedDetail is not null)
+                {
+                    await Assert.That(exception.Message).Contains(expectedDetail);
+                }
                 await Assert
                     .That(exception!.Location)
                     .IsEqualTo(
@@ -219,7 +227,7 @@ internal partial class WasmModule_ValidateTests
                 await Assert.That(module.FunctionCodes.IsEmpty).IsTrue();
                 await Assert.That(module.FunctionExportIndices.IsEmpty).IsTrue();
                 await Assert
-                    .That(() => module.Instantiate([]))
+                    .That(() => module.Instantiate(executionContext, []))
                     .ThrowsExactly<InvalidOperationException>();
             }
         }
@@ -262,17 +270,19 @@ internal partial class WasmModule_ValidateTests
     }
 
     [Test]
-    [Arguments(true, 0u)]
-    [Arguments(false, 1u)]
-    [Arguments(false, 2u)]
-    [Arguments(false, 3u)]
-    [Arguments(false, uint.MaxValue)]
+    [Arguments(true, 0u, "immutable global")]
+    [Arguments(false, 1u, "import global")]
+    [Arguments(false, 2u, null)]
+    [Arguments(false, 3u, null)]
+    [Arguments(false, uint.MaxValue, null)]
     public async Task Global取得がmutableまたは定義または範囲外_命令位置で拒否する(
         bool mutableImport,
-        uint index
+        uint index,
+        string? expectedDetail
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var module = WasmModule.Decode(
             HostLinkingModuleBinary.Create(
                 HostLinkingModuleBinary.Imports(
@@ -299,6 +309,10 @@ internal partial class WasmModule_ValidateTests
                     )
                 )
                 .IsTrue();
+            if (expectedDetail is not null)
+            {
+                await Assert.That(exception.Message).Contains(expectedDetail);
+            }
             await Assert
                 .That(exception!.Location)
                 .IsEqualTo(
@@ -310,7 +324,7 @@ internal partial class WasmModule_ValidateTests
                     )
                 );
             await Assert
-                .That(() => module.Instantiate([]))
+                .That(() => module.Instantiate(executionContext, []))
                 .ThrowsExactly<InvalidOperationException>();
         }
     }

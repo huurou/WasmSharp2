@@ -19,6 +19,7 @@ internal partial class WasmFunction_InvokeTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var candidates = emptyCandidates
             ? HostLinkingModuleBinary.LabelVector()
             : HostLinkingModuleBinary.LabelVector(0, 1);
@@ -94,7 +95,7 @@ internal partial class WasmFunction_InvokeTests
                 )
             )
         );
-        var function = module.Validate().Instantiate([], new(1)).GetFunction("run");
+        var function = module.Validate().Instantiate(executionContext, [], new(1)).GetFunction("run");
         WasmValue[] arguments =
         [
             WasmValue.FromI32(10000),
@@ -103,8 +104,8 @@ internal partial class WasmFunction_InvokeTests
         ];
 
         // Act
-        var first = function.Invoke(arguments);
-        var second = function.Invoke(arguments);
+        var first = function.Invoke(executionContext, arguments);
+        var second = function.Invoke(executionContext, arguments);
 
         // Assert
         using (Assert.Multiple())

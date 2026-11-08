@@ -13,6 +13,7 @@ internal partial class WasmModule_InstantiateTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var memory = new WasmMemory(new(1, null));
         var original = Enumerable.Range(0, 65536).Select(x => (byte)(x % 251 + 1)).ToArray();
         memory.Write(0, original);
@@ -44,7 +45,7 @@ internal partial class WasmModule_InstantiateTests
 
         // Act & Assert
         var exception = await Assert
-            .That(() => module.Instantiate([host]))
+            .That(() => module.Instantiate(executionContext, [host]))
             .ThrowsExactly<WasmTrapException>();
         var actual = new byte[original.Length];
         memory.Read(0, actual);
@@ -76,6 +77,7 @@ internal partial class WasmModule_InstantiateTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var memory = new WasmMemory(new(1, null));
         var host = new WasmHostModule("env");
         host.Define("m", memory);
@@ -94,7 +96,7 @@ internal partial class WasmModule_InstantiateTests
         if (length == 0)
         {
             // Act
-            var instance = module.Instantiate([host]);
+            var instance = module.Instantiate(executionContext, [host]);
 
             // Assert
             await Assert.That(instance).IsNotNull();
@@ -103,7 +105,7 @@ internal partial class WasmModule_InstantiateTests
         {
             // Act & Assert
             var exception = await Assert
-                .That(() => module.Instantiate([host]))
+                .That(() => module.Instantiate(executionContext, [host]))
                 .ThrowsExactly<WasmTrapException>();
             using (Assert.Multiple())
             {

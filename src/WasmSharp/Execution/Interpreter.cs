@@ -31,23 +31,24 @@ internal static partial class Interpreter
     /// <summary>
     /// 呼び出し深さとCLRスタックの余裕を確認してホスト関数を実行する
     /// </summary>
-    /// <param name="context">深さを共有する実行コンテキスト Wasmの実行外からの呼び出しではnull</param>
+    /// <param name="executionContext">ホスト処理と同期再入で共有するコンテキスト</param>
     /// <param name="function">呼び出すホスト関数</param>
     /// <param name="instance">instance必須のホスト関数へ渡すinstance それ以外では未使用</param>
     /// <param name="arguments">個数と型を照合済みの引数</param>
     /// <returns>ホスト処理の結果、または呼び出し前に検出した資源枯渇</returns>
     /// <remarks>
-    /// コンテキストがあればホスト呼び出しを1段として数え、例外発生時もその深さを解放する。
-    /// コンテキストの生成やWasmフレームの追加は行わない。ホスト処理の例外はそのまま伝播する
+    /// Wasm実行中ならホスト呼び出しを1段として数え、例外発生時もその深さを解放する。
+    /// 実行状態の生成やWasmフレームの追加は行わない。ホスト処理の例外はそのまま伝播する
     /// </remarks>
     /// <exception cref="InvalidOperationException">対象がホスト関数でないか、結果がnullまたは宣言型と一致しない場合</exception>
     internal static ExecutionResult RunHost(
-        InterpreterContext? context,
+        WasmExecutionContext executionContext,
         WasmFunction function,
         WasmInstance? instance,
         ReadOnlySpan<WasmValue> arguments
     )
     {
+        var context = executionContext.Current;
         if (context is not null && !context.TryEnterCall())
         {
             return ExhaustHost(context, WasmExhaustionReason.CallDepthLimit, context.MaxCallDepth);
@@ -58,7 +59,9 @@ internal static partial class Interpreter
             {
                 return ExhaustHost(context, WasmExhaustionReason.HostStackLimit, null);
             }
-            return ExecutionResult.Success(InvokeHost(function, instance, arguments).Values);
+            return ExecutionResult.Success(
+                InvokeHost(executionContext, function, instance, arguments).Values
+            );
         }
         finally
         {
@@ -97,6 +100,7 @@ internal static partial class Interpreter
     /// <summary>
     /// 呼び出し専用の引数でホスト処理を実行し、宣言型に一致する所有済みの結果を返す
     /// </summary>
+    /// <param name="executionContext">ホスト処理と同期再入で共有するコンテキスト</param>
     /// <param name="function">呼び出すホスト関数とその宣言型</param>
     /// <param name="instance">instance必須のホスト関数へ渡すinstance それ以外では未使用</param>
     /// <param name="arguments">個数と型を照合済みの引数 ホスト処理へ渡す前にコピーする</param>
@@ -104,6 +108,7 @@ internal static partial class Interpreter
     /// <remarks>深さの管理は呼び出し元が行う。ホスト処理が投げた例外は変換せず、そのまま伝播する</remarks>
     /// <exception cref="InvalidOperationException">対象がホスト関数でないか、結果がnull、または結果の個数・型が宣言型と異なる場合</exception>
     internal static WasmResults InvokeHost(
+        WasmExecutionContext executionContext,
         WasmFunction function,
         WasmInstance? instance,
         ReadOnlySpan<WasmValue> arguments
@@ -112,8 +117,8 @@ internal static partial class Interpreter
         var copiedArguments = arguments.ToArray();
         var result = function switch
         {
-            HostFunction host => host.Callback(copiedArguments),
-            InstanceHostFunction host => host.Callback(instance!, copiedArguments),
+            HostFunction host => host.Callback(executionContext, copiedArguments),
+            InstanceHostFunction host => host.Callback(executionContext, instance!, copiedArguments),
             _ => throw new InvalidOperationException("ホスト関数ではありません。"),
         };
         if (result is null || result.Values.Length != function.Type.Results.Length)

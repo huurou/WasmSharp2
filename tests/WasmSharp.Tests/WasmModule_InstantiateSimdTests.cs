@@ -8,6 +8,7 @@ internal partial class WasmModule_InstantiateTests
     public async Task V128の不変と可変globalをimportする_共有getとsetとexportの同一性を保ち定義をinstanceごとに分ける()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var initial = WasmValue.FromV128(0x7FF8123456789ABC, 0x8000000000000000);
         var updated = WasmValue.FromV128(0xFEDCBA9876543210, 0x0123456789ABCDEF);
         var seed = new WasmGlobal(new(WasmValueKind.V128, false), initial);
@@ -41,14 +42,14 @@ internal partial class WasmModule_InstantiateTests
             .Validate();
 
         // Act
-        var first = module.Instantiate([host]);
-        var second = module.Instantiate([host]);
-        var before = first.GetFunction("read").Invoke([]).Values[0];
-        var written = first.GetFunction("write").Invoke([updated]);
+        var first = module.Instantiate(executionContext, [host]);
+        var second = module.Instantiate(executionContext, [host]);
+        var before = first.GetFunction("read").Invoke(executionContext, []).Values[0];
+        var written = first.GetFunction("write").Invoke(executionContext, [updated]);
         var fromHost = shared.Value;
-        var fromSecond = second.GetFunction("read").Invoke([]).Values[0];
+        var fromSecond = second.GetFunction("read").Invoke(executionContext, []).Values[0];
         shared.Value = initial;
-        var afterHost = first.GetFunction("read").Invoke([]).Values[0];
+        var afterHost = first.GetFunction("read").Invoke(executionContext, []).Values[0];
         first.GetGlobalResource("defined").Value = updated;
 
         // Assert
@@ -81,6 +82,7 @@ internal partial class WasmModule_InstantiateTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var bytes = HostLinkingModuleBinary.Create(
             HostLinkingModuleBinary.Types(([], [0x7B])),
             HostLinkingModuleBinary.Functions(0),
@@ -95,9 +97,9 @@ internal partial class WasmModule_InstantiateTests
         Array.Clear(bytes);
 
         // Act
-        var instance = module.Validate().Instantiate([]);
+        var instance = module.Validate().Instantiate(executionContext, []);
         var global = instance.GetGlobalResource("value");
-        var result = instance.GetFunction("read").Invoke([]);
+        var result = instance.GetFunction("read").Invoke(executionContext, []);
 
         // Assert
         using (Assert.Multiple())

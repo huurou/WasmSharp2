@@ -69,7 +69,7 @@ internal class ConstantInitializer_EvaluateTests
     public async Task Importまたは定義関数の参照式を渡す_構築済みの同じ関数実体を返す(uint index)
     {
         // Arrange
-        var hostFunction = WasmFunction.CreateHost(new([], []), _ => new([]));
+        var hostFunction = WasmFunction.CreateHost(new([], []), (_, _) => new([]));
         var module = WasmModule
             .Decode(
                 HostLinkingModuleBinary.Create(
@@ -111,7 +111,7 @@ internal class ConstantInitializer_EvaluateTests
     public async Task 参照globalの取得式を渡す_参照型と同じ参照先を返す(WasmValueKind kind)
     {
         // Arrange
-        var function = WasmFunction.CreateHost(new([], []), _ => new([]));
+        var function = WasmFunction.CreateHost(new([], []), (_, _) => new([]));
         var external = new object();
         var value =
             kind == WasmValueKind.FuncRef

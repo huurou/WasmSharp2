@@ -8,23 +8,34 @@ namespace WasmSharp.Benchmarks.Tests.Measurements;
 
 internal class BenchmarkRun_CaptureSourceBeforeTests
 {
+    private readonly CaseJson json_ = new CaseJson();
+    private readonly MeasurementMethods methods_ = new MeasurementMethods();
+    private readonly BenchmarkRun benchmarkRun_;
+
+    public BenchmarkRun_CaptureSourceBeforeTests()
+    {
+        benchmarkRun_ = new BenchmarkRun(json_, methods_);
+    }
+
     [Test]
-    public async Task UTF8でない変更を含む_保存した差分からindexとworktreeの元バイト列を復元できる()
+    public async Task 多数行のUTF8でない変更を含む_保存した差分からindexとworktreeの全バイトを復元できる()
     {
         // Arrange
         using var fixture = new SourceCaptureFixture();
         fixture.Git("config", "--local", "core.autocrlf", "false");
         const string RELATIVE_PATH = "src/WasmSharp/Runtime.cs";
-        byte[] indexContent = [.. "class Runtime {} // "u8, 0xFF, 0x0A];
-        byte[] worktreeContent = [.. "class Runtime {} // "u8, 0xFE, 0x0A];
+        byte[] indexLine = [.. "class Runtime {} // "u8, 0xFF, 0x0A];
+        byte[] worktreeLine = [.. "class Runtime {} // "u8, 0xFE, 0x0A];
+        var indexContent = Enumerable.Repeat(indexLine, 8192).SelectMany(x => x).ToArray();
+        var worktreeContent = Enumerable.Repeat(worktreeLine, 8192).SelectMany(x => x).ToArray();
         var path = Path.Combine(fixture.RepositoryDirectory, RELATIVE_PATH);
         File.WriteAllBytes(path, indexContent);
         fixture.Git("add", RELATIVE_PATH);
         File.WriteAllBytes(path, worktreeContent);
-        var store = RunStore.Create(fixture.Run.DirectoryPath, fixture.Run.Manifest);
+        var store = RunStore.Create(fixture.Run.DirectoryPath, fixture.Run.Manifest, json_);
 
         // Act
-        var source = BenchmarkRun.CaptureSourceBefore(fixture.RepositoryDirectory, store, []);
+        var source = benchmarkRun_.CaptureSourceBefore(fixture.RepositoryDirectory, store, []);
         fixture.Git("restore", "--source=HEAD", "--staged", "--worktree", "--", RELATIVE_PATH);
         fixture.Git(
             "apply",
@@ -57,10 +68,10 @@ internal class BenchmarkRun_CaptureSourceBeforeTests
         var path = fixture.Write(RELATIVE_PATH, INDEX_CONTENT);
         fixture.Git("add", RELATIVE_PATH);
         fixture.Write(RELATIVE_PATH, WORKTREE_CONTENT);
-        var store = RunStore.Create(fixture.Run.DirectoryPath, fixture.Run.Manifest);
+        var store = RunStore.Create(fixture.Run.DirectoryPath, fixture.Run.Manifest, json_);
 
         // Act
-        var source = BenchmarkRun.CaptureSourceBefore(fixture.RepositoryDirectory, store, []);
+        var source = benchmarkRun_.CaptureSourceBefore(fixture.RepositoryDirectory, store, []);
         fixture.Git("restore", "--source=HEAD", "--staged", "--worktree", "--", RELATIVE_PATH);
         fixture.Git(
             "apply",
@@ -100,10 +111,10 @@ internal class BenchmarkRun_CaptureSourceBeforeTests
         var path = fixture.Write(RELATIVE_PATH, INDEX_CONTENT);
         fixture.Git("add", RELATIVE_PATH);
         fixture.Write(RELATIVE_PATH, WORKTREE_CONTENT);
-        var store = RunStore.Create(fixture.Run.DirectoryPath, fixture.Run.Manifest);
+        var store = RunStore.Create(fixture.Run.DirectoryPath, fixture.Run.Manifest, json_);
 
         // Act
-        var source = BenchmarkRun.CaptureSourceBefore(fixture.RepositoryDirectory, store, []);
+        var source = benchmarkRun_.CaptureSourceBefore(fixture.RepositoryDirectory, store, []);
         var patch = Path.Combine(
             fixture.Run.DirectoryPath,
             indexDiff ? source.IndexDiff.RelativePath : source.WorktreeDiff.RelativePath
@@ -144,20 +155,20 @@ internal class BenchmarkRun_CaptureSourceBeforeTests
         fixture.Write("tools/WasmSharp.Benchmarks/notes.txt", "private unrelated notes");
         fixture.Write("unrelated.cs", "unrelated source");
         var assembly = fixture.Write("output/runtime.dll", "runtime assembly");
-        var store = RunStore.Create(fixture.Run.DirectoryPath, fixture.Run.Manifest);
+        var store = RunStore.Create(fixture.Run.DirectoryPath, fixture.Run.Manifest, json_);
 
         // Act
-        var source = BenchmarkRun.CaptureSourceBefore(
+        var source = benchmarkRun_.CaptureSourceBefore(
             fixture.RepositoryDirectory,
             store,
             [(AssemblyRole.Runtime, assembly)]
         );
 
         // Assert
-        var sourceFile = RunStore.Load(fixture.Run.DirectoryPath).SourceFile!;
+        var sourceFile = RunStore.Load(fixture.Run.DirectoryPath, json_).SourceFile!;
         var savedSource = JsonSerializer.Deserialize<RunSource>(
             File.ReadAllBytes(Path.Combine(fixture.Run.DirectoryPath, sourceFile.RelativePath)),
-            CaseJson.Options
+            json_.Options
         )!;
         using (Assert.Multiple())
         {

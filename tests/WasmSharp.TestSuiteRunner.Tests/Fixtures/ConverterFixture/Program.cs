@@ -42,11 +42,21 @@ static int Convert(string inputPath, string outputPath)
     )!;
     script["source_filename"] = inputPath;
     script["commands"]![0]!["filename"] = moduleName;
+    if (Path.GetFileName(inputPath) == "partial-modules.wast")
+    {
+        var second = script["commands"]![0]!.DeepClone();
+        second["filename"] = Path.GetFileNameWithoutExtension(outputPath) + ".1.wasm";
+        script["commands"]!.AsArray().Add(second);
+    }
+
     File.WriteAllText(outputPath, script.ToJsonString());
-    if (Path.GetFileName(inputPath) is "partial.wast" or "partial-failure.wast")
+    if (
+        Path.GetFileName(inputPath) is
+        "partial.wast" or "partial-failure.wast" or "partial-modules.wast"
+    )
     {
         Console.Error.WriteLine("JSONのみ生成しました。参照先binaryは欠落しています。");
-        return Path.GetFileName(inputPath) == "partial.wast" ? 0 : 1;
+        return Path.GetFileName(inputPath) == "partial-failure.wast" ? 1 : 0;
     }
 
     File.Copy(

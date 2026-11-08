@@ -5,6 +5,8 @@ namespace WasmSharp.TestSuiteRunner.Tests.Reports;
 
 internal class ReportStore_ReadManifestTests
 {
+    private readonly ReportStore reportStore_ = new ReportStore();
+
     [Test]
     public async Task 実行結果を指定する_manifestとして受け付けない()
     {
@@ -14,7 +16,7 @@ internal class ReportStore_ReadManifestTests
 
         // Act & Assert
         var exception = await Assert
-            .That(() => ReportStore.ReadManifest(path))
+            .That(() => reportStore_.ReadManifest(path))
             .ThrowsExactly<ReportStoreException>();
         await Assert.That(exception!.Message).Contains("corpus_manifest");
     }

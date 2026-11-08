@@ -13,11 +13,7 @@ internal ref struct ModuleBinaryReader
     /// <summary>
     /// 不正なバイト列を置換せず、診断として扱う名前読み取り用のUTF-8符号化
     /// </summary>
-    private static readonly UTF8Encoding utf8_ = new(
-        // Stryker disable once Boolean: GetStringだけを使用するため、BOM発行設定は名前の読取り結果に影響しない
-        false,
-        true
-    );
+    private readonly UTF8Encoding utf8_;
 
     /// <summary>
     /// この読み取り範囲の入力バイト列
@@ -92,7 +88,8 @@ internal ref struct ModuleBinaryReader
             startOffset + bytes.Length,
             sectionId,
             functionIndex,
-            mode
+            mode,
+            new UTF8Encoding(false, true)
         )
     { }
 
@@ -106,6 +103,7 @@ internal ref struct ModuleBinaryReader
     /// <param name="sectionId">診断に使用するsection ID</param>
     /// <param name="functionIndex">診断に使用するmodule全体の関数index</param>
     /// <param name="mode">通常解析または境界失敗後の診断用読取り</param>
+    /// <param name="utf8">同じ解析の読み取り範囲で共有する名前用のUTF-8符号化</param>
     private ModuleBinaryReader(
         ReadOnlySpan<byte> bytes,
         long startOffset,
@@ -113,9 +111,11 @@ internal ref struct ModuleBinaryReader
         long declaredEnd,
         byte? sectionId,
         uint? functionIndex,
-        ModuleReadMode mode
+        ModuleReadMode mode,
+        UTF8Encoding utf8
     )
     {
+        utf8_ = utf8;
         bytes_ = bytes;
         Position = startOffset;
         InputEnd = inputEnd;
@@ -195,7 +195,8 @@ internal ref struct ModuleBinaryReader
                 start + length,
                 SectionId,
                 functionIndex ?? FunctionIndex,
-                mode_
+                mode_,
+                utf8_
             );
         }
 
@@ -206,7 +207,8 @@ internal ref struct ModuleBinaryReader
             start + length,
             SectionId,
             functionIndex ?? FunctionIndex,
-            mode_
+            mode_,
+            utf8_
         );
     }
 

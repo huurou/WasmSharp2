@@ -11,9 +11,26 @@ namespace WasmSharp.Benchmarks;
 /// <summary>
 /// 素材確認・測定・保存結果比較の引数と終了値を扱う
 /// </summary>
-internal static class BenchmarkCli
+internal sealed class BenchmarkCli
 {
-    internal static int Run(string[] args, TextWriter output, TextWriter error)
+    private readonly CaseJson json_ = new CaseJson();
+    private readonly MeasurementMethods methods_ = new MeasurementMethods();
+    private readonly WasmExecutionContext context_ = new WasmExecutionContext();
+
+    internal int Run(string[] args, TextWriter output, TextWriter error)
+    {
+        return Run(args, output, error, new BenchmarkRun(json_, methods_).Run);
+    }
+
+    /// <summary>
+    /// 測定要求の実行を受け取り、引数の解釈と結果表示・終了値を処理する
+    /// </summary>
+    internal int Run(
+        string[] args,
+        TextWriter output,
+        TextWriter error,
+        Func<RunRequest, RunManifest> run
+    )
     {
         try
         {
@@ -26,7 +43,7 @@ internal static class BenchmarkCli
             return args[0] switch
             {
                 "check" => Check(options["--assets"], output, error),
-                "run" => Measure(options, output),
+                "run" => Measure(options, output, run),
                 "compare" => Compare(options, output),
                 _ => throw new ArgumentException("有効な操作を指定してください。"),
             };
@@ -48,7 +65,11 @@ internal static class BenchmarkCli
         }
     }
 
-    private static int Measure(Dictionary<string, string> options, TextWriter output)
+    private int Measure(
+        Dictionary<string, string> options,
+        TextWriter output,
+        Func<RunRequest, RunManifest> run
+    )
     {
         var directory = Path.GetFullPath(options["--output"]);
         EnsureNewOutput(directory);
@@ -59,7 +80,7 @@ internal static class BenchmarkCli
             _ => throw new ArgumentException("用途はmeasurementまたはsmokeを指定してください。"),
         };
         var manifestPath = Path.GetFullPath(options["--assets"]);
-        var assets = AssetManifest.Load(manifestPath);
+        var assets = AssetManifest.Load(manifestPath, json_, methods_);
         var caseIds =
             options["--case"] == "all"
                 ? [.. assets.Catalog.Cases.Select(x => x.CaseId).Order(StringComparer.Ordinal)]
@@ -77,7 +98,7 @@ internal static class BenchmarkCli
         var repository = CaptureCommand
             .Run("git", command.WorkingDirectory, "rev-parse", "--show-toplevel")
             .Trim();
-        var result = BenchmarkRun.Run(
+        var result = run(
             new(
                 directory,
                 manifestPath,
@@ -94,7 +115,7 @@ internal static class BenchmarkCli
         foreach (var item in result.Cases)
         {
             output.WriteLine(
-                $"{item.CaseId}: {item.Status}; ns/op={item.Metrics.Time?.MeanNanosecondsPerOperation.ToString("R", System.Globalization.CultureInfo.InvariantCulture) ?? "Unavailable"}; bytes/op={item.Metrics.Allocation?.BytesPerOperation.ToString("R", System.Globalization.CultureInfo.InvariantCulture) ?? "Unavailable"}"
+                $"{item.CaseId}: {item.Status}; ns/op={item.Metrics.Time?.MeanNanosecondsPerOperation.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "Unavailable"}; bytes/op={item.Metrics.Allocation?.BytesPerOperation.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "Unavailable"}"
             );
             foreach (var failure in item.Failures)
             {
@@ -109,15 +130,15 @@ internal static class BenchmarkCli
         };
     }
 
-    private static int Check(string path, TextWriter output, TextWriter error)
+    private int Check(string path, TextWriter output, TextWriter error)
     {
-        var assets = AssetManifest.Load(path);
+        var assets = AssetManifest.Load(path, json_, methods_);
         var succeeded = true;
         foreach (
             var definition in assets.Catalog.Cases.OrderBy(x => x.CaseId, StringComparer.Ordinal)
         )
         {
-            var result = CaseVerifier.Verify(assets, definition.CaseId);
+            var result = CaseVerifier.Verify(context_, assets, definition.CaseId, json_);
             output.WriteLine(
                 $"{result.CaseId}: {(result.Succeeded ? "Succeeded" : "Failed")} ({result.Stage})"
             );
@@ -132,7 +153,7 @@ internal static class BenchmarkCli
         return succeeded ? 0 : 1;
     }
 
-    private static int Compare(Dictionary<string, string> options, TextWriter output)
+    private int Compare(Dictionary<string, string> options, TextWriter output)
     {
         var directory = Path.GetFullPath(options["--output"]);
         EnsureNewOutput(directory);
@@ -150,13 +171,13 @@ internal static class BenchmarkCli
                 throw new IOException("比較入力run内へ出力できません。");
             }
         }
-        var runs = baseline.Concat(current).Select(RunStore.Load).ToList();
+        var runs = baseline.Concat(current).Select(x => RunStore.Load(x, json_)).ToList();
         var policyPath = Path.GetFullPath(options["--policy"]);
         var policyBytes = File.ReadAllBytes(policyPath);
         var policy =
-            JsonSerializer.Deserialize<ComparisonPolicy>(policyBytes, CaseJson.Options)
+            JsonSerializer.Deserialize<ComparisonPolicy>(policyBytes, json_.Options)
             ?? throw new InvalidDataException("policyのJSONがnullです。");
-        var report = RunComparison.Compare(
+        var report = new RunComparison(json_).Compare(
             new(
                 baseline,
                 current,
@@ -176,7 +197,7 @@ internal static class BenchmarkCli
             )
         )
         {
-            JsonSerializer.Serialize(stream, report, CaseJson.Options);
+            JsonSerializer.Serialize(stream, report, json_.Options);
         }
         foreach (var result in report.Cases)
         {

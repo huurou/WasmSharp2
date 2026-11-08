@@ -431,24 +431,25 @@ internal partial class ModuleValidator_ValidateTests
     }
 
     [Test]
-    [Arguments((byte)2, 2u, 1u, false, "size minimum must not be greater than maximum")]
-    [Arguments((byte)2, 2u, 1u, true, "size minimum must not be greater than maximum")]
-    [Arguments((byte)2, 65537u, null, false, "memory size must be at most 65536 pages (4GiB)")]
-    [Arguments((byte)2, 65537u, null, true, "memory size must be at most 65536 pages (4GiB)")]
-    [Arguments((byte)2, 0u, 65537u, false, "memory size must be at most 65536 pages (4GiB)")]
-    [Arguments((byte)2, 0u, 65537u, true, "memory size must be at most 65536 pages (4GiB)")]
-    [Arguments((byte)2, 65537u, 1u, false, "memory size must be at most 65536 pages (4GiB)")]
-    [Arguments((byte)2, 65537u, 1u, true, "memory size must be at most 65536 pages (4GiB)")]
-    [Arguments((byte)2, 65538u, 65537u, false, "memory size must be at most 65536 pages (4GiB)")]
-    [Arguments((byte)2, 65538u, 65537u, true, "memory size must be at most 65536 pages (4GiB)")]
-    [Arguments((byte)1, 2u, 1u, false, "size minimum must not be greater than maximum")]
-    [Arguments((byte)1, 2u, 1u, true, "size minimum must not be greater than maximum")]
+    [Arguments((byte)2, 2u, 1u, false, "size minimum must not be greater than maximum", null)]
+    [Arguments((byte)2, 2u, 1u, true, "size minimum must not be greater than maximum", null)]
+    [Arguments((byte)2, 65537u, null, false, "memory size must be at most 65536 pages (4GiB)", "最小値")]
+    [Arguments((byte)2, 65537u, null, true, "memory size must be at most 65536 pages (4GiB)", null)]
+    [Arguments((byte)2, 0u, 65537u, false, "memory size must be at most 65536 pages (4GiB)", "最大値")]
+    [Arguments((byte)2, 0u, 65537u, true, "memory size must be at most 65536 pages (4GiB)", null)]
+    [Arguments((byte)2, 65537u, 1u, false, "memory size must be at most 65536 pages (4GiB)", null)]
+    [Arguments((byte)2, 65537u, 1u, true, "memory size must be at most 65536 pages (4GiB)", null)]
+    [Arguments((byte)2, 65538u, 65537u, false, "memory size must be at most 65536 pages (4GiB)", null)]
+    [Arguments((byte)2, 65538u, 65537u, true, "memory size must be at most 65536 pages (4GiB)", null)]
+    [Arguments((byte)1, 2u, 1u, false, "size minimum must not be greater than maximum", null)]
+    [Arguments((byte)1, 2u, 1u, true, "size minimum must not be greater than maximum", null)]
     public async Task Limitsが仕様に不適合_割当前にValidateで拒否する(
         byte kind,
         uint minimum,
         uint? maximum,
         bool imported,
-        string prefix
+        string prefix,
+        string? expectedDetail
     )
     {
         // Arrange
@@ -471,6 +472,10 @@ internal partial class ModuleValidator_ValidateTests
             await Assert
                 .That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal))
                 .IsTrue();
+            if (expectedDetail is not null)
+            {
+                await Assert.That(exception.Message).Contains(expectedDetail);
+            }
             await Assert.That(exception!.Location!.Stage).IsEqualTo(WasmProcessingStage.Validate);
             await Assert
                 .That(exception.Location.SectionId)

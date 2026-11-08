@@ -1,3 +1,4 @@
+using WasmSharp.Benchmarks.Cases;
 using WasmSharp.Benchmarks.Measurements;
 using WasmSharp.Benchmarks.Results;
 using WasmSharp.Benchmarks.Tests.Fixtures;
@@ -6,14 +7,61 @@ namespace WasmSharp.Benchmarks.Tests.Measurements;
 
 internal class SourceCapture_BeforeTests
 {
+    private readonly CaseJson json_ = new CaseJson();
+
     [Test]
-    public async Task 生成先と不存在のファイルを明示参照する_存在する生成先外の使用ファイルだけを採取する()
+    [Arguments(false)]
+    [Arguments(true)]
+    public async Task 共有projectへ複数経路や循環で参照する_依存sourceを一度だけruntimeへ含める(
+        bool cyclic
+    )
+    {
+        // Arrange
+        using var fixture = new SourceCaptureFixture();
+        fixture.Write(
+            "src/Shared/Shared.csproj",
+            "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup>"
+                + (cyclic
+                    ? "<ItemGroup><ProjectReference Include=\"../WasmSharp/WasmSharp.csproj\" /></ItemGroup>"
+                    : "")
+                + "</Project>"
+        );
+        fixture.Write("src/Shared/Shared.cs", "class Shared {}\n");
+        foreach (var name in new[] { "WasmSharp", "WasmSharp.Generators" })
+        {
+            var path = Path.Combine(fixture.RepositoryDirectory, "src", name, name + ".csproj");
+            File.WriteAllText(path, File.ReadAllText(path).Replace(
+                "</Project>",
+                "<ItemGroup><ProjectReference Include=\"../Shared/Shared.csproj\" /></ItemGroup></Project>"
+            ));
+        }
+        var store = RunStore.Create(fixture.Run.DirectoryPath, fixture.Run.Manifest, json_);
+        var capture = new SourceCapture(fixture.RepositoryDirectory, json_);
+
+        // Act
+        var source = capture.Before(store, []);
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            foreach (var path in new[] { "src/Shared/Shared.csproj", "src/Shared/Shared.cs" })
+            {
+                await Assert.That(source.Runtime.Files.Count(x => x.RelativePath == path)).IsEqualTo(1);
+                await Assert.That(source.Harness.Files.Any(x => x.RelativePath == path)).IsFalse();
+                await Assert.That(source.UntrackedFiles.Count(x => x.RelativePath == path)).IsEqualTo(1);
+            }
+        }
+    }
+
+    [Test]
+    public async Task 構成別の使用ファイルと生成先を参照する_Releaseで使う生成先外のファイルだけを採取する()
     {
         // Arrange
         using var fixture = new SourceCaptureFixture();
         fixture.Write("src/WasmSharp/bin/Generated.cs", "class BinaryGenerated {}");
         fixture.Write("src/WasmSharp/obj/Generated.cs", "class IntermediateGenerated {}");
         fixture.Write("src/WasmSharp/Included.txt", "used additional file");
+        fixture.Write("src/WasmSharp/DebugOnly.txt", "unused additional file");
         var projectPath = Path.Combine(
             fixture.RepositoryDirectory,
             "src/WasmSharp/WasmSharp.csproj"
@@ -23,23 +71,38 @@ internal class SourceCapture_BeforeTests
             File.ReadAllText(projectPath)
                 .Replace(
                     "</Project>",
-                    "<ItemGroup><AdditionalFiles Include=\"bin/Generated.cs;obj/Generated.cs;Missing.cs;Included.txt\" /></ItemGroup></Project>"
+                    """
+                    <ItemGroup>
+                      <AdditionalFiles Include="bin/Generated.cs;obj/Generated.cs;Missing.cs" />
+                    </ItemGroup>
+                    <ItemGroup Condition="'$(Configuration)' == 'Release'">
+                      <AdditionalFiles Include="Included.txt" />
+                    </ItemGroup>
+                    <ItemGroup Condition="'$(Configuration)' == 'Debug'">
+                      <AdditionalFiles Include="DebugOnly.txt" />
+                    </ItemGroup>
+                    </Project>
+                    """
                 )
         );
-        var store = RunStore.Create(fixture.Run.DirectoryPath, fixture.Run.Manifest);
-        var capture = new SourceCapture(fixture.RepositoryDirectory);
+        var store = RunStore.Create(fixture.Run.DirectoryPath, fixture.Run.Manifest, json_);
+        var capture = new SourceCapture(fixture.RepositoryDirectory, json_);
 
         // Act
         var source = capture.Before(store, []);
 
         // Assert
         var paths = source.Runtime.Files.Select(x => x.RelativePath).ToList();
+        var untracked = source.UntrackedFiles.Select(x => x.RelativePath).ToList();
         using (Assert.Multiple())
         {
             await Assert.That(paths).Contains("src/WasmSharp/Included.txt");
+            await Assert.That(paths.Contains("src/WasmSharp/DebugOnly.txt")).IsFalse();
             await Assert.That(paths.Contains("src/WasmSharp/bin/Generated.cs")).IsFalse();
             await Assert.That(paths.Contains("src/WasmSharp/obj/Generated.cs")).IsFalse();
             await Assert.That(paths.Contains("src/WasmSharp/Missing.cs")).IsFalse();
+            await Assert.That(untracked).Contains("src/WasmSharp/Included.txt");
+            await Assert.That(untracked.Contains("src/WasmSharp/DebugOnly.txt")).IsFalse();
         }
     }
 
@@ -50,8 +113,8 @@ internal class SourceCapture_BeforeTests
         using var fixture = new SourceCaptureFixture();
         var path = Path.Combine(fixture.RepositoryDirectory, "src/WasmSharp/WasmSharp.csproj");
         File.Delete(path);
-        var store = RunStore.Create(fixture.Run.DirectoryPath, fixture.Run.Manifest);
-        var capture = new SourceCapture(fixture.RepositoryDirectory);
+        var store = RunStore.Create(fixture.Run.DirectoryPath, fixture.Run.Manifest, json_);
+        var capture = new SourceCapture(fixture.RepositoryDirectory, json_);
 
         // Act & Assert
         var exception = await Assert
@@ -79,6 +142,11 @@ internal class SourceCapture_BeforeTests
         {
             fixture.Write(setting, "<Project />");
         }
+        // SDKの自動収集に依存せず、共通設定ファイルが保存されることを確認する。
+        fixture.Write(
+            "Directory.Build.props",
+            "<Project><PropertyGroup><DiscoverEditorConfigFiles>false</DiscoverEditorConfigFiles></PropertyGroup></Project>"
+        );
         fixture.Write("global.json", "{}");
         fixture.Write("NuGet.Config", "<configuration />");
         fixture.Write(".editorconfig", "root = true\n");
@@ -86,13 +154,14 @@ internal class SourceCapture_BeforeTests
         var expected = settings
             .Concat(["global.json", "NuGet.Config", ".editorconfig", "packages.lock.json"])
             .ToList();
-        var store = RunStore.Create(fixture.Run.DirectoryPath, fixture.Run.Manifest);
-        var capture = new SourceCapture(fixture.RepositoryDirectory);
+        var store = RunStore.Create(fixture.Run.DirectoryPath, fixture.Run.Manifest, json_);
+        var capture = new SourceCapture(fixture.RepositoryDirectory, json_);
 
         // Act
         var source = capture.Before(store, []);
 
         // Assert
+        var untrackedPaths = source.UntrackedFiles.Select(x => x.RelativePath);
         using (Assert.Multiple())
         {
             foreach (var setting in expected)
@@ -107,6 +176,7 @@ internal class SourceCapture_BeforeTests
                     .That(source.UntrackedFiles.Select(x => x.RelativePath))
                     .Contains(setting);
             }
+            await Assert.That(untrackedPaths.SequenceEqual(untrackedPaths.Order(StringComparer.Ordinal))).IsTrue();
         }
     }
 
@@ -115,14 +185,14 @@ internal class SourceCapture_BeforeTests
     {
         // Arrange
         using var fixture = new SourceCaptureFixture();
-        var store = RunStore.Create(fixture.Run.DirectoryPath, fixture.Run.Manifest);
+        var store = RunStore.Create(fixture.Run.DirectoryPath, fixture.Run.Manifest, json_);
         var externalPath = Path.Combine(fixture.Run.DirectoryPath, "External.cs");
         File.WriteAllText(externalPath, "class External {}");
         fixture.Write(
             "src/WasmSharp/WasmSharp.csproj",
             $"<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup><ItemGroup><Compile Include=\"{externalPath}\" /></ItemGroup></Project>"
         );
-        var capture = new SourceCapture(fixture.RepositoryDirectory);
+        var capture = new SourceCapture(fixture.RepositoryDirectory, json_);
 
         // Act & Assert
         var exception = await Assert
@@ -164,8 +234,8 @@ internal class SourceCapture_BeforeTests
             fixture.Git("submodule", "deinit", "--force", "--", RELATIVE_PATH);
         }
         var revision = dependency.Git("rev-parse", "HEAD");
-        var store = RunStore.Create(fixture.Run.DirectoryPath, fixture.Run.Manifest);
-        var capture = new SourceCapture(fixture.RepositoryDirectory);
+        var store = RunStore.Create(fixture.Run.DirectoryPath, fixture.Run.Manifest, json_);
+        var capture = new SourceCapture(fixture.RepositoryDirectory, json_);
 
         // Act
         var source = capture.Before(store, []);

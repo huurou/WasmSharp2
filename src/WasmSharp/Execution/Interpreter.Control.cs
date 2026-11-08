@@ -70,8 +70,7 @@ internal static partial class Interpreter
     )
     {
         var selector = unchecked((uint)context.PopValue().AsI32());
-        var candidate =
-            selector < (uint)instruction.TargetCount ? selector : (uint)instruction.TargetCount;
+        var candidate = Math.Min(selector, (uint)instruction.TargetCount);
         context.Branch(context.GetBranchTarget(instruction.Index + candidate));
         return default;
     }

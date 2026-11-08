@@ -53,7 +53,6 @@ internal static partial class Interpreter
     {
         var value = SimdValue.FromValue(context.PopValue());
         Span<byte> bytes = stackalloc byte[16];
-        bytes.Clear();
         var byteWidth = instruction.MemoryAccessSignature.ByteWidth;
         var result = ReadSimdMemory(context, in instruction, bytes[..byteWidth]);
         if (result.Status != ExecutionStatus.Success)
@@ -185,7 +184,6 @@ internal static partial class Interpreter
     )
     {
         Span<byte> bytes = stackalloc byte[16];
-        bytes.Clear();
         var byteWidth = instruction.MemoryAccessSignature.ByteWidth;
         var result = ReadSimdMemory(context, in instruction, bytes[..byteWidth]);
         if (result.Status != ExecutionStatus.Success)
@@ -251,7 +249,6 @@ internal static partial class Interpreter
     )
     {
         Span<byte> bytes = stackalloc byte[16];
-        bytes.Clear();
         var result = ReadSimdMemory(
             context,
             in instruction,

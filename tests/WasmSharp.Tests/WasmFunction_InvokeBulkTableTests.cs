@@ -19,8 +19,9 @@ internal partial class WasmFunction_InvokeTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var (module, host, firstValue, secondValue) = CreateBulkTableModule(0x70, flags);
-        var instance = module.Instantiate([host]);
+        var instance = module.Instantiate(executionContext, [host]);
         var expected =
             flags < 4
                 ? new[]
@@ -38,10 +39,10 @@ internal partial class WasmFunction_InvokeTests
         {
             instance
                 .GetFunction("init")
-                .Invoke([WasmValue.FromI32(0), WasmValue.FromI32(0), WasmValue.FromI32(2)]);
+                .Invoke(executionContext, [WasmValue.FromI32(0), WasmValue.FromI32(0), WasmValue.FromI32(2)]);
             instance
                 .GetFunction("init")
-                .Invoke([WasmValue.FromI32(2), WasmValue.FromI32(0), WasmValue.FromI32(2)]);
+                .Invoke(executionContext, [WasmValue.FromI32(2), WasmValue.FromI32(0), WasmValue.FromI32(2)]);
         }
 
         // Assert
@@ -65,22 +66,22 @@ internal partial class WasmFunction_InvokeTests
         {
             instance
                 .GetFunction("init")
-                .Invoke([WasmValue.FromI32(4), WasmValue.FromI32(0), WasmValue.FromI32(0)]);
+                .Invoke(executionContext, [WasmValue.FromI32(4), WasmValue.FromI32(0), WasmValue.FromI32(0)]);
             await Assert
                 .That(() =>
                     instance
                         .GetFunction("init")
-                        .Invoke([WasmValue.FromI32(0), WasmValue.FromI32(0), WasmValue.FromI32(1)])
+                        .Invoke(executionContext, [WasmValue.FromI32(0), WasmValue.FromI32(0), WasmValue.FromI32(1)])
                 )
                 .ThrowsExactly<WasmTrapException>();
         }
 
         // Act
-        instance.GetFunction("drop").Invoke([]);
-        instance.GetFunction("drop").Invoke([]);
+        instance.GetFunction("drop").Invoke(executionContext, []);
+        instance.GetFunction("drop").Invoke(executionContext, []);
         instance
             .GetFunction("init")
-            .Invoke([WasmValue.FromI32(4), WasmValue.FromI32(0), WasmValue.FromI32(0)]);
+            .Invoke(executionContext, [WasmValue.FromI32(4), WasmValue.FromI32(0), WasmValue.FromI32(0)]);
         var before = Enumerable.Range(0, 4).Select(x => table.Get((uint)x)).ToArray();
 
         // Assert
@@ -90,7 +91,7 @@ internal partial class WasmFunction_InvokeTests
                 .That(() =>
                     instance
                         .GetFunction("init")
-                        .Invoke([
+                        .Invoke(executionContext, [
                             WasmValue.FromI32(destination),
                             WasmValue.FromI32(source),
                             WasmValue.FromI32(length),
@@ -111,18 +112,19 @@ internal partial class WasmFunction_InvokeTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var (module, host, firstValue, secondValue) = CreateBulkTableModule(kind, 5);
-        var first = module.Instantiate([host]);
-        var second = module.Instantiate([host]);
+        var first = module.Instantiate(executionContext, [host]);
+        var second = module.Instantiate(executionContext, [host]);
 
         // Act
         first
             .GetFunction("init")
-            .Invoke([WasmValue.FromI32(0), WasmValue.FromI32(0), WasmValue.FromI32(2)]);
-        first.GetFunction("drop").Invoke([]);
+            .Invoke(executionContext, [WasmValue.FromI32(0), WasmValue.FromI32(0), WasmValue.FromI32(2)]);
+        first.GetFunction("drop").Invoke(executionContext, []);
         second
             .GetFunction("init")
-            .Invoke([WasmValue.FromI32(2), WasmValue.FromI32(0), WasmValue.FromI32(2)]);
+            .Invoke(executionContext, [WasmValue.FromI32(2), WasmValue.FromI32(0), WasmValue.FromI32(2)]);
 
         // Assert
         using (Assert.Multiple())
@@ -136,7 +138,7 @@ internal partial class WasmFunction_InvokeTests
                 .That(() =>
                     first
                         .GetFunction("init")
-                        .Invoke([WasmValue.FromI32(0), WasmValue.FromI32(0), WasmValue.FromI32(1)])
+                        .Invoke(executionContext, [WasmValue.FromI32(0), WasmValue.FromI32(0), WasmValue.FromI32(1)])
                 )
                 .ThrowsExactly<WasmTrapException>();
         }
@@ -153,8 +155,9 @@ internal partial class WasmFunction_InvokeTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var (module, host, firstValue, secondValue) = CreateBulkTableModule(kind, 5, alias);
-        var instance = module.Instantiate([host]);
+        var instance = module.Instantiate(executionContext, [host]);
         var source = instance.GetTable("a");
         var destination = instance.GetTable("b");
         source.Set(0, firstValue);
@@ -165,7 +168,7 @@ internal partial class WasmFunction_InvokeTests
         // Act
         instance
             .GetFunction("copy")
-            .Invoke([WasmValue.FromI32(1), WasmValue.FromI32(0), WasmValue.FromI32(3)]);
+            .Invoke(executionContext, [WasmValue.FromI32(1), WasmValue.FromI32(0), WasmValue.FromI32(3)]);
 
         // Assert
         await Assert
@@ -180,7 +183,7 @@ internal partial class WasmFunction_InvokeTests
         // Act
         instance
             .GetFunction("copy")
-            .Invoke([WasmValue.FromI32(0), WasmValue.FromI32(1), WasmValue.FromI32(3)]);
+            .Invoke(executionContext, [WasmValue.FromI32(0), WasmValue.FromI32(1), WasmValue.FromI32(3)]);
 
         // Assert
         await Assert
@@ -199,7 +202,7 @@ internal partial class WasmFunction_InvokeTests
         // Act
         instance
             .GetFunction("fill")
-            .Invoke([WasmValue.FromI32(1), secondValue, WasmValue.FromI32(3)]);
+            .Invoke(executionContext, [WasmValue.FromI32(1), secondValue, WasmValue.FromI32(3)]);
 
         // Assert
         await Assert
@@ -215,7 +218,7 @@ internal partial class WasmFunction_InvokeTests
         var nullValue = kind == 0x70 ? WasmValue.FromFuncRef(null) : WasmValue.FromExternRef(null);
         instance
             .GetFunction("fill")
-            .Invoke([WasmValue.FromI32(0), nullValue, WasmValue.FromI32(4)]);
+            .Invoke(executionContext, [WasmValue.FromI32(0), nullValue, WasmValue.FromI32(4)]);
 
         // Assert
         await Assert
@@ -257,8 +260,9 @@ internal partial class WasmFunction_InvokeTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var (module, host, firstValue, secondValue) = CreateBulkTableModule(0x6F, 5);
-        var instance = module.Instantiate([host]);
+        var instance = module.Instantiate(executionContext, [host]);
         var table = instance.GetTable(operation == "init" ? "a" : "b");
         for (uint index = 0; index < 4; index++)
         {
@@ -288,13 +292,13 @@ internal partial class WasmFunction_InvokeTests
         )
         {
             await Assert
-                .That(() => instance.GetFunction(operation).Invoke(arguments))
+                .That(() => instance.GetFunction(operation).Invoke(executionContext, arguments))
                 .ThrowsNothing();
         }
         else
         {
             var exception = await Assert
-                .That(() => instance.GetFunction(operation).Invoke(arguments))
+                .That(() => instance.GetFunction(operation).Invoke(executionContext, arguments))
                 .ThrowsExactly<WasmTrapException>();
             using (Assert.Multiple())
             {

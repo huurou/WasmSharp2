@@ -6,12 +6,14 @@ namespace WasmSharp.Benchmarks.Results;
 /// <summary>
 /// 保存済みrunの条件を照合する 数値と事前policyによる判定は別の工程で扱う。
 /// </summary>
-internal static partial class RunComparison
+internal sealed partial class RunComparison(CaseJson json)
 {
+    private readonly CaseJson json_ = json;
+
     /// <summary>
     /// 保存済みの2runについて、指定caseの条件差と比較できない理由を返す
     /// </summary>
-    internal static RunConditionComparison CompareConditions(
+    internal RunConditionComparison CompareConditions(
         string baselineDirectory,
         string currentDirectory,
         string caseId
@@ -59,7 +61,7 @@ internal static partial class RunComparison
         return new(differences, reasons);
     }
 
-    private static RunConditions? ReadConditions(
+    private RunConditions? ReadConditions(
         string directory,
         string caseId,
         List<ComparisonReason> reasons,
@@ -69,7 +71,7 @@ internal static partial class RunComparison
         try
         {
             // 保存参照の存在とhashはRunStoreに集約し、観測された外部pathを再読込しない
-            var run = savedRun ?? RunStore.Load(directory);
+            var run = savedRun ?? RunStore.Load(directory, json_);
             var result = run.Cases.SingleOrDefault(x => x.CaseId == caseId);
             if (
                 run.Kind != RunKind.Measurement
@@ -91,7 +93,7 @@ internal static partial class RunComparison
                 reasons.Add(
                     new(
                         ComparisonReasonKind.ConditionMismatch,
-                        $"run '{run.RunId}': 使用source/project/assemblyの途中変更があります。changes={JsonSerializer.Serialize(source.Changes, CaseJson.Options)}"
+                        $"run '{run.RunId}': 使用source/project/assemblyの途中変更があります。changes={JsonSerializer.Serialize(source.Changes, json_.Options)}"
                     )
                 );
                 return null;
@@ -117,7 +119,8 @@ internal static partial class RunComparison
                 Read<RunEnvironment>(directory, run.EnvironmentFile!),
                 source,
                 jobs,
-                checks
+                checks,
+                json_
             );
         }
         catch (Exception exception)
@@ -140,7 +143,7 @@ internal static partial class RunComparison
         }
     }
 
-    private static List<ProcessCheck> ReadProcessChecks(
+    private List<ProcessCheck> ReadProcessChecks(
         string directory,
         RunManifest run,
         List<ProcessConfiguration> jobs
@@ -174,10 +177,9 @@ internal static partial class RunComparison
                     );
                 }
                 if (
-                    check.AffinityBefore is null or 0
-                    || check.AffinityAfter is null or 0
-                    || check.AffinityBefore != check.AffinityAfter
-                    || check.AffinityUnavailableReason is not null
+                    check.AffinityBefore is null or 0 ||
+                    check.AffinityBefore != check.AffinityAfter ||
+                    check.AffinityUnavailableReason is not null
                 )
                 {
                     throw new InvalidDataException(
@@ -216,11 +218,11 @@ internal static partial class RunComparison
         );
     }
 
-    private static T Read<T>(string directory, ManifestFile file)
+    private T Read<T>(string directory, ManifestFile file)
     {
         return JsonSerializer.Deserialize<T>(
             File.ReadAllBytes(Path.Combine(directory, file.RelativePath)),
-            CaseJson.Options
+            json_.Options
         )!;
     }
 }

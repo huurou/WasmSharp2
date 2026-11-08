@@ -14,7 +14,7 @@ internal class ElementInstance_TryInitializeTests
         // Arrange
         var reference =
             kind == WasmValueKind.FuncRef
-                ? WasmFunction.CreateHost(new WasmFunctionType([], []), _ => new([]))
+                ? WasmFunction.CreateHost(new WasmFunctionType([], []), (_, _) => new([]))
                 : new object();
         var value =
             kind == WasmValueKind.FuncRef

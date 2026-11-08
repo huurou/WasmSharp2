@@ -15,8 +15,9 @@ internal partial class ModuleValidator_ValidateTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         byte[] kinds = [0x7F, 0x7E, 0x7D, 0x7C, 0x7B, 0x70, 0x6F];
-        var functionReference = WasmFunction.CreateHost(new([], []), _ => new([]));
+        var functionReference = WasmFunction.CreateHost(new([], []), (_, _) => new([]));
         var externalReference = new object();
         WasmValue[] values =
         [
@@ -55,9 +56,9 @@ internal partial class ModuleValidator_ValidateTests
         // Act
         var validated = module.Validate();
         var result = validated
-            .Instantiate([])
+            .Instantiate(executionContext, [])
             .GetFunction("run")
-            .Invoke([.. values, WasmValue.FromI32(condition)]);
+            .Invoke(executionContext, [.. values, WasmValue.FromI32(condition)]);
 
         // Assert
         using (Assert.Multiple())
@@ -80,6 +81,7 @@ internal partial class ModuleValidator_ValidateTests
     public async Task 通常終了とifの選択側を実行_後続へ結果を渡す(string body, int expected)
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var module = WasmModule.Decode(
             HostLinkingModuleBinary.Create(
                 HostLinkingModuleBinary.Types(([], [0x7F]), ([0x7F], [0x7F])),
@@ -90,7 +92,7 @@ internal partial class ModuleValidator_ValidateTests
         );
 
         // Act
-        var result = module.Validate().Instantiate([]).GetFunction("run").Invoke([]);
+        var result = module.Validate().Instantiate(executionContext, []).GetFunction("run").Invoke(executionContext, []);
 
         // Assert
         await Assert.That(result.Values[0].AsI32()).IsEqualTo(expected);
@@ -108,6 +110,7 @@ internal partial class ModuleValidator_ValidateTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         List<byte> body = [0x41, 9];
         if (opcode == 0x04)
         {
@@ -129,7 +132,7 @@ internal partial class ModuleValidator_ValidateTests
         );
 
         // Act
-        var result = module.Validate().Instantiate([]).GetFunction("run").Invoke([]);
+        var result = module.Validate().Instantiate(executionContext, []).GetFunction("run").Invoke(executionContext, []);
 
         // Assert
         await Assert.That(result.Values[0].AsI64()).IsEqualTo(expected);

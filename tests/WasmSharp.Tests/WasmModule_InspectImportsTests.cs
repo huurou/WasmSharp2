@@ -377,6 +377,7 @@ internal class WasmModule_InspectImportsTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         byte[] instruction = feature switch
         {
             "v128.const" => [0xFD, 0x0C, .. new byte[16], 0x1A],
@@ -422,7 +423,7 @@ internal class WasmModule_InspectImportsTests
             "observe",
             WasmFunction.CreateHost(
                 new([], []),
-                _ =>
+                (callbackContext, _) =>
                 {
                     calls++;
                     return new([]);
@@ -500,7 +501,7 @@ internal class WasmModule_InspectImportsTests
             }
             {
                 // Act
-                var returned = module.Instantiate([host]);
+                var returned = module.Instantiate(executionContext, [host]);
                 memory.Read(0, actual);
 
                 // Assert

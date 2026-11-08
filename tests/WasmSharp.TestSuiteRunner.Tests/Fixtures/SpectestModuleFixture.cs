@@ -26,11 +26,11 @@ internal static class SpectestModuleFixture
         [0x7C, 0x7C],
     ];
 
-    internal static WasmInstance Instantiate(WasmHostModule host)
+    internal static WasmInstance Instantiate(WasmExecutionContext context, WasmHostModule host)
     {
         var imports = new WasmImports();
         imports.Add(host);
-        return Create().Instantiate(imports);
+        return Create().Instantiate(context, imports);
     }
 
     internal static WasmModule Create()

@@ -16,6 +16,7 @@ internal partial class WasmModule_InstantiateTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         (string, string, byte, byte[]) missing = ("missing", "g", 3, [0x7F, 0]);
         (string, string, byte, byte[]) incompatible = ("env", "f", 0, [0]);
         var module = WasmModule
@@ -36,13 +37,13 @@ internal partial class WasmModule_InstantiateTests
         }
         else
         {
-            host.Define("f", WasmFunction.CreateHost(new([WasmValueKind.I32], []), _ => new([])));
+            host.Define("f", WasmFunction.CreateHost(new([WasmValueKind.I32], []), (callbackContext, _) => new([])));
         }
         var ordinal = missingFirst ? 0 : 1;
 
         // Act & Assert
         var exception = await Assert
-            .That(() => module.Instantiate([host]))
+            .That(() => module.Instantiate(executionContext, [host]))
             .ThrowsExactly<WasmInstantiateException>();
         using (Assert.Multiple())
         {
@@ -71,6 +72,7 @@ internal partial class WasmModule_InstantiateTests
     public async Task 複数の名前不足がある_最初の宣言を選ぶ()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var module = WasmModule
             .Decode(
                 HostLinkingModuleBinary.Create(
@@ -84,7 +86,7 @@ internal partial class WasmModule_InstantiateTests
 
         // Act & Assert
         var exception = await Assert
-            .That(() => module.Instantiate(new WasmImports()))
+            .That(() => module.Instantiate(executionContext, new WasmImports()))
             .ThrowsExactly<WasmInstantiateException>();
         using (Assert.Multiple())
         {
@@ -115,6 +117,7 @@ internal partial class WasmModule_InstantiateTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var module = WasmModule
             .Decode(
                 HostLinkingModuleBinary.Create(
@@ -133,12 +136,12 @@ internal partial class WasmModule_InstantiateTests
         }
         else
         {
-            first.Define("f", WasmFunction.CreateHost(new([WasmValueKind.I32], []), _ => new([])));
+            first.Define("f", WasmFunction.CreateHost(new([WasmValueKind.I32], []), (callbackContext, _) => new([])));
         }
         var last = new WasmHostModule("last");
         if (lastKindMismatch)
         {
-            last.Define("g", WasmFunction.CreateHost(new([], []), _ => new([])));
+            last.Define("g", WasmFunction.CreateHost(new([], []), (callbackContext, _) => new([])));
         }
         else
         {
@@ -147,7 +150,7 @@ internal partial class WasmModule_InstantiateTests
 
         // Act & Assert
         var exception = await Assert
-            .That(() => module.Instantiate([first, last]))
+            .That(() => module.Instantiate(executionContext, [first, last]))
             .ThrowsExactly<WasmInstantiateException>();
         using (Assert.Multiple())
         {

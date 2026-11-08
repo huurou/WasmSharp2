@@ -9,6 +9,7 @@ internal partial class WasmFunction_InvokeTests
     public async Task 分岐なし関数を別instanceから反復実行する_結果と共有する静的コードを保持する()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var module = WasmModule
             .Decode(
                 HostLinkingModuleBinary.Create(
@@ -24,8 +25,8 @@ internal partial class WasmFunction_InvokeTests
                 )
             )
             .Validate();
-        var firstFunction = (DefinedFunction)module.Instantiate([]).GetFunction("run");
-        var secondFunction = (DefinedFunction)module.Instantiate([]).GetFunction("run");
+        var firstFunction = (DefinedFunction)module.Instantiate(executionContext, []).GetFunction("run");
+        var secondFunction = (DefinedFunction)module.Instantiate(executionContext, []).GetFunction("run");
         var code = module.FunctionCodes[0];
         var instructions = code.Instructions.ToArray();
         var branchTargets = code.BranchTargets.ToArray();
@@ -34,15 +35,15 @@ internal partial class WasmFunction_InvokeTests
         var secondReference = new object();
 
         // Act
-        var first = firstFunction.Invoke([
+        var first = firstFunction.Invoke(executionContext, [
             WasmValue.FromI32(42),
             WasmValue.FromExternRef(firstReference),
         ]);
-        var second = secondFunction.Invoke([
+        var second = secondFunction.Invoke(executionContext, [
             WasmValue.FromI32(-7),
             WasmValue.FromExternRef(secondReference),
         ]);
-        var repeated = firstFunction.Invoke([WasmValue.FromI32(73), WasmValue.FromExternRef(null)]);
+        var repeated = firstFunction.Invoke(executionContext, [WasmValue.FromI32(73), WasmValue.FromExternRef(null)]);
 
         // Assert
         using (Assert.Multiple())

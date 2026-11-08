@@ -4,12 +4,12 @@ using WasmSharp.Benchmarks.Cases;
 
 namespace WasmSharp.Benchmarks.Results;
 
-internal static partial class RunComparison
+internal sealed partial class RunComparison
 {
     /// <summary>
     /// 保存runディレクトリ群と指定hashの事前policyを読み、各caseの両指標を判定する
     /// </summary>
-    internal static ComparisonReport Compare(ComparisonRequest request)
+    internal ComparisonReport Compare(ComparisonRequest request)
     {
         var reasons = new List<ComparisonReason>();
         var baseline = ReadRuns(request.BaselineRunDirectories, reasons);
@@ -40,7 +40,7 @@ internal static partial class RunComparison
         );
     }
 
-    private static List<ComparisonRun> ReadRuns(
+    private List<ComparisonRun> ReadRuns(
         List<string> directories,
         List<ComparisonReason> reasons
     )
@@ -50,7 +50,7 @@ internal static partial class RunComparison
         {
             try
             {
-                var manifest = RunStore.Load(directory);
+                var manifest = RunStore.Load(directory, json_);
                 var path = Path.Combine(directory, "run.json");
                 runs.Add(
                     new(
@@ -91,7 +91,7 @@ internal static partial class RunComparison
         return runs;
     }
 
-    private static ComparisonPolicy? ReadPolicy(
+    private ComparisonPolicy? ReadPolicy(
         ComparisonRequest request,
         List<ComparisonReason> reasons
     )
@@ -106,7 +106,7 @@ internal static partial class RunComparison
                     $"policyのSHA-256が一致しません。指定={request.PolicySha256}, 保存内容={hash}"
                 );
             }
-            var policy = JsonSerializer.Deserialize<ComparisonPolicy>(content, CaseJson.Options)!;
+            var policy = JsonSerializer.Deserialize<ComparisonPolicy>(content, json_.Options)!;
             if (
                 policy is null
                 || policy.SchemaVersion != 1
@@ -129,7 +129,7 @@ internal static partial class RunComparison
         }
     }
 
-    private static CaseComparison CompareCase(
+    private CaseComparison CompareCase(
         string caseId,
         List<ComparisonRun> baseline,
         List<ComparisonRun> current,

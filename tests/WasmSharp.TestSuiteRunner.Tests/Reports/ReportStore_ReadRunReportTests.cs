@@ -5,6 +5,8 @@ namespace WasmSharp.TestSuiteRunner.Tests.Reports;
 
 internal class ReportStore_ReadRunReportTests
 {
+    private readonly ReportStore reportStore_ = new ReportStore();
+
     [Test]
     public async Task Manifestを指定する_実行結果として受け付けない()
     {
@@ -14,7 +16,7 @@ internal class ReportStore_ReadRunReportTests
 
         // Act & Assert
         var exception = await Assert
-            .That(() => ReportStore.ReadRunReport(path))
+            .That(() => reportStore_.ReadRunReport(path))
             .ThrowsExactly<ReportStoreException>();
         await Assert.That(exception!.Message).Contains("run_report");
     }

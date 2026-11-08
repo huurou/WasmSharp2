@@ -5,6 +5,11 @@ namespace WasmSharp.Benchmarks.Tests.Cases;
 
 internal class AssetManifest_LoadTests
 {
+    private readonly WasmExecutionContext context_ = new WasmExecutionContext();
+
+    private readonly CaseJson json_ = new CaseJson();
+    private readonly MeasurementMethods methods_ = new MeasurementMethods();
+
     [Test]
     [Arguments("schema", "schema版2")]
     [Arguments("duplicate", "重複")]
@@ -39,7 +44,7 @@ internal class AssetManifest_LoadTests
 
         // Act & Assert
         var exception = await Assert
-            .That(() => AssetManifest.Load(fixture.ManifestPath))
+            .That(() => AssetManifest.Load(fixture.ManifestPath, json_, methods_))
             .ThrowsExactly<InvalidDataException>();
         await Assert.That(exception!.Message).Contains(reason);
     }
@@ -58,7 +63,7 @@ internal class AssetManifest_LoadTests
 
         // Act & Assert
         var exception = await Assert
-            .That(() => AssetManifest.Load(fixture.ManifestPath))
+            .That(() => AssetManifest.Load(fixture.ManifestPath, json_, methods_))
             .ThrowsExactly<InvalidDataException>();
         await Assert.That(exception!.Message).Contains(fixture.ManifestPath).And.Contains(reason);
     }
@@ -70,15 +75,17 @@ internal class AssetManifest_LoadTests
         using var fixture = new AssetLoadingFixture();
 
         // Act
-        var loaded = AssetManifest.Load(fixture.ManifestPath);
+        var loaded = AssetManifest.Load(fixture.ManifestPath, json_, methods_);
         File.Delete(Path.Combine(fixture.DirectoryPath, "wasm", "invoke.wasm"));
         var definition = loaded.Catalog.Get("invoke.single");
         var input = loaded.GetInput(definition.CaseId);
         var instance = WasmModule
             .Decode(loaded.GetBinary(definition.AssetId).AsSpan())
             .Validate()
-            .Instantiate(new WasmImports());
-        var results = instance.GetFunction(input.FunctionExport).Invoke(input.Arguments.AsSpan());
+            .Instantiate(context_, new WasmImports());
+        var results = instance
+            .GetFunction(input.FunctionExport)
+            .Invoke(context_, input.Arguments.AsSpan());
 
         // Assert
         using (Assert.Multiple())
@@ -101,7 +108,7 @@ internal class AssetManifest_LoadTests
 
         // Act & Assert
         var exception = await Assert
-            .That(() => AssetManifest.Load(fixture.ManifestPath))
+            .That(() => AssetManifest.Load(fixture.ManifestPath, json_, methods_))
             .Throws<InvalidDataException>();
         await Assert.That(exception!.Message).Contains(relativePath).And.Contains("SHA-256");
     }
@@ -156,12 +163,48 @@ internal class AssetManifest_LoadTests
 
         // Act & Assert
         var exception = await Assert
-            .That(() => AssetManifest.Load(fixture.ManifestPath))
+            .That(() => AssetManifest.Load(fixture.ManifestPath, json_, methods_))
             .Throws<InvalidDataException>();
         await Assert
             .That(exception!.Message)
             .Contains(escaped.RelativePath)
             .And.Contains("manifest配下");
+    }
+
+    [Test]
+    public async Task 素材ディレクトリ名の大小文字だけが異なる_OSのpath比較に従って配下の参照を判定する()
+    {
+        // Arrange
+        using var fixture = new AssetLoadingFixture();
+        var profile = fixture.Manifest.Profile;
+        var directory = Path.Combine(Path.GetDirectoryName(fixture.DirectoryPath)!, "ASSETS");
+        Directory.CreateDirectory(directory);
+        File.WriteAllBytes(
+            Path.Combine(directory, "profile.json"),
+            File.ReadAllBytes(Path.Combine(fixture.DirectoryPath, profile.RelativePath))
+        );
+        fixture.SaveManifest(fixture.Manifest with
+        {
+            Profile = profile with { RelativePath = "../ASSETS/profile.json" },
+        });
+
+        if (OperatingSystem.IsWindows())
+        {
+            // Act
+            var loaded = AssetManifest.Load(fixture.ManifestPath, json_, methods_);
+
+            // Assert
+            await Assert.That(loaded.Catalog.Get("invoke.single").InputHash)
+                .IsEqualTo(fixture.Definitions[0].InputHash);
+        }
+        else
+        {
+            // Act & Assert
+            var exception = await Assert
+                .That(() => AssetManifest.Load(fixture.ManifestPath, json_, methods_))
+                .ThrowsExactly<InvalidDataException>();
+            await Assert.That(exception!.Message).Contains("../ASSETS/profile.json").And.Contains("manifest配下");
+        }
     }
 
     [Test]
@@ -174,7 +217,7 @@ internal class AssetManifest_LoadTests
 
         // Act & Assert
         var exception = await Assert
-            .That(() => AssetManifest.Load(fixture.ManifestPath))
+            .That(() => AssetManifest.Load(fixture.ManifestPath, json_, methods_))
             .Throws<InvalidDataException>();
         await Assert.That(exception!.Message).Contains("invoke.single").And.Contains("素材");
     }
@@ -189,7 +232,7 @@ internal class AssetManifest_LoadTests
 
         // Act & Assert
         var exception = await Assert
-            .That(() => AssetManifest.Load(fixture.ManifestPath))
+            .That(() => AssetManifest.Load(fixture.ManifestPath, json_, methods_))
             .Throws<InvalidDataException>();
         await Assert.That(exception!.Message).Contains("invoke.single").And.Contains("入力hash");
     }

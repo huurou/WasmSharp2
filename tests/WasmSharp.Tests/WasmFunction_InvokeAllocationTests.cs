@@ -8,6 +8,7 @@ internal partial class WasmFunction_InvokeTests
     public async Task 同じ深さの直接call回数を増やす_割当が回数に比例せず結果を保つ()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var function = WasmModule
             .Decode(
                 HostLinkingModuleBinary.Create(
@@ -27,22 +28,22 @@ internal partial class WasmFunction_InvokeTests
                 )
             )
             .Validate()
-            .Instantiate([], new(2))
+            .Instantiate(executionContext, [], new(2))
             .GetFunction("run");
         WasmValue[] fewCalls = [WasmValue.FromI32(1)];
         WasmValue[] manyCalls = [WasmValue.FromI32(1024)];
         for (var index = 0; index < 16; index++)
         {
-            function.Invoke(fewCalls);
-            function.Invoke(manyCalls);
+            function.Invoke(executionContext, fewCalls);
+            function.Invoke(executionContext, manyCalls);
         }
 
         // Act
         var beforeFew = GC.GetAllocatedBytesForCurrentThread();
-        var fewResult = function.Invoke(fewCalls);
+        var fewResult = function.Invoke(executionContext, fewCalls);
         var fewAllocated = GC.GetAllocatedBytesForCurrentThread() - beforeFew;
         var beforeMany = GC.GetAllocatedBytesForCurrentThread();
-        var manyResult = function.Invoke(manyCalls);
+        var manyResult = function.Invoke(executionContext, manyCalls);
         var manyAllocated = GC.GetAllocatedBytesForCurrentThread() - beforeMany;
 
         // Assert

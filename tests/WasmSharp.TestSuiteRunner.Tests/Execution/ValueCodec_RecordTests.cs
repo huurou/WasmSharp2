@@ -113,7 +113,7 @@ internal class ValueCodec_RecordTests
     {
         // Arrange
         var state = new ScriptState("a.wast");
-        var function = WasmFunction.CreateHost(new([], []), _ => new WasmResults([]));
+        var function = WasmFunction.CreateHost(new([], []), (_, _) => new WasmResults([]));
         var unknown = new object();
 
         // Act

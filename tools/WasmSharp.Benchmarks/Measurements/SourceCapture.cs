@@ -8,9 +8,10 @@ namespace WasmSharp.Benchmarks.Measurements;
 /// <summary>
 /// 使用projectと評価済みsourceの集合、Gitの復元情報を採取する
 /// </summary>
-internal sealed class SourceCapture(string repositoryDirectory)
+internal sealed class SourceCapture(string repositoryDirectory, CaseJson json)
 {
     private readonly string repositoryDirectory_ = Path.GetFullPath(repositoryDirectory);
+    private readonly CaseJson json_ = json;
 
     internal RunSource Before(
         RunStore store,
@@ -181,7 +182,6 @@ internal sealed class SourceCapture(string repositoryDirectory)
                 repositoryDirectory_,
                 "msbuild",
                 projectPath,
-                "-nologo",
                 "-property:Configuration=Release",
                 "-getItem:Compile,AdditionalFiles,EmbeddedResource,ProjectReference,EditorConfigFiles"
             )
@@ -263,7 +263,7 @@ internal sealed class SourceCapture(string repositoryDirectory)
             .Select(x => new ManifestFile(x, Hash(FullPath(x))))
             .ToList();
         // pathと内容hashを別々のJSON要素にし、並びと区切りを固定する
-        var identity = JsonSerializer.SerializeToUtf8Bytes(files, CaseJson.Options);
+        var identity = JsonSerializer.SerializeToUtf8Bytes(files, json_.Options);
         return new(head, Convert.ToHexStringLower(SHA256.HashData(identity)), files);
     }
 

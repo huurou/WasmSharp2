@@ -14,7 +14,7 @@ internal class WasmImports_AddTests
     )
     {
         // Arrange
-        var function = WasmFunction.CreateHost(new([], []), _ => new([]));
+        var function = WasmFunction.CreateHost(new([], []), (callbackContext, _) => new([]));
         var first = new WasmHostModule(moduleName);
         first.Define("", function);
         var global = new WasmGlobal(new(WasmValueKind.I32, false), WasmValue.FromI32(7));
@@ -58,7 +58,7 @@ internal class WasmImports_AddTests
     )
     {
         // Arrange
-        var function = WasmFunction.CreateHost(new([], []), _ => new([]));
+        var function = WasmFunction.CreateHost(new([], []), (callbackContext, _) => new([]));
         var first = new WasmHostModule(firstName);
         first.Define("same", function);
         var memory = new WasmMemory(new(0));
@@ -98,7 +98,8 @@ internal class WasmImports_AddTests
     )
     {
         // Arrange
-        var function = WasmFunction.CreateHost(new([], []), _ => new([]));
+        var executionContext = new WasmExecutionContext();
+        var function = WasmFunction.CreateHost(new([], []), (callbackContext, _) => new([]));
         var first = new WasmHostModule("env");
         first.Define("same", function);
         var imports = new WasmImports();
@@ -125,7 +126,7 @@ internal class WasmImports_AddTests
                 )
             )
             .Validate()
-            .Instantiate(imports);
+            .Instantiate(executionContext, imports);
         await Assert.That(instance.GetFunction("same")).IsSameReferenceAs(function);
         foreach (
             var (name, kind, type) in new (string, byte, byte[])[]
@@ -144,7 +145,7 @@ internal class WasmImports_AddTests
                 )
                 .Validate();
             var exception = await Assert
-                .That(() => module.Instantiate(imports))
+                .That(() => module.Instantiate(executionContext, imports))
                 .ThrowsExactly<WasmInstantiateException>();
             using (Assert.Multiple())
             {
@@ -190,7 +191,7 @@ internal class WasmImports_AddTests
     {
         // Arrange
         var module = new WasmHostModule("env");
-        var function = WasmFunction.CreateHost(new([], []), _ => new([]));
+        var function = WasmFunction.CreateHost(new([], []), (callbackContext, _) => new([]));
         var global = new WasmGlobal(new(WasmValueKind.I32, true), WasmValue.FromI32(7));
         var memory = new WasmMemory(new(0, 1));
         var table = new WasmTable(WasmValueKind.FuncRef, new(0, 1));

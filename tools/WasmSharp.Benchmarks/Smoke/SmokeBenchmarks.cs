@@ -7,6 +7,7 @@ namespace WasmSharp.Benchmarks.Smoke;
 /// </summary>
 public class SmokeBenchmarks
 {
+    private readonly WasmExecutionContext context_ = new WasmExecutionContext();
     // 空moduleの固定バイナリ 素材コンパイラを試走の前提にしない。
     private readonly byte[] moduleBytes_ = [0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00];
     private WasmModule lastModule_ = null!;
@@ -14,7 +15,7 @@ public class SmokeBenchmarks
     [GlobalSetup]
     public void Setup()
     {
-        WasmModule.Decode(moduleBytes_).Validate().Instantiate(new WasmImports());
+        WasmModule.Decode(moduleBytes_).Validate().Instantiate(context_, new WasmImports());
     }
 
     [Benchmark(OperationsPerInvoke = 1)]
@@ -26,6 +27,6 @@ public class SmokeBenchmarks
     [GlobalCleanup]
     public void Cleanup()
     {
-        lastModule_.Validate().Instantiate(new WasmImports());
+        lastModule_.Validate().Instantiate(context_, new WasmImports());
     }
 }

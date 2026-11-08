@@ -10,6 +10,8 @@ namespace WasmSharp.Benchmarks.Measurements;
 /// </summary>
 public class InvokeBenchmarks
 {
+    private readonly WasmExecutionContext context_ = new WasmExecutionContext();
+    private CaseJson json_ = null!;
     private readonly Consumer consumer_ = new();
     private BenchmarkProcess? process_;
     private BenchmarkCase definition_ = null!;
@@ -36,7 +38,7 @@ public class InvokeBenchmarks
     [Benchmark(OperationsPerInvoke = 1)]
     public void Empty()
     {
-        lastEmptyResults_ = function_.Invoke(arguments_.AsSpan());
+        lastEmptyResults_ = function_.Invoke(context_, arguments_.AsSpan());
         consumer_.Consume(lastEmptyResults_);
     }
 
@@ -49,7 +51,7 @@ public class InvokeBenchmarks
     [Benchmark(OperationsPerInvoke = 1)]
     public void Single()
     {
-        lastSingleResults_ = function_.Invoke(arguments_.AsSpan());
+        lastSingleResults_ = function_.Invoke(context_, arguments_.AsSpan());
         consumer_.Consume(lastSingleResults_);
     }
 
@@ -62,7 +64,7 @@ public class InvokeBenchmarks
     [Benchmark(OperationsPerInvoke = 1)]
     public void Multi()
     {
-        lastMultiResults_ = function_.Invoke(arguments_.AsSpan());
+        lastMultiResults_ = function_.Invoke(context_, arguments_.AsSpan());
         consumer_.Consume(lastMultiResults_);
     }
 
@@ -75,7 +77,7 @@ public class InvokeBenchmarks
     [Benchmark(OperationsPerInvoke = 1)]
     public void IntegerDirect()
     {
-        lastIntegerDirectResults_ = function_.Invoke(arguments_.AsSpan());
+        lastIntegerDirectResults_ = function_.Invoke(context_, arguments_.AsSpan());
         consumer_.Consume(lastIntegerDirectResults_);
     }
 
@@ -88,7 +90,7 @@ public class InvokeBenchmarks
     [Benchmark(OperationsPerInvoke = 1)]
     public void FloatHost()
     {
-        lastFloatHostResults_ = function_.Invoke(arguments_.AsSpan());
+        lastFloatHostResults_ = function_.Invoke(context_, arguments_.AsSpan());
         consumer_.Consume(lastFloatHostResults_);
     }
 
@@ -101,7 +103,7 @@ public class InvokeBenchmarks
     [Benchmark(OperationsPerInvoke = 1)]
     public void Indirect()
     {
-        lastIndirectResults_ = function_.Invoke(arguments_.AsSpan());
+        lastIndirectResults_ = function_.Invoke(context_, arguments_.AsSpan());
         consumer_.Consume(lastIndirectResults_);
     }
 
@@ -114,7 +116,7 @@ public class InvokeBenchmarks
     [Benchmark(OperationsPerInvoke = 1)]
     public void CopyFill()
     {
-        lastCopyFillResults_ = function_.Invoke(arguments_.AsSpan());
+        lastCopyFillResults_ = function_.Invoke(context_, arguments_.AsSpan());
         consumer_.Consume(lastCopyFillResults_);
     }
 
@@ -127,7 +129,7 @@ public class InvokeBenchmarks
     [Benchmark(OperationsPerInvoke = 1)]
     public void ScanScalar()
     {
-        lastScanScalarResults_ = function_.Invoke(arguments_.AsSpan());
+        lastScanScalarResults_ = function_.Invoke(context_, arguments_.AsSpan());
         consumer_.Consume(lastScanScalarResults_);
     }
 
@@ -140,7 +142,7 @@ public class InvokeBenchmarks
     [Benchmark(OperationsPerInvoke = 1)]
     public void ScanSimd()
     {
-        lastScanSimdResults_ = function_.Invoke(arguments_.AsSpan());
+        lastScanSimdResults_ = function_.Invoke(context_, arguments_.AsSpan());
         consumer_.Consume(lastScanSimdResults_);
     }
 
@@ -153,7 +155,7 @@ public class InvokeBenchmarks
     [Benchmark(OperationsPerInvoke = 1)]
     public void Matrix()
     {
-        lastMatrixResults_ = function_.Invoke(arguments_.AsSpan());
+        lastMatrixResults_ = function_.Invoke(context_, arguments_.AsSpan());
         consumer_.Consume(lastMatrixResults_);
     }
 
@@ -189,8 +191,9 @@ public class InvokeBenchmarks
         Verify(new InvokeObservation(instance_, results));
     }
 
-    internal void Initialize(LoadedAssets assets, string caseId)
+    internal void Initialize(LoadedAssets assets, string caseId, CaseJson json)
     {
+        json_ = json;
         definition_ = assets.Catalog.Get(caseId);
         var input = assets.GetInput(caseId);
         var module = WasmModule.Decode(assets.GetBinary(definition_.AssetId).AsSpan()).Validate();
@@ -198,7 +201,7 @@ public class InvokeBenchmarks
         Verify(
             new InvokeObservation(
                 before,
-                before.GetFunction(input.FunctionExport).Invoke(input.Arguments.AsSpan())
+                before.GetFunction(input.FunctionExport).Invoke(context_, input.Arguments.AsSpan())
             )
         );
 
@@ -208,7 +211,7 @@ public class InvokeBenchmarks
         if (definition_.StatePolicy == StatePolicy.FixedPoint)
         {
             // 計時前に最終状態へ揃え、JIT・pilot・warmup・割り当て観測でも同じ開始条件にする。
-            function_.Invoke(arguments_.AsSpan());
+            function_.Invoke(context_, arguments_.AsSpan());
         }
         lastEmptyResults_ = null!;
         lastSingleResults_ = null!;
@@ -222,9 +225,9 @@ public class InvokeBenchmarks
         lastMatrixResults_ = null!;
     }
 
-    private static WasmInstance CreateInstance(WasmModule module, PreparedInput input)
+    private WasmInstance CreateInstance(WasmModule module, PreparedInput input)
     {
-        var instance = module.Instantiate(CaseVerifier.CreateImports());
+        var instance = module.Instantiate(context_, CaseVerifier.CreateImports());
         foreach (var array in input.Arrays)
         {
             instance.GetMemory(array.MemoryExport).Write(array.Offset, array.Bytes.AsSpan());
@@ -240,7 +243,7 @@ public class InvokeBenchmarks
 
     private void Verify(InvokeObservation observation)
     {
-        var result = CaseVerifier.Verify(definition_, observation);
+        var result = CaseVerifier.Verify(context_, definition_, observation, json_);
         if (!result.Succeeded)
         {
             throw new InvalidOperationException(

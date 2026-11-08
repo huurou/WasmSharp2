@@ -1,3 +1,4 @@
+using WasmSharp.Benchmarks.Cases;
 using WasmSharp.Benchmarks.Results;
 using WasmSharp.Benchmarks.Tests.Fixtures;
 
@@ -5,6 +6,8 @@ namespace WasmSharp.Benchmarks.Tests.Results;
 
 internal class RunStore_OpenChecksTests
 {
+    private readonly CaseJson json_ = new CaseJson();
+
     [Test]
     [Arguments(false)]
     [Arguments(true)]
@@ -12,7 +15,7 @@ internal class RunStore_OpenChecksTests
     {
         // Arrange
         using var fixture = new RunStoreFixture();
-        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest);
+        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, json_);
         if (completed)
         {
             fixture.SaveConditions(store);
@@ -26,7 +29,8 @@ internal class RunStore_OpenChecksTests
             .That(() =>
                 RunStore.OpenChecks(
                     fixture.DirectoryPath,
-                    completed ? fixture.Manifest.RunId : "other-run"
+                    completed ? fixture.Manifest.RunId : "other-run",
+                    json_
                 )
             )
             .ThrowsExactly<InvalidDataException>();

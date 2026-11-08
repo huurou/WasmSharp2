@@ -11,6 +11,7 @@ internal class Interpreter_ReturnTests
     public async Task 内側の関数を終了する_結果を引数開始位置へ保持し外側の値とフレームを残す()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var outerFunction = FunctionFixture.Create();
         var module = new WasmModule(
             [new([WasmValueKind.I32], [WasmValueKind.ExternRef, WasmValueKind.I64])],
@@ -28,7 +29,7 @@ internal class Interpreter_ReturnTests
         var reference = new object();
         var found = InstructionSet.TryGet(new(0, 0x0B), out var descriptor);
         var instruction = new Instruction(descriptor.ExecutionOpcode!.Value, default, 88, 0);
-        var context = InterpreterContext.Enter(new(10), out var isOutermost);
+        var context = executionContext.Enter(new(10), out var isOutermost);
         ExecutionResult result;
         ExecutionFrame outerFrame;
         ExecutionFrame removedFrame;
@@ -69,8 +70,8 @@ internal class Interpreter_ReturnTests
         }
         finally
         {
+            executionContext.Exit(isOutermost);
             context.Restore(0, 0, 0);
-            InterpreterContext.Exit(isOutermost);
         }
 
         // Assert
@@ -99,6 +100,7 @@ internal class Interpreter_ReturnTests
     public async Task 呼出し先の途中でreturnする_宣言結果だけを呼出し元へ返し後続命令を実行しない()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var found = InstructionSet.TryGet(new(0, 0x0F), out var descriptor);
         var instance = ExecutionInstanceFixture.Create(
             [new([], [WasmValueKind.I64]), new([], [WasmValueKind.I32, WasmValueKind.I64])],
@@ -129,7 +131,7 @@ internal class Interpreter_ReturnTests
             [],
             []
         );
-        var context = InterpreterContext.Enter(new(10), out var isOutermost);
+        var context = executionContext.Enter(new(10), out var isOutermost);
         ExecutionResult result;
         (int Frames, int Values, int Depth) state;
 
@@ -146,8 +148,8 @@ internal class Interpreter_ReturnTests
         }
         finally
         {
+            executionContext.Exit(isOutermost);
             context.Restore(0, 0, 0);
-            InterpreterContext.Exit(isOutermost);
         }
 
         // Assert

@@ -248,7 +248,7 @@ internal static class ExpressionDecoder
                 return BlockType.Empty;
             }
 
-            if (code is >= 0x40 and < 0x80)
+            if (code is > 0x40 and < 0x80)
             {
                 return BlockType.FromValue(ModuleBinaryFormat.ReadValueType(ref reader));
             }
@@ -282,15 +282,12 @@ internal static class ExpressionDecoder
     {
         var countOffset = reader.Position;
         var count = ModuleBinaryFormat.ReadCount(ref reader);
-        if (count == Array.MaxLength)
-        {
-            throw new WasmImplementationLimitException(
-                "既定を含むラベル数が配列の保持上限を超えています。",
-                WasmImplementationLimitReason.CollectionSize,
-                Array.MaxLength,
-                reader.Location(countOffset)
-            );
-        }
+        ModuleBinaryFormat.EnsureCollectionSize(
+            (ulong)count + 1,
+            ref reader,
+            countOffset,
+            "既定を含むラベル数が配列の保持上限を超えています。"
+        );
 
         List<uint> labels = [];
         for (uint index = 0; index < count; index++)
@@ -342,15 +339,12 @@ internal static class ExpressionDecoder
         ref ModuleBinaryReader reader
     )
     {
-        if (instructions.Count == Array.MaxLength)
-        {
-            throw new WasmImplementationLimitException(
-                "命令数が配列の保持上限を超えています。",
-                WasmImplementationLimitReason.CollectionSize,
-                Array.MaxLength,
-                reader.Location(instruction.ByteOffset)
-            );
-        }
+        ModuleBinaryFormat.EnsureCollectionSize(
+            (ulong)instructions.Count + 1,
+            ref reader,
+            instruction.ByteOffset,
+            "命令数が配列の保持上限を超えています。"
+        );
 
         instructions.Add(instruction);
     }

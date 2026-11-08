@@ -12,16 +12,17 @@ internal class WasmTable_TryGrowTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var module = WasmModule
             .Decode(ConstantModuleBinary.Create(0x7F, 0x41, 0x01, 0x0B))
             .Validate();
         var original =
             kind == WasmValueKind.FuncRef
-                ? module.Instantiate([]).GetFunction("run")
+                ? module.Instantiate(executionContext, []).GetFunction("run")
                 : new object();
         var added =
             kind == WasmValueKind.FuncRef
-                ? module.Instantiate([]).GetFunction("run")
+                ? module.Instantiate(executionContext, []).GetFunction("run")
                 : new object();
         var originalValue =
             kind == WasmValueKind.FuncRef

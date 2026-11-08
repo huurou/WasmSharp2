@@ -40,9 +40,9 @@ internal static class ValueCodec
     /// 実値を、型と幅を固定したhexと入力内の参照tokenで記録する。
     /// </summary>
     /// <remarks>
-    /// Core 2.0の数値・v128・参照の記録を作る。参照先の取得APIがないexnrefでは型名だけを記録する。
+    /// Core 2.0の7値型について、数値・v128・参照の記録を作る。
     /// </remarks>
-    /// <param name="value">記録するvalue</param>
+    /// <param name="value">Core 2.0の7値型のいずれかであるvalue</param>
     /// <param name="state">参照tokenとexternrefの番号を管理する入力の状態</param>
     /// <returns>数値の全ビット、v128の上下64ビット、参照のnull・token・元番号を型とともに保持する記録</returns>
     internal static ValueRecord Record(WasmValue value, ScriptState state)
@@ -64,9 +64,7 @@ internal static class ValueCodec
                 High64 = ToHex(value.AsV128().High64, 64),
             },
             WasmValueKind.FuncRef => RecordReference(record, value.AsFuncRef(), state),
-            WasmValueKind.ExternRef => RecordReference(record, value.AsExternRef(), state),
-            // exnrefは公開APIで参照先を取得できないため型だけを記録する。
-            _ => record,
+            _ => RecordReference(record, value.AsExternRef(), state),
         };
     }
 
@@ -90,8 +88,8 @@ internal static class ValueCodec
     /// <summary>
     /// WABTの値型名を返す。
     /// </summary>
-    /// <param name="kind">記録するWasmの値型</param>
-    /// <returns>JSONへ記録する小文字の型名 Core 2.0の7値型以外はexnref</returns>
+    /// <param name="kind">Core 2.0の7値型のいずれか</param>
+    /// <returns>JSONへ記録する小文字の型名</returns>
     internal static string GetTypeName(WasmValueKind kind)
     {
         return kind switch
@@ -102,8 +100,7 @@ internal static class ValueCodec
             WasmValueKind.F64 => "f64",
             WasmValueKind.V128 => "v128",
             WasmValueKind.FuncRef => "funcref",
-            WasmValueKind.ExternRef => "externref",
-            _ => "exnref",
+            _ => "externref",
         };
     }
 
@@ -144,7 +141,7 @@ internal static class ValueCodec
         // lane幅は64の約数のため、1つのlaneが下位と上位の64ビットにまたがらない。
         var (low64, high64) = value.AsV128();
         var offset = lane * width;
-        return ((offset < 64 ? low64 : high64) >> (offset % 64)) & GetMask(width);
+        return ((offset < 64 ? low64 : high64) >> offset) & GetMask(width);
     }
 
     /// <summary>
@@ -246,7 +243,7 @@ internal static class ValueCodec
             }
             else
             {
-                high64 |= bits << (offset - 64);
+                high64 |= bits << offset;
             }
         }
 

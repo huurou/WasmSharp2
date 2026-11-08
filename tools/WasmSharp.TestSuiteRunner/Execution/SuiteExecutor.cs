@@ -26,10 +26,35 @@ internal static class SuiteExecutor
         CancellationToken cancellationToken = default
     )
     {
+        return Execute(manifest, manifestPath, progress, cancellationToken, ExecuteInput);
+    }
+
+    /// <summary>
+    /// 指定した入力評価を用い、素材照合・入力間の継続・結果の集約を管理する。
+    /// </summary>
+    /// <param name="manifest">全対象入力と変換済み素材の記録</param>
+    /// <param name="manifestPath">相対配置の基準となるmanifestのpath</param>
+    /// <param name="progress">入力の処理後に相対pathを通知する処理 中断した入力も通知する</param>
+    /// <param name="cancellationToken">command間で通知を確認する中断要求</param>
+    /// <param name="executeInput">入力ごとの状態で評価し、部分結果と中断診断を返す処理</param>
+    /// <returns>確定済みの部分結果と中断診断を保持した実行記録</returns>
+    internal static RunReport Execute(
+        CorpusManifest manifest,
+        string manifestPath,
+        Action<string>? progress,
+        CancellationToken cancellationToken,
+        Func<
+            InputVerification,
+            ScriptState,
+            CancellationToken,
+            (InputRunResult Result, CorpusDiagnostic? Interruption)
+        > executeInput
+    )
+    {
         var absolutePath = Path.GetFullPath(manifestPath);
         var report = RunReport.Create(
             manifest,
-            new(Guid.NewGuid().ToString("D"))
+            new RunProvenance(Guid.NewGuid().ToString())
             {
                 StartedAt = DateTimeOffset.UtcNow,
                 RunnerVersion = typeof(SuiteExecutor).Assembly.GetName().Version?.ToString(),
@@ -79,7 +104,7 @@ internal static class SuiteExecutor
                 };
                 var state = new ScriptState(path);
                 state.Register(SpectestFactory.Create(state));
-                var (result, interruption) = ExecuteInput(input, state, cancellationToken);
+                var (result, interruption) = executeInput(input, state, cancellationToken);
                 report.Inputs[i] = result;
                 progress?.Invoke(path);
                 if (interruption is not null)
@@ -111,6 +136,7 @@ internal static class SuiteExecutor
     /// <param name="manifest">全対象入力と素材の記録</param>
     /// <param name="manifestPath">素材の相対配置の基準</param>
     /// <param name="outputPath">既存ファイルを上書きしない詳細結果の保存先</param>
+    /// <param name="reportStore">実行結果の確定保存に使用する保存処理</param>
     /// <param name="progress">入力の処理後に相対pathを通知する処理</param>
     /// <param name="cancellationToken">command間で確認する中断要求</param>
     /// <returns>実行記録と保存先の絶対path 保存に成功した場合だけ出力完了をtrueにし、保存失敗はSaveFailureに保持する</returns>
@@ -120,6 +146,7 @@ internal static class SuiteExecutor
         CorpusManifest manifest,
         string manifestPath,
         string outputPath,
+        ReportStore reportStore,
         Action<string>? progress = null,
         CancellationToken cancellationToken = default
     )
@@ -129,7 +156,7 @@ internal static class SuiteExecutor
         var stored = report with { Completion = report.Completion with { OutputComplete = true } };
         try
         {
-            ReportStore.Save(stored, absoluteOutput);
+            reportStore.Save(stored, absoluteOutput);
             return new(stored, absoluteOutput, null);
         }
         catch (ReportStoreException exception)

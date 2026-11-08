@@ -733,8 +733,8 @@ internal static class FunctionValidator
                         instruction.ByteOffset
                     );
                 }
-                // 具体候補に適合させ、両方Unknownの場合だけ結果もUnknownにする。
-                candidateType = secondType ?? firstType;
+                // Unknownはframeの底側に限られるため、第2候補がUnknownなら第1候補もUnknownになる。
+                candidateType = secondType;
             }
 
             Pop(WasmValueKind.I32, instruction.ByteOffset);

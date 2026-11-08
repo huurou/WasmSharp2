@@ -4,7 +4,7 @@ using WasmSharp.Exceptions;
 namespace WasmSharp.Execution;
 
 /// <summary>
-/// 同じスレッドの同期呼び出しで共有する実行状態
+/// 同期呼び出しで共有するスタックと呼び出し深さ
 /// </summary>
 internal sealed class InterpreterContext
 {
@@ -20,10 +20,9 @@ internal sealed class InterpreterContext
     private WasmValue[] values_ = [];
 
     /// <summary>
-    /// 現在のスレッドの実行コンテキスト 実行中でなければnull
+    /// この実行状態を所有し、ホストへの受け渡しに使うコンテキスト
     /// </summary>
-    [field: ThreadStatic]
-    internal static InterpreterContext? Current { get; private set; }
+    internal WasmExecutionContext ExecutionContext { get; }
 
     /// <summary>
     /// 実行中のフレームの定義関数
@@ -58,22 +57,12 @@ internal sealed class InterpreterContext
     /// <summary>
     /// 実行ポリシーの呼び出し深さ上限を固定してコンテキストを構築する
     /// </summary>
+    /// <param name="executionContext">この実行状態の所有者</param>
     /// <param name="options">最外側の呼び出しに適用する実行ポリシー</param>
-    private InterpreterContext(WasmExecutionOptions options)
+    internal InterpreterContext(WasmExecutionContext executionContext, WasmExecutionOptions options)
     {
+        ExecutionContext = executionContext;
         MaxCallDepth = options.MaxCallDepth;
-    }
-
-    /// <summary>
-    /// 同じスレッドのコンテキストを再利用し、存在しなければ新たに開く
-    /// </summary>
-    /// <param name="options">新しく開く場合にだけ適用する実行ポリシー</param>
-    /// <param name="isOutermost">この呼び出しで新しく開いた場合はtrue</param>
-    /// <returns>同期呼び出しの間で共有する実行コンテキスト</returns>
-    internal static InterpreterContext Enter(WasmExecutionOptions options, out bool isOutermost)
-    {
-        isOutermost = Current is null;
-        return Current ??= new InterpreterContext(options);
     }
 
     /// <summary>
@@ -96,18 +85,6 @@ internal sealed class InterpreterContext
     internal void ExitCall()
     {
         CallDepth--;
-    }
-
-    /// <summary>
-    /// 最外側の呼び出しの終了時に、現在のスレッドからコンテキストの参照を解除する
-    /// </summary>
-    /// <param name="isOutermost">対応するEnterで取得した最外側かどうかの値</param>
-    internal static void Exit(bool isOutermost)
-    {
-        if (isOutermost)
-        {
-            Current = null;
-        }
     }
 
     /// <summary>

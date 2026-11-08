@@ -1294,11 +1294,11 @@ internal partial class InstructionGenerator_InitializeTests
             """
             namespace WasmSharp.Instructions
             {
+                [Instruction(0xFD, 0x41, "extended.fd", ImmediateKind.I32, StackEffectKind.PushI32,
+                    ValidationRule.Constant, nameof(Execution.Interpreter.PushConstant))]
                 [Instruction(0, 0x41, "i32.const", ImmediateKind.I32, StackEffectKind.PushI32,
                     ValidationRule.Constant, nameof(Execution.Interpreter.PushConstant))]
                 [Instruction(0xFC, 0x41, "extended.fc", ImmediateKind.I32, StackEffectKind.PushI32,
-                    ValidationRule.Constant, nameof(Execution.Interpreter.PushConstant))]
-                [Instruction(0xFD, 0x41, "extended.fd", ImmediateKind.I32, StackEffectKind.PushI32,
                     ValidationRule.Constant, nameof(Execution.Interpreter.PushConstant))]
                 [Instruction(0xFC, 0, "i32.trunc_sat_f32_s")]
                 internal static partial class InstructionSet;
@@ -1339,9 +1339,11 @@ internal partial class InstructionGenerator_InitializeTests
                 && constant.StackEffect == WasmSharp.Instructions.StackEffectKind.PushI32
                 && constant.Validation == WasmSharp.Instructions.ValidationRule.Constant
                 && constant.NumericSignature == null
-                && constant.ExecutionOpcode.HasValue
-                && fcFound && fc.Name == "extended.fc" && fc.ExecutionOpcode.HasValue
-                && fdFound && fd.Name == "extended.fd" && fd.ExecutionOpcode.HasValue
+                && constant.ExecutionOpcode == WasmSharp.Instructions.ExecutionOpcode.Op41
+                && fcFound && fc.Name == "extended.fc"
+                && fc.ExecutionOpcode == WasmSharp.Instructions.ExecutionOpcode.OpFC_41
+                && fdFound && fd.Name == "extended.fd"
+                && fd.ExecutionOpcode == WasmSharp.Instructions.ExecutionOpcode.OpFD_41
                 && constant.ExecutionOpcode != fc.ExecutionOpcode && constant.ExecutionOpcode != fd.ExecutionOpcode
                 && fc.ExecutionOpcode != fd.ExecutionOpcode
                 && unsupportedFound && unsupported.Name == "i32.trunc_sat_f32_s"

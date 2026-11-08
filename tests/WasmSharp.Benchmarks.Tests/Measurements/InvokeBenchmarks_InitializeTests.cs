@@ -7,11 +7,14 @@ namespace WasmSharp.Benchmarks.Tests.Measurements;
 
 internal class InvokeBenchmarks_InitializeTests
 {
+    private readonly CaseJson json_ = new CaseJson();
+    private readonly MeasurementMethods methods_ = new MeasurementMethods();
+
     [Test]
     public async Task 固定入力がdataセグメントと異なる_検査用と測定用の両instanceへ同じ入力を書き込む()
     {
         // Arrange
-        var definition = VerificationFixture.ChangedMemoryInputDefinition(MeasurementStage.Invoke);
+        var definition = VerificationFixture.ChangedMemoryInputDefinition(MeasurementStage.Invoke, json_);
         var bytes = File.ReadAllBytes(
                 Path.Combine(
                     AppContext.BaseDirectory,
@@ -22,11 +25,11 @@ internal class InvokeBenchmarks_InitializeTests
                 )
             )
             .ToImmutableArray();
-        var assets = InvokeFixture.BuildAssets(definition, bytes);
+        var assets = InvokeFixture.BuildAssets(definition, bytes, json_, methods_);
         var benchmark = new InvokeBenchmarks();
 
         // Act
-        benchmark.Initialize(assets, definition.CaseId);
+        benchmark.Initialize(assets, definition.CaseId, json_);
         benchmark.Single();
 
         // Assert
@@ -42,11 +45,11 @@ internal class InvokeBenchmarks_InitializeTests
     {
         // Arrange
         var benchmark = new InvokeBenchmarks();
-        var assets = InvokeFixture.CreateAssets(caseId, invalidResult: true);
+        var assets = InvokeFixture.CreateAssets(caseId, json_, methods_, invalidResult: true);
 
         // Act & Assert
         var exception = await Assert
-            .That(() => benchmark.Initialize(assets, caseId))
+            .That(() => benchmark.Initialize(assets, caseId, json_))
             .Throws<InvalidOperationException>();
         await Assert.That(exception!.Message).Contains($"{caseId}/Invoke/results[0]");
     }

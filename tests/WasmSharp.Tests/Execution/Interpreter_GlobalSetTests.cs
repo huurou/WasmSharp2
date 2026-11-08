@@ -11,6 +11,7 @@ internal class Interpreter_GlobalSetTests
     public async Task Mutableなglobalへ設定する_最上位の値を除き同じ実体からホストと後続の取得で更新後の値を得る()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var reference = new object();
         var found = InstructionSet.TryGet(new(0, 0x24), out var descriptor);
         var numberGlobal = new WasmGlobal(new(WasmValueKind.F64, true), WasmValue.FromF64Bits(0));
@@ -44,7 +45,7 @@ internal class Interpreter_GlobalSetTests
             [],
             [numberGlobal, externGlobal]
         );
-        var context = InterpreterContext.Enter(new(10), out var isOutermost);
+        var context = executionContext.Enter(new(10), out var isOutermost);
         ExecutionResult result;
 
         // Act
@@ -59,8 +60,8 @@ internal class Interpreter_GlobalSetTests
         }
         finally
         {
+            executionContext.Exit(isOutermost);
             context.Restore(0, 0, 0);
-            InterpreterContext.Exit(isOutermost);
         }
 
         // Assert
@@ -83,6 +84,7 @@ internal class Interpreter_GlobalSetTests
     public async Task Importした定義関数から設定する_元instanceのglobalだけを更新する()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var sourceGlobal = new WasmGlobal(new(WasmValueKind.I32, true), WasmValue.FromI32(0));
         var importerGlobal = new WasmGlobal(new(WasmValueKind.I32, true), WasmValue.FromI32(0));
         var source = ExecutionInstanceFixture.Create(
@@ -119,7 +121,7 @@ internal class Interpreter_GlobalSetTests
             [source.Functions[0]],
             [importerGlobal]
         );
-        var context = InterpreterContext.Enter(new(10), out var isOutermost);
+        var context = executionContext.Enter(new(10), out var isOutermost);
         ExecutionResult result;
 
         // Act
@@ -134,8 +136,8 @@ internal class Interpreter_GlobalSetTests
         }
         finally
         {
+            executionContext.Exit(isOutermost);
             context.Restore(0, 0, 0);
-            InterpreterContext.Exit(isOutermost);
         }
 
         // Assert

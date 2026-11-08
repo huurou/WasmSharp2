@@ -63,6 +63,7 @@ internal partial class ModuleValidator_ValidateTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var module = DecodeFunction(signature, body);
         var offset = module.Functions[0].Instructions[instructionIndex].ByteOffset;
 
@@ -80,7 +81,7 @@ internal partial class ModuleValidator_ValidateTests
                 .IsEqualTo(new(WasmProcessingStage.Validate, offset, 0, 10));
             await Assert.That(module.FunctionCodes.IsEmpty).IsTrue();
             await Assert
-                .That(() => module.Instantiate([]))
+                .That(() => module.Instantiate(executionContext, []))
                 .ThrowsExactly<InvalidOperationException>();
         }
     }
@@ -295,6 +296,7 @@ internal partial class ModuleValidator_ValidateTests
     public async Task 圧縮localsが巨大で末尾を参照する_型検証は成功し実行時の保持上限で拒否する()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var module = WasmModule.Decode(
             HostLinkingModuleBinary.Create(
                 HostLinkingModuleBinary.Types(([0x7F], [0x7E])),
@@ -308,11 +310,11 @@ internal partial class ModuleValidator_ValidateTests
                 )
             )
         );
-        var function = module.Validate().Instantiate([]).GetFunction("run");
+        var function = module.Validate().Instantiate(executionContext, []).GetFunction("run");
 
         // Act & Assert
         var exception = await Assert
-            .That(() => function.Invoke([WasmValue.FromI32(1)]))
+            .That(() => function.Invoke(executionContext, [WasmValue.FromI32(1)]))
             .ThrowsExactly<WasmImplementationLimitException>();
         await Assert.That(exception!.Location!.Stage).IsEqualTo(WasmProcessingStage.Invoke);
         await Assert.That(module.FunctionCodes[0].LocalCount).IsEqualTo((ulong)uint.MaxValue);
@@ -323,6 +325,7 @@ internal partial class ModuleValidator_ValidateTests
     public async Task 後半関数のlocalが不正_再検証でも実行コードとexport索引を公開しない()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var module = WasmModule.Decode(
             HostLinkingModuleBinary.Create(
                 HostLinkingModuleBinary.Types(([0x7F], [0x7F])),
@@ -342,7 +345,7 @@ internal partial class ModuleValidator_ValidateTests
             await Assert.That(module.FunctionCodes.IsEmpty).IsTrue();
             await Assert.That(module.FunctionExportIndices.IsEmpty).IsTrue();
             await Assert
-                .That(() => module.Instantiate([]))
+                .That(() => module.Instantiate(executionContext, []))
                 .ThrowsExactly<InvalidOperationException>();
         }
     }

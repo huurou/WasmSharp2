@@ -58,6 +58,7 @@ internal partial class WasmFunction_InvokeTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         byte[] parameters = second.Length == 0 ? [0x7B] : [0x7B, 0x7B];
         var pushes = parameters.SelectMany((_, x) => new byte[] { 0x20, (byte)x });
         var bytes = HostLinkingModuleBinary.Create(
@@ -78,9 +79,9 @@ internal partial class WasmFunction_InvokeTests
         {
             var actual = module
                 .Validate()
-                .Instantiate([])
+                .Instantiate(executionContext, [])
                 .GetFunction("run")
-                .Invoke(operands)
+                .Invoke(executionContext, operands)
                 .Values;
 
             // Assert
@@ -104,6 +105,7 @@ internal partial class WasmFunction_InvokeTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var bytes = IntegerShiftModule(opcode, [0x7B, 0x7F]);
         var input = width switch
         {
@@ -120,9 +122,9 @@ internal partial class WasmFunction_InvokeTests
         {
             var actual = module
                 .Validate()
-                .Instantiate([])
+                .Instantiate(executionContext, [])
                 .GetFunction("run")
-                .Invoke([WasmValue.FromV128(input, input), WasmValue.FromI32(width + 1)])
+                .Invoke(executionContext, [WasmValue.FromV128(input, input), WasmValue.FromI32(width + 1)])
                 .Values;
 
             // Assert

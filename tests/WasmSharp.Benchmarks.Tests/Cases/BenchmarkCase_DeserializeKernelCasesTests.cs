@@ -43,7 +43,7 @@ internal partial class BenchmarkCase_DeserializeTests
 
         // Act
         var definition = JsonSerializer
-            .Deserialize<List<BenchmarkCase>>(json, CaseJson.Options)!
+            .Deserialize<List<BenchmarkCase>>(json, json_.Options)!
             .Single(x => x.CaseId == "kernel.matrix");
 
         // Assert
@@ -71,7 +71,7 @@ internal partial class BenchmarkCase_DeserializeTests
                 .IsEqualTo(
                     Convert.ToHexStringLower(
                         SHA256.HashData(
-                            JsonSerializer.SerializeToUtf8Bytes(definition.Input, CaseJson.Options)
+                            JsonSerializer.SerializeToUtf8Bytes(definition.Input, json_.Options)
                         )
                     )
                 );
@@ -114,7 +114,7 @@ internal partial class BenchmarkCase_DeserializeTests
 
         // Act
         var definition = JsonSerializer
-            .Deserialize<List<BenchmarkCase>>(json, CaseJson.Options)!
+            .Deserialize<List<BenchmarkCase>>(json, json_.Options)!
             .Single(x => x.CaseId == "kernel.matrix");
 
         // Assert

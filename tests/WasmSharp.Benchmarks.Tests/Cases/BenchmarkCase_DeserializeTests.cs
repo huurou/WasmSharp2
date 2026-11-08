@@ -6,6 +6,8 @@ namespace WasmSharp.Benchmarks.Tests.Cases;
 
 internal partial class BenchmarkCase_DeserializeTests
 {
+    private readonly CaseJson json_ = new CaseJson();
+
     [Test]
     public async Task 小さいケースfixtureを読む_操作と入力と固定期待値を復元する()
     {
@@ -13,10 +15,10 @@ internal partial class BenchmarkCase_DeserializeTests
         var json = await ReadFixtureAsync();
 
         // Act
-        var definition = JsonSerializer.Deserialize<BenchmarkCase>(json, CaseJson.Options)!;
+        var definition = JsonSerializer.Deserialize<BenchmarkCase>(json, json_.Options)!;
         var restored = JsonSerializer.Deserialize<BenchmarkCase>(
-            JsonSerializer.Serialize(definition, CaseJson.Options),
-            CaseJson.Options
+            JsonSerializer.Serialize(definition, json_.Options),
+            json_.Options
         )!;
 
         // Assert
@@ -93,7 +95,7 @@ internal partial class BenchmarkCase_DeserializeTests
         // Act & Assert
         await Assert
             .That(() =>
-                JsonSerializer.Deserialize<BenchmarkCase>(fixture.ToJsonString(), CaseJson.Options)
+                JsonSerializer.Deserialize<BenchmarkCase>(fixture.ToJsonString(), json_.Options)
             )
             .ThrowsExactly<JsonException>();
     }
@@ -111,7 +113,7 @@ internal partial class BenchmarkCase_DeserializeTests
         // Act & Assert
         await Assert
             .That(() =>
-                JsonSerializer.Deserialize<BenchmarkCase>(fixture.ToJsonString(), CaseJson.Options)
+                JsonSerializer.Deserialize<BenchmarkCase>(fixture.ToJsonString(), json_.Options)
             )
             .ThrowsExactly<JsonException>();
     }
@@ -126,7 +128,7 @@ internal partial class BenchmarkCase_DeserializeTests
         // Act & Assert
         await Assert
             .That(() =>
-                JsonSerializer.Deserialize<BenchmarkCase>(fixture.ToJsonString(), CaseJson.Options)
+                JsonSerializer.Deserialize<BenchmarkCase>(fixture.ToJsonString(), json_.Options)
             )
             .ThrowsExactly<JsonException>();
     }
@@ -141,7 +143,7 @@ internal partial class BenchmarkCase_DeserializeTests
         // Act & Assert
         await Assert
             .That(() =>
-                JsonSerializer.Deserialize<BenchmarkCase>(fixture.ToJsonString(), CaseJson.Options)
+                JsonSerializer.Deserialize<BenchmarkCase>(fixture.ToJsonString(), json_.Options)
             )
             .ThrowsExactly<JsonException>();
     }
@@ -177,7 +179,7 @@ internal partial class BenchmarkCase_DeserializeTests
         // Act
         var definition = JsonSerializer.Deserialize<BenchmarkCase>(
             fixture.ToJsonString(),
-            CaseJson.Options
+            json_.Options
         )!;
 
         // Assert

@@ -17,12 +17,12 @@ namespace WasmSharp.Benchmarks.Measurements;
 /// <summary>
 /// 採取processの環境と指定された測定・診断構成を記録する
 /// </summary>
-internal static partial class EnvironmentCapture
+internal sealed partial class EnvironmentCapture
 {
     internal static string CurrentRuntimeVersion =>
         RuntimeInformation.FrameworkDescription + "; " + Version(typeof(object).Assembly);
 
-    private static readonly string[] runtimeSettingPrefixes_ =
+    private readonly string[] runtimeSettingPrefixes_ =
     [
         "GC",
         "Jit",
@@ -54,7 +54,7 @@ internal static partial class EnvironmentCapture
         "EnableEventPipe",
     ];
 
-    internal static RunEnvironment Capture(
+    internal RunEnvironment Capture(
         RunStore store,
         CommandInvocation command,
         IEnumerable<ProcessConfiguration> processes
@@ -134,7 +134,7 @@ internal static partial class EnvironmentCapture
         );
     }
 
-    internal static ProcessConfiguration SnapshotProcess(ProcessConfiguration process)
+    internal ProcessConfiguration SnapshotProcess(ProcessConfiguration process)
     {
         return process with
         {
@@ -145,7 +145,7 @@ internal static partial class EnvironmentCapture
         };
     }
 
-    internal static ProcessConfiguration DescribeProcess(string role, Job job)
+    internal ProcessConfiguration DescribeProcess(string role, Job job)
     {
         return new(
             role,
@@ -175,9 +175,11 @@ internal static partial class EnvironmentCapture
 
     private static List<NamedSetting> RuntimeConfiguration(RunStore store)
     {
-        var entry = Assembly.GetEntryAssembly()?.Location;
-        var path = entry is null ? null : Path.ChangeExtension(entry, ".runtimeconfig.json");
-        if (path is null || !File.Exists(path))
+        var path = Path.ChangeExtension(
+            Assembly.GetEntryAssembly()?.Location,
+            ".runtimeconfig.json"
+        );
+        if (!File.Exists(path))
         {
             return
             [
@@ -216,7 +218,7 @@ internal static partial class EnvironmentCapture
         }
     }
 
-    private static bool IsRelevantVariable(string name)
+    private bool IsRelevantVariable(string name)
     {
         if (
             name.Equals("RuntimeFrameworkVersion", StringComparison.OrdinalIgnoreCase)
@@ -235,9 +237,7 @@ internal static partial class EnvironmentCapture
             var setting = name[prefix.Length..];
             return runtimeSettingPrefixes_.Any(x => setting.StartsWith(x, StringComparison.OrdinalIgnoreCase))
                 || setting
-                    is "gcServer"
-                        or "gcConcurrent"
-                        or "ServerGC"
+                    is "ServerGC"
                         or "ConcurrentGC"
                         or "PROCESSOR_COUNT"
                         or "ROLL_FORWARD"
@@ -252,7 +252,7 @@ internal static partial class EnvironmentCapture
         return false;
     }
 
-    private static bool IsProcessVariable(string name)
+    private bool IsProcessVariable(string name)
     {
         return IsRelevantVariable(name) || name == "WASMSHARP_BENCHMARK_RUN_CONFIG";
     }

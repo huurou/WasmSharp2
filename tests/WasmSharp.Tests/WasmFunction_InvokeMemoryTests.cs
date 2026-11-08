@@ -19,11 +19,12 @@ internal partial class WasmFunction_InvokeTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var hostMemory = new WasmMemory(new(initialPages, 3));
         var host = new WasmHostModule("env");
         host.Define("m", hostMemory);
         var instance = CreateMemorySizeAndGrowModule(imported, initialPages, 3)
-            .Instantiate(imported ? [host] : []);
+            .Instantiate(executionContext, imported ? [host] : []);
         var memory = instance.GetMemory("memory");
         var original = Enumerable
             .Range(0, (int)initialPages * 65536)
@@ -34,9 +35,9 @@ internal partial class WasmFunction_InvokeTests
         var actual = new byte[expectedPages * 65536];
 
         // Act
-        var before = instance.GetFunction("size").Invoke([]);
-        var previous = instance.GetFunction("grow").Invoke([WasmValue.FromI32(delta)]);
-        var after = instance.GetFunction("size").Invoke([]);
+        var before = instance.GetFunction("size").Invoke(executionContext, []);
+        var previous = instance.GetFunction("grow").Invoke(executionContext, [WasmValue.FromI32(delta)]);
+        var after = instance.GetFunction("size").Invoke(executionContext, []);
         memory.Read(0, actual);
 
         // Assert
@@ -67,21 +68,22 @@ internal partial class WasmFunction_InvokeTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         foreach (var imported in new[] { false, true })
         {
             var hostMemory = new WasmMemory(new(1, maximumPages));
             var host = new WasmHostModule("env");
             host.Define("m", hostMemory);
             var instance = CreateMemorySizeAndGrowModule(imported, 1, maximumPages)
-                .Instantiate(imported ? [host] : []);
+                .Instantiate(executionContext, imported ? [host] : []);
             var memory = instance.GetMemory("memory");
             var original = Enumerable.Range(0, 65536).Select(x => (byte)(x % 251 + 1)).ToArray();
             memory.Write(0, original);
             var actual = new byte[original.Length];
 
             // Act
-            var result = instance.GetFunction("grow").Invoke([WasmValue.FromI32(delta)]);
-            var size = instance.GetFunction("size").Invoke([]);
+            var result = instance.GetFunction("grow").Invoke(executionContext, [WasmValue.FromI32(delta)]);
+            var size = instance.GetFunction("size").Invoke(executionContext, []);
             memory.Read(0, actual);
 
             // Assert
@@ -100,6 +102,7 @@ internal partial class WasmFunction_InvokeTests
     public async Task ホストと複数instanceが同じメモリを拡張して書き込む_後続命令から更新後のサイズと内容を観測する()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var memory = new WasmMemory(new(1, 4));
         var host = new WasmHostModule("env");
         host.Define("m", memory);
@@ -131,18 +134,18 @@ internal partial class WasmFunction_InvokeTests
                 )
             )
             .Validate();
-        var first = module.Instantiate([host]);
-        var second = module.Instantiate([host]);
+        var first = module.Instantiate(executionContext, [host]);
+        var second = module.Instantiate(executionContext, [host]);
 
         // Act
-        var guestPrevious = first.GetFunction("grow").Invoke([WasmValue.FromI32(1)]);
-        var secondSize = second.GetFunction("size").Invoke([]);
+        var guestPrevious = first.GetFunction("grow").Invoke(executionContext, [WasmValue.FromI32(1)]);
+        var secondSize = second.GetFunction("size").Invoke(executionContext, []);
         var hostSuccess = memory.TryGrow(1, out var hostPrevious);
         memory.Write(131072, [0xAB]);
-        var hostByte = second.GetFunction("load").Invoke([WasmValue.FromI32(131072)]);
-        first.GetFunction("store").Invoke([WasmValue.FromI32(131073), WasmValue.FromI32(0xCD)]);
-        var guestByte = second.GetFunction("load").Invoke([WasmValue.FromI32(131073)]);
-        var finalSize = first.GetFunction("size").Invoke([]);
+        var hostByte = second.GetFunction("load").Invoke(executionContext, [WasmValue.FromI32(131072)]);
+        first.GetFunction("store").Invoke(executionContext, [WasmValue.FromI32(131073), WasmValue.FromI32(0xCD)]);
+        var guestByte = second.GetFunction("load").Invoke(executionContext, [WasmValue.FromI32(131073)]);
+        var finalSize = first.GetFunction("size").Invoke(executionContext, []);
         var actual = new byte[2];
         memory.Read(131072, actual);
 
@@ -187,6 +190,7 @@ internal partial class WasmFunction_InvokeTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         foreach (var imported in new[] { false, true })
         {
             var bytes = HostLinkingModuleBinary.Create(
@@ -205,12 +209,12 @@ internal partial class WasmFunction_InvokeTests
             // Act
             var module = WasmModule.Decode(bytes);
             Array.Fill(bytes, (byte)0xFF);
-            var instance = module.Validate().Instantiate(imported ? [host] : []);
+            var instance = module.Validate().Instantiate(executionContext, imported ? [host] : []);
             var memory = instance.GetMemory("memory");
             var initialBytes = Convert.FromHexString(initial);
             memory.Write(3, initialBytes);
             memory.Write((ulong)(3 + initialBytes.Length), [0xEE]);
-            var result = instance.GetFunction("run").Invoke([WasmValue.FromI32(1)]);
+            var result = instance.GetFunction("run").Invoke(executionContext, [WasmValue.FromI32(1)]);
 
             // Assert
             using (Assert.Multiple())
@@ -244,6 +248,7 @@ internal partial class WasmFunction_InvokeTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         foreach (var imported in new[] { false, true })
         {
             var bytes = HostLinkingModuleBinary.Create(
@@ -257,14 +262,14 @@ internal partial class WasmFunction_InvokeTests
             var memory = new WasmMemory(new(1, null));
             var host = new WasmHostModule("env");
             host.Define("m", memory);
-            var instance = WasmModule.Decode(bytes).Validate().Instantiate(imported ? [host] : []);
+            var instance = WasmModule.Decode(bytes).Validate().Instantiate(executionContext, imported ? [host] : []);
             var exported = instance.GetMemory("memory");
             exported.Write(2, Enumerable.Repeat((byte)0xCC, 10).ToArray());
 
             // Act
             var result = instance
                 .GetFunction("run")
-                .Invoke([WasmValue.FromI32(1), MemoryValue(valueType, bits)]);
+                .Invoke(executionContext, [WasmValue.FromI32(1), MemoryValue(valueType, bits)]);
             var actual = new byte[expected.Length / 2 + 2];
             exported.Read(2, actual);
 
@@ -292,6 +297,7 @@ internal partial class WasmFunction_InvokeTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var opcode = store ? (byte)0x36 : (byte)0x28;
         var encodedOffset = HostLinkingModuleBinary.Unsigned(offset);
         var bytes = HostLinkingModuleBinary.Create(
@@ -314,13 +320,13 @@ internal partial class WasmFunction_InvokeTests
                 )
             )
         );
-        var instance = WasmModule.Decode(bytes).Validate().Instantiate([]);
+        var instance = WasmModule.Decode(bytes).Validate().Instantiate(executionContext, []);
         var memory = instance.GetMemory("memory");
         memory.Write(65532, [0x81, 0x82, 0x83, 0x84]);
 
         // Act & Assert
         var exception = await Assert
-            .That(() => instance.GetFunction("run").Invoke([WasmValue.FromI32(address)]))
+            .That(() => instance.GetFunction("run").Invoke(executionContext, [WasmValue.FromI32(address)]))
             .ThrowsExactly<WasmTrapException>();
         var actual = new byte[4];
         memory.Read(65532, actual);

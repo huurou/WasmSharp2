@@ -1,4 +1,3 @@
-using WasmSharp.Execution;
 using WasmSharp.Tests.Fixtures;
 
 namespace WasmSharp.Tests;
@@ -16,7 +15,8 @@ internal partial class WasmFunction_InvokeTests
     )
     {
         // Arrange
-        var b = CreateTwoCallInstance(2).GetFunction("run");
+        var executionContext = new WasmExecutionContext();
+        var b = CreateTwoCallInstance(executionContext, 2).GetFunction("run");
         var provider = new WasmHostModule("b");
         provider.Define("run", b);
         var a = WasmModule
@@ -30,21 +30,21 @@ internal partial class WasmFunction_InvokeTests
                 )
             )
             .Validate()
-            .Instantiate([provider], new(3))
+            .Instantiate(executionContext, [provider], new(3))
             .GetFunction("run");
-        WasmResults Callback(ReadOnlySpan<WasmValue> arguments)
+        WasmResults Callback(WasmExecutionContext callbackContext, ReadOnlySpan<WasmValue> arguments)
         {
-            return (nested ? a : b).Invoke([]);
+            return (nested ? a : b).Invoke(callbackContext, []);
         }
 
         var type = new WasmFunctionType([], [WasmValueKind.I32]);
         var host = withInstance
-            ? WasmFunction.CreateHost(type, (_, arguments) => Callback(arguments))
+            ? WasmFunction.CreateHost(type, (callbackContext, _, arguments) => Callback(callbackContext, arguments))
             : WasmFunction.CreateHost(type, Callback);
-        var access = CreateHostAccessInstance();
+        var access = CreateHostAccessInstance(executionContext);
 
         // Act
-        var result = withInstance ? host.Invoke(access, []) : host.Invoke([]);
+        var result = withInstance ? host.Invoke(executionContext, access, []) : host.Invoke(executionContext, []);
 
         // Assert
         await Assert.That(result.Values[0].AsI32()).IsEqualTo(42);
@@ -58,12 +58,13 @@ internal partial class WasmFunction_InvokeTests
     )
     {
         // Arrange
-        var source = CreateTwoCallInstance(2);
-        var other = CreateHostAccessInstance();
+        var executionContext = new WasmExecutionContext();
+        var source = CreateTwoCallInstance(executionContext, 2);
+        var other = CreateHostAccessInstance(executionContext);
 
         // Act
-        var result = source.GetFunction("run").Invoke(explicitNull ? null! : other, []);
-        var cleared = InterpreterContext.Current is null;
+        var result = source.GetFunction("run").Invoke(executionContext, explicitNull ? null! : other, []);
+        var cleared = executionContext.Current is null;
 
         // Assert
         using (Assert.Multiple())
@@ -84,23 +85,24 @@ internal partial class WasmFunction_InvokeTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var called = false;
         var type = new WasmFunctionType([WasmValueKind.I32], []);
-        WasmResults Callback(ReadOnlySpan<WasmValue> values)
+        WasmResults Callback(WasmExecutionContext callbackContext, ReadOnlySpan<WasmValue> values)
         {
             called = true;
             return new([]);
         }
         var function = withInstance
-            ? WasmFunction.CreateHost(type, (_, values) => Callback(values))
+            ? WasmFunction.CreateHost(type, (callbackContext, _, values) => Callback(callbackContext, values))
             : WasmFunction.CreateHost(type, Callback);
-        var instance = CreateHostAccessInstance();
+        var instance = CreateHostAccessInstance(executionContext);
         WasmValue[] arguments = wrongCount ? [] : [WasmValue.FromI64(42)];
 
         // Act & Assert
         var exception = await Assert
             .That(() =>
-                withInstance ? function.Invoke(instance, arguments) : function.Invoke(arguments)
+                withInstance ? function.Invoke(executionContext, instance, arguments) : function.Invoke(executionContext, arguments)
             )
             .ThrowsExactly<ArgumentException>();
         using (Assert.Multiple())
@@ -118,29 +120,30 @@ internal partial class WasmFunction_InvokeTests
     )
     {
         // Arrange
-        var access = CreateHostAccessInstance();
+        var executionContext = new WasmExecutionContext();
+        var access = CreateHostAccessInstance(executionContext);
         var a = WasmModule
             .Decode(ConstantModuleBinary.Create(0x7F, 0x41, 7, 0x0B))
             .Validate()
-            .Instantiate([], new(1))
+            .Instantiate(executionContext, [], new(1))
             .GetFunction("run");
-        var b = CreateTwoCallInstance(2).GetFunction("run");
+        var b = CreateTwoCallInstance(executionContext, 2).GetFunction("run");
         var clearedBetweenCalls = false;
-        WasmResults Callback(ReadOnlySpan<WasmValue> values)
+        WasmResults Callback(WasmExecutionContext callbackContext, ReadOnlySpan<WasmValue> values)
         {
-            var first = a.Invoke([]);
-            clearedBetweenCalls = InterpreterContext.Current is null;
-            var second = b.Invoke([]);
-            clearedBetweenCalls &= InterpreterContext.Current is null;
+            var first = a.Invoke(callbackContext, []);
+            clearedBetweenCalls = callbackContext.Current is null;
+            var second = b.Invoke(callbackContext, []);
+            clearedBetweenCalls &= callbackContext.Current is null;
             return new([first.Values[0], second.Values[0]]);
         }
         var type = new WasmFunctionType([], [WasmValueKind.I32, WasmValueKind.I32]);
         var host = withInstance
-            ? WasmFunction.CreateHost(type, (_, values) => Callback(values))
+            ? WasmFunction.CreateHost(type, (callbackContext, _, values) => Callback(callbackContext, values))
             : WasmFunction.CreateHost(type, Callback);
 
         // Act
-        var result = withInstance ? host.Invoke(access, []) : host.Invoke([]);
+        var result = withInstance ? host.Invoke(executionContext, access, []) : host.Invoke(executionContext, []);
 
         // Assert
         using (Assert.Multiple())
@@ -151,7 +154,7 @@ internal partial class WasmFunction_InvokeTests
         }
     }
 
-    private static WasmInstance CreateTwoCallInstance(int maxCallDepth)
+    private static WasmInstance CreateTwoCallInstance(WasmExecutionContext executionContext, int maxCallDepth)
     {
         return WasmModule
             .Decode(
@@ -163,41 +166,44 @@ internal partial class WasmFunction_InvokeTests
                 )
             )
             .Validate()
-            .Instantiate([], new(maxCallDepth));
+            .Instantiate(executionContext, [], new(maxCallDepth));
     }
 
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task 単独hostを両形式で呼ぶ_指定instanceを使いcontextを作らず結果を返す(
+    public async Task 単独hostを両形式で呼ぶ_指定instanceとcontextを渡し実行状態を作らず結果を返す(
         bool withInstance
     )
     {
         // Arrange
-        var first = CreateHostAccessInstance();
-        var second = CreateHostAccessInstance();
+        var executionContext = new WasmExecutionContext();
+        var first = CreateHostAccessInstance(executionContext);
+        var second = CreateHostAccessInstance(executionContext);
         List<WasmInstance> targets = [];
         var noContext = true;
-        WasmResults Callback(WasmInstance target, ReadOnlySpan<WasmValue> values)
+        var sameContext = true;
+        WasmResults Callback(WasmExecutionContext callbackContext, WasmInstance target, ReadOnlySpan<WasmValue> values)
         {
+            sameContext &= ReferenceEquals(callbackContext, executionContext);
             targets.Add(target);
             target.GetMemory("memory").Write(0, [(byte)values[0].AsI32()]);
-            noContext &= InterpreterContext.Current is null;
+            noContext &= callbackContext.Current is null;
             return new(values);
         }
         var type = new WasmFunctionType([WasmValueKind.I32], [WasmValueKind.I32]);
         var function = withInstance
             ? WasmFunction.CreateHost(type, Callback)
-            : WasmFunction.CreateHost(type, values => Callback(first, values));
+            : WasmFunction.CreateHost(type, (callbackContext, values) => Callback(callbackContext, first, values));
 
         // Act
         var a = withInstance
-            ? function.Invoke(first, [WasmValue.FromI32(42)])
-            : function.Invoke([WasmValue.FromI32(42)]);
-        var b = function.Invoke(second, [WasmValue.FromI32(7)]);
+            ? function.Invoke(executionContext, first, [WasmValue.FromI32(42)])
+            : function.Invoke(executionContext, [WasmValue.FromI32(42)]);
+        var b = function.Invoke(executionContext, second, [WasmValue.FromI32(7)]);
         if (!withInstance)
         {
-            function.Invoke(null!, [WasmValue.FromI32(9)]);
+            function.Invoke(executionContext, null!, [WasmValue.FromI32(9)]);
         }
         byte[] buffer = [0];
         (withInstance ? second : first).GetMemory("memory").Read(0, buffer);
@@ -206,6 +212,7 @@ internal partial class WasmFunction_InvokeTests
         using (Assert.Multiple())
         {
             await Assert.That(noContext).IsTrue();
+            await Assert.That(sameContext).IsTrue();
             await Assert.That(targets[0]).IsSameReferenceAs(first);
             await Assert.That(targets[1]).IsSameReferenceAs(withInstance ? second : first);
             await Assert.That(a.Values[0].AsI32()).IsEqualTo(42);
@@ -214,7 +221,7 @@ internal partial class WasmFunction_InvokeTests
         }
     }
 
-    private static WasmInstance CreateHostAccessInstance()
+    private static WasmInstance CreateHostAccessInstance(WasmExecutionContext executionContext)
     {
         return WasmModule
             .Decode(
@@ -224,6 +231,6 @@ internal partial class WasmFunction_InvokeTests
                 )
             )
             .Validate()
-            .Instantiate([], new(1));
+            .Instantiate(executionContext, [], new(1));
     }
 }

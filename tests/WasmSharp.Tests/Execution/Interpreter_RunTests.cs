@@ -11,6 +11,7 @@ internal class Interpreter_RunTests
     public async Task 再入入口でCLRスタックの余裕がない_元関数位置の結果を返し外側の深さと段階を復元する()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var function = ExecutionFunctionFixture.Create(
             [InstructionFixture.Create(0x0B, 1001)],
             new([], []),
@@ -21,7 +22,7 @@ internal class Interpreter_RunTests
         // Act
         var observed = ExecutionStackFixture.RunAtLimit(() =>
         {
-            var context = InterpreterContext.Enter(new(10), out var outermost);
+            var context = executionContext.Enter(new(10), out var outermost);
             try
             {
                 context.TryEnterCall();
@@ -37,8 +38,8 @@ internal class Interpreter_RunTests
             }
             finally
             {
+                executionContext.Exit(outermost);
                 context.Restore(0, 0, 0);
-                InterpreterContext.Exit(outermost);
             }
         });
 
@@ -68,6 +69,7 @@ internal class Interpreter_RunTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var function = ExecutionFunctionFixture.Create([], maxOperandStack: int.MaxValue);
         var frame = new ExecutionFrame(FunctionFixture.Create(), 0, 0) { Pc = 17 };
         var value = WasmValue.FromExternRef(new object());
@@ -79,7 +81,7 @@ internal class Interpreter_RunTests
         var exception = await Assert
             .That(() =>
             {
-                var context = InterpreterContext.Enter(new(10), out var isOutermost);
+                var context = executionContext.Enter(new(10), out var isOutermost);
                 try
                 {
                     context.EnsureCapacity(0, 1, frame.Function);
@@ -104,8 +106,8 @@ internal class Interpreter_RunTests
                 }
                 finally
                 {
+                    executionContext.Exit(isOutermost);
                     context.Restore(0, 0, 0);
-                    InterpreterContext.Exit(isOutermost);
                 }
             })
             .ThrowsExactly<WasmImplementationLimitException>();
@@ -129,6 +131,7 @@ internal class Interpreter_RunTests
     public async Task 生成ループ内で例外が発生する_途中のフレームと値を除き次の実行を妨げない()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var function = ExecutionFunctionFixture.Create([
             new(ExecutionOpcode.Op41, WasmValue.FromExternRef(new object()), 81, 0),
             new((ExecutionOpcode)int.MaxValue, default, 83, 0),
@@ -148,7 +151,7 @@ internal class Interpreter_RunTests
         await Assert
             .That(() =>
             {
-                var context = InterpreterContext.Enter(new(10), out var isOutermost);
+                var context = executionContext.Enter(new(10), out var isOutermost);
                 try
                 {
                     context.Stage = WasmProcessingStage.Invoke;
@@ -171,8 +174,8 @@ internal class Interpreter_RunTests
                 }
                 finally
                 {
+                    executionContext.Exit(isOutermost);
                     context.Restore(0, 0, 0);
-                    InterpreterContext.Exit(isOutermost);
                 }
             })
             .ThrowsExactly<InvalidOperationException>();
@@ -192,13 +195,14 @@ internal class Interpreter_RunTests
     public async Task 外側のフレームを残して実行する_内側の終了で停止し外側の上限と状態を保つ()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var function = ExecutionFunctionFixture.Create([
             new(ExecutionOpcode.Op41, WasmValue.FromI32(73), 81, 0),
             new(ExecutionOpcode.Op0B, default, 83, 0),
         ]);
         var frame = new ExecutionFrame(FunctionFixture.Create(), 0, 0) { Pc = 17 };
         var value = WasmValue.FromExternRef(new object());
-        var context = InterpreterContext.Enter(new(10), out var isOutermost);
+        var context = executionContext.Enter(new(10), out var isOutermost);
         ExecutionResult result;
         ExecutionFrame actualFrame;
         WasmValue actualValue;
@@ -224,8 +228,8 @@ internal class Interpreter_RunTests
         }
         finally
         {
+            executionContext.Exit(isOutermost);
             context.Restore(0, 0, 0);
-            InterpreterContext.Exit(isOutermost);
         }
 
         // Assert
@@ -244,8 +248,9 @@ internal class Interpreter_RunTests
     public async Task 呼び出し深さが上限に達する_容量確保より先に原因と関数位置付きの失敗を返す()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var function = ExecutionFunctionFixture.Create([], maxOperandStack: int.MaxValue);
-        var context = InterpreterContext.Enter(new(1), out var isOutermost);
+        var context = executionContext.Enter(new(1), out var isOutermost);
         ExecutionResult result;
         (int Frames, int Values, int Depth) state;
 
@@ -258,8 +263,8 @@ internal class Interpreter_RunTests
         }
         finally
         {
+            executionContext.Exit(isOutermost);
             context.Restore(0, 0, 0);
-            InterpreterContext.Exit(isOutermost);
         }
 
         // Assert
@@ -286,6 +291,7 @@ internal class Interpreter_RunTests
     public async Task 定数関数を実行する_生成ループの結果を復元後も保持する(ExecutionOpcode opcode)
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var value = opcode switch
         {
             ExecutionOpcode.Op41 => WasmValue.FromI32(int.MinValue),
@@ -300,7 +306,7 @@ internal class Interpreter_RunTests
             ],
             value.Kind
         );
-        var context = InterpreterContext.Enter(new(10), out var isOutermost);
+        var context = executionContext.Enter(new(10), out var isOutermost);
         ExecutionResult result;
         bool restored;
 
@@ -312,8 +318,8 @@ internal class Interpreter_RunTests
         }
         finally
         {
+            executionContext.Exit(isOutermost);
             context.Restore(0, 0, 0);
-            InterpreterContext.Exit(isOutermost);
         }
 
         // Assert
@@ -332,6 +338,7 @@ internal class Interpreter_RunTests
     public async Task 引数と追加localsを持つ関数が複数の結果を残す_宣言結果だけを順序どおり返し外側を復元する()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var function = ExecutionFunctionFixture.Create(
             [
                 new(ExecutionOpcode.Op44, WasmValue.FromF64Bits(0x7FF4000000000001), 81, 0),
@@ -348,7 +355,7 @@ internal class Interpreter_RunTests
         );
         var frame = new ExecutionFrame(FunctionFixture.Create(), 0, 0) { Pc = 17 };
         var value = WasmValue.FromExternRef(new object());
-        var context = InterpreterContext.Enter(new(10), out var isOutermost);
+        var context = executionContext.Enter(new(10), out var isOutermost);
         ExecutionResult result;
         ExecutionFrame actualFrame;
         WasmValue actualValue;
@@ -376,8 +383,8 @@ internal class Interpreter_RunTests
         }
         finally
         {
+            executionContext.Exit(isOutermost);
             context.Restore(0, 0, 0);
-            InterpreterContext.Exit(isOutermost);
         }
 
         // Assert
@@ -399,13 +406,14 @@ internal class Interpreter_RunTests
     public async Task 引数があり結果が0個の関数を実行する_空の結果を返し引数を残さない()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var function = ExecutionFunctionFixture.Create(
             [new(ExecutionOpcode.Op0B, default, 81, 0)],
             new([WasmValueKind.I64, WasmValueKind.FuncRef], []),
             [new(1, WasmValueKind.ExternRef)],
             0
         );
-        var context = InterpreterContext.Enter(new(10), out var isOutermost);
+        var context = executionContext.Enter(new(10), out var isOutermost);
         ExecutionResult result;
         WasmValue cleared;
         (int Frames, int Values, int Depth) state;
@@ -424,8 +432,8 @@ internal class Interpreter_RunTests
         }
         finally
         {
+            executionContext.Exit(isOutermost);
             context.Restore(0, 0, 0);
-            InterpreterContext.Exit(isOutermost);
         }
 
         // Assert
@@ -448,6 +456,7 @@ internal class Interpreter_RunTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var function = ExecutionFunctionFixture.Create(
             [new(ExecutionOpcode.Op0B, default, 81, 0)],
             new([WasmValueKind.I32], []),
@@ -464,7 +473,7 @@ internal class Interpreter_RunTests
         var exception = await Assert
             .That(() =>
             {
-                var context = InterpreterContext.Enter(new(10), out var isOutermost);
+                var context = executionContext.Enter(new(10), out var isOutermost);
                 try
                 {
                     context.EnsureCapacity(0, 1, frame.Function);
@@ -494,8 +503,8 @@ internal class Interpreter_RunTests
                 }
                 finally
                 {
+                    executionContext.Exit(isOutermost);
                     context.Restore(0, 0, 0);
-                    InterpreterContext.Exit(isOutermost);
                 }
             })
             .ThrowsExactly<WasmImplementationLimitException>();

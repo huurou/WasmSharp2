@@ -1,3 +1,4 @@
+using WasmSharp.Benchmarks.Cases;
 using WasmSharp.Benchmarks.Measurements;
 using WasmSharp.Benchmarks.Tests.Fixtures;
 
@@ -5,6 +6,9 @@ namespace WasmSharp.Benchmarks.Tests.Measurements;
 
 internal class PreparationBenchmarks_CleanupTests
 {
+    private readonly CaseJson json_ = new CaseJson();
+    private readonly MeasurementMethods methods_ = new MeasurementMethods();
+
     [Test]
     [Arguments("memory")]
     [Arguments("start_result")]
@@ -15,7 +19,7 @@ internal class PreparationBenchmarks_CleanupTests
     {
         // Arrange
         var benchmark = new PreparationBenchmarks();
-        benchmark.Initialize(PreparationFixture.CreateAssets(), "instantiate.large");
+        benchmark.Initialize(PreparationFixture.CreateAssets(json_, methods_), "instantiate.large", json_);
         benchmark.InstantiateLarge();
         var last = benchmark.InstantiateLarge();
         switch (exportName)

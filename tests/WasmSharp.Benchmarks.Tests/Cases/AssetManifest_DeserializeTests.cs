@@ -5,6 +5,8 @@ namespace WasmSharp.Benchmarks.Tests.Cases;
 
 internal class AssetManifest_DeserializeTests
 {
+    private readonly CaseJson json_ = new CaseJson();
+
     private static readonly string[] expectedArguments_ = ["sources/fixture.wat", "-o", "wasm/fixture.wasm"];
 
     [Test]
@@ -16,10 +18,10 @@ internal class AssetManifest_DeserializeTests
         );
 
         // Act
-        var manifest = JsonSerializer.Deserialize<AssetManifest>(json, CaseJson.Options)!;
+        var manifest = JsonSerializer.Deserialize<AssetManifest>(json, json_.Options)!;
         var restored = JsonSerializer.Deserialize<AssetManifest>(
-            JsonSerializer.Serialize(manifest, CaseJson.Options),
-            CaseJson.Options
+            JsonSerializer.Serialize(manifest, json_.Options),
+            json_.Options
         )!;
         var asset = restored.Assets.Single();
         var step = asset.GenerationSteps.Single();

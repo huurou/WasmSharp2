@@ -9,12 +9,13 @@ internal partial class WasmFunction_InvokeTests
     public async Task 定義関数を再exportして別instanceから呼ぶ_所属元のメモリとデータの内容と破棄状態を使う()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var module = WasmModule.Decode(CreateDataInitializationModule()).Validate();
-        var source = module.Instantiate([]);
-        var sibling = module.Instantiate([]);
+        var source = module.Instantiate(executionContext, []);
+        var sibling = module.Instantiate(executionContext, []);
         source.GetMemory("memory").Write(0, [0xA1]);
         sibling.GetMemory("memory").Write(0, [0xC3]);
-        sibling.GetFunction("drop").Invoke([]);
+        sibling.GetFunction("drop").Invoke(executionContext, []);
         var provider = new WasmHostModule("source");
         provider.Define("init", source.GetFunction("init"));
         provider.Define("drop", source.GetFunction("drop"));
@@ -44,18 +45,18 @@ internal partial class WasmFunction_InvokeTests
                 )
             )
             .Validate()
-            .Instantiate([provider]);
+            .Instantiate(executionContext, [provider]);
         relay.GetMemory("memory").Write(0, [0xB2]);
-        relay.GetFunction("dropOwn").Invoke([]);
+        relay.GetFunction("dropOwn").Invoke(executionContext, []);
 
         // Act
         relay
             .GetFunction("init")
-            .Invoke(relay, [WasmValue.FromI32(4), WasmValue.FromI32(0), WasmValue.FromI32(4)]);
+            .Invoke(executionContext, relay, [WasmValue.FromI32(4), WasmValue.FromI32(0), WasmValue.FromI32(4)]);
         relay
             .GetFunction("run")
-            .Invoke([WasmValue.FromI32(8), WasmValue.FromI32(1), WasmValue.FromI32(2)]);
-        relay.GetFunction("drop").Invoke([]);
+            .Invoke(executionContext, [WasmValue.FromI32(8), WasmValue.FromI32(1), WasmValue.FromI32(2)]);
+        relay.GetFunction("drop").Invoke(executionContext, []);
         var sourceBytes = new byte[10];
         var relayBytes = new byte[10];
         var siblingBytes = new byte[10];
@@ -82,7 +83,7 @@ internal partial class WasmFunction_InvokeTests
             .That(() =>
                 source
                     .GetFunction("init")
-                    .Invoke([WasmValue.FromI32(0), WasmValue.FromI32(0), WasmValue.FromI32(1)])
+                    .Invoke(executionContext, [WasmValue.FromI32(0), WasmValue.FromI32(0), WasmValue.FromI32(1)])
             )
             .ThrowsExactly<WasmTrapException>();
         await Assert.That(trap!.Reason).IsEqualTo(WasmTrapReason.MemoryOutOfBounds);
@@ -98,6 +99,7 @@ internal partial class WasmFunction_InvokeTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var expected = new InvalidOperationException("再入先のホスト例外");
         WasmFunction inner = null!;
         List<Exception> caught = [];
@@ -111,7 +113,7 @@ internal partial class WasmFunction_InvokeTests
             "reenter",
             WasmFunction.CreateHost(
                 new([], []),
-                (instance, _) =>
+                (callbackContext, instance, _) =>
                 {
                     outerCallers.Add(instance);
                     var memory = instance.GetMemory("memory");
@@ -126,7 +128,7 @@ internal partial class WasmFunction_InvokeTests
                     {
                         try
                         {
-                            inner.Invoke([]);
+                            inner.Invoke(callbackContext, []);
                         }
                         catch (Exception exception)
                         {
@@ -171,14 +173,14 @@ internal partial class WasmFunction_InvokeTests
                 )
             )
             .Validate()
-            .Instantiate([outerProvider], new(outcome == 3 ? 3 : 4));
+            .Instantiate(executionContext, [outerProvider], new(outcome == 3 ? 3 : 4));
         var innerProvider = new WasmHostModule("env");
         innerProvider.Define("m", outer.GetMemory("memory"));
         innerProvider.Define(
             "probe",
             WasmFunction.CreateHost(
                 new([], []),
-                (instance, _) =>
+                (callbackContext, instance, _) =>
                 {
                     innerCallers.Add(instance);
                     if (outcome == 2)
@@ -227,24 +229,24 @@ internal partial class WasmFunction_InvokeTests
                 )
             )
             .Validate();
-        var innerInstance = innerModule.Instantiate([innerProvider], new(2));
+        var innerInstance = innerModule.Instantiate(executionContext, [innerProvider], new(2));
         inner = innerInstance.GetFunction("run");
-        var limited = innerModule.Instantiate([innerProvider], new(1));
+        var limited = innerModule.Instantiate(executionContext, [innerProvider], new(1));
         var firstReference = new object();
         var nextReference = new object();
 
         // Act
         var first = outer
             .GetFunction("run")
-            .Invoke([WasmValue.FromI32(42), WasmValue.FromExternRef(firstReference)]);
+            .Invoke(executionContext, [WasmValue.FromI32(42), WasmValue.FromExternRef(firstReference)]);
 
         // Act & Assert
         var independentExhaustion = await Assert
-            .That(() => limited.GetFunction("run").Invoke([]))
+            .That(() => limited.GetFunction("run").Invoke(executionContext, []))
             .ThrowsExactly<WasmExhaustionException>();
         var next = outer
             .GetFunction("run")
-            .Invoke([WasmValue.FromI32(84), WasmValue.FromExternRef(nextReference)]);
+            .Invoke(executionContext, [WasmValue.FromI32(84), WasmValue.FromExternRef(nextReference)]);
         var current = new byte[1];
         var added = new byte[2];
         outer.GetMemory("memory").Read(0, current);

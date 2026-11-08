@@ -13,6 +13,7 @@ internal partial class WasmModule_InstantiateTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var table = new WasmTable(WasmValueKind.FuncRef, new(4));
         var memory = new WasmMemory(new(1));
         memory.Write(0, [99]);
@@ -24,7 +25,7 @@ internal partial class WasmModule_InstantiateTests
             "start",
             WasmFunction.CreateHost(
                 new([], []),
-                _ =>
+                (callbackContext, _) =>
                 {
                     starts++;
                     return new([]);
@@ -105,11 +106,11 @@ internal partial class WasmModule_InstantiateTests
                 )
             )
             .Validate()
-            .Instantiate([host]);
+            .Instantiate(executionContext, [host]);
 
         // Act & Assert
         var exception = await Assert
-            .That(() => module.Instantiate([host]))
+            .That(() => module.Instantiate(executionContext, [host]))
             .ThrowsExactly<WasmTrapException>();
         await Assert
             .That(exception!.Reason)
@@ -118,27 +119,27 @@ internal partial class WasmModule_InstantiateTests
             );
         await Assert.That(exception.Location!.Stage).IsEqualTo(WasmProcessingStage.Instantiate);
         await Assert.That(exception.Location!.SectionId).IsEqualTo(elementFailure ? (byte?)9 : 11);
-        await Assert.That(caller.GetFunction("read").Invoke([]).Values[0].AsI32()).IsEqualTo(141);
+        await Assert.That(caller.GetFunction("read").Invoke(executionContext, []).Values[0].AsI32()).IsEqualTo(141);
         await Assert.That(starts).IsEqualTo(0);
         await Assert
-            .That(() => caller.GetFunction("dropped").Invoke([]))
+            .That(() => caller.GetFunction("dropped").Invoke(executionContext, []))
             .ThrowsExactly<WasmTrapException>();
         await Assert.That(table.Get(3).AsFuncRef()).IsNull();
         if (elementFailure)
         {
-            await Assert.That(() => caller.GetFunction("later").Invoke([])).ThrowsNothing();
+            await Assert.That(() => caller.GetFunction("later").Invoke(executionContext, [])).ThrowsNothing();
             await Assert.That(table.Get(3).AsFuncRef()).IsSameReferenceAs(table.Get(0).AsFuncRef());
             await Assert
-                .That(table.Get(3).AsFuncRef()!.Invoke([]).Values[0].AsI32())
+                .That(table.Get(3).AsFuncRef()!.Invoke(executionContext, []).Values[0].AsI32())
                 .IsEqualTo(141);
         }
         else
         {
             await Assert
-                .That(() => caller.GetFunction("later").Invoke([]))
+                .That(() => caller.GetFunction("later").Invoke(executionContext, []))
                 .ThrowsExactly<WasmTrapException>();
             await Assert.That(table.Get(3).AsFuncRef()).IsNull();
         }
-        await Assert.That(caller.GetFunction("read").Invoke([]).Values[0].AsI32()).IsEqualTo(141);
+        await Assert.That(caller.GetFunction("read").Invoke(executionContext, []).Values[0].AsI32()).IsEqualTo(141);
     }
 }

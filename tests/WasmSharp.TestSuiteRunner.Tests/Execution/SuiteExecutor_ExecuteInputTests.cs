@@ -20,7 +20,7 @@ public class SuiteExecutor_ExecuteInputTests
             "f",
             WasmFunction.CreateHost(
                 new([], []),
-                _ =>
+                (_, _) =>
                 {
                     cancellation.Cancel();
                     return new([]);

@@ -45,10 +45,12 @@ internal static class CorpusGenerator
     /// 生成前提が成立しない場合は変換を開始せず、全入力を未処理として保存する。
     /// </remarks>
     /// <param name="request">CLIで解決済みの配置を持つ要求</param>
+    /// <param name="reportStore">変換記録の確定保存に使用する保存処理</param>
     /// <param name="progress">入力ごとの変換・記録後に相対pathを通知する処理 最終照合で成功を確定する前に通知する</param>
     /// <returns>全対象入力の状態を保持するmanifestと保存結果 保存失敗時は出力未完了のmanifestと失敗理由</returns>
     internal static GenerateResult Generate(
         GenerateRequest request,
+        ReportStore reportStore,
         Action<string>? progress = null
     )
     {
@@ -63,7 +65,8 @@ internal static class CorpusGenerator
                 {
                     Diagnostics = [.. preconditions.Diagnostics],
                 },
-                manifestPath
+                manifestPath,
+                reportStore
             );
         }
 
@@ -94,7 +97,11 @@ internal static class CorpusGenerator
             manifest.Inputs[i] = Complete(manifest.Inputs[i], verification.Inputs[i]);
         }
 
-        return Save(manifest with { Diagnostics = [.. verification.Diagnostics] }, manifestPath);
+        return Save(
+            manifest with { Diagnostics = [.. verification.Diagnostics] },
+            manifestPath,
+            reportStore
+        );
     }
 
     /// <summary>
@@ -369,8 +376,13 @@ internal static class CorpusGenerator
     /// </summary>
     /// <param name="manifest">保存する全対象入力の変換記録</param>
     /// <param name="manifestPath">manifestの保存先 親ディレクトリがなければ作成する</param>
+    /// <param name="reportStore">変換記録の確定保存に使用する保存処理</param>
     /// <returns>保存したmanifestと保存先 保存に失敗した場合は出力未完了のmanifestと失敗理由</returns>
-    private static GenerateResult Save(CorpusManifest manifest, string manifestPath)
+    private static GenerateResult Save(
+        CorpusManifest manifest,
+        string manifestPath,
+        ReportStore reportStore
+    )
     {
         var recorded = manifest with
         {
@@ -401,7 +413,7 @@ internal static class CorpusGenerator
 
         try
         {
-            ReportStore.Save(saved, manifestPath);
+            reportStore.Save(saved, manifestPath);
             return new(saved, manifestPath, null);
         }
         catch (ReportStoreException ex)

@@ -17,6 +17,7 @@ internal partial class ModuleValidator_ValidateTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var candidates = emptyCandidates
             ? HostLinkingModuleBinary.LabelVector()
             : HostLinkingModuleBinary.LabelVector(0, 1);
@@ -58,9 +59,9 @@ internal partial class ModuleValidator_ValidateTests
         // Act
         var result = module
             .Validate()
-            .Instantiate([])
+            .Instantiate(executionContext, [])
             .GetFunction("run")
-            .Invoke([WasmValue.FromI32(selector)]);
+            .Invoke(executionContext, [WasmValue.FromI32(selector)]);
 
         // Assert
         await Assert.That(result.Values[0].AsI32()).IsEqualTo(expected);
@@ -70,6 +71,7 @@ internal partial class ModuleValidator_ValidateTests
     public async Task 分岐表が複数値を持つ内側制御を終了する_外側operandと結果の宣言順を保持する()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var module = WasmModule.Decode(
             HostLinkingModuleBinary.Create(
                 HostLinkingModuleBinary.Types(([], [0x7F, 0x7F, 0x7E]), ([], [0x7F, 0x7E])),
@@ -82,7 +84,7 @@ internal partial class ModuleValidator_ValidateTests
         );
 
         // Act
-        var result = module.Validate().Instantiate([]).GetFunction("run").Invoke([]);
+        var result = module.Validate().Instantiate(executionContext, []).GetFunction("run").Invoke(executionContext, []);
 
         // Assert
         await Assert

@@ -15,6 +15,7 @@ internal partial class ModuleValidator_ValidateTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var bytes = HostLinkingModuleBinary.Create(
             HostLinkingModuleBinary.Types(([0x7F, 0x7B], [0x7B])),
             HostLinkingModuleBinary.Functions(0),
@@ -43,7 +44,7 @@ internal partial class ModuleValidator_ValidateTests
                     );
                 await Assert.That(module.FunctionCodes.IsEmpty).IsTrue();
                 await Assert
-                    .That(() => module.Instantiate([]))
+                    .That(() => module.Instantiate(executionContext, []))
                     .ThrowsExactly<InvalidOperationException>();
             }
         }

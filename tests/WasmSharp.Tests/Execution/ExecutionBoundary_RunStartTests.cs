@@ -14,13 +14,14 @@ internal class ExecutionBoundary_RunStartTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var instance = CreateInstance(1);
         WasmInstance? received = null;
         (int Limit, int Depth, int Frames, WasmProcessingStage Stage) state = default;
         var calls = 0;
-        WasmResults Callback()
+        WasmResults Callback(WasmExecutionContext callbackContext)
         {
-            var context = InterpreterContext.Current!;
+            var context = callbackContext.Current!;
             state = (context.MaxCallDepth, context.CallDepth, context.FrameCount, context.Stage);
             calls++;
             return new([]);
@@ -28,19 +29,19 @@ internal class ExecutionBoundary_RunStartTests
         var function = withInstance
             ? WasmFunction.CreateHost(
                 new([], []),
-                (current, _) =>
+                (callbackContext, current, _) =>
                 {
                     received = current;
-                    return Callback();
+                    return Callback(callbackContext);
                 }
             )
-            : WasmFunction.CreateHost(new([], []), _ => Callback());
+            : WasmFunction.CreateHost(new([], []), (callbackContext, _) => Callback(callbackContext));
 
         // Act
-        ExecutionBoundary.RunStart(instance, function);
-        var firstCleared = InterpreterContext.Current is null;
-        ExecutionBoundary.RunStart(instance, function);
-        var secondCleared = InterpreterContext.Current is null;
+        ExecutionBoundary.RunStart(executionContext, instance, function);
+        var firstCleared = executionContext.Current is null;
+        ExecutionBoundary.RunStart(executionContext, instance, function);
+        var secondCleared = executionContext.Current is null;
 
         // Assert
         using (Assert.Multiple())
@@ -56,6 +57,7 @@ internal class ExecutionBoundary_RunStartTests
     public async Task Import定義startを実行する_所有instanceの上限と定義元のglobalを使う()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var source = WasmModule
             .Decode(
                 HostLinkingModuleBinary.Create(
@@ -70,12 +72,12 @@ internal class ExecutionBoundary_RunStartTests
                 )
             )
             .Validate()
-            .Instantiate([], new(1));
+            .Instantiate(executionContext, [], new(1));
         var owner = CreateInstance(2);
 
         // Act
-        ExecutionBoundary.RunStart(owner, source.GetFunction("run"));
-        var cleared = InterpreterContext.Current is null;
+        ExecutionBoundary.RunStart(executionContext, owner, source.GetFunction("run"));
+        var cleared = executionContext.Current is null;
 
         // Assert
         using (Assert.Multiple())
@@ -89,6 +91,7 @@ internal class ExecutionBoundary_RunStartTests
     public async Task 定義startでtrapになる_Instantiate段階と元位置を示して解除する()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var function = ExecutionFunctionFixture.Create(
             [InstructionFixture.Create(0x00, 77)],
             new([], []),
@@ -103,11 +106,11 @@ internal class ExecutionBoundary_RunStartTests
             {
                 try
                 {
-                    ExecutionBoundary.RunStart(function.Instance, function);
+                    ExecutionBoundary.RunStart(executionContext, function.Instance, function);
                 }
                 finally
                 {
-                    cleared = InterpreterContext.Current is null;
+                    cleared = executionContext.Current is null;
                 }
             })
             .ThrowsExactly<WasmTrapException>();
@@ -125,6 +128,7 @@ internal class ExecutionBoundary_RunStartTests
     public async Task 定義startが再帰で上限に達する_所有instanceの上限とInstantiate段階を示す()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var function = ExecutionFunctionFixture.Create(
             [InstructionFixture.Create(0x10, 77, 1)],
             new([], []),
@@ -140,11 +144,11 @@ internal class ExecutionBoundary_RunStartTests
             {
                 try
                 {
-                    ExecutionBoundary.RunStart(owner, function);
+                    ExecutionBoundary.RunStart(executionContext, owner, function);
                 }
                 finally
                 {
-                    cleared = InterpreterContext.Current is null;
+                    cleared = executionContext.Current is null;
                 }
             })
             .ThrowsExactly<WasmExhaustionException>();
@@ -171,12 +175,13 @@ internal class ExecutionBoundary_RunStartTests
     public async Task 既存contextの上限でstartを拒否する_外側の値と深さと段階を復元する(bool host)
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var owner = CreateInstance(100);
         var called = false;
         var function = host
             ? WasmFunction.CreateHost(
                 new([], []),
-                _ =>
+                (_, _) =>
                 {
                     called = true;
                     return new([]);
@@ -195,7 +200,7 @@ internal class ExecutionBoundary_RunStartTests
         var exception = await Assert
             .That(() =>
             {
-                var outer = InterpreterContext.Enter(new(1), out var isOutermost);
+                var outer = executionContext.Enter(new(1), out var isOutermost);
                 try
                 {
                     outer.Stage = WasmProcessingStage.Invoke;
@@ -204,11 +209,11 @@ internal class ExecutionBoundary_RunStartTests
                     outer.TryEnterCall();
                     try
                     {
-                        ExecutionBoundary.RunStart(owner, function);
+                        ExecutionBoundary.RunStart(executionContext, owner, function);
                     }
                     finally
                     {
-                        sameContext = ReferenceEquals(outer, InterpreterContext.Current);
+                        sameContext = ReferenceEquals(outer, executionContext.Current);
                         state = (
                             outer.FrameCount,
                             outer.ValueCount,
@@ -220,8 +225,8 @@ internal class ExecutionBoundary_RunStartTests
                 }
                 finally
                 {
+                    executionContext.Exit(isOutermost);
                     outer.Restore(0, 0, 0);
-                    InterpreterContext.Exit(isOutermost);
                 }
             })
             .ThrowsExactly<WasmExhaustionException>();
@@ -243,6 +248,7 @@ internal class ExecutionBoundary_RunStartTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var owner = CreateInstance(3);
         var inner = ExecutionFunctionFixture.Create(
             [InstructionFixture.Create(exhaustion ? 0x10U : 0x00U, 77, 1)],
@@ -254,11 +260,11 @@ internal class ExecutionBoundary_RunStartTests
         var cleared = false;
         var host = WasmFunction.CreateHost(
             new([], []),
-            _ =>
+            (callbackContext, _) =>
             {
                 try
                 {
-                    return inner.Invoke([]);
+                    return inner.Invoke(callbackContext, []);
                 }
                 catch (Exception exception)
                 {
@@ -274,11 +280,11 @@ internal class ExecutionBoundary_RunStartTests
             {
                 try
                 {
-                    ExecutionBoundary.RunStart(owner, host);
+                    ExecutionBoundary.RunStart(executionContext, owner, host);
                 }
                 finally
                 {
-                    cleared = InterpreterContext.Current is null;
+                    cleared = executionContext.Current is null;
                 }
             })
             .Throws<Exception>();
@@ -298,9 +304,10 @@ internal class ExecutionBoundary_RunStartTests
 
     private static WasmInstance CreateInstance(int maxCallDepth)
     {
+        var executionContext = new WasmExecutionContext();
         return WasmModule
             .Decode(HostLinkingModuleBinary.Create())
             .Validate()
-            .Instantiate([], new(maxCallDepth));
+            .Instantiate(executionContext, [], new(maxCallDepth));
     }
 }

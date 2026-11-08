@@ -8,7 +8,7 @@ namespace WasmSharp.Tests.Execution;
 internal class Interpreter_CallIndirectTests
 {
     private const long BYTE_OFFSET = 12345678901;
-    private static readonly WasmValue sentinel_ = WasmValue.FromF64Bits(0xFFF8123456789ABC);
+    private readonly WasmValue sentinel_ = WasmValue.FromF64Bits(0xFFF8123456789ABC);
 
     [Test]
     [Arguments(2)]
@@ -23,7 +23,7 @@ internal class Interpreter_CallIndirectTests
         var called = false;
         var host = WasmFunction.CreateHost(
             new([], []),
-            _ =>
+            (_, _) =>
             {
                 called = true;
                 return new([]);
@@ -74,7 +74,7 @@ internal class Interpreter_CallIndirectTests
         var called = false;
         var host = WasmFunction.CreateHost(
             new([], []),
-            _ =>
+            (_, _) =>
             {
                 called = true;
                 return new([]);
@@ -136,7 +136,7 @@ internal class Interpreter_CallIndirectTests
                 resultMismatch ? parameters : [.. parameters.Reverse()],
                 resultMismatch ? [.. results.Reverse()] : results
             ),
-            _ =>
+            (_, _) =>
             {
                 called = true;
                 return resultMismatch
@@ -190,11 +190,11 @@ internal class Interpreter_CallIndirectTests
         var callDepth = 0;
         var host = WasmFunction.CreateHost(
             new([WasmValueKind.I32, WasmValueKind.I64], [WasmValueKind.I64, WasmValueKind.I32]),
-            (instance, arguments) =>
+            (callbackContext, instance, arguments) =>
             {
                 receivedInstance = instance;
                 receivedArguments = arguments.ToArray();
-                callDepth = InterpreterContext.Current!.CallDepth;
+                callDepth = callbackContext.Current!.CallDepth;
                 return new([
                     WasmValue.FromI64(arguments[1].AsI64() + 1),
                     WasmValue.FromI32(arguments[0].AsI32() + 2),
@@ -338,7 +338,7 @@ internal class Interpreter_CallIndirectTests
             ).Functions[1];
     }
 
-    private static (
+    private (
         ExecutionResult Result,
         ImmutableArray<WasmValue> Values,
         ExecutionFrame Before,
@@ -354,7 +354,8 @@ internal class Interpreter_CallIndirectTests
         int maxCallDepth = 1
     )
     {
-        var context = InterpreterContext.Enter(new(maxCallDepth), out var isOutermost);
+        var executionContext = new WasmExecutionContext();
+        var context = executionContext.Enter(new(maxCallDepth), out var isOutermost);
         try
         {
             context.Stage = WasmProcessingStage.Invoke;
@@ -389,8 +390,8 @@ internal class Interpreter_CallIndirectTests
         }
         finally
         {
+            executionContext.Exit(isOutermost);
             context.Restore(0, 0, 0);
-            InterpreterContext.Exit(isOutermost);
         }
     }
 }

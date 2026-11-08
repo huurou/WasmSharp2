@@ -6,6 +6,7 @@ using BenchmarkDotNet.Exporters.Csv;
 using BenchmarkDotNet.Exporters.Json;
 using BenchmarkDotNet.Jobs;
 using Perfolizer.Mathematics.OutlierDetection;
+using WasmSharp.Benchmarks.Cases;
 using WasmSharp.Benchmarks.Measurements;
 using RunMode = BenchmarkDotNet.Jobs.RunMode;
 
@@ -13,6 +14,15 @@ namespace WasmSharp.Benchmarks.Tests.Measurements;
 
 internal class BenchmarkConfig_CreateTests
 {
+    private readonly CaseJson json_ = new CaseJson();
+    private readonly MeasurementMethods methods_ = new MeasurementMethods();
+    private readonly BenchmarkRun benchmarkRun_;
+
+    public BenchmarkConfig_CreateTests()
+    {
+        benchmarkRun_ = new BenchmarkRun(json_, methods_);
+    }
+
     [Test]
     public async Task 本測定設定を作る_ファイナライザー完了を待つ割り当て測定を選ぶ()
     {
@@ -34,7 +44,7 @@ internal class BenchmarkConfig_CreateTests
         // Arrange
         // Act
         var job = BenchmarkConfig.Create().GetJobs().Single();
-        var saved = BenchmarkRun.DescribeProcess("Measurement", job);
+        var saved = benchmarkRun_.DescribeProcess("Measurement", job);
 
         // Assert
         using (Assert.Multiple())

@@ -1,5 +1,6 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Xml.Linq;
 
 namespace WasmSharp.Generators.Tests;
@@ -93,6 +94,123 @@ internal partial class InstructionGenerator_InitializeTests
         {
             await Assert.That(driver.GetRunResult().Results.Single().Exception).IsNull();
             await Assert.That(diagnostics[0].GetMessage()).Contains("命令 ''");
+        }
+    }
+
+    [Test]
+    public async Task 数値入力配列が未解決の列挙子を参照する_生成器例外を起こさず不完全宣言の診断を報告する()
+    {
+        // Arrange
+        var compilation = GeneratorTestSource.CreateCompilation(
+            """
+            namespace WasmSharp.Instructions
+            {
+                [Instruction(0, 1, "invalid.numeric", ImmediateKind.None, StackEffectKind.Numeric,
+                    ValidationRule.Numeric, "Handler", new WasmValueKind[] { WasmValueKind.I32 },
+                    (WasmValueKind)0)]
+                internal static partial class InstructionSet;
+            }
+            """
+        );
+        var valueKind = compilation.GetTypeByMetadataName("WasmSharp.WasmValueKind")!;
+        var member = (EnumMemberDeclarationSyntax)valueKind
+            .GetMembers("I32")
+            .Single()
+            .DeclaringSyntaxReferences.Single()
+            .GetSyntax();
+        var tree = member.SyntaxTree;
+        var updatedRoot = tree.GetRoot()
+            .ReplaceNode(
+                member,
+                member.WithEqualsValue(
+                    SyntaxFactory.EqualsValueClause(SyntaxFactory.IdentifierName("UnknownValue"))
+                )
+            );
+        compilation = compilation.ReplaceSyntaxTree(
+            tree,
+            tree.WithRootAndOptions(updatedRoot, tree.Options)
+        );
+        GeneratorDriver driver = CSharpGeneratorDriver.Create(new InstructionGenerator());
+
+        // Act
+        driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out _, out var diagnostics);
+
+        // Assert
+        await GeneratorTestSource.AssertDiagnostic(driver, diagnostics, "WSIG002");
+        using (Assert.Multiple())
+        {
+            await Assert.That(driver.GetRunResult().Results.Single().Exception).IsNull();
+            await Assert.That(diagnostics[0].GetMessage()).Contains("'invalid.numeric'");
+        }
+    }
+
+    [Test]
+    public async Task 属性の引数個数が一致しない_属性位置に不完全宣言の診断を報告して生成を中断する()
+    {
+        // Arrange
+        const string ATTRIBUTE = "Instruction(0, 1)";
+        var compilation = GeneratorTestSource.CreateCompilation(
+            $$"""
+            namespace WasmSharp.Instructions
+            {
+                [{{ATTRIBUTE}}]
+                internal static partial class InstructionSet;
+            }
+            """
+        );
+        GeneratorDriver driver = CSharpGeneratorDriver.Create(new InstructionGenerator());
+
+        // Act
+        driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out _, out var diagnostics);
+
+        // Assert
+        await GeneratorTestSource.AssertDiagnostic(driver, diagnostics, "WSIG002");
+        using (Assert.Multiple())
+        {
+            await Assert.That(driver.GetRunResult().Results.Single().Exception).IsNull();
+            await Assert
+                .That(
+                    diagnostics[0]
+                        .Location.SourceTree!.GetText()
+                        .ToString(diagnostics[0].Location.SourceSpan)
+                )
+                .IsEqualTo(ATTRIBUTE);
+        }
+    }
+
+    [Test]
+    public async Task Interpreter型が存在しない_属性位置にhandler不在の診断を報告して生成を中断する()
+    {
+        // Arrange
+        const string ATTRIBUTE = """
+            Instruction(0, 0x41, "i32.const", ImmediateKind.I32, StackEffectKind.PushI32, ValidationRule.Constant, "Handler")
+            """;
+        var compilation = GeneratorTestSource.CreateCompilation(
+            $$"""
+            namespace WasmSharp.Instructions
+            {
+                [{{ATTRIBUTE}}]
+                internal static partial class InstructionSet;
+            }
+            """
+        );
+        GeneratorDriver driver = CSharpGeneratorDriver.Create(new InstructionGenerator());
+
+        // Act
+        driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out _, out var diagnostics);
+
+        // Assert
+        await GeneratorTestSource.AssertDiagnostic(driver, diagnostics, "WSIG003");
+        using (Assert.Multiple())
+        {
+            await Assert.That(driver.GetRunResult().Results.Single().Exception).IsNull();
+            await Assert
+                .That(
+                    diagnostics[0]
+                        .Location.SourceTree!.GetText()
+                        .ToString(diagnostics[0].Location.SourceSpan)
+                )
+                .IsEqualTo(ATTRIBUTE);
         }
     }
 

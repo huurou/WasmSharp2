@@ -190,7 +190,7 @@ internal static partial class Interpreter
         return ExecuteSimdIntegerBinary(
             context,
             8,
-            static (x, y) => unchecked((sbyte)x) <= unchecked((sbyte)y) ? x : y
+            static (x, y) => unchecked((ulong)Math.Min((sbyte)x, (sbyte)y))
         );
     }
 
@@ -205,7 +205,7 @@ internal static partial class Interpreter
         in Instruction instruction
     )
     {
-        return ExecuteSimdIntegerBinary(context, 8, static (x, y) => x <= y ? x : y);
+        return ExecuteSimdIntegerBinary(context, 8, Math.Min);
     }
 
     /// <summary>
@@ -222,7 +222,7 @@ internal static partial class Interpreter
         return ExecuteSimdIntegerBinary(
             context,
             8,
-            static (x, y) => unchecked((sbyte)x) >= unchecked((sbyte)y) ? x : y
+            static (x, y) => unchecked((ulong)Math.Max((sbyte)x, (sbyte)y))
         );
     }
 
@@ -237,7 +237,7 @@ internal static partial class Interpreter
         in Instruction instruction
     )
     {
-        return ExecuteSimdIntegerBinary(context, 8, static (x, y) => x >= y ? x : y);
+        return ExecuteSimdIntegerBinary(context, 8, Math.Max);
     }
 
     /// <summary>
@@ -503,7 +503,7 @@ internal static partial class Interpreter
         return ExecuteSimdIntegerBinary(
             context,
             16,
-            static (x, y) => unchecked((short)x) <= unchecked((short)y) ? x : y
+            static (x, y) => unchecked((ulong)Math.Min((short)x, (short)y))
         );
     }
 
@@ -518,7 +518,7 @@ internal static partial class Interpreter
         in Instruction instruction
     )
     {
-        return ExecuteSimdIntegerBinary(context, 16, static (x, y) => x <= y ? x : y);
+        return ExecuteSimdIntegerBinary(context, 16, Math.Min);
     }
 
     /// <summary>
@@ -535,7 +535,7 @@ internal static partial class Interpreter
         return ExecuteSimdIntegerBinary(
             context,
             16,
-            static (x, y) => unchecked((short)x) >= unchecked((short)y) ? x : y
+            static (x, y) => unchecked((ulong)Math.Max((short)x, (short)y))
         );
     }
 
@@ -550,7 +550,7 @@ internal static partial class Interpreter
         in Instruction instruction
     )
     {
-        return ExecuteSimdIntegerBinary(context, 16, static (x, y) => x >= y ? x : y);
+        return ExecuteSimdIntegerBinary(context, 16, Math.Max);
     }
 
     /// <summary>
@@ -683,7 +683,7 @@ internal static partial class Interpreter
         return ExecuteSimdIntegerBinary(
             context,
             32,
-            static (x, y) => unchecked((int)x) <= unchecked((int)y) ? x : y
+            static (x, y) => unchecked((ulong)Math.Min((int)x, (int)y))
         );
     }
 
@@ -698,7 +698,7 @@ internal static partial class Interpreter
         in Instruction instruction
     )
     {
-        return ExecuteSimdIntegerBinary(context, 32, static (x, y) => x <= y ? x : y);
+        return ExecuteSimdIntegerBinary(context, 32, Math.Min);
     }
 
     /// <summary>
@@ -715,7 +715,7 @@ internal static partial class Interpreter
         return ExecuteSimdIntegerBinary(
             context,
             32,
-            static (x, y) => unchecked((int)x) >= unchecked((int)y) ? x : y
+            static (x, y) => unchecked((ulong)Math.Max((int)x, (int)y))
         );
     }
 
@@ -730,7 +730,7 @@ internal static partial class Interpreter
         in Instruction instruction
     )
     {
-        return ExecuteSimdIntegerBinary(context, 32, static (x, y) => x >= y ? x : y);
+        return ExecuteSimdIntegerBinary(context, 32, Math.Max);
     }
 
     /// <summary>

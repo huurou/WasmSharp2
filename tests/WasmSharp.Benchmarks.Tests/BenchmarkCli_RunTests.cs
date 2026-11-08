@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text.Json;
 using WasmSharp.Benchmarks.Cases;
+using WasmSharp.Benchmarks.Measurements;
 using WasmSharp.Benchmarks.Results;
 using WasmSharp.Benchmarks.Tests.Fixtures;
 
@@ -8,6 +9,133 @@ namespace WasmSharp.Benchmarks.Tests;
 
 internal class BenchmarkCli_RunTests
 {
+    private readonly CaseJson json_ = new CaseJson();
+    private readonly MeasurementMethods methods_ = new MeasurementMethods();
+    private readonly BenchmarkCli cli_ = new BenchmarkCli();
+
+    [Test]
+    [Arguments(ResultStatus.Succeeded, 0, false)]
+    [Arguments(ResultStatus.Failed, 1, true)]
+    [Arguments(ResultStatus.Unavailable, 1, false)]
+    [Arguments(ResultStatus.Incomplete, 2, true)]
+    public async Task 測定結果を受け取る_用途と予定を渡して指標と失敗理由と終了値を返す(
+        ResultStatus status,
+        int expectedExit,
+        bool allCases
+    )
+    {
+        // Arrange
+        using var assets = new AssetLoadingFixture();
+        assets.SaveAssets(PreparationFixture.CreateAssets(json_, methods_));
+        using var run = new RunStoreFixture();
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        var caseIds = allCases
+            ? assets.Definitions.Select(x => x.CaseId).Order(StringComparer.Ordinal).ToArray()
+            : ["decode.small"];
+        var kind = allCases ? RunKind.Smoke : RunKind.Measurement;
+        var expected = run.Manifest with
+        {
+            Kind = kind,
+            Status = status,
+            Cases = [.. caseIds.Select(x => run.Manifest.Cases.Single() with
+            {
+                CaseId = x,
+                Status = status,
+                Metrics = status == ResultStatus.Unavailable
+                    ? run.Manifest.Cases.Single().Metrics with { Time = null, Allocation = null }
+                    : run.Manifest.Cases.Single().Metrics,
+                Failures = status == ResultStatus.Failed
+                    ? [new RunFailure(x, RunStage.Postcheck, RunStage.ExecutionStarted, "期待値不一致", null, "観測が異なる", null)]
+                    : [],
+            })],
+        };
+        List<string> arguments =
+        [
+            "run", "--assets", assets.ManifestPath, "--case", allCases ? "all" : "decode.small",
+            "--output", run.DirectoryPath,
+        ];
+        if (allCases)
+        {
+            arguments.AddRange(["--kind", "smoke"]);
+        }
+        var processArguments = Environment.GetCommandLineArgs().Skip(1).ToArray();
+        var entryName = Path.GetFileNameWithoutExtension(typeof(BenchmarkCli_RunTests).Assembly.Location);
+        RunRequest? captured = null;
+        var calls = 0;
+
+        // Act
+        var exitCode = cli_.Run([.. arguments], output, error, request =>
+        {
+            captured = request;
+            calls++;
+            return expected;
+        });
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(exitCode).IsEqualTo(expectedExit);
+            await Assert.That(calls).IsEqualTo(1);
+            await Assert.That(captured!.OutputDirectory).IsEqualTo(run.DirectoryPath);
+            await Assert.That(captured.AssetManifestPath).IsEqualTo(assets.ManifestPath);
+            await Assert.That(captured.CaseIds.SequenceEqual(caseIds)).IsTrue();
+            await Assert.That(captured.Kind).IsEqualTo(kind);
+            await Assert.That(captured.Config.GetJobs().Single().Id).IsEqualTo(allCases ? "Smoke" : "Measurement");
+            await Assert.That(Directory.Exists(captured.RepositoryDirectory)).IsTrue();
+            await Assert.That(captured.Command.ExecutablePath).IsEqualTo(Environment.ProcessPath);
+            await Assert.That(
+                captured.Command.Arguments.Prepend(captured.Command.ExecutablePath)
+                    .Take(2)
+                    .Select(Path.GetFileName)
+                    .Any(x => x == entryName || x == entryName + ".exe" || x == entryName + ".dll")
+            ).IsTrue();
+            await Assert
+                .That(captured.Command.Arguments.TakeLast(processArguments.Length).SequenceEqual(processArguments))
+                .IsTrue();
+            await Assert.That(captured.Command.WorkingDirectory).IsEqualTo(Environment.CurrentDirectory);
+            await Assert.That(error.ToString()).IsEmpty();
+            await Assert.That(output.ToString()).Contains($"run {expected.RunId}: {status}; 用途: {kind}; 保存先: {run.DirectoryPath}");
+            await Assert.That(output.ToString()).Contains(status == ResultStatus.Unavailable
+                ? "ns/op=Unavailable; bytes/op=Unavailable"
+                : "ns/op=125.25; bytes/op=0.000244140625");
+            foreach (var caseId in caseIds)
+            {
+                await Assert.That(output.ToString()).Contains($"{caseId}: {status};");
+            }
+            if (status == ResultStatus.Failed)
+            {
+                await Assert.That(output.ToString()).Contains("Postcheck: 期待値不一致 観測が異なる");
+            }
+        }
+    }
+
+    [Test]
+    public async Task 測定処理が保存例外を返す_成功表示をせず同じ原因と終了値2を返す()
+    {
+        // Arrange
+        using var assets = new AssetLoadingFixture();
+        using var run = new RunStoreFixture();
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+
+        // Act
+        var exitCode = cli_.Run(
+            ["run", "--assets", assets.ManifestPath, "--case", "invoke.single", "--output", run.DirectoryPath],
+            output,
+            error,
+            _ => throw new IOException("測定結果を保存できない")
+        );
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(exitCode).IsEqualTo(2);
+            await Assert.That(output.ToString()).IsEmpty();
+            await Assert.That(error.ToString()).Contains("測定結果を保存できない");
+        }
+    }
+
     [Test]
     [Arguments("")]
     [Arguments("check")]
@@ -21,7 +149,7 @@ internal class BenchmarkCli_RunTests
         string[] args = operation.Length == 0 ? ["--help"] : [operation, "--help"];
 
         // Act
-        var exitCode = BenchmarkCli.Run(args, output, error);
+        var exitCode = cli_.Run(args, output, error);
 
         // Assert
         using (Assert.Multiple())
@@ -57,7 +185,7 @@ internal class BenchmarkCli_RunTests
         var args = input.Length == 0 ? [] : input.Split('|');
 
         // Act
-        var exitCode = BenchmarkCli.Run(args, output, error);
+        var exitCode = cli_.Run(args, output, error);
 
         // Assert
         using (Assert.Multiple())
@@ -80,7 +208,7 @@ internal class BenchmarkCli_RunTests
         using var error = new StringWriter();
 
         // Act
-        var exitCode = BenchmarkCli.Run(
+        var exitCode = cli_.Run(
             [
                 "compare",
                 "--baseline",
@@ -125,7 +253,7 @@ internal class BenchmarkCli_RunTests
             Environment.SetEnvironmentVariable("PATH", assets.DirectoryPath);
 
             // Act
-            var exitCode = BenchmarkCli.Run(
+            var exitCode = cli_.Run(
                 ["run", "--assets", assets.ManifestPath, "--case", caseId, "--output", directory],
                 output,
                 error
@@ -147,25 +275,40 @@ internal class BenchmarkCli_RunTests
     }
 
     [Test]
-    public async Task 固定素材のcheckを行う_全ケースの公開操作と期待値の一致を表示する()
+    [Arguments(false)]
+    [Arguments(true)]
+    public async Task 固定素材のcheckを行う_全ケースの公開操作と期待値の一致を名前順に表示する(bool preparation)
     {
         // Arrange
         using var assets = new AssetLoadingFixture();
+        if (preparation)
+        {
+            assets.SaveAssets(PreparationFixture.CreateAssets(json_, methods_));
+        }
         using var output = new StringWriter();
         using var error = new StringWriter();
 
         // Act
-        var exitCode = BenchmarkCli.Run(
+        var exitCode = cli_.Run(
             ["check", "--assets", assets.ManifestPath],
             output,
             error
         );
 
         // Assert
+        var displayedCaseIds = output.ToString()
+            .Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries)
+            .Select(x => x.Split(':')[0]);
         using (Assert.Multiple())
         {
             await Assert.That(exitCode).IsEqualTo(0);
-            await Assert.That(output.ToString()).Contains("invoke.single: Succeeded (Invoke)");
+            await Assert.That(displayedCaseIds.SequenceEqual(
+                assets.Definitions.Select(x => x.CaseId).Order(StringComparer.Ordinal)
+            )).IsTrue();
+            if (!preparation)
+            {
+                await Assert.That(output.ToString()).Contains("invoke.single: Succeeded (Invoke)");
+            }
             await Assert.That(error.ToString()).IsEqualTo("");
         }
     }
@@ -196,7 +339,7 @@ internal class BenchmarkCli_RunTests
         using var error = new StringWriter();
 
         // Act
-        var exitCode = BenchmarkCli.Run(
+        var exitCode = cli_.Run(
             ["check", "--assets", assets.ManifestPath],
             output,
             error
@@ -253,14 +396,20 @@ internal class BenchmarkCli_RunTests
                 assets.DirectoryPath,
             ],
         };
+        var runCalled = false;
 
         // Act
-        var exitCode = BenchmarkCli.Run(args, output, error);
+        var exitCode = cli_.Run(args, output, error, _ =>
+        {
+            runCalled = true;
+            throw new InvalidOperationException("出力先検証を通過してはいけない");
+        });
 
         // Assert
         using (Assert.Multiple())
         {
             await Assert.That(exitCode).IsEqualTo(2);
+            await Assert.That(runCalled).IsFalse();
             await Assert.That(File.ReadAllBytes(assets.ManifestPath)).IsEquivalentTo(before);
             await Assert.That(error.ToString().Length > 0).IsTrue();
             if (operation is "run" or "compare")
@@ -276,7 +425,8 @@ internal class BenchmarkCli_RunTests
     [Arguments("smoke", 1)]
     [Arguments("incomplete", 2)]
     [Arguments("nested-output", 2)]
-    public async Task 比較に使えないrunを指定する_失敗と未完了を区別して性能へ採用しない(
+    [Arguments("null-policy", 2)]
+    public async Task 比較入力が成立しない_失敗と未完了を区別して性能へ採用しない(
         string scenario,
         int expectedExit
     )
@@ -293,6 +443,10 @@ internal class BenchmarkCli_RunTests
             _ => changed.Manifest,
         };
         var request = fixture.Save();
+        if (scenario == "null-policy")
+        {
+            File.WriteAllText(request.PolicyPath, "null");
+        }
         var directory =
             scenario == "nested-output"
                 ? Path.Combine(changed.DirectoryPath, "new-comparison")
@@ -305,7 +459,7 @@ internal class BenchmarkCli_RunTests
         try
         {
             // Act
-            var exitCode = BenchmarkCli.Run(
+            var exitCode = cli_.Run(
                 [
                     "compare",
                     "--baseline",
@@ -325,15 +479,19 @@ internal class BenchmarkCli_RunTests
             using (Assert.Multiple())
             {
                 await Assert.That(exitCode).IsEqualTo(expectedExit);
-                if (scenario == "nested-output")
+                if (scenario is "nested-output" or "null-policy")
                 {
                     await Assert.That(Directory.Exists(directory)).IsFalse();
+                    await Assert.That(output.ToString()).IsEmpty();
+                    await Assert
+                        .That(error.ToString())
+                        .Contains(scenario == "null-policy" ? "policyのJSONがnull" : "比較入力run内");
                 }
                 else
                 {
                     var report = JsonSerializer.Deserialize<ComparisonReport>(
                         File.ReadAllBytes(Path.Combine(directory, "comparison.json")),
-                        CaseJson.Options
+                        json_.Options
                     )!;
                     await Assert.That(report.IsAccepted).IsFalse();
                     await Assert
@@ -406,7 +564,7 @@ internal class BenchmarkCli_RunTests
         try
         {
             // Act
-            var exitCode = BenchmarkCli.Run(
+            var exitCode = cli_.Run(
                 [
                     "compare",
                     "--baseline",
@@ -462,7 +620,7 @@ internal class BenchmarkCli_RunTests
         ];
 
         // Act
-        var exitCode = BenchmarkCli.Run(args, output, error);
+        var exitCode = cli_.Run(args, output, error);
 
         // Assert
         using (Assert.Multiple())
@@ -496,7 +654,7 @@ internal class BenchmarkCli_RunTests
         try
         {
             // Act
-            var exitCode = BenchmarkCli.Run(
+            var exitCode = cli_.Run(
                 [
                     "compare",
                     "--baseline",
@@ -513,15 +671,17 @@ internal class BenchmarkCli_RunTests
             );
             var report = JsonSerializer.Deserialize<ComparisonReport>(
                 File.ReadAllBytes(Path.Combine(directory, "comparison.json")),
-                CaseJson.Options
+                json_.Options
             )!;
 
             // Assert
+            var caseIds = report.Cases.Select(x => x.CaseId);
             using (Assert.Multiple())
             {
                 await Assert.That(exitCode).IsEqualTo(0);
                 await Assert.That(error.ToString()).IsEqualTo("");
                 await Assert.That(report.Cases.Count).IsEqualTo(15);
+                await Assert.That(caseIds.SequenceEqual(caseIds.Order(StringComparer.Ordinal))).IsTrue();
                 await Assert.That(report.IsAccepted).IsTrue();
                 await Assert.That(output.ToString()).Contains("invoke.single: Improved");
                 await Assert.That(output.ToString()).Contains($"受入: True; 保存先: {directory}");

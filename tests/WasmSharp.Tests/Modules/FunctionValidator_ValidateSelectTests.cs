@@ -21,6 +21,7 @@ internal partial class FunctionValidator_ValidateTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var kind = (byte)valueType;
         byte[] select = typed ? [0x1C, 1, kind] : [0x1B];
         var module = DecodeControl(
@@ -54,7 +55,7 @@ internal partial class FunctionValidator_ValidateTests
             await Assert.That(module.FunctionCodes.IsEmpty).IsTrue();
             await Assert.That(module.Functions[0]).IsSameReferenceAs(definition);
             await Assert
-                .That(() => module.Instantiate([]))
+                .That(() => module.Instantiate(executionContext, []))
                 .ThrowsExactly<InvalidOperationException>();
         }
     }
@@ -126,6 +127,7 @@ internal partial class FunctionValidator_ValidateTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var module = DecodeControl(
             Convert.FromHexString(parameters),
             [],
@@ -153,7 +155,7 @@ internal partial class FunctionValidator_ValidateTests
                 );
             await Assert.That(module.FunctionCodes.IsEmpty).IsTrue();
             await Assert
-                .That(() => module.Instantiate([]))
+                .That(() => module.Instantiate(executionContext, []))
                 .ThrowsExactly<InvalidOperationException>();
         }
     }
@@ -167,6 +169,7 @@ internal partial class FunctionValidator_ValidateTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var module = DecodeControl([], [], Convert.FromHexString(body));
         var select = module.Functions[0].Instructions[0];
 
@@ -187,7 +190,7 @@ internal partial class FunctionValidator_ValidateTests
                 .IsEqualTo(new(WasmProcessingStage.Validate, select.ByteOffset, 0, 10));
             await Assert.That(module.FunctionCodes.IsEmpty).IsTrue();
             await Assert
-                .That(() => module.Instantiate([]))
+                .That(() => module.Instantiate(executionContext, []))
                 .ThrowsExactly<InvalidOperationException>();
         }
     }

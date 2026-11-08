@@ -1,6 +1,5 @@
 using System.Collections.Immutable;
 using System.Runtime.InteropServices;
-using WasmSharp.Exceptions;
 using WasmSharp.Execution;
 using WasmSharp.Modules;
 
@@ -74,7 +73,6 @@ public sealed class WasmInstance
     /// <param name="importedGlobals">globalのimport宣言順に並ぶ共有実体</param>
     /// <param name="memories">importを先頭に置き、定義を続けた割当済みmemoryの実体表</param>
     /// <param name="tables">importを先頭に置き、定義を続けた割当済みtableの実体表</param>
-    /// <exception cref="WasmImplementationLimitException">importと定義を合わせた関数数またはglobal数が保持上限を超える場合</exception>
     internal WasmInstance(
         WasmModule module,
         WasmExecutionOptions options,
@@ -89,34 +87,18 @@ public sealed class WasmInstance
         Memories = memories;
         Tables = tables;
         exports_ = module.Exports.ToImmutableDictionary(x => x.Name, StringComparer.Ordinal);
-        var functionCount = (long)importedFunctions.Length + module.Functions.Length;
-        if (functionCount > Array.MaxLength)
-        {
-            throw new WasmImplementationLimitException(
-                "関数表が保持上限を超えています。",
-                WasmImplementationLimitReason.CollectionSize,
-                Array.MaxLength,
-                new WasmFailureLocation(WasmProcessingStage.Instantiate, SectionId: 3)
-            );
-        }
-        var functions = ImmutableArray.CreateBuilder<WasmFunction>((int)functionCount);
+        var functions = ImmutableArray.CreateBuilder<WasmFunction>(
+            importedFunctions.Length + module.Functions.Length
+        );
         functions.AddRange(importedFunctions);
         for (var i = 0; i < module.Functions.Length; i++)
         {
             functions.Add(new DefinedFunction(this, (uint)(importedFunctions.Length + i), (uint)i));
         }
         Functions = functions.MoveToImmutable();
-        var globalCount = (long)importedGlobals.Length + module.Globals.Length;
-        if (globalCount > Array.MaxLength)
-        {
-            throw new WasmImplementationLimitException(
-                "実体表が保持上限を超えています。",
-                WasmImplementationLimitReason.CollectionSize,
-                Array.MaxLength,
-                new WasmFailureLocation(WasmProcessingStage.Instantiate, SectionId: 6)
-            );
-        }
-        var globals = ImmutableArray.CreateBuilder<WasmGlobal>((int)globalCount);
+        var globals = ImmutableArray.CreateBuilder<WasmGlobal>(
+            importedGlobals.Length + module.Globals.Length
+        );
         globals.AddRange(importedGlobals);
         foreach (var global in module.Globals)
         {

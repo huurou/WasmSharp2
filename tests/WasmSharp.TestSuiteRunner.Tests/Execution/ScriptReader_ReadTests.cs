@@ -389,6 +389,10 @@ internal class ScriptReader_ReadTests
         "exnref"
     )]
     [Arguments(
+        """{"type": "assert_return", "line": 7, "action": {"type": "invoke", "field": "f", "args": [{"type": "F32", "value": "0"}]}, "expected": []}""",
+        "F32"
+    )]
+    [Arguments(
         """{"type": "assert_return", "line": 7, "action": {"type": "invoke", "field": "f", "args": [{"type": "i32", "value": 1}]}, "expected": []}""",
         "action.args[0].value"
     )]
@@ -516,12 +520,18 @@ internal class ScriptReader_ReadTests
         null
     )]
     [Arguments(
+        """{"type":"module","line":1,"name":"\uD800","filename":"a.0.wasm"}""",
+        null,
+        null
+    )]
+    [Arguments(
         """{"type": "module", "line": 1, "name": "$A", "name": "$B", "filename": "a.0.wasm"}""",
         null,
         null
     )]
     [Arguments("""{"type": "register", "line": 2, "name": "$M", "as": "M", "x": 0}""", null, "M")]
     [Arguments("""{"type": "register", "line": 2, "as": ["M"]}""", null, null)]
+    [Arguments("""{"type":"register","line":2,"as":"\uD800"}""", null, null)]
     [Arguments(
         """{"type": "assert_invalid", "line": 3, "name": "$M", "as": "M", "filename": "a.0.wasm"}""",
         null,
@@ -545,6 +555,8 @@ internal class ScriptReader_ReadTests
         {
             await Assert.That(command.Name).IsEqualTo(name);
             await Assert.That(command.As).IsEqualTo(registeredName);
+            await Assert.That(command.Diagnostic.Operation).IsEqualTo("read_command");
+            await Assert.That(command.Diagnostic.SourceJson).IsEqualTo(json);
         }
     }
 
@@ -669,6 +681,14 @@ internal class ScriptReader_ReadTests
     [Arguments(
         """{"type":"module","line":1,"filename":"\uD800"}""",
         "filenameを文字列として取得できません。"
+    )]
+    [Arguments(
+        """{"type":"module","line":1,"name":"\uD800","filename":"a.0.wasm"}""",
+        "nameを文字列として取得できません。"
+    )]
+    [Arguments(
+        """{"type":"register","line":1,"as":"\uD800"}""",
+        "asを文字列として取得できません。"
     )]
     [Arguments(
         """{"type":"module","line":1,"filename":"a.0.wasm","\uD800":0}""",

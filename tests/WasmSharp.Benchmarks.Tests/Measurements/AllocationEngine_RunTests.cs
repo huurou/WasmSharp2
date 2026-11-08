@@ -120,7 +120,7 @@ internal class AllocationEngine_RunTests
     }
 
     [Test]
-    public async Task Workload内で例外を捕捉する_追加反復の操作数で例外頻度を返す()
+    public async Task Workload内で例外を捕捉する_追加反復の操作数で例外頻度を返し次のRunへ持ち越さない()
     {
         // Arrange
         var timing = new AllocationEngineFixture
@@ -153,12 +153,81 @@ internal class AllocationEngine_RunTests
 
         // Act
         var result = engine.Run();
+        timing.WorkloadAction = _ => { };
+        var next = engine.Run();
 
         // Assert
         using (Assert.Multiple())
         {
             await Assert.That(result.ExceptionFrequency).IsEqualTo(1d);
             await Assert.That(result.GCStats.TotalOperations).IsEqualTo(4);
+            await Assert.That(next.ExceptionFrequency).IsEqualTo(0d);
+            await Assert.That(next.GCStats.TotalOperations).IsEqualTo(4);
+        }
+    }
+
+    [Test]
+    public async Task 追加反復で配列を割り当てFullGCを行う_統計はRun全体の増分を超えない()
+    {
+        // Arrange
+        byte[]? allocated = null;
+        var timing = new AllocationEngineFixture
+        {
+            WorkloadAction = _ =>
+            {
+                allocated = new byte[1024];
+                GC.Collect(2, GCCollectionMode.Forced, blocking: true);
+            },
+        };
+        var parameters = new EngineParameters { MeasureExtraStats = true };
+        using var engine = new WasmAllocationEngineFactory(timing).CreateReadyToRun(parameters);
+
+        // Act
+        // 背景のGCや処理も含むため、Run全体の増分を測定区間の上限にする。
+        var contentionBefore = Monitor.LockContentionCount;
+        var completedBefore = ThreadPool.CompletedWorkItemCount;
+        int[] collectionsBefore =
+        [
+            GC.CollectionCount(0),
+            GC.CollectionCount(1),
+            GC.CollectionCount(2),
+        ];
+        var result = engine.Run();
+        int[] collectionsAfter =
+        [
+            GC.CollectionCount(0),
+            GC.CollectionCount(1),
+            GC.CollectionCount(2),
+        ];
+        var completedAfter = ThreadPool.CompletedWorkItemCount;
+        var contentionAfter = Monitor.LockContentionCount;
+
+        // Assert
+        await Assert.That(allocated).IsNotNull();
+        using (Assert.Multiple())
+        {
+            for (var generation = 0; generation < collectionsBefore.Length; generation++)
+            {
+                var measured = result.GCStats.GetCollectionsCount(generation);
+                await Assert.That(measured).IsGreaterThanOrEqualTo(1);
+                await Assert
+                    .That(measured)
+                    .IsLessThanOrEqualTo(
+                        collectionsAfter[generation] - collectionsBefore[generation]
+                    );
+            }
+            await Assert
+                .That(
+                    result.GCStats.GetTotalAllocatedBytes(excludeAllocationQuantumSideEffects: false)
+                        .GetValueOrDefault()
+                )
+                .IsGreaterThanOrEqualTo(allocated!.LongLength);
+            await Assert
+                .That(result.ThreadingStats.CompletedWorkItemCount)
+                .IsLessThanOrEqualTo(completedAfter - completedBefore);
+            await Assert
+                .That(result.ThreadingStats.LockContentionCount)
+                .IsLessThanOrEqualTo(contentionAfter - contentionBefore);
         }
     }
 

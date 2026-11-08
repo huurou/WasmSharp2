@@ -6,6 +6,8 @@ namespace WasmSharp.TestSuiteRunner.Tests.Execution;
 
 internal class ScriptState_FailTests
 {
+    private readonly WasmExecutionContext context_ = new WasmExecutionContext();
+
     private const string INPUT_PATH = "a.wast";
 
     [Test]
@@ -13,7 +15,7 @@ internal class ScriptState_FailTests
     {
         // Arrange
         var state = new ScriptState(INPUT_PATH);
-        state.SetModule(ModuleFixture.CreateCommand(0, "$M"), ModuleFixture.Instantiate());
+        state.SetModule(ModuleFixture.CreateCommand(0, "$M"), ModuleFixture.Instantiate(context_));
 
         // Act
         state.Fail(ModuleFixture.CreateCommand(1, "$M"), null);
@@ -37,7 +39,7 @@ internal class ScriptState_FailTests
     {
         // Arrange
         var state = new ScriptState(INPUT_PATH);
-        var module = ModuleFixture.Instantiate();
+        var module = ModuleFixture.Instantiate(context_);
         state.SetModule(ModuleFixture.CreateCommand(0, "$M"), module);
 
         // Act
@@ -103,8 +105,8 @@ internal class ScriptState_FailTests
     {
         // Arrange
         var state = new ScriptState(INPUT_PATH);
-        var other = ModuleFixture.Instantiate();
-        state.SetModule(ModuleFixture.CreateCommand(0, "$M"), ModuleFixture.Instantiate());
+        var other = ModuleFixture.Instantiate(context_);
+        state.SetModule(ModuleFixture.CreateCommand(0, "$M"), ModuleFixture.Instantiate(context_));
         state.SetModule(ModuleFixture.CreateCommand(1, "$N"), other);
 
         // Act
@@ -124,7 +126,7 @@ internal class ScriptState_FailTests
     {
         // Arrange
         var state = new ScriptState(INPUT_PATH);
-        var module = ModuleFixture.Instantiate();
+        var module = ModuleFixture.Instantiate(context_);
         state.SetModule(ModuleFixture.CreateCommand(0, "$M"), module);
 
         // Act
@@ -143,7 +145,7 @@ internal class ScriptState_FailTests
     {
         // Arrange
         var state = new ScriptState(INPUT_PATH);
-        var module = ModuleFixture.Instantiate();
+        var module = ModuleFixture.Instantiate(context_);
         var other = new WasmHostModule("N");
         state.SetModule(ModuleFixture.CreateCommand(0, null), module);
         state.Register(new WasmHostModule("M"));
@@ -171,7 +173,7 @@ internal class ScriptState_FailTests
     {
         // Arrange
         var state = new ScriptState(INPUT_PATH);
-        var module = ModuleFixture.Instantiate();
+        var module = ModuleFixture.Instantiate(context_);
         var registration = new WasmHostModule("M");
         state.SetModule(ModuleFixture.CreateCommand(0, "$M"), module);
         state.Register(registration);
@@ -193,7 +195,7 @@ internal class ScriptState_FailTests
     {
         // Arrange
         var state = new ScriptState(INPUT_PATH);
-        var module = ModuleFixture.Instantiate();
+        var module = ModuleFixture.Instantiate(context_);
         var registration = new WasmHostModule("M");
         state.SetModule(ModuleFixture.CreateCommand(0, "$M"), module);
         state.Register(registration);

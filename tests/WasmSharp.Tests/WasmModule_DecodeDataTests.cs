@@ -16,6 +16,7 @@ internal partial class WasmModule_DecodeTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var bytes = HostLinkingModuleBinary.Create(
             HostLinkingModuleBinary.Memories((1, null)),
             HostLinkingModuleBinary.Exports(("memory", 2, 0)),
@@ -42,7 +43,7 @@ internal partial class WasmModule_DecodeTests
         // Act
         var module = useStream ? WasmModule.Decode(stream) : WasmModule.Decode(bytes);
         Array.Clear(bytes);
-        var instance = module.Validate().Instantiate([]);
+        var instance = module.Validate().Instantiate(executionContext, []);
         var actual = new byte[4];
         instance.GetMemory("memory").Read(0, actual);
 
@@ -62,6 +63,7 @@ internal partial class WasmModule_DecodeTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var bytes = Convert.FromHexString("0061736D01000000" + sections);
         foreach (var useStream in new[] { false, true })
         {
@@ -70,7 +72,7 @@ internal partial class WasmModule_DecodeTests
             // Act
             var instance = (useStream ? WasmModule.Decode(stream) : WasmModule.Decode(bytes))
                 .Validate()
-                .Instantiate([]);
+                .Instantiate(executionContext, []);
 
             // Assert
             await Assert.That(instance).IsNotNull();
@@ -237,6 +239,7 @@ internal partial class WasmModule_DecodeTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var bytes = HostLinkingModuleBinary.Create(
             HostLinkingModuleBinary.Memories((1, null)),
             hasDataCount ? HostLinkingModuleBinary.Section(12, [count]) : [],
@@ -264,7 +267,7 @@ internal partial class WasmModule_DecodeTests
                 .IsEqualTo(new(WasmProcessingStage.Validate, instruction.ByteOffset, null, 11));
             await Assert.That(module.FunctionCodes).IsEmpty();
             await Assert
-                .That(() => module.Instantiate([]))
+                .That(() => module.Instantiate(executionContext, []))
                 .ThrowsExactly<InvalidOperationException>();
         }
     }

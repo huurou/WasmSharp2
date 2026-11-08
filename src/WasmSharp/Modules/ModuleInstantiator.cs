@@ -15,6 +15,7 @@ internal static class ModuleInstantiator
     /// <summary>
     /// 検証済みmoduleのリソースを構築・初期化し、startの実行を完了したinstanceを返す
     /// </summary>
+    /// <param name="executionContext">startとホストからの同期再入で共有するコンテキスト</param>
     /// <param name="module">静的検証が成功したmodule</param>
     /// <param name="imports">名前で参照する関数と共有リソースの提供登録</param>
     /// <param name="options">生成するinstanceが新しい実行コンテキストを作る際のポリシー</param>
@@ -31,6 +32,7 @@ internal static class ModuleInstantiator
     /// <exception cref="WasmExhaustionException">startの実行結果が資源枯渇の場合</exception>
     /// <exception cref="InvalidOperationException">startから呼んだホスト関数の結果が宣言型に一致しないか、nullの場合</exception>
     internal static WasmInstance Instantiate(
+        WasmExecutionContext executionContext,
         WasmModule module,
         WasmImports imports,
         WasmExecutionOptions options
@@ -39,8 +41,7 @@ internal static class ModuleInstantiator
         var linked = Link(module, imports);
         var tables = CreateIndex(
             linked.OfType<TableExternalValue>().Select(x => x.Value),
-            module.Tables.Length,
-            4
+            module.Tables.Length
         );
         foreach (var table in module.Tables)
         {
@@ -66,8 +67,7 @@ internal static class ModuleInstantiator
         }
         var memories = CreateIndex(
             linked.OfType<MemoryExternalValue>().Select(x => x.Value),
-            module.Memories.Length,
-            5
+            module.Memories.Length
         );
         foreach (var memory in module.Memories)
         {
@@ -85,7 +85,11 @@ internal static class ModuleInstantiator
         InitializeDataSegments(instance);
         if (module.Start is { } start)
         {
-            ExecutionBoundary.RunStart(instance, instance.Functions[(int)start.FunctionIndex]);
+            ExecutionBoundary.RunStart(
+                executionContext,
+                instance,
+                instance.Functions[(int)start.FunctionIndex]
+            );
         }
         return instance;
     }
@@ -197,27 +201,14 @@ internal static class ModuleInstantiator
     /// <typeparam name="T">共有するリソースの型</typeparam>
     /// <param name="imports">宣言順に並んだimportの実体</param>
     /// <param name="definitionCount">後から追加する定義の数</param>
-    /// <param name="sectionId">保持上限を超えた場合の診断に用いるセクションID</param>
     /// <returns>全実体を保持できる容量を確保し、importだけを追加した実体表</returns>
-    /// <exception cref="WasmImplementationLimitException">importと定義の合計数が配列の保持上限を超える場合</exception>
     private static ImmutableArray<T>.Builder CreateIndex<T>(
         IEnumerable<T> imports,
-        int definitionCount,
-        byte sectionId
+        int definitionCount
     )
     {
         var values = imports.ToImmutableArray();
-        var count = (long)values.Length + definitionCount;
-        if (count > Array.MaxLength)
-        {
-            throw new WasmImplementationLimitException(
-                "実体表が保持上限を超えています。",
-                WasmImplementationLimitReason.CollectionSize,
-                Array.MaxLength,
-                new WasmFailureLocation(WasmProcessingStage.Instantiate, SectionId: sectionId)
-            );
-        }
-        var index = ImmutableArray.CreateBuilder<T>((int)count);
+        var index = ImmutableArray.CreateBuilder<T>(values.Length + definitionCount);
         index.AddRange(values);
         return index;
     }
@@ -264,19 +255,13 @@ internal static class ModuleInstantiator
         int ordinal
     )
     {
-        if (
-            !providers.TryGetValue(import.ModuleName, out var items)
-            || !items.TryGetValue(import.Name, out var value)
-        )
-        {
-            throw LinkFailure(
+        return providers.GetValueOrDefault(import.ModuleName)?.GetValueOrDefault(import.Name)
+            ?? throw LinkFailure(
                 import,
                 ordinal,
                 WasmInstantiateReason.MissingImport,
                 "名前に一致する提供登録がありません。"
             );
-        }
-        return value;
     }
 
     /// <summary>

@@ -67,7 +67,7 @@ internal static class SpectestFactory
             name,
             WasmFunction.CreateHost(
                 new(parameters, []),
-                arguments =>
+                (_, arguments) =>
                 {
                     try
                     {

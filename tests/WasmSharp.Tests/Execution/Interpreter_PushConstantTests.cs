@@ -13,12 +13,13 @@ internal class Interpreter_PushConstantTests
     public async Task 型付きnull参照を積む_指定された参照型とnullを保つ(WasmValueKind kind)
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var value =
             kind == WasmValueKind.FuncRef
                 ? WasmValue.FromFuncRef(null)
                 : WasmValue.FromExternRef(null);
         var instruction = new Instruction(default, value, 1001, 0);
-        var context = InterpreterContext.Enter(new(10), out var isOutermost);
+        var context = executionContext.Enter(new(10), out var isOutermost);
         ExecutionResult result;
         WasmValue actual;
         int valueCount;
@@ -34,8 +35,8 @@ internal class Interpreter_PushConstantTests
         }
         finally
         {
+            executionContext.Exit(isOutermost);
             context.Restore(0, 0, 0);
-            InterpreterContext.Exit(isOutermost);
         }
 
         // Assert
@@ -67,6 +68,7 @@ internal class Interpreter_PushConstantTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var value = opcode switch
         {
             0x41 => WasmValue.FromI32(int.MinValue),
@@ -96,7 +98,7 @@ internal class Interpreter_PushConstantTests
         };
         var function = (DefinedFunction)
             new WasmInstance(module, WasmExecutionOptions.Default).Functions[0];
-        var context = InterpreterContext.Enter(WasmExecutionOptions.Default, out var isOutermost);
+        var context = executionContext.Enter(WasmExecutionOptions.Default, out var isOutermost);
         Instruction instruction;
         ExecutionResult result;
         WasmValue actual;
@@ -115,8 +117,8 @@ internal class Interpreter_PushConstantTests
         }
         finally
         {
+            executionContext.Exit(isOutermost);
             context.Restore(0, 0, 0);
-            InterpreterContext.Exit(isOutermost);
         }
 
         // Assert

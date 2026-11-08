@@ -8,6 +8,7 @@ internal partial class WasmFunction_InvokeTests
     public async Task 共有memoryを読んでから別instanceへ再入する_コピーを保持し増大後の現在領域へ書き込む()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var memory = new WasmMemory(new(1, 2));
         var table = new WasmTable(WasmValueKind.ExternRef, new(1, 2));
         var reference = new object();
@@ -20,7 +21,7 @@ internal partial class WasmFunction_InvokeTests
             "grow",
             WasmFunction.CreateHost(
                 new([], []),
-                (instance, arguments) =>
+                (callbackContext, instance, arguments) =>
                 {
                     grown = instance.GetMemory("m").TryGrow(1, out _);
                     grown &= instance
@@ -46,7 +47,7 @@ internal partial class WasmFunction_InvokeTests
                 )
             )
             .Validate()
-            .Instantiate([host]);
+            .Instantiate(executionContext, [host]);
         var copy = new byte[1];
         var provider = new WasmHostModule("env");
         provider.Define("m", source.GetMemory("m"));
@@ -55,10 +56,10 @@ internal partial class WasmFunction_InvokeTests
             "roundtrip",
             WasmFunction.CreateHost(
                 new([], []),
-                (instance, _) =>
+                (callbackContext, instance, _) =>
                 {
                     instance.GetMemory("m").Read(0, copy);
-                    source.GetFunction("grow").Invoke([]);
+                    source.GetFunction("grow").Invoke(callbackContext, []);
                     instance.GetMemory("m").Write(65536, [42]);
                     instance.GetTable("t").Set(0, instance.GetTable("t").Get(1));
                     return new([]);
@@ -80,10 +81,10 @@ internal partial class WasmFunction_InvokeTests
                 )
             )
             .Validate()
-            .Instantiate([provider], new(4));
+            .Instantiate(executionContext, [provider], new(4));
 
         // Act
-        destination.GetFunction("run").Invoke([]);
+        destination.GetFunction("run").Invoke(executionContext, []);
         var current = new byte[1];
         var added = new byte[1];
         source.GetMemory("m").Read(0, current);

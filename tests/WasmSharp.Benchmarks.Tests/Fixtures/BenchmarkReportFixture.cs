@@ -12,6 +12,9 @@ namespace WasmSharp.Benchmarks.Tests.Fixtures;
 
 internal sealed class BenchmarkReportFixture : IDisposable
 {
+    private readonly CaseJson json_ = new CaseJson();
+    private readonly MeasurementMethods methods_ = new MeasurementMethods();
+
     private readonly RunStoreFixture run_ = new();
     private readonly string caseId_;
 
@@ -32,7 +35,7 @@ internal sealed class BenchmarkReportFixture : IDisposable
         string benchmarkMethod = nameof(InvokeBenchmarks.Single)
     )
     {
-        caseId_ = CaseCatalog.GetCaseId(nameof(InvokeBenchmarks) + "." + benchmarkMethod);
+        caseId_ = methods_.GetCaseId(nameof(InvokeBenchmarks) + "." + benchmarkMethod);
         var config = BenchmarkConfig.Create();
         var benchmark = BenchmarkConverter
             .MethodsToBenchmarks(
@@ -81,7 +84,8 @@ internal sealed class BenchmarkReportFixture : IDisposable
                 run_.Manifest with
                 {
                     PlannedCaseIds = plannedCaseIds ?? [caseId_],
-                }
+                },
+                json_
             ),
             run_.Manifest.RunId,
             [benchmark.Job]

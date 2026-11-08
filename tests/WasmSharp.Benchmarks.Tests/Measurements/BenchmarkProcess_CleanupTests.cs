@@ -1,3 +1,5 @@
+using System.Diagnostics;
+using WasmSharp.Benchmarks.Cases;
 using WasmSharp.Benchmarks.Measurements;
 using WasmSharp.Benchmarks.Results;
 using WasmSharp.Benchmarks.Tests.Fixtures;
@@ -7,13 +9,62 @@ namespace WasmSharp.Benchmarks.Tests.Measurements;
 [NotInParallel]
 internal class BenchmarkProcess_CleanupTests
 {
+    private readonly CaseJson json_ = new CaseJson();
+    private readonly MeasurementMethods methods_ = new MeasurementMethods();
+
+    [Test]
+    public async Task 実行中にCPU割当を選び直す_前後の観測を別々に保存する()
+    {
+        // Arrange
+        using var fixture = new BenchmarkProcessFixture();
+        using var current = Process.GetCurrentProcess();
+        long? before = null;
+        if (OperatingSystem.IsWindows() || OperatingSystem.IsLinux())
+        {
+            before = current.ProcessorAffinity.ToInt64();
+        }
+        var process = BenchmarkProcess.Start("InvokeBenchmarks.Single");
+        process.Setup((_, _, _) => { });
+        var after = before is long mask ? unchecked(mask & -mask) : (long?)null;
+
+        try
+        {
+            // Act
+            if (OperatingSystem.IsWindows() || OperatingSystem.IsLinux())
+            {
+                current.ProcessorAffinity = new IntPtr(after!.Value);
+            }
+            process.Cleanup(() => { });
+            var check = RunStore.ReadChecks(fixture.Run.DirectoryPath, json_)
+                .Single(x => x.Check.Postcheck is not null).Check;
+
+            // Assert
+            using (Assert.Multiple())
+            {
+                await Assert.That(check.AffinityBefore).IsEqualTo(before);
+                await Assert.That(check.AffinityAfter).IsEqualTo(after);
+                if (after is null)
+                {
+                    await Assert.That(check.AffinityUnavailableReason).IsNotNull().And.IsNotEmpty();
+                }
+            }
+        }
+        finally
+        {
+            if ((OperatingSystem.IsWindows() || OperatingSystem.IsLinux()) && before is long original)
+            {
+                current.ProcessorAffinity = new IntPtr(original);
+            }
+        }
+    }
+
     [Test]
     public async Task 後検査成功後の保存が失敗_検査成功を保持して保存失敗を記録する()
     {
         // Arrange
         using var fixture = new BenchmarkProcessFixture();
         var process = BenchmarkProcess.Start("InvokeBenchmarks.Single");
-        process.Setup((_, _) => { });
+        process.Setup((_, _, _) => { });
 
         // Act & Assert
         var exception = await Assert
@@ -22,7 +73,7 @@ internal class BenchmarkProcess_CleanupTests
         fixture.RestoreCheckWrites();
         process.Cleanup(() => { });
         var failed = RunStore
-            .ReadChecks(fixture.Run.DirectoryPath)
+            .ReadChecks(fixture.Run.DirectoryPath, json_)
             .Single(x => x.Check.Failures.Count > 0)
             .Check;
         using (Assert.Multiple())
@@ -47,7 +98,7 @@ internal class BenchmarkProcess_CleanupTests
         // Arrange
         using var fixture = new BenchmarkProcessFixture();
         var process = BenchmarkProcess.Start("InvokeBenchmarks.Single");
-        process.Setup((_, _) => { });
+        process.Setup((_, _, _) => { });
         var expected = new InvalidOperationException("後検査の不一致");
 
         // Act & Assert
@@ -70,7 +121,9 @@ internal class BenchmarkProcess_CleanupTests
         using var fixture = new BenchmarkProcessFixture();
         var benchmark = new InvokeBenchmarks();
         var process = BenchmarkProcess.Start("InvokeBenchmarks.Single");
-        process.Setup((_, id) => benchmark.Initialize(InvokeFixture.CreateDriftingAssets(), id));
+        process.Setup((_, id, json) =>
+            benchmark.Initialize(InvokeFixture.CreateDriftingAssets(json, methods_), id, json)
+        );
         benchmark.Single();
         benchmark.Single();
 
@@ -79,7 +132,7 @@ internal class BenchmarkProcess_CleanupTests
             .That(() => process.Cleanup(benchmark.Cleanup))
             .Throws<InvalidOperationException>();
         var failed = RunStore
-            .ReadChecks(fixture.Run.DirectoryPath)
+            .ReadChecks(fixture.Run.DirectoryPath, json_)
             .Single(x => x.Check.Postcheck is not null)
             .Check;
         using (Assert.Multiple())
@@ -109,7 +162,7 @@ internal class BenchmarkProcess_CleanupTests
         // Act
         process.Setup(benchmark.Initialize);
         benchmark.Single();
-        var checks = RunStore.ReadChecks(fixture.Run.DirectoryPath).Select(x => x.Check).ToList();
+        var checks = RunStore.ReadChecks(fixture.Run.DirectoryPath, json_).Select(x => x.Check).ToList();
 
         // Assert
         using (Assert.Multiple())
@@ -117,7 +170,7 @@ internal class BenchmarkProcess_CleanupTests
             await Assert.That(checks.Any(x => x.ExecutionStarted)).IsTrue();
             await Assert.That(checks.All(x => x.Postcheck is null)).IsTrue();
             await Assert
-                .That(RunStore.Load(fixture.Run.DirectoryPath).Status)
+                .That(RunStore.Load(fixture.Run.DirectoryPath, json_).Status)
                 .IsEqualTo(ResultStatus.Incomplete);
         }
     }

@@ -72,7 +72,7 @@ internal readonly struct SimdValue
         var half = bitOffset < 64 ? low64_ : high64_;
         // 64ビットの左シフトはシフト量が0になるため全ビット1を右シフトする
         var mask = ulong.MaxValue >> (64 - bitWidth);
-        return (half >> (bitOffset % 64)) & mask;
+        return (half >> bitOffset) & mask;
     }
 
     /// <summary>
@@ -81,10 +81,9 @@ internal readonly struct SimdValue
     internal SimdValue WithLane(int bitWidth, int laneIndex, ulong bits)
     {
         var bitOffset = bitWidth * laneIndex;
-        var shift = bitOffset % 64;
         var mask = ulong.MaxValue >> (64 - bitWidth);
-        var laneMask = mask << shift;
-        var replacement = (bits & mask) << shift;
+        var laneMask = mask << bitOffset;
+        var replacement = (bits & mask) << bitOffset;
         return bitOffset < 64
             ? new SimdValue((low64_ & ~laneMask) | replacement, high64_)
             : new SimdValue(low64_, (high64_ & ~laneMask) | replacement);

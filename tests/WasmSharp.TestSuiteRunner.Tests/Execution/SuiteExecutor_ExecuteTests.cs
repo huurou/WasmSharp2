@@ -328,6 +328,90 @@ public class SuiteExecutor_ExecuteTests
         }
     }
 
+    [Test]
+    public async Task 入力内のactionで中断する_部分結果と一つの診断を保持して後続入力を止める()
+    {
+        // Arrange
+        using var fixture = CorpusFixture.Create();
+        using var cancellation = new CancellationTokenSource();
+        var host = new WasmHostModule("host");
+        host.Define(
+            "f",
+            WasmFunction.CreateHost(
+                new WasmFunctionType([], []),
+                (_, _) =>
+                {
+                    cancellation.Cancel();
+                    return new WasmResults([]);
+                }
+            )
+        );
+        fixture.WriteArtifact(
+            CorpusFixture.A,
+            "modules/a.json",
+            Encoding.UTF8.GetBytes(
+                """
+                {"source_filename":"a.wast","commands":[
+                 {"type":"module","line":1,"filename":"a.0.wasm"},
+                 {"type":"action","line":2,"action":{"type":"invoke","field":"f","args":[]},"expected":[]},
+                 {"type":"module","line":3,"filename":"a.2.wasm"},
+                 {"type":"assert_malformed","line":4,"filename":"a.1.wat","module_type":"text","text":"unexpected token"}]}
+                """
+            )
+        );
+        fixture.WriteArtifact(
+            CorpusFixture.A,
+            "modules/a.0.wasm",
+            ScriptExecutionFixture.Binary(
+                (1, [1, 0x60, 0, 0]),
+                (
+                    2,
+                    [
+                        1,
+                        .. ScriptExecutionFixture.Name("host"),
+                        .. ScriptExecutionFixture.Name("f"),
+                        0,
+                        0,
+                    ]
+                ),
+                (7, [1, .. ScriptExecutionFixture.Name("f"), 0, 0])
+            )
+        );
+        List<string> progress = [];
+
+        // Act
+        var report = SuiteExecutor.Execute(
+            Complete(fixture.Manifest),
+            fixture.ManifestPath,
+            progress.Add,
+            cancellation.Token,
+            (input, state, token) =>
+            {
+                state.Register(host);
+                return SuiteExecutor.ExecuteInput(input, state, token);
+            }
+        );
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(report.Inputs[0].Status).IsEqualTo(InputRunStatus.Incomplete);
+            await Assert.That(report.Inputs[0].Cases.Count).IsEqualTo(2);
+            await Assert.That(report.Inputs[0].Cases.All(x => x.Outcome == CaseOutcome.Passed)).IsTrue();
+            await Assert.That(report.Inputs[0].CommandCount).IsEqualTo((int?)4);
+            await Assert.That(report.Inputs[0].UnprocessedCount).IsEqualTo(2);
+            await Assert.That(report.Inputs[1].Status).IsEqualTo(InputRunStatus.Unprocessed);
+            await Assert.That(report.Inputs[1].Cases).IsEmpty();
+            await Assert.That(progress.SequenceEqual([CorpusFixture.A])).IsTrue();
+            await Assert.That(report.Completion.ProcessingComplete).IsFalse();
+            await Assert.That(report.Diagnostics.Single().Operation).IsEqualTo("execute_input");
+            await Assert.That(report.Diagnostics.Single().Path).IsEqualTo(CorpusFixture.A);
+            await Assert
+                .That(report.Diagnostics.Single().ExceptionType)
+                .IsEqualTo(typeof(OperationCanceledException).FullName);
+        }
+    }
+
     internal static CorpusManifest Complete(CorpusManifest manifest)
     {
         return manifest with { Summary = manifest.Summarize(), Completion = new(true, true) };

@@ -5,12 +5,15 @@ namespace WasmSharp.Benchmarks.Tests.Cases;
 
 internal class LoadedAssets_GetInputTests
 {
+    private readonly CaseJson json_ = new CaseJson();
+    private readonly MeasurementMethods methods_ = new MeasurementMethods();
+
     [Test]
     public async Task 未登録のケースを指定する_識別子と理由を示して拒否する()
     {
         // Arrange
         using var fixture = new AssetLoadingFixture();
-        var assets = AssetManifest.Load(fixture.ManifestPath);
+        var assets = AssetManifest.Load(fixture.ManifestPath, json_, methods_);
 
         // Act & Assert
         var exception = await Assert

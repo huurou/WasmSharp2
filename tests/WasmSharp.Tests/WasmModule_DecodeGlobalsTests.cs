@@ -14,6 +14,7 @@ internal partial class WasmModule_DecodeTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var bytes = HostLinkingModuleBinary.Create(
             HostLinkingModuleBinary.Globals(
                 (0x7F, false, [0x41, 0x7F, 0x0B]),
@@ -66,7 +67,7 @@ internal partial class WasmModule_DecodeTests
             await Assert.That(module.Globals[6].Initializer[0].Index).IsEqualTo(1u);
             await Assert.That(module.FunctionCodes.IsEmpty).IsTrue();
         }
-        await Assert.That(() => module.Instantiate([])).ThrowsExactly<InvalidOperationException>();
+        await Assert.That(() => module.Instantiate(executionContext, [])).ThrowsExactly<InvalidOperationException>();
     }
 
     [Test]
@@ -79,6 +80,7 @@ internal partial class WasmModule_DecodeTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var bytes = HostLinkingModuleBinary.Create(
             HostLinkingModuleBinary.Globals((0x7F, false, Convert.FromHexString(hex)))
         );
@@ -93,7 +95,7 @@ internal partial class WasmModule_DecodeTests
             .That(() => module.Validate())
             .ThrowsExactly<WasmValidateException>();
         await Assert.That(exception!.Location!.Stage).IsEqualTo(WasmProcessingStage.Validate);
-        await Assert.That(() => module.Instantiate([])).ThrowsExactly<InvalidOperationException>();
+        await Assert.That(() => module.Instantiate(executionContext, [])).ThrowsExactly<InvalidOperationException>();
     }
 
     [Test]
@@ -142,6 +144,7 @@ internal partial class WasmModule_DecodeTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var bytes = HostLinkingModuleBinary.Create(
             HostLinkingModuleBinary.Globals((0x70, false, [0xFD, 0x0C, .. new byte[16], 0x0B]))
         );
@@ -171,7 +174,7 @@ internal partial class WasmModule_DecodeTests
                     .IsEqualTo(new(WasmProcessingStage.Validate, 31, null, 6));
                 await Assert.That(module.FunctionCodes.IsEmpty).IsTrue();
                 await Assert
-                    .That(() => module.Instantiate([]))
+                    .That(() => module.Instantiate(executionContext, []))
                     .ThrowsExactly<InvalidOperationException>();
             }
         }

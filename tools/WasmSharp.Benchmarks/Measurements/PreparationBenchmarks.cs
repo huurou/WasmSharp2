@@ -9,6 +9,8 @@ namespace WasmSharp.Benchmarks.Measurements;
 /// </summary>
 public class PreparationBenchmarks
 {
+    private readonly WasmExecutionContext context_ = new WasmExecutionContext();
+    private CaseJson json_ = null!;
     private ImmutableArray<byte> moduleBytes_;
     private BenchmarkProcess? process_;
     private BenchmarkCase definition_ = null!;
@@ -74,7 +76,7 @@ public class PreparationBenchmarks
     [Benchmark(OperationsPerInvoke = 1)]
     public WasmInstance InstantiateLarge()
     {
-        return lastInstance_ = validatedModule_.Instantiate(imports_);
+        return lastInstance_ = validatedModule_.Instantiate(context_, imports_);
     }
 
     [GlobalCleanup]
@@ -97,8 +99,9 @@ public class PreparationBenchmarks
         );
     }
 
-    internal void Initialize(LoadedAssets assets, string caseId)
+    internal void Initialize(LoadedAssets assets, string caseId, CaseJson json)
     {
+        json_ = json;
         definition_ = assets.Catalog.Get(caseId);
         moduleBytes_ = assets.GetBinary(definition_.AssetId);
         var before = WasmModule.Decode(moduleBytes_.AsSpan());
@@ -108,7 +111,7 @@ public class PreparationBenchmarks
         }
         Verify(
             definition_.MeasurementStage == MeasurementStage.Instantiate
-                ? new InstanceObservation(before.Instantiate(CaseVerifier.CreateImports()))
+                ? new InstanceObservation(before.Instantiate(context_, CaseVerifier.CreateImports()))
                 : new ModuleObservation(before)
         );
 
@@ -129,7 +132,7 @@ public class PreparationBenchmarks
 
     private void Verify(CaseObservation observation)
     {
-        var result = CaseVerifier.Verify(definition_, observation);
+        var result = CaseVerifier.Verify(context_, definition_, observation, json_);
         if (!result.Succeeded)
         {
             throw new InvalidOperationException(

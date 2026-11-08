@@ -10,7 +10,12 @@ internal static class CaseVerifier
     /// <summary>
     /// 固定素材から測定区間に対応する公開操作を行い、その結果を照合する
     /// </summary>
-    internal static VerificationResult Verify(LoadedAssets assets, string caseId)
+    internal static VerificationResult Verify(
+        WasmExecutionContext context,
+        LoadedAssets assets,
+        string caseId,
+        CaseJson json
+    )
     {
         var definition = assets.Catalog.Get(caseId);
         var stage = "Decode";
@@ -19,19 +24,19 @@ internal static class CaseVerifier
             var module = WasmModule.Decode(assets.GetBinary(definition.AssetId).AsSpan());
             if (definition.MeasurementStage == MeasurementStage.Decode)
             {
-                return Verify(definition, new ModuleObservation(module));
+                return Verify(context, definition, new ModuleObservation(module), json);
             }
             stage = "Validate";
             module.Validate();
             if (definition.MeasurementStage == MeasurementStage.DecodeValidate)
             {
-                return Verify(definition, new ModuleObservation(module));
+                return Verify(context, definition, new ModuleObservation(module), json);
             }
             stage = "Instantiate";
-            var instance = module.Instantiate(CreateImports());
+            var instance = module.Instantiate(context, CreateImports());
             if (definition.MeasurementStage == MeasurementStage.Instantiate)
             {
-                return Verify(definition, new InstanceObservation(instance));
+                return Verify(context, definition, new InstanceObservation(instance), json);
             }
             stage = "Invoke";
             var input = assets.GetInput(caseId);
@@ -40,11 +45,15 @@ internal static class CaseVerifier
                 instance.GetMemory(array.MemoryExport).Write(array.Offset, array.Bytes.AsSpan());
             }
             return Verify(
+                context,
                 definition,
                 new InvokeObservation(
                     instance,
-                    instance.GetFunction(input.FunctionExport).Invoke(input.Arguments.AsSpan())
-                )
+                    instance
+                        .GetFunction(input.FunctionExport)
+                        .Invoke(context, input.Arguments.AsSpan())
+                ),
+                json
             );
         }
         catch (Exception exception)
@@ -60,7 +69,12 @@ internal static class CaseVerifier
         }
     }
 
-    internal static VerificationResult Verify(BenchmarkCase definition, CaseObservation observation)
+    internal static VerificationResult Verify(
+        WasmExecutionContext context,
+        BenchmarkCase definition,
+        CaseObservation observation,
+        CaseJson json
+    )
     {
         var stage = definition.MeasurementStage.ToString();
         try
@@ -78,14 +92,20 @@ internal static class CaseVerifier
                         decoded.Module.Validate();
                     }
                     stage = "Instantiate";
-                    var instance = decoded.Module.Instantiate(CreateImports());
-                    return VerifyInstance(definition, instance, ref stage);
+                    var instance = decoded.Module.Instantiate(context, CreateImports());
+                    return VerifyInstance(context, definition, instance, ref stage, json);
                 case (MeasurementStage.Instantiate, InstanceObservation instantiated):
-                    return VerifyInstance(definition, instantiated.Instance, ref stage);
+                    return VerifyInstance(
+                        context,
+                        definition,
+                        instantiated.Instance,
+                        ref stage,
+                        json
+                    );
                 case (MeasurementStage.Invoke, InvokeObservation invoked):
                     var result = VerifyResults(definition, invoked.Results);
                     return result.Succeeded
-                        ? VerifyState(definition, invoked.Instance, stage) ?? result
+                        ? VerifyState(definition, invoked.Instance, stage, json) ?? result
                         : result;
                 default:
                     return new(
@@ -125,14 +145,14 @@ internal static class CaseVerifier
             "half",
             WasmFunction.CreateHost(
                 new([WasmValueKind.F64], [WasmValueKind.F64]),
-                arguments => new([WasmValue.FromF64(arguments[0].AsF64() * 0.5)])
+                (_, arguments) => new([WasmValue.FromF64(arguments[0].AsF64() * 0.5)])
             )
         );
         module.Define(
             "add_one",
             WasmFunction.CreateHost(
                 new([WasmValueKind.I32], [WasmValueKind.I32]),
-                arguments => new([WasmValue.FromI32(unchecked(arguments[0].AsI32() + 1))])
+                (_, arguments) => new([WasmValue.FromI32(unchecked(arguments[0].AsI32() + 1))])
             )
         );
         var imports = new WasmImports();
@@ -141,34 +161,37 @@ internal static class CaseVerifier
     }
 
     private static VerificationResult VerifyInstance(
+        WasmExecutionContext context,
         BenchmarkCase definition,
         WasmInstance instance,
-        ref string stage
+        ref string stage,
+        CaseJson json
     )
     {
         // 追加Invokeによって初期化やstartの不一致が修復される前に確認する。
-        var initialState = VerifyState(definition, instance, stage);
+        var initialState = VerifyState(definition, instance, stage, json);
         if (initialState is not null)
         {
             return initialState;
         }
         stage = "Invoke";
-        var input = InputFactory.Create(definition);
+        var input = InputFactory.Create(definition, json);
         foreach (var array in input.Arrays)
         {
             instance.GetMemory(array.MemoryExport).Write(array.Offset, array.Bytes.AsSpan());
         }
         var result = VerifyResults(
             definition,
-            instance.GetFunction(input.FunctionExport).Invoke(input.Arguments.AsSpan())
+            instance.GetFunction(input.FunctionExport).Invoke(context, input.Arguments.AsSpan())
         );
-        return result.Succeeded ? VerifyState(definition, instance, stage) ?? result : result;
+        return result.Succeeded ? VerifyState(definition, instance, stage, json) ?? result : result;
     }
 
     private static VerificationResult? VerifyState(
         BenchmarkCase definition,
         WasmInstance instance,
-        string stage
+        string stage,
+        CaseJson json
     )
     {
         foreach (var array in definition.ExpectedResult.Arrays)
@@ -202,7 +225,7 @@ internal static class CaseVerifier
         // 出力digestで覆われない固定入力も確認する 行列の入力を復元して不一致を隠さない。
         if (definition.Input.Arrays.Count > 0)
         {
-            foreach (var input in InputFactory.Create(definition).Arrays)
+            foreach (var input in InputFactory.Create(definition, json).Arrays)
             {
                 if (
                     definition.ExpectedResult.Arrays.Any(x =>

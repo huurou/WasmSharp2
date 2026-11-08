@@ -76,6 +76,7 @@ internal class HostLinkingModuleBinary_CreateTests
     public async Task 符号付き幅境界の定数を指定する_両入力から複数結果を保持して呼び出せる()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var bytes = HostLinkingModuleBinary.Create(
             HostLinkingModuleBinary.Types(([], [0x7F, 0x7E])),
             HostLinkingModuleBinary.Functions(0),
@@ -98,7 +99,7 @@ internal class HostLinkingModuleBinary_CreateTests
         // Act
         WasmModule[] modules = [WasmModule.Decode(bytes), WasmModule.Decode(stream)];
         var results = modules
-            .Select(x => x.Validate().Instantiate([]).GetFunction("run").Invoke([]))
+            .Select(x => x.Validate().Instantiate(executionContext, []).GetFunction("run").Invoke(executionContext, []))
             .ToArray();
 
         // Assert
@@ -117,6 +118,7 @@ internal class HostLinkingModuleBinary_CreateTests
     public async Task 非最短の整数符号化をrawで指定する_符号化を保持して公開操作を実行できる()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var bytes = HostLinkingModuleBinary.Create(
             HostLinkingModuleBinary.Types(([], [0x7F])),
             HostLinkingModuleBinary.Functions(0),
@@ -128,9 +130,9 @@ internal class HostLinkingModuleBinary_CreateTests
         var result = WasmModule
             .Decode(bytes)
             .Validate()
-            .Instantiate([])
+            .Instantiate(executionContext, [])
             .GetFunction("run")
-            .Invoke([]);
+            .Invoke(executionContext, []);
 
         // Assert
         using (Assert.Multiple())
@@ -170,6 +172,7 @@ internal class HostLinkingModuleBinary_CreateTests
     public async Task 定数関数を生成する_バイト列と非seekのshortReadで公開操作を実行できる()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var bytes = HostLinkingModuleBinary.Create(
             HostLinkingModuleBinary.Types(([], [0x7F])),
             HostLinkingModuleBinary.Functions(0),
@@ -181,7 +184,7 @@ internal class HostLinkingModuleBinary_CreateTests
         // Act
         WasmModule[] modules = [WasmModule.Decode(bytes), WasmModule.Decode(stream)];
         var results = modules
-            .Select(x => x.Validate().Instantiate([]).GetFunction("run").Invoke([]))
+            .Select(x => x.Validate().Instantiate(executionContext, []).GetFunction("run").Invoke(executionContext, []))
             .ToArray();
 
         // Assert

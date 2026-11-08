@@ -351,18 +351,51 @@ internal static class ModuleBinaryFormat
     {
         var offset = reader.Position;
         var count = reader.ReadLength();
+        EnsureCollectionSize(count, ref reader, offset, "要素数が配列の保持上限を超えています。");
+        return count;
+    }
 
-        if (count > Array.MaxLength)
+    /// <summary>
+    /// 入力を追加保持できるか確認し、超過時は追加前の位置を通知する
+    /// </summary>
+    /// <param name="bufferedLength">保持済みの入力バイト数</param>
+    /// <param name="readCount">今回読み取った入力バイト数</param>
+    internal static void EnsureInputSize(long bufferedLength, int readCount)
+    {
+        if (readCount > Array.MaxLength - bufferedLength)
         {
             throw new WasmImplementationLimitException(
-                "要素数が配列の保持上限を超えています。",
+                "入力バイナリが保持上限を超えています。",
+                WasmImplementationLimitReason.InputSize,
+                Array.MaxLength,
+                new WasmFailureLocation(WasmProcessingStage.Decode, bufferedLength)
+            );
+        }
+    }
+
+    /// <summary>
+    /// 追加後の要素数を保持できるか確認し、超過時だけ診断位置を構築する
+    /// </summary>
+    /// <param name="count">保持する要素数</param>
+    /// <param name="reader">診断のsectionと関数を持つ読取り状態 位置は変更しない</param>
+    /// <param name="offset">上限を超える要素数が判明した入力位置</param>
+    /// <param name="message">保持対象の説明</param>
+    internal static void EnsureCollectionSize(
+        ulong count,
+        ref ModuleBinaryReader reader,
+        long offset,
+        string message
+    )
+    {
+        if (count > (ulong)Array.MaxLength)
+        {
+            throw new WasmImplementationLimitException(
+                message,
                 WasmImplementationLimitReason.CollectionSize,
                 Array.MaxLength,
                 reader.Location(offset)
             );
         }
-
-        return count;
     }
 
     /// <summary>

@@ -6,8 +6,8 @@ status: accepted
 
 ホスト関数は取得元instanceへ固定せず、import・再exportでも同じ関数実体を共有する。取得元ごとのラッパーを作る案では関数の同一性と呼び出し先の情報が混ざるため、必要なinstanceは呼び出し時に指定する。
 
-登録時に、WasmInstanceを第1引数に受け取る形式と、instanceを受け取らない形式を明示的に区別する。前者はinstanceの省略・nullをcallback実行前に拒否し、後者はinstanceなしでも実行できる。Instance引数はホスト向けの追加情報であり、Wasmの関数型と値引数には含めない。C#からは`h.Invoke(a, arguments)`等で明示できる契約とし、具体的なシグネチャはhost-linkingの設計で定める。
+登録時に、instanceを受け取る形式と、instanceを受け取らない形式を明示的に区別する。両形式とも第1引数で`WasmExecutionContext`を受け取り、instanceを受け取る形式では第2引数に`WasmInstance`が続く。前者はinstanceの省略・nullをcallback実行前に拒否し、後者はinstanceなしでも実行できる。Instance引数はホスト向けの追加情報であり、Wasmの関数型と値引数には含めない。C#からは`h.Invoke(context, a, arguments)`で明示する。
 
 Wasmからの呼び出しでは、実行中の定義関数の所属instanceを渡す。BからAの定義関数Fを呼び、FがHを呼ぶならA、BのWasmコードがAから再exportされたHを呼ぶならBとなる。Aのstart自体がHならAを渡す。C#からの直接Invokeでは明示されたinstanceを使い、省略値を取得元や進行中の呼び出しから暗黙に補わない。
 
-Instance引数はアクセス情報として扱い、実行ポリシーの選択と分離する。コンテキスト外からのホスト関数の直接Invokeは、instanceの指定・省略やリソース操作だけではWasm実行コンテキストを開かず、Wasm定義関数またはstartへ入った時点で開く。開始したWasm実行が終了してホストへ戻れば解除し、その後の別のWasm呼び出しは新しいコンテキストを開く。既存のWasm実行からの同期再入は両形式とも同じコンテキストを引き継ぐ。深さと上限は[ADR 0008](0008-instance-options-and-execution-context.md)、start失敗後の参照は[ADR 0011](0011-retain-references-after-start-failure.md)に従う。
+Instance引数はアクセス情報として扱い、実行ポリシーの選択と分離する。Wasm実行外からのホスト関数の直接Invokeは、instanceの指定・省略やリソース操作だけでは内部の実行状態を作らず、Wasm定義関数またはstartへ入った時点で作る。開始したWasm実行が終了してホストへ戻れば内部状態を解放し、その後の別のWasm呼び出しでは新しく作る。既存のWasm実行から同期再入する場合は、両形式ともcallbackが受け取ったコンテキストを次のInvokeやInstantiateへ明示的に渡す。深さと上限は[ADR 0008](0008-instance-options-and-execution-context.md)、start失敗後の参照は[ADR 0011](0011-retain-references-after-start-failure.md)に従う。

@@ -261,7 +261,7 @@ internal class ValueMatcher_MatchTests
     {
         // Arrange
         var state = new ScriptState("a.wast");
-        var function = WasmFunction.CreateHost(new([], []), _ => new WasmResults([]));
+        var function = WasmFunction.CreateHost(new([], []), (_, _) => new WasmResults([]));
 
         // Act
         var mismatches = Match(

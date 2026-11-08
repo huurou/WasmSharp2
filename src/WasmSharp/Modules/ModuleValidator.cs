@@ -17,7 +17,7 @@ internal static class ModuleValidator
     /// <returns>importを含まない定義順の線形実行コード</returns>
     internal static ImmutableArray<FunctionCode> Validate(WasmModule module)
     {
-        var (functionCount, _, memoryCount, globalCount) = ValidateImportReferences(module);
+        var (functionCount, memoryCount, globalCount) = ValidateImportReferences(module);
         ValidateFunctionReferences(module, functionCount);
         var references = ReferenceValidationContext.Create(module, functionCount);
         ValidateInitializers(module, references);
@@ -246,16 +246,14 @@ internal static class ModuleValidator
     /// 元の添字空間を保ってimportの型参照とリソース制約を逆順に検証する
     /// </summary>
     /// <param name="module">デコード済みの静的定義</param>
-    /// <returns>importした関数・table・memory・globalの個数</returns>
+    /// <returns>importした関数・memory・globalの個数</returns>
     private static (
         uint FunctionCount,
-        uint TableCount,
         uint MemoryCount,
         uint GlobalCount
     ) ValidateImportReferences(WasmModule module)
     {
         uint functionCount = 0;
-        uint tableCount = 0;
         uint memoryCount = 0;
         uint globalCount = 0;
         foreach (var import in module.Imports)
@@ -264,9 +262,6 @@ internal static class ModuleValidator
             {
                 case FunctionImport:
                     functionCount++;
-                    break;
-                case TableImport:
-                    tableCount++;
                     break;
                 case MemoryImport:
                     memoryCount++;
@@ -301,12 +296,7 @@ internal static class ModuleValidator
                     break;
 
                 case TableImport table:
-                    ValidateLimits(
-                        table.Type.Limits,
-                        uint.MaxValue,
-                        "table size must be at most 2^32-1",
-                        location
-                    );
+                    ValidateLimits(table.Type.Limits, location);
                     break;
 
                 case MemoryImport memory:
@@ -315,7 +305,7 @@ internal static class ModuleValidator
             }
         }
 
-        return (functionCount, tableCount, memoryCount, globalCount);
+        return (functionCount, memoryCount, globalCount);
     }
 
     /// <summary>
@@ -345,8 +335,6 @@ internal static class ModuleValidator
         {
             ValidateLimits(
                 table.Limits,
-                uint.MaxValue,
-                "table size must be at most 2^32-1",
                 new(WasmProcessingStage.Validate, table.ByteOffset, null, 4)
             );
         }
@@ -446,13 +434,32 @@ internal static class ModuleValidator
     }
 
     /// <summary>
-    /// memoryのページ数のlimitsを検証する
+    /// memoryのページ数の仕様上限とlimitsの大小関係を検証する
     /// </summary>
     /// <param name="limits">未検証のページ数の範囲</param>
     /// <param name="location">宣言の位置</param>
     private static void ValidateMemory(WasmLimits limits, WasmFailureLocation location)
     {
-        ValidateLimits(limits, 65536, "memory size must be at most 65536 pages (4GiB)", location);
+        const uint MAXIMUM_PAGES = 65536;
+        const string MAXIMUM_PREFIX = "memory size must be at most 65536 pages (4GiB)";
+
+        if (limits.Minimum > MAXIMUM_PAGES)
+        {
+            throw ValidationDiagnostics.ValidationFailure(
+                MAXIMUM_PREFIX,
+                "limitsの最小値が仕様上限を超えています。",
+                location
+            );
+        }
+        if (limits.Maximum is > MAXIMUM_PAGES)
+        {
+            throw ValidationDiagnostics.ValidationFailure(
+                MAXIMUM_PREFIX,
+                "limitsの最大値が仕様上限を超えています。",
+                location
+            );
+        }
+        ValidateLimits(limits, location);
     }
 
     /// <summary>
@@ -481,45 +488,19 @@ internal static class ModuleValidator
     }
 
     /// <summary>
-    /// リソースの割り当てや実装の保持上限とは区別して、limitsの仕様上の制約を検証する
+    /// limitsの最小値と最大値の大小関係を検証する
     /// </summary>
     /// <param name="limits">未検証の範囲</param>
-    /// <param name="maximum">仕様上の最大値</param>
-    /// <param name="maximumPrefix">仕様上限を超えた場合の診断先頭</param>
     /// <param name="location">宣言の位置</param>
-    private static void ValidateLimits(
-        WasmLimits limits,
-        uint maximum,
-        string maximumPrefix,
-        WasmFailureLocation location
-    )
+    private static void ValidateLimits(WasmLimits limits, WasmFailureLocation location)
     {
-        if (limits.Minimum > maximum)
+        if (limits.Maximum is { } maximum && limits.Minimum > maximum)
         {
             throw ValidationDiagnostics.ValidationFailure(
-                maximumPrefix,
-                "limitsの最小値が仕様上限を超えています。",
+                "size minimum must not be greater than maximum",
+                "limitsの最小値が最大値を超えています。",
                 location
             );
-        }
-        if (limits.Maximum is { } max)
-        {
-            if (max > maximum)
-            {
-                throw ValidationDiagnostics.ValidationFailure(
-                    maximumPrefix,
-                    "limitsの最大値が仕様上限を超えています。",
-                    location
-                );
-            }
-            if (limits.Minimum > max)
-            {
-                throw ValidationDiagnostics.ValidationFailure(
-                    "size minimum must not be greater than maximum",
-                    "limitsの最小値が最大値を超えています。",
-                    location
-                );
-            }
         }
     }
 }

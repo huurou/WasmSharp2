@@ -7,7 +7,7 @@ namespace WasmSharp.Tests.Modules;
 
 internal class ConstantInitializer_ValidateTests
 {
-    private static readonly ReferenceValidationContext references_ =
+    private readonly ReferenceValidationContext references_ =
         ReferenceValidationContext.Create(WasmModule.Decode(HostLinkingModuleBinary.Create()), 0);
 
     [Test]

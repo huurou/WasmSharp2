@@ -657,13 +657,11 @@ internal static class CorpusVerifier
     /// <returns>最初に見つかったリンクの相対path リンクを経由しない場合はnull</returns>
     private static string? FindLink(string root, string path)
     {
-        var segments = path.Split('/');
-        for (var i = 0; i < segments.Length; i++)
+        foreach (var relative in GetParentPaths(path).Append(path))
         {
-            var relative = string.Join('/', segments.Take(i + 1));
             var fullPath = Path.Combine(root, relative);
-            FileSystemInfo entry =
-                i < segments.Length - 1 ? new DirectoryInfo(fullPath) : new FileInfo(fullPath);
+            // LinkTargetはファイルとディレクトリの両方を扱う。
+            var entry = new FileInfo(fullPath);
             if (entry.LinkTarget is not null)
             {
                 return relative;
@@ -681,11 +679,6 @@ internal static class CorpusVerifier
     /// <returns>解決した素材の相対path 参照名が不正か、素材領域内に収まらない場合はnull</returns>
     private static string? ResolveReference(string jsonPath, string filename)
     {
-        if (!IsRelativePath(filename))
-        {
-            return null;
-        }
-
         var path = $"{jsonPath[..jsonPath.LastIndexOf('/')]}/{filename}";
         return IsMaterialPath(path) ? path : null;
     }
@@ -709,9 +702,8 @@ internal static class CorpusVerifier
     private static bool IsRelativePath(string path)
     {
         // 区切りを/に固定し、絶対path・ドライブ指定・root外への移動・空の要素を受け付けない。
-        return path.Length > 0
-            && !path.Any(x => x is '\\' or ':' || char.IsControl(x))
-            && path.Split('/').All(x => x is not ("" or "." or ".."));
+        return !path.Any(x => x is '\\' or ':' || char.IsControl(x)) &&
+            path.Split('/').All(x => x is not ("" or "." or ".."));
     }
 
     /// <summary>
@@ -733,14 +725,13 @@ internal static class CorpusVerifier
     /// <summary>
     /// 入力の変換状態を保存JSONと同じ表記の診断用文字列にする。
     /// </summary>
-    /// <param name="status">診断に表示する変換状態</param>
-    /// <returns>Unprocessedはunprocessed、Succeededはsucceeded、それ以外はrunner_error</returns>
+    /// <param name="status">診断に表示する成功以外の変換状態</param>
+    /// <returns>Unprocessedはunprocessed、それ以外はrunner_error</returns>
     private static string FormatStatus(ConversionStatus status)
     {
         return status switch
         {
             ConversionStatus.Unprocessed => "unprocessed",
-            ConversionStatus.Succeeded => "succeeded",
             _ => "runner_error",
         };
     }

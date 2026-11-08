@@ -16,6 +16,7 @@ internal partial class WasmModule_InstantiateTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var memory = new WasmMemory(new(1));
         memory.Write(0, [9, 9, 9, 9]);
         memory.Write(65535, [88]);
@@ -34,7 +35,7 @@ internal partial class WasmModule_InstantiateTests
             "start",
             WasmFunction.CreateHost(
                 new([], []),
-                (instance, _) =>
+                (callbackContext, instance, _) =>
                 {
                     calls++;
                     instance.GetMemory("memory").Read(0, observed);
@@ -84,7 +85,7 @@ internal partial class WasmModule_InstantiateTests
         {
             // Act & Assert
             var exception = await Assert
-                .That(() => module.Instantiate([host]))
+                .That(() => module.Instantiate(executionContext, [host]))
                 .ThrowsExactly<WasmTrapException>();
             using (Assert.Multiple())
             {
@@ -113,7 +114,7 @@ internal partial class WasmModule_InstantiateTests
         else
         {
             // Act
-            var instance = module.Instantiate([host]);
+            var instance = module.Instantiate(executionContext, [host]);
 
             // Assert
             using (Assert.Multiple())
@@ -144,6 +145,7 @@ internal partial class WasmModule_InstantiateTests
     public async Task アクティブデータが重なる_宣言順に書き込み成功した実体を破棄する()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var module = new WasmModule(
             [],
             [],
@@ -158,7 +160,7 @@ internal partial class WasmModule_InstantiateTests
         ).Validate();
 
         // Act
-        var instance = module.Instantiate([]);
+        var instance = module.Instantiate(executionContext, []);
         var actual = new byte[5];
         instance.GetMemory("memory").Read(0, actual);
 
@@ -185,6 +187,7 @@ internal partial class WasmModule_InstantiateTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var module = new WasmModule(
             [],
             [],
@@ -199,7 +202,7 @@ internal partial class WasmModule_InstantiateTests
         ).Validate();
 
         // Act
-        var instance = module.Instantiate([]);
+        var instance = module.Instantiate(executionContext, []);
         var memory = hasMemory ? instance.GetMemory("memory") : new WasmMemory(new(1));
         var initial = new byte[2];
         memory.Read(0, initial);
@@ -223,6 +226,7 @@ internal partial class WasmModule_InstantiateTests
     public async Task 同じ定義から生成した実体を破棄して再生成する_データの破棄状態と定義メモリが独立する()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var module = new WasmModule(
             [],
             [],
@@ -235,12 +239,12 @@ internal partial class WasmModule_InstantiateTests
             null,
             [ActiveData([11], 0, 50), new([22, 33], null, 60)]
         ).Validate();
-        var first = module.Instantiate([]);
+        var first = module.Instantiate(executionContext, []);
         first.DataSegments[1].Drop();
         first.GetMemory("memory").Write(0, [99]);
 
         // Act
-        var second = module.Instantiate([]);
+        var second = module.Instantiate(executionContext, []);
         var copied = second.DataSegments[1].TryInitialize(second.GetMemory("memory"), 1, 0, 2);
         var firstBytes = new byte[3];
         first.GetMemory("memory").Read(0, firstBytes);
@@ -275,6 +279,7 @@ internal partial class WasmModule_InstantiateTests
     public async Task インポートした不変globalをオフセットに使う_拡張済み共有メモリの現在範囲に書き込む()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var memory = new WasmMemory(new(0, 2));
         memory.TryGrow(2, out _);
         var host = new WasmHostModule("env");
@@ -314,7 +319,7 @@ internal partial class WasmModule_InstantiateTests
         ).Validate();
 
         // Act
-        var instance = module.Instantiate([host]);
+        var instance = module.Instantiate(executionContext, [host]);
         var actual = new byte[5];
         memory.Read(65534, actual);
 
@@ -336,6 +341,7 @@ internal partial class WasmModule_InstantiateTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         WasmInstance? received = null;
         var calls = 0;
         var initial = new byte[3];
@@ -346,13 +352,13 @@ internal partial class WasmModule_InstantiateTests
             "start",
             WasmFunction.CreateHost(
                 new([], []),
-                (instance, _) =>
+                (callbackContext, instance, _) =>
                 {
                     received = instance;
                     calls++;
                     instance.GetMemory("memory").Read(0, initial);
                     lengths = [.. instance.DataSegments.Select(x => x.Length)];
-                    value = instance.GetFunction("read").Invoke([]).Values[0].AsI32();
+                    value = instance.GetFunction("read").Invoke(callbackContext, []).Values[0].AsI32();
                     return new([]);
                 }
             )
@@ -402,7 +408,7 @@ internal partial class WasmModule_InstantiateTests
         ).Validate();
 
         // Act
-        var result = module.Instantiate([host]);
+        var result = module.Instantiate(executionContext, [host]);
 
         // Assert
         using (Assert.Multiple())
@@ -427,6 +433,7 @@ internal partial class WasmModule_InstantiateTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var memory = new WasmMemory(new(1));
         memory.Write(0, [99, 88, 77]);
         memory.Write(65535, [66]);
@@ -440,7 +447,7 @@ internal partial class WasmModule_InstantiateTests
             "start",
             WasmFunction.CreateHost(
                 new([], []),
-                _ =>
+                (callbackContext, _) =>
                 {
                     calls++;
                     return new([]);
@@ -470,7 +477,7 @@ internal partial class WasmModule_InstantiateTests
 
         // Act & Assert
         var exception = await Assert
-            .That(() => returned = module.Instantiate([host]))
+            .That(() => returned = module.Instantiate(executionContext, [host]))
             .ThrowsExactly<WasmTrapException>();
         var actual = new byte[65536];
         memory.Read(0, actual);
@@ -503,6 +510,7 @@ internal partial class WasmModule_InstantiateTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var module = new WasmModule(
             [],
             [],
@@ -517,7 +525,7 @@ internal partial class WasmModule_InstantiateTests
         ).Validate();
 
         // Act
-        var instance = module.Instantiate([]);
+        var instance = module.Instantiate(executionContext, []);
 
         // Assert
         using (Assert.Multiple())
@@ -536,6 +544,7 @@ internal partial class WasmModule_InstantiateTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var expected = new InvalidOperationException("ホスト処理の失敗");
         var memory = new WasmMemory(new(1));
         WasmInstance? saved = null;
@@ -547,7 +556,7 @@ internal partial class WasmModule_InstantiateTests
             "save",
             WasmFunction.CreateHost(
                 new([], []),
-                (instance, _) =>
+                (callbackContext, instance, _) =>
                 {
                     saved = instance;
                     savedFunction = instance.GetFunction("read");
@@ -601,14 +610,14 @@ internal partial class WasmModule_InstantiateTests
         ).Validate();
 
         // Act & Assert
-        var exception = await Assert.That(() => module.Instantiate([host])).Throws<Exception>();
+        var exception = await Assert.That(() => module.Instantiate(executionContext, [host])).Throws<Exception>();
         await Assert.That(saved).IsNotNull();
 
         // Act
         var actual = new byte[3];
         savedMemory!.Read(0, actual);
         saved.GetMemory("memory").Write(0, [44]);
-        var value = savedFunction!.Invoke([]).Values[0].AsI32();
+        var value = savedFunction!.Invoke(executionContext, []).Values[0].AsI32();
         var updated = new byte[1];
         memory.Read(0, updated);
 
@@ -638,6 +647,7 @@ internal partial class WasmModule_InstantiateTests
     public async Task 後続のImportが見つからない_データ初期化を始めず共有メモリを変更しない()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var memory = new WasmMemory(new(1));
         memory.Write(0, [99]);
         var host = new WasmHostModule("env");
@@ -660,7 +670,7 @@ internal partial class WasmModule_InstantiateTests
 
         // Act & Assert
         await Assert
-            .That(() => module.Instantiate([host]))
+            .That(() => module.Instantiate(executionContext, [host]))
             .ThrowsExactly<WasmInstantiateException>();
         var actual = new byte[1];
         memory.Read(0, actual);

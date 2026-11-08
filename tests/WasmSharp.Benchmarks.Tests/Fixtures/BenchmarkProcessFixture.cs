@@ -7,6 +7,8 @@ namespace WasmSharp.Benchmarks.Tests.Fixtures;
 
 internal sealed class BenchmarkProcessFixture : IDisposable
 {
+    private readonly CaseJson json_ = new CaseJson();
+
     private readonly string? previous_ = Environment.GetEnvironmentVariable(
         RunConfiguration.ENVIRONMENT_VARIABLE
     );
@@ -15,7 +17,7 @@ internal sealed class BenchmarkProcessFixture : IDisposable
 
     internal BenchmarkProcessFixture()
     {
-        RunStore.Create(Run.DirectoryPath, Run.Manifest);
+        RunStore.Create(Run.DirectoryPath, Run.Manifest, json_);
         var configuration = new RunConfiguration(
             Run.Manifest.RunId,
             Run.DirectoryPath,
@@ -26,7 +28,7 @@ internal sealed class BenchmarkProcessFixture : IDisposable
         var path = Path.Combine(Run.DirectoryPath, "config.json");
         File.WriteAllBytes(
             path,
-            JsonSerializer.SerializeToUtf8Bytes(configuration, CaseJson.Options)
+            JsonSerializer.SerializeToUtf8Bytes(configuration, json_.Options)
         );
         Environment.SetEnvironmentVariable(RunConfiguration.ENVIRONMENT_VARIABLE, path);
     }

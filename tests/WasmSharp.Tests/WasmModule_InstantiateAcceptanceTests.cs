@@ -13,6 +13,7 @@ internal partial class WasmModule_InstantiateTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var target = WasmModule
             .Decode(
                 HostLinkingModuleBinary.Create(
@@ -23,19 +24,19 @@ internal partial class WasmModule_InstantiateTests
                 )
             )
             .Validate()
-            .Instantiate([], new(2))
+            .Instantiate(executionContext, [], new(2))
             .GetFunction("run");
         var calls = 0;
-        WasmResults Callback(ReadOnlySpan<WasmValue> arguments)
+        WasmResults Callback(WasmExecutionContext callbackContext, ReadOnlySpan<WasmValue> arguments)
         {
             calls++;
-            return target.Invoke([]);
+            return target.Invoke(callbackContext, []);
         }
         var host = new WasmHostModule("env");
         host.Define(
             "start",
             withInstance
-                ? WasmFunction.CreateHost(new([], []), (_, arguments) => Callback(arguments))
+                ? WasmFunction.CreateHost(new([], []), (callbackContext, _, arguments) => Callback(callbackContext, arguments))
                 : WasmFunction.CreateHost(new([], []), Callback)
         );
         var module = WasmModule
@@ -51,7 +52,7 @@ internal partial class WasmModule_InstantiateTests
 
         // Act & Assert
         var exception = await Assert
-            .That(() => returned = module.Instantiate([host], new(2)))
+            .That(() => returned = module.Instantiate(executionContext, [host], new(2)))
             .ThrowsExactly<WasmExhaustionException>();
         using (Assert.Multiple())
         {
@@ -63,8 +64,8 @@ internal partial class WasmModule_InstantiateTests
         }
 
         // Act
-        var instance = module.Instantiate([host], new(3));
-        var result = target.Invoke([]);
+        var instance = module.Instantiate(executionContext, [host], new(3));
+        var result = target.Invoke(executionContext, []);
 
         // Assert
         using (Assert.Multiple())

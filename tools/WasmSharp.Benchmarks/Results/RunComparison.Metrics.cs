@@ -1,6 +1,6 @@
 namespace WasmSharp.Benchmarks.Results;
 
-internal static partial class RunComparison
+internal sealed partial class RunComparison
 {
     private static MetricComparison CompareMetric(
         List<RunMetricValue> baselineValues,

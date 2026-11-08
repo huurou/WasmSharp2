@@ -1,5 +1,4 @@
 using WasmSharp.Exceptions;
-using WasmSharp.Execution;
 using WasmSharp.Tests.Fixtures;
 
 namespace WasmSharp.Tests;
@@ -17,21 +16,22 @@ internal partial class WasmFunction_InvokeTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         WasmFunction function = null!;
         var reenter = true;
-        WasmResults Callback(ReadOnlySpan<WasmValue> values)
+        WasmResults Callback(WasmExecutionContext callbackContext, ReadOnlySpan<WasmValue> values)
         {
-            return reenter ? function.Invoke([]) : new([]);
+            return reenter ? function.Invoke(callbackContext, []) : new([]);
         }
 
         var host = withInstance
-            ? WasmFunction.CreateHost(new([], []), (_, values) => Callback(values))
+            ? WasmFunction.CreateHost(new([], []), (callbackContext, _, values) => Callback(callbackContext, values))
             : WasmFunction.CreateHost(new([], []), Callback);
-        function = CreateHostCallingInstance(host, 4).GetFunction("run");
+        function = CreateHostCallingInstance(executionContext, host, 4).GetFunction("run");
         var entry = function;
         if (differentInstance)
         {
-            function = CreateHostCallingInstance(host, 20).GetFunction("run");
+            function = CreateHostCallingInstance(executionContext, host, 20).GetFunction("run");
         }
         var cleared = false;
 
@@ -41,16 +41,16 @@ internal partial class WasmFunction_InvokeTests
             {
                 try
                 {
-                    entry.Invoke([]);
+                    entry.Invoke(executionContext, []);
                 }
                 finally
                 {
-                    cleared = InterpreterContext.Current is null;
+                    cleared = executionContext.Current is null;
                 }
             })
             .ThrowsExactly<WasmExhaustionException>();
         reenter = false;
-        var result = function.Invoke([]);
+        var result = function.Invoke(executionContext, []);
         using (Assert.Multiple())
         {
             await Assert.That(exhaustion!.Reason).IsEqualTo(WasmExhaustionReason.CallDepthLimit);
@@ -66,6 +66,7 @@ internal partial class WasmFunction_InvokeTests
     public async Task 定義関数が直接再帰する_設定上限で中断した後に独立した関数を実行できる()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var instance = WasmModule
             .Decode(
                 HostLinkingModuleBinary.Create(
@@ -76,7 +77,7 @@ internal partial class WasmFunction_InvokeTests
                 )
             )
             .Validate()
-            .Instantiate([], new(10_000));
+            .Instantiate(executionContext, [], new(10_000));
         var cleared = false;
 
         // Act & Assert
@@ -85,15 +86,15 @@ internal partial class WasmFunction_InvokeTests
             {
                 try
                 {
-                    instance.GetFunction("recursive").Invoke([]);
+                    instance.GetFunction("recursive").Invoke(executionContext, []);
                 }
                 finally
                 {
-                    cleared = InterpreterContext.Current is null;
+                    cleared = executionContext.Current is null;
                 }
             })
             .ThrowsExactly<WasmExhaustionException>();
-        var result = instance.GetFunction("empty").Invoke([]);
+        var result = instance.GetFunction("empty").Invoke(executionContext, []);
         using (Assert.Multiple())
         {
             await Assert.That(exception!.Reason).IsEqualTo(WasmExhaustionReason.CallDepthLimit);
@@ -111,6 +112,7 @@ internal partial class WasmFunction_InvokeTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var location = new WasmFailureLocation(WasmProcessingStage.Instantiate, 12345, 42);
         Exception expected = exhaustion
             ? new WasmExhaustionException(
@@ -123,9 +125,9 @@ internal partial class WasmFunction_InvokeTests
         var fail = true;
         var host = WasmFunction.CreateHost(
             new([], []),
-            (WasmHostCallback)(_ => fail ? throw expected : new([]))
+            (WasmHostCallback)((callbackContext, _) => fail ? throw expected : new([]))
         );
-        var function = CreateHostCallingInstance(host, 2).GetFunction("run");
+        var function = CreateHostCallingInstance(executionContext, host, 2).GetFunction("run");
         var cleared = false;
 
         // Act & Assert
@@ -134,16 +136,16 @@ internal partial class WasmFunction_InvokeTests
             {
                 try
                 {
-                    function.Invoke([]);
+                    function.Invoke(executionContext, []);
                 }
                 finally
                 {
-                    cleared = InterpreterContext.Current is null;
+                    cleared = executionContext.Current is null;
                 }
             })
             .Throws<Exception>();
         fail = false;
-        var result = function.Invoke([]);
+        var result = function.Invoke(executionContext, []);
         using (Assert.Multiple())
         {
             await Assert.That(actual).IsSameReferenceAs(expected);

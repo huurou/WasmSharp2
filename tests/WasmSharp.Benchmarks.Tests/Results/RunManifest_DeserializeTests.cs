@@ -7,6 +7,8 @@ namespace WasmSharp.Benchmarks.Tests.Results;
 
 internal class RunManifest_DeserializeTests
 {
+    private readonly CaseJson json_ = new CaseJson();
+
     [Test]
     [Arguments("run-succeeded.json")]
     [Arguments("run-failed.json")]
@@ -14,14 +16,14 @@ internal class RunManifest_DeserializeTests
     {
         // Arrange
         var json = await ReadFixtureAsync(name);
-        var fixture = JsonSerializer.Deserialize<RunFixture>(json, CaseJson.Options)!;
+        var fixture = JsonSerializer.Deserialize<RunFixture>(json, json_.Options)!;
         using var stream = new MemoryStream();
 
         // Act
-        await JsonSerializer.SerializeAsync(stream, fixture, CaseJson.Options);
+        await JsonSerializer.SerializeAsync(stream, fixture, json_.Options);
         stream.Position = 0;
-        var restored = await JsonSerializer.DeserializeAsync<RunFixture>(stream, CaseJson.Options);
-        var actual = JsonSerializer.SerializeToNode(restored, CaseJson.Options);
+        var restored = await JsonSerializer.DeserializeAsync<RunFixture>(stream, json_.Options);
+        var actual = JsonSerializer.SerializeToNode(restored, json_.Options);
 
         // Assert
         await Assert.That(JsonNode.DeepEquals(JsonNode.Parse(json), actual)).IsTrue();
@@ -38,11 +40,12 @@ internal class RunManifest_DeserializeTests
         fixture["run"]!["cases"]![0]!["metrics"]![property] = null;
 
         // Act & Assert
-        await Assert
+        var exception = await Assert
             .That(() =>
-                JsonSerializer.Deserialize<RunFixture>(fixture.ToJsonString(), CaseJson.Options)
+                JsonSerializer.Deserialize<RunFixture>(fixture.ToJsonString(), json_.Options)
             )
             .ThrowsExactly<ArgumentException>();
+        await Assert.That(exception!.Message).Contains("指標").And.Contains("理由が必要");
     }
 
     private static Task<string> ReadFixtureAsync(string name)

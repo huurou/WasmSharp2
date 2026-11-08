@@ -242,34 +242,37 @@ internal partial class FunctionValidator_ValidateTests
     }
 
     [Test]
-    [Arguments("42000E0101020B", 1, "unknown label 2")]
-    [Arguments("027C430000000042000E0102000B1A0B", 3, "type mismatch")]
-    [Arguments("027C0E0102000B1A0B", 1, "unknown label 2")]
-    [Arguments("027D430000000042000E0102000B1A0B", 3, "unknown label 2")]
-    [Arguments("0E02FFFFFFFF0F01000B", 0, "unknown label 4294967295")]
-    [Arguments("027C027D430000000041000E020103000B1A4400000000000000000B1A0B", 4, "type mismatch")]
+    [Arguments("42000E0101020B", 1, "unknown label 2", null)]
+    [Arguments("027C430000000042000E0102000B1A0B", 3, "type mismatch", null)]
+    [Arguments("027C0E0102000B1A0B", 1, "unknown label 2", null)]
+    [Arguments("027D430000000042000E0102000B1A0B", 3, "unknown label 2", null)]
+    [Arguments("0E02FFFFFFFF0F01000B", 0, "unknown label 4294967295", null)]
+    [Arguments("027C027D430000000041000E020103000B1A4400000000000000000B1A0B", 4, "type mismatch", null)]
     [Arguments(
         "027C027D430000000041000E020301000B1A4400000000000000000B1A0B",
         4,
-        "unknown label 3"
+        "unknown label 3",
+        null
     )]
-    [Arguments("027C027D00430000000041000E0100010B1A4400000000000000000B1A0B", 5, "type mismatch")]
-    [Arguments("027F000E0101000B1A0B", 2, "type mismatch")]
-    [Arguments("027F000E0100010B1A0B", 2, "type mismatch")]
-    [Arguments("027D430000000042000E0100000B1A0B", 3, "type mismatch")]
-    [Arguments("0E00000B", 0, "type mismatch")]
-    [Arguments("027F41000E00000B1A0B", 2, "type mismatch")]
-    [Arguments("4300000000027C41000E0102000B1A1A0B", 3, "unknown label 2")]
-    [Arguments("410102400E00000B1A0B", 2, "type mismatch")]
-    [Arguments("024041000E00000B1A0B", 4, "type mismatch")]
-    [Arguments("41000E000042000B", 3, "type mismatch")]
+    [Arguments("027C027D00430000000041000E0100010B1A4400000000000000000B1A0B", 5, "type mismatch", null)]
+    [Arguments("027F000E0101000B1A0B", 2, "type mismatch", "分岐先の引数個数")]
+    [Arguments("027F000E0100010B1A0B", 2, "type mismatch", null)]
+    [Arguments("027D430000000042000E0100000B1A0B", 3, "type mismatch", null)]
+    [Arguments("0E00000B", 0, "type mismatch", null)]
+    [Arguments("027F41000E00000B1A0B", 2, "type mismatch", null)]
+    [Arguments("4300000000027C41000E0102000B1A1A0B", 3, "unknown label 2", null)]
+    [Arguments("410102400E00000B1A0B", 2, "type mismatch", null)]
+    [Arguments("024041000E00000B1A0B", 4, "type mismatch", null)]
+    [Arguments("41000E000042000B", 3, "type mismatch", null)]
     public async Task 分岐表のラベルや型が複合的に不正_既定と候補順を優先して元の命令位置で拒否する(
         string body,
         int failureIndex,
-        string prefix
+        string prefix,
+        string? expectedDetail
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var module = DecodeControl([], [], Convert.FromHexString(body));
 
         // Act & Assert
@@ -281,6 +284,10 @@ internal partial class FunctionValidator_ValidateTests
             await Assert
                 .That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal))
                 .IsTrue();
+            if (expectedDetail is not null)
+            {
+                await Assert.That(exception.Message).Contains(expectedDetail);
+            }
             await Assert
                 .That(exception.Location)
                 .IsEqualTo(
@@ -293,7 +300,7 @@ internal partial class FunctionValidator_ValidateTests
                 );
             await Assert.That(module.FunctionCodes.IsEmpty).IsTrue();
             await Assert
-                .That(() => module.Instantiate([]))
+                .That(() => module.Instantiate(executionContext, []))
                 .ThrowsExactly<InvalidOperationException>();
         }
     }

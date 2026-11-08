@@ -32,6 +32,7 @@ internal partial class WasmFunction_InvokeTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var bytes = HostLinkingModuleBinary.Create(
             HostLinkingModuleBinary.Types(([], [0x7B])),
             HostLinkingModuleBinary.Functions(0),
@@ -46,7 +47,7 @@ internal partial class WasmFunction_InvokeTests
         foreach (var module in modules)
         {
             module.Validate();
-            var result = module.Instantiate([]).GetFunction("run").Invoke([]);
+            var result = module.Instantiate(executionContext, []).GetFunction("run").Invoke(executionContext, []);
 
             // Assert
             using (Assert.Multiple())
@@ -73,6 +74,7 @@ internal partial class WasmFunction_InvokeTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         byte[] select = typed ? [0x1C, 1, 0x7B] : [0x1B];
         var bytes = HostLinkingModuleBinary.Create(
             HostLinkingModuleBinary.Types(([0x7B, 0x7B, 0x7F], [0x7B])),
@@ -87,9 +89,9 @@ internal partial class WasmFunction_InvokeTests
         // Act
         var result = module
             .Validate()
-            .Instantiate([])
+            .Instantiate(executionContext, [])
             .GetFunction("run")
-            .Invoke([first, second, WasmValue.FromI32(condition)]);
+            .Invoke(executionContext, [first, second, WasmValue.FromI32(condition)]);
 
         // Assert
         await Assert
@@ -105,6 +107,7 @@ internal partial class WasmFunction_InvokeTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var first = WasmValue.FromV128(0x800000007FC12345, 0x0123456789ABCDEF);
         var second = WasmValue.FromV128(0xFEDCBA9876543210, 0xFFF8123456789ABC);
         var function = WasmModule
@@ -159,11 +162,11 @@ internal partial class WasmFunction_InvokeTests
                 )
             )
             .Validate()
-            .Instantiate([])
+            .Instantiate(executionContext, [])
             .GetFunction("run");
 
         // Act
-        var result = function.Invoke([first, second, WasmValue.FromI32(iterations)]);
+        var result = function.Invoke(executionContext, [first, second, WasmValue.FromI32(iterations)]);
 
         // Assert
         await Assert
@@ -175,6 +178,7 @@ internal partial class WasmFunction_InvokeTests
     public async Task V128を別moduleの同じ構造の型で間接callする_複数結果と所属instanceを保つ()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var callee = WasmModule
             .Decode(
                 HostLinkingModuleBinary.Create(
@@ -186,7 +190,7 @@ internal partial class WasmFunction_InvokeTests
                 )
             )
             .Validate()
-            .Instantiate([]);
+            .Instantiate(executionContext, []);
         var table = new WasmTable(WasmValueKind.FuncRef, new(1));
         table.Set(0, WasmValue.FromFuncRef(callee.GetFunction("run")));
         var provider = new WasmHostModule("env");
@@ -214,9 +218,9 @@ internal partial class WasmFunction_InvokeTests
 
         // Act
         var result = module
-            .Instantiate([provider])
+            .Instantiate(executionContext, [provider])
             .GetFunction("run")
-            .Invoke([first, second, WasmValue.FromI32(0)]);
+            .Invoke(executionContext, [first, second, WasmValue.FromI32(0)]);
 
         // Assert
         using (Assert.Multiple())
@@ -239,6 +243,7 @@ internal partial class WasmFunction_InvokeTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var calls = 0;
         var table = new WasmTable(WasmValueKind.FuncRef, new(1));
         table.Set(
@@ -248,7 +253,7 @@ internal partial class WasmFunction_InvokeTests
                     mismatchedResult
                         ? new([WasmValueKind.V128], [WasmValueKind.I64])
                         : new([WasmValueKind.I64], [WasmValueKind.V128]),
-                    _ =>
+                    (callbackContext, _) =>
                     {
                         calls++;
                         return new([]);
@@ -269,14 +274,14 @@ internal partial class WasmFunction_InvokeTests
                 )
             )
             .Validate()
-            .Instantiate([provider], new(2));
+            .Instantiate(executionContext, [provider], new(2));
         var value = WasmValue.FromV128(0x800000007FC12345, 0xFFF8123456789ABC);
         var function = instance.GetFunction("run");
         WasmInstance? observed = null;
 
         // Act & Assert
         var exception = await Assert
-            .That(() => function.Invoke([value]))
+            .That(() => function.Invoke(executionContext, [value]))
             .ThrowsExactly<WasmTrapException>();
         using (Assert.Multiple())
         {
@@ -291,7 +296,7 @@ internal partial class WasmFunction_InvokeTests
             WasmValue.FromFuncRef(
                 WasmFunction.CreateHost(
                     new([WasmValueKind.V128], [WasmValueKind.V128]),
-                    (caller, values) =>
+                    (callbackContext, caller, values) =>
                     {
                         observed = caller;
                         calls++;
@@ -300,8 +305,8 @@ internal partial class WasmFunction_InvokeTests
                 )
             )
         );
-        var first = function.Invoke([value]);
-        var second = function.Invoke([WasmValue.FromV128(ulong.MaxValue, 0)]);
+        var first = function.Invoke(executionContext, [value]);
+        var second = function.Invoke(executionContext, [WasmValue.FromV128(ulong.MaxValue, 0)]);
 
         // Assert
         using (Assert.Multiple())
@@ -317,10 +322,11 @@ internal partial class WasmFunction_InvokeTests
     public async Task V128を定義関数と再exportしたhostへ渡す_関数の同一性と直前instanceと明示型を保つ()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         List<WasmInstance> observed = [];
         var host = WasmFunction.CreateHost(
             new([WasmValueKind.V128], [WasmValueKind.V128]),
-            (caller, values) =>
+            (callbackContext, caller, values) =>
             {
                 observed.Add(caller);
                 return new(values);
@@ -341,7 +347,7 @@ internal partial class WasmFunction_InvokeTests
         {
             var provider = new WasmHostModule("env");
             provider.Define("host", function);
-            return module.Instantiate([provider]);
+            return module.Instantiate(executionContext, [provider]);
         }
         var source = Instantiate(host);
         var throughDefinition = Instantiate(source.GetFunction("run"));
@@ -351,12 +357,12 @@ internal partial class WasmFunction_InvokeTests
 
         // Act & Assert
         await Assert
-            .That(() => throughReexport.GetFunction("run").Invoke([WasmValue.FromI64(0)]))
+            .That(() => throughReexport.GetFunction("run").Invoke(executionContext, [WasmValue.FromI64(0)]))
             .ThrowsExactly<ArgumentException>();
 
         // Act
-        var first = throughDefinition.GetFunction("run").Invoke([firstValue]);
-        var second = throughReexport.GetFunction("run").Invoke([secondValue]);
+        var first = throughDefinition.GetFunction("run").Invoke(executionContext, [firstValue]);
+        var second = throughReexport.GetFunction("run").Invoke(executionContext, [secondValue]);
 
         // Assert
         using (Assert.Multiple())
@@ -386,6 +392,7 @@ internal partial class WasmFunction_InvokeTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         WasmInstance instance = null!;
         WasmValue[] values =
         [
@@ -398,14 +405,14 @@ internal partial class WasmFunction_InvokeTests
         List<WasmInstance> observed = [];
         var expected = new InvalidOperationException("nested v128 host failure");
         var calls = 0;
-        WasmResults Callback(ReadOnlySpan<WasmValue> arguments)
+        WasmResults Callback(WasmExecutionContext callbackContext, ReadOnlySpan<WasmValue> arguments)
         {
             var nestedValue = values[1 - calls++];
             Exception? actual = null;
             try
             {
                 var target = hostThrows ? "nested" : "echo";
-                inner.Add(instance.GetFunction(target).Invoke([nestedValue]));
+                inner.Add(instance.GetFunction(target).Invoke(callbackContext, [nestedValue]));
             }
             catch (Exception exception)
             {
@@ -413,7 +420,7 @@ internal partial class WasmFunction_InvokeTests
             }
             caught.Add(actual);
             // 同じcallback内で再入し直し、内側の失敗後に深さと値が復元されたことを確認する
-            recovered.Add(instance.GetFunction("echo").Invoke([nestedValue]));
+            recovered.Add(instance.GetFunction("echo").Invoke(callbackContext, [nestedValue]));
             return new(arguments);
         }
         var type = new WasmFunctionType([WasmValueKind.V128], [WasmValueKind.V128]);
@@ -423,15 +430,15 @@ internal partial class WasmFunction_InvokeTests
             withInstance
                 ? WasmFunction.CreateHost(
                     type,
-                    (caller, arguments) =>
+                    (callbackContext, caller, arguments) =>
                     {
                         observed.Add(caller);
-                        return Callback(arguments);
+                        return Callback(callbackContext, arguments);
                     }
                 )
                 : WasmFunction.CreateHost(type, Callback)
         );
-        provider.Define("nested", WasmFunction.CreateHost(type, _ => throw expected));
+        provider.Define("nested", WasmFunction.CreateHost(type, (callbackContext, _) => throw expected));
         instance = WasmModule
             .Decode(
                 HostLinkingModuleBinary.Create(
@@ -454,12 +461,12 @@ internal partial class WasmFunction_InvokeTests
                 )
             )
             .Validate()
-            .Instantiate([provider], new(4));
+            .Instantiate(executionContext, [provider], new(4));
 
         // Act
-        var first = instance.GetFunction("run").Invoke([values[0]]);
-        var second = instance.GetFunction("run").Invoke([values[1]]);
-        var after = instance.GetFunction("echo").Invoke([values[0]]);
+        var first = instance.GetFunction("run").Invoke(executionContext, [values[0]]);
+        var second = instance.GetFunction("run").Invoke(executionContext, [values[1]]);
+        var after = instance.GetFunction("echo").Invoke(executionContext, [values[0]]);
 
         // Assert
         using (Assert.Multiple())

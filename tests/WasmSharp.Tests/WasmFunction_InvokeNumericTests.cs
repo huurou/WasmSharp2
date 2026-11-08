@@ -25,6 +25,7 @@ internal partial class WasmFunction_InvokeTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var bytes = HostLinkingModuleBinary.Create(
             HostLinkingModuleBinary.Types(([], [resultKind])),
             HostLinkingModuleBinary.Functions(0),
@@ -43,9 +44,9 @@ internal partial class WasmFunction_InvokeTests
         var result = WasmModule
             .Decode(bytes)
             .Validate()
-            .Instantiate([])
+            .Instantiate(executionContext, [])
             .GetFunction("run")
-            .Invoke([]);
+            .Invoke(executionContext, []);
 
         // Assert
         await Assert.That(result.Values.Length).IsEqualTo(1);
@@ -75,6 +76,7 @@ internal partial class WasmFunction_InvokeTests
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var resultKind = code < 4 ? (byte)0x7F : (byte)0x7E;
         byte[] constant =
             code % 4 < 2 ? [0x43, 0, 0, 0xF0, 0x40] : [0x44, 0, 0, 0, 0, 0, 0, 0x1E, 0x40];
@@ -92,7 +94,7 @@ internal partial class WasmFunction_InvokeTests
 
             // Act
             var module = useStream ? WasmModule.Decode(stream) : WasmModule.Decode(bytes);
-            var result = module.Validate().Instantiate([]).GetFunction("run").Invoke([]);
+            var result = module.Validate().Instantiate(executionContext, []).GetFunction("run").Invoke(executionContext, []);
 
             // Assert
             await Assert.That(result.Values.Length).IsEqualTo(1);

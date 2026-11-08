@@ -14,7 +14,7 @@ internal static class TableHandlerFixture
     {
         return kind == WasmValueKind.FuncRef
             ? WasmValue.FromFuncRef(
-                isNull ? null : WasmFunction.CreateHost(new([], []), _ => new([]))
+                isNull ? null : WasmFunction.CreateHost(new([], []), (_, _) => new([]))
             )
             : WasmValue.FromExternRef(isNull ? null : new object());
     }
@@ -71,8 +71,9 @@ internal static class TableHandlerFixture
         uint secondaryIndex = 0
     )
     {
+        var executionContext = new WasmExecutionContext();
         var caller = CreateFunction([]);
-        var context = InterpreterContext.Enter(WasmExecutionOptions.Default, out var isOutermost);
+        var context = executionContext.Enter(WasmExecutionOptions.Default, out var isOutermost);
         try
         {
             context.Stage = WasmProcessingStage.Invoke;
@@ -98,8 +99,8 @@ internal static class TableHandlerFixture
         }
         finally
         {
+            executionContext.Exit(isOutermost);
             context.Restore(0, 0, 0);
-            InterpreterContext.Exit(isOutermost);
         }
     }
 }

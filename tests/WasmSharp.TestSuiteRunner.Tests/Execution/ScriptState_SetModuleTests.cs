@@ -5,12 +5,14 @@ namespace WasmSharp.TestSuiteRunner.Tests.Execution;
 
 internal class ScriptState_SetModuleTests
 {
+    private readonly WasmExecutionContext context_ = new WasmExecutionContext();
+
     [Test]
     public async Task 識別子付きの通常moduleが成功する_直近moduleと識別子を同じ成功実体へ更新する()
     {
         // Arrange
         var state = new ScriptState("a.wast");
-        var module = ModuleFixture.Instantiate();
+        var module = ModuleFixture.Instantiate(context_);
 
         // Act
         state.SetModule(ModuleFixture.CreateCommand(0, "$M"), module);
@@ -29,8 +31,8 @@ internal class ScriptState_SetModuleTests
     {
         // Arrange
         var state = new ScriptState("a.wast");
-        var first = ModuleFixture.Instantiate();
-        var second = ModuleFixture.Instantiate();
+        var first = ModuleFixture.Instantiate(context_);
+        var second = ModuleFixture.Instantiate(context_);
         state.SetModule(ModuleFixture.CreateCommand(0, "$M"), first);
 
         // Act
@@ -49,7 +51,7 @@ internal class ScriptState_SetModuleTests
     {
         // Arrange
         var state = new ScriptState("a.wast");
-        var module = ModuleFixture.Instantiate();
+        var module = ModuleFixture.Instantiate(context_);
         state.Fail(ModuleFixture.CreateCommand(0, "$M"), null);
 
         // Act
@@ -71,7 +73,7 @@ internal class ScriptState_SetModuleTests
         var state = new ScriptState("a.wast");
 
         // Act
-        state.SetModule(ModuleFixture.CreateCommand(0, "M"), ModuleFixture.Instantiate());
+        state.SetModule(ModuleFixture.CreateCommand(0, "M"), ModuleFixture.Instantiate(context_));
 
         // Assert
         await Assert.That(state.GetRegistration("M")).IsNull();

@@ -11,6 +11,7 @@ internal partial class FunctionValidator_ValidateTests
     public async Task 解決済みの型でcallとlocalsとglobalとreturnを検査_入力とmodule状態を変えず線形化する()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var module = WasmModule.Decode(
             HostLinkingModuleBinary.Create(
                 HostLinkingModuleBinary.Types(([0x7F], [0x7E]), ([0x7F, 0x7E], [0x7E, 0x7F])),
@@ -73,7 +74,7 @@ internal partial class FunctionValidator_ValidateTests
             await Assert.That(module.FunctionCodes.IsEmpty).IsTrue();
             await Assert.That(module.FunctionExportIndices.IsEmpty).IsTrue();
             await Assert
-                .That(() => module.Instantiate([]))
+                .That(() => module.Instantiate(executionContext, []))
                 .ThrowsExactly<InvalidOperationException>();
         }
     }
@@ -82,6 +83,7 @@ internal partial class FunctionValidator_ValidateTests
     public async Task 到達不能部分に具体型の不一致がある_入力とmodule状態を変えず元関数位置で拒否する()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var module = WasmModule.Decode(
             HostLinkingModuleBinary.Create(
                 HostLinkingModuleBinary.Types(([], [0x7F])),
@@ -124,7 +126,7 @@ internal partial class FunctionValidator_ValidateTests
             await Assert.That(module.FunctionCodes.IsEmpty).IsTrue();
             await Assert.That(module.FunctionExportIndices.IsEmpty).IsTrue();
             await Assert
-                .That(() => module.Instantiate([]))
+                .That(() => module.Instantiate(executionContext, []))
                 .ThrowsExactly<InvalidOperationException>();
         }
     }

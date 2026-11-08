@@ -15,6 +15,8 @@ internal sealed class ScriptExecutor(InputVerification input)
     /// </summary>
     internal const int MAX_CALL_DEPTH = 1024;
 
+    private readonly WasmExecutionContext context_ = new WasmExecutionContext();
+
     /// <summary>
     /// 全commandを一度ずつ処理し、公開操作の観測から結果を記録する。
     /// </summary>
@@ -158,6 +160,7 @@ internal sealed class ScriptExecutor(InputVerification input)
             LastStage = CaseStage.Instantiate,
         };
         var instance = module.Instantiate(
+            context_,
             state.CreateImports(),
             new WasmExecutionOptions(MAX_CALL_DEPTH)
         );
@@ -247,7 +250,7 @@ internal sealed class ScriptExecutor(InputVerification input)
     /// <param name="compareValues">assert_returnの場合だけ値を比較する</param>
     /// <param name="state">参照の同一性とmodule参照を保持する入力の状態</param>
     /// <param name="observation">実行済みの操作と、例外・値比較を渡す観測</param>
-    private static void ExecuteAction(
+    private void ExecuteAction(
         ScriptAction action,
         ImmutableArray<ExpectedValue> expected,
         bool compareValues,
@@ -274,7 +277,7 @@ internal sealed class ScriptExecutor(InputVerification input)
         };
         var actual =
             action is InvokeAction
-                ? module.Instance.GetFunction(action.Field).Invoke(arguments.AsSpan())
+                ? module.Instance.GetFunction(action.Field).Invoke(context_, arguments.AsSpan())
                 : new WasmResults([module.Instance.GetGlobal(action.Field)]);
         observation = observation with { Operation = "record_values" };
         observation = observation with

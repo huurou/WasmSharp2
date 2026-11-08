@@ -8,6 +8,7 @@ internal class WasmInstance_GetMemoryTests
     public async Task 別名と再exportから取得する_更新と増大を同じmemoryで共有する()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var source = WasmModule
             .Decode(
                 HostLinkingModuleBinary.Create(
@@ -16,7 +17,7 @@ internal class WasmInstance_GetMemoryTests
                 )
             )
             .Validate()
-            .Instantiate([]);
+            .Instantiate(executionContext, []);
         var original = source.GetMemory("m");
         var host = new WasmHostModule("env");
         host.Define("m", original);
@@ -28,8 +29,8 @@ internal class WasmInstance_GetMemoryTests
                 )
             )
             .Validate();
-        var first = module.Instantiate([host]);
-        var second = module.Instantiate([host]);
+        var first = module.Instantiate(executionContext, [host]);
+        var second = module.Instantiate(executionContext, [host]);
 
         // Act
         var resource = first.GetMemory("alias");
@@ -64,10 +65,11 @@ internal class WasmInstance_GetMemoryTests
     public async Task 指定した種類のexportがない_名前の引数不正として拒否する(string name)
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var instance = WasmModule
             .Decode(ConstantModuleBinary.Create(0x7F, 0x41, 0x01, 0x0B))
             .Validate()
-            .Instantiate([]);
+            .Instantiate(executionContext, []);
 
         // Act & Assert
         var exception = await Assert

@@ -14,14 +14,18 @@ namespace WasmSharp.Benchmarks.Measurements;
 /// <summary>
 /// runの実行前後に、比較条件と使用ファイルを記録する
 /// </summary>
-internal static class BenchmarkRun
+internal sealed class BenchmarkRun(CaseJson json, MeasurementMethods methods)
 {
+    private readonly CaseJson json_ = json;
+    private readonly MeasurementMethods methods_ = methods;
+    private readonly EnvironmentCapture environmentCapture_ = new EnvironmentCapture();
+
     /// <summary>
     /// 予定を未完了runへ保存してから、Job別の子process設定と素材コピーを用意する
     /// </summary>
-    internal static PreparedRun Prepare(RunRequest request)
+    internal PreparedRun Prepare(RunRequest request)
     {
-        var runId = Guid.NewGuid().ToString("N");
+        var runId = Guid.NewGuid().ToString();
         var output = Path.GetFullPath(request.OutputDirectory);
         var store = RunStore.Create(
             output,
@@ -40,11 +44,12 @@ internal static class BenchmarkRun
                 null,
                 null,
                 []
-            )
+            ),
+            json_
         );
         try
         {
-            var assets = AssetManifest.Load(request.AssetManifestPath);
+            var assets = AssetManifest.Load(request.AssetManifestPath, json_, methods_);
             foreach (var caseId in request.CaseIds)
             {
                 assets.Catalog.Get(caseId);
@@ -71,8 +76,8 @@ internal static class BenchmarkRun
                         [.. request.CaseIds]
                     );
                     var file = store.SaveFile(
-                        "inputs/run-" + Guid.NewGuid().ToString("N") + ".json",
-                        JsonSerializer.SerializeToUtf8Bytes(configuration, CaseJson.Options)
+                        "inputs/run-" + Guid.NewGuid().ToString() + ".json",
+                        JsonSerializer.SerializeToUtf8Bytes(configuration, json_.Options)
                     );
                     return job.WithEnvironmentVariable(
                         RunConfiguration.ENVIRONMENT_VARIABLE,
@@ -107,7 +112,18 @@ internal static class BenchmarkRun
     /// <summary>
     /// 記録済みの設定でBDNを起動し、観測・検査・保存が揃った結果を確定する
     /// </summary>
-    internal static RunManifest Run(RunRequest request)
+    internal RunManifest Run(RunRequest request)
+    {
+        return Run(request, BenchmarkRunner.Run);
+    }
+
+    /// <summary>
+    /// BDNの実行を受け取り、使用条件の採取と観測結果の保存を管理する
+    /// </summary>
+    internal RunManifest Run(
+        RunRequest request,
+        Func<BenchmarkRunInfo[], Summary[]> runBenchmarks
+    )
     {
         var prepared = Prepare(request);
         var stage = RunStage.Preparation;
@@ -136,7 +152,9 @@ internal static class BenchmarkRun
                             "inputs",
                             "assets",
                             "asset-manifest.json"
-                        )
+                        ),
+                        json_,
+                        methods_
                     )
                     .Catalog;
                 var methods = request.CaseIds.Select(catalog.GetMeasurementMethod).ToHashSet();
@@ -170,7 +188,7 @@ internal static class BenchmarkRun
                     ))
                     .ToArray();
                 stage = RunStage.ExecutionStarted;
-                summaries = BenchmarkRunner.Run(infos);
+                summaries = runBenchmarks(infos);
             }
             finally
             {
@@ -194,13 +212,13 @@ internal static class BenchmarkRun
             );
             throw;
         }
-        return RunStore.Load(request.OutputDirectory);
+        return RunStore.Load(request.OutputDirectory, json_);
     }
 
     /// <summary>
     /// BDNの観測を予定caseと対応付け、採用判定後に保存全体の完了を確認する
     /// </summary>
-    internal static void SaveReports(
+    internal void SaveReports(
         RunRequest request,
         PreparedRun prepared,
         IEnumerable<Summary> summaries
@@ -223,7 +241,7 @@ internal static class BenchmarkRun
             var reports = summaryList
                 .SelectMany(x => x.Reports)
                 .Where(x =>
-                    CaseCatalog.GetCaseId(
+                    methods_.GetCaseId(
                         x.BenchmarkCase.Descriptor.Type.Name
                             + "."
                             + x.BenchmarkCase.Descriptor.WorkloadMethod.Name
@@ -244,7 +262,7 @@ internal static class BenchmarkRun
         }
     }
 
-    private static CaseRunResult CaptureCase(
+    private CaseRunResult CaptureCase(
         RunRequest request,
         PreparedRun prepared,
         List<Summary> summaries,
@@ -294,7 +312,7 @@ internal static class BenchmarkRun
         return EvaluateCase(request, prepared, summaries, reports, result);
     }
 
-    private static CaseRunResult EvaluateCase(
+    private CaseRunResult EvaluateCase(
         RunRequest request,
         PreparedRun prepared,
         List<Summary> summaries,
@@ -447,7 +465,7 @@ internal static class BenchmarkRun
     /// <summary>
     /// BDNの実行processと最新の検査snapshotを対応付け、追加診断processも保持する
     /// </summary>
-    internal static List<BenchmarkProcessResult> AttachChecks(
+    internal List<BenchmarkProcessResult> AttachChecks(
         string outputDirectory,
         string runId,
         string caseId,
@@ -456,12 +474,12 @@ internal static class BenchmarkRun
     )
     {
         var checks = RunStore
-            .ReadChecks(outputDirectory)
+            .ReadChecks(outputDirectory, json_)
             .Where(x =>
                 x.Check.RunId == runId && x.Check.CaseId == caseId && x.Check.JobId == jobId
             )
             .GroupBy(x => x.Check.ProcessId)
-            .Select(x => x.OrderByDescending(y => GetCheckPriority(y.Check)).First())
+            .Select(x => x.MaxBy(y => GetCheckPriority(y.Check)))
             .ToDictionary(x => x.Check.ProcessId);
         var results = processes
             .Select(x =>
@@ -526,7 +544,7 @@ internal static class BenchmarkRun
             );
         }
         var measurements = store.SaveFile(
-            "raw/metrics/" + Guid.NewGuid().ToString("N") + "-measurements.csv",
+            "raw/metrics/" + Guid.NewGuid().ToString() + "-measurements.csv",
             Encoding.UTF8.GetBytes(csv.ToString())
         );
         var statistics = report.ResultStatistics;
@@ -605,34 +623,34 @@ internal static class BenchmarkRun
         );
     }
 
-    private static ProcessCheck? LatestCheck(string outputDirectory, ManifestFile? file)
+    private ProcessCheck? LatestCheck(string outputDirectory, ManifestFile? file)
     {
         return file is null
             ? null
             : JsonSerializer.Deserialize<ProcessCheck>(
                 File.ReadAllBytes(Path.Combine(outputDirectory, file.RelativePath)),
-                CaseJson.Options
+                json_.Options
             );
     }
 
     /// <summary>
     /// Jobの明示値とBDNへ委ねる既定値を区別してprocess構成を記録する
     /// </summary>
-    internal static ProcessConfiguration DescribeProcess(string role, Job job)
+    internal ProcessConfiguration DescribeProcess(string role, Job job)
     {
-        return EnvironmentCapture.DescribeProcess(role, job);
+        return environmentCapture_.DescribeProcess(role, job);
     }
 
     /// <summary>
     /// 採用済み素材の内容を照合して、ケース定義・Job設定とともにrunへ保存する
     /// </summary>
-    internal static void CaptureInputs(
+    internal void CaptureInputs(
         RunStore store,
         string assetManifestPath,
         IEnumerable<ProcessConfiguration> processes
     )
     {
-        var loaded = AssetManifest.Load(assetManifestPath);
+        var loaded = AssetManifest.Load(assetManifestPath, json_, methods_);
         var directory = Path.GetDirectoryName(Path.GetFullPath(assetManifestPath))!;
         var files = new[] { loaded.Manifest.Profile, loaded.Manifest.Cases }
             .Concat(loaded.Manifest.Assets.Select(x => x.Binary))
@@ -667,8 +685,8 @@ internal static class BenchmarkRun
         var job = store.SaveFile(
             "inputs/job.json",
             JsonSerializer.SerializeToUtf8Bytes(
-                processes.Select(EnvironmentCapture.SnapshotProcess).ToList(),
-                CaseJson.Options
+                processes.Select(environmentCapture_.SnapshotProcess).ToList(),
+                json_.Options
             )
         );
         store.SaveInputs(manifest, cases!, job);
@@ -677,13 +695,13 @@ internal static class BenchmarkRun
     /// <summary>
     /// 採取processの環境と指定された測定・診断構成を同じrunへ保存する
     /// </summary>
-    internal static RunEnvironment CaptureEnvironment(
+    internal RunEnvironment CaptureEnvironment(
         RunStore store,
         CommandInvocation command,
         IEnumerable<ProcessConfiguration> processes
     )
     {
-        var environment = EnvironmentCapture.Capture(store, command, processes);
+        var environment = environmentCapture_.Capture(store, command, processes);
         store.SaveEnvironment(environment);
         return environment;
     }
@@ -691,13 +709,13 @@ internal static class BenchmarkRun
     /// <summary>
     /// 使用source・assemblyと復元用の差分・未追跡ファイルを実行前に保存する
     /// </summary>
-    internal static RunSource CaptureSourceBefore(
+    internal RunSource CaptureSourceBefore(
         string repositoryDirectory,
         RunStore store,
         IEnumerable<(AssemblyRole Role, string Path)> assemblies
     )
     {
-        var source = new SourceCapture(repositoryDirectory).Before(store, assemblies);
+        var source = new SourceCapture(repositoryDirectory, json_).Before(store, assemblies);
         store.SaveSource(source);
         return source;
     }
@@ -705,13 +723,13 @@ internal static class BenchmarkRun
     /// <summary>
     /// 実行前に使用したファイルと新しい使用sourceの内容変化を照合して追記する
     /// </summary>
-    internal static RunSource CaptureSourceAfter(
+    internal RunSource CaptureSourceAfter(
         string repositoryDirectory,
         RunStore store,
         RunSource before
     )
     {
-        var source = new SourceCapture(repositoryDirectory).After(before);
+        var source = new SourceCapture(repositoryDirectory, json_).After(before);
         store.SaveSource(source);
         return source;
     }

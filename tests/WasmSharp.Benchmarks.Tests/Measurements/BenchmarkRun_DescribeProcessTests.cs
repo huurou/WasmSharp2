@@ -1,10 +1,20 @@
 using BenchmarkDotNet.Jobs;
+using WasmSharp.Benchmarks.Cases;
 using WasmSharp.Benchmarks.Measurements;
 
 namespace WasmSharp.Benchmarks.Tests.Measurements;
 
 internal class BenchmarkRun_DescribeProcessTests
 {
+    private readonly CaseJson json_ = new CaseJson();
+    private readonly MeasurementMethods methods_ = new MeasurementMethods();
+    private readonly BenchmarkRun benchmarkRun_;
+
+    public BenchmarkRun_DescribeProcessTests()
+    {
+        benchmarkRun_ = new BenchmarkRun(json_, methods_);
+    }
+
     [Test]
     public async Task 本測定Jobを記録する_明示設定と既定の反復調整と関連環境変数を分ける()
     {
@@ -18,7 +28,7 @@ internal class BenchmarkRun_DescribeProcessTests
             .WithEnvironmentVariable("UNRELATED_API_TOKEN", "must not be saved");
 
         // Act
-        var process = BenchmarkRun.DescribeProcess("Measurement", job);
+        var process = benchmarkRun_.DescribeProcess("Measurement", job);
 
         // Assert
         using (Assert.Multiple())

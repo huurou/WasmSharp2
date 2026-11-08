@@ -8,6 +8,15 @@ namespace WasmSharp.Benchmarks.Tests.Measurements;
 
 internal class BenchmarkRun_PrepareTests
 {
+    private readonly CaseJson json_ = new CaseJson();
+    private readonly MeasurementMethods methods_ = new MeasurementMethods();
+    private readonly BenchmarkRun benchmarkRun_;
+
+    public BenchmarkRun_PrepareTests()
+    {
+        benchmarkRun_ = new BenchmarkRun(json_, methods_);
+    }
+
     [Test]
     [Arguments(false)]
     [Arguments(true)]
@@ -29,8 +38,8 @@ internal class BenchmarkRun_PrepareTests
         );
 
         // Act & Assert
-        await Assert.That(() => BenchmarkRun.Prepare(request)).ThrowsExactly<ArgumentException>();
-        var manifest = RunStore.Load(run.DirectoryPath);
+        await Assert.That(() => benchmarkRun_.Prepare(request)).ThrowsExactly<ArgumentException>();
+        var manifest = RunStore.Load(run.DirectoryPath, json_);
         using (Assert.Multiple())
         {
             await Assert.That(manifest.Status).IsEqualTo(ResultStatus.Incomplete);
@@ -38,6 +47,9 @@ internal class BenchmarkRun_PrepareTests
             await Assert
                 .That(manifest.Failures.Single(x => x.Stage == RunStage.Preparation).Message)
                 .Contains("重複のない1件以上");
+            await Assert
+                .That(manifest.Failures.Single(x => x.Stage == RunStage.Preparation).Reason)
+                .Contains("runの準備に失敗");
             await Assert.That(Directory.Exists(Path.Combine(run.DirectoryPath, "raw"))).IsFalse();
         }
     }
@@ -59,8 +71,8 @@ internal class BenchmarkRun_PrepareTests
         );
 
         // Act & Assert
-        await Assert.That(() => BenchmarkRun.Prepare(request)).Throws<InvalidDataException>();
-        var manifest = RunStore.Load(run.DirectoryPath);
+        await Assert.That(() => benchmarkRun_.Prepare(request)).Throws<InvalidDataException>();
+        var manifest = RunStore.Load(run.DirectoryPath, json_);
         using (Assert.Multiple())
         {
             await Assert.That(manifest.PlannedCaseIds).IsEquivalentTo(["unknown"]);
@@ -92,8 +104,8 @@ internal class BenchmarkRun_PrepareTests
         );
 
         // Act
-        var prepared = BenchmarkRun.Prepare(request);
-        var manifest = RunStore.Load(run.DirectoryPath);
+        var prepared = benchmarkRun_.Prepare(request);
+        var manifest = RunStore.Load(run.DirectoryPath, json_);
         var variable = prepared
             .Jobs.Single()
             .Environment.EnvironmentVariables.SingleOrDefault(x =>
@@ -104,7 +116,7 @@ internal class BenchmarkRun_PrepareTests
         await Assert.That(variable).IsNotNull();
         var configuration = JsonSerializer.Deserialize<RunConfiguration>(
             File.ReadAllBytes(variable!.Value),
-            CaseJson.Options
+            json_.Options
         )!;
         using (Assert.Multiple())
         {
@@ -113,6 +125,8 @@ internal class BenchmarkRun_PrepareTests
             await Assert.That(configuration.RunId).IsEqualTo(manifest.RunId);
             await Assert.That(configuration.JobId).IsEqualTo("Measurement");
             await Assert.That(Path.IsPathFullyQualified(variable.Value)).IsTrue();
+            await Assert.That(Path.GetDirectoryName(variable.Value)).IsEqualTo(Path.Combine(run.DirectoryPath, "inputs"));
+            await Assert.That(Path.GetExtension(variable.Value)).IsEqualTo(".json");
             await Assert.That(configuration.OutputDirectory).IsEqualTo(run.DirectoryPath);
             await Assert
                 .That(configuration.AssetManifestPath)
@@ -122,7 +136,7 @@ internal class BenchmarkRun_PrepareTests
             await Assert
                 .That(
                     AssetManifest
-                        .Load(configuration.AssetManifestPath)
+                        .Load(configuration.AssetManifestPath, json_, methods_)
                         .Catalog.Get("invoke.single")
                         .CaseId
                 )

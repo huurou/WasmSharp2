@@ -10,11 +10,12 @@ internal class ExecutionBoundary_InvokeTests
     public async Task 外側の呼び出し深さが上限に達している_外側の上限で拒否し状態と参照を保つ()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var function = (DefinedFunction)
             WasmModule
                 .Decode(ConstantModuleBinary.Create(0x7F, 0x41, 0x2A, 0x0B))
                 .Validate()
-                .Instantiate([], new(100))
+                .Instantiate(executionContext, [], new(100))
                 .GetFunction("run");
         var outerRemains = false;
         (int Frames, int Values, int Depth) state = default;
@@ -23,24 +24,24 @@ internal class ExecutionBoundary_InvokeTests
         var exception = await Assert
             .That(() =>
             {
-                var outer = InterpreterContext.Enter(new(1), out var isOutermost);
+                var outer = executionContext.Enter(new(1), out var isOutermost);
                 try
                 {
                     outer.TryEnterCall();
                     try
                     {
-                        ExecutionBoundary.Invoke(function, null, []);
+                        ExecutionBoundary.Invoke(executionContext, function, null, []);
                     }
                     finally
                     {
-                        outerRemains = ReferenceEquals(InterpreterContext.Current, outer);
+                        outerRemains = ReferenceEquals(executionContext.Current, outer);
                         state = (outer.FrameCount, outer.ValueCount, outer.CallDepth);
                     }
                 }
                 finally
                 {
+                    executionContext.Exit(isOutermost);
                     outer.Restore(0, 0, 0);
-                    InterpreterContext.Exit(isOutermost);
                 }
             })
             .ThrowsExactly<WasmExhaustionException>();
@@ -66,6 +67,7 @@ internal class ExecutionBoundary_InvokeTests
     public async Task 関数入口で保持上限を超える_再分類せず伝播し現在のコンテキストを解除する()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var function = ExecutionFunctionFixture.Create([], maxOperandStack: int.MaxValue);
         var cleared = false;
 
@@ -75,12 +77,11 @@ internal class ExecutionBoundary_InvokeTests
             {
                 try
                 {
-                    ExecutionBoundary.Invoke(function, null, []);
+                    ExecutionBoundary.Invoke(executionContext, function, null, []);
                 }
                 finally
                 {
-                    cleared = InterpreterContext.Current is null;
-                    InterpreterContext.Exit(true);
+                    cleared = executionContext.Current is null;
                 }
             })
             .ThrowsExactly<WasmImplementationLimitException>();
@@ -101,15 +102,16 @@ internal class ExecutionBoundary_InvokeTests
     public async Task 最外側の定数関数が正常終了する_結果を返し現在のコンテキストを解除する()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var function = WasmModule
             .Decode(ConstantModuleBinary.Create(0x7F, 0x41, 0x2A, 0x0B))
             .Validate()
-            .Instantiate([], new(1))
+            .Instantiate(executionContext, [], new(1))
             .GetFunction("run");
 
         // Act
-        var result = ExecutionBoundary.Invoke(function, null, []);
-        var cleared = InterpreterContext.Current is null;
+        var result = ExecutionBoundary.Invoke(executionContext, function, null, []);
+        var cleared = executionContext.Current is null;
 
         // Assert
         using (Assert.Multiple())

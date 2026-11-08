@@ -8,10 +8,11 @@ internal class WasmGlobal_ValueTests
     public async Task 全値型を生成して更新する_ビット列と参照同一性を保持する()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var function = WasmModule
             .Decode(ConstantModuleBinary.Create(0x7F, 0x41, 0x01, 0x0B))
             .Validate()
-            .Instantiate([])
+            .Instantiate(executionContext, [])
             .GetFunction("run");
         var reference = new object();
         WasmValue[] values =
@@ -123,9 +124,13 @@ internal class WasmGlobal_ValueTests
         );
 
         // Act & Assert
-        await Assert
+        var exception = await Assert
             .That(() => global.Value = WasmValue.FromI32(7))
             .ThrowsExactly<InvalidOperationException>();
-        await Assert.That(global.Value.AsI32()).IsEqualTo(42);
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.Message).Contains("不変global");
+            await Assert.That(global.Value.AsI32()).IsEqualTo(42);
+        }
     }
 }

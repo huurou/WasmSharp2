@@ -91,7 +91,12 @@ internal static partial class Interpreter
         {
             var argumentBase = context.ValueCount - callee.Type.Parameters.Length;
             var arguments = context.GetValues(argumentBase, callee.Type.Parameters.Length);
-            var results = RunHost(context, callee, context.CurrentFunction.Instance, arguments);
+            var results = RunHost(
+                context.ExecutionContext,
+                callee,
+                context.CurrentFunction.Instance,
+                arguments
+            );
             if (results.Status != ExecutionStatus.Success)
             {
                 return results;

@@ -6,29 +6,31 @@ namespace WasmSharp.Tests;
 internal partial class WasmModule_ValidateTests
 {
     [Test]
-    [Arguments("FC0C00000B", "type mismatch", 0)]
-    [Arguments("410041004200FC0C00000B", "type mismatch", 3)]
-    [Arguments("FC0E00000B", "type mismatch", 0)]
-    [Arguments("410042004100FC0E00000B", "type mismatch", 3)]
-    [Arguments("FC11000B", "type mismatch", 0)]
-    [Arguments("4100D0704100FC11000B", "type mismatch", 3)]
-    [Arguments("4200D06F4100FC11000B", "type mismatch", 3)]
-    [Arguments("4100D06F4200FC11000B", "type mismatch", 3)]
-    [Arguments("00FC0C01020B", "unknown table 2", 1)]
-    [Arguments("00FC0C01000B", "unknown elem segment 1", 1)]
-    [Arguments("00FC0C00010B", "type mismatch", 1)]
-    [Arguments("00FC0D010B", "unknown elem segment 1", 1)]
-    [Arguments("00FC0E02030B", "unknown table 2", 1)]
-    [Arguments("00FC0E00020B", "unknown table 2", 1)]
-    [Arguments("00FC0E00010B", "type mismatch", 1)]
-    [Arguments("00FC11020B", "unknown table 2", 1)]
+    [Arguments("FC0C00000B", "type mismatch", 0, null)]
+    [Arguments("410041004200FC0C00000B", "type mismatch", 3, null)]
+    [Arguments("FC0E00000B", "type mismatch", 0, null)]
+    [Arguments("410042004100FC0E00000B", "type mismatch", 3, null)]
+    [Arguments("FC11000B", "type mismatch", 0, null)]
+    [Arguments("4100D0704100FC11000B", "type mismatch", 3, null)]
+    [Arguments("4200D06F4100FC11000B", "type mismatch", 3, null)]
+    [Arguments("4100D06F4200FC11000B", "type mismatch", 3, null)]
+    [Arguments("00FC0C01020B", "unknown table 2", 1, null)]
+    [Arguments("00FC0C01000B", "unknown elem segment 1", 1, null)]
+    [Arguments("00FC0C00010B", "type mismatch", 1, "要素セグメントと対象テーブルの参照型")]
+    [Arguments("00FC0D010B", "unknown elem segment 1", 1, null)]
+    [Arguments("00FC0E02030B", "unknown table 2", 1, null)]
+    [Arguments("00FC0E00020B", "unknown table 2", 1, null)]
+    [Arguments("00FC0E00010B", "type mismatch", 1, "コピー元とコピー先のテーブルの参照型")]
+    [Arguments("00FC11020B", "unknown table 2", 1, null)]
     public async Task 一括tableの型か添字かoperandが不正_到達不能でも設計順で元命令位置の検証失敗になる(
         string body,
         string prefix,
-        int instructionIndex
+        int instructionIndex,
+        string? expectedDetail
     )
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var module = CreateBulkValidationModule(body);
 
         // Act & Assert
@@ -40,6 +42,10 @@ internal partial class WasmModule_ValidateTests
             await Assert
                 .That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal))
                 .IsTrue();
+            if (expectedDetail is not null)
+            {
+                await Assert.That(exception.Message).Contains(expectedDetail);
+            }
             await Assert
                 .That(exception.Location)
                 .IsEqualTo(
@@ -52,7 +58,7 @@ internal partial class WasmModule_ValidateTests
                 );
             await Assert.That(module.FunctionCodes.IsEmpty).IsTrue();
             await Assert
-                .That(() => module.Instantiate([]))
+                .That(() => module.Instantiate(executionContext, []))
                 .ThrowsExactly<InvalidOperationException>();
         }
     }

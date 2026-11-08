@@ -55,7 +55,7 @@ public sealed class WasmTable
                 nameof(limits)
             );
         }
-        if (limits.Minimum > Array.MaxLength)
+        if (ExceedsStorageLimit(limits.Minimum))
         {
             throw new WasmImplementationLimitException(
                 "tableの要素数が配列の保持上限を超えています。",
@@ -134,11 +134,7 @@ public sealed class WasmTable
         }
 
         var nextCount = (ulong)previousCount + delta;
-        if (
-            nextCount > uint.MaxValue
-            || nextCount > MaximumElements
-            || nextCount > (ulong)Array.MaxLength
-        )
+        if (nextCount > MaximumElements || ExceedsStorageLimit(nextCount))
         {
             return false;
         }
@@ -154,6 +150,16 @@ public sealed class WasmTable
         Array.Fill(elements, initialValue, elements_.Length, (int)delta);
         elements_ = elements;
         return true;
+    }
+
+    /// <summary>
+    /// 要素数が配列の保持上限を超えるかを返す
+    /// </summary>
+    /// <param name="count">割当前に判定する要素数</param>
+    /// <returns>配列の保持上限を超える場合はtrue</returns>
+    internal static bool ExceedsStorageLimit(ulong count)
+    {
+        return count > (ulong)Array.MaxLength;
     }
 
     /// <summary>

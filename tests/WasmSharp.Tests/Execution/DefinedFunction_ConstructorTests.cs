@@ -9,6 +9,7 @@ internal class DefinedFunction_ConstructorTests
     public async Task 関数添字と定義添字が異なる_元instanceの定義と実行コードを使う()
     {
         // Arrange
+        var executionContext = new WasmExecutionContext();
         var instance = WasmModule
             .Decode(
                 ConstantModuleBinary.Create(
@@ -17,11 +18,11 @@ internal class DefinedFunction_ConstructorTests
                 )
             )
             .Validate()
-            .Instantiate([]);
+            .Instantiate(executionContext, []);
 
         // Act
         var function = new DefinedFunction(instance, uint.MaxValue, 1);
-        var result = function.Invoke([]);
+        var result = function.Invoke(executionContext, []);
 
         // Assert
         using (Assert.Multiple())

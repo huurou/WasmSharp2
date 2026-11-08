@@ -4,12 +4,14 @@ namespace WasmSharp.Benchmarks.Tests.Cases;
 
 internal class CaseObservation_ConstructorTests
 {
+    private readonly WasmExecutionContext context_ = new WasmExecutionContext();
+
     [Test]
     public async Task 各段階の観測を作る_moduleとinstanceとInvoke結果を区別して保持する()
     {
         // Arrange
         var module = WasmModule.Decode([0, 0x61, 0x73, 0x6d, 1, 0, 0, 0]);
-        var instance = module.Validate().Instantiate(new WasmImports());
+        var instance = module.Validate().Instantiate(context_, new WasmImports());
         var results = new WasmResults([
             WasmValue.FromI32(-1),
             WasmValue.FromI64(long.MinValue),

@@ -11,10 +11,11 @@ internal static class ExecutionBoundary
     /// <summary>
     /// start関数を実行し、実行失敗をインスタンス化時の例外へ変換する
     /// </summary>
+    /// <param name="executionContext">同期呼び出しの間で共有するコンテキスト</param>
     /// <param name="startInstance">startを宣言し、リソースとexportの構築が完了したinstance</param>
     /// <param name="function">引数も結果も持たないことを検証済みのstart関数</param>
     /// <remarks>
-    /// 進行中の実行コンテキストがあれば深さと上限を共有し、なければstartを持つinstanceの実行ポリシーを使う。
+    /// 指定コンテキストで実行中なら深さと上限を共有し、未実行ならstartを持つinstanceの実行ポリシーで開始する。
     /// 定義関数は元の所属instanceで実行し、instanceを受け取るホスト関数にはstartを持つinstanceを渡す。
     /// 終了時は成功・失敗にかかわらず呼び出し前の実行状態へ戻すが、リソースの変更は取り消さない。
     /// ホスト処理が投げた例外は変換せず、そのまま伝播する
@@ -23,36 +24,41 @@ internal static class ExecutionBoundary
     /// <exception cref="WasmExhaustionException">startの実行結果が資源枯渇の場合 処理段階はInstantiate</exception>
     /// <exception cref="WasmImplementationLimitException">実行に必要なフレーム数または値の数が保持上限を超える場合</exception>
     /// <exception cref="InvalidOperationException">ホスト関数の結果がnull、または宣言型と個数・型が異なる場合</exception>
-    internal static void RunStart(WasmInstance startInstance, WasmFunction function)
+    internal static void RunStart(
+        WasmExecutionContext executionContext,
+        WasmInstance startInstance,
+        WasmFunction function
+    )
     {
-        var context = InterpreterContext.Enter(startInstance.ExecutionOptions, out var isOutermost);
+        var context = executionContext.Enter(startInstance.ExecutionOptions, out var isOutermost);
         var outerStage = context.Stage;
         try
         {
             context.Stage = WasmProcessingStage.Instantiate;
             var result = function is DefinedFunction definedFunction
                 ? Interpreter.Run(context, definedFunction, [], WasmProcessingStage.Instantiate)
-                : Interpreter.RunHost(context, function, startInstance, []);
+                : Interpreter.RunHost(executionContext, function, startInstance, []);
 
             ThrowIfFailed(result, WasmProcessingStage.Instantiate);
         }
         finally
         {
             context.Stage = outerStage;
-            InterpreterContext.Exit(isOutermost);
+            executionContext.Exit(isOutermost);
         }
     }
 
     /// <summary>
     /// 公開APIから関数を実行し、実行失敗を呼び出し時の例外へ変換する
     /// </summary>
+    /// <param name="executionContext">同期呼び出しの間で共有するコンテキスト</param>
     /// <param name="function">呼び出す関数</param>
     /// <param name="explicitInstance">ホスト関数へ明示的に渡すinstance instance必須のホスト関数以外では未使用</param>
     /// <param name="arguments">呼び出し元で個数と型の照合を済ませた引数</param>
     /// <returns>実行スタックから独立して保持できる結果</returns>
     /// <remarks>
-    /// 定義関数は元の所属instanceで実行する。実行コンテキストがなければそのinstanceのポリシーで開始する。
-    /// 既存のコンテキストがあれば上限を共有する。ホスト関数だけの呼び出しでは新しいコンテキストを作らない。
+    /// 定義関数は元の所属instanceで実行する。指定コンテキストで未実行ならそのinstanceのポリシーで開始する。
+    /// 実行中なら上限を共有する。ホスト関数だけの呼び出しでは新しい実行状態を作らない。
     /// 終了時は呼び出し前の実行状態へ戻す。ホスト処理が投げた例外は変換せず、そのまま伝播する
     /// </remarks>
     /// <exception cref="WasmTrapException">実行結果がtrapの場合 処理段階はInvoke</exception>
@@ -60,6 +66,7 @@ internal static class ExecutionBoundary
     /// <exception cref="WasmImplementationLimitException">実行に必要なフレーム数または値の数が保持上限を超える場合</exception>
     /// <exception cref="InvalidOperationException">ホスト関数の結果がnull、または宣言型と個数・型が異なる場合</exception>
     internal static WasmResults Invoke(
+        WasmExecutionContext executionContext,
         WasmFunction function,
         WasmInstance? explicitInstance,
         ReadOnlySpan<WasmValue> arguments
@@ -68,7 +75,7 @@ internal static class ExecutionBoundary
         if (function is not DefinedFunction definedFunction)
         {
             var hostResult = Interpreter.RunHost(
-                InterpreterContext.Current,
+                executionContext,
                 function,
                 explicitInstance,
                 arguments
@@ -79,7 +86,7 @@ internal static class ExecutionBoundary
             return new WasmResults(hostResult.Values.AsSpan());
         }
 
-        var context = InterpreterContext.Enter(
+        var context = executionContext.Enter(
             definedFunction.Instance.ExecutionOptions,
             out var isOutermost
         );
@@ -98,7 +105,7 @@ internal static class ExecutionBoundary
         }
         finally
         {
-            InterpreterContext.Exit(isOutermost);
+            executionContext.Exit(isOutermost);
         }
     }
 
@@ -128,7 +135,7 @@ internal static class ExecutionBoundary
         if (result.Status == ExecutionStatus.Exhaustion)
         {
             throw new WasmExhaustionException(
-                GetExhaustionMessage(result.ExhaustionReason!.Value),
+                "call stack exhausted",
                 result.ExhaustionReason!.Value,
                 result.Limit,
                 new WasmFailureLocation(stage, result.ByteOffset, result.FunctionIndex)
@@ -161,17 +168,5 @@ internal static class ExecutionBoundary
             (WasmTrapReason.IndirectCallTypeMismatch, _) => "indirect call type mismatch",
             _ => "Wasmの実行中にtrapが発生しました。",
         };
-    }
-
-    /// <summary>
-    /// 実行資源の上限到達の原因から公開診断を選ぶ
-    /// </summary>
-    /// <param name="reason">上限に達した実行資源の原因</param>
-    /// <returns>原因に対応する公開診断</returns>
-    private static string GetExhaustionMessage(WasmExhaustionReason reason)
-    {
-        return reason is WasmExhaustionReason.CallDepthLimit or WasmExhaustionReason.HostStackLimit
-            ? "call stack exhausted"
-            : "Wasmの実行資源が上限に達しました。";
     }
 }
