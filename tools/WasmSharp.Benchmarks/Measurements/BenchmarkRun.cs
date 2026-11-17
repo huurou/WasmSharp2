@@ -574,18 +574,20 @@ internal sealed class BenchmarkRun(CaseJson json, MeasurementMethods methods)
         GcStatistics? gc = null;
         if (gcStats.TotalOperations > 0)
         {
-            var displayedBytes = gcStats.GetBytesAllocatedPerOperation(report.BenchmarkCase);
-            if (totalBytes is long bytes && displayedBytes is long displayed)
+            if (totalBytes is long bytes)
             {
+                var bytesPerOperation = (double)bytes / gcStats.TotalOperations;
+                // BDNの表示値はruntime判定による補正を含むため、取得済みの総量から計算する。
+                var displayedBytes = Math.Round(bytesPerOperation, MidpointRounding.ToEven);
                 allocation = new(
                     bytes,
                     gcStats.TotalOperations,
-                    (double)bytes / gcStats.TotalOperations,
-                    displayed,
+                    bytesPerOperation,
+                    displayedBytes,
                     new(
                         0,
                         MidpointRounding.ToEven,
-                        "BenchmarkDotNet0.15.8は総bytes/操作数を整数へToEven丸めする。表示0は割り当て不存在を意味しない。"
+                        "総bytes/操作数を最も近い整数へ丸め、中間値は偶数に丸める。表示0は割り当て不存在を意味しない。"
                     ),
                     AllocationScope.ProcessManagedAllocations,
                     ObservationIteration.SeparateFromTiming

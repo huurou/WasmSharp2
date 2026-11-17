@@ -71,7 +71,9 @@ Run 'trace-help' $trace @('collect', '--help') $repository
 $readerRoot = Join-Path $output 'tools/reader'
 New-Item -ItemType Directory -Path $readerRoot | Out-Null
 Copy-Item (Join-Path $PSScriptRoot 'Reader.cs.template') (Join-Path $readerRoot 'Program.cs')
-Copy-Item (Join-Path $PSScriptRoot 'Reader.csproj.template') (Join-Path $readerRoot 'DiagnosticReader.csproj')
+$readerProject = Join-Path $readerRoot 'DiagnosticReader.csproj'
+Copy-Item (Join-Path $PSScriptRoot 'Reader.csproj.template') $readerProject
+$traceEventPackage = ([xml](Get-Content -LiteralPath $readerProject -Raw)).SelectSingleNode("/Project/ItemGroup/PackageReference[@Include='Microsoft.Diagnostics.Tracing.TraceEvent']")
 Run 'build-workload' $dotnet @('build', 'tools/WasmSharp.Benchmarks/WasmSharp.Benchmarks.csproj', '-c', 'Release', '--warnaserror') $destination
 Run 'build-reader' $dotnet @('build', 'DiagnosticReader.csproj', '-c', 'Release', '--warnaserror') $readerRoot
 Run 'dotnet-info' $dotnet @('--info') $destination
@@ -93,7 +95,7 @@ $preparation = [ordered]@{
     dotnet = $dotnet
     dotnet_trace = $trace
     dotnet_trace_version = '10.0.750501'
-    trace_event_version = '3.1.21'
+    trace_event_version = $traceEventPackage.Version
     workload_assembly = $workload
     reader_assembly = $reader
     sdk_version = $runtime.sdk_version

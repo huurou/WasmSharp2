@@ -7,14 +7,14 @@
       "commands": [
         "husky"
       ],
-      "rollForward": false
+      "rollForward": true
     },
     "dotnet-stryker": {
-      "version": "5.0.0",
+      "version": "5.1.0",
       "commands": [
         "dotnet-stryker"
       ],
-      "rollForward": false
+      "rollForward": true
     }
   }
 }

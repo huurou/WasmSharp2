@@ -8,24 +8,24 @@ WasmSharp2の公開APIを使う性能測定ツール。固定素材の確認、�
 
 ## ビルドと契約テスト
 
-.NET10 SDKを使い、リポジトリのルートから実行する。
+.NET 11 SDKを使い、リポジトリのルートから実行する。
 
 ```powershell
 dotnet build WasmSharp2.slnx -c Release --warnaserror
 dotnet run --project tests/WasmSharp.Benchmarks.Tests/WasmSharp.Benchmarks.Tests.csproj -c Release --no-build
 ```
 
-ビルドの警告・エラー0を確認してからテストを実行する。TUnit1.66.16の通常テストは、出力先にコピーしたJSONの設定fixture・保存契約・15ケースの固定値を読み、固定Jobとexporter・diagnoserの構成や独立計算した期待値を確認する。BenchmarkDotNetの起動、WABT・Clangによる素材生成、性能の合否判定は行わない。
+ビルドの警告・エラー0を確認してからテストを実行する。TUnitの通常テストは、出力先にコピーしたJSONの設定fixture・保存契約・15ケースの固定値を読み、固定Jobとexporter・diagnoserの構成や独立計算した期待値を確認する。BenchmarkDotNetの起動、WABT・Clangによる素材生成、性能の合否判定は行わない。
 
 ## 本測定用の設定
 
-`run --kind measurement`は、同期処理用の`Measurement` Jobを.NET10・x64・Release・Throughput・1launchへ固定する。MemoryDiagnoser、Full JSON、measurement CSVを有効にし、MemoryRandomizationと電源planの自動変更を無効にする。pilot・warmup・本測定の反復数、1iterationの操作数とunrollは固定せず、BenchmarkDotNet0.15.8の自動調整を使う。`--kind`の省略時もmeasurementとなる。
+`run --kind measurement`は、同期処理用の`Measurement` Jobを.NET 11・x64・Release・Throughput・1launchへ固定する。MemoryDiagnoser、Full JSON、measurement CSVを有効にし、MemoryRandomizationと電源planの自動変更を無効にする。pilot・warmup・本測定の反復数、1iterationの操作数とunrollは固定せず、BenchmarkDotNet0.15.8の自動調整を使う。`--kind`の省略時もmeasurementとなる。
 
 各launchは新しいprocessで実行する。JIT・pilot・warmup・本測定に加え、MemoryDiagnoserによる割り当て観測用の追加反復がある。module・instanceの生成範囲と状態復元は測定ケースが定義し、設定クラスでは生成や復元を行わない。
 
 outlier方針はThroughput既定の`RemoveUpper`を明示する。Full JSONとmeasurement CSVには除外前の`Workload/Actual`と、overhead中央値の控除とoutlier処理後の`Workload/Result`を残す。rawのlaunch・iteration・mode/stage・操作数・経過nsから反復数と操作当たり時間を再確認できる。平均・中央値・標準偏差・99.9%信頼区間はバッチ反復の操作当たり平均に対する統計であり、個々のInvokeの遅延分布を表さない。Jobの表示・実効設定と実際の反復数も試走記録に残す。
 
-MemoryDiagnoserのGC総回数・操作数・割り当て量は時間測定とは別の観測区間に対応する。managed割り当ては保持量、ピーク量、nativeメモリ、guest線形メモリ内の利用量とは区別する。通常reportの丸めたbytes/opだけで割り当ての不存在を判断しない。
+MemoryDiagnoserのGC総回数・操作数・割り当て量は時間測定とは別の観測区間に対応する。managed割り当ては保持量、ピーク量、nativeメモリ、guest線形メモリ内の利用量とは区別する。保存するbytes/opの表示値は、割り当て総量を操作数で割り、整数へ偶数丸めする。BenchmarkDotNet0.15.8の表では.NET 11の小さな割り当てが0と表示される場合があるため、割り当ての有無や比較には保存した丸め前の値を使う。
 
 MeasurementとSmokeは`WasmAllocationEngineFactory`を使用する。時間測定と自動調整はBDN標準エンジンへ委譲し、追加の割り当て反復では、準備用の最後のGC後にも`GC.WaitForPendingFinalizers()`を実行する。BDN0.15.8の標準順序では、このGCが起動したArrayPool清掃の割り当てがカウンター間へ混入するためである。最終Actual反復の操作数と標準エンジンが選んだunrollを引き継ぎ、process全体の割り当てカウンターを使う。固定量の減算やスレッド単位のカウンターへの置換はしない。workload自身が発生させたGCや背景処理の割り当ては引き続き計測対象となる。
 
@@ -202,9 +202,9 @@ policyの型は[ComparisonPolicy.cs](Results/ComparisonPolicy.cs)にあり、各
 
 Windows x64では`dotnet-trace`を`10.0.750501`に固定し、`--profile dotnet-sampled-thread-time,gc-verbose --buffersize 256 --buffering-mode Drop --format NetTrace`を使う。[公式NuGetの対象framework](https://www.nuget.org/packages/dotnet-trace/10.0.750501)と[公式リリース](https://github.com/dotnet/diagnostics/releases/tag/v10.0.750501)を確認し、下記の.NET10環境で採取を確認した。globalインストールやシステム設定変更は行わず、専用出力内へ`dotnet tool install --tool-path ... --version 10.0.750501 --arch x64`で配置する。
 
-読込は`Microsoft.Diagnostics.Tracing.TraceEvent`の`3.1.21`を指定した小さい独立projectで行う。[公式NuGet](https://www.nuget.org/packages/Microsoft.Diagnostics.Tracing.TraceEvent/3.1.21)の.NET Standard2.0対応を確認し、.NET10でのnettrace→ETLX変換とstack読込を確認した。読込project、依存lock、実行DLLとSHA-256は準備出力へ保存する。受入用projectの依存版は変更しない。
+この診断手順は.NET 10で保存した採用runを対象とする。読込用projectも.NET 10を対象とし、[テンプレート](Diagnostics/Reader.csproj.template)で`Microsoft.Diagnostics.Tracing.TraceEvent`の版を固定する。読込project、依存lock、実行DLLとSHA-256は準備出力へ保存する。過去の診断を当時の版で再読込する場合は、当時の準備出力に保存したreaderを使う。
 
-リポジトリルートから、採用runを**受入用の復元先とは別の、元リポジトリ外の新規path**へ復元する。PowerShell7.5以上と基準runと同じSDK/runtime完全版を使う。次のscriptは復元後、診断コピーの`Program.cs`だけを専用workloadへ替え、既存の`CaseCatalog`、`Initialize`、測定メソッド、`Cleanup`を直接再利用する。Wasmを処理するprocessを`dotnet-trace collect -- dotnet exec <workload.dll>`で起動するため、BDNの親だけを採取する経路はない。[公式の子process起動時の注意](https://learn.microsoft.com/en-us/dotnet/core/diagnostics/dotnet-trace#launch-a-child-application-and-collect-a-trace-from-its-startup-using-dotnet-trace)も参照する。
+リポジトリルートから、採用runを**受入用の復元先とは別の、元リポジトリ外の新規path**へ復元する。PowerShell7.5以上を使い、起動時の`dotnet --version`が基準runに記録されたSDKと一致する環境で実行する。runtimeも基準runと同じ完全版を使う。次のscriptは復元後、診断コピーの`Program.cs`だけを専用workloadへ替え、既存の`CaseCatalog`、`Initialize`、測定メソッド、`Cleanup`を直接再利用する。Wasmを処理するprocessを`dotnet-trace collect -- dotnet exec <workload.dll>`で起動するため、BDNの親だけを採取する経路はない。[公式の子process起動時の注意](https://learn.microsoft.com/en-us/dotnet/core/diagnostics/dotnet-trace#launch-a-child-application-and-collect-a-trace-from-its-startup-using-dotnet-trace)も参照する。
 
 ```powershell
 $repository = (Get-Location).Path

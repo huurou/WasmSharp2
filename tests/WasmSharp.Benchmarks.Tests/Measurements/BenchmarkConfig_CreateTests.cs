@@ -5,6 +5,7 @@ using BenchmarkDotNet.Environments;
 using BenchmarkDotNet.Exporters.Csv;
 using BenchmarkDotNet.Exporters.Json;
 using BenchmarkDotNet.Jobs;
+using BenchmarkDotNet.Running;
 using Perfolizer.Mathematics.OutlierDetection;
 using WasmSharp.Benchmarks.Cases;
 using WasmSharp.Benchmarks.Measurements;
@@ -79,7 +80,7 @@ internal class BenchmarkConfig_CreateTests
         // Assert
         using (Assert.Multiple())
         {
-            await Assert.That(job.Environment.Runtime).IsEqualTo(CoreRuntime.Core10_0);
+            await Assert.That(job.Environment.Runtime?.MsBuildMoniker).IsEqualTo("net11.0");
             await Assert.That(job.Environment.Platform).IsEqualTo(Platform.X64);
             await Assert.That(job.Infrastructure.BuildConfiguration).IsEqualTo("Release");
             await Assert.That(job.Run.RunStrategy).IsEqualTo(RunStrategy.Throughput);
@@ -96,6 +97,27 @@ internal class BenchmarkConfig_CreateTests
                 await Assert.That(job.HasValue(characteristic)).IsFalse();
             }
         }
+    }
+
+    [Test]
+    public async Task 本測定設定を使う_測定子processのビルド前検証を通過する()
+    {
+        // Arrange
+        var benchmark = BenchmarkConverter
+            .MethodsToBenchmarks(
+                typeof(InvokeBenchmarks),
+                [typeof(InvokeBenchmarks).GetMethod(nameof(InvokeBenchmarks.Single))!],
+                BenchmarkConfig.Create()
+            )
+            .BenchmarksCases.Single();
+
+        // Act
+        var errors = benchmark.Job.Infrastructure.Toolchain
+            ?.Validate(benchmark, EngineParameters.DefaultResolver)
+            .ToArray();
+
+        // Assert
+        await Assert.That(errors?.Length).IsEqualTo(0);
     }
 
     [Test]

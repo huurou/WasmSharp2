@@ -1,6 +1,6 @@
 {
   "jobId": "Smoke",
-  "runtime": ".NET 10.0",
+  "runtime": ".NET 11.0",
   "platform": "X64",
   "buildConfiguration": "Release",
   "runStrategy": "Throughput",

@@ -76,9 +76,6 @@ internal sealed record AllocationRounding(
     string Description
 );
 
-/// <summary>
-/// 固定版BDN/.NET10で取得する割り当ての観測範囲
-/// </summary>
 internal enum AllocationScope
 {
     ProcessManagedAllocations,

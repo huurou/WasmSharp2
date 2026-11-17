@@ -4,13 +4,13 @@
 
 ## 準備と起動
 
-.NET 10を使用します。素材生成にはGitと固定版のspec・WABT・`wast2json`が必要です。[外部ソースの取得・ビルド手順](../../thirdParties/README.md)に従って用意してください。公式入力は改行変換を無効にして取得します。生成済み素材の実行には元WAST・WABTは不要です。
+.NET 11を使用します。素材生成にはGitと固定版のspec・WABT・`wast2json`が必要です。[外部ソースの取得・ビルド手順](../../thirdParties/README.md)に従って用意してください。公式入力は改行変換を無効にして取得します。生成済み素材の実行には元WAST・WABTは不要です。
 
 リポジトリルートでReleaseビルドを行い、生成されたapphostを起動します。以下はPowerShellでの例です。
 
 ```powershell
 dotnet build WasmSharp2.slnx -c Release --warnaserror
-$runner = './tools/WasmSharp.TestSuiteRunner/bin/Release/net10.0/WasmSharp.TestSuiteRunner.exe'
+$runner = './tools/WasmSharp.TestSuiteRunner/bin/Release/net11.0/WasmSharp.TestSuiteRunner.exe'
 & $runner --help
 ```
 
