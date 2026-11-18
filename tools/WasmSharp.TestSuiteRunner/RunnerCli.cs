@@ -9,7 +9,7 @@ namespace WasmSharp.TestSuiteRunner;
 /// 固定profileに従い、指定された一つのCLI操作を実行する
 /// </summary>
 /// <param name="profile">既定の生成・実行・最終判定に使用する固定Core 2.0 profile</param>
-/// <param name="loadCore3">Core 3.0生成の固定profileを読み取る処理</param>
+/// <param name="loadCore3">Core 3.0の生成・実行に使用する固定profileを読み取る処理</param>
 internal sealed class RunnerCli(ConversionProfile profile, Func<ConversionProfile>? loadCore3 = null)
 {
     /// <summary>
@@ -50,7 +50,7 @@ internal sealed class RunnerCli(ConversionProfile profile, Func<ConversionProfil
             return args[0] switch
             {
                 "generate" => Generate(
-                    core3 ? (loadCore3 ?? new ConversionProfileLoader().LoadCore3)() : profile,
+                    core3 ? LoadCore3() : profile,
                     paths,
                     output,
                     error
@@ -74,6 +74,15 @@ internal sealed class RunnerCli(ConversionProfile profile, Func<ConversionProfil
             error.WriteLine(ex.Message);
             return 2;
         }
+    }
+
+    /// <summary>
+    /// 生成と実行で共有するCore 3.0の固定profileを読み取る。
+    /// </summary>
+    /// <returns>注入された読取処理、なければ埋込みJSONから読み取ったCore 3.0 profile</returns>
+    private ConversionProfile LoadCore3()
+    {
+        return (loadCore3 ?? new ConversionProfileLoader().LoadCore3)();
     }
 
     /// <summary>
@@ -304,10 +313,14 @@ internal sealed class RunnerCli(ConversionProfile profile, Func<ConversionProfil
     private int Execute(Dictionary<string, string> paths, TextWriter output, TextWriter error)
     {
         var manifest = _reportStore.ReadManifest(paths["--manifest"]).Manifest;
-        if (!manifest.Profile.Matches(profile))
+        // manifestのprofile識別で固定profileを選び、条件が一致しない場合は別の版へ読み替えず拒否する。
+        var core3Profile = LoadCore3();
+        var (runProfile, specVersion) =
+            manifest.Profile.Id == core3Profile.Id ? (core3Profile, WasmSpecVersion.Core3) : (profile, WasmSpecVersion.Core2);
+        if (!manifest.Profile.Matches(runProfile))
         {
             throw new ReportStoreException(
-                $"固定profile{profile.Id}と条件・対象入力が一致しないmanifestです。",
+                $"固定profile{runProfile.Id}と条件・対象入力が一致しないmanifestです。",
                 paths["--manifest"]
             );
         }
@@ -315,9 +328,10 @@ internal sealed class RunnerCli(ConversionProfile profile, Func<ConversionProfil
         var result = SuiteExecutor.ExecuteAndSave(
             manifest,
             paths["--manifest"],
+            specVersion,
             paths["--output"],
             _reportStore,
-            progress: path => output.WriteLine($"[{++processed}/{profile.Inputs.Length}] 実行・記録: {path}")
+            progress: path => output.WriteLine($"[{++processed}/{runProfile.Inputs.Length}] 実行・記録: {path}")
         );
         WriteRun(result.Report, output);
         foreach (var diagnostic in result.Report.Diagnostics)
@@ -519,14 +533,14 @@ internal sealed class RunnerCli(ConversionProfile profile, Func<ConversionProfil
             : "artifacts/wabt-core2-1.0.42-datacount/wast2json";
         output.WriteLine(
             $$"""
-            Test Suite Runner: WebAssembly Core 2.0の公式適合検証とCore 3.0の素材生成ツール
+            Test Suite Runner: WebAssembly Core 2.0の公式適合検証とCore 3.0の素材生成・実行ツール
             使用法: WasmSharp.TestSuiteRunner <操作> <引数>
               generate --spec-root <path> --wabt-root <path> --wast2json <path> --output <directory>
                 固定Core 2.0の全入力を変換・照合し、空の専用領域にmanifest.jsonと素材を保存します（既定）。
               generate --profile core3 --spec-root <path> --wasm-tools <path> --output <directory>
                 固定Core 3.0の全入力を変換・照合し、空の専用領域にmanifest.jsonと素材を保存します。
               run --manifest <json> --output <json>
-                保存済み素材の全commandを実行し、詳細結果を新規保存します。
+                保存済み素材の全commandを、manifestの固定profileに対応する仕様の版で実行し、詳細結果を新規保存します。
               baseline-save --input <json> --output <json>
                 完了したmanifestまたは実行結果をコピーし、指定baselineを置換します。
               compare-conversion --baseline <json> --current <json> --output <json>

@@ -155,7 +155,7 @@ public partial class ScriptExecutor_ExecuteTests
         );
 
         // Act
-        var results = new ScriptExecutor(input).Execute(script, state);
+        var results = new ScriptExecutor(input, WasmSpecVersion.Core2).Execute(script, state);
 
         // Assert
         using (Assert.Multiple())

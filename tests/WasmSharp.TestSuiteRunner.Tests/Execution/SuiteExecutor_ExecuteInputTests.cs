@@ -53,7 +53,7 @@ public class SuiteExecutor_ExecuteInputTests
         );
 
         // Act
-        var (result, interruption) = SuiteExecutor.ExecuteInput(input, state, cancellation.Token);
+        var (result, interruption) = SuiteExecutor.ExecuteInput(input, state, WasmSpecVersion.Core2, cancellation.Token);
 
         // Assert
         using (Assert.Multiple())
@@ -79,7 +79,7 @@ public class SuiteExecutor_ExecuteInputTests
         var state = new ScriptState("a.wast");
 
         // Act
-        var (result, interruption) = SuiteExecutor.ExecuteInput(input, state, cancellation.Token);
+        var (result, interruption) = SuiteExecutor.ExecuteInput(input, state, WasmSpecVersion.Core2, cancellation.Token);
 
         // Assert
         using (Assert.Multiple())

@@ -20,6 +20,7 @@ public class SuiteExecutor_ExecuteAndSaveTests
         var result = SuiteExecutor.ExecuteAndSave(
             SuiteExecutor_ExecuteTests.Complete(fixture.Manifest),
             fixture.ManifestPath,
+            WasmSpecVersion.Core2,
             output,
             _reportStore
         );
@@ -60,6 +61,7 @@ public class SuiteExecutor_ExecuteAndSaveTests
         var result = SuiteExecutor.ExecuteAndSave(
             SuiteExecutor_ExecuteTests.Complete(fixture.Manifest),
             fixture.ManifestPath,
+            WasmSpecVersion.Core2,
             output,
             _reportStore
         );
@@ -90,6 +92,7 @@ public class SuiteExecutor_ExecuteAndSaveTests
         var result = SuiteExecutor.ExecuteAndSave(
             SuiteExecutor_ExecuteTests.Complete(fixture.Manifest),
             fixture.ManifestPath,
+            WasmSpecVersion.Core2,
             output,
             _reportStore,
             cancellationToken: cancellation.Token
@@ -119,7 +122,7 @@ public class SuiteExecutor_ExecuteAndSaveTests
         var output = Path.Combine(fixture.OutputRoot, "run.json");
 
         // Act
-        var result = SuiteExecutor.ExecuteAndSave(manifest, fixture.ManifestPath, output, _reportStore);
+        var result = SuiteExecutor.ExecuteAndSave(manifest, fixture.ManifestPath, WasmSpecVersion.Core2, output, _reportStore);
 
         // Assert
         var stored = _reportStore.ReadRunReport(output);
@@ -149,6 +152,7 @@ public class SuiteExecutor_ExecuteAndSaveTests
         var result = SuiteExecutor.ExecuteAndSave(
             SuiteExecutor_ExecuteTests.Complete(fixture.Manifest),
             fixture.ManifestPath,
+            WasmSpecVersion.Core2,
             output,
             _reportStore
         );

@@ -17,7 +17,7 @@ public class SuiteExecutor_ExecuteTests
         File.WriteAllBytes(fixture.GetPath("modules/a.0.wasm"), [1]);
 
         // Act
-        var report = SuiteExecutor.Execute(Complete(fixture.Manifest), fixture.ManifestPath);
+        var report = SuiteExecutor.Execute(Complete(fixture.Manifest), fixture.ManifestPath, WasmSpecVersion.Core2);
 
         // Assert
         using (Assert.Multiple())
@@ -86,7 +86,7 @@ public class SuiteExecutor_ExecuteTests
         var manifest = Complete(fixture.Manifest);
 
         // Act
-        var report = SuiteExecutor.Execute(manifest, fixture.ManifestPath);
+        var report = SuiteExecutor.Execute(manifest, fixture.ManifestPath, WasmSpecVersion.Core2);
 
         // Assert
         using (Assert.Multiple())
@@ -126,7 +126,7 @@ public class SuiteExecutor_ExecuteTests
         File.Delete(fixture.GetPath("modules/simd/b.0.wat"));
 
         // Act
-        var report = SuiteExecutor.Execute(Complete(fixture.Manifest), fixture.ManifestPath);
+        var report = SuiteExecutor.Execute(Complete(fixture.Manifest), fixture.ManifestPath, WasmSpecVersion.Core2);
 
         // Assert
         using (Assert.Multiple())
@@ -157,7 +157,7 @@ public class SuiteExecutor_ExecuteTests
         );
 
         // Act
-        var report = SuiteExecutor.Execute(Complete(fixture.Manifest), fixture.ManifestPath);
+        var report = SuiteExecutor.Execute(Complete(fixture.Manifest), fixture.ManifestPath, WasmSpecVersion.Core2);
 
         // Assert
         using (Assert.Multiple())
@@ -180,6 +180,7 @@ public class SuiteExecutor_ExecuteTests
         var report = SuiteExecutor.Execute(
             Complete(fixture.Manifest),
             fixture.ManifestPath,
+            WasmSpecVersion.Core2,
             cancellationToken: cancellation.Token
         );
 
@@ -203,7 +204,7 @@ public class SuiteExecutor_ExecuteTests
         File.WriteAllBytes(fixture.GetPath("modules/extra.wasm"), ScriptExecutionFixture.Empty);
 
         // Act
-        var report = SuiteExecutor.Execute(Complete(fixture.Manifest), fixture.ManifestPath);
+        var report = SuiteExecutor.Execute(Complete(fixture.Manifest), fixture.ManifestPath, WasmSpecVersion.Core2);
 
         // Assert
         await Assert
@@ -223,7 +224,7 @@ public class SuiteExecutor_ExecuteTests
         List<string> progress = [];
 
         // Act
-        var report = SuiteExecutor.Execute(Complete(fixture.Manifest), fixture.ManifestPath, progress.Add);
+        var report = SuiteExecutor.Execute(Complete(fixture.Manifest), fixture.ManifestPath, WasmSpecVersion.Core2, progress.Add);
 
         // Assert
         using (Assert.Multiple())
@@ -252,6 +253,7 @@ public class SuiteExecutor_ExecuteTests
         var report = SuiteExecutor.Execute(
             Complete(fixture.Manifest),
             fixture.ManifestPath,
+            WasmSpecVersion.Core2,
             path =>
             {
                 progress.Add(path);
@@ -321,12 +323,13 @@ public class SuiteExecutor_ExecuteTests
         var report = SuiteExecutor.Execute(
             Complete(fixture.Manifest),
             fixture.ManifestPath,
+            WasmSpecVersion.Core2,
             progress.Add,
             cancellation.Token,
             (input, state, token) =>
             {
                 state.Register(host);
-                return SuiteExecutor.ExecuteInput(input, state, token);
+                return SuiteExecutor.ExecuteInput(input, state, WasmSpecVersion.Core2, token);
             }
         );
 

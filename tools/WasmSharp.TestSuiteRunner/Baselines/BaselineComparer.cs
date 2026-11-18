@@ -10,7 +10,7 @@ namespace WasmSharp.TestSuiteRunner.Baselines;
 internal static class BaselineComparer
 {
     /// <summary>
-    /// profileと素材同一性が一致する場合に、ケースの前後差とpassedからの回帰を比較する。
+    /// profile・適用した仕様の版・素材同一性が一致する場合に、ケースの前後差とpassedからの回帰を比較する。
     /// </summary>
     /// <param name="baseline">比較基準となる保存済みの実行結果</param>
     /// <param name="current">比較する現在の実行結果</param>
@@ -30,6 +30,13 @@ internal static class BaselineComparer
             ComparisonType.Run,
             new ComparedReport(baselinePath) { RunId = baseline.Provenance.RunId },
             new ComparedReport(currentPath) { RunId = current.Provenance.RunId }
+        );
+        // 適用した仕様の版が異なる結果は、素材が同じでも期待する判定が異なり得るため比較成立の条件に含める。
+        AddDifference(
+            report.ConditionDifferences,
+            "spec_version",
+            baseline.SpecVersion.ToString(),
+            current.SpecVersion.ToString()
         );
         report = report with
         {
