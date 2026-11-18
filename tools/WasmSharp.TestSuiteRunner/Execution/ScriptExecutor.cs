@@ -9,7 +9,7 @@ namespace WasmSharp.TestSuiteRunner.Execution;
 /// </summary>
 /// <param name="input">この入力の照合済みbinaryと素材異常</param>
 /// <param name="specVersion">全moduleのDecode・Validateに適用する仕様の版</param>
-internal sealed class ScriptExecutor(InputVerification input, WasmSpecVersion specVersion = WasmSpecVersion.Core2)
+internal sealed class ScriptExecutor(InputVerification input, WasmSpecVersion specVersion)
 {
     /// <summary>
     /// すべてのinstanceへ明示する呼び出し深さの上限

@@ -27,7 +27,7 @@ internal static class ScriptExecutionFixture
             modules.ToImmutableDictionary(x => x.Index, x => ImmutableArray.Create(x.Binary)),
             []
         );
-        return new ScriptExecutor(input).Execute(ScriptReader.Read(document, state.InputPath), state);
+        return new ScriptExecutor(input, WasmSpecVersion.Core2).Execute(ScriptReader.Read(document, state.InputPath), state);
     }
 
     internal static string Module(int index, string? name = null)

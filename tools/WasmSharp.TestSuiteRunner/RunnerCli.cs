@@ -328,10 +328,10 @@ internal sealed class RunnerCli(ConversionProfile profile, Func<ConversionProfil
         var result = SuiteExecutor.ExecuteAndSave(
             manifest,
             paths["--manifest"],
+            specVersion,
             paths["--output"],
             _reportStore,
-            progress: path => output.WriteLine($"[{++processed}/{runProfile.Inputs.Length}] 実行・記録: {path}"),
-            specVersion: specVersion
+            progress: path => output.WriteLine($"[{++processed}/{runProfile.Inputs.Length}] 実行・記録: {path}")
         );
         WriteRun(result.Report, output);
         foreach (var diagnostic in result.Report.Diagnostics)
