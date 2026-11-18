@@ -171,27 +171,39 @@ internal static class ModuleBinaryFormat
     /// </summary>
     /// <param name="reader">sectionヘッダーの先頭にある読み取り状態 sectionの終端まで進める</param>
     /// <param name="previousRank">直前の標準sectionの順位 正常時に更新し、custom sectionでは変更しない</param>
+    /// <param name="specVersion">存在するsection IDを決める仕様の版 Core 3.0ではタグsectionを含む</param>
     /// <returns>元の入力位置とsection IDを保持する、payloadに限定した読み取り状態</returns>
     /// <exception cref="WasmDecodeException">ID、長さ、標準sectionの順序または重複が不正な場合</exception>
     /// <exception cref="ModuleReadBoundaryException">限定された範囲内で構文を読み終えられない場合</exception>
-    internal static ModuleBinaryReader ReadSection(ref ModuleBinaryReader reader, ref int previousRank)
+    internal static ModuleBinaryReader ReadSection(
+        ref ModuleBinaryReader reader,
+        ref int previousRank,
+        WasmSpecVersion specVersion
+    )
     {
         var offset = reader.Position;
         var id = reader.ReadByte();
         reader.SectionId = id;
-        if (id > 12)
+        if (specVersion == WasmSpecVersion.Core3 ? id > 13 : id > 12)
         {
-            throw reader.Error("malformed section id: Core 2.0に存在しないsection IDです。", offset);
+            throw reader.Error(
+                specVersion == WasmSpecVersion.Core3
+                    ? "malformed section id: Core 3.0に存在しないsection IDです。"
+                    : "malformed section id: Core 2.0に存在しないsection IDです。",
+                offset
+            );
         }
 
         if (id != 0)
         {
-            // data countはID順と異なり、elementとcodeの間に置かれる。
+            // タグはmemoryとglobalの間、data countはelementとcodeの間に置かれる。
             var rank = id switch
             {
-                12 => 10,
-                10 => 11,
-                11 => 12,
+                13 => 6,
+                12 => 11,
+                10 => 12,
+                11 => 13,
+                >= 6 => id + 1,
                 _ => id,
             };
             if (rank <= previousRank)

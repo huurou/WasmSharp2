@@ -398,9 +398,10 @@ internal static class ModuleValidator
     }
 
     /// <summary>
-    /// memoryの総数を確認し、超過時は元の2個目の宣言位置を保持する
+    /// memoryの総数を確認し、2個以上の場合は元の2個目の宣言位置を保持する
     /// </summary>
-    /// <param name="module">デコード済みの静的定義</param>
+    /// <remarks>Core 2.0では規則違反、複数メモリを許すCore 3.0では未実装として通知する</remarks>
+    /// <param name="module">デコード時の仕様の版を保持する静的定義</param>
     /// <param name="importCount">importしたmemoryの個数</param>
     private static void ValidateMemoryCount(WasmModule module, uint importCount)
     {
@@ -408,10 +409,33 @@ internal static class ModuleValidator
         {
             var secondImport = module.Imports.OfType<MemoryImport>().Skip(1).FirstOrDefault();
             var offset = secondImport?.ByteOffset ?? module.Memories[importCount == 0 ? 1 : 0].ByteOffset;
+            var location = new WasmFailureLocation(
+                WasmProcessingStage.Validate,
+                offset,
+                null,
+                secondImport is null ? (byte)5 : (byte)2
+            );
+            if (module.SpecVersion == WasmSpecVersion.Core3)
+            {
+                throw new WasmUnsupportedFeatureException(
+                    "未実装の機能に遭遇しました。",
+                    "multiple memories",
+                    location,
+                    [
+                        new WasmUnverifiedRange(
+                            WasmProcessingStage.Validate,
+                            0,
+                            module.InputLength,
+                            "複数メモリを前提とする検証が未完了です。"
+                        ),
+                    ]
+                );
+            }
+
             throw ValidationDiagnostics.ValidationFailure(
                 "multiple memories",
                 "memoryのimportと定義の合計が1個を超えています。",
-                new(WasmProcessingStage.Validate, offset, null, secondImport is null ? (byte)5 : (byte)2)
+                location
             );
         }
     }

@@ -1,3 +1,4 @@
+using WasmSharp.Tests.Fixtures;
 using WasmSharp.TestSuiteRunner.Execution;
 using WasmSharp.TestSuiteRunner.Reports;
 using WasmSharp.TestSuiteRunner.Tests.Fixtures;
@@ -167,6 +168,70 @@ public class SuiteExecutor_ExecuteAndSaveTests
             await Assert
                 .That(CompletionPolicy.Run(result.Report, ReportStore.Validate(result.Report), false).ExitCode)
                 .IsEqualTo(2);
+        }
+    }
+
+    [Test]
+    public async Task 公式のタグと複数メモリをCore3で実行_ランタイムが明示した未実装を処理段階と診断付きで保存する()
+    {
+        // Arrange
+        using var fixture = CorpusFixture.Create();
+        fixture.WriteArtifact(CorpusFixture.A, "modules/a.0.wasm", Core3OfficialBinary.Tag);
+        fixture.WriteArtifact(CorpusFixture.A, "modules/a.2.wasm", Core3OfficialBinary.MultipleMemories);
+        var output = Path.Combine(fixture.OutputRoot, "core3.json");
+
+        // Act
+        SuiteExecutor.ExecuteAndSave(
+            SuiteExecutor_ExecuteTests.Complete(fixture.Manifest),
+            fixture.ManifestPath,
+            WasmSpecVersion.Core3,
+            output,
+            _reportStore
+        );
+
+        // Assert
+        var cases = _reportStore.ReadRunReport(output).Report.Inputs[0].Cases;
+        using (Assert.Multiple())
+        {
+            await Assert.That(cases[0].Outcome).IsEqualTo(CaseOutcome.RuntimeUnsupported);
+            await Assert.That(cases[0].LastStage).IsEqualTo(CaseStage.Decode);
+            await Assert.That(cases[0].Diagnostics[0].Feature).IsEqualTo("tag section");
+            await Assert.That(cases[0].Diagnostics[0].Location!.Stage).IsEqualTo("Decode");
+            await Assert.That(cases[2].Outcome).IsEqualTo(CaseOutcome.RuntimeUnsupported);
+            await Assert.That(cases[2].LastStage).IsEqualTo(CaseStage.Validate);
+            await Assert.That(cases[2].Diagnostics[0].Feature).IsEqualTo("multiple memories");
+            await Assert.That(cases[2].Diagnostics[0].Location!.Stage).IsEqualTo("Validate");
+        }
+    }
+
+    [Test]
+    public async Task 公式のタグと複数メモリをCore2で実行_未実装へ読み替えず従来の段階の失敗として保存する()
+    {
+        // Arrange
+        using var fixture = CorpusFixture.Create();
+        fixture.WriteArtifact(CorpusFixture.A, "modules/a.0.wasm", Core3OfficialBinary.Tag);
+        fixture.WriteArtifact(CorpusFixture.A, "modules/a.2.wasm", Core3OfficialBinary.MultipleMemories);
+        var output = Path.Combine(fixture.OutputRoot, "core2.json");
+
+        // Act
+        SuiteExecutor.ExecuteAndSave(
+            SuiteExecutor_ExecuteTests.Complete(fixture.Manifest),
+            fixture.ManifestPath,
+            WasmSpecVersion.Core2,
+            output,
+            _reportStore
+        );
+
+        // Assert
+        var cases = _reportStore.ReadRunReport(output).Report.Inputs[0].Cases;
+        using (Assert.Multiple())
+        {
+            await Assert.That(cases[0].Outcome).IsEqualTo(CaseOutcome.Failed);
+            await Assert.That(cases[0].LastStage).IsEqualTo(CaseStage.Decode);
+            await Assert.That(cases[0].Diagnostics[0].Message).StartsWith("malformed section id");
+            await Assert.That(cases[2].Outcome).IsEqualTo(CaseOutcome.Failed);
+            await Assert.That(cases[2].LastStage).IsEqualTo(CaseStage.Validate);
+            await Assert.That(cases[2].Diagnostics[0].Message).StartsWith("multiple memories");
         }
     }
 }

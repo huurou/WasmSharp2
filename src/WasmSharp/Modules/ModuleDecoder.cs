@@ -18,23 +18,80 @@ internal static class ModuleDecoder
         "function and code section have inconsistent lengths: functionとcodeの件数が一致しません。";
 
     /// <summary>
-    /// 対応するCore 2.0構文を、入力から独立した静的module定義へデコードする
+    /// 指定した仕様の版で対応する構文を、入力から独立した静的module定義へデコードする
     /// </summary>
     /// <remarks>型や参照の妥当性の検証と、インスタンス化は行わない</remarks>
     /// <param name="bytes">ヘッダーから始まる入力バイナリ全体</param>
+    /// <param name="specVersion">存在するsectionを決める仕様の版 省略時はCore 2.0</param>
     /// <returns>入力上の診断位置を保持する、未検証のmodule定義</returns>
     /// <exception cref="WasmDecodeException">対応する構文の符号化、sectionの構成、functionとcodeの件数、またはデータ数セクションの件数や要否が不正な場合</exception>
     /// <exception cref="WasmUnsupportedFeatureException">仕様に存在する、未実装のsectionまたは命令に遭遇した場合 入力全体の有効性は保証しない</exception>
     /// <exception cref="WasmImplementationLimitException">宣言件数または命令数がコレクションの保持上限を超える場合</exception>
-    internal static WasmModule Decode(ReadOnlySpan<byte> bytes)
+    internal static WasmModule Decode(ReadOnlySpan<byte> bytes, WasmSpecVersion specVersion = WasmSpecVersion.Core2)
     {
+        if (specVersion == WasmSpecVersion.Core3)
+        {
+            RejectTagSection(bytes);
+        }
+
         try
         {
-            return DecodeCore(bytes, ModuleReadMode.Bounded);
+            return DecodeCore(bytes, ModuleReadMode.Bounded, specVersion);
         }
         catch (ModuleReadBoundaryException exception)
         {
-            throw ResolveBoundaryFailure(bytes, exception);
+            throw ResolveBoundaryFailure(bytes, exception, specVersion);
+        }
+    }
+
+    /// <summary>
+    /// Core 3.0のsection外枠だけを先頭から読み、有効な外枠のタグsectionがあれば未実装として通知する
+    /// </summary>
+    /// <remarks>
+    /// タグより前のpayloadにはCore 3.0で追加された未対応の構文がありうるため、payloadを読まずに判別する。
+    /// タグに至るまでの外枠が不正な場合は通知せず、通常のデコードで診断する
+    /// </remarks>
+    /// <param name="bytes">ヘッダーから始まる入力バイナリ全体</param>
+    /// <exception cref="WasmUnsupportedFeatureException">タグsectionまでのID・長さ・順序が有効な場合</exception>
+    private static void RejectTagSection(ReadOnlySpan<byte> bytes)
+    {
+        var reader = new ModuleBinaryReader(bytes);
+        try
+        {
+            ModuleBinaryFormat.ReadHeader(ref reader);
+            var firstSectionOffset = reader.Position;
+            var previousRank = 0;
+            while (reader.Remaining != 0)
+            {
+                var offset = reader.Position;
+                var section = ModuleBinaryFormat.ReadSection(ref reader, ref previousRank, WasmSpecVersion.Core3);
+                if (section.SectionId == 13)
+                {
+                    throw new WasmUnsupportedFeatureException(
+                        "未実装の機能に遭遇しました。",
+                        "tag section",
+                        section.Location(offset),
+                        [
+                            new WasmUnverifiedRange(
+                                WasmProcessingStage.Decode,
+                                firstSectionOffset,
+                                bytes.Length,
+                                "外枠以外のsectionのデコードが未完了です。"
+                            ),
+                            new WasmUnverifiedRange(
+                                WasmProcessingStage.Validate,
+                                0,
+                                bytes.Length,
+                                "入力全体の検証が未実施です。"
+                            ),
+                        ]
+                    );
+                }
+            }
+        }
+        catch (Exception exception) when (exception is WasmDecodeException or ModuleReadBoundaryException)
+        {
+            // 外枠の不正を未実装へ読み替えず、通常のデコードに診断を委ねる。
         }
     }
 
@@ -43,12 +100,17 @@ internal static class ModuleDecoder
     /// </summary>
     /// <param name="bytes">通常解析に使用した入力バイナリ全体</param>
     /// <param name="failure">通常解析で確定した境界失敗</param>
+    /// <param name="specVersion">通常解析と同じ仕様の版</param>
     /// <returns>再走査の構文診断 未対応・実装上限・正常終了の場合は元の診断</returns>
-    private static WasmDecodeException ResolveBoundaryFailure(ReadOnlySpan<byte> bytes, ModuleReadBoundaryException failure)
+    private static WasmDecodeException ResolveBoundaryFailure(
+        ReadOnlySpan<byte> bytes,
+        ModuleReadBoundaryException failure,
+        WasmSpecVersion specVersion
+    )
     {
         try
         {
-            DecodeCore(bytes, ModuleReadMode.Diagnostic);
+            DecodeCore(bytes, ModuleReadMode.Diagnostic, specVersion);
         }
         catch (WasmDecodeException exception)
         {
@@ -71,12 +133,13 @@ internal static class ModuleDecoder
     /// </summary>
     /// <param name="bytes">ヘッダーから始まる入力バイナリ全体</param>
     /// <param name="mode">通常解析または境界失敗後の診断用読取り</param>
+    /// <param name="specVersion">存在するsectionを決める仕様の版</param>
     /// <returns>入力上の診断位置を保持する、未検証のmodule定義</returns>
     /// <exception cref="WasmDecodeException">対応する構文の符号化、sectionの構成、functionとcodeの件数、またはデータ数セクションの件数や要否が不正な場合</exception>
     /// <exception cref="ModuleReadBoundaryException">限定された範囲内で構文を読み終えられない場合</exception>
     /// <exception cref="WasmUnsupportedFeatureException">仕様に存在する、未実装のsectionまたは命令に遭遇した場合 入力全体の有効性は保証しない</exception>
     /// <exception cref="WasmImplementationLimitException">宣言件数または命令数がコレクションの保持上限を超える場合</exception>
-    private static WasmModule DecodeCore(ReadOnlySpan<byte> bytes, ModuleReadMode mode)
+    private static WasmModule DecodeCore(ReadOnlySpan<byte> bytes, ModuleReadMode mode, WasmSpecVersion specVersion)
     {
         var reader = new ModuleBinaryReader(bytes, mode: mode);
         ModuleBinaryFormat.ReadHeader(ref reader);
@@ -99,7 +162,7 @@ internal static class ModuleDecoder
         while (reader.Remaining != 0)
         {
             var offset = reader.Position;
-            var section = ModuleBinaryFormat.ReadSection(ref reader, ref previousRank);
+            var section = ModuleBinaryFormat.ReadSection(ref reader, ref previousRank, specVersion);
             var id = section.SectionId!.Value;
 
             switch (id)
@@ -201,6 +264,11 @@ internal static class ModuleDecoder
 
                 case 12:
                     dataCount = ReadDataCount(ref section);
+                    break;
+
+                case 13:
+                    // 外枠が有効なタグは事前に未実装として通知済みのため、ここでは長さ不足の診断だけを選ぶ。
+                    section.ReadBytes((uint)section.DeclaredRemaining);
                     break;
             }
 
