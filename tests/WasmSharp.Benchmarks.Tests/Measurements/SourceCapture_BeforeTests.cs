@@ -163,13 +163,20 @@ internal class SourceCapture_BeforeTests
     }
 
     [Test]
-    public async Task リポジトリ外のsourceを参照する_対象pathを示して拒否する()
+    [Arguments(false)]
+    [Arguments(true)]
+    public async Task リポジトリ外のファイルか親ディレクトリを参照する_対象pathを示して拒否する(bool repositoryParent)
     {
         // Arrange
         using var fixture = new SourceCaptureFixture();
         var store = RunStore.Create(fixture.Run.DirectoryPath, fixture.Run.Manifest, _json);
-        var externalPath = Path.Combine(fixture.Run.DirectoryPath, "External.cs");
-        File.WriteAllText(externalPath, "class External {}");
+        var externalPath = repositoryParent
+            ? Path.GetDirectoryName(fixture.RepositoryDirectory)!
+            : Path.Combine(fixture.Run.DirectoryPath, "External.cs");
+        if (!repositoryParent)
+        {
+            File.WriteAllText(externalPath, "class External {}");
+        }
         fixture.Write(
             "src/WasmSharp/WasmSharp.csproj",
             $"<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup><ItemGroup><Compile Include=\"{externalPath}\" /></ItemGroup></Project>"

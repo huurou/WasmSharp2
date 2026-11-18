@@ -62,14 +62,15 @@ internal sealed class StrictEnumConverter : JsonConverterFactory
         }
 
         /// <summary>
-        /// 属性で指定された保存名、なければ列挙値の文字列表現をJSON文字列として出力する。
+        /// 読取専用のため書込みを受け付けない。保存名による出力は列挙型の標準変換器が行う。
         /// </summary>
-        /// <param name="writer">JSON文字列の出力先</param>
-        /// <param name="value">保存名を出力する列挙値</param>
+        /// <param name="writer">JSONの出力先</param>
+        /// <param name="value">書込みを要求された列挙値</param>
         /// <param name="options">シリアライザーから渡される設定</param>
+        /// <exception cref="NotSupportedException">書込みを要求した場合</exception>
         public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
         {
-            writer.WriteStringValue(GetName(value));
+            throw new NotSupportedException();
         }
 
         /// <summary>

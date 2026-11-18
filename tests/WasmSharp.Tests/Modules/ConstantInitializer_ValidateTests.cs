@@ -1,17 +1,11 @@
 using System.Collections.Immutable;
 using WasmSharp.Exceptions;
 using WasmSharp.Modules;
-using WasmSharp.Tests.Fixtures;
 
 namespace WasmSharp.Tests.Modules;
 
 internal class ConstantInitializer_ValidateTests
 {
-    private readonly ReferenceValidationContext _references = ReferenceValidationContext.Create(
-        WasmModule.Decode(HostLinkingModuleBinary.Create()),
-        0
-    );
-
     [Test]
     [Arguments(false)]
     [Arguments(true)]
@@ -29,7 +23,7 @@ internal class ConstantInitializer_ValidateTests
 
         // Act & Assert
         await Assert
-            .That(() => ConstantInitializer.Validate(expression, WasmValueKind.I32, importedGlobals, _references, 11))
+            .That(() => ConstantInitializer.Validate(expression, WasmValueKind.I32, importedGlobals, 0, 11))
             .ThrowsNothing();
     }
 
@@ -45,11 +39,11 @@ internal class ConstantInitializer_ValidateTests
 
         // Act & Assert
         var exception = await Assert
-            .That(() => ConstantInitializer.Validate(expression, WasmValueKind.I32, [], _references, 11))
+            .That(() => ConstantInitializer.Validate(expression, WasmValueKind.I32, [], 0, 11))
             .ThrowsExactly<WasmValidateException>();
         using (Assert.Multiple())
         {
-            await Assert.That(exception!.Message.StartsWith("type mismatch", StringComparison.Ordinal)).IsTrue();
+            await Assert.That(exception!.Message).StartsWith("type mismatch: 定数式の結果型");
             await Assert.That(exception.Location).IsEqualTo(new(WasmProcessingStage.Validate, 42, null, 11));
         }
     }
@@ -68,13 +62,11 @@ internal class ConstantInitializer_ValidateTests
 
         // Act & Assert
         var exception = await Assert
-            .That(() => ConstantInitializer.Validate(expression, WasmValueKind.I32, [], _references, 11))
+            .That(() => ConstantInitializer.Validate(expression, WasmValueKind.I32, [], 0, 11))
             .ThrowsExactly<WasmValidateException>();
         using (Assert.Multiple())
         {
-            await Assert
-                .That(exception!.Message.StartsWith("constant expression required", StringComparison.Ordinal))
-                .IsTrue();
+            await Assert.That(exception!.Message).StartsWith("constant expression required: 定数式に使用できない命令");
             await Assert.That(exception.Location).IsEqualTo(new(WasmProcessingStage.Validate, 40, null, 11));
         }
     }

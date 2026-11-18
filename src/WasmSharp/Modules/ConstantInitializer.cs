@@ -15,13 +15,13 @@ internal static class ConstantInitializer
     /// <param name="expression">終端のendを含むデコード済みの定数式</param>
     /// <param name="expectedKind">式が生成する値に要求する型</param>
     /// <param name="importedGlobals">global添字順に並ぶimportしたglobalの型</param>
-    /// <param name="references">当該module検証で共有する関数の個数と宣言集合</param>
+    /// <param name="functionCount">importと定義を合わせた関数の個数</param>
     /// <param name="sectionId">診断位置に保持するセクションID</param>
     internal static void Validate(
         ImmutableArray<DecodedInstruction> expression,
         WasmValueKind expectedKind,
         ReadOnlySpan<WasmGlobalType> importedGlobals,
-        ReferenceValidationContext references,
+        uint functionCount,
         byte sectionId
     )
     {
@@ -35,7 +35,7 @@ internal static class ConstantInitializer
         for (var index = 0; index < expression.Length - 1; index++)
         {
             var instruction = expression[index];
-            resultKind = ValidateResultInstruction(instruction, importedGlobals, references, sectionId);
+            resultKind = ValidateResultInstruction(instruction, importedGlobals, functionCount, sectionId);
         }
 
         var endLocation = new WasmFailureLocation(WasmProcessingStage.Validate, expression[^1].ByteOffset, null, sectionId);
@@ -128,13 +128,13 @@ internal static class ConstantInitializer
     /// </summary>
     /// <param name="instruction">定数性を確認した初期化命令</param>
     /// <param name="importedGlobals">定数式から参照できるimportしたglobalの型</param>
-    /// <param name="references">当該module検証で共有する関数の個数と宣言集合</param>
+    /// <param name="functionCount">importと定義を合わせた関数の個数</param>
     /// <param name="sectionId">診断位置に保持するセクションID</param>
     /// <returns>命令が生成する値の型</returns>
     private static WasmValueKind ValidateResultInstruction(
         DecodedInstruction instruction,
         ReadOnlySpan<WasmGlobalType> importedGlobals,
-        ReferenceValidationContext references,
+        uint functionCount,
         byte sectionId
     )
     {
@@ -142,11 +142,16 @@ internal static class ConstantInitializer
         {
             return importedGlobals[(int)instruction.Index].ValueKind;
         }
-        var location = new WasmFailureLocation(WasmProcessingStage.Validate, instruction.ByteOffset, null, sectionId);
         if (instruction.Opcode == new OpcodeKey(0, 0xD2))
         {
-            if (instruction.Index >= references.FunctionCount)
+            if (instruction.Index >= functionCount)
             {
+                var location = new WasmFailureLocation(
+                    WasmProcessingStage.Validate,
+                    instruction.ByteOffset,
+                    null,
+                    sectionId
+                );
                 throw ValidationDiagnostics.UnknownIndex(
                     "function",
                     instruction.Index,
@@ -154,23 +159,10 @@ internal static class ConstantInitializer
                     location
                 );
             }
-            if (!references.DeclaredFunctions.Contains(instruction.Index))
-            {
-                throw ValidationDiagnostics.ValidationFailure(
-                    "undeclared function reference",
-                    "定数式が参照する関数が宣言されていません。",
-                    location
-                );
-            }
+            // module内の定数式のref.func自体が宣言集合に含まれるため、ここでは添字の存在だけを確認する。
             return WasmValueKind.FuncRef;
         }
-        if (
-            instruction.Opcode == new OpcodeKey(0, 0xD0)
-            && instruction.Immediate.Kind is not (WasmValueKind.FuncRef or WasmValueKind.ExternRef)
-        )
-        {
-            throw ValidationDiagnostics.ValidationFailure("type mismatch", "ref.nullには参照型が必要です。", location);
-        }
+        // ref.nullの型はDecodeで検査済みなので、他の定数と同じく即値の型が結果になる。
         return instruction.Immediate.Kind;
     }
 }

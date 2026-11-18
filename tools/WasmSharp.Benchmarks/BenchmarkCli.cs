@@ -76,13 +76,9 @@ internal sealed class BenchmarkCli
             options["--case"] == "all"
                 ? [.. assets.Catalog.Cases.Select(x => x.CaseId).Order(StringComparer.Ordinal)]
                 : new List<string> { assets.Catalog.Get(options["--case"]).CaseId };
-        var executable = Environment.ProcessPath!;
-        var arguments = Environment.GetCommandLineArgs();
-        var command = new CommandInvocation(
-            executable,
-            Path.GetFileNameWithoutExtension(executable).Equals("dotnet", StringComparison.OrdinalIgnoreCase)
-                ? [.. arguments]
-                : [.. arguments.Skip(1)],
+        var command = CommandInvocation.FromProcess(
+            Environment.ProcessPath!,
+            Environment.GetCommandLineArgs(),
             Environment.CurrentDirectory
         );
         var repository = CaptureCommand.Run("git", command.WorkingDirectory, "rev-parse", "--show-toplevel").Trim();

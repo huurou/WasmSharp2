@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using WasmSharp.Exceptions;
 
 namespace WasmSharp.Execution;
@@ -185,15 +186,18 @@ internal static partial class Interpreter
     /// <returns>実行の成功または範囲外アクセスのtrap</returns>
     internal static ExecutionResult V128LoadZero(InterpreterContext context, in Instruction instruction)
     {
-        Span<byte> bytes = stackalloc byte[16];
-        bytes.Clear();
-        var result = ReadSimdMemory(context, in instruction, bytes[..instruction.MemoryAccessSignature.ByteWidth]);
+        Span<byte> buffer = stackalloc byte[sizeof(ulong)];
+        var bytes = buffer[..instruction.MemoryAccessSignature.ByteWidth];
+        var result = ReadSimdMemory(context, in instruction, bytes);
         if (result.Status != ExecutionStatus.Success)
         {
             return result;
         }
 
-        context.PushValue(SimdValue.FromLittleEndian(bytes).ToValue());
+        var low64 = bytes.Length == sizeof(uint)
+            ? BinaryPrimitives.ReadUInt32LittleEndian(bytes)
+            : BinaryPrimitives.ReadUInt64LittleEndian(bytes);
+        context.PushValue(WasmValue.FromV128(low64, 0));
         return default;
     }
 

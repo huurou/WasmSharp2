@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Configuration>
+  <CodeCoverage>
+    <ModulePaths>
+      <Include>
+        <ModulePath>.*[\\/]WasmSharp(\.Generators|\.TestSuiteRunner|\.Benchmarks)?\.dll$</ModulePath>
+      </Include>
+    </ModulePaths>
+    <Sources>
+      <Exclude>
+        <Source>.*\.generated\.cs$</Source>
+      </Exclude>
+    </Sources>
+  </CodeCoverage>
+</Configuration>

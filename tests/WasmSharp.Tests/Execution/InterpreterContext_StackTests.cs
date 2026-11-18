@@ -53,6 +53,7 @@ internal class InterpreterContext_CalculateCapacityTests
             await Assert.That(exception!.Reason).IsEqualTo(WasmImplementationLimitReason.CollectionSize);
             await Assert.That(exception.Limit).IsEqualTo(Array.MaxLength);
             await Assert.That(exception.Location).IsEqualTo(location);
+            await Assert.That(exception.Message).Contains("実行スタックの必要数");
         }
     }
 

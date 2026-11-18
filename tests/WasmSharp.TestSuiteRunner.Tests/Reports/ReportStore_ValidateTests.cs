@@ -46,14 +46,14 @@ internal class ReportStore_ValidateTests
     }
 
     [Test]
-    public async Task ケースが素材のcommand一覧と一致しない_欠落と重複と範囲外と件数不一致を報告する()
+    public async Task ケースが素材のcommand一覧と一致しない_重複をcommand順に並べて欠落と範囲外と件数不一致も報告する()
     {
         // Arrange
         var report = RunReportFixture.CreateSample();
         var cases = report.Inputs[0].Cases;
         report.Inputs[0] = report.Inputs[0] with
         {
-            Cases = [cases[0], cases[2], cases[2], cases[3], cases[3] with { Id = new("a.wast", 4) }],
+            Cases = [cases[2], cases[2], cases[0], cases[0], cases[3], cases[3] with { Id = new CaseId("a.wast", 4) }],
         };
         report.Inputs[1] = report.Inputs[1] with { CommandCount = 3, EnumeratedCount = 3 };
         report = report with { Summary = report.Summarize() };
@@ -65,7 +65,14 @@ internal class ReportStore_ValidateTests
         using (Assert.Multiple())
         {
             await Assert.That(HasIssue(issues, RecordIssueKind.Missing, "a.wast#1")).IsTrue();
-            await Assert.That(HasIssue(issues, RecordIssueKind.Duplicate, "a.wast#2")).IsTrue();
+            await Assert
+                .That(
+                    issues
+                        .Where(x => x.Kind == RecordIssueKind.Duplicate)
+                        .Select(x => x.Message)
+                        .SequenceEqual(["a.wast#0の結果が2件あります。", "a.wast#2の結果が2件あります。"])
+                )
+                .IsTrue();
             await Assert.That(HasIssue(issues, RecordIssueKind.Unexpected, "a.wast#4")).IsTrue();
             await Assert.That(HasIssue(issues, RecordIssueKind.Inconsistent, "b.wast")).IsTrue();
             await Assert

@@ -20,10 +20,10 @@ internal static class ModuleValidator
         var (functionCount, memoryCount, globalCount) = ValidateImportReferences(module);
         ValidateFunctionReferences(module, functionCount);
         var references = ReferenceValidationContext.Create(module, functionCount);
-        ValidateInitializers(module, references);
+        ValidateInitializers(module, references.FunctionCount);
         ValidateResources(module);
         ValidateElements(module, references);
-        ValidateData(module, memoryCount, references);
+        ValidateData(module, memoryCount, references.FunctionCount);
         var codes = ValidateFunctions(module, references);
         ValidateStart(module);
         ValidateExports(
@@ -49,7 +49,13 @@ internal static class ModuleValidator
         {
             foreach (var initializer in element.Initializers)
             {
-                ConstantInitializer.Validate(initializer, element.ElementType, importedGlobals, references, 9);
+                ConstantInitializer.Validate(
+                    initializer,
+                    element.ElementType,
+                    importedGlobals,
+                    references.FunctionCount,
+                    9
+                );
             }
             var target = element.ActiveTarget;
             if (target is null)
@@ -74,7 +80,13 @@ internal static class ModuleValidator
                     location
                 );
             }
-            ConstantInitializer.Validate(target.OffsetExpression, WasmValueKind.I32, importedGlobals, references, 9);
+            ConstantInitializer.Validate(
+                target.OffsetExpression,
+                WasmValueKind.I32,
+                importedGlobals,
+                references.FunctionCount,
+                9
+            );
         }
     }
 
@@ -83,8 +95,8 @@ internal static class ModuleValidator
     /// </summary>
     /// <param name="module">リソース宣言の検証を終えたmodule</param>
     /// <param name="importedMemoryCount">importしたmemoryの個数</param>
-    /// <param name="references">当該module検証で共有する参照情報</param>
-    private static void ValidateData(WasmModule module, uint importedMemoryCount, ReferenceValidationContext references)
+    /// <param name="functionCount">importと定義を合わせた関数の個数</param>
+    private static void ValidateData(WasmModule module, uint importedMemoryCount, uint functionCount)
     {
         var memoryCount = importedMemoryCount + (uint)module.Memories.Length;
         var importedGlobals = module.Imports.OfType<GlobalImport>().Select(x => x.Type).ToArray();
@@ -104,7 +116,7 @@ internal static class ModuleValidator
                     new(WasmProcessingStage.Validate, data.ByteOffset, null, 11)
                 );
             }
-            ConstantInitializer.Validate(target.OffsetExpression, WasmValueKind.I32, importedGlobals, references, 11);
+            ConstantInitializer.Validate(target.OffsetExpression, WasmValueKind.I32, importedGlobals, functionCount, 11);
         }
     }
 
@@ -149,13 +161,13 @@ internal static class ModuleValidator
     /// globalの初期化式を評価せず、1個の宣言型の値を生成することを検証する
     /// </summary>
     /// <param name="module">デコード済みの静的定義</param>
-    /// <param name="references">当該module検証で共有する参照情報</param>
-    private static void ValidateInitializers(WasmModule module, ReferenceValidationContext references)
+    /// <param name="functionCount">importと定義を合わせた関数の個数</param>
+    private static void ValidateInitializers(WasmModule module, uint functionCount)
     {
         var importedGlobals = module.Imports.OfType<GlobalImport>().Select(x => x.Type).ToArray();
         foreach (var global in module.Globals)
         {
-            ConstantInitializer.Validate(global.Initializer, global.Type.ValueKind, importedGlobals, references, 6);
+            ConstantInitializer.Validate(global.Initializer, global.Type.ValueKind, importedGlobals, functionCount, 6);
         }
     }
 

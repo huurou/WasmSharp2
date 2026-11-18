@@ -44,7 +44,26 @@ internal enum PowerSource
 /// <summary>
 /// 実行したコマンドと作業ディレクトリ 引数は順序を保持する。
 /// </summary>
-internal sealed record CommandInvocation(string ExecutablePath, List<string> Arguments, string WorkingDirectory);
+internal sealed record CommandInvocation(string ExecutablePath, List<string> Arguments, string WorkingDirectory)
+{
+    /// <summary>
+    /// プロセスの情報から、同じ起動方法を再現できるコマンドを記録する
+    /// </summary>
+    /// <param name="executablePath">dotnetまたはapphostの実行ファイル</param>
+    /// <param name="arguments">先頭にエントリアセンブリまたは実行ファイルを含むコマンドライン</param>
+    /// <param name="workingDirectory">起動時の作業ディレクトリ</param>
+    /// <returns>dotnet起動ではアセンブリを最初の引数に残し、apphost起動では実行ファイルを引数から除いた記録</returns>
+    internal static CommandInvocation FromProcess(
+        string executablePath,
+        ReadOnlySpan<string> arguments,
+        string workingDirectory
+    )
+    {
+        var isDotnet = Path.GetFileNameWithoutExtension(executablePath)
+            .Equals("dotnet", StringComparison.OrdinalIgnoreCase);
+        return new CommandInvocation(executablePath, [.. arguments[(isDotnet ? 0 : 1)..]], workingDirectory);
+    }
+}
 
 /// <summary>
 /// 測定・診断processの構成 Job識別子と実効設定を区別して保持する。

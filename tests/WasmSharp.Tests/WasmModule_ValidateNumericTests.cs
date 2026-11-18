@@ -6,21 +6,22 @@ namespace WasmSharp.Tests;
 internal partial class WasmModule_ValidateTests
 {
     [Test]
-    [Arguments("67", 1)]
-    [Arguments("6A", 1)]
-    [Arguments("41016A", 1)]
-    [Arguments("420167", 1)]
-    [Arguments("420141026A", 1)]
-    [Arguments("410142026A", 1)]
-    [Arguments("410179", 1)]
-    [Arguments("41018B", 1)]
-    [Arguments("430000803F44000000000000F03F92", 1)]
-    [Arguments("430000803FA7", 1)]
-    [Arguments("4101FC00", 2)]
-    [Arguments("FC07", 2)]
-    public async Task 到達可能な数値命令の入力不足または型不一致_Validateで命令位置を通知しInstantiateを許可しない(
+    [Arguments("67", 1, true)]
+    [Arguments("6A", 1, true)]
+    [Arguments("41016A", 1, true)]
+    [Arguments("420167", 1, false)]
+    [Arguments("420141026A", 1, false)]
+    [Arguments("410142026A", 1, false)]
+    [Arguments("410179", 1, false)]
+    [Arguments("41018B", 1, false)]
+    [Arguments("430000803F44000000000000F03F92", 1, false)]
+    [Arguments("430000803FA7", 1, false)]
+    [Arguments("4101FC00", 2, false)]
+    [Arguments("FC07", 2, true)]
+    public async Task 到達可能な数値命令の入力不足または型不一致_Validateで原因と命令位置を通知しInstantiateを許可しない(
         string instructions,
-        int opcodeLength
+        int opcodeLength,
+        bool missingOperand
     )
     {
         // Arrange
@@ -36,7 +37,9 @@ internal partial class WasmModule_ValidateTests
         var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
         using (Assert.Multiple())
         {
-            await Assert.That(exception!.Message.StartsWith("type mismatch", StringComparison.Ordinal)).IsTrue();
+            await Assert
+                .That(exception!.Message)
+                .StartsWith(missingOperand ? "type mismatch: 命令の入力値が不足" : "type mismatch: 命令の入力型が一致しません");
             await Assert
                 .That(exception.Location)
                 .IsEqualTo(new(WasmProcessingStage.Validate, bytes.Length - opcodeLength - 2, 0, 10));

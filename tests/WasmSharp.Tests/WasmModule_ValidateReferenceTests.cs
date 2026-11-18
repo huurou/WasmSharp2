@@ -124,7 +124,7 @@ internal partial class WasmModule_ValidateTests
     [Arguments("D2011A0B", false, "constant expression required", 1)]
     [Arguments("D20123010B", false, "unknown global 1", 1)]
     [Arguments("D20123000B", true, "constant expression required", 1)]
-    [Arguments("D2010B", false, "unknown function 1", 0)]
+    [Arguments("D2010B", false, "unknown function 1: 定数式が参照する関数が存在しません", 0)]
     [Arguments("D070D06F0B", false, "type mismatch", 2)]
     [Arguments("D06F0B", false, "type mismatch", 1)]
     [Arguments("0B", false, "type mismatch", 0)]

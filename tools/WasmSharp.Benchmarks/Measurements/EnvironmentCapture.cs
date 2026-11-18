@@ -64,7 +64,10 @@ internal sealed partial class EnvironmentCapture
             .OrderBy(x => x.Name, StringComparer.Ordinal)
             .ToList();
         var configurations = processes.Select(SnapshotProcess).ToList();
-        configurations.Add(new("Collector", "", 1, [], RuntimeConfiguration(store), [.. variables]));
+        var runtimeConfigurationPath = Path.ChangeExtension(Assembly.GetEntryAssembly()?.Location, ".runtimeconfig.json");
+        configurations.Add(
+            new ProcessConfiguration("Collector", "", 1, [], CaptureRuntimeConfiguration(store, runtimeConfigurationPath), [.. variables])
+        );
         var gc = GC.GetConfigurationVariables()
             .Select(x => new NamedSetting(
                 "GC." + x.Key,
@@ -143,9 +146,14 @@ internal sealed partial class EnvironmentCapture
         );
     }
 
-    private static List<NamedSetting> RuntimeConfiguration(RunStore store)
+    /// <summary>
+    /// 採取processのruntimeconfigを元のバイト列で保存し、比較用の設定一覧を返す
+    /// </summary>
+    /// <param name="store">設定ファイルの保存先</param>
+    /// <param name="path">採取processのruntimeconfigのpath 特定できない場合はnull</param>
+    /// <returns>保存先とSHA-256と各設定 未取得の場合は理由付きの設定1件</returns>
+    internal static List<NamedSetting> CaptureRuntimeConfiguration(RunStore store, string? path)
     {
-        var path = Path.ChangeExtension(Assembly.GetEntryAssembly()?.Location, ".runtimeconfig.json");
         if (!File.Exists(path))
         {
             return [new("RuntimeConfig", "Unavailable: 採取processのruntimeconfigが見つかりません。")];

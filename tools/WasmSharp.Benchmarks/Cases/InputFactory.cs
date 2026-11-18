@@ -78,7 +78,7 @@ internal static class InputFactory
 
         var elementSize = input.ElementType == ArrayElementType.U8 ? 1 : sizeof(uint);
         var byteLength = (ulong)input.Length * (uint)elementSize;
-        if (byteLength > int.MaxValue)
+        if (byteLength > (ulong)Array.MaxLength)
         {
             throw new InvalidDataException($"ケース'{caseId}'の配列長{input.Length}が入力生成の上限を超えています。");
         }

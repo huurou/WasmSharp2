@@ -11,10 +11,8 @@ internal static class CaptureCommand
     internal static string Run(string executable, string directory, params string[] arguments)
     {
         using var process = Start(executable, directory, arguments);
-        var output = process.StandardOutput.ReadToEndAsync();
         var error = process.StandardError.ReadToEndAsync();
-        process.WaitForExit();
-        var text = output.GetAwaiter().GetResult();
+        var text = process.StandardOutput.ReadToEnd();
         EnsureSucceeded(process, executable, error);
         return text;
     }
@@ -23,10 +21,8 @@ internal static class CaptureCommand
     {
         using var process = Start(executable, directory, arguments);
         using var output = new MemoryStream();
-        var copy = process.StandardOutput.BaseStream.CopyToAsync(output);
         var error = process.StandardError.ReadToEndAsync();
-        process.WaitForExit();
-        copy.GetAwaiter().GetResult();
+        process.StandardOutput.BaseStream.CopyTo(output);
         EnsureSucceeded(process, executable, error);
         return output.ToArray();
     }
@@ -53,6 +49,8 @@ internal static class CaptureCommand
     private static void EnsureSucceeded(Process process, string executable, Task<string> error)
     {
         var diagnostic = error.GetAwaiter().GetResult();
+        // 両方の出力が閉じた後も、終了値を取得できるようプロセスの終了を待つ。
+        process.WaitForExit();
         if (process.ExitCode != 0)
         {
             throw new InvalidOperationException(executable + "の採取に失敗しました: " + diagnostic);

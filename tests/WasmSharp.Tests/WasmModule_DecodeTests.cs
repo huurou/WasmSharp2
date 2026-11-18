@@ -355,7 +355,11 @@ internal partial class WasmModule_DecodeTests
 
         // Act & Assert
         var exception = await Assert.That(() => WasmModule.Decode(stream)).ThrowsExactly<ArgumentException>();
-        await Assert.That(exception!.ParamName).IsEqualTo("stream");
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.ParamName).IsEqualTo("stream");
+            await Assert.That(exception.Message).Contains("読み取り不可");
+        }
     }
 
     [Test]

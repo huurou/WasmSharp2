@@ -26,9 +26,11 @@ internal class Interpreter_V128LoadZeroTests
     {
         // Arrange
         var memory = new WasmMemory(new(pages, null));
-        var bytes = new byte[8];
+        Span<byte> bytes = stackalloc byte[16];
+        bytes.Fill(0xFF);
         BinaryPrimitives.WriteUInt64LittleEndian(bytes, 0x8123456789ABCDEFUL);
-        memory.Write((ulong)effectiveAddress, bytes.AsSpan(0, byteWidth));
+        var available = (int)memory.ByteLength - effectiveAddress;
+        memory.Write((ulong)effectiveAddress, bytes[..Math.Min(bytes.Length, available)]);
         var instruction = MemoryHandlerFixture.CreateInstruction(
             WasmValueKind.V128,
             (byte)byteWidth,

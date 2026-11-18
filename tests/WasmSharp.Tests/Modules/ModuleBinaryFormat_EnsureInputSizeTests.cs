@@ -30,6 +30,7 @@ internal class ModuleBinaryFormat_EnsureInputSizeTests
         using (Assert.Multiple())
         {
             await Assert.That(exception!.Reason).IsEqualTo(WasmImplementationLimitReason.InputSize);
+            await Assert.That(exception.Message).Contains("入力バイナリが保持上限を超え");
             await Assert.That(exception.Limit).IsEqualTo(Array.MaxLength);
             await Assert
                 .That(exception.Location)

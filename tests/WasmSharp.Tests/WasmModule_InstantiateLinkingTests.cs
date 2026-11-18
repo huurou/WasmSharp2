@@ -134,6 +134,29 @@ internal partial class WasmModule_InstantiateTests
     }
 
     [Test]
+    public async Task Startのないmoduleへ実行コンテキストを渡さない_引数不正として拒否する()
+    {
+        // Arrange
+        var module = WasmModule.Decode(HostLinkingModuleBinary.Create()).Validate();
+        var imports = new WasmImports();
+
+        // Act & Assert
+        var exception = await Assert.That(() => module.Instantiate(null!, imports)).ThrowsExactly<ArgumentNullException>();
+        await Assert.That(exception!.ParamName).IsEqualTo("context");
+    }
+
+    [Test]
+    public async Task 実行コンテキストがなくホストモジュールの要素もnull_提供登録より先にcontextを拒否する()
+    {
+        // Arrange
+        var module = WasmModule.Decode(HostLinkingModuleBinary.Create()).Validate();
+
+        // Act & Assert
+        var exception = await Assert.That(() => module.Instantiate(null!, [null!])).ThrowsExactly<ArgumentNullException>();
+        await Assert.That(exception!.ParamName).IsEqualTo("context");
+    }
+
+    [Test]
     public async Task 未検証で提供登録を指定する_解決やcallbackより前に拒否する()
     {
         // Arrange

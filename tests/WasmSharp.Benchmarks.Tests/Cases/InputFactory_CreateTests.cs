@@ -42,17 +42,20 @@ internal class InputFactory_CreateTests
     }
 
     [Test]
-    public async Task 配列長が入力生成の上限を超える_配列を確保せずケースと上限超過を示して拒否する()
+    [Arguments(true)]
+    [Arguments(false)]
+    public async Task 配列長が入力生成の上限を超える_配列を確保せずケースと上限超過を示して拒否する(bool nearLimit)
     {
         // Arrange
         var original = AssetLoadingFixture.ReadCases(_json).Single(x => x.CaseId == "memory.copy-fill");
+        var length = nearLimit ? (uint)Array.MaxLength + 1 : uint.MaxValue;
         var definition = AssetLoadingFixture.WithInput(
             original,
             original.Input with
             {
                 Arrays =
                 [
-                    new("memory", 0, ArrayElementType.U8, uint.MaxValue, ArrayInputPattern.IndexModulo256, null, null),
+                    new ArrayInput("memory", 0, ArrayElementType.U8, length, ArrayInputPattern.IndexModulo256, null, null),
                 ],
             },
             _json
