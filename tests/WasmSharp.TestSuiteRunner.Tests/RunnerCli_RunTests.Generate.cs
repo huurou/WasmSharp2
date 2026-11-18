@@ -3,7 +3,7 @@ using WasmSharp.TestSuiteRunner.Tests.Fixtures;
 
 namespace WasmSharp.TestSuiteRunner.Tests;
 
-internal class RunnerCli_GenerateTests
+internal partial class RunnerCli_RunTests
 {
     [Test]
     public async Task Core3を指定して生成する_公式commandとテキストおよびバイナリ素材を保持する()
@@ -36,6 +36,32 @@ internal class RunnerCli_GenerateTests
             await Assert.That(script.GetProperty("commands")[5].GetProperty("module_type").GetString()).IsEqualTo("text");
             await Assert.That(script.GetProperty("references").EnumerateArray().Select(x => x.GetProperty("artifact_path").GetString()!))
                 .IsEquivalentTo(["modules/gc/sample.0.wasm", "modules/gc/sample.1.wasm", "modules/gc/sample.2.wat", "modules/gc/sample.2.wasm", "modules/gc/sample.3.wat"]);
+        }
+    }
+
+    [Test]
+    [Arguments("numeric companion")]
+    [Arguments("duplicate companion")]
+    public async Task Core3のbinary_filenameが不正なテキスト素材_変換器が成功しても入力の異常として記録する(string source)
+    {
+        // Arrange
+        using var directory = new TemporaryDirectory();
+        var fixture = await Core3ConversionFixture.CreateAsync(directory, "gc/sample.wast", source);
+
+        // Act
+        var (exitCode, error) = fixture.Generate("generated");
+
+        // Assert
+        using var manifest = JsonDocument.Parse(await File.ReadAllBytesAsync(directory.Combine("generated/manifest.json")));
+        var input = manifest.RootElement.GetProperty("inputs")[0];
+        using (Assert.Multiple())
+        {
+            await Assert.That(exitCode).IsEqualTo(1);
+            await Assert.That(error).Contains("binary_filename");
+            await Assert.That(input.GetProperty("status").GetString()).IsEqualTo("runner_error");
+            await Assert.That(input.GetProperty("exit_code").GetInt32()).IsEqualTo(0);
+            await Assert.That(input.GetProperty("diagnostics").EnumerateArray().Any(x =>
+                x.GetProperty("message").GetString()!.Contains("binary_filename", StringComparison.Ordinal))).IsTrue();
         }
     }
 

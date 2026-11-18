@@ -269,6 +269,8 @@ internal sealed class ScriptDocument
         }
 
         var properties = document.RootElement.EnumerateObject().ToArray();
+        var binaryFilenames = includeBinaryFilename ? properties.Where(x => NameEquals(x, "binary_filename")).ToArray() : [];
+        var binaryFilename = binaryFilenames is [var property] ? GetString(property.Value) : null;
         return new EnumeratedCommand(
             index,
             start,
@@ -283,7 +285,8 @@ internal sealed class ScriptDocument
             GetString(GetSingle(properties, "filename"))
         )
         {
-            BinaryFilename = includeBinaryFilename ? GetString(GetSingle(properties, "binary_filename")) : null,
+            BinaryFilename = binaryFilename,
+            HasInvalidBinaryFilename = binaryFilenames.Length != 0 && binaryFilename is null,
         };
     }
 

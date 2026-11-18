@@ -33,12 +33,24 @@ catch (Exception exception) when (exception is IOException or UnauthorizedAccess
 
 static int ConvertCore3(string inputPath, string outputPath, string moduleDirectory)
 {
-    _ = File.ReadAllBytes(inputPath);
-    File.Copy(Path.Combine(AppContext.BaseDirectory, "Data", "core3-script.json"), outputPath);
+    var source = File.ReadAllText(inputPath);
+    var script = Path.Combine(AppContext.BaseDirectory, "Data", "core3-script.json");
+    if (source is "numeric companion" or "duplicate companion")
+    {
+        var binaryFilename = source == "numeric companion"
+            ? "\"binary_filename\":7"
+            : "\"binary_filename\":\"sample.2.wasm\",\"binary_filename\":\"duplicate.wasm\"";
+        File.WriteAllText(outputPath, File.ReadAllText(script).Replace(
+            "\"binary_filename\":\"sample.2.wasm\"", binaryFilename, StringComparison.Ordinal));
+    }
+    else
+    {
+        File.Copy(script, outputPath);
+    }
     File.Copy(Path.Combine(AppContext.BaseDirectory, "Data", "module.wasm"), Path.Combine(moduleDirectory, "sample.0.wasm"));
     File.WriteAllBytes(Path.Combine(moduleDirectory, "sample.1.wasm"), [0, 0x61, 0x73]);
     File.WriteAllText(Path.Combine(moduleDirectory, "sample.2.wat"), "(module)");
-    if (File.ReadAllText(inputPath) != "missing companion")
+    if (source is not ("missing companion" or "numeric companion" or "duplicate companion"))
     {
         File.Copy(Path.Combine(AppContext.BaseDirectory, "Data", "module.wasm"), Path.Combine(moduleDirectory, "sample.2.wasm"));
     }

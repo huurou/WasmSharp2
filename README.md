@@ -4,7 +4,7 @@
 
 WebAssembly Core 2.0のバイナリのデコード・検証・インスタンス化・実行を実装済みです。固定公式スイート147ファイルでは、対象の52,830コマンドがすべて成立し、テキスト形式の1,077コマンドは対象外です。詳細は[Core 2.0の受入記録](https://github.com/huurou/WasmSharp2/blob/f4c91f7a47e727aac1fd05e5f040e34cb5076fdd/.kiro/specs/simd/acceptance.md#102-単一最終runによる公式比較と全体判定)を参照してください。
 
-Core 3.0のランタイム実装は未着手です。[Core 3.0の参照候補](thirdParties/README.md#core-30の参照候補)に公式テストの取得・変換に関する確認結果をまとめています。
+Core 3.0のランタイム実装は未着手です。[Core 3.0の公式テスト素材](thirdParties/README.md#core-30の公式テスト素材)に固定入力と変換器の取得手順を、[ランナーのCore 3.0向け手順](tools/WasmSharp.TestSuiteRunner/README.md#core-30の素材生成と比較)に再生成と比較の手順をまとめています。
 
 ## 開発環境のセットアップ
 

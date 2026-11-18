@@ -329,6 +329,12 @@ internal static class CorpusVerifier
 
         var document = ScriptDocument.Parse(script.Content.AsSpan(), script.Artifact.Path, includeBinaryFilename);
         issues.AddRange(document.Diagnostics);
+        foreach (var command in document.Commands.Where(x => x.HasInvalidBinaryFilename))
+        {
+            issues.Add(new CorpusDiagnostic(
+                OPERATION, $"#{command.Index}のbinary_filenameを一意な文字列として取得できません。", expectedPath
+            ));
+        }
         if (document.SourceFilename is { } sourceFilename && sourceFilename != input.Path)
         {
             issues.Add(

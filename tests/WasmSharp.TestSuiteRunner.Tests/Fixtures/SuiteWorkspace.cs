@@ -96,11 +96,13 @@ internal sealed class SuiteWorkspace : IDisposable
 
     internal ConversionProfile CreateProfile()
     {
-        return _profileLoader.Load() with
+        var profile = _profileLoader.Load();
+        var wabt = profile.Wabt!;
+        return profile with
         {
             Id = "fixture",
-            Spec = new("https://github.com/WebAssembly/spec.git", Commit),
-            Wabt = new("https://github.com/WebAssembly/wabt.git", Commit),
+            Spec = new SourceRevision("https://github.com/WebAssembly/spec.git", Commit),
+            Wabt = wabt with { Revision = wabt.Revision with { Commit = Commit } },
             LogicalArguments = ["<relative.wast>", "-o", "<output-root>/modules/<relative.json>"],
             Inputs =
             [
@@ -116,9 +118,9 @@ internal sealed class SuiteWorkspace : IDisposable
         };
     }
 
-    internal GenerateRequest CreateRequest(ConversionProfile profile)
+    internal GenerateRequest CreateRequest(ConversionProfile profile, string? wabtRoot = null)
     {
-        return new(profile, SourceRoot, SourceRoot, ConverterPath, OutputRoot);
+        return new GenerateRequest(profile, SourceRoot, wabtRoot ?? SourceRoot, ConverterPath, OutputRoot);
     }
 
     internal Task<ProcessResult> ConvertAsync(string inputName, string outputPath)
