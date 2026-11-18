@@ -55,8 +55,9 @@ internal static class CorpusVerifier
         var owners = artifacts
             .DistinctBy(x => x.Artifact.Path, StringComparer.Ordinal)
             .ToDictionary(x => x.Artifact.Path, x => x.Owner, StringComparer.Ordinal);
+        var includeBinaryFilename = manifest.Profile.WasmTools is not null;
         var inputs = manifest
-            .Inputs.Select(x => VerifyInput(x, root, mode, inputRoot, recordCounts, owners))
+            .Inputs.Select(x => VerifyInput(x, root, mode, inputRoot, recordCounts, owners, includeBinaryFilename))
             .ToImmutableArray();
         IEnumerable<CorpusDiagnostic> diagnostics = FindExtraMaterials(root, owners.Keys);
         if (inputRoot is not null)
@@ -102,15 +103,35 @@ internal static class CorpusVerifier
             // 素材領域外を指す参照名は対応する生成物がないため、参照一覧へ含めない。
             References =
             [
-                .. document
-                    .Commands.Select(x =>
-                        x.Filename is { } filename && ResolveReference(jsonPath, filename) is { } path
-                            ? new ArtifactReference(x.Index, filename, path)
-                            : null
-                    )
-                    .OfType<ArtifactReference>(),
+                .. GetReferences(document, jsonPath)
+                    .Where(x => x.Path is not null)
+                    .Select(x => new ArtifactReference(x.Index, x.Filename, x.Path!)),
             ],
         };
+    }
+
+    private sealed record ModuleReference(int Index, string Filename, string? Path, ArtifactKind Kind, bool ForExecution);
+
+    private static IEnumerable<ModuleReference> GetReferences(ScriptDocument document, string jsonPath)
+    {
+        foreach (var command in document.Commands)
+        {
+            if (command.Filename is { } filename)
+            {
+                var isText = command.ModuleType == "text";
+                yield return new ModuleReference(
+                    command.Index, filename, ResolveReference(jsonPath, filename),
+                    isText ? ArtifactKind.Wat : ArtifactKind.Wasm, !isText
+                );
+            }
+            if (command.BinaryFilename is { } binaryFilename)
+            {
+                // textに併記されたbinaryは保管・照合だけを行い、元のmodule_typeは変更しない。
+                yield return new ModuleReference(
+                    command.Index, binaryFilename, ResolveReference(jsonPath, binaryFilename), ArtifactKind.Wasm, false
+                );
+            }
+        }
     }
 
     /// <summary>
@@ -148,6 +169,7 @@ internal static class CorpusVerifier
     /// <param name="inputRoot">元入力を照合するtest/coreの配置 元入力を照合しない場合はnull</param>
     /// <param name="recordCounts">素材pathごとの全入力を通じた記録数</param>
     /// <param name="owners">各素材pathを記録している入力の相対path</param>
+    /// <param name="includeBinaryFilename">wasm-toolsの追加素材参照を読むかどうか</param>
     /// <returns>照合できたJSON・binaryのバイト列と、入力全体または参照元commandに対応する失敗理由</returns>
     private static InputVerification VerifyInput(
         InputConversionResult input,
@@ -155,7 +177,8 @@ internal static class CorpusVerifier
         VerificationMode mode,
         string? inputRoot,
         Dictionary<string, int> recordCounts,
-        Dictionary<string, string> owners
+        Dictionary<string, string> owners,
+        bool includeBinaryFilename
     )
     {
         var issues = ImmutableArray.CreateBuilder<CorpusDiagnostic>();
@@ -176,7 +199,7 @@ internal static class CorpusVerifier
         }
 
         var checks = input.Artifacts.Select(x => CheckArtifact(x, input.Input.Path, root, recordCounts)).ToArray();
-        var document = ReadDocument(input.Input, checks, issues);
+        var document = ReadDocument(input.Input, checks, issues, includeBinaryFilename);
         if (document is null)
         {
             // 実行しない入力では、module素材の異常も入力異常として残す。
@@ -190,34 +213,28 @@ internal static class CorpusVerifier
         var checksByPath = checks
             .DistinctBy(x => x.Artifact.Path, StringComparer.Ordinal)
             .ToDictionary(x => x.Artifact.Path, StringComparer.Ordinal);
-        var references = document
-            .Commands.Where(x => x.Filename is not null)
-            .Select(x => (Command: x, Path: ResolveReference(jsonPath, x.Filename!)))
-            .ToArray();
+        var references = GetReferences(document, jsonPath).ToArray();
         var referenceCounts = references
             .Where(x => x.Path is not null)
             .CountBy(x => x.Path!, StringComparer.Ordinal)
             .ToDictionary(StringComparer.Ordinal);
         var modules = ImmutableDictionary.CreateBuilder<int, ImmutableArray<byte>>();
         var moduleIssues = ImmutableDictionary.CreateBuilder<int, CorpusDiagnostic>();
-        foreach (var (command, path) in references)
+        foreach (var (index, filename, path, expectedKind, forExecution) in references)
         {
             var check = path is null ? null : checksByPath.GetValueOrDefault(path);
-            // 実行処理と同じmodule_typeで素材の種類を決め、binaryのcommandは照合済みbinaryか理由のどちらかを必ず持つ。
-            var text = command.ModuleType == "text";
-            var expectedKind = text ? ArtifactKind.Wat : ArtifactKind.Wasm;
             var issue = (path, check) switch
             {
                 (null, _) => new CorpusDiagnostic(
                     OPERATION,
-                    $"#{command.Index}の参照名{command.Filename}は素材領域内の相対pathではありません。",
+                    $"#{index}の参照名{filename}は素材領域内の相対pathではありません。",
                     jsonPath
                 ),
                 (_, null) => new CorpusDiagnostic(
                     OPERATION,
                     owners.TryGetValue(path, out var owner)
-                        ? $"#{command.Index}が別の入力{owner}の素材を参照しています。"
-                        : $"#{command.Index}がmanifestに記録されていない素材を参照しています。",
+                        ? $"#{index}が別の入力{owner}の素材を参照しています。"
+                        : $"#{index}がmanifestに記録されていない素材を参照しています。",
                     path
                 ),
                 _ when referenceCounts[path] > 1 => new CorpusDiagnostic(
@@ -227,23 +244,23 @@ internal static class CorpusVerifier
                 ),
                 _ when check.Artifact.Kind != expectedKind => new CorpusDiagnostic(
                     OPERATION,
-                    $"#{command.Index}は{FormatKind(expectedKind)}の素材を参照する必要がありますが、{FormatKind(check.Artifact.Kind)}として記録されています。",
+                    $"#{index}は{FormatKind(expectedKind)}の素材を参照する必要がありますが、{FormatKind(check.Artifact.Kind)}として記録されています。",
                     path
                 ),
                 _ => check.Issue,
             };
-            // watは実行処理で開かないため、異常をcommandではなく入力へ残す。
-            if (issue is not null && text)
+            // 実行処理で使用しない素材の異常はcommandではなく入力へ残す。
+            if (issue is not null && !forExecution)
             {
                 issues.Add(issue);
             }
             else if (issue is not null)
             {
-                moduleIssues[command.Index] = issue;
+                moduleIssues[index] = issue;
             }
-            else if (!text)
+            else if (forExecution)
             {
-                modules[command.Index] = check!.Content;
+                modules[index] = check!.Content;
             }
         }
 
@@ -272,11 +289,13 @@ internal static class CorpusVerifier
     /// <param name="input">JSONに対応する元入力</param>
     /// <param name="checks">この入力に属する全生成物の照合結果</param>
     /// <param name="issues">JSONの配置・内容・記録に異常がある場合に理由を追加する診断一覧</param>
+    /// <param name="includeBinaryFilename">wasm-toolsの追加素材参照を読むかどうか</param>
     /// <returns>hashと列挙記録が一致するJSON JSONを一意に特定できないか、配置・hash・記録が不正な場合はnull</returns>
     private static ScriptDocument? ReadDocument(
         SourceInput input,
         ArtifactCheck[] checks,
-        ImmutableArray<CorpusDiagnostic>.Builder issues
+        ImmutableArray<CorpusDiagnostic>.Builder issues,
+        bool includeBinaryFilename
     )
     {
         var scripts = checks.Where(x => x.Artifact.Kind == ArtifactKind.Json).ToArray();
@@ -308,7 +327,7 @@ internal static class CorpusVerifier
             return null;
         }
 
-        var document = ScriptDocument.Parse(script.Content.AsSpan(), script.Artifact.Path);
+        var document = ScriptDocument.Parse(script.Content.AsSpan(), script.Artifact.Path, includeBinaryFilename);
         issues.AddRange(document.Diagnostics);
         if (document.SourceFilename is { } sourceFilename && sourceFilename != input.Path)
         {

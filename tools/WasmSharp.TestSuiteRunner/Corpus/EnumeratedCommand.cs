@@ -18,4 +18,10 @@ internal sealed record EnumeratedCommand(
     string? Type,
     string? ModuleType,
     string? Filename
-);
+)
+{
+    /// <summary>
+    /// wasm-toolsがテキスト素材に併記するバイナリの相対path
+    /// </summary>
+    internal string? BinaryFilename { get; init; }
+}

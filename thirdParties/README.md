@@ -143,14 +143,25 @@ cmake --build artifacts/wabt-datacount-tests --config Release --target run-tests
 
 2026-10-12のユーザー承認に基づき、空typed selectの情報を保持する上流修正を含む1.0.42へ更新した。旧素材・旧baselineは保持し、全147入力の再生成・変換比較と、着手前revisionを用いた新比較元の作成を行う。手順と受入結果は[移行記録](https://github.com/huurou/WasmSharp2/blob/2409d0df7453b281996b27e66a8734ca8e471aa1/.kiro/specs/test-suite-runner/wabt-1.0.42-migration.md)に記録している。
 
-## Core 3.0の参照候補
+## Core 3.0の公式テスト素材
 
-公式の[`wasm-3.0`ブランチ](https://github.com/WebAssembly/spec/tree/wasm-3.0)のcommit [`d7aada502455b3d9176ca4cbe48be4724d511d2a`](https://github.com/WebAssembly/spec/tree/d7aada502455b3d9176ca4cbe48be4724d511d2a/test/core)には、`test/core`以下に255件のWASTがある。Core 3.0用の公式入力の候補であり、Core 2.0の固定commit・検証プロファイル・baselineは置き換えない。参照用のcommitは、Core 2.0のcheckoutを変えずに取得できる。
+公式の[`wasm-3.0`ブランチ](https://github.com/WebAssembly/spec/tree/wasm-3.0)のcommit [`d7aada502455b3d9176ca4cbe48be4724d511d2a`](https://github.com/WebAssembly/spec/tree/d7aada502455b3d9176ca4cbe48be4724d511d2a/test/core)から、`test/core/**/*.wast`の全255件を採用する。`gc`と`exceptions`の各ディレクトリも含み、Core 2.0の固定commit・検証プロファイル・baselineは置き換えない。[`core3-profile.json`](../tools/WasmSharp.TestSuiteRunner/Corpus/core3-profile.json)に各入力の相対pathとGit blobのSHA-256を固定する。
+
+固定版の`wast2json`ではGCと例外処理の一部を変換できなかったため、[公式配布wasm-tools v1.263.0](https://github.com/bytecodealliance/wasm-tools/releases/tag/v1.263.0)（commit `7a2fa422cdf9aeeaf488a2acac8bc94a078bfa32`）の[`json-from-wast`](https://github.com/bytecodealliance/wasm-tools/blob/7a2fa422cdf9aeeaf488a2acac8bc94a078bfa32/src/bin/wasm-tools/json_from_wast.rs)を使用する。使用するOS・アーキテクチャのアーカイブを展開し、`wasm-tools --version`の版とcommitの先頭9桁を確認する。Windows x64公式配布版で確認した実行ファイルのSHA-256は`3be416990124225fb4b683c8add1d910ea5bccb67de0963dab13a5599b685829`
+
+対象機能は[固定版仕様のRelease 3.0](https://github.com/WebAssembly/spec/blob/d7aada502455b3d9176ca4cbe48be4724d511d2a/document/core/appendix/changes.rst#release-30)に基づく。Core 2.0の対象機能に、拡張定数式、末尾呼び出し、例外処理、複数memory、64bitアドレス、型付き参照、GC、relaxed SIMD、テキストアノテーションを加える。`json-from-wast`は機能別の切替やWasmの検証を行わない。manifestの`features[].enabled`は固定入力が対象とする仕様上の状態であり、変換器の許可・拒否設定ではない。切替がないので`default_enabled`は`null`になる。不正素材を含め、入力をフィルタリングせずに変換する。
+
+### Core 2.0のcheckoutを変えずに取得する
+
+準備済みの`thirdParties/WebAssembly-spec`があるリポジトリルートで、PowerShellから以下を実行する。各コマンドの成功を確認してから次へ進む。`git archive`を使い、作業コピーの改行変換を経由せずに入力を展開する。
 
 ```powershell
 $spec3 = 'd7aada502455b3d9176ca4cbe48be4724d511d2a'
+$spec3Root = New-Item -ItemType Directory -Path artifacts/core3-spec-d7aada50
+$archive = Join-Path $spec3Root.FullName 'source.tar'
 git -C thirdParties/WebAssembly-spec fetch --no-tags origin $spec3
-git -C thirdParties/WebAssembly-spec ls-tree -r --name-only $spec3 -- test/core
+git -C thirdParties/WebAssembly-spec archive --format=tar --output="$archive" $spec3 LICENSE test/core
+tar -xf $archive -C $spec3Root.FullName
 ```
 
-固定版の`wast2json`を`--enable-gc --enable-function-references`付きで試すと、`gc/struct.wast`と`gc/type-subtyping.wast`、`exceptions/try_table.wast`は構文エラーで変換できなかった。Core 3.0では、[`wasm-tools json-from-wast`](https://github.com/bytecodealliance/wasm-tools/blob/main/src/bin/wasm-tools/json_from_wast.rs)などの変換器で素材を生成できるかを先に確認する。変換器によってJSONの形式が異なるため、ランナーがcommandと期待値を読み取れることも別に確認する。
+生成・再生成・比較は[Test Suite RunnerのCore 3.0向け手順](../tools/WasmSharp.TestSuiteRunner/README.md#core-30の素材生成と比較)を参照する。

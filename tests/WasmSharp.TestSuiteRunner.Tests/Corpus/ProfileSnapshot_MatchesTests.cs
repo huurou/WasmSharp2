@@ -4,7 +4,7 @@ namespace WasmSharp.TestSuiteRunner.Tests.Corpus;
 
 internal class ProfileSnapshot_MatchesTests
 {
-    private readonly Core2ProfileLoader _profileLoader = new Core2ProfileLoader();
+    private readonly ConversionProfileLoader _profileLoader = new ConversionProfileLoader();
 
     [Test]
     public async Task 同じprofileから保存した条件と比べる_一致すると判定する()
@@ -52,9 +52,9 @@ internal class ProfileSnapshot_MatchesTests
         {
             "id" => snapshot with { Id = "different-profile" },
             "spec" => snapshot with { Spec = snapshot.Spec with { Commit = new string('a', 40) } },
-            "wabt" => snapshot with { Wabt = snapshot.Wabt with { Commit = new string('b', 40) } },
+            "wabt" => snapshot with { Wabt = snapshot.Wabt! with { Commit = new string('b', 40) } },
             "working_directory" => snapshot with { WorkingDirectory = "different-directory" },
-            "conversion" => snapshot with { Conversion = snapshot.Conversion with { Check = !snapshot.Conversion.Check } },
+            "conversion" => snapshot with { Conversion = snapshot.Conversion! with { Check = !snapshot.Conversion!.Check } },
             "features" => snapshot with { Features = [.. snapshot.Features.Skip(1)] },
             "logical_arguments" => snapshot with { LogicalArguments = [.. snapshot.LogicalArguments, "--debug-names"] },
             _ => throw new ArgumentOutOfRangeException(nameof(condition)),

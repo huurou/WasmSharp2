@@ -474,24 +474,24 @@ internal class BaselineComparer_CompareConversionTests
             "profile.id" => profile with { Id = "changed" },
             "spec.url" => profile with { Spec = profile.Spec with { Url = "https://changed.invalid/spec" } },
             "spec.commit" => profile with { Spec = profile.Spec with { Commit = new string('a', 40) } },
-            "wabt.url" => profile with { Wabt = profile.Wabt with { Url = "https://changed.invalid/wabt" } },
-            "wabt.commit" => profile with { Wabt = profile.Wabt with { Commit = new string('b', 40) } },
+            "wabt.url" => profile with { Wabt = profile.Wabt! with { Url = "https://changed.invalid/wabt" } },
+            "wabt.commit" => profile with { Wabt = profile.Wabt! with { Commit = new string('b', 40) } },
             "working_directory" => profile with { WorkingDirectory = "changed" },
             "conversion.check" => profile with
             {
-                Conversion = profile.Conversion with { Check = !profile.Conversion.Check },
+                Conversion = profile.Conversion! with { Check = !profile.Conversion!.Check },
             },
             "conversion.canonical_lebs" => profile with
             {
-                Conversion = profile.Conversion with { CanonicalLebs = !profile.Conversion.CanonicalLebs },
+                Conversion = profile.Conversion! with { CanonicalLebs = !profile.Conversion!.CanonicalLebs },
             },
             "conversion.relocatable" => profile with
             {
-                Conversion = profile.Conversion with { Relocatable = !profile.Conversion.Relocatable },
+                Conversion = profile.Conversion! with { Relocatable = !profile.Conversion!.Relocatable },
             },
             "conversion.debug_names" => profile with
             {
-                Conversion = profile.Conversion with { DebugNames = !profile.Conversion.DebugNames },
+                Conversion = profile.Conversion! with { DebugNames = !profile.Conversion!.DebugNames },
             },
             _ => profile,
         };

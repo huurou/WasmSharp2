@@ -266,23 +266,12 @@ internal static class BaselineComparer
         AddDifference(differences, "profile.id", baseline.Id, current.Id);
         AddDifference(differences, "spec.url", baseline.Spec.Url, current.Spec.Url);
         AddDifference(differences, "spec.commit", baseline.Spec.Commit, current.Spec.Commit);
-        AddDifference(differences, "wabt.url", baseline.Wabt.Url, current.Wabt.Url);
-        AddDifference(differences, "wabt.commit", baseline.Wabt.Commit, current.Wabt.Commit);
+        CompareWabtRevision(differences, baseline.Wabt, current.Wabt);
         AddDifference(differences, "working_directory", baseline.WorkingDirectory, current.WorkingDirectory);
-        AddDifference(differences, "conversion.check", baseline.Conversion.Check, current.Conversion.Check);
-        AddDifference(
-            differences,
-            "conversion.canonical_lebs",
-            baseline.Conversion.CanonicalLebs,
-            current.Conversion.CanonicalLebs
-        );
-        AddDifference(
-            differences,
-            "conversion.relocatable",
-            baseline.Conversion.Relocatable,
-            current.Conversion.Relocatable
-        );
-        AddDifference(differences, "conversion.debug_names", baseline.Conversion.DebugNames, current.Conversion.DebugNames);
+        CompareWabtOptions(differences, baseline.Conversion, current.Conversion);
+        AddDifference(differences, "wasm_tools.url", baseline.WasmTools?.Url, current.WasmTools?.Url);
+        AddDifference(differences, "wasm_tools.commit", baseline.WasmTools?.Commit, current.WasmTools?.Commit);
+        AddDifference(differences, "wasm_tools.version", baseline.WasmTools?.Version, current.WasmTools?.Version);
         if (!baseline.LogicalArguments.SequenceEqual(current.LogicalArguments, StringComparer.Ordinal))
         {
             AddDifference(
@@ -306,6 +295,20 @@ internal static class BaselineComparer
             AddDifference(differences, $"features.{name}.default_enabled", before?.DefaultEnabled, after?.DefaultEnabled);
             AddDifference(differences, $"features.{name}.enabled", before?.Enabled, after?.Enabled);
         }
+    }
+
+    private static void CompareWabtRevision(List<ConditionDifference> differences, SourceRevision? baseline, SourceRevision? current)
+    {
+        AddDifference(differences, "wabt.url", baseline?.Url, current?.Url);
+        AddDifference(differences, "wabt.commit", baseline?.Commit, current?.Commit);
+    }
+
+    private static void CompareWabtOptions(List<ConditionDifference> differences, ConversionOptions? baseline, ConversionOptions? current)
+    {
+        AddDifference(differences, "conversion.check", baseline?.Check, current?.Check);
+        AddDifference(differences, "conversion.canonical_lebs", baseline?.CanonicalLebs, current?.CanonicalLebs);
+        AddDifference(differences, "conversion.relocatable", baseline?.Relocatable, current?.Relocatable);
+        AddDifference(differences, "conversion.debug_names", baseline?.DebugNames, current?.DebugNames);
     }
 
     /// <summary>

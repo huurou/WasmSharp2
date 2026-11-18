@@ -6,7 +6,7 @@ namespace WasmSharp.TestSuiteRunner.Tests.Fixtures;
 
 internal sealed class SuiteWorkspace : IDisposable
 {
-    private readonly Core2ProfileLoader _profileLoader = new Core2ProfileLoader();
+    private readonly ConversionProfileLoader _profileLoader = new ConversionProfileLoader();
 
     private readonly DirectoryInfo _root;
 
@@ -94,7 +94,7 @@ internal sealed class SuiteWorkspace : IDisposable
         return result.Output;
     }
 
-    internal Core2Profile CreateProfile()
+    internal ConversionProfile CreateProfile()
     {
         return _profileLoader.Load() with
         {
@@ -116,7 +116,7 @@ internal sealed class SuiteWorkspace : IDisposable
         };
     }
 
-    internal GenerateRequest CreateRequest(Core2Profile profile)
+    internal GenerateRequest CreateRequest(ConversionProfile profile)
     {
         return new(profile, SourceRoot, SourceRoot, ConverterPath, OutputRoot);
     }

@@ -119,7 +119,7 @@ internal static class CompletionPolicy
     /// <param name="issues">実行結果の記録内容に対する完全性検証の問題一覧</param>
     /// <param name="profile">受入対象となる固定Core2.0の条件と入力集合</param>
     /// <returns>合格または不合格の終了状態と、条件不一致・記録不備・不合格ケースの理由</returns>
-    internal static CompletionDecision Verify(RunReport report, ImmutableArray<RecordIssue> issues, Core2Profile profile)
+    internal static CompletionDecision Verify(RunReport report, ImmutableArray<RecordIssue> issues, ConversionProfile profile)
     {
         List<DecisionReason> reasons = [];
         if (!report.Corpus.Profile.Matches(profile))

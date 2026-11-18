@@ -8,8 +8,9 @@ namespace WasmSharp.TestSuiteRunner;
 /// <summary>
 /// 固定profileに従い、指定された一つのCLI操作を実行する
 /// </summary>
-/// <param name="profile">生成・実行・最終判定の対象となる固定profile</param>
-internal sealed class RunnerCli(Core2Profile profile)
+/// <param name="profile">既定の生成・実行・最終判定に使用する固定Core 2.0 profile</param>
+/// <param name="loadCore3">Core 3.0生成の固定profileを読み取る処理</param>
+internal sealed class RunnerCli(ConversionProfile profile, Func<ConversionProfile>? loadCore3 = null)
 {
     /// <summary>
     /// CLI操作内でJSON設定を共有する保存済み結果の読取・保存処理
@@ -26,6 +27,7 @@ internal sealed class RunnerCli(Core2Profile profile)
     internal int Run(string[] args, TextWriter output, TextWriter error)
     {
         Dictionary<string, string> paths;
+        bool core3;
         try
         {
             if (args is ["--help"] || args is [var command, "--help"] && Options(command) is not null)
@@ -33,7 +35,7 @@ internal sealed class RunnerCli(Core2Profile profile)
                 WriteHelp(output);
                 return 0;
             }
-            paths = Parse(args, Environment.CurrentDirectory);
+            paths = Parse(args, Environment.CurrentDirectory, out core3);
         }
         catch (Exception ex) when (ex is ArgumentException or NotSupportedException)
         {
@@ -47,7 +49,12 @@ internal sealed class RunnerCli(Core2Profile profile)
             ProtectOutput(args[0], paths);
             return args[0] switch
             {
-                "generate" => Generate(paths, output, error),
+                "generate" => Generate(
+                    core3 ? (loadCore3 ?? new ConversionProfileLoader().LoadCore3)() : profile,
+                    paths,
+                    output,
+                    error
+                ),
                 "run" => Execute(paths, output, error),
                 "baseline-save" => SaveBaseline(paths, output),
                 "compare-conversion" or "compare-run" => Compare(args[0], paths, output, error),
@@ -92,17 +99,21 @@ internal sealed class RunnerCli(Core2Profile profile)
     /// </summary>
     /// <param name="args">操作名と引数</param>
     /// <param name="workingDirectory">CLIを開始した作業ディレクトリ</param>
+    /// <param name="core3">Core 3.0の生成を選択した場合はtrue</param>
     /// <returns>必須引数名と絶対pathの対応</returns>
     /// <exception cref="ArgumentException">操作または引数が不正な場合</exception>
-    private static Dictionary<string, string> Parse(string[] args, string workingDirectory)
+    private static Dictionary<string, string> Parse(string[] args, string workingDirectory, out bool core3)
     {
+        core3 = false;
+        var hasProfile = false;
+        var generate = args is ["generate", ..];
         var options =
             (args.Length > 0 ? Options(args[0]) : null) ?? throw new ArgumentException("有効な操作を指定してください。");
         Dictionary<string, string> paths = [with(StringComparer.Ordinal)];
         for (var i = 1; i < args.Length; i += 2)
         {
             var option = args[i];
-            if (!options.Contains(option, StringComparer.Ordinal))
+            if (!options.Contains(option, StringComparer.Ordinal) && !(generate && option is ("--profile" or "--wasm-tools")))
             {
                 throw new ArgumentException($"未知の引数です: {option}");
             }
@@ -112,11 +123,37 @@ internal sealed class RunnerCli(Core2Profile profile)
                 || args[i + 1].StartsWith("--", StringComparison.Ordinal)
             )
             {
-                throw new ArgumentException($"{option}のpathが不足しています。");
+                throw new ArgumentException(option == "--profile" ? "--profileの値が不足しています。" : $"{option}のpathが不足しています。");
+            }
+            if (option == "--profile")
+            {
+                if (hasProfile)
+                {
+                    throw new ArgumentException($"引数が重複しています: {option}");
+                }
+                core3 = args[i + 1] switch
+                {
+                    "core2" => false,
+                    "core3" => true,
+                    var value => throw new ArgumentException($"未知のprofileです: {value}"),
+                };
+                hasProfile = true;
+                continue;
             }
             if (!paths.TryAdd(option, Path.GetFullPath(args[i + 1], workingDirectory)))
             {
                 throw new ArgumentException($"引数が重複しています: {option}");
+            }
+        }
+        if (core3)
+        {
+            options = ["--spec-root", "--wasm-tools", "--output"];
+        }
+        foreach (var option in paths.Keys)
+        {
+            if (!options.Contains(option, StringComparer.Ordinal))
+            {
+                throw new ArgumentException($"選択したprofileでは使用できない引数です: {option}");
             }
         }
         foreach (var option in options)
@@ -144,9 +181,13 @@ internal sealed class RunnerCli(Core2Profile profile)
         var resolvedOutput = ResolvePath(output);
         if (operation == "generate")
         {
-            foreach (var option in new[] { "--spec-root", "--wabt-root" })
+            foreach (var option in new[] { "--spec-root", "--wabt-root", "--wasm-tools" })
             {
-                var source = ResolvePath(paths[option]);
+                if (!paths.TryGetValue(option, out var sourcePath))
+                {
+                    continue;
+                }
+                var source = ResolvePath(sourcePath);
                 if (ContainsPath(source, resolvedOutput) || ContainsPath(resolvedOutput, source))
                 {
                     throw new IOException($"生成先{output}は{option}のソース配下または祖先です。");
@@ -213,23 +254,24 @@ internal sealed class RunnerCli(Core2Profile profile)
     /// <summary>
     /// 生成だけを実行し、manifestの集計と保存結果から終了値を返す。
     /// </summary>
+    /// <param name="generationProfile">生成に使用する固定profile</param>
     /// <param name="paths">固定ソース、変換器、生成先の絶対path</param>
     /// <param name="output">進捗と集計の表示先</param>
     /// <param name="error">操作と保存の失敗の表示先</param>
     /// <returns>生成操作の終了値</returns>
-    private int Generate(Dictionary<string, string> paths, TextWriter output, TextWriter error)
+    private int Generate(ConversionProfile generationProfile, Dictionary<string, string> paths, TextWriter output, TextWriter error)
     {
         var processed = 0;
         var result = CorpusGenerator.Generate(
             new GenerateRequest(
-                profile,
+                generationProfile,
                 paths["--spec-root"],
-                paths["--wabt-root"],
-                paths["--wast2json"],
+                paths.GetValueOrDefault("--wabt-root"),
+                paths.GetValueOrDefault("--wasm-tools") ?? paths["--wast2json"],
                 paths["--output"]
             ),
             _reportStore,
-            path => output.WriteLine($"[{++processed}/{profile.Inputs.Length}] 変換・記録: {path}")
+            path => output.WriteLine($"[{++processed}/{generationProfile.Inputs.Length}] 変換・記録: {path}")
         );
         WriteConversion(result.Manifest, output);
         foreach (var diagnostic in result.Manifest.Diagnostics)
@@ -477,10 +519,12 @@ internal sealed class RunnerCli(Core2Profile profile)
             : "artifacts/wabt-core2-1.0.42-datacount/wast2json";
         output.WriteLine(
             $$"""
-            Test Suite Runner: WebAssembly Core 2.0の公式適合検証ツール
+            Test Suite Runner: WebAssembly Core 2.0の公式適合検証とCore 3.0の素材生成ツール
             使用法: WasmSharp.TestSuiteRunner <操作> <引数>
               generate --spec-root <path> --wabt-root <path> --wast2json <path> --output <directory>
-                固定全入力を変換・照合し、空の専用領域にmanifest.jsonと素材を保存します。
+                固定Core 2.0の全入力を変換・照合し、空の専用領域にmanifest.jsonと素材を保存します（既定）。
+              generate --profile core3 --spec-root <path> --wasm-tools <path> --output <directory>
+                固定Core 3.0の全入力を変換・照合し、空の専用領域にmanifest.jsonと素材を保存します。
               run --manifest <json> --output <json>
                 保存済み素材の全commandを実行し、詳細結果を新規保存します。
               baseline-save --input <json> --output <json>
