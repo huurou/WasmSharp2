@@ -42,7 +42,7 @@ Linuxでは実行ファイル名を`WasmSharp.TestSuiteRunner`に読み替え、
 & $runner baseline-save --input artifacts/run-1.json --output artifacts/run-baseline.json
 ```
 
-初回受入では全commandの記録に加え、spectest・register・共有リソースの必須公式ケースを確認します。具体的なケースは[設計の初回公式受入](../../.kiro/specs/test-suite-runner/design.md#初回の実cliによる公式受入)を参照してください。ランナーの初回受入では、後続仕様で対応する未実装機能や判定済みの不一致を記録に残します。Core 2.0全件合格は別途`verify`で判定します。
+ランナーの初回受入で確認したspectest・register・共有リソースの公式ケースは、[当時の受入条件](https://github.com/huurou/WasmSharp2/blob/2409d0df7453b281996b27e66a8734ca8e471aa1/.kiro/specs/test-suite-runner/design.md#初回の実cliによる公式受入)を参照してください。現在のランタイムがCore 2.0の対象全件に合格するかは、別途`verify`で判定します。
 
 ## 機能追加後の実行・比較・更新
 
@@ -62,7 +62,7 @@ Linuxでは実行ファイル名を`WasmSharp.TestSuiteRunner`に読み替え、
 
 件数とケースID、残る未対応・前提不成立の原因を、各機能仕様の受入記録に残します。
 ファイル名だけで担当機能を決めると、同じ入力に含まれる他機能のケースを誤って分類するため、診断と依存原因を確認します。
-判定条件は[ロードマップの公式検証方針](../../.kiro/steering/roadmap.md)、記録例は[linear-memoryの残る未対応の起因](../../.kiro/specs/linear-memory/acceptance.md#残る未対応の起因)を参照してください。
+判定条件は[Core 2.0の公式検証方針](https://github.com/huurou/WasmSharp2/blob/2409d0df7453b281996b27e66a8734ca8e471aa1/.kiro/steering/roadmap.md#公式検証の方針と完了条件)、記録例は[linear-memoryの受入記録](https://github.com/huurou/WasmSharp2/blob/2409d0df7453b281996b27e66a8734ca8e471aa1/.kiro/specs/linear-memory/acceptance.md#残る未対応の起因)を参照してください。
 この機能別の確認は受入記録で行い、CLIの`verify`はCore 2.0全体の最終判定に使います。
 
 条件を満たさない場合は修正し、新しい出力先で実行と比較を繰り返します。
@@ -104,6 +104,6 @@ manifestと生成物の相対配置を保てば、素材ディレクトリを移
 
 ## 通常CIの検証範囲
 
-[Unit tests](../../.github/workflows/unit-tests.yml)はReleaseビルドと、ランタイム・生成器・ランナーのTUnitテストを実行します。
+[Unit tests](../../.github/workflows/unit-tests.yml)はReleaseビルドと、ランタイム・生成器・ランナー・性能測定ツールのTUnitテストを実行します。
 通常CIでは公式スイート全体の`run`・baseline比較・`verify`を実行しないため、CIの成功は機能別の公式受入やCore 2.0全件合格を意味しません。
 機能の完了確認には、上記の全体実行・比較と、対象機能に残る未対応・前提不成立の確認が必要です。

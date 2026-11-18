@@ -33,7 +33,7 @@ if (-not (Test-Path thirdParties/wabt/.git)) {
 git -C thirdParties/wabt fetch origin ff0ef7e0009402740c805a9744c09b05be063e48
 git -C thirdParties/wabt fetch ../patches/wabt-datacount-zero.bundle HEAD
 git -c core.autocrlf=false submodule update --init --checkout -- thirdParties/WebAssembly-spec thirdParties/wabt
-git -C thirdParties/wabt submodule update --init --checkout -- third_party/picosha2
+git -C thirdParties/wabt -c core.autocrlf=false submodule update --init --checkout -- third_party/picosha2
 git submodule status
 ```
 
@@ -44,8 +44,14 @@ git submodule status
 下記の`wast2json`専用ビルドに必要なnested submoduleはPicoSHA2のみで、WABTが
 `27fcf6979298949e8a462e16d09a0351c18fcaf2`に固定している。
 specのKaTeXは仕様書の生成用であり、公式テストの変換には不要
-上流ツールの全依存も必要な場合は`git submodule update --init --recursive`で取得できる。
-固定版の復元に`--remote`は使わない。
+WABTの修正commitを取得済みで、入れ子の依存もすべて揃える場合は次を実行する。
+
+```powershell
+git submodule sync --recursive
+git -c core.autocrlf=false submodule update --init --recursive --checkout
+```
+
+固定版の復元に`--remote`は使わない。Git管理情報のないソースが取得先に残りクローンできない場合は、該当ディレクトリを別の場所へ退避してから再実行する。
 
 ## WABTのCore 2.0設定
 
@@ -66,13 +72,13 @@ CMakeとVisual Studio 2026のC++ビルド環境を使用する。以下はPowerS
 WABT1.0.42には、データセグメントが0件の場合に必要なDataCountを省略する不具合がある。
 上記で取得する固定commitは修正済みなので、そのままビルドする。
 [修正パッチ](patches/wabt-datacount-zero.patch)は差分確認用に保持しており、再適用は不要である。
-詳細と検証結果は[DataCount移行記録](../.kiro/specs/test-suite-runner/wabt-datacount-migration.md)を参照する。
+詳細と検証結果は[DataCount移行記録](https://github.com/huurou/WasmSharp2/blob/2409d0df7453b281996b27e66a8734ca8e471aa1/.kiro/specs/test-suite-runner/wabt-datacount-migration.md)を参照する。
 
 以下の専用ビルドではWABT自身のテストとlibwasm・WASIを無効にし、SHA-256実装には固定済みPicoSHA2を使用する。
 旧実行ファイルを保持するため、修正前と異なる出力先を使う。
 これは修正済みcommitから変換器を新しく用意する手順であり、保存済み素材の生成に使った実行ファイルと同一のビルドではない。
 保存済み素材は、パッチ適用状態で`BUILD_TESTS=ON`・`BUILD_LIBWASM=ON`として構成した`artifacts/wabt-datacount-tests/Release/wast2json.exe`で生成した。
-その後、ソースと実行ファイルが不変であることを確認して修正commitへ対応付けた。実行ファイルのSHA-256とビルド条件は[移行記録](../.kiro/specs/test-suite-runner/wabt-datacount-migration.md#修正版の識別)を参照する。
+その後、ソースと実行ファイルが不変であることを確認して修正commitへ対応付けた。実行ファイルのSHA-256とビルド条件は[移行記録の修正版の識別](https://github.com/huurou/WasmSharp2/blob/2409d0df7453b281996b27e66a8734ca8e471aa1/.kiro/specs/test-suite-runner/wabt-datacount-migration.md#修正版の識別)を参照する。
 新しいビルドではビルド条件と実行ファイルのSHA-256を記録し、再生成後の`compare-conversion`で出典差と素材差を確認する。保存済み実行ファイルとのhash一致は前提にしない。
 
 ```powershell
@@ -99,7 +105,7 @@ foreach ($inputFile in $inputs) {
 
 この確認は固定commitの選定と取得・変換の確認に限る。
 JSONの`module_type=text`に対応する`.wat`も変換器の出力として残すが、ランタイムの対象外とし、合格件数に含めない。
-正式なcorpus manifest、入力・生成物のhash一覧、spectest・registerを含む実行・リンク基盤の公式評価と初回baselineは、`host-linking`に続く`test-suite-runner`で整備する。固定スイートに現れる全値型の比較も同じツールが初期から扱う。
+入力・生成物のhashを含むmanifestの生成、公式スイートの実行、baselineの保存・比較は[Test Suite Runnerの操作ガイド](../tools/WasmSharp.TestSuiteRunner/README.md)を参照する。
 
 ## WABT自身のテスト
 
@@ -117,7 +123,7 @@ cmake --build artifacts/wabt-datacount-tests --config Release --target run-tests
 
 1.0.42のテストランナーは、spec実行の失敗件数が3件の場合もskipと集計する。
 終了0とpassed件数だけで全件合格と判断せず、skipの内訳と直接実行の結果を確認する。
-2026-10-16の実測結果と検証範囲は[DataCount移行記録](../.kiro/specs/test-suite-runner/wabt-datacount-migration.md)に記載する。
+2026-10-16の実測結果と検証範囲は[DataCount移行記録](https://github.com/huurou/WasmSharp2/blob/2409d0df7453b281996b27e66a8734ca8e471aa1/.kiro/specs/test-suite-runner/wabt-datacount-migration.md)に記載している。
 
 ## 移行時の確認結果
 
@@ -135,4 +141,16 @@ cmake --build artifacts/wabt-datacount-tests --config Release --target run-tests
 
 ## WABT1.0.42への更新
 
-2026-10-12のユーザー承認に基づき、空typed selectの情報を保持する上流修正を含む1.0.42へ更新した。旧素材・旧baselineは保持し、全147入力の再生成・変換比較と、着手前revisionを用いた新比較元の作成を行う。手順と受入結果は[移行記録](../.kiro/specs/test-suite-runner/wabt-1.0.42-migration.md)に記録する。
+2026-10-12のユーザー承認に基づき、空typed selectの情報を保持する上流修正を含む1.0.42へ更新した。旧素材・旧baselineは保持し、全147入力の再生成・変換比較と、着手前revisionを用いた新比較元の作成を行う。手順と受入結果は[移行記録](https://github.com/huurou/WasmSharp2/blob/2409d0df7453b281996b27e66a8734ca8e471aa1/.kiro/specs/test-suite-runner/wabt-1.0.42-migration.md)に記録している。
+
+## Core 3.0の参照候補
+
+公式の[`wasm-3.0`ブランチ](https://github.com/WebAssembly/spec/tree/wasm-3.0)のcommit [`d7aada502455b3d9176ca4cbe48be4724d511d2a`](https://github.com/WebAssembly/spec/tree/d7aada502455b3d9176ca4cbe48be4724d511d2a/test/core)には、`test/core`以下に255件のWASTがある。Core 3.0用の公式入力の候補であり、Core 2.0の固定commit・検証プロファイル・baselineは置き換えない。参照用のcommitは、Core 2.0のcheckoutを変えずに取得できる。
+
+```powershell
+$spec3 = 'd7aada502455b3d9176ca4cbe48be4724d511d2a'
+git -C thirdParties/WebAssembly-spec fetch --no-tags origin $spec3
+git -C thirdParties/WebAssembly-spec ls-tree -r --name-only $spec3 -- test/core
+```
+
+固定版の`wast2json`を`--enable-gc --enable-function-references`付きで試すと、`gc/struct.wast`と`gc/type-subtyping.wast`、`exceptions/try_table.wast`は構文エラーで変換できなかった。Core 3.0では、[`wasm-tools json-from-wast`](https://github.com/bytecodealliance/wasm-tools/blob/main/src/bin/wasm-tools/json_from_wast.rs)などの変換器で素材を生成できるかを先に確認する。変換器によってJSONの形式が異なるため、ランナーがcommandと期待値を読み取れることも別に確認する。
