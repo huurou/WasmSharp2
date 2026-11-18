@@ -15,7 +15,7 @@ internal class ScriptState_SetModuleTests
         var module = ModuleFixture.Instantiate(_context);
 
         // Act
-        state.SetModule(ModuleFixture.CreateCommand(0, "$M"), module);
+        state.SetModule("$M", module);
 
         // Assert
         using (Assert.Multiple())
@@ -33,10 +33,10 @@ internal class ScriptState_SetModuleTests
         var state = new ScriptState("a.wast");
         var first = ModuleFixture.Instantiate(_context);
         var second = ModuleFixture.Instantiate(_context);
-        state.SetModule(ModuleFixture.CreateCommand(0, "$M"), first);
+        state.SetModule("$M", first);
 
         // Act
-        state.SetModule(ModuleFixture.CreateCommand(1, null), second);
+        state.SetModule(null, second);
 
         // Assert
         using (Assert.Multiple())
@@ -55,7 +55,7 @@ internal class ScriptState_SetModuleTests
         state.Fail(ModuleFixture.CreateCommand(0, "$M"), null);
 
         // Act
-        state.SetModule(ModuleFixture.CreateCommand(1, "$M"), module);
+        state.SetModule("$M", module);
 
         // Assert
         var binding = state.ResolveModule("$M");
@@ -73,7 +73,7 @@ internal class ScriptState_SetModuleTests
         var state = new ScriptState("a.wast");
 
         // Act
-        state.SetModule(ModuleFixture.CreateCommand(0, "M"), ModuleFixture.Instantiate(_context));
+        state.SetModule("M", ModuleFixture.Instantiate(_context));
 
         // Assert
         await Assert.That(state.GetRegistration("M")).IsNull();

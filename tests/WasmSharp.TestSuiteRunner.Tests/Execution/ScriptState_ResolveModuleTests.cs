@@ -25,7 +25,7 @@ internal class ScriptState_ResolveModuleTests
     {
         // Arrange
         var state = new ScriptState("a.wast");
-        state.SetModule(ModuleFixture.CreateCommand(0, "$M"), ModuleFixture.Instantiate(_context));
+        state.SetModule("$M", ModuleFixture.Instantiate(_context));
 
         // Act
         var binding = state.ResolveModule("$N");
@@ -41,8 +41,8 @@ internal class ScriptState_ResolveModuleTests
         var state = new ScriptState("a.wast");
         var named = ModuleFixture.Instantiate(_context);
         var last = ModuleFixture.Instantiate(_context);
-        state.SetModule(ModuleFixture.CreateCommand(0, "$M"), named);
-        state.SetModule(ModuleFixture.CreateCommand(1, "$N"), last);
+        state.SetModule("$M", named);
+        state.SetModule("$N", last);
 
         // Act
         var binding = state.ResolveModule("$M");
@@ -57,8 +57,8 @@ internal class ScriptState_ResolveModuleTests
         // Arrange
         var state = new ScriptState("a.wast");
         var last = ModuleFixture.Instantiate(_context);
-        state.SetModule(ModuleFixture.CreateCommand(0, "$M"), ModuleFixture.Instantiate(_context));
-        state.SetModule(ModuleFixture.CreateCommand(1, null), last);
+        state.SetModule("$M", ModuleFixture.Instantiate(_context));
+        state.SetModule(null, last);
 
         // Act
         var binding = state.ResolveModule(null);

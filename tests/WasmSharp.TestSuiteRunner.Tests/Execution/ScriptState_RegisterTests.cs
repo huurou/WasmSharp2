@@ -49,7 +49,7 @@ internal class ScriptState_RegisterTests
         // Arrange
         var state = new ScriptState("a.wast");
         var module = ModuleFixture.Instantiate(_context);
-        state.SetModule(ModuleFixture.CreateCommand(0, "$M"), module);
+        state.SetModule("$M", module);
 
         // Act
         state.Register(new WasmHostModule("$M"));

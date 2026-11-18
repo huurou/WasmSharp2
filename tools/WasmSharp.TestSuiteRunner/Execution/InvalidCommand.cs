@@ -21,7 +21,7 @@ internal sealed record InvalidCommand(int Index, int? Line, string? Type, CaseDi
     internal override string? Type { get; } = Type;
 
     /// <summary>
-    /// 通常moduleで読み取れたmodule識別子 通常module以外と、取得できない場合はnull
+    /// 通常module・module定義で読み取れた名前、またはmodule_instanceで読み取れたinstanceのmodule識別子 それ以外の種別と、取得できない場合はnull
     /// </summary>
     internal string? Name { get; init; }
 

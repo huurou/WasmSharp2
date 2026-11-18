@@ -15,6 +15,16 @@ internal abstract record ScriptCommand(int Index, int? Line)
     internal const string MODULE = "module";
 
     /// <summary>
+    /// インスタンス化を伴わないmodule定義を表すJSONのcommand種別
+    /// </summary>
+    internal const string MODULE_DEFINITION = "module_definition";
+
+    /// <summary>
+    /// 定義のインスタンス化を表すJSONのcommand種別
+    /// </summary>
+    internal const string MODULE_INSTANCE = "module_instance";
+
+    /// <summary>
     /// 登録名への対応付けを表すJSONのcommand種別
     /// </summary>
     internal const string REGISTER = "register";
@@ -70,7 +80,7 @@ internal abstract record ScriptCommand(int Index, int? Line)
     internal CaseCategory? Category =>
         Type switch
         {
-            MODULE or REGISTER => CaseCategory.Setup,
+            MODULE or MODULE_DEFINITION or MODULE_INSTANCE or REGISTER => CaseCategory.Setup,
             ACTION => CaseCategory.Action,
             ASSERT_RETURN
             or ASSERT_TRAP
