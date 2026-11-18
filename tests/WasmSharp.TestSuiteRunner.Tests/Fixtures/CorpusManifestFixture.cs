@@ -6,7 +6,7 @@ internal static class CorpusManifestFixture
 {
     internal static CorpusManifest Create()
     {
-        var profile = new Core2ProfileLoader().Load() with
+        var profile = new ConversionProfileLoader().Load() with
         {
             Id = "fixture",
             Inputs =
@@ -31,7 +31,7 @@ internal static class CorpusManifestFixture
                 SpecOrigin = "https://mirror.invalid/spec",
                 WabtOrigin = "https://mirror.invalid/wabt",
                 SpecHead = profile.Spec.Commit,
-                WabtHead = profile.Wabt.Commit,
+                WabtHead = profile.Wabt!.Commit,
             }
         );
         var script = new ScriptArtifact

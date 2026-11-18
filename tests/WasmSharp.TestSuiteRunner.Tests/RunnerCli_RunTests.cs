@@ -10,7 +10,7 @@ internal class RunnerCli_RunTests
 {
     private readonly ReportStore _reportStore = new ReportStore();
 
-    private readonly Core2ProfileLoader _profileLoader = new Core2ProfileLoader();
+    private readonly ConversionProfileLoader _profileLoader = new ConversionProfileLoader();
 
     [Test]
     [Arguments("", "有効な操作")]
@@ -860,7 +860,7 @@ internal class RunnerCli_RunTests
         }
     }
 
-    private static (int ExitCode, string Output, string Error) Run(Core2Profile profile, params string[] args)
+    private static (int ExitCode, string Output, string Error) Run(ConversionProfile profile, params string[] args)
     {
         using var output = new StringWriter();
         using var error = new StringWriter();

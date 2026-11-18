@@ -152,7 +152,7 @@ internal class CorpusGenerator_CheckPreconditionsTests
             }
             : profile with
             {
-                Wabt = profile.Wabt with { Commit = OTHER_COMMIT },
+                Wabt = profile.Wabt! with { Commit = OTHER_COMMIT },
             };
 
         // Act

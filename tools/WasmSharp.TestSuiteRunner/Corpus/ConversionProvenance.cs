@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace WasmSharp.TestSuiteRunner.Corpus;
 
 /// <summary>
@@ -14,6 +16,12 @@ internal sealed record ConversionProvenance
     /// 実際に起動する変換器の絶対path
     /// </summary>
     public string? ExecutablePath { get; init; }
+
+    /// <summary>
+    /// wasm-toolsの--versionで観測した値 Core 2.0の保存形式には出力しない
+    /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? ExecutableVersion { get; init; }
 
     /// <summary>
     /// 生成記録を開始した日時
