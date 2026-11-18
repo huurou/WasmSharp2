@@ -6,7 +6,7 @@ using WasmSharp.TestSuiteRunner.Tests.Fixtures;
 
 namespace WasmSharp.TestSuiteRunner.Tests;
 
-internal class RunnerCli_RunTests
+internal partial class RunnerCli_RunTests
 {
     private readonly ReportStore _reportStore = new ReportStore();
 

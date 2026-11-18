@@ -3,8 +3,47 @@ using WasmSharp.TestSuiteRunner.Tests.Fixtures;
 
 namespace WasmSharp.TestSuiteRunner.Tests;
 
-internal class RunnerCli_CompareConversionTests
+internal partial class RunnerCli_RunTests
 {
+    [Test]
+    [Arguments("wabt", false)]
+    [Arguments("conversion", false)]
+    [Arguments("default_enabled", false)]
+    [Arguments("wabt", true)]
+    [Arguments("conversion", true)]
+    [Arguments("default_enabled", true)]
+    public async Task Core2の保存条件に必須のnullがある_変換比較は読取を拒否する(string field, bool hasWasmTools)
+    {
+        // Arrange
+        using var directory = new TemporaryDirectory();
+        var input = directory.Combine("manifest.json");
+        var comparison = directory.Combine("comparison.json");
+        var manifest = RunReportFixture.CreateManifest(("a.wast", 1));
+        _reportStore.Save(manifest with { Profile = manifest.Profile with { Id = "core2" } }, input);
+        var json = JsonNode.Parse(await File.ReadAllTextAsync(input))!;
+        var profile = json["profile"]!;
+        if (hasWasmTools)
+        {
+            profile["wasm_tools"] = JsonNode.Parse("""
+                {"url":"https://github.com/bytecodealliance/wasm-tools.git","commit":"7a2fa422cdf9aeeaf488a2acac8bc94a078bfa32","version":"1.263.0"}
+                """);
+        }
+        var parent = field == "default_enabled" ? profile["features"]![0]! : profile;
+        parent[field] = null;
+        await File.WriteAllTextAsync(input, json.ToJsonString());
+
+        // Act
+        var result = Run(_profileLoader.Load(), "compare-conversion", "--baseline", input, "--current", input, "--output", comparison);
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(result.ExitCode).IsEqualTo(2);
+            await Assert.That(result.Error).Contains("保存済み結果のJSONとして読み取れません");
+            await Assert.That(File.Exists(comparison)).IsFalse();
+        }
+    }
+
     [Test]
     [Arguments(false)]
     [Arguments(true)]

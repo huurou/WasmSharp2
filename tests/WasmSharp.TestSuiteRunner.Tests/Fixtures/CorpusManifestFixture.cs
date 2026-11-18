@@ -31,7 +31,7 @@ internal static class CorpusManifestFixture
                 SpecOrigin = "https://mirror.invalid/spec",
                 WabtOrigin = "https://mirror.invalid/wabt",
                 SpecHead = profile.Spec.Commit,
-                WabtHead = profile.Wabt!.Commit,
+                WabtHead = profile.Wabt!.Revision.Commit,
             }
         );
         var script = new ScriptArtifact

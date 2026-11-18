@@ -103,7 +103,14 @@ internal static class CorpusGenerator
         // 親ディレクトリの無関係なGitをspecの版として扱わないよう、spec-root直下のGit情報だけを見る。
         var specCheckout = IsCheckout(request.SpecRoot);
         var specHead = specCheckout ? ReadHead(request.SpecRoot, "spec", profile.Spec, diagnostics) : null;
-        var wabtHead = profile.Wabt is { } wabt ? CheckWabtCheckout(request.WabtRoot!, wabt, diagnostics) : null;
+        string? wabtHead = null;
+        string? wabtOrigin = null;
+        if (request.WabtCheckout is { } checkout)
+        {
+            wabtHead = CheckWabtCheckout(checkout.Root, checkout.Settings.Revision, diagnostics);
+            wabtOrigin = wabtHead is null ? null : ReadOrigin(checkout.Root);
+        }
+
         var executableHash = HashExecutable(request.ConverterPath, diagnostics);
         var executableVersion = executableHash is not null && profile.WasmTools is { } release
             ? CheckWasmToolsVersion(request.ConverterPath, release, diagnostics)
@@ -119,10 +126,10 @@ internal static class CorpusGenerator
                 OperatingSystem = RuntimeInformation.OSDescription,
                 Architecture = RuntimeInformation.OSArchitecture.ToString(),
                 SpecRoot = request.SpecRoot,
-                WabtRoot = request.WabtRoot,
+                WabtRoot = request.WabtCheckout?.Root,
                 OutputRoot = request.OutputRoot,
                 SpecOrigin = specCheckout ? ReadOrigin(request.SpecRoot) : null,
-                WabtOrigin = wabtHead is null ? null : ReadOrigin(request.WabtRoot!),
+                WabtOrigin = wabtOrigin,
                 SpecHead = specHead,
                 WabtHead = wabtHead,
             },
