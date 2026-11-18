@@ -20,6 +20,11 @@
       Private="false"
     />
     <Compile Remove="Fixtures\ConverterFixture\**\*.cs" />
+    <!-- 版により扱いの異なる公式バイナリは、ランタイムのテストと同じバイト列を使う。 -->
+    <Compile
+      Include="..\WasmSharp.Tests\Fixtures\Core3OfficialBinary.cs"
+      Link="Fixtures\Core3OfficialBinary.cs"
+    />
     <None Remove="Fixtures\ConverterFixture\**\*" />
     <None Update="Fixtures\Data\**\*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
