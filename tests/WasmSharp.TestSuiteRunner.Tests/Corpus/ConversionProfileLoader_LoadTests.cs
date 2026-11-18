@@ -4,9 +4,9 @@ using WasmSharp.TestSuiteRunner.Corpus;
 
 namespace WasmSharp.TestSuiteRunner.Tests.Corpus;
 
-internal class Core2ProfileLoader_LoadTests
+internal class ConversionProfileLoader_LoadTests
 {
-    private readonly Core2ProfileLoader _profileLoader = new Core2ProfileLoader();
+    private readonly ConversionProfileLoader _profileLoader = new ConversionProfileLoader();
 
     [Test]
     public async Task Nullを表すJSONを読む_profileを作らず理由付きで拒否する()
@@ -41,7 +41,7 @@ internal class Core2ProfileLoader_LoadTests
                 .That(profile.Spec)
                 .IsEqualTo(new SourceRevision("https://github.com/WebAssembly/spec.git", SPEC_COMMIT));
             await Assert
-                .That(profile.Wabt)
+                .That(profile.Wabt?.Revision)
                 .IsEqualTo(new SourceRevision("https://github.com/WebAssembly/wabt.git", WABT_COMMIT));
             await Assert.That(profile.Inputs.Length).IsEqualTo(147);
             await Assert.That(profile.Inputs.Count(x => x.Path.StartsWith("simd/", StringComparison.Ordinal))).IsEqualTo(57);
@@ -114,7 +114,7 @@ internal class Core2ProfileLoader_LoadTests
             await Assert.That(profile.Features.Where(x => x.Enabled).Select(x => x.Name)).IsEquivalentTo(enabled);
             await Assert.That(profile.Features.Where(x => !x.Enabled).Select(x => x.Name)).IsEquivalentTo(disabled);
             await Assert
-                .That(profile.Features.Where(x => x.DefaultEnabled).Select(x => x.Name))
+                .That(profile.Features.Where(x => x.DefaultEnabled is true).Select(x => x.Name))
                 .IsEquivalentTo([
                     .. enabled,
                     "exceptions",
@@ -125,7 +125,7 @@ internal class Core2ProfileLoader_LoadTests
                     "extended-const",
                     "relaxed-simd",
                 ]);
-            await Assert.That(profile.Conversion).IsEqualTo(new ConversionOptions(true, true, false, false));
+            await Assert.That(profile.Wabt?.Options).IsEqualTo(new ConversionOptions(true, true, false, false));
             await Assert.That(profile.WorkingDirectory).IsEqualTo("test/core");
             await Assert
                 .That(
@@ -176,7 +176,7 @@ internal class Core2ProfileLoader_LoadTests
             await Assert.That(profile.Inputs[0]).IsEqualTo(new SourceInput("sample.wast", "sample-hash"));
             await Assert.That(changedInputs.Length).IsEqualTo(2);
             await Assert.That(profile.Features[0]).IsEqualTo(new FeatureSetting("simd", true, true));
-            await Assert.That(profile.Conversion.Check).IsTrue();
+            await Assert.That(profile.Wabt!.Options.Check).IsTrue();
         }
     }
 }

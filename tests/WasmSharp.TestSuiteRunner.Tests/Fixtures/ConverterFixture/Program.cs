@@ -3,6 +3,12 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 
 Console.OutputEncoding = Encoding.UTF8;
+if (args is ["--version"])
+{
+    Console.WriteLine("wasm-tools 1.263.0 (7a2fa422c 2026-10-30)");
+    return 0;
+}
+
 var outputIndex = Array.IndexOf(args, "-o");
 if (args.Length == 0 || outputIndex < 1 || outputIndex + 1 >= args.Length)
 {
@@ -11,16 +17,45 @@ if (args.Length == 0 || outputIndex < 1 || outputIndex + 1 >= args.Length)
 }
 
 Console.WriteLine(JsonSerializer.Serialize(new { arguments = args, working_directory = Environment.CurrentDirectory }));
-var inputPath = args[0];
+var inputPath = args[0] == "json-from-wast" ? args[1] : args[0];
 var outputPath = Path.GetFullPath(args[outputIndex + 1]);
 try
 {
-    return Convert(inputPath, outputPath);
+    return args[0] == "json-from-wast" && inputPath != "failure.wast"
+        ? ConvertCore3(inputPath, outputPath, args[Array.IndexOf(args, "--wasm-dir") + 1])
+        : Convert(inputPath, outputPath);
 }
 catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
 {
     Console.Error.WriteLine($"変換・出力に失敗しました: {outputPath}: {exception.Message}");
     return 2;
+}
+
+static int ConvertCore3(string inputPath, string outputPath, string moduleDirectory)
+{
+    var source = File.ReadAllText(inputPath);
+    var script = Path.Combine(AppContext.BaseDirectory, "Data", "core3-script.json");
+    if (source is "numeric companion" or "duplicate companion")
+    {
+        var binaryFilename = source == "numeric companion"
+            ? "\"binary_filename\":7"
+            : "\"binary_filename\":\"sample.2.wasm\",\"binary_filename\":\"duplicate.wasm\"";
+        File.WriteAllText(outputPath, File.ReadAllText(script).Replace(
+            "\"binary_filename\":\"sample.2.wasm\"", binaryFilename, StringComparison.Ordinal));
+    }
+    else
+    {
+        File.Copy(script, outputPath);
+    }
+    File.Copy(Path.Combine(AppContext.BaseDirectory, "Data", "module.wasm"), Path.Combine(moduleDirectory, "sample.0.wasm"));
+    File.WriteAllBytes(Path.Combine(moduleDirectory, "sample.1.wasm"), [0, 0x61, 0x73]);
+    File.WriteAllText(Path.Combine(moduleDirectory, "sample.2.wat"), "(module)");
+    if (source is not ("missing companion" or "numeric companion" or "duplicate companion"))
+    {
+        File.Copy(Path.Combine(AppContext.BaseDirectory, "Data", "module.wasm"), Path.Combine(moduleDirectory, "sample.2.wasm"));
+    }
+    File.WriteAllText(Path.Combine(moduleDirectory, "sample.3.wat"), "(module ?)");
+    return 0;
 }
 
 static int Convert(string inputPath, string outputPath)

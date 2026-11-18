@@ -9,7 +9,7 @@ using WasmSharp.TestSuiteRunner.Reports;
 namespace WasmSharp.TestSuiteRunner.Corpus;
 
 /// <summary>
-/// 固定profileの全入力を固定wast2jsonで変換し、変換状態と生成物をmanifestへ記録する
+/// 固定profileの全入力を変換し、変換状態と生成物をmanifestへ記録する
 /// </summary>
 /// <remarks>
 /// 固定ソースの取得・ビルド・更新は行わず、公式入力と外部ソースを変更しない。
@@ -70,7 +70,7 @@ internal static class CorpusGenerator
                 .OrderBy(x => manifest.Inputs[x].Input.Path, StringComparer.Ordinal)
         )
         {
-            manifest.Inputs[index] = Record(request.OutputRoot, Convert(request, manifest.Inputs[index]), seen);
+            manifest.Inputs[index] = Record(request, Convert(request, manifest.Inputs[index]), seen);
             progress?.Invoke(manifest.Inputs[index].Input.Path);
         }
 
@@ -104,30 +104,32 @@ internal static class CorpusGenerator
         var specCheckout = IsCheckout(request.SpecRoot);
         var specHead = specCheckout ? ReadHead(request.SpecRoot, "spec", profile.Spec, diagnostics) : null;
         string? wabtHead = null;
-        if (IsCheckout(request.WabtRoot))
+        string? wabtOrigin = null;
+        if (request.WabtCheckout is { } checkout)
         {
-            wabtHead = ReadHead(request.WabtRoot, "WABT", profile.Wabt, diagnostics);
-        }
-        else
-        {
-            diagnostics.Add(
-                new(PREPARE, $"WABTの配置{request.WabtRoot}は、固定commitを確認できるGitのcheckoutではありません。")
-            );
+            wabtHead = CheckWabtCheckout(checkout.Root, checkout.Settings.Revision, diagnostics);
+            wabtOrigin = wabtHead is null ? null : ReadOrigin(checkout.Root);
         }
 
-        return new(
+        var executableHash = HashExecutable(request.ConverterPath, diagnostics);
+        var executableVersion = executableHash is not null && profile.WasmTools is { } release
+            ? CheckWasmToolsVersion(request.ConverterPath, release, diagnostics)
+            : null;
+
+        return new GenerationPreconditions(
             new ConversionProvenance
             {
-                ExecutableSha256 = HashExecutable(request.ConverterPath, diagnostics),
+                ExecutableSha256 = executableHash,
+                ExecutableVersion = executableVersion,
                 ExecutablePath = request.ConverterPath,
                 CreatedAt = DateTimeOffset.UtcNow,
                 OperatingSystem = RuntimeInformation.OSDescription,
                 Architecture = RuntimeInformation.OSArchitecture.ToString(),
                 SpecRoot = request.SpecRoot,
-                WabtRoot = request.WabtRoot,
+                WabtRoot = request.WabtCheckout?.Root,
                 OutputRoot = request.OutputRoot,
                 SpecOrigin = specCheckout ? ReadOrigin(request.SpecRoot) : null,
-                WabtOrigin = wabtHead is null ? null : ReadOrigin(request.WabtRoot),
+                WabtOrigin = wabtOrigin,
                 SpecHead = specHead,
                 WabtHead = wabtHead,
             },
@@ -155,6 +157,7 @@ internal static class CorpusGenerator
                 {
                     "<relative.wast>" => input.Input.Path,
                     "<output-root>/modules/<relative.json>" => outputPath,
+                    "<output-root>/modules/<relative-directory>" => Path.GetDirectoryName(outputPath)!,
                     _ => x,
                 }
             )
@@ -218,16 +221,16 @@ internal static class CorpusGenerator
     /// <summary>
     /// 変換先で初めて見つかった生成物を、その入力の所有物としてhashとJSONの列挙記録を追加する。
     /// </summary>
-    /// <param name="outputRoot">manifestと素材を保存する出力先</param>
+    /// <param name="request">生成先の配置と生成JSONの形式を指定する要求</param>
     /// <param name="input">生成物を関連付ける入力の記録 変換失敗時の部分生成物も収集する</param>
     /// <param name="seen">全入力で共有する既出pathの集合 今回列挙したpathを追加する</param>
     /// <returns>収集できた生成物と、未対応の拡張子や列挙・読取の失敗理由を追加した入力記録</returns>
-    private static InputConversionResult Record(string outputRoot, InputConversionResult input, HashSet<string> seen)
+    private static InputConversionResult Record(GenerateRequest request, InputConversionResult input, HashSet<string> seen)
     {
         // 変換器はJSONと同じディレクトリへ素材を書くため、そこで新たに現れたファイルをこの入力の生成物とする。
         var scriptPath = CorpusVerifier.GetScriptPath(input.Input.Path);
         var directory = scriptPath[..scriptPath.LastIndexOf('/')];
-        var fullDirectory = Path.Combine(outputRoot, directory);
+        var fullDirectory = Path.Combine(request.OutputRoot, directory);
         List<Artifact> artifacts = [];
         List<CorpusDiagnostic> diagnostics = [];
         try
@@ -249,13 +252,13 @@ internal static class CorpusGenerator
                     continue;
                 }
 
-                var content = File.ReadAllBytes(Path.Combine(outputRoot, path));
+                var content = File.ReadAllBytes(Path.Combine(request.OutputRoot, path));
                 artifacts.Add(
                     new(path, kind.Value, System.Convert.ToHexStringLower(SHA256.HashData(content)), input.Input.Path)
                     {
                         Script =
                             kind == ArtifactKind.Json
-                                ? CorpusVerifier.CreateScript(ScriptDocument.Parse(content, path), path)
+                                ? CorpusVerifier.CreateScript(ScriptDocument.Parse(content, path, request.Profile.WasmTools is not null), path)
                                 : null,
                     }
                 );
@@ -345,6 +348,53 @@ internal static class CorpusGenerator
         {
             return new(recorded, manifestPath, ex);
         }
+    }
+
+    /// <summary>
+    /// 配布版wasm-toolsが固定リリースと同じ版・commitを報告することを確認する。
+    /// </summary>
+    private static string? CheckWasmToolsVersion(
+        string path,
+        WasmToolsRelease release,
+        ImmutableArray<CorpusDiagnostic>.Builder diagnostics
+    )
+    {
+        try
+        {
+            var startInfo = new ProcessStartInfo(path);
+            startInfo.ArgumentList.Add("--version");
+            var (exitCode, output, error) = RunProcess(startInfo);
+            var version = output.Trim();
+            var expected = $"wasm-tools {release.Version} ({release.Commit[..9]} ";
+            if (exitCode != 0 || !version.StartsWith(expected, StringComparison.Ordinal))
+            {
+                diagnostics.Add(new CorpusDiagnostic(PREPARE, $"wasm-toolsの版が固定リリース {release.Version} ({release.Commit}) と一致しません。終了値: {exitCode}、標準出力: {version}、標準エラー: {error.Trim()}", path));
+            }
+            return version;
+        }
+        catch (Win32Exception ex)
+        {
+            diagnostics.Add(new CorpusDiagnostic(PREPARE, $"wasm-toolsの版を取得できません: {ex.Message}", path, ex.GetType().FullName));
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Core 2.0の変換器は、修正済みWABTソースの固定checkoutを要求する。
+    /// </summary>
+    private static string? CheckWabtCheckout(
+        string root,
+        SourceRevision revision,
+        ImmutableArray<CorpusDiagnostic>.Builder diagnostics
+    )
+    {
+        if (IsCheckout(root))
+        {
+            return ReadHead(root, "WABT", revision, diagnostics);
+        }
+
+        diagnostics.Add(new CorpusDiagnostic(PREPARE, $"WABTの配置{root}は、固定commitを確認できるGitのcheckoutではありません。"));
+        return null;
     }
 
     /// <summary>

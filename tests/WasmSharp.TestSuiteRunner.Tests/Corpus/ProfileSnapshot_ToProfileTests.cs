@@ -4,7 +4,7 @@ namespace WasmSharp.TestSuiteRunner.Tests.Corpus;
 
 internal class ProfileSnapshot_ToProfileTests
 {
-    private readonly Core2ProfileLoader _profileLoader = new Core2ProfileLoader();
+    private readonly ConversionProfileLoader _profileLoader = new ConversionProfileLoader();
 
     [Test]
     public async Task 保存用profileを不変モデルへ戻す_全条件を保持してコレクションをコピーする()
@@ -26,7 +26,6 @@ internal class ProfileSnapshot_ToProfileTests
             await Assert.That(profile.Spec).IsEqualTo(original.Spec);
             await Assert.That(profile.Wabt).IsEqualTo(original.Wabt);
             await Assert.That(profile.WorkingDirectory).IsEqualTo(original.WorkingDirectory);
-            await Assert.That(profile.Conversion).IsEqualTo(original.Conversion);
             await Assert.That(profile.Inputs.SequenceEqual(original.Inputs)).IsTrue();
             await Assert.That(profile.Features.SequenceEqual(original.Features)).IsTrue();
             await Assert.That(profile.LogicalArguments.SequenceEqual(original.LogicalArguments)).IsTrue();

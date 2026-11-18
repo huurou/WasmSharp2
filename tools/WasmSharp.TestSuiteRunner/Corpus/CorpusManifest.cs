@@ -43,7 +43,7 @@ internal sealed record CorpusManifest(ProfileSnapshot Profile, ConversionProvena
     /// <param name="profile">公式入力の全対象と変換条件を固定するprofile</param>
     /// <param name="provenance">生成前提の確認で観測した環境と取得元</param>
     /// <returns>profileの一覧をコピーし、全入力を未処理、処理と出力を未完了とした生成記録</returns>
-    internal static CorpusManifest Create(Core2Profile profile, ConversionProvenance provenance)
+    internal static CorpusManifest Create(ConversionProfile profile, ConversionProvenance provenance)
     {
         return new(ProfileSnapshot.FromProfile(profile), provenance)
         {

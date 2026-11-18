@@ -6,7 +6,7 @@ namespace WasmSharp.TestSuiteRunner.Tests.Reports;
 
 internal class CompletionPolicy_VerifyTests
 {
-    private readonly Core2ProfileLoader _profileLoader = new Core2ProfileLoader();
+    private readonly ConversionProfileLoader _profileLoader = new ConversionProfileLoader();
 
     private static readonly string[] __expectedReasons =
     [

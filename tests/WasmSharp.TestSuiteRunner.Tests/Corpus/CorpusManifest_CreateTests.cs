@@ -4,7 +4,7 @@ namespace WasmSharp.TestSuiteRunner.Tests.Corpus;
 
 internal class CorpusManifest_CreateTests
 {
-    private readonly Core2ProfileLoader _profileLoader = new Core2ProfileLoader();
+    private readonly ConversionProfileLoader _profileLoader = new ConversionProfileLoader();
 
     [Test]
     public async Task 生成開始時のmanifestを作る_生成物がなくても全対象を未処理で保持する()

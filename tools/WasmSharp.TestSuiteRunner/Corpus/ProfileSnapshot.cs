@@ -1,3 +1,6 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
+
 namespace WasmSharp.TestSuiteRunner.Corpus;
 
 /// <summary>
@@ -11,13 +14,19 @@ namespace WasmSharp.TestSuiteRunner.Corpus;
 internal sealed record ProfileSnapshot(
     string Id,
     SourceRevision Spec,
-    SourceRevision Wabt,
+    SourceRevision? Wabt,
     string WorkingDirectory,
-    ConversionOptions Conversion
-)
+    ConversionOptions? Conversion
+) : IJsonOnDeserialized
 {
     /// <summary>
-    /// 全featureの既定値と実効値
+    /// wasm-toolsを使う場合の固定リリース Core 2.0の保存形式には出力しない
+    /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public WasmToolsRelease? WasmTools { get; init; }
+
+    /// <summary>
+    /// 対象機能の状態と、変換器に機能切替がある場合の既定値
     /// </summary>
     public List<FeatureSetting> Features { get; init; } = [];
 
@@ -31,15 +40,26 @@ internal sealed record ProfileSnapshot(
     /// </summary>
     public List<string> LogicalArguments { get; init; } = [];
 
+    void IJsonOnDeserialized.OnDeserialized()
+    {
+        // wasm_toolsの有無にかかわらず、Core 2.0では従来の必須項目を要求する。
+        if ((Id == "core2" || WasmTools is null)
+            && (Wabt is null || Conversion is null || Features.Any(x => x is { DefaultEnabled: null })))
+        {
+            throw new JsonException("WABTのprofileにはwabt、conversion、機能のdefault_enabledが必要です。");
+        }
+    }
+
     /// <summary>
     /// 不変モデルの全条件を、独立した一覧を持つ保存用DTOへコピーする。
     /// </summary>
     /// <param name="profile">保存する公式入力の全対象と変換条件</param>
     /// <returns>feature、入力、論理引数をそれぞれ新しい一覧へコピーした保存用profile</returns>
-    internal static ProfileSnapshot FromProfile(Core2Profile profile)
+    internal static ProfileSnapshot FromProfile(ConversionProfile profile)
     {
-        return new(profile.Id, profile.Spec, profile.Wabt, profile.WorkingDirectory, profile.Conversion)
+        return new ProfileSnapshot(profile.Id, profile.Spec, profile.Wabt?.Revision, profile.WorkingDirectory, profile.Wabt?.Options)
         {
+            WasmTools = profile.WasmTools,
             Features = [.. profile.Features],
             Inputs = [.. profile.Inputs],
             LogicalArguments = [.. profile.LogicalArguments],
@@ -50,9 +70,15 @@ internal sealed record ProfileSnapshot(
     /// 保存用DTOの一覧をコピーし、不変のprofileを復元する。
     /// </summary>
     /// <returns>可変一覧の内容を不変配列へコピーしたprofile</returns>
-    internal Core2Profile ToProfile()
+    internal ConversionProfile ToProfile()
     {
-        return new(Id, Spec, Wabt, [.. Features], [.. Inputs], WorkingDirectory, [.. LogicalArguments], Conversion);
+        var wabt = Wabt is { } revision && Conversion is { } options
+            ? new ConversionProfile.WabtSettings(revision, options)
+            : null;
+        return new ConversionProfile(Id, Spec, wabt, [.. Features], [.. Inputs], WorkingDirectory, [.. LogicalArguments])
+        {
+            WasmTools = WasmTools,
+        };
     }
 
     /// <summary>
@@ -60,13 +86,14 @@ internal sealed record ProfileSnapshot(
     /// </summary>
     /// <param name="profile">比較する固定profile</param>
     /// <returns>feature、入力、論理引数の順序を含め、すべての条件が一致する場合はtrue</returns>
-    internal bool Matches(Core2Profile profile)
+    internal bool Matches(ConversionProfile profile)
     {
         return Id == profile.Id
             && Spec == profile.Spec
-            && Wabt == profile.Wabt
+            && Wabt == profile.Wabt?.Revision
+            && WasmTools == profile.WasmTools
             && WorkingDirectory == profile.WorkingDirectory
-            && Conversion == profile.Conversion
+            && Conversion == profile.Wabt?.Options
             && Features.SequenceEqual(profile.Features)
             && Inputs.SequenceEqual(profile.Inputs)
             && LogicalArguments.SequenceEqual(profile.LogicalArguments);

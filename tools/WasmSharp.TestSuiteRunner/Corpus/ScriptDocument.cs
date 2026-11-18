@@ -85,8 +85,9 @@ internal sealed class ScriptDocument
     /// </summary>
     /// <param name="content">生成JSONの生バイト列</param>
     /// <param name="path">診断に記録するmanifest基準の相対path</param>
+    /// <param name="includeBinaryFilename">wasm-toolsのテキスト素材に併記されるバイナリも参照として読むかどうか</param>
     /// <returns>元バイト列のコピーと列挙結果 構文破損時も破損前に確定したcommandと失敗理由を保持し、総数を未確定にする</returns>
-    internal static ScriptDocument Parse(ReadOnlySpan<byte> content, string path)
+    internal static ScriptDocument Parse(ReadOnlySpan<byte> content, string path, bool includeBinaryFilename = false)
     {
         var owned = content.ToImmutableArray();
         var commands = ImmutableArray.CreateBuilder<EnumeratedCommand>();
@@ -96,7 +97,7 @@ internal sealed class ScriptDocument
         var reader = new Utf8JsonReader(owned.AsSpan());
         try
         {
-            complete = ReadRoot(ref reader, owned, commands, diagnostics, path, ref sourceFilename);
+            complete = ReadRoot(ref reader, owned, commands, diagnostics, path, ref sourceFilename, includeBinaryFilename);
         }
         catch (JsonException ex)
         {
@@ -137,6 +138,7 @@ internal sealed class ScriptDocument
     /// <param name="diagnostics">必須項目の欠落・重複・型不正や未知の項目を追加する診断一覧</param>
     /// <param name="path">診断に記録するJSONの相対path</param>
     /// <param name="sourceFilename">取得した元入力の相対pathを設定する変数 重複・型不正の場合はnull</param>
+    /// <param name="includeBinaryFilename">wasm-toolsの追加素材参照を読むかどうか</param>
     /// <returns>唯一のcommands配列を最後まで列挙できた場合はtrue 他の必須項目の診断がある場合も列挙完了とは区別する</returns>
     /// <exception cref="JsonException">JSONの構文が破損している場合</exception>
     private static bool ReadRoot(
@@ -145,7 +147,8 @@ internal sealed class ScriptDocument
         ImmutableArray<EnumeratedCommand>.Builder commands,
         ImmutableArray<CorpusDiagnostic>.Builder diagnostics,
         string path,
-        ref string? sourceFilename
+        ref string? sourceFilename,
+        bool includeBinaryFilename
     )
     {
         reader.Read();
@@ -195,7 +198,7 @@ internal sealed class ScriptDocument
                 }
                 else
                 {
-                    ReadCommands(ref reader, content, commands);
+                    ReadCommands(ref reader, content, commands, includeBinaryFilename);
                     enumerated = true;
                 }
             }
@@ -230,11 +233,13 @@ internal sealed class ScriptDocument
     /// <param name="reader">commands配列の開始位置にあるreader 正常終了時は配列の終端まで進める</param>
     /// <param name="content">readerが参照する、このdocumentが所有する元バイト列</param>
     /// <param name="commands">確定したcommandを追加する一覧 構文破損時も追加済みの要素を保持する</param>
+    /// <param name="includeBinaryFilename">wasm-toolsの追加素材参照を読むかどうか</param>
     /// <exception cref="JsonException">配列の途中でJSONの構文破損を検出した場合</exception>
     private static void ReadCommands(
         ref Utf8JsonReader reader,
         ImmutableArray<byte> content,
-        ImmutableArray<EnumeratedCommand>.Builder commands
+        ImmutableArray<EnumeratedCommand>.Builder commands,
+        bool includeBinaryFilename
     )
     {
         while (reader.Read() && reader.TokenType != JsonTokenType.EndArray)
@@ -242,7 +247,7 @@ internal sealed class ScriptDocument
             var start = (int)reader.TokenStartIndex;
             reader.Skip();
             var length = (int)reader.BytesConsumed - start;
-            commands.Add(CreateCommand(commands.Count, start, content.AsMemory().Slice(start, length)));
+            commands.Add(CreateCommand(commands.Count, start, content.AsMemory().Slice(start, length), includeBinaryFilename));
         }
     }
 
@@ -252,8 +257,9 @@ internal sealed class ScriptDocument
     /// <param name="index">入力内の0始まりcommand index</param>
     /// <param name="start">所有する元バイト列におけるcommandの開始位置</param>
     /// <param name="json">構文確認済みのcommand要素を表すJSON</param>
+    /// <param name="includeBinaryFilename">wasm-toolsの追加素材参照を読むかどうか</param>
     /// <returns>JSONの範囲と取得できた項目 objectでない要素、項目の欠落・重複・型不正は該当する値をnullにする</returns>
-    private static EnumeratedCommand CreateCommand(int index, int start, ReadOnlyMemory<byte> json)
+    private static EnumeratedCommand CreateCommand(int index, int start, ReadOnlyMemory<byte> json, bool includeBinaryFilename)
     {
         // 境界は確定済みのため再読取は失敗しない。構造不正は取得できない項目としてnullにとどめる。
         using var document = JsonDocument.Parse(json);
@@ -263,7 +269,9 @@ internal sealed class ScriptDocument
         }
 
         var properties = document.RootElement.EnumerateObject().ToArray();
-        return new(
+        var binaryFilenames = includeBinaryFilename ? properties.Where(x => NameEquals(x, "binary_filename")).ToArray() : [];
+        var binaryFilename = binaryFilenames is [var property] ? GetString(property.Value) : null;
+        return new EnumeratedCommand(
             index,
             start,
             json.Length,
@@ -275,7 +283,11 @@ internal sealed class ScriptDocument
             GetString(GetSingle(properties, "type")),
             GetString(GetSingle(properties, "module_type")),
             GetString(GetSingle(properties, "filename"))
-        );
+        )
+        {
+            BinaryFilename = binaryFilename,
+            HasInvalidBinaryFilename = binaryFilenames.Length != 0 && binaryFilename is null,
+        };
     }
 
     /// <summary>

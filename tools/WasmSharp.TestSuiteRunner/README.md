@@ -1,10 +1,15 @@
 # Test Suite Runner
 
-固定したWebAssembly Core 2.0公式スイートを生成・実行し、保存済み結果との回帰比較を行うCLIです。WasmSharpの公開APIで全commandを処理し、結果と診断をJSONに保存します。
+固定したWebAssembly Core 2.0公式スイートを生成・実行し、保存済み結果との回帰比較を行うCLIです。WasmSharpの公開APIで全commandを処理し、結果と診断をJSONに保存します。Core 3.0では、公式テスト素材の生成と変換結果の比較を行えます。
 
 ## 準備と起動
 
-.NET 11を使用します。素材生成にはGitと固定版のspec・WABT・`wast2json`が必要です。[外部ソースの取得・ビルド手順](../../thirdParties/README.md)に従って用意してください。公式入力は改行変換を無効にして取得します。生成済み素材の実行には元WAST・WABTは不要です。
+.NET 11を使用します。素材生成に必要な準備は仕様版によって異なります。
+
+- **Core 2.0**: Gitで固定版のspecとWABTを取得し、固定版の`wast2json`をビルドします。[外部ソースの取得・ビルド手順](../../thirdParties/README.md)を参照してください。生成済み素材の実行には元WASTやWABTは不要です。
+- **Core 3.0**: 固定版の公式入力と指定版の`wasm-tools`を用意します。WABTの取得やビルドは不要です。[固定入力と変換器の取得手順](../../thirdParties/README.md#core-30の公式テスト素材)を参照してください。
+
+どちらの版も、公式入力の改行を変えずに取得します。
 
 リポジトリルートでReleaseビルドを行い、生成されたapphostを起動します。以下はPowerShellでの例です。
 
@@ -20,7 +25,8 @@ Linuxでは実行ファイル名を`WasmSharp.TestSuiteRunner`に読み替え、
 
 | 操作 | 必須引数 | 処理 |
 | --- | --- | --- |
-| `generate` | `--spec-root`、`--wabt-root`、`--wast2json`、`--output` | 固定147入力を変換・照合し、出力ディレクトリに`manifest.json`と素材を保存する。 |
+| `generate`（既定のCore 2.0） | `--spec-root`、`--wabt-root`、`--wast2json`、`--output` | 固定147入力を変換・照合し、出力ディレクトリに`manifest.json`と素材を保存する。 |
+| `generate --profile core3` | `--spec-root`、`--wasm-tools`、`--output` | 固定255入力を変換・照合し、出力ディレクトリに`manifest.json`と素材を保存する。 |
 | `run` | `--manifest`、`--output` | manifestと相対配置の素材から全commandを実行し、結果JSONを保存する。 |
 | `baseline-save` | `--input`、`--output` | 完了したmanifestまたは実行結果JSONを同じ内容でコピーする。既存baselineの上書きもこの操作で行う。 |
 | `compare-conversion` | `--baseline`、`--current`、`--output` | 保存した2つのmanifestの入力・生成物・変換条件を比較する。 |
@@ -31,7 +37,23 @@ Linuxでは実行ファイル名を`WasmSharp.TestSuiteRunner`に読み替え、
 
 生成先は未作成または空の専用ディレクトリにします。固定ソース配下とその祖先は指定できません。JSON出力は入力自身を指定できず、`baseline-save`以外では既存ファイルも上書きできません。繰り返し実行するときは新しい出力先を指定してください。
 
-## 初回の生成・実行とbaseline保存
+## Core 3.0の素材生成と比較
+
+[固定入力と変換器の取得手順](../../thirdParties/README.md#core-30の公式テスト素材)に従い、入力と配布版`wasm-tools`を用意します。`--spec-root`には`test/core`を含む親ディレクトリを渡します。以下はWindows x64での例です。各コマンドで終了0を確認してから次へ進みます。
+
+```powershell
+$spec3Root = './artifacts/core3-spec-d7aada50'
+$wasmTools = './artifacts/wasm-tools-1.263.0-x86_64-windows/wasm-tools.exe'
+& $runner generate --profile core3 --spec-root $spec3Root --wasm-tools $wasmTools --output artifacts/core3-corpus-1
+& $runner generate --profile core3 --spec-root $spec3Root --wasm-tools $wasmTools --output artifacts/core3-corpus-2
+& $runner compare-conversion --baseline artifacts/core3-corpus-1/manifest.json --current artifacts/core3-corpus-2/manifest.json --output artifacts/core3-conversion-diff.json
+```
+
+manifestは`profile.wasm_tools`に固定版とcommitを、`provenance`に実行ファイルの観測版とSHA-256を記録します。入力ごとに実際の引数、終了値、標準出力・標準エラー、生成物の相対pathとSHA-256、全commandと素材参照の一覧を保存します。変換器が出力したJSON、期待値・期待診断、不正バイナリを含む素材は書き換えません。`module_type: text`はテキスト素材として識別し、`binary_filename`が併記されていれば、そのバイナリも別の参照として保存・照合します。変換や照合に失敗した入力は`runner_error`として残ります。
+
+Windows x64の公式配布版で255入力、65,193command、JSON255件・Wasm5,898件・WAT1,241件を確認しました。異なる出力先での比較では条件差・出典差・入力と素材の差・未比較がいずれも0件でした。`run`と`verify`は引き続きCore 2.0専用です。Core 3.0の変換成功はWasmSharpでの実行や適合を意味しません。
+
+## Core 2.0の初回の生成・実行とbaseline保存
 
 次の各行を個別に実行し、終了値と結果を確認します。`$runner`は上記の起動例で設定した実行ファイルです。
 

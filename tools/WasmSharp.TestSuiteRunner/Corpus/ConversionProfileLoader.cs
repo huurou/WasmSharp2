@@ -5,7 +5,7 @@ namespace WasmSharp.TestSuiteRunner.Corpus;
 /// <summary>
 /// 読取設定を共有し、固定Core 2.0 profileのJSONを読み取る
 /// </summary>
-internal sealed class Core2ProfileLoader
+internal sealed class ConversionProfileLoader
 {
     /// <summary>
     /// 埋込みprofileのsnake_case名に対応する読取設定
@@ -20,9 +20,15 @@ internal sealed class Core2ProfileLoader
     /// </summary>
     /// <returns>埋込みJSONに記録された固定の入力集合と変換条件</returns>
     /// <exception cref="JsonException">埋込みJSONをprofileとして読み取れない、または読み取った値がnullの場合</exception>
-    internal Core2Profile Load()
+    internal ConversionProfile Load()
     {
-        using var stream = typeof(Core2Profile).Assembly.GetManifestResourceStream("Core2.Profile")!;
+        using var stream = typeof(ConversionProfile).Assembly.GetManifestResourceStream("Core2.Profile")!;
+        return Load(stream);
+    }
+
+    internal ConversionProfile LoadCore3()
+    {
+        using var stream = typeof(ConversionProfile).Assembly.GetManifestResourceStream("Core3.Profile")!;
         return Load(stream);
     }
 
@@ -32,9 +38,10 @@ internal sealed class Core2ProfileLoader
     /// <param name="stream">埋込みprofileと同じ形式のUTF-8のJSONを読み取るstream</param>
     /// <returns>JSONに記録された入力集合と変換条件</returns>
     /// <exception cref="JsonException">JSONをprofileとして読み取れない、または読み取った値がnullの場合</exception>
-    internal Core2Profile Load(Stream stream)
+    internal ConversionProfile Load(Stream stream)
     {
-        return JsonSerializer.Deserialize<Core2Profile>(stream, _jsonOptions)
+        var snapshot = JsonSerializer.Deserialize<ProfileSnapshot>(stream, _jsonOptions)
             ?? throw new JsonException("profileがnullです。");
+        return snapshot.ToProfile();
     }
 }

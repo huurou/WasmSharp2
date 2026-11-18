@@ -145,6 +145,7 @@ internal class CorpusGenerator_CheckPreconditionsTests
         // Arrange
         using var workspace = await SuiteWorkspace.CreateAsync();
         var profile = workspace.CreateProfile();
+        var wabt = profile.Wabt!;
         profile = spec
             ? profile with
             {
@@ -152,7 +153,7 @@ internal class CorpusGenerator_CheckPreconditionsTests
             }
             : profile with
             {
-                Wabt = profile.Wabt with { Commit = OTHER_COMMIT },
+                Wabt = wabt with { Revision = wabt.Revision with { Commit = OTHER_COMMIT } },
             };
 
         // Act
@@ -176,7 +177,7 @@ internal class CorpusGenerator_CheckPreconditionsTests
         using var workspace = await SuiteWorkspace.CreateAsync();
         var wabtRoot = Path.Combine(workspace.OutputRoot, "wabt");
         Directory.CreateDirectory(wabtRoot);
-        var request = workspace.CreateRequest(workspace.CreateProfile()) with { WabtRoot = wabtRoot };
+        var request = workspace.CreateRequest(workspace.CreateProfile(), wabtRoot);
 
         // Act
         var preconditions = CorpusGenerator.CheckPreconditions(request);
@@ -199,7 +200,7 @@ internal class CorpusGenerator_CheckPreconditionsTests
         var wabtRoot = Path.Combine(workspace.OutputRoot, "unborn-wabt");
         await workspace.GitAsync("init", wabtRoot);
         await workspace.GitAsync("-C", wabtRoot, "remote", "add", "origin", "https://unrelated.invalid/wabt.git");
-        var request = workspace.CreateRequest(workspace.CreateProfile()) with { WabtRoot = wabtRoot };
+        var request = workspace.CreateRequest(workspace.CreateProfile(), wabtRoot);
 
         // Act
         var preconditions = CorpusGenerator.CheckPreconditions(request);
@@ -312,7 +313,7 @@ internal class CorpusGenerator_CheckPreconditionsTests
         using var workspace = await SuiteWorkspace.CreateAsync();
         var wabtRoot = Path.Combine(workspace.OutputRoot, "broken-wabt");
         Directory.CreateDirectory(Path.Combine(wabtRoot, ".git"));
-        var request = workspace.CreateRequest(workspace.CreateProfile()) with { WabtRoot = wabtRoot };
+        var request = workspace.CreateRequest(workspace.CreateProfile(), wabtRoot);
 
         // Act
         var preconditions = CorpusGenerator.CheckPreconditions(request);

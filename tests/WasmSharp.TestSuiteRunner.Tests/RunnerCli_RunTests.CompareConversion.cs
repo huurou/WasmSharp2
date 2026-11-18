@@ -1,0 +1,89 @@
+using System.Text.Json.Nodes;
+using WasmSharp.TestSuiteRunner.Tests.Fixtures;
+
+namespace WasmSharp.TestSuiteRunner.Tests;
+
+internal partial class RunnerCli_RunTests
+{
+    [Test]
+    [Arguments("wabt", false)]
+    [Arguments("conversion", false)]
+    [Arguments("default_enabled", false)]
+    [Arguments("wabt", true)]
+    [Arguments("conversion", true)]
+    [Arguments("default_enabled", true)]
+    public async Task Core2の保存条件に必須のnullがある_変換比較は読取を拒否する(string field, bool hasWasmTools)
+    {
+        // Arrange
+        using var directory = new TemporaryDirectory();
+        var input = directory.Combine("manifest.json");
+        var comparison = directory.Combine("comparison.json");
+        var manifest = RunReportFixture.CreateManifest(("a.wast", 1));
+        _reportStore.Save(manifest with { Profile = manifest.Profile with { Id = "core2" } }, input);
+        var json = JsonNode.Parse(await File.ReadAllTextAsync(input))!;
+        var profile = json["profile"]!;
+        if (hasWasmTools)
+        {
+            profile["wasm_tools"] = JsonNode.Parse("""
+                {"url":"https://github.com/bytecodealliance/wasm-tools.git","commit":"7a2fa422cdf9aeeaf488a2acac8bc94a078bfa32","version":"1.263.0"}
+                """);
+        }
+        var parent = field == "default_enabled" ? profile["features"]![0]! : profile;
+        parent[field] = null;
+        await File.WriteAllTextAsync(input, json.ToJsonString());
+
+        // Act
+        var result = Run(_profileLoader.Load(), "compare-conversion", "--baseline", input, "--current", input, "--output", comparison);
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(result.ExitCode).IsEqualTo(2);
+            await Assert.That(result.Error).Contains("保存済み結果のJSONとして読み取れません");
+            await Assert.That(File.Exists(comparison)).IsFalse();
+        }
+    }
+
+    [Test]
+    [Arguments(false)]
+    [Arguments(true)]
+    public async Task Core3を別の配置に再生成して比較する_変換器の版だけが異なる場合も識別する(bool changeVersion)
+    {
+        // Arrange
+        using var directory = new TemporaryDirectory();
+        var fixture = await Core3ConversionFixture.CreateAsync(directory, "gc/sample.wast", "(module)\n");
+        var before = fixture.Generate("before");
+        var after = fixture.Generate("after");
+        await Assert.That(before.ExitCode).IsEqualTo(0).Because(before.Error);
+        await Assert.That(after.ExitCode).IsEqualTo(0).Because(after.Error);
+        var current = directory.Combine("after/manifest.json");
+        if (changeVersion)
+        {
+            var manifest = JsonNode.Parse(await File.ReadAllTextAsync(current))!;
+            manifest["profile"]!["wasm_tools"]!["version"] = "1.263.1";
+            await File.WriteAllTextAsync(current, manifest.ToJsonString());
+        }
+        var comparison = directory.Combine("comparison.json");
+
+        // Act
+        var (exitCode, error) = fixture.Run(["compare-conversion", "--baseline", directory.Combine("before/manifest.json"), "--current", current, "--output", comparison]);
+
+        // Assert
+        var report = JsonNode.Parse(await File.ReadAllTextAsync(comparison))!;
+        using (Assert.Multiple())
+        {
+            await Assert.That(exitCode).IsEqualTo(changeVersion ? 1 : 0).Because(error);
+            await Assert.That(report["complete"]!.GetValue<bool>()).IsTrue();
+            await Assert.That(report["entry_differences"]!.AsArray()).IsEmpty();
+            var conditions = report["condition_differences"]!.AsArray();
+            if (changeVersion)
+            {
+                await Assert.That(conditions.Single()!["name"]!.GetValue<string>()).IsEqualTo("wasm_tools.version");
+            }
+            else
+            {
+                await Assert.That(conditions).IsEmpty();
+            }
+        }
+    }
+}

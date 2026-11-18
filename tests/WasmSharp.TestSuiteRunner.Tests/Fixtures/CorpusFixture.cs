@@ -46,7 +46,7 @@ internal sealed class CorpusFixture : IDisposable
         OutputRoot = _directory.Combine("output");
         WriteSource(A, "(module)\n");
         WriteSource(B, "(module)\n");
-        var profile = new Core2ProfileLoader().Load() with
+        var profile = new ConversionProfileLoader().Load() with
         {
             Id = "fixture",
             Inputs = [new(A, Sha256(ReadSource(A))), new(B, Sha256(ReadSource(B)))],
