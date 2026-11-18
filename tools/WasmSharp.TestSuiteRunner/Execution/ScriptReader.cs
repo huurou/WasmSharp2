@@ -65,9 +65,14 @@ internal static class ScriptReader
     private const string EXPECTED = "expected";
 
     /// <summary>
-    /// actionの対象moduleの識別子を示すJSONの項目名
+    /// actionの対象moduleの識別子、またはmodule_instanceの定義名を示すJSONの項目名
     /// </summary>
     private const string MODULE = "module";
+
+    /// <summary>
+    /// module_instanceで生成するinstanceのmodule識別子を示すJSONの項目名
+    /// </summary>
+    private const string INSTANCE = "instance";
 
     /// <summary>
     /// actionの対象export名を示すJSONの項目名
@@ -129,14 +134,19 @@ internal static class ScriptReader
                 new(OPERATION, ex.Message) { SourceJson = Encoding.UTF8.GetString(json.Span) }
             )
             {
-                Name = command.Type == ScriptCommand.MODULE ? GetSingleString(root, NAME) : null,
+                Name = command.Type switch
+                {
+                    ScriptCommand.MODULE or ScriptCommand.MODULE_DEFINITION => GetSingleString(root, NAME),
+                    ScriptCommand.MODULE_INSTANCE => GetSingleString(root, INSTANCE),
+                    _ => null,
+                },
                 As = command.Type == ScriptCommand.REGISTER ? GetSingleString(root, AS) : null,
             };
         }
     }
 
     /// <summary>
-    /// commandの項目の重複と種類を確認し、固定した10種類のモデルへ読み取る。
+    /// commandの項目の重複と種類を確認し、固定した12種類のモデルへ読み取る。
     /// </summary>
     /// <param name="element">1件のcommandを表すJSON要素</param>
     /// <param name="index">入力内の0始まりcommand index</param>
@@ -149,6 +159,8 @@ internal static class ScriptReader
         return type switch
         {
             ScriptCommand.MODULE => ReadModule(properties, index),
+            ScriptCommand.MODULE_DEFINITION => ReadModuleDefinition(properties, index),
+            ScriptCommand.MODULE_INSTANCE => ReadModuleInstance(properties, index),
             ScriptCommand.REGISTER => ReadRegister(properties, index),
             ScriptCommand.ACTION => ReadActionCommand(properties, index),
             ScriptCommand.ASSERT_RETURN => ReadAssertReturn(properties, index),
@@ -195,8 +207,56 @@ internal static class ScriptReader
     /// <exception cref="ScriptFormatException">項目の過不足、型、行番号、module形式が固定形式に合わない場合</exception>
     private static ModuleCommand ReadModule(Dictionary<string, JsonElement> properties, int index)
     {
-        RejectUnknownNames(properties, "", TYPE, LINE, NAME, FILENAME, MODULE_TYPE);
+        return ReadModule(properties, index, static (i, l, n, f, t) => new ModuleCommand(i, l, n, f, t));
+    }
+
+    /// <summary>
+    /// module定義の行番号・定義名・素材名を、通常moduleと同じ形式で読み取る。
+    /// </summary>
+    /// <param name="properties">項目名の重複を検査済みのcommand</param>
+    /// <param name="index">入力内の0始まりcommand index</param>
+    /// <returns>定義名が省略されていればNameがnullのmodule定義</returns>
+    /// <exception cref="ScriptFormatException">項目の過不足、型、行番号、module形式が固定形式に合わない場合</exception>
+    private static ModuleDefinitionCommand ReadModuleDefinition(Dictionary<string, JsonElement> properties, int index)
+    {
+        return ReadModule(properties, index, static (i, l, n, f, t) => new ModuleDefinitionCommand(i, l, n, f, t));
+    }
+
+    /// <summary>
+    /// module_instanceの行番号と、どちらも省略できるinstanceのmodule識別子・定義名を読み取る。
+    /// </summary>
+    /// <param name="properties">項目名の重複を検査済みのcommand</param>
+    /// <param name="index">入力内の0始まりcommand index</param>
+    /// <returns>定義名が省略されていれば直近の定義を対象とするmodule_instance</returns>
+    /// <exception cref="ScriptFormatException">項目の過不足、型、行番号が固定形式に合わない場合</exception>
+    private static ModuleInstanceCommand ReadModuleInstance(Dictionary<string, JsonElement> properties, int index)
+    {
+        RejectUnknownNames(properties, "", TYPE, LINE, INSTANCE, MODULE);
         return new(
+            index,
+            ReadLine(properties),
+            GetOptionalString(properties, "", INSTANCE),
+            GetOptionalString(properties, "", MODULE)
+        );
+    }
+
+    /// <summary>
+    /// 素材を参照するmoduleの行番号・名前・素材名を読み、形式の省略はbinaryとする。
+    /// </summary>
+    /// <typeparam name="T">通常moduleまたはmodule定義の型</typeparam>
+    /// <param name="properties">項目名の重複を検査済みのcommand</param>
+    /// <param name="index">入力内の0始まりcommand index</param>
+    /// <param name="create">index・行番号・名前・素材名・素材形式から種類ごとのcommandを作る関数</param>
+    /// <returns>名前が省略されていればnullを渡して作ったcommand</returns>
+    /// <exception cref="ScriptFormatException">項目の過不足、型、行番号、module形式が固定形式に合わない場合</exception>
+    private static T ReadModule<T>(
+        Dictionary<string, JsonElement> properties,
+        int index,
+        Func<int, int, string?, string, ScriptModuleType, T> create
+    )
+    {
+        RejectUnknownNames(properties, "", TYPE, LINE, NAME, FILENAME, MODULE_TYPE);
+        return create(
             index,
             ReadLine(properties),
             GetOptionalString(properties, "", NAME),

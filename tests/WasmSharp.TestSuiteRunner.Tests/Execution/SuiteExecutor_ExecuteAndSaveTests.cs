@@ -5,7 +5,7 @@ using WasmSharp.TestSuiteRunner.Tests.Fixtures;
 
 namespace WasmSharp.TestSuiteRunner.Tests.Execution;
 
-public class SuiteExecutor_ExecuteAndSaveTests
+public partial class SuiteExecutor_ExecuteAndSaveTests
 {
     private readonly ReportStore _reportStore = new ReportStore();
 
