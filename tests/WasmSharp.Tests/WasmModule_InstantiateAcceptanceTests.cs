@@ -8,9 +8,7 @@ internal partial class WasmModule_InstantiateTests
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task HostStartから別instanceを呼ぶ_所有instanceの上限で中断した後に独立Instantiateできる(
-        bool withInstance
-    )
+    public async Task HostStartから別instanceを呼ぶ_所有instanceの上限で中断した後に独立Instantiateできる(bool withInstance)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
@@ -36,7 +34,10 @@ internal partial class WasmModule_InstantiateTests
         host.Define(
             "start",
             withInstance
-                ? WasmFunction.CreateHost(new([], []), (callbackContext, _, arguments) => Callback(callbackContext, arguments))
+                ? WasmFunction.CreateHost(
+                    new([], []),
+                    (callbackContext, _, arguments) => Callback(callbackContext, arguments)
+                )
                 : WasmFunction.CreateHost(new([], []), Callback)
         );
         var module = WasmModule

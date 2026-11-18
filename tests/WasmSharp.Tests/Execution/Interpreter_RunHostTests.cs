@@ -44,9 +44,7 @@ internal class Interpreter_RunHostTests
         using (Assert.Multiple())
         {
             await Assert.That(observed.Result.Status).IsEqualTo(ExecutionStatus.Exhaustion);
-            await Assert
-                .That(observed.Result.ExhaustionReason)
-                .IsEqualTo(WasmExhaustionReason.HostStackLimit);
+            await Assert.That(observed.Result.ExhaustionReason).IsEqualTo(WasmExhaustionReason.HostStackLimit);
             await Assert.That(observed.Result.Limit).IsNull();
             await Assert.That(observed.CallDepth).IsEqualTo(0);
             await Assert.That(observed.ContextPreserved).IsTrue();

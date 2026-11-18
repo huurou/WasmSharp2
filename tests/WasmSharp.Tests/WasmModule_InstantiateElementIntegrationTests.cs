@@ -46,27 +46,19 @@ internal partial class WasmModule_InstantiateTests
                 var expected =
                     index == activeTable && index != 2
                         ? WasmValue.FromFuncRef(instance.GetFunction("f"))
-                        : (
-                            index == 2 ? WasmValue.FromExternRef(null) : WasmValue.FromFuncRef(null)
-                        );
+                        : (index == 2 ? WasmValue.FromExternRef(null) : WasmValue.FromFuncRef(null));
                 await Assert.That(value).IsEqualTo(expected);
             }
             if (passive)
             {
                 var table = instance.GetTable("t0");
-                await Assert
-                    .That(instance.ElementSegments[0].TryInitialize(table, 1, 0, 1))
-                    .IsTrue();
-                await Assert
-                    .That(table.Get(1).AsFuncRef())
-                    .IsSameReferenceAs(instance.GetFunction("f"));
+                await Assert.That(instance.ElementSegments[0].TryInitialize(table, 1, 0, 1)).IsTrue();
+                await Assert.That(table.Get(1).AsFuncRef()).IsSameReferenceAs(instance.GetFunction("f"));
                 await Assert.That(instance.ElementSegments[0].Length).IsEqualTo(1u);
                 instance.ElementSegments[0].Drop();
                 var other = module.Instantiate(executionContext, []);
                 await Assert.That(other.ElementSegments[0].Length).IsEqualTo(1u);
-                await Assert
-                    .That(table.Get(1).AsFuncRef())
-                    .IsSameReferenceAs(instance.GetFunction("f"));
+                await Assert.That(table.Get(1).AsFuncRef()).IsSameReferenceAs(instance.GetFunction("f"));
             }
         }
     }
@@ -84,19 +76,11 @@ internal partial class WasmModule_InstantiateTests
             .Decode(
                 HostLinkingModuleBinary.Create(
                     HostLinkingModuleBinary.Types(([], [0x7F])),
-                    HostLinkingModuleBinary.Imports(
-                        ("env", "g", 3, [0x6F, 0]),
-                        ("env", "offset", 3, [0x7F, 0])
-                    ),
+                    HostLinkingModuleBinary.Imports(("env", "g", 3, [0x6F, 0]), ("env", "offset", 3, [0x7F, 0])),
                     HostLinkingModuleBinary.Functions(0),
                     HostLinkingModuleBinary.Tables((0x70, 1, null), (0x6F, 1, null)),
                     HostLinkingModuleBinary.Globals((0x70, false, [0xD2, 0, 0x0B])),
-                    HostLinkingModuleBinary.Exports(
-                        ("f", 0, 0),
-                        ("g", 3, 2),
-                        ("t0", 1, 0),
-                        ("t1", 1, 1)
-                    ),
+                    HostLinkingModuleBinary.Exports(("f", 0, 0), ("g", 3, 2), ("t0", 1, 0), ("t1", 1, 1)),
                     HostLinkingModuleBinary.Section(
                         9,
                         [2, 0, 0x23, 1, 0x0B, 1, 0, 6, 1, 0x23, 1, 0x0B, 0x6F, 1, 0x23, 0, 0x0B]
@@ -113,9 +97,7 @@ internal partial class WasmModule_InstantiateTests
         using (Assert.Multiple())
         {
             await Assert.That(instance.GetTable("t0").Get(0)).IsEqualTo(instance.GetGlobal("g"));
-            await Assert
-                .That(instance.GetGlobal("g").AsFuncRef())
-                .IsSameReferenceAs(instance.GetFunction("f"));
+            await Assert.That(instance.GetGlobal("g").AsFuncRef()).IsSameReferenceAs(instance.GetFunction("f"));
             await Assert.That(instance.GetTable("t1").Get(0)).IsEqualTo(value);
         }
     }
@@ -126,10 +108,7 @@ internal partial class WasmModule_InstantiateTests
     [Arguments(-1, true)]
     [Arguments(-1, false)]
     [Arguments(int.MinValue, false)]
-    public async Task 後続activeの範囲が不正_先行転送だけ残し後続elementとdataとStartを中断する(
-        int offset,
-        bool empty
-    )
+    public async Task 後続activeの範囲が不正_先行転送だけ残し後続elementとdataとStartを中断する(int offset, bool empty)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
@@ -176,21 +155,7 @@ internal partial class WasmModule_InstantiateTests
             0x0B,
             .. (empty ? new byte[] { 0 } : [2, 2, 2]),
         ];
-        byte[] elements =
-        [
-            6,
-            .. declarative,
-            .. first,
-            .. declarative,
-            .. failing,
-            .. declarative,
-            0,
-            0x41,
-            1,
-            0x0B,
-            1,
-            2,
-        ];
+        byte[] elements = [6, .. declarative, .. first, .. declarative, .. failing, .. declarative, 0, 0x41, 1, 0x0B, 1, 2];
         var section = HostLinkingModuleBinary.Section(9, elements);
         var code = HostLinkingModuleBinary.Code(([], [0x10, 0, 0x23, 0, 0x0B]));
         var data = HostLinkingModuleBinary.Section(11, [1, 0, 0x41, 0, 0x0B, 1, 22]);
@@ -212,13 +177,7 @@ internal partial class WasmModule_InstantiateTests
         );
         var module = WasmModule.Decode(bytes).Validate();
         var failureOffset =
-            bytes.Length
-            - code.Length
-            - data.Length
-            - elements.Length
-            + 1
-            + declarative.Length * 2
-            + first.Length;
+            bytes.Length - code.Length - data.Length - elements.Length + 1 + declarative.Length * 2 + first.Length;
 
         // Act & Assert
         var exception = await Assert
@@ -231,17 +190,8 @@ internal partial class WasmModule_InstantiateTests
         using (Assert.Multiple())
         {
             await Assert.That(exception!.Reason).IsEqualTo(WasmTrapReason.TableOutOfBounds);
-            await Assert
-                .That(
-                    exception.Message.StartsWith(
-                        "out of bounds table access",
-                        StringComparison.Ordinal
-                    )
-                )
-                .IsTrue();
-            await Assert
-                .That(exception.Location)
-                .IsEqualTo(new(WasmProcessingStage.Instantiate, failureOffset, null, 9));
+            await Assert.That(exception.Message.StartsWith("out of bounds table access", StringComparison.Ordinal)).IsTrue();
+            await Assert.That(exception.Location).IsEqualTo(new(WasmProcessingStage.Instantiate, failureOffset, null, 9));
             await Assert.That(table.Get(1)).IsEqualTo(original);
             await Assert.That(actual[0]).IsEqualTo((byte)99);
             await Assert.That(starts).IsEqualTo(0);
@@ -262,9 +212,7 @@ internal partial class WasmModule_InstantiateTests
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task 要素処理後にdataが初期化される_成功時のStartと失敗後の関数が完成instanceを参照する(
-        bool invalidData
-    )
+    public async Task 要素処理後にdataが初期化される_成功時のStartと失敗後の関数が完成instanceを参照する(bool invalidData)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
@@ -320,22 +268,11 @@ internal partial class WasmModule_InstantiateTests
                     HostLinkingModuleBinary.Functions(0),
                     HostLinkingModuleBinary.Exports(("f", 0, 2), ("table", 1, 0), ("memory", 2, 0)),
                     HostLinkingModuleBinary.Start(1),
-                    HostLinkingModuleBinary.Section(
-                        9,
-                        [3, 0, 0x41, 0, 0x0B, 1, 2, 1, 0, 1, 2, 3, 0, 1, 2]
-                    ),
+                    HostLinkingModuleBinary.Section(9, [3, 0, 0x41, 0, 0x0B, 1, 2, 1, 0, 1, 2, 3, 0, 1, 2]),
                     HostLinkingModuleBinary.Code(([], [0x10, 0, 0x0B])),
                     HostLinkingModuleBinary.Section(
                         11,
-                        [
-                            1,
-                            0,
-                            0x41,
-                            .. HostLinkingModuleBinary.Signed(invalidData ? 65536 : 0),
-                            0x0B,
-                            1,
-                            22,
-                        ]
+                        [1, 0, 0x41, .. HostLinkingModuleBinary.Signed(invalidData ? 65536 : 0), 0x0B, 1, 22]
                     )
                 )
             )
@@ -372,16 +309,8 @@ internal partial class WasmModule_InstantiateTests
         {
             await Assert.That(actual[0]).IsEqualTo(invalidData ? (byte)99 : (byte)22);
             await Assert.That(observed!.GetTable("table")).IsSameReferenceAs(table);
-            await Assert
-                .That(table.Get(0).AsFuncRef())
-                .IsSameReferenceAs(observed.GetFunction("f"));
-            await Assert
-                .That(
-                    observed
-                        .ElementSegments.Select(x => x.Length)
-                        .SequenceEqual(new uint[] { 0, 1, 0 })
-                )
-                .IsTrue();
+            await Assert.That(table.Get(0).AsFuncRef()).IsSameReferenceAs(observed.GetFunction("f"));
+            await Assert.That(observed.ElementSegments.Select(x => x.Length).SequenceEqual(new uint[] { 0, 1, 0 })).IsTrue();
             await Assert.That(observed.DataSegments[0].Length).IsEqualTo(invalidData ? 1u : 0u);
         }
     }
@@ -412,9 +341,7 @@ internal partial class WasmModule_InstantiateTests
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task 後続importの解決か型照合が成立しない_先行共有tableとメモリを変更せずStartを呼ばない(
-        bool wrongType
-    )
+    public async Task 後続importの解決か型照合が成立しない_先行共有tableとメモリを変更せずStartを呼ばない(bool wrongType)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
@@ -429,10 +356,7 @@ internal partial class WasmModule_InstantiateTests
         host.Define("memory", memory);
         if (wrongType)
         {
-            host.Define(
-                "missing",
-                new WasmGlobal(new(WasmValueKind.I64, false), WasmValue.FromI64(0))
-            );
+            host.Define("missing", new WasmGlobal(new(WasmValueKind.I64, false), WasmValue.FromI64(0)));
         }
         host.Define(
             "start",
@@ -472,11 +396,7 @@ internal partial class WasmModule_InstantiateTests
         {
             await Assert
                 .That(exception!.Reason)
-                .IsEqualTo(
-                    wrongType
-                        ? WasmInstantiateReason.TypeMismatch
-                        : WasmInstantiateReason.MissingImport
-                );
+                .IsEqualTo(wrongType ? WasmInstantiateReason.TypeMismatch : WasmInstantiateReason.MissingImport);
             await Assert.That(table.Get(0)).IsEqualTo(original);
             await Assert.That(actual[0]).IsEqualTo((byte)99);
             await Assert.That(calls).IsEqualTo(0);

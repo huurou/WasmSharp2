@@ -28,10 +28,7 @@ internal sealed class RunnerCli(Core2Profile profile)
         Dictionary<string, string> paths;
         try
         {
-            if (
-                args is ["--help"]
-                || args is [var command, "--help"] && Options(command) is not null
-            )
+            if (args is ["--help"] || args is [var command, "--help"] && Options(command) is not null)
             {
                 WriteHelp(output);
                 return 0;
@@ -100,9 +97,8 @@ internal sealed class RunnerCli(Core2Profile profile)
     private static Dictionary<string, string> Parse(string[] args, string workingDirectory)
     {
         var options =
-            (args.Length > 0 ? Options(args[0]) : null)
-            ?? throw new ArgumentException("有効な操作を指定してください。");
-        Dictionary<string, string> paths = new(StringComparer.Ordinal);
+            (args.Length > 0 ? Options(args[0]) : null) ?? throw new ArgumentException("有効な操作を指定してください。");
+        Dictionary<string, string> paths = [with(StringComparer.Ordinal)];
         for (var i = 1; i < args.Length; i += 2)
         {
             var option = args[i];
@@ -156,10 +152,7 @@ internal sealed class RunnerCli(Core2Profile profile)
                     throw new IOException($"生成先{output}は{option}のソース配下または祖先です。");
                 }
             }
-            if (
-                File.Exists(output)
-                || Directory.Exists(output) && Directory.EnumerateFileSystemEntries(output).Any()
-            )
+            if (File.Exists(output) || Directory.Exists(output) && Directory.EnumerateFileSystemEntries(output).Any())
             {
                 throw new IOException(
                     $"生成先{output}には既存の内容があります。未作成または空の専用ディレクトリを指定してください。"
@@ -169,10 +162,7 @@ internal sealed class RunnerCli(Core2Profile profile)
         }
         foreach (var option in new[] { "--manifest", "--input", "--baseline", "--current" })
         {
-            if (
-                paths.TryGetValue(option, out var input)
-                && ContainsPath(resolvedOutput, ResolvePath(input))
-            )
+            if (paths.TryGetValue(option, out var input) && ContainsPath(resolvedOutput, ResolvePath(input)))
             {
                 throw new IOException($"入力自身を出力先には指定できません: {output}");
             }
@@ -194,16 +184,11 @@ internal sealed class RunnerCli(Core2Profile profile)
         var resolved = root;
         foreach (
             var part in path[root.Length..]
-                .Split(
-                    [Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar],
-                    StringSplitOptions.RemoveEmptyEntries
-                )
+                .Split([Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar], StringSplitOptions.RemoveEmptyEntries)
         )
         {
             resolved = Path.Combine(resolved, part);
-            FileSystemInfo info = Directory.Exists(resolved)
-                ? new DirectoryInfo(resolved)
-                : new FileInfo(resolved);
+            FileSystemInfo info = Directory.Exists(resolved) ? new DirectoryInfo(resolved) : new FileInfo(resolved);
             if (info.Exists && info.LinkTarget is not null)
             {
                 resolved = info.ResolveLinkTarget(returnFinalTarget: true)!.FullName;
@@ -220,14 +205,9 @@ internal sealed class RunnerCli(Core2Profile profile)
     /// <returns>同じ配置または配下の場合はtrue</returns>
     private static bool ContainsPath(string root, string path)
     {
-        var comparison = OperatingSystem.IsWindows()
-            ? StringComparison.OrdinalIgnoreCase
-            : StringComparison.Ordinal;
+        var comparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
         return string.Equals(root, path, comparison)
-            || path.StartsWith(
-                Path.EndsInDirectorySeparator(root) ? root : root + Path.DirectorySeparatorChar,
-                comparison
-            );
+            || path.StartsWith(Path.EndsInDirectorySeparator(root) ? root : root + Path.DirectorySeparatorChar, comparison);
     }
 
     /// <summary>
@@ -266,11 +246,7 @@ internal sealed class RunnerCli(Core2Profile profile)
         WriteSaveResult(result.ManifestPath, result.SaveFailure, output, error);
         return WriteDecision(
             "生成",
-            CompletionPolicy.Generate(
-                result.Manifest,
-                ReportStore.Validate(result.Manifest),
-                result.SaveFailure is null
-            ),
+            CompletionPolicy.Generate(result.Manifest, ReportStore.Validate(result.Manifest), result.SaveFailure is null),
             output,
             error
         );
@@ -299,8 +275,7 @@ internal sealed class RunnerCli(Core2Profile profile)
             paths["--manifest"],
             paths["--output"],
             reportStore_,
-            progress: path =>
-                output.WriteLine($"[{++processed}/{profile.Inputs.Length}] 実行・記録: {path}")
+            progress: path => output.WriteLine($"[{++processed}/{profile.Inputs.Length}] 実行・記録: {path}")
         );
         WriteRun(result.Report, output);
         foreach (var diagnostic in result.Report.Diagnostics)
@@ -310,11 +285,7 @@ internal sealed class RunnerCli(Core2Profile profile)
         WriteSaveResult(result.OutputPath, result.SaveFailure, output, error);
         return WriteDecision(
             "実行",
-            CompletionPolicy.Run(
-                result.Report,
-                ReportStore.Validate(result.Report),
-                result.SaveFailure is null
-            ),
+            CompletionPolicy.Run(result.Report, ReportStore.Validate(result.Report), result.SaveFailure is null),
             output,
             error
         );
@@ -342,12 +313,7 @@ internal sealed class RunnerCli(Core2Profile profile)
     /// <param name="output">集計と判定の表示先</param>
     /// <param name="error">未完了理由の表示先</param>
     /// <returns>比較操作の終了値</returns>
-    private int Compare(
-        string operation,
-        Dictionary<string, string> paths,
-        TextWriter output,
-        TextWriter error
-    )
+    private int Compare(string operation, Dictionary<string, string> paths, TextWriter output, TextWriter error)
     {
         var report =
             operation == "compare-conversion"
@@ -421,8 +387,7 @@ internal sealed class RunnerCli(Core2Profile profile)
             $"変換成功: {summary.SucceededCount}件、入力異常: {summary.RunnerErrorCount}件、生成物: {summary.ArtifactCount}件"
         );
         var undetermined = manifest.Inputs.Count(x =>
-            x.Status != ConversionStatus.Unprocessed
-            && !x.Artifacts.Any(y => y.Script is { EnumerationComplete: true })
+            x.Status != ConversionStatus.Unprocessed && !x.Artifacts.Any(y => y.Script is { EnumerationComplete: true })
         );
         output.WriteLine($"command件数未確定: {undetermined}入力");
     }
@@ -445,9 +410,7 @@ internal sealed class RunnerCli(Core2Profile profile)
         WriteOutcomes("セットアップ", summary.Setup, output);
         WriteOutcomes("単独action", summary.Action, output);
         WriteOutcomes("assertion", summary.Assertion, output);
-        output.WriteLine(
-            $"種類未確定command: runner_error={summary.UncategorizedRunnerErrorCount}"
-        );
+        output.WriteLine($"種類未確定command: runner_error={summary.UncategorizedRunnerErrorCount}");
     }
 
     /// <summary>
@@ -470,12 +433,7 @@ internal sealed class RunnerCli(Core2Profile profile)
     /// <param name="failure">保存失敗 保存成功時はnull</param>
     /// <param name="output">保存先の表示先</param>
     /// <param name="error">失敗理由の表示先</param>
-    private static void WriteSaveResult(
-        string path,
-        ReportStoreException? failure,
-        TextWriter output,
-        TextWriter error
-    )
+    private static void WriteSaveResult(string path, ReportStoreException? failure, TextWriter output, TextWriter error)
     {
         if (failure is null)
         {
@@ -495,12 +453,7 @@ internal sealed class RunnerCli(Core2Profile profile)
     /// <param name="output">判定と用途不合格理由の表示先</param>
     /// <param name="error">操作未完了理由の表示先</param>
     /// <returns>判定が定める0・1・2</returns>
-    private static int WriteDecision(
-        string name,
-        CompletionDecision decision,
-        TextWriter output,
-        TextWriter error
-    )
+    private static int WriteDecision(string name, CompletionDecision decision, TextWriter output, TextWriter error)
     {
         output.WriteLine(
             $"{name}判定: {decision.ExitCode switch { 0 => "成立", 1 => "条件不成立", _ => "未完了" }}（終了値{decision.ExitCode}）"

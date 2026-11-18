@@ -24,9 +24,7 @@ internal class CompletionPolicy_BaselineSaveTests
         using (Assert.Multiple())
         {
             await Assert.That(decision.ExitCode).IsEqualTo(2);
-            await Assert
-                .That(decision.Reasons.Single())
-                .IsEqualTo("a.wastの件数が未確定です。ほか2件");
+            await Assert.That(decision.Reasons.Single()).IsEqualTo("a.wastの件数が未確定です。ほか2件");
             await Assert.That(single.Reasons.Single()).IsEqualTo("a.wastの件数が未確定です。");
             await Assert.That(unsaved.ExitCode).IsEqualTo(2);
             await Assert.That(unsaved.Reasons.Single()).Contains("保存");

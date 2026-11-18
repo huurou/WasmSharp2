@@ -52,9 +52,7 @@ internal class Interpreter_TableInitTests
             await Assert.That(repeated.Result.Status).IsEqualTo(ExecutionStatus.Success);
             await Assert.That(actual.ValueCount).IsEqualTo(1);
             await Assert.That(actual.Sentinel).IsEqualTo(NumericHandlerFixture.Sentinel);
-            await Assert
-                .That(function.Instance.ElementSegments[(int)(1 - tableIndex)].Length)
-                .IsEqualTo(4U);
+            await Assert.That(function.Instance.ElementSegments[(int)(1 - tableIndex)].Length).IsEqualTo(4U);
             await Assert.That(tables[tableIndex].Get(0)).IsEqualTo(first);
             await Assert.That(tables[tableIndex].Get(2)).IsEqualTo(original);
             await Assert.That(tables[tableIndex].Get(3)).IsEqualTo(first);

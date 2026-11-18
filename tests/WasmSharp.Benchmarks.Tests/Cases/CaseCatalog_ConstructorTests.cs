@@ -30,10 +30,7 @@ internal class CaseCatalog_ConstructorTests
         // Arrange
         var definitions = AssetLoadingFixture.ReadCases(json_);
         var scalar = definitions.Single(x => x.CaseId == "scan.scalar");
-        var simd = definitions.Single(x => x.CaseId == "scan.simd") with
-        {
-            ComparisonGroup = "other-group",
-        };
+        var simd = definitions.Single(x => x.CaseId == "scan.simd") with { ComparisonGroup = "other-group" };
 
         // Act & Assert
         var exception = await Assert
@@ -70,37 +67,18 @@ internal class CaseCatalog_ConstructorTests
                 await Assert.That(methods_.GetCaseId(method)).IsEqualTo(definition.CaseId);
             }
             await Assert
-                .That(
-                    catalog
-                        .Cases.Select(x => catalog.GetMeasurementMethod(x.CaseId))
-                        .Distinct()
-                        .Count()
-                )
+                .That(catalog.Cases.Select(x => catalog.GetMeasurementMethod(x.CaseId)).Distinct().Count())
                 .IsEqualTo(15);
             await Assert
-                .That(
-                    catalog.Cases.All(x =>
-                        ReferenceEquals(x, definitions.Single(y => y.CaseId == x.CaseId))
-                    )
-                )
+                .That(catalog.Cases.All(x => ReferenceEquals(x, definitions.Single(y => y.CaseId == x.CaseId))))
                 .IsTrue();
             await Assert.That(loop.OperationDefinition.OperationsPerInvoke).IsEqualTo(1U);
             await Assert.That(loop.Workload.Single().Count).IsEqualTo(4096UL);
-            await Assert
-                .That(catalog.Get("memory.copy-fill").StatePolicy)
-                .IsEqualTo(StatePolicy.FixedPoint);
-            await Assert
-                .That(catalog.Get("kernel.matrix").StatePolicy)
-                .IsEqualTo(StatePolicy.OverwriteOutput);
-            await Assert
-                .That(catalog.Get("decode.small").StatePolicy)
-                .IsEqualTo(StatePolicy.FreshModule);
-            await Assert
-                .That(catalog.Get("instantiate.large").StatePolicy)
-                .IsEqualTo(StatePolicy.FreshInstance);
-            await Assert
-                .That(catalog.Get("scan.scalar").InputHash)
-                .IsNotEqualTo(catalog.Get("scan.simd").InputHash);
+            await Assert.That(catalog.Get("memory.copy-fill").StatePolicy).IsEqualTo(StatePolicy.FixedPoint);
+            await Assert.That(catalog.Get("kernel.matrix").StatePolicy).IsEqualTo(StatePolicy.OverwriteOutput);
+            await Assert.That(catalog.Get("decode.small").StatePolicy).IsEqualTo(StatePolicy.FreshModule);
+            await Assert.That(catalog.Get("instantiate.large").StatePolicy).IsEqualTo(StatePolicy.FreshInstance);
+            await Assert.That(catalog.Get("scan.scalar").InputHash).IsNotEqualTo(catalog.Get("scan.simd").InputHash);
         }
     }
 
@@ -160,20 +138,11 @@ internal class CaseCatalog_ConstructorTests
             },
             "state-restoration" => simd with
             {
-                OperationDefinition = simd.OperationDefinition with
-                {
-                    IncludesStateRestoration = true,
-                },
+                OperationDefinition = simd.OperationDefinition with { IncludesStateRestoration = true },
             },
             "measurement-stage" => simd with { MeasurementStage = MeasurementStage.Instantiate },
             "state-policy" => simd with { StatePolicy = StatePolicy.OverwriteOutput },
-            _ => simd with
-            {
-                ExpectedResult = simd.ExpectedResult with
-                {
-                    Values = [new(NumericType.I32, "00000000")],
-                },
-            },
+            _ => simd with { ExpectedResult = simd.ExpectedResult with { Values = [new(NumericType.I32, "00000000")] } },
         };
 
         // Act & Assert
@@ -187,9 +156,6 @@ internal class CaseCatalog_ConstructorTests
                 or "state-policy"
             ? "operation/state"
             : condition;
-        await Assert
-            .That(exception!.Message)
-            .Contains("scan.sum-u32")
-            .And.Contains(expectedCondition);
+        await Assert.That(exception!.Message).Contains("scan.sum-u32").And.Contains(expectedCondition);
     }
 }

@@ -7,12 +7,7 @@ namespace WasmSharp.Modules;
 /// <param name="index">指定された種類のindex空間における公開対象の位置</param>
 /// <param name="byteOffset">入力バイナリ上のexport宣言のバイト位置</param>
 /// <param name="kind">公開対象の外部要素の種類</param>
-internal readonly struct ModuleExport(
-    string name,
-    uint index,
-    long byteOffset,
-    WasmExternalKind kind
-)
+internal readonly struct ModuleExport(string name, uint index, long byteOffset, WasmExternalKind kind)
 {
     /// <summary>
     /// 外部要素を公開するexport名

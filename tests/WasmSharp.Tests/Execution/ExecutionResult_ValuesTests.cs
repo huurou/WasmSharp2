@@ -50,11 +50,7 @@ internal class ExecutionResult_SuccessTests
     public async Task 複数の戻り値を指定する_型と順序とビット列を保持する()
     {
         // Arrange
-        ImmutableArray<WasmValue> values =
-        [
-            WasmValue.FromI32(-7),
-            WasmValue.FromF64Bits(0xFFF8123456789ABCUL),
-        ];
+        ImmutableArray<WasmValue> values = [WasmValue.FromI32(-7), WasmValue.FromF64Bits(0xFFF8123456789ABCUL)];
 
         // Act
         var result = ExecutionResult.Success(values);
@@ -122,9 +118,7 @@ internal class ExecutionResult_TrapTests
             await Assert.That(result.FunctionIndex).IsEqualTo(3U);
             await Assert.That(result.ByteOffset).IsEqualTo(42L);
             await Assert.That(result.SectionId).IsEqualTo((byte)10);
-            await Assert
-                .That(result.TrapDiagnosticKind)
-                .IsEqualTo(TrapDiagnosticKind.UndefinedElement);
+            await Assert.That(result.TrapDiagnosticKind).IsEqualTo(TrapDiagnosticKind.UndefinedElement);
             await Assert.That(result.TableElementIndex).IsEqualTo(uint.MaxValue);
         }
     }
@@ -145,9 +139,7 @@ internal class ExecutionResult_ExhaustionTests
         using (Assert.Multiple())
         {
             await Assert.That(result.Status).IsEqualTo(ExecutionStatus.Exhaustion);
-            await Assert
-                .That(result.ExhaustionReason)
-                .IsEqualTo(WasmExhaustionReason.CallDepthLimit);
+            await Assert.That(result.ExhaustionReason).IsEqualTo(WasmExhaustionReason.CallDepthLimit);
             await Assert.That(result.Limit).IsEqualTo(LIMIT);
             await Assert.That(result.FunctionIndex).IsEqualTo(3U);
             await Assert.That(result.ByteOffset).IsEqualTo(42L);
@@ -162,9 +154,7 @@ internal class ExecutionResult_ExhaustionTests
     {
         // Act & Assert
         await Assert
-            .That(() =>
-                ExecutionResult.Exhaustion(WasmExhaustionReason.CallDepthLimit, limit, 0, 0)
-            )
+            .That(() => ExecutionResult.Exhaustion(WasmExhaustionReason.CallDepthLimit, limit, 0, 0))
             .ThrowsExactly<ArgumentOutOfRangeException>();
     }
 }

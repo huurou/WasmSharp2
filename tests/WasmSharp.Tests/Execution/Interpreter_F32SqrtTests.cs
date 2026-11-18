@@ -15,10 +15,7 @@ internal class Interpreter_F32SqrtTests
     [Arguments(0xBF800000u, 0x7FC00000u)]
     [Arguments(0xFFC12345u, 0x7FC00000u)]
     [Arguments(0x7F812345u, 0x7FC00000u)]
-    public async Task 通常値と境界値とNaN_32bitの平方根結果を返す(
-        uint operandBits,
-        uint expectedBits
-    )
+    public async Task 通常値と境界値とNaN_32bitの平方根結果を返す(uint operandBits, uint expectedBits)
     {
         // Arrange
         WasmValue[] operands = [WasmValue.FromF32Bits(operandBits)];

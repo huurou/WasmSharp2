@@ -43,9 +43,7 @@ internal class ProfileSnapshot_MatchesTests
     [Arguments("conversion")]
     [Arguments("features")]
     [Arguments("logical_arguments")]
-    public async Task 入力集合が同じでも生成条件の1項目が異なる_一致しないと判定する(
-        string condition
-    )
+    public async Task 入力集合が同じでも生成条件の1項目が異なる_一致しないと判定する(string condition)
     {
         // Arrange
         var profile = profileLoader_.Load();
@@ -56,15 +54,9 @@ internal class ProfileSnapshot_MatchesTests
             "spec" => snapshot with { Spec = snapshot.Spec with { Commit = new string('a', 40) } },
             "wabt" => snapshot with { Wabt = snapshot.Wabt with { Commit = new string('b', 40) } },
             "working_directory" => snapshot with { WorkingDirectory = "different-directory" },
-            "conversion" => snapshot with
-            {
-                Conversion = snapshot.Conversion with { Check = !snapshot.Conversion.Check },
-            },
+            "conversion" => snapshot with { Conversion = snapshot.Conversion with { Check = !snapshot.Conversion.Check } },
             "features" => snapshot with { Features = [.. snapshot.Features.Skip(1)] },
-            "logical_arguments" => snapshot with
-            {
-                LogicalArguments = [.. snapshot.LogicalArguments, "--debug-names"],
-            },
+            "logical_arguments" => snapshot with { LogicalArguments = [.. snapshot.LogicalArguments, "--debug-names"] },
             _ => throw new ArgumentOutOfRangeException(nameof(condition)),
         };
 

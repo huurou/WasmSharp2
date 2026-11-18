@@ -54,11 +54,7 @@ internal partial class InstructionGenerator_InitializeTests
         GeneratorDriver driver = CSharpGeneratorDriver.Create(new InstructionGenerator());
 
         // Act
-        driver = driver.RunGeneratorsAndUpdateCompilation(
-            compilation,
-            out var output,
-            out var diagnostics
-        );
+        driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out var output, out var diagnostics);
 
         // Assert
         await Assert.That(diagnostics).IsEmpty();
@@ -103,9 +99,7 @@ internal partial class InstructionGenerator_InitializeTests
     [Test]
     [Arguments("FuncRef")]
     [Arguments("ExternRef")]
-    public async Task 参照型即値の命令を宣言する_定数規則を再利用して型別nullを生成handlerへ渡す(
-        string referenceType
-    )
+    public async Task 参照型即値の命令を宣言する_定数規則を再利用して型別nullを生成handlerへ渡す(string referenceType)
     {
         // Arrange
         var compilation = GeneratorTestSource.CreateCompilation(
@@ -135,11 +129,7 @@ internal partial class InstructionGenerator_InitializeTests
         GeneratorDriver driver = CSharpGeneratorDriver.Create(new InstructionGenerator());
 
         // Act
-        driver = driver.RunGeneratorsAndUpdateCompilation(
-            compilation,
-            out var output,
-            out var diagnostics
-        );
+        driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out var output, out var diagnostics);
 
         // Assert
         await Assert.That(diagnostics).IsEmpty();

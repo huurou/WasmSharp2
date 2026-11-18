@@ -9,12 +9,7 @@ internal class UnavailableCause_CreateCaseCauseTests
     public async Task 複数の利用不能状態に依存する_直接原因と元の失敗を重複なくindex順に並べる()
     {
         // Arrange
-        UnavailableCause[] causes =
-        [
-            new(Id(5), [Id(3), Id(1)]),
-            new(Id(2), [Id(1)]),
-            new(Id(5), [Id(3), Id(1)]),
-        ];
+        UnavailableCause[] causes = [new(Id(5), [Id(3), Id(1)]), new(Id(2), [Id(1)]), new(Id(5), [Id(3), Id(1)])];
 
         // Act
         var cause = UnavailableCause.CreateCaseCause(causes);

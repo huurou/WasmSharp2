@@ -28,22 +28,10 @@ internal static class SpectestFactory
         DefinePrint(host, state, "print_f64", [WasmValueKind.F64]);
         DefinePrint(host, state, "print_i32_f32", [WasmValueKind.I32, WasmValueKind.F32]);
         DefinePrint(host, state, "print_f64_f64", [WasmValueKind.F64, WasmValueKind.F64]);
-        host.Define(
-            "global_i32",
-            new WasmGlobal(new(WasmValueKind.I32, false), WasmValue.FromI32(666))
-        );
-        host.Define(
-            "global_i64",
-            new WasmGlobal(new(WasmValueKind.I64, false), WasmValue.FromI64(666))
-        );
-        host.Define(
-            "global_f32",
-            new WasmGlobal(new(WasmValueKind.F32, false), WasmValue.FromF32(666.6f))
-        );
-        host.Define(
-            "global_f64",
-            new WasmGlobal(new(WasmValueKind.F64, false), WasmValue.FromF64(666.6d))
-        );
+        host.Define("global_i32", new WasmGlobal(new(WasmValueKind.I32, false), WasmValue.FromI32(666)));
+        host.Define("global_i64", new WasmGlobal(new(WasmValueKind.I64, false), WasmValue.FromI64(666)));
+        host.Define("global_f32", new WasmGlobal(new(WasmValueKind.F32, false), WasmValue.FromF32(666.6f)));
+        host.Define("global_f64", new WasmGlobal(new(WasmValueKind.F64, false), WasmValue.FromF64(666.6d)));
         host.Define("table", new WasmTable(WasmValueKind.FuncRef, new(10, 20)));
         host.Define("memory", new WasmMemory(new(1, 2)));
         return host;

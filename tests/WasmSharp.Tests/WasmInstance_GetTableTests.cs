@@ -57,9 +57,7 @@ internal class WasmInstance_GetTableTests
         }
         // Act & Assert
         await Assert.That(() => first.GetTable("T")).ThrowsExactly<ArgumentException>();
-        var exception = await Assert
-            .That(() => first.GetTable(null!))
-            .ThrowsExactly<ArgumentNullException>();
+        var exception = await Assert.That(() => first.GetTable(null!)).ThrowsExactly<ArgumentNullException>();
         await Assert.That(exception!.ParamName).IsEqualTo("name");
     }
 
@@ -77,9 +75,7 @@ internal class WasmInstance_GetTableTests
             .Instantiate(executionContext, []);
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => instance.GetTable(name))
-            .ThrowsExactly<ArgumentException>();
+        var exception = await Assert.That(() => instance.GetTable(name)).ThrowsExactly<ArgumentException>();
         await Assert.That(exception!.ParamName).IsEqualTo("name");
     }
 }

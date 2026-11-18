@@ -18,10 +18,7 @@ internal class Interpreter_F64TruncTests
     [Arguments(0xFFF8000000000000ul, 0x7FF8000000000000ul)]
     [Arguments(0xFFF8123456789ABCul, 0x7FF8000000000000ul)]
     [Arguments(0x7FF0123456789ABCul, 0x7FF8000000000000ul)]
-    public async Task 入力の通常値と境界値とNaN_0方向へ整数値化する(
-        ulong operandBits,
-        ulong expectedBits
-    )
+    public async Task 入力の通常値と境界値とNaN_0方向へ整数値化する(ulong operandBits, ulong expectedBits)
     {
         // Arrange
         WasmValue[] operands = [WasmValue.FromF64Bits(operandBits)];

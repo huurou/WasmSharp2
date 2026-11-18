@@ -14,10 +14,7 @@ internal partial class ModuleValidator_ValidateTests
     [Arguments("4100047F41070C0042001A0541080B0B", 8)]
     [Arguments("027F410741000D001A41080B0B", 8)]
     [Arguments("027F410741010D001A41080B0B", 7)]
-    public async Task 前方分岐または非分岐を実行_保持値を使い飛び越えた命令を実行しない(
-        string body,
-        int expected
-    )
+    public async Task 前方分岐または非分岐を実行_保持値を使い飛び越えた命令を実行しない(string body, int expected)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
@@ -47,9 +44,7 @@ internal partial class ModuleValidator_ValidateTests
                 HostLinkingModuleBinary.Types(([], [0x7F, 0x7F, 0x7E]), ([], [0x7F, 0x7E])),
                 HostLinkingModuleBinary.Functions(0),
                 HostLinkingModuleBinary.Exports(("run", 0, 0)),
-                HostLinkingModuleBinary.Code(
-                    ([], Convert.FromHexString("410902010240410A42140C01000B000B0B"))
-                )
+                HostLinkingModuleBinary.Code(([], Convert.FromHexString("410902010240410A42140C01000B000B0B")))
             )
         );
 
@@ -58,13 +53,7 @@ internal partial class ModuleValidator_ValidateTests
 
         // Assert
         await Assert
-            .That(
-                result.Values.SequenceEqual([
-                    WasmValue.FromI32(9),
-                    WasmValue.FromI32(10),
-                    WasmValue.FromI64(20),
-                ])
-            )
+            .That(result.Values.SequenceEqual([WasmValue.FromI32(9), WasmValue.FromI32(10), WasmValue.FromI64(20)]))
             .IsTrue();
     }
 
@@ -78,9 +67,7 @@ internal partial class ModuleValidator_ValidateTests
                 HostLinkingModuleBinary.Create(
                     HostLinkingModuleBinary.Types(([0x7F], [0x7E])),
                     HostLinkingModuleBinary.Functions(0),
-                    HostLinkingModuleBinary.Code(
-                        ([], Convert.FromHexString("2000030041016B220020000D001A42070B0B"))
-                    )
+                    HostLinkingModuleBinary.Code(([], Convert.FromHexString("2000030041016B220020000D001A42070B0B")))
                 )
             )
             .Validate();
@@ -92,12 +79,7 @@ internal partial class ModuleValidator_ValidateTests
         // Act
         try
         {
-            result = Interpreter.Run(
-                context,
-                function,
-                [WasmValue.FromI32(10000)],
-                WasmProcessingStage.Invoke
-            );
+            result = Interpreter.Run(context, function, [WasmValue.FromI32(10000)], WasmProcessingStage.Invoke);
             state = (context.FrameCount, context.ValueCount, context.CallDepth);
         }
         finally
@@ -113,9 +95,7 @@ internal partial class ModuleValidator_ValidateTests
             await Assert.That(result.Values[0].AsI64()).IsEqualTo(7L);
             await Assert.That(state).IsEqualTo((0, 0, 0));
             await Assert.That(module.FunctionCodes[0].MaxOperandStack).IsEqualTo(2);
-            await Assert
-                .That(module.FunctionCodes[0].BranchTargets[0])
-                .IsEqualTo(new BranchTarget(1, 0, 1));
+            await Assert.That(module.FunctionCodes[0].BranchTargets[0]).IsEqualTo(new BranchTarget(1, 0, 1));
         }
     }
 

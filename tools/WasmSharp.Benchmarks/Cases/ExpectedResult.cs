@@ -30,11 +30,7 @@ internal sealed record GlobalExpectation(string ExportName, NumericValue Value);
 /// <summary>
 /// tableの要素数と、指定位置の関数実体への参照の期待値
 /// </summary>
-internal sealed record TableExpectation(
-    string ExportName,
-    uint Length,
-    List<TableElementExpectation> Elements
-);
+internal sealed record TableExpectation(string ExportName, uint Length, List<TableElementExpectation> Elements);
 
 /// <summary>
 /// 同じinstanceの関数exportを使って照合するtable要素 FunctionExportがnullならnull参照を期待する。

@@ -46,15 +46,9 @@ public sealed class WasmMemory
     public WasmMemory(WasmLimits limits)
     {
         ArgumentNullException.ThrowIfNull(limits);
-        if (
-            limits.Maximum > MAX_PAGE_COUNT ||
-            ExceedsPageLimit(limits.Minimum, limits.Maximum)
-        )
+        if (limits.Maximum > MAX_PAGE_COUNT || ExceedsPageLimit(limits.Minimum, limits.Maximum))
         {
-            throw new ArgumentException(
-                "memoryのlimitsがCore 2.0の制約を満たしません。",
-                nameof(limits)
-            );
+            throw new ArgumentException("memoryのlimitsがCore 2.0の制約を満たしません。", nameof(limits));
         }
 
         pages_ = new byte[limits.Minimum][];
@@ -226,10 +220,7 @@ public sealed class WasmMemory
                 var count = (int)Math.Min(length, (ulong)Math.Min(destinationOffset, sourceOffset));
                 pages_[(int)((sourceEnd - 1) / PAGE_SIZE)]
                     .AsSpan(sourceOffset - count, count)
-                    .CopyTo(
-                        pages_[(int)((destinationEnd - 1) / PAGE_SIZE)]
-                            .AsSpan(destinationOffset - count, count)
-                    );
+                    .CopyTo(pages_[(int)((destinationEnd - 1) / PAGE_SIZE)].AsSpan(destinationOffset - count, count));
                 destinationEnd -= (uint)count;
                 sourceEnd -= (uint)count;
                 length -= (uint)count;
@@ -242,11 +233,7 @@ public sealed class WasmMemory
         {
             var destinationOffset = (int)(destination % PAGE_SIZE);
             var sourceOffset = (int)(source % PAGE_SIZE);
-            var count = (int)
-                Math.Min(
-                    length,
-                    (ulong)Math.Min(PAGE_SIZE - destinationOffset, PAGE_SIZE - sourceOffset)
-                );
+            var count = (int)Math.Min(length, (ulong)Math.Min(PAGE_SIZE - destinationOffset, PAGE_SIZE - sourceOffset));
             pages_[(int)(source / PAGE_SIZE)]
                 .AsSpan(sourceOffset, count)
                 .CopyTo(pages_[(int)(destination / PAGE_SIZE)].AsSpan(destinationOffset, count));

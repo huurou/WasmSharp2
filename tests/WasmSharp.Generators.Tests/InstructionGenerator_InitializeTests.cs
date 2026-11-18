@@ -117,11 +117,7 @@ internal partial class InstructionGenerator_InitializeTests
         GeneratorDriver driver = CSharpGeneratorDriver.Create(new InstructionGenerator());
 
         // Act
-        driver = driver.RunGeneratorsAndUpdateCompilation(
-            compilation,
-            out var output,
-            out var diagnostics
-        );
+        driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out var output, out var diagnostics);
 
         // Assert
         await Assert.That(diagnostics).IsEmpty();
@@ -175,11 +171,7 @@ internal partial class InstructionGenerator_InitializeTests
         GeneratorDriver driver = CSharpGeneratorDriver.Create(new InstructionGenerator());
 
         // Act
-        driver = driver.RunGeneratorsAndUpdateCompilation(
-            compilation,
-            out var output,
-            out var diagnostics
-        );
+        driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out var output, out var diagnostics);
 
         // Assert
         await Assert.That(diagnostics).IsEmpty();
@@ -206,38 +198,18 @@ internal partial class InstructionGenerator_InitializeTests
         0
     )]
     [Arguments("new WasmValueKind[] { WasmValueKind.FuncRef }", "V128", "None", 0)]
-    [Arguments(
-        "new WasmValueKind[] { WasmValueKind.V128, WasmValueKind.FuncRef }",
-        "V128",
-        "None",
-        0
-    )]
+    [Arguments("new WasmValueKind[] { WasmValueKind.V128, WasmValueKind.FuncRef }", "V128", "None", 0)]
     [Arguments("new WasmValueKind[] { (WasmValueKind)999 }", "V128", "None", 0)]
     [Arguments("new WasmValueKind[] { WasmValueKind.V128 }", "ExternRef", "None", 0)]
     [Arguments("new WasmValueKind[] { WasmValueKind.V128 }", "I32", "LaneIndex", 0)]
     [Arguments("new WasmValueKind[] { WasmValueKind.V128 }", "I32", "LaneIndex", 3)]
     [Arguments("new WasmValueKind[] { WasmValueKind.V128 }", "F64", "LaneIndex", 4)]
     [Arguments("new WasmValueKind[] { WasmValueKind.V128 }", "V128", "LaneIndex", 16)]
-    [Arguments(
-        "new WasmValueKind[] { WasmValueKind.V128, WasmValueKind.I32 }",
-        "I32",
-        "LaneIndex",
-        4
-    )]
-    [Arguments(
-        "new WasmValueKind[] { WasmValueKind.V128, WasmValueKind.I32, WasmValueKind.I32 }",
-        "V128",
-        "LaneIndex",
-        4
-    )]
+    [Arguments("new WasmValueKind[] { WasmValueKind.V128, WasmValueKind.I32 }", "I32", "LaneIndex", 4)]
+    [Arguments("new WasmValueKind[] { WasmValueKind.V128, WasmValueKind.I32, WasmValueKind.I32 }", "V128", "LaneIndex", 4)]
     [Arguments("new WasmValueKind[] { WasmValueKind.V128 }", "I32", "None", 16)]
     [Arguments("new WasmValueKind[] { WasmValueKind.V128 }", "V128", "Shuffle", 0)]
-    [Arguments(
-        "new WasmValueKind[] { WasmValueKind.V128, WasmValueKind.I32 }",
-        "V128",
-        "Shuffle",
-        0
-    )]
+    [Arguments("new WasmValueKind[] { WasmValueKind.V128, WasmValueKind.I32 }", "V128", "Shuffle", 0)]
     public async Task SIMD型列やlane制約が不正_既存の不完全宣言診断を報告する(
         string inputs,
         string resultType,
@@ -293,10 +265,7 @@ internal partial class InstructionGenerator_InitializeTests
     )
     {
         // Arrange
-        var inputTypes = string.Join(
-            ", ",
-            Enumerable.Repeat($"WasmSharp.WasmValueKind.{inputType}", inputCount)
-        );
+        var inputTypes = string.Join(", ", Enumerable.Repeat($"WasmSharp.WasmValueKind.{inputType}", inputCount));
         var compilation = GeneratorTestSource.CreateCompilation(
             $$"""
             namespace WasmSharp.Instructions
@@ -325,11 +294,7 @@ internal partial class InstructionGenerator_InitializeTests
         GeneratorDriver driver = CSharpGeneratorDriver.Create(new InstructionGenerator());
 
         // Act
-        driver = driver.RunGeneratorsAndUpdateCompilation(
-            compilation,
-            out var output,
-            out var diagnostics
-        );
+        driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out var output, out var diagnostics);
 
         // Assert
         await Assert.That(diagnostics).IsEmpty();
@@ -418,11 +383,7 @@ internal partial class InstructionGenerator_InitializeTests
 
     [Test]
     [Arguments("", "WSIG003", "2, WasmValueKind.I32, WasmValueKind.I32")]
-    [Arguments(
-        "",
-        "WSIG003",
-        "new WasmValueKind[] { WasmValueKind.V128, WasmValueKind.I32 }, WasmValueKind.V128"
-    )]
+    [Arguments("", "WSIG003", "new WasmValueKind[] { WasmValueKind.V128, WasmValueKind.I32 }, WasmValueKind.V128")]
     [Arguments(
         "internal static int Handler(InterpreterContext context, in Instruction instruction) => 0;",
         "WSIG004",
@@ -500,11 +461,7 @@ internal partial class InstructionGenerator_InitializeTests
         GeneratorDriver driver = CSharpGeneratorDriver.Create(new InstructionGenerator());
 
         // Act
-        driver = driver.RunGeneratorsAndUpdateCompilation(
-            compilation,
-            out var output,
-            out var diagnostics
-        );
+        driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out var output, out var diagnostics);
 
         // Assert
         await Assert.That(diagnostics).IsEmpty();
@@ -566,11 +523,7 @@ internal partial class InstructionGenerator_InitializeTests
         GeneratorDriver driver = CSharpGeneratorDriver.Create(new InstructionGenerator());
 
         // Act
-        driver = driver.RunGeneratorsAndUpdateCompilation(
-            compilation,
-            out var output,
-            out var diagnostics
-        );
+        driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out var output, out var diagnostics);
 
         // Assert
         await Assert.That(diagnostics).IsEmpty();
@@ -668,11 +621,7 @@ internal partial class InstructionGenerator_InitializeTests
         GeneratorDriver driver = CSharpGeneratorDriver.Create(new InstructionGenerator());
 
         // Act
-        driver = driver.RunGeneratorsAndUpdateCompilation(
-            compilation,
-            out var output,
-            out var diagnostics
-        );
+        driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out var output, out var diagnostics);
 
         // Assert
         await Assert.That(diagnostics).IsEmpty();
@@ -749,10 +698,7 @@ internal partial class InstructionGenerator_InitializeTests
                 }
             }
             """;
-        var compilation = GeneratorTestSource.CreateCompilation(
-            DECLARATION,
-            GeneratorTestSource.EXECUTION_CONTRACTS
-        );
+        var compilation = GeneratorTestSource.CreateCompilation(DECLARATION, GeneratorTestSource.EXECUTION_CONTRACTS);
         GeneratorDriver driver = CSharpGeneratorDriver.Create(new InstructionGenerator());
         var declarationTree = compilation.SyntaxTrees.Single(x => x.ToString() == DECLARATION);
         var updated = compilation.ReplaceSyntaxTree(
@@ -763,24 +709,13 @@ internal partial class InstructionGenerator_InitializeTests
                     .Replace("i32.const", name)
                     .Replace("ImmediateKind.I32", $"ImmediateKind.{immediate}")
                     .Replace("StackEffectKind.PushI32", $"StackEffectKind.{stackEffect}")
-                    .Replace(
-                        "nameof(Execution.Interpreter.First)",
-                        "nameof(Execution.Interpreter.Second)"
-                    )
+                    .Replace("nameof(Execution.Interpreter.First)", "nameof(Execution.Interpreter.Second)")
             )
         );
 
         // Act
-        driver = driver.RunGeneratorsAndUpdateCompilation(
-            compilation,
-            out var originalOutput,
-            out var originalDiagnostics
-        );
-        driver = driver.RunGeneratorsAndUpdateCompilation(
-            updated,
-            out var output,
-            out var diagnostics
-        );
+        driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out var originalOutput, out var originalDiagnostics);
+        driver = driver.RunGeneratorsAndUpdateCompilation(updated, out var output, out var diagnostics);
 
         // Assert
         await Assert.That(originalDiagnostics).IsEmpty();
@@ -835,18 +770,13 @@ internal partial class InstructionGenerator_InitializeTests
                 }
             }
             """;
-        var compilation = GeneratorTestSource.CreateCompilation(
-            DECLARATION,
-            GeneratorTestSource.EXECUTION_CONTRACTS
-        );
+        var compilation = GeneratorTestSource.CreateCompilation(DECLARATION, GeneratorTestSource.EXECUTION_CONTRACTS);
         GeneratorDriver driver = CSharpGeneratorDriver.Create(new InstructionGenerator());
         driver = driver.RunGenerators(compilation);
         var declarationTree = compilation.SyntaxTrees.Single(x => x.ToString() == DECLARATION);
         var updated = compilation.ReplaceSyntaxTree(
             declarationTree,
-            CSharpSyntaxTree.ParseText(
-                DECLARATION.Replace("ExecutionResult Handler(", "void Handler(")
-            )
+            CSharpSyntaxTree.ParseText(DECLARATION.Replace("ExecutionResult Handler(", "void Handler("))
         );
 
         // Act
@@ -857,21 +787,13 @@ internal partial class InstructionGenerator_InitializeTests
     }
 
     [Test]
-    [Arguments(
-        "ImmediateKind.Unsupported, StackEffectKind.PushI32, ValidationRule.Constant, \"Handler\""
-    )]
-    [Arguments(
-        "ImmediateKind.I32, StackEffectKind.Unsupported, ValidationRule.Constant, \"Handler\""
-    )]
-    [Arguments(
-        "ImmediateKind.I32, StackEffectKind.PushI32, ValidationRule.Unsupported, \"Handler\""
-    )]
+    [Arguments("ImmediateKind.Unsupported, StackEffectKind.PushI32, ValidationRule.Constant, \"Handler\"")]
+    [Arguments("ImmediateKind.I32, StackEffectKind.Unsupported, ValidationRule.Constant, \"Handler\"")]
+    [Arguments("ImmediateKind.I32, StackEffectKind.PushI32, ValidationRule.Unsupported, \"Handler\"")]
     [Arguments("ImmediateKind.I32, StackEffectKind.PushI32, ValidationRule.Constant, null")]
     [Arguments("ImmediateKind.I32, StackEffectKind.PushI32, ValidationRule.Constant, \"\"")]
     [Arguments("(ImmediateKind)999, StackEffectKind.PushI32, ValidationRule.Constant, \"Handler\"")]
-    [Arguments(
-        "ImmediateKind.LaneIndex, StackEffectKind.PushI32, ValidationRule.Constant, \"Handler\", LaneCount = 4"
-    )]
+    [Arguments("ImmediateKind.LaneIndex, StackEffectKind.PushI32, ValidationRule.Constant, \"Handler\", LaneCount = 4")]
     [Arguments(
         "ImmediateKind.Unsupported, StackEffectKind.Numeric, ValidationRule.Numeric, \"Handler\", 1, WasmValueKind.I32, WasmValueKind.I32"
     )]
@@ -922,48 +844,21 @@ internal partial class InstructionGenerator_InitializeTests
 
     [Test]
     [Arguments("", "WSIG003")]
-    [Arguments(
-        "static void Handler(InterpreterContext context, in Instruction instruction)",
-        "WSIG004"
-    )]
-    [Arguments(
-        "ExecutionResult Handler(InterpreterContext context, in Instruction instruction)",
-        "WSIG004"
-    )]
-    [Arguments(
-        "static ExecutionResult Handler(InterpreterContext context, Instruction instruction)",
-        "WSIG004"
-    )]
-    [Arguments(
-        "static ExecutionResult Handler(in InterpreterContext context, in Instruction instruction)",
-        "WSIG004"
-    )]
-    [Arguments(
-        "static ExecutionResult Handler(in Instruction instruction, InterpreterContext context)",
-        "WSIG004"
-    )]
-    [Arguments(
-        "static ExecutionResult Handler(InterpreterContext context, ref Instruction instruction)",
-        "WSIG004"
-    )]
-    [Arguments(
-        "static ExecutionResult Handler<T>(InterpreterContext context, in Instruction instruction)",
-        "WSIG004"
-    )]
-    [Arguments(
-        "static ref ExecutionResult Handler(InterpreterContext context, in Instruction instruction)",
-        "WSIG004"
-    )]
+    [Arguments("static void Handler(InterpreterContext context, in Instruction instruction)", "WSIG004")]
+    [Arguments("ExecutionResult Handler(InterpreterContext context, in Instruction instruction)", "WSIG004")]
+    [Arguments("static ExecutionResult Handler(InterpreterContext context, Instruction instruction)", "WSIG004")]
+    [Arguments("static ExecutionResult Handler(in InterpreterContext context, in Instruction instruction)", "WSIG004")]
+    [Arguments("static ExecutionResult Handler(in Instruction instruction, InterpreterContext context)", "WSIG004")]
+    [Arguments("static ExecutionResult Handler(InterpreterContext context, ref Instruction instruction)", "WSIG004")]
+    [Arguments("static ExecutionResult Handler<T>(InterpreterContext context, in Instruction instruction)", "WSIG004")]
+    [Arguments("static ref ExecutionResult Handler(InterpreterContext context, in Instruction instruction)", "WSIG004")]
     public async Task Handlerが存在しないか契約と異なる_属性位置付きのビルドエラーを報告する(
         string signature,
         string expectedId
     )
     {
         // Arrange
-        var method =
-            signature == ""
-                ? ""
-                : $"internal {signature} => throw new System.NotSupportedException();";
+        var method = signature == "" ? "" : $"internal {signature} => throw new System.NotSupportedException();";
         var compilation = GeneratorTestSource.CreateCompilation(
             $$"""
             namespace WasmSharp.Instructions
@@ -992,34 +887,10 @@ internal partial class InstructionGenerator_InitializeTests
     }
 
     [Test]
-    [Arguments(
-        "Trap",
-        "WasmSharp.Exceptions.WasmTrapReason.IntegerDivideByZero",
-        "null",
-        "null",
-        false
-    )]
-    [Arguments(
-        "Trap",
-        "WasmSharp.Exceptions.WasmTrapReason.IntegerDivideByZero",
-        "null",
-        "null",
-        true
-    )]
-    [Arguments(
-        "Exhaustion",
-        "null",
-        "WasmSharp.Exceptions.WasmExhaustionReason.CallDepthLimit",
-        "12",
-        false
-    )]
-    [Arguments(
-        "Exhaustion",
-        "null",
-        "WasmSharp.Exceptions.WasmExhaustionReason.CallDepthLimit",
-        "12",
-        true
-    )]
+    [Arguments("Trap", "WasmSharp.Exceptions.WasmTrapReason.IntegerDivideByZero", "null", "null", false)]
+    [Arguments("Trap", "WasmSharp.Exceptions.WasmTrapReason.IntegerDivideByZero", "null", "null", true)]
+    [Arguments("Exhaustion", "null", "WasmSharp.Exceptions.WasmExhaustionReason.CallDepthLimit", "12", false)]
+    [Arguments("Exhaustion", "null", "WasmSharp.Exceptions.WasmExhaustionReason.CallDepthLimit", "12", true)]
     public async Task Handlerが失敗する_原因と上限と元位置をそのまま返して次の命令を実行しない(
         string status,
         string trapReason,
@@ -1058,11 +929,7 @@ internal partial class InstructionGenerator_InitializeTests
         GeneratorDriver driver = CSharpGeneratorDriver.Create(new InstructionGenerator());
 
         // Act
-        driver = driver.RunGeneratorsAndUpdateCompilation(
-            compilation,
-            out var output,
-            out var diagnostics
-        );
+        driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out var output, out var diagnostics);
 
         // Assert
         await Assert.That(diagnostics).IsEmpty();
@@ -1122,11 +989,7 @@ internal partial class InstructionGenerator_InitializeTests
         {
             await Assert.That(diagnostics[0].GetMessage()).Contains("'second'");
             await Assert
-                .That(
-                    diagnostics[0]
-                        .Location.SourceTree!.GetText()
-                        .ToString(diagnostics[0].Location.SourceSpan)
-                )
+                .That(diagnostics[0].Location.SourceTree!.GetText().ToString(diagnostics[0].Location.SourceSpan))
                 .Contains("second");
         }
     }
@@ -1134,9 +997,7 @@ internal partial class InstructionGenerator_InitializeTests
     [Test]
     [Arguments(0)]
     [Arguments(1)]
-    public async Task 入口フレームが終了する_単一の生成ループが外側を実行せず停止する(
-        int entryFrameCount
-    )
+    public async Task 入口フレームが終了する_単一の生成ループが外側を実行せず停止する(int entryFrameCount)
     {
         // Arrange
         var compilation = GeneratorTestSource.CreateCompilation(
@@ -1173,20 +1034,14 @@ internal partial class InstructionGenerator_InitializeTests
         GeneratorDriver driver = CSharpGeneratorDriver.Create(new InstructionGenerator());
 
         // Act
-        driver = driver.RunGeneratorsAndUpdateCompilation(
-            compilation,
-            out var output,
-            out var diagnostics
-        );
+        driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out var output, out var diagnostics);
 
         // Assert
         await Assert.That(diagnostics).IsEmpty();
         await Assert.That(driver.GetRunResult().GeneratedTrees.Length).IsEqualTo(2);
         var loop = driver
             .GetRunResult()
-            .GeneratedTrees.Single(x =>
-                x.FilePath.EndsWith("Interpreter.g.cs", StringComparison.Ordinal)
-            );
+            .GeneratedTrees.Single(x => x.FilePath.EndsWith("Interpreter.g.cs", StringComparison.Ordinal));
         using (Assert.Multiple())
         {
             await Assert
@@ -1241,17 +1096,11 @@ internal partial class InstructionGenerator_InitializeTests
         var declarationTree = compilation.SyntaxTrees.Single(x => x.ToString() == DECLARATION);
         var updated = compilation.ReplaceSyntaxTree(
             declarationTree,
-            CSharpSyntaxTree.ParseText(
-                DECLARATION.Replace("0xFC, 0, \"before\"", "0xFD, 0xFFFFFFFF, \"after\\\"name\"")
-            )
+            CSharpSyntaxTree.ParseText(DECLARATION.Replace("0xFC, 0, \"before\"", "0xFD, 0xFFFFFFFF, \"after\\\"name\""))
         );
 
         // Act
-        driver = driver.RunGeneratorsAndUpdateCompilation(
-            updated,
-            out var output,
-            out var diagnostics
-        );
+        driver = driver.RunGeneratorsAndUpdateCompilation(updated, out var output, out var diagnostics);
 
         // Assert
         await Assert.That(diagnostics).IsEmpty();
@@ -1318,11 +1167,7 @@ internal partial class InstructionGenerator_InitializeTests
         GeneratorDriver driver = CSharpGeneratorDriver.Create(new InstructionGenerator());
 
         // Act
-        driver = driver.RunGeneratorsAndUpdateCompilation(
-            compilation,
-            out var output,
-            out var diagnostics
-        );
+        driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out var output, out var diagnostics);
 
         // Assert
         await Assert.That(diagnostics).IsEmpty();

@@ -35,12 +35,7 @@ internal class BaselineComparer_CompareConversionTests
         current.Profile.Features.Reverse();
 
         // Act
-        var comparison = BaselineComparer.CompareConversion(
-            baseline,
-            current,
-            baselinePath_,
-            currentPath_
-        );
+        var comparison = BaselineComparer.CompareConversion(baseline, current, baselinePath_, currentPath_);
 
         // Assert
         using (Assert.Multiple())
@@ -55,9 +50,7 @@ internal class BaselineComparer_CompareConversionTests
             await Assert.That(comparison.ConditionDifferences).IsEmpty();
             await Assert.That(comparison.EntryDifferences).IsEmpty();
             await Assert.That(comparison.Uncompared).IsEmpty();
-            await Assert
-                .That(CompletionPolicy.CompareConversion(comparison, saved: true).ExitCode)
-                .IsEqualTo(0);
+            await Assert.That(CompletionPolicy.CompareConversion(comparison, saved: true).ExitCode).IsEqualTo(0);
         }
     }
 
@@ -72,12 +65,7 @@ internal class BaselineComparer_CompareConversionTests
         };
 
         // Act
-        var comparison = BaselineComparer.CompareConversion(
-            baseline,
-            current,
-            baselinePath_,
-            currentPath_
-        );
+        var comparison = BaselineComparer.CompareConversion(baseline, current, baselinePath_, currentPath_);
 
         // Assert
         using (Assert.Multiple())
@@ -85,17 +73,13 @@ internal class BaselineComparer_CompareConversionTests
             await Assert
                 .That(comparison.ProvenanceDifferences.Single().Baseline)
                 .IsEqualTo(baseline.Provenance.ExecutableSha256);
-            await Assert
-                .That(comparison.ProvenanceDifferences.Single().Name)
-                .IsEqualTo("executable_sha256");
+            await Assert.That(comparison.ProvenanceDifferences.Single().Name).IsEqualTo("executable_sha256");
             await Assert
                 .That(comparison.ProvenanceDifferences.Single().Current)
                 .IsEqualTo(current.Provenance.ExecutableSha256);
             await Assert.That(comparison.Summary.ProvenanceDifferenceCount).IsEqualTo(1);
             await Assert.That(comparison.ConditionDifferences).IsEmpty();
-            await Assert
-                .That(CompletionPolicy.CompareConversion(comparison, saved: true).ExitCode)
-                .IsEqualTo(0);
+            await Assert.That(CompletionPolicy.CompareConversion(comparison, saved: true).ExitCode).IsEqualTo(0);
         }
     }
 
@@ -122,16 +106,10 @@ internal class BaselineComparer_CompareConversionTests
         var current = ChangeCondition(baseline.CreateSnapshot(), condition);
 
         // Act
-        var comparison = BaselineComparer.CompareConversion(
-            baseline,
-            current,
-            baselinePath_,
-            currentPath_
-        );
+        var comparison = BaselineComparer.CompareConversion(baseline, current, baselinePath_, currentPath_);
 
         // Assert
-        var featureName =
-            condition == "feature.added" ? "changed" : baseline.Profile.Features[0].Name;
+        var featureName = condition == "feature.added" ? "changed" : baseline.Profile.Features[0].Name;
         string[] expectedNames = condition switch
         {
             "feature.default_enabled" => [$"features.{featureName}.default_enabled"],
@@ -148,18 +126,10 @@ internal class BaselineComparer_CompareConversionTests
             await Assert.That(comparison.Established).IsTrue();
             await Assert.That(comparison.Complete).IsTrue();
             await Assert.That(comparison.ConditionDifferences).IsNotEmpty();
-            await Assert
-                .That(comparison.ConditionDifferences.Select(x => x.Name))
-                .IsEquivalentTo(expectedNames);
-            await Assert
-                .That(comparison.ConditionDifferences.All(x => x.Baseline != x.Current))
-                .IsTrue();
-            await Assert
-                .That(comparison.Summary.ConditionDifferenceCount)
-                .IsEqualTo(comparison.ConditionDifferences.Count);
-            await Assert
-                .That(CompletionPolicy.CompareConversion(comparison, saved: true).ExitCode)
-                .IsEqualTo(1);
+            await Assert.That(comparison.ConditionDifferences.Select(x => x.Name)).IsEquivalentTo(expectedNames);
+            await Assert.That(comparison.ConditionDifferences.All(x => x.Baseline != x.Current)).IsTrue();
+            await Assert.That(comparison.Summary.ConditionDifferenceCount).IsEqualTo(comparison.ConditionDifferences.Count);
+            await Assert.That(CompletionPolicy.CompareConversion(comparison, saved: true).ExitCode).IsEqualTo(1);
         }
     }
 
@@ -179,16 +149,10 @@ internal class BaselineComparer_CompareConversionTests
         switch (property)
         {
             case "profile_input.sha256":
-                current.Profile.Inputs[0] = current.Profile.Inputs[0] with
-                {
-                    Sha256 = new string('f', 64),
-                };
+                current.Profile.Inputs[0] = current.Profile.Inputs[0] with { Sha256 = new string('f', 64) };
                 break;
             case "input.sha256":
-                current.Inputs[0] = input with
-                {
-                    Input = input.Input with { Sha256 = new string('f', 64) },
-                };
+                current.Inputs[0] = input with { Input = input.Input with { Sha256 = new string('f', 64) } };
                 break;
             case "artifact.sha256":
                 input.Artifacts[0] = input.Artifacts[0] with { Sha256 = new string('f', 64) };
@@ -206,25 +170,14 @@ internal class BaselineComparer_CompareConversionTests
         current = current with { Summary = current.Summarize() };
 
         // Act
-        var comparison = BaselineComparer.CompareConversion(
-            baseline,
-            current,
-            baselinePath_,
-            currentPath_
-        );
+        var comparison = BaselineComparer.CompareConversion(baseline, current, baselinePath_, currentPath_);
 
         // Assert
         using (Assert.Multiple())
         {
-            await Assert
-                .That(comparison.EntryDifferences.Any(x => x.Property == property))
-                .IsTrue();
-            await Assert
-                .That(comparison.Summary.EntryDifferenceCount)
-                .IsEqualTo(comparison.EntryDifferences.Count);
-            await Assert
-                .That(CompletionPolicy.CompareConversion(comparison, saved: true).ExitCode)
-                .IsEqualTo(1);
+            await Assert.That(comparison.EntryDifferences.Any(x => x.Property == property)).IsTrue();
+            await Assert.That(comparison.Summary.EntryDifferenceCount).IsEqualTo(comparison.EntryDifferences.Count);
+            await Assert.That(CompletionPolicy.CompareConversion(comparison, saved: true).ExitCode).IsEqualTo(1);
         }
     }
 
@@ -241,12 +194,7 @@ internal class BaselineComparer_CompareConversionTests
         var source = full.Profile.Inputs.Single(x => x.Path == "b.wast");
 
         // Act
-        var comparison = BaselineComparer.CompareConversion(
-            baseline,
-            current,
-            baselinePath_,
-            currentPath_
-        );
+        var comparison = BaselineComparer.CompareConversion(baseline, current, baselinePath_, currentPath_);
 
         // Assert
         (string Property, string Value)[] expected =
@@ -259,17 +207,13 @@ internal class BaselineComparer_CompareConversionTests
         {
             foreach (var (property, value) in expected)
             {
-                var difference = comparison.EntryDifferences.Single(x =>
-                    x.Path == source.Path && x.Property == property
-                );
+                var difference = comparison.EntryDifferences.Single(x => x.Path == source.Path && x.Property == property);
                 await Assert.That(difference.Baseline).IsEqualTo(added ? null : value);
                 await Assert.That(difference.Current).IsEqualTo(added ? value : null);
             }
             await Assert.That(comparison.Complete).IsTrue();
             await Assert.That(comparison.Uncompared).IsEmpty();
-            await Assert
-                .That(CompletionPolicy.CompareConversion(comparison, saved: true).ExitCode)
-                .IsEqualTo(1);
+            await Assert.That(CompletionPolicy.CompareConversion(comparison, saved: true).ExitCode).IsEqualTo(1);
         }
     }
 
@@ -281,46 +225,25 @@ internal class BaselineComparer_CompareConversionTests
         var current = baseline.CreateSnapshot();
         current.Inputs.RemoveAt(1);
         current.Inputs[0].Artifacts.Clear();
-        current
-            .Inputs[0]
-            .Artifacts.Add(
-                new("modules/new.wasm", ArtifactKind.Wasm, new string('f', 64), "a.wast")
-            );
+        current.Inputs[0].Artifacts.Add(new("modules/new.wasm", ArtifactKind.Wasm, new string('f', 64), "a.wast"));
         current = current with { Summary = current.Summarize() };
 
         // Act
-        var comparison = BaselineComparer.CompareConversion(
-            baseline,
-            current,
-            baselinePath_,
-            currentPath_
-        );
+        var comparison = BaselineComparer.CompareConversion(baseline, current, baselinePath_, currentPath_);
 
         // Assert
         using (Assert.Multiple())
         {
+            await Assert.That(comparison.EntryDifferences.Any(x => x.Path == "b.wast" && x.Current is null)).IsTrue();
             await Assert
-                .That(comparison.EntryDifferences.Any(x => x.Path == "b.wast" && x.Current is null))
+                .That(comparison.EntryDifferences.Any(x => x.Path == "modules/a.json" && x.Current is null))
                 .IsTrue();
             await Assert
-                .That(
-                    comparison.EntryDifferences.Any(x =>
-                        x.Path == "modules/a.json" && x.Current is null
-                    )
-                )
-                .IsTrue();
-            await Assert
-                .That(
-                    comparison.EntryDifferences.Any(x =>
-                        x.Path == "modules/new.wasm" && x.Baseline is null
-                    )
-                )
+                .That(comparison.EntryDifferences.Any(x => x.Path == "modules/new.wasm" && x.Baseline is null))
                 .IsTrue();
             await Assert.That(comparison.Complete).IsFalse();
             await Assert.That(comparison.Uncompared).IsNotEmpty();
-            await Assert
-                .That(CompletionPolicy.CompareConversion(comparison, saved: true).ExitCode)
-                .IsEqualTo(2);
+            await Assert.That(CompletionPolicy.CompareConversion(comparison, saved: true).ExitCode).IsEqualTo(2);
         }
     }
 
@@ -338,10 +261,7 @@ internal class BaselineComparer_CompareConversionTests
         switch (issue)
         {
             case "未処理":
-                baseline.Inputs[0] = baseline.Inputs[0] with
-                {
-                    Status = ConversionStatus.Unprocessed,
-                };
+                baseline.Inputs[0] = baseline.Inputs[0] with { Status = ConversionStatus.Unprocessed };
                 break;
             case "出力失敗":
                 baseline = baseline with { Completion = new(true, false) };
@@ -377,12 +297,8 @@ internal class BaselineComparer_CompareConversionTests
         {
             await Assert.That(comparison.Complete).IsFalse();
             await Assert.That(comparison.Uncompared).IsNotEmpty();
-            await Assert
-                .That(comparison.Summary.UncomparedCount)
-                .IsEqualTo(comparison.Uncompared.Count);
-            await Assert
-                .That(CompletionPolicy.CompareConversion(comparison, saved: true).ExitCode)
-                .IsEqualTo(2);
+            await Assert.That(comparison.Summary.UncomparedCount).IsEqualTo(comparison.Uncompared.Count);
+            await Assert.That(CompletionPolicy.CompareConversion(comparison, saved: true).ExitCode).IsEqualTo(2);
         }
     }
 
@@ -407,9 +323,7 @@ internal class BaselineComparer_CompareConversionTests
         {
             await Assert.That(comparison.Complete).IsTrue();
             await Assert.That(comparison.Summary.CurrentRunnerErrorCount).IsEqualTo(1);
-            await Assert
-                .That(CompletionPolicy.CompareConversion(comparison, saved: true).ExitCode)
-                .IsEqualTo(1);
+            await Assert.That(CompletionPolicy.CompareConversion(comparison, saved: true).ExitCode).IsEqualTo(1);
         }
     }
 
@@ -440,18 +354,14 @@ internal class BaselineComparer_CompareConversionTests
         {
             await Assert.That(await File.ReadAllTextAsync(baselinePath)).IsEqualTo(original);
             await Assert.That(document.RootElement.GetProperty("complete").GetBoolean()).IsTrue();
-            await Assert
-                .That(document.RootElement.GetProperty("kind").GetString())
-                .IsEqualTo("comparison_report");
+            await Assert.That(document.RootElement.GetProperty("kind").GetString()).IsEqualTo("comparison_report");
         }
     }
 
     [Test]
     [Arguments(true)]
     [Arguments(false)]
-    public async Task 片側だけの記録が未完了_問題のある比較側を未比較理由に残す(
-        bool baselineIncomplete
-    )
+    public async Task 片側だけの記録が未完了_問題のある比較側を未比較理由に残す(bool baselineIncomplete)
     {
         // Arrange
         var baseline = CreateManifest();
@@ -466,12 +376,7 @@ internal class BaselineComparer_CompareConversionTests
         }
 
         // Act
-        var comparison = BaselineComparer.CompareConversion(
-            baseline,
-            current,
-            baselinePath_,
-            currentPath_
-        );
+        var comparison = BaselineComparer.CompareConversion(baseline, current, baselinePath_, currentPath_);
 
         // Assert
         using (Assert.Multiple())
@@ -492,10 +397,7 @@ internal class BaselineComparer_CompareConversionTests
     [Arguments("生成物", false)]
     [Arguments("feature", true)]
     [Arguments("feature", false)]
-    public async Task 片側の同名項目が重複する_種類と比較側の件数を含む未比較理由を残す(
-        string kind,
-        bool baselineDuplicate
-    )
+    public async Task 片側の同名項目が重複する_種類と比較側の件数を含む未比較理由を残す(string kind, bool baselineDuplicate)
     {
         // Arrange
         var baseline = CreateManifest();
@@ -523,27 +425,18 @@ internal class BaselineComparer_CompareConversionTests
         }
 
         // Act
-        var comparison = BaselineComparer.CompareConversion(
-            baseline,
-            current,
-            baselinePath_,
-            currentPath_
-        );
+        var comparison = BaselineComparer.CompareConversion(baseline, current, baselinePath_, currentPath_);
 
         // Assert
         var reason = comparison
-            .Uncompared.Single(x =>
-                x.Target == name && x.Reason.StartsWith(kind, StringComparison.Ordinal)
-            )
+            .Uncompared.Single(x => x.Target == name && x.Reason.StartsWith(kind, StringComparison.Ordinal))
             .Reason;
         using (Assert.Multiple())
         {
             await Assert.That(comparison.Complete).IsFalse();
             await Assert
                 .That(reason)
-                .Contains(
-                    baselineDuplicate ? "baseline=2件、current=1件" : "baseline=1件、current=2件"
-                );
+                .Contains(baselineDuplicate ? "baseline=2件、current=1件" : "baseline=1件、current=2件");
         }
     }
 
@@ -562,21 +455,10 @@ internal class BaselineComparer_CompareConversionTests
         }
 
         // Act
-        var comparison = BaselineComparer.CompareConversion(
-            baseline,
-            current,
-            baselinePath_,
-            currentPath_
-        );
+        var comparison = BaselineComparer.CompareConversion(baseline, current, baselinePath_, currentPath_);
 
         // Assert
-        await Assert
-            .That(
-                comparison
-                    .EntryDifferences.Select(x => x.Path)
-                    .SequenceEqual(expectedInputPaths_)
-            )
-            .IsTrue();
+        await Assert.That(comparison.EntryDifferences.Select(x => x.Path).SequenceEqual(expectedInputPaths_)).IsTrue();
     }
 
     private static CorpusManifest CreateManifest()
@@ -590,22 +472,10 @@ internal class BaselineComparer_CompareConversionTests
         profile = condition switch
         {
             "profile.id" => profile with { Id = "changed" },
-            "spec.url" => profile with
-            {
-                Spec = profile.Spec with { Url = "https://changed.invalid/spec" },
-            },
-            "spec.commit" => profile with
-            {
-                Spec = profile.Spec with { Commit = new string('a', 40) },
-            },
-            "wabt.url" => profile with
-            {
-                Wabt = profile.Wabt with { Url = "https://changed.invalid/wabt" },
-            },
-            "wabt.commit" => profile with
-            {
-                Wabt = profile.Wabt with { Commit = new string('b', 40) },
-            },
+            "spec.url" => profile with { Spec = profile.Spec with { Url = "https://changed.invalid/spec" } },
+            "spec.commit" => profile with { Spec = profile.Spec with { Commit = new string('a', 40) } },
+            "wabt.url" => profile with { Wabt = profile.Wabt with { Url = "https://changed.invalid/wabt" } },
+            "wabt.commit" => profile with { Wabt = profile.Wabt with { Commit = new string('b', 40) } },
             "working_directory" => profile with { WorkingDirectory = "changed" },
             "conversion.check" => profile with
             {
@@ -613,24 +483,15 @@ internal class BaselineComparer_CompareConversionTests
             },
             "conversion.canonical_lebs" => profile with
             {
-                Conversion = profile.Conversion with
-                {
-                    CanonicalLebs = !profile.Conversion.CanonicalLebs,
-                },
+                Conversion = profile.Conversion with { CanonicalLebs = !profile.Conversion.CanonicalLebs },
             },
             "conversion.relocatable" => profile with
             {
-                Conversion = profile.Conversion with
-                {
-                    Relocatable = !profile.Conversion.Relocatable,
-                },
+                Conversion = profile.Conversion with { Relocatable = !profile.Conversion.Relocatable },
             },
             "conversion.debug_names" => profile with
             {
-                Conversion = profile.Conversion with
-                {
-                    DebugNames = !profile.Conversion.DebugNames,
-                },
+                Conversion = profile.Conversion with { DebugNames = !profile.Conversion.DebugNames },
             },
             _ => profile,
         };
@@ -640,16 +501,10 @@ internal class BaselineComparer_CompareConversionTests
                 profile.LogicalArguments.Add("--changed");
                 break;
             case "feature.default_enabled":
-                profile.Features[0] = profile.Features[0] with
-                {
-                    DefaultEnabled = !profile.Features[0].DefaultEnabled,
-                };
+                profile.Features[0] = profile.Features[0] with { DefaultEnabled = !profile.Features[0].DefaultEnabled };
                 break;
             case "feature.enabled":
-                profile.Features[0] = profile.Features[0] with
-                {
-                    Enabled = !profile.Features[0].Enabled,
-                };
+                profile.Features[0] = profile.Features[0] with { Enabled = !profile.Features[0].Enabled };
                 break;
             case "feature.added":
                 profile.Features.Add(new("changed", false, false));

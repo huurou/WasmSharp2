@@ -10,10 +10,7 @@ internal class CorpusVerifier_CreateScriptTests
     public async Task 入れ子の入力のJSONから作る_参照をJSONの親基準のmanifest相対pathへ解決する()
     {
         // Arrange
-        var document = ScriptDocument.Parse(
-            Encoding.UTF8.GetBytes(CorpusFixture.B_JSON),
-            "modules/simd/b.json"
-        );
+        var document = ScriptDocument.Parse(Encoding.UTF8.GetBytes(CorpusFixture.B_JSON), "modules/simd/b.json");
 
         // Act
         var script = CorpusVerifier.CreateScript(document, "modules/simd/b.json");
@@ -24,14 +21,8 @@ internal class CorpusVerifier_CreateScriptTests
             await Assert.That(script.SourceFilename).IsEqualTo(CorpusFixture.B);
             await Assert.That(script.EnumerationComplete).IsTrue();
             await Assert.That(script.CommandCount).IsEqualTo(1);
-            await Assert
-                .That(script.Commands.SequenceEqual([new(0, 1, "module", null, "b.0.wasm")]))
-                .IsTrue();
-            await Assert
-                .That(
-                    script.References.SequenceEqual([new(0, "b.0.wasm", "modules/simd/b.0.wasm")])
-                )
-                .IsTrue();
+            await Assert.That(script.Commands.SequenceEqual([new(0, 1, "module", null, "b.0.wasm")])).IsTrue();
+            await Assert.That(script.References.SequenceEqual([new(0, "b.0.wasm", "modules/simd/b.0.wasm")])).IsTrue();
         }
     }
 
@@ -54,9 +45,7 @@ internal class CorpusVerifier_CreateScriptTests
         {
             await Assert.That(script.Commands.Count).IsEqualTo(2);
             await Assert.That(script.Commands[0].Filename).IsEqualTo("../../a.0.wasm");
-            await Assert
-                .That(script.References.SequenceEqual([new(1, "a.1.wasm", "modules/a.1.wasm")]))
-                .IsTrue();
+            await Assert.That(script.References.SequenceEqual([new(1, "a.1.wasm", "modules/a.1.wasm")])).IsTrue();
         }
     }
 

@@ -10,11 +10,7 @@ internal class Interpreter_I32XorTests
     [Arguments(-1, -1, 0)]
     [Arguments(unchecked((int)0xAAAAAAAA), unchecked((int)0x55555555), -1)]
     [Arguments(unchecked((int)0x80000000), -1, unchecked((int)0x7FFFFFFF))]
-    public async Task 入力0と全bit1と最上位bitを含む値_同幅の排他的論理和を返す(
-        int left,
-        int right,
-        int expected
-    )
+    public async Task 入力0と全bit1と最上位bitを含む値_同幅の排他的論理和を返す(int left, int right, int expected)
     {
         // Arrange
         WasmValue[] operands = [WasmValue.FromI32(left), WasmValue.FromI32(right)];

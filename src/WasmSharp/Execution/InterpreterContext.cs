@@ -8,7 +8,6 @@ namespace WasmSharp.Execution;
 /// </summary>
 internal sealed class InterpreterContext
 {
-
     /// <summary>
     /// 関数呼び出しのフレームを保持する配列
     /// </summary>
@@ -98,11 +97,7 @@ internal sealed class InterpreterContext
     {
         // 加算前に広げ、両方の必要数を検査してから配列を拡張する。
         var frameCapacity = CalculateCapacity(frames_.Length, (ulong)FrameCount + 1, function);
-        var valueCapacity = CalculateCapacity(
-            values_.Length,
-            operandBase + (ulong)maxOperandStack,
-            function
-        );
+        var valueCapacity = CalculateCapacity(values_.Length, operandBase + (ulong)maxOperandStack, function);
         if (frameCapacity != frames_.Length)
         {
             Array.Resize(ref frames_, frameCapacity);
@@ -129,11 +124,7 @@ internal sealed class InterpreterContext
                 "実行スタックの必要数がコレクションの保持上限を超えました。",
                 WasmImplementationLimitReason.CollectionSize,
                 Array.MaxLength,
-                new WasmFailureLocation(
-                    Stage,
-                    function.Definition.BodyOffset,
-                    function.FunctionIndex
-                )
+                new WasmFailureLocation(Stage, function.Definition.BodyOffset, function.FunctionIndex)
             );
         }
         if (requiredCount <= (ulong)capacity)

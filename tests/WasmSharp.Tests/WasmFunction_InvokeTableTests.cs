@@ -20,18 +20,13 @@ internal partial class WasmFunction_InvokeTests
         var executionContext = new WasmExecutionContext();
         var module = CreateBasicTableModule(kind, tableIndex);
         var importedKind = tableIndex == 0 ? kind : (byte)(kind == 0x70 ? 0x6F : 0x70);
-        var imported = new WasmTable(
-            (importedKind == 0x70 ? WasmValueKind.FuncRef : WasmValueKind.ExternRef),
-            new(1, 4)
-        );
+        var imported = new WasmTable((importedKind == 0x70 ? WasmValueKind.FuncRef : WasmValueKind.ExternRef), new(1, 4));
         var host = new WasmHostModule("env");
         host.Define("t", imported);
         var instance = module.Instantiate(executionContext, [host]);
         var selected = instance.GetTable(tableIndex == 0 ? "imported" : "defined");
         var other = instance.GetTable(tableIndex == 0 ? "defined" : "imported");
-        var before = TableHandlerFixture.CreateReference(
-            (kind == 0x70 ? WasmValueKind.FuncRef : WasmValueKind.ExternRef)
-        );
+        var before = TableHandlerFixture.CreateReference((kind == 0x70 ? WasmValueKind.FuncRef : WasmValueKind.ExternRef));
         var value = TableHandlerFixture.CreateReference(
             (kind == 0x70 ? WasmValueKind.FuncRef : WasmValueKind.ExternRef),
             isNull
@@ -55,60 +50,38 @@ internal partial class WasmFunction_InvokeTests
     [Test]
     [Arguments((byte)0x70)]
     [Arguments((byte)0x6F)]
-    public async Task 共有tableを複数instanceから更新と増大する_ホストとguestが同じ内容と要素数を参照する(
-        byte kind
-    )
+    public async Task 共有tableを複数instanceから更新と増大する_ホストとguestが同じ内容と要素数を参照する(byte kind)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
         var module = CreateBasicTableModule(kind, 0);
-        var table = new WasmTable(
-            (kind == 0x70 ? WasmValueKind.FuncRef : WasmValueKind.ExternRef),
-            new(1, 4)
-        );
+        var table = new WasmTable((kind == 0x70 ? WasmValueKind.FuncRef : WasmValueKind.ExternRef), new(1, 4));
         var host = new WasmHostModule("env");
         host.Define("t", table);
         var first = module.Instantiate(executionContext, [host]);
         var second = module.Instantiate(executionContext, [host]);
-        var original = TableHandlerFixture.CreateReference(
-            (kind == 0x70 ? WasmValueKind.FuncRef : WasmValueKind.ExternRef)
-        );
-        var added = TableHandlerFixture.CreateReference(
-            (kind == 0x70 ? WasmValueKind.FuncRef : WasmValueKind.ExternRef)
-        );
+        var original = TableHandlerFixture.CreateReference((kind == 0x70 ? WasmValueKind.FuncRef : WasmValueKind.ExternRef));
+        var added = TableHandlerFixture.CreateReference((kind == 0x70 ? WasmValueKind.FuncRef : WasmValueKind.ExternRef));
         table.Set(0, original);
 
         // Act
         var firstValues = first.GetFunction("set-get").Invoke(executionContext, [WasmValue.FromI32(0), added]).Values;
         var grown = second.GetFunction("grow-size").Invoke(executionContext, [original, WasmValue.FromI32(2)]).Values;
         var zero = first.GetFunction("grow-size").Invoke(executionContext, [added, WasmValue.FromI32(0)]).Values;
-        var secondValues = second
-            .GetFunction("set-get")
-            .Invoke(executionContext, [WasmValue.FromI32(2), added])
-            .Values;
+        var secondValues = second.GetFunction("set-get").Invoke(executionContext, [WasmValue.FromI32(2), added]).Values;
 
         // Assert
         using (Assert.Multiple())
         {
-            await Assert
-                .That(firstValues.SequenceEqual([original, added, WasmValue.FromI32(1)]))
-                .IsTrue();
-            await Assert
-                .That(grown.SequenceEqual([WasmValue.FromI32(1), WasmValue.FromI32(3)]))
-                .IsTrue();
-            await Assert
-                .That(zero.SequenceEqual([WasmValue.FromI32(3), WasmValue.FromI32(3)]))
-                .IsTrue();
-            await Assert
-                .That(secondValues.SequenceEqual([original, added, WasmValue.FromI32(3)]))
-                .IsTrue();
+            await Assert.That(firstValues.SequenceEqual([original, added, WasmValue.FromI32(1)])).IsTrue();
+            await Assert.That(grown.SequenceEqual([WasmValue.FromI32(1), WasmValue.FromI32(3)])).IsTrue();
+            await Assert.That(zero.SequenceEqual([WasmValue.FromI32(3), WasmValue.FromI32(3)])).IsTrue();
+            await Assert.That(secondValues.SequenceEqual([original, added, WasmValue.FromI32(3)])).IsTrue();
             await Assert.That(table.Count).IsEqualTo(3u);
             await Assert.That(table.Get(0)).IsEqualTo(added);
             await Assert.That(table.Get(1)).IsEqualTo(original);
             await Assert.That(table.Get(2)).IsEqualTo(added);
-            await Assert
-                .That(ReferenceEquals(first.GetTable("defined"), second.GetTable("defined")))
-                .IsFalse();
+            await Assert.That(ReferenceEquals(first.GetTable("defined"), second.GetTable("defined"))).IsFalse();
         }
     }
 
@@ -117,10 +90,7 @@ internal partial class WasmFunction_InvokeTests
     [Arguments((byte)0x6F, 4)]
     [Arguments((byte)0x70, -1)]
     [Arguments((byte)0x6F, int.MinValue)]
-    public async Task 増分が宣言上限または保持上限を超える_負の1を返し要素数と内容を変更しない(
-        byte kind,
-        int delta
-    )
+    public async Task 増分が宣言上限または保持上限を超える_負の1を返し要素数と内容を変更しない(byte kind, int delta)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
@@ -132,29 +102,28 @@ internal partial class WasmFunction_InvokeTests
         var host = new WasmHostModule("env");
         host.Define("t", table);
         var instance = module.Instantiate(executionContext, [host]);
-        var original = TableHandlerFixture.CreateReference(
-            (kind == 0x70 ? WasmValueKind.FuncRef : WasmValueKind.ExternRef)
-        );
+        var original = TableHandlerFixture.CreateReference((kind == 0x70 ? WasmValueKind.FuncRef : WasmValueKind.ExternRef));
         table.Set(0, original);
 
         // Act
         var values = instance
             .GetFunction("grow-size")
-            .Invoke(executionContext, [
-                TableHandlerFixture.CreateReference(
-                    (kind == 0x70 ? WasmValueKind.FuncRef : WasmValueKind.ExternRef),
-                    true
-                ),
-                WasmValue.FromI32(delta),
-            ])
+            .Invoke(
+                executionContext,
+                [
+                    TableHandlerFixture.CreateReference(
+                        (kind == 0x70 ? WasmValueKind.FuncRef : WasmValueKind.ExternRef),
+                        true
+                    ),
+                    WasmValue.FromI32(delta),
+                ]
+            )
             .Values;
 
         // Assert
         using (Assert.Multiple())
         {
-            await Assert
-                .That(values.SequenceEqual([WasmValue.FromI32(-1), WasmValue.FromI32(1)]))
-                .IsTrue();
+            await Assert.That(values.SequenceEqual([WasmValue.FromI32(-1), WasmValue.FromI32(1)])).IsTrue();
             await Assert.That(table.Count).IsEqualTo(1u);
             await Assert.That(table.Get(0)).IsEqualTo(original);
         }
@@ -165,10 +134,7 @@ internal partial class WasmFunction_InvokeTests
     [Arguments(false, int.MinValue)]
     [Arguments(true, 1)]
     [Arguments(true, -1)]
-    public async Task 符号なし要素添字が範囲外_内容を変更せず関数と命令位置付きのInvoke_trapになる(
-        bool write,
-        int index
-    )
+    public async Task 符号なし要素添字が範囲外_内容を変更せず関数と命令位置付きのInvoke_trapになる(bool write, int index)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
@@ -201,17 +167,8 @@ internal partial class WasmFunction_InvokeTests
         using (Assert.Multiple())
         {
             await Assert.That(exception!.Reason).IsEqualTo(WasmTrapReason.TableOutOfBounds);
-            await Assert
-                .That(
-                    exception.Message.StartsWith(
-                        "out of bounds table access",
-                        StringComparison.Ordinal
-                    )
-                )
-                .IsTrue();
-            await Assert
-                .That(exception.Location)
-                .IsEqualTo(new(WasmProcessingStage.Invoke, expectedOffset, 1));
+            await Assert.That(exception.Message.StartsWith("out of bounds table access", StringComparison.Ordinal)).IsTrue();
+            await Assert.That(exception.Location).IsEqualTo(new(WasmProcessingStage.Invoke, expectedOffset, 1));
             await Assert.That(instance.GetTable("t").Get(0)).IsEqualTo(original);
         }
     }
@@ -232,9 +189,7 @@ internal partial class WasmFunction_InvokeTests
                     HostLinkingModuleBinary.Functions(1),
                     HostLinkingModuleBinary.Tables((0x6F, 1, 2)),
                     HostLinkingModuleBinary.Exports(("run", 0, 1), ("t", 1, 0)),
-                    HostLinkingModuleBinary.Code(
-                        ([], [0x10, 0, 0xD0, 0x6F, 0x41, 1, 0xFC, 0x0F, 0, 0x0B])
-                    )
+                    HostLinkingModuleBinary.Code(([], [0x10, 0, 0xD0, 0x6F, 0x41, 1, 0xFC, 0x0F, 0, 0x0B]))
                 )
             )
             .Validate()
@@ -242,15 +197,9 @@ internal partial class WasmFunction_InvokeTests
         var table = instance.GetTable("t");
 
         // Act & Assert
-        await Assert
-            .That(() => table.Get(uint.MaxValue))
-            .ThrowsExactly<ArgumentOutOfRangeException>();
-        await Assert
-            .That(() => table.Set(0, WasmValue.FromI32(1)))
-            .ThrowsExactly<ArgumentException>();
-        await Assert
-            .That(() => table.TryGrow(0, WasmValue.FromFuncRef(null), out _))
-            .ThrowsExactly<ArgumentException>();
+        await Assert.That(() => table.Get(uint.MaxValue)).ThrowsExactly<ArgumentOutOfRangeException>();
+        await Assert.That(() => table.Set(0, WasmValue.FromI32(1))).ThrowsExactly<ArgumentException>();
+        await Assert.That(() => table.TryGrow(0, WasmValue.FromFuncRef(null), out _)).ThrowsExactly<ArgumentException>();
         var exception = await Assert
             .That(() => instance.GetFunction("run").Invoke(executionContext, []))
             .ThrowsExactly<OutOfMemoryException>();
@@ -266,17 +215,9 @@ internal partial class WasmFunction_InvokeTests
         return WasmModule
             .Decode(
                 HostLinkingModuleBinary.Create(
-                    HostLinkingModuleBinary.Types(
-                        ([0x7F, kind], [kind, kind, 0x7F]),
-                        ([kind, 0x7F], [0x7F, 0x7F])
-                    ),
+                    HostLinkingModuleBinary.Types(([0x7F, kind], [kind, kind, 0x7F]), ([kind, 0x7F], [0x7F, 0x7F])),
                     HostLinkingModuleBinary.Imports(
-                        (
-                            "env",
-                            "t",
-                            1,
-                            [importedKind, .. HostLinkingModuleBinary.Limits(1, maximum)]
-                        )
+                        ("env", "t", 1, [importedKind, .. HostLinkingModuleBinary.Limits(1, maximum)])
                     ),
                     HostLinkingModuleBinary.Functions(0, 1),
                     HostLinkingModuleBinary.Tables((definedKind, 1, maximum)),
@@ -310,10 +251,7 @@ internal partial class WasmFunction_InvokeTests
                                 0x0B,
                             ]
                         ),
-                        (
-                            [],
-                            [0x20, 0, 0x20, 1, 0xFC, 0x0F, tableIndex, 0xFC, 0x10, tableIndex, 0x0B]
-                        )
+                        ([], [0x20, 0, 0x20, 1, 0xFC, 0x0F, tableIndex, 0xFC, 0x10, tableIndex, 0x0B])
                     )
                 )
             )

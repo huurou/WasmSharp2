@@ -12,11 +12,7 @@ internal class Interpreter_I32x4AllTrueTests
     [Arguments(0xFFFFFFFFFFFFFFFFUL, 0xFFFFFFFFFFFFFFFFUL, 1)]
     [Arguments(0xFFFFFFFFFFFFFFFFUL, 0x00000000FFFFFFFFUL, 0)]
     [Arguments(0xFFFFFFFF00000000UL, 0xFFFFFFFFFFFFFFFFUL, 0)]
-    public async Task ゼロlaneと全非ゼロlane_各laneの非ゼロ判定を返す(
-        ulong low64,
-        ulong high64,
-        int expected
-    )
+    public async Task ゼロlaneと全非ゼロlane_各laneの非ゼロ判定を返す(ulong low64, ulong high64, int expected)
     {
         // Arrange
         WasmValue[] operands = [WasmValue.FromV128(low64, high64)];

@@ -27,22 +27,15 @@ internal class BenchmarkProcess_SetupTests
             .Throws<IOException>();
         fixture.RestoreCheckWrites();
         process.Cleanup(() => { });
-        var failed = RunStore
-            .ReadChecks(fixture.Run.DirectoryPath, json_)
-            .Single(x => x.Check.Failures.Count > 0)
-            .Check;
+        var failed = RunStore.ReadChecks(fixture.Run.DirectoryPath, json_).Single(x => x.Check.Failures.Count > 0).Check;
         using (Assert.Multiple())
         {
             await Assert.That(failed.Precheck!.Status).IsEqualTo(ResultStatus.Succeeded);
             await Assert.That(failed.ExecutionStarted).IsFalse();
             await Assert.That(failed.Failures.Single().Stage).IsEqualTo(RunStage.Saving);
             await Assert.That(failed.Failures.Single().Reason).IsNotEmpty();
-            await Assert
-                .That(failed.Failures.Single().LastConfirmedStage)
-                .IsEqualTo(RunStage.Precheck);
-            await Assert
-                .That(failed.Failures.Single().ExceptionType)
-                .IsEqualTo(exception!.GetType().FullName);
+            await Assert.That(failed.Failures.Single().LastConfirmedStage).IsEqualTo(RunStage.Precheck);
+            await Assert.That(failed.Failures.Single().ExceptionType).IsEqualTo(exception!.GetType().FullName);
         }
     }
 
@@ -90,10 +83,7 @@ internal class BenchmarkProcess_SetupTests
                 )
             )
             .Throws<InvalidOperationException>();
-        var failed = RunStore
-            .ReadChecks(fixture.Run.DirectoryPath, json_)
-            .Single(x => x.Check.Failures.Count > 0)
-            .Check;
+        var failed = RunStore.ReadChecks(fixture.Run.DirectoryPath, json_).Single(x => x.Check.Failures.Count > 0).Check;
         using (Assert.Multiple())
         {
             await Assert.That(failed.Precheck!.Status).IsEqualTo(ResultStatus.Failed);
@@ -107,9 +97,7 @@ internal class BenchmarkProcess_SetupTests
             await Assert.That(failed.Failures.Single().CaseId).IsEqualTo("invoke.single");
             await Assert.That(failed.Failures.Single().Stage).IsEqualTo(RunStage.Precheck);
             await Assert.That(failed.Failures.Single().Reason).IsNotEmpty();
-            await Assert
-                .That(failed.Failures.Single().ExceptionType)
-                .IsEqualTo(typeof(InvalidOperationException).FullName);
+            await Assert.That(failed.Failures.Single().ExceptionType).IsEqualTo(typeof(InvalidOperationException).FullName);
         }
     }
 
@@ -129,17 +117,15 @@ internal class BenchmarkProcess_SetupTests
     [Arguments("decode-validate.small", nameof(PreparationBenchmarks.DecodeValidateSmall))]
     [Arguments("decode-validate.large", nameof(PreparationBenchmarks.DecodeValidateLarge))]
     [Arguments("instantiate.large", nameof(PreparationBenchmarks.InstantiateLarge))]
-    public async Task 設定から測定を準備する_前後検査と実行開始を同じprocessへ保存する(
-        string caseId,
-        string method
-    )
+    public async Task 設定から測定を準備する_前後検査と実行開始を同じprocessへ保存する(string caseId, string method)
     {
         // Arrange
         using var assets = new AssetLoadingFixture();
-        var preparation = caseId.StartsWith("decode", StringComparison.Ordinal) ||
-            caseId == "instantiate.large";
+        var preparation = caseId.StartsWith("decode", StringComparison.Ordinal) || caseId == "instantiate.large";
         assets.SaveAssets(
-            preparation ? PreparationFixture.CreateAssets(json_, methods_) : InvokeFixture.CreateAssets(caseId, json_, methods_)
+            preparation
+                ? PreparationFixture.CreateAssets(json_, methods_)
+                : InvokeFixture.CreateAssets(caseId, json_, methods_)
         );
         using var run = new RunStoreFixture();
         RunStore.Create(run.DirectoryPath, run.Manifest with { PlannedCaseIds = [caseId] }, json_);
@@ -151,10 +137,7 @@ internal class BenchmarkProcess_SetupTests
             [caseId]
         );
         var path = Path.Combine(run.DirectoryPath, "config.json");
-        File.WriteAllBytes(
-            path,
-            JsonSerializer.SerializeToUtf8Bytes(configuration, json_.Options)
-        );
+        File.WriteAllBytes(path, JsonSerializer.SerializeToUtf8Bytes(configuration, json_.Options));
         var previous = Environment.GetEnvironmentVariable(RunConfiguration.ENVIRONMENT_VARIABLE);
         Environment.SetEnvironmentVariable(RunConfiguration.ENVIRONMENT_VARIABLE, path);
         try
@@ -169,9 +152,7 @@ internal class BenchmarkProcess_SetupTests
 
             // Assert
             var checks = RunStore.ReadChecks(run.DirectoryPath, json_).Select(x => x.Check).ToList();
-            var prechecked = checks.Single(x =>
-                x.Precheck?.Status == ResultStatus.Succeeded && !x.ExecutionStarted
-            );
+            var prechecked = checks.Single(x => x.Precheck?.Status == ResultStatus.Succeeded && !x.ExecutionStarted);
             var completed = checks.Single(x => x.Postcheck is not null);
             using (Assert.Multiple())
             {
@@ -186,13 +167,9 @@ internal class BenchmarkProcess_SetupTests
                     await Assert.That(observation.Actual).IsEqualTo(observation.Expected);
                     await Assert.That(observation.Matches).IsTrue();
                 }
-                await Assert
-                    .That(checks.Any(x => x.Precheck?.Status == ResultStatus.Succeeded))
-                    .IsTrue();
+                await Assert.That(checks.Any(x => x.Precheck?.Status == ResultStatus.Succeeded)).IsTrue();
                 await Assert.That(checks.Any(x => x.ExecutionStarted)).IsTrue();
-                await Assert
-                    .That(checks.Any(x => x.Postcheck?.Status == ResultStatus.Succeeded))
-                    .IsTrue();
+                await Assert.That(checks.Any(x => x.Postcheck?.Status == ResultStatus.Succeeded)).IsTrue();
                 await Assert
                     .That(
                         checks.All(x =>
@@ -204,22 +181,12 @@ internal class BenchmarkProcess_SetupTests
                     )
                     .IsTrue();
                 await Assert.That(checks.Last().LoadedAssemblies.Count).IsEqualTo(2);
-                await Assert
-                    .That(
-                        checks.All(x =>
-                            x.RuntimeVersion == EnvironmentCapture.CurrentRuntimeVersion
-                        )
-                    )
-                    .IsTrue();
+                await Assert.That(checks.All(x => x.RuntimeVersion == EnvironmentCapture.CurrentRuntimeVersion)).IsTrue();
                 if (OperatingSystem.IsWindows() || OperatingSystem.IsLinux())
                 {
                     using var current = Process.GetCurrentProcess();
-                    await Assert
-                        .That(completed.AffinityBefore)
-                        .IsEqualTo(current.ProcessorAffinity.ToInt64());
-                    await Assert
-                        .That(completed.AffinityAfter)
-                        .IsEqualTo(current.ProcessorAffinity.ToInt64());
+                    await Assert.That(completed.AffinityBefore).IsEqualTo(current.ProcessorAffinity.ToInt64());
+                    await Assert.That(completed.AffinityAfter).IsEqualTo(current.ProcessorAffinity.ToInt64());
                     await Assert.That(completed.AffinityUnavailableReason).IsNull();
                 }
                 await Assert
@@ -228,9 +195,7 @@ internal class BenchmarkProcess_SetupTests
                             .Last()
                             .LoadedAssemblies.All(x =>
                                 Path.IsPathFullyQualified(x.Path)
-                                && Convert.ToHexStringLower(
-                                    SHA256.HashData(File.ReadAllBytes(x.Path))
-                                ) == x.Sha256
+                                && Convert.ToHexStringLower(SHA256.HashData(File.ReadAllBytes(x.Path))) == x.Sha256
                             )
                     )
                     .IsTrue();

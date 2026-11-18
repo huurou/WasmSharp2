@@ -36,20 +36,9 @@ internal static class ExecutionFunctionFixture
             null
         )
         {
-            FunctionCodes =
-            [
-                new([], [], 0),
-                new(instructions, locals.AsSpan(), maxOperandStack, branchTargets),
-            ],
+            FunctionCodes = [new([], [], 0), new(instructions, locals.AsSpan(), maxOperandStack, branchTargets)],
         };
         return (DefinedFunction)
-            new WasmInstance(
-                module,
-                new(1),
-                [],
-                [],
-                memories.IsDefault ? [] : memories,
-                []
-            ).Functions[1];
+            new WasmInstance(module, new(1), [], [], memories.IsDefault ? [] : memories, []).Functions[1];
     }
 }

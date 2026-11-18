@@ -6,24 +6,9 @@ namespace WasmSharp.Tests;
 internal partial class WasmFunction_InvokeTests
 {
     [Test]
-    [Arguments(
-        "0C",
-        "0123456789ABCDEFFEDCBA9876543210",
-        0xEFCDAB8967452301UL,
-        0x1032547698BADCFEUL
-    )]
-    [Arguments(
-        "8C00",
-        "4523C17F0000000000000080230180FF",
-        0x000000007FC12345UL,
-        0xFF80012380000000UL
-    )]
-    [Arguments(
-        "8C80808000",
-        "BC9A78563412F87F0000000000000080",
-        0x7FF8123456789ABCUL,
-        0x8000000000000000UL
-    )]
+    [Arguments("0C", "0123456789ABCDEFFEDCBA9876543210", 0xEFCDAB8967452301UL, 0x1032547698BADCFEUL)]
+    [Arguments("8C00", "4523C17F0000000000000080230180FF", 0x000000007FC12345UL, 0xFF80012380000000UL)]
+    [Arguments("8C80808000", "BC9A78563412F87F0000000000000080", 0x7FF8123456789ABCUL, 0x8000000000000000UL)]
     public async Task V128定数の最短か許容非最短番号がある_両入力の4段階で全bitを保持する(
         string opcode,
         string bits,
@@ -52,9 +37,7 @@ internal partial class WasmFunction_InvokeTests
             // Assert
             using (Assert.Multiple())
             {
-                await Assert
-                    .That(module.Functions[0].Instructions[0].Immediate.AsV128())
-                    .IsEqualTo((low, high));
+                await Assert.That(module.Functions[0].Instructions[0].Immediate.AsV128()).IsEqualTo((low, high));
                 await Assert.That(result.Values.Length).IsEqualTo(1);
                 await Assert.That(result.Values[0].AsV128()).IsEqualTo((low, high));
             }
@@ -68,10 +51,7 @@ internal partial class WasmFunction_InvokeTests
     [Arguments(true, 0)]
     [Arguments(true, 1)]
     [Arguments(true, int.MinValue)]
-    public async Task V128のselectがある_I32条件で選択したNaNと符号付きゼロの全bitを保持する(
-        bool typed,
-        int condition
-    )
+    public async Task V128のselectがある_I32条件で選択したNaNと符号付きゼロの全bitを保持する(bool typed, int condition)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
@@ -94,17 +74,13 @@ internal partial class WasmFunction_InvokeTests
             .Invoke(executionContext, [first, second, WasmValue.FromI32(condition)]);
 
         // Assert
-        await Assert
-            .That(result.Values[0].AsV128())
-            .IsEqualTo((condition != 0 ? first : second).AsV128());
+        await Assert.That(result.Values[0].AsV128()).IsEqualTo((condition != 0 ? first : second).AsV128());
     }
 
     [Test]
     [Arguments(1)]
     [Arguments(2)]
-    public async Task V128の複数値をloopで交換して分岐する_Dropした値を残さず全bitと結果順序を保つ(
-        int iterations
-    )
+    public async Task V128の複数値をloopで交換して分岐する_Dropした値を残さず全bitと結果順序を保つ(int iterations)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
@@ -113,10 +89,7 @@ internal partial class WasmFunction_InvokeTests
         var function = WasmModule
             .Decode(
                 HostLinkingModuleBinary.Create(
-                    HostLinkingModuleBinary.Types(
-                        ([0x7B, 0x7B, 0x7F], [0x7B, 0x7B]),
-                        ([0x7B, 0x7B], [0x7B, 0x7B])
-                    ),
+                    HostLinkingModuleBinary.Types(([0x7B, 0x7B, 0x7F], [0x7B, 0x7B]), ([0x7B, 0x7B], [0x7B, 0x7B])),
                     HostLinkingModuleBinary.Functions(0),
                     HostLinkingModuleBinary.Exports(("run", 0, 0)),
                     HostLinkingModuleBinary.Code(
@@ -169,9 +142,7 @@ internal partial class WasmFunction_InvokeTests
         var result = function.Invoke(executionContext, [first, second, WasmValue.FromI32(iterations)]);
 
         // Assert
-        await Assert
-            .That(result.Values.SequenceEqual(iterations == 1 ? [second, first] : [first, second]))
-            .IsTrue();
+        await Assert.That(result.Values.SequenceEqual(iterations == 1 ? [second, first] : [first, second])).IsTrue();
     }
 
     [Test]
@@ -207,9 +178,7 @@ internal partial class WasmFunction_InvokeTests
                     HostLinkingModuleBinary.Functions(2),
                     HostLinkingModuleBinary.Globals((0x7F, false, [0x41, 9, 0x0B])),
                     HostLinkingModuleBinary.Exports(("run", 0, 0)),
-                    HostLinkingModuleBinary.Code(
-                        ([], [0x20, 0, 0x20, 1, 0x20, 2, 0x11, 1, 0, 0x0B])
-                    )
+                    HostLinkingModuleBinary.Code(([], [0x20, 0, 0x20, 1, 0x20, 2, 0x11, 1, 0, 0x0B]))
                 )
             )
             .Validate();
@@ -225,13 +194,9 @@ internal partial class WasmFunction_InvokeTests
         // Assert
         using (Assert.Multiple())
         {
-            await Assert
-                .That(result.Values.SequenceEqual([second, first, WasmValue.FromI32(42)]))
-                .IsTrue();
+            await Assert.That(result.Values.SequenceEqual([second, first, WasmValue.FromI32(42)])).IsTrue();
             await Assert.That(module.Types[1]).IsNotSameReferenceAs(callee.GetFunction("run").Type);
-            await Assert
-                .That(table.Get(0).AsFuncRef())
-                .IsSameReferenceAs(callee.GetFunction("run"));
+            await Assert.That(table.Get(0).AsFuncRef()).IsSameReferenceAs(callee.GetFunction("run"));
         }
     }
 
@@ -374,9 +339,7 @@ internal partial class WasmFunction_InvokeTests
             await Assert.That(observed[1]).IsSameReferenceAs(throughReexport);
             await Assert.That(source.GetFunction("host")).IsSameReferenceAs(host);
             await Assert.That(throughReexport.GetFunction("host")).IsSameReferenceAs(host);
-            await Assert
-                .That(throughDefinition.GetFunction("host"))
-                .IsSameReferenceAs(source.GetFunction("run"));
+            await Assert.That(throughDefinition.GetFunction("host")).IsSameReferenceAs(source.GetFunction("run"));
             await Assert.That(host.Type.Parameters.SequenceEqual([WasmValueKind.V128])).IsTrue();
             await Assert.That(host.Type.Results.SequenceEqual([WasmValueKind.V128])).IsTrue();
         }
@@ -443,16 +406,9 @@ internal partial class WasmFunction_InvokeTests
             .Decode(
                 HostLinkingModuleBinary.Create(
                     HostLinkingModuleBinary.Types(([0x7B], [0x7B]), ([0x7B], [0x7B, 0x7B, 0x7B])),
-                    HostLinkingModuleBinary.Imports(
-                        ("env", "host", 0, [0]),
-                        ("env", "nested", 0, [0])
-                    ),
+                    HostLinkingModuleBinary.Imports(("env", "host", 0, [0]), ("env", "nested", 0, [0])),
                     HostLinkingModuleBinary.Functions(1, 0, 0),
-                    HostLinkingModuleBinary.Exports(
-                        ("run", 0, 2),
-                        ("echo", 0, 3),
-                        ("nested", 0, 4)
-                    ),
+                    HostLinkingModuleBinary.Exports(("run", 0, 2), ("echo", 0, 3), ("nested", 0, 4)),
                     HostLinkingModuleBinary.Code(
                         ([(1, 0x7B)], [0x20, 0, 0x21, 1, 0x20, 0, 0x20, 0, 0x10, 0, 0x20, 1, 0x0B]),
                         ([(2048, 0x7B)], [0x20, 0, 0x0B]),
@@ -472,12 +428,8 @@ internal partial class WasmFunction_InvokeTests
         using (Assert.Multiple())
         {
             await Assert.That(calls).IsEqualTo(2);
-            await Assert
-                .That(first.Values.SequenceEqual([values[0], values[0], values[0]]))
-                .IsTrue();
-            await Assert
-                .That(second.Values.SequenceEqual([values[1], values[1], values[1]]))
-                .IsTrue();
+            await Assert.That(first.Values.SequenceEqual([values[0], values[0], values[0]])).IsTrue();
+            await Assert.That(second.Values.SequenceEqual([values[1], values[1], values[1]])).IsTrue();
             await Assert.That(after.Values.SequenceEqual([values[0]])).IsTrue();
             await Assert.That(recovered[0].Values.SequenceEqual([values[1]])).IsTrue();
             await Assert.That(recovered[1].Values.SequenceEqual([values[0]])).IsTrue();
@@ -494,9 +446,7 @@ internal partial class WasmFunction_InvokeTests
             }
             foreach (var exception in caught)
             {
-                await Assert
-                    .That(exception?.GetType())
-                    .IsEqualTo(hostThrows ? typeof(InvalidOperationException) : null);
+                await Assert.That(exception?.GetType()).IsEqualTo(hostThrows ? typeof(InvalidOperationException) : null);
                 if (hostThrows)
                 {
                     await Assert.That(exception).IsSameReferenceAs(expected);

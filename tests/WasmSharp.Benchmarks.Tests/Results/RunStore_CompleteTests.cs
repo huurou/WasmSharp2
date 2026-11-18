@@ -52,9 +52,7 @@ internal class RunStore_CompleteTests
     [Test]
     [Arguments(ResultStatus.Failed)]
     [Arguments(ResultStatus.Unavailable)]
-    public async Task 指標を取得できなかったケースを保存する_状態とnullと理由を保持する(
-        ResultStatus status
-    )
+    public async Task 指標を取得できなかったケースを保存する_状態とnullと理由を保持する(ResultStatus status)
     {
         // Arrange
         using var fixture = new RunStoreFixture();
@@ -70,14 +68,7 @@ internal class RunStore_CompleteTests
             "process中断"
         );
         store.SaveCase(
-            new(
-                "invoke.single",
-                status,
-                new(null, "時間未取得", null, "割当未取得", null, "GC未取得"),
-                null,
-                [failure],
-                []
-            )
+            new("invoke.single", status, new(null, "時間未取得", null, "割当未取得", null, "GC未取得"), null, [failure], [])
         );
 
         // Act
@@ -90,17 +81,11 @@ internal class RunStore_CompleteTests
             await Assert.That(actual.Status).IsEqualTo(status);
             await Assert.That(actual.Cases.Single().Status).IsEqualTo(status);
             await Assert.That(actual.Cases.Single().Metrics.Time).IsNull();
-            await Assert
-                .That(actual.Cases.Single().Metrics.TimeUnavailableReason)
-                .IsEqualTo("時間未取得");
+            await Assert.That(actual.Cases.Single().Metrics.TimeUnavailableReason).IsEqualTo("時間未取得");
             await Assert.That(actual.Cases.Single().Metrics.Allocation).IsNull();
-            await Assert
-                .That(actual.Cases.Single().Metrics.AllocationUnavailableReason)
-                .IsEqualTo("割当未取得");
+            await Assert.That(actual.Cases.Single().Metrics.AllocationUnavailableReason).IsEqualTo("割当未取得");
             await Assert.That(actual.Cases.Single().Metrics.Gc).IsNull();
-            await Assert
-                .That(actual.Cases.Single().Metrics.GcUnavailableReason)
-                .IsEqualTo("GC未取得");
+            await Assert.That(actual.Cases.Single().Metrics.GcUnavailableReason).IsEqualTo("GC未取得");
             await Assert.That(actual.Failures).IsEquivalentTo([failure]);
         }
     }
@@ -127,9 +112,7 @@ internal class RunStore_CompleteTests
 
         // Act & Assert
         await Assert.That(() => store.Complete(ResultStatus.Succeeded)).Throws<IOException>();
-        await Assert
-            .That(RunStore.Load(fixture.DirectoryPath, json_).Status)
-            .IsEqualTo(ResultStatus.Incomplete);
+        await Assert.That(RunStore.Load(fixture.DirectoryPath, json_).Status).IsEqualTo(ResultStatus.Incomplete);
     }
 
     [Test]
@@ -137,9 +120,7 @@ internal class RunStore_CompleteTests
     [Arguments("case")]
     [Arguments("job")]
     [Arguments("process")]
-    public async Task 結果と検査の識別情報が異なる_対応しない検査を完了へ採用しない(
-        string different
-    )
+    public async Task 結果と検査の識別情報が異なる_対応しない検査を完了へ採用しない(string different)
     {
         // Arrange
         using var fixture = new RunStoreFixture();
@@ -152,47 +133,28 @@ internal class RunStore_CompleteTests
             "job" => fixture.Check with { JobId = "other-job" },
             _ => fixture.Check with { ProcessId = 9999 },
         };
-        var check = store.SaveFile(
-            "checks/mismatched.json",
-            JsonSerializer.SerializeToUtf8Bytes(mismatched, json_.Options)
-        );
+        var check = store.SaveFile("checks/mismatched.json", JsonSerializer.SerializeToUtf8Bytes(mismatched, json_.Options));
         var result = fixture.Manifest.Cases.Single() with
         {
             Metrics = new(null, "未取得", null, "未取得", null, "未取得"),
             RawFiles = [],
             BenchmarkReport = fixture.Manifest.Cases.Single().BenchmarkReport! with
             {
-                Processes =
-                [
-                    fixture.Manifest.Cases.Single().BenchmarkReport!.Processes.Single() with
-                    {
-                        CheckFile = check,
-                    },
-                ],
+                Processes = [fixture.Manifest.Cases.Single().BenchmarkReport!.Processes.Single() with { CheckFile = check }],
             },
         };
         store.SaveCase(result);
 
         // Act & Assert
-        var failure = await Assert
-            .That(() => store.Complete(ResultStatus.Succeeded))
-            .ThrowsExactly<InvalidDataException>();
-        await Assert
-            .That(failure!.Message)
-            .Contains("ケース")
-            .And.Contains("process検査")
-            .And.Contains("一致しません");
-        await Assert
-            .That(RunStore.Load(fixture.DirectoryPath, json_).Status)
-            .IsEqualTo(ResultStatus.Incomplete);
+        var failure = await Assert.That(() => store.Complete(ResultStatus.Succeeded)).ThrowsExactly<InvalidDataException>();
+        await Assert.That(failure!.Message).Contains("ケース").And.Contains("process検査").And.Contains("一致しません");
+        await Assert.That(RunStore.Load(fixture.DirectoryPath, json_).Status).IsEqualTo(ResultStatus.Incomplete);
     }
 
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task 完了後に追記する_保存参照の状態にかかわらず確定したrunを変更しない(
-        bool missingReference
-    )
+    public async Task 完了後に追記する_保存参照の状態にかかわらず確定したrunを変更しない(bool missingReference)
     {
         // Arrange
         using var fixture = new RunStoreFixture();
@@ -212,12 +174,8 @@ internal class RunStore_CompleteTests
             .ThrowsExactly<InvalidOperationException>();
         await Assert.That(failure!.Message).Contains("完了したrun").And.Contains("変更できません");
         await Assert.That(() => store.SaveCase(result)).ThrowsExactly<InvalidOperationException>();
-        await Assert
-            .That(() => store.Complete(ResultStatus.Failed))
-            .ThrowsExactly<InvalidOperationException>();
-        await Assert
-            .That(File.ReadAllText(Path.Combine(fixture.DirectoryPath, "run.json")))
-            .IsEqualTo(original);
+        await Assert.That(() => store.Complete(ResultStatus.Failed)).ThrowsExactly<InvalidOperationException>();
+        await Assert.That(File.ReadAllText(Path.Combine(fixture.DirectoryPath, "run.json"))).IsEqualTo(original);
     }
 
     [Test]
@@ -233,9 +191,7 @@ internal class RunStore_CompleteTests
             .That(() => store.Complete(ResultStatus.Succeeded))
             .ThrowsExactly<InvalidOperationException>();
         await Assert.That(failure!.Message).Contains("runの条件").And.Contains("保存されていません");
-        await Assert
-            .That(RunStore.Load(fixture.DirectoryPath, json_).Status)
-            .IsEqualTo(ResultStatus.Incomplete);
+        await Assert.That(RunStore.Load(fixture.DirectoryPath, json_).Status).IsEqualTo(ResultStatus.Incomplete);
     }
 
     [Test]
@@ -248,12 +204,8 @@ internal class RunStore_CompleteTests
         fixture.SaveSucceededCase(store);
 
         // Act & Assert
-        await Assert
-            .That(() => store.SaveFile("raw/full.json", "上書き"u8))
-            .ThrowsExactly<IOException>();
-        await Assert
-            .That(() => store.Complete(ResultStatus.Succeeded))
-            .ThrowsExactly<InvalidOperationException>();
+        await Assert.That(() => store.SaveFile("raw/full.json", "上書き"u8)).ThrowsExactly<IOException>();
+        await Assert.That(() => store.Complete(ResultStatus.Succeeded)).ThrowsExactly<InvalidOperationException>();
         var actual = RunStore.Load(fixture.DirectoryPath, json_);
         await Assert.That(actual.Status).IsEqualTo(ResultStatus.Incomplete);
         await Assert.That(actual.CompletedAtUtc).IsNull();
@@ -281,24 +233,17 @@ internal class RunStore_CompleteTests
             );
 
             // Act & Assert
-            await Assert
-                .That(() => store.Complete(ResultStatus.Succeeded))
-                .ThrowsExactly<UnauthorizedAccessException>();
+            await Assert.That(() => store.Complete(ResultStatus.Succeeded)).ThrowsExactly<UnauthorizedAccessException>();
         }
         else
         {
             var permissions = File.GetUnixFileMode(fixture.DirectoryPath);
             try
             {
-                File.SetUnixFileMode(
-                    fixture.DirectoryPath,
-                    UnixFileMode.UserRead | UnixFileMode.UserExecute
-                );
+                File.SetUnixFileMode(fixture.DirectoryPath, UnixFileMode.UserRead | UnixFileMode.UserExecute);
 
                 // Act & Assert
-                await Assert
-                    .That(() => store.Complete(ResultStatus.Succeeded))
-                    .ThrowsExactly<UnauthorizedAccessException>();
+                await Assert.That(() => store.Complete(ResultStatus.Succeeded)).ThrowsExactly<UnauthorizedAccessException>();
             }
             finally
             {
@@ -345,20 +290,11 @@ internal class RunStore_CompleteTests
         fixture.SaveConditions(store);
         fixture.SaveSucceededCase(store);
         store.SaveCase(
-            new(
-                "invoke.empty",
-                ResultStatus.Incomplete,
-                new(null, "未完了", null, "未完了", null, "未完了"),
-                null,
-                [],
-                []
-            )
+            new("invoke.empty", ResultStatus.Incomplete, new(null, "未完了", null, "未完了", null, "未完了"), null, [], [])
         );
 
         // Act & Assert
-        await Assert
-            .That(() => store.Complete(ResultStatus.Succeeded))
-            .ThrowsExactly<InvalidOperationException>();
+        await Assert.That(() => store.Complete(ResultStatus.Succeeded)).ThrowsExactly<InvalidOperationException>();
         var actual = RunStore.Load(fixture.DirectoryPath, json_);
         using (Assert.Multiple())
         {
@@ -388,10 +324,7 @@ internal class RunStore_CompleteTests
         result = result with
         {
             RawFiles = [raw, measurements],
-            Metrics = result.Metrics with
-            {
-                Time = result.Metrics.Time! with { RawMeasurements = measurements },
-            },
+            Metrics = result.Metrics with { Time = result.Metrics.Time! with { RawMeasurements = measurements } },
             BenchmarkReport = result.BenchmarkReport! with
             {
                 Processes = [result.BenchmarkReport.Processes.Single() with { CheckFile = check }],
@@ -414,24 +347,16 @@ internal class RunStore_CompleteTests
             await Assert.That(actual.CompletedAtUtc).IsNotNull();
             await Assert.That(actual.Cases.Single().CaseId).IsEqualTo("invoke.single");
             await Assert.That(actual.Cases.Single().RawFiles).IsEquivalentTo([raw, measurements]);
-            await Assert
-                .That(actual.Cases.Single().Metrics.Time!.RawMeasurements)
-                .IsEqualTo(measurements);
-            await Assert
-                .That(actual.Cases.Single().BenchmarkReport!.Processes.Single().CheckFile)
-                .IsEqualTo(check);
-            await Assert
-                .That(raw.Sha256)
-                .IsEqualTo("edeae6278fcd26ef2a3edede5984e0965edb505c4b73152650e79d9762f7711f");
+            await Assert.That(actual.Cases.Single().Metrics.Time!.RawMeasurements).IsEqualTo(measurements);
+            await Assert.That(actual.Cases.Single().BenchmarkReport!.Processes.Single().CheckFile).IsEqualTo(check);
+            await Assert.That(raw.Sha256).IsEqualTo("edeae6278fcd26ef2a3edede5984e0965edb505c4b73152650e79d9762f7711f");
             await Assert.That(restoredCheck.RunId).IsEqualTo(actual.RunId);
             await Assert.That(restoredCheck.CaseId).IsEqualTo("invoke.single");
             await Assert.That(restoredCheck.JobId).IsEqualTo("job-1");
             await Assert.That(restoredCheck.ProcessId).IsEqualTo(4321);
             await Assert.That(actual.EnvironmentFile!.RelativePath).IsEqualTo("environment.json");
             await Assert.That(actual.SourceFile!.RelativePath.StartsWith("source/")).IsTrue();
-            await Assert
-                .That(actual.AssetManifestFile!.RelativePath)
-                .IsEqualTo("assets/asset-manifest.json");
+            await Assert.That(actual.AssetManifestFile!.RelativePath).IsEqualTo("assets/asset-manifest.json");
             await Assert.That(actual.CasesFile!.RelativePath).IsEqualTo("cases.json");
             await Assert.That(actual.JobSettingsFile!.RelativePath).IsEqualTo("job.json");
             await Assert

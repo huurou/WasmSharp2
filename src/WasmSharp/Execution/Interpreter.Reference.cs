@@ -10,11 +10,7 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult RefFunc(InterpreterContext context, in Instruction instruction)
     {
-        context.PushValue(
-            WasmValue.FromFuncRef(
-                context.CurrentFunction.Instance.Functions[(int)instruction.Index]
-            )
-        );
+        context.PushValue(WasmValue.FromFuncRef(context.CurrentFunction.Instance.Functions[(int)instruction.Index]));
         return default;
     }
 
@@ -24,16 +20,10 @@ internal static partial class Interpreter
     /// <param name="context">判定する参照operandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのref.is_null命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult RefIsNull(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult RefIsNull(InterpreterContext context, in Instruction instruction)
     {
         var value = context.PopValue();
-        var isNull =
-            value.Kind == WasmValueKind.FuncRef
-                ? value.AsFuncRef() is null
-                : value.AsExternRef() is null;
+        var isNull = value.Kind == WasmValueKind.FuncRef ? value.AsFuncRef() is null : value.AsExternRef() is null;
         context.PushValue(WasmValue.FromI32(isNull ? 1 : 0));
         return default;
     }

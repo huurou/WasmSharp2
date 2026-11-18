@@ -42,8 +42,7 @@ public abstract record WasmImportInfo
     /// <param name="ModuleName">要求する提供元のmodule名</param>
     /// <param name="Name">要求する外部要素の名前</param>
     /// <param name="Type">解決済みの関数型</param>
-    public sealed record Function(string ModuleName, string Name, WasmFunctionType Type)
-        : WasmImportInfo(ModuleName, Name)
+    public sealed record Function(string ModuleName, string Name, WasmFunctionType Type) : WasmImportInfo(ModuleName, Name)
     {
         /// <inheritdoc />
         private protected override WasmExternalKind ExternalKind => WasmExternalKind.Function;
@@ -55,8 +54,7 @@ public abstract record WasmImportInfo
     /// <param name="ModuleName">要求する提供元のmodule名</param>
     /// <param name="Name">要求する外部要素の名前</param>
     /// <param name="Type">値型と可変性</param>
-    public sealed record Global(string ModuleName, string Name, WasmGlobalType Type)
-        : WasmImportInfo(ModuleName, Name)
+    public sealed record Global(string ModuleName, string Name, WasmGlobalType Type) : WasmImportInfo(ModuleName, Name)
     {
         /// <inheritdoc />
         private protected override WasmExternalKind ExternalKind => WasmExternalKind.Global;
@@ -68,8 +66,7 @@ public abstract record WasmImportInfo
     /// <param name="ModuleName">要求する提供元のmodule名</param>
     /// <param name="Name">要求する外部要素の名前</param>
     /// <param name="Limits">宣言された最小値と任意の最大値</param>
-    public sealed record Memory(string ModuleName, string Name, WasmLimits Limits)
-        : WasmImportInfo(ModuleName, Name)
+    public sealed record Memory(string ModuleName, string Name, WasmLimits Limits) : WasmImportInfo(ModuleName, Name)
     {
         /// <inheritdoc />
         private protected override WasmExternalKind ExternalKind => WasmExternalKind.Memory;
@@ -82,12 +79,8 @@ public abstract record WasmImportInfo
     /// <param name="Name">要求する外部要素の名前</param>
     /// <param name="ElementType">要素の参照型</param>
     /// <param name="Limits">宣言された最小値と任意の最大値</param>
-    public sealed record Table(
-        string ModuleName,
-        string Name,
-        WasmValueKind ElementType,
-        WasmLimits Limits
-    ) : WasmImportInfo(ModuleName, Name)
+    public sealed record Table(string ModuleName, string Name, WasmValueKind ElementType, WasmLimits Limits)
+        : WasmImportInfo(ModuleName, Name)
     {
         /// <inheritdoc />
         private protected override WasmExternalKind ExternalKind => WasmExternalKind.Table;

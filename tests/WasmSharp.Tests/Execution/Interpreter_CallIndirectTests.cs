@@ -1,7 +1,6 @@
 using System.Collections.Immutable;
 using WasmSharp.Exceptions;
 using WasmSharp.Execution;
-using WasmSharp.Modules;
 
 namespace WasmSharp.Tests.Execution;
 
@@ -15,9 +14,7 @@ internal class Interpreter_CallIndirectTests
     [Arguments(int.MaxValue)]
     [Arguments(int.MinValue)]
     [Arguments(-1)]
-    public async Task 要素添字が範囲外である_他の検査や呼出しを行わず添字付きtrapと呼出し元の位置を返す(
-        int selector
-    )
+    public async Task 要素添字が範囲外である_他の検査や呼出しを行わず添字付きtrapと呼出し元の位置を返す(int selector)
     {
         // Arrange
         var called = false;
@@ -31,11 +28,7 @@ internal class Interpreter_CallIndirectTests
         );
         var table = new WasmTable(WasmValueKind.FuncRef, new(2));
         table.Set(0, WasmValue.FromFuncRef(host));
-        var caller = CreateFunction(
-            [new([], []), new([WasmValueKind.I32, WasmValueKind.I64], [])],
-            0,
-            [table]
-        );
+        var caller = CreateFunction([new([], []), new([WasmValueKind.I32, WasmValueKind.I64], [])], 0, [table]);
 
         // Act
         var actual = Execute(caller, selector, [WasmValue.FromI32(7), WasmValue.FromI64(9)]);
@@ -45,9 +38,7 @@ internal class Interpreter_CallIndirectTests
         {
             await Assert.That(actual.Result.Status).IsEqualTo(ExecutionStatus.Trap);
             await Assert.That(actual.Result.TrapReason).IsEqualTo(WasmTrapReason.TableOutOfBounds);
-            await Assert
-                .That(actual.Result.TrapDiagnosticKind)
-                .IsEqualTo(TrapDiagnosticKind.UndefinedElement);
+            await Assert.That(actual.Result.TrapDiagnosticKind).IsEqualTo(TrapDiagnosticKind.UndefinedElement);
             await Assert.That(actual.Result.TableElementIndex).IsEqualTo(unchecked((uint)selector));
             await Assert.That(actual.Result.FunctionIndex).IsEqualTo(caller.FunctionIndex);
             await Assert.That(actual.Result.ByteOffset).IsEqualTo(BYTE_OFFSET);
@@ -55,15 +46,7 @@ internal class Interpreter_CallIndirectTests
             await Assert.That(actual.FrameCount).IsEqualTo(1);
             await Assert.That(actual.CallDepth).IsEqualTo(1);
             await Assert.That(actual.Caller).IsEqualTo(actual.Before);
-            await Assert
-                .That(
-                    actual.Values.SequenceEqual([
-                        sentinel_,
-                        WasmValue.FromI32(7),
-                        WasmValue.FromI64(9),
-                    ])
-                )
-                .IsTrue();
+            await Assert.That(actual.Values.SequenceEqual([sentinel_, WasmValue.FromI32(7), WasmValue.FromI64(9)])).IsTrue();
         }
     }
 
@@ -82,11 +65,7 @@ internal class Interpreter_CallIndirectTests
         );
         var table = new WasmTable(WasmValueKind.FuncRef, new(2));
         table.Set(0, WasmValue.FromFuncRef(host));
-        var caller = CreateFunction(
-            [new([], []), new([WasmValueKind.I32, WasmValueKind.I64], [])],
-            0,
-            [table]
-        );
+        var caller = CreateFunction([new([], []), new([WasmValueKind.I32, WasmValueKind.I64], [])], 0, [table]);
 
         // Act
         var actual = Execute(caller, 1, [WasmValue.FromI32(7), WasmValue.FromI64(9)]);
@@ -95,12 +74,8 @@ internal class Interpreter_CallIndirectTests
         using (Assert.Multiple())
         {
             await Assert.That(actual.Result.Status).IsEqualTo(ExecutionStatus.Trap);
-            await Assert
-                .That(actual.Result.TrapReason)
-                .IsEqualTo(WasmTrapReason.UninitializedElement);
-            await Assert
-                .That(actual.Result.TrapDiagnosticKind)
-                .IsEqualTo(TrapDiagnosticKind.Default);
+            await Assert.That(actual.Result.TrapReason).IsEqualTo(WasmTrapReason.UninitializedElement);
+            await Assert.That(actual.Result.TrapDiagnosticKind).IsEqualTo(TrapDiagnosticKind.Default);
             await Assert.That(actual.Result.TableElementIndex).IsEqualTo(1U);
             await Assert.That(actual.Result.FunctionIndex).IsEqualTo(caller.FunctionIndex);
             await Assert.That(actual.Result.ByteOffset).IsEqualTo(BYTE_OFFSET);
@@ -108,15 +83,7 @@ internal class Interpreter_CallIndirectTests
             await Assert.That(actual.FrameCount).IsEqualTo(1);
             await Assert.That(actual.CallDepth).IsEqualTo(1);
             await Assert.That(actual.Caller).IsEqualTo(actual.Before);
-            await Assert
-                .That(
-                    actual.Values.SequenceEqual([
-                        sentinel_,
-                        WasmValue.FromI32(7),
-                        WasmValue.FromI64(9),
-                    ])
-                )
-                .IsTrue();
+            await Assert.That(actual.Values.SequenceEqual([sentinel_, WasmValue.FromI32(7), WasmValue.FromI64(9)])).IsTrue();
         }
     }
 
@@ -132,10 +99,7 @@ internal class Interpreter_CallIndirectTests
         var parameters = new[] { WasmValueKind.I32, WasmValueKind.I64 };
         var results = new[] { WasmValueKind.I64, WasmValueKind.I32 };
         var host = WasmFunction.CreateHost(
-            new(
-                resultMismatch ? parameters : [.. parameters.Reverse()],
-                resultMismatch ? [.. results.Reverse()] : results
-            ),
+            new(resultMismatch ? parameters : [.. parameters.Reverse()], resultMismatch ? [.. results.Reverse()] : results),
             (_, _) =>
             {
                 called = true;
@@ -155,9 +119,7 @@ internal class Interpreter_CallIndirectTests
         using (Assert.Multiple())
         {
             await Assert.That(actual.Result.Status).IsEqualTo(ExecutionStatus.Trap);
-            await Assert
-                .That(actual.Result.TrapReason)
-                .IsEqualTo(WasmTrapReason.IndirectCallTypeMismatch);
+            await Assert.That(actual.Result.TrapReason).IsEqualTo(WasmTrapReason.IndirectCallTypeMismatch);
             await Assert.That(actual.Result.TableElementIndex).IsNull();
             await Assert.That(actual.Result.FunctionIndex).IsEqualTo(caller.FunctionIndex);
             await Assert.That(actual.Result.ByteOffset).IsEqualTo(BYTE_OFFSET);
@@ -165,15 +127,7 @@ internal class Interpreter_CallIndirectTests
             await Assert.That(actual.FrameCount).IsEqualTo(1);
             await Assert.That(actual.CallDepth).IsEqualTo(1);
             await Assert.That(actual.Caller).IsEqualTo(actual.Before);
-            await Assert
-                .That(
-                    actual.Values.SequenceEqual([
-                        sentinel_,
-                        WasmValue.FromI32(7),
-                        WasmValue.FromI64(9),
-                    ])
-                )
-                .IsTrue();
+            await Assert.That(actual.Values.SequenceEqual([sentinel_, WasmValue.FromI32(7), WasmValue.FromI64(9)])).IsTrue();
         }
     }
 
@@ -195,49 +149,28 @@ internal class Interpreter_CallIndirectTests
                 receivedInstance = instance;
                 receivedArguments = arguments.ToArray();
                 callDepth = callbackContext.Current!.CallDepth;
-                return new([
-                    WasmValue.FromI64(arguments[1].AsI64() + 1),
-                    WasmValue.FromI32(arguments[0].AsI32() + 2),
-                ]);
+                return new([WasmValue.FromI64(arguments[1].AsI64() + 1), WasmValue.FromI32(arguments[0].AsI32() + 2)]);
             }
         );
         var selectedTable = new WasmTable(WasmValueKind.FuncRef, new(2));
         selectedTable.Set(1, WasmValue.FromFuncRef(host));
-        var caller = CreateFunction(
-            [new([], []), expectedType],
-            0,
-            [new(WasmValueKind.FuncRef, new(0)), selectedTable]
-        );
+        var caller = CreateFunction([new([], []), expectedType], 0, [new(WasmValueKind.FuncRef, new(0)), selectedTable]);
 
         // Act
-        var actual = Execute(
-            caller,
-            1,
-            [WasmValue.FromI32(7), WasmValue.FromI64(9)],
-            tableIndex: 1,
-            maxCallDepth: 10
-        );
+        var actual = Execute(caller, 1, [WasmValue.FromI32(7), WasmValue.FromI64(9)], tableIndex: 1, maxCallDepth: 10);
 
         // Assert
         using (Assert.Multiple())
         {
             await Assert.That(actual.Result.Status).IsEqualTo(ExecutionStatus.Success);
             await Assert.That(receivedInstance).IsSameReferenceAs(caller.Instance);
-            await Assert
-                .That(receivedArguments.SequenceEqual([WasmValue.FromI32(7), WasmValue.FromI64(9)]))
-                .IsTrue();
+            await Assert.That(receivedArguments.SequenceEqual([WasmValue.FromI32(7), WasmValue.FromI64(9)])).IsTrue();
             await Assert.That(callDepth).IsEqualTo(2);
             await Assert.That(actual.FrameCount).IsEqualTo(1);
             await Assert.That(actual.CallDepth).IsEqualTo(1);
             await Assert.That(actual.Caller).IsEqualTo(actual.Before);
             await Assert
-                .That(
-                    actual.Values.SequenceEqual([
-                        sentinel_,
-                        WasmValue.FromI64(10),
-                        WasmValue.FromI32(9),
-                    ])
-                )
+                .That(actual.Values.SequenceEqual([sentinel_, WasmValue.FromI64(10), WasmValue.FromI32(9)]))
                 .IsTrue();
         }
     }
@@ -259,21 +192,13 @@ internal class Interpreter_CallIndirectTests
         var selectedTable = new WasmTable(WasmValueKind.FuncRef, new(1));
         selectedTable.Set(0, WasmValue.FromFuncRef(callee));
         var caller = CreateFunction(
-            [
-                new([], []),
-                new([WasmValueKind.I32, WasmValueKind.I64], [WasmValueKind.I64, WasmValueKind.I32]),
-            ],
+            [new([], []), new([WasmValueKind.I32, WasmValueKind.I64], [WasmValueKind.I64, WasmValueKind.I32])],
             0,
             [selectedTable]
         );
 
         // Act
-        var actual = Execute(
-            caller,
-            0,
-            [WasmValue.FromI32(7), WasmValue.FromI64(9)],
-            maxCallDepth: 10
-        );
+        var actual = Execute(caller, 0, [WasmValue.FromI32(7), WasmValue.FromI64(9)], maxCallDepth: 10);
 
         // Assert
         using (Assert.Multiple())
@@ -286,22 +211,10 @@ internal class Interpreter_CallIndirectTests
             await Assert.That(actual.Current.StackBase).IsEqualTo(1);
             await Assert.That(actual.Current.OperandBase).IsEqualTo(3);
             await Assert.That(actual.Current.Function.Instance).IsSameReferenceAs(callee.Instance);
-            await Assert
-                .That(actual.Current.Function.Instance.Globals[0])
-                .IsSameReferenceAs(global);
+            await Assert.That(actual.Current.Function.Instance.Globals[0]).IsSameReferenceAs(global);
             await Assert.That(actual.Current.Function.Instance.Tables[0]).IsSameReferenceAs(table);
-            await Assert
-                .That(actual.Current.Function.Instance.Memories[0])
-                .IsSameReferenceAs(memory);
-            await Assert
-                .That(
-                    actual.Values.SequenceEqual([
-                        sentinel_,
-                        WasmValue.FromI32(7),
-                        WasmValue.FromI64(9),
-                    ])
-                )
-                .IsTrue();
+            await Assert.That(actual.Current.Function.Instance.Memories[0]).IsSameReferenceAs(memory);
+            await Assert.That(actual.Values.SequenceEqual([sentinel_, WasmValue.FromI32(7), WasmValue.FromI64(9)])).IsTrue();
         }
     }
 
@@ -370,13 +283,7 @@ internal class Interpreter_CallIndirectTests
             }
             context.PushValue(WasmValue.FromI32(selector));
 
-            var instruction = new Instruction(
-                default,
-                default,
-                BYTE_OFFSET,
-                1,
-                secondaryIndex: tableIndex
-            );
+            var instruction = new Instruction(default, default, BYTE_OFFSET, 1, secondaryIndex: tableIndex);
             var result = Interpreter.CallIndirect(context, in instruction);
             return (
                 result,

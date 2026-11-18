@@ -7,14 +7,14 @@ namespace WasmSharp.Benchmarks.Tests.Cases;
 internal partial class BenchmarkCase_DeserializeTests
 {
     private static readonly string[] expectedCallCaseIds_ =
-                    [
-                        "invoke.empty",
-                        "invoke.single",
-                        "invoke.multi",
-                        "loop.integer-direct",
-                        "loop.float-host",
-                        "loop.indirect",
-                    ];
+    [
+        "invoke.empty",
+        "invoke.single",
+        "invoke.multi",
+        "loop.integer-direct",
+        "loop.float-host",
+        "loop.indirect",
+    ];
 
     [Test]
     public async Task 呼び出し素材の固定ケースを読む_公開操作数とguest仕事量を分けて保持する()
@@ -25,27 +25,19 @@ internal partial class BenchmarkCase_DeserializeTests
         // Act
         var definitions = JsonSerializer
             .Deserialize<List<BenchmarkCase>>(json, json_.Options)!
-            .Where(x =>
-                x.MeasurementStage == MeasurementStage.Invoke && x.AssetId is "invoke" or "calls"
-            )
+            .Where(x => x.MeasurementStage == MeasurementStage.Invoke && x.AssetId is "invoke" or "calls")
             .ToArray();
 
         // Assert
         using (Assert.Multiple())
         {
-            await Assert
-                .That(definitions.Select(x => x.CaseId))
-                .IsEquivalentTo(
-                    expectedCallCaseIds_
-                );
+            await Assert.That(definitions.Select(x => x.CaseId)).IsEquivalentTo(expectedCallCaseIds_);
             foreach (var definition in definitions)
             {
                 await Assert.That(definition.CaseRevision).IsEqualTo(1U);
                 await Assert.That(definition.MeasurementStage).IsEqualTo(MeasurementStage.Invoke);
                 await Assert.That(definition.OperationDefinition.OperationsPerInvoke).IsEqualTo(1U);
-                await Assert
-                    .That(definition.OperationDefinition.IncludesStateRestoration)
-                    .IsFalse();
+                await Assert.That(definition.OperationDefinition.IncludesStateRestoration).IsFalse();
                 await Assert.That(definition.StatePolicy).IsEqualTo(StatePolicy.ReadOnly);
                 await Assert.That(definition.Input.Arrays.Count).IsEqualTo(0);
                 await Assert.That(definition.ExpectedResult.Arrays.Count).IsEqualTo(0);
@@ -55,9 +47,7 @@ internal partial class BenchmarkCase_DeserializeTests
                     await Assert.That(definition.AssetId).IsEqualTo("calls");
                     await Assert
                         .That(definition.Workload.Single())
-                        .IsEqualTo(
-                            new WorkloadQuantity("guest_loop", 4096, WorkloadUnit.Iterations)
-                        );
+                        .IsEqualTo(new WorkloadQuantity("guest_loop", 4096, WorkloadUnit.Iterations));
                 }
                 else
                 {
@@ -80,9 +70,7 @@ internal partial class BenchmarkCase_DeserializeTests
         var indirect = 17 + ITERATIONS / 2 * 4;
 
         // Act
-        var definitions = JsonSerializer
-            .Deserialize<List<BenchmarkCase>>(json, json_.Options)!
-            .ToDictionary(x => x.CaseId);
+        var definitions = JsonSerializer.Deserialize<List<BenchmarkCase>>(json, json_.Options)!.ToDictionary(x => x.CaseId);
 
         // Assert
         using (Assert.Multiple())
@@ -100,12 +88,8 @@ internal partial class BenchmarkCase_DeserializeTests
                 new(NumericType.I64, "fedcba9876543210"),
                 new(NumericType.F64, "8000000000000000"),
             ];
-            await Assert
-                .That(definitions["invoke.multi"].Input.Arguments.SequenceEqual(multi))
-                .IsTrue();
-            await Assert
-                .That(definitions["invoke.multi"].ExpectedResult.Values.SequenceEqual(multi))
-                .IsTrue();
+            await Assert.That(definitions["invoke.multi"].Input.Arguments.SequenceEqual(multi)).IsTrue();
+            await Assert.That(definitions["invoke.multi"].ExpectedResult.Values.SequenceEqual(multi)).IsTrue();
             await Assert
                 .That(definitions["loop.integer-direct"].Input.Arguments.Single())
                 .IsEqualTo(new NumericValue(NumericType.I32, "00000011"));
@@ -117,30 +101,18 @@ internal partial class BenchmarkCase_DeserializeTests
                 .IsEqualTo(new NumericValue(NumericType.I32, "00000011"));
             await Assert
                 .That(definitions["loop.integer-direct"].ExpectedResult.Values.Single())
-                .IsEqualTo(
-                    new NumericValue(
-                        NumericType.I32,
-                        integer.ToString("x8", CultureInfo.InvariantCulture)
-                    )
-                );
+                .IsEqualTo(new NumericValue(NumericType.I32, integer.ToString("x8", CultureInfo.InvariantCulture)));
             await Assert
                 .That(definitions["loop.float-host"].ExpectedResult.Values.Single())
                 .IsEqualTo(
                     new NumericValue(
                         NumericType.F64,
-                        BitConverter
-                            .DoubleToUInt64Bits(floating)
-                            .ToString("x16", CultureInfo.InvariantCulture)
+                        BitConverter.DoubleToUInt64Bits(floating).ToString("x16", CultureInfo.InvariantCulture)
                     )
                 );
             await Assert
                 .That(definitions["loop.indirect"].ExpectedResult.Values.Single())
-                .IsEqualTo(
-                    new NumericValue(
-                        NumericType.I32,
-                        indirect.ToString("x8", CultureInfo.InvariantCulture)
-                    )
-                );
+                .IsEqualTo(new NumericValue(NumericType.I32, indirect.ToString("x8", CultureInfo.InvariantCulture)));
         }
     }
 
@@ -161,20 +133,12 @@ internal partial class BenchmarkCase_DeserializeTests
         {
             await Assert.That(table.ExportName).IsEqualTo("functions");
             await Assert.That(table.Length).IsEqualTo(2U);
-            await Assert
-                .That(
-                    table.Elements.SequenceEqual(
-                        [new(0, "add_one"), new(1, "add_three")]
-                    )
-                )
-                .IsTrue();
+            await Assert.That(table.Elements.SequenceEqual([new(0, "add_one"), new(1, "add_three")])).IsTrue();
         }
     }
 
     private static Task<string> ReadCallCasesAsync()
     {
-        return File.ReadAllTextAsync(
-            Path.Combine(AppContext.BaseDirectory, "Fixtures", "Data", "cases.json")
-        );
+        return File.ReadAllTextAsync(Path.Combine(AppContext.BaseDirectory, "Fixtures", "Data", "cases.json"));
     }
 }

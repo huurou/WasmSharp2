@@ -45,14 +45,10 @@ internal partial class WasmModule_DecodeTests
                 .ThrowsExactly<WasmDecodeException>();
             using (Assert.Multiple())
             {
-                await Assert
-                    .That(exception!.Message.StartsWith(diagnostic, StringComparison.Ordinal))
-                    .IsTrue();
+                await Assert.That(exception!.Message.StartsWith(diagnostic, StringComparison.Ordinal)).IsTrue();
                 await Assert
                     .That(exception.Location)
-                    .IsEqualTo(
-                        new(WasmProcessingStage.Decode, bytes.Length - offsetFromEnd, 0, 10)
-                    );
+                    .IsEqualTo(new(WasmProcessingStage.Decode, bytes.Length - offsetFromEnd, 0, 10));
             }
         }
     }
@@ -89,14 +85,10 @@ internal partial class WasmModule_DecodeTests
                 .ThrowsExactly<WasmDecodeException>();
             using (Assert.Multiple())
             {
-                await Assert
-                    .That(exception!.Message.StartsWith(diagnostic, StringComparison.Ordinal))
-                    .IsTrue();
+                await Assert.That(exception!.Message.StartsWith(diagnostic, StringComparison.Ordinal)).IsTrue();
                 await Assert
                     .That(exception.Location)
-                    .IsEqualTo(
-                        new(WasmProcessingStage.Decode, bytes.Length - offsetFromEnd, 0, 10)
-                    );
+                    .IsEqualTo(new(WasmProcessingStage.Decode, bytes.Length - offsetFromEnd, 0, 10));
             }
         }
     }

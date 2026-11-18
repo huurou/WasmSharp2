@@ -8,13 +8,8 @@ namespace WasmSharp.TestSuiteRunner.Execution;
 /// <param name="Name">module識別子 省略時はnull</param>
 /// <param name="Filename">JSONの親を基準にした素材のファイル名</param>
 /// <param name="ModuleType">素材の形式 module_typeの省略時はbinary</param>
-internal sealed record ModuleCommand(
-    int Index,
-    int? Line,
-    string? Name,
-    string Filename,
-    ScriptModuleType ModuleType
-) : ScriptCommand(Index, Line)
+internal sealed record ModuleCommand(int Index, int? Line, string? Name, string Filename, ScriptModuleType ModuleType)
+    : ScriptCommand(Index, Line)
 {
     /// <summary>
     /// JSONの通常moduleを識別するcommand種別

@@ -54,13 +54,9 @@ internal class Interpreter_ElementDropTests
             await Assert.That(empty.Result.Status).IsEqualTo(ExecutionStatus.Success);
             await Assert.That(empty.ValueCount).IsEqualTo(1);
             await Assert.That(nonempty.Result.Status).IsEqualTo(ExecutionStatus.Trap);
-            await Assert
-                .That(nonempty.Result.TrapReason)
-                .IsEqualTo(WasmTrapReason.TableOutOfBounds);
+            await Assert.That(nonempty.Result.TrapReason).IsEqualTo(WasmTrapReason.TableOutOfBounds);
             await Assert.That(invalidSource.Result.Status).IsEqualTo(ExecutionStatus.Trap);
-            await Assert
-                .That(invalidSource.Result.TrapReason)
-                .IsEqualTo(WasmTrapReason.TableOutOfBounds);
+            await Assert.That(invalidSource.Result.TrapReason).IsEqualTo(WasmTrapReason.TableOutOfBounds);
         }
     }
 }

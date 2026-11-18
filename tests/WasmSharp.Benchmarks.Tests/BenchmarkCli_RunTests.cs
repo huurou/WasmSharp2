@@ -38,22 +38,49 @@ internal class BenchmarkCli_RunTests
         {
             Kind = kind,
             Status = status,
-            Cases = [.. caseIds.Select(x => run.Manifest.Cases.Single() with
-            {
-                CaseId = x,
-                Status = status,
-                Metrics = status == ResultStatus.Unavailable
-                    ? run.Manifest.Cases.Single().Metrics with { Time = null, Allocation = null }
-                    : run.Manifest.Cases.Single().Metrics,
-                Failures = status == ResultStatus.Failed
-                    ? [new RunFailure(x, RunStage.Postcheck, RunStage.ExecutionStarted, "期待値不一致", null, "観測が異なる", null)]
-                    : [],
-            })],
+            Cases =
+            [
+                .. caseIds.Select(x =>
+                    run.Manifest.Cases.Single() with
+                    {
+                        CaseId = x,
+                        Status = status,
+                        Metrics =
+                            status == ResultStatus.Unavailable
+                                ? run.Manifest.Cases.Single().Metrics with
+                                {
+                                    Time = null,
+                                    Allocation = null,
+                                }
+                                : run.Manifest.Cases.Single().Metrics,
+                        Failures =
+                            status == ResultStatus.Failed
+                                ?
+                                [
+                                    new RunFailure(
+                                        x,
+                                        RunStage.Postcheck,
+                                        RunStage.ExecutionStarted,
+                                        "期待値不一致",
+                                        null,
+                                        "観測が異なる",
+                                        null
+                                    ),
+                                ]
+                                : [],
+                    }
+                ),
+            ],
         };
         List<string> arguments =
         [
-            "run", "--assets", assets.ManifestPath, "--case", allCases ? "all" : "decode.small",
-            "--output", run.DirectoryPath,
+            "run",
+            "--assets",
+            assets.ManifestPath,
+            "--case",
+            allCases ? "all" : "decode.small",
+            "--output",
+            run.DirectoryPath,
         ];
         if (allCases)
         {
@@ -65,12 +92,17 @@ internal class BenchmarkCli_RunTests
         var calls = 0;
 
         // Act
-        var exitCode = cli_.Run([.. arguments], output, error, request =>
-        {
-            captured = request;
-            calls++;
-            return expected;
-        });
+        var exitCode = cli_.Run(
+            [.. arguments],
+            output,
+            error,
+            request =>
+            {
+                captured = request;
+                calls++;
+                return expected;
+            }
+        );
 
         // Assert
         using (Assert.Multiple())
@@ -84,21 +116,30 @@ internal class BenchmarkCli_RunTests
             await Assert.That(captured.Config.GetJobs().Single().Id).IsEqualTo(allCases ? "Smoke" : "Measurement");
             await Assert.That(Directory.Exists(captured.RepositoryDirectory)).IsTrue();
             await Assert.That(captured.Command.ExecutablePath).IsEqualTo(Environment.ProcessPath);
-            await Assert.That(
-                captured.Command.Arguments.Prepend(captured.Command.ExecutablePath)
-                    .Take(2)
-                    .Select(Path.GetFileName)
-                    .Any(x => x == entryName || x == entryName + ".exe" || x == entryName + ".dll")
-            ).IsTrue();
+            await Assert
+                .That(
+                    captured
+                        .Command.Arguments.Prepend(captured.Command.ExecutablePath)
+                        .Take(2)
+                        .Select(Path.GetFileName)
+                        .Any(x => x == entryName || x == entryName + ".exe" || x == entryName + ".dll")
+                )
+                .IsTrue();
             await Assert
                 .That(captured.Command.Arguments.TakeLast(processArguments.Length).SequenceEqual(processArguments))
                 .IsTrue();
             await Assert.That(captured.Command.WorkingDirectory).IsEqualTo(Environment.CurrentDirectory);
             await Assert.That(error.ToString()).IsEmpty();
-            await Assert.That(output.ToString()).Contains($"run {expected.RunId}: {status}; 用途: {kind}; 保存先: {run.DirectoryPath}");
-            await Assert.That(output.ToString()).Contains(status == ResultStatus.Unavailable
-                ? "ns/op=Unavailable; bytes/op=Unavailable"
-                : "ns/op=125.25; bytes/op=0.000244140625");
+            await Assert
+                .That(output.ToString())
+                .Contains($"run {expected.RunId}: {status}; 用途: {kind}; 保存先: {run.DirectoryPath}");
+            await Assert
+                .That(output.ToString())
+                .Contains(
+                    status == ResultStatus.Unavailable
+                        ? "ns/op=Unavailable; bytes/op=Unavailable"
+                        : "ns/op=125.25; bytes/op=0.000244140625"
+                );
             foreach (var caseId in caseIds)
             {
                 await Assert.That(output.ToString()).Contains($"{caseId}: {status};");
@@ -157,9 +198,7 @@ internal class BenchmarkCli_RunTests
             await Assert.That(exitCode).IsEqualTo(0);
             await Assert.That(error.ToString()).IsEqualTo("");
             await Assert.That(output.ToString()).Contains("check --assets <manifest>");
-            await Assert
-                .That(output.ToString())
-                .Contains("run --assets <manifest> --case <id|all>");
+            await Assert.That(output.ToString()).Contains("run --assets <manifest> --case <id|all>");
             await Assert.That(output.ToString()).Contains("compare --baseline <run-directory,...>");
         }
     }
@@ -174,10 +213,7 @@ internal class BenchmarkCli_RunTests
     [Arguments("check|--assets|--next", "--assetsの値が不足")]
     [Arguments("check", "必須引数が不足しています: --assets")]
     [Arguments("check|--assets|a|--assets|b", "引数が重複しています: --assets")]
-    public async Task 操作または引数が不正_不足や重複を識別できる理由と終了値2を返す(
-        string input,
-        string reason
-    )
+    public async Task 操作または引数が不正_不足や重複を識別できる理由と終了値2を返す(string input, string reason)
     {
         // Arrange
         using var output = new StringWriter();
@@ -238,9 +274,7 @@ internal class BenchmarkCli_RunTests
     [NotInParallel]
     [Arguments("invoke.single")]
     [Arguments("all")]
-    public async Task Gitを起動できない_単一または全caseの要求を受け付けてから理由と終了値2を返す(
-        string caseId
-    )
+    public async Task Gitを起動できない_単一または全caseの要求を受け付けてから理由と終了値2を返す(string caseId)
     {
         // Arrange
         using var assets = new AssetLoadingFixture();
@@ -289,22 +323,19 @@ internal class BenchmarkCli_RunTests
         using var error = new StringWriter();
 
         // Act
-        var exitCode = cli_.Run(
-            ["check", "--assets", assets.ManifestPath],
-            output,
-            error
-        );
+        var exitCode = cli_.Run(["check", "--assets", assets.ManifestPath], output, error);
 
         // Assert
-        var displayedCaseIds = output.ToString()
+        var displayedCaseIds = output
+            .ToString()
             .Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries)
             .Select(x => x.Split(':')[0]);
         using (Assert.Multiple())
         {
             await Assert.That(exitCode).IsEqualTo(0);
-            await Assert.That(displayedCaseIds.SequenceEqual(
-                assets.Definitions.Select(x => x.CaseId).Order(StringComparer.Ordinal)
-            )).IsTrue();
+            await Assert
+                .That(displayedCaseIds.SequenceEqual(assets.Definitions.Select(x => x.CaseId).Order(StringComparer.Ordinal)))
+                .IsTrue();
             if (!preparation)
             {
                 await Assert.That(output.ToString()).Contains("invoke.single: Succeeded (Invoke)");
@@ -316,10 +347,7 @@ internal class BenchmarkCli_RunTests
     [Test]
     [Arguments(false, 1)]
     [Arguments(true, 2)]
-    public async Task 素材の期待値またはhashが不一致の場合_理由を表示して成立と区別する(
-        bool brokenHash,
-        int expectedExit
-    )
+    public async Task 素材の期待値またはhashが不一致の場合_理由を表示して成立と区別する(bool brokenHash, int expectedExit)
     {
         // Arrange
         using var assets = new AssetLoadingFixture();
@@ -339,11 +367,7 @@ internal class BenchmarkCli_RunTests
         using var error = new StringWriter();
 
         // Act
-        var exitCode = cli_.Run(
-            ["check", "--assets", assets.ManifestPath],
-            output,
-            error
-        );
+        var exitCode = cli_.Run(["check", "--assets", assets.ManifestPath], output, error);
 
         // Assert
         using (Assert.Multiple())
@@ -373,16 +397,7 @@ internal class BenchmarkCli_RunTests
         string[] args = operation switch
         {
             "check" => ["check", "--assets", assets.ManifestPath, "--assets", assets.ManifestPath],
-            "run" =>
-            [
-                "run",
-                "--assets",
-                assets.ManifestPath,
-                "--case",
-                "all",
-                "--output",
-                assets.DirectoryPath,
-            ],
+            "run" => ["run", "--assets", assets.ManifestPath, "--case", "all", "--output", assets.DirectoryPath],
             _ =>
             [
                 "compare",
@@ -399,11 +414,16 @@ internal class BenchmarkCli_RunTests
         var runCalled = false;
 
         // Act
-        var exitCode = cli_.Run(args, output, error, _ =>
-        {
-            runCalled = true;
-            throw new InvalidOperationException("出力先検証を通過してはいけない");
-        });
+        var exitCode = cli_.Run(
+            args,
+            output,
+            error,
+            _ =>
+            {
+                runCalled = true;
+                throw new InvalidOperationException("出力先検証を通過してはいけない");
+            }
+        );
 
         // Assert
         using (Assert.Multiple())
@@ -426,10 +446,7 @@ internal class BenchmarkCli_RunTests
     [Arguments("incomplete", 2)]
     [Arguments("nested-output", 2)]
     [Arguments("null-policy", 2)]
-    public async Task 比較入力が成立しない_失敗と未完了を区別して性能へ採用しない(
-        string scenario,
-        int expectedExit
-    )
+    public async Task 比較入力が成立しない_失敗と未完了を区別して性能へ採用しない(string scenario, int expectedExit)
     {
         // Arrange
         using var fixture = new ComparisonFixture();
@@ -450,10 +467,7 @@ internal class BenchmarkCli_RunTests
         var directory =
             scenario == "nested-output"
                 ? Path.Combine(changed.DirectoryPath, "new-comparison")
-                : Path.Combine(
-                    Path.GetTempPath(),
-                    "wasm-benchmark-cli-" + Guid.NewGuid().ToString("N")
-                );
+                : Path.Combine(Path.GetTempPath(), "wasm-benchmark-cli-" + Guid.NewGuid().ToString("N"));
         using var output = new StringWriter();
         using var error = new StringWriter();
         try
@@ -494,15 +508,9 @@ internal class BenchmarkCli_RunTests
                         json_.Options
                     )!;
                     await Assert.That(report.IsAccepted).IsFalse();
+                    await Assert.That(report.Cases.Single().Decision).IsEqualTo(ComparisonDecision.Indeterminate);
                     await Assert
-                        .That(report.Cases.Single().Decision)
-                        .IsEqualTo(ComparisonDecision.Indeterminate);
-                    await Assert
-                        .That(
-                            report
-                                .Cases.Single()
-                                .Time.Current!.Runs.Any(x => x.RunId == changed.Manifest.RunId)
-                        )
+                        .That(report.Cases.Single().Time.Current!.Runs.Any(x => x.RunId == changed.Manifest.RunId))
                         .IsFalse();
                     await Assert.That(report.Cases.Single().BlocksCompletion).IsTrue();
                 }
@@ -555,10 +563,7 @@ internal class BenchmarkCli_RunTests
             };
         }
         var request = fixture.Save();
-        var directory = Path.Combine(
-            Path.GetTempPath(),
-            "wasm-benchmark-cli-" + Guid.NewGuid().ToString("N")
-        );
+        var directory = Path.Combine(Path.GetTempPath(), "wasm-benchmark-cli-" + Guid.NewGuid().ToString("N"));
         using var output = new StringWriter();
         using var error = new StringWriter();
         try
@@ -595,11 +600,7 @@ internal class BenchmarkCli_RunTests
     [Test]
     [Arguments("--kind", "diagnostic", "用途")]
     [Arguments("--case", "missing", "未登録")]
-    public async Task 測定要求が不正な場合_測定を開始せず理由と終了値2を返す(
-        string option,
-        string value,
-        string reason
-    )
+    public async Task 測定要求が不正な場合_測定を開始せず理由と終了値2を返す(string option, string value, string reason)
     {
         // Arrange
         using var assets = new AssetLoadingFixture();
@@ -637,19 +638,13 @@ internal class BenchmarkCli_RunTests
         // Arrange
         using var fixture = new ComparisonFixture(allCases: true);
         var request = fixture.Save();
-        var directory = Path.Combine(
-            Path.GetTempPath(),
-            "wasm-benchmark-cli-" + Guid.NewGuid().ToString("N")
-        );
+        var directory = Path.Combine(Path.GetTempPath(), "wasm-benchmark-cli-" + Guid.NewGuid().ToString("N"));
         using var output = new StringWriter();
         using var error = new StringWriter();
         var inputs = request
             .BaselineRunDirectories.Concat(request.CurrentRunDirectories)
             .SelectMany(x => Directory.GetFiles(x, "*", SearchOption.AllDirectories))
-            .ToDictionary(
-                x => x,
-                x => Convert.ToHexStringLower(SHA256.HashData(File.ReadAllBytes(x)))
-            );
+            .ToDictionary(x => x, x => Convert.ToHexStringLower(SHA256.HashData(File.ReadAllBytes(x))));
 
         try
         {
@@ -694,9 +689,7 @@ internal class BenchmarkCli_RunTests
                 foreach (var input in inputs)
                 {
                     await Assert
-                        .That(
-                            Convert.ToHexStringLower(SHA256.HashData(File.ReadAllBytes(input.Key)))
-                        )
+                        .That(Convert.ToHexStringLower(SHA256.HashData(File.ReadAllBytes(input.Key))))
                         .IsEqualTo(input.Value);
                 }
             }

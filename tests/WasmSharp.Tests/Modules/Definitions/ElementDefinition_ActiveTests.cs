@@ -43,9 +43,7 @@ internal class ElementDefinition_ActiveTests
             await Assert.That(segment.Initializers[0][0].ByteOffset).IsEqualTo(41L);
             await Assert.That(segment.Initializers[0][1].Opcode).IsEqualTo(new OpcodeKey(0, 0x0B));
             await Assert.That(segment.Initializers[0][1].ByteOffset).IsEqualTo(46L);
-            await Assert
-                .That(segment.Initializers[1][0].Immediate.Kind)
-                .IsEqualTo(WasmValueKind.ExternRef);
+            await Assert.That(segment.Initializers[1][0].Immediate.Kind).IsEqualTo(WasmValueKind.ExternRef);
             await Assert.That(segment.Initializers[1][0].ByteOffset).IsEqualTo(47L);
             await Assert.That(segment.Initializers[1][1].ByteOffset).IsEqualTo(49L);
         }

@@ -16,11 +16,7 @@ internal class Interpreter_I8x16ReplaceLaneTests
     )
     {
         // Arrange
-        WasmValue[] operands =
-        [
-            WasmValue.FromV128(0x7766554433221100, 0xFFEEDDCCBBAA9988),
-            WasmValue.FromI32(operand),
-        ];
+        WasmValue[] operands = [WasmValue.FromV128(0x7766554433221100, 0xFFEEDDCCBBAA9988), WasmValue.FromI32(operand)];
 
         // Act
         var actual = SimdHandlerFixture.Execute(Interpreter.I8x16ReplaceLane, operands, laneIndex);

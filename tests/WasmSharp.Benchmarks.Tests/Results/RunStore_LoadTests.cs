@@ -33,9 +33,7 @@ internal class RunStore_LoadTests
         {
             await Assert.That(actual.Status).IsEqualTo(ResultStatus.Incomplete);
             await Assert.That(actual.CompletedAtUtc).IsNull();
-            await Assert
-                .That(actual.Failures.Single().InterruptionReason)
-                .Contains("予定ケースが完了していません");
+            await Assert.That(actual.Failures.Single().InterruptionReason).Contains("予定ケースが完了していません");
         }
     }
 
@@ -50,20 +48,11 @@ internal class RunStore_LoadTests
         store.Complete(ResultStatus.Succeeded);
         var completed = RunStore.Load(fixture.DirectoryPath, json_);
         var content = "null"u8.ToArray();
-        var source = completed.SourceFile! with
-        {
-            Sha256 = Convert.ToHexStringLower(SHA256.HashData(content)),
-        };
+        var source = completed.SourceFile! with { Sha256 = Convert.ToHexStringLower(SHA256.HashData(content)) };
         File.WriteAllBytes(Path.Combine(fixture.DirectoryPath, source.RelativePath), content);
         File.WriteAllBytes(
             Path.Combine(fixture.DirectoryPath, "run.json"),
-            JsonSerializer.SerializeToUtf8Bytes(
-                completed with
-                {
-                    SourceFile = source,
-                },
-                json_.Options
-            )
+            JsonSerializer.SerializeToUtf8Bytes(completed with { SourceFile = source }, json_.Options)
         );
 
         // Act
@@ -74,9 +63,7 @@ internal class RunStore_LoadTests
         {
             await Assert.That(actual.Status).IsEqualTo(ResultStatus.Incomplete);
             await Assert.That(actual.CompletedAtUtc).IsNull();
-            await Assert
-                .That(actual.Failures.Single().InterruptionReason)
-                .Contains("source情報が保存されていません");
+            await Assert.That(actual.Failures.Single().InterruptionReason).Contains("source情報が保存されていません");
         }
     }
 
@@ -87,10 +74,7 @@ internal class RunStore_LoadTests
     [Arguments("source/worktree.patch", true)]
     [Arguments("tools/WasmSharp.Benchmarks/New.cs", false)]
     [Arguments("tools/WasmSharp.Benchmarks/New.cs", true)]
-    public async Task 完了後にsourceの保存参照が欠落または変更される_未完了として読み込む(
-        string relativePath,
-        bool changed
-    )
+    public async Task 完了後にsourceの保存参照が欠落または変更される_未完了として読み込む(string relativePath, bool changed)
     {
         // Arrange
         using var fixture = new RunStoreFixture();
@@ -116,9 +100,7 @@ internal class RunStore_LoadTests
         {
             await Assert.That(actual.Status).IsEqualTo(ResultStatus.Incomplete);
             await Assert.That(actual.CompletedAtUtc).IsNull();
-            await Assert
-                .That(actual.Failures.Single().InterruptionReason)
-                .Contains("保存参照の照合に失敗");
+            await Assert.That(actual.Failures.Single().InterruptionReason).Contains("保存参照の照合に失敗");
         }
     }
 
@@ -165,10 +147,7 @@ internal class RunStore_LoadTests
             [
                 result with
                 {
-                    Metrics = result.Metrics with
-                    {
-                        Time = result.Metrics.Time! with { RawMeasurements = missing },
-                    },
+                    Metrics = result.Metrics with { Time = result.Metrics.Time! with { RawMeasurements = missing } },
                 },
             ],
         };
@@ -186,12 +165,8 @@ internal class RunStore_LoadTests
             await Assert.That(actual.Status).IsEqualTo(ResultStatus.Incomplete);
             await Assert.That(actual.CompletedAtUtc).IsNull();
             await Assert.That(actual.Cases.Single().RawFiles).IsEquivalentTo(result.RawFiles);
-            await Assert
-                .That(actual.Cases.Single().Metrics.Time!.RawMeasurements)
-                .IsEqualTo(missing);
-            await Assert
-                .That(actual.Failures.Single().InterruptionReason)
-                .Contains("保存参照の照合に失敗");
+            await Assert.That(actual.Cases.Single().Metrics.Time!.RawMeasurements).IsEqualTo(missing);
+            await Assert.That(actual.Failures.Single().InterruptionReason).Contains("保存参照の照合に失敗");
         }
     }
 
@@ -203,13 +178,7 @@ internal class RunStore_LoadTests
         Directory.CreateDirectory(fixture.DirectoryPath);
         File.WriteAllBytes(
             Path.Combine(fixture.DirectoryPath, "run.json"),
-            JsonSerializer.SerializeToUtf8Bytes(
-                fixture.Manifest with
-                {
-                    CompletedAtUtc = null,
-                },
-                json_.Options
-            )
+            JsonSerializer.SerializeToUtf8Bytes(fixture.Manifest with { CompletedAtUtc = null }, json_.Options)
         );
 
         // Act
@@ -221,14 +190,8 @@ internal class RunStore_LoadTests
             await Assert.That(actual.Status).IsEqualTo(ResultStatus.Incomplete);
             await Assert.That(actual.CompletedAtUtc).IsNull();
             await Assert.That(actual.Cases.Single().Metrics.Time).IsNotNull();
-            await Assert
-                .That(actual.Failures.Single().Reason)
-                .Contains("runの完了")
-                .And.Contains("確定していません");
-            await Assert
-                .That(actual.Failures.Single().InterruptionReason)
-                .Contains("完了記録")
-                .And.Contains("ありません");
+            await Assert.That(actual.Failures.Single().Reason).Contains("runの完了").And.Contains("確定していません");
+            await Assert.That(actual.Failures.Single().InterruptionReason).Contains("完了記録").And.Contains("ありません");
         }
     }
 

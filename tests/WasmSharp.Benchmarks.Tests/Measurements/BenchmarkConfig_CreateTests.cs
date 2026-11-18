@@ -30,10 +30,7 @@ internal class BenchmarkConfig_CreateTests
         // Arrange
         // Act
         var job = BenchmarkConfig.Create().GetJobs().Single();
-        var factory = job.ResolveValue(
-            InfrastructureMode.EngineFactoryCharacteristic,
-            EngineParameters.DefaultResolver
-        );
+        var factory = job.ResolveValue(InfrastructureMode.EngineFactoryCharacteristic, EngineParameters.DefaultResolver);
 
         // Assert
         await Assert.That(factory.GetType().Name).IsEqualTo("WasmAllocationEngineFactory");
@@ -112,9 +109,7 @@ internal class BenchmarkConfig_CreateTests
             .BenchmarksCases.Single();
 
         // Act
-        var errors = benchmark.Job.Infrastructure.Toolchain
-            ?.Validate(benchmark, EngineParameters.DefaultResolver)
-            .ToArray();
+        var errors = benchmark.Job.Infrastructure.Toolchain?.Validate(benchmark, EngineParameters.DefaultResolver).ToArray();
 
         // Assert
         await Assert.That(errors?.Length).IsEqualTo(0);

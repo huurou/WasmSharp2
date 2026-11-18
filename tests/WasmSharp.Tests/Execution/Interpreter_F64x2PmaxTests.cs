@@ -80,11 +80,7 @@ internal class Interpreter_F64x2PmaxTests
     )
     {
         // Arrange
-        WasmValue[] operands =
-        [
-            WasmValue.FromV128(leftLow64, leftHigh64),
-            WasmValue.FromV128(rightLow64, rightHigh64),
-        ];
+        WasmValue[] operands = [WasmValue.FromV128(leftLow64, leftHigh64), WasmValue.FromV128(rightLow64, rightHigh64)];
 
         // Act
         var actual = SimdHandlerFixture.Execute(Interpreter.F64x2Pmax, operands);

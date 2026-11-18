@@ -18,10 +18,7 @@ internal class Interpreter_I64TruncF32STests
     [Arguments(0x5EFFFFFFU, 9223371487098961920L)]
     [Arguments(0xDF000000U, long.MinValue)]
     [Arguments(0xDEFFFFFFU, -9223371487098961920L)]
-    public async Task 入力が切捨て後の範囲内_0方向への整数値を同幅のbit列で返す(
-        uint operandBits,
-        long expected
-    )
+    public async Task 入力が切捨て後の範囲内_0方向への整数値を同幅のbit列で返す(uint operandBits, long expected)
     {
         // Arrange
         WasmValue[] operands = [WasmValue.FromF32Bits(operandBits)];

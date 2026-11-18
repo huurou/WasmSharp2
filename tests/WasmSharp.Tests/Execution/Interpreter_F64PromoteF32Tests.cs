@@ -20,10 +20,7 @@ internal class Interpreter_F64PromoteF32Tests
     [Arguments(0x00800000u, 0x3810000000000000UL)]
     [Arguments(0x7F7FFFFFu, 0x47EFFFFFE0000000UL)]
     [Arguments(0xFF7FFFFFu, 0xC7EFFFFFE0000000UL)]
-    public async Task 非NaNの通常値と境界値_値を正確に保持してf64へ拡張する(
-        uint operandBits,
-        ulong expectedBits
-    )
+    public async Task 非NaNの通常値と境界値_値を正確に保持してf64へ拡張する(uint operandBits, ulong expectedBits)
     {
         // Arrange
         WasmValue[] operands = [WasmValue.FromF32Bits(operandBits)];
@@ -48,9 +45,7 @@ internal class Interpreter_F64PromoteF32Tests
     [Arguments(0xFFC12345u)]
     [Arguments(0x7F812345u)]
     [Arguments(0xFF812345u)]
-    public async Task Canonicalとpayload付きのquietおよびsignalingNaN_正のcanonicalNaNへ揃える(
-        uint operandBits
-    )
+    public async Task Canonicalとpayload付きのquietおよびsignalingNaN_正のcanonicalNaNへ揃える(uint operandBits)
     {
         // Arrange
         WasmValue[] operands = [WasmValue.FromF32Bits(operandBits)];

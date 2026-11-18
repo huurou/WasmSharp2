@@ -21,5 +21,4 @@ internal sealed record InstanceObservation(WasmInstance Instance) : CaseObservat
 /// <summary>
 /// 最後のInvokeの所属instanceと戻り値 memory/table/globalの観測は同じinstanceから行う。
 /// </summary>
-internal sealed record InvokeObservation(WasmInstance Instance, WasmResults Results)
-    : CaseObservation;
+internal sealed record InvokeObservation(WasmInstance Instance, WasmResults Results) : CaseObservation;

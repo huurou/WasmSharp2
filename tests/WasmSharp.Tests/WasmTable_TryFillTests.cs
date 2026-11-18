@@ -9,10 +9,7 @@ internal class WasmTable_TryFillTests
     [Arguments(WasmValueKind.FuncRef, true)]
     [Arguments(WasmValueKind.ExternRef, false)]
     [Arguments(WasmValueKind.ExternRef, true)]
-    public async Task 末尾まで同じ参照で埋める_範囲外を保ち参照型と同一性を保持する(
-        WasmValueKind kind,
-        bool isNull
-    )
+    public async Task 末尾まで同じ参照で埋める_範囲外を保ち参照型と同一性を保持する(WasmValueKind kind, bool isNull)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
@@ -65,10 +62,7 @@ internal class WasmTable_TryFillTests
     [Arguments(0u, 0u)]
     [Arguments(2u, 0u)]
     [Arguments(2u, 2u)]
-    public async Task 長さがゼロで開始位置が領域内または末尾にある_成功する(
-        uint count,
-        uint destination
-    )
+    public async Task 長さがゼロで開始位置が領域内または末尾にある_成功する(uint count, uint destination)
     {
         // Arrange
         var table = new WasmTable(WasmValueKind.ExternRef, new WasmLimits(count));
@@ -85,10 +79,7 @@ internal class WasmTable_TryFillTests
     [Arguments(4u, 0u)]
     [Arguments(uint.MaxValue, 1u)]
     [Arguments(1u, uint.MaxValue)]
-    public async Task 充填先の範囲が不正である_内容を一部も変更せずfalseを返す(
-        uint destination,
-        uint length
-    )
+    public async Task 充填先の範囲が不正である_内容を一部も変更せずfalseを返す(uint destination, uint length)
     {
         // Arrange
         var table = new WasmTable(WasmValueKind.ExternRef, new WasmLimits(3));
@@ -108,9 +99,7 @@ internal class WasmTable_TryFillTests
             await Assert.That(table.Count).IsEqualTo(3u);
             for (uint index = 0; index < table.Count; index++)
             {
-                await Assert
-                    .That(ReferenceEquals(table.Get(index).AsExternRef(), references[index]))
-                    .IsTrue();
+                await Assert.That(ReferenceEquals(table.Get(index).AsExternRef(), references[index])).IsTrue();
             }
         }
     }

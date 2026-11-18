@@ -9,9 +9,7 @@ internal class ExecutionBoundary_RunStartTests
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task ホストstartを実行する_所有instanceの上限で一段だけ数えて終了時に解除する(
-        bool withInstance
-    )
+    public async Task ホストstartを実行する_所有instanceの上限で一段だけ数えて終了時に解除する(bool withInstance)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
@@ -65,10 +63,7 @@ internal class ExecutionBoundary_RunStartTests
                     HostLinkingModuleBinary.Functions(0, 0),
                     HostLinkingModuleBinary.Globals((0x7F, true, [0x41, 0x00, 0x0B])),
                     HostLinkingModuleBinary.Exports(("run", 0, 0), ("value", 3, 0)),
-                    HostLinkingModuleBinary.Code(
-                        ([], [0x10, 0x01, 0x0B]),
-                        ([], [0x41, 0x07, 0x24, 0x00, 0x0B])
-                    )
+                    HostLinkingModuleBinary.Code(([], [0x10, 0x01, 0x0B]), ([], [0x41, 0x07, 0x24, 0x00, 0x0B]))
                 )
             )
             .Validate()
@@ -92,12 +87,7 @@ internal class ExecutionBoundary_RunStartTests
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
-        var function = ExecutionFunctionFixture.Create(
-            [InstructionFixture.Create(0x00, 77)],
-            new([], []),
-            [],
-            0
-        );
+        var function = ExecutionFunctionFixture.Create([InstructionFixture.Create(0x00, 77)], new([], []), [], 0);
         var cleared = false;
 
         // Act & Assert
@@ -117,9 +107,7 @@ internal class ExecutionBoundary_RunStartTests
         using (Assert.Multiple())
         {
             await Assert.That(exception!.Reason).IsEqualTo(WasmTrapReason.Unreachable);
-            await Assert
-                .That(exception.Location)
-                .IsEqualTo(new WasmFailureLocation(WasmProcessingStage.Instantiate, 77, 1));
+            await Assert.That(exception.Location).IsEqualTo(new WasmFailureLocation(WasmProcessingStage.Instantiate, 77, 1));
             await Assert.That(cleared).IsTrue();
         }
     }
@@ -129,12 +117,7 @@ internal class ExecutionBoundary_RunStartTests
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
-        var function = ExecutionFunctionFixture.Create(
-            [InstructionFixture.Create(0x10, 77, 1)],
-            new([], []),
-            [],
-            0
-        );
+        var function = ExecutionFunctionFixture.Create([InstructionFixture.Create(0x10, 77, 1)], new([], []), [], 0);
         var owner = CreateInstance(3);
         var cleared = false;
 
@@ -158,13 +141,7 @@ internal class ExecutionBoundary_RunStartTests
             await Assert.That(exception.Limit).IsEqualTo(3);
             await Assert
                 .That(exception.Location)
-                .IsEqualTo(
-                    new WasmFailureLocation(
-                        WasmProcessingStage.Instantiate,
-                        function.Definition.BodyOffset,
-                        1
-                    )
-                );
+                .IsEqualTo(new WasmFailureLocation(WasmProcessingStage.Instantiate, function.Definition.BodyOffset, 1));
             await Assert.That(cleared).IsTrue();
         }
     }
@@ -187,12 +164,7 @@ internal class ExecutionBoundary_RunStartTests
                     return new([]);
                 }
             )
-            : ExecutionFunctionFixture.Create(
-                [InstructionFixture.Create(0x0B, 77)],
-                new([], []),
-                [],
-                0
-            );
+            : ExecutionFunctionFixture.Create([InstructionFixture.Create(0x0B, 77)], new([], []), [], 0);
         var sameContext = false;
         (int Frames, int Values, int Depth, WasmProcessingStage Stage, int Value) state = default;
 
@@ -243,9 +215,7 @@ internal class ExecutionBoundary_RunStartTests
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task ホストstartからの再入が失敗する_Invoke段階の例外実体を変更せず解除する(
-        bool exhaustion
-    )
+    public async Task ホストstartからの再入が失敗する_Invoke段階の例外実体を変更せず解除する(bool exhaustion)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();

@@ -74,8 +74,7 @@ internal readonly struct Instruction(
     /// <summary>
     /// shuffleの選択値を保持する不変のbyte列
     /// </summary>
-    internal ImmutableArray<byte> ShuffleLanes { get; } =
-        shuffleLanes.IsDefault ? [] : shuffleLanes;
+    internal ImmutableArray<byte> ShuffleLanes { get; } = shuffleLanes.IsDefault ? [] : shuffleLanes;
 
     /// <summary>
     /// laneを指定する命令の添字

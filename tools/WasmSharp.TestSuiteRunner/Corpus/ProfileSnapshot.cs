@@ -38,13 +38,7 @@ internal sealed record ProfileSnapshot(
     /// <returns>feature、入力、論理引数をそれぞれ新しい一覧へコピーした保存用profile</returns>
     internal static ProfileSnapshot FromProfile(Core2Profile profile)
     {
-        return new(
-            profile.Id,
-            profile.Spec,
-            profile.Wabt,
-            profile.WorkingDirectory,
-            profile.Conversion
-        )
+        return new(profile.Id, profile.Spec, profile.Wabt, profile.WorkingDirectory, profile.Conversion)
         {
             Features = [.. profile.Features],
             Inputs = [.. profile.Inputs],
@@ -58,16 +52,7 @@ internal sealed record ProfileSnapshot(
     /// <returns>可変一覧の内容を不変配列へコピーしたprofile</returns>
     internal Core2Profile ToProfile()
     {
-        return new(
-            Id,
-            Spec,
-            Wabt,
-            [.. Features],
-            [.. Inputs],
-            WorkingDirectory,
-            [.. LogicalArguments],
-            Conversion
-        );
+        return new(Id, Spec, Wabt, [.. Features], [.. Inputs], WorkingDirectory, [.. LogicalArguments], Conversion);
     }
 
     /// <summary>
@@ -93,11 +78,6 @@ internal sealed record ProfileSnapshot(
     /// <returns>feature、入力、論理引数をそれぞれ新しい一覧へコピーした保存用profile</returns>
     internal ProfileSnapshot CreateSnapshot()
     {
-        return this with
-        {
-            Features = [.. Features],
-            Inputs = [.. Inputs],
-            LogicalArguments = [.. LogicalArguments],
-        };
+        return this with { Features = [.. Features], Inputs = [.. Inputs], LogicalArguments = [.. LogicalArguments] };
     }
 }

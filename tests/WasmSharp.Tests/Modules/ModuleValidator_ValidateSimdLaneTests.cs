@@ -21,9 +21,7 @@ internal partial class ModuleValidator_ValidateTests
         var bytes = HostLinkingModuleBinary.Create(
             HostLinkingModuleBinary.Types(([], [])),
             HostLinkingModuleBinary.Functions(0),
-            HostLinkingModuleBinary.Code(
-                ([], [0, .. Convert.FromHexString(instruction), 0x1A, 0x0B])
-            )
+            HostLinkingModuleBinary.Code(([], [0, .. Convert.FromHexString(instruction), 0x1A, 0x0B]))
         );
         using var stream = new ChunkedReadStream(new MemoryStream(bytes));
         WasmModule[] modules = [WasmModule.Decode(bytes), WasmModule.Decode(stream)];
@@ -34,22 +32,13 @@ internal partial class ModuleValidator_ValidateTests
             // Act & Assert
             for (var attempt = 0; attempt < 2; attempt++)
             {
-                var exception = await Assert
-                    .That(() => module.Validate())
-                    .ThrowsExactly<WasmValidateException>();
+                var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
                 using (Assert.Multiple())
                 {
                     await Assert
-                        .That(
-                            exception!.Message.StartsWith(
-                                "invalid lane index",
-                                StringComparison.Ordinal
-                            )
-                        )
+                        .That(exception!.Message.StartsWith("invalid lane index", StringComparison.Ordinal))
                         .IsTrue();
-                    await Assert
-                        .That(exception!.Location)
-                        .IsEqualTo(new(WasmProcessingStage.Validate, offset, 0, 10));
+                    await Assert.That(exception!.Location).IsEqualTo(new(WasmProcessingStage.Validate, offset, 0, 10));
                     await Assert.That(module.FunctionCodes.IsEmpty).IsTrue();
                     await Assert
                         .That(() => module.Instantiate(executionContext, []))
@@ -77,26 +66,18 @@ internal partial class ModuleValidator_ValidateTests
         var bytes = HostLinkingModuleBinary.Create(
             HostLinkingModuleBinary.Types((types, [0x7B])),
             HostLinkingModuleBinary.Functions(0),
-            HostLinkingModuleBinary.Code(
-                ([], [.. pushes, .. Convert.FromHexString(instruction), 0x0B])
-            )
+            HostLinkingModuleBinary.Code(([], [.. pushes, .. Convert.FromHexString(instruction), 0x0B]))
         );
         var module = WasmModule.Decode(bytes);
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => module.Validate())
-            .ThrowsExactly<WasmValidateException>();
+        var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
         using (Assert.Multiple())
         {
-            await Assert
-                .That(exception!.Message.StartsWith("type mismatch", StringComparison.Ordinal))
-                .IsTrue();
+            await Assert.That(exception!.Message.StartsWith("type mismatch", StringComparison.Ordinal)).IsTrue();
             await Assert
                 .That(exception!.Location)
-                .IsEqualTo(
-                    new(WasmProcessingStage.Validate, Array.IndexOf(bytes, (byte)0xFD), 0, 10)
-                );
+                .IsEqualTo(new(WasmProcessingStage.Validate, Array.IndexOf(bytes, (byte)0xFD), 0, 10));
             await Assert.That(module.FunctionCodes.IsEmpty).IsTrue();
         }
     }
@@ -108,18 +89,14 @@ internal partial class ModuleValidator_ValidateTests
     [Arguments("FD1D01")]
     [Arguments("FD0D1F1F1F1F1F1F1F1F1F1F1F1F1F1F1F1F")]
     [Arguments("FD2201")]
-    public async Task SIMD接続の到達不能命令が静的制約を満たす_不足operandには既存の多相型規則を適用する(
-        string instruction
-    )
+    public async Task SIMD接続の到達不能命令が静的制約を満たす_不足operandには既存の多相型規則を適用する(string instruction)
     {
         // Arrange
         var module = WasmModule.Decode(
             HostLinkingModuleBinary.Create(
                 HostLinkingModuleBinary.Types(([], [])),
                 HostLinkingModuleBinary.Functions(0),
-                HostLinkingModuleBinary.Code(
-                    ([], [0, .. Convert.FromHexString(instruction), 0x1A, 0x0B])
-                )
+                HostLinkingModuleBinary.Code(([], [0, .. Convert.FromHexString(instruction), 0x1A, 0x0B]))
             )
         );
 
@@ -134,42 +111,27 @@ internal partial class ModuleValidator_ValidateTests
     [Arguments("FD4D")]
     [Arguments("FD1500")]
     [Arguments("FD0D00000000000000000000000000000000")]
-    public async Task SIMD接続の演算がglobal初期化式にある_Decodeは保持しValidateで定数式として拒否する(
-        string instruction
-    )
+    public async Task SIMD接続の演算がglobal初期化式にある_Decodeは保持しValidateで定数式として拒否する(string instruction)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
         var bytes = HostLinkingModuleBinary.Create(
             HostLinkingModuleBinary.Globals(
-                (
-                    0x7B,
-                    false,
-                    [0xFD, 0x0C, .. new byte[16], .. Convert.FromHexString(instruction), 0x0B]
-                )
+                (0x7B, false, [0xFD, 0x0C, .. new byte[16], .. Convert.FromHexString(instruction), 0x0B])
             )
         );
         var module = WasmModule.Decode(bytes);
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => module.Validate())
-            .ThrowsExactly<WasmValidateException>();
+        var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
         using (Assert.Multiple())
         {
             await Assert
-                .That(
-                    exception!.Message.StartsWith(
-                        "constant expression required",
-                        StringComparison.Ordinal
-                    )
-                )
+                .That(exception!.Message.StartsWith("constant expression required", StringComparison.Ordinal))
                 .IsTrue();
             await Assert.That(exception!.Location!.Stage).IsEqualTo(WasmProcessingStage.Validate);
             await Assert.That(exception!.Location!.SectionId).IsEqualTo((byte?)6);
-            await Assert
-                .That(() => module.Instantiate(executionContext, []))
-                .ThrowsExactly<InvalidOperationException>();
+            await Assert.That(() => module.Instantiate(executionContext, [])).ThrowsExactly<InvalidOperationException>();
         }
     }
 }

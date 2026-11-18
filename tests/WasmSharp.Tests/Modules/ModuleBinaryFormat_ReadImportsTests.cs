@@ -30,24 +30,16 @@ internal class ModuleBinaryFormat_ReadImportsTests
             await Assert.That(imports[0].ModuleName).IsEqualTo("env");
             await Assert.That(imports[0].Name).IsEqualTo("g");
             await Assert.That(imports[0].ByteOffset).IsEqualTo(11L);
-            await Assert
-                .That(((GlobalImport)imports[0]).Type)
-                .IsEqualTo(new WasmGlobalType(WasmValueKind.V128, true));
+            await Assert.That(((GlobalImport)imports[0]).Type).IsEqualTo(new WasmGlobalType(WasmValueKind.V128, true));
             await Assert.That(imports[1].ModuleName).IsEqualTo("");
             await Assert.That(imports[1].Name).IsEqualTo("");
             await Assert.That(((FunctionImport)imports[1]).TypeIndex).IsEqualTo(uint.MaxValue);
-            await Assert
-                .That(((MemoryImport)imports[2]).Type.Limits)
-                .IsEqualTo(new WasmLimits(uint.MaxValue, 0));
+            await Assert.That(((MemoryImport)imports[2]).Type.Limits).IsEqualTo(new WasmLimits(uint.MaxValue, 0));
             await Assert.That(((MemoryImport)imports[2]).Type.ByteOffset).IsEqualTo(35L);
-            await Assert
-                .That(((TableImport)imports[3]).Type.ElementKind)
-                .IsEqualTo(WasmValueKind.ExternRef);
+            await Assert.That(((TableImport)imports[3]).Type.ElementKind).IsEqualTo(WasmValueKind.ExternRef);
             await Assert.That(((TableImport)imports[3]).Type.Limits).IsEqualTo(new WasmLimits(3));
             await Assert.That(((TableImport)imports[3]).Type.ByteOffset).IsEqualTo(49L);
-            await Assert
-                .That(((GlobalImport)imports[4]).Type)
-                .IsEqualTo(new WasmGlobalType(WasmValueKind.FuncRef, false));
+            await Assert.That(((GlobalImport)imports[4]).Type).IsEqualTo(new WasmGlobalType(WasmValueKind.FuncRef, false));
         }
     }
 
@@ -65,33 +57,22 @@ internal class ModuleBinaryFormat_ReadImportsTests
         var payload = Convert.FromHexString(hex);
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => ReadImports(payload))
-            .ThrowsExactly<WasmDecodeException>();
-        await Assert
-            .That(exception!.Location)
-            .IsEqualTo(new(WasmProcessingStage.Decode, offset, null, 2));
+        var exception = await Assert.That(() => ReadImports(payload)).ThrowsExactly<WasmDecodeException>();
+        await Assert.That(exception!.Location).IsEqualTo(new(WasmProcessingStage.Decode, offset, null, 2));
     }
 
     [Test]
     [Arguments("0100000080", 15L)]
     [Arguments("010000000080", 15L)]
     [Arguments("010000020100", 16L)]
-    public async Task Import記述の範囲が不一致_元位置の診断を持つ境界通知になる(
-        string hex,
-        long offset
-    )
+    public async Task Import記述の範囲が不一致_元位置の診断を持つ境界通知になる(string hex, long offset)
     {
         // Arrange
         var payload = Convert.FromHexString(hex);
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => ReadImports(payload))
-            .ThrowsExactly<ModuleReadBoundaryException>();
-        await Assert
-            .That(exception!.Fallback.Location)
-            .IsEqualTo(new(WasmProcessingStage.Decode, offset, null, 2));
+        var exception = await Assert.That(() => ReadImports(payload)).ThrowsExactly<ModuleReadBoundaryException>();
+        await Assert.That(exception!.Fallback.Location).IsEqualTo(new(WasmProcessingStage.Decode, offset, null, 2));
     }
 
     private static List<ModuleImport> ReadImports(byte[] payload)

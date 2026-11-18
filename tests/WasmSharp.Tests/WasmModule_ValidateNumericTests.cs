@@ -33,22 +33,14 @@ internal partial class WasmModule_ValidateTests
         var module = WasmModule.Decode(bytes);
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => module.Validate())
-            .ThrowsExactly<WasmValidateException>();
+        var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
         using (Assert.Multiple())
         {
-            await Assert
-                .That(exception!.Message.StartsWith("type mismatch", StringComparison.Ordinal))
-                .IsTrue();
+            await Assert.That(exception!.Message.StartsWith("type mismatch", StringComparison.Ordinal)).IsTrue();
             await Assert
                 .That(exception.Location)
-                .IsEqualTo(
-                    new(WasmProcessingStage.Validate, bytes.Length - opcodeLength - 2, 0, 10)
-                );
-            await Assert
-                .That(() => module.Instantiate(executionContext, []))
-                .ThrowsExactly<InvalidOperationException>();
+                .IsEqualTo(new(WasmProcessingStage.Validate, bytes.Length - opcodeLength - 2, 0, 10));
+            await Assert.That(() => module.Instantiate(executionContext, [])).ThrowsExactly<InvalidOperationException>();
         }
     }
 
@@ -57,10 +49,7 @@ internal partial class WasmModule_ValidateTests
     [Arguments("420079", (byte)0x7F)]
     [Arguments("430000803F43000000405B", (byte)0x7D)]
     [Arguments("44000000000000F03FFC06", (byte)0x7F)]
-    public async Task 数値命令の結果型と関数宣言が不一致_関数endでValidateに失敗する(
-        string instructions,
-        byte resultKind
-    )
+    public async Task 数値命令の結果型と関数宣言が不一致_関数endでValidateに失敗する(string instructions, byte resultKind)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
@@ -72,17 +61,11 @@ internal partial class WasmModule_ValidateTests
         var module = WasmModule.Decode(bytes);
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => module.Validate())
-            .ThrowsExactly<WasmValidateException>();
+        var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
         using (Assert.Multiple())
         {
-            await Assert
-                .That(exception!.Location)
-                .IsEqualTo(new(WasmProcessingStage.Validate, bytes.Length - 1, 0, 10));
-            await Assert
-                .That(() => module.Instantiate(executionContext, []))
-                .ThrowsExactly<InvalidOperationException>();
+            await Assert.That(exception!.Location).IsEqualTo(new(WasmProcessingStage.Validate, bytes.Length - 1, 0, 10));
+            await Assert.That(() => module.Instantiate(executionContext, [])).ThrowsExactly<InvalidOperationException>();
         }
     }
 
@@ -103,34 +86,21 @@ internal partial class WasmModule_ValidateTests
         // Arrange
         var executionContext = new WasmExecutionContext();
         var bytes = HostLinkingModuleBinary.Create(
-            HostLinkingModuleBinary.Globals(
-                (resultKind, false, [.. Convert.FromHexString(instructions), 0x0B])
-            )
+            HostLinkingModuleBinary.Globals((resultKind, false, [.. Convert.FromHexString(instructions), 0x0B]))
         );
         var module = WasmModule.Decode(bytes);
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => module.Validate())
-            .ThrowsExactly<WasmValidateException>();
+        var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
         using (Assert.Multiple())
         {
             await Assert
-                .That(
-                    exception!.Message.StartsWith(
-                        "constant expression required",
-                        StringComparison.Ordinal
-                    )
-                )
+                .That(exception!.Message.StartsWith("constant expression required", StringComparison.Ordinal))
                 .IsTrue();
             await Assert
                 .That(exception.Location)
-                .IsEqualTo(
-                    new(WasmProcessingStage.Validate, bytes.Length - opcodeLength - 1, null, 6)
-                );
-            await Assert
-                .That(() => module.Instantiate(executionContext, []))
-                .ThrowsExactly<InvalidOperationException>();
+                .IsEqualTo(new(WasmProcessingStage.Validate, bytes.Length - opcodeLength - 1, null, 6));
+            await Assert.That(() => module.Instantiate(executionContext, [])).ThrowsExactly<InvalidOperationException>();
         }
     }
 }

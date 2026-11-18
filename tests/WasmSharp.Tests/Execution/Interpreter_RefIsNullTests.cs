@@ -11,10 +11,7 @@ internal class Interpreter_RefIsNullTests
     [Arguments(WasmValueKind.FuncRef, true)]
     [Arguments(WasmValueKind.ExternRef, false)]
     [Arguments(WasmValueKind.ExternRef, true)]
-    public async Task 参照値を判定する_nullはi32の1で非nullはi32の0へ置き換える(
-        WasmValueKind kind,
-        bool isNull
-    )
+    public async Task 参照値を判定する_nullはi32の1で非nullはi32の0へ置き換える(WasmValueKind kind, bool isNull)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();

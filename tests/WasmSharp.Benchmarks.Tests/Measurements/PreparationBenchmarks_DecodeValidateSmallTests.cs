@@ -27,9 +27,7 @@ internal class PreparationBenchmarks_DecodeValidateSmallTests
         using (Assert.Multiple())
         {
             await Assert.That(ReferenceEquals(first, second)).IsFalse();
-            await Assert
-                .That(() => first.Instantiate(context_, CaseVerifier.CreateImports()))
-                .ThrowsNothing();
+            await Assert.That(() => first.Instantiate(context_, CaseVerifier.CreateImports())).ThrowsNothing();
             await Assert.That(benchmark.Cleanup).ThrowsNothing();
         }
     }

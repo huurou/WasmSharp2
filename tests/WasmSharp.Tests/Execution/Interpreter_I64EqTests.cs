@@ -9,11 +9,7 @@ internal class Interpreter_I64EqTests
     [Arguments(long.MinValue, long.MinValue, 1)]
     [Arguments(1L, 4294967297L, 0)]
     [Arguments(0L, 0L, 1)]
-    public async Task 幅境界と等値のoperand_i32で全bitの等値比較を返す(
-        long left,
-        long right,
-        int expected
-    )
+    public async Task 幅境界と等値のoperand_i32で全bitの等値比較を返す(long left, long right, int expected)
     {
         // Arrange
         WasmValue[] operands = [WasmValue.FromI64(left), WasmValue.FromI64(right)];

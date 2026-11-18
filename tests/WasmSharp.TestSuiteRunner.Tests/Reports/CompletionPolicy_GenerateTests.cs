@@ -14,11 +14,7 @@ internal class CompletionPolicy_GenerateTests
         manifest.Diagnostics.Add(new("conversion", "変換器の確認に失敗しました。"));
 
         // Act
-        var decision = CompletionPolicy.Generate(
-            manifest,
-            ReportStore.Validate(manifest),
-            saved: true
-        );
+        var decision = CompletionPolicy.Generate(manifest, ReportStore.Validate(manifest), saved: true);
 
         // Assert
         using (Assert.Multiple())
@@ -35,11 +31,7 @@ internal class CompletionPolicy_GenerateTests
         var manifest = RunReportFixture.CreateManifest(("a.wast", 1), ("b.wast", 2));
 
         // Act
-        var decision = CompletionPolicy.Generate(
-            manifest,
-            ReportStore.Validate(manifest),
-            saved: true
-        );
+        var decision = CompletionPolicy.Generate(manifest, ReportStore.Validate(manifest), saved: true);
 
         // Assert
         using (Assert.Multiple())
@@ -58,11 +50,7 @@ internal class CompletionPolicy_GenerateTests
         manifest = manifest with { Summary = manifest.Summarize() };
 
         // Act
-        var decision = CompletionPolicy.Generate(
-            manifest,
-            ReportStore.Validate(manifest),
-            saved: true
-        );
+        var decision = CompletionPolicy.Generate(manifest, ReportStore.Validate(manifest), saved: true);
 
         // Assert
         using (Assert.Multiple())
@@ -80,20 +68,14 @@ internal class CompletionPolicy_GenerateTests
         var manifest = CorpusManifestFixture.Create();
 
         // Act
-        var decision = CompletionPolicy.Generate(
-            manifest,
-            ReportStore.Validate(manifest),
-            saved: true
-        );
+        var decision = CompletionPolicy.Generate(manifest, ReportStore.Validate(manifest), saved: true);
 
         // Assert
         using (Assert.Multiple())
         {
             await Assert.That(decision.ExitCode).IsEqualTo(2);
             await Assert.That(decision.Reasons.Any(x => x.Contains("unprocessed.wast"))).IsTrue();
-            await Assert
-                .That(decision.Reasons.Any(x => x.Contains("変換・照合に失敗した入力")))
-                .IsTrue();
+            await Assert.That(decision.Reasons.Any(x => x.Contains("変換・照合に失敗した入力"))).IsTrue();
         }
     }
 
@@ -104,11 +86,7 @@ internal class CompletionPolicy_GenerateTests
         var manifest = RunReportFixture.CreateManifest(("a.wast", 1));
 
         // Act
-        var decision = CompletionPolicy.Generate(
-            manifest,
-            ReportStore.Validate(manifest),
-            saved: false
-        );
+        var decision = CompletionPolicy.Generate(manifest, ReportStore.Validate(manifest), saved: false);
 
         // Assert
         using (Assert.Multiple())

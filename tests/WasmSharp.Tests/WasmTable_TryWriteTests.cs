@@ -7,9 +7,7 @@ internal class WasmTable_TryWriteTests
     [Test]
     [Arguments(WasmValueKind.FuncRef)]
     [Arguments(WasmValueKind.ExternRef)]
-    public async Task 末尾まで参照列を転送する_指定範囲だけを書き換え参照型と同一性を保つ(
-        WasmValueKind kind
-    )
+    public async Task 末尾まで参照列を転送する_指定範囲だけを書き換え参照型と同一性を保つ(WasmValueKind kind)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
@@ -25,10 +23,7 @@ internal class WasmTable_TryWriteTests
             kind == WasmValueKind.FuncRef
                 ? WasmValue.FromFuncRef((WasmFunction)reference)
                 : WasmValue.FromExternRef(reference);
-        var empty =
-            kind == WasmValueKind.FuncRef
-                ? WasmValue.FromFuncRef(null)
-                : WasmValue.FromExternRef(null);
+        var empty = kind == WasmValueKind.FuncRef ? WasmValue.FromFuncRef(null) : WasmValue.FromExternRef(null);
         var values = new[] { value, empty };
         var table = new WasmTable(kind, new WasmLimits(3));
         table.Set(2, value);
@@ -47,9 +42,7 @@ internal class WasmTable_TryWriteTests
             await Assert
                 .That(
                     ReferenceEquals(
-                        kind == WasmValueKind.FuncRef
-                            ? table.Get(1).AsFuncRef()
-                            : table.Get(1).AsExternRef(),
+                        kind == WasmValueKind.FuncRef ? table.Get(1).AsFuncRef() : table.Get(1).AsExternRef(),
                         reference
                     )
                 )
@@ -79,10 +72,7 @@ internal class WasmTable_TryWriteTests
     [Arguments(4u, 0)]
     [Arguments(uint.MaxValue, 0)]
     [Arguments(uint.MaxValue, 1)]
-    public async Task 転送先の範囲が不正である_内容を一部も変更せずfalseを返す(
-        uint destination,
-        int length
-    )
+    public async Task 転送先の範囲が不正である_内容を一部も変更せずfalseを返す(uint destination, int length)
     {
         // Arrange
         var table = new WasmTable(WasmValueKind.ExternRef, new WasmLimits(3));
@@ -104,9 +94,7 @@ internal class WasmTable_TryWriteTests
             await Assert.That(table.Count).IsEqualTo(3u);
             for (uint index = 0; index < table.Count; index++)
             {
-                await Assert
-                    .That(ReferenceEquals(table.Get(index).AsExternRef(), references[index]))
-                    .IsTrue();
+                await Assert.That(ReferenceEquals(table.Get(index).AsExternRef(), references[index])).IsTrue();
             }
         }
     }

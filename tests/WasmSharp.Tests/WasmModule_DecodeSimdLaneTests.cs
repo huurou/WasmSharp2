@@ -10,9 +10,7 @@ internal partial class WasmModule_DecodeTests
     [Arguments("FD20")]
     [Arguments("FD0D")]
     [Arguments("FD0D000000000000000000000000000000")]
-    public async Task SIMD接続のlaneかshuffle即値が切断する_両入力で即値先頭のDecode診断を返す(
-        string instruction
-    )
+    public async Task SIMD接続のlaneかshuffle即値が切断する_両入力で即値先頭のDecode診断を返す(string instruction)
     {
         // Arrange
         var bytes = HostLinkingModuleBinary.Create(
@@ -21,11 +19,7 @@ internal partial class WasmModule_DecodeTests
             HostLinkingModuleBinary.Code(([], Convert.FromHexString(instruction)))
         );
         using var stream = new ChunkedReadStream(new MemoryStream(bytes));
-        Func<WasmModule>[] decoders =
-        [
-            () => WasmModule.Decode(bytes),
-            () => WasmModule.Decode(stream),
-        ];
+        Func<WasmModule>[] decoders = [() => WasmModule.Decode(bytes), () => WasmModule.Decode(stream)];
 
         foreach (var decode in decoders)
         {
@@ -34,18 +28,11 @@ internal partial class WasmModule_DecodeTests
             using (Assert.Multiple())
             {
                 await Assert
-                    .That(
-                        exception!.Message.StartsWith(
-                            "unexpected end of section or function",
-                            StringComparison.Ordinal
-                        )
-                    )
+                    .That(exception!.Message.StartsWith("unexpected end of section or function", StringComparison.Ordinal))
                     .IsTrue();
                 await Assert
                     .That(exception.Location)
-                    .IsEqualTo(
-                        new(WasmProcessingStage.Decode, Array.IndexOf(bytes, (byte)0xFD) + 2, 0, 10)
-                    );
+                    .IsEqualTo(new(WasmProcessingStage.Decode, Array.IndexOf(bytes, (byte)0xFD) + 2, 0, 10));
             }
         }
     }

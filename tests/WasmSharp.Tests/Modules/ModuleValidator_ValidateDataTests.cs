@@ -9,9 +9,7 @@ internal partial class ModuleValidator_ValidateTests
     [Test]
     [Arguments(0u)]
     [Arguments(uint.MaxValue)]
-    public async Task アクティブデータが存在しないメモリを参照する_式より先にセグメント位置で拒否する(
-        uint memoryIndex
-    )
+    public async Task アクティブデータが存在しないメモリを参照する_式より先にセグメント位置で拒否する(uint memoryIndex)
     {
         // Arrange
         var module = new WasmModule(
@@ -30,11 +28,7 @@ internal partial class ModuleValidator_ValidateTests
                     new(
                         memoryIndex,
                         [
-                            DecodedInstruction.WithImmediate(
-                                new(0, 0x42),
-                                WasmValue.FromI64(0),
-                                52
-                            ),
+                            DecodedInstruction.WithImmediate(new(0, 0x42), WasmValue.FromI64(0), 52),
                             DecodedInstruction.WithoutImmediate(new(0, 0x0B), 54),
                         ]
                     ),
@@ -44,22 +38,13 @@ internal partial class ModuleValidator_ValidateTests
         );
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => module.Validate())
-            .ThrowsExactly<WasmValidateException>();
+        var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
         using (Assert.Multiple())
         {
             await Assert
-                .That(
-                    exception!.Message.StartsWith(
-                        $"unknown memory {memoryIndex}",
-                        StringComparison.Ordinal
-                    )
-                )
+                .That(exception!.Message.StartsWith($"unknown memory {memoryIndex}", StringComparison.Ordinal))
                 .IsTrue();
-            await Assert
-                .That(exception.Location)
-                .IsEqualTo(new(WasmProcessingStage.Validate, 50, null, 11));
+            await Assert.That(exception.Location).IsEqualTo(new(WasmProcessingStage.Validate, 50, null, 11));
         }
     }
 
@@ -83,11 +68,7 @@ internal partial class ModuleValidator_ValidateTests
                     new(
                         0,
                         [
-                            DecodedInstruction.WithImmediate(
-                                new(0, 0x42),
-                                WasmValue.FromI64(0),
-                                52
-                            ),
+                            DecodedInstruction.WithImmediate(new(0, 0x42), WasmValue.FromI64(0), 52),
                             DecodedInstruction.WithoutImmediate(new(0, 0x0B), 54),
                         ]
                     ),
@@ -97,17 +78,11 @@ internal partial class ModuleValidator_ValidateTests
         );
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => module.Validate())
-            .ThrowsExactly<WasmValidateException>();
+        var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
         using (Assert.Multiple())
         {
-            await Assert
-                .That(exception!.Message.StartsWith("type mismatch", StringComparison.Ordinal))
-                .IsTrue();
-            await Assert
-                .That(exception.Location)
-                .IsEqualTo(new(WasmProcessingStage.Validate, 54, null, 11));
+            await Assert.That(exception!.Message.StartsWith("type mismatch", StringComparison.Ordinal)).IsTrue();
+            await Assert.That(exception.Location).IsEqualTo(new(WasmProcessingStage.Validate, 54, null, 11));
         }
     }
 
@@ -125,12 +100,7 @@ internal partial class ModuleValidator_ValidateTests
         ModuleImport[] imports =
         [
             new GlobalImport("env", "unused", new(WasmValueKind.I64, false), 20),
-            .. importedMemory
-                ? new ModuleImport[]
-                {
-                    new MemoryImport("env", "memory", new(new(0, null), 25), 25),
-                }
-                : [],
+            .. importedMemory ? new ModuleImport[] { new MemoryImport("env", "memory", new(new(0, null), 25), 25) } : [],
             new GlobalImport("env", "offset", new(WasmValueKind.I32, false), 30),
         ];
         var module = new WasmModule(
@@ -151,11 +121,7 @@ internal partial class ModuleValidator_ValidateTests
                         [
                             useGlobal
                                 ? DecodedInstruction.WithIndex(new(0, 0x23), 1, 52)
-                                : DecodedInstruction.WithImmediate(
-                                    new(0, 0x41),
-                                    WasmValue.FromI32(-1),
-                                    52
-                                ),
+                                : DecodedInstruction.WithImmediate(new(0, 0x41), WasmValue.FromI32(-1), 52),
                             DecodedInstruction.WithoutImmediate(new(0, 0x0B), 54),
                         ]
                     ),
@@ -193,9 +159,7 @@ internal partial class ModuleValidator_ValidateTests
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task データのオフセット式が可変または定義済みglobalを参照する_命令位置で拒否する(
-        bool mutableImport
-    )
+    public async Task データのオフセット式が可変または定義済みglobalを参照する_命令位置で拒否する(bool mutableImport)
     {
         // Arrange
         var module = new WasmModule(
@@ -233,9 +197,7 @@ internal partial class ModuleValidator_ValidateTests
         );
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => module.Validate())
-            .ThrowsExactly<WasmValidateException>();
+        var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
         using (Assert.Multiple())
         {
             await Assert
@@ -246,9 +208,7 @@ internal partial class ModuleValidator_ValidateTests
                     )
                 )
                 .IsTrue();
-            await Assert
-                .That(exception.Location)
-                .IsEqualTo(new(WasmProcessingStage.Validate, 52, null, 11));
+            await Assert.That(exception.Location).IsEqualTo(new(WasmProcessingStage.Validate, 52, null, 11));
         }
     }
 
@@ -272,16 +232,8 @@ internal partial class ModuleValidator_ValidateTests
                     new(
                         0,
                         [
-                            DecodedInstruction.WithImmediate(
-                                new(0, 0x41),
-                                WasmValue.FromI32(1),
-                                52
-                            ),
-                            DecodedInstruction.WithImmediate(
-                                new(0, 0x41),
-                                WasmValue.FromI32(2),
-                                54
-                            ),
+                            DecodedInstruction.WithImmediate(new(0, 0x41), WasmValue.FromI32(1), 52),
+                            DecodedInstruction.WithImmediate(new(0, 0x41), WasmValue.FromI32(2), 54),
                             DecodedInstruction.WithoutImmediate(new(0, 0x6A), 56),
                             DecodedInstruction.WithoutImmediate(new(0, 0x0B), 57),
                         ]
@@ -292,31 +244,20 @@ internal partial class ModuleValidator_ValidateTests
         );
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => module.Validate())
-            .ThrowsExactly<WasmValidateException>();
+        var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
         using (Assert.Multiple())
         {
             await Assert
-                .That(
-                    exception!.Message.StartsWith(
-                        "constant expression required",
-                        StringComparison.Ordinal
-                    )
-                )
+                .That(exception!.Message.StartsWith("constant expression required", StringComparison.Ordinal))
                 .IsTrue();
-            await Assert
-                .That(exception.Location)
-                .IsEqualTo(new(WasmProcessingStage.Validate, 56, null, 11));
+            await Assert.That(exception.Location).IsEqualTo(new(WasmProcessingStage.Validate, 56, null, 11));
         }
     }
 
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task データと関数本体が不正_リソース検証後にデータを宣言順で検証する(
-        bool invalidResource
-    )
+    public async Task データと関数本体が不正_リソース検証後にデータを宣言順で検証する(bool invalidResource)
     {
         // Arrange
         var module = new WasmModule(
@@ -346,11 +287,7 @@ internal partial class ModuleValidator_ValidateTests
                     new(
                         0,
                         [
-                            DecodedInstruction.WithImmediate(
-                                new(0, 0x42),
-                                WasmValue.FromI64(0),
-                                52
-                            ),
+                            DecodedInstruction.WithImmediate(new(0, 0x42), WasmValue.FromI64(0), 52),
                             DecodedInstruction.WithoutImmediate(new(0, 0x0B), 54),
                         ]
                     ),
@@ -361,11 +298,7 @@ internal partial class ModuleValidator_ValidateTests
                     new(
                         1,
                         [
-                            DecodedInstruction.WithImmediate(
-                                new(0, 0x41),
-                                WasmValue.FromI32(0),
-                                62
-                            ),
+                            DecodedInstruction.WithImmediate(new(0, 0x41), WasmValue.FromI32(0), 62),
                             DecodedInstruction.WithoutImmediate(new(0, 0x0B), 64),
                         ]
                     ),
@@ -375,17 +308,13 @@ internal partial class ModuleValidator_ValidateTests
         );
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => module.Validate())
-            .ThrowsExactly<WasmValidateException>();
+        var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
         using (Assert.Multiple())
         {
             await Assert
                 .That(
                     exception!.Message.StartsWith(
-                        invalidResource
-                            ? "size minimum must not be greater than maximum"
-                            : "type mismatch",
+                        invalidResource ? "size minimum must not be greater than maximum" : "type mismatch",
                         StringComparison.Ordinal
                     )
                 )
@@ -393,12 +322,7 @@ internal partial class ModuleValidator_ValidateTests
             await Assert
                 .That(exception.Location)
                 .IsEqualTo(
-                    new(
-                        WasmProcessingStage.Validate,
-                        invalidResource ? 30 : 54,
-                        null,
-                        invalidResource ? (byte)5 : (byte)11
-                    )
+                    new(WasmProcessingStage.Validate, invalidResource ? 30 : 54, null, invalidResource ? (byte)5 : (byte)11)
                 );
         }
     }
@@ -406,9 +330,7 @@ internal partial class ModuleValidator_ValidateTests
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task データまたは後続のexportが不正_再検証でも実行コードと検証成功状態を確定しない(
-        bool invalidData
-    )
+    public async Task データまたは後続のexportが不正_再検証でも実行コードと検証成功状態を確定しない(bool invalidData)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
@@ -428,11 +350,7 @@ internal partial class ModuleValidator_ValidateTests
                     new(
                         invalidData ? 1u : 0u,
                         [
-                            DecodedInstruction.WithImmediate(
-                                new(0, 0x41),
-                                WasmValue.FromI32(0),
-                                52
-                            ),
+                            DecodedInstruction.WithImmediate(new(0, 0x41), WasmValue.FromI32(0), 52),
                             DecodedInstruction.WithoutImmediate(new(0, 0x0B), 54),
                         ]
                     ),
@@ -444,9 +362,7 @@ internal partial class ModuleValidator_ValidateTests
         // Act & Assert
         for (var attempt = 0; attempt < 2; attempt++)
         {
-            var exception = await Assert
-                .That(() => module.Validate())
-                .ThrowsExactly<WasmValidateException>();
+            var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
             using (Assert.Multiple())
             {
                 await Assert
@@ -457,14 +373,10 @@ internal partial class ModuleValidator_ValidateTests
                         )
                     )
                     .IsTrue();
-                await Assert
-                    .That(exception.Location!.SectionId)
-                    .IsEqualTo(invalidData ? (byte)11 : (byte)7);
+                await Assert.That(exception.Location!.SectionId).IsEqualTo(invalidData ? (byte)11 : (byte)7);
                 await Assert.That(module.FunctionCodes.IsEmpty).IsTrue();
                 await Assert.That(module.FunctionExportIndices.IsEmpty).IsTrue();
-                await Assert
-                    .That(() => module.Instantiate(executionContext, []))
-                    .ThrowsExactly<InvalidOperationException>();
+                await Assert.That(() => module.Instantiate(executionContext, [])).ThrowsExactly<InvalidOperationException>();
             }
         }
     }

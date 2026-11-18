@@ -16,9 +16,7 @@ internal class LoadedAssets_GetInputTests
         var assets = AssetManifest.Load(fixture.ManifestPath, json_, methods_);
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => assets.GetInput("unknown-case"))
-            .ThrowsExactly<InvalidDataException>();
+        var exception = await Assert.That(() => assets.GetInput("unknown-case")).ThrowsExactly<InvalidDataException>();
         await Assert.That(exception!.Message).Contains("unknown-case").And.Contains("未登録");
     }
 }

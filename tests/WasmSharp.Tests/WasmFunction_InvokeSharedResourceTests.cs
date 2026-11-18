@@ -24,9 +24,7 @@ internal partial class WasmFunction_InvokeTests
                 (callbackContext, instance, arguments) =>
                 {
                     grown = instance.GetMemory("m").TryGrow(1, out _);
-                    grown &= instance
-                        .GetTable("t")
-                        .TryGrow(1, WasmValue.FromExternRef(reference), out _);
+                    grown &= instance.GetTable("t").TryGrow(1, WasmValue.FromExternRef(reference), out _);
                     instance.GetMemory("m").Write(0, [9]);
                     return new([]);
                 }
@@ -100,9 +98,7 @@ internal partial class WasmFunction_InvokeTests
             await Assert.That(destination.GetMemory("m").PageCount).IsEqualTo(2u);
             await Assert.That(source.GetTable("t").Count).IsEqualTo(2u);
             await Assert.That(table.Get(0).AsExternRef()).IsSameReferenceAs(reference);
-            await Assert
-                .That(destination.GetTable("t").Get(1).AsExternRef())
-                .IsSameReferenceAs(reference);
+            await Assert.That(destination.GetTable("t").Get(1).AsExternRef()).IsSameReferenceAs(reference);
         }
     }
 }

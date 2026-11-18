@@ -10,10 +10,7 @@ internal class Interpreter_BranchIfZeroTests
     [Arguments(0, true)]
     [Arguments(1, false)]
     [Arguments(-1, false)]
-    public async Task 条件がゼロまたは非ゼロ_条件を消費しゼロの場合だけ分岐する(
-        int condition,
-        bool shouldBranch
-    )
+    public async Task 条件がゼロまたは非ゼロ_条件を消費しゼロの場合だけ分岐する(int condition, bool shouldBranch)
     {
         // Arrange
         var discarded = WasmValue.FromI32(11);

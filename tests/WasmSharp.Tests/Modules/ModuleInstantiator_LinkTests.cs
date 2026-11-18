@@ -46,11 +46,7 @@ internal class ModuleInstantiator_LinkTests
     {
         // Arrange
         var module = WasmModule
-            .Decode(
-                HostLinkingModuleBinary.Create(
-                    HostLinkingModuleBinary.Imports(("env", "table", 1, [0x70, 1, 2, 3]))
-                )
-            )
+            .Decode(HostLinkingModuleBinary.Create(HostLinkingModuleBinary.Imports(("env", "table", 1, [0x70, 1, 2, 3]))))
             .Validate();
         var table = new WasmTable(WasmValueKind.ExternRef, new(0, 7));
         table.TryGrow(4, WasmValue.FromExternRef(null), out _);

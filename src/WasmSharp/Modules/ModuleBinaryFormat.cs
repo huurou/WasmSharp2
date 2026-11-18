@@ -31,30 +31,10 @@ internal static class ModuleBinaryFormat
             imports.Add(
                 kind switch
                 {
-                    WasmExternalKind.Function => new FunctionImport(
-                        moduleName,
-                        name,
-                        reader.ReadU32(),
-                        offset
-                    ),
-                    WasmExternalKind.Table => new TableImport(
-                        moduleName,
-                        name,
-                        ReadTableType(ref reader),
-                        offset
-                    ),
-                    WasmExternalKind.Memory => new MemoryImport(
-                        moduleName,
-                        name,
-                        ReadMemoryType(ref reader),
-                        offset
-                    ),
-                    WasmExternalKind.Global => new GlobalImport(
-                        moduleName,
-                        name,
-                        ReadGlobalType(ref reader),
-                        offset
-                    ),
+                    WasmExternalKind.Function => new FunctionImport(moduleName, name, reader.ReadU32(), offset),
+                    WasmExternalKind.Table => new TableImport(moduleName, name, ReadTableType(ref reader), offset),
+                    WasmExternalKind.Memory => new MemoryImport(moduleName, name, ReadMemoryType(ref reader), offset),
+                    WasmExternalKind.Global => new GlobalImport(moduleName, name, ReadGlobalType(ref reader), offset),
                     _ => throw new InvalidOperationException(),
                 }
             );
@@ -130,10 +110,7 @@ internal static class ModuleBinaryFormat
         {
             0 => false,
             1 => true,
-            _ => throw reader.Error(
-                "malformed mutability: globalの可変性の符号化が不正です。",
-                offset
-            ),
+            _ => throw reader.Error("malformed mutability: globalの可変性の符号化が不正です。", offset),
         };
         return new WasmGlobalType(valueKind, isMutable);
     }
@@ -171,11 +148,7 @@ internal static class ModuleBinaryFormat
     /// <param name="reader">照合対象の先頭にある読取り状態 4byte進める</param>
     /// <param name="expected">期待する4byte</param>
     /// <param name="message">完全な不一致の診断先頭</param>
-    private static void ReadHeaderWord(
-        ref ModuleBinaryReader reader,
-        ReadOnlySpan<byte> expected,
-        string message
-    )
+    private static void ReadHeaderWord(ref ModuleBinaryReader reader, ReadOnlySpan<byte> expected, string message)
     {
         long? mismatch = null;
         foreach (var value in expected)
@@ -201,20 +174,14 @@ internal static class ModuleBinaryFormat
     /// <returns>元の入力位置とsection IDを保持する、payloadに限定した読み取り状態</returns>
     /// <exception cref="WasmDecodeException">ID、長さ、標準sectionの順序または重複が不正な場合</exception>
     /// <exception cref="ModuleReadBoundaryException">限定された範囲内で構文を読み終えられない場合</exception>
-    internal static ModuleBinaryReader ReadSection(
-        ref ModuleBinaryReader reader,
-        ref int previousRank
-    )
+    internal static ModuleBinaryReader ReadSection(ref ModuleBinaryReader reader, ref int previousRank)
     {
         var offset = reader.Position;
         var id = reader.ReadByte();
         reader.SectionId = id;
         if (id > 12)
         {
-            throw reader.Error(
-                "malformed section id: Core 2.0に存在しないsection IDです。",
-                offset
-            );
+            throw reader.Error("malformed section id: Core 2.0に存在しないsection IDです。", offset);
         }
 
         if (id != 0)
@@ -229,10 +196,7 @@ internal static class ModuleBinaryFormat
             };
             if (rank <= previousRank)
             {
-                throw reader.Error(
-                    "unexpected content after last section: sectionの順序または重複が不正です。",
-                    offset
-                );
+                throw reader.Error("unexpected content after last section: sectionの順序または重複が不正です。", offset);
             }
 
             previousRank = rank;
@@ -263,12 +227,7 @@ internal static class ModuleBinaryFormat
 
             var parameters = ReadValueTypes(ref reader);
             var results = ReadValueTypes(ref reader);
-            types.Add(
-                new WasmFunctionType(
-                    CollectionsMarshal.AsSpan(parameters),
-                    CollectionsMarshal.AsSpan(results)
-                )
-            );
+            types.Add(new WasmFunctionType(CollectionsMarshal.AsSpan(parameters), CollectionsMarshal.AsSpan(results)));
         }
 
         return types;
@@ -313,10 +272,7 @@ internal static class ModuleBinaryFormat
             -0x05 => WasmValueKind.V128,
             -0x10 => WasmValueKind.FuncRef,
             -0x11 => WasmValueKind.ExternRef,
-            _ => throw reader.Error(
-                "malformed reference type: Core 2.0に存在しない値型です。",
-                offset
-            ),
+            _ => throw reader.Error("malformed reference type: Core 2.0に存在しない値型です。", offset),
         };
     }
 
@@ -380,12 +336,7 @@ internal static class ModuleBinaryFormat
     /// <param name="reader">診断のsectionと関数を持つ読取り状態 位置は変更しない</param>
     /// <param name="offset">上限を超える要素数が判明した入力位置</param>
     /// <param name="message">保持対象の説明</param>
-    internal static void EnsureCollectionSize(
-        ulong count,
-        ref ModuleBinaryReader reader,
-        long offset,
-        string message
-    )
+    internal static void EnsureCollectionSize(ulong count, ref ModuleBinaryReader reader, long offset, string message)
     {
         if (count > (ulong)Array.MaxLength)
         {
@@ -408,9 +359,7 @@ internal static class ModuleBinaryFormat
     {
         if (reader.Position != reader.DeclaredEnd)
         {
-            throw reader.BoundaryError(
-                "section size mismatch: 読取り位置が宣言終端と一致しません。"
-            );
+            throw reader.BoundaryError("section size mismatch: 読取り位置が宣言終端と一致しません。");
         }
     }
 }

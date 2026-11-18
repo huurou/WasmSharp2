@@ -7,9 +7,4 @@ namespace WasmSharp.TestSuiteRunner.Baselines;
 /// <param name="Property">差がある属性</param>
 /// <param name="Baseline">比較元の値 存在しない場合はnull</param>
 /// <param name="Current">現結果の値 存在しない場合はnull</param>
-internal sealed record EntryDifference(
-    string Path,
-    string Property,
-    string? Baseline,
-    string? Current
-);
+internal sealed record EntryDifference(string Path, string Property, string? Baseline, string? Current);

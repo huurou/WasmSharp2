@@ -19,11 +19,7 @@ internal class Interpreter_LocalSetTests
                 InstructionFixture.Create(0x42, 83, immediate: WasmValue.FromI64(9)),
                 InstructionFixture.Create(0x21, 85, 0),
                 InstructionFixture.Create(0x20, 87, 0),
-                InstructionFixture.Create(
-                    0x44,
-                    89,
-                    immediate: WasmValue.FromF64Bits(0xFFF4000000000001)
-                ),
+                InstructionFixture.Create(0x44, 89, immediate: WasmValue.FromF64Bits(0xFFF4000000000001)),
                 InstructionFixture.Create(0x21, 98, 1),
                 InstructionFixture.Create(0x20, 100, 1),
                 InstructionFixture.Create(0x0B, 102),
@@ -46,12 +42,7 @@ internal class Interpreter_LocalSetTests
             context.TryEnterCall();
             context.PushFrame(frame);
             context.PushValue(outer);
-            result = Interpreter.Run(
-                context,
-                function,
-                [WasmValue.FromI64(1)],
-                WasmProcessingStage.Invoke
-            );
+            result = Interpreter.Run(context, function, [WasmValue.FromI64(1)], WasmProcessingStage.Invoke);
             actualOuter = context.GetValue(0);
         }
         finally

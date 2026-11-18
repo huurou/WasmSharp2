@@ -71,10 +71,7 @@ internal class ReportStore_ReadTests
             """,
         "kind"
     )]
-    public async Task 有効な実行結果のschemaやkindだけを変える_読み替えず読取を拒否する(
-        string header,
-        string expected
-    )
+    public async Task 有効な実行結果のschemaやkindだけを変える_読み替えず読取を拒否する(string header, string expected)
     {
         // Arrange
         using var directory = new TemporaryDirectory();
@@ -87,9 +84,7 @@ internal class ReportStore_ReadTests
         );
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => reportStore_.Read(path))
-            .ThrowsExactly<ReportStoreException>();
+        var exception = await Assert.That(() => reportStore_.Read(path)).ThrowsExactly<ReportStoreException>();
         using (Assert.Multiple())
         {
             await Assert.That(exception!.Message).Contains(path);
@@ -148,19 +143,13 @@ internal class ReportStore_ReadTests
         var path = await WriteModifiedSampleAsync(directory, original, replacement);
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => reportStore_.Read(path))
-            .ThrowsExactly<ReportStoreException>();
+        var exception = await Assert.That(() => reportStore_.Read(path)).ThrowsExactly<ReportStoreException>();
         await Assert.That(exception!.InnerException).IsTypeOf<JsonException>();
     }
 
     [Test]
     [Arguments("\"max_call_depth\":1024", "", "max_call_depth")]
-    [Arguments(
-        "\"execution_policy\":{\"max_call_depth\":1024}",
-        "\"execution_policy\":null",
-        "execution_policy"
-    )]
+    [Arguments("\"execution_policy\":{\"max_call_depth\":1024}", "\"execution_policy\":null", "execution_policy")]
     public async Task 実行ポリシーがnullまたは必須項目を欠く_構造不正として読取を拒否する(
         string original,
         string replacement,
@@ -172,9 +161,7 @@ internal class ReportStore_ReadTests
         var path = await WriteModifiedSampleAsync(directory, original, replacement);
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => reportStore_.Read(path))
-            .ThrowsExactly<ReportStoreException>();
+        var exception = await Assert.That(() => reportStore_.Read(path)).ThrowsExactly<ReportStoreException>();
         using (Assert.Multiple())
         {
             await Assert.That(exception!.InnerException).IsTypeOf<JsonException>();
@@ -193,18 +180,14 @@ internal class ReportStore_ReadTests
             "inputs":[
             """
     )]
-    public async Task 有効な実行結果の一覧にnullの要素を含める_構造不正として読取を拒否する(
-        string original
-    )
+    public async Task 有効な実行結果の一覧にnullの要素を含める_構造不正として読取を拒否する(string original)
     {
         // Arrange
         using var directory = new TemporaryDirectory();
         var path = await WriteModifiedSampleAsync(directory, original, original + "null,");
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => reportStore_.Read(path))
-            .ThrowsExactly<ReportStoreException>();
+        var exception = await Assert.That(() => reportStore_.Read(path)).ThrowsExactly<ReportStoreException>();
         using (Assert.Multiple())
         {
             await Assert.That(exception!.Message).Contains(path);
@@ -223,18 +206,14 @@ internal class ReportStore_ReadTests
         await File.WriteAllBytesAsync(path, content[..(content.Length / 2)]);
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => reportStore_.Read(path))
-            .ThrowsExactly<ReportStoreException>();
+        var exception = await Assert.That(() => reportStore_.Read(path)).ThrowsExactly<ReportStoreException>();
         using (Assert.Multiple())
         {
             await Assert.That(exception!.InnerException).IsTypeOf<JsonException>();
             await Assert.That(exception.Path).IsEqualTo(path);
             await Assert
                 .That(exception.Message)
-                .IsEqualTo(
-                    $"{path}を保存済み結果のJSONとして読み取れません: {exception.InnerException!.Message}"
-                );
+                .IsEqualTo($"{path}を保存済み結果のJSONとして読み取れません: {exception.InnerException!.Message}");
         }
     }
 
@@ -247,9 +226,7 @@ internal class ReportStore_ReadTests
         var relativePath = Path.GetRelativePath(Environment.CurrentDirectory, fullPath);
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => reportStore_.Read(relativePath))
-            .ThrowsExactly<ReportStoreException>();
+        var exception = await Assert.That(() => reportStore_.Read(relativePath)).ThrowsExactly<ReportStoreException>();
         using (Assert.Multiple())
         {
             await Assert.That(exception!.Path).IsEqualTo(fullPath);
@@ -264,17 +241,10 @@ internal class ReportStore_ReadTests
     public async Task 素材スナップショットと集計を欠く標本を読む_構造不正として読取を拒否する()
     {
         // Arrange
-        var path = Path.Combine(
-            AppContext.BaseDirectory,
-            "Fixtures",
-            "Data",
-            "incomplete-run-report.json"
-        );
+        var path = Path.Combine(AppContext.BaseDirectory, "Fixtures", "Data", "incomplete-run-report.json");
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => reportStore_.Read(path))
-            .ThrowsExactly<ReportStoreException>();
+        var exception = await Assert.That(() => reportStore_.Read(path)).ThrowsExactly<ReportStoreException>();
         await Assert.That(exception!.InnerException).IsTypeOf<JsonException>();
     }
 
@@ -286,16 +256,11 @@ internal class ReportStore_ReadTests
         // Arrange
         using var directory = new TemporaryDirectory();
         var report = RunReportFixture.CreateSample();
-        report.Inputs[0].Cases[0] = report.Inputs[0].Cases[0] with
-        {
-            Id = new(inputPath, commandIndex),
-        };
+        report.Inputs[0].Cases[0] = report.Inputs[0].Cases[0] with { Id = new(inputPath, commandIndex) };
         var path = await directory.WriteJsonAsync("run.json", report);
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => reportStore_.Read(path))
-            .ThrowsExactly<ReportStoreException>();
+        var exception = await Assert.That(() => reportStore_.Read(path)).ThrowsExactly<ReportStoreException>();
         await Assert.That(exception!.Message).Contains($"{inputPath}#{commandIndex}");
     }
 
@@ -306,11 +271,7 @@ internal class ReportStore_ReadTests
         using var directory = new TemporaryDirectory();
         var report = RunReportFixture.CreateSample();
         var cases = report.Inputs[0].Cases;
-        report.Inputs[0] = report.Inputs[0] with
-        {
-            CommandCount = null,
-            Cases = [cases[0], cases[2], cases[2], cases[3]],
-        };
+        report.Inputs[0] = report.Inputs[0] with { CommandCount = null, Cases = [cases[0], cases[2], cases[2], cases[3]] };
         var path = await directory.WriteJsonAsync("run.json", report);
 
         // Act
@@ -322,25 +283,13 @@ internal class ReportStore_ReadTests
             await Assert.That(stored.Report.Inputs[0].Cases.Count).IsEqualTo(4);
             await Assert.That(stored.Report.Inputs[1].Cases.Count).IsEqualTo(2);
             await Assert
-                .That(
-                    stored.Issues.Any(x =>
-                        x.Kind == RecordIssueKind.Missing && x.Message.Contains("a.wast#1")
-                    )
-                )
+                .That(stored.Issues.Any(x => x.Kind == RecordIssueKind.Missing && x.Message.Contains("a.wast#1")))
                 .IsTrue();
             await Assert
-                .That(
-                    stored.Issues.Any(x =>
-                        x.Kind == RecordIssueKind.Duplicate && x.Message.Contains("a.wast#2")
-                    )
-                )
+                .That(stored.Issues.Any(x => x.Kind == RecordIssueKind.Duplicate && x.Message.Contains("a.wast#2")))
                 .IsTrue();
-            await Assert
-                .That(stored.Issues.Any(x => x.Kind == RecordIssueKind.Undetermined))
-                .IsTrue();
-            await Assert
-                .That(stored.Issues.Any(x => x.Kind == RecordIssueKind.Inconsistent))
-                .IsTrue();
+            await Assert.That(stored.Issues.Any(x => x.Kind == RecordIssueKind.Undetermined)).IsTrue();
+            await Assert.That(stored.Issues.Any(x => x.Kind == RecordIssueKind.Inconsistent)).IsTrue();
         }
     }
 
@@ -352,10 +301,7 @@ internal class ReportStore_ReadTests
     {
         var path = await directory.WriteJsonAsync("run.json", RunReportFixture.CreateSample());
         var json = await File.ReadAllTextAsync(path);
-        await File.WriteAllTextAsync(
-            path,
-            json.Replace(original, replacement, StringComparison.Ordinal)
-        );
+        await File.WriteAllTextAsync(path, json.Replace(original, replacement, StringComparison.Ordinal));
         return path;
     }
 }

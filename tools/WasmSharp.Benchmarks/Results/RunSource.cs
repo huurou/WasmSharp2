@@ -46,12 +46,7 @@ internal enum AssemblyRole
 /// <summary>
 /// 実行前後の内容変化 nullのhashは該当時点でのファイル不存在を表す。
 /// </summary>
-internal sealed record ContentChange(
-    ContentKind Kind,
-    string Path,
-    string? BeforeSha256,
-    string? AfterSha256
-);
+internal sealed record ContentChange(ContentKind Kind, string Path, string? BeforeSha256, string? AfterSha256);
 
 /// <summary>
 /// 途中変更を確認するファイルの種類

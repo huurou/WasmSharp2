@@ -61,10 +61,7 @@ internal sealed class RunComparisonFixture : IDisposable
                     ],
                     EnvironmentVariables =
                     [
-                        new(
-                            "WASMSHARP_BENCHMARK_RUN_CONFIG",
-                            root + "/runs/" + runId + "/run-config.json"
-                        ),
+                        new("WASMSHARP_BENCHMARK_RUN_CONFIG", root + "/runs/" + runId + "/run-config.json"),
                     ],
                 },
             ],
@@ -75,20 +72,12 @@ internal sealed class RunComparisonFixture : IDisposable
             AssembliesBefore =
             [
                 new(AssemblyRole.Runtime, root + "/bin/WasmSharp.dll", runId + "-runtime"),
-                new(
-                    AssemblyRole.Harness,
-                    root + "/bin/WasmSharp.Benchmarks.dll",
-                    runId + "-harness"
-                ),
+                new(AssemblyRole.Harness, root + "/bin/WasmSharp.Benchmarks.dll", runId + "-harness"),
             ],
             AssembliesAfter =
             [
                 new(AssemblyRole.Runtime, root + "/bin/WasmSharp.dll", runId + "-runtime"),
-                new(
-                    AssemblyRole.Harness,
-                    root + "/bin/WasmSharp.Benchmarks.dll",
-                    runId + "-harness"
-                ),
+                new(AssemblyRole.Harness, root + "/bin/WasmSharp.Benchmarks.dll", runId + "-harness"),
             ],
             Runtime = template_.Source.Runtime with
             {
@@ -104,22 +93,20 @@ internal sealed class RunComparisonFixture : IDisposable
                 Files =
                 [
                     .. template_.Source.Harness.Files,
-                    new(
-                        "tools/WasmSharp.Benchmarks/Measurements/InvokeBenchmarks.cs",
-                        "harness-code"
-                    ),
+                    new("tools/WasmSharp.Benchmarks/Measurements/InvokeBenchmarks.cs", "harness-code"),
                 ],
             },
         };
-        Cases = [.. JsonSerializer
-            .Deserialize<List<BenchmarkCase>>(
-                File.ReadAllBytes(
-                    Path.Combine(AppContext.BaseDirectory, "Fixtures", "Data", "cases.json")
-                ),
-                json_.Options
-            )!
-            .Where(x => x.CaseId == "invoke.single")
-            .Select(x => x with { Workload = [new("calls", 1, WorkloadUnit.Iterations)] })];
+        Cases =
+        [
+            .. JsonSerializer
+                .Deserialize<List<BenchmarkCase>>(
+                    File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "Fixtures", "Data", "cases.json")),
+                    json_.Options
+                )!
+                .Where(x => x.CaseId == "invoke.single")
+                .Select(x => x with { Workload = [new("calls", 1, WorkloadUnit.Iterations)] }),
+        ];
         Assets = new(
             1,
             new("core2-profile.json", "profile-hash"),
@@ -158,15 +145,18 @@ internal sealed class RunComparisonFixture : IDisposable
         };
         Assets = Assets with
         {
-            Assets = [.. cases
-                .DistinctBy(x => x.AssetId)
-                .Select(x =>
-                    Assets.Assets.Single() with
-                    {
-                        AssetId = x.AssetId,
-                        Binary = new("wasm/" + x.AssetId + ".wasm", x.AssetSha256),
-                    }
-                )],
+            Assets =
+            [
+                .. cases
+                    .DistinctBy(x => x.AssetId)
+                    .Select(x =>
+                        Assets.Assets.Single() with
+                        {
+                            AssetId = x.AssetId,
+                            Binary = new("wasm/" + x.AssetId + ".wasm", x.AssetSha256),
+                        }
+                    ),
+            ],
         };
     }
 
@@ -207,10 +197,7 @@ internal sealed class RunComparisonFixture : IDisposable
                         AffinityBefore = hasAffinity ? affinity : AffinityBefore,
                         AffinityAfter = hasAffinity ? affinity : AffinityAfter,
                         AffinityUnavailableReason = AffinityUnavailableReason,
-                        RuntimeVersion = ProcessRuntimeVersions.GetValueOrDefault(
-                            key,
-                            ProcessRuntimeVersion
-                        ),
+                        RuntimeVersion = ProcessRuntimeVersions.GetValueOrDefault(key, ProcessRuntimeVersion),
                     }
                 );
                 processes.Add(
@@ -229,17 +216,9 @@ internal sealed class RunComparisonFixture : IDisposable
                     RawFiles = [raw, measurements],
                     Metrics = result.Metrics with
                     {
-                        Time = result.Metrics.Time is { } time
-                            ? time with
-                            {
-                                RawMeasurements = measurements,
-                            }
-                            : null,
+                        Time = result.Metrics.Time is { } time ? time with { RawMeasurements = measurements } : null,
                     },
-                    BenchmarkReport = result.BenchmarkReport! with
-                    {
-                        Processes = processes,
-                    },
+                    BenchmarkReport = result.BenchmarkReport! with { Processes = processes },
                 }
             );
         }

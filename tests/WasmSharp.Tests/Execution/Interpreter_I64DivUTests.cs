@@ -14,11 +14,7 @@ internal class Interpreter_I64DivUTests
     [Arguments(-1L, long.MinValue, 1L)]
     [Arguments(-1L, 1L, -1L)]
     [Arguments(0L, 3L, 0L)]
-    public async Task 左右が異なる値と最上位bit_符号なしの整数商を同幅のbit列で返す(
-        long left,
-        long right,
-        long expected
-    )
+    public async Task 左右が異なる値と最上位bit_符号なしの整数商を同幅のbit列で返す(long left, long right, long expected)
     {
         // Arrange
         WasmValue[] operands = [WasmValue.FromI64(left), WasmValue.FromI64(right)];

@@ -32,11 +32,7 @@ internal class Interpreter_I32x4GeUTests
     )
     {
         // Arrange
-        WasmValue[] operands =
-        [
-            WasmValue.FromV128(firstLow64, firstHigh64),
-            WasmValue.FromV128(secondLow64, secondHigh64),
-        ];
+        WasmValue[] operands = [WasmValue.FromV128(firstLow64, firstHigh64), WasmValue.FromV128(secondLow64, secondHigh64)];
 
         // Act
         var actual = SimdHandlerFixture.Execute(Interpreter.I32x4GeU, operands);

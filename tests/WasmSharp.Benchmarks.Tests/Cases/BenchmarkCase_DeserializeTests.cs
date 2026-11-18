@@ -31,21 +31,15 @@ internal partial class BenchmarkCase_DeserializeTests
             await Assert.That(restored.InputHash).IsEqualTo(new string('b', 64));
             await Assert.That(restored.MeasurementStage).IsEqualTo(MeasurementStage.Invoke);
             await Assert.That(restored.OperationDefinition.OperationsPerInvoke).IsEqualTo(1U);
-            await Assert
-                .That(restored.OperationDefinition.Description)
-                .IsEqualTo("公開Invokeを1回");
+            await Assert.That(restored.OperationDefinition.Description).IsEqualTo("公開Invokeを1回");
             await Assert.That(restored.Workload.Single().Count).IsEqualTo(4UL);
             await Assert.That(restored.Workload.Single().Unit).IsEqualTo(WorkloadUnit.Elements);
             await Assert.That(restored.StatePolicy).IsEqualTo(StatePolicy.OverwriteOutput);
             await Assert.That(restored.OperationDefinition.IncludesStateRestoration).IsFalse();
             await Assert.That(restored.ComparisonGroup).IsEqualTo("fixture.same-input");
             await Assert.That(restored.Input.FunctionExport).IsEqualTo("run");
-            await Assert
-                .That(restored.Input.Arguments[0])
-                .IsEqualTo(new NumericValue(NumericType.I32, "ffffffff"));
-            await Assert
-                .That(restored.Input.Arguments[1])
-                .IsEqualTo(new NumericValue(NumericType.F64, "8000000000000000"));
+            await Assert.That(restored.Input.Arguments[0]).IsEqualTo(new NumericValue(NumericType.I32, "ffffffff"));
+            await Assert.That(restored.Input.Arguments[1]).IsEqualTo(new NumericValue(NumericType.F64, "8000000000000000"));
             var input = restored.Input.Arrays.Single();
             await Assert.That(input.MemoryExport).IsEqualTo("memory");
             await Assert.That(input.Offset).IsEqualTo(16U);
@@ -56,14 +50,12 @@ internal partial class BenchmarkCase_DeserializeTests
             await Assert.That(input.FillByte).IsNull();
             await Assert
                 .That(
-                    restored.ExpectedResult.Values.SequenceEqual(
-                        [
-                            new(NumericType.I32, "ffffffff"),
-                            new(NumericType.I64, "ffffffffffffffff"),
-                            new(NumericType.F32, "80000000"),
-                            new(NumericType.F64, "7ff8000000000042"),
-                        ]
-                    )
+                    restored.ExpectedResult.Values.SequenceEqual([
+                        new(NumericType.I32, "ffffffff"),
+                        new(NumericType.I64, "ffffffffffffffff"),
+                        new(NumericType.F32, "80000000"),
+                        new(NumericType.F64, "7ff8000000000042"),
+                    ])
                 )
                 .IsTrue();
             var output = restored.ExpectedResult.Arrays.Single();
@@ -94,9 +86,7 @@ internal partial class BenchmarkCase_DeserializeTests
 
         // Act & Assert
         await Assert
-            .That(() =>
-                JsonSerializer.Deserialize<BenchmarkCase>(fixture.ToJsonString(), json_.Options)
-            )
+            .That(() => JsonSerializer.Deserialize<BenchmarkCase>(fixture.ToJsonString(), json_.Options))
             .ThrowsExactly<JsonException>();
     }
 
@@ -112,9 +102,7 @@ internal partial class BenchmarkCase_DeserializeTests
 
         // Act & Assert
         await Assert
-            .That(() =>
-                JsonSerializer.Deserialize<BenchmarkCase>(fixture.ToJsonString(), json_.Options)
-            )
+            .That(() => JsonSerializer.Deserialize<BenchmarkCase>(fixture.ToJsonString(), json_.Options))
             .ThrowsExactly<JsonException>();
     }
 
@@ -127,9 +115,7 @@ internal partial class BenchmarkCase_DeserializeTests
 
         // Act & Assert
         await Assert
-            .That(() =>
-                JsonSerializer.Deserialize<BenchmarkCase>(fixture.ToJsonString(), json_.Options)
-            )
+            .That(() => JsonSerializer.Deserialize<BenchmarkCase>(fixture.ToJsonString(), json_.Options))
             .ThrowsExactly<JsonException>();
     }
 
@@ -142,26 +128,14 @@ internal partial class BenchmarkCase_DeserializeTests
 
         // Act & Assert
         await Assert
-            .That(() =>
-                JsonSerializer.Deserialize<BenchmarkCase>(fixture.ToJsonString(), json_.Options)
-            )
+            .That(() => JsonSerializer.Deserialize<BenchmarkCase>(fixture.ToJsonString(), json_.Options))
             .ThrowsExactly<JsonException>();
     }
 
     [Test]
     [Arguments("decode", MeasurementStage.Decode, "fresh_module", StatePolicy.FreshModule)]
-    [Arguments(
-        "decode_validate",
-        MeasurementStage.DecodeValidate,
-        "fresh_module",
-        StatePolicy.FreshModule
-    )]
-    [Arguments(
-        "instantiate",
-        MeasurementStage.Instantiate,
-        "fresh_instance",
-        StatePolicy.FreshInstance
-    )]
+    [Arguments("decode_validate", MeasurementStage.DecodeValidate, "fresh_module", StatePolicy.FreshModule)]
+    [Arguments("instantiate", MeasurementStage.Instantiate, "fresh_instance", StatePolicy.FreshInstance)]
     [Arguments("invoke", MeasurementStage.Invoke, "read_only", StatePolicy.ReadOnly)]
     [Arguments("invoke", MeasurementStage.Invoke, "fixed_point", StatePolicy.FixedPoint)]
     public async Task 区間と開始状態を保存する_独立した分類として復元する(
@@ -177,10 +151,7 @@ internal partial class BenchmarkCase_DeserializeTests
         fixture["state_policy"] = state;
 
         // Act
-        var definition = JsonSerializer.Deserialize<BenchmarkCase>(
-            fixture.ToJsonString(),
-            json_.Options
-        )!;
+        var definition = JsonSerializer.Deserialize<BenchmarkCase>(fixture.ToJsonString(), json_.Options)!;
 
         // Assert
         using (Assert.Multiple())
@@ -192,8 +163,6 @@ internal partial class BenchmarkCase_DeserializeTests
 
     private static Task<string> ReadFixtureAsync()
     {
-        return File.ReadAllTextAsync(
-            Path.Combine(AppContext.BaseDirectory, "Fixtures", "Data", "benchmark-case.json")
-        );
+        return File.ReadAllTextAsync(Path.Combine(AppContext.BaseDirectory, "Fixtures", "Data", "benchmark-case.json"));
     }
 }

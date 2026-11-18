@@ -49,25 +49,14 @@ internal static class ModuleValidator
         {
             foreach (var initializer in element.Initializers)
             {
-                ConstantInitializer.Validate(
-                    initializer,
-                    element.ElementType,
-                    importedGlobals,
-                    references,
-                    9
-                );
+                ConstantInitializer.Validate(initializer, element.ElementType, importedGlobals, references, 9);
             }
             var target = element.ActiveTarget;
             if (target is null)
             {
                 continue;
             }
-            var location = new WasmFailureLocation(
-                WasmProcessingStage.Validate,
-                element.ByteOffset,
-                null,
-                9
-            );
+            var location = new WasmFailureLocation(WasmProcessingStage.Validate, element.ByteOffset, null, 9);
             if (target.TableIndex >= (uint)references.TableElementTypes.Length)
             {
                 throw ValidationDiagnostics.UnknownIndex(
@@ -85,13 +74,7 @@ internal static class ModuleValidator
                     location
                 );
             }
-            ConstantInitializer.Validate(
-                target.OffsetExpression,
-                WasmValueKind.I32,
-                importedGlobals,
-                references,
-                9
-            );
+            ConstantInitializer.Validate(target.OffsetExpression, WasmValueKind.I32, importedGlobals, references, 9);
         }
     }
 
@@ -101,11 +84,7 @@ internal static class ModuleValidator
     /// <param name="module">リソース宣言の検証を終えたmodule</param>
     /// <param name="importedMemoryCount">importしたmemoryの個数</param>
     /// <param name="references">当該module検証で共有する参照情報</param>
-    private static void ValidateData(
-        WasmModule module,
-        uint importedMemoryCount,
-        ReferenceValidationContext references
-    )
+    private static void ValidateData(WasmModule module, uint importedMemoryCount, ReferenceValidationContext references)
     {
         var memoryCount = importedMemoryCount + (uint)module.Memories.Length;
         var importedGlobals = module.Imports.OfType<GlobalImport>().Select(x => x.Type).ToArray();
@@ -125,13 +104,7 @@ internal static class ModuleValidator
                     new(WasmProcessingStage.Validate, data.ByteOffset, null, 11)
                 );
             }
-            ConstantInitializer.Validate(
-                target.OffsetExpression,
-                WasmValueKind.I32,
-                importedGlobals,
-                references,
-                11
-            );
+            ConstantInitializer.Validate(target.OffsetExpression, WasmValueKind.I32, importedGlobals, references, 11);
         }
     }
 
@@ -141,10 +114,7 @@ internal static class ModuleValidator
     /// <param name="module">importと定義関数の型参照、global初期化式、リソース宣言、要素・データセグメントの検証を終えたmodule</param>
     /// <param name="references">当該module検証で共有する参照情報</param>
     /// <returns>ローカルに保持した定義順の線形実行コード</returns>
-    private static ImmutableArray<FunctionCode> ValidateFunctions(
-        WasmModule module,
-        ReferenceValidationContext references
-    )
+    private static ImmutableArray<FunctionCode> ValidateFunctions(WasmModule module, ReferenceValidationContext references)
     {
         var importedFunctionCount = (uint)module.Imports.Count(x => x is FunctionImport);
         WasmFunctionType[] functionTypes =
@@ -180,21 +150,12 @@ internal static class ModuleValidator
     /// </summary>
     /// <param name="module">デコード済みの静的定義</param>
     /// <param name="references">当該module検証で共有する参照情報</param>
-    private static void ValidateInitializers(
-        WasmModule module,
-        ReferenceValidationContext references
-    )
+    private static void ValidateInitializers(WasmModule module, ReferenceValidationContext references)
     {
         var importedGlobals = module.Imports.OfType<GlobalImport>().Select(x => x.Type).ToArray();
         foreach (var global in module.Globals)
         {
-            ConstantInitializer.Validate(
-                global.Initializer,
-                global.Type.ValueKind,
-                importedGlobals,
-                references,
-                6
-            );
+            ConstantInitializer.Validate(global.Initializer, global.Type.ValueKind, importedGlobals, references, 6);
         }
     }
 
@@ -211,12 +172,7 @@ internal static class ModuleValidator
 
         var start = module.Start.Value;
         var imports = module.Imports.OfType<FunctionImport>().ToArray();
-        var location = new WasmFailureLocation(
-            WasmProcessingStage.Validate,
-            start.ByteOffset,
-            start.FunctionIndex,
-            8
-        );
+        var location = new WasmFailureLocation(WasmProcessingStage.Validate, start.ByteOffset, start.FunctionIndex, 8);
         if (start.FunctionIndex >= (ulong)imports.Length + (uint)module.Functions.Length)
         {
             throw ValidationDiagnostics.UnknownIndex(
@@ -247,11 +203,7 @@ internal static class ModuleValidator
     /// </summary>
     /// <param name="module">デコード済みの静的定義</param>
     /// <returns>importした関数・memory・globalの個数</returns>
-    private static (
-        uint FunctionCount,
-        uint MemoryCount,
-        uint GlobalCount
-    ) ValidateImportReferences(WasmModule module)
+    private static (uint FunctionCount, uint MemoryCount, uint GlobalCount) ValidateImportReferences(WasmModule module)
     {
         uint functionCount = 0;
         uint memoryCount = 0;
@@ -276,23 +228,11 @@ internal static class ModuleValidator
         for (var index = module.Imports.Length - 1; index >= 0; index--)
         {
             var import = module.Imports[index];
-            var location = new WasmFailureLocation(
-                WasmProcessingStage.Validate,
-                import.ByteOffset,
-                null,
-                2
-            );
+            var location = new WasmFailureLocation(WasmProcessingStage.Validate, import.ByteOffset, null, 2);
             switch (import)
             {
                 case FunctionImport function:
-                    ValidateTypeIndex(
-                        module,
-                        function.TypeIndex,
-                        location with
-                        {
-                            FunctionIndex = --functionIndex,
-                        }
-                    );
+                    ValidateTypeIndex(module, function.TypeIndex, location with { FunctionIndex = --functionIndex });
                     break;
 
                 case TableImport table:
@@ -333,17 +273,11 @@ internal static class ModuleValidator
     {
         foreach (var table in module.Tables)
         {
-            ValidateLimits(
-                table.Limits,
-                new(WasmProcessingStage.Validate, table.ByteOffset, null, 4)
-            );
+            ValidateLimits(table.Limits, new(WasmProcessingStage.Validate, table.ByteOffset, null, 4));
         }
         foreach (var memory in module.Memories)
         {
-            ValidateMemory(
-                memory.Limits,
-                new(WasmProcessingStage.Validate, memory.ByteOffset, null, 5)
-            );
+            ValidateMemory(memory.Limits, new(WasmProcessingStage.Validate, memory.ByteOffset, null, 5));
         }
     }
 
@@ -388,9 +322,7 @@ internal static class ModuleValidator
                     WasmExternalKind.Table => "table",
                     WasmExternalKind.Memory => "memory",
                     WasmExternalKind.Global => "global",
-                    _ => throw new InvalidOperationException(
-                        "デコード済みexportの種類が不正です。"
-                    ),
+                    _ => throw new InvalidOperationException("デコード済みexportの種類が不正です。"),
                 };
                 throw ValidationDiagnostics.UnknownIndex(
                     category,
@@ -416,20 +348,11 @@ internal static class ModuleValidator
     /// <param name="module">関数型を保持するmodule</param>
     /// <param name="typeIndex">未検証の型index</param>
     /// <param name="location">参照元の位置</param>
-    private static void ValidateTypeIndex(
-        WasmModule module,
-        uint typeIndex,
-        WasmFailureLocation location
-    )
+    private static void ValidateTypeIndex(WasmModule module, uint typeIndex, WasmFailureLocation location)
     {
         if (typeIndex >= (uint)module.Types.Length)
         {
-            throw ValidationDiagnostics.UnknownIndex(
-                "type",
-                typeIndex,
-                "参照する関数型が存在しません。",
-                location
-            );
+            throw ValidationDiagnostics.UnknownIndex("type", typeIndex, "参照する関数型が存在しません。", location);
         }
     }
 
@@ -472,17 +395,11 @@ internal static class ModuleValidator
         if (importCount + (uint)module.Memories.Length > 1)
         {
             var secondImport = module.Imports.OfType<MemoryImport>().Skip(1).FirstOrDefault();
-            var offset =
-                secondImport?.ByteOffset ?? module.Memories[importCount == 0 ? 1 : 0].ByteOffset;
+            var offset = secondImport?.ByteOffset ?? module.Memories[importCount == 0 ? 1 : 0].ByteOffset;
             throw ValidationDiagnostics.ValidationFailure(
                 "multiple memories",
                 "memoryのimportと定義の合計が1個を超えています。",
-                new(
-                    WasmProcessingStage.Validate,
-                    offset,
-                    null,
-                    secondImport is null ? (byte)5 : (byte)2
-                )
+                new(WasmProcessingStage.Validate, offset, null, secondImport is null ? (byte)5 : (byte)2)
             );
         }
     }

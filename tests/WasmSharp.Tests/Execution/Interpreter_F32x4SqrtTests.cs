@@ -6,24 +6,9 @@ namespace WasmSharp.Tests.Execution;
 internal class Interpreter_F32x4SqrtTests
 {
     [Test]
-    [Arguments(
-        0x4000000040800000UL,
-        0x8000000000000001UL,
-        0x3FB504F340000000UL,
-        0x800000001A3504F3UL
-    )]
-    [Arguments(
-        0x7F80000000000000UL,
-        0xFF800000BF800000UL,
-        0x7F80000000000000UL,
-        0x7FC000007FC00000UL
-    )]
-    [Arguments(
-        0x7F8123457FC00000UL,
-        0x41100000FFC12345UL,
-        0x7FC000007FC00000UL,
-        0x404000007FC00000UL
-    )]
+    [Arguments(0x4000000040800000UL, 0x8000000000000001UL, 0x3FB504F340000000UL, 0x800000001A3504F3UL)]
+    [Arguments(0x7F80000000000000UL, 0xFF800000BF800000UL, 0x7F80000000000000UL, 0x7FC000007FC00000UL)]
+    [Arguments(0x7F8123457FC00000UL, 0x41100000FFC12345UL, 0x7FC000007FC00000UL, 0x404000007FC00000UL)]
     public async Task 正負の値と境界値とNaNのlane_同精度で平方根を返す(
         ulong inputLow64,
         ulong inputHigh64,

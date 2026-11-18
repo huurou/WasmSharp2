@@ -20,8 +20,7 @@ internal sealed record CaseMetrics(
     public string? AllocationUnavailableReason { get; init; } =
         RequireReason(Allocation, AllocationUnavailableReason, nameof(AllocationUnavailableReason));
 
-    public string? GcUnavailableReason { get; init; } =
-        RequireReason(Gc, GcUnavailableReason, nameof(GcUnavailableReason));
+    public string? GcUnavailableReason { get; init; } = RequireReason(Gc, GcUnavailableReason, nameof(GcUnavailableReason));
 
     private static string? RequireReason(object? metric, string? reason, string parameterName)
     {
@@ -70,11 +69,7 @@ internal sealed record AllocationStatistics(
 /// <summary>
 /// 表示値を得る丸め条件 表示0を割り当て不存在と解釈しない。
 /// </summary>
-internal sealed record AllocationRounding(
-    int DecimalPlaces,
-    MidpointRounding MidpointRounding,
-    string Description
-);
+internal sealed record AllocationRounding(int DecimalPlaces, MidpointRounding MidpointRounding, string Description);
 
 internal enum AllocationScope
 {
@@ -103,7 +98,4 @@ internal sealed record GcStatistics(
 /// <summary>
 /// 1つのgenerationの総回数と操作数による正規化値
 /// </summary>
-internal sealed record GcGenerationStatistics(
-    long TotalCollections,
-    double CollectionsPerThousandOperations
-);
+internal sealed record GcGenerationStatistics(long TotalCollections, double CollectionsPerThousandOperations);

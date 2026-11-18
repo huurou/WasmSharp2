@@ -13,10 +13,7 @@ namespace WasmSharp;
 /// <param name="context">呼び出し元が渡したコンテキスト 同期再入するInvokeやInstantiateにも同じオブジェクトを渡す</param>
 /// <param name="arguments">宣言された引数型と順序に従う値 利用を保証する期間は同期callbackの実行中</param>
 /// <returns>宣言された結果の個数・型・順序に一致する所有済みの値 nullは不可</returns>
-public delegate WasmResults WasmHostCallback(
-    WasmExecutionContext context,
-    ReadOnlySpan<WasmValue> arguments
-);
+public delegate WasmResults WasmHostCallback(WasmExecutionContext context, ReadOnlySpan<WasmValue> arguments);
 
 /// <summary>
 /// 呼び出し時のinstanceを受け取るホスト関数の処理を定義するデリゲート
@@ -42,7 +39,6 @@ public delegate WasmResults WasmHostInstanceCallback(
 /// <remarks>module名とitem名は大文字・小文字を区別して完全一致で照合する。登録した実体は複製せず共有する</remarks>
 public sealed class WasmHostModule
 {
-
     /// <summary>
     /// importの名前解決で使うmodule名
     /// </summary>
@@ -51,10 +47,8 @@ public sealed class WasmHostModule
     /// <summary>
     /// 現在の名前と実体の対応を、後続の定義変更に影響されない形で取得する
     /// </summary>
-    internal ImmutableDictionary<string, ExternalValue> Snapshot { get; private set; } = ImmutableDictionary.Create<
-        string,
-        ExternalValue
-    >(StringComparer.Ordinal);
+    internal ImmutableDictionary<string, ExternalValue> Snapshot { get; private set; } =
+        ImmutableDictionary.Create<string, ExternalValue>(StringComparer.Ordinal);
 
     /// <summary>
     /// 空のmodule名を持つ提供元を構築する

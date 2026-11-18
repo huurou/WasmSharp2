@@ -37,44 +37,29 @@ internal sealed class LoadedAssets(
         var manifest = ReadJson<AssetManifest>(File.ReadAllBytes(path), path, json);
         if (manifest.SchemaVersion != 1)
         {
-            throw new InvalidDataException(
-                $"manifestのschema版{manifest.SchemaVersion}には対応していません。"
-            );
+            throw new InvalidDataException($"manifestのschema版{manifest.SchemaVersion}には対応していません。");
         }
 
         ReadVerified(directory, manifest.Profile);
         var catalog = new CaseCatalog(
-            ReadJson<List<BenchmarkCase>>(
-                ReadVerified(directory, manifest.Cases),
-                manifest.Cases.RelativePath,
-                json
-            ),
+            ReadJson<List<BenchmarkCase>>(ReadVerified(directory, manifest.Cases), manifest.Cases.RelativePath, json),
             json,
             methods
         );
-        var binaries = ImmutableDictionary.CreateBuilder<string, ImmutableArray<byte>>(
-            StringComparer.Ordinal
-        );
+        var binaries = ImmutableDictionary.CreateBuilder<string, ImmutableArray<byte>>(StringComparer.Ordinal);
         foreach (var asset in manifest.Assets)
         {
             foreach (var source in asset.Sources)
             {
                 ResolvePath(directory, source.RelativePath);
             }
-            if (
-                !binaries.TryAdd(
-                    asset.AssetId,
-                    [.. ReadVerified(directory, asset.Binary)]
-                )
-            )
+            if (!binaries.TryAdd(asset.AssetId, [.. ReadVerified(directory, asset.Binary)]))
             {
                 throw new InvalidDataException($"素材'{asset.AssetId}'が重複しています。");
             }
         }
 
-        var inputs = ImmutableDictionary.CreateBuilder<string, PreparedInput>(
-            StringComparer.Ordinal
-        );
+        var inputs = ImmutableDictionary.CreateBuilder<string, PreparedInput>(StringComparer.Ordinal);
         foreach (var definition in catalog.Cases)
         {
             var asset = manifest.Assets.SingleOrDefault(x => x.AssetId == definition.AssetId);
@@ -95,9 +80,7 @@ internal sealed class LoadedAssets(
         var bytes = File.ReadAllBytes(ResolvePath(directory, file.RelativePath));
         if (Convert.ToHexStringLower(SHA256.HashData(bytes)) != file.Sha256)
         {
-            throw new InvalidDataException(
-                $"素材path'{file.RelativePath}'のSHA-256が一致しません。"
-            );
+            throw new InvalidDataException($"素材path'{file.RelativePath}'のSHA-256が一致しません。");
         }
         return bytes;
     }
@@ -106,22 +89,14 @@ internal sealed class LoadedAssets(
     {
         if (Path.IsPathRooted(relativePath))
         {
-            throw new InvalidDataException(
-                $"素材path'{relativePath}'はmanifestからの相対pathで指定してください。"
-            );
+            throw new InvalidDataException($"素材path'{relativePath}'はmanifestからの相対pathで指定してください。");
         }
         var path = Path.GetFullPath(Path.Combine(directory, relativePath));
-        var prefix = Path.EndsInDirectorySeparator(directory)
-            ? directory
-            : directory + Path.DirectorySeparatorChar;
-        var comparison = OperatingSystem.IsWindows()
-            ? StringComparison.OrdinalIgnoreCase
-            : StringComparison.Ordinal;
+        var prefix = Path.EndsInDirectorySeparator(directory) ? directory : directory + Path.DirectorySeparatorChar;
+        var comparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
         if (!path.StartsWith(prefix, comparison))
         {
-            throw new InvalidDataException(
-                $"素材path'{relativePath}'はmanifest配下の相対pathで指定してください。"
-            );
+            throw new InvalidDataException($"素材path'{relativePath}'はmanifest配下の相対pathで指定してください。");
         }
         return path;
     }
@@ -135,10 +110,7 @@ internal sealed class LoadedAssets(
         }
         catch (JsonException exception)
         {
-            throw new InvalidDataException(
-                $"'{path}'のJSON形式が不正です: {exception.Message}",
-                exception
-            );
+            throw new InvalidDataException($"'{path}'のJSON形式が不正です: {exception.Message}", exception);
         }
     }
 }

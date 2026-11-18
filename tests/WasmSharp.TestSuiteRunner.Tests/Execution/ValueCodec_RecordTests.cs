@@ -56,9 +56,7 @@ internal class ValueCodec_RecordTests
         var record = ValueCodec.Record(WasmValue.FromV128(low64, high64), state);
 
         // Assert
-        await Assert
-            .That(record)
-            .IsEqualTo(new ValueRecord("v128") { Low64 = expectedLow64, High64 = expectedHigh64 });
+        await Assert.That(record).IsEqualTo(new ValueRecord("v128") { Low64 = expectedLow64, High64 = expectedHigh64 });
     }
 
     [Test]

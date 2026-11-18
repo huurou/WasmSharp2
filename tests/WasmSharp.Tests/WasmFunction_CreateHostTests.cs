@@ -9,10 +9,7 @@ internal class WasmFunction_CreateHostTests
     [Arguments(false, true)]
     [Arguments(true, false)]
     [Arguments(true, true)]
-    public async Task 型またはcallbackがnull_生成時に引数名付きで拒否する(
-        bool withInstance,
-        bool nullType
-    )
+    public async Task 型またはcallbackがnull_生成時に引数名付きで拒否する(bool withInstance, bool nullType)
     {
         // Arrange
         var type = nullType ? null! : new WasmFunctionType([], []);
@@ -22,9 +19,7 @@ internal class WasmFunction_CreateHostTests
         // Act & Assert
         var exception = await Assert
             .That(() =>
-                withInstance
-                    ? WasmFunction.CreateHost(type, instanceCallback)
-                    : WasmFunction.CreateHost(type, callback)
+                withInstance ? WasmFunction.CreateHost(type, instanceCallback) : WasmFunction.CreateHost(type, callback)
             )
             .ThrowsExactly<ArgumentNullException>();
         await Assert.That(exception!.ParamName).IsEqualTo(nullType ? "type" : "callback");
@@ -52,17 +47,12 @@ internal class WasmFunction_CreateHostTests
             if (withInstance)
             {
                 await Assert
-                    .That(
-                        function is InstanceHostFunction host
-                            && ReferenceEquals(host.Callback, instanceCallback)
-                    )
+                    .That(function is InstanceHostFunction host && ReferenceEquals(host.Callback, instanceCallback))
                     .IsTrue();
             }
             else
             {
-                await Assert
-                    .That(function is HostFunction host && ReferenceEquals(host.Callback, callback))
-                    .IsTrue();
+                await Assert.That(function is HostFunction host && ReferenceEquals(host.Callback, callback)).IsTrue();
             }
         }
     }

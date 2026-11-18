@@ -21,8 +21,6 @@ internal class SmokeBenchmarks_CleanupTests
         // Assert
         await Assert.That(() => last.Instantiate(context_, new WasmImports())).ThrowsNothing();
         // Act & Assert
-        await Assert
-            .That(() => first.Instantiate(context_, new WasmImports()))
-            .ThrowsExactly<InvalidOperationException>();
+        await Assert.That(() => first.Instantiate(context_, new WasmImports())).ThrowsExactly<InvalidOperationException>();
     }
 }

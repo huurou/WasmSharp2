@@ -31,10 +31,7 @@ internal static partial class Interpreter
     /// <param name="context">ifの条件と入口引数を持つ実行コンテキスト</param>
     /// <param name="instruction">elseまたはif終了への分岐情報を持つ検証済みの命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult BranchIfZero(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult BranchIfZero(InterpreterContext context, in Instruction instruction)
     {
         if (context.PopValue().AsI32() == 0)
         {
@@ -64,10 +61,7 @@ internal static partial class Interpreter
     /// <param name="context">選択値と分岐値を持つ実行コンテキスト</param>
     /// <param name="instruction">候補列の開始添字と既定を除く候補数を持つ検証済みのbr_table命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult BranchTable(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult BranchTable(InterpreterContext context, in Instruction instruction)
     {
         var selector = unchecked((uint)context.PopValue().AsI32());
         var candidate = Math.Min(selector, (uint)instruction.TargetCount);

@@ -7,9 +7,7 @@ internal class ElementInstance_TryInitializeTests
     [Test]
     [Arguments(WasmValueKind.FuncRef)]
     [Arguments(WasmValueKind.ExternRef)]
-    public async Task 入力配列の変更後に転送する_所有した指定範囲だけを書き込み参照型と同一性を保つ(
-        WasmValueKind kind
-    )
+    public async Task 入力配列の変更後に転送する_所有した指定範囲だけを書き込み参照型と同一性を保つ(WasmValueKind kind)
     {
         // Arrange
         var reference =
@@ -20,10 +18,7 @@ internal class ElementInstance_TryInitializeTests
             kind == WasmValueKind.FuncRef
                 ? WasmValue.FromFuncRef((WasmFunction)reference)
                 : WasmValue.FromExternRef(reference);
-        var empty =
-            kind == WasmValueKind.FuncRef
-                ? WasmValue.FromFuncRef(null)
-                : WasmValue.FromExternRef(null);
+        var empty = kind == WasmValueKind.FuncRef ? WasmValue.FromFuncRef(null) : WasmValue.FromExternRef(null);
         var values = new[] { empty, value, empty };
         var element = new ElementInstance(values);
         var table = new WasmTable(kind, new WasmLimits(4));
@@ -45,9 +40,7 @@ internal class ElementInstance_TryInitializeTests
             await Assert
                 .That(
                     ReferenceEquals(
-                        kind == WasmValueKind.FuncRef
-                            ? table.Get(2).AsFuncRef()
-                            : table.Get(2).AsExternRef(),
+                        kind == WasmValueKind.FuncRef ? table.Get(2).AsFuncRef() : table.Get(2).AsExternRef(),
                         reference
                     )
                 )
@@ -62,10 +55,7 @@ internal class ElementInstance_TryInitializeTests
         // Arrange
         var first = new object();
         var second = new object();
-        var element = new ElementInstance([
-            WasmValue.FromExternRef(first),
-            WasmValue.FromExternRef(second),
-        ]);
+        var element = new ElementInstance([WasmValue.FromExternRef(first), WasmValue.FromExternRef(second)]);
         var table = new WasmTable(WasmValueKind.ExternRef, new WasmLimits(4));
 
         // Act
@@ -92,17 +82,10 @@ internal class ElementInstance_TryInitializeTests
     [Arguments(3u, 3u, 0u)]
     [Arguments(3u, 0u, 2u)]
     [Arguments(3u, 3u, 2u)]
-    public async Task 長さがゼロで両開始位置が領域内または末尾にある_成功する(
-        uint count,
-        uint destination,
-        uint source
-    )
+    public async Task 長さがゼロで両開始位置が領域内または末尾にある_成功する(uint count, uint destination, uint source)
     {
         // Arrange
-        var element = new ElementInstance([
-            WasmValue.FromExternRef(new object()),
-            WasmValue.FromExternRef(null),
-        ]);
+        var element = new ElementInstance([WasmValue.FromExternRef(new object()), WasmValue.FromExternRef(null)]);
         var table = new WasmTable(WasmValueKind.ExternRef, new WasmLimits(count));
 
         // Act
@@ -131,10 +114,7 @@ internal class ElementInstance_TryInitializeTests
     )
     {
         // Arrange
-        var element = new ElementInstance([
-            WasmValue.FromExternRef(new object()),
-            WasmValue.FromExternRef(null),
-        ]);
+        var element = new ElementInstance([WasmValue.FromExternRef(new object()), WasmValue.FromExternRef(null)]);
         var table = new WasmTable(WasmValueKind.ExternRef, new WasmLimits(3));
         var references = new[] { new object(), new object(), new object() };
         for (uint index = 0; index < table.Count; index++)
@@ -152,9 +132,7 @@ internal class ElementInstance_TryInitializeTests
             await Assert.That(element.Length).IsEqualTo(2u);
             for (uint index = 0; index < table.Count; index++)
             {
-                await Assert
-                    .That(ReferenceEquals(table.Get(index).AsExternRef(), references[index]))
-                    .IsTrue();
+                await Assert.That(ReferenceEquals(table.Get(index).AsExternRef(), references[index])).IsTrue();
             }
         }
     }
@@ -189,9 +167,7 @@ internal class ElementInstance_TryInitializeTests
             await Assert.That(element.Length).IsEqualTo(0u);
             for (uint index = 0; index < table.Count; index++)
             {
-                await Assert
-                    .That(ReferenceEquals(table.Get(index).AsExternRef(), reference))
-                    .IsTrue();
+                await Assert.That(ReferenceEquals(table.Get(index).AsExternRef(), reference)).IsTrue();
             }
         }
     }

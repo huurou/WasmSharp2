@@ -25,9 +25,7 @@ internal partial class WasmFunction_InvokeTests
                         ([0x7F], [0x7F]),
                         ([0x7F, 0x7F], [])
                     ),
-                    HostLinkingModuleBinary.Imports(
-                        ("env", "memory", 2, HostLinkingModuleBinary.Limits(1, 2))
-                    ),
+                    HostLinkingModuleBinary.Imports(("env", "memory", 2, HostLinkingModuleBinary.Limits(1, 2))),
                     HostLinkingModuleBinary.Functions(0, 1, 2, 3, 2),
                     HostLinkingModuleBinary.Exports(
                         ("load", 0, 0),
@@ -53,9 +51,7 @@ internal partial class WasmFunction_InvokeTests
         var first = module.Instantiate(executionContext, [host]);
         var second = module.Instantiate(executionContext, [host]);
         var initialized = first.GetFunction("load").Invoke(executionContext, [WasmValue.FromI32(15)]).Values[0];
-        var initializedScalar = second.GetFunction("read").Invoke(executionContext, [WasmValue.FromI32(15)]).Values[
-            0
-        ];
+        var initializedScalar = second.GetFunction("read").Invoke(executionContext, [WasmValue.FromI32(15)]).Values[0];
         var savedBytes = new byte[16];
         memory.Read(15, savedBytes);
         var grown = first.GetFunction("grow").Invoke(executionContext, [WasmValue.FromI32(1)]).Values[0];
@@ -89,12 +85,8 @@ internal partial class WasmFunction_InvokeTests
             await Assert.That(zero.AsV128()).IsEqualTo((0UL, 0UL));
             await Assert.That(scalar.AsI32()).IsEqualTo(0x76543210);
             await Assert.That(Vector(Convert.ToHexString(storedBytes))).IsEqualTo(vector);
-            await Assert
-                .That(afterScalar.AsV128())
-                .IsEqualTo((0xFFC0004276543210UL, 0x0123456789ABCDEFUL));
-            await Assert
-                .That(afterHost.AsV128())
-                .IsEqualTo((0xFFC0004276543210UL, 0x8000000000000000UL));
+            await Assert.That(afterScalar.AsV128()).IsEqualTo((0xFFC0004276543210UL, 0x0123456789ABCDEFUL));
+            await Assert.That(afterHost.AsV128()).IsEqualTo((0xFFC0004276543210UL, 0x8000000000000000UL));
             await Assert.That(fromSecond).IsEqualTo(afterHost);
             await Assert.That(Vector(Convert.ToHexString(currentBytes))).IsEqualTo(afterHost);
             await Assert.That(retained).IsEqualTo(initial);
@@ -134,14 +126,8 @@ internal partial class WasmFunction_InvokeTests
             var instance = module.Validate().Instantiate(executionContext, []);
             instance
                 .GetMemory("memory")
-                .Write(
-                    (ulong)(65536 - width),
-                    Enumerable.Range(1, width).Select(x => (byte)x).ToArray()
-                );
-            var actual = instance
-                .GetFunction("run")
-                .Invoke(executionContext, [WasmValue.FromI32(65535 - width)])
-                .Values;
+                .Write((ulong)(65536 - width), Enumerable.Range(1, width).Select(x => (byte)x).ToArray());
+            var actual = instance.GetFunction("run").Invoke(executionContext, [WasmValue.FromI32(65535 - width)]).Values;
 
             // Assert
             using (Assert.Multiple())
@@ -156,13 +142,7 @@ internal partial class WasmFunction_InvokeTests
             await Assert.That(trap!.Reason).IsEqualTo(WasmTrapReason.MemoryOutOfBounds);
             await Assert
                 .That(trap.Location)
-                .IsEqualTo(
-                    new(
-                        WasmProcessingStage.Invoke,
-                        module.Functions[0].Instructions[1].ByteOffset,
-                        0
-                    )
-                );
+                .IsEqualTo(new(WasmProcessingStage.Invoke, module.Functions[0].Instructions[1].ByteOffset, 0));
         }
     }
 
@@ -215,9 +195,7 @@ internal partial class WasmFunction_InvokeTests
         // Assert
         using (Assert.Multiple())
         {
-            await Assert
-                .That(loaded.AsV128())
-                .IsEqualTo(Vector(Convert.ToHexString(expectedVector)).AsV128());
+            await Assert.That(loaded.AsV128()).IsEqualTo(Vector(Convert.ToHexString(expectedVector)).AsV128());
             await Assert.That(stored).IsEmpty();
             await Assert.That(actualMemory.SequenceEqual(expectedMemory)).IsTrue();
         }
@@ -226,10 +204,7 @@ internal partial class WasmFunction_InvokeTests
             .That(() =>
                 instance
                     .GetFunction("store")
-                    .Invoke(executionContext, [
-                        WasmValue.FromI32(65537 - width),
-                        Vector(Convert.ToHexString(inputBytes)),
-                    ])
+                    .Invoke(executionContext, [WasmValue.FromI32(65537 - width), Vector(Convert.ToHexString(inputBytes))])
             )
             .ThrowsExactly<WasmTrapException>();
         memory.Read(65520, actualMemory);
@@ -308,7 +283,8 @@ internal partial class WasmFunction_InvokeTests
         WasmInstance? returned = null;
         Action run = start
             ? () => returned = module.Instantiate(executionContext, [host])
-            : () => (returned = module.Instantiate(executionContext, [host])).GetFunction("run").Invoke(executionContext, []);
+            : () =>
+                (returned = module.Instantiate(executionContext, [host])).GetFunction("run").Invoke(executionContext, []);
 
         // Act & Assert
         var trap = await Assert.That(run).ThrowsExactly<WasmTrapException>();
@@ -323,20 +299,10 @@ internal partial class WasmFunction_InvokeTests
         using (Assert.Multiple())
         {
             await Assert.That(trap!.Reason).IsEqualTo(WasmTrapReason.MemoryOutOfBounds);
-            await Assert
-                .That(
-                    trap.Message.StartsWith("out of bounds memory access", StringComparison.Ordinal)
-                )
-                .IsTrue();
+            await Assert.That(trap.Message.StartsWith("out of bounds memory access", StringComparison.Ordinal)).IsTrue();
             await Assert
                 .That(trap.Location)
-                .IsEqualTo(
-                    new(
-                        start ? WasmProcessingStage.Instantiate : WasmProcessingStage.Invoke,
-                        offset,
-                        1
-                    )
-                );
+                .IsEqualTo(new(start ? WasmProcessingStage.Instantiate : WasmProcessingStage.Invoke, offset, 1));
             await Assert.That(calls).IsEqualTo(1);
             await Assert.That(result).IsEqualTo(33);
             await Assert.That(last[0]).IsEqualTo((byte)0xA5);

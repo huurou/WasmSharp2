@@ -1,7 +1,7 @@
+using System.Xml.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using System.Xml.Linq;
 
 namespace WasmSharp.Generators.Tests;
 
@@ -58,11 +58,7 @@ internal partial class InstructionGenerator_InitializeTests
         {
             await Assert.That(diagnostics[0].GetMessage()).Contains("'invalid'");
             await Assert
-                .That(
-                    diagnostics[0]
-                        .Location.SourceTree!.GetText()
-                        .ToString(diagnostics[0].Location.SourceSpan)
-                )
+                .That(diagnostics[0].Location.SourceTree!.GetText().ToString(diagnostics[0].Location.SourceSpan))
                 .Contains("\"invalid\"");
         }
     }
@@ -113,23 +109,15 @@ internal partial class InstructionGenerator_InitializeTests
             """
         );
         var valueKind = compilation.GetTypeByMetadataName("WasmSharp.WasmValueKind")!;
-        var member = (EnumMemberDeclarationSyntax)valueKind
-            .GetMembers("I32")
-            .Single()
-            .DeclaringSyntaxReferences.Single()
-            .GetSyntax();
+        var member = (EnumMemberDeclarationSyntax)
+            valueKind.GetMembers("I32").Single().DeclaringSyntaxReferences.Single().GetSyntax();
         var tree = member.SyntaxTree;
         var updatedRoot = tree.GetRoot()
             .ReplaceNode(
                 member,
-                member.WithEqualsValue(
-                    SyntaxFactory.EqualsValueClause(SyntaxFactory.IdentifierName("UnknownValue"))
-                )
+                member.WithEqualsValue(SyntaxFactory.EqualsValueClause(SyntaxFactory.IdentifierName("UnknownValue")))
             );
-        compilation = compilation.ReplaceSyntaxTree(
-            tree,
-            tree.WithRootAndOptions(updatedRoot, tree.Options)
-        );
+        compilation = compilation.ReplaceSyntaxTree(tree, tree.WithRootAndOptions(updatedRoot, tree.Options));
         GeneratorDriver driver = CSharpGeneratorDriver.Create(new InstructionGenerator());
 
         // Act
@@ -169,11 +157,7 @@ internal partial class InstructionGenerator_InitializeTests
         {
             await Assert.That(driver.GetRunResult().Results.Single().Exception).IsNull();
             await Assert
-                .That(
-                    diagnostics[0]
-                        .Location.SourceTree!.GetText()
-                        .ToString(diagnostics[0].Location.SourceSpan)
-                )
+                .That(diagnostics[0].Location.SourceTree!.GetText().ToString(diagnostics[0].Location.SourceSpan))
                 .IsEqualTo(ATTRIBUTE);
         }
     }
@@ -205,11 +189,7 @@ internal partial class InstructionGenerator_InitializeTests
         {
             await Assert.That(driver.GetRunResult().Results.Single().Exception).IsNull();
             await Assert
-                .That(
-                    diagnostics[0]
-                        .Location.SourceTree!.GetText()
-                        .ToString(diagnostics[0].Location.SourceSpan)
-                )
+                .That(diagnostics[0].Location.SourceTree!.GetText().ToString(diagnostics[0].Location.SourceSpan))
                 .IsEqualTo(ATTRIBUTE);
         }
     }
@@ -240,11 +220,7 @@ internal partial class InstructionGenerator_InitializeTests
         GeneratorDriver driver = CSharpGeneratorDriver.Create(new InstructionGenerator());
 
         // Act
-        driver = driver.RunGeneratorsAndUpdateCompilation(
-            compilation,
-            out var output,
-            out var diagnostics
-        );
+        driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out var output, out var diagnostics);
 
         // Assert
         await Assert.That(diagnostics).IsEmpty();
@@ -254,9 +230,7 @@ internal partial class InstructionGenerator_InitializeTests
             .OfType<IFieldSymbol>()
             .Single(x => x.HasConstantValue);
         var documentation = XDocument.Parse(opcode.GetDocumentationCommentXml()!);
-        await Assert
-            .That(documentation.Root!.Element("summary")!.Value.Trim())
-            .IsEqualTo("custom<&>の実行opcode");
+        await Assert.That(documentation.Root!.Element("summary")!.Value.Trim()).IsEqualTo("custom<&>の実行opcode");
         await GeneratorTestSource.AssertCompilesAndRuns(
             output,
             """

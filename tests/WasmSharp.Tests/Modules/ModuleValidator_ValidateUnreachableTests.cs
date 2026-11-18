@@ -1,5 +1,4 @@
 using WasmSharp.Exceptions;
-using WasmSharp.Modules;
 using WasmSharp.Tests.Fixtures;
 
 namespace WasmSharp.Tests.Modules;
@@ -17,10 +16,7 @@ internal partial class ModuleValidator_ValidateTests
     [Arguments("6000017F", "004201000B")]
     [Arguments("6000017F", "00420141010F0B")]
     [Arguments("6000017F", "00004101000B")]
-    public async Task 到達不能部分で底から値を取り出す_型多相性で成立する命令列を受理する(
-        string signature,
-        string body
-    )
+    public async Task 到達不能部分で底から値を取り出す_型多相性で成立する命令列を受理する(string signature, string body)
     {
         // Arrange
         var module = DecodeFunction(signature, body);
@@ -55,18 +51,11 @@ internal partial class ModuleValidator_ValidateTests
         var module = DecodeFunction(signature, body);
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => module.Validate())
-            .ThrowsExactly<WasmValidateException>();
+        var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
         await Assert
             .That(exception!.Location)
             .IsEqualTo(
-                new(
-                    WasmProcessingStage.Validate,
-                    module.Functions[0].Instructions[instructionIndex].ByteOffset,
-                    0,
-                    10
-                )
+                new(WasmProcessingStage.Validate, module.Functions[0].Instructions[instructionIndex].ByteOffset, 0, 10)
             );
     }
 
@@ -100,18 +89,11 @@ internal partial class ModuleValidator_ValidateTests
         }
         else
         {
-            var exception = await Assert
-                .That(() => module.Validate())
-                .ThrowsExactly<WasmValidateException>();
+            var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
             await Assert
                 .That(exception!.Location)
                 .IsEqualTo(
-                    new(
-                        WasmProcessingStage.Validate,
-                        module.Functions[0].Instructions[failureInstruction].ByteOffset,
-                        0,
-                        10
-                    )
+                    new(WasmProcessingStage.Validate, module.Functions[0].Instructions[failureInstruction].ByteOffset, 0, 10)
                 );
         }
     }

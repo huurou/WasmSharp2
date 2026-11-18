@@ -13,16 +13,11 @@ internal static class TableHandlerFixture
     public static WasmValue CreateReference(WasmValueKind kind, bool isNull = false)
     {
         return kind == WasmValueKind.FuncRef
-            ? WasmValue.FromFuncRef(
-                isNull ? null : WasmFunction.CreateHost(new([], []), (_, _) => new([]))
-            )
+            ? WasmValue.FromFuncRef(isNull ? null : WasmFunction.CreateHost(new([], []), (_, _) => new([])))
             : WasmValue.FromExternRef(isNull ? null : new object());
     }
 
-    public static DefinedFunction CreateFunction(
-        ImmutableArray<WasmTable> tables,
-        params WasmValue[][] elements
-    )
+    public static DefinedFunction CreateFunction(ImmutableArray<WasmTable> tables, params WasmValue[][] elements)
     {
         var globals = ImmutableArray.CreateBuilder<WasmGlobal>();
         var definitions = new List<ElementDefinition>();
@@ -54,16 +49,10 @@ internal static class TableHandlerFixture
         {
             FunctionCodes = [new([], [], 0), new([], [], 4)],
         };
-        return (DefinedFunction)
-            new WasmInstance(module, new(10), [], globals.ToImmutable(), [], tables).Functions[1];
+        return (DefinedFunction)new WasmInstance(module, new(10), [], globals.ToImmutable(), [], tables).Functions[1];
     }
 
-    public static (
-        ExecutionResult Result,
-        WasmValue Value,
-        WasmValue Sentinel,
-        int ValueCount
-    ) Execute(
+    public static (ExecutionResult Result, WasmValue Value, WasmValue Sentinel, int ValueCount) Execute(
         NumericHandlerFixture.Handler handler,
         DefinedFunction function,
         uint tableIndex,
@@ -87,13 +76,7 @@ internal static class TableHandlerFixture
                 context.PushValue(operand);
             }
 
-            var instruction = new Instruction(
-                default,
-                default,
-                BYTE_OFFSET,
-                tableIndex,
-                secondaryIndex: secondaryIndex
-            );
+            var instruction = new Instruction(default, default, BYTE_OFFSET, tableIndex, secondaryIndex: secondaryIndex);
             var result = handler(context, in instruction);
             return (result, context.PeekValue(), context.GetValue(0), context.ValueCount);
         }

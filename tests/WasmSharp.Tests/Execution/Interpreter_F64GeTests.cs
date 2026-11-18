@@ -17,11 +17,7 @@ internal class Interpreter_F64GeTests
     [Arguments(0xBFF4000000000000ul, 0xFFF8123456789ABCul, 0)]
     [Arguments(0x7FF0123456789ABCul, 0xBFF4000000000000ul, 0)]
     [Arguments(0xBFF4000000000000ul, 0x7FF0123456789ABCul, 0)]
-    public async Task 通常値と等値とNaNの左右operand_i32で以上比較を返す(
-        ulong leftBits,
-        ulong rightBits,
-        int expected
-    )
+    public async Task 通常値と等値とNaNの左右operand_i32で以上比較を返す(ulong leftBits, ulong rightBits, int expected)
     {
         // Arrange
         WasmValue[] operands = [WasmValue.FromF64Bits(leftBits), WasmValue.FromF64Bits(rightBits)];

@@ -21,9 +21,7 @@ internal class WasmExecutionOptions_ConstructorTests
     public async Task 正でない上限を指定する_引数不正として拒否する(int limit)
     {
         // Act & Assert
-        await Assert
-            .That(() => new WasmExecutionOptions(limit))
-            .ThrowsExactly<ArgumentOutOfRangeException>();
+        await Assert.That(() => new WasmExecutionOptions(limit)).ThrowsExactly<ArgumentOutOfRangeException>();
     }
 }
 

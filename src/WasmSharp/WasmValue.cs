@@ -237,9 +237,7 @@ public readonly struct WasmValue
     {
         if (Kind != expected)
         {
-            throw new InvalidOperationException(
-                $"{Kind}のvalueを{expected}として取得できません。"
-            );
+            throw new InvalidOperationException($"{Kind}のvalueを{expected}として取得できません。");
         }
     }
 }

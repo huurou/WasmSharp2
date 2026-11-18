@@ -10,27 +10,15 @@ internal class Interpreter_RefFuncTests
     [Arguments(0U)]
     [Arguments(1U)]
     [Arguments(2U)]
-    public async Task 別instanceからimportした定義関数で実行する_所属instanceの関数表から同じ関数実体を積む(
-        uint index
-    )
+    public async Task 別instanceからimportした定義関数で実行する_所属instanceの関数表から同じ関数実体を積む(uint index)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
         var host = WasmFunction.CreateHost(new([], []), (_, _) => new([]));
         var provider = ExecutionInstanceFixture.Create([new([], [])], [(0, [], [], 1)], [], []);
-        var source = ExecutionInstanceFixture.Create(
-            [new([], [])],
-            [(0, [], [], 1)],
-            [host, provider.Functions[0]],
-            []
-        );
+        var source = ExecutionInstanceFixture.Create([new([], [])], [(0, [], [], 1)], [host, provider.Functions[0]], []);
         var current = (DefinedFunction)source.Functions[2];
-        var importer = ExecutionInstanceFixture.Create(
-            [new([], [])],
-            [(0, [], [], 1)],
-            [current],
-            []
-        );
+        var importer = ExecutionInstanceFixture.Create([new([], [])], [(0, [], [], 1)], [current], []);
         var instruction = new Instruction(default, default, 1001, index);
         var context = executionContext.Enter(new(10), out var isOutermost);
         ExecutionResult result;

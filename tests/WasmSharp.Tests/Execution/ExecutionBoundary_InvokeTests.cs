@@ -51,13 +51,7 @@ internal class ExecutionBoundary_InvokeTests
             await Assert.That(exception.Reason).IsEqualTo(WasmExhaustionReason.CallDepthLimit);
             await Assert
                 .That(exception.Location)
-                .IsEqualTo(
-                    new WasmFailureLocation(
-                        WasmProcessingStage.Invoke,
-                        function.Definition.BodyOffset,
-                        0
-                    )
-                );
+                .IsEqualTo(new WasmFailureLocation(WasmProcessingStage.Invoke, function.Definition.BodyOffset, 0));
             await Assert.That(outerRemains).IsTrue();
             await Assert.That(state).IsEqualTo((0, 0, 1));
         }
@@ -87,9 +81,7 @@ internal class ExecutionBoundary_InvokeTests
             .ThrowsExactly<WasmImplementationLimitException>();
         using (Assert.Multiple())
         {
-            await Assert
-                .That(exception!.Reason)
-                .IsEqualTo(WasmImplementationLimitReason.CollectionSize);
+            await Assert.That(exception!.Reason).IsEqualTo(WasmImplementationLimitReason.CollectionSize);
             await Assert
                 .That(exception.Location)
                 .IsEqualTo(new WasmFailureLocation(WasmProcessingStage.Invoke, 12345678900, 1));

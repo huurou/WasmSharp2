@@ -11,11 +11,7 @@ internal class Interpreter_V128AnyTrueTests
     [Arguments(0x0000000000000000UL, 0x0000000000000001UL, 1)]
     [Arguments(0x0000000000000000UL, 0x8000000000000000UL, 1)]
     [Arguments(0xFFFFFFFFFFFFFFFFUL, 0xFFFFFFFFFFFFFFFFUL, 1)]
-    public async Task 全ゼロと上下64bitの非ゼロ_128bit全体の非ゼロ判定を返す(
-        ulong low64,
-        ulong high64,
-        int expected
-    )
+    public async Task 全ゼロと上下64bitの非ゼロ_128bit全体の非ゼロ判定を返す(ulong low64, ulong high64, int expected)
     {
         // Arrange
         WasmValue[] operands = [WasmValue.FromV128(low64, high64)];

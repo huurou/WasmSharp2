@@ -84,9 +84,7 @@ internal partial class WasmModule_InstantiateTests
         var trapOffset = bytes.Length - data.Length - code.Length + Array.IndexOf(code, (byte)0x28);
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => returned = module.Instantiate(executionContext, [host]))
-            .Throws<Exception>();
+        var exception = await Assert.That(() => returned = module.Instantiate(executionContext, [host])).Throws<Exception>();
         await Assert.That(savedInstance).IsNotNull();
         await Assert.That(savedFunction).IsNotNull();
         await Assert.That(savedMemory).IsNotNull();
@@ -110,17 +108,8 @@ internal partial class WasmModule_InstantiateTests
                 await Assert.That(exception).IsTypeOf<WasmTrapException>();
                 var trap = (WasmTrapException)exception!;
                 await Assert.That(trap.Reason).IsEqualTo(WasmTrapReason.MemoryOutOfBounds);
-                await Assert
-                    .That(
-                        trap.Message.StartsWith(
-                            "out of bounds memory access",
-                            StringComparison.Ordinal
-                        )
-                    )
-                    .IsTrue();
-                await Assert
-                    .That(trap.Location)
-                    .IsEqualTo(new(WasmProcessingStage.Instantiate, trapOffset, 1));
+                await Assert.That(trap.Message.StartsWith("out of bounds memory access", StringComparison.Ordinal)).IsTrue();
+                await Assert.That(trap.Location).IsEqualTo(new(WasmProcessingStage.Instantiate, trapOffset, 1));
             }
             await Assert.That(returned).IsNull();
             await Assert.That(calls).IsEqualTo(1);

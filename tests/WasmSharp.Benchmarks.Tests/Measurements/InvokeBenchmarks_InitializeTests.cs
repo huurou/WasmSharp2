@@ -16,13 +16,7 @@ internal class InvokeBenchmarks_InitializeTests
         // Arrange
         var definition = VerificationFixture.ChangedMemoryInputDefinition(MeasurementStage.Invoke, json_);
         var bytes = File.ReadAllBytes(
-                Path.Combine(
-                    AppContext.BaseDirectory,
-                    "Fixtures",
-                    "Data",
-                    "Verification",
-                    "state.wasm"
-                )
+                Path.Combine(AppContext.BaseDirectory, "Fixtures", "Data", "Verification", "state.wasm")
             )
             .ToImmutableArray();
         var assets = InvokeFixture.BuildAssets(definition, bytes, json_, methods_);
@@ -39,9 +33,7 @@ internal class InvokeBenchmarks_InitializeTests
     [Test]
     [Arguments("invoke.single")]
     [Arguments("memory.copy-fill")]
-    public async Task 測定前の結果が固定期待値と異なる_対象ケースとInvoke段階を含む例外で中断する(
-        string caseId
-    )
+    public async Task 測定前の結果が固定期待値と異なる_対象ケースとInvoke段階を含む例外で中断する(string caseId)
     {
         // Arrange
         var benchmark = new InvokeBenchmarks();

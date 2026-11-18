@@ -68,9 +68,7 @@ internal class WasmInstance_GetGlobalResourceTests
             .Instantiate(executionContext, []);
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => instance.GetGlobalResource(name))
-            .ThrowsExactly<ArgumentException>();
+        var exception = await Assert.That(() => instance.GetGlobalResource(name)).ThrowsExactly<ArgumentException>();
         await Assert.That(exception!.ParamName).IsEqualTo("name");
     }
 
@@ -79,15 +77,10 @@ internal class WasmInstance_GetGlobalResourceTests
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
-        var instance = WasmModule
-            .Decode(HostLinkingModuleBinary.Create())
-            .Validate()
-            .Instantiate(executionContext, []);
+        var instance = WasmModule.Decode(HostLinkingModuleBinary.Create()).Validate().Instantiate(executionContext, []);
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => instance.GetGlobalResource(null!))
-            .ThrowsExactly<ArgumentNullException>();
+        var exception = await Assert.That(() => instance.GetGlobalResource(null!)).ThrowsExactly<ArgumentNullException>();
         await Assert.That(exception!.ParamName).IsEqualTo("name");
     }
 }

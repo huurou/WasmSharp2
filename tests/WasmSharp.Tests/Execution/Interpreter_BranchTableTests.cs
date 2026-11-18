@@ -25,17 +25,10 @@ internal class Interpreter_BranchTableTests
         WasmValue[] operands = [WasmValue.FromI32(11), kept, WasmValue.FromI32(selector)];
         var instruction = new Instruction(default, default, 81, 1, targetCount);
         BranchTarget[] targets =
-            targetCount == 0
-                ? [new(2, 0, 0), new(1, 1, 1)]
-                : [new(2, 0, 0), new(3, 1, 1), new(0, 1, 1), new(1, 1, 1)];
+            targetCount == 0 ? [new(2, 0, 0), new(1, 1, 1)] : [new(2, 0, 0), new(3, 1, 1), new(0, 1, 1), new(1, 1, 1)];
 
         // Act
-        var actual = ControlHandlerFixture.Execute(
-            Interpreter.BranchTable,
-            in instruction,
-            operands,
-            [.. targets]
-        );
+        var actual = ControlHandlerFixture.Execute(Interpreter.BranchTable, in instruction, operands, [.. targets]);
 
         // Assert
         using (Assert.Multiple())

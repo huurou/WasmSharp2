@@ -7,9 +7,7 @@ namespace WasmSharp.Benchmarks.Cases;
 /// </summary>
 internal sealed class MeasurementMethods
 {
-    private readonly FrozenDictionary<string, string> methods_ = new Dictionary<string, string>(
-        StringComparer.Ordinal
-    )
+    private readonly FrozenDictionary<string, string> methods_ = new Dictionary<string, string>(StringComparer.Ordinal)
     {
         ["invoke.empty"] = "InvokeBenchmarks.Empty",
         ["invoke.single"] = "InvokeBenchmarks.Single",

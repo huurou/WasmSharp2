@@ -12,10 +12,7 @@ internal class RunStore_SaveCheckTests
     [Test]
     [Arguments("other-run", "invoke.single")]
     [Arguments("fixture-success", "other-case")]
-    public async Task 別のrunまたは予定外ケースの検査である_混在を拒否する(
-        string runId,
-        string caseId
-    )
+    public async Task 別のrunまたは予定外ケースの検査である_混在を拒否する(string runId, string caseId)
     {
         // Arrange
         using var fixture = new RunStoreFixture();
@@ -24,11 +21,7 @@ internal class RunStore_SaveCheckTests
 
         // Act & Assert
         var failure = await Assert.That(() => store.SaveCheck(check)).ThrowsExactly<ArgumentException>();
-        await Assert
-            .That(failure!.Message)
-            .Contains("run")
-            .And.Contains("ケース")
-            .And.Contains("一致しません");
+        await Assert.That(failure!.Message).Contains("run").And.Contains("ケース").And.Contains("一致しません");
     }
 
     [Test]
@@ -65,11 +58,7 @@ internal class RunStore_SaveCheckTests
         using (Assert.Multiple())
         {
             await Assert
-                .That(
-                    new[] { first.RelativePath, second.RelativePath, last.RelativePath }
-                        .Distinct()
-                        .Count()
-                )
+                .That(new[] { first.RelativePath, second.RelativePath, last.RelativePath }.Distinct().Count())
                 .IsEqualTo(3);
             await Assert.That(restored.LastConfirmedStage).IsEqualTo(RunStage.Precheck);
             await Assert.That(restored.ExecutionStarted).IsFalse();

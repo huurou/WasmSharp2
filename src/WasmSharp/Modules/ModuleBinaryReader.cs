@@ -157,14 +157,9 @@ internal ref struct ModuleBinaryReader
     /// <exception cref="WasmDecodeException">診断用読取りで指定長が物理残量を超える場合</exception>
     internal ReadOnlySpan<byte> ReadBytes(uint length)
     {
-        if (
-            (long)length > Remaining
-            || (mode_ == ModuleReadMode.Bounded && (long)length > DeclaredRemaining)
-        )
+        if ((long)length > Remaining || (mode_ == ModuleReadMode.Bounded && (long)length > DeclaredRemaining))
         {
-            throw BoundaryError(
-                "unexpected end of section or function: 宣言された長さを取得できません。"
-            );
+            throw BoundaryError("unexpected end of section or function: 宣言された長さを取得できません。");
         }
 
         var result = bytes_.Slice(position_, (int)length);
@@ -335,11 +330,7 @@ internal ref struct ModuleBinaryReader
         }
         catch (DecoderFallbackException exception)
         {
-            throw new WasmDecodeException(
-                "malformed UTF-8 encoding: 名前のUTF-8が不正です。",
-                Location(offset),
-                exception
-            );
+            throw new WasmDecodeException("malformed UTF-8 encoding: 名前のUTF-8が不正です。", Location(offset), exception);
         }
     }
 
@@ -364,8 +355,7 @@ internal ref struct ModuleBinaryReader
             {
                 // 最終バイトの余ったビットは、符号なしなら0、符号付きなら符号拡張に限る。
                 var positiveLimit = 1 << (signed ? remainingBits - 1 : remainingBits);
-                var validPayload =
-                    payload < positiveLimit || (signed && payload >= 128 - positiveLimit);
+                var validPayload = payload < positiveLimit || (signed && payload >= 128 - positiveLimit);
                 if (!validPayload)
                 {
                     throw Error("integer too large: 整数の未使用ビットが不正です。", offset);
@@ -394,12 +384,7 @@ internal ref struct ModuleBinaryReader
     /// <returns>Decode段階の診断位置</returns>
     internal readonly WasmFailureLocation Location(long? offset = null)
     {
-        return new WasmFailureLocation(
-            WasmProcessingStage.Decode,
-            offset ?? Position,
-            FunctionIndex,
-            SectionId
-        );
+        return new WasmFailureLocation(WasmProcessingStage.Decode, offset ?? Position, FunctionIndex, SectionId);
     }
 
     /// <summary>
@@ -420,11 +405,7 @@ internal ref struct ModuleBinaryReader
     /// <param name="inputLength">未確認範囲の終端となる入力全体のバイト数</param>
     /// <param name="offset">未実装の構文が始まる、Decode開始位置を0としたバイト位置</param>
     /// <returns>デコード未完了の後続範囲と、入力全体の検証未実施を保持する例外 このメソッドでは送出しない</returns>
-    internal readonly WasmUnsupportedFeatureException Unsupported(
-        string feature,
-        int inputLength,
-        long offset
-    )
+    internal readonly WasmUnsupportedFeatureException Unsupported(string feature, int inputLength, long offset)
     {
         return new WasmUnsupportedFeatureException(
             "未実装の機能に遭遇しました。",
@@ -437,12 +418,7 @@ internal ref struct ModuleBinaryReader
                     inputLength,
                     "この構文以降のデコードが未完了です。"
                 ),
-                new WasmUnverifiedRange(
-                    WasmProcessingStage.Validate,
-                    0,
-                    inputLength,
-                    "入力全体の検証が未実施です。"
-                ),
+                new WasmUnverifiedRange(WasmProcessingStage.Validate, 0, inputLength, "入力全体の検証が未実施です。"),
             ]
         );
     }

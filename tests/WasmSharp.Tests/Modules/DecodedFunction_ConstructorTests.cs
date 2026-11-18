@@ -12,11 +12,7 @@ internal class DecodedFunction_ConstructorTests
         LocalDeclaration[] locals = [new(uint.MaxValue, WasmValueKind.I64)];
         DecodedInstruction[] instructions =
         [
-            DecodedInstruction.WithImmediate(
-                new(0, 0x44),
-                WasmValue.FromF64Bits(0xFFF8123456789ABCUL),
-                37
-            ),
+            DecodedInstruction.WithImmediate(new(0, 0x44), WasmValue.FromF64Bits(0xFFF8123456789ABCUL), 37),
             DecodedInstruction.WithoutImmediate(new(0, 0x0B), 46),
         ];
 
@@ -35,9 +31,7 @@ internal class DecodedFunction_ConstructorTests
             await Assert.That(function.Locals[0].Type).IsEqualTo(WasmValueKind.I64);
             await Assert.That(function.Instructions.Length).IsEqualTo(2);
             await Assert.That(function.Instructions[0].Opcode).IsEqualTo(new OpcodeKey(0, 0x44));
-            await Assert
-                .That(function.Instructions[0].Immediate.AsF64Bits())
-                .IsEqualTo(0xFFF8123456789ABCUL);
+            await Assert.That(function.Instructions[0].Immediate.AsF64Bits()).IsEqualTo(0xFFF8123456789ABCUL);
             await Assert.That(function.Instructions[0].ByteOffset).IsEqualTo(37L);
             await Assert.That(function.Instructions[1].Opcode).IsEqualTo(new OpcodeKey(0, 0x0B));
             await Assert.That(function.Instructions[1].ByteOffset).IsEqualTo(46L);

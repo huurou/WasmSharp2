@@ -26,10 +26,7 @@ internal partial class WasmFunction_InvokeTests
         var instance = CreateMemorySizeAndGrowModule(imported, initialPages, 3)
             .Instantiate(executionContext, imported ? [host] : []);
         var memory = instance.GetMemory("memory");
-        var original = Enumerable
-            .Range(0, (int)initialPages * 65536)
-            .Select(x => (byte)(x % 251 + 1))
-            .ToArray();
+        var original = Enumerable.Range(0, (int)initialPages * 65536).Select(x => (byte)(x % 251 + 1)).ToArray();
         memory.Write(0, original);
         var expectedPages = initialPages + (uint)delta;
         var actual = new byte[expectedPages * 65536];
@@ -109,14 +106,8 @@ internal partial class WasmFunction_InvokeTests
         var module = WasmModule
             .Decode(
                 HostLinkingModuleBinary.Create(
-                    HostLinkingModuleBinary.Types(
-                        ([], [0x7F]),
-                        ([0x7F], [0x7F]),
-                        ([0x7F, 0x7F], [])
-                    ),
-                    HostLinkingModuleBinary.Imports(
-                        ("env", "m", 2, HostLinkingModuleBinary.Limits(1, 6))
-                    ),
+                    HostLinkingModuleBinary.Types(([], [0x7F]), ([0x7F], [0x7F]), ([0x7F, 0x7F], [])),
+                    HostLinkingModuleBinary.Imports(("env", "m", 2, HostLinkingModuleBinary.Limits(1, 6))),
                     HostLinkingModuleBinary.Functions(0, 1, 1, 2),
                     HostLinkingModuleBinary.Exports(
                         ("size", 0, 0),
@@ -306,18 +297,7 @@ internal partial class WasmFunction_InvokeTests
             HostLinkingModuleBinary.Memories((1, null)),
             HostLinkingModuleBinary.Exports(("run", 0, 0), ("memory", 2, 0)),
             HostLinkingModuleBinary.Code(
-                (
-                    [],
-                    [
-                        0x20,
-                        0,
-                        .. store ? new byte[] { 0x41, 1 } : [],
-                        opcode,
-                        0,
-                        .. encodedOffset,
-                        0x0B,
-                    ]
-                )
+                ([], [0x20, 0, .. store ? new byte[] { 0x41, 1 } : [], opcode, 0, .. encodedOffset, 0x0B])
             )
         );
         var instance = WasmModule.Decode(bytes).Validate().Instantiate(executionContext, []);
@@ -334,27 +314,16 @@ internal partial class WasmFunction_InvokeTests
         {
             await Assert.That(exception!.Reason).IsEqualTo(WasmTrapReason.MemoryOutOfBounds);
             await Assert
-                .That(
-                    exception.Message.StartsWith(
-                        "out of bounds memory access",
-                        StringComparison.Ordinal
-                    )
-                )
+                .That(exception.Message.StartsWith("out of bounds memory access", StringComparison.Ordinal))
                 .IsTrue();
             await Assert
                 .That(exception.Location)
-                .IsEqualTo(
-                    new(WasmProcessingStage.Invoke, bytes.Length - encodedOffset.Length - 3, 0)
-                );
+                .IsEqualTo(new(WasmProcessingStage.Invoke, bytes.Length - encodedOffset.Length - 3, 0));
             await Assert.That(Convert.ToHexString(actual)).IsEqualTo("81828384");
         }
     }
 
-    private static WasmModule CreateMemorySizeAndGrowModule(
-        bool imported,
-        uint initialPages,
-        uint? maximumPages
-    )
+    private static WasmModule CreateMemorySizeAndGrowModule(bool imported, uint initialPages, uint? maximumPages)
     {
         return WasmModule
             .Decode(
@@ -362,25 +331,13 @@ internal partial class WasmFunction_InvokeTests
                     HostLinkingModuleBinary.Types(([], [0x7F]), ([0x7F], [0x7F])),
                     imported
                         ? HostLinkingModuleBinary.Imports(
-                            (
-                                "env",
-                                "m",
-                                2,
-                                HostLinkingModuleBinary.Limits(initialPages, maximumPages + 2)
-                            )
+                            ("env", "m", 2, HostLinkingModuleBinary.Limits(initialPages, maximumPages + 2))
                         )
                         : [],
                     HostLinkingModuleBinary.Functions(0, 1),
                     imported ? [] : HostLinkingModuleBinary.Memories((initialPages, maximumPages)),
-                    HostLinkingModuleBinary.Exports(
-                        ("size", 0, 0),
-                        ("grow", 0, 1),
-                        ("memory", 2, 0)
-                    ),
-                    HostLinkingModuleBinary.Code(
-                        ([], [0x3F, 0, 0x0B]),
-                        ([], [0x20, 0, 0x40, 0, 0x0B])
-                    )
+                    HostLinkingModuleBinary.Exports(("size", 0, 0), ("grow", 0, 1), ("memory", 2, 0)),
+                    HostLinkingModuleBinary.Code(([], [0x3F, 0, 0x0B]), ([], [0x20, 0, 0x40, 0, 0x0B]))
                 )
             )
             .Validate();

@@ -13,9 +13,7 @@ internal class PreparationBenchmarks_CleanupTests
     [Arguments("memory")]
     [Arguments("start_result")]
     [Arguments("functions")]
-    public async Task 最後のinstanceの初期状態が異なる_対象ケースと段階を含む例外で後検査を失敗させる(
-        string exportName
-    )
+    public async Task 最後のinstanceの初期状態が異なる_対象ケースと段階を含む例外で後検査を失敗させる(string exportName)
     {
         // Arrange
         var benchmark = new PreparationBenchmarks();
@@ -37,9 +35,6 @@ internal class PreparationBenchmarks_CleanupTests
 
         // Act & Assert
         var exception = await Assert.That(benchmark.Cleanup).Throws<InvalidOperationException>();
-        await Assert
-            .That(exception!.Message)
-            .Contains("instantiate.large/Instantiate/")
-            .And.Contains(exportName);
+        await Assert.That(exception!.Message).Contains("instantiate.large/Instantiate/").And.Contains(exportName);
     }
 }

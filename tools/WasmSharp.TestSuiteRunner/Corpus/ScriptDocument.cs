@@ -113,13 +113,7 @@ internal sealed class ScriptDocument
             );
         }
 
-        return new(
-            owned,
-            sourceFilename,
-            commands.ToImmutable(),
-            complete,
-            diagnostics.ToImmutable()
-        );
+        return new(owned, sourceFilename, commands.ToImmutable(), complete, diagnostics.ToImmutable());
     }
 
     /// <summary>
@@ -177,9 +171,7 @@ internal sealed class ScriptDocument
                 }
                 else if ((sourceFilename = GetString(ref reader)) is null)
                 {
-                    diagnostics.Add(
-                        new(OPERATION, $"{SOURCE_FILENAME}を文字列として取得できません。", path)
-                    );
+                    diagnostics.Add(new(OPERATION, $"{SOURCE_FILENAME}を文字列として取得できません。", path));
                 }
 
                 hasSourceFilename = true;
@@ -250,9 +242,7 @@ internal sealed class ScriptDocument
             var start = (int)reader.TokenStartIndex;
             reader.Skip();
             var length = (int)reader.BytesConsumed - start;
-            commands.Add(
-                CreateCommand(commands.Count, start, content.AsMemory().Slice(start, length))
-            );
+            commands.Add(CreateCommand(commands.Count, start, content.AsMemory().Slice(start, length)));
         }
     }
 
@@ -297,9 +287,7 @@ internal sealed class ScriptDocument
     private static JsonElement? GetSingle(JsonProperty[] properties, string name)
     {
         // 同名の項目が複数ある場合は、どちらの値も採用せず取得できない値とする。
-        return properties.Where(x => NameEquals(x, name)).ToArray() is [var property]
-            ? property.Value
-            : null;
+        return properties.Where(x => NameEquals(x, name)).ToArray() is [var property] ? property.Value : null;
     }
 
     /// <summary>

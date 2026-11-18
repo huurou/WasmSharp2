@@ -34,9 +34,7 @@ internal static class BaselineComparer
         report = report with
         {
             Established =
-                report.ConditionDifferences.Count == 0
-                && report.EntryDifferences.Count == 0
-                && report.Uncompared.Count == 0,
+                report.ConditionDifferences.Count == 0 && report.EntryDifferences.Count == 0 && report.Uncompared.Count == 0,
         };
         AddRecordIssues(report, "baseline", ReportStore.Validate(baseline));
         AddRecordIssues(report, "current", ReportStore.Validate(current));
@@ -115,12 +113,7 @@ internal static class BaselineComparer
                     : CaseChange.Changed,
             };
             report.Cases.Add(
-                new(
-                    id,
-                    change,
-                    baselineCase?.Outcome == CaseOutcome.Passed
-                        && currentCase?.Outcome != CaseOutcome.Passed
-                )
+                new(id, change, baselineCase?.Outcome == CaseOutcome.Passed && currentCase?.Outcome != CaseOutcome.Passed)
                 {
                     Baseline = baselineCase,
                     Current = currentCase,
@@ -149,23 +142,9 @@ internal static class BaselineComparer
         {
             ExpectedValues = [.. item.ExpectedValues.Select(x => x with { Lanes = [.. x.Lanes] })],
             ActualValues = [.. item.ActualValues],
-            Diagnostics =
-            [
-                .. item.Diagnostics.Select(x =>
-                    x with
-                    {
-                        UnverifiedRanges = [.. x.UnverifiedRanges],
-                    }
-                ),
-            ],
+            Diagnostics = [.. item.Diagnostics.Select(x => x with { UnverifiedRanges = [.. x.UnverifiedRanges] })],
             Prints = [.. item.Prints.Select(x => x with { Arguments = [.. x.Arguments] })],
-            Cause = item.Cause is { } cause
-                ? cause with
-                {
-                    Direct = [.. cause.Direct],
-                    Origins = [.. cause.Origins],
-                }
-                : null,
+            Cause = item.Cause is { } cause ? cause with { Direct = [.. cause.Direct], Origins = [.. cause.Origins] } : null,
         };
     }
 
@@ -196,9 +175,8 @@ internal static class BaselineComparer
         return Summarize(
             report,
             currentFailedCount: 0,
-            currentRunnerErrorCount: current.Inputs.Count(x =>
-                x.Status == ConversionStatus.RunnerError
-            ) + current.Diagnostics.Count
+            currentRunnerErrorCount: current.Inputs.Count(x => x.Status == ConversionStatus.RunnerError)
+                + current.Diagnostics.Count
         );
     }
 
@@ -219,10 +197,7 @@ internal static class BaselineComparer
         ComparedReport currentReport
     )
     {
-        var report = new ComparisonReport(comparison, baselineReport, currentReport)
-        {
-            Established = true,
-        };
+        var report = new ComparisonReport(comparison, baselineReport, currentReport) { Established = true };
         CompareProfile(report, baseline.Profile, current.Profile);
         AddDifference(
             report.ProvenanceDifferences,
@@ -254,22 +229,10 @@ internal static class BaselineComparer
             )
         )
         {
-            AddEntryDifference(
-                report,
-                path,
-                "input.sha256",
-                before?.Input.Sha256,
-                after?.Input.Sha256
-            );
+            AddEntryDifference(report, path, "input.sha256", before?.Input.Sha256, after?.Input.Sha256);
             if (comparison == ComparisonType.Conversion)
             {
-                AddEntryDifference(
-                    report,
-                    path,
-                    "conversion.status",
-                    before?.Status,
-                    after?.Status
-                );
+                AddEntryDifference(report, path, "conversion.status", before?.Status, after?.Status);
             }
         }
 
@@ -285,13 +248,7 @@ internal static class BaselineComparer
         {
             AddEntryDifference(report, path, "artifact.sha256", before?.Sha256, after?.Sha256);
             AddEntryDifference(report, path, "artifact.kind", before?.Kind, after?.Kind);
-            AddEntryDifference(
-                report,
-                path,
-                "artifact.input_path",
-                before?.InputPath,
-                after?.InputPath
-            );
+            AddEntryDifference(report, path, "artifact.input_path", before?.InputPath, after?.InputPath);
         }
 
         return report;
@@ -303,11 +260,7 @@ internal static class BaselineComparer
     /// <param name="report">条件差と重複の理由を追加する比較結果</param>
     /// <param name="baseline">比較基準となるprofileのスナップショット</param>
     /// <param name="current">比較する現在のprofileのスナップショット</param>
-    private static void CompareProfile(
-        ComparisonReport report,
-        ProfileSnapshot baseline,
-        ProfileSnapshot current
-    )
+    private static void CompareProfile(ComparisonReport report, ProfileSnapshot baseline, ProfileSnapshot current)
     {
         var differences = report.ConditionDifferences;
         AddDifference(differences, "profile.id", baseline.Id, current.Id);
@@ -315,18 +268,8 @@ internal static class BaselineComparer
         AddDifference(differences, "spec.commit", baseline.Spec.Commit, current.Spec.Commit);
         AddDifference(differences, "wabt.url", baseline.Wabt.Url, current.Wabt.Url);
         AddDifference(differences, "wabt.commit", baseline.Wabt.Commit, current.Wabt.Commit);
-        AddDifference(
-            differences,
-            "working_directory",
-            baseline.WorkingDirectory,
-            current.WorkingDirectory
-        );
-        AddDifference(
-            differences,
-            "conversion.check",
-            baseline.Conversion.Check,
-            current.Conversion.Check
-        );
+        AddDifference(differences, "working_directory", baseline.WorkingDirectory, current.WorkingDirectory);
+        AddDifference(differences, "conversion.check", baseline.Conversion.Check, current.Conversion.Check);
         AddDifference(
             differences,
             "conversion.canonical_lebs",
@@ -339,18 +282,8 @@ internal static class BaselineComparer
             baseline.Conversion.Relocatable,
             current.Conversion.Relocatable
         );
-        AddDifference(
-            differences,
-            "conversion.debug_names",
-            baseline.Conversion.DebugNames,
-            current.Conversion.DebugNames
-        );
-        if (
-            !baseline.LogicalArguments.SequenceEqual(
-                current.LogicalArguments,
-                StringComparer.Ordinal
-            )
-        )
+        AddDifference(differences, "conversion.debug_names", baseline.Conversion.DebugNames, current.Conversion.DebugNames);
+        if (!baseline.LogicalArguments.SequenceEqual(current.LogicalArguments, StringComparer.Ordinal))
         {
             AddDifference(
                 differences,
@@ -370,12 +303,7 @@ internal static class BaselineComparer
             )
         )
         {
-            AddDifference(
-                differences,
-                $"features.{name}.default_enabled",
-                before?.DefaultEnabled,
-                after?.DefaultEnabled
-            );
+            AddDifference(differences, $"features.{name}.default_enabled", before?.DefaultEnabled, after?.DefaultEnabled);
             AddDifference(differences, $"features.{name}.enabled", before?.Enabled, after?.Enabled);
         }
     }
@@ -413,10 +341,7 @@ internal static class BaselineComparer
             if (left.Length > 1 || right.Length > 1)
             {
                 uncompared.Add(
-                    new(
-                        name,
-                        $"{kind}が重複しているため対応できません。baseline={left.Length}件、current={right.Length}件"
-                    )
+                    new(name, $"{kind}が重複しているため対応できません。baseline={left.Length}件、current={right.Length}件")
                 );
                 continue;
             }
@@ -433,12 +358,7 @@ internal static class BaselineComparer
     /// <param name="name">比較条件または参考出典の識別名</param>
     /// <param name="baseline">比較基準の値</param>
     /// <param name="current">現在の値</param>
-    private static void AddDifference<T>(
-        List<ConditionDifference> differences,
-        string name,
-        T baseline,
-        T current
-    )
+    private static void AddDifference<T>(List<ConditionDifference> differences, string name, T baseline, T current)
     {
         if (!EqualityComparer<T>.Default.Equals(baseline, current))
         {
@@ -455,13 +375,7 @@ internal static class BaselineComparer
     /// <param name="property">比較する属性の識別名</param>
     /// <param name="baseline">比較基準の属性値</param>
     /// <param name="current">現在の属性値</param>
-    private static void AddEntryDifference<T>(
-        ComparisonReport report,
-        string path,
-        string property,
-        T baseline,
-        T current
-    )
+    private static void AddEntryDifference<T>(ComparisonReport report, string path, string property, T baseline, T current)
     {
         if (!EqualityComparer<T>.Default.Equals(baseline, current))
         {
@@ -486,11 +400,7 @@ internal static class BaselineComparer
     /// <param name="report">比較できなかった理由を追加する結果</param>
     /// <param name="target">問題のある比較側を表すbaselineまたはcurrentの識別名</param>
     /// <param name="issues">保存済み記録の検証で見つかった問題一覧</param>
-    private static void AddRecordIssues(
-        ComparisonReport report,
-        string target,
-        IEnumerable<RecordIssue> issues
-    )
+    private static void AddRecordIssues(ComparisonReport report, string target, IEnumerable<RecordIssue> issues)
     {
         report.Uncompared.AddRange(issues.Select(x => new UncomparedItem(target, x.Message)));
     }
@@ -502,11 +412,7 @@ internal static class BaselineComparer
     /// <param name="currentFailedCount">現在の実行結果に含まれるfailedの件数 変換比較では0</param>
     /// <param name="currentRunnerErrorCount">現在の結果に含まれるケース、入力、操作全体のrunner_errorの件数</param>
     /// <returns>集計と完了状態を更新した比較結果 差分やケースの一覧は入力結果と共有する</returns>
-    private static ComparisonReport Summarize(
-        ComparisonReport report,
-        int currentFailedCount,
-        int currentRunnerErrorCount
-    )
+    private static ComparisonReport Summarize(ComparisonReport report, int currentFailedCount, int currentRunnerErrorCount)
     {
         return report with
         {

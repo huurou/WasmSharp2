@@ -78,8 +78,7 @@ internal partial class WasmFunction_InvokeTests
         // Arrange
         var executionContext = new WasmExecutionContext();
         var resultKind = code < 4 ? (byte)0x7F : (byte)0x7E;
-        byte[] constant =
-            code % 4 < 2 ? [0x43, 0, 0, 0xF0, 0x40] : [0x44, 0, 0, 0, 0, 0, 0, 0x1E, 0x40];
+        byte[] constant = code % 4 < 2 ? [0x43, 0, 0, 0xF0, 0x40] : [0x44, 0, 0, 0, 0, 0, 0, 0x1E, 0x40];
         var expected = code < 4 ? WasmValue.FromI32(7) : WasmValue.FromI64(7);
         foreach (var nonShortest in new[] { false, true })
         {

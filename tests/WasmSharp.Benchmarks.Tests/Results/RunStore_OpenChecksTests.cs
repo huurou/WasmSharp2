@@ -26,20 +26,12 @@ internal class RunStore_OpenChecksTests
 
         // Act & Assert
         var exception = await Assert
-            .That(() =>
-                RunStore.OpenChecks(
-                    fixture.DirectoryPath,
-                    completed ? fixture.Manifest.RunId : "other-run",
-                    json_
-                )
-            )
+            .That(() => RunStore.OpenChecks(fixture.DirectoryPath, completed ? fixture.Manifest.RunId : "other-run", json_))
             .ThrowsExactly<InvalidDataException>();
         using (Assert.Multiple())
         {
             await Assert.That(exception!.Message).Contains("一致しないか完了");
-            await Assert
-                .That(File.ReadAllBytes(Path.Combine(fixture.DirectoryPath, "run.json")))
-                .IsEquivalentTo(expected);
+            await Assert.That(File.ReadAllBytes(Path.Combine(fixture.DirectoryPath, "run.json"))).IsEquivalentTo(expected);
         }
     }
 }

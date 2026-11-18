@@ -16,9 +16,7 @@ internal partial class WasmModule_DecodeTests
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
-        var bytes = HostLinkingModuleBinary.Create(
-            HostLinkingModuleBinary.Section(9, Convert.FromHexString(payload))
-        );
+        var bytes = HostLinkingModuleBinary.Create(HostLinkingModuleBinary.Section(9, Convert.FromHexString(payload)));
         using var stream = new MemoryStream(bytes);
 
         // Act
@@ -30,9 +28,7 @@ internal partial class WasmModule_DecodeTests
             await Assert.That(module.ElementSegments.Length).IsEqualTo(payload == "00" ? 0 : 1);
             if (payload == "00")
             {
-                await Assert
-                    .That(module.Validate().Instantiate(executionContext, []).ElementSegments.IsEmpty)
-                    .IsTrue();
+                await Assert.That(module.Validate().Instantiate(executionContext, []).ElementSegments.IsEmpty).IsTrue();
             }
             else
             {

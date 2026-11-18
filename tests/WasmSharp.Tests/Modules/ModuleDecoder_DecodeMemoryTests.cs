@@ -45,15 +45,10 @@ internal partial class ModuleDecoder_DecodeTests
             using (Assert.Multiple())
             {
                 await Assert.That(decoded.Opcode).IsEqualTo(new OpcodeKey(0, (uint)(0x28 + index)));
-                await Assert
-                    .That(decoded.MemoryArgument)
-                    .IsEqualTo(new MemoryArgument(alignment, offset));
+                await Assert.That(decoded.MemoryArgument).IsEqualTo(new MemoryArgument(alignment, offset));
                 await Assert
                     .That(decoded.ByteOffset)
-                    .IsEqualTo(
-                        (long)firstOffset
-                            + index * (1 + encodedAlignment.Length + encodedOffset.Length)
-                    );
+                    .IsEqualTo((long)firstOffset + index * (1 + encodedAlignment.Length + encodedOffset.Length));
             }
         }
     }

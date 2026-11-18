@@ -8,17 +8,12 @@ namespace WasmSharp.Benchmarks.Cases;
 /// </summary>
 internal sealed class CaseJson
 {
-    internal JsonSerializerOptions Options { get; } = new JsonSerializerOptions
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
-        RespectRequiredConstructorParameters = true,
-        RespectNullableAnnotations = true,
-        Converters =
-            {
-                new JsonStringEnumConverter(
-                    JsonNamingPolicy.SnakeCaseLower,
-                    allowIntegerValues: false
-                ),
-            },
-    };
+    internal JsonSerializerOptions Options { get; } =
+        new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
+            RespectRequiredConstructorParameters = true,
+            RespectNullableAnnotations = true,
+            Converters = { new JsonStringEnumConverter(JsonNamingPolicy.SnakeCaseLower, allowIntegerValues: false) },
+        };
 }

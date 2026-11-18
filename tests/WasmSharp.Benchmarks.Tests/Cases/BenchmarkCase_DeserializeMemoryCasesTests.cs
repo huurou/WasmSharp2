@@ -26,17 +26,13 @@ internal partial class BenchmarkCase_DeserializeTests
         // Assert
         using (Assert.Multiple())
         {
-            await Assert
-                .That(definitions.Select(x => x.CaseId))
-                .IsEquivalentTo(expectedMemoryCaseIds_);
+            await Assert.That(definitions.Select(x => x.CaseId)).IsEquivalentTo(expectedMemoryCaseIds_);
             foreach (var definition in definitions)
             {
                 await Assert.That(definition.CaseRevision).IsEqualTo(1U);
                 await Assert.That(definition.MeasurementStage).IsEqualTo(MeasurementStage.Invoke);
                 await Assert.That(definition.OperationDefinition.OperationsPerInvoke).IsEqualTo(1U);
-                await Assert
-                    .That(definition.OperationDefinition.IncludesStateRestoration)
-                    .IsFalse();
+                await Assert.That(definition.OperationDefinition.IncludesStateRestoration).IsFalse();
                 await Assert.That(definition.Input.Arguments.Count).IsEqualTo(0);
                 await Assert.That(definition.ExpectedResult.Globals.Count).IsEqualTo(0);
                 await Assert.That(definition.ExpectedResult.Tables.Count).IsEqualTo(0);
@@ -44,12 +40,7 @@ internal partial class BenchmarkCase_DeserializeTests
                     .That(definition.InputHash)
                     .IsEqualTo(
                         Convert.ToHexStringLower(
-                            SHA256.HashData(
-                                JsonSerializer.SerializeToUtf8Bytes(
-                                    definition.Input,
-                                    json_.Options
-                                )
-                            )
+                            SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(definition.Input, json_.Options))
                         )
                     );
             }
@@ -67,33 +58,9 @@ internal partial class BenchmarkCase_DeserializeTests
         var filledDigest = Convert.ToHexStringLower(SHA256.HashData(filledBytes));
         ArrayInput[] initial =
         [
-            new(
-                "memory",
-                0,
-                ArrayElementType.U8,
-                65536,
-                ArrayInputPattern.IndexModulo256,
-                null,
-                null
-            ),
-            new(
-                "memory",
-                65536,
-                ArrayElementType.U8,
-                65536,
-                ArrayInputPattern.RepeatedByte,
-                null,
-                0xa5
-            ),
-            new(
-                "memory",
-                131072,
-                ArrayElementType.U8,
-                65536,
-                ArrayInputPattern.IndexModulo256,
-                null,
-                null
-            ),
+            new("memory", 0, ArrayElementType.U8, 65536, ArrayInputPattern.IndexModulo256, null, null),
+            new("memory", 65536, ArrayElementType.U8, 65536, ArrayInputPattern.RepeatedByte, null, 0xa5),
+            new("memory", 131072, ArrayElementType.U8, 65536, ArrayInputPattern.IndexModulo256, null, null),
         ];
         ArrayDigest[] final =
         [
@@ -117,12 +84,10 @@ internal partial class BenchmarkCase_DeserializeTests
             await Assert.That(definition.ExpectedResult.Arrays.SequenceEqual(final)).IsTrue();
             await Assert
                 .That(definition.Workload)
-                .IsEquivalentTo(
-                    [
-                        new WorkloadQuantity("fill", 65536, WorkloadUnit.Bytes),
-                        new WorkloadQuantity("copy", 65536, WorkloadUnit.Bytes),
-                    ]
-                );
+                .IsEquivalentTo([
+                    new WorkloadQuantity("fill", 65536, WorkloadUnit.Bytes),
+                    new WorkloadQuantity("copy", 65536, WorkloadUnit.Bytes),
+                ]);
             // 各出力の末尾1バイトを加算するため、165+255=420
             await Assert
                 .That(definition.ExpectedResult.Values.Single())
@@ -139,17 +104,11 @@ internal partial class BenchmarkCase_DeserializeTests
         var bytes = new byte[ELEMENTS * sizeof(uint)];
         for (uint index = 0; index < ELEMENTS; index++)
         {
-            BinaryPrimitives.WriteUInt32LittleEndian(
-                bytes.AsSpan((int)index * sizeof(uint)),
-                index % 256
-            );
+            BinaryPrimitives.WriteUInt32LittleEndian(bytes.AsSpan((int)index * sizeof(uint)), index % 256);
         }
         // 0〜255の総和が64組で2,088,960になる。
         var sum = ELEMENTS / 256 * (255 * 256 / 2);
-        var expected = new NumericValue(
-            NumericType.I32,
-            sum.ToString("x8", CultureInfo.InvariantCulture)
-        );
+        var expected = new NumericValue(NumericType.I32, sum.ToString("x8", CultureInfo.InvariantCulture));
         var digest = Convert.ToHexStringLower(SHA256.HashData(bytes));
 
         // Act
@@ -164,12 +123,8 @@ internal partial class BenchmarkCase_DeserializeTests
         {
             await Assert.That(definitions.Length).IsEqualTo(2);
             await Assert.That(sum).IsEqualTo(2088960U);
-            await Assert
-                .That(definitions.Select(x => x.Input.FunctionExport))
-                .IsEquivalentTo(expectedFunctionExports_);
-            await Assert
-                .That(definitions.Select(x => x.AssetSha256).Distinct().Count())
-                .IsEqualTo(1);
+            await Assert.That(definitions.Select(x => x.Input.FunctionExport)).IsEquivalentTo(expectedFunctionExports_);
+            await Assert.That(definitions.Select(x => x.AssetSha256).Distinct().Count()).IsEqualTo(1);
             foreach (var definition in definitions)
             {
                 await Assert.That(definition.AssetId).IsEqualTo("scan");
@@ -194,24 +149,13 @@ internal partial class BenchmarkCase_DeserializeTests
                 await Assert.That(definition.ExpectedResult.Values.Single()).IsEqualTo(expected);
                 await Assert
                     .That(definition.ExpectedResult.Arrays.Single())
-                    .IsEqualTo(
-                        new ArrayDigest(
-                            "memory",
-                            0,
-                            ArrayElementType.U32,
-                            ELEMENTS,
-                            "sha256",
-                            digest
-                        )
-                    );
+                    .IsEqualTo(new ArrayDigest("memory", 0, ArrayElementType.U32, ELEMENTS, "sha256", digest));
             }
         }
     }
 
     private static Task<string> ReadMemoryCasesAsync()
     {
-        return File.ReadAllTextAsync(
-            Path.Combine(AppContext.BaseDirectory, "Fixtures", "Data", "cases.json")
-        );
+        return File.ReadAllTextAsync(Path.Combine(AppContext.BaseDirectory, "Fixtures", "Data", "cases.json"));
     }
 }

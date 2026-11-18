@@ -29,9 +29,7 @@ internal class WasmInstance_GetGlobalTests
         await Assert.That(after.AsI32()).IsEqualTo(2);
         // Act & Assert
         await Assert.That(() => instance.GetGlobal("G")).ThrowsExactly<ArgumentException>();
-        var exception = await Assert
-            .That(() => instance.GetGlobal(null!))
-            .ThrowsExactly<ArgumentNullException>();
+        var exception = await Assert.That(() => instance.GetGlobal(null!)).ThrowsExactly<ArgumentNullException>();
         await Assert.That(exception!.ParamName).IsEqualTo("name");
     }
 
@@ -49,9 +47,7 @@ internal class WasmInstance_GetGlobalTests
             .Instantiate(executionContext, []);
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => instance.GetGlobal(name))
-            .ThrowsExactly<ArgumentException>();
+        var exception = await Assert.That(() => instance.GetGlobal(name)).ThrowsExactly<ArgumentException>();
         await Assert.That(exception!.ParamName).IsEqualTo("name");
     }
 }

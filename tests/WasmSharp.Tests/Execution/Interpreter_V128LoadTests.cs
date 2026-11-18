@@ -21,31 +21,9 @@ internal class Interpreter_V128LoadTests
         var memory = new WasmMemory(new(pages, null));
         memory.Write(
             (ulong)effectiveAddress,
-            [
-                0x10,
-                0x32,
-                0x54,
-                0x76,
-                0x98,
-                0xBA,
-                0xDC,
-                0xFE,
-                0xEF,
-                0xCD,
-                0xAB,
-                0x89,
-                0x67,
-                0x45,
-                0x23,
-                0x01,
-            ]
+            [0x10, 0x32, 0x54, 0x76, 0x98, 0xBA, 0xDC, 0xFE, 0xEF, 0xCD, 0xAB, 0x89, 0x67, 0x45, 0x23, 0x01]
         );
-        var instruction = MemoryHandlerFixture.CreateInstruction(
-            WasmValueKind.V128,
-            16,
-            offset: offset,
-            alignment: 4
-        );
+        var instruction = MemoryHandlerFixture.CreateInstruction(WasmValueKind.V128, 16, offset: offset, alignment: 4);
 
         // Act
         var actual = MemoryHandlerFixture.Execute(
@@ -60,9 +38,7 @@ internal class Interpreter_V128LoadTests
         {
             await Assert.That(actual.Result.Status).IsEqualTo(ExecutionStatus.Success);
             await Assert.That(actual.Value.Kind).IsEqualTo(WasmValueKind.V128);
-            await Assert
-                .That(actual.Value.AsV128())
-                .IsEqualTo((0xFEDCBA9876543210UL, 0x0123456789ABCDEFUL));
+            await Assert.That(actual.Value.AsV128()).IsEqualTo((0xFEDCBA9876543210UL, 0x0123456789ABCDEFUL));
             await Assert.That(actual.Sentinel).IsEqualTo(NumericHandlerFixture.Sentinel);
             await Assert.That(actual.ValueCount).IsEqualTo(2);
         }
@@ -85,11 +61,7 @@ internal class Interpreter_V128LoadTests
     {
         // Arrange
         var memory = new WasmMemory(new(pages, null));
-        var instruction = MemoryHandlerFixture.CreateInstruction(
-            WasmValueKind.V128,
-            16,
-            offset: offset
-        );
+        var instruction = MemoryHandlerFixture.CreateInstruction(WasmValueKind.V128, 16, offset: offset);
 
         // Act
         var actual = MemoryHandlerFixture.Execute(

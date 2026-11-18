@@ -17,11 +17,7 @@ internal class Interpreter_F32LtTests
     [Arguments(0xBFA00000u, 0xFFC12345u, 0)]
     [Arguments(0x7F812345u, 0xBFA00000u, 0)]
     [Arguments(0xBFA00000u, 0x7F812345u, 0)]
-    public async Task 通常値と等値とNaNの左右operand_i32で小なり比較を返す(
-        uint leftBits,
-        uint rightBits,
-        int expected
-    )
+    public async Task 通常値と等値とNaNの左右operand_i32で小なり比較を返す(uint leftBits, uint rightBits, int expected)
     {
         // Arrange
         WasmValue[] operands = [WasmValue.FromF32Bits(leftBits), WasmValue.FromF32Bits(rightBits)];

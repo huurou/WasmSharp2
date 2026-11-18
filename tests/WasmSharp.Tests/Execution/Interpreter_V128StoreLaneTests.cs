@@ -51,9 +51,7 @@ internal class Interpreter_V128StoreLaneTests
             0x23,
             0x01,
         ];
-        vectorBytes
-            .AsSpan(laneIndex * byteWidth, byteWidth)
-            .CopyTo(expected.AsSpan(effectiveAddress));
+        vectorBytes.AsSpan(laneIndex * byteWidth, byteWidth).CopyTo(expected.AsSpan(effectiveAddress));
         var instruction = new Instruction(
             default,
             default,
@@ -79,10 +77,7 @@ internal class Interpreter_V128StoreLaneTests
             Interpreter.V128StoreLane,
             memory,
             in instruction,
-            [
-                WasmValue.FromI32(address),
-                WasmValue.FromV128(0xFEDCBA9876543210UL, 0x0123456789ABCDEFUL),
-            ]
+            [WasmValue.FromI32(address), WasmValue.FromV128(0xFEDCBA9876543210UL, 0x0123456789ABCDEFUL)]
         );
         memory.Read(0, after);
 
@@ -142,10 +137,7 @@ internal class Interpreter_V128StoreLaneTests
             Interpreter.V128StoreLane,
             memory,
             in instruction,
-            [
-                WasmValue.FromI32(address),
-                WasmValue.FromV128(0xFEDCBA9876543210UL, 0x0123456789ABCDEFUL),
-            ]
+            [WasmValue.FromI32(address), WasmValue.FromV128(0xFEDCBA9876543210UL, 0x0123456789ABCDEFUL)]
         );
         memory.Read(0, after);
 

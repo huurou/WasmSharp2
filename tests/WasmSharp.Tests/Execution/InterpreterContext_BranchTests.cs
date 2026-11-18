@@ -141,9 +141,7 @@ internal class InterpreterContext_BranchTests
             for (var i = 0; i < discardCount; i++)
             {
                 context.PushValue(
-                    i % 2 == 0
-                        ? WasmValue.FromExternRef(new object())
-                        : WasmValue.FromFuncRef(FunctionFixture.Create())
+                    i % 2 == 0 ? WasmValue.FromExternRef(new object()) : WasmValue.FromFuncRef(FunctionFixture.Create())
                 );
             }
             foreach (var value in expected)
@@ -155,12 +153,7 @@ internal class InterpreterContext_BranchTests
 
             actualPrefix = [.. Enumerable.Range(0, prefix.Length).Select(context.GetValue)];
             actualKept = [.. Enumerable.Range(prefix.Length, keepCount).Select(context.GetValue)];
-            cleared =
-            [
-                .. Enumerable
-                    .Range(prefix.Length + keepCount, discardCount)
-                    .Select(context.GetValue),
-            ];
+            cleared = [.. Enumerable.Range(prefix.Length + keepCount, discardCount).Select(context.GetValue)];
             actualCaller = context.GetFrame(0);
             actualCurrent = context.GetFrame(1);
             state = (context.FrameCount, context.ValueCount, context.CallDepth);
@@ -196,15 +189,11 @@ internal class InterpreterContext_BranchTests
                 await Assert.That(actualKept[i]).IsEqualTo(expected[i]);
                 if (expected[i].Kind == WasmValueKind.FuncRef)
                 {
-                    await Assert
-                        .That(actualKept[i].AsFuncRef())
-                        .IsSameReferenceAs(expected[i].AsFuncRef());
+                    await Assert.That(actualKept[i].AsFuncRef()).IsSameReferenceAs(expected[i].AsFuncRef());
                 }
                 if (expected[i].Kind == WasmValueKind.ExternRef)
                 {
-                    await Assert
-                        .That(actualKept[i].AsExternRef())
-                        .IsSameReferenceAs(expected[i].AsExternRef());
+                    await Assert.That(actualKept[i].AsExternRef()).IsSameReferenceAs(expected[i].AsExternRef());
                 }
             }
             foreach (var value in cleared)

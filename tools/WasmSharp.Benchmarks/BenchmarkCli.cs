@@ -25,12 +25,7 @@ internal sealed class BenchmarkCli
     /// <summary>
     /// 測定要求の実行を受け取り、引数の解釈と結果表示・終了値を処理する
     /// </summary>
-    internal int Run(
-        string[] args,
-        TextWriter output,
-        TextWriter error,
-        Func<RunRequest, RunManifest> run
-    )
+    internal int Run(string[] args, TextWriter output, TextWriter error, Func<RunRequest, RunManifest> run)
     {
         try
         {
@@ -65,11 +60,7 @@ internal sealed class BenchmarkCli
         }
     }
 
-    private int Measure(
-        Dictionary<string, string> options,
-        TextWriter output,
-        Func<RunRequest, RunManifest> run
-    )
+    private int Measure(Dictionary<string, string> options, TextWriter output, Func<RunRequest, RunManifest> run)
     {
         var directory = Path.GetFullPath(options["--output"]);
         EnsureNewOutput(directory);
@@ -89,15 +80,12 @@ internal sealed class BenchmarkCli
         var arguments = Environment.GetCommandLineArgs();
         var command = new CommandInvocation(
             executable,
-            Path.GetFileNameWithoutExtension(executable)
-                .Equals("dotnet", StringComparison.OrdinalIgnoreCase)
+            Path.GetFileNameWithoutExtension(executable).Equals("dotnet", StringComparison.OrdinalIgnoreCase)
                 ? [.. arguments]
                 : [.. arguments.Skip(1)],
             Environment.CurrentDirectory
         );
-        var repository = CaptureCommand
-            .Run("git", command.WorkingDirectory, "rev-parse", "--show-toplevel")
-            .Trim();
+        var repository = CaptureCommand.Run("git", command.WorkingDirectory, "rev-parse", "--show-toplevel").Trim();
         var result = run(
             new(
                 directory,
@@ -109,9 +97,7 @@ internal sealed class BenchmarkCli
                 command
             )
         );
-        output.WriteLine(
-            $"run {result.RunId}: {result.Status}; 用途: {result.Kind}; 保存先: {directory}"
-        );
+        output.WriteLine($"run {result.RunId}: {result.Status}; 用途: {result.Kind}; 保存先: {directory}");
         foreach (var item in result.Cases)
         {
             output.WriteLine(
@@ -134,14 +120,10 @@ internal sealed class BenchmarkCli
     {
         var assets = AssetManifest.Load(path, json_, methods_);
         var succeeded = true;
-        foreach (
-            var definition in assets.Catalog.Cases.OrderBy(x => x.CaseId, StringComparer.Ordinal)
-        )
+        foreach (var definition in assets.Catalog.Cases.OrderBy(x => x.CaseId, StringComparer.Ordinal))
         {
             var result = CaseVerifier.Verify(context_, assets, definition.CaseId, json_);
-            output.WriteLine(
-                $"{result.CaseId}: {(result.Succeeded ? "Succeeded" : "Failed")} ({result.Stage})"
-            );
+            output.WriteLine($"{result.CaseId}: {(result.Succeeded ? "Succeeded" : "Failed")} ({result.Stage})");
             if (!result.Succeeded)
             {
                 succeeded = false;
@@ -183,19 +165,16 @@ internal sealed class BenchmarkCli
                 current,
                 policyPath,
                 Convert.ToHexStringLower(SHA256.HashData(policyBytes)),
-                [.. runs.SelectMany(x => x.PlannedCaseIds)
-                    .Concat(policy.Cases.Select(x => x.CaseId))
-                    .Distinct(StringComparer.Ordinal)
-                    .Order(StringComparer.Ordinal)]
+                [
+                    .. runs.SelectMany(x => x.PlannedCaseIds)
+                        .Concat(policy.Cases.Select(x => x.CaseId))
+                        .Distinct(StringComparer.Ordinal)
+                        .Order(StringComparer.Ordinal),
+                ]
             )
         );
         Directory.CreateDirectory(directory);
-        using (
-            var stream = new FileStream(
-                Path.Combine(directory, "comparison.json"),
-                FileMode.CreateNew
-            )
-        )
+        using (var stream = new FileStream(Path.Combine(directory, "comparison.json"), FileMode.CreateNew))
         {
             JsonSerializer.Serialize(stream, report, json_.Options);
         }
@@ -218,9 +197,7 @@ internal sealed class BenchmarkCli
         var paths = value.Split(',');
         if (paths.Any(string.IsNullOrWhiteSpace))
         {
-            throw new ArgumentException(
-                "run一覧は空要素を含まないカンマ区切りで指定してください。"
-            );
+            throw new ArgumentException("run一覧は空要素を含まないカンマ区切りで指定してください。");
         }
         return [.. paths.Select(Path.GetFullPath)];
     }
@@ -276,9 +253,7 @@ internal sealed class BenchmarkCli
     private static void WriteHelp(TextWriter output)
     {
         output.WriteLine("check --assets <manifest>");
-        output.WriteLine(
-            "run --assets <manifest> --case <id|all> --output <new-directory> [--kind measurement|smoke]"
-        );
+        output.WriteLine("run --assets <manifest> --case <id|all> --output <new-directory> [--kind measurement|smoke]");
         output.WriteLine(
             "compare --baseline <run-directory,...> --current <run-directory,...> --policy <path> --output <new-directory>"
         );

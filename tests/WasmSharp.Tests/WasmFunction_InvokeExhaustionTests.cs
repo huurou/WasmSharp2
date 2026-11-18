@@ -107,20 +107,13 @@ internal partial class WasmFunction_InvokeTests
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task Hostがランタイムと同型の例外を投げる_位置と段階を含め元実体を伝播し次の実行を妨げない(
-        bool exhaustion
-    )
+    public async Task Hostがランタイムと同型の例外を投げる_位置と段階を含め元実体を伝播し次の実行を妨げない(bool exhaustion)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
         var location = new WasmFailureLocation(WasmProcessingStage.Instantiate, 12345, 42);
         Exception expected = exhaustion
-            ? new WasmExhaustionException(
-                "ホスト由来",
-                WasmExhaustionReason.HostStackLimit,
-                null,
-                location
-            )
+            ? new WasmExhaustionException("ホスト由来", WasmExhaustionReason.HostStackLimit, null, location)
             : new WasmTrapException("ホスト由来", WasmTrapReason.Unreachable, location);
         var fail = true;
         var host = WasmFunction.CreateHost(

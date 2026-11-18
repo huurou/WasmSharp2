@@ -40,10 +40,7 @@ internal partial class WasmFunction_InvokeTests
             .Decode(
                 HostLinkingModuleBinary.Create(
                     HostLinkingModuleBinary.Types(([0x7F], [0x7F]), ([], [0x7F])),
-                    HostLinkingModuleBinary.Imports(
-                        ("env", "observe", 0, [0]),
-                        ("env", "state", 3, [0x7F, 1])
-                    ),
+                    HostLinkingModuleBinary.Imports(("env", "observe", 0, [0]), ("env", "state", 3, [0x7F, 1])),
                     HostLinkingModuleBinary.Functions(0, 1),
                     HostLinkingModuleBinary.Exports(("run", 0, 1), ("read", 0, 2), ("state", 3, 0)),
                     HostLinkingModuleBinary.Code(
@@ -74,9 +71,7 @@ internal partial class WasmFunction_InvokeTests
         using (Assert.Multiple())
         {
             await Assert.That(result.Values[0].AsI32()).IsEqualTo(expected);
-            await Assert
-                .That(observed.SequenceEqual([(11, 1), (22, 13), (condition, 26)]))
-                .IsTrue();
+            await Assert.That(observed.SequenceEqual([(11, 1), (22, 13), (condition, 26)])).IsTrue();
             await Assert.That(later.Values[0].AsI32()).IsEqualTo(36);
             await Assert.That(instance.GetGlobalResource("state")).IsSameReferenceAs(state);
             await Assert.That(other.GetGlobalResource("state")).IsSameReferenceAs(state);
@@ -123,12 +118,7 @@ internal partial class WasmFunction_InvokeTests
                         ("env", "constant", 3, [0x7E, 0])
                     ),
                     HostLinkingModuleBinary.Functions(0, 1),
-                    HostLinkingModuleBinary.Exports(
-                        ("run", 0, 1),
-                        ("read", 0, 2),
-                        ("state", 3, 0),
-                        ("constant", 3, 1)
-                    ),
+                    HostLinkingModuleBinary.Exports(("run", 0, 1), ("read", 0, 2), ("state", 3, 0), ("constant", 3, 1)),
                     HostLinkingModuleBinary.Code(
                         (
                             [],
@@ -156,14 +146,10 @@ internal partial class WasmFunction_InvokeTests
         // Assert
         using (Assert.Multiple())
         {
-            await Assert
-                .That(observed.SequenceEqual([(1, 3), (expectedMarker, expectedState)]))
-                .IsTrue();
+            await Assert.That(observed.SequenceEqual([(1, 3), (expectedMarker, expectedState)])).IsTrue();
             await Assert.That(later.Values[0].AsI32()).IsEqualTo(expectedState);
             await Assert.That(later.Values[1].AsI64()).IsEqualTo(5L);
-            await Assert
-                .That(instance.GetGlobalResource("state"))
-                .IsSameReferenceAs(other.GetGlobalResource("state"));
+            await Assert.That(instance.GetGlobalResource("state")).IsSameReferenceAs(other.GetGlobalResource("state"));
             await Assert.That(other.GetGlobalResource("constant")).IsSameReferenceAs(constant);
             await Assert.That(constant.Type.ValueKind).IsEqualTo(WasmValueKind.I64);
             await Assert.That(constant.Type.IsMutable).IsFalse();
@@ -214,27 +200,15 @@ internal partial class WasmFunction_InvokeTests
             .Decode(
                 HostLinkingModuleBinary.Create(
                     HostLinkingModuleBinary.Types(([0x7F], [0x7F]), ([], [0x7F, 0x7F])),
-                    HostLinkingModuleBinary.Imports(
-                        ("source", "f", 0, [0]),
-                        ("source", "h", 0, [0])
-                    ),
+                    HostLinkingModuleBinary.Imports(("source", "f", 0, [0]), ("source", "h", 0, [0])),
                     HostLinkingModuleBinary.Functions(1),
-                    HostLinkingModuleBinary.Globals(
-                        (0x7F, true, [0x41, .. HostLinkingModuleBinary.Signed(100), 0x0B])
-                    ),
-                    HostLinkingModuleBinary.Exports(
-                        ("run", 0, 2),
-                        ("f", 0, 0),
-                        ("h", 0, 1),
-                        ("state", 3, 0)
-                    ),
+                    HostLinkingModuleBinary.Globals((0x7F, true, [0x41, .. HostLinkingModuleBinary.Signed(100), 0x0B])),
+                    HostLinkingModuleBinary.Exports(("run", 0, 2), ("f", 0, 0), ("h", 0, 1), ("state", 3, 0)),
                     HostLinkingModuleBinary.Code(
                         (
                             [],
                             // 3+4==7のifからf(3)を呼び、続いて2*3を再exportされたhostへ渡す。
-                            Convert.FromHexString(
-                                "410341046A410746047F4103100005000B410241036C10010B"
-                            )
+                            Convert.FromHexString("410341046A410746047F4103100005000B410241036C10010B")
                         )
                     )
                 )
@@ -248,22 +222,14 @@ internal partial class WasmFunction_InvokeTests
         // Assert
         using (Assert.Multiple())
         {
-            await Assert
-                .That(result.Values.Select(x => x.AsI32()).SequenceEqual([20, 16]))
-                .IsTrue();
+            await Assert.That(result.Values.Select(x => x.AsI32()).SequenceEqual([20, 16])).IsTrue();
             await Assert.That(observed.Count).IsEqualTo(2);
             await Assert.That(observed[0].Instance).IsSameReferenceAs(source);
             await Assert.That(observed[1].Instance).IsSameReferenceAs(destination);
-            await Assert
-                .That(
-                    observed.Select(x => (x.Argument, x.State)).SequenceEqual([(10, 10), (6, 100)])
-                )
-                .IsTrue();
+            await Assert.That(observed.Select(x => (x.Argument, x.State)).SequenceEqual([(10, 10), (6, 100)])).IsTrue();
             await Assert.That(source.GetGlobal("state").AsI32()).IsEqualTo(11);
             await Assert.That(destination.GetGlobal("state").AsI32()).IsEqualTo(101);
-            await Assert
-                .That(destination.GetFunction("f"))
-                .IsSameReferenceAs(source.GetFunction("f"));
+            await Assert.That(destination.GetFunction("f")).IsSameReferenceAs(source.GetFunction("f"));
             await Assert.That(destination.GetFunction("h")).IsSameReferenceAs(callback);
             await Assert.That(source.GetFunction("h")).IsSameReferenceAs(callback);
         }
@@ -272,9 +238,7 @@ internal partial class WasmFunction_InvokeTests
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task 数値条件のif内でhostが例外を投げる_型と元実体を保ち後続更新とcallbackを実行しない(
-        bool runtimeTrap
-    )
+    public async Task 数値条件のif内でhostが例外を投げる_型と元実体を保ち後続更新とcallbackを実行しない(bool runtimeTrap)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
@@ -327,9 +291,7 @@ internal partial class WasmFunction_InvokeTests
                         (
                             [],
                             // 引数+1が非ゼロなら7を加えてhostを呼び、その後の加算とcallbackを飛ばす。
-                            Convert.FromHexString(
-                                "200041016A0440230041076A24001000230041016A240010010B0B"
-                            )
+                            Convert.FromHexString("200041016A0440230041076A24001000230041016A240010010B0B")
                         ),
                         ([], [0x23, 0, 0x0B])
                     )
@@ -351,9 +313,7 @@ internal partial class WasmFunction_InvokeTests
         {
             await Assert.That(actual).IsSameReferenceAs(expected);
             await Assert.That(observed).IsSameReferenceAs(instance);
-            await Assert
-                .That(instance.GetFunction("read").Invoke(executionContext, []).Values[0].AsI32())
-                .IsEqualTo(9);
+            await Assert.That(instance.GetFunction("read").Invoke(executionContext, []).Values[0].AsI32()).IsEqualTo(9);
             await Assert.That(afterCalled).IsFalse();
         }
     }
@@ -389,10 +349,7 @@ internal partial class WasmFunction_InvokeTests
         var afterTrap = Convert.FromHexString("410310001B1A410410001A0B");
         var bytes = HostLinkingModuleBinary.Create(
             HostLinkingModuleBinary.Types(([0x7F], [0x7F]), ([], []), ([], [0x7F])),
-            HostLinkingModuleBinary.Imports(
-                ("env", "observe", 0, [0]),
-                ("env", "state", 3, [0x7F, 1])
-            ),
+            HostLinkingModuleBinary.Imports(("env", "observe", 0, [0]), ("env", "state", 3, [0x7F, 1])),
             HostLinkingModuleBinary.Functions(2, 1),
             HostLinkingModuleBinary.Exports(("run", 0, 2), ("read", 0, 1)),
             HostLinkingModuleBinary.Code(
@@ -418,16 +375,12 @@ internal partial class WasmFunction_InvokeTests
         using (Assert.Multiple())
         {
             await Assert.That(exception!.Reason).IsEqualTo(reason);
-            await Assert
-                .That(exception.Message.StartsWith(message, StringComparison.Ordinal))
-                .IsTrue();
+            await Assert.That(exception.Message.StartsWith(message, StringComparison.Ordinal)).IsTrue();
             await Assert
                 .That(exception.Location)
                 .IsEqualTo(new WasmFailureLocation(WasmProcessingStage.Invoke, expectedOffset, 2));
             await Assert.That(observed.SequenceEqual([1, 2])).IsTrue();
-            await Assert
-                .That(instance.GetFunction("read").Invoke(executionContext, []).Values[0].AsI32())
-                .IsEqualTo(3);
+            await Assert.That(instance.GetFunction("read").Invoke(executionContext, []).Values[0].AsI32()).IsEqualTo(3);
         }
     }
 
@@ -456,26 +409,7 @@ internal partial class WasmFunction_InvokeTests
                     HostLinkingModuleBinary.Functions(0),
                     HostLinkingModuleBinary.Exports(("run", 0, 0)),
                     HostLinkingModuleBinary.Code(
-                        (
-                            [],
-                            [
-                                0x20,
-                                0,
-                                0x20,
-                                1,
-                                0x20,
-                                4,
-                                .. f32Select,
-                                0x20,
-                                2,
-                                0x20,
-                                3,
-                                0x20,
-                                4,
-                                .. f64Select,
-                                0x0B,
-                            ]
-                        )
+                        ([], [0x20, 0, 0x20, 1, 0x20, 4, .. f32Select, 0x20, 2, 0x20, 3, 0x20, 4, .. f64Select, 0x0B])
                     )
                 )
             )
@@ -484,20 +418,26 @@ internal partial class WasmFunction_InvokeTests
             .GetFunction("run");
 
         // Act
-        var nan = function.Invoke(executionContext, [
-            WasmValue.FromF32Bits(0xFF812345),
-            WasmValue.FromF32Bits(0x7FC54321),
-            WasmValue.FromF64Bits(0xFFF0123456789ABC),
-            WasmValue.FromF64Bits(0x7FF8ABCDEF012345),
-            WasmValue.FromI32(condition),
-        ]);
-        var zero = function.Invoke(executionContext, [
-            WasmValue.FromF32Bits(0x80000000),
-            WasmValue.FromF32Bits(0),
-            WasmValue.FromF64Bits(0x8000000000000000),
-            WasmValue.FromF64Bits(0),
-            WasmValue.FromI32(condition),
-        ]);
+        var nan = function.Invoke(
+            executionContext,
+            [
+                WasmValue.FromF32Bits(0xFF812345),
+                WasmValue.FromF32Bits(0x7FC54321),
+                WasmValue.FromF64Bits(0xFFF0123456789ABC),
+                WasmValue.FromF64Bits(0x7FF8ABCDEF012345),
+                WasmValue.FromI32(condition),
+            ]
+        );
+        var zero = function.Invoke(
+            executionContext,
+            [
+                WasmValue.FromF32Bits(0x80000000),
+                WasmValue.FromF32Bits(0),
+                WasmValue.FromF64Bits(0x8000000000000000),
+                WasmValue.FromF64Bits(0),
+                WasmValue.FromI32(condition),
+            ]
+        );
 
         // Assert
         using (Assert.Multiple())

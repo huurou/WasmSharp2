@@ -17,10 +17,7 @@ internal partial class WasmFunction_InvokeTests
                     HostLinkingModuleBinary.Functions(0),
                     HostLinkingModuleBinary.Exports(("run", 0, 0)),
                     HostLinkingModuleBinary.Code(
-                        (
-                            [(1, 0x7F), (1, 0x6F)],
-                            [0x20, 0, 0x21, 2, 0x20, 1, 0x21, 3, 0x20, 2, 0x20, 3, 0x0B]
-                        )
+                        ([(1, 0x7F), (1, 0x6F)], [0x20, 0, 0x21, 2, 0x20, 1, 0x21, 3, 0x20, 2, 0x20, 3, 0x0B])
                     )
                 )
             )
@@ -35,14 +32,11 @@ internal partial class WasmFunction_InvokeTests
         var secondReference = new object();
 
         // Act
-        var first = firstFunction.Invoke(executionContext, [
-            WasmValue.FromI32(42),
-            WasmValue.FromExternRef(firstReference),
-        ]);
-        var second = secondFunction.Invoke(executionContext, [
-            WasmValue.FromI32(-7),
-            WasmValue.FromExternRef(secondReference),
-        ]);
+        var first = firstFunction.Invoke(executionContext, [WasmValue.FromI32(42), WasmValue.FromExternRef(firstReference)]);
+        var second = secondFunction.Invoke(
+            executionContext,
+            [WasmValue.FromI32(-7), WasmValue.FromExternRef(secondReference)]
+        );
         var repeated = firstFunction.Invoke(executionContext, [WasmValue.FromI32(73), WasmValue.FromExternRef(null)]);
 
         // Assert

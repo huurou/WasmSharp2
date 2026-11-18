@@ -13,9 +13,7 @@ internal class HostLinkingModuleBinary_ExportsTests
         // Act & Assert
         foreach (var name in names)
         {
-            await Assert
-                .That(() => HostLinkingModuleBinary.Exports((name, 0, 0)))
-                .ThrowsExactly<EncoderFallbackException>();
+            await Assert.That(() => HostLinkingModuleBinary.Exports((name, 0, 0))).ThrowsExactly<EncoderFallbackException>();
         }
     }
 }

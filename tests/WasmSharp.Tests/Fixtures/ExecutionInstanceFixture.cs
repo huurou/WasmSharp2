@@ -25,12 +25,7 @@ internal static class ExecutionInstanceFixture
     {
         var module = new WasmModule(
             types.AsSpan(),
-            [
-                .. functions.Select(
-                    (x, i) =>
-                        new DecodedFunction(x.TypeIndex, GetBodyOffset(i), x.Locals.AsSpan(), [])
-                ),
-            ],
+            [.. functions.Select((x, i) => new DecodedFunction(x.TypeIndex, GetBodyOffset(i), x.Locals.AsSpan(), []))],
             [],
             1L << 40,
             [],
@@ -42,20 +37,9 @@ internal static class ExecutionInstanceFixture
         {
             FunctionCodes =
             [
-                .. functions.Select(x => new FunctionCode(
-                    x.Instructions,
-                    x.Locals.AsSpan(),
-                    x.MaxOperandStack
-                )),
+                .. functions.Select(x => new FunctionCode(x.Instructions, x.Locals.AsSpan(), x.MaxOperandStack)),
             ],
         };
-        return new WasmInstance(
-            module,
-            WasmExecutionOptions.Default,
-            importedFunctions,
-            importedGlobals,
-            [],
-            []
-        );
+        return new WasmInstance(module, WasmExecutionOptions.Default, importedFunctions, importedGlobals, [], []);
     }
 }

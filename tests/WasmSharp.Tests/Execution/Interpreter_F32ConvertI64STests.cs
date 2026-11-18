@@ -20,10 +20,7 @@ internal class Interpreter_F32ConvertI64STests
     [Arguments(0x8000004000000001UL, 0xDEFFFFFFu)]
     [Arguments(0x0020000020000001UL, 0x5A000001u)]
     [Arguments(0xFFDFFFFFDFFFFFFFUL, 0xDA000001u)]
-    public async Task 整数の通常値と境界値_符号付き解釈で目的幅へ変換する(
-        ulong operandBits,
-        uint expectedBits
-    )
+    public async Task 整数の通常値と境界値_符号付き解釈で目的幅へ変換する(ulong operandBits, uint expectedBits)
     {
         // Arrange
         WasmValue[] operands = [WasmValue.FromI64(unchecked((long)operandBits))];

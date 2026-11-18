@@ -21,9 +21,7 @@ internal class WasmMemory_TryCopyTests
         {
             await Assert.That(success).IsTrue();
             await Assert.That(source.SequenceEqual(new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 })).IsTrue();
-            await Assert
-                .That(destination.SequenceEqual(new byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 0 }))
-                .IsTrue();
+            await Assert.That(destination.SequenceEqual(new byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 0 })).IsTrue();
         }
     }
 
@@ -47,9 +45,7 @@ internal class WasmMemory_TryCopyTests
         using (Assert.Multiple())
         {
             await Assert.That(success).IsTrue();
-            await Assert
-                .That(actual.SequenceEqual(new byte[] { 1, 2, 1, 2, 3, 4, 5, 6, 7, 8 }))
-                .IsTrue();
+            await Assert.That(actual.SequenceEqual(new byte[] { 1, 2, 1, 2, 3, 4, 5, 6, 7, 8 })).IsTrue();
         }
     }
 
@@ -71,9 +67,7 @@ internal class WasmMemory_TryCopyTests
         using (Assert.Multiple())
         {
             await Assert.That(success).IsTrue();
-            await Assert
-                .That(actual.SequenceEqual(new byte[] { 3, 4, 5, 6, 7, 8, 9, 10, 9, 10 }))
-                .IsTrue();
+            await Assert.That(actual.SequenceEqual(new byte[] { 3, 4, 5, 6, 7, 8, 9, 10, 9, 10 })).IsTrue();
         }
     }
 
@@ -81,10 +75,7 @@ internal class WasmMemory_TryCopyTests
     [Arguments(65534UL, 10UL)]
     [Arguments(10UL, 65534UL)]
     [Arguments(65534UL, 65534UL)]
-    public async Task コピー元またはコピー先が末尾まである_全範囲をコピーする(
-        ulong destination,
-        ulong source
-    )
+    public async Task コピー元またはコピー先が末尾まである_全範囲をコピーする(ulong destination, ulong source)
     {
         // Arrange
         var memory = new WasmMemory(new WasmLimits(1));
@@ -108,11 +99,7 @@ internal class WasmMemory_TryCopyTests
     [Arguments(1u, 65536UL, 0UL)]
     [Arguments(1u, 0UL, 65536UL)]
     [Arguments(1u, 65536UL, 65536UL)]
-    public async Task 長さがゼロで各開始位置が領域内または末尾にある_成功する(
-        uint pages,
-        ulong destination,
-        ulong source
-    )
+    public async Task 長さがゼロで各開始位置が領域内または末尾にある_成功する(uint pages, ulong destination, ulong source)
     {
         // Arrange
         var memory = new WasmMemory(new WasmLimits(pages));

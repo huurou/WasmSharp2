@@ -15,10 +15,7 @@ internal class CorpusGenerator_GenerateTests
         // Arrange
         using var workspace = await SuiteWorkspace.CreateAsync();
         var profile = workspace.CreateProfile();
-        profile = profile with
-        {
-            Wabt = profile.Wabt with { Commit = "0000000000000000000000000000000000000000" },
-        };
+        profile = profile with { Wabt = profile.Wabt with { Commit = "0000000000000000000000000000000000000000" } };
 
         // Act
         var result = CorpusGenerator.Generate(workspace.CreateRequest(profile), reportStore_);
@@ -29,9 +26,7 @@ internal class CorpusGenerator_GenerateTests
         using (Assert.Multiple())
         {
             await Assert.That(result.SaveFailure).IsNull();
-            await Assert
-                .That(result.ManifestPath)
-                .IsEqualTo(Path.Combine(workspace.OutputRoot, "manifest.json"));
+            await Assert.That(result.ManifestPath).IsEqualTo(Path.Combine(workspace.OutputRoot, "manifest.json"));
             await Assert.That(manifest.Diagnostics.Count).IsEqualTo(1);
             await Assert
                 .That(
@@ -53,12 +48,8 @@ internal class CorpusGenerator_GenerateTests
                         .SequenceEqual(["manifest.json"])
                 )
                 .IsTrue();
-            await Assert
-                .That(stored.Issues.Any(x => x.Kind == RecordIssueKind.Unprocessed))
-                .IsTrue();
-            await Assert
-                .That(CompletionPolicy.Generate(stored.Manifest, stored.Issues, true).ExitCode)
-                .IsEqualTo(2);
+            await Assert.That(stored.Issues.Any(x => x.Kind == RecordIssueKind.Unprocessed)).IsTrue();
+            await Assert.That(CompletionPolicy.Generate(stored.Manifest, stored.Issues, true).ExitCode).IsEqualTo(2);
         }
     }
 
@@ -84,14 +75,7 @@ internal class CorpusGenerator_GenerateTests
         {
             await Assert.That(result.SaveFailure).IsNull();
             await Assert
-                .That(
-                    progress.SequenceEqual([
-                        "failure.wast",
-                        "partial-failure.wast",
-                        "partial.wast",
-                        "success.wast",
-                    ])
-                )
+                .That(progress.SequenceEqual(["failure.wast", "partial-failure.wast", "partial.wast", "success.wast"]))
                 .IsTrue();
             await Assert.That(manifest.Diagnostics).IsEmpty();
             await Assert.That(success.Status).IsEqualTo(ConversionStatus.Succeeded);
@@ -108,40 +92,24 @@ internal class CorpusGenerator_GenerateTests
                 .IsTrue();
             await Assert.That(success.Artifacts[0].Script).IsNull();
             await Assert.That(success.Artifacts[1].Script!.CommandCount).IsEqualTo(1);
-            await Assert
-                .That(success.Artifacts[1].Script!.References[0].ArtifactPath)
-                .IsEqualTo("modules/success.0.wasm");
+            await Assert.That(success.Artifacts[1].Script!.References[0].ArtifactPath).IsEqualTo("modules/success.0.wasm");
             await Assert.That(failure.Status).IsEqualTo(ConversionStatus.RunnerError);
             await Assert.That(failure.Artifacts).IsEmpty();
             await Assert.That(failure.Diagnostics.Any(x => x.Operation == "convert")).IsTrue();
             await Assert.That(partial.ExitCode).IsEqualTo(0);
             await Assert.That(partial.Status).IsEqualTo(ConversionStatus.RunnerError);
-            await Assert
-                .That(partial.Artifacts.Select(x => x.Path).SequenceEqual(["modules/partial.json"]))
-                .IsTrue();
-            await Assert
-                .That(partial.Diagnostics.Any(x => x.Path == "modules/partial.0.wasm"))
-                .IsTrue();
+            await Assert.That(partial.Artifacts.Select(x => x.Path).SequenceEqual(["modules/partial.json"])).IsTrue();
+            await Assert.That(partial.Diagnostics.Any(x => x.Path == "modules/partial.0.wasm")).IsTrue();
             await Assert.That(partialFailure.Status).IsEqualTo(ConversionStatus.RunnerError);
             await Assert
-                .That(
-                    partialFailure
-                        .Artifacts.Select(x => x.Path)
-                        .SequenceEqual(["modules/partial-failure.json"])
-                )
+                .That(partialFailure.Artifacts.Select(x => x.Path).SequenceEqual(["modules/partial-failure.json"]))
                 .IsTrue();
             await Assert.That(manifest.Summary).IsEqualTo(new ConversionSummary(4, 1, 3, 0, 4));
             await Assert.That(manifest.Completion).IsEqualTo(new ConversionCompletion(true, true));
             await Assert.That(stored.Issues).IsEmpty();
-            await Assert
-                .That(JsonSerializer.Serialize(stored.Manifest))
-                .IsEqualTo(JsonSerializer.Serialize(manifest));
-            await Assert
-                .That(CompletionPolicy.Generate(stored.Manifest, stored.Issues, true).ExitCode)
-                .IsEqualTo(1);
-            await Assert
-                .That(await workspace.GitAsync("status", "--porcelain"))
-                .IsEqualTo(string.Empty);
+            await Assert.That(JsonSerializer.Serialize(stored.Manifest)).IsEqualTo(JsonSerializer.Serialize(manifest));
+            await Assert.That(CompletionPolicy.Generate(stored.Manifest, stored.Issues, true).ExitCode).IsEqualTo(1);
+            await Assert.That(await workspace.GitAsync("status", "--porcelain")).IsEqualTo(string.Empty);
         }
     }
 
@@ -166,12 +134,8 @@ internal class CorpusGenerator_GenerateTests
         {
             await Assert.That(result.SaveFailure).IsNull();
             await Assert.That(result.Manifest.Diagnostics).IsEmpty();
-            await Assert
-                .That(result.Manifest.Summary)
-                .IsEqualTo(new ConversionSummary(1, 1, 0, 0, 2));
-            await Assert
-                .That(CompletionPolicy.Generate(stored.Manifest, stored.Issues, true).ExitCode)
-                .IsEqualTo(0);
+            await Assert.That(result.Manifest.Summary).IsEqualTo(new ConversionSummary(1, 1, 0, 0, 2));
+            await Assert.That(CompletionPolicy.Generate(stored.Manifest, stored.Issues, true).ExitCode).IsEqualTo(0);
         }
     }
 
@@ -180,16 +144,10 @@ internal class CorpusGenerator_GenerateTests
     {
         // Arrange
         using var workspace = await SuiteWorkspace.CreateAsync();
-        await File.WriteAllTextAsync(
-            Path.Combine(workspace.InputRoot, "partial-modules.wast"),
-            "(module)\n(module)\n"
-        );
+        await File.WriteAllTextAsync(Path.Combine(workspace.InputRoot, "partial-modules.wast"), "(module)\n(module)\n");
         var profile = workspace.CreateProfile() with
         {
-            Inputs =
-            [
-                .. workspace.CreateProfile().Inputs.Where(x => x.Path == "partial-modules.wast"),
-            ],
+            Inputs = [.. workspace.CreateProfile().Inputs.Where(x => x.Path == "partial-modules.wast")],
         };
         var request = workspace.CreateRequest(profile) with
         {
@@ -209,16 +167,15 @@ internal class CorpusGenerator_GenerateTests
             await Assert.That(input.Status).IsEqualTo(ConversionStatus.RunnerError);
             await Assert.That(input.Artifacts.Single().Script!.CommandCount).IsEqualTo(2);
             await Assert
-                .That(input.Diagnostics.Select(x => x.Path).SequenceEqual([
-                    "modules/partial-modules.0.wasm",
-                    "modules/partial-modules.1.wasm",
-                ]))
+                .That(
+                    input
+                        .Diagnostics.Select(x => x.Path)
+                        .SequenceEqual(["modules/partial-modules.0.wasm", "modules/partial-modules.1.wasm"])
+                )
                 .IsTrue();
             await Assert.That(input.Diagnostics[0].Message).StartsWith("#0");
             await Assert.That(input.Diagnostics[1].Message).StartsWith("#1");
-            await Assert
-                .That(stored.Manifest.Inputs.Single().Diagnostics.SequenceEqual(input.Diagnostics))
-                .IsTrue();
+            await Assert.That(stored.Manifest.Inputs.Single().Diagnostics.SequenceEqual(input.Diagnostics)).IsTrue();
         }
     }
 
@@ -228,10 +185,7 @@ internal class CorpusGenerator_GenerateTests
         // Arrange
         using var workspace = await SuiteWorkspace.CreateAsync();
         var profile = workspace.CreateProfile() with { Inputs = [] };
-        var request = workspace.CreateRequest(profile) with
-        {
-            SpecRoot = CopySpec(workspace, "empty-spec"),
-        };
+        var request = workspace.CreateRequest(profile) with { SpecRoot = CopySpec(workspace, "empty-spec") };
         List<string> progress = [];
 
         // Act
@@ -244,12 +198,8 @@ internal class CorpusGenerator_GenerateTests
             await Assert.That(result.SaveFailure).IsNull();
             await Assert.That(result.Manifest.Inputs).IsEmpty();
             await Assert.That(result.Manifest.Diagnostics).IsEmpty();
-            await Assert
-                .That(result.Manifest.Summary)
-                .IsEqualTo(new ConversionSummary(0, 0, 0, 0, 0));
-            await Assert
-                .That(result.Manifest.Completion)
-                .IsEqualTo(new ConversionCompletion(true, true));
+            await Assert.That(result.Manifest.Summary).IsEqualTo(new ConversionSummary(0, 0, 0, 0, 0));
+            await Assert.That(result.Manifest.Completion).IsEqualTo(new ConversionCompletion(true, true));
             await Assert.That(stored.Manifest.Completion).IsEqualTo(result.Manifest.Completion);
             await Assert.That(progress).IsEmpty();
         }
@@ -298,9 +248,7 @@ internal class CorpusGenerator_GenerateTests
             await Assert
                 .That(secondResult.Manifest.Provenance.SpecRoot)
                 .IsNotEqualTo(firstResult.Manifest.Provenance.SpecRoot);
-            await Assert
-                .That(secondResult.Manifest.Inputs.All(x => x.Status == ConversionStatus.Succeeded))
-                .IsTrue();
+            await Assert.That(secondResult.Manifest.Inputs.All(x => x.Status == ConversionStatus.Succeeded)).IsTrue();
         }
     }
 
@@ -313,10 +261,7 @@ internal class CorpusGenerator_GenerateTests
         await File.WriteAllTextAsync(manifestPath, "既存の結果");
 
         // Act
-        var result = CorpusGenerator.Generate(
-            workspace.CreateRequest(workspace.CreateProfile()),
-            reportStore_
-        );
+        var result = CorpusGenerator.Generate(workspace.CreateRequest(workspace.CreateProfile()), reportStore_);
 
         // Assert
         using (Assert.Multiple())
@@ -344,10 +289,7 @@ internal class CorpusGenerator_GenerateTests
             {
                 if (path == "partial.wast")
                 {
-                    File.WriteAllText(
-                        Path.Combine(workspace.OutputRoot, "modules", "extra.txt"),
-                        "未対応の生成物"
-                    );
+                    File.WriteAllText(Path.Combine(workspace.OutputRoot, "modules", "extra.txt"), "未対応の生成物");
                 }
             }
         );
@@ -361,13 +303,7 @@ internal class CorpusGenerator_GenerateTests
             await Assert.That(input.Artifacts.Count).IsEqualTo(2);
             await Assert
                 .That(input.Diagnostics)
-                .Contains(
-                    new CorpusDiagnostic(
-                        "record",
-                        "素材として扱わない種類の生成物です。",
-                        "modules/extra.txt"
-                    )
-                );
+                .Contains(new CorpusDiagnostic("record", "素材として扱わない種類の生成物です。", "modules/extra.txt"));
         }
     }
 
@@ -408,20 +344,15 @@ internal class CorpusGenerator_GenerateTests
                 await Assert.That(input.ExitCode).IsEqualTo(0);
                 await Assert.That(input.Status).IsEqualTo(ConversionStatus.RunnerError);
                 await Assert
-                    .That(input.Artifacts.Select(x => x.Path).SequenceEqual([
-                        "modules/success.0.wasm",
-                        "modules/success.json",
-                    ]))
+                    .That(
+                        input.Artifacts.Select(x => x.Path).SequenceEqual(["modules/success.0.wasm", "modules/success.json"])
+                    )
                     .IsTrue();
                 await Assert.That(diagnostic.Path).IsEqualTo("success.wast");
                 await Assert.That(diagnostic.ExceptionType).IsEqualTo(typeof(IOException).FullName);
                 await Assert.That(diagnostic.Message).StartsWith("生成物を記録できません: ");
-                await Assert
-                    .That(stored.Manifest.Completion)
-                    .IsEqualTo(new ConversionCompletion(true, true));
-                await Assert
-                    .That(Get(stored.Manifest, "success.wast").Diagnostics)
-                    .Contains(diagnostic);
+                await Assert.That(stored.Manifest.Completion).IsEqualTo(new ConversionCompletion(true, true));
+                await Assert.That(Get(stored.Manifest, "success.wast").Diagnostics).Contains(diagnostic);
             }
         }
         finally
@@ -437,10 +368,7 @@ internal class CorpusGenerator_GenerateTests
         using var workspace = await SuiteWorkspace.CreateAsync();
         var outputRoot = Path.Combine(workspace.OutputRoot, "file");
         await File.WriteAllTextAsync(outputRoot, "既存のファイル");
-        var request = workspace.CreateRequest(workspace.CreateProfile()) with
-        {
-            OutputRoot = outputRoot,
-        };
+        var request = workspace.CreateRequest(workspace.CreateProfile()) with { OutputRoot = outputRoot };
 
         // Act
         var result = CorpusGenerator.Generate(request, reportStore_);
@@ -449,19 +377,13 @@ internal class CorpusGenerator_GenerateTests
         using (Assert.Multiple())
         {
             await Assert.That(result.SaveFailure).IsNotNull();
-            await Assert
-                .That(result.SaveFailure!.Path)
-                .IsEqualTo(Path.Combine(outputRoot, "manifest.json"));
+            await Assert.That(result.SaveFailure!.Path).IsEqualTo(Path.Combine(outputRoot, "manifest.json"));
             await Assert.That(result.SaveFailure.InnerException).IsTypeOf<IOException>();
             await Assert.That(result.SaveFailure.Message).Contains("保存先を用意できません");
             await Assert.That(result.Manifest.Completion.OutputComplete).IsFalse();
             await Assert.That(result.Manifest.Inputs.SelectMany(x => x.Artifacts)).IsEmpty();
             await Assert
-                .That(
-                    result
-                        .Manifest.Inputs.SelectMany(x => x.Diagnostics)
-                        .Any(x => x.Operation == "record")
-                )
+                .That(result.Manifest.Inputs.SelectMany(x => x.Diagnostics).Any(x => x.Operation == "record"))
                 .IsFalse();
             await Assert.That(await File.ReadAllTextAsync(outputRoot)).IsEqualTo("既存のファイル");
         }

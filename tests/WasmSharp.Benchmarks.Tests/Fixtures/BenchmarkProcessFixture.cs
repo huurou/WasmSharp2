@@ -9,9 +9,7 @@ internal sealed class BenchmarkProcessFixture : IDisposable
 {
     private readonly CaseJson json_ = new CaseJson();
 
-    private readonly string? previous_ = Environment.GetEnvironmentVariable(
-        RunConfiguration.ENVIRONMENT_VARIABLE
-    );
+    private readonly string? previous_ = Environment.GetEnvironmentVariable(RunConfiguration.ENVIRONMENT_VARIABLE);
     internal AssetLoadingFixture Assets { get; } = new();
     internal RunStoreFixture Run { get; } = new();
 
@@ -26,10 +24,7 @@ internal sealed class BenchmarkProcessFixture : IDisposable
             ["invoke.single"]
         );
         var path = Path.Combine(Run.DirectoryPath, "config.json");
-        File.WriteAllBytes(
-            path,
-            JsonSerializer.SerializeToUtf8Bytes(configuration, json_.Options)
-        );
+        File.WriteAllBytes(path, JsonSerializer.SerializeToUtf8Bytes(configuration, json_.Options));
         Environment.SetEnvironmentVariable(RunConfiguration.ENVIRONMENT_VARIABLE, path);
     }
 

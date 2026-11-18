@@ -14,10 +14,7 @@ internal class Interpreter_GlobalGetTests
         var executionContext = new WasmExecutionContext();
         var reference = new object();
         var found = InstructionSet.TryGet(new(0, 0x23), out var descriptor);
-        var externGlobal = new WasmGlobal(
-            new(WasmValueKind.ExternRef, true),
-            WasmValue.FromExternRef(null)
-        );
+        var externGlobal = new WasmGlobal(new(WasmValueKind.ExternRef, true), WasmValue.FromExternRef(null));
         var vectorGlobal = new WasmGlobal(
             new(WasmValueKind.V128, false),
             WasmValue.FromV128(0x0123456789ABCDEF, 0xFEDCBA9876543210)
@@ -49,12 +46,7 @@ internal class Interpreter_GlobalGetTests
         // Act
         try
         {
-            result = Interpreter.Run(
-                context,
-                (DefinedFunction)instance.Functions[0],
-                [],
-                WasmProcessingStage.Invoke
-            );
+            result = Interpreter.Run(context, (DefinedFunction)instance.Functions[0], [], WasmProcessingStage.Invoke);
         }
         finally
         {
@@ -72,9 +64,7 @@ internal class Interpreter_GlobalGetTests
             await Assert.That(result.Status).IsEqualTo(ExecutionStatus.Success);
             await Assert.That(result.Values.Length).IsEqualTo(3);
             await Assert.That(result.Values[0].AsExternRef()).IsSameReferenceAs(reference);
-            await Assert
-                .That(result.Values[1].AsV128())
-                .IsEqualTo((0x0123456789ABCDEFUL, 0xFEDCBA9876543210UL));
+            await Assert.That(result.Values[1].AsV128()).IsEqualTo((0x0123456789ABCDEFUL, 0xFEDCBA9876543210UL));
             await Assert.That(result.Values[2].AsF32Bits()).IsEqualTo(0x7FC00001U);
         }
     }
@@ -86,33 +76,13 @@ internal class Interpreter_GlobalGetTests
         var executionContext = new WasmExecutionContext();
         var source = ExecutionInstanceFixture.Create(
             [new([], [WasmValueKind.I32])],
-            [
-                (
-                    0,
-                    [],
-                    [
-                        InstructionFixture.Create(0x23, 1001, 0),
-                        InstructionFixture.Create(0x0B, 1003),
-                    ],
-                    1
-                ),
-            ],
+            [(0, [], [InstructionFixture.Create(0x23, 1001, 0), InstructionFixture.Create(0x0B, 1003)], 1)],
             [],
             [new(new(WasmValueKind.I32, false), WasmValue.FromI32(1))]
         );
         var importer = ExecutionInstanceFixture.Create(
             [new([], [WasmValueKind.I32])],
-            [
-                (
-                    0,
-                    [],
-                    [
-                        InstructionFixture.Create(0x10, 1001, 0),
-                        InstructionFixture.Create(0x0B, 1003),
-                    ],
-                    1
-                ),
-            ],
+            [(0, [], [InstructionFixture.Create(0x10, 1001, 0), InstructionFixture.Create(0x0B, 1003)], 1)],
             [source.Functions[0]],
             [new(new(WasmValueKind.I32, false), WasmValue.FromI32(2))]
         );
@@ -122,12 +92,7 @@ internal class Interpreter_GlobalGetTests
         // Act
         try
         {
-            result = Interpreter.Run(
-                context,
-                (DefinedFunction)importer.Functions[1],
-                [],
-                WasmProcessingStage.Invoke
-            );
+            result = Interpreter.Run(context, (DefinedFunction)importer.Functions[1], [], WasmProcessingStage.Invoke);
         }
         finally
         {

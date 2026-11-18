@@ -27,10 +27,7 @@ internal static class RunReportFixture
                 Line = null,
                 Diagnostics =
                 [
-                    new("read_command", "未知のcommand種別です。")
-                    {
-                        SourceJson = """{"type": "assert_unknown"}""",
-                    },
+                    new("read_command", "未知のcommand種別です。") { SourceJson = """{"type": "assert_unknown"}""" },
                 ],
             },
             Case("b.wast", 0, CaseCategory.Setup, CaseOutcome.RuntimeUnsupported),
@@ -74,10 +71,7 @@ internal static class RunReportFixture
             Id = "fixture",
             Inputs = [.. inputs.Select(x => new SourceInput(x.Path, Sha256(x.Path)))],
         };
-        var manifest = CorpusManifest.Create(
-            profile,
-            new ConversionProvenance { ExecutableSha256 = new string('d', 64) }
-        );
+        var manifest = CorpusManifest.Create(profile, new ConversionProvenance { ExecutableSha256 = new string('d', 64) });
         for (var i = 0; i < inputs.Length; i++)
         {
             var (path, commandCount) = inputs[i];
@@ -99,13 +93,7 @@ internal static class RunReportFixture
                             [
                                 .. Enumerable
                                     .Range(0, commandCount)
-                                    .Select(x => new ArtifactCommand(
-                                        x,
-                                        x + 1,
-                                        "module",
-                                        null,
-                                        null
-                                    )),
+                                    .Select(x => new ArtifactCommand(x, x + 1, "module", null, null)),
                             ],
                         },
                     },
@@ -120,12 +108,7 @@ internal static class RunReportFixture
         };
     }
 
-    internal static CaseResult Case(
-        string inputPath,
-        int commandIndex,
-        CaseCategory? category,
-        CaseOutcome outcome
-    )
+    internal static CaseResult Case(string inputPath, int commandIndex, CaseCategory? category, CaseOutcome outcome)
     {
         var commandType = category switch
         {

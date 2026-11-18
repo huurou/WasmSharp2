@@ -8,13 +8,7 @@ namespace WasmSharp.TestSuiteRunner.Reports;
 /// <param name="CommandType">元JSONのcommand種別 取得できない場合はnull</param>
 /// <param name="Category">集計区分 種類を確定できない場合はnull</param>
 /// <param name="Outcome">6分類のいずれか</param>
-internal sealed record CaseResult(
-    CaseId Id,
-    int? Line,
-    string? CommandType,
-    CaseCategory? Category,
-    CaseOutcome Outcome
-)
+internal sealed record CaseResult(CaseId Id, int? Line, string? CommandType, CaseCategory? Category, CaseOutcome Outcome)
 {
     /// <summary>
     /// 否定assertionの期待診断 JSONのtextを加工せず保持し、該当しない場合はnull

@@ -10,12 +10,7 @@ internal partial class InstructionSet_TryGetTests
     public async Task SIMD接続の固定付録にあるlane論理比較群_85命令の型効果と即値とhandlerが一致する()
     {
         // Arrange
-        var expected = Core2InstructionFixture
-            .Read(0xFD)
-            .Where(x =>
-                SimdInstructionRegex().IsMatch(x.Value)
-            )
-            .ToArray();
+        var expected = Core2InstructionFixture.Read(0xFD).Where(x => SimdInstructionRegex().IsMatch(x.Value)).ToArray();
         var declarations = typeof(InstructionSet)
             .GetCustomAttributes<InstructionAttribute>()
             .Where(x => x.Prefix == 0xFD)
@@ -27,9 +22,7 @@ internal partial class InstructionSet_TryGetTests
         {
             var parts = item.Value.Split('.');
             var operation = parts[1];
-            var hasLane =
-                operation.StartsWith("extract_lane", StringComparison.Ordinal)
-                || operation == "replace_lane";
+            var hasLane = operation.StartsWith("extract_lane", StringComparison.Ordinal) || operation == "replace_lane";
             var width = parts[0] == "v128" ? 128 : int.Parse(parts[0][1..].Split('x')[0]);
             var scalar = parts[0].StartsWith('f')
                 ? (width == 32 ? WasmValueKind.F32 : WasmValueKind.F64)
@@ -37,18 +30,14 @@ internal partial class InstructionSet_TryGetTests
             WasmValueKind[] inputs =
                 operation == "splat" ? [scalar]
                 : operation == "replace_lane" ? [WasmValueKind.V128, scalar]
-                : operation == "bitselect"
-                    ? [WasmValueKind.V128, WasmValueKind.V128, WasmValueKind.V128]
-                : hasLane || operation is "not" or "any_true" or "all_true" or "bitmask"
-                    ? [WasmValueKind.V128]
+                : operation == "bitselect" ? [WasmValueKind.V128, WasmValueKind.V128, WasmValueKind.V128]
+                : hasLane || operation is "not" or "any_true" or "all_true" or "bitmask" ? [WasmValueKind.V128]
                 : [WasmValueKind.V128, WasmValueKind.V128];
             var result =
                 operation.StartsWith("extract_lane", StringComparison.Ordinal) ? scalar
                 : operation is "any_true" or "all_true" or "bitmask" ? WasmValueKind.I32
                 : WasmValueKind.V128;
-            var handler = string.Concat(
-                    item.Value.Split('.', '_').Select(x => char.ToUpperInvariant(x[0]) + x[1..])
-                )
+            var handler = string.Concat(item.Value.Split('.', '_').Select(x => char.ToUpperInvariant(x[0]) + x[1..]))
                 .Replace("Andnot", "AndNot", StringComparison.Ordinal);
 
             // Act
@@ -69,9 +58,7 @@ internal partial class InstructionSet_TryGetTests
                 await Assert.That(actual.LaneCount).IsEqualTo((byte)(hasLane ? 128 / width : 0));
                 await Assert.That(actual.StackEffect).IsEqualTo(StackEffectKind.Numeric);
                 await Assert.That(actual.Validation).IsEqualTo(ValidationRule.Numeric);
-                await Assert
-                    .That(actual.NumericSignature!.Value.InputTypes.SequenceEqual(inputs))
-                    .IsTrue();
+                await Assert.That(actual.NumericSignature!.Value.InputTypes.SequenceEqual(inputs)).IsTrue();
                 await Assert.That(actual.NumericSignature.Value.ResultType).IsEqualTo(result);
                 await Assert.That(declarations[item.Key].ExecutionHandler).IsEqualTo(handler);
             }
@@ -82,10 +69,7 @@ internal partial class InstructionSet_TryGetTests
     public async Task SIMD整数接続の固定付録にある整数群_88命令の型効果とhandlerが一致する()
     {
         // Arrange
-        var expected = Core2InstructionFixture
-            .Read(0xFD)
-            .Where(x => IsIntegerSimd(x.Value))
-            .ToArray();
+        var expected = Core2InstructionFixture.Read(0xFD).Where(x => IsIntegerSimd(x.Value)).ToArray();
         var declarations = typeof(InstructionSet)
             .GetCustomAttributes<InstructionAttribute>()
             .Where(x => x.Prefix == 0xFD)
@@ -112,13 +96,11 @@ internal partial class InstructionSet_TryGetTests
                     || operation.StartsWith("extend_", StringComparison.Ordinal)
                     || operation.StartsWith("extadd_", StringComparison.Ordinal);
                 WasmValueKind[] inputs =
-                    operation is "shl" or "shr_s" or "shr_u"
-                        ? [WasmValueKind.V128, WasmValueKind.I32]
+                    operation is "shl" or "shr_s" or "shr_u" ? [WasmValueKind.V128, WasmValueKind.I32]
                     : unary ? [WasmValueKind.V128]
                     : [WasmValueKind.V128, WasmValueKind.V128];
                 var handler = string.Concat(
-                        item.Entry.Value.Split('.', '_')
-                            .Select(x => char.ToUpperInvariant(x[0]) + x[1..])
+                        item.Entry.Value.Split('.', '_').Select(x => char.ToUpperInvariant(x[0]) + x[1..])
                     )
                     .Replace("Extmul", "ExtMul", StringComparison.Ordinal)
                     .Replace("Extadd", "ExtAdd", StringComparison.Ordinal)
@@ -131,12 +113,8 @@ internal partial class InstructionSet_TryGetTests
                 await Assert.That(descriptor.Validation).IsEqualTo(ValidationRule.Numeric);
                 await Assert.That(descriptor.LaneCount).IsEqualTo((byte)0);
                 await Assert.That(descriptor.NumericSignature.HasValue).IsTrue();
-                await Assert
-                    .That(descriptor.NumericSignature?.InputTypes.SequenceEqual(inputs) ?? false)
-                    .IsTrue();
-                await Assert
-                    .That(descriptor.NumericSignature?.ResultType)
-                    .IsEqualTo(WasmValueKind.V128);
+                await Assert.That(descriptor.NumericSignature?.InputTypes.SequenceEqual(inputs) ?? false).IsTrue();
+                await Assert.That(descriptor.NumericSignature?.ResultType).IsEqualTo(WasmValueKind.V128);
                 await Assert.That(declarations[item.Entry.Key].ExecutionHandler).IsEqualTo(handler);
             }
         }
@@ -146,10 +124,7 @@ internal partial class InstructionSet_TryGetTests
     public async Task SIMD浮動接続の固定付録にある演算変換群_40命令の型効果とhandlerが一致する()
     {
         // Arrange
-        var expected = Core2InstructionFixture
-            .Read(0xFD)
-            .Where(x => IsFloatSimd(x.Value))
-            .ToArray();
+        var expected = Core2InstructionFixture.Read(0xFD).Where(x => IsFloatSimd(x.Value)).ToArray();
         var declarations = typeof(InstructionSet)
             .GetCustomAttributes<InstructionAttribute>()
             .Where(x => x.Prefix == 0xFD)
@@ -171,22 +146,10 @@ internal partial class InstructionSet_TryGetTests
             foreach (var item in actual)
             {
                 var operation = item.Entry.Value.Split('.')[1];
-                var binary =
-                    operation
-                    is "add"
-                        or "sub"
-                        or "mul"
-                        or "div"
-                        or "min"
-                        or "max"
-                        or "pmin"
-                        or "pmax";
-                WasmValueKind[] inputs = binary
-                    ? [WasmValueKind.V128, WasmValueKind.V128]
-                    : [WasmValueKind.V128];
+                var binary = operation is "add" or "sub" or "mul" or "div" or "min" or "max" or "pmin" or "pmax";
+                WasmValueKind[] inputs = binary ? [WasmValueKind.V128, WasmValueKind.V128] : [WasmValueKind.V128];
                 var handler = string.Concat(
-                    item.Entry.Value.Split('.', '_')
-                        .Select(x => char.ToUpperInvariant(x[0]) + x[1..])
+                    item.Entry.Value.Split('.', '_').Select(x => char.ToUpperInvariant(x[0]) + x[1..])
                 );
                 var descriptor = item.Descriptor;
                 await Assert.That(descriptor.Name).IsEqualTo(item.Entry.Value);
@@ -195,12 +158,8 @@ internal partial class InstructionSet_TryGetTests
                 await Assert.That(descriptor.StackEffect).IsEqualTo(StackEffectKind.Numeric);
                 await Assert.That(descriptor.Validation).IsEqualTo(ValidationRule.Numeric);
                 await Assert.That(descriptor.LaneCount).IsEqualTo((byte)0);
-                await Assert
-                    .That(descriptor.NumericSignature?.InputTypes.SequenceEqual(inputs) ?? false)
-                    .IsTrue();
-                await Assert
-                    .That(descriptor.NumericSignature?.ResultType)
-                    .IsEqualTo(WasmValueKind.V128);
+                await Assert.That(descriptor.NumericSignature?.InputTypes.SequenceEqual(inputs) ?? false).IsTrue();
+                await Assert.That(descriptor.NumericSignature?.ResultType).IsEqualTo(WasmValueKind.V128);
                 await Assert.That(declarations[item.Entry.Key].ExecutionHandler).IsEqualTo(handler);
             }
         }
@@ -232,16 +191,12 @@ internal partial class InstructionSet_TryGetTests
             var width =
                 operation is "load" or "store" ? 16
                 : operation.Contains('x') ? 8
-                : int.Parse(DigitsRegex().Match(operation).Value)
-                    / 8;
+                : int.Parse(DigitsRegex().Match(operation).Value) / 8;
             var handler =
                 lane ? (store ? "V128StoreLane" : "V128LoadLane")
                 : operation.EndsWith("_splat", StringComparison.Ordinal) ? "V128LoadSplat"
                 : operation.EndsWith("_zero", StringComparison.Ordinal) ? "V128LoadZero"
-                : "V128"
-                    + string.Concat(
-                        operation.Split('_').Select(x => char.ToUpperInvariant(x[0]) + x[1..])
-                    );
+                : "V128" + string.Concat(operation.Split('_').Select(x => char.ToUpperInvariant(x[0]) + x[1..]));
             var rule = store
                 ? (lane ? ValidationRule.MemoryStoreLane : ValidationRule.MemoryStore)
                 : (lane ? ValidationRule.MemoryLoadLane : ValidationRule.MemoryLoad);
@@ -260,16 +215,12 @@ internal partial class InstructionSet_TryGetTests
                 await Assert.That(actual.ExecutionOpcode).IsNotNull();
                 await Assert
                     .That(actual.Immediate)
-                    .IsEqualTo(
-                        lane ? ImmediateKind.MemoryArgumentLaneIndex : ImmediateKind.MemoryArgument
-                    );
+                    .IsEqualTo(lane ? ImmediateKind.MemoryArgumentLaneIndex : ImmediateKind.MemoryArgument);
                 await Assert.That(actual.StackEffect).IsEqualTo(stackEffect);
                 await Assert.That(actual.Validation).IsEqualTo(rule);
                 await Assert.That(actual.LaneCount).IsEqualTo((byte)(lane ? 16 / width : 0));
                 await Assert.That(actual.NumericSignature).IsNull();
-                await Assert
-                    .That(actual.MemoryAccessSignature?.ValueType)
-                    .IsEqualTo(WasmValueKind.V128);
+                await Assert.That(actual.MemoryAccessSignature?.ValueType).IsEqualTo(WasmValueKind.V128);
                 await Assert.That(actual.MemoryAccessSignature?.ByteWidth).IsEqualTo((byte)width);
                 await Assert.That(actual.MemoryAccessSignature?.SignExtend).IsFalse();
                 await Assert.That(declarations[item.Key].ExecutionHandler).IsEqualTo(handler);
@@ -399,65 +350,17 @@ internal partial class InstructionSet_TryGetTests
     [Arguments(0x01, ImmediateKind.None, StackEffectKind.None, ValidationRule.None, "NoOp")]
     [Arguments(0x02, ImmediateKind.BlockType, StackEffectKind.Block, ValidationRule.Block, "NoOp")]
     [Arguments(0x03, ImmediateKind.BlockType, StackEffectKind.Loop, ValidationRule.Loop, "NoOp")]
-    [Arguments(
-        0x04,
-        ImmediateKind.BlockType,
-        StackEffectKind.If,
-        ValidationRule.If,
-        "BranchIfZero"
-    )]
+    [Arguments(0x04, ImmediateKind.BlockType, StackEffectKind.If, ValidationRule.If, "BranchIfZero")]
     [Arguments(0x05, ImmediateKind.None, StackEffectKind.Else, ValidationRule.Else, "Branch")]
-    [Arguments(
-        0x0B,
-        ImmediateKind.None,
-        StackEffectKind.FunctionEnd,
-        ValidationRule.FunctionEnd,
-        "Return"
-    )]
+    [Arguments(0x0B, ImmediateKind.None, StackEffectKind.FunctionEnd, ValidationRule.FunctionEnd, "Return")]
     [Arguments(0x0C, ImmediateKind.Index, StackEffectKind.Branch, ValidationRule.Branch, "Branch")]
-    [Arguments(
-        0x0D,
-        ImmediateKind.Index,
-        StackEffectKind.BranchIf,
-        ValidationRule.BranchIf,
-        "BranchIf"
-    )]
-    [Arguments(
-        0x0E,
-        ImmediateKind.BranchTable,
-        StackEffectKind.BranchTable,
-        ValidationRule.BranchTable,
-        "BranchTable"
-    )]
+    [Arguments(0x0D, ImmediateKind.Index, StackEffectKind.BranchIf, ValidationRule.BranchIf, "BranchIf")]
+    [Arguments(0x0E, ImmediateKind.BranchTable, StackEffectKind.BranchTable, ValidationRule.BranchTable, "BranchTable")]
     [Arguments(0x1B, ImmediateKind.None, StackEffectKind.Select, ValidationRule.Select, "Select")]
-    [Arguments(
-        0xD0,
-        ImmediateKind.ReferenceType,
-        StackEffectKind.PushReference,
-        ValidationRule.Constant,
-        "PushConstant"
-    )]
-    [Arguments(
-        0xD1,
-        ImmediateKind.None,
-        StackEffectKind.RefIsNull,
-        ValidationRule.RefIsNull,
-        "RefIsNull"
-    )]
-    [Arguments(
-        0xD2,
-        ImmediateKind.Index,
-        StackEffectKind.RefFunc,
-        ValidationRule.RefFunc,
-        "RefFunc"
-    )]
-    [Arguments(
-        0x1C,
-        ImmediateKind.TypeVector,
-        StackEffectKind.TypedSelect,
-        ValidationRule.TypedSelect,
-        "Select"
-    )]
+    [Arguments(0xD0, ImmediateKind.ReferenceType, StackEffectKind.PushReference, ValidationRule.Constant, "PushConstant")]
+    [Arguments(0xD1, ImmediateKind.None, StackEffectKind.RefIsNull, ValidationRule.RefIsNull, "RefIsNull")]
+    [Arguments(0xD2, ImmediateKind.Index, StackEffectKind.RefFunc, ValidationRule.RefFunc, "RefFunc")]
+    [Arguments(0x1C, ImmediateKind.TypeVector, StackEffectKind.TypedSelect, ValidationRule.TypedSelect, "Select")]
     public async Task 制御とselectと参照の宣言を確認する_即値と型効果と規則と共有handlerが一致する(
         uint code,
         ImmediateKind immediate,
@@ -492,10 +395,7 @@ internal partial class InstructionSet_TryGetTests
     [Test]
     [Arguments((byte)0, 128)]
     [Arguments((byte)0xFC, 8)]
-    public async Task 全数値命令の宣言を固定仕様と照合する_入力型列と結果型とhandlerが一致する(
-        byte prefix,
-        int count
-    )
+    public async Task 全数値命令の宣言を固定仕様と照合する_入力型列と結果型とhandlerが一致する(byte prefix, int count)
     {
         // Arrange
         var names = Core2InstructionFixture.Read(prefix);
@@ -511,9 +411,7 @@ internal partial class InstructionSet_TryGetTests
             var key = new OpcodeKey(prefix, (uint)code);
             var found = InstructionSet.TryGet(key, out var descriptor);
             var name = names[(uint)code];
-            var handler = string.Concat(
-                name.Split('.', '_').Select(x => char.ToUpperInvariant(x[0]) + x[1..])
-            );
+            var handler = string.Concat(name.Split('.', '_').Select(x => char.ToUpperInvariant(x[0]) + x[1..]));
             var signature =
                 prefix == 0
                     ? ExpectedNumericSignature((uint)code)
@@ -530,15 +428,9 @@ internal partial class InstructionSet_TryGetTests
                 await Assert.That(descriptor.Validation).IsEqualTo(ValidationRule.Numeric);
                 await Assert.That(descriptor.NumericSignature).IsNotNull();
                 await Assert
-                    .That(
-                        descriptor.NumericSignature!.Value.InputTypes.SequenceEqual(
-                            signature.InputTypes
-                        )
-                    )
+                    .That(descriptor.NumericSignature!.Value.InputTypes.SequenceEqual(signature.InputTypes))
                     .IsTrue();
-                await Assert
-                    .That(descriptor.NumericSignature!.Value.ResultType)
-                    .IsEqualTo(signature.ResultType);
+                await Assert.That(descriptor.NumericSignature!.Value.ResultType).IsEqualTo(signature.ResultType);
                 await Assert.That(descriptor.ExecutionOpcode).IsNotNull();
                 await Assert.That(declarations[key].ExecutionHandler).IsEqualTo(handler);
             }
@@ -614,18 +506,21 @@ internal partial class InstructionSet_TryGetTests
         };
     }
 
-    [System.Text.RegularExpressions.GeneratedRegex(@"^(?:[if]\d+x\d+)\.(?:splat|extract_lane(?:_[su])?|replace_lane|eq|ne|lt(?:_[su])?|gt(?:_[su])?|le(?:_[su])?|ge(?:_[su])?|all_true|bitmask)$|^i8x16\.(?:shuffle|swizzle)$|^v128\.(?:not|and|andnot|or|xor|bitselect|any_true)$"
+    [System.Text.RegularExpressions.GeneratedRegex(
+        @"^(?:[if]\d+x\d+)\.(?:splat|extract_lane(?:_[su])?|replace_lane|eq|ne|lt(?:_[su])?|gt(?:_[su])?|le(?:_[su])?|ge(?:_[su])?|all_true|bitmask)$|^i8x16\.(?:shuffle|swizzle)$|^v128\.(?:not|and|andnot|or|xor|bitselect|any_true)$"
     )]
     private static partial System.Text.RegularExpressions.Regex SimdInstructionRegex();
 
     [System.Text.RegularExpressions.GeneratedRegex(@"\d+")]
     private static partial System.Text.RegularExpressions.Regex DigitsRegex();
 
-    [System.Text.RegularExpressions.GeneratedRegex(@"^f(?:32x4|64x2)\.(?:abs|neg|sqrt|add|sub|mul|div|ceil|floor|trunc|nearest|min|max|pmin|pmax|convert_.*|demote_.*|promote_.*)$|^i32x4\.trunc_sat_f(?:32x4|64x2)_[su](?:_zero)?$"
+    [System.Text.RegularExpressions.GeneratedRegex(
+        @"^f(?:32x4|64x2)\.(?:abs|neg|sqrt|add|sub|mul|div|ceil|floor|trunc|nearest|min|max|pmin|pmax|convert_.*|demote_.*|promote_.*)$|^i32x4\.trunc_sat_f(?:32x4|64x2)_[su](?:_zero)?$"
     )]
     private static partial System.Text.RegularExpressions.Regex FloatSimdRegex();
 
-    [System.Text.RegularExpressions.GeneratedRegex(@"^i(?:8x16|16x8|32x4|64x2)\.(?:abs|neg|popcnt|narrow_.*|shl|shr_[su]|add(?:_sat_[su])?|sub(?:_sat_[su])?|mul|min_[su]|max_[su]|avgr_u|extend_.*|extmul_.*|extadd_pairwise_.*|dot_.*|q15mulr_sat_s)$"
+    [System.Text.RegularExpressions.GeneratedRegex(
+        @"^i(?:8x16|16x8|32x4|64x2)\.(?:abs|neg|popcnt|narrow_.*|shl|shr_[su]|add(?:_sat_[su])?|sub(?:_sat_[su])?|mul|min_[su]|max_[su]|avgr_u|extend_.*|extmul_.*|extadd_pairwise_.*|dot_.*|q15mulr_sat_s)$"
     )]
     private static partial System.Text.RegularExpressions.Regex IntegerSimdRegex();
 }

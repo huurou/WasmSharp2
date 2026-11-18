@@ -24,11 +24,7 @@ internal class Interpreter_I16x8AddTests
     )
     {
         // Arrange
-        WasmValue[] operands =
-        [
-            WasmValue.FromV128(firstLow64, firstHigh64),
-            WasmValue.FromV128(secondLow64, secondHigh64),
-        ];
+        WasmValue[] operands = [WasmValue.FromV128(firstLow64, firstHigh64), WasmValue.FromV128(secondLow64, secondHigh64)];
 
         // Act
         var actual = SimdHandlerFixture.Execute(Interpreter.I16x8Add, operands);

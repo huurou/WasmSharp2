@@ -21,9 +21,7 @@ internal class ImportInspector_InspectTests
         await Assert.That(result.UnverifiedRanges[0].Stage).IsEqualTo(WasmProcessingStage.Decode);
         await Assert.That(result.UnverifiedRanges[0].StartOffset).IsEqualTo(10L);
         await Assert.That(result.UnverifiedRanges[0].EndOffset).IsEqualTo(10L);
-        await Assert
-            .That(result.UnverifiedRanges[0].Description)
-            .IsEqualTo("このpayloadの構文は未確認です。");
+        await Assert.That(result.UnverifiedRanges[0].Description).IsEqualTo("このpayloadの構文は未確認です。");
     }
 
     [Test]
@@ -40,9 +38,7 @@ internal class ImportInspector_InspectTests
 
         // Assert
         await Assert.That(result.Imports.IsEmpty).IsTrue();
-        await Assert
-            .That(result.UnverifiedRanges.Single().Stage)
-            .IsEqualTo(WasmProcessingStage.Validate);
+        await Assert.That(result.UnverifiedRanges.Single().Stage).IsEqualTo(WasmProcessingStage.Validate);
     }
 
     [Test]
@@ -74,9 +70,7 @@ internal class ImportInspector_InspectTests
     {
         // Arrange
         var bytes = HostLinkingModuleBinary.Create(
-            HostLinkingModuleBinary.Imports(
-                ("env", "f", 0, HostLinkingModuleBinary.Unsigned(typeIndex))
-            )
+            HostLinkingModuleBinary.Imports(("env", "f", 0, HostLinkingModuleBinary.Unsigned(typeIndex)))
         );
 
         // Act & Assert
@@ -85,9 +79,7 @@ internal class ImportInspector_InspectTests
             .ThrowsExactly<WasmImportInspectionException>();
         using (Assert.Multiple())
         {
-            await Assert
-                .That(exception!.Reason)
-                .IsEqualTo(WasmImportInspectionReason.UnresolvedType);
+            await Assert.That(exception!.Reason).IsEqualTo(WasmImportInspectionReason.UnresolvedType);
             await Assert.That(exception.Message).IsEqualTo("importの関数型添字を解決できません。");
             await Assert
                 .That(exception.UnverifiedRanges[0])
@@ -102,12 +94,7 @@ internal class ImportInspector_InspectTests
             await Assert
                 .That(exception.UnverifiedRanges[1])
                 .IsEqualTo(
-                    new WasmUnverifiedRange(
-                        WasmProcessingStage.Validate,
-                        0,
-                        bytes.Length,
-                        "入力全体の検証が未実施です。"
-                    )
+                    new WasmUnverifiedRange(WasmProcessingStage.Validate, 0, bytes.Length, "入力全体の検証が未実施です。")
                 );
         }
     }
@@ -143,9 +130,7 @@ internal class ImportInspector_InspectTests
         {
             await Assert.That(result.Imports.IsEmpty).IsTrue();
             await Assert.That(result.UnverifiedRanges.Length).IsEqualTo(12);
-            await Assert
-                .That(result.UnverifiedRanges[0].Stage)
-                .IsEqualTo(WasmProcessingStage.Decode);
+            await Assert.That(result.UnverifiedRanges[0].Stage).IsEqualTo(WasmProcessingStage.Decode);
             await Assert.That(result.UnverifiedRanges[0].StartOffset).IsEqualTo(12L);
             await Assert.That(result.UnverifiedRanges[0].EndOffset).IsEqualTo(13L);
             for (var index = 0; index < ids.Length; index++)
@@ -155,9 +140,7 @@ internal class ImportInspector_InspectTests
                 await Assert.That(range.StartOffset).IsEqualTo(15L + index * 3);
                 await Assert.That(range.EndOffset).IsEqualTo(16L + index * 3);
             }
-            await Assert
-                .That(result.UnverifiedRanges[^1].Stage)
-                .IsEqualTo(WasmProcessingStage.Validate);
+            await Assert.That(result.UnverifiedRanges[^1].Stage).IsEqualTo(WasmProcessingStage.Validate);
             await Assert.That(result.UnverifiedRanges[^1].EndOffset).IsEqualTo(bytes.Length);
         }
     }
@@ -167,9 +150,7 @@ internal class ImportInspector_InspectTests
     {
         // Arrange
         var bytes = HostLinkingModuleBinary.Create(
-            HostLinkingModuleBinary.Types(
-                ([0x7F, 0x7E, 0x7D, 0x7C, 0x7B, 0x70, 0x6F], [0x7B, 0x6F])
-            ),
+            HostLinkingModuleBinary.Types(([0x7F, 0x7E, 0x7D, 0x7C, 0x7B, 0x70, 0x6F], [0x7B, 0x6F])),
             HostLinkingModuleBinary.Imports(
                 ("環境", "共有", 3, [0x7B, 1]),
                 ("", "", 0, [0]),
@@ -224,34 +205,17 @@ internal class ImportInspector_InspectTests
                     )
                 )
                 .IsTrue();
-            await Assert
-                .That(
-                    type.Results.SequenceEqual(
-                        new[] { WasmValueKind.V128, WasmValueKind.ExternRef }
-                    )
-                )
-                .IsTrue();
-            await Assert
-                .That(((WasmImportInfo.Memory)result.Imports[2]).Limits)
-                .IsEqualTo(new WasmLimits(uint.MaxValue, 0));
-            await Assert
-                .That(((WasmImportInfo.Table)result.Imports[3]).ElementType)
-                .IsEqualTo(WasmValueKind.ExternRef);
-            await Assert
-                .That(((WasmImportInfo.Table)result.Imports[3]).Limits)
-                .IsEqualTo(new WasmLimits(3));
+            await Assert.That(type.Results.SequenceEqual(new[] { WasmValueKind.V128, WasmValueKind.ExternRef })).IsTrue();
+            await Assert.That(((WasmImportInfo.Memory)result.Imports[2]).Limits).IsEqualTo(new WasmLimits(uint.MaxValue, 0));
+            await Assert.That(((WasmImportInfo.Table)result.Imports[3]).ElementType).IsEqualTo(WasmValueKind.ExternRef);
+            await Assert.That(((WasmImportInfo.Table)result.Imports[3]).Limits).IsEqualTo(new WasmLimits(3));
             await Assert
                 .That(((WasmImportInfo.Global)result.Imports[4]).Type)
                 .IsEqualTo(new WasmGlobalType(WasmValueKind.FuncRef, false));
             await Assert
                 .That(result.UnverifiedRanges.Single())
                 .IsEqualTo(
-                    new WasmUnverifiedRange(
-                        WasmProcessingStage.Validate,
-                        0,
-                        bytes.Length,
-                        "入力全体の検証が未実施です。"
-                    )
+                    new WasmUnverifiedRange(WasmProcessingStage.Validate, 0, bytes.Length, "入力全体の検証が未実施です。")
                 );
         }
     }

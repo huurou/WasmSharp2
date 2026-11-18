@@ -15,11 +15,7 @@ internal class Interpreter_F32MulTests
     [Arguments(0x7F7FFFFFu, 0x40000000u, 0x7F800000u)]
     [Arguments(0x00000000u, 0x7F800000u, 0x7FC00000u)]
     [Arguments(0x7F812345u, 0x3F800000u, 0x7FC00000u)]
-    public async Task 通常値と境界値とNaN_32bitの乗算結果を返す(
-        uint leftBits,
-        uint rightBits,
-        uint expectedBits
-    )
+    public async Task 通常値と境界値とNaN_32bitの乗算結果を返す(uint leftBits, uint rightBits, uint expectedBits)
     {
         // Arrange
         WasmValue[] operands = [WasmValue.FromF32Bits(leftBits), WasmValue.FromF32Bits(rightBits)];

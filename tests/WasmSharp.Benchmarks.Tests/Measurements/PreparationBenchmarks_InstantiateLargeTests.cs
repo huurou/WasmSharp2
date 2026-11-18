@@ -27,23 +27,12 @@ internal class PreparationBenchmarks_InstantiateLargeTests
         using (Assert.Multiple())
         {
             await Assert.That(ReferenceEquals(first, second)).IsFalse();
+            await Assert.That(ReferenceEquals(first.GetMemory("memory"), second.GetMemory("memory"))).IsFalse();
+            await Assert.That(ReferenceEquals(first.GetTable("functions"), second.GetTable("functions"))).IsFalse();
             await Assert
-                .That(ReferenceEquals(first.GetMemory("memory"), second.GetMemory("memory")))
+                .That(ReferenceEquals(first.GetGlobalResource("start_result"), second.GetGlobalResource("start_result")))
                 .IsFalse();
-            await Assert
-                .That(ReferenceEquals(first.GetTable("functions"), second.GetTable("functions")))
-                .IsFalse();
-            await Assert
-                .That(
-                    ReferenceEquals(
-                        first.GetGlobalResource("start_result"),
-                        second.GetGlobalResource("start_result")
-                    )
-                )
-                .IsFalse();
-            await Assert
-                .That(ReferenceEquals(first.GetFunction("add_one"), second.GetFunction("add_one")))
-                .IsTrue();
+            await Assert.That(ReferenceEquals(first.GetFunction("add_one"), second.GetFunction("add_one"))).IsTrue();
             await Assert.That(second.GetGlobal("start_result").AsI32()).IsEqualTo(42);
             await Assert.That(benchmark.Cleanup).ThrowsNothing();
         }

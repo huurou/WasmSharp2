@@ -39,11 +39,7 @@ internal static class CorpusManifestFixture
             SourceFilename = "failed.wast",
             EnumerationComplete = false,
             CommandCount = null,
-            Commands =
-            [
-                new(0, 2, "assert_malformed", "text", "failed.0.wat"),
-                new(1, null, null, null, null),
-            ],
+            Commands = [new(0, 2, "assert_malformed", "text", "failed.0.wat"), new(1, null, null, null, null)],
             References = [new(0, "failed.0.wat", "modules/failed.0.wat")],
         };
         manifest.Inputs[0] = manifest.Inputs[0] with
@@ -55,21 +51,13 @@ internal static class CorpusManifestFixture
             Arguments = ["failed.wast", "-o", "/output/modules/failed.json"],
             Artifacts =
             [
-                new("modules/failed.json", ArtifactKind.Json, new string('e', 64), "failed.wast")
-                {
-                    Script = script,
-                },
+                new("modules/failed.json", ArtifactKind.Json, new string('e', 64), "failed.wast") { Script = script },
                 new("modules/failed.0.wat", ArtifactKind.Wat, new string('f', 64), "failed.wast"),
             ],
             Diagnostics =
             [
                 new("convert", "変換に失敗しました。", "failed.wast"),
-                new(
-                    "enumerate",
-                    "JSON末尾が破損しています。",
-                    "modules/failed.json",
-                    "System.Text.Json.JsonException"
-                ),
+                new("enumerate", "JSON末尾が破損しています。", "modules/failed.json", "System.Text.Json.JsonException"),
             ],
         };
         manifest.Inputs[1] = manifest.Inputs[1] with
@@ -89,12 +77,7 @@ internal static class CorpusManifestFixture
                         References = [new(0, "success.0.wasm", "modules/success.0.wasm")],
                     },
                 },
-                new(
-                    "modules/success.0.wasm",
-                    ArtifactKind.Wasm,
-                    new string('1', 64),
-                    "success.wast"
-                ),
+                new("modules/success.0.wasm", ArtifactKind.Wasm, new string('1', 64), "success.wast"),
             ],
         };
         return manifest with

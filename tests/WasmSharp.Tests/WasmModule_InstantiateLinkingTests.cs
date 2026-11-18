@@ -8,9 +8,7 @@ internal partial class WasmModule_InstantiateTests
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task 巨大table定義とstartを持つ_全リンク成功後だけ保持上限を返してstartを実行しない(
-        bool provideGlobal
-    )
+    public async Task 巨大table定義とstartを持つ_全リンク成功後だけ保持上限を返してstartを実行しない(bool provideGlobal)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
@@ -18,10 +16,7 @@ internal partial class WasmModule_InstantiateTests
             .Decode(
                 HostLinkingModuleBinary.Create(
                     HostLinkingModuleBinary.Types(([], [])),
-                    HostLinkingModuleBinary.Imports(
-                        ("env", "f", 0, [0]),
-                        ("env", "g", 3, [0x7F, 0])
-                    ),
+                    HostLinkingModuleBinary.Imports(("env", "f", 0, [0]), ("env", "g", 3, [0x7F, 0])),
                     HostLinkingModuleBinary.Tables((0x70, uint.MaxValue, null)),
                     HostLinkingModuleBinary.Start(0)
                 )
@@ -53,15 +48,11 @@ internal partial class WasmModule_InstantiateTests
                 .ThrowsExactly<WasmImplementationLimitException>();
             using (Assert.Multiple())
             {
-                await Assert
-                    .That(exception!.Reason)
-                    .IsEqualTo(WasmImplementationLimitReason.CollectionSize);
+                await Assert.That(exception!.Reason).IsEqualTo(WasmImplementationLimitReason.CollectionSize);
                 await Assert.That(exception.Limit).IsEqualTo(Array.MaxLength);
                 await Assert
                     .That(exception.Location)
-                    .IsEqualTo(
-                        new(WasmProcessingStage.Instantiate, module.Tables[0].ByteOffset, null, 4)
-                    );
+                    .IsEqualTo(new(WasmProcessingStage.Instantiate, module.Tables[0].ByteOffset, null, 4));
                 await Assert.That(calls).IsEqualTo(0);
             }
         }
@@ -127,11 +118,7 @@ internal partial class WasmModule_InstantiateTests
         // Arrange
         var executionContext = new WasmExecutionContext();
         var module = WasmModule
-            .Decode(
-                HostLinkingModuleBinary.Create(
-                    HostLinkingModuleBinary.Imports(("missing", "missing", 3, [0x7F, 0]))
-                )
-            )
+            .Decode(HostLinkingModuleBinary.Create(HostLinkingModuleBinary.Imports(("missing", "missing", 3, [0x7F, 0]))))
             .Validate();
         var first = new WasmHostModule("env");
         var second = new WasmHostModule("env");
@@ -139,9 +126,7 @@ internal partial class WasmModule_InstantiateTests
         second.Define("f", new WasmMemory(new(0)));
 
         // Act & Assert
-        await Assert
-            .That(() => module.Instantiate(executionContext, [first, second]))
-            .ThrowsExactly<ArgumentException>();
+        await Assert.That(() => module.Instantiate(executionContext, [first, second])).ThrowsExactly<ArgumentException>();
         await Assert
             .That(() => module.Instantiate(executionContext, (WasmImports)null!))
             .ThrowsExactly<ArgumentNullException>();
@@ -154,9 +139,7 @@ internal partial class WasmModule_InstantiateTests
         // Arrange
         var executionContext = new WasmExecutionContext();
         var module = WasmModule.Decode(
-            HostLinkingModuleBinary.Create(
-                HostLinkingModuleBinary.Imports(("missing", "g", 3, [0x7F, 0]))
-            )
+            HostLinkingModuleBinary.Create(HostLinkingModuleBinary.Imports(("missing", "g", 3, [0x7F, 0])))
         );
 
         // Act & Assert
@@ -173,9 +156,7 @@ internal partial class WasmModule_InstantiateTests
     [Arguments((byte)0x7B)]
     [Arguments((byte)0x70)]
     [Arguments((byte)0x6F)]
-    public async Task ImportedGlobalで定義を初期化する_7型の値と参照を保ち種類別添字で接続する(
-        byte kind
-    )
+    public async Task ImportedGlobalで定義を初期化する_7型の値と参照を保ち種類別添字で接続する(byte kind)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
@@ -247,9 +228,7 @@ internal partial class WasmModule_InstantiateTests
             }
             if (kind == 0x6F)
             {
-                await Assert
-                    .That(first.GetGlobal("g").AsExternRef())
-                    .IsSameReferenceAs(value.AsExternRef());
+                await Assert.That(first.GetGlobal("g").AsExternRef()).IsSameReferenceAs(value.AsExternRef());
             }
         }
     }

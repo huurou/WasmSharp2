@@ -48,9 +48,7 @@ internal class WasmValue_AsI32Tests
         {
             foreach (var value in values)
             {
-                var exception = await Assert
-                    .That(value.AsI32)
-                    .ThrowsExactly<InvalidOperationException>();
+                var exception = await Assert.That(value.AsI32).ThrowsExactly<InvalidOperationException>();
                 await Assert.That(exception!.Message).Contains(value.Kind.ToString());
                 await Assert.That(exception.Message).Contains("I32");
             }
@@ -158,9 +156,7 @@ internal class WasmValue_FromF32Tests
         {
             await Assert.That(value.Kind).IsEqualTo(WasmValueKind.F32);
             await Assert.That(value.AsF32Bits()).IsEqualTo(expectedBits);
-            await Assert
-                .That(BitConverter.SingleToUInt32Bits(value.AsF32()))
-                .IsEqualTo(expectedBits);
+            await Assert.That(BitConverter.SingleToUInt32Bits(value.AsF32())).IsEqualTo(expectedBits);
         }
     }
 }
@@ -194,9 +190,7 @@ internal class WasmValue_FromF32BitsTests
         {
             await Assert.That(value.Kind).IsEqualTo(WasmValueKind.F32);
             await Assert.That(value.AsF32Bits()).IsEqualTo(expectedBits);
-            await Assert
-                .That(BitConverter.SingleToUInt32Bits(value.AsF32()))
-                .IsEqualTo(expectedBits);
+            await Assert.That(BitConverter.SingleToUInt32Bits(value.AsF32())).IsEqualTo(expectedBits);
         }
     }
 }
@@ -284,9 +278,7 @@ internal class WasmValue_FromF64Tests
         {
             await Assert.That(value.Kind).IsEqualTo(WasmValueKind.F64);
             await Assert.That(value.AsF64Bits()).IsEqualTo(expectedBits);
-            await Assert
-                .That(BitConverter.DoubleToUInt64Bits(value.AsF64()))
-                .IsEqualTo(expectedBits);
+            await Assert.That(BitConverter.DoubleToUInt64Bits(value.AsF64())).IsEqualTo(expectedBits);
         }
     }
 }
@@ -320,9 +312,7 @@ internal class WasmValue_FromF64BitsTests
         {
             await Assert.That(value.Kind).IsEqualTo(WasmValueKind.F64);
             await Assert.That(value.AsF64Bits()).IsEqualTo(expectedBits);
-            await Assert
-                .That(BitConverter.DoubleToUInt64Bits(value.AsF64()))
-                .IsEqualTo(expectedBits);
+            await Assert.That(BitConverter.DoubleToUInt64Bits(value.AsF64())).IsEqualTo(expectedBits);
         }
     }
 }
@@ -390,10 +380,7 @@ internal class WasmValue_FromV128Tests
     [Arguments(0UL, ulong.MaxValue)]
     [Arguments(0x0123456789ABCDEFUL, 0xFEDCBA9876543210UL)]
     [Arguments(0x8000000000000000UL, 1UL)]
-    public async Task 上下64ビットを構築する_種類と128ビット全体を保持する(
-        ulong low64,
-        ulong high64
-    )
+    public async Task 上下64ビットを構築する_種類と128ビット全体を保持する(ulong low64, ulong high64)
     {
         // Arrange
         var expected = (Low64: low64, High64: high64);
@@ -571,9 +558,7 @@ internal class WasmValue_FromExternRefTests
         {
             await Assert.That(ReferenceEquals(firstValue.AsExternRef(), first)).IsTrue();
             await Assert.That(ReferenceEquals(secondValue.AsExternRef(), second)).IsTrue();
-            await Assert
-                .That(ReferenceEquals(firstValue.AsExternRef(), secondValue.AsExternRef()))
-                .IsFalse();
+            await Assert.That(ReferenceEquals(firstValue.AsExternRef(), secondValue.AsExternRef())).IsFalse();
         }
     }
 }

@@ -33,8 +33,7 @@ internal static partial class Core2InstructionFixture
                 }
             }
             var name = row.Groups[1].Value.Split('~')[0];
-            name = MacroReferenceRegex()
-                .Replace(name, x => x.Groups[1].Value == "K" ? x.Value : macros[x.Groups[1].Value]);
+            name = MacroReferenceRegex().Replace(name, x => x.Groups[1].Value == "K" ? x.Value : macros[x.Groups[1].Value]);
             name = KeywordRegex().Replace(name, "$1").Replace(@"\_", "_").Replace("{.}", ".");
             instructions.Add(code, name);
         }
@@ -43,9 +42,7 @@ internal static partial class Core2InstructionFixture
 
     private static string ReadResource(string name)
     {
-        using var stream = typeof(Core2InstructionFixture).Assembly.GetManifestResourceStream(
-            name
-        )!;
+        using var stream = typeof(Core2InstructionFixture).Assembly.GetManifestResourceStream(name)!;
         using var reader = new StreamReader(stream);
         return reader.ReadToEnd();
     }

@@ -1,8 +1,8 @@
+using System.Runtime.CompilerServices;
 using BenchmarkDotNet.Engines;
 using BenchmarkDotNet.Jobs;
 using BenchmarkDotNet.Reports;
 using Perfolizer.Mathematics.OutlierDetection;
-using System.Runtime.CompilerServices;
 using WasmSharp.Benchmarks.Measurements;
 using WasmSharp.Benchmarks.Tests.Fixtures;
 
@@ -14,9 +14,7 @@ internal class AllocationEngine_RunTests
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task 追加反復を終える_成功と例外のどちらでもイベント購読がエンジンを保持しない(
-        bool fails
-    )
+    public async Task 追加反復を終える_成功と例外のどちらでもイベント購読がエンジンを保持しない(bool fails)
     {
         // Arrange
         WeakReference? reference = null;
@@ -63,34 +61,19 @@ internal class AllocationEngine_RunTests
         using (var engine = new WasmAllocationEngineFactory(timing).CreateReadyToRun(parameters))
         {
             // Act & Assert
-            var actual = await Assert
-                .That(engine.Run)
-                .ThrowsExactly<InvalidOperationException>();
+            var actual = await Assert.That(engine.Run).ThrowsExactly<InvalidOperationException>();
             using (Assert.Multiple())
             {
                 await Assert.That(actual).IsSameReferenceAs(expected);
                 await Assert
-                    .That(
-                        callbacks.SequenceEqual([
-                            "global setup",
-                            "iteration setup",
-                            "iteration cleanup",
-                        ])
-                    )
+                    .That(callbacks.SequenceEqual(["global setup", "iteration setup", "iteration cleanup"]))
                     .IsTrue();
                 await Assert.That(timing.Disposed).IsFalse();
             }
         }
 
         await Assert
-            .That(
-                callbacks.SequenceEqual([
-                    "global setup",
-                    "iteration setup",
-                    "iteration cleanup",
-                    "global cleanup",
-                ])
-            )
+            .That(callbacks.SequenceEqual(["global setup", "iteration setup", "iteration cleanup", "global cleanup"]))
             .IsTrue();
     }
 
@@ -101,17 +84,11 @@ internal class AllocationEngine_RunTests
         var expected = new InvalidOperationException("時間計測失敗");
         var setupCount = 0;
         var timing = new AllocationEngineFixture { RunFailure = expected };
-        var parameters = new EngineParameters
-        {
-            MeasureExtraStats = true,
-            IterationSetupAction = () => setupCount++,
-        };
+        var parameters = new EngineParameters { MeasureExtraStats = true, IterationSetupAction = () => setupCount++ };
         using var engine = new WasmAllocationEngineFactory(timing).CreateReadyToRun(parameters);
 
         // Act & Assert
-        var actual = await Assert
-            .That(engine.Run)
-            .ThrowsExactly<InvalidOperationException>();
+        var actual = await Assert.That(engine.Run).ThrowsExactly<InvalidOperationException>();
         using (Assert.Multiple())
         {
             await Assert.That(actual).IsSameReferenceAs(expected);
@@ -186,19 +163,9 @@ internal class AllocationEngine_RunTests
         // 背景のGCや処理も含むため、Run全体の増分を測定区間の上限にする。
         var contentionBefore = Monitor.LockContentionCount;
         var completedBefore = ThreadPool.CompletedWorkItemCount;
-        int[] collectionsBefore =
-        [
-            GC.CollectionCount(0),
-            GC.CollectionCount(1),
-            GC.CollectionCount(2),
-        ];
+        int[] collectionsBefore = [GC.CollectionCount(0), GC.CollectionCount(1), GC.CollectionCount(2)];
         var result = engine.Run();
-        int[] collectionsAfter =
-        [
-            GC.CollectionCount(0),
-            GC.CollectionCount(1),
-            GC.CollectionCount(2),
-        ];
+        int[] collectionsAfter = [GC.CollectionCount(0), GC.CollectionCount(1), GC.CollectionCount(2)];
         var completedAfter = ThreadPool.CompletedWorkItemCount;
         var contentionAfter = Monitor.LockContentionCount;
 
@@ -212,15 +179,10 @@ internal class AllocationEngine_RunTests
                 await Assert.That(measured).IsGreaterThanOrEqualTo(1);
                 await Assert
                     .That(measured)
-                    .IsLessThanOrEqualTo(
-                        collectionsAfter[generation] - collectionsBefore[generation]
-                    );
+                    .IsLessThanOrEqualTo(collectionsAfter[generation] - collectionsBefore[generation]);
             }
             await Assert
-                .That(
-                    result.GCStats.GetTotalAllocatedBytes(excludeAllocationQuantumSideEffects: false)
-                        .GetValueOrDefault()
-                )
+                .That(result.GCStats.GetTotalAllocatedBytes(excludeAllocationQuantumSideEffects: false).GetValueOrDefault())
                 .IsGreaterThanOrEqualTo(allocated!.LongLength);
             await Assert
                 .That(result.ThreadingStats.CompletedWorkItemCount)
@@ -243,54 +205,17 @@ internal class AllocationEngine_RunTests
         long measuredInvocations = 0;
         var timing = new AllocationEngineFixture
         {
-            TargetJob = Job
-                .Default.WithUnrollFactor(effectiveUnroll)
-                .WithOutlierMode(OutlierMode.DontRemove),
+            TargetJob = Job.Default.WithUnrollFactor(effectiveUnroll).WithOutlierMode(OutlierMode.DontRemove),
             OperationsPerInvoke = 3,
             WorkloadAction = count => measuredInvocations = count,
             Results = new RunResults(
                 [
                     new Measurement(0, IterationMode.Workload, IterationStage.Jitting, 1, 3, 300),
-                    new Measurement(
-                        0,
-                        IterationMode.Workload,
-                        IterationStage.Actual,
-                        1,
-                        totalOperations,
-                        100
-                    ),
-                    new Measurement(
-                        0,
-                        IterationMode.Workload,
-                        IterationStage.Actual,
-                        2,
-                        totalOperations,
-                        101
-                    ),
-                    new Measurement(
-                        0,
-                        IterationMode.Workload,
-                        IterationStage.Actual,
-                        3,
-                        totalOperations,
-                        99
-                    ),
-                    new Measurement(
-                        0,
-                        IterationMode.Workload,
-                        IterationStage.Actual,
-                        4,
-                        totalOperations,
-                        100
-                    ),
-                    new Measurement(
-                        0,
-                        IterationMode.Workload,
-                        IterationStage.Actual,
-                        5,
-                        totalOperations,
-                        10000
-                    ),
+                    new Measurement(0, IterationMode.Workload, IterationStage.Actual, 1, totalOperations, 100),
+                    new Measurement(0, IterationMode.Workload, IterationStage.Actual, 2, totalOperations, 101),
+                    new Measurement(0, IterationMode.Workload, IterationStage.Actual, 3, totalOperations, 99),
+                    new Measurement(0, IterationMode.Workload, IterationStage.Actual, 4, totalOperations, 100),
+                    new Measurement(0, IterationMode.Workload, IterationStage.Actual, 5, totalOperations, 10000),
                     new Measurement(0, IterationMode.Overhead, IterationStage.Actual, 1, 4096, 10),
                 ],
                 OutlierMode.DontRemove,
@@ -299,11 +224,7 @@ internal class AllocationEngine_RunTests
                 0
             ),
         };
-        var parameters = new EngineParameters
-        {
-            MeasureExtraStats = true,
-            TargetJob = Job.Default.WithUnrollFactor(16),
-        };
+        var parameters = new EngineParameters { MeasureExtraStats = true, TargetJob = Job.Default.WithUnrollFactor(16) };
         using var engine = new WasmAllocationEngineFactory(timing).CreateReadyToRun(parameters);
 
         // Act
@@ -316,9 +237,7 @@ internal class AllocationEngine_RunTests
             await Assert.That(measuredInvocations).IsEqualTo(5);
             await Assert.That(result.GCStats.TotalOperations).IsEqualTo(totalOperations);
             await Assert.That(result.ThreadingStats.TotalOperations).IsEqualTo(totalOperations);
-            await Assert
-                .That(result.EngineMeasurements)
-                .IsSameReferenceAs(timing.Results.EngineMeasurements);
+            await Assert.That(result.EngineMeasurements).IsSameReferenceAs(timing.Results.EngineMeasurements);
             await Assert
                 .That(
                     result

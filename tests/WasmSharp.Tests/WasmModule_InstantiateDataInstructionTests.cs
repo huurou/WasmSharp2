@@ -26,19 +26,7 @@ internal partial class WasmModule_InstantiateTests
             HostLinkingModuleBinary.Functions(0),
             HostLinkingModuleBinary.Start(0),
             HostLinkingModuleBinary.Code(
-                (
-                    [],
-                    [
-                        0x41,
-                        .. HostLinkingModuleBinary.Signed(65535),
-                        0x41,
-                        0,
-                        0x41,
-                        2,
-                        .. operation,
-                        0x0B,
-                    ]
-                )
+                ([], [0x41, .. HostLinkingModuleBinary.Signed(65535), 0x41, 0, 0x41, 2, .. operation, 0x0B])
             )
         );
         var module = WasmModule.Decode(bytes).Validate();
@@ -53,18 +41,11 @@ internal partial class WasmModule_InstantiateTests
         {
             await Assert.That(exception!.Reason).IsEqualTo(WasmTrapReason.MemoryOutOfBounds);
             await Assert
-                .That(
-                    exception.Message.StartsWith(
-                        "out of bounds memory access",
-                        StringComparison.Ordinal
-                    )
-                )
+                .That(exception.Message.StartsWith("out of bounds memory access", StringComparison.Ordinal))
                 .IsTrue();
             await Assert
                 .That(exception.Location)
-                .IsEqualTo(
-                    new(WasmProcessingStage.Instantiate, bytes.Length - operation.Length - 1, 0)
-                );
+                .IsEqualTo(new(WasmProcessingStage.Instantiate, bytes.Length - operation.Length - 1, 0));
             await Assert.That(actual.SequenceEqual(original)).IsTrue();
         }
     }
@@ -72,9 +53,7 @@ internal partial class WasmModule_InstantiateTests
     [Test]
     [Arguments(0)]
     [Arguments(1)]
-    public async Task 開始関数が初期化済みのアクティブデータを参照する_破棄済みとして扱い空コピーだけ成功する(
-        int length
-    )
+    public async Task 開始関数が初期化済みのアクティブデータを参照する_破棄済みとして扱い空コピーだけ成功する(int length)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
@@ -87,9 +66,7 @@ internal partial class WasmModule_InstantiateTests
             HostLinkingModuleBinary.Functions(0),
             HostLinkingModuleBinary.Start(0),
             HostLinkingModuleBinary.Section(12, [1]),
-            HostLinkingModuleBinary.Code(
-                ([], [0x41, 0, 0x41, 0, 0x41, (byte)length, 0xFC, 8, 0, 0, 0x0B])
-            ),
+            HostLinkingModuleBinary.Code(([], [0x41, 0, 0x41, 0, 0x41, (byte)length, 0xFC, 8, 0, 0, 0x0B])),
             HostLinkingModuleBinary.Section(11, [1, 0, 0x41, 0, 0x0B, 1, 0xAB])
         );
         var module = WasmModule.Decode(bytes).Validate();
@@ -112,9 +89,7 @@ internal partial class WasmModule_InstantiateTests
                 await Assert.That(exception!.Reason).IsEqualTo(WasmTrapReason.MemoryOutOfBounds);
                 await Assert
                     .That(exception.Location)
-                    .IsEqualTo(
-                        new(WasmProcessingStage.Instantiate, Array.IndexOf(bytes, (byte)0xFC), 0)
-                    );
+                    .IsEqualTo(new(WasmProcessingStage.Instantiate, Array.IndexOf(bytes, (byte)0xFC), 0));
             }
         }
         var actual = new byte[1];

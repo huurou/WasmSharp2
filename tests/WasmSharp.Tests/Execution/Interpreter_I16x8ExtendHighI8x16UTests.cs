@@ -6,12 +6,7 @@ namespace WasmSharp.Tests.Execution;
 internal class Interpreter_I16x8ExtendHighI8x16UTests
 {
     [Test]
-    [Arguments(
-        0xFE7E810100FF7F80UL,
-        0x01FE817EFF00807FUL,
-        0x00FF00000080007FUL,
-        0x000100FE0081007EUL
-    )]
+    [Arguments(0xFE7E810100FF7F80UL, 0x01FE817EFF00807FUL, 0x00FF00000080007FUL, 0x000100FE0081007EUL)]
     public async Task 上下で異なる符号境界のlane_選択した半分を順に拡張する(
         ulong firstLow64,
         ulong firstHigh64,

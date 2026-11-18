@@ -13,10 +13,7 @@ internal sealed class SourceCapture(string repositoryDirectory, CaseJson json)
     private readonly string repositoryDirectory_ = Path.GetFullPath(repositoryDirectory);
     private readonly CaseJson json_ = json;
 
-    internal RunSource Before(
-        RunStore store,
-        IEnumerable<(AssemblyRole Role, string Path)> assemblies
-    )
+    internal RunSource Before(RunStore store, IEnumerable<(AssemblyRole Role, string Path)> assemblies)
     {
         var head = Git("rev-parse", "HEAD").Trim();
         var (runtime, harness) = Sources(head);
@@ -83,11 +80,7 @@ internal sealed class SourceCapture(string repositoryDirectory, CaseJson json)
             .DistinctBy(x => x.RelativePath)
             .ToDictionary(x => x.RelativePath, x => x.Sha256);
         // 実行前に使用したファイルは、projectから外れても存在する限り内容を照合する
-        foreach (
-            var path in previous.Keys.Where(x =>
-                !current.ContainsKey(x) && File.Exists(FullPath(x))
-            )
-        )
+        foreach (var path in previous.Keys.Where(x => !current.ContainsKey(x) && File.Exists(FullPath(x))))
         {
             current.Add(path, Hash(FullPath(path)));
         }
@@ -127,11 +120,7 @@ internal sealed class SourceCapture(string repositoryDirectory, CaseJson json)
     private static bool IsProject(string path)
     {
         return Path.GetExtension(path) is ".csproj" or ".props" or ".targets"
-        || Path.GetFileName(path)
-            is "global.json"
-                or "NuGet.Config"
-                or "nuget.config"
-                or "packages.lock.json";
+            || Path.GetFileName(path) is "global.json" or "NuGet.Config" or "nuget.config" or "packages.lock.json";
     }
 
     private (SourceSet Runtime, SourceSet Harness) Sources(string head, bool allowMissing = false)
@@ -139,21 +128,11 @@ internal sealed class SourceCapture(string repositoryDirectory, CaseJson json)
         var runtime = new HashSet<string>(StringComparer.Ordinal);
         AddProject("src/WasmSharp/WasmSharp.csproj", runtime, [], allowMissing);
         var harness = new HashSet<string>(StringComparer.Ordinal);
-        AddProject(
-            "tools/WasmSharp.Benchmarks/WasmSharp.Benchmarks.csproj",
-            harness,
-            runtime,
-            allowMissing
-        );
+        AddProject("tools/WasmSharp.Benchmarks/WasmSharp.Benchmarks.csproj", harness, runtime, allowMissing);
         return (Set(head, runtime), Set(head, harness));
     }
 
-    private void AddProject(
-        string relativePath,
-        HashSet<string> files,
-        HashSet<string> excluded,
-        bool allowMissing
-    )
+    private void AddProject(string relativePath, HashSet<string> files, HashSet<string> excluded, bool allowMissing)
     {
         if (excluded.Contains(relativePath))
         {
@@ -187,15 +166,7 @@ internal sealed class SourceCapture(string repositoryDirectory, CaseJson json)
             )
         );
         var items = evaluation.RootElement.GetProperty("Items");
-        foreach (
-            var kind in new[]
-            {
-                "Compile",
-                "AdditionalFiles",
-                "EmbeddedResource",
-                "EditorConfigFiles",
-            }
-        )
+        foreach (var kind in new[] { "Compile", "AdditionalFiles", "EmbeddedResource", "EditorConfigFiles" })
         {
             foreach (var item in items.GetProperty(kind).EnumerateArray())
             {
@@ -205,19 +176,10 @@ internal sealed class SourceCapture(string repositoryDirectory, CaseJson json)
 
         foreach (var item in items.GetProperty("ProjectReference").EnumerateArray())
         {
-            AddProject(
-                RelativePath(item.GetProperty("FullPath").GetString()!),
-                files,
-                excluded,
-                allowMissing
-            );
+            AddProject(RelativePath(item.GetProperty("FullPath").GetString()!), files, excluded, allowMissing);
         }
 
-        for (
-            var directory = Path.GetDirectoryName(projectPath)!;
-            ;
-            directory = Path.GetDirectoryName(directory)!
-        )
+        for (var directory = Path.GetDirectoryName(projectPath)!; ; directory = Path.GetDirectoryName(directory)!)
         {
             foreach (
                 var name in new[]
@@ -258,10 +220,7 @@ internal sealed class SourceCapture(string repositoryDirectory, CaseJson json)
 
     private SourceSet Set(string head, HashSet<string> paths)
     {
-        var files = paths
-            .Order(StringComparer.Ordinal)
-            .Select(x => new ManifestFile(x, Hash(FullPath(x))))
-            .ToList();
+        var files = paths.Order(StringComparer.Ordinal).Select(x => new ManifestFile(x, Hash(FullPath(x)))).ToList();
         // pathと内容hashを別々のJSON要素にし、並びと区切りを固定する
         var identity = JsonSerializer.SerializeToUtf8Bytes(files, json_.Options);
         return new(head, Convert.ToHexStringLower(SHA256.HashData(identity)), files);
@@ -269,44 +228,38 @@ internal sealed class SourceCapture(string repositoryDirectory, CaseJson json)
 
     private List<SubmoduleRevision> Submodules()
     {
-        return [.. Git("submodule", "status", "--recursive")
-            .Split('\n', StringSplitOptions.RemoveEmptyEntries)
-            .Select(x =>
-            {
-                var parts = x[1..].Split(' ', 3, StringSplitOptions.RemoveEmptyEntries);
-                var path = parts[1];
-                var initialized = x[0] != '-';
-                var dirty =
-                    x[0] is '+' or 'U'
-                    || (
-                        initialized
-                        && CaptureCommand
-                            .Run(
-                                "git",
-                                FullPath(path),
-                                "status",
-                                "--porcelain",
-                                "--untracked-files=normal"
-                            )
-                            .Length != 0
-                    );
-                return new SubmoduleRevision(path, parts[0], dirty);
-            })];
+        return
+        [
+            .. Git("submodule", "status", "--recursive")
+                .Split('\n', StringSplitOptions.RemoveEmptyEntries)
+                .Select(x =>
+                {
+                    var parts = x[1..].Split(' ', 3, StringSplitOptions.RemoveEmptyEntries);
+                    var path = parts[1];
+                    var initialized = x[0] != '-';
+                    var dirty =
+                        x[0] is '+' or 'U'
+                        || (
+                            initialized
+                            && CaptureCommand
+                                .Run("git", FullPath(path), "status", "--porcelain", "--untracked-files=normal")
+                                .Length != 0
+                        );
+                    return new SubmoduleRevision(path, parts[0], dirty);
+                }),
+        ];
     }
 
     private string RelativePath(string path)
     {
-        var relativePath = Path.GetRelativePath(repositoryDirectory_, Path.GetFullPath(path))
-            .Replace('\\', '/');
+        var relativePath = Path.GetRelativePath(repositoryDirectory_, Path.GetFullPath(path)).Replace('\\', '/');
         if (
             relativePath == ".."
             || relativePath.StartsWith("../", StringComparison.Ordinal)
             || Path.IsPathRooted(relativePath)
         )
         {
-            throw new InvalidOperationException(
-                "使用project/sourceがリポジトリ外にあります: " + path
-            );
+            throw new InvalidOperationException("使用project/sourceがリポジトリ外にあります: " + path);
         }
 
         return relativePath;

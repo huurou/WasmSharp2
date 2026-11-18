@@ -21,9 +21,7 @@ internal class RunStore_SaveFileTests
             .ThrowsExactly<ArgumentException>();
         await Assert.That(failure!.Message).Contains("run内").And.Contains("相対path");
         await Assert
-            .That(() =>
-                store.SaveFile(Path.Combine(fixture.DirectoryPath, "absolute.txt"), "outside"u8)
-            )
+            .That(() => store.SaveFile(Path.Combine(fixture.DirectoryPath, "absolute.txt"), "outside"u8))
             .ThrowsExactly<ArgumentException>();
     }
 }

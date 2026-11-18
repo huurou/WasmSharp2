@@ -20,15 +20,9 @@ internal class SuiteWorkspace_CreateAsyncTests
             await Assert.That(second.SourceRoot).IsNotEqualTo(first.SourceRoot);
             await Assert.That(second.OutputRoot).IsNotEqualTo(first.OutputRoot);
             await Assert.That(Directory.GetFiles(second.OutputRoot)).IsEmpty();
-            await Assert
-                .That(await first.GitAsync("status", "--porcelain"))
-                .IsEqualTo(string.Empty);
-            await Assert
-                .That(await second.GitAsync("status", "--porcelain"))
-                .IsEqualTo(string.Empty);
-            await Assert
-                .That(await first.GitAsync("show", "HEAD:test/core/success.wast"))
-                .IsEqualTo("(module)\n");
+            await Assert.That(await first.GitAsync("status", "--porcelain")).IsEqualTo(string.Empty);
+            await Assert.That(await second.GitAsync("status", "--porcelain")).IsEqualTo(string.Empty);
+            await Assert.That(await first.GitAsync("show", "HEAD:test/core/success.wast")).IsEqualTo("(module)\n");
         }
     }
 }

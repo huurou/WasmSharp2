@@ -34,14 +34,10 @@ internal partial class WasmModule_ValidateTests
         var module = CreateBulkValidationModule(body);
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => module.Validate())
-            .ThrowsExactly<WasmValidateException>();
+        var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
         using (Assert.Multiple())
         {
-            await Assert
-                .That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal))
-                .IsTrue();
+            await Assert.That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal)).IsTrue();
             if (expectedDetail is not null)
             {
                 await Assert.That(exception.Message).Contains(expectedDetail);
@@ -49,17 +45,10 @@ internal partial class WasmModule_ValidateTests
             await Assert
                 .That(exception.Location)
                 .IsEqualTo(
-                    new(
-                        WasmProcessingStage.Validate,
-                        module.Functions[0].Instructions[instructionIndex].ByteOffset,
-                        0,
-                        10
-                    )
+                    new(WasmProcessingStage.Validate, module.Functions[0].Instructions[instructionIndex].ByteOffset, 0, 10)
                 );
             await Assert.That(module.FunctionCodes.IsEmpty).IsTrue();
-            await Assert
-                .That(() => module.Instantiate(executionContext, []))
-                .ThrowsExactly<InvalidOperationException>();
+            await Assert.That(() => module.Instantiate(executionContext, [])).ThrowsExactly<InvalidOperationException>();
         }
     }
 

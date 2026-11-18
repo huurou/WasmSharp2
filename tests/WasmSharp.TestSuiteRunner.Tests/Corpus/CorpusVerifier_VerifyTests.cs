@@ -53,9 +53,7 @@ internal class CorpusVerifier_VerifyTests
             await Assert.That(diagnostic.Operation).IsEqualTo("verify");
             await Assert.That(diagnostic.Path).IsEqualTo("modules");
             await Assert.That(diagnostic.Message).StartsWith("素材領域を列挙できません: ");
-            await Assert
-                .That(diagnostic.ExceptionType)
-                .IsEqualTo(typeof(UnauthorizedAccessException).FullName);
+            await Assert.That(diagnostic.ExceptionType).IsEqualTo(typeof(UnauthorizedAccessException).FullName);
             await Assert.That(result.Inputs.All(x => x.Issues.IsEmpty && x.ModuleIssues.IsEmpty)).IsTrue();
             await Assert.That(Get(result, CorpusFixture.A).Modules.Count).IsEqualTo(2);
         }
@@ -92,10 +90,7 @@ internal class CorpusVerifier_VerifyTests
         // Arrange
         using var fixture = CorpusFixture.Create();
         File.Delete(fixture.GetPath("modules/a.0.wasm"));
-        await File.WriteAllBytesAsync(
-            fixture.GetPath("modules/a.2.wasm"),
-            CorpusFixture.FirstModule
-        );
+        await File.WriteAllBytesAsync(fixture.GetPath("modules/a.2.wasm"), CorpusFixture.FirstModule);
 
         // Act
         var result = Verify(fixture);
@@ -113,18 +108,14 @@ internal class CorpusVerifier_VerifyTests
             await Assert.That(a.ModuleIssues[0].Message).IsEqualTo("素材がありません。");
             await Assert.That(a.ModuleIssues[2].Path).IsEqualTo("modules/a.2.wasm");
             await Assert.That(a.ModuleIssues[2].Message).Contains("SHA-256");
-            await Assert
-                .That(Get(result, CorpusFixture.B).Modules.Keys.SequenceEqual([0]))
-                .IsTrue();
+            await Assert.That(Get(result, CorpusFixture.B).Modules.Keys.SequenceEqual([0])).IsTrue();
         }
     }
 
     [Test]
     [Arguments(true)]
     [Arguments(false)]
-    public async Task Watが欠落または改変されている_入力異常として残しcommandの素材別の理由にしない(
-        bool delete
-    )
+    public async Task Watが欠落または改変されている_入力異常として残しcommandの素材別の理由にしない(bool delete)
     {
         // Arrange
         using var fixture = CorpusFixture.Create();
@@ -178,10 +169,7 @@ internal class CorpusVerifier_VerifyTests
     {
         // Arrange
         using var fixture = CorpusFixture.Create();
-        await File.WriteAllBytesAsync(
-            fixture.GetPath("modules/extra.wasm"),
-            CorpusFixture.FirstModule
-        );
+        await File.WriteAllBytesAsync(fixture.GetPath("modules/extra.wasm"), CorpusFixture.FirstModule);
         Directory.CreateDirectory(fixture.GetPath("modules/simd/nested"));
         await File.WriteAllTextAsync(fixture.GetPath("modules/simd/nested/extra.json"), "{}");
 
@@ -210,27 +198,17 @@ internal class CorpusVerifier_VerifyTests
     [Arguments("/modules/a.0.wasm")]
     [Arguments("C:/modules/a.0.wasm")]
     [Arguments("other/a.0.wasm")]
-    public async Task Manifestの素材pathが素材領域の相対pathではない_ファイルを利用せず理由を残す(
-        string path
-    )
+    public async Task Manifestの素材pathが素材領域の相対pathではない_ファイルを利用せず理由を残す(string path)
     {
         // Arrange
         using var fixture = CorpusFixture.Create();
-        await File.WriteAllBytesAsync(
-            Path.Combine(fixture.Root, "a.0.wasm"),
-            CorpusFixture.FirstModule
-        );
+        await File.WriteAllBytesAsync(Path.Combine(fixture.Root, "a.0.wasm"), CorpusFixture.FirstModule);
         fixture.UpdateInput(
             CorpusFixture.A,
             x =>
                 x with
                 {
-                    Artifacts =
-                    [
-                        .. x.Artifacts.Select(y =>
-                            y.Path == "modules/a.0.wasm" ? y with { Path = path } : y
-                        ),
-                    ],
+                    Artifacts = [.. x.Artifacts.Select(y => y.Path == "modules/a.0.wasm" ? y with { Path = path } : y)],
                 }
         );
 
@@ -243,9 +221,7 @@ internal class CorpusVerifier_VerifyTests
         {
             await Assert.That(a.Modules.ContainsKey(0)).IsFalse();
             await Assert.That(a.ModuleIssues.ContainsKey(0)).IsTrue();
-            await Assert
-                .That(a.Issues.Any(x => x.Path == path && x.Message.Contains("相対path")))
-                .IsTrue();
+            await Assert.That(a.Issues.Any(x => x.Path == path && x.Message.Contains("相対path"))).IsTrue();
             await Assert.That(a.Modules.ContainsKey(2)).IsTrue();
         }
     }
@@ -256,21 +232,12 @@ internal class CorpusVerifier_VerifyTests
     [Arguments("..\\outside.wasm", "..\\outside.wasm")]
     [Arguments("b.0.wasm", CorpusFixture.B)]
     [Arguments("unrecorded.wasm", "manifestに記録されていない")]
-    public async Task JSONの参照名が入力の素材を指さない_利用commandに理由を残す(
-        string filename,
-        string expectedReason
-    )
+    public async Task JSONの参照名が入力の素材を指さない_利用commandに理由を残す(string filename, string expectedReason)
     {
         // Arrange
         using var fixture = CorpusFixture.Create();
-        await File.WriteAllBytesAsync(
-            Path.Combine(fixture.Root, "outside.wasm"),
-            CorpusFixture.FirstModule
-        );
-        await File.WriteAllBytesAsync(
-            fixture.GetPath("modules/b.0.wasm"),
-            CorpusFixture.FirstModule
-        );
+        await File.WriteAllBytesAsync(Path.Combine(fixture.Root, "outside.wasm"), CorpusFixture.FirstModule);
+        await File.WriteAllBytesAsync(fixture.GetPath("modules/b.0.wasm"), CorpusFixture.FirstModule);
         fixture.UpdateInput(
             CorpusFixture.B,
             x =>
@@ -329,12 +296,7 @@ internal class CorpusVerifier_VerifyTests
                     Artifacts =
                     [
                         .. x.Artifacts.Select(y =>
-                            y.Path == "modules/a.0.wasm"
-                                ? y with
-                                {
-                                    InputPath = CorpusFixture.B,
-                                }
-                                : y
+                            y.Path == "modules/a.0.wasm" ? y with { InputPath = CorpusFixture.B } : y
                         ),
                     ],
                 }
@@ -363,11 +325,7 @@ internal class CorpusVerifier_VerifyTests
             .Artifacts.Single(x => x.Path == "modules/a.0.wasm");
         fixture.UpdateInput(
             CorpusFixture.B,
-            x =>
-                x with
-                {
-                    Artifacts = [.. x.Artifacts, shared with { InputPath = CorpusFixture.B }],
-                }
+            x => x with { Artifacts = [.. x.Artifacts, shared with { InputPath = CorpusFixture.B }] }
         );
 
         // Act
@@ -414,12 +372,7 @@ internal class CorpusVerifier_VerifyTests
             await Assert.That(a.Modules.ContainsKey(2)).IsTrue();
             await Assert.That(b.Document).IsNull();
             await Assert
-                .That(
-                    b.Issues.Any(x =>
-                        x.Path == "modules/simd/b.json" &&
-                        x.Message.Contains("リンクmodules/simdを")
-                    )
-                )
+                .That(b.Issues.Any(x => x.Path == "modules/simd/b.json" && x.Message.Contains("リンクmodules/simdを")))
                 .IsTrue();
             await Assert.That(result.Diagnostics).IsEmpty();
         }
@@ -441,9 +394,7 @@ internal class CorpusVerifier_VerifyTests
         {
             await Assert.That(a.Issues.Length).IsEqualTo(1);
             await Assert.That(a.Issues[0].Path).IsEqualTo("modules/a.9.wasm");
-            await Assert
-                .That(a.Issues[0].Message)
-                .IsEqualTo("どのcommandからも参照されていない素材です。");
+            await Assert.That(a.Issues[0].Message).IsEqualTo("どのcommandからも参照されていない素材です。");
             await Assert.That(a.Modules.Keys.Order().SequenceEqual([0, 2])).IsTrue();
         }
     }
@@ -455,9 +406,7 @@ internal class CorpusVerifier_VerifyTests
     [Arguments("commands")]
     [Arguments("references")]
     [Arguments("missing")]
-    public async Task Manifestの列挙記録の1項目が生成JSONと一致しない_documentを返さない(
-        string field
-    )
+    public async Task Manifestの列挙記録の1項目が生成JSONと一致しない_documentを返さない(string field)
     {
         // Arrange
         using var fixture = CorpusFixture.Create();
@@ -474,23 +423,11 @@ internal class CorpusVerifier_VerifyTests
                                 {
                                     Script = field switch
                                     {
-                                        "source_filename" => script with
-                                        {
-                                            SourceFilename = "other.wast",
-                                        },
-                                        "enumeration_complete" => script with
-                                        {
-                                            EnumerationComplete = false,
-                                        },
+                                        "source_filename" => script with { SourceFilename = "other.wast" },
+                                        "enumeration_complete" => script with { EnumerationComplete = false },
                                         "command_count" => script with { CommandCount = 3 },
-                                        "commands" => script with
-                                        {
-                                            Commands = [.. script.Commands.Take(3)],
-                                        },
-                                        "references" => script with
-                                        {
-                                            References = [.. script.References.Skip(1)],
-                                        },
+                                        "commands" => script with { Commands = [.. script.Commands.Take(3)] },
+                                        "references" => script with { References = [.. script.References.Skip(1)] },
                                         "missing" => null,
                                         _ => throw new ArgumentOutOfRangeException(nameof(field)),
                                     },
@@ -530,9 +467,7 @@ internal class CorpusVerifier_VerifyTests
                 {
                     Artifacts =
                     [
-                        .. x.Artifacts.Select(y =>
-                            y.Kind == ArtifactKind.Json ? y with { Path = "modules/other.json" } : y
-                        ),
+                        .. x.Artifacts.Select(y => y.Kind == ArtifactKind.Json ? y with { Path = "modules/other.json" } : y),
                     ],
                 }
         );
@@ -546,11 +481,7 @@ internal class CorpusVerifier_VerifyTests
         {
             await Assert.That(a.Document).IsNull();
             await Assert
-                .That(
-                    a.Issues.Any(x =>
-                        x.Path == "modules/other.json" && x.Message.Contains("modules/a.json")
-                    )
-                )
+                .That(a.Issues.Any(x => x.Path == "modules/other.json" && x.Message.Contains("modules/a.json")))
                 .IsTrue();
         }
     }
@@ -564,11 +495,7 @@ internal class CorpusVerifier_VerifyTests
             CorpusFixture.A,
             "modules/a.json",
             Encoding.UTF8.GetBytes(
-                CorpusFixture.A_JSON.Replace(
-                    "\"a.wast\"",
-                    "\"/sources/a.wast\"",
-                    StringComparison.Ordinal
-                )
+                CorpusFixture.A_JSON.Replace("\"a.wast\"", "\"/sources/a.wast\"", StringComparison.Ordinal)
             )
         );
 
@@ -594,9 +521,7 @@ internal class CorpusVerifier_VerifyTests
         fixture.WriteArtifact(
             CorpusFixture.A,
             "modules/a.json",
-            Encoding.UTF8.GetBytes(
-                CorpusFixture.A_JSON.Replace("\"a.0.wasm\"", "\"a.json\"", StringComparison.Ordinal)
-            )
+            Encoding.UTF8.GetBytes(CorpusFixture.A_JSON.Replace("\"a.0.wasm\"", "\"a.json\"", StringComparison.Ordinal))
         );
         fixture.UpdateInput(
             CorpusFixture.A,
@@ -605,9 +530,7 @@ internal class CorpusVerifier_VerifyTests
                 {
                     Artifacts =
                     [
-                        .. x.Artifacts.Select(y =>
-                            y.Path == "modules/a.1.wat" ? y with { Kind = ArtifactKind.Wasm } : y
-                        ),
+                        .. x.Artifacts.Select(y => y.Path == "modules/a.1.wat" ? y with { Kind = ArtifactKind.Wasm } : y),
                     ],
                 }
         );
@@ -625,9 +548,7 @@ internal class CorpusVerifier_VerifyTests
             await Assert.That(a.ModuleIssues[0].Message).Contains("json");
             await Assert.That(a.ModuleIssues.ContainsKey(1)).IsFalse();
             await Assert.That(a.Issues.Any(x => x.Path == "modules/a.1.wat")).IsTrue();
-            await Assert
-                .That(a.Issues.Single(x => x.Path == "modules/a.1.wat").Message)
-                .Contains("wat");
+            await Assert.That(a.Issues.Single(x => x.Path == "modules/a.1.wat").Message).Contains("wat");
             await Assert.That(a.Modules.ContainsKey(2)).IsTrue();
         }
     }
@@ -646,25 +567,14 @@ internal class CorpusVerifier_VerifyTests
                     Artifacts =
                     [
                         .. x.Artifacts,
-                        new(
-                            "modules/a.3.wat",
-                            ArtifactKind.Wasm,
-                            CorpusFixture.Sha256(CorpusFixture.Text),
-                            CorpusFixture.A
-                        ),
+                        new("modules/a.3.wat", ArtifactKind.Wasm, CorpusFixture.Sha256(CorpusFixture.Text), CorpusFixture.A),
                     ],
                 }
         );
         fixture.WriteArtifact(
             CorpusFixture.A,
             "modules/a.json",
-            Encoding.UTF8.GetBytes(
-                CorpusFixture.A_JSON.Replace(
-                    "\"a.0.wasm\"",
-                    "\"a.3.wat\"",
-                    StringComparison.Ordinal
-                )
-            )
+            Encoding.UTF8.GetBytes(CorpusFixture.A_JSON.Replace("\"a.0.wasm\"", "\"a.3.wat\"", StringComparison.Ordinal))
         );
 
         // Act
@@ -726,12 +636,7 @@ internal class CorpusVerifier_VerifyTests
         using var fixture = CorpusFixture.Create();
         fixture.UpdateInput(
             CorpusFixture.A,
-            x =>
-                x with
-                {
-                    Status = status,
-                    ExitCode = status == ConversionStatus.RunnerError ? 1 : null,
-                }
+            x => x with { Status = status, ExitCode = status == ConversionStatus.RunnerError ? 1 : null }
         );
 
         // Act
@@ -799,9 +704,7 @@ internal class CorpusVerifier_VerifyTests
             await Assert.That(a.Document).IsNotNull();
             await Assert.That(b.Issues.Length).IsEqualTo(1);
             await Assert.That(b.Issues[0].Path).IsEqualTo(CorpusFixture.B);
-            await Assert
-                .That(result.Diagnostics.Select(x => x.Path).SequenceEqual(["simd/c.wast"]))
-                .IsTrue();
+            await Assert.That(result.Diagnostics.Select(x => x.Path).SequenceEqual(["simd/c.wast"])).IsTrue();
         }
     }
 
@@ -810,11 +713,7 @@ internal class CorpusVerifier_VerifyTests
     {
         // Arrange
         using var fixture = CorpusFixture.Create();
-        fixture.WriteArtifact(
-            CorpusFixture.A,
-            "modules/extra.json",
-            Encoding.UTF8.GetBytes(CorpusFixture.A_JSON)
-        );
+        fixture.WriteArtifact(CorpusFixture.A, "modules/extra.json", Encoding.UTF8.GetBytes(CorpusFixture.A_JSON));
 
         // Act
         var result = Verify(fixture);
@@ -827,13 +726,7 @@ internal class CorpusVerifier_VerifyTests
             await Assert.That(input.Modules).IsEmpty();
             await Assert
                 .That(input.Issues)
-                .Contains(
-                    new CorpusDiagnostic(
-                        "verify",
-                        "JSONの生成物が2件記録されています。",
-                        CorpusFixture.A
-                    )
-                );
+                .Contains(new CorpusDiagnostic("verify", "JSONの生成物が2件記録されています。", CorpusFixture.A));
         }
     }
 
@@ -859,13 +752,7 @@ internal class CorpusVerifier_VerifyTests
             await Assert.That(input.Document!.EnumerationComplete).IsTrue();
             await Assert
                 .That(input.Issues)
-                .Contains(
-                    new CorpusDiagnostic(
-                        "enumerate",
-                        "固定形式にないextraがあります。",
-                        "modules/a.json"
-                    )
-                );
+                .Contains(new CorpusDiagnostic("enumerate", "固定形式にないextraがあります。", "modules/a.json"));
         }
     }
 
@@ -879,9 +766,7 @@ internal class CorpusVerifier_VerifyTests
         fixture.WriteArtifact(
             CorpusFixture.A,
             "modules/a.json",
-            Encoding.UTF8.GetBytes(
-                CorpusFixture.A_JSON.Replace("a.2.wasm", "a.0.wasm", StringComparison.Ordinal)
-            )
+            Encoding.UTF8.GetBytes(CorpusFixture.A_JSON.Replace("a.2.wasm", "a.0.wasm", StringComparison.Ordinal))
         );
 
         // Act
@@ -896,9 +781,7 @@ internal class CorpusVerifier_VerifyTests
             foreach (var issue in input.ModuleIssues.Values)
             {
                 await Assert.That(issue.Path).IsEqualTo("modules/a.0.wasm");
-                await Assert
-                    .That(issue.Message)
-                    .IsEqualTo("2件のcommandから参照されており、commandと1対1に対応しません。");
+                await Assert.That(issue.Message).IsEqualTo("2件のcommandから参照されており、commandと1対1に対応しません。");
             }
         }
     }
@@ -908,12 +791,7 @@ internal class CorpusVerifier_VerifyTests
     {
         // Arrange
         using var fixture = CorpusFixture.Create();
-        using var stream = File.Open(
-            fixture.GetPath("modules/a.0.wasm"),
-            FileMode.Open,
-            FileAccess.Read,
-            FileShare.None
-        );
+        using var stream = File.Open(fixture.GetPath("modules/a.0.wasm"), FileMode.Open, FileAccess.Read, FileShare.None);
 
         // Act
         var result = Verify(fixture);
@@ -924,9 +802,7 @@ internal class CorpusVerifier_VerifyTests
         {
             await Assert.That(input.Modules.ContainsKey(0)).IsFalse();
             await Assert.That(input.ModuleIssues[0].Path).IsEqualTo("modules/a.0.wasm");
-            await Assert
-                .That(input.ModuleIssues[0].ExceptionType)
-                .IsEqualTo(typeof(IOException).FullName);
+            await Assert.That(input.ModuleIssues[0].ExceptionType).IsEqualTo(typeof(IOException).FullName);
             await Assert.That(input.ModuleIssues[0].Message).StartsWith("素材を読み取れません: ");
         }
     }
@@ -949,20 +825,10 @@ internal class CorpusVerifier_VerifyTests
         // Assert
         await Assert
             .That(result.Diagnostics)
-            .IsEquivalentTo(
-                [
-                    new CorpusDiagnostic(
-                        "verify",
-                        "manifestに記録されていないリンクがあります。",
-                        "modules/extra-directory"
-                    ),
-                    new CorpusDiagnostic(
-                        "verify",
-                        "manifestに記録されていないリンクがあります。",
-                        "modules/extra.wasm"
-                    ),
-                ]
-            );
+            .IsEquivalentTo([
+                new CorpusDiagnostic("verify", "manifestに記録されていないリンクがあります。", "modules/extra-directory"),
+                new CorpusDiagnostic("verify", "manifestに記録されていないリンクがあります。", "modules/extra.wasm"),
+            ]);
     }
 
     [Test]
@@ -986,12 +852,7 @@ internal class CorpusVerifier_VerifyTests
 
     private static CorpusVerification Verify(CorpusFixture fixture)
     {
-        return CorpusVerifier.Verify(
-            fixture.Manifest,
-            fixture.ManifestPath,
-            VerificationMode.Execution,
-            null
-        );
+        return CorpusVerifier.Verify(fixture.Manifest, fixture.ManifestPath, VerificationMode.Execution, null);
     }
 
     private static InputVerification Get(CorpusVerification result, string inputPath)

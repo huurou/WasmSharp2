@@ -69,12 +69,7 @@ public partial class ScriptExecutor_ExecuteTests
                 """;
 
         // Act
-        var results = ScriptExecutionFixture.Execute(
-            commands,
-            state,
-            (0, ScriptExecutionFixture.Empty),
-            (1, [1])
-        );
+        var results = ScriptExecutionFixture.Execute(commands, state, (0, ScriptExecutionFixture.Empty), (1, [1]));
 
         // Assert
         using (Assert.Multiple())
@@ -99,17 +94,7 @@ public partial class ScriptExecutor_ExecuteTests
         state.Register(host);
         var start = ScriptExecutionFixture.Binary(
             (1, [1, 0x60, 0, 0]),
-            (
-                2,
-                [
-                    1,
-                    .. ScriptExecutionFixture.Name("shared"),
-                    .. ScriptExecutionFixture.Name("g"),
-                    3,
-                    0x7F,
-                    1,
-                ]
-            ),
+            (2, [1, .. ScriptExecutionFixture.Name("shared"), .. ScriptExecutionFixture.Name("g"), 3, 0x7F, 1]),
             (3, [1, 0]),
             (8, [0]),
             (10, [1, 7, 0, 0x41, 7, 0x24, 0, 0x00, 0x0B])
@@ -122,11 +107,7 @@ public partial class ScriptExecutor_ExecuteTests
                 {"type":"assert_malformed","line":1,"filename":"a.2.wasm","module_type":"binary","text":""},
                 {"type":"assert_invalid","line":1,"filename":"a.3.wasm","module_type":"binary","text":""}
                 """;
-        var invalid = ScriptExecutionFixture.Binary(
-            (1, [1, 0x60, 0, 1, 0x7F]),
-            (3, [1, 0]),
-            (10, [1, 2, 0, 0x0B])
-        );
+        var invalid = ScriptExecutionFixture.Binary((1, [1, 0x60, 0, 1, 0x7F]), (3, [1, 0]), (10, [1, 2, 0, 0x0B]));
 
         // Act
         var results = ScriptExecutionFixture.Execute(
@@ -143,9 +124,7 @@ public partial class ScriptExecutor_ExecuteTests
         {
             await Assert.That(results.All(x => x.Outcome == CaseOutcome.Passed)).IsTrue();
             await Assert.That(global.Value.AsI32()).IsEqualTo(7);
-            await Assert
-                .That(ReferenceEquals(state.LastModule, state.ResolveModule("$A")))
-                .IsTrue();
+            await Assert.That(ReferenceEquals(state.LastModule, state.ResolveModule("$A"))).IsTrue();
             await Assert.That(state.LastModule!.Cause).IsNull();
             await Assert.That(results[1].LastStage).IsEqualTo(CaseStage.Instantiate);
             await Assert.That(results[1].Diagnostics[0].Operation).IsEqualTo("instantiate");
@@ -159,14 +138,14 @@ public partial class ScriptExecutor_ExecuteTests
     {
         // Arrange
         var state = new ScriptState("a.wast");
-        var input = new WasmSharp.TestSuiteRunner.Corpus.InputVerification(
+        var input = new TestSuiteRunner.Corpus.InputVerification(
             new("a.wast", new string('a', 64)),
             null,
             [],
             [],
             System.Collections.Immutable.ImmutableDictionary<
                 int,
-                WasmSharp.TestSuiteRunner.Corpus.CorpusDiagnostic
+                TestSuiteRunner.Corpus.CorpusDiagnostic
             >.Empty.Add(0, new("verify", "hash不一致", "a.0.wasm"))
         );
         var script = new ScriptReadResult(
@@ -192,9 +171,7 @@ public partial class ScriptExecutor_ExecuteTests
     [Test]
     [Arguments("assert_malformed")]
     [Arguments("assert_invalid")]
-    public async Task 否定moduleの対象段階が正常終了する_不一致として止まりstartを実行しない(
-        string type
-    )
+    public async Task 否定moduleの対象段階が正常終了する_不一致として止まりstartを実行しない(string type)
     {
         // Arrange
         var stage = type == "assert_malformed" ? CaseStage.Decode : CaseStage.Validate;
@@ -205,23 +182,12 @@ public partial class ScriptExecutor_ExecuteTests
         state.Register(host);
         var binary = ScriptExecutionFixture.Binary(
             (1, [1, 0x60, 0, 0]),
-            (
-                2,
-                [
-                    1,
-                    .. ScriptExecutionFixture.Name("shared"),
-                    .. ScriptExecutionFixture.Name("g"),
-                    3,
-                    0x7F,
-                    1,
-                ]
-            ),
+            (2, [1, .. ScriptExecutionFixture.Name("shared"), .. ScriptExecutionFixture.Name("g"), 3, 0x7F, 1]),
             (3, [1, 0]),
             (8, [0]),
             (10, [1, 6, 0, 0x41, 7, 0x24, 0, 0x0B])
         );
-        var commands =
-            $$"""{"type":"{{type}}","line":1,"filename":"a.0.wasm","module_type":"binary","text":"expected"}""";
+        var commands = $$"""{"type":"{{type}}","line":1,"filename":"a.0.wasm","module_type":"binary","text":"expected"}""";
 
         // Act
         var results = ScriptExecutionFixture.Execute(commands, state, (0, binary));
@@ -266,9 +232,7 @@ public partial class ScriptExecutor_ExecuteTests
             using (Assert.Multiple())
             {
                 await Assert.That(ReferenceEquals(a.GetFunction("f"), b.GetFunction("f"))).IsTrue();
-                await Assert
-                    .That(ReferenceEquals(a.GetGlobalResource("g"), b.GetGlobalResource("g")))
-                    .IsTrue();
+                await Assert.That(ReferenceEquals(a.GetGlobalResource("g"), b.GetGlobalResource("g"))).IsTrue();
                 await Assert.That(ReferenceEquals(a.GetMemory("m"), b.GetMemory("m"))).IsTrue();
                 await Assert.That(ReferenceEquals(a.GetTable("t"), b.GetTable("t"))).IsTrue();
                 await Assert.That(a.ExecutionOptions.MaxCallDepth).IsEqualTo(1024);
@@ -304,13 +268,9 @@ public partial class ScriptExecutor_ExecuteTests
             await Assert.That(results.Length).IsEqualTo(5);
             await Assert.That(results[2].Outcome).IsEqualTo(CaseOutcome.Blocked);
             await Assert.That(results[2].LastStage).IsEqualTo(CaseStage.InspectImports);
-            await Assert
-                .That(results[2].Cause!.Direct)
-                .IsEquivalentTo([new CaseId("a.wast", 0), new("a.wast", 1)]);
+            await Assert.That(results[2].Cause!.Direct).IsEquivalentTo([new CaseId("a.wast", 0), new("a.wast", 1)]);
             await Assert.That(results[4].Cause!.Direct).IsEquivalentTo([new CaseId("a.wast", 3)]);
-            await Assert
-                .That(results[4].Cause!.Origins)
-                .IsEquivalentTo([new CaseId("a.wast", 0), new("a.wast", 1)]);
+            await Assert.That(results[4].Cause!.Origins).IsEquivalentTo([new CaseId("a.wast", 0), new("a.wast", 1)]);
         }
     }
 
@@ -326,16 +286,7 @@ public partial class ScriptExecutor_ExecuteTests
             + ScriptExecutionFixture.Module(2);
         var invalid = ScriptExecutionFixture.Binary(
             (1, [1, 0x60, 0, 1, 0x7F]),
-            (
-                2,
-                [
-                    1,
-                    .. ScriptExecutionFixture.Name("one"),
-                    .. ScriptExecutionFixture.Name("f"),
-                    0,
-                    0,
-                ]
-            ),
+            (2, [1, .. ScriptExecutionFixture.Name("one"), .. ScriptExecutionFixture.Name("f"), 0, 0]),
             (3, [1, 0]),
             (10, [1, 2, 0, 0x0B])
         );
@@ -366,9 +317,7 @@ public partial class ScriptExecutor_ExecuteTests
     {
         // Arrange
         var state = new ScriptState("a.wast");
-        var outcome = type is "assert_malformed" or "assert_invalid"
-            ? CaseOutcome.Passed
-            : CaseOutcome.Blocked;
+        var outcome = type is "assert_malformed" or "assert_invalid" ? CaseOutcome.Passed : CaseOutcome.Blocked;
         var stage = type switch
         {
             "assert_malformed" => CaseStage.Decode,
@@ -377,16 +326,7 @@ public partial class ScriptExecutor_ExecuteTests
         };
         var invalid = ScriptExecutionFixture.Binary(
             (1, [1, 0x60, 0, 1, 0x7F]),
-            (
-                2,
-                [
-                    1,
-                    .. ScriptExecutionFixture.Name("failed"),
-                    .. ScriptExecutionFixture.Name("f"),
-                    0,
-                    0,
-                ]
-            ),
+            (2, [1, .. ScriptExecutionFixture.Name("failed"), .. ScriptExecutionFixture.Name("f"), 0, 0]),
             (3, [1, 0]),
             (10, [1, 2, 0, 0x0B])
         );
@@ -406,12 +346,7 @@ public partial class ScriptExecutor_ExecuteTests
             + """{"type":"register","line":1,"name":"$A","as":"after"}""";
 
         // Act
-        var results = ScriptExecutionFixture.Execute(
-            commands,
-            state,
-            (0, ScriptExecutionFixture.Empty),
-            (2, binary)
-        );
+        var results = ScriptExecutionFixture.Execute(commands, state, (0, ScriptExecutionFixture.Empty), (2, binary));
 
         // Assert
         using (Assert.Multiple())
@@ -423,12 +358,8 @@ public partial class ScriptExecutor_ExecuteTests
             await Assert.That(results[3].Outcome).IsEqualTo(CaseOutcome.Passed);
             if (outcome == CaseOutcome.Blocked)
             {
-                await Assert
-                    .That(results[2].Cause!.Direct)
-                    .IsEquivalentTo([new CaseId("a.wast", 1)]);
-                await Assert
-                    .That(results[2].Cause!.Origins)
-                    .IsEquivalentTo([new CaseId("a.wast", 1)]);
+                await Assert.That(results[2].Cause!.Direct).IsEquivalentTo([new CaseId("a.wast", 1)]);
+                await Assert.That(results[2].Cause!.Origins).IsEquivalentTo([new CaseId("a.wast", 1)]);
             }
             else
             {

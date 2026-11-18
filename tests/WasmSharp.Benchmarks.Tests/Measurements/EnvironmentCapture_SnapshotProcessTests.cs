@@ -61,16 +61,14 @@ internal class EnvironmentCapture_SnapshotProcessTests
         ];
         var expected = names.Select((x, index) => new NamedSetting(x, "value-" + index)).ToList();
         var variables = expected
-            .Concat(
-                [
-                    new("DOTNET_PRIVATE_API_TOKEN", "dotnet secret"),
-                    new("COMPlus_PRIVATE_API_TOKEN", "complus secret"),
-                    new("PRIVATE_API_TOKEN", "unprefixed secret"),
-                    new("DOTNET_", "empty setting"),
-                    new("COMPlus_", "empty setting"),
-                    new("OTHER_GCServer", "unrelated prefix"),
-                ]
-            )
+            .Concat([
+                new("DOTNET_PRIVATE_API_TOKEN", "dotnet secret"),
+                new("COMPlus_PRIVATE_API_TOKEN", "complus secret"),
+                new("PRIVATE_API_TOKEN", "unprefixed secret"),
+                new("DOTNET_", "empty setting"),
+                new("COMPlus_", "empty setting"),
+                new("OTHER_GCServer", "unrelated prefix"),
+            ])
             .ToList();
         var process = new ProcessConfiguration("Diagnostic", "job", 2, [], [], variables);
 

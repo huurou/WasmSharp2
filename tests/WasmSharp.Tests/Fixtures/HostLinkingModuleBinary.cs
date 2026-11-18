@@ -13,10 +13,7 @@ internal static class HostLinkingModuleBinary
 
     public static byte[] Types(params (byte[] Parameters, byte[] Results)[] types)
     {
-        return VectorSection(
-            1,
-            types.Select(x => (byte[])[0x60, .. TypeVector(x.Parameters), .. TypeVector(x.Results)])
-        );
+        return VectorSection(1, types.Select(x => (byte[])[0x60, .. TypeVector(x.Parameters), .. TypeVector(x.Results)]));
     }
 
     public static byte[] Functions(params uint[] typeIndices)
@@ -34,22 +31,14 @@ internal static class HostLinkingModuleBinary
         return [.. Unsigned((uint)types.Length), .. types];
     }
 
-    public static byte[] Imports(
-        params (string Module, string Name, byte Kind, byte[] Type)[] imports
-    )
+    public static byte[] Imports(params (string Module, string Name, byte Kind, byte[] Type)[] imports)
     {
-        return VectorSection(
-            2,
-            imports.Select(x => (byte[])[.. Name(x.Module), .. Name(x.Name), x.Kind, .. x.Type])
-        );
+        return VectorSection(2, imports.Select(x => (byte[])[.. Name(x.Module), .. Name(x.Name), x.Kind, .. x.Type]));
     }
 
     public static byte[] Tables(params (byte ElementType, uint Minimum, uint? Maximum)[] tables)
     {
-        return VectorSection(
-            4,
-            tables.Select(x => (byte[])[x.ElementType, .. Limits(x.Minimum, x.Maximum)])
-        );
+        return VectorSection(4, tables.Select(x => (byte[])[x.ElementType, .. Limits(x.Minimum, x.Maximum)]));
     }
 
     public static byte[] Memories(params (uint Minimum, uint? Maximum)[] memories)
@@ -57,15 +46,11 @@ internal static class HostLinkingModuleBinary
         return VectorSection(5, memories.Select(x => Limits(x.Minimum, x.Maximum)));
     }
 
-    public static byte[] Globals(
-        params (byte ValueType, bool IsMutable, byte[] Initializer)[] globals
-    )
+    public static byte[] Globals(params (byte ValueType, bool IsMutable, byte[] Initializer)[] globals)
     {
         return VectorSection(
             6,
-            globals.Select(x =>
-                (byte[])[x.ValueType, x.IsMutable ? (byte)1 : (byte)0, .. x.Initializer]
-            )
+            globals.Select(x => (byte[])[x.ValueType, x.IsMutable ? (byte)1 : (byte)0, .. x.Initializer])
         );
     }
 
@@ -76,22 +61,15 @@ internal static class HostLinkingModuleBinary
 
     public static byte[] Limits(uint minimum, uint? maximum = null)
     {
-        return maximum is { } max
-            ? [0x01, .. Unsigned(minimum), .. Unsigned(max)]
-            : [0x00, .. Unsigned(minimum)];
+        return maximum is { } max ? [0x01, .. Unsigned(minimum), .. Unsigned(max)] : [0x00, .. Unsigned(minimum)];
     }
 
     public static byte[] Exports(params (string Name, byte Kind, uint Index)[] exports)
     {
-        return VectorSection(
-            7,
-            exports.Select(x => (byte[])[.. Name(x.Name), x.Kind, .. Unsigned(x.Index)])
-        );
+        return VectorSection(7, exports.Select(x => (byte[])[.. Name(x.Name), x.Kind, .. Unsigned(x.Index)]));
     }
 
-    public static byte[] Code(
-        params ((uint Count, byte Kind)[] Locals, byte[] Instructions)[] functions
-    )
+    public static byte[] Code(params ((uint Count, byte Kind)[] Locals, byte[] Instructions)[] functions)
     {
         return VectorSection(
             10,

@@ -8,9 +8,6 @@ end_of_line = crlf
 [*.{bash,fish,ksh,sh,zsh}]
 end_of_line = lf
 
-[.husky/pre-commit]
-end_of_line = lf
-
 # C# ファイル
 [*.cs]
 
@@ -38,7 +35,7 @@ dotnet_search_reference_assemblies = true
 
 # using の整理
 dotnet_separate_import_directive_groups = false
-dotnet_sort_system_directives_first = false
+dotnet_sort_system_directives_first = true
 file_header_template = unset
 
 # this. と Me. の設定
@@ -213,6 +210,7 @@ csharp_space_between_parentheses = false
 csharp_space_between_square_brackets = false
 
 # 折り返しの設定
+max_line_length = 125
 csharp_preserve_single_line_blocks = true
 csharp_preserve_single_line_statements = true
 
@@ -220,13 +218,18 @@ csharp_preserve_single_line_statements = true
 
 # 名前付けルール
 
-dotnet_naming_rule.private_field_should_be_suf_.severity = silent
-dotnet_naming_rule.private_field_should_be_suf_.symbols = private_field
-dotnet_naming_rule.private_field_should_be_suf_.style = suf_
+dotnet_naming_rule.private_field_should_be_begins_with_underscore.severity = suggestion
+dotnet_naming_rule.private_field_should_be_begins_with_underscore.symbols = private_field
+dotnet_naming_rule.private_field_should_be_begins_with_underscore.style = begins_with_underscore
 
-dotnet_naming_rule.const_should_be_upper.severity = suggestion
-dotnet_naming_rule.const_should_be_upper.symbols = const
-dotnet_naming_rule.const_should_be_upper.style = upper
+dotnet_naming_rule.private_static_field_should_be_begins_with_double_underscore.severity = suggestion
+dotnet_naming_rule.private_static_field_should_be_begins_with_double_underscore.symbols = private_static_field
+dotnet_naming_rule.private_static_field_should_be_begins_with_double_underscore.style = begins_with_double_underscore
+
+# constは暗黙的にstaticだが、private static fieldの規則よりこの規則が優先される
+dotnet_naming_rule.const_should_be_pascal_case.severity = suggestion
+dotnet_naming_rule.const_should_be_pascal_case.symbols = const
+dotnet_naming_rule.const_should_be_pascal_case.style = pascal_case
 
 dotnet_naming_rule.interface_should_be_begins_with_i.severity = suggestion
 dotnet_naming_rule.interface_should_be_begins_with_i.symbols = interface
@@ -244,19 +247,23 @@ dotnet_naming_rule.non_field_members_should_be_pascal_case.style = pascal_case
 
 dotnet_naming_symbols.interface.applicable_kinds = interface
 dotnet_naming_symbols.interface.applicable_accessibilities = public, internal, private, protected, protected_internal, private_protected
-dotnet_naming_symbols.interface.required_modifiers = 
+dotnet_naming_symbols.interface.required_modifiers =
 
 dotnet_naming_symbols.types.applicable_kinds = class, struct, interface, enum
 dotnet_naming_symbols.types.applicable_accessibilities = public, internal, private, protected, protected_internal, private_protected
-dotnet_naming_symbols.types.required_modifiers = 
+dotnet_naming_symbols.types.required_modifiers =
 
 dotnet_naming_symbols.non_field_members.applicable_kinds = property, event, method
 dotnet_naming_symbols.non_field_members.applicable_accessibilities = public, internal, private, protected, protected_internal, private_protected
-dotnet_naming_symbols.non_field_members.required_modifiers = 
+dotnet_naming_symbols.non_field_members.required_modifiers =
 
 dotnet_naming_symbols.private_field.applicable_kinds = field
 dotnet_naming_symbols.private_field.applicable_accessibilities = private
-dotnet_naming_symbols.private_field.required_modifiers = 
+dotnet_naming_symbols.private_field.required_modifiers =
+
+dotnet_naming_symbols.private_static_field.applicable_kinds = field
+dotnet_naming_symbols.private_static_field.applicable_accessibilities = private
+dotnet_naming_symbols.private_static_field.required_modifiers = static
 
 dotnet_naming_symbols.const.applicable_kinds = *
 dotnet_naming_symbols.const.applicable_accessibilities = *
@@ -264,25 +271,34 @@ dotnet_naming_symbols.const.required_modifiers = const
 
 # 命名スタイル
 
-dotnet_naming_style.pascal_case.required_prefix = 
-dotnet_naming_style.pascal_case.required_suffix = 
-dotnet_naming_style.pascal_case.word_separator = 
+dotnet_naming_style.pascal_case.required_prefix =
+dotnet_naming_style.pascal_case.required_suffix =
+dotnet_naming_style.pascal_case.word_separator =
 dotnet_naming_style.pascal_case.capitalization = pascal_case
 
 dotnet_naming_style.begins_with_i.required_prefix = I
-dotnet_naming_style.begins_with_i.required_suffix = 
-dotnet_naming_style.begins_with_i.word_separator = 
+dotnet_naming_style.begins_with_i.required_suffix =
+dotnet_naming_style.begins_with_i.word_separator =
 dotnet_naming_style.begins_with_i.capitalization = pascal_case
 
-dotnet_naming_style.suf_.required_prefix = 
-dotnet_naming_style.suf_.required_suffix = _
-dotnet_naming_style.suf_.word_separator = 
-dotnet_naming_style.suf_.capitalization = camel_case
+dotnet_naming_style.begins_with_underscore.required_prefix = _
+dotnet_naming_style.begins_with_underscore.required_suffix =
+dotnet_naming_style.begins_with_underscore.word_separator =
+dotnet_naming_style.begins_with_underscore.capitalization = camel_case
 
-dotnet_naming_style.upper.required_prefix = 
-dotnet_naming_style.upper.required_suffix = 
-dotnet_naming_style.upper.word_separator = 
-dotnet_naming_style.upper.capitalization = all_upper
+dotnet_naming_style.begins_with_double_underscore.required_prefix = __
+dotnet_naming_style.begins_with_double_underscore.required_suffix =
+dotnet_naming_style.begins_with_double_underscore.word_separator =
+dotnet_naming_style.begins_with_double_underscore.capitalization = camel_case
 
 # CA1707: 識別子はアンダースコアを含むことはできません
 dotnet_diagnostic.CA1707.severity = none
+
+# 空白・改行はcsharpierに担当してもらう
+dotnet_diagnostic.IDE0055.severity = none
+
+# 未使用usingの削除
+dotnet_diagnostic.IDE0005.severity = suggestion
+
+# IDE0001: 名前を単純化します
+dotnet_diagnostic.IDE0001.severity = suggestion

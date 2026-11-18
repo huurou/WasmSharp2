@@ -35,18 +35,7 @@ internal class CompletionPolicy_CompareConversionTests
     {
         // Arrange
         var report = CreateReport(
-            new(
-                conditionDifferenceCount,
-                0,
-                entryDifferenceCount,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                currentRunnerErrorCount
-            )
+            new(conditionDifferenceCount, 0, entryDifferenceCount, 0, 0, 0, 0, 0, 0, currentRunnerErrorCount)
         );
 
         // Act
@@ -63,10 +52,7 @@ internal class CompletionPolicy_CompareConversionTests
     [Test]
     [Arguments(false, true)]
     [Arguments(true, false)]
-    public async Task 比較が完了していないか比較結果を保存できなかった_未完了の2を返す(
-        bool complete,
-        bool saved
-    )
+    public async Task 比較が完了していないか比較結果を保存できなかった_未完了の2を返す(bool complete, bool saved)
     {
         // Arrange
         var report = CreateReport(new(1, 0, 0, 0, 0, 0, 0, 0, 0, 0)) with
@@ -83,11 +69,7 @@ internal class CompletionPolicy_CompareConversionTests
 
     private static ComparisonReport CreateReport(ComparisonSummary summary)
     {
-        return new ComparisonReport(
-            ComparisonType.Conversion,
-            new("/baseline/manifest.json"),
-            new("/current/manifest.json")
-        )
+        return new ComparisonReport(ComparisonType.Conversion, new("/baseline/manifest.json"), new("/current/manifest.json"))
         {
             Established = true,
             Complete = true,

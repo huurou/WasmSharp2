@@ -28,12 +28,7 @@ internal class BenchmarkRun_AttachChecksTests
         var check = fixture.Check;
         var earlier = stage switch
         {
-            RunStage.Precheck => check with
-            {
-                Precheck = null,
-                ExecutionStarted = false,
-                Postcheck = null,
-            },
+            RunStage.Precheck => check with { Precheck = null, ExecutionStarted = false, Postcheck = null },
             RunStage.ExecutionStarted => check with { ExecutionStarted = false, Postcheck = null },
             _ => check with { Postcheck = null },
         };
@@ -46,18 +41,7 @@ internal class BenchmarkRun_AttachChecksTests
         store.SaveCheck(
             earlier with
             {
-                Failures =
-                [
-                    new(
-                        check.CaseId,
-                        RunStage.Precheck,
-                        null,
-                        "以前の段階の失敗",
-                        null,
-                        null,
-                        null
-                    ),
-                ],
+                Failures = [new(check.CaseId, RunStage.Precheck, null, "以前の段階の失敗", null, null, null)],
             }
         );
         var expected = store.SaveCheck(later);
@@ -88,15 +72,7 @@ internal class BenchmarkRun_AttachChecksTests
             {
                 Failures =
                 [
-                    new(
-                        check.CaseId,
-                        RunStage.Postcheck,
-                        RunStage.ExecutionStarted,
-                        "後検査の失敗",
-                        null,
-                        null,
-                        null
-                    ),
+                    new(check.CaseId, RunStage.Postcheck, RunStage.ExecutionStarted, "後検査の失敗", null, null, null),
                 ],
             }
         );
@@ -118,9 +94,7 @@ internal class BenchmarkRun_AttachChecksTests
     [Arguments("run")]
     [Arguments("case")]
     [Arguments("job")]
-    public async Task 異なるrunまたはcaseまたはJobを指定する_検査を診断processとして追加しない(
-        string different
-    )
+    public async Task 異なるrunまたはcaseまたはJobを指定する_検査を診断processとして追加しない(string different)
     {
         // Arrange
         using var fixture = new RunStoreFixture();
@@ -154,13 +128,7 @@ internal class BenchmarkRun_AttachChecksTests
         };
 
         // Act
-        var results = benchmarkRun_.AttachChecks(
-            fixture.DirectoryPath,
-            check.RunId,
-            check.CaseId,
-            check.JobId,
-            processes
-        );
+        var results = benchmarkRun_.AttachChecks(fixture.DirectoryPath, check.RunId, check.CaseId, check.JobId, processes);
 
         // Assert
         await Assert.That(results).IsEquivalentTo(processes);
@@ -173,13 +141,7 @@ internal class BenchmarkRun_AttachChecksTests
         using var fixture = new RunStoreFixture();
         var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, json_);
         var check = fixture.Check;
-        store.SaveCheck(
-            check with
-            {
-                Postcheck = null,
-                LastConfirmedStage = RunStage.ExecutionStarted,
-            }
-        );
+        store.SaveCheck(check with { Postcheck = null, LastConfirmedStage = RunStage.ExecutionStarted });
         var final = store.SaveCheck(check);
         store.SaveCheck(check with { JobId = "OtherJob" });
         var diagnostic = store.SaveCheck(check with { ProcessId = check.ProcessId + 1 });
@@ -197,18 +159,10 @@ internal class BenchmarkRun_AttachChecksTests
         using (Assert.Multiple())
         {
             await Assert.That(results.Count).IsEqualTo(2);
-            await Assert
-                .That(results.Single(x => x.ProcessId == check.ProcessId).CheckFile)
-                .IsEqualTo(final);
-            await Assert
-                .That(results.Single(x => x.ProcessId == check.ProcessId + 1).CheckFile)
-                .IsEqualTo(diagnostic);
-            await Assert
-                .That(results.Single(x => x.ProcessId == check.ProcessId + 1).ExitCode)
-                .IsNull();
-            await Assert
-                .That(results.Single(x => x.ProcessId == check.ProcessId + 1).HasResultMeasurements)
-                .IsFalse();
+            await Assert.That(results.Single(x => x.ProcessId == check.ProcessId).CheckFile).IsEqualTo(final);
+            await Assert.That(results.Single(x => x.ProcessId == check.ProcessId + 1).CheckFile).IsEqualTo(diagnostic);
+            await Assert.That(results.Single(x => x.ProcessId == check.ProcessId + 1).ExitCode).IsNull();
+            await Assert.That(results.Single(x => x.ProcessId == check.ProcessId + 1).HasResultMeasurements).IsFalse();
         }
     }
 }

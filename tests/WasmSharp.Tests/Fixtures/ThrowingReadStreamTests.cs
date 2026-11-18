@@ -10,9 +10,7 @@ internal class ThrowingReadStream_ReadTests
         using var stream = new ThrowingReadStream(expected);
 
         // Act & Assert
-        var actual = await Assert
-            .That(() => stream.Read(new byte[1], 0, 1))
-            .ThrowsExactly<IOException>();
+        var actual = await Assert.That(() => stream.Read(new byte[1], 0, 1)).ThrowsExactly<IOException>();
         await Assert.That(actual).IsSameReferenceAs(expected);
     }
 
@@ -24,9 +22,7 @@ internal class ThrowingReadStream_ReadTests
         using var stream = new ThrowingReadStream(expected);
 
         // Act & Assert
-        var actual = await Assert
-            .That(() => stream.Read(new byte[1].AsSpan()))
-            .ThrowsExactly<IOException>();
+        var actual = await Assert.That(() => stream.Read(new byte[1].AsSpan())).ThrowsExactly<IOException>();
         await Assert.That(actual).IsSameReferenceAs(expected);
     }
 }

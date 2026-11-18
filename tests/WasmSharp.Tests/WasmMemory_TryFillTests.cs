@@ -55,10 +55,7 @@ internal class WasmMemory_TryFillTests
     [Arguments(0u, 0UL)]
     [Arguments(1u, 0UL)]
     [Arguments(1u, 65536UL)]
-    public async Task 長さがゼロで開始位置が領域内または末尾にある_成功する(
-        uint pages,
-        ulong destination
-    )
+    public async Task 長さがゼロで開始位置が領域内または末尾にある_成功する(uint pages, ulong destination)
     {
         // Arrange
         var memory = new WasmMemory(new WasmLimits(pages));
@@ -75,10 +72,7 @@ internal class WasmMemory_TryFillTests
     [Arguments(65537UL, 0UL)]
     [Arguments(1UL, ulong.MaxValue)]
     [Arguments(ulong.MaxValue, 2UL)]
-    public async Task 指定範囲が領域外にある_内容を一部も変更せずfalseを返す(
-        ulong destination,
-        ulong length
-    )
+    public async Task 指定範囲が領域外にある_内容を一部も変更せずfalseを返す(ulong destination, ulong length)
     {
         // Arrange
         var memory = new WasmMemory(new WasmLimits(1));

@@ -11,7 +11,7 @@ internal sealed class RunConditions(string runId, CaseJson json)
     private readonly CaseJson json_ = json;
 
     internal string RunId { get; } = runId;
-    internal Dictionary<string, string> Values { get; } = new(StringComparer.Ordinal);
+    internal Dictionary<string, string> Values { get; } = [with(StringComparer.Ordinal)];
 
     internal static RunConditions Create(
         RunManifest run,
@@ -27,16 +27,12 @@ internal sealed class RunConditions(string runId, CaseJson json)
         var conditions = new RunConditions(run.RunId, json);
         var paths = new ConditionPaths(environment.Command, source, assets);
         conditions.Add("run.schema_version", run.SchemaVersion);
-        conditions.Add(
-            "run.planned_cases",
-            run.PlannedCaseIds.Order(StringComparer.Ordinal).ToArray()
-        );
+        conditions.Add("run.planned_cases", run.PlannedCaseIds.Order(StringComparer.Ordinal).ToArray());
         conditions.Add(
             "case",
             definition with
             {
-                Workload = [.. definition
-                    .Workload.OrderBy(x => x.Name, StringComparer.Ordinal)],
+                Workload = [.. definition.Workload.OrderBy(x => x.Name, StringComparer.Ordinal)],
             }
         );
         conditions.Add("assets.schema_version", assets.SchemaVersion);
@@ -44,16 +40,9 @@ internal sealed class RunConditions(string runId, CaseJson json)
         var asset = assets.Assets.Single(x => x.AssetId == definition.AssetId);
         conditions.Add(
             "asset.binary",
-            new
-            {
-                Path = "binary:" + ConditionPaths.AssetPath(asset.Binary.RelativePath),
-                asset.Binary.Sha256,
-            }
+            new { Path = "binary:" + ConditionPaths.AssetPath(asset.Binary.RelativePath), asset.Binary.Sha256 }
         );
-        conditions.Add(
-            "asset.sources",
-            asset.Sources.OrderBy(x => x.RelativePath, StringComparer.Ordinal).ToArray()
-        );
+        conditions.Add("asset.sources", asset.Sources.OrderBy(x => x.RelativePath, StringComparer.Ordinal).ToArray());
         for (var index = 0; index < asset.GenerationSteps.Count; index++)
         {
             var step = asset.GenerationSteps[index];
@@ -68,27 +57,19 @@ internal sealed class RunConditions(string runId, CaseJson json)
                     step.Tool.BuildConfiguration,
                 }
             );
-            conditions.Add(
-                $"asset.generation[{index}].arguments",
-                step.Arguments.Select(paths.AssetArgument).ToArray()
-            );
+            conditions.Add($"asset.generation[{index}].arguments", step.Arguments.Select(paths.AssetArgument).ToArray());
         }
 
         // runtime集合に含まれるproject・共通設定もharnessのビルド条件を変えうる
         foreach (
             var file in source
                 .Harness.Files.Concat(
-                    source.Runtime.Files.Where(x =>
-                        !x.RelativePath.EndsWith(".cs", StringComparison.OrdinalIgnoreCase)
-                    )
+                    source.Runtime.Files.Where(x => !x.RelativePath.EndsWith(".cs", StringComparison.OrdinalIgnoreCase))
                 )
                 .DistinctBy(x => x.RelativePath)
         )
         {
-            conditions.Add(
-                "source.files[" + file.RelativePath.Replace('\\', '/') + "].sha256",
-                file.Sha256
-            );
+            conditions.Add("source.files[" + file.RelativePath.Replace('\\', '/') + "].sha256", file.Sha256);
         }
         conditions.Add(
             "source.submodules",
@@ -118,31 +99,27 @@ internal sealed class RunConditions(string runId, CaseJson json)
         {
             Configuration = Process(x, paths),
             Check = checks.First(y => y.JobId == x.JobId),
-        }).ToArray();
+        })
+            .ToArray();
         conditions.Add(
             "job.processes",
-            jobConditions.Select(x => x.Configuration)
+            jobConditions
+                .Select(x => x.Configuration)
                 .OrderBy(x => JsonSerializer.Serialize(x, json.Options), StringComparer.Ordinal)
                 .ToArray()
         );
         conditions.Add(
             "process.affinity",
-            jobConditions.Select(x => new
-            {
-                x.Configuration,
-                Mask = x.Check.AffinityBefore,
-            })
+            jobConditions
+                .Select(x => new { x.Configuration, Mask = x.Check.AffinityBefore })
                 .OrderBy(x => JsonSerializer.Serialize(x, json.Options), StringComparer.Ordinal)
                 .ToArray()
         );
         conditions.Add("command.executable", paths.CommandExecutable());
         conditions.Add(
             "process.runtime",
-            jobConditions.Select(x => new
-            {
-                x.Configuration,
-                Version = x.Check.RuntimeVersion,
-            })
+            jobConditions
+                .Select(x => new { x.Configuration, Version = x.Check.RuntimeVersion })
                 .OrderBy(x => JsonSerializer.Serialize(x, json.Options), StringComparer.Ordinal)
                 .ToArray()
         );
@@ -150,24 +127,14 @@ internal sealed class RunConditions(string runId, CaseJson json)
         return conditions;
     }
 
-    private static SortedDictionary<string, string> Settings(
-        IEnumerable<NamedSetting> settings,
-        ConditionPaths paths
-    )
+    private static SortedDictionary<string, string> Settings(IEnumerable<NamedSetting> settings, ConditionPaths paths)
     {
         return new(
             settings
-                .Where(x =>
-                    x.Name
-                        is not "WASMSHARP_BENCHMARK_RUN_CONFIG"
-                            and not "RuntimeConfigFile.RelativePath"
-                )
+                .Where(x => x.Name is not "WASMSHARP_BENCHMARK_RUN_CONFIG" and not "RuntimeConfigFile.RelativePath")
                 .ToDictionary(
                     x => x.Name,
-                    x =>
-                        x.Name is "DOTNET_ROOT" or "DOTNET_ROOT_X64"
-                            ? "tool-root:dotnet"
-                            : paths.Value(x.Value)
+                    x => x.Name is "DOTNET_ROOT" or "DOTNET_ROOT_X64" ? "tool-root:dotnet" : paths.Value(x.Value)
                 ),
             StringComparer.Ordinal
         );
@@ -185,14 +152,14 @@ internal sealed class RunConditions(string runId, CaseJson json)
         };
     }
 
-    private object[] Processes(
-        IEnumerable<ProcessConfiguration> processes,
-        ConditionPaths paths
-    )
+    private object[] Processes(IEnumerable<ProcessConfiguration> processes, ConditionPaths paths)
     {
-        return [.. processes
-            .Select(x => Process(x, paths))
-            .OrderBy(x => JsonSerializer.Serialize(x, json_.Options), StringComparer.Ordinal)];
+        return
+        [
+            .. processes
+                .Select(x => Process(x, paths))
+                .OrderBy(x => JsonSerializer.Serialize(x, json_.Options), StringComparer.Ordinal),
+        ];
     }
 
     private void Add<T>(string name, T value)
@@ -219,10 +186,7 @@ internal sealed class RunConditions(string runId, CaseJson json)
         }
         else
         {
-            Values.Add(
-                name,
-                value.ValueKind == JsonValueKind.String ? value.GetString()! : value.GetRawText()
-            );
+            Values.Add(name, value.ValueKind == JsonValueKind.String ? value.GetString()! : value.GetRawText());
         }
     }
 }
@@ -271,11 +235,7 @@ internal sealed class ConditionPaths
         {
             // 名前に含まれるドットと、実行形式の拡張子を区別する。
             var harnessName = Path.GetFileNameWithoutExtension(FileName(harness.Path));
-            if (
-                name == harnessName ||
-                name == $"{harnessName}.exe" ||
-                name == $"{harnessName}.dll"
-            )
+            if (name == harnessName || name == $"{harnessName}.exe" || name == $"{harnessName}.dll")
             {
                 return "assembly:Harness";
             }
@@ -329,11 +289,8 @@ internal sealed class ConditionPaths
         if (path.StartsWith(root_ + "/", StringComparison.OrdinalIgnoreCase))
         {
             var relative = path[(root_.Length + 1)..];
-            return (
-                    relative.EndsWith(".csproj", StringComparison.OrdinalIgnoreCase)
-                        ? "project:"
-                        : "repository:"
-                ) + relative;
+            return (relative.EndsWith(".csproj", StringComparison.OrdinalIgnoreCase) ? "project:" : "repository:")
+                + relative;
         }
         return path;
     }
@@ -347,17 +304,12 @@ internal sealed class ConditionPaths
     {
         var path = Normalize(value);
         var references = assets_
-            .Assets.SelectMany(x =>
-                x.Sources.Select(y => y.RelativePath).Append(x.Binary.RelativePath)
-            )
+            .Assets.SelectMany(x => x.Sources.Select(y => y.RelativePath).Append(x.Binary.RelativePath))
             .Append(assets_.Profile.RelativePath);
         foreach (var reference in references)
         {
             var relative = Normalize(reference);
-            if (
-                path == relative
-                || path.EndsWith("/" + relative, StringComparison.OrdinalIgnoreCase)
-            )
+            if (path == relative || path.EndsWith("/" + relative, StringComparison.OrdinalIgnoreCase))
             {
                 return "asset:" + relative;
             }

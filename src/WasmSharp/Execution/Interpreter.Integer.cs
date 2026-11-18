@@ -669,9 +669,7 @@ internal static partial class Interpreter
     {
         var right = context.PopValue().AsI32() & 31;
         var left = unchecked((uint)context.PopValue().AsI32());
-        context.PushValue(
-            WasmValue.FromI32(unchecked((int)BitOperations.RotateRight(left, right)))
-        );
+        context.PushValue(WasmValue.FromI32(unchecked((int)BitOperations.RotateRight(left, right))));
         return default;
     }
 
@@ -707,10 +705,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI32Popcnt命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I32Popcnt(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I32Popcnt(InterpreterContext context, in Instruction instruction)
     {
         var operand = unchecked((uint)context.PopValue().AsI32());
         context.PushValue(WasmValue.FromI32(BitOperations.PopCount(operand)));
@@ -811,9 +806,7 @@ internal static partial class Interpreter
     {
         var right = (int)(context.PopValue().AsI64() & 63);
         var left = unchecked((ulong)context.PopValue().AsI64());
-        context.PushValue(
-            WasmValue.FromI64(unchecked((long)BitOperations.RotateLeft(left, right)))
-        );
+        context.PushValue(WasmValue.FromI64(unchecked((long)BitOperations.RotateLeft(left, right))));
         return default;
     }
 
@@ -827,9 +820,7 @@ internal static partial class Interpreter
     {
         var right = (int)(context.PopValue().AsI64() & 63);
         var left = unchecked((ulong)context.PopValue().AsI64());
-        context.PushValue(
-            WasmValue.FromI64(unchecked((long)BitOperations.RotateRight(left, right)))
-        );
+        context.PushValue(WasmValue.FromI64(unchecked((long)BitOperations.RotateRight(left, right))));
         return default;
     }
 
@@ -865,10 +856,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI64Popcnt命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I64Popcnt(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I64Popcnt(InterpreterContext context, in Instruction instruction)
     {
         var operand = unchecked((ulong)context.PopValue().AsI64());
         context.PushValue(WasmValue.FromI64(BitOperations.PopCount(operand)));

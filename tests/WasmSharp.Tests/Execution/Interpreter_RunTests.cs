@@ -12,12 +12,7 @@ internal class Interpreter_RunTests
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
-        var function = ExecutionFunctionFixture.Create(
-            [InstructionFixture.Create(0x0B, 1001)],
-            new([], []),
-            [],
-            0
-        );
+        var function = ExecutionFunctionFixture.Create([InstructionFixture.Create(0x0B, 1001)], new([], []), [], 0);
 
         // Act
         var observed = ExecutionStackFixture.RunAtLimit(() =>
@@ -28,13 +23,7 @@ internal class Interpreter_RunTests
                 context.TryEnterCall();
                 context.Stage = WasmProcessingStage.Instantiate;
                 var result = Interpreter.Run(context, function, [], WasmProcessingStage.Invoke);
-                return (
-                    Result: result,
-                    context.FrameCount,
-                    context.ValueCount,
-                    context.CallDepth,
-                    context.Stage
-                );
+                return (Result: result, context.FrameCount, context.ValueCount, context.CallDepth, context.Stage);
             }
             finally
             {
@@ -47,16 +36,12 @@ internal class Interpreter_RunTests
         using (Assert.Multiple())
         {
             await Assert.That(observed.Result.Status).IsEqualTo(ExecutionStatus.Exhaustion);
-            await Assert
-                .That(observed.Result.ExhaustionReason)
-                .IsEqualTo(WasmExhaustionReason.HostStackLimit);
+            await Assert.That(observed.Result.ExhaustionReason).IsEqualTo(WasmExhaustionReason.HostStackLimit);
             await Assert.That(observed.Result.Limit).IsNull();
             await Assert.That(observed.Result.FunctionIndex).IsEqualTo(1U);
             await Assert.That(observed.Result.ByteOffset).IsEqualTo(12345678900L);
             await Assert
-                .That(
-                    (observed.FrameCount, observed.ValueCount, observed.CallDepth, observed.Stage)
-                )
+                .That((observed.FrameCount, observed.ValueCount, observed.CallDepth, observed.Stage))
                 .IsEqualTo((0, 0, 1, WasmProcessingStage.Instantiate));
         }
     }
@@ -64,9 +49,7 @@ internal class Interpreter_RunTests
     [Test]
     [Arguments(WasmProcessingStage.Invoke)]
     [Arguments(WasmProcessingStage.Instantiate)]
-    public async Task 入口の必要容量が保持上限を超える_段階と関数位置を付けて伝播し外側を復元する(
-        WasmProcessingStage stage
-    )
+    public async Task 入口の必要容量が保持上限を超える_段階と関数位置を付けて伝播し外側を復元する(WasmProcessingStage stage)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
@@ -96,12 +79,7 @@ internal class Interpreter_RunTests
                     {
                         actualFrame = context.GetFrame(0);
                         actualValue = context.GetValue(0);
-                        state = (
-                            context.FrameCount,
-                            context.ValueCount,
-                            context.CallDepth,
-                            context.Stage
-                        );
+                        state = (context.FrameCount, context.ValueCount, context.CallDepth, context.Stage);
                     }
                 }
                 finally
@@ -114,13 +92,9 @@ internal class Interpreter_RunTests
 
         using (Assert.Multiple())
         {
-            await Assert
-                .That(exception!.Reason)
-                .IsEqualTo(WasmImplementationLimitReason.CollectionSize);
+            await Assert.That(exception!.Reason).IsEqualTo(WasmImplementationLimitReason.CollectionSize);
             await Assert.That(exception.Limit).IsEqualTo(Array.MaxLength);
-            await Assert
-                .That(exception.Location)
-                .IsEqualTo(new WasmFailureLocation(stage, 12345678900, 1));
+            await Assert.That(exception.Location).IsEqualTo(new WasmFailureLocation(stage, 12345678900, 1));
             await Assert.That(actualFrame).IsEqualTo(frame);
             await Assert.That(actualValue).IsEqualTo(value);
             await Assert.That(state).IsEqualTo((1, 1, 1, WasmProcessingStage.Decode));
@@ -219,12 +193,7 @@ internal class Interpreter_RunTests
             result = Interpreter.Run(context, function, [], WasmProcessingStage.Invoke);
             actualFrame = context.GetFrame(0);
             actualValue = context.GetValue(0);
-            state = (
-                context.FrameCount,
-                context.ValueCount,
-                context.CallDepth,
-                context.MaxCallDepth
-            );
+            state = (context.FrameCount, context.ValueCount, context.CallDepth, context.MaxCallDepth);
         }
         finally
         {
@@ -271,9 +240,7 @@ internal class Interpreter_RunTests
         using (Assert.Multiple())
         {
             await Assert.That(result.Status).IsEqualTo(ExecutionStatus.Exhaustion);
-            await Assert
-                .That(result.ExhaustionReason)
-                .IsEqualTo(WasmExhaustionReason.CallDepthLimit);
+            await Assert.That(result.ExhaustionReason).IsEqualTo(WasmExhaustionReason.CallDepthLimit);
             await Assert.That(result.TrapReason).IsNull();
             await Assert.That(result.Values).IsEmpty();
             await Assert.That(result.Limit).IsEqualTo(1);
@@ -300,10 +267,7 @@ internal class Interpreter_RunTests
             _ => WasmValue.FromF64Bits(0xFFF8123456789ABC),
         };
         var function = ExecutionFunctionFixture.Create(
-            [
-                new(opcode, value, 12345678901, 0),
-                new(ExecutionOpcode.Op0B, default, 12345678909, 0),
-            ],
+            [new(opcode, value, 12345678901, 0), new(ExecutionOpcode.Op0B, default, 12345678909, 0)],
             value.Kind
         );
         var context = executionContext.Enter(new(10), out var isOutermost);
@@ -346,10 +310,7 @@ internal class Interpreter_RunTests
                 new(ExecutionOpcode.Op41, WasmValue.FromI32(-1), 99, 0),
                 new(ExecutionOpcode.Op0B, default, 101, 0),
             ],
-            new(
-                [WasmValueKind.I32, WasmValueKind.ExternRef],
-                [WasmValueKind.F64, WasmValueKind.I64, WasmValueKind.I32]
-            ),
+            new([WasmValueKind.I32, WasmValueKind.ExternRef], [WasmValueKind.F64, WasmValueKind.I64, WasmValueKind.I32]),
             [new(2, WasmValueKind.V128)],
             3
         );
@@ -482,23 +443,13 @@ internal class Interpreter_RunTests
                     context.PushValue(value);
                     try
                     {
-                        Interpreter.Run(
-                            context,
-                            function,
-                            [WasmValue.FromI32(1)],
-                            WasmProcessingStage.Invoke
-                        );
+                        Interpreter.Run(context, function, [WasmValue.FromI32(1)], WasmProcessingStage.Invoke);
                     }
                     finally
                     {
                         actualFrame = context.GetFrame(0);
                         actualValue = context.GetValue(0);
-                        state = (
-                            context.FrameCount,
-                            context.ValueCount,
-                            context.CallDepth,
-                            context.Stage
-                        );
+                        state = (context.FrameCount, context.ValueCount, context.CallDepth, context.Stage);
                     }
                 }
                 finally
@@ -511,9 +462,7 @@ internal class Interpreter_RunTests
 
         using (Assert.Multiple())
         {
-            await Assert
-                .That(exception!.Reason)
-                .IsEqualTo(WasmImplementationLimitReason.CollectionSize);
+            await Assert.That(exception!.Reason).IsEqualTo(WasmImplementationLimitReason.CollectionSize);
             await Assert.That(exception.Limit).IsEqualTo(Array.MaxLength);
             await Assert
                 .That(exception.Location)

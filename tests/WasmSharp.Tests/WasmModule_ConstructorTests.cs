@@ -18,16 +18,10 @@ internal class WasmModule_ConstructorTests
         ModuleImport[] imports = [new FunctionImport("env", "f", uint.MaxValue, 12)];
         TableDefinition[] tables = [new(WasmValueKind.FuncRef, new WasmLimits(1), 15)];
         MemoryDefinition[] memories = [new(new WasmLimits(uint.MaxValue), 18)];
-        DecodedInstruction[] initializer =
-        [
-            DecodedInstruction.WithImmediate(new(0, 0x41), WasmValue.FromI32(42), 22),
-        ];
+        DecodedInstruction[] initializer = [DecodedInstruction.WithImmediate(new(0, 0x41), WasmValue.FromI32(42), 22)];
         GlobalDefinition[] globals = [new(new(WasmValueKind.I32, true), initializer, 20)];
         byte[] dataBytes = [0xAB, 0xCD];
-        DataDefinition[] dataSegments =
-        [
-            new(dataBytes, new ActiveDataTarget(uint.MaxValue, initializer), 32),
-        ];
+        DataDefinition[] dataSegments = [new(dataBytes, new ActiveDataTarget(uint.MaxValue, initializer), 32)];
 
         // Act
         var module = new WasmModule(
@@ -66,24 +60,16 @@ internal class WasmModule_ConstructorTests
             await Assert.That(module.Exports[0].Index).IsEqualTo(uint.MaxValue);
             await Assert.That(module.Exports[0].ByteOffset).IsEqualTo(20L);
             await Assert.That(module.InputLength).IsEqualTo(48L);
-            await Assert
-                .That(((FunctionImport)module.Imports[0]).TypeIndex)
-                .IsEqualTo(uint.MaxValue);
+            await Assert.That(((FunctionImport)module.Imports[0]).TypeIndex).IsEqualTo(uint.MaxValue);
             await Assert.That(module.Tables[0].Limits.Minimum).IsEqualTo(1u);
             await Assert.That(module.Memories[0].Limits.Minimum).IsEqualTo(uint.MaxValue);
             await Assert.That(module.Globals[0].Initializer[0].Immediate.AsI32()).IsEqualTo(42);
             await Assert.That(module.Start).IsEqualTo(new StartDefinition(uint.MaxValue, 25));
             await Assert.That(module.DataSegments.Length).IsEqualTo(1);
-            await Assert
-                .That(Convert.ToHexString(module.DataSegments[0].Bytes.AsSpan()))
-                .IsEqualTo("ABCD");
+            await Assert.That(Convert.ToHexString(module.DataSegments[0].Bytes.AsSpan())).IsEqualTo("ABCD");
             await Assert.That(module.DataSegments[0].ByteOffset).IsEqualTo(32L);
-            await Assert
-                .That(module.DataSegments[0].ActiveTarget!.MemoryIndex)
-                .IsEqualTo(uint.MaxValue);
-            await Assert
-                .That(module.DataSegments[0].ActiveTarget!.OffsetExpression[0].Immediate.AsI32())
-                .IsEqualTo(42);
+            await Assert.That(module.DataSegments[0].ActiveTarget!.MemoryIndex).IsEqualTo(uint.MaxValue);
+            await Assert.That(module.DataSegments[0].ActiveTarget!.OffsetExpression[0].Immediate.AsI32()).IsEqualTo(42);
             await Assert.That(module.DataCount).IsEqualTo(new DataCountDefinition(1, 28));
         }
     }
@@ -125,29 +111,13 @@ internal class WasmModule_ConstructorTests
     public async Task 元の要素配列を変更する_要素セグメントを宣言順で独立して保持する()
     {
         // Arrange
-        var active = ElementDefinition.Active(
-            WasmValueKind.FuncRef,
-            [],
-            new ActiveElementTarget(2, []),
-            30
-        );
+        var active = ElementDefinition.Active(WasmValueKind.FuncRef, [], new ActiveElementTarget(2, []), 30);
         var passive = ElementDefinition.Passive(WasmValueKind.ExternRef, [], 40);
         var declarative = ElementDefinition.Declarative(WasmValueKind.FuncRef, [], 50);
         ElementDefinition[] elements = [active, passive, declarative];
 
         // Act
-        var module = new WasmModule(
-            [],
-            [],
-            [],
-            60,
-            [],
-            [],
-            [],
-            [],
-            null,
-            elementSegments: elements
-        );
+        var module = new WasmModule([], [], [], 60, [], [], [], [], null, elementSegments: elements);
         Array.Clear(elements);
 
         // Assert

@@ -25,12 +25,7 @@ public partial class ScriptExecutor_ExecuteTests
                 """;
 
         // Act
-        var results = ScriptExecutionFixture.Execute(
-            commands,
-            state,
-            (0, ScriptExecutionFixture.Exports()),
-            (1, [1])
-        );
+        var results = ScriptExecutionFixture.Execute(commands, state, (0, ScriptExecutionFixture.Exports()), (1, [1]));
 
         // Assert
         using (Assert.Multiple())
@@ -39,9 +34,7 @@ public partial class ScriptExecutor_ExecuteTests
             await Assert.That(results[3].Outcome).IsEqualTo(CaseOutcome.Blocked);
             await Assert.That(results[3].Cause!.Origins).IsEquivalentTo([new CaseId("a.wast", 1)]);
             await Assert.That(results[4].Outcome).IsEqualTo(CaseOutcome.RunnerError);
-            await Assert
-                .That(results[4].Diagnostics[0].Message)
-                .IsEqualTo("対象module $missingがありません。");
+            await Assert.That(results[4].Diagnostics[0].Message).IsEqualTo("対象module $missingがありません。");
             await Assert.That(results[5].Outcome).IsEqualTo(CaseOutcome.RunnerError);
             await Assert.That(results[5].Diagnostics[0].Operation).IsEqualTo("invoke");
             await Assert.That(results[6].Outcome).IsEqualTo(CaseOutcome.Passed);
@@ -53,7 +46,7 @@ public partial class ScriptExecutor_ExecuteTests
     {
         // Arrange
         var state = new ScriptState("a.wast");
-        var exception = new WasmSharp.Exceptions.WasmTrapException("callback trap");
+        var exception = new Exceptions.WasmTrapException("callback trap");
         var host = new WasmHostModule("host");
         host.Define(
             "f",
@@ -69,16 +62,7 @@ public partial class ScriptExecutor_ExecuteTests
         state.Register(host);
         var binary = ScriptExecutionFixture.Binary(
             (1, [1, 0x60, 0, 0]),
-            (
-                2,
-                [
-                    1,
-                    .. ScriptExecutionFixture.Name("host"),
-                    .. ScriptExecutionFixture.Name("f"),
-                    0,
-                    0,
-                ]
-            ),
+            (2, [1, .. ScriptExecutionFixture.Name("host"), .. ScriptExecutionFixture.Name("f"), 0, 0]),
             (7, [1, .. ScriptExecutionFixture.Name("f"), 0, 0])
         );
         var commands =
@@ -97,9 +81,7 @@ public partial class ScriptExecutor_ExecuteTests
             await Assert.That(results[1].Outcome).IsEqualTo(CaseOutcome.RunnerError);
             await Assert.That(results[1].Diagnostics[0].FromCallback).IsTrue();
             await Assert.That(results[1].Diagnostics[0].Message).IsEqualTo(exception.Message);
-            await Assert
-                .That(results[1].Diagnostics[0].ExceptionType)
-                .IsEqualTo(exception.GetType().FullName);
+            await Assert.That(results[1].Diagnostics[0].ExceptionType).IsEqualTo(exception.GetType().FullName);
         }
     }
 
@@ -122,16 +104,7 @@ public partial class ScriptExecutor_ExecuteTests
             (1, [1, 0x60, 7, .. kinds, 7, .. kinds]),
             (3, [1, 0]),
             (7, [1, .. ScriptExecutionFixture.Name("f"), 0, 0]),
-            (
-                10,
-                [
-                    1,
-                    16,
-                    0,
-                    .. Enumerable.Range(0, 7).SelectMany(x => new byte[] { 0x20, (byte)x }),
-                    0x0B,
-                ]
-            )
+            (10, [1, 16, 0, .. Enumerable.Range(0, 7).SelectMany(x => new byte[] { 0x20, (byte)x }), 0x0B])
         );
         var commands =
             ScriptExecutionFixture.Module(0)
@@ -175,11 +148,7 @@ public partial class ScriptExecutor_ExecuteTests
                 """;
 
         // Act
-        var results = ScriptExecutionFixture.Execute(
-            commands,
-            state,
-            (0, ScriptExecutionFixture.Exports())
-        );
+        var results = ScriptExecutionFixture.Execute(commands, state, (0, ScriptExecutionFixture.Exports()));
 
         // Assert
         using (Assert.Multiple())
@@ -215,16 +184,7 @@ public partial class ScriptExecutor_ExecuteTests
         state.Register(host);
         var binary = ScriptExecutionFixture.Binary(
             (1, [1, 0x60, 1, 0x7F, 1, 0x7F]),
-            (
-                2,
-                [
-                    1,
-                    .. ScriptExecutionFixture.Name("host"),
-                    .. ScriptExecutionFixture.Name("f"),
-                    0,
-                    0,
-                ]
-            ),
+            (2, [1, .. ScriptExecutionFixture.Name("host"), .. ScriptExecutionFixture.Name("f"), 0, 0]),
             (7, [1, .. ScriptExecutionFixture.Name("f"), 0, 0])
         );
         var commands =
@@ -264,11 +224,7 @@ public partial class ScriptExecutor_ExecuteTests
             + $$"""{"type":"{{type}}","line":1,"action":{"type":"invoke","field":"f","args":[]},"text":"expected","expected":[]}""";
 
         // Act
-        var results = ScriptExecutionFixture.Execute(
-            commands,
-            state,
-            (0, ScriptExecutionFixture.Exports())
-        );
+        var results = ScriptExecutionFixture.Execute(commands, state, (0, ScriptExecutionFixture.Exports()));
 
         // Assert
         using (Assert.Multiple())
@@ -291,11 +247,7 @@ public partial class ScriptExecutor_ExecuteTests
             + """{"type":"action","line":1,"action":{"type":"get","field":"missing"},"expected":[]}""";
 
         // Act
-        var results = ScriptExecutionFixture.Execute(
-            commands,
-            state,
-            (0, ScriptExecutionFixture.Exports())
-        );
+        var results = ScriptExecutionFixture.Execute(commands, state, (0, ScriptExecutionFixture.Exports()));
 
         // Assert
         using (Assert.Multiple())
@@ -315,18 +267,7 @@ public partial class ScriptExecutor_ExecuteTests
             (1, [1, 0x60, 0, 0]),
             (3, [1, 0]),
             (6, [1, 0x7F, 1, 0x41, 0, 0x0B]),
-            (
-                7,
-                [
-                    2,
-                    .. ScriptExecutionFixture.Name("f"),
-                    0,
-                    0,
-                    .. ScriptExecutionFixture.Name("g"),
-                    3,
-                    0,
-                ]
-            ),
+            (7, [2, .. ScriptExecutionFixture.Name("f"), 0, 0, .. ScriptExecutionFixture.Name("g"), 3, 0]),
             (10, [1, 7, 0, 0x41, 9, 0x24, 0, 0x00, 0x0B])
         );
         var commands =
@@ -361,18 +302,7 @@ public partial class ScriptExecutor_ExecuteTests
         var binary = ScriptExecutionFixture.Binary(
             (1, [1, 0x60, 0, 0]),
             (3, [2, 0, 0]),
-            (
-                7,
-                [
-                    2,
-                    .. ScriptExecutionFixture.Name("recursive"),
-                    0,
-                    0,
-                    .. ScriptExecutionFixture.Name("empty"),
-                    0,
-                    1,
-                ]
-            ),
+            (7, [2, .. ScriptExecutionFixture.Name("recursive"), 0, 0, .. ScriptExecutionFixture.Name("empty"), 0, 1]),
             (10, [2, 4, 0, 0x10, 0, 0x0B, 2, 0, 0x0B])
         );
         var commands =
@@ -403,16 +333,7 @@ public partial class ScriptExecutor_ExecuteTests
         state.Register(SpectestFactory.Create(state));
         var binary = ScriptExecutionFixture.Binary(
             (1, [2, 0x60, 1, 0x7F, 0, 0x60, 0, 0]),
-            (
-                2,
-                [
-                    1,
-                    .. ScriptExecutionFixture.Name("spectest"),
-                    .. ScriptExecutionFixture.Name("print_i32"),
-                    0,
-                    0,
-                ]
-            ),
+            (2, [1, .. ScriptExecutionFixture.Name("spectest"), .. ScriptExecutionFixture.Name("print_i32"), 0, 0]),
             (3, [1, 1]),
             (7, [1, .. ScriptExecutionFixture.Name("f"), 0, 1]),
             (8, [1]),
@@ -451,11 +372,7 @@ public partial class ScriptExecutor_ExecuteTests
                 """ + ScriptExecutionFixture.Module(2);
 
         // Act
-        var results = ScriptExecutionFixture.Execute(
-            commands,
-            state,
-            (2, ScriptExecutionFixture.Empty)
-        );
+        var results = ScriptExecutionFixture.Execute(commands, state, (2, ScriptExecutionFixture.Empty));
 
         // Assert
         using (Assert.Multiple())

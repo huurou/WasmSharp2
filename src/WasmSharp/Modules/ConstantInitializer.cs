@@ -35,27 +35,13 @@ internal static class ConstantInitializer
         for (var index = 0; index < expression.Length - 1; index++)
         {
             var instruction = expression[index];
-            resultKind = ValidateResultInstruction(
-                instruction,
-                importedGlobals,
-                references,
-                sectionId
-            );
+            resultKind = ValidateResultInstruction(instruction, importedGlobals, references, sectionId);
         }
 
-        var endLocation = new WasmFailureLocation(
-            WasmProcessingStage.Validate,
-            expression[^1].ByteOffset,
-            null,
-            sectionId
-        );
+        var endLocation = new WasmFailureLocation(WasmProcessingStage.Validate, expression[^1].ByteOffset, null, sectionId);
         if (expression.Length != 2)
         {
-            throw ValidationDiagnostics.ValidationFailure(
-                "type mismatch",
-                "定数式の結果が1個ではありません。",
-                endLocation
-            );
+            throw ValidationDiagnostics.ValidationFailure("type mismatch", "定数式の結果が1個ではありません。", endLocation);
         }
         if (resultKind != expectedKind)
         {
@@ -85,9 +71,7 @@ internal static class ConstantInitializer
         {
             return WasmValue.FromFuncRef(functions[(int)initializer.Index]);
         }
-        return initializer.Opcode == new OpcodeKey(0, 0x23)
-            ? globals[(int)initializer.Index].Value
-            : initializer.Immediate;
+        return initializer.Opcode == new OpcodeKey(0, 0x23) ? globals[(int)initializer.Index].Value : initializer.Immediate;
     }
 
     /// <summary>
@@ -102,12 +86,7 @@ internal static class ConstantInitializer
         byte sectionId
     )
     {
-        var location = new WasmFailureLocation(
-            WasmProcessingStage.Validate,
-            instruction.ByteOffset,
-            null,
-            sectionId
-        );
+        var location = new WasmFailureLocation(WasmProcessingStage.Validate, instruction.ByteOffset, null, sectionId);
         if (instruction.Opcode == new OpcodeKey(0, 0x23))
         {
             if (instruction.Index >= (uint)importedGlobals.Length)
@@ -163,12 +142,7 @@ internal static class ConstantInitializer
         {
             return importedGlobals[(int)instruction.Index].ValueKind;
         }
-        var location = new WasmFailureLocation(
-            WasmProcessingStage.Validate,
-            instruction.ByteOffset,
-            null,
-            sectionId
-        );
+        var location = new WasmFailureLocation(WasmProcessingStage.Validate, instruction.ByteOffset, null, sectionId);
         if (instruction.Opcode == new OpcodeKey(0, 0xD2))
         {
             if (instruction.Index >= references.FunctionCount)
@@ -195,11 +169,7 @@ internal static class ConstantInitializer
             && instruction.Immediate.Kind is not (WasmValueKind.FuncRef or WasmValueKind.ExternRef)
         )
         {
-            throw ValidationDiagnostics.ValidationFailure(
-                "type mismatch",
-                "ref.nullには参照型が必要です。",
-                location
-            );
+            throw ValidationDiagnostics.ValidationFailure("type mismatch", "ref.nullには参照型が必要です。", location);
         }
         return instruction.Immediate.Kind;
     }

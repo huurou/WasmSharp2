@@ -7,12 +7,8 @@ namespace WasmSharp.Modules.Imports;
 /// <param name="Name">要求する関数の名前</param>
 /// <param name="TypeIndex">要求する関数型の未検証のindex</param>
 /// <param name="ByteOffset">入力バイナリ上のimport宣言のバイト位置</param>
-internal sealed record FunctionImport(
-    string ModuleName,
-    string Name,
-    uint TypeIndex,
-    long ByteOffset
-) : ModuleImport(ModuleName, Name, ByteOffset)
+internal sealed record FunctionImport(string ModuleName, string Name, uint TypeIndex, long ByteOffset)
+    : ModuleImport(ModuleName, Name, ByteOffset)
 {
     /// <inheritdoc />
     internal override WasmExternalKind Kind => WasmExternalKind.Function;

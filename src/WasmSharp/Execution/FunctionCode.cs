@@ -26,8 +26,7 @@ internal sealed class FunctionCode(
     /// <summary>
     /// 命令から参照する関数内の確定済み分岐情報 分岐表は候補の後に既定1件を置く
     /// </summary>
-    internal ImmutableArray<BranchTarget> BranchTargets { get; } =
-        branchTargets.IsDefault ? [] : branchTargets;
+    internal ImmutableArray<BranchTarget> BranchTargets { get; } = branchTargets.IsDefault ? [] : branchTargets;
 
     /// <summary>
     /// 引数の後に続く追加localsを、展開せずに個数と型別の初期値でまとめた配列
@@ -49,9 +48,7 @@ internal sealed class FunctionCode(
     /// </summary>
     /// <param name="locals">追加localsの圧縮宣言</param>
     /// <returns>宣言順の個数と初期値</returns>
-    private static ImmutableArray<LocalInitializer> CreateLocals(
-        ReadOnlySpan<LocalDeclaration> locals
-    )
+    private static ImmutableArray<LocalInitializer> CreateLocals(ReadOnlySpan<LocalDeclaration> locals)
     {
         var initializers = ImmutableArray.CreateBuilder<LocalInitializer>(locals.Length);
         foreach (var local in locals)

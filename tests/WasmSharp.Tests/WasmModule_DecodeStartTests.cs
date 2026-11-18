@@ -37,16 +37,8 @@ internal partial class WasmModule_DecodeTests
         using var inspectionStream = new MemoryStream(bytes);
 
         // Act
-        var inspections = new[]
-        {
-            WasmModule.InspectImports(bytes),
-            WasmModule.InspectImports(inspectionStream),
-        };
-        var modules = new[]
-        {
-            WasmModule.Decode(bytes).Validate(),
-            WasmModule.Decode(stream).Validate(),
-        };
+        var inspections = new[] { WasmModule.InspectImports(bytes), WasmModule.InspectImports(inspectionStream) };
+        var modules = new[] { WasmModule.Decode(bytes).Validate(), WasmModule.Decode(stream).Validate() };
 
         // Assert
         await Assert.That(calls).IsEqualTo(0);
@@ -64,13 +56,7 @@ internal partial class WasmModule_DecodeTests
                         )
                     )
                     .IsTrue();
-                await Assert
-                    .That(
-                        inspection.UnverifiedRanges.Any(x =>
-                            x.Stage == WasmProcessingStage.Validate
-                        )
-                    )
-                    .IsTrue();
+                await Assert.That(inspection.UnverifiedRanges.Any(x => x.Stage == WasmProcessingStage.Validate)).IsTrue();
             }
         }
 
@@ -108,12 +94,8 @@ internal partial class WasmModule_DecodeTests
         await Assert.That(() => module.Instantiate(executionContext, [])).ThrowsExactly<InvalidOperationException>();
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => module.Validate())
-            .ThrowsExactly<WasmValidateException>();
-        await Assert
-            .That(exception!.Location)
-            .IsEqualTo(new(WasmProcessingStage.Validate, 10, uint.MaxValue, 8));
+        var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
+        await Assert.That(exception!.Location).IsEqualTo(new(WasmProcessingStage.Validate, 10, uint.MaxValue, 8));
         await Assert.That(() => module.Instantiate(executionContext, [])).ThrowsExactly<InvalidOperationException>();
     }
 
@@ -126,28 +108,18 @@ internal partial class WasmModule_DecodeTests
     [Arguments("080100070100", 11L, (byte)7)]
     [Arguments("08020000090100", 11L, (byte)8)]
     [Arguments("0801000902FF", 14L, (byte)9)]
-    public async Task Startや後続の外枠が破損_未対応に置き換えず両入力でDecode失敗になる(
-        string hex,
-        long offset,
-        byte id
-    )
+    public async Task Startや後続の外枠が破損_未対応に置き換えず両入力でDecode失敗になる(string hex, long offset, byte id)
     {
         // Arrange
         var bytes = HostLinkingModuleBinary.Create(Convert.FromHexString(hex));
         using var stream = new ChunkedReadStream(new MemoryStream(bytes));
-        Func<WasmModule>[] decoders =
-        [
-            () => WasmModule.Decode(bytes),
-            () => WasmModule.Decode(stream),
-        ];
+        Func<WasmModule>[] decoders = [() => WasmModule.Decode(bytes), () => WasmModule.Decode(stream)];
 
         // Act & Assert
         foreach (var decode in decoders)
         {
             var exception = await Assert.That(decode).ThrowsExactly<WasmDecodeException>();
-            await Assert
-                .That(exception!.Location)
-                .IsEqualTo(new(WasmProcessingStage.Decode, offset, null, id));
+            await Assert.That(exception!.Location).IsEqualTo(new(WasmProcessingStage.Decode, offset, null, id));
         }
     }
 

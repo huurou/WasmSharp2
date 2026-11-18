@@ -20,10 +20,7 @@ internal partial class WasmModule_InstantiateTests
             .Decode(
                 HostLinkingModuleBinary.Create(
                     HostLinkingModuleBinary.Types(([], [0x7B]), ([0x7B], [])),
-                    HostLinkingModuleBinary.Imports(
-                        ("env", "seed", 3, [0x7B, 0]),
-                        ("env", "shared", 3, [0x7B, 1])
-                    ),
+                    HostLinkingModuleBinary.Imports(("env", "seed", 3, [0x7B, 0]), ("env", "shared", 3, [0x7B, 1])),
                     HostLinkingModuleBinary.Functions(0, 1),
                     HostLinkingModuleBinary.Globals((0x7B, true, [0x23, 0, 0x0B])),
                     HostLinkingModuleBinary.Exports(
@@ -33,10 +30,7 @@ internal partial class WasmModule_InstantiateTests
                         ("read", 0, 0),
                         ("write", 0, 1)
                     ),
-                    HostLinkingModuleBinary.Code(
-                        ([], [0x23, 1, 0x0B]),
-                        ([], [0x20, 0, 0x24, 1, 0x0B])
-                    )
+                    HostLinkingModuleBinary.Code(([], [0x23, 1, 0x0B]), ([], [0x20, 0, 0x24, 1, 0x0B]))
                 )
             )
             .Validate();
@@ -68,27 +62,21 @@ internal partial class WasmModule_InstantiateTests
             await Assert.That(first.GetGlobal("seed")).IsEqualTo(initial);
             await Assert.That(first.GetGlobal("defined")).IsEqualTo(updated);
             await Assert.That(second.GetGlobal("defined")).IsEqualTo(initial);
-            await Assert
-                .That(first.GetGlobalResource("defined"))
-                .IsNotSameReferenceAs(second.GetGlobalResource("defined"));
+            await Assert.That(first.GetGlobalResource("defined")).IsNotSameReferenceAs(second.GetGlobalResource("defined"));
         }
     }
 
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task V128定数でglobalを初期化する_両入力の4段階で初期値をそのまま取得する(
-        bool useStream
-    )
+    public async Task V128定数でglobalを初期化する_両入力の4段階で初期値をそのまま取得する(bool useStream)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
         var bytes = HostLinkingModuleBinary.Create(
             HostLinkingModuleBinary.Types(([], [0x7B])),
             HostLinkingModuleBinary.Functions(0),
-            HostLinkingModuleBinary.Globals(
-                (0x7B, true, Convert.FromHexString("FD0CBC9A78563412F87F00000000000000800B"))
-            ),
+            HostLinkingModuleBinary.Globals((0x7B, true, Convert.FromHexString("FD0CBC9A78563412F87F00000000000000800B"))),
             HostLinkingModuleBinary.Exports(("value", 3, 0), ("read", 0, 0)),
             HostLinkingModuleBinary.Code(([], [0x23, 0, 0x0B]))
         );
@@ -105,9 +93,7 @@ internal partial class WasmModule_InstantiateTests
         using (Assert.Multiple())
         {
             await Assert.That(global.Type).IsEqualTo(new WasmGlobalType(WasmValueKind.V128, true));
-            await Assert
-                .That(global.Value.AsV128())
-                .IsEqualTo((0x7FF8123456789ABCUL, 0x8000000000000000UL));
+            await Assert.That(global.Value.AsV128()).IsEqualTo((0x7FF8123456789ABCUL, 0x8000000000000000UL));
             await Assert.That(result.Values[0].AsV128()).IsEqualTo(global.Value.AsV128());
         }
     }

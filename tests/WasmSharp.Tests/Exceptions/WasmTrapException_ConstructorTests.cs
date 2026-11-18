@@ -11,14 +11,7 @@ internal class WasmTrapException_ConstructorTests
         var innerException = new InvalidOperationException("原因");
 
         // Act
-        WasmTrapException[] exceptions =
-        [
-            new(),
-            new("trap"),
-            new("trap", innerException),
-            new(null),
-            new(null, null),
-        ];
+        WasmTrapException[] exceptions = [new(), new("trap"), new("trap", innerException), new(null), new(null, null)];
 
         // Assert
         using (Assert.Multiple())
@@ -30,9 +23,7 @@ internal class WasmTrapException_ConstructorTests
             }
             await Assert.That(exceptions[1].Message).IsEqualTo("trap");
             await Assert.That(exceptions[2].Message).IsEqualTo("trap");
-            await Assert
-                .That(ReferenceEquals(exceptions[2].InnerException, innerException))
-                .IsTrue();
+            await Assert.That(ReferenceEquals(exceptions[2].InnerException, innerException)).IsTrue();
         }
     }
 

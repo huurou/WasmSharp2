@@ -22,14 +22,8 @@ internal class WasmTable_SetTests
             .Instantiate(executionContext, [])
             .GetFunction("run");
         var external = new object();
-        var value =
-            kind == WasmValueKind.FuncRef
-                ? WasmValue.FromFuncRef(function)
-                : WasmValue.FromExternRef(external);
-        var empty =
-            kind == WasmValueKind.FuncRef
-                ? WasmValue.FromFuncRef(null)
-                : WasmValue.FromExternRef(null);
+        var value = kind == WasmValueKind.FuncRef ? WasmValue.FromFuncRef(function) : WasmValue.FromExternRef(external);
+        var empty = kind == WasmValueKind.FuncRef ? WasmValue.FromFuncRef(null) : WasmValue.FromExternRef(null);
         var table = new WasmTable(kind, new WasmLimits(grow ? 1u : 2u));
         if (grow)
         {
@@ -64,10 +58,7 @@ internal class WasmTable_SetTests
     [Arguments(WasmValueKind.ExternRef, false)]
     [Arguments(WasmValueKind.FuncRef, true)]
     [Arguments(WasmValueKind.ExternRef, true)]
-    public async Task 要素型と異なる値を設定する_元の要素を変更せず拒否する(
-        WasmValueKind kind,
-        bool numeric
-    )
+    public async Task 要素型と異なる値を設定する_元の要素を変更せず拒否する(WasmValueKind kind, bool numeric)
     {
         // Arrange
         var table = new WasmTable(kind, new WasmLimits(1));
@@ -103,11 +94,7 @@ internal class WasmTable_SetTests
     [Arguments(0u, 0u, false)]
     [Arguments(1u, 1u, false)]
     [Arguments(1u, uint.MaxValue, true)]
-    public async Task 添字と値の型が両方不正である_型より範囲違反を優先して内容を保つ(
-        uint count,
-        uint index,
-        bool numeric
-    )
+    public async Task 添字と値の型が両方不正である_型より範囲違反を優先して内容を保つ(uint count, uint index, bool numeric)
     {
         // Arrange
         var table = new WasmTable(WasmValueKind.ExternRef, new WasmLimits(count));
@@ -119,9 +106,7 @@ internal class WasmTable_SetTests
         var invalid = numeric ? WasmValue.FromI32(1) : WasmValue.FromFuncRef(null);
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => table.Set(index, invalid))
-            .ThrowsExactly<ArgumentOutOfRangeException>();
+        var exception = await Assert.That(() => table.Set(index, invalid)).ThrowsExactly<ArgumentOutOfRangeException>();
         using (Assert.Multiple())
         {
             await Assert.That(exception!.ParamName).IsEqualTo("index");
@@ -129,9 +114,7 @@ internal class WasmTable_SetTests
             await Assert.That(table.Count).IsEqualTo(count);
             for (uint position = 0; position < count; position++)
             {
-                await Assert
-                    .That(ReferenceEquals(table.Get(position).AsExternRef(), reference))
-                    .IsTrue();
+                await Assert.That(ReferenceEquals(table.Get(position).AsExternRef(), reference)).IsTrue();
             }
         }
     }

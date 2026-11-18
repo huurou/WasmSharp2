@@ -11,10 +11,7 @@ internal class Interpreter_TableFillTests
     [Arguments(WasmValueKind.FuncRef, true)]
     [Arguments(WasmValueKind.ExternRef, false)]
     [Arguments(WasmValueKind.ExternRef, true)]
-    public async Task 指定tableの範囲を埋める_範囲外と他tableを保って同じ参照を設定する(
-        WasmValueKind kind,
-        bool isNull
-    )
+    public async Task 指定tableの範囲を埋める_範囲外と他tableを保って同じ参照を設定する(WasmValueKind kind, bool isNull)
     {
         // Arrange
         var original = TableHandlerFixture.CreateReference(kind);
@@ -42,9 +39,7 @@ internal class Interpreter_TableFillTests
             await Assert.That(table.Get(1)).IsEqualTo(value);
             await Assert.That(table.Get(2)).IsEqualTo(value);
             await Assert.That(table.Get(3)).IsEqualTo(original);
-            await Assert
-                .That(other.Get(1))
-                .IsEqualTo(TableHandlerFixture.CreateReference(kind, true));
+            await Assert.That(other.Get(1)).IsEqualTo(TableHandlerFixture.CreateReference(kind, true));
         }
     }
 
@@ -53,10 +48,7 @@ internal class Interpreter_TableFillTests
     [Arguments(-1, 1)]
     [Arguments(0, -1)]
     [Arguments(5, 0)]
-    public async Task 範囲が不正である_全operandを除いて位置付きtrapを返し内容を保つ(
-        int destination,
-        int length
-    )
+    public async Task 範囲が不正である_全operandを除いて位置付きtrapを返し内容を保つ(int destination, int length)
     {
         // Arrange
         var table = new WasmTable(WasmValueKind.ExternRef, new(4));
@@ -69,11 +61,7 @@ internal class Interpreter_TableFillTests
             Interpreter.TableFill,
             function,
             0,
-            [
-                WasmValue.FromI32(destination),
-                WasmValue.FromExternRef(null),
-                WasmValue.FromI32(length),
-            ]
+            [WasmValue.FromI32(destination), WasmValue.FromExternRef(null), WasmValue.FromI32(length)]
         );
 
         // Assert

@@ -19,16 +19,10 @@ internal class SimdValue_GetLaneTests
     [Arguments(32, 3, 0xFEDCBA98UL)]
     [Arguments(64, 0, 0x0123456789ABCDEFUL)]
     [Arguments(64, 1, 0xFEDCBA9876543210UL)]
-    public async Task Lane幅と位置を指定する_低位から対応するビット列を取得する(
-        int bitWidth,
-        int laneIndex,
-        ulong expected
-    )
+    public async Task Lane幅と位置を指定する_低位から対応するビット列を取得する(int bitWidth, int laneIndex, ulong expected)
     {
         // Arrange
-        var value = SimdValue.FromValue(
-            WasmValue.FromV128(0x0123456789ABCDEFUL, 0xFEDCBA9876543210UL)
-        );
+        var value = SimdValue.FromValue(WasmValue.FromV128(0x0123456789ABCDEFUL, 0xFEDCBA9876543210UL));
 
         // Act
         var actual = value.GetLane(bitWidth, laneIndex);

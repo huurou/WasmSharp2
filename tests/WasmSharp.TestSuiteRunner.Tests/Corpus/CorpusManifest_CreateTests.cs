@@ -20,9 +20,7 @@ internal class CorpusManifest_CreateTests
         using (Assert.Multiple())
         {
             await Assert.That(manifest.Profile.Inputs.SequenceEqual(profile.Inputs)).IsTrue();
-            await Assert
-                .That(manifest.Inputs.Select(x => x.Input).SequenceEqual(profile.Inputs))
-                .IsTrue();
+            await Assert.That(manifest.Inputs.Select(x => x.Input).SequenceEqual(profile.Inputs)).IsTrue();
             await Assert
                 .That(
                     manifest.Inputs.All(x =>
@@ -36,12 +34,8 @@ internal class CorpusManifest_CreateTests
                 )
                 .IsTrue();
             await Assert.That(manifest.Summary).IsEqualTo(new ConversionSummary(147, 0, 0, 147, 0));
-            await Assert
-                .That(manifest.Completion)
-                .IsEqualTo(new ConversionCompletion(false, false));
-            await Assert
-                .That(manifest.Provenance.ExecutableSha256)
-                .IsEqualTo(provenance.ExecutableSha256);
+            await Assert.That(manifest.Completion).IsEqualTo(new ConversionCompletion(false, false));
+            await Assert.That(manifest.Provenance.ExecutableSha256).IsEqualTo(provenance.ExecutableSha256);
             await Assert.That(manifest.Diagnostics.Count).IsEqualTo(0);
         }
     }

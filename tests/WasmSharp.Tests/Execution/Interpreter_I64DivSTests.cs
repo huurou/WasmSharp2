@@ -14,11 +14,7 @@ internal class Interpreter_I64DivSTests
     [Arguments(3L, 11L, 0L)]
     [Arguments(long.MinValue, 1L, long.MinValue)]
     [Arguments(0L, -1L, 0L)]
-    public async Task 正負と左右が異なる値と幅境界_左を右で割った0方向への整数商を返す(
-        long left,
-        long right,
-        long expected
-    )
+    public async Task 正負と左右が異なる値と幅境界_左を右で割った0方向への整数商を返す(long left, long right, long expected)
     {
         // Arrange
         WasmValue[] operands = [WasmValue.FromI64(left), WasmValue.FromI64(right)];

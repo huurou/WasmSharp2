@@ -1,6 +1,5 @@
 using System.Security.Cryptography;
 using System.Text.Json;
-using WasmSharp.Benchmarks.Cases;
 
 namespace WasmSharp.Benchmarks.Results;
 
@@ -15,18 +14,10 @@ internal sealed partial class RunComparison
         var baseline = ReadRuns(request.BaselineRunDirectories, reasons);
         var current = ReadRuns(request.CurrentRunDirectories, reasons);
         var policy = ReadPolicy(request, reasons);
-        if (
-            baseline
-                .Select(x => x.Manifest.RunId)
-                .Intersect(current.Select(x => x.Manifest.RunId))
-                .Any()
-        )
+        if (baseline.Select(x => x.Manifest.RunId).Intersect(current.Select(x => x.Manifest.RunId)).Any())
         {
             reasons.Add(
-                new(
-                    ComparisonReasonKind.InsufficientMeasurements,
-                    "同じrun IDを基準群と候補群に重複使用できません。"
-                )
+                new(ComparisonReasonKind.InsufficientMeasurements, "同じrun IDを基準群と候補群に重複使用できません。")
             );
         }
         return new(
@@ -34,16 +25,15 @@ internal sealed partial class RunComparison
             [.. baseline.Select(x => x.Reference)],
             [.. current.Select(x => x.Reference)],
             new(request.PolicyPath, request.PolicySha256),
-            [.. request
-                .CaseIds.Distinct(StringComparer.Ordinal)
-                .Select(x => CompareCase(x, baseline, current, policy, reasons))]
+            [
+                .. request
+                    .CaseIds.Distinct(StringComparer.Ordinal)
+                    .Select(x => CompareCase(x, baseline, current, policy, reasons)),
+            ]
         );
     }
 
-    private List<ComparisonRun> ReadRuns(
-        List<string> directories,
-        List<ComparisonReason> reasons
-    )
+    private List<ComparisonRun> ReadRuns(List<string> directories, List<ComparisonReason> reasons)
     {
         var runs = new List<ComparisonRun>();
         foreach (var directory in directories)
@@ -56,13 +46,7 @@ internal sealed partial class RunComparison
                     new(
                         directory,
                         manifest,
-                        new(
-                            manifest.RunId,
-                            new(
-                                path,
-                                Convert.ToHexStringLower(SHA256.HashData(File.ReadAllBytes(path)))
-                            )
-                        )
+                        new(manifest.RunId, new(path, Convert.ToHexStringLower(SHA256.HashData(File.ReadAllBytes(path)))))
                     )
                 );
             }
@@ -76,25 +60,14 @@ internal sealed partial class RunComparison
                 );
             }
         }
-        if (
-            runs.Select(x => x.Manifest.RunId).Distinct(StringComparer.Ordinal).Count()
-            != runs.Count
-        )
+        if (runs.Select(x => x.Manifest.RunId).Distinct(StringComparer.Ordinal).Count() != runs.Count)
         {
-            reasons.Add(
-                new(
-                    ComparisonReasonKind.InsufficientMeasurements,
-                    "群内の独立run IDが重複しています。"
-                )
-            );
+            reasons.Add(new(ComparisonReasonKind.InsufficientMeasurements, "群内の独立run IDが重複しています。"));
         }
         return runs;
     }
 
-    private ComparisonPolicy? ReadPolicy(
-        ComparisonRequest request,
-        List<ComparisonReason> reasons
-    )
+    private ComparisonPolicy? ReadPolicy(ComparisonRequest request, List<ComparisonReason> reasons)
     {
         try
         {
@@ -107,11 +80,7 @@ internal sealed partial class RunComparison
                 );
             }
             var policy = JsonSerializer.Deserialize<ComparisonPolicy>(content, json_.Options)!;
-            if (
-                policy is null
-                || policy.SchemaVersion != 1
-                || string.IsNullOrWhiteSpace(policy.PolicyId)
-            )
+            if (policy is null || policy.SchemaVersion != 1 || string.IsNullOrWhiteSpace(policy.PolicyId))
             {
                 throw new InvalidDataException("policyの版または識別子が不正です。");
             }
@@ -175,10 +144,7 @@ internal sealed partial class RunComparison
                     )
                 );
             }
-            if (
-                result is not null
-                && (result.Metrics.Time is null || result.Metrics.Allocation is null)
-            )
+            if (result is not null && (result.Metrics.Time is null || result.Metrics.Allocation is null))
             {
                 reasons.Add(
                     new(
@@ -193,16 +159,11 @@ internal sealed partial class RunComparison
         if (casePolicy is null || casePolicy.MinimumIndependentRuns < 3)
         {
             reasons.Add(
-                new(
-                    ComparisonReasonKind.MissingPolicy,
-                    $"case '{caseId}'の一意なpolicyと3以上の必要独立run数が必要です。"
-                )
+                new(ComparisonReasonKind.MissingPolicy, $"case '{caseId}'の一意なpolicyと3以上の必要独立run数が必要です。")
             );
             casePolicy = null;
         }
-        var untargeted =
-            casePolicy?.Time.ReductionTarget is null
-            && casePolicy?.Allocation.ReductionTarget is null;
+        var untargeted = casePolicy?.Time.ReductionTarget is null && casePolicy?.Allocation.ReductionTarget is null;
         var time = CompareMetric(
             MetricValues(baseline, caseId, true),
             MetricValues(current, caseId, true),
@@ -227,28 +188,22 @@ internal sealed partial class RunComparison
         var blocked = reasons.Any(x => IsBlocking(x.Kind));
         var decision =
             blocked ? ComparisonDecision.Indeterminate
-            : time.Decision == ComparisonDecision.Regressed
-            || allocation.Decision == ComparisonDecision.Regressed
+            : time.Decision == ComparisonDecision.Regressed || allocation.Decision == ComparisonDecision.Regressed
                 ? ComparisonDecision.Regressed
             : time.TargetAchieved
             || allocation.TargetAchieved
             || (
                 untargeted
-                && (
-                    time.Decision == ComparisonDecision.Improved
-                    || allocation.Decision == ComparisonDecision.Improved
-                )
+                && (time.Decision == ComparisonDecision.Improved || allocation.Decision == ComparisonDecision.Improved)
             )
                 ? ComparisonDecision.Improved
-            : time.Decision == ComparisonDecision.Equivalent
-            && allocation.Decision == ComparisonDecision.Equivalent
+            : time.Decision == ComparisonDecision.Equivalent && allocation.Decision == ComparisonDecision.Equivalent
                 ? ComparisonDecision.Equivalent
             : ComparisonDecision.Indeterminate;
         return new(
             caseId,
             decision,
-            decision == ComparisonDecision.Improved
-                && (time.TargetAchieved || allocation.TargetAchieved),
+            decision == ComparisonDecision.Improved && (time.TargetAchieved || allocation.TargetAchieved),
             blocked || decision == ComparisonDecision.Regressed,
             reasons,
             differences,
@@ -257,11 +212,7 @@ internal sealed partial class RunComparison
         );
     }
 
-    private static List<RunMetricValue> MetricValues(
-        List<ComparisonRun> runs,
-        string caseId,
-        bool time
-    )
+    private static List<RunMetricValue> MetricValues(List<ComparisonRun> runs, string caseId, bool time)
     {
         var values = new List<RunMetricValue>();
         foreach (var run in runs)
@@ -289,13 +240,7 @@ internal sealed partial class RunComparison
                 && timing.ConfidenceInterval.Level is > 0 and <= 1
             )
             {
-                values.Add(
-                    new(
-                        run.Manifest.RunId,
-                        timing.MeanNanosecondsPerOperation,
-                        timing.ConfidenceInterval
-                    )
-                );
+                values.Add(new(run.Manifest.RunId, timing.MeanNanosecondsPerOperation, timing.ConfidenceInterval));
             }
             else if (
                 !time
@@ -333,9 +278,5 @@ internal sealed partial class RunComparison
                 or UnauthorizedAccessException;
     }
 
-    private sealed record ComparisonRun(
-        string Directory,
-        RunManifest Manifest,
-        ComparedRun Reference
-    );
+    private sealed record ComparisonRun(string Directory, RunManifest Manifest, ComparedRun Reference);
 }

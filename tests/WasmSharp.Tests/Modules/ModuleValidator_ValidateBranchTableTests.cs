@@ -18,9 +18,7 @@ internal partial class ModuleValidator_ValidateTests
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
-        var candidates = emptyCandidates
-            ? HostLinkingModuleBinary.LabelVector()
-            : HostLinkingModuleBinary.LabelVector(0, 1);
+        var candidates = emptyCandidates ? HostLinkingModuleBinary.LabelVector() : HostLinkingModuleBinary.LabelVector(0, 1);
         var module = WasmModule.Decode(
             HostLinkingModuleBinary.Create(
                 HostLinkingModuleBinary.Types(([0x7F], [0x7F])),
@@ -77,9 +75,7 @@ internal partial class ModuleValidator_ValidateTests
                 HostLinkingModuleBinary.Types(([], [0x7F, 0x7F, 0x7E]), ([], [0x7F, 0x7E])),
                 HostLinkingModuleBinary.Functions(0),
                 HostLinkingModuleBinary.Exports(("run", 0, 0)),
-                HostLinkingModuleBinary.Code(
-                    ([], Convert.FromHexString("412A02014107420941000E0100000B0B"))
-                )
+                HostLinkingModuleBinary.Code(([], Convert.FromHexString("412A02014107420941000E0100000B0B")))
             )
         );
 
@@ -88,13 +84,7 @@ internal partial class ModuleValidator_ValidateTests
 
         // Assert
         await Assert
-            .That(
-                result.Values.SequenceEqual([
-                    WasmValue.FromI32(42),
-                    WasmValue.FromI32(7),
-                    WasmValue.FromI64(9),
-                ])
-            )
+            .That(result.Values.SequenceEqual([WasmValue.FromI32(42), WasmValue.FromI32(7), WasmValue.FromI64(9)]))
             .IsTrue();
     }
 }

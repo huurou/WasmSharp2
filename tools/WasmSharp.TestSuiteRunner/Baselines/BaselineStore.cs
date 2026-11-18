@@ -22,16 +22,11 @@ internal static class BaselineStore
             string.Equals(
                 input,
                 output,
-                OperatingSystem.IsWindows()
-                    ? StringComparison.OrdinalIgnoreCase
-                    : StringComparison.Ordinal
+                OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal
             )
         )
         {
-            throw new ReportStoreException(
-                "入力自身をbaselineの保存先には指定できません。",
-                output
-            );
+            throw new ReportStoreException("入力自身をbaselineの保存先には指定できません。", output);
         }
 
         var stored = reportStore.Read(input);

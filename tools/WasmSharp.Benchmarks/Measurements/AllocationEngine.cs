@@ -1,17 +1,13 @@
+using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using BenchmarkDotNet.Characteristics;
 using BenchmarkDotNet.Engines;
 using BenchmarkDotNet.Jobs;
 using BenchmarkDotNet.Reports;
-using System.Runtime.CompilerServices;
-using System.Runtime.ExceptionServices;
 
 namespace WasmSharp.Benchmarks.Measurements;
 
-internal sealed class AllocationEngine(
-    IEngine timingEngine,
-    Action? iterationSetup,
-    Action? iterationCleanup
-) : IEngine
+internal sealed class AllocationEngine(IEngine timingEngine, Action? iterationSetup, Action? iterationCleanup) : IEngine
 {
     private long exceptionCount_;
 
@@ -29,8 +25,7 @@ internal sealed class AllocationEngine(
         var timed = BenchmarkStack.Run(timingEngine);
         var totalOperations = timed
             .EngineMeasurements.Last(x =>
-                x.IterationMode == IterationMode.Workload
-                && x.IterationStage == IterationStage.Actual
+                x.IterationMode == IterationMode.Workload && x.IterationStage == IterationStage.Actual
             )
             .Operations;
         // 標準factoryが長時間の処理に選んだunrollを使う。

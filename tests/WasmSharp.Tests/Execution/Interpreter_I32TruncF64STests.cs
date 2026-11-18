@@ -21,10 +21,7 @@ internal class Interpreter_I32TruncF64STests
     [Arguments(0xC1E0000000000001UL, int.MinValue)]
     // −2147483648.9は切捨て後に範囲へ入る
     [Arguments(0xC1E00000001CCCCDUL, int.MinValue)]
-    public async Task 入力が切捨て後の範囲内_0方向への整数値を同幅のbit列で返す(
-        ulong operandBits,
-        int expected
-    )
+    public async Task 入力が切捨て後の範囲内_0方向への整数値を同幅のbit列で返す(ulong operandBits, int expected)
     {
         // Arrange
         WasmValue[] operands = [WasmValue.FromF64Bits(operandBits)];

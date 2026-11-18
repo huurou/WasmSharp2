@@ -214,18 +214,10 @@ internal static class ScriptReader
     /// <param name="index">入力内の0始まりcommand index</param>
     /// <returns>module識別子が省略されていれば直近moduleを対象とするregister</returns>
     /// <exception cref="ScriptFormatException">項目の過不足、型、行番号が固定形式に合わない場合</exception>
-    private static RegisterCommand ReadRegister(
-        Dictionary<string, JsonElement> properties,
-        int index
-    )
+    private static RegisterCommand ReadRegister(Dictionary<string, JsonElement> properties, int index)
     {
         RejectUnknownNames(properties, "", TYPE, LINE, NAME, AS);
-        return new(
-            index,
-            ReadLine(properties),
-            GetOptionalString(properties, "", NAME),
-            GetString(properties, "", AS)
-        );
+        return new(index, ReadLine(properties), GetOptionalString(properties, "", NAME), GetString(properties, "", AS));
     }
 
     /// <summary>
@@ -235,18 +227,10 @@ internal static class ScriptReader
     /// <param name="index">入力内の0始まりcommand index</param>
     /// <returns>invokeまたはgetと型だけの結果宣言を持つ単独action</returns>
     /// <exception cref="ScriptFormatException">command・action・結果宣言の項目や型が固定形式に合わない場合</exception>
-    private static ActionCommand ReadActionCommand(
-        Dictionary<string, JsonElement> properties,
-        int index
-    )
+    private static ActionCommand ReadActionCommand(Dictionary<string, JsonElement> properties, int index)
     {
         RejectUnknownNames(properties, "", TYPE, LINE, ACTION, EXPECTED);
-        return new(
-            index,
-            ReadLine(properties),
-            ReadAction(properties),
-            ReadResultTypes(properties)
-        );
+        return new(index, ReadLine(properties), ReadAction(properties), ReadResultTypes(properties));
     }
 
     /// <summary>
@@ -256,21 +240,14 @@ internal static class ScriptReader
     /// <param name="index">入力内の0始まりcommand index</param>
     /// <returns>値の文字列を加工せず保持するassert_return</returns>
     /// <exception cref="ScriptFormatException">command・action・期待値の項目や型が固定形式に合わない場合</exception>
-    private static AssertReturnCommand ReadAssertReturn(
-        Dictionary<string, JsonElement> properties,
-        int index
-    )
+    private static AssertReturnCommand ReadAssertReturn(Dictionary<string, JsonElement> properties, int index)
     {
         RejectUnknownNames(properties, "", TYPE, LINE, ACTION, EXPECTED);
         return new(
             index,
             ReadLine(properties),
             ReadAction(properties),
-            ReadValues(
-                GetArray(properties, "", EXPECTED),
-                EXPECTED,
-                static (k, v, l, x) => new ExpectedValue(k, v, l, x)
-            )
+            ReadValues(GetArray(properties, "", EXPECTED), EXPECTED, static (k, v, l, x) => new ExpectedValue(k, v, l, x))
         );
     }
 
@@ -347,10 +324,7 @@ internal static class ScriptReader
                 );
             case "get":
                 RejectUnknownNames(properties, ACTION, TYPE, MODULE, FIELD);
-                return new GetAction(
-                    GetOptionalString(properties, ACTION, MODULE),
-                    GetString(properties, ACTION, FIELD)
-                );
+                return new GetAction(GetOptionalString(properties, ACTION, MODULE), GetString(properties, ACTION, FIELD));
             default:
                 throw Unknown(Join(ACTION, TYPE), type);
         }
@@ -404,11 +378,7 @@ internal static class ScriptReader
             kind,
             null,
             laneType,
-            [
-                .. GetArray(properties, path, VALUE)
-                    .EnumerateArray()
-                    .Select((x, i) => ToString(x, $"{lanesPath}[{i}]")),
-            ]
+            [.. GetArray(properties, path, VALUE).EnumerateArray().Select((x, i) => ToString(x, $"{lanesPath}[{i}]"))]
         );
     }
 
@@ -418,9 +388,7 @@ internal static class ScriptReader
     /// <param name="command">型だけのexpected配列を持つcommand</param>
     /// <returns>JSONの記載順の結果型 新しい配列として保持し、空の宣言なら空</returns>
     /// <exception cref="ScriptFormatException">expectedがない、配列でない、または要素が既知のtypeだけを持つobjectではない場合</exception>
-    private static ImmutableArray<WasmValueKind> ReadResultTypes(
-        Dictionary<string, JsonElement> command
-    )
+    private static ImmutableArray<WasmValueKind> ReadResultTypes(Dictionary<string, JsonElement> command)
     {
         return
         [
@@ -559,9 +527,7 @@ internal static class ScriptReader
         catch (InvalidOperationException)
         {
             // 対になるサロゲートを欠くエスケープ等を含む名前は、固定形式のどの項目名とも一致しない。
-            throw new ScriptFormatException(
-                $"{target}に文字列として取得できない項目名があります。"
-            );
+            throw new ScriptFormatException($"{target}に文字列として取得できない項目名があります。");
         }
     }
 
@@ -595,11 +561,7 @@ internal static class ScriptReader
     /// <param name="name">必須の項目名</param>
     /// <returns>指定した項目のJSON要素 値の種類は検査しない</returns>
     /// <exception cref="ScriptFormatException">指定した項目がない場合</exception>
-    private static JsonElement GetRequired(
-        Dictionary<string, JsonElement> properties,
-        string path,
-        string name
-    )
+    private static JsonElement GetRequired(Dictionary<string, JsonElement> properties, string path, string name)
     {
         return properties.TryGetValue(name, out var value)
             ? value
@@ -614,11 +576,7 @@ internal static class ScriptReader
     /// <param name="name">必須の配列の項目名</param>
     /// <returns>指定した項目の配列要素 配列の各要素の種類は検査しない</returns>
     /// <exception cref="ScriptFormatException">指定した項目がないか、配列ではない場合</exception>
-    private static JsonElement GetArray(
-        Dictionary<string, JsonElement> properties,
-        string path,
-        string name
-    )
+    private static JsonElement GetArray(Dictionary<string, JsonElement> properties, string path, string name)
     {
         var value = GetRequired(properties, path, name);
         return value.ValueKind == JsonValueKind.Array
@@ -634,11 +592,7 @@ internal static class ScriptReader
     /// <param name="name">必須の文字列の項目名</param>
     /// <returns>指定した項目の文字列 空文字列もそのまま返す</returns>
     /// <exception cref="ScriptFormatException">指定した項目がないか、取得可能な文字列ではない場合</exception>
-    private static string GetString(
-        Dictionary<string, JsonElement> properties,
-        string path,
-        string name
-    )
+    private static string GetString(Dictionary<string, JsonElement> properties, string path, string name)
     {
         return ToString(GetRequired(properties, path, name), Join(path, name));
     }
@@ -651,15 +605,9 @@ internal static class ScriptReader
     /// <param name="name">任意の文字列の項目名</param>
     /// <returns>加工しない文字列 項目が存在しない場合だけnull</returns>
     /// <exception cref="ScriptFormatException">指定した項目はあるが取得可能な文字列ではない場合</exception>
-    private static string? GetOptionalString(
-        Dictionary<string, JsonElement> properties,
-        string path,
-        string name
-    )
+    private static string? GetOptionalString(Dictionary<string, JsonElement> properties, string path, string name)
     {
-        return properties.TryGetValue(name, out var value)
-            ? ToString(value, Join(path, name))
-            : null;
+        return properties.TryGetValue(name, out var value) ? ToString(value, Join(path, name)) : null;
     }
 
     /// <summary>

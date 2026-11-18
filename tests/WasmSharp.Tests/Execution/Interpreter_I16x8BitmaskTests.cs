@@ -12,11 +12,7 @@ internal class Interpreter_I16x8BitmaskTests
     [Arguments(0x8000800080008000UL, 0x8000800080008000UL, 255)]
     [Arguments(0x0001000100018000UL, 0x0001000100018000UL, 17)]
     [Arguments(0x0001000100010001UL, 0x8000000100010001UL, 128)]
-    public async Task 符号bitと下位bitが混在するlane_最上位bitをlane番号順に集める(
-        ulong low64,
-        ulong high64,
-        int expected
-    )
+    public async Task 符号bitと下位bitが混在するlane_最上位bitをlane番号順に集める(ulong low64, ulong high64, int expected)
     {
         // Arrange
         WasmValue[] operands = [WasmValue.FromV128(low64, high64)];

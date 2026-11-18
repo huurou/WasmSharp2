@@ -35,28 +35,17 @@ internal partial class WasmModule_ValidateTests
         );
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => module.Validate())
-            .ThrowsExactly<WasmValidateException>();
+        var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
         using (Assert.Multiple())
         {
-            await Assert
-                .That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal))
-                .IsTrue();
+            await Assert.That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal)).IsTrue();
             await Assert
                 .That(exception.Location)
                 .IsEqualTo(
-                    new(
-                        WasmProcessingStage.Validate,
-                        module.Functions[0].Instructions[instructionIndex].ByteOffset,
-                        0,
-                        10
-                    )
+                    new(WasmProcessingStage.Validate, module.Functions[0].Instructions[instructionIndex].ByteOffset, 0, 10)
                 );
             await Assert.That(module.FunctionCodes.IsEmpty).IsTrue();
-            await Assert
-                .That(() => module.Instantiate(executionContext, []))
-                .ThrowsExactly<InvalidOperationException>();
+            await Assert.That(() => module.Instantiate(executionContext, [])).ThrowsExactly<InvalidOperationException>();
         }
     }
 
@@ -69,9 +58,7 @@ internal partial class WasmModule_ValidateTests
                 HostLinkingModuleBinary.Types(([], [])),
                 HostLinkingModuleBinary.Functions(0),
                 HostLinkingModuleBinary.Tables((0x6F, 1, 2)),
-                HostLinkingModuleBinary.Code(
-                    ([], [0x00, 0x25, 0, 0x26, 0, 0xFC, 0x0F, 0, 0x1A, 0xFC, 0x10, 0, 0x1A, 0x0B])
-                )
+                HostLinkingModuleBinary.Code(([], [0x00, 0x25, 0, 0x26, 0, 0xFC, 0x0F, 0, 0x1A, 0xFC, 0x10, 0, 0x1A, 0x0B]))
             )
         );
 

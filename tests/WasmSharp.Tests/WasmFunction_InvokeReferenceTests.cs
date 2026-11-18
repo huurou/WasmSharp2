@@ -7,10 +7,7 @@ internal partial class WasmFunction_InvokeTests
     [Test]
     [Arguments((byte)0x70, WasmValueKind.FuncRef)]
     [Arguments((byte)0x6F, WasmValueKind.ExternRef)]
-    public async Task 参照nullと追加localを返す_参照型を保ちnull判定が1になる(
-        byte kind,
-        WasmValueKind expectedKind
-    )
+    public async Task 参照nullと追加localを返す_参照型を保ちnull判定が1になる(byte kind, WasmValueKind expectedKind)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
@@ -20,30 +17,22 @@ internal partial class WasmFunction_InvokeTests
                 HostLinkingModuleBinary.Functions(0),
                 HostLinkingModuleBinary.Globals((kind, false, [0xD0, kind, 0x0B])),
                 HostLinkingModuleBinary.Exports(("run", 0, 0)),
-                HostLinkingModuleBinary.Code(
-                    ([(1, kind)], [0xD0, kind, 0x20, 0, 0x23, 0, 0x20, 0, 0xD1, 0x0B])
-                )
+                HostLinkingModuleBinary.Code(([(1, kind)], [0xD0, kind, 0x20, 0, 0x23, 0, 0x20, 0, 0xD1, 0x0B]))
             )
         );
 
         // Act
-        var values = module.Validate().Instantiate(executionContext, []).GetFunction("run").Invoke(executionContext, []).Values;
+        var values = module
+            .Validate()
+            .Instantiate(executionContext, [])
+            .GetFunction("run")
+            .Invoke(executionContext, [])
+            .Values;
 
         // Assert
         var expectedNull =
-            expectedKind == WasmValueKind.FuncRef
-                ? WasmValue.FromFuncRef(null)
-                : WasmValue.FromExternRef(null);
-        await Assert
-            .That(
-                values.SequenceEqual([
-                    expectedNull,
-                    expectedNull,
-                    expectedNull,
-                    WasmValue.FromI32(1),
-                ])
-            )
-            .IsTrue();
+            expectedKind == WasmValueKind.FuncRef ? WasmValue.FromFuncRef(null) : WasmValue.FromExternRef(null);
+        await Assert.That(values.SequenceEqual([expectedNull, expectedNull, expectedNull, WasmValue.FromI32(1)])).IsTrue();
     }
 
     [Test]
@@ -58,10 +47,7 @@ internal partial class WasmFunction_InvokeTests
                     HostLinkingModuleBinary.Functions(0, 1),
                     HostLinkingModuleBinary.Globals((0x70, false, [0xD2, 0, 0x0B])),
                     HostLinkingModuleBinary.Exports(("target", 0, 0), ("run", 0, 1), ("g", 3, 0)),
-                    HostLinkingModuleBinary.Code(
-                        ([], [0x0B]),
-                        ([], [0xD2, 0, 0x23, 0, 0xD2, 0, 0xD1, 0x0B])
-                    )
+                    HostLinkingModuleBinary.Code(([], [0x0B]), ([], [0xD2, 0, 0x23, 0, 0xD2, 0, 0xD1, 0x0B]))
                 )
             )
             .Validate();
@@ -93,12 +79,8 @@ internal partial class WasmFunction_InvokeTests
                     ])
                 )
                 .IsTrue();
-            await Assert
-                .That(firstValues[0].AsFuncRef())
-                .IsSameReferenceAs(firstValues[1].AsFuncRef());
-            await Assert
-                .That(ReferenceEquals(firstValues[0].AsFuncRef(), secondValues[0].AsFuncRef()))
-                .IsFalse();
+            await Assert.That(firstValues[0].AsFuncRef()).IsSameReferenceAs(firstValues[1].AsFuncRef());
+            await Assert.That(ReferenceEquals(firstValues[0].AsFuncRef(), secondValues[0].AsFuncRef())).IsFalse();
         }
     }
 
@@ -107,10 +89,7 @@ internal partial class WasmFunction_InvokeTests
     [Arguments((byte)0x70, 1)]
     [Arguments((byte)0x6F, 0)]
     [Arguments((byte)0x6F, 1)]
-    public async Task 参照を引数とlocalとtyped_selectとifで渡す_複数結果の順序と選択した参照を保つ(
-        byte kind,
-        int condition
-    )
+    public async Task 参照を引数とlocalとtyped_selectとifで渡す_複数結果の順序と選択した参照を保つ(byte kind, int condition)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
@@ -170,8 +149,6 @@ internal partial class WasmFunction_InvokeTests
             .Values;
 
         // Assert
-        await Assert
-            .That(values.SequenceEqual([selected, selected, WasmValue.FromI32(0)]))
-            .IsTrue();
+        await Assert.That(values.SequenceEqual([selected, selected, WasmValue.FromI32(0)])).IsTrue();
     }
 }

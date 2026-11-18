@@ -27,9 +27,7 @@ internal partial class EnvironmentCapture_CaptureTests
         const string LAST_VARIABLE = "DOTNET_GC_CUSTOM_Z";
         using var fixture = new RunStoreFixture();
         var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, json_);
-        var command = new CommandInvocation(
-            Environment.ProcessPath!, [], Environment.CurrentDirectory
-        );
+        var command = new CommandInvocation(Environment.ProcessPath!, [], Environment.CurrentDirectory);
         var previousFirst = Environment.GetEnvironmentVariable(FIRST_VARIABLE);
         var previousLast = Environment.GetEnvironmentVariable(LAST_VARIABLE);
         try
@@ -45,12 +43,8 @@ internal partial class EnvironmentCapture_CaptureTests
             using (Assert.Multiple())
             {
                 await Assert.That(names.SequenceEqual(names.Order(StringComparer.Ordinal))).IsTrue();
-                await Assert
-                    .That(captured.EnvironmentVariables.Single(x => x.Name == FIRST_VARIABLE).Value)
-                    .IsEqualTo("a");
-                await Assert
-                    .That(captured.EnvironmentVariables.Single(x => x.Name == LAST_VARIABLE).Value)
-                    .IsEqualTo("z");
+                await Assert.That(captured.EnvironmentVariables.Single(x => x.Name == FIRST_VARIABLE).Value).IsEqualTo("a");
+                await Assert.That(captured.EnvironmentVariables.Single(x => x.Name == LAST_VARIABLE).Value).IsEqualTo("z");
             }
         }
         finally
@@ -66,11 +60,7 @@ internal partial class EnvironmentCapture_CaptureTests
         // Arrange
         using var fixture = new RunStoreFixture();
         var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, json_);
-        var command = new CommandInvocation(
-            Environment.ProcessPath!,
-            [],
-            Environment.CurrentDirectory
-        );
+        var command = new CommandInvocation(Environment.ProcessPath!, [], Environment.CurrentDirectory);
         var windowsBefore = OperatingSystem.IsWindows() ? await ReadWindowsEnvironment() : null;
 
         // Act
@@ -79,14 +69,9 @@ internal partial class EnvironmentCapture_CaptureTests
 
         // Assert
         var collector = captured.Processes.Single();
-        var gcNames = captured.GcSettings
-            .Where(x => x.Name.StartsWith("GC.", StringComparison.Ordinal))
-            .Select(x => x.Name);
+        var gcNames = captured.GcSettings.Where(x => x.Name.StartsWith("GC.", StringComparison.Ordinal)).Select(x => x.Name);
         var runtimeConfig = File.ReadAllBytes(
-            Path.ChangeExtension(
-                System.Reflection.Assembly.GetEntryAssembly()!.Location,
-                ".runtimeconfig.json"
-            )
+            Path.ChangeExtension(System.Reflection.Assembly.GetEntryAssembly()!.Location, ".runtimeconfig.json")
         );
         using (Assert.Multiple())
         {
@@ -98,9 +83,7 @@ internal partial class EnvironmentCapture_CaptureTests
                 {
                     var plan = PowerPlanRegex().Match(windowsBefore.PowerPlan);
                     await Assert.That(plan.Success).IsTrue();
-                    await Assert
-                        .That(captured.Power.PlanId)
-                        .IsEqualTo(Guid.Parse(plan.Groups["id"].Value).ToString());
+                    await Assert.That(captured.Power.PlanId).IsEqualTo(Guid.Parse(plan.Groups["id"].Value).ToString());
                     await Assert.That(captured.Power.PlanName).IsEqualTo(plan.Groups["name"].Value);
                 }
             }
@@ -108,79 +91,39 @@ internal partial class EnvironmentCapture_CaptureTests
             await Assert.That(collector.JobId).IsEqualTo("");
             await Assert.That(collector.LaunchCount).IsEqualTo(1);
             await Assert.That(collector.JobSettings).IsEmpty();
+            await Assert.That(collector.EnvironmentVariables).IsEquivalentTo(captured.EnvironmentVariables);
             await Assert
-                .That(collector.EnvironmentVariables)
-                .IsEquivalentTo(captured.EnvironmentVariables);
-            await Assert
-                .That(
-                    collector
-                        .RuntimeConfiguration.Single(x =>
-                            x.Name == "RuntimeConfigFile.RelativePath"
-                        )
-                        .Value
-                )
+                .That(collector.RuntimeConfiguration.Single(x => x.Name == "RuntimeConfigFile.RelativePath").Value)
                 .IsEqualTo("settings/collector.runtimeconfig.json");
             await Assert
-                .That(
-                    collector
-                        .RuntimeConfiguration.Single(x => x.Name == "RuntimeConfigFile.Sha256")
-                        .Value
-                )
+                .That(collector.RuntimeConfiguration.Single(x => x.Name == "RuntimeConfigFile.Sha256").Value)
                 .IsEqualTo(Convert.ToHexStringLower(SHA256.HashData(runtimeConfig)));
             await Assert
                 .That(
-                    File.ReadAllBytes(
-                            Path.Combine(
-                                fixture.DirectoryPath,
-                                "settings/collector.runtimeconfig.json"
-                            )
-                        )
+                    File.ReadAllBytes(Path.Combine(fixture.DirectoryPath, "settings/collector.runtimeconfig.json"))
                         .SequenceEqual(runtimeConfig)
                 )
                 .IsTrue();
-            await Assert
-                .That(captured.RuntimeVersion)
-                .StartsWith(RuntimeInformation.FrameworkDescription + "; ");
+            await Assert.That(captured.RuntimeVersion).StartsWith(RuntimeInformation.FrameworkDescription + "; ");
             await Assert.That(Version.TryParse(captured.SdkVersion.Split('-')[0], out _)).IsTrue();
             await Assert
                 .That(captured.GcSettings.Single(x => x.Name == "GCSettings.LatencyMode").Value)
                 .IsEqualTo(GCSettings.LatencyMode.ToString());
             await Assert
-                .That(
-                    captured
-                        .GcSettings.Single(x =>
-                            x.Name == "GCSettings.LargeObjectHeapCompactionMode"
-                        )
-                        .Value
-                )
+                .That(captured.GcSettings.Single(x => x.Name == "GCSettings.LargeObjectHeapCompactionMode").Value)
                 .IsEqualTo(GCSettings.LargeObjectHeapCompactionMode.ToString());
             foreach (var setting in GC.GetConfigurationVariables())
             {
                 await Assert
                     .That(captured.GcSettings.Single(x => x.Name == "GC." + setting.Key).Value)
-                    .IsEqualTo(
-                        Convert.ToString(
-                            setting.Value,
-                            System.Globalization.CultureInfo.InvariantCulture
-                        )
-                    );
+                    .IsEqualTo(Convert.ToString(setting.Value, System.Globalization.CultureInfo.InvariantCulture));
             }
+            await Assert.That(captured.JitSettings.Single(x => x.Name == "JitInfo").Value.Length > 0).IsTrue();
             await Assert
-                .That(captured.JitSettings.Single(x => x.Name == "JitInfo").Value.Length > 0)
-                .IsTrue();
-            await Assert
-                .That(
-                    captured
-                        .JitSettings.Single(x => x.Name == "RuntimeFeature.IsDynamicCodeSupported")
-                        .Value
-                )
+                .That(captured.JitSettings.Single(x => x.Name == "RuntimeFeature.IsDynamicCodeSupported").Value)
                 .IsEqualTo(RuntimeFeature.IsDynamicCodeSupported.ToString());
             await Assert
-                .That(
-                    captured
-                        .JitSettings.Single(x => x.Name == "RuntimeFeature.IsDynamicCodeCompiled")
-                        .Value
-                )
+                .That(captured.JitSettings.Single(x => x.Name == "RuntimeFeature.IsDynamicCodeCompiled").Value)
                 .IsEqualTo(RuntimeFeature.IsDynamicCodeCompiled.ToString());
             await Assert
                 .That(captured.JitSettings.Single(x => x.Name == "Effective.TieredPGO").Value)
@@ -197,11 +140,7 @@ internal partial class EnvironmentCapture_CaptureTests
         // Arrange
         using var fixture = new RunStoreFixture();
         var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, json_);
-        var command = new CommandInvocation(
-            Environment.ProcessPath!,
-            [],
-            Path.Combine(fixture.DirectoryPath, "missing")
-        );
+        var command = new CommandInvocation(Environment.ProcessPath!, [], Path.Combine(fixture.DirectoryPath, "missing"));
 
         // Act
         var captured = environmentCapture_.Capture(store, command, []);
@@ -212,9 +151,7 @@ internal partial class EnvironmentCapture_CaptureTests
 
     private static async Task<WindowsEnvironment> ReadWindowsEnvironment()
     {
-        var start = new ProcessStartInfo(
-            Path.Combine(Environment.SystemDirectory, "WindowsPowerShell/v1.0/powershell.exe")
-        )
+        var start = new ProcessStartInfo(Path.Combine(Environment.SystemDirectory, "WindowsPowerShell/v1.0/powershell.exe"))
         {
             RedirectStandardOutput = true,
             RedirectStandardError = true,
@@ -257,7 +194,6 @@ internal partial class EnvironmentCapture_CaptureTests
 
     private sealed record WindowsEnvironment(List<string> CpuNames, string PowerPlan);
 
-    [GeneratedRegex(@"(?<id>[0-9a-fA-F-]{36})\s+\((?<name>.*)\)$"
-    )]
+    [GeneratedRegex(@"(?<id>[0-9a-fA-F-]{36})\s+\((?<name>.*)\)$")]
     private static partial Regex PowerPlanRegex();
 }

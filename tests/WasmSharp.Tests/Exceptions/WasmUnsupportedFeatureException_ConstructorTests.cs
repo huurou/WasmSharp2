@@ -8,21 +8,14 @@ internal class WasmUnsupportedFeatureException_ConstructorTests
     [Test]
     [Arguments(true)]
     [Arguments(false)]
-    public async Task 未確認範囲にdefaultまたは空配列を指定する_列挙可能な空配列で取得できる(
-        bool useDefault
-    )
+    public async Task 未確認範囲にdefaultまたは空配列を指定する_列挙可能な空配列で取得できる(bool useDefault)
     {
         // Arrange
         var location = new WasmFailureLocation(WasmProcessingStage.Validate);
         ImmutableArray<WasmUnverifiedRange> ranges = useDefault ? default : [];
 
         // Act
-        var exception = new WasmUnsupportedFeatureException(
-            "診断範囲なし",
-            "function.parameters",
-            location,
-            ranges
-        );
+        var exception = new WasmUnsupportedFeatureException("診断範囲なし", "function.parameters", location, ranges);
 
         // Assert
         using (Assert.Multiple())
@@ -49,13 +42,7 @@ internal class WasmUnsupportedFeatureException_ConstructorTests
         var innerException = new InvalidOperationException("原因");
 
         // Act
-        var exception = new WasmUnsupportedFeatureException(
-            "処理を中断した",
-            "i32.add",
-            location,
-            ranges,
-            innerException
-        );
+        var exception = new WasmUnsupportedFeatureException("処理を中断した", "i32.add", location, ranges, innerException);
 
         // Assert
         using (Assert.Multiple())
@@ -68,19 +55,10 @@ internal class WasmUnsupportedFeatureException_ConstructorTests
             await Assert.That(exception.UnverifiedRanges.Length).IsEqualTo(2);
             await Assert
                 .That(exception.UnverifiedRanges[0])
-                .IsEqualTo(
-                    new WasmUnverifiedRange(
-                        WasmProcessingStage.Decode,
-                        37,
-                        100,
-                        "未対応命令以降の構文"
-                    )
-                );
+                .IsEqualTo(new WasmUnverifiedRange(WasmProcessingStage.Decode, 37, 100, "未対応命令以降の構文"));
             await Assert
                 .That(exception.UnverifiedRanges[1])
-                .IsEqualTo(
-                    new WasmUnverifiedRange(WasmProcessingStage.Validate, 0, 100, "入力全体の検証")
-                );
+                .IsEqualTo(new WasmUnverifiedRange(WasmProcessingStage.Validate, 0, 100, "入力全体の検証"));
         }
     }
 
@@ -113,9 +91,7 @@ internal class WasmUnsupportedFeatureException_ConstructorTests
             }
             await Assert.That(exceptions[1].Message).IsEqualTo("未実装");
             await Assert.That(exceptions[2].Message).IsEqualTo("未実装");
-            await Assert
-                .That(ReferenceEquals(exceptions[2].InnerException, innerException))
-                .IsTrue();
+            await Assert.That(ReferenceEquals(exceptions[2].InnerException, innerException)).IsTrue();
         }
     }
 }

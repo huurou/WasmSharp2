@@ -36,10 +36,7 @@ internal static partial class Interpreter
             context,
             32,
             static (x, y) =>
-                F32ArithmeticResult(
-                        BitConverter.UInt32BitsToSingle((uint)x)
-                            + BitConverter.UInt32BitsToSingle((uint)y)
-                    )
+                F32ArithmeticResult(BitConverter.UInt32BitsToSingle((uint)x) + BitConverter.UInt32BitsToSingle((uint)y))
                     .AsF32Bits()
         );
     }
@@ -56,10 +53,7 @@ internal static partial class Interpreter
             context,
             32,
             static (x, y) =>
-                F32ArithmeticResult(
-                        BitConverter.UInt32BitsToSingle((uint)x)
-                            - BitConverter.UInt32BitsToSingle((uint)y)
-                    )
+                F32ArithmeticResult(BitConverter.UInt32BitsToSingle((uint)x) - BitConverter.UInt32BitsToSingle((uint)y))
                     .AsF32Bits()
         );
     }
@@ -76,10 +70,7 @@ internal static partial class Interpreter
             context,
             32,
             static (x, y) =>
-                F32ArithmeticResult(
-                        BitConverter.UInt32BitsToSingle((uint)x)
-                            * BitConverter.UInt32BitsToSingle((uint)y)
-                    )
+                F32ArithmeticResult(BitConverter.UInt32BitsToSingle((uint)x) * BitConverter.UInt32BitsToSingle((uint)y))
                     .AsF32Bits()
         );
     }
@@ -96,10 +87,7 @@ internal static partial class Interpreter
             context,
             32,
             static (x, y) =>
-                F32ArithmeticResult(
-                        BitConverter.UInt32BitsToSingle((uint)x)
-                            / BitConverter.UInt32BitsToSingle((uint)y)
-                    )
+                F32ArithmeticResult(BitConverter.UInt32BitsToSingle((uint)x) / BitConverter.UInt32BitsToSingle((uint)y))
                     .AsF32Bits()
         );
     }
@@ -110,17 +98,12 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのF32x4Sqrt命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult F32x4Sqrt(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult F32x4Sqrt(InterpreterContext context, in Instruction instruction)
     {
         return ExecuteSimdFloatUnary(
             context,
             32,
-            static x =>
-                F32ArithmeticResult(MathF.Sqrt(BitConverter.UInt32BitsToSingle((uint)x)))
-                    .AsF32Bits()
+            static x => F32ArithmeticResult(MathF.Sqrt(BitConverter.UInt32BitsToSingle((uint)x))).AsF32Bits()
         );
     }
 
@@ -130,10 +113,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのF32x4Ceil命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult F32x4Ceil(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult F32x4Ceil(InterpreterContext context, in Instruction instruction)
     {
         return ExecuteSimdFloatUnary(
             context,
@@ -152,10 +132,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのF32x4Floor命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult F32x4Floor(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult F32x4Floor(InterpreterContext context, in Instruction instruction)
     {
         return ExecuteSimdFloatUnary(
             context,
@@ -174,10 +151,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのF32x4Trunc命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult F32x4Trunc(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult F32x4Trunc(InterpreterContext context, in Instruction instruction)
     {
         return ExecuteSimdFloatUnary(
             context,
@@ -196,10 +170,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのF32x4Nearest命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult F32x4Nearest(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult F32x4Nearest(InterpreterContext context, in Instruction instruction)
     {
         return ExecuteSimdFloatUnary(
             context,
@@ -207,8 +178,7 @@ internal static partial class Interpreter
             static x =>
             {
                 var operand = BitConverter.UInt32BitsToSingle((uint)x);
-                return F32ArithmeticResult(MathF.Round(operand, MidpointRounding.ToEven))
-                    .AsF32Bits();
+                return F32ArithmeticResult(MathF.Round(operand, MidpointRounding.ToEven)).AsF32Bits();
             }
         );
     }
@@ -225,11 +195,7 @@ internal static partial class Interpreter
             context,
             32,
             static (x, y) =>
-                F32MinResult(
-                        BitConverter.UInt32BitsToSingle((uint)x),
-                        BitConverter.UInt32BitsToSingle((uint)y)
-                    )
-                    .AsF32Bits()
+                F32MinResult(BitConverter.UInt32BitsToSingle((uint)x), BitConverter.UInt32BitsToSingle((uint)y)).AsF32Bits()
         );
     }
 
@@ -245,11 +211,7 @@ internal static partial class Interpreter
             context,
             32,
             static (x, y) =>
-                F32MaxResult(
-                        BitConverter.UInt32BitsToSingle((uint)x),
-                        BitConverter.UInt32BitsToSingle((uint)y)
-                    )
-                    .AsF32Bits()
+                F32MaxResult(BitConverter.UInt32BitsToSingle((uint)x), BitConverter.UInt32BitsToSingle((uint)y)).AsF32Bits()
         );
     }
 
@@ -259,18 +221,12 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのF32x4Pmin命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult F32x4Pmin(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult F32x4Pmin(InterpreterContext context, in Instruction instruction)
     {
         return ExecuteSimdFloatBinary(
             context,
             32,
-            static (x, y) =>
-                BitConverter.UInt32BitsToSingle((uint)y) < BitConverter.UInt32BitsToSingle((uint)x)
-                    ? y
-                    : x
+            static (x, y) => BitConverter.UInt32BitsToSingle((uint)y) < BitConverter.UInt32BitsToSingle((uint)x) ? y : x
         );
     }
 
@@ -280,18 +236,12 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのF32x4Pmax命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult F32x4Pmax(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult F32x4Pmax(InterpreterContext context, in Instruction instruction)
     {
         return ExecuteSimdFloatBinary(
             context,
             32,
-            static (x, y) =>
-                BitConverter.UInt32BitsToSingle((uint)x) < BitConverter.UInt32BitsToSingle((uint)y)
-                    ? y
-                    : x
+            static (x, y) => BitConverter.UInt32BitsToSingle((uint)x) < BitConverter.UInt32BitsToSingle((uint)y) ? y : x
         );
     }
 
@@ -329,10 +279,7 @@ internal static partial class Interpreter
             context,
             64,
             static (x, y) =>
-                F64ArithmeticResult(
-                        BitConverter.UInt64BitsToDouble(x) + BitConverter.UInt64BitsToDouble(y)
-                    )
-                    .AsF64Bits()
+                F64ArithmeticResult(BitConverter.UInt64BitsToDouble(x) + BitConverter.UInt64BitsToDouble(y)).AsF64Bits()
         );
     }
 
@@ -348,10 +295,7 @@ internal static partial class Interpreter
             context,
             64,
             static (x, y) =>
-                F64ArithmeticResult(
-                        BitConverter.UInt64BitsToDouble(x) - BitConverter.UInt64BitsToDouble(y)
-                    )
-                    .AsF64Bits()
+                F64ArithmeticResult(BitConverter.UInt64BitsToDouble(x) - BitConverter.UInt64BitsToDouble(y)).AsF64Bits()
         );
     }
 
@@ -367,10 +311,7 @@ internal static partial class Interpreter
             context,
             64,
             static (x, y) =>
-                F64ArithmeticResult(
-                        BitConverter.UInt64BitsToDouble(x) * BitConverter.UInt64BitsToDouble(y)
-                    )
-                    .AsF64Bits()
+                F64ArithmeticResult(BitConverter.UInt64BitsToDouble(x) * BitConverter.UInt64BitsToDouble(y)).AsF64Bits()
         );
     }
 
@@ -386,10 +327,7 @@ internal static partial class Interpreter
             context,
             64,
             static (x, y) =>
-                F64ArithmeticResult(
-                        BitConverter.UInt64BitsToDouble(x) / BitConverter.UInt64BitsToDouble(y)
-                    )
-                    .AsF64Bits()
+                F64ArithmeticResult(BitConverter.UInt64BitsToDouble(x) / BitConverter.UInt64BitsToDouble(y)).AsF64Bits()
         );
     }
 
@@ -399,16 +337,12 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのF64x2Sqrt命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult F64x2Sqrt(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult F64x2Sqrt(InterpreterContext context, in Instruction instruction)
     {
         return ExecuteSimdFloatUnary(
             context,
             64,
-            static x =>
-                F64ArithmeticResult(Math.Sqrt(BitConverter.UInt64BitsToDouble(x))).AsF64Bits()
+            static x => F64ArithmeticResult(Math.Sqrt(BitConverter.UInt64BitsToDouble(x))).AsF64Bits()
         );
     }
 
@@ -418,10 +352,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのF64x2Ceil命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult F64x2Ceil(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult F64x2Ceil(InterpreterContext context, in Instruction instruction)
     {
         return ExecuteSimdFloatUnary(
             context,
@@ -440,10 +371,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのF64x2Floor命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult F64x2Floor(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult F64x2Floor(InterpreterContext context, in Instruction instruction)
     {
         return ExecuteSimdFloatUnary(
             context,
@@ -462,10 +390,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのF64x2Trunc命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult F64x2Trunc(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult F64x2Trunc(InterpreterContext context, in Instruction instruction)
     {
         return ExecuteSimdFloatUnary(
             context,
@@ -484,10 +409,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのF64x2Nearest命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult F64x2Nearest(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult F64x2Nearest(InterpreterContext context, in Instruction instruction)
     {
         return ExecuteSimdFloatUnary(
             context,
@@ -495,8 +417,7 @@ internal static partial class Interpreter
             static x =>
             {
                 var operand = BitConverter.UInt64BitsToDouble(x);
-                return F64ArithmeticResult(Math.Round(operand, MidpointRounding.ToEven))
-                    .AsF64Bits();
+                return F64ArithmeticResult(Math.Round(operand, MidpointRounding.ToEven)).AsF64Bits();
             }
         );
     }
@@ -512,9 +433,7 @@ internal static partial class Interpreter
         return ExecuteSimdFloatBinary(
             context,
             64,
-            static (x, y) =>
-                F64MinResult(BitConverter.UInt64BitsToDouble(x), BitConverter.UInt64BitsToDouble(y))
-                    .AsF64Bits()
+            static (x, y) => F64MinResult(BitConverter.UInt64BitsToDouble(x), BitConverter.UInt64BitsToDouble(y)).AsF64Bits()
         );
     }
 
@@ -529,9 +448,7 @@ internal static partial class Interpreter
         return ExecuteSimdFloatBinary(
             context,
             64,
-            static (x, y) =>
-                F64MaxResult(BitConverter.UInt64BitsToDouble(x), BitConverter.UInt64BitsToDouble(y))
-                    .AsF64Bits()
+            static (x, y) => F64MaxResult(BitConverter.UInt64BitsToDouble(x), BitConverter.UInt64BitsToDouble(y)).AsF64Bits()
         );
     }
 
@@ -541,16 +458,12 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのF64x2Pmin命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult F64x2Pmin(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult F64x2Pmin(InterpreterContext context, in Instruction instruction)
     {
         return ExecuteSimdFloatBinary(
             context,
             64,
-            static (x, y) =>
-                BitConverter.UInt64BitsToDouble(y) < BitConverter.UInt64BitsToDouble(x) ? y : x
+            static (x, y) => BitConverter.UInt64BitsToDouble(y) < BitConverter.UInt64BitsToDouble(x) ? y : x
         );
     }
 
@@ -560,16 +473,12 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのF64x2Pmax命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult F64x2Pmax(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult F64x2Pmax(InterpreterContext context, in Instruction instruction)
     {
         return ExecuteSimdFloatBinary(
             context,
             64,
-            static (x, y) =>
-                BitConverter.UInt64BitsToDouble(x) < BitConverter.UInt64BitsToDouble(y) ? y : x
+            static (x, y) => BitConverter.UInt64BitsToDouble(x) < BitConverter.UInt64BitsToDouble(y) ? y : x
         );
     }
 
@@ -617,20 +526,12 @@ internal static partial class Interpreter
     /// <param name="bitWidth">laneの幅</param>
     /// <param name="operation">laneの符号bit操作または純粋な浮動小数点演算</param>
     /// <returns>演算後のビット列</returns>
-    private static SimdValue MapSimdFloatUnary(
-        SimdValue vector,
-        int bitWidth,
-        Func<ulong, ulong> operation
-    )
+    private static SimdValue MapSimdFloatUnary(SimdValue vector, int bitWidth, Func<ulong, ulong> operation)
     {
         var result = default(SimdValue);
         for (var laneIndex = 0; laneIndex < 128 / bitWidth; laneIndex++)
         {
-            result = result.WithLane(
-                bitWidth,
-                laneIndex,
-                operation(vector.GetLane(bitWidth, laneIndex))
-            );
+            result = result.WithLane(bitWidth, laneIndex, operation(vector.GetLane(bitWidth, laneIndex)));
         }
 
         return result;
@@ -654,10 +555,7 @@ internal static partial class Interpreter
         var result = default(SimdValue);
         for (var laneIndex = 0; laneIndex < 128 / bitWidth; laneIndex++)
         {
-            var bits = operation(
-                left.GetLane(bitWidth, laneIndex),
-                right.GetLane(bitWidth, laneIndex)
-            );
+            var bits = operation(left.GetLane(bitWidth, laneIndex), right.GetLane(bitWidth, laneIndex));
             result = result.WithLane(bitWidth, laneIndex, bits);
         }
 

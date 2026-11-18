@@ -20,9 +20,7 @@ internal class BenchmarkRun_CaptureSourceAfterTests
     [Test]
     [Arguments("NuGet.Config")]
     [Arguments("nuget.config")]
-    public async Task 使用ファイルを追加変更削除する_sourceとprojectとassemblyの途中変更を記録する(
-        string nuGetConfigName
-    )
+    public async Task 使用ファイルを追加変更削除する_sourceとprojectとassemblyの途中変更を記録する(string nuGetConfigName)
     {
         // Arrange
         using var fixture = new SourceCaptureFixture();
@@ -54,19 +52,9 @@ internal class BenchmarkRun_CaptureSourceAfterTests
         }
         fixture.Write("src/WasmSharp/Runtime.cs", "class Runtime { int changed; }\n");
         fixture.Write("tools/WasmSharp.Benchmarks/New.cs", "class New {}\n");
-        File.Delete(
-            Path.Combine(fixture.RepositoryDirectory, "src/WasmSharp.Generators/Generator.cs")
-        );
-        File.Delete(
-            Path.Combine(
-                fixture.RepositoryDirectory,
-                "src/WasmSharp.Generators/WasmSharp.Generators.csproj"
-            )
-        );
-        var project = Path.Combine(
-            fixture.RepositoryDirectory,
-            "tools/WasmSharp.Benchmarks/WasmSharp.Benchmarks.csproj"
-        );
+        File.Delete(Path.Combine(fixture.RepositoryDirectory, "src/WasmSharp.Generators/Generator.cs"));
+        File.Delete(Path.Combine(fixture.RepositoryDirectory, "src/WasmSharp.Generators/WasmSharp.Generators.csproj"));
+        var project = Path.Combine(fixture.RepositoryDirectory, "tools/WasmSharp.Benchmarks/WasmSharp.Benchmarks.csproj");
         File.WriteAllText(
             project,
             File.ReadAllText(project)
@@ -92,8 +80,8 @@ internal class BenchmarkRun_CaptureSourceAfterTests
             File.ReadAllBytes(Path.Combine(fixture.Run.DirectoryPath, afterFile.RelativePath)),
             json_.Options
         )!;
-        var changedPaths = savedSource.Changes
-            .Where(x => x.Kind is ContentKind.Source or ContentKind.Project)
+        var changedPaths = savedSource
+            .Changes.Where(x => x.Kind is ContentKind.Source or ContentKind.Project)
             .Select(x => x.Path);
         using (Assert.Multiple())
         {
@@ -104,9 +92,7 @@ internal class BenchmarkRun_CaptureSourceAfterTests
                 await Assert.That(change.Kind).IsEqualTo(ContentKind.Project);
                 await Assert
                     .That(change.BeforeSha256)
-                    .IsEqualTo(
-                        before.Runtime.Files.Single(x => x.RelativePath == setting.Key).Sha256
-                    );
+                    .IsEqualTo(before.Runtime.Files.Single(x => x.RelativePath == setting.Key).Sha256);
                 await Assert.That(change.AfterSha256).IsNotNull();
                 await Assert.That(change.AfterSha256).IsNotEqualTo(change.BeforeSha256);
             }
@@ -114,68 +100,30 @@ internal class BenchmarkRun_CaptureSourceAfterTests
                 .That(after.Changes.Single(x => x.Path == "src/WasmSharp/Runtime.cs").Kind)
                 .IsEqualTo(ContentKind.Source);
             await Assert
-                .That(
-                    after
-                        .Changes.Single(x => x.Path == "tools/WasmSharp.Benchmarks/New.cs")
-                        .BeforeSha256
-                )
+                .That(after.Changes.Single(x => x.Path == "tools/WasmSharp.Benchmarks/New.cs").BeforeSha256)
                 .IsNull();
             await Assert
-                .That(
-                    after
-                        .Changes.Single(x => x.Path == "src/WasmSharp.Generators/Generator.cs")
-                        .AfterSha256
-                )
+                .That(after.Changes.Single(x => x.Path == "src/WasmSharp.Generators/Generator.cs").AfterSha256)
                 .IsNull();
             await Assert
-                .That(
-                    after
-                        .Changes.Single(x =>
-                            x.Path == "src/WasmSharp.Generators/WasmSharp.Generators.csproj"
-                        )
-                        .Kind
-                )
+                .That(after.Changes.Single(x => x.Path == "src/WasmSharp.Generators/WasmSharp.Generators.csproj").Kind)
                 .IsEqualTo(ContentKind.Project);
             await Assert
                 .That(
-                    after
-                        .Changes.Single(x =>
-                            x.Path == "src/WasmSharp.Generators/WasmSharp.Generators.csproj"
-                        )
-                        .AfterSha256
+                    after.Changes.Single(x => x.Path == "src/WasmSharp.Generators/WasmSharp.Generators.csproj").AfterSha256
                 )
                 .IsNull();
             await Assert
-                .That(
-                    after
-                        .Changes.Single(x =>
-                            x.Path == "tools/WasmSharp.Benchmarks/WasmSharp.Benchmarks.csproj"
-                        )
-                        .Kind
-                )
+                .That(after.Changes.Single(x => x.Path == "tools/WasmSharp.Benchmarks/WasmSharp.Benchmarks.csproj").Kind)
                 .IsEqualTo(ContentKind.Project);
             await Assert
-                .That(
-                    after
-                        .Changes.Single(x =>
-                            x.Path == "tools/WasmSharp.Benchmarks/Extra/Extra.csproj"
-                        )
-                        .BeforeSha256
-                )
+                .That(after.Changes.Single(x => x.Path == "tools/WasmSharp.Benchmarks/Extra/Extra.csproj").BeforeSha256)
                 .IsNull();
-            await Assert
-                .That(after.Changes.Single(x => x.Path == assembly).Kind)
-                .IsEqualTo(ContentKind.Assembly);
-            await Assert
-                .That(after.Changes.Single(x => x.Path == deletedAssembly).AfterSha256)
-                .IsNull();
+            await Assert.That(after.Changes.Single(x => x.Path == assembly).Kind).IsEqualTo(ContentKind.Assembly);
+            await Assert.That(after.Changes.Single(x => x.Path == deletedAssembly).AfterSha256).IsNull();
             await Assert.That(after.Changes.Any(x => x.Path == "unrelated.cs")).IsFalse();
-            await Assert
-                .That(after.Changes.Any(x => x.Path == "src/WasmSharp.Generators/Releases.md"))
-                .IsFalse();
-            await Assert
-                .That(after.AssembliesAfter.Single().Sha256)
-                .IsNotEqualTo(before.AssembliesBefore.First().Sha256);
+            await Assert.That(after.Changes.Any(x => x.Path == "src/WasmSharp.Generators/Releases.md")).IsFalse();
+            await Assert.That(after.AssembliesAfter.Single().Sha256).IsNotEqualTo(before.AssembliesBefore.First().Sha256);
             await Assert.That(after.Runtime.Sha256).IsEqualTo(before.Runtime.Sha256);
             await Assert.That(afterFile.RelativePath).IsNotEqualTo(beforeFile.RelativePath);
             await Assert.That(savedSource.Changes).IsEquivalentTo(after.Changes);

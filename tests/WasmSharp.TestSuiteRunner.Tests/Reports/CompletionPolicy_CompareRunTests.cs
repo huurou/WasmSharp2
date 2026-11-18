@@ -34,9 +34,7 @@ internal class CompletionPolicy_CompareRunTests
     )
     {
         // Arrange
-        var report = CreateReport(
-            new(0, 0, 0, 0, 0, 0, regressionCount, 0, currentFailedCount, currentRunnerErrorCount)
-        );
+        var report = CreateReport(new(0, 0, 0, 0, 0, 0, regressionCount, 0, currentFailedCount, currentRunnerErrorCount));
 
         // Act
         var decision = CompletionPolicy.CompareRun(report, saved: true);

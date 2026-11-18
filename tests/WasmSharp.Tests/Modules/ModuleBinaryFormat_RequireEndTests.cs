@@ -30,11 +30,7 @@ internal class ModuleBinaryFormat_RequireEndTests
     [Arguments(2u, 1, 101L)]
     [Arguments(1u, 2, 102L)]
     [Arguments(uint.MaxValue, 2, 102L)]
-    public async Task 診断用モードで宣言終端と不一致_過不足ともDecode失敗になる(
-        uint length,
-        int readCount,
-        long offset
-    )
+    public async Task 診断用モードで宣言終端と不一致_過不足ともDecode失敗になる(uint length, int readCount, long offset)
     {
         // Arrange
         byte[] bytes = [0, 0];
@@ -54,14 +50,8 @@ internal class ModuleBinaryFormat_RequireEndTests
             .ThrowsExactly<WasmDecodeException>();
         using (Assert.Multiple())
         {
-            await Assert
-                .That(
-                    exception!.Message.StartsWith("section size mismatch", StringComparison.Ordinal)
-                )
-                .IsTrue();
-            await Assert
-                .That(exception.Location)
-                .IsEqualTo(new(WasmProcessingStage.Decode, offset, 3, 10));
+            await Assert.That(exception!.Message.StartsWith("section size mismatch", StringComparison.Ordinal)).IsTrue();
+            await Assert.That(exception.Location).IsEqualTo(new(WasmProcessingStage.Decode, offset, 3, 10));
         }
     }
 }

@@ -11,12 +11,7 @@ internal class Interpreter_StoreTests
     {
         // Arrange
         var memory = new WasmMemory(new(1, null));
-        var instruction = MemoryHandlerFixture.CreateInstruction(
-            WasmValueKind.I64,
-            8,
-            offset: 6,
-            alignment: 3
-        );
+        var instruction = MemoryHandlerFixture.CreateInstruction(WasmValueKind.I64, 8, offset: 6, alignment: 3);
         var bytes = new byte[10];
 
         // Act
@@ -33,11 +28,7 @@ internal class Interpreter_StoreTests
         {
             await Assert.That(actual.Result.Status).IsEqualTo(ExecutionStatus.Success);
             await Assert
-                .That(
-                    bytes.SequenceEqual(
-                        new byte[] { 0, 0x10, 0x32, 0x54, 0x76, 0x98, 0xBA, 0xDC, 0xFE, 0 }
-                    )
-                )
+                .That(bytes.SequenceEqual(new byte[] { 0, 0x10, 0x32, 0x54, 0x76, 0x98, 0xBA, 0xDC, 0xFE, 0 }))
                 .IsTrue();
             await Assert.That(actual.Sentinel).IsEqualTo(NumericHandlerFixture.Sentinel);
             await Assert.That(actual.ValueCount).IsEqualTo(1);
@@ -51,11 +42,7 @@ internal class Interpreter_StoreTests
     {
         // Arrange
         var memory = new WasmMemory(new(2, null));
-        var instruction = MemoryHandlerFixture.CreateInstruction(
-            WasmValueKind.I32,
-            4,
-            alignment: 2
-        );
+        var instruction = MemoryHandlerFixture.CreateInstruction(WasmValueKind.I32, 4, alignment: 2);
         var bytes = new byte[4];
 
         // Act
@@ -102,12 +89,7 @@ internal class Interpreter_StoreTests
         var bytes = new byte[8];
 
         // Act
-        var actual = MemoryHandlerFixture.Execute(
-            Interpreter.Store,
-            memory,
-            in instruction,
-            [WasmValue.FromI32(9), value]
-        );
+        var actual = MemoryHandlerFixture.Execute(Interpreter.Store, memory, in instruction, [WasmValue.FromI32(9), value]);
         memory.Read(7, bytes);
 
         // Assert
@@ -128,33 +110,13 @@ internal class Interpreter_StoreTests
     [Arguments(WasmValueKind.F32, 0xFF812345UL, new byte[] { 0x45, 0x23, 0x81, 0xFF })]
     [Arguments(WasmValueKind.F32, 0x7FC54321UL, new byte[] { 0x21, 0x43, 0xC5, 0x7F })]
     [Arguments(WasmValueKind.F32, 0xFFC54321UL, new byte[] { 0x21, 0x43, 0xC5, 0xFF })]
-    [Arguments(
-        WasmValueKind.F64,
-        0x3FF0000000000001UL,
-        new byte[] { 1, 0, 0, 0, 0, 0, 0xF0, 0x3F }
-    )]
+    [Arguments(WasmValueKind.F64, 0x3FF0000000000001UL, new byte[] { 1, 0, 0, 0, 0, 0, 0xF0, 0x3F })]
     [Arguments(WasmValueKind.F64, 0x0000000000000000UL, new byte[] { 0, 0, 0, 0, 0, 0, 0, 0 })]
     [Arguments(WasmValueKind.F64, 0x8000000000000000UL, new byte[] { 0, 0, 0, 0, 0, 0, 0, 0x80 })]
-    [Arguments(
-        WasmValueKind.F64,
-        0x7FF0123456789ABCUL,
-        new byte[] { 0xBC, 0x9A, 0x78, 0x56, 0x34, 0x12, 0xF0, 0x7F }
-    )]
-    [Arguments(
-        WasmValueKind.F64,
-        0xFFF0123456789ABCUL,
-        new byte[] { 0xBC, 0x9A, 0x78, 0x56, 0x34, 0x12, 0xF0, 0xFF }
-    )]
-    [Arguments(
-        WasmValueKind.F64,
-        0x7FF8543210ABCDEFUL,
-        new byte[] { 0xEF, 0xCD, 0xAB, 0x10, 0x32, 0x54, 0xF8, 0x7F }
-    )]
-    [Arguments(
-        WasmValueKind.F64,
-        0xFFF8543210ABCDEFUL,
-        new byte[] { 0xEF, 0xCD, 0xAB, 0x10, 0x32, 0x54, 0xF8, 0xFF }
-    )]
+    [Arguments(WasmValueKind.F64, 0x7FF0123456789ABCUL, new byte[] { 0xBC, 0x9A, 0x78, 0x56, 0x34, 0x12, 0xF0, 0x7F })]
+    [Arguments(WasmValueKind.F64, 0xFFF0123456789ABCUL, new byte[] { 0xBC, 0x9A, 0x78, 0x56, 0x34, 0x12, 0xF0, 0xFF })]
+    [Arguments(WasmValueKind.F64, 0x7FF8543210ABCDEFUL, new byte[] { 0xEF, 0xCD, 0xAB, 0x10, 0x32, 0x54, 0xF8, 0x7F })]
+    [Arguments(WasmValueKind.F64, 0xFFF8543210ABCDEFUL, new byte[] { 0xEF, 0xCD, 0xAB, 0x10, 0x32, 0x54, 0xF8, 0xFF })]
     public async Task 浮動小数点の通常値と正負の0とNaN_全ビットをリトルエンディアンで書き込む(
         WasmValueKind valueType,
         ulong bits,
@@ -163,14 +125,8 @@ internal class Interpreter_StoreTests
     {
         // Arrange
         var memory = new WasmMemory(new(2, null));
-        var instruction = MemoryHandlerFixture.CreateInstruction(
-            valueType,
-            (byte)expectedBytes.Length
-        );
-        var value =
-            valueType == WasmValueKind.F32
-                ? WasmValue.FromF32Bits((uint)bits)
-                : WasmValue.FromF64Bits(bits);
+        var instruction = MemoryHandlerFixture.CreateInstruction(valueType, (byte)expectedBytes.Length);
+        var value = valueType == WasmValueKind.F32 ? WasmValue.FromF32Bits((uint)bits) : WasmValue.FromF64Bits(bits);
         var bytes = new byte[expectedBytes.Length];
 
         // Act
@@ -210,11 +166,7 @@ internal class Interpreter_StoreTests
         var before = new byte[65536];
         Array.Fill(before, (byte)0xA5);
         memory.Write(0, before);
-        var instruction = MemoryHandlerFixture.CreateInstruction(
-            WasmValueKind.I32,
-            4,
-            offset: offset
-        );
+        var instruction = MemoryHandlerFixture.CreateInstruction(WasmValueKind.I32, 4, offset: offset);
         var after = new byte[before.Length];
 
         // Act

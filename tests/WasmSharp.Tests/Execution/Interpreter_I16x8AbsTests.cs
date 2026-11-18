@@ -6,12 +6,7 @@ namespace WasmSharp.Tests.Execution;
 internal class Interpreter_I16x8AbsTests
 {
     [Test]
-    [Arguments(
-        0x7FFF0000FFFF8000UL,
-        0x000280010001FFFEUL,
-        0x7FFF000000018000UL,
-        0x00027FFF00010002UL
-    )]
+    [Arguments(0x7FFF0000FFFF8000UL, 0x000280010001FFFEUL, 0x7FFF000000018000UL, 0x00027FFF00010002UL)]
     public async Task 最小負数と正負のlane_絶対値を幅内へ折り返す(
         ulong inputLow64,
         ulong inputHigh64,

@@ -9,12 +9,8 @@ namespace WasmSharp.TestSuiteRunner.Execution;
 /// <param name="Line">元入力の1始まり行番号</param>
 /// <param name="Action">実行するinvokeまたはget</param>
 /// <param name="ResultTypes">型だけの結果宣言 追加のassertionとしては扱わない</param>
-internal sealed record ActionCommand(
-    int Index,
-    int? Line,
-    ScriptAction Action,
-    ImmutableArray<WasmValueKind> ResultTypes
-) : ScriptCommand(Index, Line)
+internal sealed record ActionCommand(int Index, int? Line, ScriptAction Action, ImmutableArray<WasmValueKind> ResultTypes)
+    : ScriptCommand(Index, Line)
 {
     /// <summary>
     /// JSONの単独actionを識別するcommand種別

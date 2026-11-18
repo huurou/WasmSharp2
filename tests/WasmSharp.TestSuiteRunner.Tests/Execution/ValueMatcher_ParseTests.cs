@@ -52,10 +52,7 @@ internal class ValueMatcher_ParseTests
     [Arguments(WasmValueKind.FuncRef, "0")]
     [Arguments(WasmValueKind.ExternRef, "4294967296")]
     [Arguments(WasmValueKind.ExternRef, "Null")]
-    public async Task 固定形式にない期待値の文字列を指定する_位置を示して拒否する(
-        WasmValueKind kind,
-        string text
-    )
+    public async Task 固定形式にない期待値の文字列を指定する_位置を示して拒否する(WasmValueKind kind, string text)
     {
         // Act & Assert
         var exception = await Assert
@@ -101,10 +98,7 @@ internal class ValueMatcher_ParseTests
     [Arguments(WasmValueKind.F32, "nan")]
     [Arguments(WasmValueKind.F64, "nan:0x1")]
     [Arguments(WasmValueKind.F64, " nan:arithmetic")]
-    public async Task 固定形式にないNaNPatternを指定する_位置を示して拒否する(
-        WasmValueKind kind,
-        string text
-    )
+    public async Task 固定形式にないNaNPatternを指定する_位置を示して拒否する(WasmValueKind kind, string text)
     {
         // Act & Assert
         var exception = await Assert
@@ -133,9 +127,7 @@ internal class ValueMatcher_ParseTests
 
         // Act & Assert
         var exception = await Assert
-            .That(() =>
-                ValueMatcher.Parse([Scalar(WasmValueKind.I32, "0"), Vector(laneType, lanes)])
-            )
+            .That(() => ValueMatcher.Parse([Scalar(WasmValueKind.I32, "0"), Vector(laneType, lanes)]))
             .ThrowsExactly<ScriptFormatException>();
         await Assert.That(exception!.Message).Contains("expected[1].value[1]");
     }
@@ -147,19 +139,14 @@ internal class ValueMatcher_ParseTests
     [Arguments(LaneType.I64, 1)]
     [Arguments(LaneType.F32, 2)]
     [Arguments(LaneType.F64, 4)]
-    public async Task V128のlane数がlane型と一致しない期待値を指定する_位置を示して拒否する(
-        LaneType laneType,
-        int count
-    )
+    public async Task V128のlane数がlane型と一致しない期待値を指定する_位置を示して拒否する(LaneType laneType, int count)
     {
         // Arrange
         var lanes = Enumerable.Repeat("0", count).ToArray();
 
         // Act & Assert
         var exception = await Assert
-            .That(() =>
-                ValueMatcher.Parse([Scalar(WasmValueKind.I32, "0"), Vector(laneType, lanes)])
-            )
+            .That(() => ValueMatcher.Parse([Scalar(WasmValueKind.I32, "0"), Vector(laneType, lanes)]))
             .ThrowsExactly<ScriptFormatException>();
         await Assert.That(exception!.Message).Contains("expected[1].value");
     }
@@ -176,10 +163,7 @@ internal class ValueMatcher_ParseTests
 
     private static string Format(ValuePattern pattern)
     {
-        var bits = string.Join(
-            ",",
-            pattern.Bits.Select(x => $"{x.Bits:x}:{x.Nan?.ToString() ?? "-"}")
-        );
+        var bits = string.Join(",", pattern.Bits.Select(x => $"{x.Bits:x}:{x.Nan?.ToString() ?? "-"}"));
         return $"{pattern.Kind}/{pattern.Width}/{bits}/{pattern.Externref?.ToString() ?? "-"}";
     }
 }

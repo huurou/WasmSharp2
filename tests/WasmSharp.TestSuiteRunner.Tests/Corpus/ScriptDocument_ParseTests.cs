@@ -67,15 +67,11 @@ internal class ScriptDocument_ParseTests
             await Assert.That(document.SourceFilename).IsEqualTo("a.wast");
             await Assert.That(document.EnumerationComplete).IsFalse();
             await Assert.That(document.CommandCount).IsNull();
-            await Assert
-                .That(document.Commands.Select(x => x.Type).SequenceEqual(["module", "action"]))
-                .IsTrue();
+            await Assert.That(document.Commands.Select(x => x.Type).SequenceEqual(["module", "action"])).IsTrue();
             await Assert.That(document.Diagnostics.Length).IsEqualTo(1);
             await Assert.That(document.Diagnostics[0].Operation).IsEqualTo("enumerate");
             await Assert.That(document.Diagnostics[0].Path).IsEqualTo(PATH);
-            await Assert
-                .That(document.Diagnostics[0].ExceptionType)
-                .StartsWith("System.Text.Json.");
+            await Assert.That(document.Diagnostics[0].ExceptionType).StartsWith("System.Text.Json.");
             await Assert.That(document.Diagnostics[0].Message).Contains("6行目の2バイト目");
             await Assert.That(document.Diagnostics[0].Message).Contains("2件");
         }
@@ -102,9 +98,7 @@ internal class ScriptDocument_ParseTests
             await Assert.That(document.Diagnostics.Length).IsEqualTo(1);
             await Assert.That(document.Diagnostics[0].Operation).IsEqualTo("enumerate");
             await Assert.That(document.Diagnostics[0].Path).IsEqualTo(PATH);
-            await Assert
-                .That(document.Diagnostics[0].ExceptionType)
-                .StartsWith("System.Text.Json.");
+            await Assert.That(document.Diagnostics[0].ExceptionType).StartsWith("System.Text.Json.");
             await Assert.That(document.Diagnostics[0].Message).Contains("JSONの構文");
         }
     }
@@ -148,9 +142,7 @@ internal class ScriptDocument_ParseTests
             await Assert.That(document.Diagnostics.Length).IsEqualTo(2);
             await Assert.That(document.Diagnostics[0].Message).Contains("source_filename");
             await Assert.That(document.Diagnostics[0].ExceptionType).IsNull();
-            await Assert
-                .That(document.Diagnostics[1].ExceptionType)
-                .StartsWith("System.Text.Json.");
+            await Assert.That(document.Diagnostics[1].ExceptionType).StartsWith("System.Text.Json.");
         }
     }
 
@@ -256,14 +248,8 @@ internal class ScriptDocument_ParseTests
     [Arguments("[]", "root")]
     [Arguments("""{"source_filename": "a.wast"}""", "commands")]
     [Arguments("""{"source_filename": "a.wast", "commands": {}}""", "commands")]
-    [Arguments(
-        """{"source_filename": "a.wast", "commands": [{"type": "module"}], "commands": []}""",
-        "commands"
-    )]
-    public async Task Commandsを一度だけ列挙できないJSONを読む_総数を未確定にして理由を残す(
-        string json,
-        string expected
-    )
+    [Arguments("""{"source_filename": "a.wast", "commands": [{"type": "module"}], "commands": []}""", "commands")]
+    public async Task Commandsを一度だけ列挙できないJSONを読む_総数を未確定にして理由を残す(string json, string expected)
     {
         // Act
         var document = ScriptDocument.Parse(Encoding.UTF8.GetBytes(json), PATH);
@@ -274,9 +260,7 @@ internal class ScriptDocument_ParseTests
             await Assert.That(document.EnumerationComplete).IsFalse();
             await Assert.That(document.CommandCount).IsNull();
             await Assert.That(document.Diagnostics).IsNotEmpty();
-            await Assert
-                .That(document.Diagnostics.All(x => x.Operation == "enumerate" && x.Path == PATH))
-                .IsTrue();
+            await Assert.That(document.Diagnostics.All(x => x.Operation == "enumerate" && x.Path == PATH)).IsTrue();
             await Assert
                 .That(
                     document.Diagnostics.Any(x =>
@@ -291,15 +275,9 @@ internal class ScriptDocument_ParseTests
     [Test]
     [Arguments("""{"commands": []}""", "source_filename")]
     [Arguments("""{"source_filename": 1, "commands": []}""", "source_filename")]
-    [Arguments(
-        """{"source_filename": "a.wast", "source_filename": "b.wast", "commands": []}""",
-        "source_filename"
-    )]
+    [Arguments("""{"source_filename": "a.wast", "source_filename": "b.wast", "commands": []}""", "source_filename")]
     [Arguments("""{"source_filename": "a.wast", "commands": [], "extra": 1}""", "extra")]
-    public async Task 全体の項目が固定形式と異なるJSONを読む_列挙を完了したまま理由を残す(
-        string json,
-        string expected
-    )
+    public async Task 全体の項目が固定形式と異なるJSONを読む_列挙を完了したまま理由を残す(string json, string expected)
     {
         // Act
         var document = ScriptDocument.Parse(Encoding.UTF8.GetBytes(json), PATH);
@@ -335,9 +313,7 @@ internal class ScriptDocument_ParseTests
             await Assert.That(document.Commands[0].Filename).IsEqualTo("a.0.wasm");
             await Assert.That(document.Diagnostics.Length).IsEqualTo(1);
             await Assert.That(document.Diagnostics[0].Path).IsEqualTo(PATH);
-            await Assert
-                .That(document.Diagnostics[0].Message)
-                .IsEqualTo("source_filenameを文字列として取得できません。");
+            await Assert.That(document.Diagnostics[0].Message).IsEqualTo("source_filenameを文字列として取得できません。");
             await Assert.That(document.Diagnostics[0].ExceptionType).IsNull();
         }
     }
@@ -389,9 +365,7 @@ internal class ScriptDocument_ParseTests
     [Test]
     [Arguments("""{"nested":[1,2]}""")]
     [Arguments("""[{"type":"module","line":1}],"commands":[{"nested":[1,2]}]""")]
-    public async Task Commandsが配列でないか重複する_後続の出典を読み取り総数は未確定にする(
-        string commands
-    )
+    public async Task Commandsが配列でないか重複する_後続の出典を読み取り総数は未確定にする(string commands)
     {
         // Arrange
         var json = "{\"commands\":" + commands + ",\"source_filename\":\"a.wast\"}";

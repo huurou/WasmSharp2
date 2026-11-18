@@ -30,16 +30,7 @@ public class SuiteExecutor_ExecuteInputTests
         state.Register(host);
         var binary = ScriptExecutionFixture.Binary(
             (1, [1, 0x60, 0, 0]),
-            (
-                2,
-                [
-                    1,
-                    .. ScriptExecutionFixture.Name("host"),
-                    .. ScriptExecutionFixture.Name("f"),
-                    0,
-                    0,
-                ]
-            ),
+            (2, [1, .. ScriptExecutionFixture.Name("host"), .. ScriptExecutionFixture.Name("f"), 0, 0]),
             (7, [1, .. ScriptExecutionFixture.Name("f"), 0, 0])
         );
         var document = ScriptDocument.Parse(
@@ -72,9 +63,7 @@ public class SuiteExecutor_ExecuteInputTests
             await Assert.That(result.Cases.All(x => x.Outcome == CaseOutcome.Passed)).IsTrue();
             await Assert.That(result.CommandCount).IsEqualTo((int?)3);
             await Assert.That(result.UnprocessedCount).IsEqualTo(1);
-            await Assert
-                .That(interruption!.ExceptionType)
-                .IsEqualTo(typeof(OperationCanceledException).FullName);
+            await Assert.That(interruption!.ExceptionType).IsEqualTo(typeof(OperationCanceledException).FullName);
             await Assert.That(interruption.Operation).IsEqualTo("execute_input");
             await Assert.That(interruption.Path).IsEqualTo("a.wast");
         }
@@ -100,9 +89,7 @@ public class SuiteExecutor_ExecuteInputTests
             await Assert.That(result.Cases).IsEmpty();
             await Assert.That(result.UnprocessedCount).IsEqualTo(0);
             await Assert.That(interruption!.Operation).IsEqualTo("execute_input");
-            await Assert
-                .That(interruption.ExceptionType)
-                .IsEqualTo(typeof(OperationCanceledException).FullName);
+            await Assert.That(interruption.ExceptionType).IsEqualTo(typeof(OperationCanceledException).FullName);
         }
     }
 }

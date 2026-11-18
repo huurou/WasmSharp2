@@ -23,10 +23,7 @@ public sealed class WasmFunctionType
     /// <param name="parameters">宣言順に並べた引数の型</param>
     /// <param name="results">宣言順に並べた戻り値の型</param>
     /// <exception cref="ArgumentOutOfRangeException">Core 2.0で定義されていない値型を含む場合</exception>
-    public WasmFunctionType(
-        ReadOnlySpan<WasmValueKind> parameters,
-        ReadOnlySpan<WasmValueKind> results
-    )
+    public WasmFunctionType(ReadOnlySpan<WasmValueKind> parameters, ReadOnlySpan<WasmValueKind> results)
     {
         ValidateKinds(parameters, nameof(parameters));
         ValidateKinds(results, nameof(results));
@@ -57,11 +54,7 @@ public sealed class WasmFunctionType
                 )
             )
             {
-                throw new ArgumentOutOfRangeException(
-                    paramName,
-                    kind,
-                    "Core 2.0で定義されていないvalueの種類です。"
-                );
+                throw new ArgumentOutOfRangeException(paramName, kind, "Core 2.0で定義されていないvalueの種類です。");
             }
         }
     }

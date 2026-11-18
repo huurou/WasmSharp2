@@ -27,9 +27,7 @@ internal static class TestProcess
             // 検証用プロセスの異常でテスト全体が待ち続けることを防ぐ。
             process.Kill(entireProcessTree: true);
             await process.WaitForExitAsync();
-            throw new TimeoutException(
-                $"検証用プロセスが終了しませんでした: {startInfo.FileName}\n{await error}"
-            );
+            throw new TimeoutException($"検証用プロセスが終了しませんでした: {startInfo.FileName}\n{await error}");
         }
 
         return new ProcessResult(process.ExitCode, await output, await error);

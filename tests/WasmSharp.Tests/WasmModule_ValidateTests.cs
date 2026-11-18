@@ -21,15 +21,9 @@ internal partial class WasmModule_ValidateTests
         // Act & Assert
         foreach (var module in modules)
         {
-            var exception = await Assert
-                .That(() => module.Validate())
-                .ThrowsExactly<WasmValidateException>();
-            await Assert
-                .That(exception!.Location)
-                .IsEqualTo(new(WasmProcessingStage.Validate, bytes.Length - 1, 0, 10));
-            await Assert
-                .That(() => module.Instantiate(executionContext, []))
-                .ThrowsExactly<InvalidOperationException>();
+            var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
+            await Assert.That(exception!.Location).IsEqualTo(new(WasmProcessingStage.Validate, bytes.Length - 1, 0, 10));
+            await Assert.That(() => module.Instantiate(executionContext, [])).ThrowsExactly<InvalidOperationException>();
         }
     }
 
@@ -39,23 +33,16 @@ internal partial class WasmModule_ValidateTests
         // Arrange
         var executionContext = new WasmExecutionContext();
         var module = WasmModule.Decode(
-            ConstantModuleBinary.Create(
-                [(0x7F, [0x41, 0x01, 0x0B]), (0x7F, [0x42, 0x02, 0x0B])],
-                [("run", 0), ("bad", 1)]
-            )
+            ConstantModuleBinary.Create([(0x7F, [0x41, 0x01, 0x0B]), (0x7F, [0x42, 0x02, 0x0B])], [("run", 0), ("bad", 1)])
         );
 
         // Act & Assert
         for (var attempt = 0; attempt < 2; attempt++)
         {
-            var exception = await Assert
-                .That(() => module.Validate())
-                .ThrowsExactly<WasmValidateException>();
+            var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
             await Assert.That(exception!.Location!.Stage).IsEqualTo(WasmProcessingStage.Validate);
             await Assert.That(exception.Location.FunctionIndex).IsEqualTo(1u);
-            await Assert
-                .That(() => module.Instantiate(executionContext, []))
-                .ThrowsExactly<InvalidOperationException>();
+            await Assert.That(() => module.Instantiate(executionContext, [])).ThrowsExactly<InvalidOperationException>();
         }
     }
 
@@ -100,34 +87,22 @@ internal partial class WasmModule_ValidateTests
     public async Task Exportの関数indexが存在しない_検証段階のexport位置付き失敗になる(uint index)
     {
         // Arrange
-        var module = WasmModule.Decode(
-            ConstantModuleBinary.Create([(0x7F, [0x41, 0x01, 0x0B])], [("run", index)])
-        );
+        var module = WasmModule.Decode(ConstantModuleBinary.Create([(0x7F, [0x41, 0x01, 0x0B])], [("run", index)]));
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => module.Validate())
-            .ThrowsExactly<WasmValidateException>();
-        await Assert
-            .That(exception!.Location)
-            .IsEqualTo(new(WasmProcessingStage.Validate, 22, index, 7));
+        var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
+        await Assert.That(exception!.Location).IsEqualTo(new(WasmProcessingStage.Validate, 22, index, 7));
     }
 
     [Test]
     public async Task Export名が重複_二つ目の宣言位置付き失敗になる()
     {
         // Arrange
-        var module = WasmModule.Decode(
-            ConstantModuleBinary.Create([(0x7F, [0x41, 0x01, 0x0B])], [("run", 0), ("run", 0)])
-        );
+        var module = WasmModule.Decode(ConstantModuleBinary.Create([(0x7F, [0x41, 0x01, 0x0B])], [("run", 0), ("run", 0)]));
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => module.Validate())
-            .ThrowsExactly<WasmValidateException>();
-        await Assert
-            .That(exception!.Location)
-            .IsEqualTo(new(WasmProcessingStage.Validate, 28, 0, 7));
+        var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
+        await Assert.That(exception!.Location).IsEqualTo(new(WasmProcessingStage.Validate, 28, 0, 7));
     }
 
     [Test]
@@ -153,20 +128,12 @@ internal partial class WasmModule_ValidateTests
         // Arrange
         var payloadLength = (1 + typeIndex.Length / 2).ToString("X2");
         var bytes = Convert.FromHexString(
-            "0061736D010000000105016000017F03"
-                + payloadLength
-                + "01"
-                + typeIndex
-                + "0A0601040041010B"
+            "0061736D010000000105016000017F03" + payloadLength + "01" + typeIndex + "0A0601040041010B"
         );
         var module = WasmModule.Decode(bytes);
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => module.Validate())
-            .ThrowsExactly<WasmValidateException>();
-        await Assert
-            .That(exception!.Location)
-            .IsEqualTo(new(WasmProcessingStage.Validate, bytes.Length - 4, 0, 10));
+        var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
+        await Assert.That(exception!.Location).IsEqualTo(new(WasmProcessingStage.Validate, bytes.Length - 4, 0, 10));
     }
 }

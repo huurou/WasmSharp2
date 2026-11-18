@@ -1,8 +1,8 @@
-using BenchmarkDotNet.Jobs;
-using BenchmarkDotNet.Toolchains.Results;
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text.Json;
+using BenchmarkDotNet.Jobs;
+using BenchmarkDotNet.Toolchains.Results;
 using WasmSharp.Benchmarks.Cases;
 using WasmSharp.Benchmarks.Measurements;
 using WasmSharp.Benchmarks.Results;
@@ -26,52 +26,34 @@ internal class BenchmarkRun_SaveReportsTests
     {
         // Arrange
         // validation失敗と複数reportにより統計を作らず、0操作を含むprocessの記録を保存する
-        using var fixture = new BenchmarkReportFixture(
-            ["WorkloadResult 1: 0 op, 0.00 ns"],
-            validationSucceeded: false
-        );
+        using var fixture = new BenchmarkReportFixture(["WorkloadResult 1: 0 op, 0.00 ns"], validationSucceeded: false);
         fixture.SaveConditions();
 
         // Act
-        benchmarkRun_.SaveReports(
-            fixture.Request,
-            fixture.Prepared,
-            [fixture.Summary, fixture.Summary]
-        );
+        benchmarkRun_.SaveReports(fixture.Request, fixture.Prepared, [fixture.Summary, fixture.Summary]);
         var result = RunStore.Load(fixture.DirectoryPath, json_).Cases.Single();
 
         // Assert
         using (Assert.Multiple())
         {
             await Assert.That(result.BenchmarkReport!.Processes.Count != 0).IsTrue();
-            await Assert
-                .That(result.BenchmarkReport.Processes.All(x => !x.HasResultMeasurements))
-                .IsTrue();
+            await Assert.That(result.BenchmarkReport.Processes.All(x => !x.HasResultMeasurements)).IsTrue();
         }
     }
 
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task 成功reportにbuildまたはvalidationの失敗が混在する_成功記録だけで採用しない(
-        bool validation
-    )
+    public async Task 成功reportにbuildまたはvalidationの失敗が混在する_成功記録だけで採用しない(bool validation)
     {
         // Arrange
         using var fixture = new BenchmarkReportFixture();
-        using var failed = new BenchmarkReportFixture(
-            buildSucceeded: validation,
-            validationSucceeded: !validation
-        );
+        using var failed = new BenchmarkReportFixture(buildSucceeded: validation, validationSucceeded: !validation);
         fixture.SaveConditions();
         fixture.Prepared.Store.SaveCheck(fixture.SuccessfulCheck());
 
         // Act
-        benchmarkRun_.SaveReports(
-            fixture.Request,
-            fixture.Prepared,
-            [fixture.Summary, failed.Summary]
-        );
+        benchmarkRun_.SaveReports(fixture.Request, fixture.Prepared, [fixture.Summary, failed.Summary]);
         var result = RunStore.Load(fixture.DirectoryPath, json_).Cases.Single();
 
         // Assert
@@ -81,13 +63,7 @@ internal class BenchmarkRun_SaveReportsTests
             await Assert.That(result.BenchmarkReport!.BuildSucceeded).IsEqualTo(validation);
             await Assert.That(result.BenchmarkReport.ValidationSucceeded).IsEqualTo(!validation);
             await Assert
-                .That(
-                    result
-                        .Failures.Single(x =>
-                            x.Stage == (validation ? RunStage.Validation : RunStage.Build)
-                        )
-                        .Message
-                )
+                .That(result.Failures.Single(x => x.Stage == (validation ? RunStage.Validation : RunStage.Build)).Message)
                 .Contains(validation ? "fixture validation failure" : "fixture build failure");
         }
     }
@@ -95,14 +71,10 @@ internal class BenchmarkRun_SaveReportsTests
     [Test]
     [Arguments(ResultStatus.Failed)]
     [Arguments(ResultStatus.Unavailable)]
-    public async Task 成功caseと失敗または取得不能caseが混在する_全体の状態へ反映して保存する(
-        ResultStatus otherStatus
-    )
+    public async Task 成功caseと失敗または取得不能caseが混在する_全体の状態へ反映して保存する(ResultStatus otherStatus)
     {
         // Arrange
-        using var fixture = new BenchmarkReportFixture(
-            plannedCaseIds: ["invoke.single", "invoke.multi"]
-        );
+        using var fixture = new BenchmarkReportFixture(plannedCaseIds: ["invoke.single", "invoke.multi"]);
         using var other = new BenchmarkReportFixture(
             BenchmarkReportFixture.ReadLines().Where(x => !x.StartsWith("// GC:")),
             benchmarkMethod: nameof(InvokeBenchmarks.Multi)
@@ -116,26 +88,14 @@ internal class BenchmarkRun_SaveReportsTests
             {
                 Failures =
                 [
-                    new(
-                        "invoke.multi",
-                        RunStage.Postcheck,
-                        RunStage.ExecutionStarted,
-                        "後検査の失敗",
-                        null,
-                        null,
-                        null
-                    ),
+                    new("invoke.multi", RunStage.Postcheck, RunStage.ExecutionStarted, "後検査の失敗", null, null, null),
                 ],
             };
         }
         fixture.Prepared.Store.SaveCheck(check);
 
         // Act
-        benchmarkRun_.SaveReports(
-            fixture.Request,
-            fixture.Prepared,
-            [fixture.Summary, other.Summary]
-        );
+        benchmarkRun_.SaveReports(fixture.Request, fixture.Prepared, [fixture.Summary, other.Summary]);
         var manifest = RunStore.Load(fixture.DirectoryPath, json_);
 
         // Assert
@@ -146,18 +106,14 @@ internal class BenchmarkRun_SaveReportsTests
             await Assert
                 .That(manifest.Cases.Single(x => x.CaseId == "invoke.single").Status)
                 .IsEqualTo(ResultStatus.Succeeded);
-            await Assert
-                .That(manifest.Cases.Single(x => x.CaseId == "invoke.multi").Status)
-                .IsEqualTo(otherStatus);
+            await Assert.That(manifest.Cases.Single(x => x.CaseId == "invoke.multi").Status).IsEqualTo(otherStatus);
         }
     }
 
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task Report件数とJob集合の片方だけが予定と異なる_不一致を記録して未完了にする(
-        bool duplicated
-    )
+    public async Task Report件数とJob集合の片方だけが予定と異なる_不一致を記録して未完了にする(bool duplicated)
     {
         // Arrange
         using var fixture = new BenchmarkReportFixture();
@@ -188,8 +144,7 @@ internal class BenchmarkRun_SaveReportsTests
             await Assert
                 .That(
                     result.Failures.Any(x =>
-                        x.Stage == RunStage.BenchmarkProcessExit
-                        && x.Reason.Contains("case/JobのBDN reportが揃っていません")
+                        x.Stage == RunStage.BenchmarkProcessExit && x.Reason.Contains("case/JobのBDN reportが揃っていません")
                     )
                 )
                 .IsTrue();
@@ -199,9 +154,7 @@ internal class BenchmarkRun_SaveReportsTests
     [Test]
     [Arguments(83)]
     [Arguments(null)]
-    public async Task Reportと測定行があっても子processが正常終了しない_最後の確認段階を残して未完了になる(
-        int? exitCode
-    )
+    public async Task Reportと測定行があっても子processが正常終了しない_最後の確認段階を残して未完了になる(int? exitCode)
     {
         // Arrange
         using var fixture = new BenchmarkReportFixture(exitCode: exitCode);
@@ -224,12 +177,8 @@ internal class BenchmarkRun_SaveReportsTests
         {
             await Assert.That(result.Status).IsEqualTo(ResultStatus.Incomplete);
             await Assert.That(manifest.CompletedAtUtc).IsNull();
-            await Assert
-                .That(result.BenchmarkReport!.Processes.Single().ExitCode)
-                .IsEqualTo(exitCode);
-            await Assert
-                .That(result.Failures.All(x => x.LastConfirmedStage == RunStage.ExecutionStarted))
-                .IsTrue();
+            await Assert.That(result.BenchmarkReport!.Processes.Single().ExitCode).IsEqualTo(exitCode);
+            await Assert.That(result.Failures.All(x => x.LastConfirmedStage == RunStage.ExecutionStarted)).IsTrue();
             await Assert
                 .That(
                     result.Failures.Any(x =>
@@ -271,9 +220,7 @@ internal class BenchmarkRun_SaveReportsTests
         {
             await Assert.That(result.Status).IsEqualTo(ResultStatus.Incomplete);
             await Assert.That(result.BenchmarkReport!.Processes).Count().IsEqualTo(2);
-            await Assert
-                .That(result.Failures.Any(x => x.InterruptionReason!.Contains("PID=124")))
-                .IsTrue();
+            await Assert.That(result.Failures.Any(x => x.InterruptionReason!.Contains("PID=124"))).IsTrue();
         }
     }
 
@@ -297,15 +244,9 @@ internal class BenchmarkRun_SaveReportsTests
         {
             await Assert.That(manifest.Status).IsEqualTo(ResultStatus.Failed);
             await Assert.That(result.Status).IsEqualTo(ResultStatus.Failed);
-            await Assert
-                .That(result.BenchmarkReport!.Processes.Single().Errors)
-                .Contains("Exception during GlobalCleanup!");
-            await Assert
-                .That(result.Failures.Any(x => x.Message!.Contains("GlobalCleanup")))
-                .IsTrue();
-            await Assert
-                .That(result.Failures.Any(x => x.Reason.Contains("BDNのErrors")))
-                .IsTrue();
+            await Assert.That(result.BenchmarkReport!.Processes.Single().Errors).Contains("Exception during GlobalCleanup!");
+            await Assert.That(result.Failures.Any(x => x.Message!.Contains("GlobalCleanup"))).IsTrue();
+            await Assert.That(result.Failures.Any(x => x.Reason.Contains("BDNのErrors"))).IsTrue();
             await Assert.That(result.RawFiles.Count).IsEqualTo(2);
         }
     }
@@ -317,10 +258,7 @@ internal class BenchmarkRun_SaveReportsTests
     [Arguments(true, "observations")]
     [Arguments(false, "recorded-same")]
     [Arguments(true, "recorded-other")]
-    public async Task 前後検査のどちらかが不一致である_成功したreportでも失敗になる(
-        bool postcheck,
-        string failureSource
-    )
+    public async Task 前後検査のどちらかが不一致である_成功したreportでも失敗になる(bool postcheck, string failureSource)
     {
         // Arrange
         using var fixture = new BenchmarkReportFixture();
@@ -341,15 +279,18 @@ internal class BenchmarkRun_SaveReportsTests
                 Precheck = postcheck ? check.Precheck : failed,
                 Postcheck = postcheck ? failed : check.Postcheck,
                 Failures = failureSource.StartsWith("recorded", StringComparison.Ordinal)
-                    ? [new RunFailure(
-                        "invoke.single",
-                        RunStage.Precheck,
-                        RunStage.ExecutionStarted,
-                        "既に保存された検査失敗",
-                        null,
-                        null,
-                        null
-                    )]
+                    ?
+                    [
+                        new RunFailure(
+                            "invoke.single",
+                            RunStage.Precheck,
+                            RunStage.ExecutionStarted,
+                            "既に保存された検査失敗",
+                            null,
+                            null,
+                            null
+                        ),
+                    ]
                     : [],
             }
         );
@@ -367,25 +308,17 @@ internal class BenchmarkRun_SaveReportsTests
                 .That(
                     manifest
                         .Cases.Single()
-                        .Failures.Count(x =>
-                            x.Stage == (postcheck ? RunStage.Postcheck : RunStage.Precheck)
-                        )
+                        .Failures.Count(x => x.Stage == (postcheck ? RunStage.Postcheck : RunStage.Precheck))
                 )
                 .IsEqualTo(1);
             await Assert
                 .That(
                     manifest
                         .Cases.Single()
-                        .Failures.Single(x =>
-                            x.Stage == (postcheck ? RunStage.Postcheck : RunStage.Precheck)
-                        )
+                        .Failures.Single(x => x.Stage == (postcheck ? RunStage.Postcheck : RunStage.Precheck))
                         .Reason
                 )
-                .Contains(
-                    failureSource == "recorded-same"
-                        ? "既に保存された検査失敗"
-                        : "固定期待値との照合に失敗"
-                );
+                .Contains(failureSource == "recorded-same" ? "既に保存された検査失敗" : "固定期待値との照合に失敗");
         }
     }
 
@@ -424,10 +357,7 @@ internal class BenchmarkRun_SaveReportsTests
     public async Task Buildかvalidationが不成立である_発生段階を保存して失敗になる(bool validation)
     {
         // Arrange
-        using var fixture = new BenchmarkReportFixture(
-            buildSucceeded: validation,
-            validationSucceeded: !validation
-        );
+        using var fixture = new BenchmarkReportFixture(buildSucceeded: validation, validationSucceeded: !validation);
         fixture.SaveConditions();
         fixture.Prepared.Store.SaveCheck(fixture.SuccessfulCheck());
 
@@ -441,21 +371,13 @@ internal class BenchmarkRun_SaveReportsTests
             await Assert.That(manifest.Status).IsEqualTo(ResultStatus.Failed);
             await Assert
                 .That(
-                    manifest
-                        .Cases.Single()
-                        .Failures.Any(x =>
-                            x.Stage == (validation ? RunStage.Validation : RunStage.Build)
-                        )
+                    manifest.Cases.Single().Failures.Any(x => x.Stage == (validation ? RunStage.Validation : RunStage.Build))
                 )
                 .IsTrue();
             var failure = manifest
                 .Cases.Single()
-                .Failures.Single(x =>
-                    x.Stage == (validation ? RunStage.Validation : RunStage.Build)
-                );
-            await Assert
-                .That(failure.Message)
-                .Contains(validation ? "fixture validation failure" : "fixture build failure");
+                .Failures.Single(x => x.Stage == (validation ? RunStage.Validation : RunStage.Build));
+            await Assert.That(failure.Message).Contains(validation ? "fixture validation failure" : "fixture build failure");
             await Assert.That(failure.Reason).Contains(validation ? "validation" : "build");
         }
     }
@@ -482,9 +404,7 @@ internal class BenchmarkRun_SaveReportsTests
             await Assert.That(result.Status).IsEqualTo(ResultStatus.Unavailable);
             await Assert.That(result.Metrics.Time).IsNotNull();
             await Assert.That(result.Metrics.Allocation).IsNull();
-            await Assert
-                .That(result.Metrics.AllocationUnavailableReason)
-                .Contains("取得できません");
+            await Assert.That(result.Metrics.AllocationUnavailableReason).Contains("取得できません");
             await Assert.That(result.Metrics.Gc).IsNull();
             await Assert.That(result.Metrics.GcUnavailableReason).Contains("取得できません");
         }
@@ -494,10 +414,7 @@ internal class BenchmarkRun_SaveReportsTests
     public async Task Result1行で時間の信頼区間を取得できない_前後検査が成功しても取得不能になる()
     {
         // Arrange
-        using var fixture = new BenchmarkReportFixture([
-            "WorkloadResult 1: 64 op, 43100.00 ns",
-            "// GC: 0 0 0 24576 64",
-        ]);
+        using var fixture = new BenchmarkReportFixture(["WorkloadResult 1: 64 op, 43100.00 ns", "// GC: 0 0 0 24576 64"]);
         fixture.SaveConditions();
         fixture.Prepared.Store.SaveCheck(fixture.SuccessfulCheck());
 
@@ -510,23 +427,17 @@ internal class BenchmarkRun_SaveReportsTests
         {
             await Assert.That(manifest.Status).IsEqualTo(ResultStatus.Unavailable);
             await Assert.That(manifest.Cases.Single().Metrics.Time).IsNull();
-            await Assert
-                .That(manifest.Cases.Single().Metrics.TimeUnavailableReason)
-                .Contains("信頼区間");
+            await Assert.That(manifest.Cases.Single().Metrics.TimeUnavailableReason).Contains("信頼区間");
         }
     }
 
     [Test]
     [Arguments(true)]
     [Arguments(false)]
-    public async Task 予定したcaseのreportがない_欠落理由と未完了を保存して他caseを補完しない(
-        bool hasReport
-    )
+    public async Task 予定したcaseのreportがない_欠落理由と未完了を保存して他caseを補完しない(bool hasReport)
     {
         // Arrange
-        using var fixture = new BenchmarkReportFixture(
-            plannedCaseIds: ["invoke.single", "decode.small"]
-        );
+        using var fixture = new BenchmarkReportFixture(plannedCaseIds: ["invoke.single", "decode.small"]);
         fixture.SaveConditions();
         fixture.Prepared.Store.SaveCheck(fixture.SuccessfulCheck());
         if (!hasReport)
@@ -550,12 +461,8 @@ internal class BenchmarkRun_SaveReportsTests
             await Assert.That(missing.Status).IsEqualTo(ResultStatus.Incomplete);
             await Assert.That(missing.BenchmarkReport!.BuildSucceeded).IsFalse();
             await Assert.That(missing.RawFiles.Any(x => x is null)).IsFalse();
-            await Assert
-                .That(missing.Failures.Any(x => x.Reason.Contains("processの実行記録がありません")))
-                .IsTrue();
-            await Assert
-                .That(missing.Failures.Any(x => x.Reason.Contains("reportが揃っていません")))
-                .IsTrue();
+            await Assert.That(missing.Failures.Any(x => x.Reason.Contains("processの実行記録がありません"))).IsTrue();
+            await Assert.That(missing.Failures.Any(x => x.Reason.Contains("reportが揃っていません"))).IsTrue();
             await Assert.That(missing.Metrics.Time).IsNull();
             await Assert.That(missing.Metrics.TimeUnavailableReason).Contains("report");
         }
@@ -564,9 +471,7 @@ internal class BenchmarkRun_SaveReportsTests
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task Result測定行か実行processがない_前後検査があっても未完了になる(
-        bool notExecuted
-    )
+    public async Task Result測定行か実行processがない_前後検査があっても未完了になる(bool notExecuted)
     {
         // Arrange
         using var fixture = new BenchmarkReportFixture(
@@ -593,9 +498,7 @@ internal class BenchmarkRun_SaveReportsTests
     [Arguments("case")]
     [Arguments("job")]
     [Arguments("pid")]
-    public async Task 成功検査の識別情報が対応しない_別processの検査で成功へ補完しない(
-        string difference
-    )
+    public async Task 成功検査の識別情報が対応しない_別processの検査で成功へ補完しない(string difference)
     {
         // Arrange
         using var fixture = new BenchmarkReportFixture();
@@ -608,10 +511,7 @@ internal class BenchmarkRun_SaveReportsTests
             "job" => check with { JobId = "OtherJob" },
             _ => check with { ProcessId = 124 },
         };
-        fixture.Prepared.Store.SaveFile(
-            "checks/foreign.json",
-            JsonSerializer.SerializeToUtf8Bytes(check, json_.Options)
-        );
+        fixture.Prepared.Store.SaveFile("checks/foreign.json", JsonSerializer.SerializeToUtf8Bytes(check, json_.Options));
 
         // Act
         benchmarkRun_.SaveReports(fixture.Request, fixture.Prepared, [fixture.Summary]);
@@ -621,9 +521,7 @@ internal class BenchmarkRun_SaveReportsTests
         using (Assert.Multiple())
         {
             await Assert.That(result.Status).IsEqualTo(ResultStatus.Incomplete);
-            await Assert
-                .That(result.BenchmarkReport!.Processes.Single(x => x.ProcessId == 123).CheckFile)
-                .IsNull();
+            await Assert.That(result.BenchmarkReport!.Processes.Single(x => x.ProcessId == 123).CheckFile).IsNull();
             await Assert.That(result.Failures.Any(x => x.Reason.Contains("前後検査完了"))).IsTrue();
         }
     }
@@ -648,9 +546,7 @@ internal class BenchmarkRun_SaveReportsTests
             await Assert.That(result.Status).IsEqualTo(ResultStatus.Incomplete);
             await Assert.That(diagnostic.ExitCode).IsNull();
             await Assert.That(diagnostic.CheckFile).IsNotNull();
-            await Assert
-                .That(result.Failures.Any(x => x.InterruptionReason!.Contains("取得不能")))
-                .IsTrue();
+            await Assert.That(result.Failures.Any(x => x.InterruptionReason!.Contains("取得不能"))).IsTrue();
         }
     }
 
@@ -661,25 +557,18 @@ internal class BenchmarkRun_SaveReportsTests
         using var fixture = new BenchmarkReportFixture();
         fixture.SaveConditions();
         fixture.Prepared.Store.SaveCheck(fixture.SuccessfulCheck());
-        File.WriteAllText(
-            Path.Combine(fixture.DirectoryPath, "source", "index.patch"),
-            "保存後の変更"
-        );
+        File.WriteAllText(Path.Combine(fixture.DirectoryPath, "source", "index.patch"), "保存後の変更");
 
         // Act & Assert
         await Assert
-            .That(() =>
-                benchmarkRun_.SaveReports(fixture.Request, fixture.Prepared, [fixture.Summary])
-            )
+            .That(() => benchmarkRun_.SaveReports(fixture.Request, fixture.Prepared, [fixture.Summary]))
             .Throws<IOException>();
         var manifest = RunStore.Load(fixture.DirectoryPath, json_);
         using (Assert.Multiple())
         {
             await Assert.That(manifest.Status).IsEqualTo(ResultStatus.Incomplete);
             await Assert.That(manifest.CompletedAtUtc).IsNull();
-            await Assert
-                .That(File.Exists(Path.Combine(fixture.DirectoryPath, "raw", "bdn-output.txt")))
-                .IsTrue();
+            await Assert.That(File.Exists(Path.Combine(fixture.DirectoryPath, "raw", "bdn-output.txt"))).IsTrue();
         }
     }
 
@@ -732,9 +621,7 @@ internal class BenchmarkRun_SaveReportsTests
             await Assert.That(result.Metrics.Gc!.TotalOperations).IsEqualTo(64);
             await Assert.That(result.Status).IsEqualTo(ResultStatus.Incomplete);
             await Assert.That(result.RawFiles.Count).IsEqualTo(2);
-            await Assert
-                .That(result.RawFiles.Any(x => x.RelativePath.EndsWith("-measurements.csv")))
-                .IsTrue();
+            await Assert.That(result.RawFiles.Any(x => x.RelativePath.EndsWith("-measurements.csv"))).IsTrue();
         }
     }
 
@@ -818,19 +705,11 @@ internal class BenchmarkRun_SaveReportsTests
             await Assert.That(allocation.TotalOperations).IsEqualTo(operations);
             await Assert.That(allocation.BytesPerOperation).IsEqualTo(unrounded);
             await Assert.That(allocation.DisplayedBytesPerOperation).IsEqualTo(displayed);
-            await Assert
-                .That(allocation.Scope)
-                .IsEqualTo(AllocationScope.ProcessManagedAllocations);
-            await Assert
-                .That(allocation.Iteration)
-                .IsEqualTo(ObservationIteration.SeparateFromTiming);
+            await Assert.That(allocation.Scope).IsEqualTo(AllocationScope.ProcessManagedAllocations);
+            await Assert.That(allocation.Iteration).IsEqualTo(ObservationIteration.SeparateFromTiming);
             await Assert.That(allocation.Rounding.DecimalPlaces).IsEqualTo(0);
-            await Assert
-                .That(allocation.Rounding.MidpointRounding)
-                .IsEqualTo(MidpointRounding.ToEven);
-            await Assert
-                .That(allocation.Rounding.Description)
-                .Contains("表示0は割り当て不存在を意味しない");
+            await Assert.That(allocation.Rounding.MidpointRounding).IsEqualTo(MidpointRounding.ToEven);
+            await Assert.That(allocation.Rounding.Description).Contains("表示0は割り当て不存在を意味しない");
             await Assert.That(result.Metrics.AllocationUnavailableReason).IsNull();
             await Assert.That(result.Metrics.GcUnavailableReason).IsNull();
             await Assert.That(gc.TotalOperations).IsEqualTo(operations);
@@ -842,13 +721,9 @@ internal class BenchmarkRun_SaveReportsTests
             await Assert.That(gc.Gen2.CollectionsPerThousandOperations).IsEqualTo(normalized2);
             await Assert.That(gc.Iteration).IsEqualTo(ObservationIteration.SeparateFromTiming);
             await Assert.That(result.Status).IsEqualTo(ResultStatus.Incomplete);
+            await Assert.That(result.RawFiles.Any(x => x.RelativePath == "raw/bdn-output.txt")).IsTrue();
             await Assert
-                .That(result.RawFiles.Any(x => x.RelativePath == "raw/bdn-output.txt"))
-                .IsTrue();
-            await Assert
-                .That(
-                    File.ReadAllText(Path.Combine(fixture.DirectoryPath, "raw", "bdn-output.txt"))
-                )
+                .That(File.ReadAllText(Path.Combine(fixture.DirectoryPath, "raw", "bdn-output.txt")))
                 .Contains(gcLine);
         }
     }
@@ -867,12 +742,8 @@ internal class BenchmarkRun_SaveReportsTests
         // Assert
         await Assert.That(result.Metrics.Time).IsNotNull();
         var time = result.Metrics.Time!;
-        var raw = File.ReadAllBytes(
-            Path.Combine(fixture.DirectoryPath, time.RawMeasurements.RelativePath)
-        );
-        var rows = System
-            .Text.Encoding.UTF8.GetString(raw)
-            .Split('\n', StringSplitOptions.RemoveEmptyEntries);
+        var raw = File.ReadAllBytes(Path.Combine(fixture.DirectoryPath, time.RawMeasurements.RelativePath));
+        var rows = System.Text.Encoding.UTF8.GetString(raw).Split('\n', StringSplitOptions.RemoveEmptyEntries);
         var values = rows.Skip(1).Select(x => x.TrimEnd('\r').Split(',')).ToArray();
         var results = values.Where(x => x[2] == "Workload" && x[3] == "Result").ToArray();
         using (Assert.Multiple())
@@ -883,22 +754,16 @@ internal class BenchmarkRun_SaveReportsTests
             await Assert.That(time.MeasurementCount).IsEqualTo(15);
             await Assert.That(time.MeanNanosecondsPerOperation).IsEqualTo(76.04321956634521);
             await Assert.That(time.MedianNanosecondsPerOperation).IsEqualTo(75.50182342529297);
-            await Assert
-                .That(time.StandardDeviationNanosecondsPerOperation)
-                .IsEqualTo(1.3306110771777684);
+            await Assert.That(time.StandardDeviationNanosecondsPerOperation).IsEqualTo(1.3306110771777684);
             await Assert.That(time.ConfidenceInterval.Lower).IsEqualTo(74.6207156172511);
             await Assert.That(time.ConfidenceInterval.Upper).IsEqualTo(77.46572351543934);
             await Assert.That(time.ConfidenceInterval.Level).IsEqualTo(0.999);
             await Assert.That(result.Metrics.TimeUnavailableReason).IsNull();
             await Assert
                 .That(rows[0])
-                .IsEqualTo(
-                    "launch_index,iteration_index,iteration_mode,iteration_stage,operations,elapsed_nanoseconds"
-                );
+                .IsEqualTo("launch_index,iteration_index,iteration_mode,iteration_stage,operations,elapsed_nanoseconds");
             await Assert.That(values.Length).IsEqualTo(88);
-            await Assert
-                .That(values.Count(x => x[2] == "Workload" && x[3] == "Actual"))
-                .IsEqualTo(15);
+            await Assert.That(values.Count(x => x[2] == "Workload" && x[3] == "Actual")).IsEqualTo(15);
             await Assert.That(results.Length).IsEqualTo(15);
             await Assert.That(results[0][0]).IsEqualTo("1");
             await Assert.That(results[0][1]).IsEqualTo("1");
@@ -906,14 +771,11 @@ internal class BenchmarkRun_SaveReportsTests
             await Assert
                 .That(
                     results.Average(x =>
-                        double.Parse(x[5], CultureInfo.InvariantCulture)
-                        / long.Parse(x[4], CultureInfo.InvariantCulture)
+                        double.Parse(x[5], CultureInfo.InvariantCulture) / long.Parse(x[4], CultureInfo.InvariantCulture)
                     )
                 )
                 .IsEqualTo(76.04321956634521);
-            await Assert
-                .That(time.RawMeasurements.Sha256)
-                .IsEqualTo(Convert.ToHexStringLower(SHA256.HashData(raw)));
+            await Assert.That(time.RawMeasurements.Sha256).IsEqualTo(Convert.ToHexStringLower(SHA256.HashData(raw)));
             await Assert.That(result.RawFiles.Contains(time.RawMeasurements)).IsTrue();
             await Assert.That(time.RawMeasurements.RelativePath).StartsWith("raw/");
         }

@@ -39,10 +39,7 @@ internal static class ModuleInstantiator
     )
     {
         var linked = Link(module, imports);
-        var tables = CreateIndex(
-            linked.OfType<TableExternalValue>().Select(x => x.Value),
-            module.Tables.Length
-        );
+        var tables = CreateIndex(linked.OfType<TableExternalValue>().Select(x => x.Value), module.Tables.Length);
         foreach (var table in module.Tables)
         {
             try
@@ -55,20 +52,12 @@ internal static class ModuleInstantiator
                     exception.Message,
                     exception.Reason,
                     exception.Limit,
-                    new WasmFailureLocation(
-                        WasmProcessingStage.Instantiate,
-                        table.ByteOffset,
-                        null,
-                        4
-                    ),
+                    new WasmFailureLocation(WasmProcessingStage.Instantiate, table.ByteOffset, null, 4),
                     exception
                 );
             }
         }
-        var memories = CreateIndex(
-            linked.OfType<MemoryExternalValue>().Select(x => x.Value),
-            module.Memories.Length
-        );
+        var memories = CreateIndex(linked.OfType<MemoryExternalValue>().Select(x => x.Value), module.Memories.Length);
         foreach (var memory in module.Memories)
         {
             memories.Add(new WasmMemory(memory.Limits));
@@ -85,11 +74,7 @@ internal static class ModuleInstantiator
         InitializeDataSegments(instance);
         if (module.Start is { } start)
         {
-            ExecutionBoundary.RunStart(
-                executionContext,
-                instance,
-                instance.Functions[(int)start.FunctionIndex]
-            );
+            ExecutionBoundary.RunStart(executionContext, instance, instance.Functions[(int)start.FunctionIndex]);
         }
         return instance;
     }
@@ -110,29 +95,13 @@ internal static class ModuleInstantiator
                 var offset = unchecked(
                     (uint)
                         ConstantInitializer
-                            .Evaluate(
-                                target.OffsetExpression,
-                                instance.Globals.AsSpan(),
-                                instance.Functions.AsSpan()
-                            )
+                            .Evaluate(target.OffsetExpression, instance.Globals.AsSpan(), instance.Functions.AsSpan())
                             .AsI32()
                 );
-                if (
-                    !element.TryInitialize(
-                        instance.Tables[(int)target.TableIndex],
-                        offset,
-                        0,
-                        element.Length
-                    )
-                )
+                if (!element.TryInitialize(instance.Tables[(int)target.TableIndex], offset, 0, element.Length))
                 {
                     ExecutionBoundary.ThrowIfFailed(
-                        ExecutionResult.Trap(
-                            WasmTrapReason.TableOutOfBounds,
-                            null,
-                            definition.ByteOffset,
-                            9
-                        ),
+                        ExecutionResult.Trap(WasmTrapReason.TableOutOfBounds, null, definition.ByteOffset, 9),
                         WasmProcessingStage.Instantiate
                     );
                 }
@@ -164,30 +133,14 @@ internal static class ModuleInstantiator
             var offset = unchecked(
                 (uint)
                     ConstantInitializer
-                        .Evaluate(
-                            target.OffsetExpression,
-                            instance.Globals.AsSpan(),
-                            instance.Functions.AsSpan()
-                        )
+                        .Evaluate(target.OffsetExpression, instance.Globals.AsSpan(), instance.Functions.AsSpan())
                         .AsI32()
             );
             var data = instance.DataSegments[index];
-            if (
-                !data.TryInitialize(
-                    instance.Memories[(int)target.MemoryIndex],
-                    offset,
-                    0,
-                    data.Length
-                )
-            )
+            if (!data.TryInitialize(instance.Memories[(int)target.MemoryIndex], offset, 0, data.Length))
             {
                 ExecutionBoundary.ThrowIfFailed(
-                    ExecutionResult.Trap(
-                        WasmTrapReason.MemoryOutOfBounds,
-                        null,
-                        definition.ByteOffset,
-                        11
-                    ),
+                    ExecutionResult.Trap(WasmTrapReason.MemoryOutOfBounds, null, definition.ByteOffset, 11),
                     WasmProcessingStage.Instantiate
                 );
             }
@@ -202,10 +155,7 @@ internal static class ModuleInstantiator
     /// <param name="imports">宣言順に並んだimportの実体</param>
     /// <param name="definitionCount">後から追加する定義の数</param>
     /// <returns>全実体を保持できる容量を確保し、importだけを追加した実体表</returns>
-    private static ImmutableArray<T>.Builder CreateIndex<T>(
-        IEnumerable<T> imports,
-        int definitionCount
-    )
+    private static ImmutableArray<T>.Builder CreateIndex<T>(IEnumerable<T> imports, int definitionCount)
     {
         var values = imports.ToImmutableArray();
         var index = ImmutableArray.CreateBuilder<T>(values.Length + definitionCount);
@@ -271,12 +221,7 @@ internal static class ModuleInstantiator
     /// <param name="import">照合するimport宣言</param>
     /// <param name="value">名前で解決した提供実体</param>
     /// <param name="ordinal">import section内の宣言順 0始まり</param>
-    private static void ValidateImport(
-        WasmModule module,
-        ModuleImport import,
-        ExternalValue value,
-        int ordinal
-    )
+    private static void ValidateImport(WasmModule module, ModuleImport import, ExternalValue value, int ordinal)
     {
         var actualKind = value switch
         {
@@ -300,23 +245,15 @@ internal static class ModuleInstantiator
             (FunctionImport required, FunctionExternalValue provided) => module
                 .Types[(int)required.TypeIndex]
                 .Parameters.SequenceEqual(provided.Value.Type.Parameters)
-                && module
-                    .Types[(int)required.TypeIndex]
-                    .Results.SequenceEqual(provided.Value.Type.Results),
-            (GlobalImport required, GlobalExternalValue provided) => required.Type
-                == provided.Value.Type,
+                && module.Types[(int)required.TypeIndex].Results.SequenceEqual(provided.Value.Type.Results),
+            (GlobalImport required, GlobalExternalValue provided) => required.Type == provided.Value.Type,
             (MemoryImport required, MemoryExternalValue provided) => MatchesLimits(
                 required.Type.Limits,
                 provided.Value.PageCount,
                 provided.Value.MaximumPages
             ),
-            (TableImport required, TableExternalValue provided) => required.Type.ElementKind
-                == provided.Value.ElementType
-                && MatchesLimits(
-                    required.Type.Limits,
-                    provided.Value.Count,
-                    provided.Value.MaximumElements
-                ),
+            (TableImport required, TableExternalValue provided) => required.Type.ElementKind == provided.Value.ElementType
+                && MatchesLimits(required.Type.Limits, provided.Value.Count, provided.Value.MaximumElements),
             _ => throw new InvalidOperationException("外部要素の種類が一致しません。"),
         };
         if (!matches)
@@ -359,10 +296,7 @@ internal static class ModuleInstantiator
         {
             FunctionExternalValue function => DescribeFunction(function.Value.Type),
             GlobalExternalValue global => global.Value.Type.ToString(),
-            MemoryExternalValue memory => new WasmLimits(
-                memory.Value.PageCount,
-                memory.Value.MaximumPages
-            ).ToString(),
+            MemoryExternalValue memory => new WasmLimits(memory.Value.PageCount, memory.Value.MaximumPages).ToString(),
             TableExternalValue table =>
                 $"{table.Value.ElementType} {new WasmLimits(table.Value.Count, table.Value.MaximumElements)}",
             _ => throw new InvalidOperationException("外部要素の種類が不明です。"),
@@ -410,8 +344,7 @@ internal static class ModuleInstantiator
         var prefix = reason switch
         {
             WasmInstantiateReason.MissingImport => "unknown import",
-            WasmInstantiateReason.KindMismatch or WasmInstantiateReason.TypeMismatch =>
-                "incompatible import type",
+            WasmInstantiateReason.KindMismatch or WasmInstantiateReason.TypeMismatch => "incompatible import type",
             _ => throw new InvalidOperationException("import照合の失敗理由が不明です。"),
         };
         return new WasmInstantiateException(

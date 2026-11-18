@@ -16,14 +16,10 @@ internal sealed record ProcessCheck(
     RunStage? LastConfirmedStage,
     List<AssemblyIdentity> LoadedAssemblies,
     List<RunFailure> Failures,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        long? AffinityBefore = null,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        long? AffinityAfter = null,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        string? AffinityUnavailableReason = null,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        string? RuntimeVersion = null
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] long? AffinityBefore = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] long? AffinityAfter = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? AffinityUnavailableReason = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? RuntimeVersion = null
 );
 
 /// <summary>

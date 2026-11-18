@@ -19,20 +19,12 @@ internal static class CompletionPolicy
     /// <param name="issues">変換結果の記録内容に対する完全性検証の問題一覧</param>
     /// <param name="saved">結果の保存を完了できたかどうか</param>
     /// <returns>終了状態と、成功しない場合の理由</returns>
-    internal static CompletionDecision Generate(
-        CorpusManifest manifest,
-        ImmutableArray<RecordIssue> issues,
-        bool saved
-    )
+    internal static CompletionDecision Generate(CorpusManifest manifest, ImmutableArray<RecordIssue> issues, bool saved)
     {
         List<DecisionReason> reasons = [];
         AddSaveFailure(reasons, saved);
         AddIssues(reasons, issues, _ => CompletionStatus.Incomplete);
-        AddCount(
-            reasons,
-            manifest.Inputs.Count(x => x.Status == ConversionStatus.RunnerError),
-            "変換・照合に失敗した入力"
-        );
+        AddCount(reasons, manifest.Inputs.Count(x => x.Status == ConversionStatus.RunnerError), "変換・照合に失敗した入力");
         AddCount(reasons, manifest.Diagnostics.Count, "操作全体の診断");
         return Decide(reasons);
     }
@@ -45,11 +37,7 @@ internal static class CompletionPolicy
     /// <param name="issues">実行結果の記録内容に対する完全性検証の問題一覧</param>
     /// <param name="saved">結果の保存を完了できたかどうか</param>
     /// <returns>終了状態と理由 command件数未確定は不合格、それ以外の記録不備は未完了とする</returns>
-    internal static CompletionDecision Run(
-        RunReport report,
-        ImmutableArray<RecordIssue> issues,
-        bool saved
-    )
+    internal static CompletionDecision Run(RunReport report, ImmutableArray<RecordIssue> issues, bool saved)
     {
         List<DecisionReason> reasons = [];
         AddSaveFailure(reasons, saved);
@@ -57,26 +45,17 @@ internal static class CompletionPolicy
         AddIssues(
             reasons,
             issues,
-            x =>
-                x == RecordIssueKind.Undetermined
-                    ? CompletionStatus.Unsatisfied
-                    : CompletionStatus.Incomplete
+            x => x == RecordIssueKind.Undetermined ? CompletionStatus.Unsatisfied : CompletionStatus.Incomplete
         );
         var cases = report.Inputs.SelectMany(x => x.Cases).ToArray();
         var casesById = cases.ToLookup(x => x.Id);
         AddCount(reasons, cases.Count(x => x.Outcome == CaseOutcome.Failed), "failed");
-        AddCount(
-            reasons,
-            cases.Count(x => x.Outcome == CaseOutcome.RunnerError),
-            "command単位のrunner_error"
-        );
+        AddCount(reasons, cases.Count(x => x.Outcome == CaseOutcome.RunnerError), "command単位のrunner_error");
         AddCount(reasons, report.Inputs.Sum(x => x.Issues.Count), "入力単位のrunner_error");
         AddCount(reasons, report.Diagnostics.Count, "操作全体の診断");
         AddCount(
             reasons,
-            cases.Count(x =>
-                x.Outcome == CaseOutcome.Blocked && !IsBlockedByUnsupported(x, casesById)
-            ),
+            cases.Count(x => x.Outcome == CaseOutcome.Blocked && !IsBlockedByUnsupported(x, casesById)),
             "runtime_unsupported以外を原因とするblocked"
         );
         return Decide(reasons);
@@ -128,11 +107,7 @@ internal static class CompletionPolicy
         AddComparisonCompletion(reasons, report);
         AddCount(reasons, report.Summary.RegressionCount, "回帰");
         AddCount(reasons, report.Summary.CurrentFailedCount, "現結果のfailed");
-        AddCount(
-            reasons,
-            report.Summary.CurrentRunnerErrorCount,
-            "現結果の入力単位・command単位のrunner_error"
-        );
+        AddCount(reasons, report.Summary.CurrentRunnerErrorCount, "現結果の入力単位・command単位のrunner_error");
         return Decide(reasons);
     }
 
@@ -144,21 +119,12 @@ internal static class CompletionPolicy
     /// <param name="issues">実行結果の記録内容に対する完全性検証の問題一覧</param>
     /// <param name="profile">受入対象となる固定Core2.0の条件と入力集合</param>
     /// <returns>合格または不合格の終了状態と、条件不一致・記録不備・不合格ケースの理由</returns>
-    internal static CompletionDecision Verify(
-        RunReport report,
-        ImmutableArray<RecordIssue> issues,
-        Core2Profile profile
-    )
+    internal static CompletionDecision Verify(RunReport report, ImmutableArray<RecordIssue> issues, Core2Profile profile)
     {
         List<DecisionReason> reasons = [];
         if (!report.Corpus.Profile.Matches(profile))
         {
-            reasons.Add(
-                new(
-                    CompletionStatus.Unsatisfied,
-                    $"固定profile {profile.Id}と条件が一致しない結果です。"
-                )
-            );
+            reasons.Add(new(CompletionStatus.Unsatisfied, $"固定profile {profile.Id}と条件が一致しない結果です。"));
         }
 
         AddIssues(reasons, issues, _ => CompletionStatus.Unsatisfied);
@@ -187,15 +153,11 @@ internal static class CompletionPolicy
     /// <param name="item">依存原因を調べるケース結果</param>
     /// <param name="casesById">起点の識別から結果を参照する全ケースの対応表</param>
     /// <returns>起点が1件以上あり、全起点の全記録がruntime_unsupportedの場合はtrue</returns>
-    private static bool IsBlockedByUnsupported(
-        CaseResult item,
-        ILookup<CaseId, CaseResult> casesById
-    )
+    private static bool IsBlockedByUnsupported(CaseResult item, ILookup<CaseId, CaseResult> casesById)
     {
         return item.Cause is { Origins.Count: > 0 } cause
             && cause.Origins.All(x =>
-                casesById[x].Any()
-                && casesById[x].All(y => y.Outcome == CaseOutcome.RuntimeUnsupported)
+                casesById[x].Any() && casesById[x].All(y => y.Outcome == CaseOutcome.RuntimeUnsupported)
             );
     }
 
@@ -229,9 +191,7 @@ internal static class CompletionPolicy
         {
             var first = group.First().Message;
             var count = group.Count();
-            reasons.Add(
-                new(getStatus(group.Key), count == 1 ? first : $"{first}ほか{count - 1}件")
-            );
+            reasons.Add(new(getStatus(group.Key), count == 1 ? first : $"{first}ほか{count - 1}件"));
         }
     }
 
@@ -240,10 +200,7 @@ internal static class CompletionPolicy
     /// </summary>
     /// <param name="reasons">判定理由の追加先</param>
     /// <param name="report">完了状態を調べる比較結果</param>
-    private static void AddComparisonCompletion(
-        List<DecisionReason> reasons,
-        ComparisonReport report
-    )
+    private static void AddComparisonCompletion(List<DecisionReason> reasons, ComparisonReport report)
     {
         if (!report.Established)
         {
@@ -258,10 +215,7 @@ internal static class CompletionPolicy
         if (report.Summary.UncomparedCount > 0)
         {
             reasons.Add(
-                new(
-                    CompletionStatus.Incomplete,
-                    $"比較できなかった対象が{report.Summary.UncomparedCount}件あります。"
-                )
+                new(CompletionStatus.Incomplete, $"比較できなかった対象が{report.Summary.UncomparedCount}件あります。")
             );
         }
     }

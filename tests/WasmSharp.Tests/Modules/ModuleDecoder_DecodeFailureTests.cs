@@ -8,53 +8,35 @@ internal partial class ModuleDecoder_DecodeTests
 {
     [Test]
     [Arguments("090100", (byte)13)]
-    public async Task 空要素sectionの後に未知sectionがある_未知sectionの位置で拒否する(
-        string section,
-        byte id
-    )
+    public async Task 空要素sectionの後に未知sectionがある_未知sectionの位置で拒否する(string section, byte id)
     {
         // Arrange
         var bytes = Convert.FromHexString("0061736D01000000" + section + "0D00");
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => ModuleDecoder.Decode(bytes))
-            .ThrowsExactly<WasmDecodeException>();
+        var exception = await Assert.That(() => ModuleDecoder.Decode(bytes)).ThrowsExactly<WasmDecodeException>();
         using (Assert.Multiple())
         {
-            await Assert
-                .That(exception!.Location)
-                .IsEqualTo(new(WasmProcessingStage.Decode, 11, null, id));
+            await Assert.That(exception!.Location).IsEqualTo(new(WasmProcessingStage.Decode, 11, null, id));
         }
     }
 
     [Test]
     [Arguments("FD0105")]
     [Arguments("FD00")]
-    public async Task メモリ命令の即値が切断される_未対応にせずDecodeの境界位置を返す(
-        string instructions
-    )
+    public async Task メモリ命令の即値が切断される_未対応にせずDecodeの境界位置を返す(string instructions)
     {
         // Arrange
         var bytes = ConstantModuleBinary.Create(0x7F, Convert.FromHexString(instructions));
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => ModuleDecoder.Decode(bytes))
-            .ThrowsExactly<WasmDecodeException>();
+        var exception = await Assert.That(() => ModuleDecoder.Decode(bytes)).ThrowsExactly<WasmDecodeException>();
         using (Assert.Multiple())
         {
             await Assert
-                .That(
-                    exception!.Message.StartsWith(
-                        "unexpected end of section or function",
-                        StringComparison.Ordinal
-                    )
-                )
+                .That(exception!.Message.StartsWith("unexpected end of section or function", StringComparison.Ordinal))
                 .IsTrue();
-            await Assert
-                .That(exception.Location)
-                .IsEqualTo(new(WasmProcessingStage.Decode, bytes.Length, 0, 10));
+            await Assert.That(exception.Location).IsEqualTo(new(WasmProcessingStage.Decode, bytes.Length, 0, 10));
         }
     }
 
@@ -73,21 +55,14 @@ internal partial class ModuleDecoder_DecodeTests
     [Arguments("FCFFFFFFFF10", 38L)]
     [Arguments("FD808080808000", 39L)]
     [Arguments("056A", 33L)]
-    public async Task 未割当opcodeか不正LEBか平坦else_未対応に置き換えず破損になる(
-        string instructions,
-        long offset
-    )
+    public async Task 未割当opcodeか不正LEBか平坦else_未対応に置き換えず破損になる(string instructions, long offset)
     {
         // Arrange
         var bytes = ConstantModuleBinary.Create(0x7F, Convert.FromHexString(instructions));
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => ModuleDecoder.Decode(bytes))
-            .ThrowsExactly<WasmDecodeException>();
-        await Assert
-            .That(exception!.Location)
-            .IsEqualTo(new(WasmProcessingStage.Decode, offset, 0, 10));
+        var exception = await Assert.That(() => ModuleDecoder.Decode(bytes)).ThrowsExactly<WasmDecodeException>();
+        await Assert.That(exception!.Location).IsEqualTo(new(WasmProcessingStage.Decode, offset, 0, 10));
     }
 
     [Test]
@@ -100,12 +75,8 @@ internal partial class ModuleDecoder_DecodeTests
         var bytes = Convert.FromHexString("0061736D0100000007030100" + kind.ToString("X2"));
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => ModuleDecoder.Decode(bytes))
-            .ThrowsExactly<WasmDecodeException>();
-        await Assert
-            .That(exception!.Location)
-            .IsEqualTo(new(WasmProcessingStage.Decode, 13, null, 7));
+        var exception = await Assert.That(() => ModuleDecoder.Decode(bytes)).ThrowsExactly<WasmDecodeException>();
+        await Assert.That(exception!.Location).IsEqualTo(new(WasmProcessingStage.Decode, 13, null, 7));
     }
 
     [Test]
@@ -124,11 +95,7 @@ internal partial class ModuleDecoder_DecodeTests
         var bytes = Convert.FromHexString("0061736D01000000" + sections);
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => ModuleDecoder.Decode(bytes))
-            .ThrowsExactly<WasmDecodeException>();
-        await Assert
-            .That(exception!.Location)
-            .IsEqualTo(new(WasmProcessingStage.Decode, offset, null, id));
+        var exception = await Assert.That(() => ModuleDecoder.Decode(bytes)).ThrowsExactly<WasmDecodeException>();
+        await Assert.That(exception!.Location).IsEqualTo(new(WasmProcessingStage.Decode, offset, null, id));
     }
 }

@@ -35,9 +35,7 @@ internal static class SpectestModuleFixture
 
     internal static WasmModule Create()
     {
-        var imports = functionNames_
-            .Select((x, i) => (x, (byte)0, new byte[] { (byte)i }))
-            .ToList();
+        var imports = functionNames_.Select((x, i) => (x, (byte)0, new byte[] { (byte)i })).ToList();
         imports.AddRange([
             ("global_i32", 3, new byte[] { 0x7F, 0 }),
             ("global_i64", 3, new byte[] { 0x7E, 0 }),
@@ -59,30 +57,19 @@ internal static class SpectestModuleFixture
         return Create(true, ("print", 0, [0]));
     }
 
-    private static WasmModule Create(
-        bool start,
-        params (string Name, byte Kind, byte[] Type)[] imports
-    )
+    private static WasmModule Create(bool start, params (string Name, byte Kind, byte[] Type)[] imports)
     {
         var indices = new uint[4];
-        byte[] types =
-        [
-            7,
-            .. parameterTypes_.SelectMany(x => (byte[])[0x60, (byte)x.Length, .. x, 0]),
-        ];
+        byte[] types = [7, .. parameterTypes_.SelectMany(x => (byte[])[0x60, (byte)x.Length, .. x, 0])];
         byte[] declarations =
         [
             .. Unsigned((uint)imports.Length),
-            .. imports.SelectMany(x =>
-                (byte[])[.. Name("spectest"), .. Name(x.Name), x.Kind, .. x.Type]
-            ),
+            .. imports.SelectMany(x => (byte[])[.. Name("spectest"), .. Name(x.Name), x.Kind, .. x.Type]),
         ];
         byte[] exports =
         [
             .. Unsigned((uint)imports.Length),
-            .. imports.SelectMany(x =>
-                (byte[])[.. Name(x.Name), x.Kind, .. Unsigned(indices[x.Kind]++)]
-            ),
+            .. imports.SelectMany(x => (byte[])[.. Name(x.Name), x.Kind, .. Unsigned(indices[x.Kind]++)]),
         ];
         byte[] binary =
         [

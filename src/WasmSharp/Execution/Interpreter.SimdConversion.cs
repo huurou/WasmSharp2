@@ -8,19 +8,13 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI32x4TruncSatF32x4S命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I32x4TruncSatF32x4S(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I32x4TruncSatF32x4S(InterpreterContext context, in Instruction instruction)
     {
         return ExecuteSimdConversion(
             context,
             32,
             32,
-            static x =>
-                unchecked(
-                    (uint)TruncateSaturatingI32(BitConverter.UInt32BitsToSingle((uint)x), true)
-                )
+            static x => unchecked((uint)TruncateSaturatingI32(BitConverter.UInt32BitsToSingle((uint)x), true))
         );
     }
 
@@ -30,19 +24,13 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI32x4TruncSatF32x4U命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I32x4TruncSatF32x4U(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I32x4TruncSatF32x4U(InterpreterContext context, in Instruction instruction)
     {
         return ExecuteSimdConversion(
             context,
             32,
             32,
-            static x =>
-                unchecked(
-                    (uint)TruncateSaturatingI32(BitConverter.UInt32BitsToSingle((uint)x), false)
-                )
+            static x => unchecked((uint)TruncateSaturatingI32(BitConverter.UInt32BitsToSingle((uint)x), false))
         );
     }
 
@@ -52,17 +40,13 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI32x4TruncSatF64x2SZero命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I32x4TruncSatF64x2SZero(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I32x4TruncSatF64x2SZero(InterpreterContext context, in Instruction instruction)
     {
         return ExecuteSimdConversion(
             context,
             64,
             32,
-            static x =>
-                unchecked((uint)TruncateSaturatingI32(BitConverter.UInt64BitsToDouble(x), true))
+            static x => unchecked((uint)TruncateSaturatingI32(BitConverter.UInt64BitsToDouble(x), true))
         );
     }
 
@@ -72,17 +56,13 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI32x4TruncSatF64x2UZero命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I32x4TruncSatF64x2UZero(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I32x4TruncSatF64x2UZero(InterpreterContext context, in Instruction instruction)
     {
         return ExecuteSimdConversion(
             context,
             64,
             32,
-            static x =>
-                unchecked((uint)TruncateSaturatingI32(BitConverter.UInt64BitsToDouble(x), false))
+            static x => unchecked((uint)TruncateSaturatingI32(BitConverter.UInt64BitsToDouble(x), false))
         );
     }
 
@@ -92,17 +72,9 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのF32x4ConvertI32x4S命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult F32x4ConvertI32x4S(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult F32x4ConvertI32x4S(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdConversion(
-            context,
-            32,
-            32,
-            static x => BitConverter.SingleToUInt32Bits((float)unchecked((int)x))
-        );
+        return ExecuteSimdConversion(context, 32, 32, static x => BitConverter.SingleToUInt32Bits((float)unchecked((int)x)));
     }
 
     /// <summary>
@@ -111,17 +83,9 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのF32x4ConvertI32x4U命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult F32x4ConvertI32x4U(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult F32x4ConvertI32x4U(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdConversion(
-            context,
-            32,
-            32,
-            static x => BitConverter.SingleToUInt32Bits((float)(uint)x)
-        );
+        return ExecuteSimdConversion(context, 32, 32, static x => BitConverter.SingleToUInt32Bits((float)(uint)x));
     }
 
     /// <summary>
@@ -130,10 +94,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのF64x2ConvertLowI32x4S命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult F64x2ConvertLowI32x4S(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult F64x2ConvertLowI32x4S(InterpreterContext context, in Instruction instruction)
     {
         return ExecuteSimdConversion(
             context,
@@ -149,17 +110,9 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのF64x2ConvertLowI32x4U命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult F64x2ConvertLowI32x4U(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult F64x2ConvertLowI32x4U(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdConversion(
-            context,
-            32,
-            64,
-            static x => BitConverter.DoubleToUInt64Bits((double)(uint)x)
-        );
+        return ExecuteSimdConversion(context, 32, 64, static x => BitConverter.DoubleToUInt64Bits((double)(uint)x));
     }
 
     /// <summary>
@@ -168,10 +121,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのF32x4DemoteF64x2Zero命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult F32x4DemoteF64x2Zero(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult F32x4DemoteF64x2Zero(InterpreterContext context, in Instruction instruction)
     {
         return ExecuteSimdConversion(
             context,
@@ -187,17 +137,13 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのF64x2PromoteLowF32x4命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult F64x2PromoteLowF32x4(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult F64x2PromoteLowF32x4(InterpreterContext context, in Instruction instruction)
     {
         return ExecuteSimdConversion(
             context,
             32,
             64,
-            static x =>
-                F64ArithmeticResult((double)BitConverter.UInt32BitsToSingle((uint)x)).AsF64Bits()
+            static x => F64ArithmeticResult((double)BitConverter.UInt32BitsToSingle((uint)x)).AsF64Bits()
         );
     }
 
@@ -217,9 +163,7 @@ internal static partial class Interpreter
     )
     {
         var vector = SimdValue.FromValue(context.PopValue());
-        context.PushValue(
-            MapSimdConversion(vector, inputBitWidth, outputBitWidth, operation).ToValue()
-        );
+        context.PushValue(MapSimdConversion(vector, inputBitWidth, outputBitWidth, operation).ToValue());
         return default;
     }
 
@@ -242,11 +186,7 @@ internal static partial class Interpreter
         var laneCount = Math.Min(128 / inputBitWidth, 128 / outputBitWidth);
         for (var laneIndex = 0; laneIndex < laneCount; laneIndex++)
         {
-            result = result.WithLane(
-                outputBitWidth,
-                laneIndex,
-                operation(vector.GetLane(inputBitWidth, laneIndex))
-            );
+            result = result.WithLane(outputBitWidth, laneIndex, operation(vector.GetLane(inputBitWidth, laneIndex)));
         }
 
         return result;

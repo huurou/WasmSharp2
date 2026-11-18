@@ -49,9 +49,7 @@ internal partial class FunctionValidator_ValidateTests
                     .That(code.BranchTargets[0])
                     .IsEqualTo(new BranchTarget(candidatePc, candidateHeight, keepCount));
             }
-            await Assert
-                .That(code.BranchTargets[candidateCount])
-                .IsEqualTo(new BranchTarget(defaultPc, 0, keepCount));
+            await Assert.That(code.BranchTargets[candidateCount]).IsEqualTo(new BranchTarget(defaultPc, 0, keepCount));
             await Assert.That(code.Instructions[^1].Opcode).IsEqualTo(ExecutionOpcode.Op0B);
             await Assert.That(module.FunctionCodes.IsEmpty).IsTrue();
         }
@@ -66,12 +64,7 @@ internal partial class FunctionValidator_ValidateTests
                 HostLinkingModuleBinary.Types(([], [0x7F, 0x7E]), ([0x7F, 0x7E], [0x7F, 0x7E])),
                 HostLinkingModuleBinary.Functions(0),
                 HostLinkingModuleBinary.Code(
-                    (
-                        [],
-                        Convert.FromHexString(
-                            "41014202030141000D0002004103420441000E02010002000B1A1A0B0B"
-                        )
-                    )
+                    ([], Convert.FromHexString("41014202030141000D0002004103420441000E02010002000B1A1A0B0B"))
                 )
             )
         );
@@ -100,11 +93,7 @@ internal partial class FunctionValidator_ValidateTests
             await Assert.That(code.BranchTargets[3]).IsEqualTo(new BranchTarget(11, 0, 2));
             await Assert.That(code.MaxOperandStack).IsEqualTo(5);
             await Assert
-                .That(
-                    code.BranchTargets.All(x =>
-                        x.TargetPc >= 0 && x.TargetPc < code.Instructions.Length
-                    )
-                )
+                .That(code.BranchTargets.All(x => x.TargetPc >= 0 && x.TargetPc < code.Instructions.Length))
                 .IsTrue();
         }
     }
@@ -117,31 +106,18 @@ internal partial class FunctionValidator_ValidateTests
             HostLinkingModuleBinary.Create(
                 HostLinkingModuleBinary.Types(([], []), ([], [0x7F, 0x7E])),
                 HostLinkingModuleBinary.Functions(0),
-                HostLinkingModuleBinary.Code(
-                    ([], Convert.FromHexString("02014107410941000E00000B1A1A0B"))
-                )
+                HostLinkingModuleBinary.Code(([], Convert.FromHexString("02014107410941000E00000B1A1A0B")))
             )
         );
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => module.Validate())
-            .ThrowsExactly<WasmValidateException>();
+        var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
         using (Assert.Multiple())
         {
-            await Assert
-                .That(exception!.Message.StartsWith("type mismatch", StringComparison.Ordinal))
-                .IsTrue();
+            await Assert.That(exception!.Message.StartsWith("type mismatch", StringComparison.Ordinal)).IsTrue();
             await Assert
                 .That(exception.Location)
-                .IsEqualTo(
-                    new(
-                        WasmProcessingStage.Validate,
-                        module.Functions[0].Instructions[4].ByteOffset,
-                        0,
-                        10
-                    )
-                );
+                .IsEqualTo(new(WasmProcessingStage.Validate, module.Functions[0].Instructions[4].ByteOffset, 0, 10));
             await Assert.That(module.FunctionCodes.IsEmpty).IsTrue();
         }
     }
@@ -163,29 +139,7 @@ internal partial class FunctionValidator_ValidateTests
                 HostLinkingModuleBinary.Types(([], []), ([], outerKinds), ([], innerKinds)),
                 HostLinkingModuleBinary.Functions(0),
                 HostLinkingModuleBinary.Code(
-                    (
-                        [],
-                        [
-                            0x02,
-                            1,
-                            0x02,
-                            2,
-                            0,
-                            0x41,
-                            1,
-                            0x0E,
-                            2,
-                            0,
-                            1,
-                            1,
-                            0x0B,
-                            .. drops,
-                            0,
-                            0x0B,
-                            .. drops,
-                            0x0B,
-                        ]
-                    )
+                    ([], [0x02, 1, 0x02, 2, 0, 0x41, 1, 0x0E, 2, 0, 1, 1, 0x0B, .. drops, 0, 0x0B, .. drops, 0x0B])
                 )
             )
         );
@@ -204,9 +158,7 @@ internal partial class FunctionValidator_ValidateTests
         using (Assert.Multiple())
         {
             await Assert.That(code.BranchTargets.Length).IsEqualTo(3);
-            await Assert
-                .That(code.BranchTargets.All(x => x.KeepCount == innerKinds.Length))
-                .IsTrue();
+            await Assert.That(code.BranchTargets.All(x => x.KeepCount == innerKinds.Length)).IsTrue();
             await Assert.That(code.BranchTargets[0].TargetPc).IsEqualTo(3);
             await Assert.That(code.BranchTargets[1]).IsEqualTo(code.BranchTargets[2]);
         }
@@ -215,9 +167,7 @@ internal partial class FunctionValidator_ValidateTests
     [Test]
     [Arguments("027C027D0041010E020001010B1A4400000000000000000B1A0B")]
     [Arguments("027C027D000E020001010B1A4400000000000000000B1A0B")]
-    public async Task Meet_bottomの分岐値とselectorが多相的_内側f32と外側f64の型を一律一致させない(
-        string body
-    )
+    public async Task Meet_bottomの分岐値とselectorが多相的_内側f32と外側f64の型を一律一致させない(string body)
     {
         // Arrange
         var module = DecodeControl([], [], Convert.FromHexString(body));
@@ -248,12 +198,7 @@ internal partial class FunctionValidator_ValidateTests
     [Arguments("027D430000000042000E0102000B1A0B", 3, "unknown label 2", null)]
     [Arguments("0E02FFFFFFFF0F01000B", 0, "unknown label 4294967295", null)]
     [Arguments("027C027D430000000041000E020103000B1A4400000000000000000B1A0B", 4, "type mismatch", null)]
-    [Arguments(
-        "027C027D430000000041000E020301000B1A4400000000000000000B1A0B",
-        4,
-        "unknown label 3",
-        null
-    )]
+    [Arguments("027C027D430000000041000E020301000B1A4400000000000000000B1A0B", 4, "unknown label 3", null)]
     [Arguments("027C027D00430000000041000E0100010B1A4400000000000000000B1A0B", 5, "type mismatch", null)]
     [Arguments("027F000E0101000B1A0B", 2, "type mismatch", "分岐先の引数個数")]
     [Arguments("027F000E0100010B1A0B", 2, "type mismatch", null)]
@@ -276,14 +221,10 @@ internal partial class FunctionValidator_ValidateTests
         var module = DecodeControl([], [], Convert.FromHexString(body));
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => module.Validate())
-            .ThrowsExactly<WasmValidateException>();
+        var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
         using (Assert.Multiple())
         {
-            await Assert
-                .That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal))
-                .IsTrue();
+            await Assert.That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal)).IsTrue();
             if (expectedDetail is not null)
             {
                 await Assert.That(exception.Message).Contains(expectedDetail);
@@ -291,17 +232,10 @@ internal partial class FunctionValidator_ValidateTests
             await Assert
                 .That(exception.Location)
                 .IsEqualTo(
-                    new(
-                        WasmProcessingStage.Validate,
-                        module.Functions[0].Instructions[failureIndex].ByteOffset,
-                        0,
-                        10
-                    )
+                    new(WasmProcessingStage.Validate, module.Functions[0].Instructions[failureIndex].ByteOffset, 0, 10)
                 );
             await Assert.That(module.FunctionCodes.IsEmpty).IsTrue();
-            await Assert
-                .That(() => module.Instantiate(executionContext, []))
-                .ThrowsExactly<InvalidOperationException>();
+            await Assert.That(() => module.Instantiate(executionContext, [])).ThrowsExactly<InvalidOperationException>();
         }
     }
 }

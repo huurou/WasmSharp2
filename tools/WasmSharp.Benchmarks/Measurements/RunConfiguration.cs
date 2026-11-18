@@ -1,6 +1,6 @@
+using System.Collections.Immutable;
 using BenchmarkDotNet.Configs;
 using BenchmarkDotNet.Jobs;
-using System.Collections.Immutable;
 using WasmSharp.Benchmarks.Results;
 
 namespace WasmSharp.Benchmarks.Measurements;

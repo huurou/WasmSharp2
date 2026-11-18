@@ -52,8 +52,6 @@ internal class WasmGlobal_ConstructorTests
     public async Task 型がnullである_引数例外として拒否する()
     {
         // Act & Assert
-        await Assert
-            .That(() => new WasmGlobal(null!, default))
-            .ThrowsExactly<ArgumentNullException>();
+        await Assert.That(() => new WasmGlobal(null!, default)).ThrowsExactly<ArgumentNullException>();
     }
 }

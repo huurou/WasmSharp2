@@ -32,12 +32,7 @@ internal class Interpreter_DropTests
         // Act
         try
         {
-            result = Interpreter.Run(
-                context,
-                function,
-                [WasmValue.FromExternRef(reference)],
-                WasmProcessingStage.Invoke
-            );
+            result = Interpreter.Run(context, function, [WasmValue.FromExternRef(reference)], WasmProcessingStage.Invoke);
         }
         finally
         {

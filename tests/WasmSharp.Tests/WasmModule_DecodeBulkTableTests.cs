@@ -9,21 +9,14 @@ internal partial class WasmModule_DecodeTests
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task 一括table命令を連続Decodeする_2添字の順序と最大uintと命令終端を保持する(
-        bool useStream
-    )
+    public async Task 一括table命令を連続Decodeする_2添字の順序と最大uintと命令終端を保持する(bool useStream)
     {
         // Arrange
         var bytes = HostLinkingModuleBinary.Create(
             HostLinkingModuleBinary.Types(([], [])),
             HostLinkingModuleBinary.Functions(0),
             HostLinkingModuleBinary.Code(
-                (
-                    [],
-                    Convert.FromHexString(
-                        "FC8C008100FFFFFFFF0FFC0DFFFFFFFF0FFC0EFFFFFFFF0F8200FC1180000B"
-                    )
-                )
+                ([], Convert.FromHexString("FC8C008100FFFFFFFF0FFC0DFFFFFFFF0FFC0EFFFFFFFF0F8200FC1180000B"))
             )
         );
         using var stream = new MemoryStream(bytes);
@@ -78,19 +71,13 @@ internal partial class WasmModule_DecodeTests
         var instructionOffset = bytes.Length - body.Length / 2;
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => WasmModule.Decode(bytes))
-            .ThrowsExactly<WasmDecodeException>();
+        var exception = await Assert.That(() => WasmModule.Decode(bytes)).ThrowsExactly<WasmDecodeException>();
         using (Assert.Multiple())
         {
-            await Assert
-                .That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal))
-                .IsTrue();
+            await Assert.That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal)).IsTrue();
             await Assert
                 .That(exception.Location)
-                .IsEqualTo(
-                    new(WasmProcessingStage.Decode, instructionOffset + relativeOffset, 0, 10)
-                );
+                .IsEqualTo(new(WasmProcessingStage.Decode, instructionOffset + relativeOffset, 0, 10));
         }
     }
 }

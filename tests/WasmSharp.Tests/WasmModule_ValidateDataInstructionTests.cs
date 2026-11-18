@@ -41,27 +41,14 @@ internal partial class WasmModule_ValidateTests
         var module = WasmModule.Decode(bytes);
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => module.Validate())
-            .ThrowsExactly<WasmValidateException>();
+        var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
         using (Assert.Multiple())
         {
-            await Assert
-                .That(exception!.Message.StartsWith(diagnostic, StringComparison.Ordinal))
-                .IsTrue();
+            await Assert.That(exception!.Message.StartsWith(diagnostic, StringComparison.Ordinal)).IsTrue();
             await Assert
                 .That(exception.Location)
-                .IsEqualTo(
-                    new(
-                        WasmProcessingStage.Validate,
-                        bytes.Length - data.Length - offsetFromEnd,
-                        0,
-                        10
-                    )
-                );
-            await Assert
-                .That(() => module.Instantiate(executionContext, []))
-                .ThrowsExactly<InvalidOperationException>();
+                .IsEqualTo(new(WasmProcessingStage.Validate, bytes.Length - data.Length - offsetFromEnd, 0, 10));
+            await Assert.That(() => module.Instantiate(executionContext, [])).ThrowsExactly<InvalidOperationException>();
         }
     }
 
@@ -113,11 +100,7 @@ internal partial class WasmModule_ValidateTests
         );
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => module.Validate())
-            .ThrowsExactly<WasmValidateException>();
-        await Assert
-            .That(exception!.Message.StartsWith("unknown data segment 0", StringComparison.Ordinal))
-            .IsTrue();
+        var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
+        await Assert.That(exception!.Message.StartsWith("unknown data segment 0", StringComparison.Ordinal)).IsTrue();
     }
 }

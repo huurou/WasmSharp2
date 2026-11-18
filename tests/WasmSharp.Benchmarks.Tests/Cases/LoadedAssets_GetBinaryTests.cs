@@ -16,9 +16,7 @@ internal class LoadedAssets_GetBinaryTests
         var assets = AssetManifest.Load(fixture.ManifestPath, json_, methods_);
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => assets.GetBinary("unknown-asset"))
-            .ThrowsExactly<InvalidDataException>();
+        var exception = await Assert.That(() => assets.GetBinary("unknown-asset")).ThrowsExactly<InvalidDataException>();
         await Assert.That(exception!.Message).Contains("unknown-asset").And.Contains("未登録");
     }
 }

@@ -11,10 +11,7 @@ internal class Interpreter_I32ClzTests
     [Arguments(unchecked((int)0x80000000), 0)]
     [Arguments(1, 31)]
     [Arguments(unchecked((int)0x00010000), 15)]
-    public async Task 入力0と全bit1と最上位bitを含む値_先頭ゼロ数を元の整数幅で返す(
-        int operand,
-        int expected
-    )
+    public async Task 入力0と全bit1と最上位bitを含む値_先頭ゼロ数を元の整数幅で返す(int operand, int expected)
     {
         // Arrange
         WasmValue[] operands = [WasmValue.FromI32(operand)];

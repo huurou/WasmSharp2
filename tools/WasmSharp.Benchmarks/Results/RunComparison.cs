@@ -13,11 +13,7 @@ internal sealed partial class RunComparison(CaseJson json)
     /// <summary>
     /// 保存済みの2runについて、指定caseの条件差と比較できない理由を返す
     /// </summary>
-    internal RunConditionComparison CompareConditions(
-        string baselineDirectory,
-        string currentDirectory,
-        string caseId
-    )
+    internal RunConditionComparison CompareConditions(string baselineDirectory, string currentDirectory, string caseId)
     {
         var reasons = new List<ComparisonReason>();
         var baseline = ReadConditions(baselineDirectory, caseId, reasons);
@@ -34,11 +30,7 @@ internal sealed partial class RunComparison(CaseJson json)
         var differences = new List<ConditionDifference>();
         if (baseline is not null && current is not null)
         {
-            foreach (
-                var name in baseline
-                    .Values.Keys.Union(current.Values.Keys)
-                    .Order(StringComparer.Ordinal)
-            )
+            foreach (var name in baseline.Values.Keys.Union(current.Values.Keys).Order(StringComparer.Ordinal))
             {
                 var before = baseline.Values.GetValueOrDefault(name);
                 var after = current.Values.GetValueOrDefault(name);
@@ -51,12 +43,7 @@ internal sealed partial class RunComparison(CaseJson json)
 
         if (differences.Count != 0)
         {
-            reasons.Add(
-                new(
-                    ComparisonReasonKind.ConditionMismatch,
-                    "ランタイムコード以外の比較条件が異なります。"
-                )
-            );
+            reasons.Add(new(ComparisonReasonKind.ConditionMismatch, "ランタイムコード以外の比較条件が異なります。"));
         }
         return new(differences, reasons);
     }
@@ -100,16 +87,10 @@ internal sealed partial class RunComparison(CaseJson json)
             }
             if (run.Failures.Count != 0 || result.Failures.Count != 0)
             {
-                reasons.Add(
-                    new(
-                        ComparisonReasonKind.CorrectnessFailure,
-                        $"run '{run.RunId}': 保存された失敗があります。"
-                    )
-                );
+                reasons.Add(new(ComparisonReasonKind.CorrectnessFailure, $"run '{run.RunId}': 保存された失敗があります。"));
                 return null;
             }
-            var definition = Read<List<BenchmarkCase>>(directory, run.CasesFile!)
-                .Single(x => x.CaseId == caseId);
+            var definition = Read<List<BenchmarkCase>>(directory, run.CasesFile!).Single(x => x.CaseId == caseId);
             var jobs = Read<List<ProcessConfiguration>>(directory, run.JobSettingsFile!);
             var checks = ReadProcessChecks(directory, run, jobs);
             return RunConditions.Create(
@@ -143,20 +124,13 @@ internal sealed partial class RunComparison(CaseJson json)
         }
     }
 
-    private List<ProcessCheck> ReadProcessChecks(
-        string directory,
-        RunManifest run,
-        List<ProcessConfiguration> jobs
-    )
+    private List<ProcessCheck> ReadProcessChecks(string directory, RunManifest run, List<ProcessConfiguration> jobs)
     {
         var checks = new List<ProcessCheck>();
         foreach (var result in run.Cases)
         {
             var processes = result.BenchmarkReport?.Processes ?? [];
-            if (
-                jobs.Count == 0
-                || jobs.Any(x => processes.Count(y => y.JobId == x.JobId) < x.LaunchCount)
-            )
+            if (jobs.Count == 0 || jobs.Any(x => processes.Count(y => y.JobId == x.JobId) < x.LaunchCount))
             {
                 throw new InvalidDataException("全予定子processのaffinity観測が揃っていません。");
             }
@@ -177,9 +151,9 @@ internal sealed partial class RunComparison(CaseJson json)
                     );
                 }
                 if (
-                    check.AffinityBefore is null or 0 ||
-                    check.AffinityBefore != check.AffinityAfter ||
-                    check.AffinityUnavailableReason is not null
+                    check.AffinityBefore is null or 0
+                    || check.AffinityBefore != check.AffinityAfter
+                    || check.AffinityUnavailableReason is not null
                 )
                 {
                     throw new InvalidDataException(
@@ -189,19 +163,11 @@ internal sealed partial class RunComparison(CaseJson json)
                 checks.Add(check);
             }
         }
-        if (
-            checks
-                .GroupBy(x => x.JobId)
-                .Any(x => x.Select(y => y.AffinityBefore).Distinct().Count() != 1)
-        )
+        if (checks.GroupBy(x => x.JobId).Any(x => x.Select(y => y.AffinityBefore).Distinct().Count() != 1))
         {
             throw new InvalidDataException("同じJobの子process間でaffinityが異なります。");
         }
-        if (
-            checks
-                .GroupBy(x => x.JobId)
-                .Any(x => x.Select(y => y.RuntimeVersion).Distinct().Count() != 1)
-        )
+        if (checks.GroupBy(x => x.JobId).Any(x => x.Select(y => y.RuntimeVersion).Distinct().Count() != 1))
         {
             throw new InvalidDataException("同じJobの子process間でruntimeが異なります。");
         }
@@ -211,29 +177,21 @@ internal sealed partial class RunComparison(CaseJson json)
     private static bool AssembliesUnchanged(RunSource source)
     {
         return source.AssembliesBefore.Count == source.AssembliesAfter.Count
-        && source.AssembliesBefore.All(x =>
-            source.AssembliesAfter.Any(y =>
-                y.Role == x.Role && y.Path == x.Path && y.Sha256 == x.Sha256
-            )
-        );
+            && source.AssembliesBefore.All(x =>
+                source.AssembliesAfter.Any(y => y.Role == x.Role && y.Path == x.Path && y.Sha256 == x.Sha256)
+            );
     }
 
     private T Read<T>(string directory, ManifestFile file)
     {
-        return JsonSerializer.Deserialize<T>(
-            File.ReadAllBytes(Path.Combine(directory, file.RelativePath)),
-            json_.Options
-        )!;
+        return JsonSerializer.Deserialize<T>(File.ReadAllBytes(Path.Combine(directory, file.RelativePath)), json_.Options)!;
     }
 }
 
 /// <summary>
 /// 条件差と比較の前提不成立 数値の改善・悪化を表す判定とは分ける。
 /// </summary>
-internal sealed record RunConditionComparison(
-    List<ConditionDifference> Differences,
-    List<ComparisonReason> Reasons
-)
+internal sealed record RunConditionComparison(List<ConditionDifference> Differences, List<ComparisonReason> Reasons)
 {
     internal bool IsComparable => Differences.Count == 0 && Reasons.Count == 0;
 }

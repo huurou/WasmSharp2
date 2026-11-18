@@ -36,11 +36,7 @@ internal sealed class ScriptExecutor(InputVerification input)
     /// <returns>観測した段階・値・例外・printを持つケース結果 command処理中の例外は診断として記録する</returns>
     internal CaseResult Execute(ScriptCommand command, ScriptState state)
     {
-        var observation = new CommandObservation(
-            state.BeginCommand(command.Index),
-            "read_command",
-            null
-        );
+        var observation = new CommandObservation(state.BeginCommand(command.Index), "read_command", null);
         try
         {
             switch (command)
@@ -58,13 +54,7 @@ internal sealed class ScriptExecutor(InputVerification input)
                     ExecuteAction(action.Action, [], false, state, ref observation);
                     break;
                 case AssertReturnCommand assertion:
-                    ExecuteAction(
-                        assertion.Action,
-                        assertion.Expected,
-                        true,
-                        state,
-                        ref observation
-                    );
+                    ExecuteAction(assertion.Action, assertion.Expected, true, state, ref observation);
                     break;
                 case AssertTrapCommand assertion:
                     ExecuteAction(assertion.Action, [], false, state, ref observation);
@@ -78,11 +68,7 @@ internal sealed class ScriptExecutor(InputVerification input)
         {
             observation = observation with { Exception = exception };
         }
-        observation = observation with
-        {
-            Prints = state.Prints,
-            CallbackException = state.CallbackException,
-        };
+        observation = observation with { Prints = state.Prints, CallbackException = state.CallbackException };
         var result = AssertionJudge.Judge(command, observation);
         if (result.Outcome != CaseOutcome.Passed)
         {
@@ -116,11 +102,7 @@ internal sealed class ScriptExecutor(InputVerification input)
             {
                 Diagnostics =
                 [
-                    new(issue.Operation, issue.Message)
-                    {
-                        Path = issue.Path,
-                        ExceptionType = issue.ExceptionType,
-                    },
+                    new(issue.Operation, issue.Message) { Path = issue.Path, ExceptionType = issue.ExceptionType },
                 ],
             };
             return;
@@ -138,11 +120,7 @@ internal sealed class ScriptExecutor(InputVerification input)
         {
             return;
         }
-        observation = observation with
-        {
-            Operation = "inspect_imports",
-            LastStage = CaseStage.InspectImports,
-        };
+        observation = observation with { Operation = "inspect_imports", LastStage = CaseStage.InspectImports };
         var inspection = WasmModule.InspectImports(bytes.AsSpan());
         var causes = inspection
             .Imports.Select(x => state.GetRegistration(x.ModuleName)?.Cause)
@@ -154,16 +132,8 @@ internal sealed class ScriptExecutor(InputVerification input)
             observation = observation with { BlockedBy = causes };
             return;
         }
-        observation = observation with
-        {
-            Operation = "instantiate",
-            LastStage = CaseStage.Instantiate,
-        };
-        var instance = module.Instantiate(
-            context_,
-            state.CreateImports(),
-            new WasmExecutionOptions(MAX_CALL_DEPTH)
-        );
+        observation = observation with { Operation = "instantiate", LastStage = CaseStage.Instantiate };
+        var instance = module.Instantiate(context_, state.CreateImports(), new WasmExecutionOptions(MAX_CALL_DEPTH));
         if (command is ModuleCommand normal)
         {
             state.SetModule(normal, new(module, instance));
@@ -176,11 +146,7 @@ internal sealed class ScriptExecutor(InputVerification input)
     /// <param name="command">提供元moduleと登録名を指定するregister</param>
     /// <param name="state">moduleを解決し、成功時に最新の登録を保持する入力の状態</param>
     /// <param name="observation">moduleの不在・利用不能状態またはRegister段階を反映する観測</param>
-    private static void ExecuteRegister(
-        RegisterCommand command,
-        ScriptState state,
-        ref CommandObservation observation
-    )
+    private static void ExecuteRegister(RegisterCommand command, ScriptState state, ref CommandObservation observation)
     {
         observation = observation with { Operation = "resolve_module" };
         var binding = ResolveModule(command.Name, state, ref observation);
@@ -218,21 +184,14 @@ internal sealed class ScriptExecutor(InputVerification input)
     /// <param name="state">module識別子と直近moduleを保持する入力の状態</param>
     /// <param name="observation">対象が不在の場合は診断、利用不能の場合は依存する原因を反映する観測</param>
     /// <returns>成功したmoduleとinstance 不在または利用不能の場合はnull</returns>
-    private static InstantiatedModule? ResolveModule(
-        string? name,
-        ScriptState state,
-        ref CommandObservation observation
-    )
+    private static InstantiatedModule? ResolveModule(string? name, ScriptState state, ref CommandObservation observation)
     {
         var binding = state.ResolveModule(name);
         if (binding is null)
         {
             observation = observation with
             {
-                Diagnostics =
-                [
-                    new("resolve_module", $"対象module {name ?? "(直近)"}がありません。"),
-                ],
+                Diagnostics = [new("resolve_module", $"対象module {name ?? "(直近)"}がありません。")],
             };
         }
         else if (binding.Cause is { } cause)
@@ -259,9 +218,7 @@ internal sealed class ScriptExecutor(InputVerification input)
     )
     {
         observation = observation with { Operation = "create_arguments" };
-        var arguments = action is InvokeAction invoke
-            ? ValueCodec.CreateArguments(invoke.Arguments, state)
-            : [];
+        var arguments = action is InvokeAction invoke ? ValueCodec.CreateArguments(invoke.Arguments, state) : [];
         observation = observation with { Operation = "parse_expected" };
         var patterns = ValueMatcher.Parse(expected);
         observation = observation with { Operation = "resolve_module" };
@@ -280,17 +237,11 @@ internal sealed class ScriptExecutor(InputVerification input)
                 ? module.Instance.GetFunction(action.Field).Invoke(context_, arguments.AsSpan())
                 : new WasmResults([module.Instance.GetGlobal(action.Field)]);
         observation = observation with { Operation = "record_values" };
-        observation = observation with
-        {
-            Values = [.. actual.Values.Select(x => ValueCodec.Record(x, state))],
-        };
+        observation = observation with { Values = [.. actual.Values.Select(x => ValueCodec.Record(x, state))] };
         if (compareValues)
         {
             observation = observation with { Operation = "match_values" };
-            observation = observation with
-            {
-                Mismatches = ValueMatcher.Match(patterns, actual, state),
-            };
+            observation = observation with { Mismatches = ValueMatcher.Match(patterns, actual, state) };
         }
     }
 }

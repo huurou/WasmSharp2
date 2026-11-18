@@ -7,9 +7,7 @@ internal class WasmTable_TryCopyTests
     [Test]
     [Arguments(WasmValueKind.FuncRef)]
     [Arguments(WasmValueKind.ExternRef)]
-    public async Task 別tableから双方の末尾までコピーする_供給元と範囲外を保ち参照同一性を転送する(
-        WasmValueKind kind
-    )
+    public async Task 別tableから双方の末尾までコピーする_供給元と範囲外を保ち参照同一性を転送する(WasmValueKind kind)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
@@ -25,10 +23,7 @@ internal class WasmTable_TryCopyTests
             kind == WasmValueKind.FuncRef
                 ? WasmValue.FromFuncRef((WasmFunction)reference)
                 : WasmValue.FromExternRef(reference);
-        var empty =
-            kind == WasmValueKind.FuncRef
-                ? WasmValue.FromFuncRef(null)
-                : WasmValue.FromExternRef(null);
+        var empty = kind == WasmValueKind.FuncRef ? WasmValue.FromFuncRef(null) : WasmValue.FromExternRef(null);
         var source = new WasmTable(kind, new WasmLimits(3));
         source.Set(1, value);
         var destination = new WasmTable(kind, new WasmLimits(4));
@@ -50,9 +45,7 @@ internal class WasmTable_TryCopyTests
             await Assert
                 .That(
                     ReferenceEquals(
-                        kind == WasmValueKind.FuncRef
-                            ? destination.Get(2).AsFuncRef()
-                            : destination.Get(2).AsExternRef(),
+                        kind == WasmValueKind.FuncRef ? destination.Get(2).AsFuncRef() : destination.Get(2).AsExternRef(),
                         reference
                     )
                 )
@@ -94,9 +87,7 @@ internal class WasmTable_TryCopyTests
             await Assert.That(success).IsTrue();
             for (uint index = 0; index < table.Count; index++)
             {
-                await Assert
-                    .That(ReferenceEquals(table.Get(index).AsExternRef(), expected[index]))
-                    .IsTrue();
+                await Assert.That(ReferenceEquals(table.Get(index).AsExternRef(), expected[index])).IsTrue();
             }
         }
     }
@@ -162,15 +153,11 @@ internal class WasmTable_TryCopyTests
             await Assert.That(source.Count).IsEqualTo(4u);
             for (uint index = 0; index < source.Count; index++)
             {
-                await Assert
-                    .That(ReferenceEquals(source.Get(index).AsExternRef(), references[index]))
-                    .IsTrue();
+                await Assert.That(ReferenceEquals(source.Get(index).AsExternRef(), references[index])).IsTrue();
             }
             for (uint index = 0; index < table.Count; index++)
             {
-                await Assert
-                    .That(ReferenceEquals(table.Get(index).AsExternRef(), references[3 - index]))
-                    .IsTrue();
+                await Assert.That(ReferenceEquals(table.Get(index).AsExternRef(), references[3 - index])).IsTrue();
             }
         }
     }

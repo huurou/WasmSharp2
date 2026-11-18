@@ -9,11 +9,7 @@ internal class Interpreter_I64SubTests
     [Arguments(long.MinValue, 1L, long.MaxValue)]
     [Arguments(3L, 11L, -8L)]
     [Arguments(4294967296L, 1L, 4294967295L)]
-    public async Task 減算の幅境界と左右が異なる値_左から右を引いた64bitの剰余を返す(
-        long left,
-        long right,
-        long expected
-    )
+    public async Task 減算の幅境界と左右が異なる値_左から右を引いた64bitの剰余を返す(long left, long right, long expected)
     {
         // Arrange
         WasmValue[] operands = [WasmValue.FromI64(left), WasmValue.FromI64(right)];

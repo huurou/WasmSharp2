@@ -23,10 +23,7 @@ internal sealed class BenchmarkProcess
         var path =
             Environment.GetEnvironmentVariable(RunConfiguration.ENVIRONMENT_VARIABLE)
             ?? throw new InvalidOperationException("run設定の環境変数がありません。");
-        var configuration = JsonSerializer.Deserialize<RunConfiguration>(
-            File.ReadAllBytes(path),
-            json_.Options
-        )!;
+        var configuration = JsonSerializer.Deserialize<RunConfiguration>(File.ReadAllBytes(path), json_.Options)!;
         var caseId = methods_.GetCaseId(measurementMethod);
         if (!configuration.PlannedCaseIds.Contains(caseId))
         {
@@ -63,37 +60,29 @@ internal sealed class BenchmarkProcess
                 CaptureAffinity(after: false);
                 check_ = check_ with
                 {
-                    LoadedAssemblies = [.. new[]
-                    {
-                        (AssemblyRole.Runtime, typeof(WasmModule).Assembly.Location),
-                        (AssemblyRole.Harness, typeof(InvokeBenchmarks).Assembly.Location),
-                    }
-                        .Select(x => new AssemblyIdentity(
+                    LoadedAssemblies =
+                    [
+                        .. new[]
+                        {
+                            (AssemblyRole.Runtime, typeof(WasmModule).Assembly.Location),
+                            (AssemblyRole.Harness, typeof(InvokeBenchmarks).Assembly.Location),
+                        }.Select(x => new AssemblyIdentity(
                             x.Item1,
                             x.Location,
                             Convert.ToHexStringLower(SHA256.HashData(File.ReadAllBytes(x.Location)))
-                        ))],
+                        )),
+                    ],
                 };
             }
         );
         Save();
         RunChecked(
             RunStage.Precheck,
-            () => initialize(
-                AssetManifest.Load(configuration_.AssetManifestPath, json_, methods_),
-                check_.CaseId,
-                json_
-            )
+            () => initialize(AssetManifest.Load(configuration_.AssetManifestPath, json_, methods_), check_.CaseId, json_)
         );
         check_ = check_ with { Precheck = Success(), LastConfirmedStage = RunStage.Precheck };
         Save();
-        Save(
-            check_ with
-            {
-                ExecutionStarted = true,
-                LastConfirmedStage = RunStage.ExecutionStarted,
-            }
-        );
+        Save(check_ with { ExecutionStarted = true, LastConfirmedStage = RunStage.ExecutionStarted });
     }
 
     internal void Cleanup(Action verify)
@@ -145,11 +134,7 @@ internal sealed class BenchmarkProcess
                 }
             }
             catch (Exception exception)
-                when (exception
-                        is Win32Exception
-                            or InvalidOperationException
-                            or PlatformNotSupportedException
-                )
+                when (exception is Win32Exception or InvalidOperationException or PlatformNotSupportedException)
             {
                 reason = exception.GetType().Name + ": " + exception.Message;
             }

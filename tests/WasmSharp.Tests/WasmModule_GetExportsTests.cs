@@ -16,14 +16,7 @@ internal class WasmModule_GetExportsTests
                 HostLinkingModuleBinary.Tables((0x70, 1, null)),
                 HostLinkingModuleBinary.Memories((1, null)),
                 HostLinkingModuleBinary.Globals((0x7F, true, [0x41, 0x05, 0x0B])),
-                HostLinkingModuleBinary.Exports(
-                    ("g", 3, 0),
-                    ("f", 0, 0),
-                    ("m", 2, 0),
-                    ("t", 1, 0),
-                    ("F", 0, 0),
-                    ("", 3, 0)
-                ),
+                HostLinkingModuleBinary.Exports(("g", 3, 0), ("f", 0, 0), ("m", 2, 0), ("t", 1, 0), ("F", 0, 0), ("", 3, 0)),
                 HostLinkingModuleBinary.Code(([], [0x0B]))
             )
         );
@@ -47,12 +40,8 @@ internal class WasmModule_GetExportsTests
         {
             await Assert.That(beforeValidation.SequenceEqual(expected)).IsTrue();
             await Assert.That(afterValidation.SequenceEqual(expected)).IsTrue();
-            await Assert
-                .That(instance.GetFunction("F"))
-                .IsSameReferenceAs(instance.GetFunction("f"));
-            await Assert
-                .That(instance.GetGlobalResource(""))
-                .IsSameReferenceAs(instance.GetGlobalResource("g"));
+            await Assert.That(instance.GetFunction("F")).IsSameReferenceAs(instance.GetFunction("f"));
+            await Assert.That(instance.GetGlobalResource("")).IsSameReferenceAs(instance.GetGlobalResource("g"));
         }
     }
 
@@ -69,12 +58,7 @@ internal class WasmModule_GetExportsTests
                     HostLinkingModuleBinary.Tables((0x70, 1, null)),
                     HostLinkingModuleBinary.Memories((1, null)),
                     HostLinkingModuleBinary.Globals((0x7F, true, [0x41, 0x05, 0x0B])),
-                    HostLinkingModuleBinary.Exports(
-                        ("f", 0, 0),
-                        ("t", 1, 0),
-                        ("m", 2, 0),
-                        ("g", 3, 0)
-                    ),
+                    HostLinkingModuleBinary.Exports(("f", 0, 0), ("t", 1, 0), ("m", 2, 0), ("g", 3, 0)),
                     HostLinkingModuleBinary.Code(([], [0x0B]))
                 )
             )
@@ -95,12 +79,7 @@ internal class WasmModule_GetExportsTests
                         ("env", "m", 2, HostLinkingModuleBinary.Limits(1)),
                         ("env", "g", 3, [0x7F, 0x01])
                     ),
-                    HostLinkingModuleBinary.Exports(
-                        ("memory", 2, 0),
-                        ("global", 3, 0),
-                        ("table", 1, 0),
-                        ("function", 0, 0)
-                    )
+                    HostLinkingModuleBinary.Exports(("memory", 2, 0), ("global", 3, 0), ("table", 1, 0), ("function", 0, 0))
                 )
             )
             .Validate();
@@ -120,18 +99,10 @@ internal class WasmModule_GetExportsTests
         using (Assert.Multiple())
         {
             await Assert.That(exports.SequenceEqual(expected)).IsTrue();
-            await Assert
-                .That(instance.GetMemory(exports[0].Name))
-                .IsSameReferenceAs(source.GetMemory("m"));
-            await Assert
-                .That(instance.GetGlobalResource(exports[1].Name))
-                .IsSameReferenceAs(source.GetGlobalResource("g"));
-            await Assert
-                .That(instance.GetTable(exports[2].Name))
-                .IsSameReferenceAs(source.GetTable("t"));
-            await Assert
-                .That(instance.GetFunction(exports[3].Name))
-                .IsSameReferenceAs(source.GetFunction("f"));
+            await Assert.That(instance.GetMemory(exports[0].Name)).IsSameReferenceAs(source.GetMemory("m"));
+            await Assert.That(instance.GetGlobalResource(exports[1].Name)).IsSameReferenceAs(source.GetGlobalResource("g"));
+            await Assert.That(instance.GetTable(exports[2].Name)).IsSameReferenceAs(source.GetTable("t"));
+            await Assert.That(instance.GetFunction(exports[3].Name)).IsSameReferenceAs(source.GetFunction("f"));
         }
     }
 

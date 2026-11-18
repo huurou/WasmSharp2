@@ -48,9 +48,7 @@ internal class WasmResults_ConstructorTests
             await Assert.That(actual[1].AsI64()).IsEqualTo(0x100000000L);
             await Assert.That(actual[2].AsF32Bits()).IsEqualTo(0xFFC12345U);
             await Assert.That(actual[3].AsF64Bits()).IsEqualTo(0x8000000000000000UL);
-            await Assert
-                .That(actual[4].AsV128())
-                .IsEqualTo((0x0123456789ABCDEFUL, 0xFEDCBA9876543210UL));
+            await Assert.That(actual[4].AsV128()).IsEqualTo((0x0123456789ABCDEFUL, 0xFEDCBA9876543210UL));
             await Assert.That(actual[5].AsFuncRef()).IsNull();
             await Assert.That(ReferenceEquals(actual[6].AsExternRef(), reference)).IsTrue();
         }

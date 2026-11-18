@@ -1,6 +1,5 @@
 using System.Text.Json;
 using WasmSharp.TestSuiteRunner.Baselines;
-using WasmSharp.TestSuiteRunner.Corpus;
 using WasmSharp.TestSuiteRunner.Reports;
 using WasmSharp.TestSuiteRunner.Tests.Fixtures;
 
@@ -31,12 +30,7 @@ internal class BaselineComparer_CompareRunTests
         current.Inputs[1].Cases.Reverse();
 
         // Act
-        var comparison = BaselineComparer.CompareRun(
-            baseline,
-            current,
-            baselinePath_,
-            currentPath_
-        );
+        var comparison = BaselineComparer.CompareRun(baseline, current, baselinePath_, currentPath_);
 
         // Assert
         using (Assert.Multiple())
@@ -53,20 +47,12 @@ internal class BaselineComparer_CompareRunTests
                 .That(
                     comparison
                         .Cases.Select(x => x.Id)
-                        .SequenceEqual(
-                            [
-                                new CaseId("a.wast", 0),
-                                new CaseId("a.wast", 1),
-                                new CaseId("b.wast", 0),
-                            ]
-                        )
+                        .SequenceEqual([new CaseId("a.wast", 0), new CaseId("a.wast", 1), new CaseId("b.wast", 0)])
                 )
                 .IsTrue();
             await Assert.That(comparison.Cases.All(x => x.Change == CaseChange.Unchanged)).IsTrue();
             await Assert.That(comparison.Summary.RegressionCount).IsEqualTo(0);
-            await Assert
-                .That(CompletionPolicy.CompareRun(comparison, saved: true).ExitCode)
-                .IsEqualTo(0);
+            await Assert.That(CompletionPolicy.CompareRun(comparison, saved: true).ExitCode).IsEqualTo(0);
         }
     }
 
@@ -76,9 +62,7 @@ internal class BaselineComparer_CompareRunTests
     [Arguments(CaseOutcome.RunnerError)]
     [Arguments(CaseOutcome.OutOfScope)]
     [Arguments(CaseOutcome.Blocked)]
-    public async Task 以前passedだったケースが別分類になる_前後の結果と回帰を残す(
-        CaseOutcome outcome
-    )
+    public async Task 以前passedだったケースが別分類になる_前後の結果と回帰を残す(CaseOutcome outcome)
     {
         // Arrange
         var baseline = CreateReport();
@@ -87,12 +71,7 @@ internal class BaselineComparer_CompareRunTests
         current = current with { Summary = current.Summarize() };
 
         // Act
-        var comparison = BaselineComparer.CompareRun(
-            baseline,
-            current,
-            baselinePath_,
-            currentPath_
-        );
+        var comparison = BaselineComparer.CompareRun(baseline, current, baselinePath_, currentPath_);
 
         // Assert
         var changed = comparison.Cases.Single(x => x.Id == new CaseId("a.wast", 1));
@@ -104,9 +83,7 @@ internal class BaselineComparer_CompareRunTests
             await Assert.That(changed.Current!.Outcome).IsEqualTo(outcome);
             await Assert.That(comparison.Summary.ChangedCaseCount).IsEqualTo(1);
             await Assert.That(comparison.Summary.RegressionCount).IsEqualTo(1);
-            await Assert
-                .That(CompletionPolicy.CompareRun(comparison, saved: true).ExitCode)
-                .IsEqualTo(1);
+            await Assert.That(CompletionPolicy.CompareRun(comparison, saved: true).ExitCode).IsEqualTo(1);
         }
     }
 
@@ -120,9 +97,7 @@ internal class BaselineComparer_CompareRunTests
     [Arguments("診断位置")]
     [Arguments("未確認範囲")]
     [Arguments("print")]
-    public async Task 分類が同じで期待や実際や診断が変化する_詳細差分を残し分類の回帰と区別する(
-        string change
-    )
+    public async Task 分類が同じで期待や実際や診断が変化する_詳細差分を残し分類の回帰と区別する(string change)
     {
         // Arrange
         var baseline = CreateReport();
@@ -149,10 +124,7 @@ internal class BaselineComparer_CompareRunTests
                 item.Diagnostics[0] = item.Diagnostics[0] with { Message = "変更後の診断" };
                 break;
             case "診断位置":
-                item.Diagnostics[0] = item.Diagnostics[0] with
-                {
-                    Location = new("Invoke", 99, 0, null),
-                };
+                item.Diagnostics[0] = item.Diagnostics[0] with { Location = new("Invoke", 99, 0, null) };
                 break;
             case "未確認範囲":
                 item.Diagnostics[0].UnverifiedRanges.Add(new("Validate", 0, 1, "変更後の範囲"));
@@ -164,12 +136,7 @@ internal class BaselineComparer_CompareRunTests
         current.Inputs[0].Cases[1] = item;
 
         // Act
-        var comparison = BaselineComparer.CompareRun(
-            baseline,
-            current,
-            baselinePath_,
-            currentPath_
-        );
+        var comparison = BaselineComparer.CompareRun(baseline, current, baselinePath_, currentPath_);
 
         // Assert
         var changed = comparison.Cases.Single(x => x.Id == item.Id);
@@ -208,12 +175,7 @@ internal class BaselineComparer_CompareRunTests
         current = current with { Summary = current.Summarize() };
 
         // Act
-        var comparison = BaselineComparer.CompareRun(
-            baseline,
-            current,
-            baselinePath_,
-            currentPath_
-        );
+        var comparison = BaselineComparer.CompareRun(baseline, current, baselinePath_, currentPath_);
 
         // Assert
         var missing = comparison.Cases.Single(x => x.Id == new CaseId("a.wast", 1));
@@ -224,22 +186,17 @@ internal class BaselineComparer_CompareRunTests
             await Assert.That(missing.Change).IsEqualTo(CaseChange.Missing);
             await Assert.That(missing.Regression).IsTrue();
             await Assert.That(missing.Current).IsNull();
-            await Assert
-                .That(comparison.Uncompared.Single(x => x.Target == "a.wast#1").Reason)
-                .Contains("current");
+            await Assert.That(comparison.Uncompared.Single(x => x.Target == "a.wast#1").Reason).Contains("current");
             await Assert.That(comparison.Summary.MissingCaseCount).IsEqualTo(1);
             await Assert.That(comparison.Summary.RegressionCount).IsEqualTo(1);
             await Assert
                 .That(
                     comparison.Uncompared.Any(x =>
-                        x.Reason.Contains("a.wast#1", StringComparison.Ordinal)
-                        || x.Target == "a.wast#1"
+                        x.Reason.Contains("a.wast#1", StringComparison.Ordinal) || x.Target == "a.wast#1"
                     )
                 )
                 .IsTrue();
-            await Assert
-                .That(CompletionPolicy.CompareRun(comparison, saved: true).ExitCode)
-                .IsEqualTo(2);
+            await Assert.That(CompletionPolicy.CompareRun(comparison, saved: true).ExitCode).IsEqualTo(2);
         }
     }
 
@@ -248,22 +205,14 @@ internal class BaselineComparer_CompareRunTests
     {
         // Arrange
         var baseline = CreateReport();
-        baseline.Inputs[0].Cases[1] = baseline.Inputs[0].Cases[1] with
-        {
-            Outcome = CaseOutcome.Failed,
-        };
+        baseline.Inputs[0].Cases[1] = baseline.Inputs[0].Cases[1] with { Outcome = CaseOutcome.Failed };
         baseline = baseline with { Summary = baseline.Summarize() };
         var current = CreateReport();
         current.Inputs[0].Cases.RemoveAt(1);
         current = current with { Summary = current.Summarize() };
 
         // Act
-        var comparison = BaselineComparer.CompareRun(
-            baseline,
-            current,
-            baselinePath_,
-            currentPath_
-        );
+        var comparison = BaselineComparer.CompareRun(baseline, current, baselinePath_, currentPath_);
 
         // Assert
         using (Assert.Multiple())
@@ -271,9 +220,7 @@ internal class BaselineComparer_CompareRunTests
             await Assert.That(comparison.Summary.MissingCaseCount).IsEqualTo(1);
             await Assert.That(comparison.Summary.RegressionCount).IsEqualTo(0);
             await Assert.That(comparison.Complete).IsFalse();
-            await Assert
-                .That(CompletionPolicy.CompareRun(comparison, saved: true).ExitCode)
-                .IsEqualTo(2);
+            await Assert.That(CompletionPolicy.CompareRun(comparison, saved: true).ExitCode).IsEqualTo(2);
         }
     }
 
@@ -287,12 +234,7 @@ internal class BaselineComparer_CompareRunTests
         var current = CreateReport();
 
         // Act
-        var comparison = BaselineComparer.CompareRun(
-            baseline,
-            current,
-            baselinePath_,
-            currentPath_
-        );
+        var comparison = BaselineComparer.CompareRun(baseline, current, baselinePath_, currentPath_);
 
         // Assert
         var added = comparison.Cases.Single(x => x.Id == new CaseId("a.wast", 1));
@@ -303,9 +245,7 @@ internal class BaselineComparer_CompareRunTests
             await Assert.That(added.Current!.Outcome).IsEqualTo(CaseOutcome.Passed);
             await Assert.That(added.Regression).IsFalse();
             await Assert.That(comparison.Summary.AddedCaseCount).IsEqualTo(1);
-            await Assert
-                .That(comparison.Uncompared.Single(x => x.Target == "a.wast#1").Reason)
-                .Contains("baseline");
+            await Assert.That(comparison.Uncompared.Single(x => x.Target == "a.wast#1").Reason).Contains("baseline");
             await Assert.That(comparison.Complete).IsFalse();
         }
     }
@@ -313,9 +253,7 @@ internal class BaselineComparer_CompareRunTests
     [Test]
     [Arguments(true)]
     [Arguments(false)]
-    public async Task 片側のケース識別が重複する_対応不能の理由を残し他のケースは比較する(
-        bool baselineDuplicate
-    )
+    public async Task 片側のケース識別が重複する_対応不能の理由を残し他のケースは比較する(bool baselineDuplicate)
     {
         // Arrange
         var baseline = CreateReport();
@@ -332,12 +270,7 @@ internal class BaselineComparer_CompareRunTests
         }
 
         // Act
-        var comparison = BaselineComparer.CompareRun(
-            baseline,
-            current,
-            baselinePath_,
-            currentPath_
-        );
+        var comparison = BaselineComparer.CompareRun(baseline, current, baselinePath_, currentPath_);
 
         // Assert
         using (Assert.Multiple())
@@ -347,15 +280,12 @@ internal class BaselineComparer_CompareRunTests
             await Assert
                 .That(
                     comparison.Uncompared.Any(x =>
-                        x.Target == "a.wast#1"
-                        && x.Reason.Contains("重複", StringComparison.Ordinal)
+                        x.Target == "a.wast#1" && x.Reason.Contains("重複", StringComparison.Ordinal)
                     )
                 )
                 .IsTrue();
             await Assert.That(comparison.Complete).IsFalse();
-            await Assert
-                .That(CompletionPolicy.CompareRun(comparison, saved: true).ExitCode)
-                .IsEqualTo(2);
+            await Assert.That(CompletionPolicy.CompareRun(comparison, saved: true).ExitCode).IsEqualTo(2);
         }
     }
 
@@ -365,9 +295,7 @@ internal class BaselineComparer_CompareRunTests
     [Arguments("入力hash")]
     [Arguments("生成物hash")]
     [Arguments("生成物欠落")]
-    public async Task 比較成立の条件が異なる_条件差と未比較理由を残し回帰を判定しない(
-        string condition
-    )
+    public async Task 比較成立の条件が異なる_条件差と未比較理由を残し回帰を判定しない(string condition)
     {
         // Arrange
         var baseline = CreateReport();
@@ -377,10 +305,7 @@ internal class BaselineComparer_CompareRunTests
             case "profile":
                 current = current with
                 {
-                    Corpus = current.Corpus with
-                    {
-                        Profile = current.Corpus.Profile with { Id = "changed" },
-                    },
+                    Corpus = current.Corpus with { Profile = current.Corpus.Profile with { Id = "changed" } },
                 };
                 break;
             case "feature":
@@ -390,10 +315,7 @@ internal class BaselineComparer_CompareRunTests
                 };
                 break;
             case "入力hash":
-                current.Corpus.Profile.Inputs[0] = current.Corpus.Profile.Inputs[0] with
-                {
-                    Sha256 = new string('f', 64),
-                };
+                current.Corpus.Profile.Inputs[0] = current.Corpus.Profile.Inputs[0] with { Sha256 = new string('f', 64) };
                 break;
             case "生成物hash":
                 current.Corpus.Inputs[0].Artifacts[0] = current.Corpus.Inputs[0].Artifacts[0] with
@@ -403,37 +325,26 @@ internal class BaselineComparer_CompareRunTests
                 break;
             case "生成物欠落":
                 current.Corpus.Inputs[0].Artifacts.RemoveAt(0);
-                current = current with
-                {
-                    Corpus = current.Corpus with { Summary = current.Corpus.Summarize() },
-                };
+                current = current with { Corpus = current.Corpus with { Summary = current.Corpus.Summarize() } };
                 break;
         }
 
         // Act
-        var comparison = BaselineComparer.CompareRun(
-            baseline,
-            current,
-            baselinePath_,
-            currentPath_
-        );
+        var comparison = BaselineComparer.CompareRun(baseline, current, baselinePath_, currentPath_);
 
         // Assert
         using (Assert.Multiple())
         {
             await Assert.That(comparison.Established).IsFalse();
             await Assert.That(comparison.Complete).IsFalse();
-            await Assert
-                .That(comparison.ConditionDifferences.Count + comparison.EntryDifferences.Count)
-                .IsGreaterThan(0);
+            await Assert.That(comparison.ConditionDifferences.Count + comparison.EntryDifferences.Count).IsGreaterThan(0);
             await Assert.That(comparison.Uncompared).IsNotEmpty();
             foreach (var difference in comparison.ConditionDifferences)
             {
                 await Assert
                     .That(
                         comparison.Uncompared.Any(x =>
-                            x.Target == difference.Name
-                            && x.Reason.Contains("比較成立", StringComparison.Ordinal)
+                            x.Target == difference.Name && x.Reason.Contains("比較成立", StringComparison.Ordinal)
                         )
                     )
                     .IsTrue();
@@ -443,16 +354,13 @@ internal class BaselineComparer_CompareRunTests
                 await Assert
                     .That(
                         comparison.Uncompared.Any(x =>
-                            x.Target == difference.Path
-                            && x.Reason.Contains(difference.Property, StringComparison.Ordinal)
+                            x.Target == difference.Path && x.Reason.Contains(difference.Property, StringComparison.Ordinal)
                         )
                     )
                     .IsTrue();
             }
             await Assert.That(comparison.Cases).IsEmpty();
-            await Assert
-                .That(CompletionPolicy.CompareRun(comparison, saved: true).ExitCode)
-                .IsEqualTo(2);
+            await Assert.That(CompletionPolicy.CompareRun(comparison, saved: true).ExitCode).IsEqualTo(2);
         }
     }
 
@@ -474,12 +382,7 @@ internal class BaselineComparer_CompareRunTests
         };
 
         // Act
-        var comparison = BaselineComparer.CompareRun(
-            baseline,
-            current,
-            baselinePath_,
-            currentPath_
-        );
+        var comparison = BaselineComparer.CompareRun(baseline, current, baselinePath_, currentPath_);
 
         // Assert
         using (Assert.Multiple())
@@ -488,9 +391,7 @@ internal class BaselineComparer_CompareRunTests
             await Assert.That(comparison.Complete).IsTrue();
             await Assert.That(comparison.Summary.ProvenanceDifferenceCount).IsEqualTo(1);
             await Assert.That(comparison.Cases.Count).IsEqualTo(3);
-            await Assert
-                .That(CompletionPolicy.CompareRun(comparison, saved: true).ExitCode)
-                .IsEqualTo(0);
+            await Assert.That(CompletionPolicy.CompareRun(comparison, saved: true).ExitCode).IsEqualTo(0);
         }
     }
 
@@ -502,12 +403,7 @@ internal class BaselineComparer_CompareRunTests
         var current = RunReportFixture.CreateSample();
 
         // Act
-        var comparison = BaselineComparer.CompareRun(
-            baseline,
-            current,
-            baselinePath_,
-            currentPath_
-        );
+        var comparison = BaselineComparer.CompareRun(baseline, current, baselinePath_, currentPath_);
 
         // Assert
         var failed = comparison.Cases.Single(x => x.Id == new CaseId("a.wast", 2));
@@ -520,9 +416,7 @@ internal class BaselineComparer_CompareRunTests
             await Assert.That(failed.Change).IsEqualTo(CaseChange.Unchanged);
             await Assert.That(failed.Current!.ExpectedValues[0].Value).IsEqualTo("1");
             await Assert.That(failed.Current.ActualValues[0].Bits).IsEqualTo("00000002");
-            await Assert
-                .That(CompletionPolicy.CompareRun(comparison, saved: true).ExitCode)
-                .IsEqualTo(1);
+            await Assert.That(CompletionPolicy.CompareRun(comparison, saved: true).ExitCode).IsEqualTo(1);
         }
     }
 
@@ -531,20 +425,12 @@ internal class BaselineComparer_CompareRunTests
     {
         // Arrange
         var baseline = CreateReport();
-        baseline.Inputs[0].Cases[1] = baseline.Inputs[0].Cases[1] with
-        {
-            Outcome = CaseOutcome.Failed,
-        };
+        baseline.Inputs[0].Cases[1] = baseline.Inputs[0].Cases[1] with { Outcome = CaseOutcome.Failed };
         baseline = baseline with { Summary = baseline.Summarize() };
         var current = CreateReport();
 
         // Act
-        var comparison = BaselineComparer.CompareRun(
-            baseline,
-            current,
-            baselinePath_,
-            currentPath_
-        );
+        var comparison = BaselineComparer.CompareRun(baseline, current, baselinePath_, currentPath_);
 
         // Assert
         using (Assert.Multiple())
@@ -552,9 +438,7 @@ internal class BaselineComparer_CompareRunTests
             await Assert.That(comparison.Summary.ChangedCaseCount).IsEqualTo(1);
             await Assert.That(comparison.Summary.RegressionCount).IsEqualTo(0);
             await Assert.That(comparison.Summary.CurrentFailedCount).IsEqualTo(0);
-            await Assert
-                .That(CompletionPolicy.CompareRun(comparison, saved: true).ExitCode)
-                .IsEqualTo(0);
+            await Assert.That(CompletionPolicy.CompareRun(comparison, saved: true).ExitCode).IsEqualTo(0);
         }
     }
 
@@ -569,21 +453,14 @@ internal class BaselineComparer_CompareRunTests
         current = current with { Summary = current.Summarize() };
 
         // Act
-        var comparison = BaselineComparer.CompareRun(
-            baseline,
-            current,
-            baselinePath_,
-            currentPath_
-        );
+        var comparison = BaselineComparer.CompareRun(baseline, current, baselinePath_, currentPath_);
 
         // Assert
         using (Assert.Multiple())
         {
             await Assert.That(comparison.Summary.RegressionCount).IsEqualTo(0);
             await Assert.That(comparison.Summary.CurrentRunnerErrorCount).IsEqualTo(2);
-            await Assert
-                .That(CompletionPolicy.CompareRun(comparison, saved: true).ExitCode)
-                .IsEqualTo(1);
+            await Assert.That(CompletionPolicy.CompareRun(comparison, saved: true).ExitCode).IsEqualTo(1);
         }
     }
 
@@ -600,11 +477,7 @@ internal class BaselineComparer_CompareRunTests
         switch (issue)
         {
             case "未処理":
-                current.Inputs[0] = current.Inputs[0] with
-                {
-                    Status = InputRunStatus.Incomplete,
-                    UnprocessedCount = 1,
-                };
+                current.Inputs[0] = current.Inputs[0] with { Status = InputRunStatus.Incomplete, UnprocessedCount = 1 };
                 current.Inputs[0].Cases.RemoveAt(1);
                 break;
             case "未確定":
@@ -623,12 +496,7 @@ internal class BaselineComparer_CompareRunTests
         }
 
         // Act
-        var comparison = BaselineComparer.CompareRun(
-            baseline,
-            current,
-            baselinePath_,
-            currentPath_
-        );
+        var comparison = BaselineComparer.CompareRun(baseline, current, baselinePath_, currentPath_);
 
         // Assert
         using (Assert.Multiple())
@@ -636,9 +504,7 @@ internal class BaselineComparer_CompareRunTests
             await Assert.That(comparison.Cases).IsNotEmpty();
             await Assert.That(comparison.Uncompared).IsNotEmpty();
             await Assert.That(comparison.Complete).IsFalse();
-            await Assert
-                .That(CompletionPolicy.CompareRun(comparison, saved: true).ExitCode)
-                .IsEqualTo(2);
+            await Assert.That(CompletionPolicy.CompareRun(comparison, saved: true).ExitCode).IsEqualTo(2);
         }
     }
 
@@ -652,12 +518,7 @@ internal class BaselineComparer_CompareRunTests
         var blockedReport = RunReportFixture.CreateSample();
 
         // Act
-        var comparison = BaselineComparer.CompareRun(
-            baseline,
-            current,
-            baselinePath_,
-            currentPath_
-        );
+        var comparison = BaselineComparer.CompareRun(baseline, current, baselinePath_, currentPath_);
         var blockedComparison = BaselineComparer.CompareRun(
             blockedReport,
             RunReportFixture.CreateSample(),
@@ -727,40 +588,24 @@ internal class BaselineComparer_CompareRunTests
             .Single(x => x.GetProperty("regression").GetBoolean());
         using (Assert.Multiple())
         {
-            await Assert
-                .That(changed.GetProperty("baseline").GetProperty("outcome").GetString())
-                .IsEqualTo("passed");
-            await Assert
-                .That(changed.GetProperty("current").GetProperty("outcome").GetString())
-                .IsEqualTo("failed");
+            await Assert.That(changed.GetProperty("baseline").GetProperty("outcome").GetString()).IsEqualTo("passed");
+            await Assert.That(changed.GetProperty("current").GetProperty("outcome").GetString()).IsEqualTo("failed");
             await Assert
                 .That(changed.GetProperty("current").GetProperty("expected_text").GetString())
                 .IsEqualTo("expected diagnostic");
             await Assert
-                .That(
-                    changed
-                        .GetProperty("current")
-                        .GetProperty("diagnostics")[0]
-                        .GetProperty("message")
-                        .GetString()
-                )
+                .That(changed.GetProperty("current").GetProperty("diagnostics")[0].GetProperty("message").GetString())
                 .IsEqualTo("actual diagnostic");
             await Assert.That(await File.ReadAllTextAsync(baselinePath)).IsEqualTo(original);
-            await Assert
-                .That(CompletionPolicy.CompareRun(comparison, saved: true).ExitCode)
-                .IsEqualTo(1);
-            await Assert
-                .That(CompletionPolicy.CompareRun(comparison, saved: false).ExitCode)
-                .IsEqualTo(2);
+            await Assert.That(CompletionPolicy.CompareRun(comparison, saved: true).ExitCode).IsEqualTo(1);
+            await Assert.That(CompletionPolicy.CompareRun(comparison, saved: false).ExitCode).IsEqualTo(2);
         }
     }
 
     [Test]
     [Arguments(true)]
     [Arguments(false)]
-    public async Task 片側だけが記録未完了_未比較理由に問題のある比較側を残す(
-        bool baselineIncomplete
-    )
+    public async Task 片側だけが記録未完了_未比較理由に問題のある比較側を残す(bool baselineIncomplete)
     {
         // Arrange
         var baseline = CreateReport();
@@ -775,12 +620,7 @@ internal class BaselineComparer_CompareRunTests
         }
 
         // Act
-        var comparison = BaselineComparer.CompareRun(
-            baseline,
-            current,
-            baselinePath_,
-            currentPath_
-        );
+        var comparison = BaselineComparer.CompareRun(baseline, current, baselinePath_, currentPath_);
 
         // Assert
         using (Assert.Multiple())
@@ -803,10 +643,7 @@ internal class BaselineComparer_CompareRunTests
             {
                 Line = 5,
                 ExpectedValues = [new("v128") { LaneType = "i32", Lanes = ["0", "0", "0", "0"] }],
-                ActualValues =
-                [
-                    new("v128") { Low64 = "0000000000000000", High64 = "0000000000000000" },
-                ],
+                ActualValues = [new("v128") { Low64 = "0000000000000000", High64 = "0000000000000000" }],
                 LastStage = CaseStage.Invoke,
                 Diagnostics = [new("invoke", "元の診断")],
                 Prints = [new("print_i32") { Arguments = [new("i32") { Bits = "00000000" }] }],

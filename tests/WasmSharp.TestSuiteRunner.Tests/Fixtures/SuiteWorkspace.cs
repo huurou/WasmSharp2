@@ -40,10 +40,7 @@ internal sealed class SuiteWorkspace : IDisposable
             Directory.CreateDirectory(Path.Combine(workspace.root_.FullName, "empty-template"));
             foreach (var name in new[] { "success", "failure", "partial", "partial-failure" })
             {
-                await File.WriteAllTextAsync(
-                    Path.Combine(workspace.InputRoot, name + ".wast"),
-                    "(module)\n"
-                );
+                await File.WriteAllTextAsync(Path.Combine(workspace.InputRoot, name + ".wast"), "(module)\n");
             }
 
             await workspace.GitAsync(
@@ -68,20 +65,13 @@ internal sealed class SuiteWorkspace : IDisposable
     internal async Task<string> GitAsync(params string[] arguments)
     {
         var startInfo = new ProcessStartInfo("git") { WorkingDirectory = SourceRoot };
-        foreach (
-            var key in startInfo
-                .Environment.Keys.Where(x => x.StartsWith("GIT_", StringComparison.Ordinal))
-                .ToArray()
-        )
+        foreach (var key in startInfo.Environment.Keys.Where(x => x.StartsWith("GIT_", StringComparison.Ordinal)).ToArray())
         {
             startInfo.Environment.Remove(key);
         }
 
         startInfo.Environment["GIT_CONFIG_NOSYSTEM"] = "1";
-        startInfo.Environment["GIT_CONFIG_GLOBAL"] = Path.Combine(
-            root_.FullName,
-            "empty-gitconfig"
-        );
+        startInfo.Environment["GIT_CONFIG_GLOBAL"] = Path.Combine(root_.FullName, "empty-gitconfig");
         startInfo.Environment["GIT_AUTHOR_NAME"] = "Test Suite Runner";
         startInfo.Environment["GIT_AUTHOR_EMAIL"] = "fixture@example.invalid";
         startInfo.Environment["GIT_COMMITTER_NAME"] = "Test Suite Runner";
@@ -98,9 +88,7 @@ internal sealed class SuiteWorkspace : IDisposable
         var result = await TestProcess.RunAsync(startInfo);
         if (result.ExitCode != 0)
         {
-            throw new InvalidOperationException(
-                $"一時Git素材の準備・確認に失敗しました: {result.Error}"
-            );
+            throw new InvalidOperationException($"一時Git素材の準備・確認に失敗しました: {result.Error}");
         }
 
         return result.Output;
@@ -122,9 +110,7 @@ internal sealed class SuiteWorkspace : IDisposable
                     .Order(StringComparer.Ordinal)
                     .Select(x => new SourceInput(
                         x!,
-                        Convert.ToHexStringLower(
-                            SHA256.HashData(File.ReadAllBytes(Path.Combine(InputRoot, x!)))
-                        )
+                        Convert.ToHexStringLower(SHA256.HashData(File.ReadAllBytes(Path.Combine(InputRoot, x!))))
                     )),
             ],
         };

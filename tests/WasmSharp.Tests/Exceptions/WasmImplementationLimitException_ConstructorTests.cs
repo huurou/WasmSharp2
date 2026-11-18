@@ -22,9 +22,7 @@ internal class WasmImplementationLimitException_ConstructorTests
         using (Assert.Multiple())
         {
             await Assert.That(exception.Location).IsNull();
-            await Assert
-                .That(exception.Reason)
-                .IsEqualTo(WasmImplementationLimitReason.CollectionSize);
+            await Assert.That(exception.Reason).IsEqualTo(WasmImplementationLimitReason.CollectionSize);
             await Assert.That(exception.Limit).IsEqualTo(Array.MaxLength);
             await Assert.That(exception.Message).IsEqualTo("tableの保持上限");
             await Assert.That(ReferenceEquals(exception.InnerException, innerException)).IsTrue();
@@ -45,13 +43,7 @@ internal class WasmImplementationLimitException_ConstructorTests
         var innerException = new InvalidOperationException("原因");
 
         // Act
-        var exception = new WasmImplementationLimitException(
-            "保持上限に到達した",
-            reason,
-            limit,
-            location,
-            innerException
-        );
+        var exception = new WasmImplementationLimitException("保持上限に到達した", reason, limit, location, innerException);
 
         // Assert
         using (Assert.Multiple())

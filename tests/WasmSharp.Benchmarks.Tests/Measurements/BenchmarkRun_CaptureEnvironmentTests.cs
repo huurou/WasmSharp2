@@ -54,18 +54,10 @@ internal class BenchmarkRun_CaptureEnvironmentTests
         using (Assert.Multiple())
         {
             await Assert.That(environment.Cpu.Length > 0).IsTrue();
-            await Assert
-                .That(environment.LogicalProcessorCount)
-                .IsEqualTo(Environment.ProcessorCount);
-            await Assert
-                .That(environment.OperatingSystem)
-                .IsEqualTo(RuntimeInformation.OSDescription);
-            await Assert
-                .That(environment.OsArchitecture)
-                .IsEqualTo(RuntimeInformation.OSArchitecture.ToString());
-            await Assert
-                .That(environment.ProcessArchitecture)
-                .IsEqualTo(RuntimeInformation.ProcessArchitecture.ToString());
+            await Assert.That(environment.LogicalProcessorCount).IsEqualTo(Environment.ProcessorCount);
+            await Assert.That(environment.OperatingSystem).IsEqualTo(RuntimeInformation.OSDescription);
+            await Assert.That(environment.OsArchitecture).IsEqualTo(RuntimeInformation.OSArchitecture.ToString());
+            await Assert.That(environment.ProcessArchitecture).IsEqualTo(RuntimeInformation.ProcessArchitecture.ToString());
             await Assert.That(environment.RuntimeVersion).Contains(Environment.Version.ToString());
             await Assert.That(environment.SdkVersion).IsNotEqualTo("10.0");
             await Assert.That(environment.BenchmarkDotNetVersion).Contains("0.15.8");
@@ -74,42 +66,20 @@ internal class BenchmarkRun_CaptureEnvironmentTests
                 .That(environment.GcSettings.Single(x => x.Name == "GCSettings.IsServerGC").Value)
                 .IsEqualTo(System.Runtime.GCSettings.IsServerGC.ToString());
             await Assert
-                .That(
-                    environment
-                        .JitSettings.Single(x => x.Name == "Effective.TieredCompilation")
-                        .Value
-                )
+                .That(environment.JitSettings.Single(x => x.Name == "Effective.TieredCompilation").Value)
                 .Contains("Unavailable:");
+            await Assert.That(saved.Command.Arguments.SequenceEqual(["--diagnose", "value with spaces"])).IsTrue();
             await Assert
-                .That(saved.Command.Arguments.SequenceEqual(["--diagnose", "value with spaces"]))
-                .IsTrue();
-            await Assert
-                .That(
-                    saved
-                        .Processes.Single(x => x.Role == "Diagnostic")
-                        .EnvironmentVariables.Select(x => x.Name)
-                )
-                .IsEquivalentTo([
-                    "DOTNET_EnableHWIntrinsic",
-                    "RuntimeFrameworkVersion",
-                    "RollForward",
-                ]);
+                .That(saved.Processes.Single(x => x.Role == "Diagnostic").EnvironmentVariables.Select(x => x.Name))
+                .IsEquivalentTo(["DOTNET_EnableHWIntrinsic", "RuntimeFrameworkVersion", "RollForward"]);
             await Assert
                 .That(File.ReadAllText(Path.Combine(fixture.DirectoryPath, "environment.json")))
                 .DoesNotContain("must not be saved");
             await Assert
-                .That(
-                    saved
-                        .Processes.Single(x => x.Role == "Collector")
-                        .RuntimeConfiguration.Select(x => x.Name)
-                )
+                .That(saved.Processes.Single(x => x.Role == "Collector").RuntimeConfiguration.Select(x => x.Name))
                 .Contains("runtimeOptions.framework.version");
             await Assert
-                .That(
-                    File.Exists(
-                        Path.Combine(fixture.DirectoryPath, "settings/collector.runtimeconfig.json")
-                    )
-                )
+                .That(File.Exists(Path.Combine(fixture.DirectoryPath, "settings/collector.runtimeconfig.json")))
                 .IsTrue();
         }
     }

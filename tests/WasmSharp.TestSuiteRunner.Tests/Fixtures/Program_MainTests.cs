@@ -53,19 +53,14 @@ internal class Program_MainTests
                 .That(Convert.ToHexString(await File.ReadAllBytesAsync(existingPath)))
                 .IsEqualTo(Convert.ToHexString(resultFixture));
             await Assert.That(File.Exists(outputPath)).IsFalse();
-            await Assert
-                .That(await workspace.GitAsync("status", "--porcelain"))
-                .IsEqualTo(string.Empty);
+            await Assert.That(await workspace.GitAsync("status", "--porcelain")).IsEqualTo(string.Empty);
         }
     }
 
     [Test]
     [Arguments("partial.wast", 0)]
     [Arguments("partial-failure.wast", 1)]
-    public async Task 部分生成入力を指定する_終了値にかかわらずJSONだけを残す(
-        string inputName,
-        int exitCode
-    )
+    public async Task 部分生成入力を指定する_終了値にかかわらずJSONだけを残す(string inputName, int exitCode)
     {
         // Arrange
         using var workspace = await SuiteWorkspace.CreateAsync();
@@ -76,21 +71,14 @@ internal class Program_MainTests
 
         // Assert
         using var script = JsonDocument.Parse(await File.ReadAllTextAsync(outputPath));
-        var moduleName = script
-            .RootElement.GetProperty("commands")[0]
-            .GetProperty("filename")
-            .GetString()!;
+        var moduleName = script.RootElement.GetProperty("commands")[0].GetProperty("filename").GetString()!;
         using (Assert.Multiple())
         {
             await Assert.That(result.ExitCode).IsEqualTo(exitCode);
             await Assert.That(result.Error).Contains("JSONのみ生成しました");
-            await Assert
-                .That(File.Exists(Path.Combine(workspace.OutputRoot, moduleName)))
-                .IsFalse();
+            await Assert.That(File.Exists(Path.Combine(workspace.OutputRoot, moduleName))).IsFalse();
             await Assert.That(Directory.GetFiles(workspace.OutputRoot)).Count().IsEqualTo(1);
-            await Assert
-                .That(await workspace.GitAsync("status", "--porcelain"))
-                .IsEqualTo(string.Empty);
+            await Assert.That(await workspace.GitAsync("status", "--porcelain")).IsEqualTo(string.Empty);
         }
     }
 
@@ -111,9 +99,7 @@ internal class Program_MainTests
             await Assert.That(result.Error).Contains("failure.wastの変換に失敗しました");
             await Assert.That(result.Output).Contains("failure.wast");
             await Assert.That(Directory.GetFiles(workspace.OutputRoot)).IsEmpty();
-            await Assert
-                .That(await workspace.GitAsync("status", "--porcelain"))
-                .IsEqualTo(string.Empty);
+            await Assert.That(await workspace.GitAsync("status", "--porcelain")).IsEqualTo(string.Empty);
         }
     }
 
@@ -137,34 +123,21 @@ internal class Program_MainTests
 
         using var arguments = JsonDocument.Parse(result.Output);
         using var script = JsonDocument.Parse(await File.ReadAllTextAsync(outputPath));
-        var moduleName = script
-            .RootElement.GetProperty("commands")[0]
-            .GetProperty("filename")
-            .GetString()!;
+        var moduleName = script.RootElement.GetProperty("commands")[0].GetProperty("filename").GetString()!;
         var binary = await File.ReadAllBytesAsync(Path.Combine(workspace.OutputRoot, moduleName));
         using (Assert.Multiple())
         {
-            await Assert
-                .That(arguments.RootElement.GetProperty("arguments").GetArrayLength())
-                .IsEqualTo(3);
-            await Assert
-                .That(arguments.RootElement.GetProperty("arguments")[2].GetString())
-                .IsEqualTo(outputPath);
+            await Assert.That(arguments.RootElement.GetProperty("arguments").GetArrayLength()).IsEqualTo(3);
+            await Assert.That(arguments.RootElement.GetProperty("arguments")[2].GetString()).IsEqualTo(outputPath);
             await Assert
                 .That(arguments.RootElement.GetProperty("working_directory").GetString())
                 .IsEqualTo(workspace.InputRoot);
-            await Assert
-                .That(script.RootElement.GetProperty("source_filename").GetString())
-                .IsEqualTo("success.wast");
+            await Assert.That(script.RootElement.GetProperty("source_filename").GetString()).IsEqualTo("success.wast");
             await Assert.That(Convert.ToHexString(binary)).IsEqualTo("0061736D01000000");
             await Assert
-                .That(() =>
-                    WasmModule.Decode(binary).Validate().Instantiate(context_, new WasmImports())
-                )
+                .That(() => WasmModule.Decode(binary).Validate().Instantiate(context_, new WasmImports()))
                 .ThrowsNothing();
-            await Assert
-                .That(await workspace.GitAsync("status", "--porcelain"))
-                .IsEqualTo(string.Empty);
+            await Assert.That(await workspace.GitAsync("status", "--porcelain")).IsEqualTo(string.Empty);
         }
     }
 }

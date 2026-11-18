@@ -44,10 +44,7 @@ internal partial class ModuleValidator_ValidateTests
 
         // Assert
         await Assert.That(valid.FunctionCodes.IsEmpty).IsFalse();
-        await AssertSimdMemoryValidationFailure(
-            invalid,
-            "alignment must not be larger than natural"
-        );
+        await AssertSimdMemoryValidationFailure(invalid, "alignment must not be larger than natural");
     }
 
     [Test]
@@ -59,10 +56,7 @@ internal partial class ModuleValidator_ValidateTests
     [Arguments((byte)0x59, 8)]
     [Arguments((byte)0x5A, 4)]
     [Arguments((byte)0x5B, 2)]
-    public async Task SIMDメモリ接続のlane上限を検証する_最終laneを受理し上限を元位置で拒否する(
-        byte opcode,
-        int count
-    )
+    public async Task SIMDメモリ接続のlane上限を検証する_最終laneを受理し上限を元位置で拒否する(byte opcode, int count)
     {
         // Arrange
         var valid = CreateSimdMemoryValidationModule(opcode, 0, (byte)(count - 1));
@@ -81,23 +75,9 @@ internal partial class ModuleValidator_ValidateTests
     [Arguments((byte)0x54, false, true, (byte)1, (byte)16, "unknown memory 0")]
     [Arguments((byte)0x58, false, false, (byte)0, (byte)0, "unknown memory 0")]
     [Arguments((byte)0x5C, false, true, (byte)0, (byte)0, "unknown memory 0")]
-    [Arguments(
-        (byte)0x54,
-        true,
-        true,
-        (byte)1,
-        (byte)16,
-        "alignment must not be larger than natural"
-    )]
+    [Arguments((byte)0x54, true, true, (byte)1, (byte)16, "alignment must not be larger than natural")]
     [Arguments((byte)0x54, true, true, (byte)0, (byte)16, "invalid lane index")]
-    [Arguments(
-        (byte)0x5D,
-        true,
-        true,
-        (byte)4,
-        (byte)0,
-        "alignment must not be larger than natural"
-    )]
+    [Arguments((byte)0x5D, true, true, (byte)4, (byte)0, "alignment must not be larger than natural")]
     public async Task SIMDメモリ接続の静的制約が複合不正である_到達不能でもmemoryとalignmentとlaneの順に検査する(
         byte opcode,
         bool memory,
@@ -108,14 +88,7 @@ internal partial class ModuleValidator_ValidateTests
     )
     {
         // Arrange
-        var module = CreateSimdMemoryValidationModule(
-            opcode,
-            alignment,
-            lane,
-            memory,
-            unreachable,
-            omitOperands: true
-        );
+        var module = CreateSimdMemoryValidationModule(opcode, alignment, lane, memory, unreachable, omitOperands: true);
 
         // Act & Assert
         await AssertSimdMemoryValidationFailure(module, diagnostic);
@@ -136,13 +109,7 @@ internal partial class ModuleValidator_ValidateTests
     )
     {
         // Arrange
-        var module = CreateSimdMemoryValidationModule(
-            opcode,
-            0,
-            0,
-            reverse: true,
-            omitOperands: omit
-        );
+        var module = CreateSimdMemoryValidationModule(opcode, 0, 0, reverse: true, omitOperands: omit);
 
         // Act & Assert
         await AssertSimdMemoryValidationFailure(module, "type mismatch");
@@ -194,31 +161,22 @@ internal partial class ModuleValidator_ValidateTests
         );
     }
 
-    private static async Task AssertSimdMemoryValidationFailure(
-        WasmModule module,
-        string diagnostic
-    )
+    private static async Task AssertSimdMemoryValidationFailure(WasmModule module, string diagnostic)
     {
         var executionContext = new WasmExecutionContext();
         var instruction = module.Functions[0].Instructions.Last(x => x.Opcode.Prefix == 0xFD);
         for (var attempt = 0; attempt < 2; attempt++)
         {
             // Act & Assert
-            var exception = await Assert
-                .That(() => module.Validate())
-                .ThrowsExactly<WasmValidateException>();
+            var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
             using (Assert.Multiple())
             {
-                await Assert
-                    .That(exception!.Message.StartsWith(diagnostic, StringComparison.Ordinal))
-                    .IsTrue();
+                await Assert.That(exception!.Message.StartsWith(diagnostic, StringComparison.Ordinal)).IsTrue();
                 await Assert
                     .That(exception.Location)
                     .IsEqualTo(new(WasmProcessingStage.Validate, instruction.ByteOffset, 0, 10));
                 await Assert.That(module.FunctionCodes).IsEmpty();
-                await Assert
-                    .That(() => module.Instantiate(executionContext, []))
-                    .ThrowsExactly<InvalidOperationException>();
+                await Assert.That(() => module.Instantiate(executionContext, [])).ThrowsExactly<InvalidOperationException>();
             }
         }
     }

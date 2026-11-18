@@ -20,11 +20,7 @@ internal class WasmException_ConstructorTests
             new WasmValidateException(null),
             new WasmValidateException(null, null),
         ];
-        WasmException[] withMessage =
-        [
-            new WasmDecodeException("失敗"),
-            new WasmValidateException("失敗"),
-        ];
+        WasmException[] withMessage = [new WasmDecodeException("失敗"), new WasmValidateException("失敗")];
         WasmException[] withInnerException =
         [
             new WasmDecodeException("失敗", innerException),
@@ -49,9 +45,7 @@ internal class WasmException_ConstructorTests
             {
                 await Assert.That(exception.Location).IsNull();
                 await Assert.That(exception.Message).IsEqualTo("失敗");
-                await Assert
-                    .That(ReferenceEquals(exception.InnerException, innerException))
-                    .IsTrue();
+                await Assert.That(ReferenceEquals(exception.InnerException, innerException)).IsTrue();
             }
         }
     }
@@ -59,9 +53,7 @@ internal class WasmException_ConstructorTests
     [Test]
     [Arguments(WasmProcessingStage.Decode)]
     [Arguments(WasmProcessingStage.Validate)]
-    public async Task 診断を指定する_処理段階と入力位置と元の例外を保持する(
-        WasmProcessingStage stage
-    )
+    public async Task 診断を指定する_処理段階と入力位置と元の例外を保持する(WasmProcessingStage stage)
     {
         // Arrange
         var location = new WasmFailureLocation(stage, 37, 2, 10);

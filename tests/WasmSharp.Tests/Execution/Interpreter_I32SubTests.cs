@@ -9,11 +9,7 @@ internal class Interpreter_I32SubTests
     [Arguments(int.MinValue, 1, int.MaxValue)]
     [Arguments(3, 11, -8)]
     [Arguments(-1, int.MinValue, int.MaxValue)]
-    public async Task 減算の幅境界と左右が異なる値_左から右を引いた32bitの剰余を返す(
-        int left,
-        int right,
-        int expected
-    )
+    public async Task 減算の幅境界と左右が異なる値_左から右を引いた32bitの剰余を返す(int left, int right, int expected)
     {
         // Arrange
         WasmValue[] operands = [WasmValue.FromI32(left), WasmValue.FromI32(right)];

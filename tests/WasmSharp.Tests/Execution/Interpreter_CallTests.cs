@@ -23,17 +23,7 @@ internal class Interpreter_CallTests
         );
         var instance = ExecutionInstanceFixture.Create(
             [new([], [])],
-            [
-                (
-                    0,
-                    [],
-                    [
-                        InstructionFixture.Create(0x10, 1001, 0),
-                        InstructionFixture.Create(0x0B, 1003),
-                    ],
-                    0
-                ),
-            ],
+            [(0, [], [InstructionFixture.Create(0x10, 1001, 0), InstructionFixture.Create(0x0B, 1003)], 0)],
             [host],
             []
         );
@@ -43,12 +33,7 @@ internal class Interpreter_CallTests
         // Act
         try
         {
-            result = Interpreter.Run(
-                context,
-                (DefinedFunction)instance.Functions[1],
-                [],
-                WasmProcessingStage.Invoke
-            );
+            result = Interpreter.Run(context, (DefinedFunction)instance.Functions[1], [], WasmProcessingStage.Invoke);
         }
         finally
         {
@@ -59,9 +44,7 @@ internal class Interpreter_CallTests
         using (Assert.Multiple())
         {
             await Assert.That(result.Status).IsEqualTo(ExecutionStatus.Exhaustion);
-            await Assert
-                .That(result.ExhaustionReason)
-                .IsEqualTo(WasmExhaustionReason.CallDepthLimit);
+            await Assert.That(result.ExhaustionReason).IsEqualTo(WasmExhaustionReason.CallDepthLimit);
             await Assert.That(result.FunctionIndex).IsEqualTo(1U);
             await Assert.That(result.ByteOffset).IsEqualTo(1001L);
             await Assert.That(called).IsFalse();
@@ -77,10 +60,7 @@ internal class Interpreter_CallTests
         var found = InstructionSet.TryGet(new(0, 0x10), out var descriptor);
         var instance = ExecutionInstanceFixture.Create(
             [
-                new(
-                    [WasmValueKind.I64, WasmValueKind.ExternRef],
-                    [WasmValueKind.ExternRef, WasmValueKind.I64]
-                ),
+                new([WasmValueKind.I64, WasmValueKind.ExternRef], [WasmValueKind.ExternRef, WasmValueKind.I64]),
                 new(
                     [WasmValueKind.ExternRef],
                     [
@@ -174,15 +154,7 @@ internal class Interpreter_CallTests
         var source = ExecutionInstanceFixture.Create(
             [new([], [WasmValueKind.I32])],
             [
-                (
-                    0,
-                    [],
-                    [
-                        InstructionFixture.Create(0x10, 1001, 1),
-                        InstructionFixture.Create(0x0B, 1003),
-                    ],
-                    1
-                ),
+                (0, [], [InstructionFixture.Create(0x10, 1001, 1), InstructionFixture.Create(0x0B, 1003)], 1),
                 (
                     0,
                     [],
@@ -208,15 +180,7 @@ internal class Interpreter_CallTests
                     ],
                     1
                 ),
-                (
-                    0,
-                    [],
-                    [
-                        InstructionFixture.Create(0x10, 2001, 0),
-                        InstructionFixture.Create(0x0B, 2003),
-                    ],
-                    1
-                ),
+                (0, [], [InstructionFixture.Create(0x10, 2001, 0), InstructionFixture.Create(0x0B, 2003)], 1),
             ],
             [source.Functions[0]],
             []
@@ -227,12 +191,7 @@ internal class Interpreter_CallTests
         // Act
         try
         {
-            result = Interpreter.Run(
-                context,
-                (DefinedFunction)importer.Functions[2],
-                [],
-                WasmProcessingStage.Invoke
-            );
+            result = Interpreter.Run(context, (DefinedFunction)importer.Functions[2], [], WasmProcessingStage.Invoke);
         }
         finally
         {
@@ -259,17 +218,7 @@ internal class Interpreter_CallTests
         var executionContext = new WasmExecutionContext();
         var instance = ExecutionInstanceFixture.Create(
             [new([], [])],
-            [
-                (
-                    0,
-                    [],
-                    [
-                        InstructionFixture.Create(0x10, 1001, 0),
-                        InstructionFixture.Create(0x0B, 1003),
-                    ],
-                    0
-                ),
-            ],
+            [(0, [], [InstructionFixture.Create(0x10, 1001, 0), InstructionFixture.Create(0x0B, 1003)], 0)],
             [],
             []
         );
@@ -280,12 +229,7 @@ internal class Interpreter_CallTests
         // Act
         try
         {
-            result = Interpreter.Run(
-                context,
-                (DefinedFunction)instance.Functions[0],
-                [],
-                WasmProcessingStage.Invoke
-            );
+            result = Interpreter.Run(context, (DefinedFunction)instance.Functions[0], [], WasmProcessingStage.Invoke);
             state = (context.FrameCount, context.ValueCount, context.CallDepth);
         }
         finally
@@ -298,14 +242,10 @@ internal class Interpreter_CallTests
         using (Assert.Multiple())
         {
             await Assert.That(result.Status).IsEqualTo(ExecutionStatus.Exhaustion);
-            await Assert
-                .That(result.ExhaustionReason)
-                .IsEqualTo(WasmExhaustionReason.CallDepthLimit);
+            await Assert.That(result.ExhaustionReason).IsEqualTo(WasmExhaustionReason.CallDepthLimit);
             await Assert.That(result.Limit).IsEqualTo(limit);
             await Assert.That(result.FunctionIndex).IsEqualTo(0U);
-            await Assert
-                .That(result.ByteOffset)
-                .IsEqualTo(ExecutionInstanceFixture.GetBodyOffset(0));
+            await Assert.That(result.ByteOffset).IsEqualTo(ExecutionInstanceFixture.GetBodyOffset(0));
             await Assert.That(state).IsEqualTo((0, 0, 0));
         }
     }
@@ -350,12 +290,7 @@ internal class Interpreter_CallTests
         // Act
         try
         {
-            result = Interpreter.Run(
-                context,
-                (DefinedFunction)instance.Functions[1],
-                [],
-                WasmProcessingStage.Invoke
-            );
+            result = Interpreter.Run(context, (DefinedFunction)instance.Functions[1], [], WasmProcessingStage.Invoke);
         }
         finally
         {
@@ -380,15 +315,7 @@ internal class Interpreter_CallTests
             [new([], [])],
             [
                 (0, [], [InstructionFixture.Create(0x0B, 1001)], int.MaxValue),
-                (
-                    0,
-                    [],
-                    [
-                        InstructionFixture.Create(0x10, 2001, 0),
-                        InstructionFixture.Create(0x0B, 2003),
-                    ],
-                    0
-                ),
+                (0, [], [InstructionFixture.Create(0x10, 2001, 0), InstructionFixture.Create(0x0B, 2003)], 0),
             ],
             [],
             []
@@ -414,12 +341,7 @@ internal class Interpreter_CallTests
                     }
                     finally
                     {
-                        state = (
-                            context.FrameCount,
-                            context.ValueCount,
-                            context.CallDepth,
-                            context.Stage
-                        );
+                        state = (context.FrameCount, context.ValueCount, context.CallDepth, context.Stage);
                     }
                 }
                 finally
@@ -432,17 +354,11 @@ internal class Interpreter_CallTests
 
         using (Assert.Multiple())
         {
-            await Assert
-                .That(exception!.Reason)
-                .IsEqualTo(WasmImplementationLimitReason.CollectionSize);
+            await Assert.That(exception!.Reason).IsEqualTo(WasmImplementationLimitReason.CollectionSize);
             await Assert
                 .That(exception.Location)
                 .IsEqualTo(
-                    new WasmFailureLocation(
-                        WasmProcessingStage.Instantiate,
-                        ExecutionInstanceFixture.GetBodyOffset(0),
-                        0
-                    )
+                    new WasmFailureLocation(WasmProcessingStage.Instantiate, ExecutionInstanceFixture.GetBodyOffset(0), 0)
                 );
             await Assert.That(state).IsEqualTo((0, 0, 0, WasmProcessingStage.Invoke));
         }
@@ -451,9 +367,7 @@ internal class Interpreter_CallTests
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task ホスト関数の結果を受け取る_正常時だけ後続命令を実行し状態を復元する(
-        bool invalid
-    )
+    public async Task ホスト関数の結果を受け取る_正常時だけ後続命令を実行し状態を復元する(bool invalid)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
@@ -487,12 +401,7 @@ internal class Interpreter_CallTests
             {
                 try
                 {
-                    Interpreter.Run(
-                        context,
-                        (DefinedFunction)instance.Functions[1],
-                        [],
-                        WasmProcessingStage.Invoke
-                    );
+                    Interpreter.Run(context, (DefinedFunction)instance.Functions[1], [], WasmProcessingStage.Invoke);
                 }
                 finally
                 {

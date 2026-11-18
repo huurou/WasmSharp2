@@ -7,9 +7,7 @@ internal partial class WasmModule_ValidateTests
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task 制御とselectを含むstartがある_両入力のDecodeとValidateは副作用を起こさない(
-        bool useStream
-    )
+    public async Task 制御とselectを含むstartがある_両入力のDecodeとValidateは副作用を起こさない(bool useStream)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
@@ -30,18 +28,12 @@ internal partial class WasmModule_ValidateTests
         );
         var bytes = HostLinkingModuleBinary.Create(
             HostLinkingModuleBinary.Types(([], [])),
-            HostLinkingModuleBinary.Imports(
-                ("env", "callback", 0, [0]),
-                ("env", "g", 3, [0x7F, 1])
-            ),
+            HostLinkingModuleBinary.Imports(("env", "callback", 0, [0]), ("env", "g", 3, [0x7F, 1])),
             HostLinkingModuleBinary.Functions(0),
             HostLinkingModuleBinary.Exports(("run", 0, 1)),
             HostLinkingModuleBinary.Start(1),
             HostLinkingModuleBinary.Code(
-                (
-                    [],
-                    Convert.FromHexString("0102400340010B0B41010440100005000B4108410941001B24000B")
-                )
+                ([], Convert.FromHexString("0102400340010B0B41010440100005000B4108410941001B24000B"))
             )
         );
         using var stream = new ChunkedReadStream(new MemoryStream(bytes));

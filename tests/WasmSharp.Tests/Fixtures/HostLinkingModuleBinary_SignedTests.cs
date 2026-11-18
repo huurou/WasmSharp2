@@ -14,10 +14,7 @@ internal class HostLinkingModuleBinary_SignedTests
     [Arguments((long)uint.MaxValue, "FFFFFFFF0F")]
     [Arguments(long.MinValue, "8080808080808080807F")]
     [Arguments(long.MaxValue, "FFFFFFFFFFFFFFFFFF00")]
-    public async Task 符号付き整数の幅境界を指定する_定数とs33型添字の符号を保持する(
-        long value,
-        string expected
-    )
+    public async Task 符号付き整数の幅境界を指定する_定数とs33型添字の符号を保持する(long value, string expected)
     {
         // Arrange
         var input = value;

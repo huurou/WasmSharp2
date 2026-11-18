@@ -167,9 +167,7 @@ internal class ScriptState_FailTests
     [Arguments(ScriptCommand.REGISTER)]
     [Arguments("assert_exception")]
     [Arguments(null)]
-    public async Task 更新対象を取得できない不正なcommandが失敗する_名前状態を更新しない(
-        string? type
-    )
+    public async Task 更新対象を取得できない不正なcommandが失敗する_名前状態を更新しない(string? type)
     {
         // Arrange
         var state = new ScriptState(INPUT_PATH);

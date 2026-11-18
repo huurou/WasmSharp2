@@ -18,11 +18,7 @@ internal class Interpreter_F64x2ReplaceLaneTests
     )
     {
         // Arrange
-        WasmValue[] operands =
-        [
-            WasmValue.FromV128(0x7766554433221100, 0xFFEEDDCCBBAA9988),
-            WasmValue.FromF64Bits(operand),
-        ];
+        WasmValue[] operands = [WasmValue.FromV128(0x7766554433221100, 0xFFEEDDCCBBAA9988), WasmValue.FromF64Bits(operand)];
 
         // Act
         var actual = SimdHandlerFixture.Execute(Interpreter.F64x2ReplaceLane, operands, laneIndex);

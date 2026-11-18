@@ -73,24 +73,15 @@ internal partial class WasmFunction_InvokeTests
         {
             callee.AddRange([0x20, (byte)(count + index)]);
         }
-        callee.AddRange(
-            returnFromInnerBlock ? [0x0F] : [0x41, 6, 0x41, 7, 0x6C, 0x41, 42, 0x46, 0x0D, 1]
-        );
+        callee.AddRange(returnFromInnerBlock ? [0x0F] : [0x41, 6, 0x41, 7, 0x6C, 0x41, 42, 0x46, 0x0D, 1]);
         callee.AddRange([0x00, 0x0B, 0x0B, 0x0F, 0x00, 0x0B]);
         var function = WasmModule
             .Decode(
                 HostLinkingModuleBinary.Create(
-                    HostLinkingModuleBinary.Types(
-                        (kinds, kinds),
-                        (kinds, [.. kinds, .. kinds]),
-                        ([], kinds)
-                    ),
+                    HostLinkingModuleBinary.Types((kinds, kinds), (kinds, [.. kinds, .. kinds]), ([], kinds)),
                     HostLinkingModuleBinary.Functions(1, 0),
                     HostLinkingModuleBinary.Exports(("run", 0, 0)),
-                    HostLinkingModuleBinary.Code(
-                        ([], [.. caller]),
-                        (kinds.Select(x => (1u, x)).ToArray(), [.. callee])
-                    )
+                    HostLinkingModuleBinary.Code(([], [.. caller]), (kinds.Select(x => (1u, x)).ToArray(), [.. callee]))
                 )
             )
             .Validate()
@@ -105,32 +96,20 @@ internal partial class WasmFunction_InvokeTests
         using (Assert.Multiple())
         {
             await Assert.That(first.Values.SequenceEqual([.. values, .. values])).IsTrue();
-            await Assert
-                .That(second.Values.SequenceEqual([.. otherValues, .. otherValues]))
-                .IsTrue();
+            await Assert.That(second.Values.SequenceEqual([.. otherValues, .. otherValues])).IsTrue();
             if (count == 7)
             {
                 for (var offset = 0; offset < 14; offset += 7)
                 {
                     await Assert.That(first.Values[offset + 2].AsF32Bits()).IsEqualTo(0xFF812345u);
-                    await Assert
-                        .That(first.Values[offset + 3].AsF64Bits())
-                        .IsEqualTo(0xFFF0123456789ABCul);
+                    await Assert.That(first.Values[offset + 3].AsF64Bits()).IsEqualTo(0xFFF0123456789ABCul);
                     await Assert
                         .That(first.Values[offset + 4].AsV128())
                         .IsEqualTo((0x0123456789ABCDEFul, 0xFEDCBA9876543210ul));
-                    await Assert
-                        .That(first.Values[offset + 5].AsFuncRef())
-                        .IsSameReferenceAs(functionReference);
-                    await Assert
-                        .That(first.Values[offset + 6].AsExternRef())
-                        .IsSameReferenceAs(reference);
-                    await Assert
-                        .That(second.Values[offset + 5].AsFuncRef())
-                        .IsSameReferenceAs(otherFunctionReference);
-                    await Assert
-                        .That(second.Values[offset + 6].AsExternRef())
-                        .IsSameReferenceAs(otherReference);
+                    await Assert.That(first.Values[offset + 5].AsFuncRef()).IsSameReferenceAs(functionReference);
+                    await Assert.That(first.Values[offset + 6].AsExternRef()).IsSameReferenceAs(reference);
+                    await Assert.That(second.Values[offset + 5].AsFuncRef()).IsSameReferenceAs(otherFunctionReference);
+                    await Assert.That(second.Values[offset + 6].AsExternRef()).IsSameReferenceAs(otherReference);
                 }
             }
         }
@@ -150,10 +129,7 @@ internal partial class WasmFunction_InvokeTests
         var function = WasmModule
             .Decode(
                 HostLinkingModuleBinary.Create(
-                    HostLinkingModuleBinary.Types(
-                        ([0x7F], [0x7F, 0x7F]),
-                        ([0x7F], [0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F])
-                    ),
+                    HostLinkingModuleBinary.Types(([0x7F], [0x7F, 0x7F]), ([0x7F], [0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F])),
                     HostLinkingModuleBinary.Functions(1, 0),
                     HostLinkingModuleBinary.Exports(("run", 0, 0)),
                     HostLinkingModuleBinary.Code(
@@ -225,11 +201,7 @@ internal partial class WasmFunction_InvokeTests
 
         // Assert
         await Assert
-            .That(
-                result
-                    .Values.Select(x => x.AsI32())
-                    .SequenceEqual([37, 0, expectedFirst, 0, expectedSecond, 42])
-            )
+            .That(result.Values.Select(x => x.AsI32()).SequenceEqual([37, 0, expectedFirst, 0, expectedSecond, 42]))
             .IsTrue();
     }
 }

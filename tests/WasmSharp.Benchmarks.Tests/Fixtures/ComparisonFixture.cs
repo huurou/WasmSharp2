@@ -26,13 +26,7 @@ internal sealed class ComparisonFixture : IDisposable
             1,
             "before-change",
             DateTimeOffset.Parse("2026-10-21T12:00:00Z"),
-            [.. CaseIds
-                .Select(x => new CaseComparisonPolicy(
-                    x,
-                    3,
-                    Metric(null),
-                    Metric(new AbsoluteThreshold(4))
-                ))]
+            [.. CaseIds.Select(x => new CaseComparisonPolicy(x, 3, Metric(null), Metric(new AbsoluteThreshold(4))))]
         );
         for (var index = 0; index < 3; index++)
         {
@@ -58,17 +52,13 @@ internal sealed class ComparisonFixture : IDisposable
         );
     }
 
-    internal static void SetValues(
-        RunComparisonFixture fixture,
-        double time,
-        double allocation,
-        string? caseId = null
-    )
+    internal static void SetValues(RunComparisonFixture fixture, double time, double allocation, string? caseId = null)
     {
         fixture.Manifest = fixture.Manifest with
         {
-            Cases = [.. fixture
-                .Manifest.Cases.Select(x =>
+            Cases =
+            [
+                .. fixture.Manifest.Cases.Select(x =>
                     caseId is not null && x.CaseId != caseId
                         ? x
                         : x with
@@ -85,14 +75,12 @@ internal sealed class ComparisonFixture : IDisposable
                                 {
                                     TotalAllocatedBytes = (long)(allocation * 4096),
                                     BytesPerOperation = allocation,
-                                    DisplayedBytesPerOperation = Math.Round(
-                                        allocation,
-                                        MidpointRounding.ToEven
-                                    ),
+                                    DisplayedBytesPerOperation = Math.Round(allocation, MidpointRounding.ToEven),
                                 },
                             },
                         }
-                )],
+                ),
+            ],
         };
     }
 

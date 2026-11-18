@@ -26,12 +26,7 @@ internal class Interpreter_TableGetTests
         var function = TableHandlerFixture.CreateFunction([.. tables]);
 
         // Act
-        var actual = TableHandlerFixture.Execute(
-            Interpreter.TableGet,
-            function,
-            tableIndex,
-            [WasmValue.FromI32(1)]
-        );
+        var actual = TableHandlerFixture.Execute(Interpreter.TableGet, function, tableIndex, [WasmValue.FromI32(1)]);
 
         // Assert
         using (Assert.Multiple())
@@ -50,9 +45,7 @@ internal class Interpreter_TableGetTests
     [Arguments(int.MaxValue)]
     [Arguments(int.MinValue)]
     [Arguments(-1)]
-    public async Task 要素添字が範囲外である_符号なし境界のtrapと命令位置を返して内容を保つ(
-        int index
-    )
+    public async Task 要素添字が範囲外である_符号なし境界のtrapと命令位置を返して内容を保つ(int index)
     {
         // Arrange
         var table = new WasmTable(WasmValueKind.ExternRef, new(2));
@@ -61,12 +54,7 @@ internal class Interpreter_TableGetTests
         var function = TableHandlerFixture.CreateFunction([table]);
 
         // Act
-        var actual = TableHandlerFixture.Execute(
-            Interpreter.TableGet,
-            function,
-            0,
-            [WasmValue.FromI32(index)]
-        );
+        var actual = TableHandlerFixture.Execute(Interpreter.TableGet, function, 0, [WasmValue.FromI32(index)]);
 
         // Assert
         using (Assert.Multiple())

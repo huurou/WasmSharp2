@@ -43,17 +43,11 @@ public sealed class WasmTable
         ArgumentNullException.ThrowIfNull(limits);
         if (elementType is not (WasmValueKind.FuncRef or WasmValueKind.ExternRef))
         {
-            throw new ArgumentOutOfRangeException(
-                nameof(elementType),
-                "tableには参照型を指定してください。"
-            );
+            throw new ArgumentOutOfRangeException(nameof(elementType), "tableには参照型を指定してください。");
         }
         if (limits.Minimum > limits.Maximum)
         {
-            throw new ArgumentException(
-                "tableの最小要素数が最大要素数を超えています。",
-                nameof(limits)
-            );
+            throw new ArgumentException("tableの最小要素数が最大要素数を超えています。", nameof(limits));
         }
         if (ExceedsStorageLimit(limits.Minimum))
         {
@@ -69,9 +63,7 @@ public sealed class WasmTable
         elements_ = new WasmValue[limits.Minimum];
         Array.Fill(
             elements_,
-            elementType == WasmValueKind.FuncRef
-                ? WasmValue.FromFuncRef(null)
-                : WasmValue.FromExternRef(null)
+            elementType == WasmValueKind.FuncRef ? WasmValue.FromFuncRef(null) : WasmValue.FromExternRef(null)
         );
     }
 
@@ -127,10 +119,7 @@ public sealed class WasmTable
         previousCount = Count;
         if (initialValue.Kind != ElementType)
         {
-            throw new ArgumentException(
-                "tableの要素型と初期値の型が一致しません。",
-                nameof(initialValue)
-            );
+            throw new ArgumentException("tableの要素型と初期値の型が一致しません。", nameof(initialValue));
         }
 
         var nextCount = (ulong)previousCount + delta;
@@ -229,9 +218,7 @@ public sealed class WasmTable
             return false;
         }
 
-        source
-            .elements_.AsSpan((int)sourceOffset, (int)length)
-            .CopyTo(elements_.AsSpan((int)destination, (int)length));
+        source.elements_.AsSpan((int)sourceOffset, (int)length).CopyTo(elements_.AsSpan((int)destination, (int)length));
         return true;
     }
 

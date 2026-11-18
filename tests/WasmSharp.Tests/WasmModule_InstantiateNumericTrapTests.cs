@@ -8,11 +8,7 @@ internal partial class WasmModule_InstantiateTests
     [Test]
     [Arguments("410141006D", WasmTrapReason.IntegerDivideByZero, "integer divide by zero")]
     [Arguments("418080808078417F6D", WasmTrapReason.IntegerOverflow, "integer overflow")]
-    [Arguments(
-        "430000C07FA8",
-        WasmTrapReason.InvalidConversionToInteger,
-        "invalid conversion to integer"
-    )]
+    [Arguments("430000C07FA8", WasmTrapReason.InvalidConversionToInteger, "invalid conversion to integer")]
     public async Task 制御内のStartで数値trapに到達する_公開診断と失敗前の更新と保存参照を保ち以後の副作用を実行しない(
         string numericInstructions,
         WasmTrapReason reason,
@@ -141,14 +137,10 @@ internal partial class WasmModule_InstantiateTests
         using (Assert.Multiple())
         {
             await Assert.That(exception!.Reason).IsEqualTo(reason);
-            await Assert
-                .That(exception.Message.StartsWith(expectedMessage, StringComparison.Ordinal))
-                .IsTrue();
+            await Assert.That(exception.Message.StartsWith(expectedMessage, StringComparison.Ordinal)).IsTrue();
             await Assert
                 .That(exception.Location)
-                .IsEqualTo(
-                    new WasmFailureLocation(WasmProcessingStage.Instantiate, expectedOffset, 3)
-                );
+                .IsEqualTo(new WasmFailureLocation(WasmProcessingStage.Instantiate, expectedOffset, 3));
             await Assert.That(returned).IsNull();
             await Assert.That(shared.Value.AsI32()).IsEqualTo(7);
             await Assert.That(saveCalls).IsEqualTo(1);
@@ -159,28 +151,13 @@ internal partial class WasmModule_InstantiateTests
             await Assert.That(updated[0]).IsEqualTo((byte)10);
             await Assert.That(ReferenceEquals(savedElement, element)).IsTrue();
             await Assert
-                .That(
-                    ReferenceEquals(
-                        savedInstance.GetTable("table").Get(0).AsExternRef(),
-                        updatedElement
-                    )
-                )
+                .That(ReferenceEquals(savedInstance.GetTable("table").Get(0).AsExternRef(), updatedElement))
                 .IsTrue();
-            await Assert
-                .That(ReferenceEquals(savedFunction, savedInstance.GetFunction("read")))
-                .IsTrue();
-            await Assert
-                .That(ReferenceEquals(savedMemory, savedInstance.GetMemory("memory")))
-                .IsTrue();
-            await Assert
-                .That(ReferenceEquals(savedTable, savedInstance.GetTable("table")))
-                .IsTrue();
-            await Assert
-                .That(ReferenceEquals(savedGlobal, savedInstance.GetGlobalResource("value")))
-                .IsTrue();
-            await Assert
-                .That(ReferenceEquals(shared, savedInstance.GetGlobalResource("shared")))
-                .IsTrue();
+            await Assert.That(ReferenceEquals(savedFunction, savedInstance.GetFunction("read"))).IsTrue();
+            await Assert.That(ReferenceEquals(savedMemory, savedInstance.GetMemory("memory"))).IsTrue();
+            await Assert.That(ReferenceEquals(savedTable, savedInstance.GetTable("table"))).IsTrue();
+            await Assert.That(ReferenceEquals(savedGlobal, savedInstance.GetGlobalResource("value"))).IsTrue();
+            await Assert.That(ReferenceEquals(shared, savedInstance.GetGlobalResource("shared"))).IsTrue();
         }
     }
 }

@@ -12,9 +12,7 @@ internal class WasmTable_GetTests
         var table = new WasmTable(WasmValueKind.FuncRef, new WasmLimits(count));
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => table.Get(index))
-            .ThrowsExactly<ArgumentOutOfRangeException>();
+        var exception = await Assert.That(() => table.Get(index)).ThrowsExactly<ArgumentOutOfRangeException>();
         using (Assert.Multiple())
         {
             await Assert.That(exception!.ParamName).IsEqualTo("index");

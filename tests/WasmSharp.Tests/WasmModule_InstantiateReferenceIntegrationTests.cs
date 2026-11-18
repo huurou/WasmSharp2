@@ -7,9 +7,7 @@ internal partial class WasmModule_InstantiateTests
     [Test]
     [Arguments((byte)0x70)]
     [Arguments((byte)0x6F)]
-    public async Task Importされたimmutable参照globalを定数式で取得する_定義globalと結果に同じ参照を返す(
-        byte kind
-    )
+    public async Task Importされたimmutable参照globalを定数式で取得する_定義globalと結果に同じ参照を返す(byte kind)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();

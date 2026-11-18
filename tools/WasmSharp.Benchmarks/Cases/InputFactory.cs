@@ -14,14 +14,10 @@ internal static class InputFactory
     internal static PreparedInput Create(BenchmarkCase definition, CaseJson json)
     {
         var input = definition.Input;
-        var hash = Convert.ToHexStringLower(
-            SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(input, json.Options))
-        );
+        var hash = Convert.ToHexStringLower(SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(input, json.Options)));
         if (hash != definition.InputHash)
         {
-            throw new InvalidDataException(
-                $"ケース'{definition.CaseId}'の入力hashが一致しません。"
-            );
+            throw new InvalidDataException($"ケース'{definition.CaseId}'の入力hashが一致しません。");
         }
         return new PreparedInput(
             input.FunctionExport,
@@ -48,11 +44,7 @@ internal static class InputFactory
                 $"ケース'{caseId}'の{value.Type}のbit列'{value.Bits}'は固定桁数の小文字16進表記ではありません。"
             );
         }
-        var bits = ulong.Parse(
-            value.Bits,
-            NumberStyles.AllowHexSpecifier,
-            CultureInfo.InvariantCulture
-        );
+        var bits = ulong.Parse(value.Bits, NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture);
         return value.Type switch
         {
             NumericType.I32 => WasmValue.FromI32(unchecked((int)bits)),
@@ -69,9 +61,7 @@ internal static class InputFactory
             ArrayInputPattern.RepeatedByte => input.ElementType == ArrayElementType.U8
                 && input.FillByte.HasValue
                 && input.Seed is null,
-            ArrayInputPattern.IndexModulo256 => input.ElementType
-                is ArrayElementType.U8
-                    or ArrayElementType.U32
+            ArrayInputPattern.IndexModulo256 => input.ElementType is ArrayElementType.U8 or ArrayElementType.U32
                 && input.Seed is null
                 && input.FillByte is null,
             ArrayInputPattern.SeededU32 => input.ElementType == ArrayElementType.U32
@@ -90,9 +80,7 @@ internal static class InputFactory
         var byteLength = (ulong)input.Length * (uint)elementSize;
         if (byteLength > int.MaxValue)
         {
-            throw new InvalidDataException(
-                $"ケース'{caseId}'の配列長{input.Length}が入力生成の上限を超えています。"
-            );
+            throw new InvalidDataException($"ケース'{caseId}'の配列長{input.Length}が入力生成の上限を超えています。");
         }
         var bytes = new byte[(int)byteLength];
         if (input.Pattern == ArrayInputPattern.RepeatedByte)
@@ -123,10 +111,7 @@ internal static class InputFactory
                 }
                 else
                 {
-                    BinaryPrimitives.WriteUInt32LittleEndian(
-                        bytes.AsSpan(index * sizeof(uint)),
-                        value
-                    );
+                    BinaryPrimitives.WriteUInt32LittleEndian(bytes.AsSpan(index * sizeof(uint)), value);
                 }
             }
         }
@@ -146,8 +131,4 @@ internal sealed record PreparedInput(
 /// <summary>
 /// 配置先とバイト列を保持する生成済み入力配列
 /// </summary>
-internal sealed record PreparedArrayInput(
-    string MemoryExport,
-    uint Offset,
-    ImmutableArray<byte> Bytes
-);
+internal sealed record PreparedArrayInput(string MemoryExport, uint Offset, ImmutableArray<byte> Bytes);

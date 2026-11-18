@@ -17,8 +17,7 @@ internal static class AssertionJudge
     internal static CaseResult Judge(ScriptCommand command, CommandObservation observation)
     {
         var fromCallback =
-            observation.Exception is not null
-            && ReferenceEquals(observation.Exception, observation.CallbackException);
+            observation.Exception is not null && ReferenceEquals(observation.Exception, observation.CallbackException);
         var diagnostics = observation.Diagnostics.Select(CopyDiagnostic).ToList();
         if (command is InvalidCommand invalid)
         {
@@ -27,12 +26,7 @@ internal static class AssertionJudge
         if (observation.Exception is { } exception)
         {
             diagnostics.Add(
-                CaseDiagnostic.FromException(
-                    observation.Operation,
-                    observation.LastStage,
-                    exception,
-                    fromCallback
-                )
+                CaseDiagnostic.FromException(observation.Operation, observation.LastStage, exception, fromCallback)
             );
         }
         diagnostics.AddRange(
@@ -51,10 +45,7 @@ internal static class AssertionJudge
             LastStage = observation.LastStage,
             Diagnostics = diagnostics,
             Prints = [.. observation.Prints.Select(x => x with { Arguments = [.. x.Arguments] })],
-            Cause =
-                outcome == CaseOutcome.Blocked
-                    ? UnavailableCause.CreateCaseCause(observation.BlockedBy)
-                    : null,
+            Cause = outcome == CaseOutcome.Blocked ? UnavailableCause.CreateCaseCause(observation.BlockedBy) : null,
         };
     }
 
@@ -65,11 +56,7 @@ internal static class AssertionJudge
     /// <param name="observation">公開段階、例外、値の相違、依存先の失敗を記録した観測</param>
     /// <param name="fromCallback">観測した例外がspectestのcallbackで発生した同じ例外実体かどうか</param>
     /// <returns>観測と期待から決めた結果分類 callbackの例外や素材・JSONの異常はrunner_error</returns>
-    private static CaseOutcome Classify(
-        ScriptCommand command,
-        CommandObservation observation,
-        bool fromCallback
-    )
+    private static CaseOutcome Classify(ScriptCommand command, CommandObservation observation, bool fromCallback)
     {
         if (command is InvalidCommand || !observation.Diagnostics.IsEmpty)
         {
@@ -84,10 +71,7 @@ internal static class AssertionJudge
             if (
                 exception
                 is WasmUnsupportedFeatureException
-                    or WasmImportInspectionException
-                {
-                    Reason: WasmImportInspectionReason.UnsupportedFeature
-                }
+                    or WasmImportInspectionException { Reason: WasmImportInspectionReason.UnsupportedFeature }
             )
             {
                 return CaseOutcome.RuntimeUnsupported;
@@ -129,8 +113,7 @@ internal static class AssertionJudge
             ModuleCommand => observation.LastStage == CaseStage.Instantiate,
             RegisterCommand => observation.LastStage == CaseStage.Register,
             ActionCommand x => MatchesAction(x.Action, observation.LastStage),
-            AssertReturnCommand x => MatchesAction(x.Action, observation.LastStage)
-                && observation.Mismatches.IsEmpty,
+            AssertReturnCommand x => MatchesAction(x.Action, observation.LastStage) && observation.Mismatches.IsEmpty,
             _ => false,
         };
         return completed ? CaseOutcome.Passed : CaseOutcome.Failed;
@@ -147,14 +130,11 @@ internal static class AssertionJudge
     {
         return command switch
         {
-            AssertMalformedCommand { ModuleType: ScriptModuleType.Binary } => stage
-                == CaseStage.Decode
+            AssertMalformedCommand { ModuleType: ScriptModuleType.Binary } => stage == CaseStage.Decode
                 && exception is WasmDecodeException,
-            AssertInvalidCommand { ModuleType: ScriptModuleType.Binary } => stage
-                == CaseStage.Validate
+            AssertInvalidCommand { ModuleType: ScriptModuleType.Binary } => stage == CaseStage.Validate
                 && exception is WasmValidateException,
-            AssertUnlinkableCommand { ModuleType: ScriptModuleType.Binary } => stage
-                == CaseStage.Instantiate
+            AssertUnlinkableCommand { ModuleType: ScriptModuleType.Binary } => stage == CaseStage.Instantiate
                 && exception
                     is WasmInstantiateException
                 {
@@ -162,12 +142,10 @@ internal static class AssertionJudge
                             or WasmInstantiateReason.KindMismatch
                             or WasmInstantiateReason.TypeMismatch
                 },
-            AssertUninstantiableCommand { ModuleType: ScriptModuleType.Binary } => stage
-                == CaseStage.Instantiate
+            AssertUninstantiableCommand { ModuleType: ScriptModuleType.Binary } => stage == CaseStage.Instantiate
                 && exception is WasmTrapException,
             AssertTrapCommand x => MatchesAction(x.Action, stage) && exception is WasmTrapException,
-            AssertExhaustionCommand x => MatchesAction(x.Action, stage)
-                && exception is WasmExhaustionException,
+            AssertExhaustionCommand x => MatchesAction(x.Action, stage) && exception is WasmExhaustionException,
             _ => false,
         };
     }
@@ -210,9 +188,7 @@ internal static class AssertionJudge
         {
             return
             [
-                .. assertion.Expected.Select(x => new ExpectedValueRecord(
-                    ValueCodec.GetTypeName(x.Kind)
-                )
+                .. assertion.Expected.Select(x => new ExpectedValueRecord(ValueCodec.GetTypeName(x.Kind))
                 {
                     Value = x.Value,
                     LaneType = x.LaneType?.ToString().ToLowerInvariant(),

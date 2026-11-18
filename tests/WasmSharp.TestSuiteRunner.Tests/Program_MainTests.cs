@@ -14,14 +14,9 @@ internal class Program_MainTests
         // Arrange
         var executablePath = Path.Combine(
             AppContext.BaseDirectory,
-            OperatingSystem.IsWindows()
-                ? "WasmSharp.TestSuiteRunner.exe"
-                : "WasmSharp.TestSuiteRunner"
+            OperatingSystem.IsWindows() ? "WasmSharp.TestSuiteRunner.exe" : "WasmSharp.TestSuiteRunner"
         );
-        var startInfo = new ProcessStartInfo(executablePath)
-        {
-            WorkingDirectory = AppContext.BaseDirectory,
-        };
+        var startInfo = new ProcessStartInfo(executablePath) { WorkingDirectory = AppContext.BaseDirectory };
         startInfo.ArgumentList.Add("--help");
 
         // Act
@@ -40,9 +35,7 @@ internal class Program_MainTests
     [Test]
     [Arguments("verify")]
     [Arguments("baseline-save")]
-    public async Task ビルド済みCLIへ保存済み結果を渡す_操作を実行して所定の終了値を返す(
-        string operation
-    )
+    public async Task ビルド済みCLIへ保存済み結果を渡す_操作を実行して所定の終了値を返す(string operation)
     {
         // Arrange
         using var directory = new TemporaryDirectory();
@@ -52,9 +45,7 @@ internal class Program_MainTests
         reportStore_.Save(report, input);
         var executablePath = Path.Combine(
             AppContext.BaseDirectory,
-            OperatingSystem.IsWindows()
-                ? "WasmSharp.TestSuiteRunner.exe"
-                : "WasmSharp.TestSuiteRunner"
+            OperatingSystem.IsWindows() ? "WasmSharp.TestSuiteRunner.exe" : "WasmSharp.TestSuiteRunner"
         );
         var startInfo = new ProcessStartInfo(executablePath) { WorkingDirectory = directory.Root };
         startInfo.ArgumentList.Add(operation);
@@ -74,14 +65,10 @@ internal class Program_MainTests
         {
             await Assert.That(result.ExitCode).IsEqualTo(operation == "verify" ? 1 : 0);
             await Assert.That(result.Error).IsEqualTo(string.Empty);
-            await Assert
-                .That(result.Output)
-                .Contains(operation == "verify" ? "最終判定: 不合格" : "baseline保存: 完了");
+            await Assert.That(result.Output).Contains(operation == "verify" ? "最終判定: 不合格" : "baseline保存: 完了");
             if (operation == "baseline-save")
             {
-                await Assert
-                    .That(File.ReadAllBytes(output))
-                    .IsEquivalentTo(File.ReadAllBytes(input));
+                await Assert.That(File.ReadAllBytes(output)).IsEquivalentTo(File.ReadAllBytes(input));
             }
         }
     }

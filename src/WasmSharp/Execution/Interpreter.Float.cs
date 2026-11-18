@@ -9,9 +9,7 @@ internal static partial class Interpreter
     /// <returns>算術結果のビット列を持つf32のvalue</returns>
     private static WasmValue F32ArithmeticResult(float value)
     {
-        return WasmValue.FromF32Bits(
-            float.IsNaN(value) ? 0x7FC00000u : BitConverter.SingleToUInt32Bits(value)
-        );
+        return WasmValue.FromF32Bits(float.IsNaN(value) ? 0x7FC00000u : BitConverter.SingleToUInt32Bits(value));
     }
 
     /// <summary>
@@ -21,9 +19,7 @@ internal static partial class Interpreter
     /// <returns>算術結果のビット列を持つf64のvalue</returns>
     private static WasmValue F64ArithmeticResult(double value)
     {
-        return WasmValue.FromF64Bits(
-            double.IsNaN(value) ? 0x7FF8000000000000ul : BitConverter.DoubleToUInt64Bits(value)
-        );
+        return WasmValue.FromF64Bits(double.IsNaN(value) ? 0x7FF8000000000000ul : BitConverter.DoubleToUInt64Bits(value));
     }
 
     /// <summary>
@@ -266,10 +262,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのF32Nearest命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult F32Nearest(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult F32Nearest(InterpreterContext context, in Instruction instruction)
     {
         var operand = context.PopValue().AsF32();
         var result = MathF.Round(operand, MidpointRounding.ToEven);
@@ -309,10 +302,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのF32Copysign命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult F32Copysign(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult F32Copysign(InterpreterContext context, in Instruction instruction)
     {
         var right = context.PopValue().AsF32Bits();
         var left = context.PopValue().AsF32Bits();
@@ -368,10 +358,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのF64Nearest命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult F64Nearest(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult F64Nearest(InterpreterContext context, in Instruction instruction)
     {
         var operand = context.PopValue().AsF64();
         var result = Math.Round(operand, MidpointRounding.ToEven);
@@ -411,16 +398,11 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのF64Copysign命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult F64Copysign(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult F64Copysign(InterpreterContext context, in Instruction instruction)
     {
         var right = context.PopValue().AsF64Bits();
         var left = context.PopValue().AsF64Bits();
-        context.PushValue(
-            WasmValue.FromF64Bits((left & 0x7FFFFFFFFFFFFFFFul) | (right & 0x8000000000000000ul))
-        );
+        context.PushValue(WasmValue.FromF64Bits((left & 0x7FFFFFFFFFFFFFFFul) | (right & 0x8000000000000000ul)));
         return default;
     }
 

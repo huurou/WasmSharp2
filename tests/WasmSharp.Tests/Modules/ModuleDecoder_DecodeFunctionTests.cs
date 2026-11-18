@@ -9,38 +9,14 @@ internal partial class ModuleDecoder_DecodeTests
 {
     [Test]
     [Arguments("030201000A0401020005", "END opcode expected", 17L, 0u, (byte)10)]
-    [Arguments(
-        "030201000A0E010C03FFFFFFFF0F7F017F006E0B",
-        "malformed reference type",
-        26L,
-        0u,
-        (byte)10
-    )]
-    [Arguments(
-        "030201000A0E010C03FFFFFFFF0F7F017F00FF0B",
-        "integer representation too long",
-        27L,
-        0u,
-        (byte)10
-    )]
+    [Arguments("030201000A0E010C03FFFFFFFF0F7F017F006E0B", "malformed reference type", 26L, 0u, (byte)10)]
+    [Arguments("030201000A0E010C03FFFFFFFF0F7F017F00FF0B", "integer representation too long", 27L, 0u, (byte)10)]
     [Arguments("030201000A0C010A02FFFFFFFF0F7F017E0B", "too many locals", 23L, 0u, (byte)10)]
     [Arguments("030201000A0E010C03FFFFFFFF0F7F017E017F0B", "too many locals", 23L, 0u, (byte)10)]
-    [Arguments(
-        "03020100",
-        "function and code section have inconsistent lengths",
-        12L,
-        null,
-        (byte)3
-    )]
+    [Arguments("03020100", "function and code section have inconsistent lengths", 12L, null, (byte)3)]
     [Arguments("030201000A050003006A0B", "section size mismatch", 15L, null, (byte)10)]
     [Arguments("0A040102006A", "unexpected end", 14L, 0u, (byte)10)]
-    [Arguments(
-        "000200030201000A050103006A0B",
-        "function and code section have inconsistent lengths",
-        22L,
-        null,
-        (byte)10
-    )]
+    [Arguments("000200030201000A050103006A0B", "function and code section have inconsistent lengths", 22L, null, (byte)10)]
     public async Task 式終端とlocalsと件数の複合不正_符号化確認と確定した構造不正を優先する(
         string sections,
         string prefix,
@@ -53,14 +29,10 @@ internal partial class ModuleDecoder_DecodeTests
         var bytes = Convert.FromHexString("0061736D01000000" + sections);
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => ModuleDecoder.Decode(bytes))
-            .ThrowsExactly<WasmDecodeException>();
+        var exception = await Assert.That(() => ModuleDecoder.Decode(bytes)).ThrowsExactly<WasmDecodeException>();
         using (Assert.Multiple())
         {
-            await Assert
-                .That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal))
-                .IsTrue();
+            await Assert.That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal)).IsTrue();
             await Assert
                 .That(exception.Location)
                 .IsEqualTo(new(WasmProcessingStage.Decode, offset, functionIndex, sectionId));
@@ -74,9 +46,7 @@ internal partial class ModuleDecoder_DecodeTests
     {
         // Arrange
         var payloadLength = (1 + typeIndex.Length / 2).ToString("X2");
-        var bytes = Convert.FromHexString(
-            "0061736D0100000003" + payloadLength + "01" + typeIndex + "0A040102000B"
-        );
+        var bytes = Convert.FromHexString("0061736D0100000003" + payloadLength + "01" + typeIndex + "0A040102000B");
 
         // Act
         var module = ModuleDecoder.Decode(bytes);
@@ -89,10 +59,7 @@ internal partial class ModuleDecoder_DecodeTests
     [Test]
     [Arguments("0A0A010801FFFFFFFF0F7F0B", 1)]
     [Arguments("0A0C010A02FEFFFFFF0F7F017E0B", 2)]
-    public async Task Locals合計がu32最大値_巨大配列へ展開せず圧縮宣言を保持する(
-        string codeSection,
-        int count
-    )
+    public async Task Locals合計がu32最大値_巨大配列へ展開せず圧縮宣言を保持する(string codeSection, int count)
     {
         // Arrange
         var bytes = Convert.FromHexString("0061736D0100000003020100" + codeSection);
@@ -115,9 +82,7 @@ internal partial class ModuleDecoder_DecodeTests
     public async Task 引数とlocalsと複数定数がある_最小実行形の判定をせず構文を読み終える()
     {
         // Arrange
-        var bytes = Convert.FromHexString(
-            "0061736D0100000001070160017F027F7E030201000A0A010801017F410142020B"
-        );
+        var bytes = Convert.FromHexString("0061736D0100000001070160017F027F7E030201000A0A010801017F410142020B");
 
         // Act
         var module = ModuleDecoder.Decode(bytes);
@@ -152,12 +117,8 @@ internal partial class ModuleDecoder_DecodeTests
         var bytes = Convert.FromHexString("0061736D01000000" + sections);
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => ModuleDecoder.Decode(bytes))
-            .ThrowsExactly<WasmDecodeException>();
-        await Assert
-            .That(exception!.Location)
-            .IsEqualTo(new(WasmProcessingStage.Decode, offset, functionIndex, 10));
+        var exception = await Assert.That(() => ModuleDecoder.Decode(bytes)).ThrowsExactly<WasmDecodeException>();
+        await Assert.That(exception!.Location).IsEqualTo(new(WasmProcessingStage.Decode, offset, functionIndex, 10));
     }
 
     [Test]
@@ -208,9 +169,7 @@ internal partial class ModuleDecoder_DecodeTests
             await Assert.That(bits).IsEqualTo(expectedBits);
             await Assert.That(function.Instructions[0].ByteOffset).IsEqualTo(33L);
             await Assert.That(function.Instructions[1].Opcode).IsEqualTo(new OpcodeKey(0, 0x0B));
-            await Assert
-                .That(function.Instructions[1].ByteOffset)
-                .IsEqualTo((long)bytes.Length - 1);
+            await Assert.That(function.Instructions[1].ByteOffset).IsEqualTo((long)bytes.Length - 1);
         }
     }
 
@@ -251,24 +210,16 @@ internal partial class ModuleDecoder_DecodeTests
         // Arrange
         var bytes = HostLinkingModuleBinary.Create(
             HostLinkingModuleBinary.Types(([], [])),
-            HostLinkingModuleBinary.Imports(
-                ("env", "g", 3, [0x7F, 0]),
-                ("env", "first", 0, [0]),
-                ("env", "second", 0, [0])
-            ),
+            HostLinkingModuleBinary.Imports(("env", "g", 3, [0x7F, 0]), ("env", "first", 0, [0]), ("env", "second", 0, [0])),
             HostLinkingModuleBinary.Functions(0, 0),
             HostLinkingModuleBinary.Code(([], [0x0B]), ([], Convert.FromHexString(instructions)))
         );
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => ModuleDecoder.Decode(bytes))
-            .ThrowsExactly<WasmDecodeException>();
+        var exception = await Assert.That(() => ModuleDecoder.Decode(bytes)).ThrowsExactly<WasmDecodeException>();
         using (Assert.Multiple())
         {
-            await Assert
-                .That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal))
-                .IsTrue();
+            await Assert.That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal)).IsTrue();
             await Assert
                 .That(exception.Location)
                 .IsEqualTo(new(WasmProcessingStage.Decode, bytes.Length - distanceFromEnd, 3, 10));

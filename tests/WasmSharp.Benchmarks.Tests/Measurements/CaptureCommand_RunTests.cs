@@ -14,9 +14,7 @@ internal class CaptureCommand_RunTests
 
         // Act & Assert
         var exception = await Assert
-            .That(() =>
-                CaptureCommand.Run("git", fixture.DirectoryPath, "wasmsharp-nonexistent-command")
-            )
+            .That(() => CaptureCommand.Run("git", fixture.DirectoryPath, "wasmsharp-nonexistent-command"))
             .ThrowsExactly<InvalidOperationException>();
         using (Assert.Multiple())
         {

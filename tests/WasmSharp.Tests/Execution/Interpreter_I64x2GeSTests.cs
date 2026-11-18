@@ -40,11 +40,7 @@ internal class Interpreter_I64x2GeSTests
     )
     {
         // Arrange
-        WasmValue[] operands =
-        [
-            WasmValue.FromV128(firstLow64, firstHigh64),
-            WasmValue.FromV128(secondLow64, secondHigh64),
-        ];
+        WasmValue[] operands = [WasmValue.FromV128(firstLow64, firstHigh64), WasmValue.FromV128(secondLow64, secondHigh64)];
 
         // Act
         var actual = SimdHandlerFixture.Execute(Interpreter.I64x2GeS, operands);

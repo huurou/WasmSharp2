@@ -86,11 +86,7 @@ public abstract class WasmFunction
     /// <exception cref="WasmTrapException">Wasmの実行規則によるtrapが発生した場合</exception>
     /// <exception cref="WasmExhaustionException">呼び出し深さが上限に達したか、CLRスタックの余裕が不足した場合</exception>
     /// <exception cref="WasmImplementationLimitException">実行に必要なフレーム数または値の数が保持上限を超える場合</exception>
-    public WasmResults Invoke(
-        WasmExecutionContext context,
-        WasmInstance instance,
-        ReadOnlySpan<WasmValue> arguments
-    )
+    public WasmResults Invoke(WasmExecutionContext context, WasmInstance instance, ReadOnlySpan<WasmValue> arguments)
     {
         ArgumentNullException.ThrowIfNull(context);
         var parameters = Type.Parameters;

@@ -7,9 +7,4 @@ namespace WasmSharp.TestSuiteRunner.Corpus;
 /// <param name="CanonicalLebs">LEBを最短表現で出力するかどうか</param>
 /// <param name="Relocatable">再配置可能なbinaryを生成するかどうか</param>
 /// <param name="DebugNames">デバッグ名を出力するかどうか</param>
-internal sealed record ConversionOptions(
-    bool Check,
-    bool CanonicalLebs,
-    bool Relocatable,
-    bool DebugNames
-);
+internal sealed record ConversionOptions(bool Check, bool CanonicalLebs, bool Relocatable, bool DebugNames);

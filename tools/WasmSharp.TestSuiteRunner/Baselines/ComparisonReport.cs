@@ -6,11 +6,7 @@ namespace WasmSharp.TestSuiteRunner.Baselines;
 /// <param name="Comparison">変換結果の再現性比較か、実行結果の回帰比較か</param>
 /// <param name="Baseline">比較元baselineの識別</param>
 /// <param name="Current">比較する現結果の識別</param>
-internal sealed record ComparisonReport(
-    ComparisonType Comparison,
-    ComparedReport Baseline,
-    ComparedReport Current
-)
+internal sealed record ComparisonReport(ComparisonType Comparison, ComparedReport Baseline, ComparedReport Current)
 {
     /// <summary>
     /// 永続形式の版

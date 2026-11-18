@@ -68,21 +68,13 @@ internal partial class ModuleValidator_ValidateTests
         var offset = module.Functions[0].Instructions[instructionIndex].ByteOffset;
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => module.Validate())
-            .ThrowsExactly<WasmValidateException>();
+        var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
         using (Assert.Multiple())
         {
-            await Assert
-                .That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal))
-                .IsTrue();
-            await Assert
-                .That(exception!.Location)
-                .IsEqualTo(new(WasmProcessingStage.Validate, offset, 0, 10));
+            await Assert.That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal)).IsTrue();
+            await Assert.That(exception!.Location).IsEqualTo(new(WasmProcessingStage.Validate, offset, 0, 10));
             await Assert.That(module.FunctionCodes.IsEmpty).IsTrue();
-            await Assert
-                .That(() => module.Instantiate(executionContext, []))
-                .ThrowsExactly<InvalidOperationException>();
+            await Assert.That(() => module.Instantiate(executionContext, [])).ThrowsExactly<InvalidOperationException>();
         }
     }
 
@@ -112,23 +104,14 @@ internal partial class ModuleValidator_ValidateTests
         );
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => module.Validate())
-            .ThrowsExactly<WasmValidateException>();
+        var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
         using (Assert.Multiple())
         {
-            await Assert
-                .That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal))
-                .IsTrue();
+            await Assert.That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal)).IsTrue();
             await Assert
                 .That(exception!.Location)
                 .IsEqualTo(
-                    new(
-                        WasmProcessingStage.Validate,
-                        module.Functions[0].Instructions[instructionIndex].ByteOffset,
-                        1,
-                        10
-                    )
+                    new(WasmProcessingStage.Validate, module.Functions[0].Instructions[instructionIndex].ByteOffset, 1, 10)
                 );
         }
     }
@@ -139,17 +122,10 @@ internal partial class ModuleValidator_ValidateTests
         // Arrange
         var module = WasmModule.Decode(
             HostLinkingModuleBinary.Create(
-                HostLinkingModuleBinary.Types(
-                    ([0x7F, 0x7E], [0x7E, 0x7F]),
-                    ([], [0x7E, 0x7F]),
-                    ([], [])
-                ),
+                HostLinkingModuleBinary.Types(([0x7F, 0x7E], [0x7E, 0x7F]), ([], [0x7E, 0x7F]), ([], [])),
                 HostLinkingModuleBinary.Imports(("env", "g", 3, [0x7F, 0]), ("env", "f", 0, [0])),
                 HostLinkingModuleBinary.Functions(1, 2),
-                HostLinkingModuleBinary.Code(
-                    ([], [0x10, 2, 0x41, 42, 0x42, 7, 0x10, 0, 0x0B]),
-                    ([], [0x0B])
-                )
+                HostLinkingModuleBinary.Code(([], [0x10, 2, 0x41, 42, 0x42, 7, 0x10, 0, 0x0B]), ([], [0x0B]))
             )
         );
 
@@ -163,9 +139,7 @@ internal partial class ModuleValidator_ValidateTests
             await Assert.That(codes[0].Instructions[0].Opcode).IsEqualTo(ExecutionOpcode.Op10);
             await Assert.That(codes[0].Instructions[0].Index).IsEqualTo(2u);
             await Assert.That(codes[0].Instructions[3].Index).IsEqualTo(0u);
-            await Assert
-                .That(codes[0].Instructions[3].ByteOffset)
-                .IsEqualTo(module.Functions[0].Instructions[3].ByteOffset);
+            await Assert.That(codes[0].Instructions[3].ByteOffset).IsEqualTo(module.Functions[0].Instructions[3].ByteOffset);
         }
     }
 
@@ -247,37 +221,22 @@ internal partial class ModuleValidator_ValidateTests
         );
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => module.Validate())
-            .ThrowsExactly<WasmValidateException>();
+        var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
         await Assert
             .That(exception!.Location)
-            .IsEqualTo(
-                new(
-                    WasmProcessingStage.Validate,
-                    module.Functions[0].Instructions[0].ByteOffset,
-                    0,
-                    10
-                )
-            );
+            .IsEqualTo(new(WasmProcessingStage.Validate, module.Functions[0].Instructions[0].ByteOffset, 0, 10));
     }
 
     [Test]
     public async Task 圧縮localsの宣言が多数ある_末尾の型を解決する()
     {
         // Arrange
-        (uint Count, byte Kind)[] locals =
-        [
-            .. Enumerable.Repeat((1u, (byte)0x7F), 1023),
-            (1u, 0x7E),
-        ];
+        (uint Count, byte Kind)[] locals = [.. Enumerable.Repeat((1u, (byte)0x7F), 1023), (1u, 0x7E)];
         var module = WasmModule.Decode(
             HostLinkingModuleBinary.Create(
                 HostLinkingModuleBinary.Types(([], [0x7E])),
                 HostLinkingModuleBinary.Functions(0),
-                HostLinkingModuleBinary.Code(
-                    (locals, [0x20, .. HostLinkingModuleBinary.Unsigned(1023), 0x0B])
-                )
+                HostLinkingModuleBinary.Code((locals, [0x20, .. HostLinkingModuleBinary.Unsigned(1023), 0x0B]))
             )
         );
 
@@ -303,10 +262,7 @@ internal partial class ModuleValidator_ValidateTests
                 HostLinkingModuleBinary.Functions(0),
                 HostLinkingModuleBinary.Exports(("run", 0, 0)),
                 HostLinkingModuleBinary.Code(
-                    (
-                        [(0, 0x7D), (uint.MaxValue - 1, 0x7F), (1, 0x7E)],
-                        [0x20, 0xFF, 0xFF, 0xFF, 0xFF, 0x0F, 0x0B]
-                    )
+                    ([(0, 0x7D), (uint.MaxValue - 1, 0x7F), (1, 0x7E)], [0x20, 0xFF, 0xFF, 0xFF, 0xFF, 0x0F, 0x0B])
                 )
             )
         );
@@ -338,15 +294,11 @@ internal partial class ModuleValidator_ValidateTests
         // Act & Assert
         for (var attempt = 0; attempt < 2; attempt++)
         {
-            var exception = await Assert
-                .That(() => module.Validate())
-                .ThrowsExactly<WasmValidateException>();
+            var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
             await Assert.That(exception!.Location!.FunctionIndex).IsEqualTo(1u);
             await Assert.That(module.FunctionCodes.IsEmpty).IsTrue();
             await Assert.That(module.FunctionExportIndices.IsEmpty).IsTrue();
-            await Assert
-                .That(() => module.Instantiate(executionContext, []))
-                .ThrowsExactly<InvalidOperationException>();
+            await Assert.That(() => module.Instantiate(executionContext, [])).ThrowsExactly<InvalidOperationException>();
         }
     }
 }

@@ -9,9 +9,7 @@ internal class WasmImports_AddTests
     [Test]
     [Arguments("")]
     [Arguments("env")]
-    public async Task 同名moduleの非重複itemを追加する_既存登録と取得済みsnapshotを変えない(
-        string moduleName
-    )
+    public async Task 同名moduleの非重複itemを追加する_既存登録と取得済みsnapshotを変えない(string moduleName)
     {
         // Arrange
         var function = WasmFunction.CreateHost(new([], []), (callbackContext, _) => new([]));
@@ -35,16 +33,10 @@ internal class WasmImports_AddTests
             await Assert.That(before[moduleName].ContainsKey("new")).IsFalse();
             await Assert.That(after[moduleName].Count).IsEqualTo(2);
             await Assert
-                .That(
-                    after[moduleName][""] is FunctionExternalValue f
-                        && ReferenceEquals(f.Value, function)
-                )
+                .That(after[moduleName][""] is FunctionExternalValue f && ReferenceEquals(f.Value, function))
                 .IsTrue();
             await Assert
-                .That(
-                    after[moduleName]["new"] is GlobalExternalValue g
-                        && ReferenceEquals(g.Value, global)
-                )
+                .That(after[moduleName]["new"] is GlobalExternalValue g && ReferenceEquals(g.Value, global))
                 .IsTrue();
         }
     }
@@ -52,10 +44,7 @@ internal class WasmImports_AddTests
     [Test]
     [Arguments("env", "Env")]
     [Arguments("\u00e9", "e\u0301")]
-    public async Task Module名だけが異なる同名itemを追加する_名前を完全一致で区別する(
-        string firstName,
-        string secondName
-    )
+    public async Task Module名だけが異なる同名itemを追加する_名前を完全一致で区別する(string firstName, string secondName)
     {
         // Arrange
         var function = WasmFunction.CreateHost(new([], []), (callbackContext, _) => new([]));
@@ -76,16 +65,10 @@ internal class WasmImports_AddTests
         {
             await Assert.That(snapshot.Count).IsEqualTo(2);
             await Assert
-                .That(
-                    snapshot[firstName]["same"] is FunctionExternalValue f
-                        && ReferenceEquals(f.Value, function)
-                )
+                .That(snapshot[firstName]["same"] is FunctionExternalValue f && ReferenceEquals(f.Value, function))
                 .IsTrue();
             await Assert
-                .That(
-                    snapshot[secondName]["same"] is MemoryExternalValue m
-                        && ReferenceEquals(m.Value, memory)
-                )
+                .That(snapshot[secondName]["same"] is MemoryExternalValue m && ReferenceEquals(m.Value, memory))
                 .IsTrue();
         }
     }
@@ -93,9 +76,7 @@ internal class WasmImports_AddTests
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task 提供元の一部が重複する_同じ実体や異なる種類でも全件追加せず拒否する(
-        bool sameProvider
-    )
+    public async Task 提供元の一部が重複する_同じ実体や異なる種類でも全件追加せず拒否する(bool sameProvider)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
@@ -108,10 +89,7 @@ internal class WasmImports_AddTests
         candidate.Define("new-first", function);
         if (!sameProvider)
         {
-            candidate.Define(
-                "same",
-                new WasmGlobal(new(WasmValueKind.I32, true), WasmValue.FromI32(7))
-            );
+            candidate.Define("same", new WasmGlobal(new(WasmValueKind.I32, true), WasmValue.FromI32(7)));
         }
         candidate.Define("new-last", new WasmMemory(new(0)));
 
@@ -128,13 +106,7 @@ internal class WasmImports_AddTests
             .Validate()
             .Instantiate(executionContext, imports);
         await Assert.That(instance.GetFunction("same")).IsSameReferenceAs(function);
-        foreach (
-            var (name, kind, type) in new (string, byte, byte[])[]
-            {
-                ("new-first", 0, [0]),
-                ("new-last", 2, [0, 0]),
-            }
-        )
+        foreach (var (name, kind, type) in new (string, byte, byte[])[] { ("new-first", 0, [0]), ("new-last", 2, [0, 0]) })
         {
             var module = WasmModule
                 .Decode(
@@ -162,9 +134,7 @@ internal class WasmImports_AddTests
         var imports = new WasmImports();
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => imports.Add(null!))
-            .ThrowsExactly<ArgumentNullException>();
+        var exception = await Assert.That(() => imports.Add(null!)).ThrowsExactly<ArgumentNullException>();
         using (Assert.Multiple())
         {
             await Assert.That(exception!.ParamName).IsEqualTo("module");
@@ -213,21 +183,10 @@ internal class WasmImports_AddTests
             await Assert.That(snapshot.Count).IsEqualTo(1);
             await Assert.That(items.Count).IsEqualTo(4);
             await Assert.That(items.ContainsKey("later")).IsFalse();
-            await Assert
-                .That(
-                    items["function"] is FunctionExternalValue f
-                        && ReferenceEquals(f.Value, function)
-                )
-                .IsTrue();
-            await Assert
-                .That(items["global"] is GlobalExternalValue g && ReferenceEquals(g.Value, global))
-                .IsTrue();
-            await Assert
-                .That(items["memory"] is MemoryExternalValue m && ReferenceEquals(m.Value, memory))
-                .IsTrue();
-            await Assert
-                .That(items["table"] is TableExternalValue t && ReferenceEquals(t.Value, table))
-                .IsTrue();
+            await Assert.That(items["function"] is FunctionExternalValue f && ReferenceEquals(f.Value, function)).IsTrue();
+            await Assert.That(items["global"] is GlobalExternalValue g && ReferenceEquals(g.Value, global)).IsTrue();
+            await Assert.That(items["memory"] is MemoryExternalValue m && ReferenceEquals(m.Value, memory)).IsTrue();
+            await Assert.That(items["table"] is TableExternalValue t && ReferenceEquals(t.Value, table)).IsTrue();
         }
     }
 }

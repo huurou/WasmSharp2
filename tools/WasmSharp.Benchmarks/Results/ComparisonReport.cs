@@ -28,8 +28,7 @@ internal sealed record ComparisonReport(
     /// <summary>
     /// 全対象caseの両指標が許容内で、選定目標の少なくとも1件が達成したことを表す
     /// </summary>
-    internal bool IsAccepted =>
-        Cases.All(x => !x.BlocksCompletion) && Cases.Any(x => x.TargetAchieved);
+    internal bool IsAccepted => Cases.All(x => !x.BlocksCompletion) && Cases.Any(x => x.TargetAchieved);
 }
 
 /// <summary>
@@ -89,21 +88,12 @@ internal sealed record MetricComparison(
 /// <summary>
 /// 独立runの値と中央値・最小最大 時間は各runの平均ns/op、割り当ては丸め前bytes/opを用いる。
 /// </summary>
-internal sealed record RunGroupStatistics(
-    List<RunMetricValue> Runs,
-    double Median,
-    double Minimum,
-    double Maximum
-);
+internal sealed record RunGroupStatistics(List<RunMetricValue> Runs, double Median, double Minimum, double Maximum);
 
 /// <summary>
 /// 1runの値と、そのrun内で算出した信頼区間 割り当ての信頼区間はnull
 /// </summary>
-internal sealed record RunMetricValue(
-    string RunId,
-    double Value,
-    ConfidenceInterval? ConfidenceInterval
-);
+internal sealed record RunMetricValue(string RunId, double Value, ConfidenceInterval? ConfidenceInterval);
 
 /// <summary>
 /// current-baselineの絶対差とcurrent/baselineの比率 baselineが0ならRatioはnull

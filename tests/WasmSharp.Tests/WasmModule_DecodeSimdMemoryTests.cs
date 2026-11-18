@@ -15,9 +15,7 @@ internal partial class WasmModule_DecodeTests
     [Arguments("FD5400")]
     [Arguments("FD540080")]
     [Arguments("FD540000")]
-    public async Task SIMDメモリ接続の即値が切断される_両入力でDecodeの境界診断と元位置を返す(
-        string hex
-    )
+    public async Task SIMDメモリ接続の即値が切断される_両入力でDecodeの境界診断と元位置を返す(string hex)
     {
         // Arrange
         var bytes = ConstantModuleBinary.Create(0x7B, Convert.FromHexString(hex));
@@ -32,16 +30,9 @@ internal partial class WasmModule_DecodeTests
             using (Assert.Multiple())
             {
                 await Assert
-                    .That(
-                        exception!.Message.StartsWith(
-                            "unexpected end of section or function",
-                            StringComparison.Ordinal
-                        )
-                    )
+                    .That(exception!.Message.StartsWith("unexpected end of section or function", StringComparison.Ordinal))
                     .IsTrue();
-                await Assert
-                    .That(exception.Location)
-                    .IsEqualTo(new(WasmProcessingStage.Decode, bytes.Length, 0, 10));
+                await Assert.That(exception.Location).IsEqualTo(new(WasmProcessingStage.Decode, bytes.Length, 0, 10));
                 await Assert.That(stream.CanRead).IsTrue();
             }
         }

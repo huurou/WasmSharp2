@@ -75,11 +75,7 @@ internal static class ImportInspector
             throw InspectionFailure(exception.Fallback, ranges, bytes.Length);
         }
         catch (WasmException exception)
-            when (exception
-                    is WasmDecodeException
-                        or WasmUnsupportedFeatureException
-                        or WasmImplementationLimitException
-            )
+            when (exception is WasmDecodeException or WasmUnsupportedFeatureException or WasmImplementationLimitException)
         {
             throw InspectionFailure(exception, ranges, bytes.Length);
         }
@@ -154,8 +150,7 @@ internal static class ImportInspector
                         imports.Add(
                             import switch
                             {
-                                FunctionImport function
-                                    when function.TypeIndex < (uint)types.Count =>
+                                FunctionImport function when function.TypeIndex < (uint)types.Count =>
                                     new WasmImportInfo.Function(
                                         function.ModuleName,
                                         function.Name,
@@ -197,14 +192,7 @@ internal static class ImportInspector
             }
             ModuleBinaryFormat.RequireEnd(ref section);
         }
-        ranges.Add(
-            new WasmUnverifiedRange(
-                WasmProcessingStage.Validate,
-                0,
-                bytes.Length,
-                "入力全体の検証が未実施です。"
-            )
-        );
+        ranges.Add(new WasmUnverifiedRange(WasmProcessingStage.Validate, 0, bytes.Length, "入力全体の検証が未実施です。"));
         return new WasmImportInspection(imports.ToImmutable(), ranges.ToImmutable());
     }
 
@@ -230,12 +218,7 @@ internal static class ImportInspector
                 inputLength,
                 "この位置以降のimport調査が未完了です。"
             ),
-            new WasmUnverifiedRange(
-                WasmProcessingStage.Validate,
-                0,
-                inputLength,
-                "入力全体の検証が未実施です。"
-            ),
+            new WasmUnverifiedRange(WasmProcessingStage.Validate, 0, inputLength, "入力全体の検証が未実施です。"),
         ];
     }
 
@@ -244,10 +227,7 @@ internal static class ImportInspector
     /// </summary>
     /// <param name="section">読み飛ばすpayloadの現在位置を持つreader</param>
     /// <param name="ranges">構文未確認範囲を追加する先</param>
-    private static void SkipPayload(
-        ref ModuleBinaryReader section,
-        ImmutableArray<WasmUnverifiedRange>.Builder ranges
-    )
+    private static void SkipPayload(ref ModuleBinaryReader section, ImmutableArray<WasmUnverifiedRange>.Builder ranges)
     {
         ranges.Add(
             new WasmUnverifiedRange(

@@ -10,9 +10,7 @@ internal partial class ModuleValidator_ValidateTests
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task 複数importの型とlimitsが不正_末尾の違反と元の関数添字を選ぶ(
-        bool lastIsFunction
-    )
+    public async Task 複数importの型とlimitsが不正_末尾の違反と元の関数添字を選ぶ(bool lastIsFunction)
     {
         // Arrange
         var function = ("env", "f", (byte)0, HostLinkingModuleBinary.Unsigned(uint.MaxValue));
@@ -30,31 +28,20 @@ internal partial class ModuleValidator_ValidateTests
         );
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => module.Validate())
-            .ThrowsExactly<WasmValidateException>();
+        var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
         using (Assert.Multiple())
         {
             await Assert
                 .That(
                     exception!.Message.StartsWith(
-                        lastIsFunction
-                            ? "unknown type 4294967295"
-                            : "size minimum must not be greater than maximum",
+                        lastIsFunction ? "unknown type 4294967295" : "size minimum must not be greater than maximum",
                         StringComparison.Ordinal
                     )
                 )
                 .IsTrue();
             await Assert
                 .That(exception.Location)
-                .IsEqualTo(
-                    new(
-                        WasmProcessingStage.Validate,
-                        module.Imports[3].ByteOffset,
-                        lastIsFunction ? 1u : null,
-                        2
-                    )
-                );
+                .IsEqualTo(new(WasmProcessingStage.Validate, module.Imports[3].ByteOffset, lastIsFunction ? 1u : null, 2));
         }
     }
 
@@ -72,29 +59,21 @@ internal partial class ModuleValidator_ValidateTests
             HostLinkingModuleBinary.Create(
                 HostLinkingModuleBinary.Tables((0x70, 2, 1)),
                 HostLinkingModuleBinary.Memories((65537, null)),
-                HostLinkingModuleBinary.Globals(
-                    (0x7F, false, invalidGlobal ? [0x42, 0, 0x0B] : [0x41, 0, 0x0B])
-                )
+                HostLinkingModuleBinary.Globals((0x7F, false, invalidGlobal ? [0x42, 0, 0x0B] : [0x41, 0, 0x0B]))
             )
         );
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => module.Validate())
-            .ThrowsExactly<WasmValidateException>();
+        var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
         using (Assert.Multiple())
         {
-            await Assert
-                .That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal))
-                .IsTrue();
+            await Assert.That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal)).IsTrue();
             await Assert
                 .That(exception.Location)
                 .IsEqualTo(
                     new(
                         WasmProcessingStage.Validate,
-                        invalidGlobal
-                            ? module.Globals[0].Initializer[^1].ByteOffset
-                            : module.Tables[0].ByteOffset,
+                        invalidGlobal ? module.Globals[0].Initializer[^1].ByteOffset : module.Tables[0].ByteOffset,
                         null,
                         sectionId
                     )
@@ -117,17 +96,8 @@ internal partial class ModuleValidator_ValidateTests
             CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo(culture);
 
             // Act & Assert
-            var exception = await Assert
-                .That(() => module.Validate())
-                .ThrowsExactly<WasmValidateException>();
-            await Assert
-                .That(
-                    exception!.Message.StartsWith(
-                        "unknown global 4294967295",
-                        StringComparison.Ordinal
-                    )
-                )
-                .IsTrue();
+            var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
+            await Assert.That(exception!.Message.StartsWith("unknown global 4294967295", StringComparison.Ordinal)).IsTrue();
         }
         finally
         {
@@ -198,9 +168,7 @@ internal partial class ModuleValidator_ValidateTests
         );
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => ModuleValidator.Validate(module))
-            .ThrowsExactly<WasmValidateException>();
+        var exception = await Assert.That(() => ModuleValidator.Validate(module)).ThrowsExactly<WasmValidateException>();
         var category = kind switch
         {
             0 => "function",
@@ -211,23 +179,11 @@ internal partial class ModuleValidator_ValidateTests
         using (Assert.Multiple())
         {
             await Assert
-                .That(
-                    exception!.Message.StartsWith(
-                        $"unknown {category} {index}",
-                        StringComparison.Ordinal
-                    )
-                )
+                .That(exception!.Message.StartsWith($"unknown {category} {index}", StringComparison.Ordinal))
                 .IsTrue();
             await Assert
                 .That(exception!.Location)
-                .IsEqualTo(
-                    new(
-                        WasmProcessingStage.Validate,
-                        module.Exports[0].ByteOffset,
-                        kind == 0 ? index : null,
-                        7
-                    )
-                );
+                .IsEqualTo(new(WasmProcessingStage.Validate, module.Exports[0].ByteOffset, kind == 0 ? index : null, 7));
         }
     }
 
@@ -245,24 +201,13 @@ internal partial class ModuleValidator_ValidateTests
         );
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => ModuleValidator.Validate(module))
-            .ThrowsExactly<WasmValidateException>();
+        var exception = await Assert.That(() => ModuleValidator.Validate(module)).ThrowsExactly<WasmValidateException>();
         using (Assert.Multiple())
         {
-            await Assert
-                .That(
-                    exception!.Message.StartsWith(
-                        $"unknown memory {index}",
-                        StringComparison.Ordinal
-                    )
-                )
-                .IsTrue();
+            await Assert.That(exception!.Message.StartsWith($"unknown memory {index}", StringComparison.Ordinal)).IsTrue();
             await Assert
                 .That(exception.Location)
-                .IsEqualTo(
-                    new(WasmProcessingStage.Validate, module.Exports[0].ByteOffset, null, 7)
-                );
+                .IsEqualTo(new(WasmProcessingStage.Validate, module.Exports[0].ByteOffset, null, 7));
         }
     }
 
@@ -284,19 +229,10 @@ internal partial class ModuleValidator_ValidateTests
         );
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => ModuleValidator.Validate(module))
-            .ThrowsExactly<WasmValidateException>();
+        var exception = await Assert.That(() => ModuleValidator.Validate(module)).ThrowsExactly<WasmValidateException>();
         using (Assert.Multiple())
         {
-            await Assert
-                .That(
-                    exception!.Message.StartsWith(
-                        $"unknown type {typeIndex}",
-                        StringComparison.Ordinal
-                    )
-                )
-                .IsTrue();
+            await Assert.That(exception!.Message.StartsWith($"unknown type {typeIndex}", StringComparison.Ordinal)).IsTrue();
             await Assert
                 .That(exception!.Location)
                 .IsEqualTo(new(WasmProcessingStage.Validate, module.Imports[2].ByteOffset, 1, 2));
@@ -306,36 +242,25 @@ internal partial class ModuleValidator_ValidateTests
     [Test]
     [Arguments(true)]
     [Arguments(false)]
-    public async Task Import後の定義関数が不正_型参照と本体の診断がmodule全体の関数添字になる(
-        bool invalidType
-    )
+    public async Task Import後の定義関数が不正_型参照と本体の診断がmodule全体の関数添字になる(bool invalidType)
     {
         // Arrange
         var module = WasmModule.Decode(
             HostLinkingModuleBinary.Create(
                 HostLinkingModuleBinary.Types(([], [0x7F])),
-                HostLinkingModuleBinary.Imports(
-                    ("", "", 0, [0]),
-                    ("", "", 3, [0x7F, 0]),
-                    ("", "", 0, [0])
-                ),
+                HostLinkingModuleBinary.Imports(("", "", 0, [0]), ("", "", 3, [0x7F, 0]), ("", "", 0, [0])),
                 HostLinkingModuleBinary.Functions(invalidType ? 1u : 0u),
                 HostLinkingModuleBinary.Code(([], [0x42, 0, 0x0B]))
             )
         );
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => ModuleValidator.Validate(module))
-            .ThrowsExactly<WasmValidateException>();
+        var exception = await Assert.That(() => ModuleValidator.Validate(module)).ThrowsExactly<WasmValidateException>();
         using (Assert.Multiple())
         {
             await Assert
                 .That(
-                    exception!.Message.StartsWith(
-                        invalidType ? "unknown type 1" : "type mismatch",
-                        StringComparison.Ordinal
-                    )
+                    exception!.Message.StartsWith(invalidType ? "unknown type 1" : "type mismatch", StringComparison.Ordinal)
                 )
                 .IsTrue();
             await Assert
@@ -343,9 +268,7 @@ internal partial class ModuleValidator_ValidateTests
                 .IsEqualTo(
                     new(
                         WasmProcessingStage.Validate,
-                        invalidType
-                            ? module.Functions[0].BodyOffset
-                            : module.Functions[0].Instructions[^1].ByteOffset,
+                        invalidType ? module.Functions[0].BodyOffset : module.Functions[0].Instructions[^1].ByteOffset,
                         2,
                         10
                     )
@@ -366,21 +289,13 @@ internal partial class ModuleValidator_ValidateTests
         );
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => ModuleValidator.Validate(module))
-            .ThrowsExactly<WasmValidateException>();
+        var exception = await Assert.That(() => ModuleValidator.Validate(module)).ThrowsExactly<WasmValidateException>();
         using (Assert.Multiple())
         {
-            await Assert
-                .That(
-                    exception!.Message.StartsWith("duplicate export name", StringComparison.Ordinal)
-                )
-                .IsTrue();
+            await Assert.That(exception!.Message.StartsWith("duplicate export name", StringComparison.Ordinal)).IsTrue();
             await Assert
                 .That(exception!.Location)
-                .IsEqualTo(
-                    new(WasmProcessingStage.Validate, module.Exports[1].ByteOffset, null, 7)
-                );
+                .IsEqualTo(new(WasmProcessingStage.Validate, module.Exports[1].ByteOffset, null, 7));
         }
     }
 
@@ -391,14 +306,8 @@ internal partial class ModuleValidator_ValidateTests
     public async Task Memoryのimportと定義の合計が2個_二つ目の宣言で拒否する(int importCount)
     {
         // Arrange
-        var imports = Enumerable
-            .Range(0, importCount)
-            .Select(x => ("", "", (byte)2, new byte[] { 0, 0 }))
-            .ToArray();
-        var memories = Enumerable
-            .Range(0, 2 - importCount)
-            .Select(x => (0u, (uint?)null))
-            .ToArray();
+        var imports = Enumerable.Range(0, importCount).Select(x => ("", "", (byte)2, new byte[] { 0, 0 })).ToArray();
+        var memories = Enumerable.Range(0, 2 - importCount).Select(x => (0u, (uint?)null)).ToArray();
         var module = WasmModule.Decode(
             HostLinkingModuleBinary.Create(
                 HostLinkingModuleBinary.Imports(imports),
@@ -407,22 +316,16 @@ internal partial class ModuleValidator_ValidateTests
         );
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => ModuleValidator.Validate(module))
-            .ThrowsExactly<WasmValidateException>();
+        var exception = await Assert.That(() => ModuleValidator.Validate(module)).ThrowsExactly<WasmValidateException>();
         using (Assert.Multiple())
         {
-            await Assert
-                .That(exception!.Message.StartsWith("multiple memories", StringComparison.Ordinal))
-                .IsTrue();
+            await Assert.That(exception!.Message.StartsWith("multiple memories", StringComparison.Ordinal)).IsTrue();
             await Assert
                 .That(exception!.Location)
                 .IsEqualTo(
                     new(
                         WasmProcessingStage.Validate,
-                        importCount == 2
-                            ? module.Imports[1].ByteOffset
-                            : module.Memories[^1].ByteOffset,
+                        importCount == 2 ? module.Imports[1].ByteOffset : module.Memories[^1].ByteOffset,
                         null,
                         importCount == 2 ? (byte)2 : (byte)5
                     )
@@ -455,23 +358,16 @@ internal partial class ModuleValidator_ValidateTests
         // Arrange
         var limits = HostLinkingModuleBinary.Limits(minimum, maximum);
         var section =
-            imported
-                ? HostLinkingModuleBinary.Imports(
-                    ("", "", kind, kind == 1 ? [0x70, .. limits] : limits)
-                )
+            imported ? HostLinkingModuleBinary.Imports(("", "", kind, kind == 1 ? [0x70, .. limits] : limits))
             : kind == 1 ? HostLinkingModuleBinary.Tables((0x70, minimum, maximum))
             : HostLinkingModuleBinary.Memories((minimum, maximum));
         var module = WasmModule.Decode(HostLinkingModuleBinary.Create(section));
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => ModuleValidator.Validate(module))
-            .ThrowsExactly<WasmValidateException>();
+        var exception = await Assert.That(() => ModuleValidator.Validate(module)).ThrowsExactly<WasmValidateException>();
         using (Assert.Multiple())
         {
-            await Assert
-                .That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal))
-                .IsTrue();
+            await Assert.That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal)).IsTrue();
             if (expectedDetail is not null)
             {
                 await Assert.That(exception.Message).Contains(expectedDetail);
@@ -499,21 +395,13 @@ internal partial class ModuleValidator_ValidateTests
             {
                 HostLinkingModuleBinary.Imports(
                     ("", "", 2, HostLinkingModuleBinary.Limits(65536, 65536)),
-                    (
-                        "",
-                        "",
-                        1,
-                        [0x70, .. HostLinkingModuleBinary.Limits(uint.MaxValue, uint.MaxValue)]
-                    ),
+                    ("", "", 1, [0x70, .. HostLinkingModuleBinary.Limits(uint.MaxValue, uint.MaxValue)]),
                     ("", "", 1, [0x6F, .. HostLinkingModuleBinary.Limits(uint.MaxValue)])
                 ),
             }
             :
             [
-                HostLinkingModuleBinary.Tables(
-                    (0x70, uint.MaxValue, uint.MaxValue),
-                    (0x6F, uint.MaxValue, null)
-                ),
+                HostLinkingModuleBinary.Tables((0x70, uint.MaxValue, uint.MaxValue), (0x6F, uint.MaxValue, null)),
                 HostLinkingModuleBinary.Memories((65536, 65536)),
             ];
         var module = WasmModule.Decode(HostLinkingModuleBinary.Create(sections));

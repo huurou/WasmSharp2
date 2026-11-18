@@ -24,12 +24,8 @@ internal class ExpressionDecoder_ReadTests
         using (Assert.Multiple())
         {
             await Assert.That(instructions.Count).IsEqualTo(2);
-            await Assert
-                .That(instructions[0].Immediate.AsV128())
-                .IsEqualTo((0xEFCDAB8967452301UL, 0x1032547698BADCFEUL));
-            await Assert
-                .That(instructions.Select(x => x.ByteOffset).SequenceEqual([40, 58]))
-                .IsTrue();
+            await Assert.That(instructions[0].Immediate.AsV128()).IsEqualTo((0xEFCDAB8967452301UL, 0x1032547698BADCFEUL));
+            await Assert.That(instructions.Select(x => x.ByteOffset).SequenceEqual([40, 58])).IsTrue();
             await Assert.That(followingByte).IsEqualTo((byte)0xFF);
         }
     }
@@ -37,9 +33,7 @@ internal class ExpressionDecoder_ReadTests
     [Test]
     [Arguments(ModuleReadMode.Bounded)]
     [Arguments(ModuleReadMode.Diagnostic)]
-    public async Task V128定数の16byteが途中で切れる_両読取モードで即値先頭の境界診断を保持する(
-        ModuleReadMode mode
-    )
+    public async Task V128定数の16byteが途中で切れる_両読取モードで即値先頭の境界診断を保持する(ModuleReadMode mode)
     {
         // Arrange
         for (var length = 0; length < 16; length++)
@@ -55,9 +49,7 @@ internal class ExpressionDecoder_ReadTests
             WasmDecodeException failure;
             if (mode == ModuleReadMode.Bounded)
             {
-                var exception = await Assert
-                    .That(read)
-                    .ThrowsExactly<ModuleReadBoundaryException>();
+                var exception = await Assert.That(read).ThrowsExactly<ModuleReadBoundaryException>();
                 failure = exception!.Fallback;
             }
             else
@@ -67,16 +59,9 @@ internal class ExpressionDecoder_ReadTests
             using (Assert.Multiple())
             {
                 await Assert
-                    .That(
-                        failure.Message.StartsWith(
-                            "unexpected end of section or function",
-                            StringComparison.Ordinal
-                        )
-                    )
+                    .That(failure.Message.StartsWith("unexpected end of section or function", StringComparison.Ordinal))
                     .IsTrue();
-                await Assert
-                    .That(failure.Location)
-                    .IsEqualTo(new(WasmProcessingStage.Decode, 42, 3, 10));
+                await Assert.That(failure.Location).IsEqualTo(new(WasmProcessingStage.Decode, 42, 3, 10));
             }
         }
     }
@@ -84,18 +69,10 @@ internal class ExpressionDecoder_ReadTests
     [Test]
     [Arguments(ModuleReadMode.Bounded)]
     [Arguments(ModuleReadMode.Diagnostic)]
-    public async Task 参照命令が続く_型別nullと未検証の最大関数添字と入力位置を保持する(
-        ModuleReadMode mode
-    )
+    public async Task 参照命令が続く_型別nullと未検証の最大関数添字と入力位置を保持する(ModuleReadMode mode)
     {
         // Arrange
-        var reader = new ModuleBinaryReader(
-            Convert.FromHexString("D070D06FD1D2FFFFFFFF0F0BFF"),
-            40,
-            10,
-            3,
-            mode
-        );
+        var reader = new ModuleBinaryReader(Convert.FromHexString("D070D06FD1D2FFFFFFFF0F0BFF"), 40, 10, 3, mode);
 
         // Act
         var instructions = ExpressionDecoder.Read(ref reader, 100);
@@ -104,9 +81,7 @@ internal class ExpressionDecoder_ReadTests
         // Assert
         using (Assert.Multiple())
         {
-            await Assert
-                .That(instructions.Select(x => x.ByteOffset).SequenceEqual([40, 42, 44, 45, 51]))
-                .IsTrue();
+            await Assert.That(instructions.Select(x => x.ByteOffset).SequenceEqual([40, 42, 44, 45, 51])).IsTrue();
             await Assert.That(instructions[0].Immediate).IsEqualTo(WasmValue.FromFuncRef(null));
             await Assert.That(instructions[1].Immediate).IsEqualTo(WasmValue.FromExternRef(null));
             await Assert.That(instructions[2].Opcode).IsEqualTo(new OpcodeKey(0, 0xD1));
@@ -200,9 +175,7 @@ internal class ExpressionDecoder_ReadTests
     public async Task 分岐添字と空を含む分岐表がある_非最短u32と候補順と末尾の既定を保持する()
     {
         // Arrange
-        var bytes = Convert.FromHexString(
-            "0CFFFFFFFF0F0D80000E038000FFFFFFFF0F02FFFFFFFF0F0E00FFFFFFFF0F0B"
-        );
+        var bytes = Convert.FromHexString("0CFFFFFFFF0F0D80000E038000FFFFFFFF0F02FFFFFFFF0F0E00FFFFFFFF0F0B");
         foreach (var mode in new[] { ModuleReadMode.Bounded, ModuleReadMode.Diagnostic })
         {
             var reader = new ModuleBinaryReader(bytes, 40, 10, 3, mode);
@@ -218,10 +191,7 @@ internal class ExpressionDecoder_ReadTests
                 await Assert.That(instructions[0].Index).IsEqualTo(uint.MaxValue);
                 await Assert.That(instructions[1].Index).IsEqualTo(0u);
                 await Assert
-                    .That(
-                        instructions[2]
-                            .Labels.SequenceEqual(new uint[] { 0, uint.MaxValue, 2, uint.MaxValue })
-                    )
+                    .That(instructions[2].Labels.SequenceEqual(new uint[] { 0, uint.MaxValue, 2, uint.MaxValue }))
                     .IsTrue();
                 await Assert.That(instructions[3].Labels.Length).IsEqualTo(1);
                 await Assert.That(instructions[3].Labels[0]).IsEqualTo(uint.MaxValue);
@@ -236,10 +206,7 @@ internal class ExpressionDecoder_ReadTests
     [Arguments("017F", "I32")]
     [Arguments("087F7E7D7C7B706F7F", "I32,I64,F32,F64,V128,FuncRef,ExternRef,I32")]
     [Arguments("81007E", "I64")]
-    public async Task Select型列が空か単一か複数である_値型を保持して長さを検証しない(
-        string vector,
-        string expectedTypes
-    )
+    public async Task Select型列が空か単一か複数である_値型を保持して長さを検証しない(string vector, string expectedTypes)
     {
         // Arrange
         var bytes = Convert.FromHexString("1B1C" + vector + "0B");
@@ -257,9 +224,7 @@ internal class ExpressionDecoder_ReadTests
                 await Assert.That(instructions[0].Opcode).IsEqualTo(new OpcodeKey(0, 0x1B));
                 await Assert.That(instructions[0].SelectTypes.IsEmpty).IsTrue();
                 await Assert.That(instructions[1].Opcode).IsEqualTo(new OpcodeKey(0, 0x1C));
-                await Assert
-                    .That(string.Join(',', instructions[1].SelectTypes))
-                    .IsEqualTo(expectedTypes);
+                await Assert.That(string.Join(',', instructions[1].SelectTypes)).IsEqualTo(expectedTypes);
                 await Assert.That(instructions[1].SelectTypes.IsDefault).IsFalse();
             }
         }
@@ -297,12 +262,8 @@ internal class ExpressionDecoder_ReadTests
                 .ThrowsExactly<WasmDecodeException>();
             using (Assert.Multiple())
             {
-                await Assert
-                    .That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal))
-                    .IsTrue();
-                await Assert
-                    .That(exception.Location)
-                    .IsEqualTo(new(WasmProcessingStage.Decode, offset, 3, 10));
+                await Assert.That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal)).IsTrue();
+                await Assert.That(exception.Location).IsEqualTo(new(WasmProcessingStage.Decode, offset, 3, 10));
             }
         }
     }
@@ -315,10 +276,7 @@ internal class ExpressionDecoder_ReadTests
     [Arguments("0E0100", 43L)]
     [Arguments("1C01", 42L)]
     [Arguments("1C027F", 43L)]
-    public async Task 制御終端か複合即値が切れる_通常解析と診断走査で元の境界位置を保持する(
-        string hex,
-        long offset
-    )
+    public async Task 制御終端か複合即値が切れる_通常解析と診断走査で元の境界位置を保持する(string hex, long offset)
     {
         // Arrange
         var bytes = Convert.FromHexString(hex);
@@ -333,9 +291,7 @@ internal class ExpressionDecoder_ReadTests
             WasmDecodeException failure;
             if (mode == ModuleReadMode.Bounded)
             {
-                var exception = await Assert
-                    .That(read)
-                    .ThrowsExactly<ModuleReadBoundaryException>();
+                var exception = await Assert.That(read).ThrowsExactly<ModuleReadBoundaryException>();
                 failure = exception!.Fallback;
             }
             else
@@ -345,16 +301,9 @@ internal class ExpressionDecoder_ReadTests
             using (Assert.Multiple())
             {
                 await Assert
-                    .That(
-                        failure.Message.StartsWith(
-                            "unexpected end of section or function",
-                            StringComparison.Ordinal
-                        )
-                    )
+                    .That(failure.Message.StartsWith("unexpected end of section or function", StringComparison.Ordinal))
                     .IsTrue();
-                await Assert
-                    .That(failure.Location)
-                    .IsEqualTo(new(WasmProcessingStage.Decode, offset, 3, 10));
+                await Assert.That(failure.Location).IsEqualTo(new(WasmProcessingStage.Decode, offset, 3, 10));
             }
         }
     }
@@ -386,9 +335,7 @@ internal class ExpressionDecoder_ReadTests
     [Test]
     [Arguments(ModuleReadMode.Bounded)]
     [Arguments(ModuleReadMode.Diagnostic)]
-    public async Task 対応命令が続く_即値と入力順と位置を保持してend直後で止まる(
-        ModuleReadMode mode
-    )
+    public async Task 対応命令が続く_即値と入力順と位置を保持してend直後で止まる(ModuleReadMode mode)
     {
         // Arrange
         var reader = new ModuleBinaryReader(
@@ -414,25 +361,17 @@ internal class ExpressionDecoder_ReadTests
                     instructions
                         .Select(x => x.Opcode)
                         .SequenceEqual(
-                            new byte[] { 0x41, 0x42, 0x43, 0x44, 0x20, 0x1A, 0x0F, 0x0B }.Select(
-                                x => new OpcodeKey(0, x)
-                            )
+                            new byte[] { 0x41, 0x42, 0x43, 0x44, 0x20, 0x1A, 0x0F, 0x0B }.Select(x => new OpcodeKey(0, x))
                         )
                 )
                 .IsTrue();
             await Assert
-                .That(
-                    instructions
-                        .Select(x => x.ByteOffset)
-                        .SequenceEqual([40, 42, 44, 49, 58, 61, 62, 63])
-                )
+                .That(instructions.Select(x => x.ByteOffset).SequenceEqual([40, 42, 44, 49, 58, 61, 62, 63]))
                 .IsTrue();
             await Assert.That(instructions[0].Immediate.AsI32()).IsEqualTo(-1);
             await Assert.That(instructions[1].Immediate.AsI64()).IsEqualTo(-2L);
             await Assert.That(instructions[2].Immediate.AsF32Bits()).IsEqualTo(0xFFC12345u);
-            await Assert
-                .That(instructions[3].Immediate.AsF64Bits())
-                .IsEqualTo(0xFFF8123456789ABCUL);
+            await Assert.That(instructions[3].Immediate.AsF64Bits()).IsEqualTo(0xFFF8123456789ABCUL);
             await Assert.That(instructions[4].Index).IsEqualTo(128u);
             await Assert.That(position).IsEqualTo(64L);
             await Assert.That(remaining).IsEqualTo(1);
@@ -483,15 +422,10 @@ internal class ExpressionDecoder_ReadTests
         {
             await Assert
                 .That(
-                    exception!.Fallback.Message.StartsWith(
-                        "unexpected end of section or function",
-                        StringComparison.Ordinal
-                    )
+                    exception!.Fallback.Message.StartsWith("unexpected end of section or function", StringComparison.Ordinal)
                 )
                 .IsTrue();
-            await Assert
-                .That(exception.Fallback.Location)
-                .IsEqualTo(new(WasmProcessingStage.Decode, offset, 3, 10));
+            await Assert.That(exception.Fallback.Location).IsEqualTo(new(WasmProcessingStage.Decode, offset, 3, 10));
         }
     }
 
@@ -512,16 +446,9 @@ internal class ExpressionDecoder_ReadTests
         using (Assert.Multiple())
         {
             await Assert
-                .That(
-                    exception!.Message.StartsWith(
-                        "unexpected end of section or function",
-                        StringComparison.Ordinal
-                    )
-                )
+                .That(exception!.Message.StartsWith("unexpected end of section or function", StringComparison.Ordinal))
                 .IsTrue();
-            await Assert
-                .That(exception.Location)
-                .IsEqualTo(new(WasmProcessingStage.Decode, 42, 3, 10));
+            await Assert.That(exception.Location).IsEqualTo(new(WasmProcessingStage.Decode, 42, 3, 10));
         }
     }
 
@@ -540,22 +467,14 @@ internal class ExpressionDecoder_ReadTests
                 ExpressionDecoder.Read(ref expression, 100);
             })
             .ThrowsExactly<ModuleReadBoundaryException>();
-        await Assert
-            .That(exception!.Fallback.Location)
-            .IsEqualTo(new(WasmProcessingStage.Decode, 42, 3, 10));
+        await Assert.That(exception!.Fallback.Location).IsEqualTo(new(WasmProcessingStage.Decode, 42, 3, 10));
     }
 
     [Test]
     public async Task 宣言範囲の後にendがある_診断走査は同じ構文処理で物理範囲を読む()
     {
         // Arrange
-        var reader = new ModuleBinaryReader(
-            Convert.FromHexString("41000BFF"),
-            40,
-            10,
-            3,
-            ModuleReadMode.Diagnostic
-        );
+        var reader = new ModuleBinaryReader(Convert.FromHexString("41000BFF"), 40, 10, 3, ModuleReadMode.Diagnostic);
         var expression = reader.ReadRange(2);
 
         // Act
@@ -576,9 +495,7 @@ internal class ExpressionDecoder_ReadTests
     [Test]
     [Arguments(ModuleReadMode.Bounded)]
     [Arguments(ModuleReadMode.Diagnostic)]
-    public async Task メモリ命令の後に不正がある_即値を読んで後続の構文不正の位置を返す(
-        ModuleReadMode mode
-    )
+    public async Task メモリ命令の後に不正がある_即値を読んで後続の構文不正の位置を返す(ModuleReadMode mode)
     {
         // Arrange
         var bytes = Convert.FromHexString("417FFD000000FF05");
@@ -593,12 +510,8 @@ internal class ExpressionDecoder_ReadTests
             .ThrowsExactly<WasmDecodeException>();
         using (Assert.Multiple())
         {
-            await Assert
-                .That(exception!.Message.StartsWith("illegal opcode", StringComparison.Ordinal))
-                .IsTrue();
-            await Assert
-                .That(exception.Location)
-                .IsEqualTo(new(WasmProcessingStage.Decode, 46, 3, 10));
+            await Assert.That(exception!.Message.StartsWith("illegal opcode", StringComparison.Ordinal)).IsTrue();
+            await Assert.That(exception.Location).IsEqualTo(new(WasmProcessingStage.Decode, 46, 3, 10));
         }
     }
 
@@ -626,12 +539,8 @@ internal class ExpressionDecoder_ReadTests
             .ThrowsExactly<WasmDecodeException>();
         using (Assert.Multiple())
         {
-            await Assert
-                .That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal))
-                .IsTrue();
-            await Assert
-                .That(exception.Location)
-                .IsEqualTo(new(WasmProcessingStage.Decode, 40, 3, 10));
+            await Assert.That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal)).IsTrue();
+            await Assert.That(exception.Location).IsEqualTo(new(WasmProcessingStage.Decode, 40, 3, 10));
         }
     }
 }

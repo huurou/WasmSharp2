@@ -9,9 +9,7 @@ internal partial class WasmModule_DecodeTests
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task Global初期化式の定数とglobal取得_両入力で型とビット列と生添字を未評価で保持する(
-        bool useStream
-    )
+    public async Task Global初期化式の定数とglobal取得_両入力で型とビット列と生添字を未評価で保持する(bool useStream)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
@@ -36,30 +34,18 @@ internal partial class WasmModule_DecodeTests
         using (Assert.Multiple())
         {
             await Assert.That(module.Globals.Length).IsEqualTo(7);
-            await Assert
-                .That(module.Globals[0].Type)
-                .IsEqualTo(new WasmGlobalType(WasmValueKind.I32, false));
+            await Assert.That(module.Globals[0].Type).IsEqualTo(new WasmGlobalType(WasmValueKind.I32, false));
             await Assert.That(module.Globals[0].ByteOffset).IsEqualTo(11L);
             await Assert.That(module.Globals[0].Initializer.Length).IsEqualTo(2);
             await Assert.That(module.Globals[0].Initializer[0].ByteOffset).IsEqualTo(13L);
             await Assert.That(module.Globals[0].Initializer[0].Immediate.AsI32()).IsEqualTo(-1);
-            await Assert
-                .That(module.Globals[0].Initializer[1].Opcode)
-                .IsEqualTo(new OpcodeKey(0, 0x0B));
-            await Assert
-                .That(module.Globals[1].Type)
-                .IsEqualTo(new WasmGlobalType(WasmValueKind.I64, true));
+            await Assert.That(module.Globals[0].Initializer[1].Opcode).IsEqualTo(new OpcodeKey(0, 0x0B));
+            await Assert.That(module.Globals[1].Type).IsEqualTo(new WasmGlobalType(WasmValueKind.I64, true));
             await Assert.That(module.Globals[1].Initializer[0].Immediate.AsI64()).IsEqualTo(-1L);
-            await Assert
-                .That(module.Globals[2].Initializer[0].Immediate.AsF32Bits())
-                .IsEqualTo(0x7FC01234u);
-            await Assert
-                .That(module.Globals[3].Initializer[0].Immediate.AsF64Bits())
-                .IsEqualTo(0x8000000000000000UL);
+            await Assert.That(module.Globals[2].Initializer[0].Immediate.AsF32Bits()).IsEqualTo(0x7FC01234u);
+            await Assert.That(module.Globals[3].Initializer[0].Immediate.AsF64Bits()).IsEqualTo(0x8000000000000000UL);
             await Assert.That(module.Globals[4].Type.ValueKind).IsEqualTo(WasmValueKind.V128);
-            await Assert
-                .That(module.Globals[4].Initializer[0].Opcode)
-                .IsEqualTo(new OpcodeKey(0, 0x23));
+            await Assert.That(module.Globals[4].Initializer[0].Opcode).IsEqualTo(new OpcodeKey(0, 0x23));
             await Assert.That(module.Globals[4].Initializer[0].Index).IsEqualTo(uint.MaxValue);
             await Assert.That(module.Globals[5].Type.ValueKind).IsEqualTo(WasmValueKind.FuncRef);
             await Assert.That(module.Globals[5].Initializer[0].Index).IsEqualTo(0u);
@@ -74,10 +60,7 @@ internal partial class WasmModule_DecodeTests
     [Arguments("0B", 1)]
     [Arguments("410041010B", 3)]
     [Arguments("42000B", 2)]
-    public async Task Global式の結果数や型が未検証_構文として保持して検証段階へ渡す(
-        string hex,
-        int count
-    )
+    public async Task Global式の結果数や型が未検証_構文として保持して検証段階へ渡す(string hex, int count)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
@@ -91,9 +74,7 @@ internal partial class WasmModule_DecodeTests
         // Assert
         await Assert.That(module.Globals[0].Initializer.Length).IsEqualTo(count);
         // Act & Assert
-        var exception = await Assert
-            .That(() => module.Validate())
-            .ThrowsExactly<WasmValidateException>();
+        var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
         await Assert.That(exception!.Location!.Stage).IsEqualTo(WasmProcessingStage.Validate);
         await Assert.That(() => module.Instantiate(executionContext, [])).ThrowsExactly<InvalidOperationException>();
     }
@@ -110,38 +91,25 @@ internal partial class WasmModule_DecodeTests
     [Arguments("017F00050B", 13L)]
     [Arguments("017F000B00", 14L)]
     [Arguments("027F0041000B", 16L)]
-    public async Task Global定義や式の構文が破損_両入力で元位置付きDecode失敗になる(
-        string hex,
-        long offset
-    )
+    public async Task Global定義や式の構文が破損_両入力で元位置付きDecode失敗になる(string hex, long offset)
     {
         // Arrange
-        var bytes = HostLinkingModuleBinary.Create(
-            HostLinkingModuleBinary.Section(6, Convert.FromHexString(hex))
-        );
+        var bytes = HostLinkingModuleBinary.Create(HostLinkingModuleBinary.Section(6, Convert.FromHexString(hex)));
         using var stream = new ChunkedReadStream(new MemoryStream(bytes));
-        Func<WasmModule>[] decoders =
-        [
-            () => WasmModule.Decode(bytes),
-            () => WasmModule.Decode(stream),
-        ];
+        Func<WasmModule>[] decoders = [() => WasmModule.Decode(bytes), () => WasmModule.Decode(stream)];
 
         // Act & Assert
         foreach (var decode in decoders)
         {
             var exception = await Assert.That(decode).ThrowsExactly<WasmDecodeException>();
-            await Assert
-                .That(exception!.Location)
-                .IsEqualTo(new(WasmProcessingStage.Decode, offset, null, 6));
+            await Assert.That(exception!.Location).IsEqualTo(new(WasmProcessingStage.Decode, offset, null, 6));
         }
     }
 
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task GlobalのV128定数が要求型と異なる_完全な即値はDecodeして終端位置でValidate失敗になる(
-        bool useStream
-    )
+    public async Task GlobalのV128定数が要求型と異なる_完全な即値はDecodeして終端位置でValidate失敗になる(bool useStream)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
@@ -154,28 +122,18 @@ internal partial class WasmModule_DecodeTests
         var module = useStream ? WasmModule.Decode(stream) : WasmModule.Decode(bytes);
 
         // Assert
-        await Assert
-            .That(module.Globals[0].Initializer[0].Immediate.AsV128())
-            .IsEqualTo((0UL, 0UL));
+        await Assert.That(module.Globals[0].Initializer[0].Immediate.AsV128()).IsEqualTo((0UL, 0UL));
 
         // Act & Assert
         for (var attempt = 0; attempt < 2; attempt++)
         {
-            var exception = await Assert
-                .That(() => module.Validate())
-                .ThrowsExactly<WasmValidateException>();
+            var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
             using (Assert.Multiple())
             {
-                await Assert
-                    .That(exception!.Message.StartsWith("type mismatch", StringComparison.Ordinal))
-                    .IsTrue();
-                await Assert
-                    .That(exception.Location)
-                    .IsEqualTo(new(WasmProcessingStage.Validate, 31, null, 6));
+                await Assert.That(exception!.Message.StartsWith("type mismatch", StringComparison.Ordinal)).IsTrue();
+                await Assert.That(exception.Location).IsEqualTo(new(WasmProcessingStage.Validate, 31, null, 6));
                 await Assert.That(module.FunctionCodes.IsEmpty).IsTrue();
-                await Assert
-                    .That(() => module.Instantiate(executionContext, []))
-                    .ThrowsExactly<InvalidOperationException>();
+                await Assert.That(() => module.Instantiate(executionContext, [])).ThrowsExactly<InvalidOperationException>();
             }
         }
     }
@@ -183,14 +141,10 @@ internal partial class WasmModule_DecodeTests
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task GlobalのV128定数が切断される_要求型の検証へ進まずDecodeで即値位置を返す(
-        bool useStream
-    )
+    public async Task GlobalのV128定数が切断される_要求型の検証へ進まずDecodeで即値位置を返す(bool useStream)
     {
         // Arrange
-        var bytes = HostLinkingModuleBinary.Create(
-            HostLinkingModuleBinary.Globals((0x70, false, [0xFD, 0x0C]))
-        );
+        var bytes = HostLinkingModuleBinary.Create(HostLinkingModuleBinary.Globals((0x70, false, [0xFD, 0x0C])));
         using var stream = new ChunkedReadStream(new MemoryStream(bytes));
 
         // Act & Assert
@@ -200,16 +154,9 @@ internal partial class WasmModule_DecodeTests
         using (Assert.Multiple())
         {
             await Assert
-                .That(
-                    exception!.Message.StartsWith(
-                        "unexpected end of section or function",
-                        StringComparison.Ordinal
-                    )
-                )
+                .That(exception!.Message.StartsWith("unexpected end of section or function", StringComparison.Ordinal))
                 .IsTrue();
-            await Assert
-                .That(exception.Location)
-                .IsEqualTo(new(WasmProcessingStage.Decode, 15, null, 6));
+            await Assert.That(exception.Location).IsEqualTo(new(WasmProcessingStage.Decode, 15, null, 6));
         }
     }
 }

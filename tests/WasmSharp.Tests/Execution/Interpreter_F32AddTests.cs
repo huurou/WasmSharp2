@@ -16,11 +16,7 @@ internal class Interpreter_F32AddTests
     [Arguments(0x7FC00000u, 0x3F800000u, 0x7FC00000u)]
     [Arguments(0xFFC12345u, 0x3F800000u, 0x7FC00000u)]
     [Arguments(0x3F800000u, 0x7F812345u, 0x7FC00000u)]
-    public async Task 通常値と境界値とNaN_32bitの加算結果を返す(
-        uint leftBits,
-        uint rightBits,
-        uint expectedBits
-    )
+    public async Task 通常値と境界値とNaN_32bitの加算結果を返す(uint leftBits, uint rightBits, uint expectedBits)
     {
         // Arrange
         WasmValue[] operands = [WasmValue.FromF32Bits(leftBits), WasmValue.FromF32Bits(rightBits)];
@@ -43,11 +39,7 @@ internal class Interpreter_F32AddTests
     public async Task 加算後に減算する場合_各命令の丸めを保つ()
     {
         // Arrange
-        WasmValue[] operands =
-        [
-            WasmValue.FromF32Bits(0x4B800000u),
-            WasmValue.FromF32Bits(0x3F800000u),
-        ];
+        WasmValue[] operands = [WasmValue.FromF32Bits(0x4B800000u), WasmValue.FromF32Bits(0x3F800000u)];
 
         // Act
         var actual = NumericHandlerFixture.Execute(

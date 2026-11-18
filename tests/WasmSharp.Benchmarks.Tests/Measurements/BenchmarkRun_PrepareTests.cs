@@ -20,9 +20,7 @@ internal class BenchmarkRun_PrepareTests
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task 予定ケースが空または重複する_準備失敗を保存して測定を開始しない(
-        bool duplicated
-    )
+    public async Task 予定ケースが空または重複する_準備失敗を保存して測定を開始しない(bool duplicated)
     {
         // Arrange
         using var assets = new AssetLoadingFixture();
@@ -78,11 +76,7 @@ internal class BenchmarkRun_PrepareTests
             await Assert.That(manifest.PlannedCaseIds).IsEquivalentTo(["unknown"]);
             await Assert.That(manifest.Status).IsEqualTo(ResultStatus.Incomplete);
             await Assert
-                .That(
-                    manifest.Failures.Any(x =>
-                        x.Stage == RunStage.Preparation && x.Message!.Contains("unknown")
-                    )
-                )
+                .That(manifest.Failures.Any(x => x.Stage == RunStage.Preparation && x.Message!.Contains("unknown")))
                 .IsTrue();
         }
     }
@@ -108,16 +102,11 @@ internal class BenchmarkRun_PrepareTests
         var manifest = RunStore.Load(run.DirectoryPath, json_);
         var variable = prepared
             .Jobs.Single()
-            .Environment.EnvironmentVariables.SingleOrDefault(x =>
-                x.Key == RunConfiguration.ENVIRONMENT_VARIABLE
-            );
+            .Environment.EnvironmentVariables.SingleOrDefault(x => x.Key == RunConfiguration.ENVIRONMENT_VARIABLE);
 
         // Assert
         await Assert.That(variable).IsNotNull();
-        var configuration = JsonSerializer.Deserialize<RunConfiguration>(
-            File.ReadAllBytes(variable!.Value),
-            json_.Options
-        )!;
+        var configuration = JsonSerializer.Deserialize<RunConfiguration>(File.ReadAllBytes(variable!.Value), json_.Options)!;
         using (Assert.Multiple())
         {
             await Assert.That(manifest.Status).IsEqualTo(ResultStatus.Incomplete);
@@ -130,15 +119,10 @@ internal class BenchmarkRun_PrepareTests
             await Assert.That(configuration.OutputDirectory).IsEqualTo(run.DirectoryPath);
             await Assert
                 .That(configuration.AssetManifestPath)
-                .IsEqualTo(
-                    Path.Combine(run.DirectoryPath, "inputs", "assets", "asset-manifest.json")
-                );
+                .IsEqualTo(Path.Combine(run.DirectoryPath, "inputs", "assets", "asset-manifest.json"));
             await Assert
                 .That(
-                    AssetManifest
-                        .Load(configuration.AssetManifestPath, json_, methods_)
-                        .Catalog.Get("invoke.single")
-                        .CaseId
+                    AssetManifest.Load(configuration.AssetManifestPath, json_, methods_).Catalog.Get("invoke.single").CaseId
                 )
                 .IsEqualTo("invoke.single");
         }

@@ -24,8 +24,7 @@ internal class Interpreter_ReturnTests
             [],
             null
         );
-        var function = (DefinedFunction)
-            new WasmInstance(module, WasmExecutionOptions.Default).Functions[0];
+        var function = (DefinedFunction)new WasmInstance(module, WasmExecutionOptions.Default).Functions[0];
         var reference = new object();
         var found = InstructionSet.TryGet(new(0, 0x0B), out var descriptor);
         var instruction = new Instruction(descriptor.ExecutionOpcode!.Value, default, 88, 0);
@@ -138,12 +137,7 @@ internal class Interpreter_ReturnTests
         // Act
         try
         {
-            result = Interpreter.Run(
-                context,
-                (DefinedFunction)instance.Functions[1],
-                [],
-                WasmProcessingStage.Invoke
-            );
+            result = Interpreter.Run(context, (DefinedFunction)instance.Functions[1], [], WasmProcessingStage.Invoke);
             state = (context.FrameCount, context.ValueCount, context.CallDepth);
         }
         finally

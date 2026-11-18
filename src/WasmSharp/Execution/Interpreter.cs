@@ -15,17 +15,9 @@ internal static partial class Interpreter
     /// <param name="context">現在関数を保持する実行コンテキスト</param>
     /// <param name="instruction">trapが発生する数値命令</param>
     /// <returns>原因と発生位置を持つtrap</returns>
-    private static ExecutionResult NumericTrap(
-        WasmTrapReason reason,
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    private static ExecutionResult NumericTrap(WasmTrapReason reason, InterpreterContext context, in Instruction instruction)
     {
-        return ExecutionResult.Trap(
-            reason,
-            context.CurrentFunction.FunctionIndex,
-            instruction.ByteOffset
-        );
+        return ExecutionResult.Trap(reason, context.CurrentFunction.FunctionIndex, instruction.ByteOffset);
     }
 
     /// <summary>
@@ -59,9 +51,7 @@ internal static partial class Interpreter
             {
                 return ExhaustHost(context, WasmExhaustionReason.HostStackLimit, null);
             }
-            return ExecutionResult.Success(
-                InvokeHost(executionContext, function, instance, arguments).Values
-            );
+            return ExecutionResult.Success(InvokeHost(executionContext, function, instance, arguments).Values);
         }
         finally
         {
@@ -80,11 +70,7 @@ internal static partial class Interpreter
     /// ホストから別ホストへの公開Invokeや、ホスト関数をstartとして実行する場合も、外側のWasmのcall命令の位置を使う。
     /// Wasmフレームがなければ位置はnull
     /// </remarks>
-    private static ExecutionResult ExhaustHost(
-        InterpreterContext? context,
-        WasmExhaustionReason reason,
-        int? limit
-    )
+    private static ExecutionResult ExhaustHost(InterpreterContext? context, WasmExhaustionReason reason, int? limit)
     {
         uint? functionIndex = null;
         long? byteOffset = null;
@@ -187,9 +173,7 @@ internal static partial class Interpreter
             {
                 return result;
             }
-            return ExecutionResult.Success(
-                context.CopyValues(valueCount, function.Type.Results.Length)
-            );
+            return ExecutionResult.Success(context.CopyValues(valueCount, function.Type.Results.Length));
         }
         finally
         {
@@ -204,10 +188,7 @@ internal static partial class Interpreter
     /// <param name="context">上限を固定した実行コンテキスト</param>
     /// <param name="function">入場しようとした定義関数</param>
     /// <returns>呼び出し深さの上限到達を表す実行結果</returns>
-    private static ExecutionResult ExhaustCallDepth(
-        InterpreterContext context,
-        DefinedFunction function
-    )
+    private static ExecutionResult ExhaustCallDepth(InterpreterContext context, DefinedFunction function)
     {
         return ExecutionResult.Exhaustion(
             WasmExhaustionReason.CallDepthLimit,
@@ -224,11 +205,7 @@ internal static partial class Interpreter
     /// <param name="function">開始する定義関数</param>
     /// <param name="stackBase">共有値スタック上の引数の開始位置</param>
     /// <exception cref="WasmImplementationLimitException">必要数が配列の保持上限を超える場合</exception>
-    private static void EnsureFrameCapacity(
-        InterpreterContext context,
-        DefinedFunction function,
-        int stackBase
-    )
+    private static void EnsureFrameCapacity(InterpreterContext context, DefinedFunction function, int stackBase)
     {
         // 追加localsは最大でuint範囲のため、各数を広げて加算してから保持上限と比べる。
         context.EnsureCapacity(
@@ -244,10 +221,7 @@ internal static partial class Interpreter
     /// <param name="context">定数を積む実行コンテキスト</param>
     /// <param name="instruction">型付き即値を持つ検証済みの定数命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult PushConstant(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult PushConstant(InterpreterContext context, in Instruction instruction)
     {
         context.PushValue(instruction.Immediate);
         return default;
@@ -259,10 +233,7 @@ internal static partial class Interpreter
     /// <param name="context">trapが発生する関数を保持する実行コンテキスト</param>
     /// <param name="instruction">診断に用いるバイト位置を持つunreachable命令</param>
     /// <returns>Unreachableを理由とするtrap</returns>
-    internal static ExecutionResult Unreachable(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult Unreachable(InterpreterContext context, in Instruction instruction)
     {
         return ExecutionResult.Trap(
             WasmTrapReason.Unreachable,
@@ -325,10 +296,7 @@ internal static partial class Interpreter
     /// <param name="context">現在の関数と値スタックを持つ実行コンテキスト</param>
     /// <param name="instruction">importを含むglobalのindexを持つ検証済みのglobal.get命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult GlobalGet(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult GlobalGet(InterpreterContext context, in Instruction instruction)
     {
         context.PushValue(context.CurrentFunction.Instance.Globals[(int)instruction.Index].Value);
         return default;
@@ -340,15 +308,10 @@ internal static partial class Interpreter
     /// <param name="context">現在の関数と設定する値を持つ実行コンテキスト</param>
     /// <param name="instruction">対象の型と可変性を確認済みのglobal.set命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult GlobalSet(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult GlobalSet(InterpreterContext context, in Instruction instruction)
     {
         // 型と可変性は検証済みのため、ホスト操作向けの検査を重ねない。
-        context
-            .CurrentFunction.Instance.Globals[(int)instruction.Index]
-            .SetValidatedValue(context.PopValue());
+        context.CurrentFunction.Instance.Globals[(int)instruction.Index].SetValidatedValue(context.PopValue());
         return default;
     }
 

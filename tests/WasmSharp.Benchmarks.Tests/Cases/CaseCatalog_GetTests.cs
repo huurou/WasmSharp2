@@ -15,9 +15,7 @@ internal class CaseCatalog_GetTests
         var catalog = new CaseCatalog(AssetLoadingFixture.ReadCases(json_), json_, methods_);
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => catalog.Get("unknown.case"))
-            .Throws<InvalidDataException>();
+        var exception = await Assert.That(() => catalog.Get("unknown.case")).Throws<InvalidDataException>();
         await Assert.That(exception!.Message).Contains("unknown.case");
     }
 }

@@ -99,12 +99,7 @@ internal sealed record CaseDiagnostic(string Operation, string Message)
                 _ => null,
             },
             Location = exception is WasmException { Location: { } location }
-                ? new(
-                    location.Stage.ToString(),
-                    location.ByteOffset,
-                    location.FunctionIndex,
-                    location.SectionId
-                )
+                ? new(location.Stage.ToString(), location.ByteOffset, location.FunctionIndex, location.SectionId)
                 : null,
             Import = exception is WasmInstantiateException { ImportOrdinal: { } ordinal } link
                 ? new(ordinal, link.ModuleName, link.ImportName, link.ExpectedKind?.ToString())
@@ -124,12 +119,7 @@ internal sealed record CaseDiagnostic(string Operation, string Message)
                         WasmImportInspectionException x => x.UnverifiedRanges,
                         _ => [],
                     }
-                ).Select(x => new UnverifiedRangeRecord(
-                    x.Stage.ToString(),
-                    x.StartOffset,
-                    x.EndOffset,
-                    x.Description
-                )),
+                ).Select(x => new UnverifiedRangeRecord(x.Stage.ToString(), x.StartOffset, x.EndOffset, x.Description)),
             ],
             FromCallback = fromCallback,
         };

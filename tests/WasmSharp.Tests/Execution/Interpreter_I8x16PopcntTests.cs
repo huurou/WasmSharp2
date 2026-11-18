@@ -6,12 +6,7 @@ namespace WasmSharp.Tests.Execution;
 internal class Interpreter_I8x16PopcntTests
 {
     [Test]
-    [Arguments(
-        0xFE7FAA558001FF00UL,
-        0xEF085AA581F00F03UL,
-        0x0707040401010800UL,
-        0x0701040402040402UL
-    )]
+    [Arguments(0xFE7FAA558001FF00UL, 0xEF085AA581F00F03UL, 0x0707040401010800UL, 0x0701040402040402UL)]
     public async Task ゼロと全bit1と単一bitと交互bitを含む全byte_各laneの1bit数を返す(
         ulong inputLow64,
         ulong inputHigh64,

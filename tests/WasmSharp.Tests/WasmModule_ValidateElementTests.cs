@@ -15,10 +15,7 @@ internal partial class WasmModule_ValidateTests
     [Arguments(1, WasmValueKind.ExternRef)]
     [Arguments(2, WasmValueKind.FuncRef)]
     [Arguments(2, WasmValueKind.ExternRef)]
-    public async Task 各modeの要素式がimport不変globalの参照型と一致する_検証に成功する(
-        int mode,
-        WasmValueKind kind
-    )
+    public async Task 各modeの要素式がimport不変globalの参照型と一致する_検証に成功する(int mode, WasmValueKind kind)
     {
         // Arrange
         var initializer = ElementExpression(DecodedInstruction.WithIndex(new(0, 0x23), 0, 52));
@@ -46,10 +43,7 @@ internal partial class WasmModule_ValidateTests
     public async Task Passiveまたはdeclarativeの要素列が空_テーブルなしでも検証に成功する(int mode)
     {
         // Arrange
-        var module = CreateElementValidationModule(
-            [CreateValidationElement(mode, WasmValueKind.FuncRef, [])],
-            []
-        );
+        var module = CreateElementValidationModule([CreateValidationElement(mode, WasmValueKind.FuncRef, [])], []);
 
         // Act & Assert
         await Assert.That(() => module.Validate()).ThrowsNothing();
@@ -65,26 +59,16 @@ internal partial class WasmModule_ValidateTests
         var element = CreateValidationElement(
             mode,
             WasmValueKind.FuncRef,
-            [
-                ElementExpression(
-                    DecodedInstruction.WithImmediate(new(0, 0x41), WasmValue.FromI32(0), 52)
-                ),
-            ]
+            [ElementExpression(DecodedInstruction.WithImmediate(new(0, 0x41), WasmValue.FromI32(0), 52))]
         );
         var module = CreateElementValidationModule([element], []);
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => module.Validate())
-            .ThrowsExactly<WasmValidateException>();
+        var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
         using (Assert.Multiple())
         {
-            await Assert
-                .That(exception!.Message.StartsWith("type mismatch", StringComparison.Ordinal))
-                .IsTrue();
-            await Assert
-                .That(exception.Location)
-                .IsEqualTo(new(WasmProcessingStage.Validate, 54, null, 9));
+            await Assert.That(exception!.Message.StartsWith("type mismatch", StringComparison.Ordinal)).IsTrue();
+            await Assert.That(exception.Location).IsEqualTo(new(WasmProcessingStage.Validate, 54, null, 9));
         }
     }
 
@@ -107,22 +91,13 @@ internal partial class WasmModule_ValidateTests
         );
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => module.Validate())
-            .ThrowsExactly<WasmValidateException>();
+        var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
         using (Assert.Multiple())
         {
             await Assert
-                .That(
-                    exception!.Message.StartsWith(
-                        "constant expression required",
-                        StringComparison.Ordinal
-                    )
-                )
+                .That(exception!.Message.StartsWith("constant expression required", StringComparison.Ordinal))
                 .IsTrue();
-            await Assert
-                .That(exception.Location)
-                .IsEqualTo(new(WasmProcessingStage.Validate, 52, null, 9));
+            await Assert.That(exception.Location).IsEqualTo(new(WasmProcessingStage.Validate, 52, null, 9));
         }
     }
 
@@ -137,14 +112,7 @@ internal partial class WasmModule_ValidateTests
                     WasmValueKind.FuncRef,
                     [
                         ElementExpression(DecodedInstruction.WithIndex(new(0, 0x23), 0, 52)),
-                        ElementExpression(
-                            DecodedInstruction.WithImmediate(
-                                new(0, 0x41),
-                                WasmValue.FromI32(0),
-                                62
-                            ),
-                            64
-                        ),
+                        ElementExpression(DecodedInstruction.WithImmediate(new(0, 0x41), WasmValue.FromI32(0), 62), 64),
                     ]
                 ),
             ],
@@ -153,17 +121,11 @@ internal partial class WasmModule_ValidateTests
         );
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => module.Validate())
-            .ThrowsExactly<WasmValidateException>();
+        var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
         using (Assert.Multiple())
         {
-            await Assert
-                .That(exception!.Message.StartsWith("type mismatch", StringComparison.Ordinal))
-                .IsTrue();
-            await Assert
-                .That(exception.Location)
-                .IsEqualTo(new(WasmProcessingStage.Validate, 64, null, 9));
+            await Assert.That(exception!.Message.StartsWith("type mismatch", StringComparison.Ordinal)).IsTrue();
+            await Assert.That(exception.Location).IsEqualTo(new(WasmProcessingStage.Validate, 64, null, 9));
         }
     }
 
@@ -180,14 +142,7 @@ internal partial class WasmModule_ValidateTests
                     [],
                     new(
                         tableIndex,
-                        ElementExpression(
-                                DecodedInstruction.WithImmediate(
-                                    new(0, 0x42),
-                                    WasmValue.FromI64(0),
-                                    72
-                                ),
-                                74
-                            )
+                        ElementExpression(DecodedInstruction.WithImmediate(new(0, 0x42), WasmValue.FromI64(0), 72), 74)
                             .AsSpan()
                     ),
                     50
@@ -197,22 +152,13 @@ internal partial class WasmModule_ValidateTests
         );
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => module.Validate())
-            .ThrowsExactly<WasmValidateException>();
+        var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
         using (Assert.Multiple())
         {
             await Assert
-                .That(
-                    exception!.Message.StartsWith(
-                        $"unknown table {tableIndex}",
-                        StringComparison.Ordinal
-                    )
-                )
+                .That(exception!.Message.StartsWith($"unknown table {tableIndex}", StringComparison.Ordinal))
                 .IsTrue();
-            await Assert
-                .That(exception.Location)
-                .IsEqualTo(new(WasmProcessingStage.Validate, 50, null, 9));
+            await Assert.That(exception.Location).IsEqualTo(new(WasmProcessingStage.Validate, 50, null, 9));
         }
     }
 
@@ -227,14 +173,7 @@ internal partial class WasmModule_ValidateTests
                     [],
                     new(
                         0,
-                        ElementExpression(
-                                DecodedInstruction.WithImmediate(
-                                    new(0, 0x42),
-                                    WasmValue.FromI64(0),
-                                    72
-                                ),
-                                74
-                            )
+                        ElementExpression(DecodedInstruction.WithImmediate(new(0, 0x42), WasmValue.FromI64(0), 72), 74)
                             .AsSpan()
                     ),
                     50
@@ -244,18 +183,12 @@ internal partial class WasmModule_ValidateTests
         );
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => module.Validate())
-            .ThrowsExactly<WasmValidateException>();
+        var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
         using (Assert.Multiple())
         {
-            await Assert
-                .That(exception!.Message.StartsWith("type mismatch", StringComparison.Ordinal))
-                .IsTrue();
+            await Assert.That(exception!.Message.StartsWith("type mismatch", StringComparison.Ordinal)).IsTrue();
             await Assert.That(exception.Message).Contains("要素セグメントの参照型と対象テーブル");
-            await Assert
-                .That(exception.Location)
-                .IsEqualTo(new(WasmProcessingStage.Validate, 50, null, 9));
+            await Assert.That(exception.Location).IsEqualTo(new(WasmProcessingStage.Validate, 50, null, 9));
         }
     }
 
@@ -270,14 +203,7 @@ internal partial class WasmModule_ValidateTests
                     [],
                     new(
                         0,
-                        ElementExpression(
-                                DecodedInstruction.WithImmediate(
-                                    new(0, 0x42),
-                                    WasmValue.FromI64(0),
-                                    72
-                                ),
-                                74
-                            )
+                        ElementExpression(DecodedInstruction.WithImmediate(new(0, 0x42), WasmValue.FromI64(0), 72), 74)
                             .AsSpan()
                     ),
                     50
@@ -287,17 +213,11 @@ internal partial class WasmModule_ValidateTests
         );
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => module.Validate())
-            .ThrowsExactly<WasmValidateException>();
+        var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
         using (Assert.Multiple())
         {
-            await Assert
-                .That(exception!.Message.StartsWith("type mismatch", StringComparison.Ordinal))
-                .IsTrue();
-            await Assert
-                .That(exception.Location)
-                .IsEqualTo(new(WasmProcessingStage.Validate, 74, null, 9));
+            await Assert.That(exception!.Message.StartsWith("type mismatch", StringComparison.Ordinal)).IsTrue();
+            await Assert.That(exception.Location).IsEqualTo(new(WasmProcessingStage.Validate, 74, null, 9));
         }
     }
 
@@ -315,11 +235,7 @@ internal partial class WasmModule_ValidateTests
                 ElementDefinition.Active(
                     kind,
                     [],
-                    new(
-                        tableIndex,
-                        ElementExpression(DecodedInstruction.WithIndex(new(0, 0x23), 0, 72), 74)
-                            .AsSpan()
-                    ),
+                    new(tableIndex, ElementExpression(DecodedInstruction.WithIndex(new(0, 0x23), 0, 72), 74).AsSpan()),
                     50
                 ),
             ],
@@ -337,9 +253,7 @@ internal partial class WasmModule_ValidateTests
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task 要素が不正_後続データの有無によらず要素の診断を報告し再検証でも成功状態にしない(
-        bool invalidData
-    )
+    public async Task 要素が不正_後続データの有無によらず要素の診断を報告し再検証でも成功状態にしない(bool invalidData)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
@@ -348,11 +262,7 @@ internal partial class WasmModule_ValidateTests
                 CreateValidationElement(
                     1,
                     WasmValueKind.FuncRef,
-                    [
-                        ElementExpression(
-                            DecodedInstruction.WithImmediate(new(0, 0x41), WasmValue.FromI32(0), 52)
-                        ),
-                    ]
+                    [ElementExpression(DecodedInstruction.WithImmediate(new(0, 0x41), WasmValue.FromI32(0), 52))]
                 ),
             ],
             [],
@@ -363,14 +273,7 @@ internal partial class WasmModule_ValidateTests
                         [],
                         new(
                             0,
-                            ElementExpression(
-                                    DecodedInstruction.WithImmediate(
-                                        new(0, 0x41),
-                                        WasmValue.FromI32(0),
-                                        82
-                                    ),
-                                    84
-                                )
+                            ElementExpression(DecodedInstruction.WithImmediate(new(0, 0x41), WasmValue.FromI32(0), 82), 84)
                                 .AsSpan()
                         ),
                         80
@@ -382,25 +285,18 @@ internal partial class WasmModule_ValidateTests
         // Act & Assert
         for (var attempt = 0; attempt < 2; attempt++)
         {
-            var exception = await Assert
-                .That(() => module.Validate())
-                .ThrowsExactly<WasmValidateException>();
+            var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
             using (Assert.Multiple())
             {
                 await Assert.That(exception!.Location!.SectionId).IsEqualTo((byte)9);
                 await Assert.That(module.FunctionCodes.IsEmpty).IsTrue();
                 await Assert.That(module.FunctionExportIndices.IsEmpty).IsTrue();
-                await Assert
-                    .That(() => module.Instantiate(executionContext, []))
-                    .ThrowsExactly<InvalidOperationException>();
+                await Assert.That(() => module.Instantiate(executionContext, [])).ThrowsExactly<InvalidOperationException>();
             }
         }
     }
 
-    private static ImmutableArray<DecodedInstruction> ElementExpression(
-        DecodedInstruction instruction,
-        long endOffset = 54
-    )
+    private static ImmutableArray<DecodedInstruction> ElementExpression(DecodedInstruction instruction, long endOffset = 54)
     {
         return [instruction, DecodedInstruction.WithoutImmediate(new(0, 0x0B), endOffset)];
     }
@@ -418,15 +314,7 @@ internal partial class WasmModule_ValidateTests
                 initializers,
                 new(
                     0,
-                    ElementExpression(
-                            DecodedInstruction.WithImmediate(
-                                new(0, 0x41),
-                                WasmValue.FromI32(0),
-                                72
-                            ),
-                            74
-                        )
-                        .AsSpan()
+                    ElementExpression(DecodedInstruction.WithImmediate(new(0, 0x41), WasmValue.FromI32(0), 72), 74).AsSpan()
                 ),
                 50
             ),

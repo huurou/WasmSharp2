@@ -328,21 +328,12 @@ public sealed class WasmModule
     /// <exception cref="WasmImplementationLimitException">リソースの構築またはstartの実行に必要な保持数が実装上限を超える場合</exception>
     /// <exception cref="WasmTrapException">アクティブデータセグメントの初期化先が範囲外か、startの実行結果がtrapの場合</exception>
     /// <exception cref="WasmExhaustionException">startの実行結果が資源枯渇の場合</exception>
-    public WasmInstance Instantiate(
-        WasmExecutionContext context,
-        WasmImports imports,
-        WasmExecutionOptions? options = null
-    )
+    public WasmInstance Instantiate(WasmExecutionContext context, WasmImports imports, WasmExecutionOptions? options = null)
     {
         RequireValidated();
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(imports);
-        return ModuleInstantiator.Instantiate(
-            context,
-            this,
-            imports,
-            options ?? WasmExecutionOptions.Default
-        );
+        return ModuleInstantiator.Instantiate(context, this, imports, options ?? WasmExecutionOptions.Default);
     }
 
     /// <summary>

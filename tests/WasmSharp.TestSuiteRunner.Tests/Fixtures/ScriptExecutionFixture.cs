@@ -17,9 +17,7 @@ internal static class ScriptExecutionFixture
     )
     {
         var document = ScriptDocument.Parse(
-            Encoding.UTF8.GetBytes(
-                "{\"source_filename\":\"a.wast\",\"commands\":[" + commands + "]}"
-            ),
+            Encoding.UTF8.GetBytes("{\"source_filename\":\"a.wast\",\"commands\":[" + commands + "]}"),
             "a.json"
         );
         var input = new InputVerification(
@@ -29,10 +27,7 @@ internal static class ScriptExecutionFixture
             modules.ToImmutableDictionary(x => x.Index, x => ImmutableArray.Create(x.Binary)),
             []
         );
-        return new ScriptExecutor(input).Execute(
-            ScriptReader.Read(document, state.InputPath),
-            state
-        );
+        return new ScriptExecutor(input).Execute(ScriptReader.Read(document, state.InputPath), state);
     }
 
     internal static string Module(int index, string? name = null)
@@ -48,13 +43,7 @@ internal static class ScriptExecutionFixture
     {
         return Binary(
             (1, [1, 0x60, 0, 0]),
-            (
-                2,
-                [
-                    (byte)names.Length,
-                    .. names.SelectMany(x => (byte[])[.. Name(x), .. Name("f"), 0, 0]),
-                ]
-            )
+            (2, [(byte)names.Length, .. names.SelectMany(x => (byte[])[.. Name(x), .. Name("f"), 0, 0])])
         );
     }
 
@@ -66,10 +55,7 @@ internal static class ScriptExecutionFixture
             (4, [1, 0x70, 1, 1, 2]),
             (5, [1, 1, 1, 2]),
             (6, [1, 0x7F, 1, 0x41, 0, 0x0B]),
-            (
-                7,
-                [4, .. Name("f"), 0, 0, .. Name("t"), 1, 0, .. Name("m"), 2, 0, .. Name("g"), 3, 0]
-            ),
+            (7, [4, .. Name("f"), 0, 0, .. Name("t"), 1, 0, .. Name("m"), 2, 0, .. Name("g"), 3, 0]),
             (10, [1, 4, 0, 0x41, 7, 0x0B])
         );
     }
@@ -122,9 +108,7 @@ internal static class ScriptExecutionFixture
             0,
             0,
             0,
-            .. sections.SelectMany(x =>
-                (byte[])[x.Id, .. Unsigned((uint)x.Payload.Length), .. x.Payload]
-            ),
+            .. sections.SelectMany(x => (byte[])[x.Id, .. Unsigned((uint)x.Payload.Length), .. x.Payload]),
         ];
     }
 

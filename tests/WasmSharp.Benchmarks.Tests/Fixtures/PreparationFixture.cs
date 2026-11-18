@@ -5,11 +5,7 @@ namespace WasmSharp.Benchmarks.Tests.Fixtures;
 
 internal static class PreparationFixture
 {
-    internal static LoadedAssets CreateAssets(
-        CaseJson json,
-        MeasurementMethods methods,
-        bool invalidStart = false
-    )
+    internal static LoadedAssets CreateAssets(CaseJson json, MeasurementMethods methods, bool invalidStart = false)
     {
         var definitions = AssetLoadingFixture
             .ReadCases(json)
@@ -38,13 +34,7 @@ internal static class PreparationFixture
             })
             .ToList();
         var bytes = File.ReadAllBytes(
-                Path.Combine(
-                    AppContext.BaseDirectory,
-                    "Fixtures",
-                    "Data",
-                    "Verification",
-                    "state.wasm"
-                )
+                Path.Combine(AppContext.BaseDirectory, "Fixtures", "Data", "Verification", "state.wasm")
             )
             .ToImmutableArray();
         return new(

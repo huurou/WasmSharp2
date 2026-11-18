@@ -29,10 +29,7 @@ internal static partial class Interpreter
     /// <param name="context">現在の関数と検証済みのアドレス・値を持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのv128.store命令</param>
     /// <returns>実行の成功またはメモリを変更しない範囲外アクセスのtrap</returns>
-    internal static ExecutionResult V128Store(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult V128Store(InterpreterContext context, in Instruction instruction)
     {
         var value = SimdValue.FromValue(context.PopValue());
         Span<byte> bytes = stackalloc byte[16];
@@ -46,10 +43,7 @@ internal static partial class Interpreter
     /// <param name="context">現在の関数と検証済みのアドレス・vectorを持つ実行コンテキスト</param>
     /// <param name="instruction">アクセス幅とlane indexを持つ検証済みのload_lane命令</param>
     /// <returns>実行の成功または範囲外アクセスのtrap</returns>
-    internal static ExecutionResult V128LoadLane(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult V128LoadLane(InterpreterContext context, in Instruction instruction)
     {
         var value = SimdValue.FromValue(context.PopValue());
         Span<byte> bytes = stackalloc byte[16];
@@ -72,20 +66,13 @@ internal static partial class Interpreter
     /// <param name="context">現在の関数と検証済みのアドレス・vectorを持つ実行コンテキスト</param>
     /// <param name="instruction">アクセス幅とlane indexを持つ検証済みのstore_lane命令</param>
     /// <returns>実行の成功またはメモリを変更しない範囲外アクセスのtrap</returns>
-    internal static ExecutionResult V128StoreLane(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult V128StoreLane(InterpreterContext context, in Instruction instruction)
     {
         var value = SimdValue.FromValue(context.PopValue());
         Span<byte> bytes = stackalloc byte[16];
         value.WriteLittleEndian(bytes);
         var byteWidth = instruction.MemoryAccessSignature.ByteWidth;
-        return WriteSimdMemory(
-            context,
-            in instruction,
-            bytes.Slice(instruction.LaneIndex * byteWidth, byteWidth)
-        );
+        return WriteSimdMemory(context, in instruction, bytes.Slice(instruction.LaneIndex * byteWidth, byteWidth));
     }
 
     /// <summary>
@@ -94,10 +81,7 @@ internal static partial class Interpreter
     /// <param name="context">現在の関数と検証済みのアドレスを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みの拡張load命令</param>
     /// <returns>実行の成功または範囲外アクセスのtrap</returns>
-    internal static ExecutionResult V128Load8x8S(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult V128Load8x8S(InterpreterContext context, in Instruction instruction)
     {
         return LoadSimdMemoryExtended(context, in instruction, 8, true);
     }
@@ -108,10 +92,7 @@ internal static partial class Interpreter
     /// <param name="context">現在の関数と検証済みのアドレスを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みの拡張load命令</param>
     /// <returns>実行の成功または範囲外アクセスのtrap</returns>
-    internal static ExecutionResult V128Load8x8U(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult V128Load8x8U(InterpreterContext context, in Instruction instruction)
     {
         return LoadSimdMemoryExtended(context, in instruction, 8, false);
     }
@@ -122,10 +103,7 @@ internal static partial class Interpreter
     /// <param name="context">現在の関数と検証済みのアドレスを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みの拡張load命令</param>
     /// <returns>実行の成功または範囲外アクセスのtrap</returns>
-    internal static ExecutionResult V128Load16x4S(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult V128Load16x4S(InterpreterContext context, in Instruction instruction)
     {
         return LoadSimdMemoryExtended(context, in instruction, 16, true);
     }
@@ -136,10 +114,7 @@ internal static partial class Interpreter
     /// <param name="context">現在の関数と検証済みのアドレスを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みの拡張load命令</param>
     /// <returns>実行の成功または範囲外アクセスのtrap</returns>
-    internal static ExecutionResult V128Load16x4U(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult V128Load16x4U(InterpreterContext context, in Instruction instruction)
     {
         return LoadSimdMemoryExtended(context, in instruction, 16, false);
     }
@@ -150,10 +125,7 @@ internal static partial class Interpreter
     /// <param name="context">現在の関数と検証済みのアドレスを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みの拡張load命令</param>
     /// <returns>実行の成功または範囲外アクセスのtrap</returns>
-    internal static ExecutionResult V128Load32x2S(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult V128Load32x2S(InterpreterContext context, in Instruction instruction)
     {
         return LoadSimdMemoryExtended(context, in instruction, 32, true);
     }
@@ -164,10 +136,7 @@ internal static partial class Interpreter
     /// <param name="context">現在の関数と検証済みのアドレスを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みの拡張load命令</param>
     /// <returns>実行の成功または範囲外アクセスのtrap</returns>
-    internal static ExecutionResult V128Load32x2U(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult V128Load32x2U(InterpreterContext context, in Instruction instruction)
     {
         return LoadSimdMemoryExtended(context, in instruction, 32, false);
     }
@@ -178,10 +147,7 @@ internal static partial class Interpreter
     /// <param name="context">現在の関数と検証済みのアドレスを持つ実行コンテキスト</param>
     /// <param name="instruction">1・2・4・8byteを指定する検証済みのsplat load命令</param>
     /// <returns>実行の成功または範囲外アクセスのtrap</returns>
-    internal static ExecutionResult V128LoadSplat(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult V128LoadSplat(InterpreterContext context, in Instruction instruction)
     {
         Span<byte> bytes = stackalloc byte[16];
         var byteWidth = instruction.MemoryAccessSignature.ByteWidth;
@@ -217,18 +183,11 @@ internal static partial class Interpreter
     /// <param name="context">現在の関数と検証済みのアドレスを持つ実行コンテキスト</param>
     /// <param name="instruction">lane即値を持たない検証済みのzero load命令</param>
     /// <returns>実行の成功または範囲外アクセスのtrap</returns>
-    internal static ExecutionResult V128LoadZero(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult V128LoadZero(InterpreterContext context, in Instruction instruction)
     {
         Span<byte> bytes = stackalloc byte[16];
         bytes.Clear();
-        var result = ReadSimdMemory(
-            context,
-            in instruction,
-            bytes[..instruction.MemoryAccessSignature.ByteWidth]
-        );
+        var result = ReadSimdMemory(context, in instruction, bytes[..instruction.MemoryAccessSignature.ByteWidth]);
         if (result.Status != ExecutionStatus.Success)
         {
             return result;
@@ -249,19 +208,13 @@ internal static partial class Interpreter
     )
     {
         Span<byte> bytes = stackalloc byte[16];
-        var result = ReadSimdMemory(
-            context,
-            in instruction,
-            bytes[..instruction.MemoryAccessSignature.ByteWidth]
-        );
+        var result = ReadSimdMemory(context, in instruction, bytes[..instruction.MemoryAccessSignature.ByteWidth]);
         if (result.Status != ExecutionStatus.Success)
         {
             return result;
         }
 
-        context.PushValue(
-            ExtendSimdMemoryLanes(SimdValue.FromLittleEndian(bytes), bitWidth, signed).ToValue()
-        );
+        context.PushValue(ExtendSimdMemoryLanes(SimdValue.FromLittleEndian(bytes), bitWidth, signed).ToValue());
         return default;
     }
 
@@ -296,8 +249,7 @@ internal static partial class Interpreter
         Span<byte> destination
     )
     {
-        var address =
-            (ulong)unchecked((uint)context.PopValue().AsI32()) + instruction.MemoryArgument.Offset;
+        var address = (ulong)unchecked((uint)context.PopValue().AsI32()) + instruction.MemoryArgument.Offset;
         return context.CurrentFunction.Instance.Memories[0].TryRead(address, destination)
             ? default
             : ExecutionResult.Trap(
@@ -316,8 +268,7 @@ internal static partial class Interpreter
         ReadOnlySpan<byte> source
     )
     {
-        var address =
-            (ulong)unchecked((uint)context.PopValue().AsI32()) + instruction.MemoryArgument.Offset;
+        var address = (ulong)unchecked((uint)context.PopValue().AsI32()) + instruction.MemoryArgument.Offset;
         return context.CurrentFunction.Instance.Memories[0].TryWrite(address, source)
             ? default
             : ExecutionResult.Trap(

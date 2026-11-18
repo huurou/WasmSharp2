@@ -42,17 +42,13 @@ internal class FunctionCode_ConstructorTests
     [Test]
     [Arguments(0)]
     [Arguments(2)]
-    public async Task 単一分岐と分岐表を同じ関数へ保持する_開始番号から候補と最後の既定を参照できる(
-        int targetCount
-    )
+    public async Task 単一分岐と分岐表を同じ関数へ保持する_開始番号から候補と最後の既定を参照できる(int targetCount)
     {
         // Arrange
         var singleTarget = new BranchTarget(1, 0, 0);
         var defaultTarget = new BranchTarget(1, 0, 2);
         ImmutableArray<BranchTarget> targets =
-            targetCount == 0
-                ? [singleTarget, defaultTarget]
-                : [singleTarget, new(0, 1, 2), new(1, 3, 2), defaultTarget];
+            targetCount == 0 ? [singleTarget, defaultTarget] : [singleTarget, new(0, 1, 2), new(1, 3, 2), defaultTarget];
         ImmutableArray<Instruction> instructions =
         [
             new(ExecutionOpcode.Op0B, default, 31, 0),

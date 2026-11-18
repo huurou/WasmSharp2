@@ -7,14 +7,7 @@ internal class Interpreter_V128AndNotTests
 {
     [Test]
     [Arguments(0UL, 0UL, 0xFFFFFFFFFFFFFFFFUL, 0xFFFFFFFFFFFFFFFFUL, 0UL, 0UL)]
-    [Arguments(
-        0xFFFFFFFFFFFFFFFFUL,
-        0xFFFFFFFFFFFFFFFFUL,
-        0UL,
-        0UL,
-        0xFFFFFFFFFFFFFFFFUL,
-        0xFFFFFFFFFFFFFFFFUL
-    )]
+    [Arguments(0xFFFFFFFFFFFFFFFFUL, 0xFFFFFFFFFFFFFFFFUL, 0UL, 0UL, 0xFFFFFFFFFFFFFFFFUL, 0xFFFFFFFFFFFFFFFFUL)]
     [Arguments(
         0x0123456789ABCDEFUL,
         0xFEDCBA9876543210UL,
@@ -41,11 +34,7 @@ internal class Interpreter_V128AndNotTests
     )
     {
         // Arrange
-        WasmValue[] operands =
-        [
-            WasmValue.FromV128(firstLow64, firstHigh64),
-            WasmValue.FromV128(secondLow64, secondHigh64),
-        ];
+        WasmValue[] operands = [WasmValue.FromV128(firstLow64, firstHigh64), WasmValue.FromV128(secondLow64, secondHigh64)];
 
         // Act
         var actual = SimdHandlerFixture.Execute(Interpreter.V128AndNot, operands);

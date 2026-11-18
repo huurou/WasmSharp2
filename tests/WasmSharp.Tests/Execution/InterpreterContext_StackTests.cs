@@ -50,9 +50,7 @@ internal class InterpreterContext_CalculateCapacityTests
             .ThrowsExactly<WasmImplementationLimitException>();
         using (Assert.Multiple())
         {
-            await Assert
-                .That(exception!.Reason)
-                .IsEqualTo(WasmImplementationLimitReason.CollectionSize);
+            await Assert.That(exception!.Reason).IsEqualTo(WasmImplementationLimitReason.CollectionSize);
             await Assert.That(exception.Limit).IsEqualTo(Array.MaxLength);
             await Assert.That(exception.Location).IsEqualTo(location);
         }
@@ -127,9 +125,7 @@ internal class InterpreterContext_EnsureCapacityTests
 
         using (Assert.Multiple())
         {
-            await Assert
-                .That(exception!.Reason)
-                .IsEqualTo(WasmImplementationLimitReason.CollectionSize);
+            await Assert.That(exception!.Reason).IsEqualTo(WasmImplementationLimitReason.CollectionSize);
             await Assert.That(exception.Location).IsEqualTo(location);
             await Assert.That(value.AsI32()).IsEqualTo(42);
             await Assert.That(depth).IsEqualTo(1);
@@ -147,14 +143,8 @@ internal class InterpreterContext_RestoreTests
         // Arrange
         var executionContext = new WasmExecutionContext();
         var module = new WasmModule(
-            [
-                new([WasmValueKind.I64], [WasmValueKind.ExternRef]),
-                new([WasmValueKind.ExternRef], [WasmValueKind.I32]),
-            ],
-            [
-                new(0, 30, [new(1, WasmValueKind.F32)], []),
-                new(1, 80, [new(1, WasmValueKind.I32)], []),
-            ],
+            [new([WasmValueKind.I64], [WasmValueKind.ExternRef]), new([WasmValueKind.ExternRef], [WasmValueKind.I32])],
+            [new(0, 30, [new(1, WasmValueKind.F32)], []), new(1, 80, [new(1, WasmValueKind.I32)], [])],
             [],
             90,
             [],
@@ -219,8 +209,7 @@ internal class InterpreterContext_RestoreTests
         finally
         {
             context.Restore(0, 0, 0);
-            fullyRestored =
-                context.FrameCount == 0 && context.ValueCount == 0 && context.CallDepth == 0;
+            fullyRestored = context.FrameCount == 0 && context.ValueCount == 0 && context.CallDepth == 0;
             executionContext.Exit(isOutermost);
         }
 

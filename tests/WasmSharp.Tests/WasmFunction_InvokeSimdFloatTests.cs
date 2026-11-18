@@ -70,12 +70,9 @@ internal partial class WasmFunction_InvokeTests
             HostLinkingModuleBinary.Types((parameters, [0x7B])),
             HostLinkingModuleBinary.Functions(0),
             HostLinkingModuleBinary.Exports(("run", 0, 0)),
-            HostLinkingModuleBinary.Code(
-                ([], [.. pushes, 0xFD, .. Convert.FromHexString(opcode), 0x0B])
-            )
+            HostLinkingModuleBinary.Code(([], [.. pushes, 0xFD, .. Convert.FromHexString(opcode), 0x0B]))
         );
-        WasmValue[] operands =
-            second.Length == 0 ? [Vector(first)] : [Vector(first), Vector(second)];
+        WasmValue[] operands = second.Length == 0 ? [Vector(first)] : [Vector(first), Vector(second)];
         using var stream = new ChunkedReadStream(new MemoryStream(bytes));
 
         // Act

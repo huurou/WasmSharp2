@@ -64,18 +64,12 @@ public sealed class WasmGlobal
             )
         )
         {
-            throw new ArgumentException(
-                "Core 2.0で定義されていないvalueの種類です。",
-                nameof(type)
-            );
+            throw new ArgumentException("Core 2.0で定義されていないvalueの種類です。", nameof(type));
         }
 
         if (initialValue.Kind != type.ValueKind)
         {
-            throw new ArgumentException(
-                "globalの型と初期値の型が一致しません。",
-                nameof(initialValue)
-            );
+            throw new ArgumentException("globalの型と初期値の型が一致しません。", nameof(initialValue));
         }
 
         Type = type;

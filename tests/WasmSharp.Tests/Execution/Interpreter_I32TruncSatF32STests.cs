@@ -25,10 +25,7 @@ internal class Interpreter_I32TruncSatF32STests
     [Arguments(0x7FC00000U, 0)]
     [Arguments(0xFFC12345U, 0)]
     [Arguments(0x7F812345U, 0)]
-    public async Task 入力が有限値または特殊値_切捨てと飽和した整数をtrapなしで返す(
-        uint operandBits,
-        int expected
-    )
+    public async Task 入力が有限値または特殊値_切捨てと飽和した整数をtrapなしで返す(uint operandBits, int expected)
     {
         // Arrange
         WasmValue[] operands = [WasmValue.FromF32Bits(operandBits)];

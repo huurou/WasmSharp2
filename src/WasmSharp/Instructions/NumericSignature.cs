@@ -7,7 +7,4 @@ namespace WasmSharp.Instructions;
 /// </summary>
 /// <param name="InputTypes">スタック下側から上側の順序で並ぶ入力型列</param>
 /// <param name="ResultType">結果の数値型</param>
-internal readonly record struct NumericSignature(
-    ImmutableArray<WasmValueKind> InputTypes,
-    WasmValueKind ResultType
-);
+internal readonly record struct NumericSignature(ImmutableArray<WasmValueKind> InputTypes, WasmValueKind ResultType);

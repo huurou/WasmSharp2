@@ -48,11 +48,7 @@ internal class Interpreter_F32x4PmaxTests
     )
     {
         // Arrange
-        WasmValue[] operands =
-        [
-            WasmValue.FromV128(leftLow64, leftHigh64),
-            WasmValue.FromV128(rightLow64, rightHigh64),
-        ];
+        WasmValue[] operands = [WasmValue.FromV128(leftLow64, leftHigh64), WasmValue.FromV128(rightLow64, rightHigh64)];
 
         // Act
         var actual = SimdHandlerFixture.Execute(Interpreter.F32x4Pmax, operands);

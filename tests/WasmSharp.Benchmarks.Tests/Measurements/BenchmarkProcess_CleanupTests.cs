@@ -35,8 +35,10 @@ internal class BenchmarkProcess_CleanupTests
                 current.ProcessorAffinity = new IntPtr(after!.Value);
             }
             process.Cleanup(() => { });
-            var check = RunStore.ReadChecks(fixture.Run.DirectoryPath, json_)
-                .Single(x => x.Check.Postcheck is not null).Check;
+            var check = RunStore
+                .ReadChecks(fixture.Run.DirectoryPath, json_)
+                .Single(x => x.Check.Postcheck is not null)
+                .Check;
 
             // Assert
             using (Assert.Multiple())
@@ -67,15 +69,10 @@ internal class BenchmarkProcess_CleanupTests
         process.Setup((_, _, _) => { });
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => process.Cleanup(fixture.BlockCheckWrites))
-            .Throws<IOException>();
+        var exception = await Assert.That(() => process.Cleanup(fixture.BlockCheckWrites)).Throws<IOException>();
         fixture.RestoreCheckWrites();
         process.Cleanup(() => { });
-        var failed = RunStore
-            .ReadChecks(fixture.Run.DirectoryPath, json_)
-            .Single(x => x.Check.Failures.Count > 0)
-            .Check;
+        var failed = RunStore.ReadChecks(fixture.Run.DirectoryPath, json_).Single(x => x.Check.Failures.Count > 0).Check;
         using (Assert.Multiple())
         {
             await Assert.That(failed.Precheck!.Status).IsEqualTo(ResultStatus.Succeeded);
@@ -83,12 +80,8 @@ internal class BenchmarkProcess_CleanupTests
             await Assert.That(failed.ExecutionStarted).IsTrue();
             await Assert.That(failed.Failures.Single().Stage).IsEqualTo(RunStage.Saving);
             await Assert.That(failed.Failures.Single().Reason).IsNotEmpty();
-            await Assert
-                .That(failed.Failures.Single().LastConfirmedStage)
-                .IsEqualTo(RunStage.Postcheck);
-            await Assert
-                .That(failed.Failures.Single().ExceptionType)
-                .IsEqualTo(exception!.GetType().FullName);
+            await Assert.That(failed.Failures.Single().LastConfirmedStage).IsEqualTo(RunStage.Postcheck);
+            await Assert.That(failed.Failures.Single().ExceptionType).IsEqualTo(exception!.GetType().FullName);
         }
     }
 
@@ -121,20 +114,13 @@ internal class BenchmarkProcess_CleanupTests
         using var fixture = new BenchmarkProcessFixture();
         var benchmark = new InvokeBenchmarks();
         var process = BenchmarkProcess.Start("InvokeBenchmarks.Single");
-        process.Setup((_, id, json) =>
-            benchmark.Initialize(InvokeFixture.CreateDriftingAssets(json, methods_), id, json)
-        );
+        process.Setup((_, id, json) => benchmark.Initialize(InvokeFixture.CreateDriftingAssets(json, methods_), id, json));
         benchmark.Single();
         benchmark.Single();
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => process.Cleanup(benchmark.Cleanup))
-            .Throws<InvalidOperationException>();
-        var failed = RunStore
-            .ReadChecks(fixture.Run.DirectoryPath, json_)
-            .Single(x => x.Check.Postcheck is not null)
-            .Check;
+        var exception = await Assert.That(() => process.Cleanup(benchmark.Cleanup)).Throws<InvalidOperationException>();
+        var failed = RunStore.ReadChecks(fixture.Run.DirectoryPath, json_).Single(x => x.Check.Postcheck is not null).Check;
         using (Assert.Multiple())
         {
             await Assert.That(failed.Precheck!.Status).IsEqualTo(ResultStatus.Succeeded);
@@ -169,9 +155,7 @@ internal class BenchmarkProcess_CleanupTests
         {
             await Assert.That(checks.Any(x => x.ExecutionStarted)).IsTrue();
             await Assert.That(checks.All(x => x.Postcheck is null)).IsTrue();
-            await Assert
-                .That(RunStore.Load(fixture.Run.DirectoryPath, json_).Status)
-                .IsEqualTo(ResultStatus.Incomplete);
+            await Assert.That(RunStore.Load(fixture.Run.DirectoryPath, json_).Status).IsEqualTo(ResultStatus.Incomplete);
         }
     }
 }

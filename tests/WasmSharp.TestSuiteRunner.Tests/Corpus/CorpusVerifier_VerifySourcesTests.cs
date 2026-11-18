@@ -12,10 +12,7 @@ internal class CorpusVerifier_VerifySourcesTests
         using var fixture = CorpusFixture.Create();
 
         // Act
-        var diagnostics = CorpusVerifier.VerifySources(
-            fixture.Manifest.Profile.Inputs,
-            fixture.InputRoot
-        );
+        var diagnostics = CorpusVerifier.VerifySources(fixture.Manifest.Profile.Inputs, fixture.InputRoot);
 
         // Assert
         await Assert.That(diagnostics).IsEmpty();
@@ -29,10 +26,7 @@ internal class CorpusVerifier_VerifySourcesTests
         fixture.WriteSource(CorpusFixture.B, "(module)\r\n");
 
         // Act
-        var diagnostics = CorpusVerifier.VerifySources(
-            fixture.Manifest.Profile.Inputs,
-            fixture.InputRoot
-        );
+        var diagnostics = CorpusVerifier.VerifySources(fixture.Manifest.Profile.Inputs, fixture.InputRoot);
 
         // Assert
         using (Assert.Multiple())
@@ -56,29 +50,21 @@ internal class CorpusVerifier_VerifySourcesTests
         fixture.WriteSource("simd/note.WAST", "対象外の拡張子");
 
         // Act
-        var diagnostics = CorpusVerifier.VerifySources(
-            fixture.Manifest.Profile.Inputs,
-            fixture.InputRoot
-        );
+        var diagnostics = CorpusVerifier.VerifySources(fixture.Manifest.Profile.Inputs, fixture.InputRoot);
 
         // Assert
         using (Assert.Multiple())
         {
             await Assert
                 .That(
-                    diagnostics.Select(x => x.Path).SequenceEqual([
-                        CorpusFixture.A,
-                        "extra.wast",
-                        "simd/extra.wast",
-                        "z.wast",
-                    ])
+                    diagnostics
+                        .Select(x => x.Path)
+                        .SequenceEqual([CorpusFixture.A, "extra.wast", "simd/extra.wast", "z.wast"])
                 )
                 .IsTrue();
             await Assert.That(diagnostics.All(x => x.Operation == "verify")).IsTrue();
             await Assert.That(diagnostics[0].Message).IsEqualTo("元入力がありません。");
-            await Assert
-                .That(diagnostics.Skip(1).All(x => x.Message == "固定profileにない元入力があります。"))
-                .IsTrue();
+            await Assert.That(diagnostics.Skip(1).All(x => x.Message == "固定profileにない元入力があります。")).IsTrue();
         }
     }
 
@@ -95,11 +81,7 @@ internal class CorpusVerifier_VerifySourcesTests
         );
 
         // Assert
-        await Assert
-            .That(diagnostics)
-            .IsEquivalentTo(
-                [new CorpusDiagnostic("verify", "元入力がありません。", "a.wast")]
-            );
+        await Assert.That(diagnostics).IsEquivalentTo([new CorpusDiagnostic("verify", "元入力がありません。", "a.wast")]);
     }
 
     [Test]
@@ -111,10 +93,7 @@ internal class CorpusVerifier_VerifySourcesTests
         using var restriction = new DirectoryReadRestriction(restricted.FullName);
 
         // Act
-        var diagnostics = CorpusVerifier.VerifySources(
-            fixture.Manifest.Profile.Inputs,
-            fixture.InputRoot
-        );
+        var diagnostics = CorpusVerifier.VerifySources(fixture.Manifest.Profile.Inputs, fixture.InputRoot);
 
         // Assert
         var diagnostic = diagnostics.Single();
@@ -123,9 +102,7 @@ internal class CorpusVerifier_VerifySourcesTests
             await Assert.That(diagnostic.Operation).IsEqualTo("verify");
             await Assert.That(diagnostic.Path).IsNull();
             await Assert.That(diagnostic.Message).StartsWith("元入力の一覧を列挙できません: ");
-            await Assert
-                .That(diagnostic.ExceptionType)
-                .IsEqualTo(typeof(UnauthorizedAccessException).FullName);
+            await Assert.That(diagnostic.ExceptionType).IsEqualTo(typeof(UnauthorizedAccessException).FullName);
         }
     }
 
@@ -142,10 +119,7 @@ internal class CorpusVerifier_VerifySourcesTests
         );
 
         // Act
-        var diagnostics = CorpusVerifier.VerifySources(
-            fixture.Manifest.Profile.Inputs,
-            fixture.InputRoot
-        );
+        var diagnostics = CorpusVerifier.VerifySources(fixture.Manifest.Profile.Inputs, fixture.InputRoot);
 
         // Assert
         var diagnostic = diagnostics.Single();

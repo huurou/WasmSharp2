@@ -84,10 +84,7 @@ internal class WasmMemory_TryGrowTests
     [Arguments(2u, 2u)]
     [Arguments(null, 65536u)]
     [Arguments(null, uint.MaxValue)]
-    public async Task 宣言または仕様上限を超える_現在サイズを返して内容を保ちfalseになる(
-        uint? maximum,
-        uint delta
-    )
+    public async Task 宣言または仕様上限を超える_現在サイズを返して内容を保ちfalseになる(uint? maximum, uint delta)
     {
         // Arrange
         var memory = new WasmMemory(new WasmLimits(1, maximum));

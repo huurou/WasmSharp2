@@ -13,14 +13,7 @@ internal partial class BenchmarkCase_DeserializeTests
         var json = await ReadPreparationCasesAsync();
         var expected = new Dictionary<string, string[]>
         {
-            ["invoke"] =
-            [
-                "invoke.empty",
-                "invoke.single",
-                "invoke.multi",
-                "decode.small",
-                "decode-validate.small",
-            ],
+            ["invoke"] = ["invoke.empty", "invoke.single", "invoke.multi", "decode.small", "decode-validate.small"],
             ["calls"] = ["loop.integer-direct", "loop.float-host", "loop.indirect"],
             ["memory"] = ["memory.copy-fill"],
             ["scan"] = ["scan.scalar", "scan.simd"],
@@ -36,21 +29,11 @@ internal partial class BenchmarkCase_DeserializeTests
         {
             await Assert.That(definitions.Count).IsEqualTo(15);
             await Assert.That(definitions.Select(x => x.CaseId).Distinct().Count()).IsEqualTo(15);
-            await Assert
-                .That(definitions.Select(x => x.AssetId).Distinct())
-                .IsEquivalentTo(expected.Keys);
-            await Assert
-                .That(definitions.Count(x => x.MeasurementStage == MeasurementStage.Invoke))
-                .IsEqualTo(10);
-            await Assert
-                .That(definitions.Count(x => x.MeasurementStage == MeasurementStage.Decode))
-                .IsEqualTo(2);
-            await Assert
-                .That(definitions.Count(x => x.MeasurementStage == MeasurementStage.DecodeValidate))
-                .IsEqualTo(2);
-            await Assert
-                .That(definitions.Count(x => x.MeasurementStage == MeasurementStage.Instantiate))
-                .IsEqualTo(1);
+            await Assert.That(definitions.Select(x => x.AssetId).Distinct()).IsEquivalentTo(expected.Keys);
+            await Assert.That(definitions.Count(x => x.MeasurementStage == MeasurementStage.Invoke)).IsEqualTo(10);
+            await Assert.That(definitions.Count(x => x.MeasurementStage == MeasurementStage.Decode)).IsEqualTo(2);
+            await Assert.That(definitions.Count(x => x.MeasurementStage == MeasurementStage.DecodeValidate)).IsEqualTo(2);
+            await Assert.That(definitions.Count(x => x.MeasurementStage == MeasurementStage.Instantiate)).IsEqualTo(1);
             foreach (var asset in expected)
             {
                 var cases = definitions.Where(x => x.AssetId == asset.Key).ToArray();
@@ -61,19 +44,12 @@ internal partial class BenchmarkCase_DeserializeTests
             {
                 await Assert.That(definition.CaseRevision).IsEqualTo(1U);
                 await Assert.That(definition.OperationDefinition.OperationsPerInvoke).IsEqualTo(1U);
-                await Assert
-                    .That(definition.OperationDefinition.IncludesStateRestoration)
-                    .IsFalse();
+                await Assert.That(definition.OperationDefinition.IncludesStateRestoration).IsFalse();
                 await Assert
                     .That(definition.InputHash)
                     .IsEqualTo(
                         Convert.ToHexStringLower(
-                            SHA256.HashData(
-                                JsonSerializer.SerializeToUtf8Bytes(
-                                    definition.Input,
-                                    json_.Options
-                                )
-                            )
+                            SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(definition.Input, json_.Options))
                         )
                     );
             }
@@ -103,17 +79,11 @@ internal partial class BenchmarkCase_DeserializeTests
                 await Assert
                     .That(definition.MeasurementStage)
                     .IsEqualTo(
-                        definition.CaseId == "decode.small"
-                            ? MeasurementStage.Decode
-                            : MeasurementStage.DecodeValidate
+                        definition.CaseId == "decode.small" ? MeasurementStage.Decode : MeasurementStage.DecodeValidate
                     );
                 await Assert
                     .That(definition.Workload)
-                    .IsEquivalentTo(
-                        [
-                            new WorkloadQuantity("defined_functions", 3, WorkloadUnit.Functions),
-                        ]
-                    );
+                    .IsEquivalentTo([new WorkloadQuantity("defined_functions", 3, WorkloadUnit.Functions)]);
                 await Assert.That(definition.Input.FunctionExport).IsEqualTo("single");
                 await Assert
                     .That(definition.Input.Arguments.Single())
@@ -121,9 +91,7 @@ internal partial class BenchmarkCase_DeserializeTests
                 await Assert.That(definition.Input.Arrays.Count).IsEqualTo(0);
                 await Assert
                     .That(definition.ExpectedResult.Values.Single())
-                    .IsEqualTo(
-                        new NumericValue(NumericType.I32, unchecked((uint)-42).ToString("x8"))
-                    );
+                    .IsEqualTo(new NumericValue(NumericType.I32, unchecked((uint)-42).ToString("x8")));
                 await Assert
                     .That(
                         definition.ExpectedResult.Arrays.Count

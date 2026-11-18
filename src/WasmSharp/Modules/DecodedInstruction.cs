@@ -122,11 +122,7 @@ internal readonly struct DecodedInstruction
     /// <param name="immediate">定数の即値</param>
     /// <param name="byteOffset">入力バイナリ上の命令のバイト位置</param>
     /// <returns>定数以外の即値を既定値に統一した命令</returns>
-    internal static DecodedInstruction WithImmediate(
-        OpcodeKey opcode,
-        WasmValue immediate,
-        long byteOffset
-    )
+    internal static DecodedInstruction WithImmediate(OpcodeKey opcode, WasmValue immediate, long byteOffset)
     {
         return new(opcode, byteOffset, immediate: immediate);
     }
@@ -151,12 +147,7 @@ internal readonly struct DecodedInstruction
     /// <param name="secondaryIndex">符号化順で2番目の添字</param>
     /// <param name="byteOffset">入力バイナリ上の命令のバイト位置</param>
     /// <returns>2個の添字以外の即値を既定値に統一した命令</returns>
-    internal static DecodedInstruction WithIndexPair(
-        OpcodeKey opcode,
-        uint index,
-        uint secondaryIndex,
-        long byteOffset
-    )
+    internal static DecodedInstruction WithIndexPair(OpcodeKey opcode, uint index, uint secondaryIndex, long byteOffset)
     {
         return new(opcode, byteOffset, index: index, secondaryIndex: secondaryIndex);
     }
@@ -168,11 +159,7 @@ internal readonly struct DecodedInstruction
     /// <param name="memoryArgument">アラインメント指数とオフセット</param>
     /// <param name="byteOffset">入力バイナリ上の命令のバイト位置</param>
     /// <returns>メモリ命令以外の即値を既定値に統一した命令</returns>
-    internal static DecodedInstruction WithMemoryArgument(
-        OpcodeKey opcode,
-        MemoryArgument memoryArgument,
-        long byteOffset
-    )
+    internal static DecodedInstruction WithMemoryArgument(OpcodeKey opcode, MemoryArgument memoryArgument, long byteOffset)
     {
         return new(opcode, byteOffset, memoryArgument: memoryArgument);
     }
@@ -202,11 +189,7 @@ internal readonly struct DecodedInstruction
     /// <param name="laneIndex">符号化されたlaneの添字 範囲の検証は後段で行う</param>
     /// <param name="byteOffset">入力バイナリ上の命令のバイト位置</param>
     /// <returns>lane以外の即値を既定値に統一した命令</returns>
-    internal static DecodedInstruction WithLaneIndex(
-        OpcodeKey opcode,
-        byte laneIndex,
-        long byteOffset
-    )
+    internal static DecodedInstruction WithLaneIndex(OpcodeKey opcode, byte laneIndex, long byteOffset)
     {
         return new(opcode, byteOffset, laneIndex: laneIndex);
     }
@@ -218,11 +201,7 @@ internal readonly struct DecodedInstruction
     /// <param name="shuffleLanes">符号化された選択値 範囲の検証は後段で行う</param>
     /// <param name="byteOffset">入力バイナリ上の命令のバイト位置</param>
     /// <returns>不変の選択値列を所有する命令</returns>
-    internal static DecodedInstruction WithShuffleLanes(
-        OpcodeKey opcode,
-        ReadOnlySpan<byte> shuffleLanes,
-        long byteOffset
-    )
+    internal static DecodedInstruction WithShuffleLanes(OpcodeKey opcode, ReadOnlySpan<byte> shuffleLanes, long byteOffset)
     {
         return new(opcode, byteOffset, shuffleLanes: ImmutableArray.Create(shuffleLanes));
     }
@@ -234,11 +213,7 @@ internal readonly struct DecodedInstruction
     /// <param name="blockType">空型・単一値型・型添字のいずれか</param>
     /// <param name="byteOffset">入力バイナリ上の命令のバイト位置</param>
     /// <returns>型指定以外の即値を既定値に統一した命令</returns>
-    internal static DecodedInstruction WithBlockType(
-        OpcodeKey opcode,
-        BlockType blockType,
-        long byteOffset
-    )
+    internal static DecodedInstruction WithBlockType(OpcodeKey opcode, BlockType blockType, long byteOffset)
     {
         return new(opcode, byteOffset, blockType: blockType);
     }

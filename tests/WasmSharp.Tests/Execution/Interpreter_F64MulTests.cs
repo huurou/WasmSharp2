@@ -15,11 +15,7 @@ internal class Interpreter_F64MulTests
     [Arguments(0x7FEFFFFFFFFFFFFFul, 0x4000000000000000ul, 0x7FF0000000000000ul)]
     [Arguments(0x0000000000000000ul, 0x7FF0000000000000ul, 0x7FF8000000000000ul)]
     [Arguments(0x7FF0123456789ABCul, 0x3FF0000000000000ul, 0x7FF8000000000000ul)]
-    public async Task 通常値と境界値とNaN_64bitの乗算結果を返す(
-        ulong leftBits,
-        ulong rightBits,
-        ulong expectedBits
-    )
+    public async Task 通常値と境界値とNaN_64bitの乗算結果を返す(ulong leftBits, ulong rightBits, ulong expectedBits)
     {
         // Arrange
         WasmValue[] operands = [WasmValue.FromF64Bits(leftBits), WasmValue.FromF64Bits(rightBits)];

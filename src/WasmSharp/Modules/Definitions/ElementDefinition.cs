@@ -70,9 +70,7 @@ internal sealed class ElementDefinition
     )
     {
         ElementType = elementType;
-        var expressions = ImmutableArray.CreateBuilder<ImmutableArray<DecodedInstruction>>(
-            initializers.Length
-        );
+        var expressions = ImmutableArray.CreateBuilder<ImmutableArray<DecodedInstruction>>(initializers.Length);
         foreach (var initializer in initializers)
         {
             expressions.Add([.. initializer]);
@@ -141,10 +139,7 @@ internal sealed class ElementDefinition
 /// </summary>
 /// <param name="tableIndex">初期化先の未検証のテーブルインデックス</param>
 /// <param name="offsetExpression">構築時にコピーするオフセット式の命令列</param>
-internal sealed class ActiveElementTarget(
-    uint tableIndex,
-    ReadOnlySpan<DecodedInstruction> offsetExpression
-)
+internal sealed class ActiveElementTarget(uint tableIndex, ReadOnlySpan<DecodedInstruction> offsetExpression)
 {
     /// <summary>
     /// 初期化先の未検証のテーブルインデックス
@@ -154,6 +149,5 @@ internal sealed class ActiveElementTarget(
     /// <summary>
     /// 終端を含む未評価のオフセット式
     /// </summary>
-    internal ImmutableArray<DecodedInstruction> OffsetExpression { get; } =
-        ImmutableArray.Create(offsetExpression);
+    internal ImmutableArray<DecodedInstruction> OffsetExpression { get; } = ImmutableArray.Create(offsetExpression);
 }

@@ -39,14 +39,10 @@ internal partial class WasmModule_DecodeTests
                 .ThrowsExactly<WasmDecodeException>();
             using (Assert.Multiple())
             {
-                await Assert
-                    .That(exception!.Message.StartsWith(diagnostic, StringComparison.Ordinal))
-                    .IsTrue();
+                await Assert.That(exception!.Message.StartsWith(diagnostic, StringComparison.Ordinal)).IsTrue();
                 await Assert
                     .That(exception.Location)
-                    .IsEqualTo(
-                        new(WasmProcessingStage.Decode, bytes.Length - offsetFromEnd, 0, 10)
-                    );
+                    .IsEqualTo(new(WasmProcessingStage.Decode, bytes.Length - offsetFromEnd, 0, 10));
             }
         }
     }
@@ -80,23 +76,11 @@ internal partial class WasmModule_DecodeTests
                 using (Assert.Multiple())
                 {
                     await Assert
-                        .That(
-                            exception!.Message.StartsWith(
-                                "data count section required",
-                                StringComparison.Ordinal
-                            )
-                        )
+                        .That(exception!.Message.StartsWith("data count section required", StringComparison.Ordinal))
                         .IsTrue();
                     await Assert
                         .That(exception.Location)
-                        .IsEqualTo(
-                            new(
-                                WasmProcessingStage.Decode,
-                                bytes.Length,
-                                null,
-                                hasData ? (byte)11 : (byte)10
-                            )
-                        );
+                        .IsEqualTo(new(WasmProcessingStage.Decode, bytes.Length, null, hasData ? (byte)11 : (byte)10));
                 }
             }
         }
@@ -117,21 +101,15 @@ internal partial class WasmModule_DecodeTests
         // Arrange
         var bytes = HostLinkingModuleBinary.Create(
             HostLinkingModuleBinary.Types(([], [])),
-            functionMismatch
-                ? HostLinkingModuleBinary.Functions(0, 0)
-                : HostLinkingModuleBinary.Functions(0),
+            functionMismatch ? HostLinkingModuleBinary.Functions(0, 0) : HostLinkingModuleBinary.Functions(0),
             dataCount is { } count ? HostLinkingModuleBinary.Section(12, [count]) : [],
             HostLinkingModuleBinary.Code(([], [0xFC, 9, 0, 0x0B])),
             HostLinkingModuleBinary.Section(11, Convert.FromHexString(data))
         );
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => WasmModule.Decode(bytes))
-            .ThrowsExactly<WasmDecodeException>();
-        await Assert
-            .That(exception!.Message.StartsWith(diagnostic, StringComparison.Ordinal))
-            .IsTrue();
+        var exception = await Assert.That(() => WasmModule.Decode(bytes)).ThrowsExactly<WasmDecodeException>();
+        await Assert.That(exception!.Message.StartsWith(diagnostic, StringComparison.Ordinal)).IsTrue();
     }
 
     [Test]
@@ -147,26 +125,18 @@ internal partial class WasmModule_DecodeTests
         // Arrange
         var bytes = HostLinkingModuleBinary.Create(
             HostLinkingModuleBinary.Types(([], [])),
-            functionMismatch
-                ? HostLinkingModuleBinary.Functions(0, 0)
-                : HostLinkingModuleBinary.Functions(0),
+            functionMismatch ? HostLinkingModuleBinary.Functions(0, 0) : HostLinkingModuleBinary.Functions(0),
             dataCount is { } count ? HostLinkingModuleBinary.Section(12, [count]) : [],
             HostLinkingModuleBinary.Code(([], [0xFC, 9, 0, 0x0B])),
             HostLinkingModuleBinary.Section(11, [1, 0, 0xFD, 0, 0, 0, 0x0B, 0])
         );
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => WasmModule.Decode(bytes))
-            .ThrowsExactly<WasmDecodeException>();
+        var exception = await Assert.That(() => WasmModule.Decode(bytes)).ThrowsExactly<WasmDecodeException>();
         using (Assert.Multiple())
         {
-            await Assert
-                .That(exception!.Message.StartsWith(diagnostic, StringComparison.Ordinal))
-                .IsTrue();
-            await Assert
-                .That(exception.Location)
-                .IsEqualTo(new(WasmProcessingStage.Decode, bytes.Length, null, 11));
+            await Assert.That(exception!.Message.StartsWith(diagnostic, StringComparison.Ordinal)).IsTrue();
+            await Assert.That(exception.Location).IsEqualTo(new(WasmProcessingStage.Decode, bytes.Length, null, 11));
         }
     }
 }

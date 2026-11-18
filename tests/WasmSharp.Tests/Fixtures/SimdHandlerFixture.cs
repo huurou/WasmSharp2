@@ -6,12 +6,7 @@ namespace WasmSharp.Tests.Fixtures;
 
 internal static class SimdHandlerFixture
 {
-    public static (
-        ExecutionResult Result,
-        WasmValue Value,
-        WasmValue Sentinel,
-        int ValueCount
-    ) Execute(
+    public static (ExecutionResult Result, WasmValue Value, WasmValue Sentinel, int ValueCount) Execute(
         NumericHandlerFixture.Handler handler,
         ReadOnlySpan<WasmValue> operands,
         byte laneIndex = 0,

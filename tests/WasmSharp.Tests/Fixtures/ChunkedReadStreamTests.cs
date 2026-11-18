@@ -20,12 +20,8 @@ internal class ChunkedReadStream_ReadTests
         // Assert
         using (Assert.Multiple())
         {
-            await Assert
-                .That([first, second, third, end])
-                .IsEquivalentTo([2, 2, 1, 0], CollectionOrdering.Matching);
-            await Assert
-                .That(buffer)
-                .IsEquivalentTo(new byte[] { 9, 1, 2, 3, 4, 5, 9 }, CollectionOrdering.Matching);
+            await Assert.That([first, second, third, end]).IsEquivalentTo([2, 2, 1, 0], CollectionOrdering.Matching);
+            await Assert.That(buffer).IsEquivalentTo(new byte[] { 9, 1, 2, 3, 4, 5, 9 }, CollectionOrdering.Matching);
         }
     }
 
@@ -45,9 +41,7 @@ internal class ChunkedReadStream_ReadTests
         using (Assert.Multiple())
         {
             await Assert.That(count).IsEqualTo(2);
-            await Assert
-                .That(buffer)
-                .IsEquivalentTo(new byte[] { 1, 2, 0 }, CollectionOrdering.Matching);
+            await Assert.That(buffer).IsEquivalentTo(new byte[] { 1, 2, 0 }, CollectionOrdering.Matching);
             await Assert.That(input.Position).IsEqualTo(4);
         }
     }
@@ -82,9 +76,7 @@ internal class ChunkedReadStream_ReadTests
         await Assert.That(stream.CanRead).IsFalse();
 
         // Act & Assert
-        await Assert
-            .That(() => stream.Read(new byte[1], 0, 1))
-            .ThrowsExactly<ObjectDisposedException>();
+        await Assert.That(() => stream.Read(new byte[1], 0, 1)).ThrowsExactly<ObjectDisposedException>();
     }
 }
 
@@ -107,9 +99,7 @@ internal class ChunkedReadStream_SeekTests
         // Act & Assert
         using (Assert.Multiple())
         {
-            await Assert
-                .That(() => stream.Seek(0, SeekOrigin.Begin))
-                .ThrowsExactly<NotSupportedException>();
+            await Assert.That(() => stream.Seek(0, SeekOrigin.Begin)).ThrowsExactly<NotSupportedException>();
             await Assert.That(() => stream.Position).ThrowsExactly<NotSupportedException>();
             await Assert.That(() => stream.Position = 0).ThrowsExactly<NotSupportedException>();
             await Assert.That(() => stream.Length).ThrowsExactly<NotSupportedException>();

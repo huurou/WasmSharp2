@@ -30,9 +30,7 @@ internal class ReportStore_ValidateTests
         // Arrange
         var report = RunReportFixture.CreateSample();
         report.Inputs[1] = report.Inputs[0];
-        report.Inputs.Add(
-            new InputRunResult("z.wast") { Status = InputRunStatus.Processed, CommandCount = 0 }
-        );
+        report.Inputs.Add(new InputRunResult("z.wast") { Status = InputRunStatus.Processed, CommandCount = 0 });
         report = report with { Summary = report.Summarize() };
 
         // Act
@@ -55,17 +53,7 @@ internal class ReportStore_ValidateTests
         var cases = report.Inputs[0].Cases;
         report.Inputs[0] = report.Inputs[0] with
         {
-            Cases =
-            [
-                cases[0],
-                cases[2],
-                cases[2],
-                cases[3],
-                cases[3] with
-                {
-                    Id = new("a.wast", 4),
-                },
-            ],
+            Cases = [cases[0], cases[2], cases[2], cases[3], cases[3] with { Id = new("a.wast", 4) }],
         };
         report.Inputs[1] = report.Inputs[1] with { CommandCount = 3, EnumeratedCount = 3 };
         report = report with { Summary = report.Summarize() };
@@ -110,10 +98,7 @@ internal class ReportStore_ValidateTests
         var artifact = report.Corpus.Inputs[0].Artifacts[0];
         report.Corpus.Inputs[0].Artifacts[0] = artifact with
         {
-            Script = artifact.Script! with
-            {
-                Commands = [.. artifact.Script.Commands, new(4, 5, "module", null, null)],
-            },
+            Script = artifact.Script! with { Commands = [.. artifact.Script.Commands, new(4, 5, "module", null, null)] },
         };
 
         // Act
@@ -142,9 +127,7 @@ internal class ReportStore_ValidateTests
         using (Assert.Multiple())
         {
             await Assert.That(HasIssue(issues, RecordIssueKind.Duplicate, "素材のa.wast")).IsTrue();
-            await Assert
-                .That(HasIssue(issues, RecordIssueKind.Inconsistent, "素材の集計"))
-                .IsTrue();
+            await Assert.That(HasIssue(issues, RecordIssueKind.Inconsistent, "素材の集計")).IsTrue();
         }
     }
 
@@ -168,11 +151,7 @@ internal class ReportStore_ValidateTests
         using (Assert.Multiple())
         {
             await Assert.That(HasIssue(issues, RecordIssueKind.Unprocessed, "b.wast")).IsTrue();
-            await Assert
-                .That(
-                    HasIssue(issues, RecordIssueKind.Inconsistent, "処理の完了が記録されています")
-                )
-                .IsTrue();
+            await Assert.That(HasIssue(issues, RecordIssueKind.Inconsistent, "処理の完了が記録されています")).IsTrue();
             await Assert.That(issues.Any(x => x.Kind == RecordIssueKind.Missing)).IsFalse();
         }
     }
@@ -192,12 +171,8 @@ internal class ReportStore_ValidateTests
         // Assert
         using (Assert.Multiple())
         {
-            await Assert
-                .That(issues.Count(x => x.Kind == RecordIssueKind.Unprocessed))
-                .IsEqualTo(1);
-            await Assert
-                .That(issues.Count(x => x.Kind == RecordIssueKind.OutputFailed))
-                .IsEqualTo(1);
+            await Assert.That(issues.Count(x => x.Kind == RecordIssueKind.Unprocessed)).IsEqualTo(1);
+            await Assert.That(issues.Count(x => x.Kind == RecordIssueKind.OutputFailed)).IsEqualTo(1);
         }
     }
 
@@ -233,9 +208,7 @@ internal class ReportStore_ValidateTests
         // Assert
         using (Assert.Multiple())
         {
-            await Assert
-                .That(HasIssue(issues, RecordIssueKind.Unprocessed, "unprocessed.wast"))
-                .IsTrue();
+            await Assert.That(HasIssue(issues, RecordIssueKind.Unprocessed, "unprocessed.wast")).IsTrue();
             await Assert.That(HasIssue(issues, RecordIssueKind.Unprocessed, "処理の完了")).IsTrue();
             await Assert.That(issues.Count).IsEqualTo(2);
         }
@@ -280,14 +253,8 @@ internal class ReportStore_ValidateTests
         // Assert
         using (Assert.Multiple())
         {
-            await Assert
-                .That(HasIssue(issues, RecordIssueKind.Unprocessed, "unprocessed.wast"))
-                .IsTrue();
-            await Assert
-                .That(
-                    HasIssue(issues, RecordIssueKind.Inconsistent, "処理の完了が記録されています")
-                )
-                .IsTrue();
+            await Assert.That(HasIssue(issues, RecordIssueKind.Unprocessed, "unprocessed.wast")).IsTrue();
+            await Assert.That(HasIssue(issues, RecordIssueKind.Inconsistent, "処理の完了が記録されています")).IsTrue();
             await Assert.That(issues.Length).IsEqualTo(2);
         }
     }
@@ -304,17 +271,13 @@ internal class ReportStore_ValidateTests
         var issues = ReportStore.Validate(report);
 
         // Assert
-        await Assert
-            .That(issues)
-            .Contains(new RecordIssue(RecordIssueKind.Unprocessed, "b.wastは未処理です。"));
+        await Assert.That(issues).Contains(new RecordIssue(RecordIssueKind.Unprocessed, "b.wastは未処理です。"));
     }
 
     [Test]
     [Arguments(-1)]
     [Arguments(5)]
-    public async Task 未処理command数が列挙済み範囲を外れる_件数の不整合を報告し欠落件数を推測しない(
-        int unprocessedCount
-    )
+    public async Task 未処理command数が列挙済み範囲を外れる_件数の不整合を報告し欠落件数を推測しない(int unprocessedCount)
     {
         // Arrange
         var report = RunReportFixture.CreateSample();
@@ -344,8 +307,6 @@ internal class ReportStore_ValidateTests
 
     private static bool HasIssue(IEnumerable<RecordIssue> issues, RecordIssueKind kind, string text)
     {
-        return issues.Any(x =>
-            x.Kind == kind && x.Message.Contains(text, StringComparison.Ordinal)
-        );
+        return issues.Any(x => x.Kind == kind && x.Message.Contains(text, StringComparison.Ordinal));
     }
 }

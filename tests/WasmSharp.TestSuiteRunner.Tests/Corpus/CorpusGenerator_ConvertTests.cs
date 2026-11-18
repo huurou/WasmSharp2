@@ -61,9 +61,7 @@ internal class CorpusGenerator_ConvertTests
         // Arrange
         using var workspace = await SuiteWorkspace.CreateAsync();
         var request = workspace.CreateRequest(workspace.CreateProfile());
-        var input = new InputConversionResult(
-            request.Profile.Inputs.Single(x => x.Path == "success.wast")
-        );
+        var input = new InputConversionResult(request.Profile.Inputs.Single(x => x.Path == "success.wast"));
         var outputPath = Path.Combine(workspace.OutputRoot, "modules", "success.json");
 
         // Act
@@ -74,9 +72,7 @@ internal class CorpusGenerator_ConvertTests
         using (Assert.Multiple())
         {
             await Assert.That(result.ExitCode).IsEqualTo(0);
-            await Assert
-                .That(result.Arguments.SequenceEqual(["success.wast", "-o", outputPath]))
-                .IsTrue();
+            await Assert.That(result.Arguments.SequenceEqual(["success.wast", "-o", outputPath])).IsTrue();
             await Assert
                 .That(
                     output
@@ -92,9 +88,7 @@ internal class CorpusGenerator_ConvertTests
             await Assert.That(result.StandardError).IsEqualTo(string.Empty);
             await Assert.That(result.Diagnostics).IsEmpty();
             await Assert.That(File.Exists(outputPath)).IsTrue();
-            await Assert
-                .That(File.Exists(Path.Combine(workspace.OutputRoot, "modules", "success.0.wasm")))
-                .IsTrue();
+            await Assert.That(File.Exists(Path.Combine(workspace.OutputRoot, "modules", "success.0.wasm"))).IsTrue();
         }
     }
 
@@ -104,9 +98,7 @@ internal class CorpusGenerator_ConvertTests
         // Arrange
         using var workspace = await SuiteWorkspace.CreateAsync();
         var request = workspace.CreateRequest(workspace.CreateProfile());
-        var input = new InputConversionResult(
-            request.Profile.Inputs.Single(x => x.Path == "failure.wast")
-        );
+        var input = new InputConversionResult(request.Profile.Inputs.Single(x => x.Path == "failure.wast"));
 
         // Act
         var result = CorpusGenerator.Convert(request, input);
@@ -121,9 +113,7 @@ internal class CorpusGenerator_ConvertTests
             await Assert.That(result.Diagnostics.Count).IsEqualTo(1);
             await Assert.That(result.Diagnostics[0].Operation).IsEqualTo("convert");
             await Assert.That(result.Diagnostics[0].Path).IsEqualTo("failure.wast");
-            await Assert
-                .That(result.Diagnostics[0].Message)
-                .IsEqualTo("変換器が終了値1で終了しました。");
+            await Assert.That(result.Diagnostics[0].Message).IsEqualTo("変換器が終了値1で終了しました。");
         }
     }
 
@@ -133,9 +123,7 @@ internal class CorpusGenerator_ConvertTests
         // Arrange
         using var workspace = await SuiteWorkspace.CreateAsync();
         var request = workspace.CreateRequest(workspace.CreateProfile());
-        var input = new InputConversionResult(
-            request.Profile.Inputs.Single(x => x.Path == "success.wast")
-        );
+        var input = new InputConversionResult(request.Profile.Inputs.Single(x => x.Path == "success.wast"));
         await File.WriteAllTextAsync(Path.Combine(workspace.OutputRoot, "modules"), "既存ファイル");
 
         // Act
@@ -149,9 +137,7 @@ internal class CorpusGenerator_ConvertTests
             await Assert.That(result.StandardOutput).IsEqualTo(string.Empty);
             await Assert.That(result.Diagnostics.Count).IsEqualTo(1);
             await Assert.That(result.Diagnostics[0].Message).Contains("出力先");
-            await Assert
-                .That(result.Diagnostics[0].ExceptionType)
-                .IsEqualTo(typeof(IOException).FullName);
+            await Assert.That(result.Diagnostics[0].ExceptionType).IsEqualTo(typeof(IOException).FullName);
         }
     }
 
@@ -175,9 +161,7 @@ internal class CorpusGenerator_ConvertTests
             await Assert.That(result.Status).IsEqualTo(ConversionStatus.RunnerError);
             await Assert.That(result.ExitCode).IsNull();
             await Assert.That(result.Diagnostics.Count).IsEqualTo(1);
-            await Assert
-                .That(result.Diagnostics[0].ExceptionType)
-                .IsEqualTo(typeof(Win32Exception).FullName);
+            await Assert.That(result.Diagnostics[0].ExceptionType).IsEqualTo(typeof(Win32Exception).FullName);
             await Assert.That(result.Diagnostics[0].Message).Contains("変換器を起動できません");
         }
     }

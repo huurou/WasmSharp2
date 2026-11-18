@@ -35,25 +35,7 @@ internal class Interpreter_V128LoadLaneTests
         byte[] payload = [0xEF, 0xCD, 0xAB, 0x89, 0x67, 0x45, 0x23, 0x81];
         payload.AsSpan(0, byteWidth).CopyTo(before.AsSpan(effectiveAddress));
         memory.Write(0, before);
-        byte[] expected =
-        [
-            0x10,
-            0x32,
-            0x54,
-            0x76,
-            0x98,
-            0xBA,
-            0xDC,
-            0xFE,
-            0xEF,
-            0xCD,
-            0xAB,
-            0x89,
-            0x67,
-            0x45,
-            0x23,
-            0x01,
-        ];
+        byte[] expected = [0x10, 0x32, 0x54, 0x76, 0x98, 0xBA, 0xDC, 0xFE, 0xEF, 0xCD, 0xAB, 0x89, 0x67, 0x45, 0x23, 0x01];
         payload.AsSpan(0, byteWidth).CopyTo(expected.AsSpan(laneIndex * byteWidth));
         var expectedValue = (
             BinaryPrimitives.ReadUInt64LittleEndian(expected),
@@ -84,10 +66,7 @@ internal class Interpreter_V128LoadLaneTests
             Interpreter.V128LoadLane,
             memory,
             in instruction,
-            [
-                WasmValue.FromI32(address),
-                WasmValue.FromV128(0xFEDCBA9876543210UL, 0x0123456789ABCDEFUL),
-            ]
+            [WasmValue.FromI32(address), WasmValue.FromV128(0xFEDCBA9876543210UL, 0x0123456789ABCDEFUL)]
         );
         memory.Read(0, after);
 
@@ -148,10 +127,7 @@ internal class Interpreter_V128LoadLaneTests
             Interpreter.V128LoadLane,
             memory,
             in instruction,
-            [
-                WasmValue.FromI32(address),
-                WasmValue.FromV128(0xFEDCBA9876543210UL, 0x0123456789ABCDEFUL),
-            ]
+            [WasmValue.FromI32(address), WasmValue.FromV128(0xFEDCBA9876543210UL, 0x0123456789ABCDEFUL)]
         );
         memory.Read(0, after);
 

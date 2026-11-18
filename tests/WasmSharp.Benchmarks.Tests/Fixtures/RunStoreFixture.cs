@@ -20,9 +20,7 @@ internal sealed class RunStoreFixture : IDisposable
     internal RunStoreFixture()
     {
         var fixture = JsonNode.Parse(
-            File.ReadAllText(
-                Path.Combine(AppContext.BaseDirectory, "Fixtures", "Data", "run-succeeded.json")
-            )
+            File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures", "Data", "run-succeeded.json"))
         )!;
         Manifest = fixture["run"]!.Deserialize<RunManifest>(json_.Options)!;
         Environment = fixture["environment"]!.Deserialize<RunEnvironment>(json_.Options)!;
@@ -43,17 +41,13 @@ internal sealed class RunStoreFixture : IDisposable
         Source = Source with
         {
             IndexDiff = store.SaveFile(Source.IndexDiff.RelativePath, "fixture index diff\n"u8),
-            WorktreeDiff = store.SaveFile(
-                Source.WorktreeDiff.RelativePath,
-                "fixture worktree diff\n"u8
-            ),
-            UntrackedFiles = [.. Source
-                .UntrackedFiles.Select(x =>
-                    store.SaveFile(
-                        x.RelativePath,
-                        "namespace Fixture;\ninternal sealed class NewType;\n"u8
-                    )
-                )],
+            WorktreeDiff = store.SaveFile(Source.WorktreeDiff.RelativePath, "fixture worktree diff\n"u8),
+            UntrackedFiles =
+            [
+                .. Source.UntrackedFiles.Select(x =>
+                    store.SaveFile(x.RelativePath, "namespace Fixture;\ninternal sealed class NewType;\n"u8)
+                ),
+            ],
         };
         store.SaveSource(Source);
     }
@@ -67,10 +61,7 @@ internal sealed class RunStoreFixture : IDisposable
         result = result with
         {
             RawFiles = [raw, measurements],
-            Metrics = result.Metrics with
-            {
-                Time = result.Metrics.Time! with { RawMeasurements = measurements },
-            },
+            Metrics = result.Metrics with { Time = result.Metrics.Time! with { RawMeasurements = measurements } },
             BenchmarkReport = result.BenchmarkReport! with
             {
                 Processes = [result.BenchmarkReport.Processes.Single() with { CheckFile = check }],

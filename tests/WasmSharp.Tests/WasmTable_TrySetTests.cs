@@ -7,9 +7,7 @@ internal class WasmTable_TrySetTests
     [Test]
     [Arguments(WasmValueKind.FuncRef)]
     [Arguments(WasmValueKind.ExternRef)]
-    public async Task 末尾に非null参照とnullを設定する_同じ実体の公開操作へ反映する(
-        WasmValueKind kind
-    )
+    public async Task 末尾に非null参照とnullを設定する_同じ実体の公開操作へ反映する(WasmValueKind kind)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
@@ -19,14 +17,8 @@ internal class WasmTable_TrySetTests
             .Instantiate(executionContext, [])
             .GetFunction("run");
         var external = new object();
-        var value =
-            kind == WasmValueKind.FuncRef
-                ? WasmValue.FromFuncRef(function)
-                : WasmValue.FromExternRef(external);
-        var empty =
-            kind == WasmValueKind.FuncRef
-                ? WasmValue.FromFuncRef(null)
-                : WasmValue.FromExternRef(null);
+        var value = kind == WasmValueKind.FuncRef ? WasmValue.FromFuncRef(function) : WasmValue.FromExternRef(external);
+        var empty = kind == WasmValueKind.FuncRef ? WasmValue.FromFuncRef(null) : WasmValue.FromExternRef(null);
         var table = new WasmTable(kind, new WasmLimits(2));
         var alias = table;
 
@@ -78,9 +70,7 @@ internal class WasmTable_TrySetTests
             await Assert.That(table.Count).IsEqualTo(count);
             for (uint position = 0; position < count; position++)
             {
-                await Assert
-                    .That(ReferenceEquals(table.Get(position).AsExternRef(), reference))
-                    .IsTrue();
+                await Assert.That(ReferenceEquals(table.Get(position).AsExternRef(), reference)).IsTrue();
             }
         }
     }

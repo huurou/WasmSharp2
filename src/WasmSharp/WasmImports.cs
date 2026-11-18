@@ -11,10 +11,10 @@ public sealed class WasmImports
     /// <summary>
     /// module名とitem名から共有する外部実体への対応
     /// </summary>
-    private ImmutableDictionary<string, ImmutableDictionary<string, ExternalValue>> modules_ =
-        ImmutableDictionary.Create<string, ImmutableDictionary<string, ExternalValue>>(
-            StringComparer.Ordinal
-        );
+    private ImmutableDictionary<string, ImmutableDictionary<string, ExternalValue>> modules_ = ImmutableDictionary.Create<
+        string,
+        ImmutableDictionary<string, ExternalValue>
+    >(StringComparer.Ordinal);
 
     /// <summary>
     /// 提供元の現在の定義を登録する。重複する名前の組があれば全件を追加せず拒否する
@@ -38,10 +38,7 @@ public sealed class WasmImports
         {
             if (existing.ContainsKey(name))
             {
-                throw new ArgumentException(
-                    "同じmodule名とitem名の提供登録が存在します。",
-                    nameof(module)
-                );
+                throw new ArgumentException("同じmodule名とitem名の提供登録が存在します。", nameof(module));
             }
         }
         // 全件の照合と新しい対応表の作成が成功してから登録を確定する。

@@ -17,10 +17,7 @@ internal class WasmTable_TryGetTests
             .Instantiate(executionContext, [])
             .GetFunction("run");
         var external = new object();
-        var value =
-            kind == WasmValueKind.FuncRef
-                ? WasmValue.FromFuncRef(function)
-                : WasmValue.FromExternRef(external);
+        var value = kind == WasmValueKind.FuncRef ? WasmValue.FromFuncRef(function) : WasmValue.FromExternRef(external);
         var table = new WasmTable(kind, new WasmLimits(2));
         table.Set(1, value);
 
@@ -35,9 +32,7 @@ internal class WasmTable_TryGetTests
             await Assert.That(savedSuccess).IsTrue();
             await Assert.That(empty.Kind).IsEqualTo(kind);
             await Assert.That(saved.Kind).IsEqualTo(kind);
-            await Assert
-                .That(kind == WasmValueKind.FuncRef ? empty.AsFuncRef() : empty.AsExternRef())
-                .IsNull();
+            await Assert.That(kind == WasmValueKind.FuncRef ? empty.AsFuncRef() : empty.AsExternRef()).IsNull();
             await Assert
                 .That(
                     ReferenceEquals(
@@ -73,9 +68,7 @@ internal class WasmTable_TryGetTests
             await Assert.That(table.Count).IsEqualTo(count);
             for (uint position = 0; position < count; position++)
             {
-                await Assert
-                    .That(ReferenceEquals(table.Get(position).AsExternRef(), reference))
-                    .IsTrue();
+                await Assert.That(ReferenceEquals(table.Get(position).AsExternRef(), reference)).IsTrue();
             }
         }
     }

@@ -47,22 +47,16 @@ internal partial class WasmModule_ValidateTests
         // Act & Assert
         for (var attempt = 0; attempt < 2; attempt++)
         {
-            var exception = await Assert
-                .That(() => module.Validate())
-                .ThrowsExactly<WasmValidateException>();
+            var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
             using (Assert.Multiple())
             {
-                await Assert
-                    .That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal))
-                    .IsTrue();
+                await Assert.That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal)).IsTrue();
                 await Assert
                     .That(exception.Location)
                     .IsEqualTo(new(WasmProcessingStage.Validate, offset, functionIndex, sectionId));
                 await Assert.That(module.FunctionCodes.IsEmpty).IsTrue();
                 await Assert.That(module.FunctionExportIndices.IsEmpty).IsTrue();
-                await Assert
-                    .That(() => module.Instantiate(executionContext, []))
-                    .ThrowsExactly<InvalidOperationException>();
+                await Assert.That(() => module.Instantiate(executionContext, [])).ThrowsExactly<InvalidOperationException>();
             }
         }
     }
@@ -70,10 +64,7 @@ internal partial class WasmModule_ValidateTests
     [Test]
     [Arguments(false, "duplicate export name")]
     [Arguments(true, "unknown function 1")]
-    public async Task Export名が重複し添字も不正_export内の添字を先に選ぶ(
-        bool invalidIndex,
-        string prefix
-    )
+    public async Task Export名が重複し添字も不正_export内の添字を先に選ぶ(bool invalidIndex, string prefix)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
@@ -81,47 +72,29 @@ internal partial class WasmModule_ValidateTests
             HostLinkingModuleBinary.Create(
                 HostLinkingModuleBinary.Types(([], [])),
                 HostLinkingModuleBinary.Functions(0),
-                HostLinkingModuleBinary.Exports(
-                    ("same", 0, 0),
-                    ("same", 0, invalidIndex ? 1u : 0u)
-                ),
+                HostLinkingModuleBinary.Exports(("same", 0, 0), ("same", 0, invalidIndex ? 1u : 0u)),
                 HostLinkingModuleBinary.Code(([], [0x0B]))
             )
         );
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => module.Validate())
-            .ThrowsExactly<WasmValidateException>();
+        var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
         using (Assert.Multiple())
         {
-            await Assert
-                .That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal))
-                .IsTrue();
+            await Assert.That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal)).IsTrue();
             await Assert
                 .That(exception.Location)
-                .IsEqualTo(
-                    new(
-                        WasmProcessingStage.Validate,
-                        module.Exports[1].ByteOffset,
-                        invalidIndex ? 1u : 0u,
-                        7
-                    )
-                );
+                .IsEqualTo(new(WasmProcessingStage.Validate, module.Exports[1].ByteOffset, invalidIndex ? 1u : 0u, 7));
             await Assert.That(module.FunctionCodes.IsEmpty).IsTrue();
             await Assert.That(module.FunctionExportIndices.IsEmpty).IsTrue();
-            await Assert
-                .That(() => module.Instantiate(executionContext, []))
-                .ThrowsExactly<InvalidOperationException>();
+            await Assert.That(() => module.Instantiate(executionContext, [])).ThrowsExactly<InvalidOperationException>();
         }
     }
 
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task Importのstartが引数結果0個_提供元なしで検証しInstantiateまでcallbackを実行しない(
-        bool useStream
-    )
+    public async Task Importのstartが引数結果0個_提供元なしで検証しInstantiateまでcallbackを実行しない(bool useStream)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
@@ -183,38 +156,27 @@ internal partial class WasmModule_ValidateTests
     [Arguments("", "7F")]
     [Arguments("", "7F7E")]
     [Arguments("7F", "7F")]
-    public async Task Importのstartが引数または結果を持つ_start位置で拒否する(
-        string parameters,
-        string results
-    )
+    public async Task Importのstartが引数または結果を持つ_start位置で拒否する(string parameters, string results)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
         var module = WasmModule.Decode(
             HostLinkingModuleBinary.Create(
-                HostLinkingModuleBinary.Types(
-                    (Convert.FromHexString(parameters), Convert.FromHexString(results))
-                ),
+                HostLinkingModuleBinary.Types((Convert.FromHexString(parameters), Convert.FromHexString(results))),
                 HostLinkingModuleBinary.Imports(("", "", 0, [0])),
                 HostLinkingModuleBinary.Start(0)
             )
         );
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => module.Validate())
-            .ThrowsExactly<WasmValidateException>();
+        var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
         using (Assert.Multiple())
         {
-            await Assert
-                .That(exception!.Message.StartsWith("start function", StringComparison.Ordinal))
-                .IsTrue();
+            await Assert.That(exception!.Message.StartsWith("start function", StringComparison.Ordinal)).IsTrue();
             await Assert
                 .That(exception!.Location)
                 .IsEqualTo(new(WasmProcessingStage.Validate, module.Start!.Value.ByteOffset, 0, 8));
-            await Assert
-                .That(() => module.Instantiate(executionContext, []))
-                .ThrowsExactly<InvalidOperationException>();
+            await Assert.That(() => module.Instantiate(executionContext, [])).ThrowsExactly<InvalidOperationException>();
         }
     }
 
@@ -222,10 +184,7 @@ internal partial class WasmModule_ValidateTests
     [Arguments(false, 0u)]
     [Arguments(true, 2u)]
     [Arguments(true, uint.MaxValue)]
-    public async Task Startが関数添字空間の範囲外_再検証しても成果を反映しない(
-        bool hasFunctions,
-        uint index
-    )
+    public async Task Startが関数添字空間の範囲外_再検証しても成果を反映しない(bool hasFunctions, uint index)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
@@ -245,29 +204,18 @@ internal partial class WasmModule_ValidateTests
         // Act & Assert
         for (var attempt = 0; attempt < 2; attempt++)
         {
-            var exception = await Assert
-                .That(() => module.Validate())
-                .ThrowsExactly<WasmValidateException>();
+            var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
             using (Assert.Multiple())
             {
                 await Assert
-                    .That(
-                        exception!.Message.StartsWith(
-                            $"unknown function {index}",
-                            StringComparison.Ordinal
-                        )
-                    )
+                    .That(exception!.Message.StartsWith($"unknown function {index}", StringComparison.Ordinal))
                     .IsTrue();
                 await Assert
                     .That(exception!.Location)
-                    .IsEqualTo(
-                        new(WasmProcessingStage.Validate, module.Start!.Value.ByteOffset, index, 8)
-                    );
+                    .IsEqualTo(new(WasmProcessingStage.Validate, module.Start!.Value.ByteOffset, index, 8));
                 await Assert.That(module.FunctionCodes.IsEmpty).IsTrue();
                 await Assert.That(module.FunctionExportIndices.IsEmpty).IsTrue();
-                await Assert
-                    .That(() => module.Instantiate(executionContext, []))
-                    .ThrowsExactly<InvalidOperationException>();
+                await Assert.That(() => module.Instantiate(executionContext, [])).ThrowsExactly<InvalidOperationException>();
             }
         }
     }
@@ -281,9 +229,7 @@ internal partial class WasmModule_ValidateTests
         var module = WasmModule.Decode(
             HostLinkingModuleBinary.Create(
                 HostLinkingModuleBinary.Types(([], []), ([], [0x7F])),
-                hasImport
-                    ? HostLinkingModuleBinary.Imports(("", "", 0, [0]))
-                    : HostLinkingModuleBinary.Imports(),
+                hasImport ? HostLinkingModuleBinary.Imports(("", "", 0, [0])) : HostLinkingModuleBinary.Imports(),
                 HostLinkingModuleBinary.Functions(1),
                 HostLinkingModuleBinary.Start(hasImport ? 1u : 0u),
                 HostLinkingModuleBinary.Code(([], [0x41, 0, 0x0B]))
@@ -291,24 +237,13 @@ internal partial class WasmModule_ValidateTests
         );
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => module.Validate())
-            .ThrowsExactly<WasmValidateException>();
+        var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
         using (Assert.Multiple())
         {
-            await Assert
-                .That(exception!.Message.StartsWith("start function", StringComparison.Ordinal))
-                .IsTrue();
+            await Assert.That(exception!.Message.StartsWith("start function", StringComparison.Ordinal)).IsTrue();
             await Assert
                 .That(exception!.Location)
-                .IsEqualTo(
-                    new(
-                        WasmProcessingStage.Validate,
-                        module.Start!.Value.ByteOffset,
-                        hasImport ? 1u : 0u,
-                        8
-                    )
-                );
+                .IsEqualTo(new(WasmProcessingStage.Validate, module.Start!.Value.ByteOffset, hasImport ? 1u : 0u, 8));
         }
     }
 

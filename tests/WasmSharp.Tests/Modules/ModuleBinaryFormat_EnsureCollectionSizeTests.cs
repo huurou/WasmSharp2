@@ -27,14 +27,12 @@ internal class ModuleBinaryFormat_EnsureCollectionSizeTests
         var count = (ulong)Array.MaxLength + 1;
 
         // Act & Assert
-        var exception = await Assert.That(() => CheckSize(count))
-            .ThrowsExactly<WasmImplementationLimitException>();
+        var exception = await Assert.That(() => CheckSize(count)).ThrowsExactly<WasmImplementationLimitException>();
         using (Assert.Multiple())
         {
             await Assert.That(exception!.Reason).IsEqualTo(WasmImplementationLimitReason.CollectionSize);
             await Assert.That(exception.Limit).IsEqualTo(Array.MaxLength);
-            await Assert.That(exception.Location)
-                .IsEqualTo(new WasmFailureLocation(WasmProcessingStage.Decode, 17, 3, 10));
+            await Assert.That(exception.Location).IsEqualTo(new WasmFailureLocation(WasmProcessingStage.Decode, 17, 3, 10));
         }
     }
 

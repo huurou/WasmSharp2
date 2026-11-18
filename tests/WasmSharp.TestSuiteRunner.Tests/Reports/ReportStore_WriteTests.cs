@@ -41,9 +41,7 @@ internal class ReportStore_WriteTests
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task 書込み中に中断する_一時ファイルを残さず既存の結果を保持する(
-        bool replaceExisting
-    )
+    public async Task 書込み中に中断する_一時ファイルを残さず既存の結果を保持する(bool replaceExisting)
     {
         // Arrange
         using var directory = new TemporaryDirectory();

@@ -8,6 +8,7 @@ namespace WasmSharp.Benchmarks.Smoke;
 public class SmokeBenchmarks
 {
     private readonly WasmExecutionContext context_ = new WasmExecutionContext();
+
     // 空moduleの固定バイナリ 素材コンパイラを試走の前提にしない。
     private readonly byte[] moduleBytes_ = [0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00];
     private WasmModule lastModule_ = null!;

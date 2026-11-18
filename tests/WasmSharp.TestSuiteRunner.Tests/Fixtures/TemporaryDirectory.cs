@@ -9,8 +9,7 @@ internal sealed class TemporaryDirectory : IDisposable
         PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
     };
 
-    internal string Root { get; } =
-        Directory.CreateTempSubdirectory("WasmSharp.TestSuiteRunner.Tests ").FullName;
+    internal string Root { get; } = Directory.CreateTempSubdirectory("WasmSharp.TestSuiteRunner.Tests ").FullName;
 
     internal string Combine(string name)
     {

@@ -41,27 +41,56 @@ internal class RunConditions_CreateTests
         };
         List<ProcessConfiguration> jobs =
         [
-            fixture.Jobs.Single() with { JobId = "z-job", Role = "z-role", LaunchCount = 2 },
-            fixture.Jobs.Single() with { JobId = "a-job", Role = "a-role", LaunchCount = 1 },
+            fixture.Jobs.Single() with
+            {
+                JobId = "z-job",
+                Role = "z-role",
+                LaunchCount = 2,
+            },
+            fixture.Jobs.Single() with
+            {
+                JobId = "a-job",
+                Role = "a-role",
+                LaunchCount = 1,
+            },
         ];
         List<ProcessCheck> checks =
         [
-            template.Check with { JobId = "z-job", AffinityBefore = 8, RuntimeVersion = "z-runtime" },
-            template.Check with { JobId = "a-job", AffinityBefore = 4, RuntimeVersion = "a-runtime" },
+            template.Check with
+            {
+                JobId = "z-job",
+                AffinityBefore = 8,
+                RuntimeVersion = "z-runtime",
+            },
+            template.Check with
+            {
+                JobId = "a-job",
+                AffinityBefore = 4,
+                RuntimeVersion = "a-runtime",
+            },
         ];
         var environment = fixture.Environment with { Processes = jobs };
 
         // Act
-        var original = RunConditions.Create(
-            fixture.Manifest, definition, assets, environment, source, jobs, checks,
-            json_
-        );
+        var original = RunConditions.Create(fixture.Manifest, definition, assets, environment, source, jobs, checks, json_);
         var reordered = RunConditions.Create(
             fixture.Manifest,
-            definition with { Workload = [.. definition.Workload.AsEnumerable().Reverse()] },
-            assets with { Assets = [asset with { Sources = [.. asset.Sources.AsEnumerable().Reverse()] }] },
-            environment with { Processes = [.. jobs.AsEnumerable().Reverse()] },
-            source with { Submodules = [.. source.Submodules.AsEnumerable().Reverse()] },
+            definition with
+            {
+                Workload = [.. definition.Workload.AsEnumerable().Reverse()],
+            },
+            assets with
+            {
+                Assets = [asset with { Sources = [.. asset.Sources.AsEnumerable().Reverse()] }],
+            },
+            environment with
+            {
+                Processes = [.. jobs.AsEnumerable().Reverse()],
+            },
+            source with
+            {
+                Submodules = [.. source.Submodules.AsEnumerable().Reverse()],
+            },
             [.. jobs.AsEnumerable().Reverse()],
             [.. checks.AsEnumerable().Reverse()],
             json_
@@ -96,22 +125,25 @@ internal class RunConditions_CreateTests
         using var template = new RunStoreFixture();
         var environment = fixture.Environment with
         {
-            EnvironmentVariables =
-            [
-                new NamedSetting("DOTNET_ROOT", Path.Combine(fixture.RepositoryDirectory, "dotnet")),
-            ],
+            EnvironmentVariables = [new NamedSetting("DOTNET_ROOT", Path.Combine(fixture.RepositoryDirectory, "dotnet"))],
         };
         var check = template.Check with { JobId = fixture.Jobs.Single().JobId };
 
         // Act
         var actual = RunConditions.Create(
-            fixture.Manifest, fixture.Cases.Single(), fixture.Assets, environment,
-            fixture.Source, fixture.Jobs, [check], json_
+            fixture.Manifest,
+            fixture.Cases.Single(),
+            fixture.Assets,
+            environment,
+            fixture.Source,
+            fixture.Jobs,
+            [check],
+            json_
         );
 
         // Assert
-        var arguments = actual.Values
-            .Where(x => x.Key.StartsWith("command.arguments[", StringComparison.Ordinal))
+        var arguments = actual
+            .Values.Where(x => x.Key.StartsWith("command.arguments[", StringComparison.Ordinal))
             .Select(x => x.Value);
         using (Assert.Multiple())
         {

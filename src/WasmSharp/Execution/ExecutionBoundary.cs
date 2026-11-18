@@ -24,11 +24,7 @@ internal static class ExecutionBoundary
     /// <exception cref="WasmExhaustionException">startの実行結果が資源枯渇の場合 処理段階はInstantiate</exception>
     /// <exception cref="WasmImplementationLimitException">実行に必要なフレーム数または値の数が保持上限を超える場合</exception>
     /// <exception cref="InvalidOperationException">ホスト関数の結果がnull、または宣言型と個数・型が異なる場合</exception>
-    internal static void RunStart(
-        WasmExecutionContext executionContext,
-        WasmInstance startInstance,
-        WasmFunction function
-    )
+    internal static void RunStart(WasmExecutionContext executionContext, WasmInstance startInstance, WasmFunction function)
     {
         var context = executionContext.Enter(startInstance.ExecutionOptions, out var isOutermost);
         var outerStage = context.Stage;
@@ -74,30 +70,17 @@ internal static class ExecutionBoundary
     {
         if (function is not DefinedFunction definedFunction)
         {
-            var hostResult = Interpreter.RunHost(
-                executionContext,
-                function,
-                explicitInstance,
-                arguments
-            );
+            var hostResult = Interpreter.RunHost(executionContext, function, explicitInstance, arguments);
 
             ThrowIfFailed(hostResult, WasmProcessingStage.Invoke);
 
             return new WasmResults(hostResult.Values.AsSpan());
         }
 
-        var context = executionContext.Enter(
-            definedFunction.Instance.ExecutionOptions,
-            out var isOutermost
-        );
+        var context = executionContext.Enter(definedFunction.Instance.ExecutionOptions, out var isOutermost);
         try
         {
-            var result = Interpreter.Run(
-                context,
-                definedFunction,
-                arguments,
-                WasmProcessingStage.Invoke
-            );
+            var result = Interpreter.Run(context, definedFunction, arguments, WasmProcessingStage.Invoke);
 
             ThrowIfFailed(result, WasmProcessingStage.Invoke);
 
@@ -124,12 +107,7 @@ internal static class ExecutionBoundary
             throw new WasmTrapException(
                 GetTrapMessage(result),
                 result.TrapReason!.Value,
-                new WasmFailureLocation(
-                    stage,
-                    result.ByteOffset,
-                    result.FunctionIndex,
-                    result.SectionId
-                )
+                new WasmFailureLocation(stage, result.ByteOffset, result.FunctionIndex, result.SectionId)
             );
         }
         if (result.Status == ExecutionStatus.Exhaustion)
@@ -160,11 +138,10 @@ internal static class ExecutionBoundary
             (WasmTrapReason.IntegerOverflow, _) => "integer overflow",
             (WasmTrapReason.InvalidConversionToInteger, _) => "invalid conversion to integer",
             (WasmTrapReason.MemoryOutOfBounds, _) => "out of bounds memory access",
-            (WasmTrapReason.TableOutOfBounds, TrapDiagnosticKind.UndefinedElement) =>
-                "undefined element" + elementIndexSuffix,
-            (WasmTrapReason.TableOutOfBounds, _) => "out of bounds table access",
-            (WasmTrapReason.UninitializedElement, _) => "uninitialized element"
+            (WasmTrapReason.TableOutOfBounds, TrapDiagnosticKind.UndefinedElement) => "undefined element"
                 + elementIndexSuffix,
+            (WasmTrapReason.TableOutOfBounds, _) => "out of bounds table access",
+            (WasmTrapReason.UninitializedElement, _) => "uninitialized element" + elementIndexSuffix,
             (WasmTrapReason.IndirectCallTypeMismatch, _) => "indirect call type mismatch",
             _ => "Wasmの実行中にtrapが発生しました。",
         };

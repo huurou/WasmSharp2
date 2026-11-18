@@ -7,31 +7,21 @@ internal class WasmTable_TryGrowTests
     [Test]
     [Arguments(WasmValueKind.FuncRef)]
     [Arguments(WasmValueKind.ExternRef)]
-    public async Task 非null参照を指定して増大する_既存と追加の参照同一性を保持する(
-        WasmValueKind kind
-    )
+    public async Task 非null参照を指定して増大する_既存と追加の参照同一性を保持する(WasmValueKind kind)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
-        var module = WasmModule
-            .Decode(ConstantModuleBinary.Create(0x7F, 0x41, 0x01, 0x0B))
-            .Validate();
+        var module = WasmModule.Decode(ConstantModuleBinary.Create(0x7F, 0x41, 0x01, 0x0B)).Validate();
         var original =
-            kind == WasmValueKind.FuncRef
-                ? module.Instantiate(executionContext, []).GetFunction("run")
-                : new object();
+            kind == WasmValueKind.FuncRef ? module.Instantiate(executionContext, []).GetFunction("run") : new object();
         var added =
-            kind == WasmValueKind.FuncRef
-                ? module.Instantiate(executionContext, []).GetFunction("run")
-                : new object();
+            kind == WasmValueKind.FuncRef ? module.Instantiate(executionContext, []).GetFunction("run") : new object();
         var originalValue =
             kind == WasmValueKind.FuncRef
                 ? WasmValue.FromFuncRef((WasmFunction)original)
                 : WasmValue.FromExternRef(original);
         var addedValue =
-            kind == WasmValueKind.FuncRef
-                ? WasmValue.FromFuncRef((WasmFunction)added)
-                : WasmValue.FromExternRef(added);
+            kind == WasmValueKind.FuncRef ? WasmValue.FromFuncRef((WasmFunction)added) : WasmValue.FromExternRef(added);
         var table = new WasmTable(kind, new WasmLimits(1, 3));
         table.Set(0, originalValue);
         var alias = table;
@@ -50,11 +40,8 @@ internal class WasmTable_TryGrowTests
             {
                 var value = table.Get(index);
                 await Assert.That(value.Kind).IsEqualTo(kind);
-                var reference =
-                    kind == WasmValueKind.FuncRef ? value.AsFuncRef() : value.AsExternRef();
-                await Assert
-                    .That(ReferenceEquals(reference, index == 0 ? original : added))
-                    .IsTrue();
+                var reference = kind == WasmValueKind.FuncRef ? value.AsFuncRef() : value.AsExternRef();
+                await Assert.That(ReferenceEquals(reference, index == 0 ? original : added)).IsTrue();
             }
         }
     }
@@ -62,16 +49,11 @@ internal class WasmTable_TryGrowTests
     [Test]
     [Arguments(WasmValueKind.FuncRef)]
     [Arguments(WasmValueKind.ExternRef)]
-    public async Task 空のtableを型別nullで増大する_全追加要素を指定型のnullにする(
-        WasmValueKind kind
-    )
+    public async Task 空のtableを型別nullで増大する_全追加要素を指定型のnullにする(WasmValueKind kind)
     {
         // Arrange
         var table = new WasmTable(kind, new WasmLimits(0));
-        var initial =
-            kind == WasmValueKind.FuncRef
-                ? WasmValue.FromFuncRef(null)
-                : WasmValue.FromExternRef(null);
+        var initial = kind == WasmValueKind.FuncRef ? WasmValue.FromFuncRef(null) : WasmValue.FromExternRef(null);
 
         // Act
         var success = table.TryGrow(2, initial, out var previous);
@@ -119,9 +101,7 @@ internal class WasmTable_TryGrowTests
         table.Set(0, WasmValue.FromExternRef(reference));
 
         // Act & Assert
-        await Assert
-            .That(() => table.TryGrow(delta, WasmValue.FromFuncRef(null), out _))
-            .ThrowsExactly<ArgumentException>();
+        await Assert.That(() => table.TryGrow(delta, WasmValue.FromFuncRef(null), out _)).ThrowsExactly<ArgumentException>();
         using (Assert.Multiple())
         {
             await Assert.That(table.Count).IsEqualTo(1u);
@@ -132,10 +112,7 @@ internal class WasmTable_TryGrowTests
     [Test]
     [Arguments(1u, 1u)]
     [Arguments(null, uint.MaxValue)]
-    public async Task 宣言または仕様上限を超える_現在サイズを返して内容を保ちfalseになる(
-        uint? maximum,
-        uint delta
-    )
+    public async Task 宣言または仕様上限を超える_現在サイズを返して内容を保ちfalseになる(uint? maximum, uint delta)
     {
         // Arrange
         var table = new WasmTable(WasmValueKind.ExternRef, new WasmLimits(1, maximum));
@@ -164,11 +141,7 @@ internal class WasmTable_TryGrowTests
         table.Set(0, WasmValue.FromExternRef(reference));
 
         // Act
-        var success = table.TryGrow(
-            (uint)Array.MaxLength,
-            WasmValue.FromExternRef(null),
-            out var previous
-        );
+        var success = table.TryGrow((uint)Array.MaxLength, WasmValue.FromExternRef(null), out var previous);
 
         // Assert
         using (Assert.Multiple())

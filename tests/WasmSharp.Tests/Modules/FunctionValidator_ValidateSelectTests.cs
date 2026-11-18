@@ -24,11 +24,7 @@ internal partial class FunctionValidator_ValidateTests
         var executionContext = new WasmExecutionContext();
         var kind = (byte)valueType;
         byte[] select = typed ? [0x1C, 1, kind] : [0x1B];
-        var module = DecodeControl(
-            [kind, kind, 0x7F],
-            [kind],
-            [0x20, 0, 0x20, 1, 0x20, 2, .. select, 0x0B]
-        );
+        var module = DecodeControl([kind, kind, 0x7F], [kind], [0x20, 0, 0x20, 1, 0x20, 2, .. select, 0x0B]);
         var definition = module.Functions[0];
 
         // Act
@@ -45,18 +41,12 @@ internal partial class FunctionValidator_ValidateTests
         using (Assert.Multiple())
         {
             await Assert.That(code.Instructions.Length).IsEqualTo(5);
-            await Assert
-                .That(code.Instructions[3].Opcode)
-                .IsEqualTo(typed ? ExecutionOpcode.Op1C : ExecutionOpcode.Op1B);
-            await Assert
-                .That(code.Instructions[3].ByteOffset)
-                .IsEqualTo(definition.Instructions[3].ByteOffset);
+            await Assert.That(code.Instructions[3].Opcode).IsEqualTo(typed ? ExecutionOpcode.Op1C : ExecutionOpcode.Op1B);
+            await Assert.That(code.Instructions[3].ByteOffset).IsEqualTo(definition.Instructions[3].ByteOffset);
             await Assert.That(code.MaxOperandStack).IsEqualTo(3);
             await Assert.That(module.FunctionCodes.IsEmpty).IsTrue();
             await Assert.That(module.Functions[0]).IsSameReferenceAs(definition);
-            await Assert
-                .That(() => module.Instantiate(executionContext, []))
-                .ThrowsExactly<InvalidOperationException>();
+            await Assert.That(() => module.Instantiate(executionContext, [])).ThrowsExactly<InvalidOperationException>();
         }
     }
 
@@ -92,9 +82,7 @@ internal partial class FunctionValidator_ValidateTests
         // Assert
         using (Assert.Multiple())
         {
-            await Assert
-                .That(code.Instructions.Length)
-                .IsEqualTo(module.Functions[0].Instructions.Length);
+            await Assert.That(code.Instructions.Length).IsEqualTo(module.Functions[0].Instructions.Length);
             await Assert.That(module.FunctionCodes.IsEmpty).IsTrue();
         }
     }
@@ -128,35 +116,20 @@ internal partial class FunctionValidator_ValidateTests
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
-        var module = DecodeControl(
-            Convert.FromHexString(parameters),
-            [],
-            Convert.FromHexString(body)
-        );
+        var module = DecodeControl(Convert.FromHexString(parameters), [], Convert.FromHexString(body));
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => module.Validate())
-            .ThrowsExactly<WasmValidateException>();
+        var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
         using (Assert.Multiple())
         {
-            await Assert
-                .That(exception!.Message.StartsWith("type mismatch", StringComparison.Ordinal))
-                .IsTrue();
+            await Assert.That(exception!.Message.StartsWith("type mismatch", StringComparison.Ordinal)).IsTrue();
             await Assert
                 .That(exception.Location)
                 .IsEqualTo(
-                    new(
-                        WasmProcessingStage.Validate,
-                        module.Functions[0].Instructions[failureIndex].ByteOffset,
-                        0,
-                        10
-                    )
+                    new(WasmProcessingStage.Validate, module.Functions[0].Instructions[failureIndex].ByteOffset, 0, 10)
                 );
             await Assert.That(module.FunctionCodes.IsEmpty).IsTrue();
-            await Assert
-                .That(() => module.Instantiate(executionContext, []))
-                .ThrowsExactly<InvalidOperationException>();
+            await Assert.That(() => module.Instantiate(executionContext, [])).ThrowsExactly<InvalidOperationException>();
         }
     }
 
@@ -174,24 +147,14 @@ internal partial class FunctionValidator_ValidateTests
         var select = module.Functions[0].Instructions[0];
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => module.Validate())
-            .ThrowsExactly<WasmValidateException>();
+        var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
         using (Assert.Multiple())
         {
             await Assert.That(select.SelectTypes.Length).IsEqualTo(typeCount);
-            await Assert
-                .That(
-                    exception!.Message.StartsWith("invalid result arity", StringComparison.Ordinal)
-                )
-                .IsTrue();
-            await Assert
-                .That(exception.Location)
-                .IsEqualTo(new(WasmProcessingStage.Validate, select.ByteOffset, 0, 10));
+            await Assert.That(exception!.Message.StartsWith("invalid result arity", StringComparison.Ordinal)).IsTrue();
+            await Assert.That(exception.Location).IsEqualTo(new(WasmProcessingStage.Validate, select.ByteOffset, 0, 10));
             await Assert.That(module.FunctionCodes.IsEmpty).IsTrue();
-            await Assert
-                .That(() => module.Instantiate(executionContext, []))
-                .ThrowsExactly<InvalidOperationException>();
+            await Assert.That(() => module.Instantiate(executionContext, [])).ThrowsExactly<InvalidOperationException>();
         }
     }
 }

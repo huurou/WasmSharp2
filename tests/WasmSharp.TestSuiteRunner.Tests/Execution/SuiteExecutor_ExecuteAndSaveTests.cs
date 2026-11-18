@@ -71,15 +71,9 @@ public class SuiteExecutor_ExecuteAndSaveTests
             await Assert.That(result.SaveFailure).IsNull();
             await Assert.That(stored.Report.Inputs[0].CommandCount).IsNull();
             await Assert.That(stored.Report.Inputs[0].Cases.Count).IsEqualTo(1);
-            await Assert
-                .That(stored.Report.Inputs[0].Cases[0].Outcome)
-                .IsEqualTo(CaseOutcome.Passed);
-            await Assert
-                .That(stored.Report.Inputs[1].Cases[0].Outcome)
-                .IsEqualTo(CaseOutcome.Passed);
-            await Assert
-                .That(CompletionPolicy.Run(stored.Report, stored.Issues, true).ExitCode)
-                .IsEqualTo(1);
+            await Assert.That(stored.Report.Inputs[0].Cases[0].Outcome).IsEqualTo(CaseOutcome.Passed);
+            await Assert.That(stored.Report.Inputs[1].Cases[0].Outcome).IsEqualTo(CaseOutcome.Passed);
+            await Assert.That(CompletionPolicy.Run(stored.Report, stored.Issues, true).ExitCode).IsEqualTo(1);
         }
     }
 
@@ -108,12 +102,8 @@ public class SuiteExecutor_ExecuteAndSaveTests
             await Assert.That(result.SaveFailure).IsNull();
             await Assert.That(stored.Report.Completion.OutputComplete).IsTrue();
             await Assert.That(stored.Report.Completion.ProcessingComplete).IsFalse();
-            await Assert
-                .That(stored.Report.Inputs.All(x => x.Status == InputRunStatus.Unprocessed))
-                .IsTrue();
-            await Assert
-                .That(CompletionPolicy.Run(stored.Report, stored.Issues, true).ExitCode)
-                .IsEqualTo(2);
+            await Assert.That(stored.Report.Inputs.All(x => x.Status == InputRunStatus.Unprocessed)).IsTrue();
+            await Assert.That(CompletionPolicy.Run(stored.Report, stored.Issues, true).ExitCode).IsEqualTo(2);
         }
     }
 
@@ -122,23 +112,14 @@ public class SuiteExecutor_ExecuteAndSaveTests
     {
         // Arrange
         using var fixture = CorpusFixture.Create();
-        fixture.WriteArtifact(
-            CorpusFixture.A,
-            "modules/a.2.wasm",
-            ScriptExecutionFixture.Exports()
-        );
+        fixture.WriteArtifact(CorpusFixture.A, "modules/a.2.wasm", ScriptExecutionFixture.Exports());
         Directory.Move(fixture.SourceRoot, Path.Combine(fixture.Root, "unused-source"));
         fixture.MoveOutput();
         var manifest = SuiteExecutor_ExecuteTests.Complete(fixture.Manifest);
         var output = Path.Combine(fixture.OutputRoot, "run.json");
 
         // Act
-        var result = SuiteExecutor.ExecuteAndSave(
-            manifest,
-            fixture.ManifestPath,
-            output,
-            reportStore_
-        );
+        var result = SuiteExecutor.ExecuteAndSave(manifest, fixture.ManifestPath, output, reportStore_);
 
         // Assert
         var stored = reportStore_.ReadRunReport(output);
@@ -148,19 +129,11 @@ public class SuiteExecutor_ExecuteAndSaveTests
             await Assert.That(result.SaveFailure).IsNull();
             await Assert.That(stored.Issues.IsEmpty).IsTrue();
             await Assert.That(stored.Report.Summary.EnumeratedCommandCount).IsEqualTo(5);
+            await Assert.That(CompletionPolicy.Run(stored.Report, stored.Issues, true).ExitCode).IsEqualTo(0);
             await Assert
-                .That(CompletionPolicy.Run(stored.Report, stored.Issues, true).ExitCode)
+                .That(CompletionPolicy.Verify(stored.Report, stored.Issues, manifest.Profile.ToProfile()).ExitCode)
                 .IsEqualTo(0);
-            await Assert
-                .That(
-                    CompletionPolicy
-                        .Verify(stored.Report, stored.Issues, manifest.Profile.ToProfile())
-                        .ExitCode
-                )
-                .IsEqualTo(0);
-            await Assert
-                .That(ReferenceEquals(result.Report.Corpus.Inputs, manifest.Inputs))
-                .IsFalse();
+            await Assert.That(ReferenceEquals(result.Report.Corpus.Inputs, manifest.Inputs)).IsFalse();
         }
     }
 
@@ -188,11 +161,7 @@ public class SuiteExecutor_ExecuteAndSaveTests
             await Assert.That(result.SaveFailure!.Path).IsEqualTo(output);
             await Assert.That(result.Report.Completion.OutputComplete).IsFalse();
             await Assert
-                .That(
-                    CompletionPolicy
-                        .Run(result.Report, ReportStore.Validate(result.Report), false)
-                        .ExitCode
-                )
+                .That(CompletionPolicy.Run(result.Report, ReportStore.Validate(result.Report), false).ExitCode)
                 .IsEqualTo(2);
         }
     }

@@ -8,9 +8,7 @@ internal partial class WasmModule_DecodeTests
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task 間接callが非最短LEBとuint全域の二添字を持つ_元位置と型tableの順序を保持する(
-        bool useStream
-    )
+    public async Task 間接callが非最短LEBとuint全域の二添字を持つ_元位置と型tableの順序を保持する(bool useStream)
     {
         // Arrange
         byte[] body = [0x11, 0x80, 1, 0xFF, 0xFF, 0xFF, 0xFF, 0x0F, 0x11, 0x80, 0, 0x81, 0, 0x0B];
@@ -28,12 +26,7 @@ internal partial class WasmModule_DecodeTests
         using (Assert.Multiple())
         {
             await Assert
-                .That(
-                    module
-                        .Functions[0]
-                        .Instructions.Select(x => x.Index)
-                        .SequenceEqual(new uint[] { 128, 0, 0 })
-                )
+                .That(module.Functions[0].Instructions.Select(x => x.Index).SequenceEqual(new uint[] { 128, 0, 0 }))
                 .IsTrue();
             await Assert
                 .That(
@@ -48,13 +41,7 @@ internal partial class WasmModule_DecodeTests
                     module
                         .Functions[0]
                         .Instructions.Select(x => x.ByteOffset)
-                        .SequenceEqual(
-                            [
-                                bytes.Length - body.Length,
-                                bytes.Length - 6,
-                                bytes.Length - 1,
-                            ]
-                        )
+                        .SequenceEqual([bytes.Length - body.Length, bytes.Length - 6, bytes.Length - 1])
                 )
                 .IsTrue();
         }
@@ -83,24 +70,13 @@ internal partial class WasmModule_DecodeTests
         );
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => WasmModule.Decode(bytes))
-            .ThrowsExactly<WasmDecodeException>();
+        var exception = await Assert.That(() => WasmModule.Decode(bytes)).ThrowsExactly<WasmDecodeException>();
         using (Assert.Multiple())
         {
-            await Assert
-                .That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal))
-                .IsTrue();
+            await Assert.That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal)).IsTrue();
             await Assert
                 .That(exception.Location)
-                .IsEqualTo(
-                    new(
-                        WasmProcessingStage.Decode,
-                        bytes.Length - instructions.Length + relativeOffset,
-                        0,
-                        10
-                    )
-                );
+                .IsEqualTo(new(WasmProcessingStage.Decode, bytes.Length - instructions.Length + relativeOffset, 0, 10));
         }
     }
 }

@@ -1,10 +1,9 @@
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 
 namespace WasmSharp.Generators;
 
@@ -84,9 +83,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
             "WasmSharp.Instructions.InstructionAttribute",
             static (node, _) => node is Microsoft.CodeAnalysis.CSharp.Syntax.ClassDeclarationSyntax,
             (context, _) =>
-                context
-                    .Attributes.Select(x => ParseDeclaration(x, context.SemanticModel.Compilation))
-                    .ToImmutableArray()
+                context.Attributes.Select(x => ParseDeclaration(x, context.SemanticModel.Compilation)).ToImmutableArray()
         );
         context.RegisterSourceOutput(
             declarations.Collect(),
@@ -111,11 +108,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
                     if (!keys.Add((instruction.Prefix, instruction.Code)))
                     {
                         context.ReportDiagnostic(
-                            Diagnostic.Create(
-                                duplicateOpcode_,
-                                instruction.Location,
-                                instruction.Name
-                            )
+                            Diagnostic.Create(duplicateOpcode_, instruction.Location, instruction.Name)
                         );
                         hasErrors = true;
                     }
@@ -167,30 +160,23 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
             arguments.Length == 3 ? null : (string?)arguments[6].Value,
             arguments.Length == 9
                     ? new NumericSignatureDeclaration(
-                        arguments[7].IsNull
-                            ? []
-                            : [.. arguments[7].Values.Select(GetEnumName)],
+                        arguments[7].IsNull ? [] : [.. arguments[7].Values.Select(GetEnumName)],
                         GetEnumName(arguments[8])
                     )
-                : arguments.Length == 10
-                && arguments[7].Type!.SpecialType == SpecialType.System_Byte
+                : arguments.Length == 10 && arguments[7].Type!.SpecialType == SpecialType.System_Byte
                     ? new NumericSignatureDeclaration(
                         [.. Enumerable.Repeat(GetEnumName(arguments[8]), (byte)arguments[7].Value!)],
                         GetEnumName(arguments[9])
                     )
                 : null,
-            arguments.Length == 10
-            && arguments[7].Type!.ToDisplayString() == "WasmSharp.WasmValueKind"
+            arguments.Length == 10 && arguments[7].Type!.ToDisplayString() == "WasmSharp.WasmValueKind"
                 ? new MemoryAccessSignatureDeclaration(
                     GetEnumName(arguments[7]),
                     (byte)arguments[8].Value!,
                     (bool)arguments[9].Value!
                 )
                 : null,
-            attribute
-                .NamedArguments.Where(x => x.Key == "LaneCount")
-                .Select(x => (byte)x.Value.Value!)
-                .SingleOrDefault(),
+            attribute.NamedArguments.Where(x => x.Key == "LaneCount").Select(x => (byte)x.Value.Value!).SingleOrDefault(),
             location
         );
         if (
@@ -237,10 +223,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
         }
 
         var interpreter = compilation.GetTypeByMetadataName("WasmSharp.Execution.Interpreter");
-        var methods = interpreter
-            ?.GetMembers(declaration.Handler)
-            .OfType<IMethodSymbol>()
-            .ToArray();
+        var methods = interpreter?.GetMembers(declaration.Handler).OfType<IMethodSymbol>().ToArray();
         if (methods == null || methods.Length == 0)
         {
             return (null, Diagnostic.Create(missingHandler_, location, declaration.Name));
@@ -264,8 +247,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
             && method.ReturnType.ToDisplayString() == "WasmSharp.Execution.ExecutionResult"
             && method.Parameters.Length == 2
             && method.Parameters[0].RefKind == RefKind.None
-            && method.Parameters[0].Type.ToDisplayString()
-                == "WasmSharp.Execution.InterpreterContext"
+            && method.Parameters[0].Type.ToDisplayString() == "WasmSharp.Execution.InterpreterContext"
             && method.Parameters[1].RefKind == RefKind.In
             && method.Parameters[1].Type.ToDisplayString() == "WasmSharp.Execution.Instruction";
     }
@@ -339,10 +321,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
             return false;
         }
         return declaration.Immediate != "Shuffle"
-            || (
-                signature is { InputTypes.Length: 2, ResultType: "V128" }
-                && signature.InputTypes.All(x => x == "V128")
-            );
+            || (signature is { InputTypes.Length: 2, ResultType: "V128" } && signature.InputTypes.All(x => x == "V128"));
     }
 
     /// <summary>
@@ -359,8 +338,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
         if (
             !isLoad
             && !isStore
-            && declaration.StackEffect
-                is not ("MemoryLoad" or "MemoryStore" or "MemoryLoadLane" or "MemoryStoreLane")
+            && declaration.StackEffect is not ("MemoryLoad" or "MemoryStore" or "MemoryLoadLane" or "MemoryStoreLane")
             && declaration.Immediate != "MemoryArgumentLaneIndex"
             && signature == null
         )
@@ -416,9 +394,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
     /// </summary>
     /// <param name="instructions">診断がなく、prefixと命令番号が重複しない命令宣言の一覧</param>
     /// <returns>全宣言の記述子と、handlerを持つ宣言の実行opcodeを含むC#ソース</returns>
-    private static string GenerateInstructionSet(
-        ImmutableArray<InstructionDeclaration> instructions
-    )
+    private static string GenerateInstructionSet(ImmutableArray<InstructionDeclaration> instructions)
     {
         var source = new StringBuilder(
             """
@@ -488,10 +464,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
         foreach (var instruction in instructions)
         {
             var key = $"new OpcodeKey({instruction.Prefix}, {instruction.Code}u)";
-            var executionOpcode =
-                instruction.Handler == null
-                    ? "null"
-                    : $"ExecutionOpcode.{instruction.ExecutionOpcode}";
+            var executionOpcode = instruction.Handler == null ? "null" : $"ExecutionOpcode.{instruction.ExecutionOpcode}";
             var signature = instruction.NumericSignature;
             var numericSignature =
                 signature == null
@@ -565,9 +538,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
             source.AppendLine(
                 $"                case global::WasmSharp.Instructions.ExecutionOpcode.{instruction.ExecutionOpcode}:"
             );
-            source.AppendLine(
-                $"                    result = @{instruction.Handler}(context, in instruction);"
-            );
+            source.AppendLine($"                    result = @{instruction.Handler}(context, in instruction);");
             source.AppendLine("                    break;");
         }
         source.AppendLine(
@@ -627,10 +598,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
     /// </summary>
     /// <param name="InputTypes">スタック下側から上側の順序で並ぶWasmValueKindの列挙子名</param>
     /// <param name="ResultType">結果のWasmValueKindの列挙子名</param>
-    private sealed record NumericSignatureDeclaration(
-        ImmutableArray<string> InputTypes,
-        string ResultType
-    );
+    private sealed record NumericSignatureDeclaration(ImmutableArray<string> InputTypes, string ResultType);
 
     /// <summary>
     /// 生成するメモリアクセス情報の属性値
@@ -638,9 +606,5 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
     /// <param name="ValueType">読み書きするWasmValueKindの列挙子名</param>
     /// <param name="ByteWidth">読み書きするバイト数</param>
     /// <param name="SignExtend">狭い整数のロードで符号拡張するか</param>
-    private sealed record MemoryAccessSignatureDeclaration(
-        string ValueType,
-        byte ByteWidth,
-        bool SignExtend
-    );
+    private sealed record MemoryAccessSignatureDeclaration(string ValueType, byte ByteWidth, bool SignExtend);
 }

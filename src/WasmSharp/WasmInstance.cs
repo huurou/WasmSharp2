@@ -87,18 +87,14 @@ public sealed class WasmInstance
         Memories = memories;
         Tables = tables;
         exports_ = module.Exports.ToImmutableDictionary(x => x.Name, StringComparer.Ordinal);
-        var functions = ImmutableArray.CreateBuilder<WasmFunction>(
-            importedFunctions.Length + module.Functions.Length
-        );
+        var functions = ImmutableArray.CreateBuilder<WasmFunction>(importedFunctions.Length + module.Functions.Length);
         functions.AddRange(importedFunctions);
         for (var i = 0; i < module.Functions.Length; i++)
         {
             functions.Add(new DefinedFunction(this, (uint)(importedFunctions.Length + i), (uint)i));
         }
         Functions = functions.MoveToImmutable();
-        var globals = ImmutableArray.CreateBuilder<WasmGlobal>(
-            importedGlobals.Length + module.Globals.Length
-        );
+        var globals = ImmutableArray.CreateBuilder<WasmGlobal>(importedGlobals.Length + module.Globals.Length);
         globals.AddRange(importedGlobals);
         foreach (var global in module.Globals)
         {

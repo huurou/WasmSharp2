@@ -29,9 +29,7 @@ internal class DefinedFunction_ConstructorTests
         {
             await Assert.That(ReferenceEquals(function.Instance, instance)).IsTrue();
             await Assert.That(function.FunctionIndex).IsEqualTo(uint.MaxValue);
-            await Assert
-                .That(ReferenceEquals(function.Type, instance.GetFunction("second").Type))
-                .IsTrue();
+            await Assert.That(ReferenceEquals(function.Type, instance.GetFunction("second").Type)).IsTrue();
             await Assert.That(result.Values.Single().AsI64()).IsEqualTo(42L);
         }
     }

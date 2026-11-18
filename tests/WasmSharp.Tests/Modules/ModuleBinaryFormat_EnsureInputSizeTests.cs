@@ -14,8 +14,7 @@ internal class ModuleBinaryFormat_EnsureInputSizeTests
         var bufferedLength = (long)Array.MaxLength - 4096 + difference;
 
         // Act & Assert
-        await Assert.That(() => ModuleBinaryFormat.EnsureInputSize(bufferedLength, 4096))
-            .ThrowsNothing();
+        await Assert.That(() => ModuleBinaryFormat.EnsureInputSize(bufferedLength, 4096)).ThrowsNothing();
     }
 
     [Test]
@@ -25,13 +24,15 @@ internal class ModuleBinaryFormat_EnsureInputSizeTests
         var bufferedLength = (long)Array.MaxLength - 2;
 
         // Act & Assert
-        var exception = await Assert.That(() => ModuleBinaryFormat.EnsureInputSize(bufferedLength, 3))
+        var exception = await Assert
+            .That(() => ModuleBinaryFormat.EnsureInputSize(bufferedLength, 3))
             .ThrowsExactly<WasmImplementationLimitException>();
         using (Assert.Multiple())
         {
             await Assert.That(exception!.Reason).IsEqualTo(WasmImplementationLimitReason.InputSize);
             await Assert.That(exception.Limit).IsEqualTo(Array.MaxLength);
-            await Assert.That(exception.Location)
+            await Assert
+                .That(exception.Location)
                 .IsEqualTo(new WasmFailureLocation(WasmProcessingStage.Decode, bufferedLength));
         }
     }

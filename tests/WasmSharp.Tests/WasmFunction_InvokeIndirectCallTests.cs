@@ -20,10 +20,7 @@ internal partial class WasmFunction_InvokeTests
                     HostLinkingModuleBinary.Globals((0x7F, false, [0x41, 42, 0x0B])),
                     HostLinkingModuleBinary.Exports(("f", 0, 0), ("t", 1, 0), ("m", 2, 0)),
                     HostLinkingModuleBinary.Code(
-                        (
-                            [],
-                            [0x20, 1, 0x20, 0, 0x23, 0, 0x41, 0, 0x2D, 0, 0, 0x41, 0, 0x25, 0, 0x0B]
-                        )
+                        ([], [0x20, 1, 0x20, 0, 0x23, 0, 0x41, 0, 0x2D, 0, 0, 0x41, 0, 0x25, 0, 0x0B])
                     )
                 )
             )
@@ -44,17 +41,12 @@ internal partial class WasmFunction_InvokeTests
                         ([0x7F, 0x7E], [0x7E, 0x7F, 0x7F, 0x7F, 0x70]),
                         ([0x7F, 0x7E, 0x7F], [0x7E, 0x7F, 0x7F, 0x7F, 0x70])
                     ),
-                    HostLinkingModuleBinary.Imports(
-                        ("env", "unused", 1, [0x6F, 0, 1]),
-                        ("env", "t", 1, [0x70, 0, 1])
-                    ),
+                    HostLinkingModuleBinary.Imports(("env", "unused", 1, [0x6F, 0, 1]), ("env", "t", 1, [0x70, 0, 1])),
                     HostLinkingModuleBinary.Functions(2),
                     HostLinkingModuleBinary.Memories((1, null)),
                     HostLinkingModuleBinary.Globals((0x7F, false, [0x41, 0, 0x0B])),
                     HostLinkingModuleBinary.Exports(("run", 0, 0)),
-                    HostLinkingModuleBinary.Code(
-                        ([], [0x20, 0, 0x20, 1, 0x20, 2, 0x11, 1, 1, 0x0B])
-                    )
+                    HostLinkingModuleBinary.Code(([], [0x20, 0, 0x20, 1, 0x20, 2, 0x11, 1, 1, 0x0B]))
                 )
             )
             .Validate();
@@ -81,9 +73,7 @@ internal partial class WasmFunction_InvokeTests
                     ])
                 )
                 .IsTrue();
-            await Assert
-                .That(ReferenceEquals(callerModule.Types[1], callee.GetFunction("f").Type))
-                .IsFalse();
+            await Assert.That(ReferenceEquals(callerModule.Types[1], callee.GetFunction("f").Type)).IsFalse();
             await Assert.That(table.Get(0).AsFuncRef()).IsSameReferenceAs(callee.GetFunction("f"));
         }
     }
@@ -140,18 +130,10 @@ internal partial class WasmFunction_InvokeTests
         using (Assert.Multiple())
         {
             await Assert.That(exception!.Reason).IsEqualTo(reason);
-            await Assert
-                .That(exception.Message.StartsWith(prefix, StringComparison.Ordinal))
-                .IsTrue();
+            await Assert.That(exception.Message.StartsWith(prefix, StringComparison.Ordinal)).IsTrue();
             await Assert
                 .That(exception.Location)
-                .IsEqualTo(
-                    new(
-                        WasmProcessingStage.Invoke,
-                        module.Functions[0].Instructions[1].ByteOffset,
-                        0
-                    )
-                );
+                .IsEqualTo(new(WasmProcessingStage.Invoke, module.Functions[0].Instructions[1].ByteOffset, 0));
             await Assert.That(calls).IsEqualTo(0);
         }
         await Assert.That(() => instance.GetFunction("ok").Invoke(executionContext, [])).ThrowsNothing();
@@ -160,9 +142,7 @@ internal partial class WasmFunction_InvokeTests
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task Tableからinstance必須hostを間接callする_呼び出し元instanceを渡し例外後も状態を復元する(
-        bool throws
-    )
+    public async Task Tableからinstance必須hostを間接callする_呼び出し元instanceを渡し例外後も状態を復元する(bool throws)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
@@ -250,9 +230,7 @@ internal partial class WasmFunction_InvokeTests
         );
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => run.Invoke(executionContext, []))
-            .ThrowsExactly<WasmExhaustionException>();
+        var exception = await Assert.That(() => run.Invoke(executionContext, [])).ThrowsExactly<WasmExhaustionException>();
         using (Assert.Multiple())
         {
             await Assert.That(exception!.Location!.Stage).IsEqualTo(WasmProcessingStage.Invoke);
@@ -320,10 +298,7 @@ internal partial class WasmFunction_InvokeTests
             )
         );
         table.Set(2, WasmValue.FromFuncRef(inner.GetFunction("trap")));
-        table.Set(
-            3,
-            WasmValue.FromFuncRef(WasmFunction.CreateHost(new([], []), (callbackContext, _) => throw expected))
-        );
+        table.Set(3, WasmValue.FromFuncRef(WasmFunction.CreateHost(new([], []), (callbackContext, _) => throw expected)));
         table.Set(
             4,
             WasmValue.FromFuncRef(
@@ -367,9 +342,7 @@ internal partial class WasmFunction_InvokeTests
             .That(() => inner.GetFunction("run").Invoke(executionContext, [WasmValue.FromI32(4)]))
             .ThrowsExactly<WasmExhaustionException>();
         await Assert.That(successes).IsEqualTo(1);
-        await Assert
-            .That(() => outer.GetFunction("run").Invoke(executionContext, [WasmValue.FromI32(4)]))
-            .ThrowsNothing();
+        await Assert.That(() => outer.GetFunction("run").Invoke(executionContext, [WasmValue.FromI32(4)])).ThrowsNothing();
         await Assert.That(successes).IsEqualTo(2);
         await Assert.That(observed).IsSameReferenceAs(outer);
     }
@@ -386,9 +359,7 @@ internal partial class WasmFunction_InvokeTests
             .Decode(
                 HostLinkingModuleBinary.Create(
                     HostLinkingModuleBinary.Types(([], []), ([0x7F], [])),
-                    HostLinkingModuleBinary.Imports(
-                        ("env", "t", 1, [0x70, .. HostLinkingModuleBinary.Limits(table.Count)])
-                    ),
+                    HostLinkingModuleBinary.Imports(("env", "t", 1, [0x70, .. HostLinkingModuleBinary.Limits(table.Count)])),
                     HostLinkingModuleBinary.Functions(1, 0),
                     HostLinkingModuleBinary.Exports(("run", 0, 0), ("ok", 0, 1)),
                     HostLinkingModuleBinary.Code(([], [0x20, 0, 0x11, 0, 0, 0x0B]), ([], [0x0B]))

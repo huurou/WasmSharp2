@@ -1,5 +1,3 @@
-using System.Linq;
-
 namespace WasmSharp.Instructions;
 
 /// <summary>
@@ -168,14 +166,6 @@ internal sealed class InstructionAttribute(
     /// <param name="code">prefix内の命令番号</param>
     /// <param name="name">Wasm仕様上の命令名</param>
     public InstructionAttribute(byte prefix, uint code, string name)
-        : this(
-            prefix,
-            code,
-            name,
-            ImmediateKind.Unsupported,
-            StackEffectKind.Unsupported,
-            ValidationRule.Unsupported,
-            null
-        )
+        : this(prefix, code, name, ImmediateKind.Unsupported, StackEffectKind.Unsupported, ValidationRule.Unsupported, null)
     { }
 }

@@ -29,9 +29,7 @@ internal class DataInstance_DropTests
             await Assert.That(recreated.Length).IsEqualTo(4u);
             await Assert.That(success).IsTrue();
             await Assert.That(actual.SequenceEqual(new byte[] { 10, 20, 30, 40 })).IsTrue();
-            await Assert
-                .That(definition.Bytes.AsSpan().SequenceEqual(new byte[] { 10, 20, 30, 40 }))
-                .IsTrue();
+            await Assert.That(definition.Bytes.AsSpan().SequenceEqual(new byte[] { 10, 20, 30, 40 })).IsTrue();
         }
     }
 

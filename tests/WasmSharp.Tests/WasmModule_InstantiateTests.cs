@@ -10,17 +10,11 @@ internal partial class WasmModule_InstantiateTests
     public async Task Contextがnullの生成_提供登録の両形式で引数名付きで拒否する(bool useImports)
     {
         // Arrange
-        var module = WasmModule
-            .Decode(ConstantModuleBinary.Create(0x7F, 0x41, 0x01, 0x0B))
-            .Validate();
+        var module = WasmModule.Decode(ConstantModuleBinary.Create(0x7F, 0x41, 0x01, 0x0B)).Validate();
 
         // Act & Assert
         var exception = await Assert
-            .That(() =>
-                useImports
-                    ? module.Instantiate(null!, new WasmImports())
-                    : module.Instantiate(null!, [])
-            )
+            .That(() => useImports ? module.Instantiate(null!, new WasmImports()) : module.Instantiate(null!, []))
             .ThrowsExactly<ArgumentNullException>();
         await Assert.That(exception!.ParamName).IsEqualTo("context");
     }
@@ -30,9 +24,7 @@ internal partial class WasmModule_InstantiateTests
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
-        var module = WasmModule
-            .Decode(ConstantModuleBinary.Create(0x7F, 0x41, 0x01, 0x0B))
-            .Validate();
+        var module = WasmModule.Decode(ConstantModuleBinary.Create(0x7F, 0x41, 0x01, 0x0B)).Validate();
         var options = new WasmExecutionOptions(7);
 
         // Act
@@ -44,9 +36,7 @@ internal partial class WasmModule_InstantiateTests
         {
             await Assert.That(ReferenceEquals(first, second)).IsFalse();
             await Assert.That(ReferenceEquals(first.ExecutionOptions, options)).IsTrue();
-            await Assert
-                .That(ReferenceEquals(second.ExecutionOptions, WasmExecutionOptions.Default))
-                .IsTrue();
+            await Assert.That(ReferenceEquals(second.ExecutionOptions, WasmExecutionOptions.Default)).IsTrue();
         }
     }
 
@@ -54,9 +44,7 @@ internal partial class WasmModule_InstantiateTests
     [Arguments("empty")]
     [Arguments("null")]
     [Arguments("duplicate")]
-    public async Task 検証していない_提供登録の検査より先に状態の契約違反として拒否する(
-        string providerState
-    )
+    public async Task 検証していない_提供登録の検査より先に状態の契約違反として拒否する(string providerState)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();

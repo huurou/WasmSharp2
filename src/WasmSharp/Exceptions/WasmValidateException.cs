@@ -31,10 +31,6 @@ public class WasmValidateException : WasmException
     /// <param name="message">例外の原因を説明するメッセージ</param>
     /// <param name="location">失敗した処理段階と入力上の位置</param>
     /// <param name="innerException">原因となった例外</param>
-    public WasmValidateException(
-        string? message,
-        WasmFailureLocation location,
-        Exception? innerException
-    )
+    public WasmValidateException(string? message, WasmFailureLocation location, Exception? innerException)
         : base(message, location, innerException) { }
 }

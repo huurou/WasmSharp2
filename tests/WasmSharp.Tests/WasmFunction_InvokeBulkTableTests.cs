@@ -14,9 +14,7 @@ internal partial class WasmFunction_InvokeTests
     [Arguments((byte)5)]
     [Arguments((byte)6)]
     [Arguments((byte)7)]
-    public async Task 全要素形式から初期化する_modeに従って保持または破棄し反復dropできる(
-        byte flags
-    )
+    public async Task 全要素形式から初期化する_modeに従って保持または破棄し反復dropできる(byte flags)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
@@ -48,12 +46,8 @@ internal partial class WasmFunction_InvokeTests
         // Assert
         using (Assert.Multiple())
         {
-            await Assert
-                .That(table.Get(0))
-                .IsEqualTo(active || passive ? expected[0] : WasmValue.FromFuncRef(null));
-            await Assert
-                .That(table.Get(1))
-                .IsEqualTo(active || passive ? expected[1] : WasmValue.FromFuncRef(null));
+            await Assert.That(table.Get(0)).IsEqualTo(active || passive ? expected[0] : WasmValue.FromFuncRef(null));
+            await Assert.That(table.Get(1)).IsEqualTo(active || passive ? expected[1] : WasmValue.FromFuncRef(null));
             if (passive)
             {
                 await Assert.That(table.Get(2)).IsEqualTo(expected[0]);
@@ -91,25 +85,20 @@ internal partial class WasmFunction_InvokeTests
                 .That(() =>
                     instance
                         .GetFunction("init")
-                        .Invoke(executionContext, [
-                            WasmValue.FromI32(destination),
-                            WasmValue.FromI32(source),
-                            WasmValue.FromI32(length),
-                        ])
+                        .Invoke(
+                            executionContext,
+                            [WasmValue.FromI32(destination), WasmValue.FromI32(source), WasmValue.FromI32(length)]
+                        )
                 )
                 .ThrowsExactly<WasmTrapException>();
-            await Assert
-                .That(Enumerable.Range(0, 4).Select(x => table.Get((uint)x)).SequenceEqual(before))
-                .IsTrue();
+            await Assert.That(Enumerable.Range(0, 4).Select(x => table.Get((uint)x)).SequenceEqual(before)).IsTrue();
         }
     }
 
     [Test]
     [Arguments((byte)0x70)]
     [Arguments((byte)0x6F)]
-    public async Task Passive要素を別instanceから初期化する_dropは転送済み参照と他instanceに影響しない(
-        byte kind
-    )
+    public async Task Passive要素を別instanceから初期化する_dropは転送済み参照と他instanceに影響しない(byte kind)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
@@ -149,10 +138,7 @@ internal partial class WasmFunction_InvokeTests
     [Arguments((byte)0x6F, false)]
     [Arguments((byte)0x70, true)]
     [Arguments((byte)0x6F, true)]
-    public async Task 同型table間をcopyとfillする_異なる添字と共有実体の前後重複でも参照の同一性を保つ(
-        byte kind,
-        bool alias
-    )
+    public async Task 同型table間をcopyとfillする_異なる添字と共有実体の前後重複でも参照の同一性を保つ(byte kind, bool alias)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
@@ -191,43 +177,25 @@ internal partial class WasmFunction_InvokeTests
                 Enumerable
                     .Range(0, 3)
                     .Select(x => destination.Get((uint)x))
-                    .SequenceEqual(
-                        alias
-                            ? [firstValue, secondValue, firstValue]
-                            : [secondValue, firstValue, secondValue]
-                    )
+                    .SequenceEqual(alias ? [firstValue, secondValue, firstValue] : [secondValue, firstValue, secondValue])
             )
             .IsTrue();
 
         // Act
-        instance
-            .GetFunction("fill")
-            .Invoke(executionContext, [WasmValue.FromI32(1), secondValue, WasmValue.FromI32(3)]);
+        instance.GetFunction("fill").Invoke(executionContext, [WasmValue.FromI32(1), secondValue, WasmValue.FromI32(3)]);
 
         // Assert
         await Assert
-            .That(
-                Enumerable
-                    .Range(1, 3)
-                    .Select(x => destination.Get((uint)x))
-                    .All(x => x.Equals(secondValue))
-            )
+            .That(Enumerable.Range(1, 3).Select(x => destination.Get((uint)x)).All(x => x.Equals(secondValue)))
             .IsTrue();
 
         // Act
         var nullValue = kind == 0x70 ? WasmValue.FromFuncRef(null) : WasmValue.FromExternRef(null);
-        instance
-            .GetFunction("fill")
-            .Invoke(executionContext, [WasmValue.FromI32(0), nullValue, WasmValue.FromI32(4)]);
+        instance.GetFunction("fill").Invoke(executionContext, [WasmValue.FromI32(0), nullValue, WasmValue.FromI32(4)]);
 
         // Assert
         await Assert
-            .That(
-                Enumerable
-                    .Range(0, 4)
-                    .Select(x => destination.Get((uint)x))
-                    .All(x => x.Equals(nullValue))
-            )
+            .That(Enumerable.Range(0, 4).Select(x => destination.Get((uint)x)).All(x => x.Equals(nullValue)))
             .IsTrue();
     }
 
@@ -291,9 +259,7 @@ internal partial class WasmFunction_InvokeTests
                 )
         )
         {
-            await Assert
-                .That(() => instance.GetFunction(operation).Invoke(executionContext, arguments))
-                .ThrowsNothing();
+            await Assert.That(() => instance.GetFunction(operation).Invoke(executionContext, arguments)).ThrowsNothing();
         }
         else
         {
@@ -303,35 +269,20 @@ internal partial class WasmFunction_InvokeTests
             using (Assert.Multiple())
             {
                 await Assert.That(exception!.Reason).IsEqualTo(WasmTrapReason.TableOutOfBounds);
+                await Assert.That(exception.Location).IsEqualTo(new(WasmProcessingStage.Invoke, offset, functionIndex));
                 await Assert
-                    .That(exception.Location)
-                    .IsEqualTo(new(WasmProcessingStage.Invoke, offset, functionIndex));
-                await Assert
-                    .That(
-                        exception.Message.StartsWith(
-                            "out of bounds table access",
-                            StringComparison.Ordinal
-                        )
-                    )
+                    .That(exception.Message.StartsWith("out of bounds table access", StringComparison.Ordinal))
                     .IsTrue();
             }
         }
-        await Assert
-            .That(
-                Enumerable
-                    .Range(0, 4)
-                    .Select(x => table.Get((uint)x))
-                    .All(x => x.Equals(firstValue))
-            )
-            .IsTrue();
+        await Assert.That(Enumerable.Range(0, 4).Select(x => table.Get((uint)x)).All(x => x.Equals(firstValue))).IsTrue();
     }
 
-    private static (
-        WasmModule Module,
-        WasmHostModule Host,
-        WasmValue First,
-        WasmValue Second
-    ) CreateBulkTableModule(byte kind, byte flags, bool alias = false)
+    private static (WasmModule Module, WasmHostModule Host, WasmValue First, WasmValue Second) CreateBulkTableModule(
+        byte kind,
+        byte flags,
+        bool alias = false
+    )
     {
         var valueKind = kind == 0x70 ? WasmValueKind.FuncRef : WasmValueKind.ExternRef;
         var first = TableHandlerFixture.CreateReference(valueKind);
@@ -351,22 +302,14 @@ internal partial class WasmFunction_InvokeTests
         byte[] element =
         [
             .. mode,
-            .. (
-                flags is 0 or 4
-                    ? Array.Empty<byte>()
-                    : [flags < 4 ? (byte)0 : kind]
-            ),
+            .. (flags is 0 or 4 ? Array.Empty<byte>() : [flags < 4 ? (byte)0 : kind]),
             2,
             .. (flags < 4 ? new byte[] { 0, 1 } : [0x23, 0, 0x0B, 0x23, 1, 0x0B]),
         ];
         var module = WasmModule
             .Decode(
                 HostLinkingModuleBinary.Create(
-                    HostLinkingModuleBinary.Types(
-                        ([0x7F, 0x7F, 0x7F], []),
-                        ([0x7F, kind, 0x7F], []),
-                        ([], [])
-                    ),
+                    HostLinkingModuleBinary.Types(([0x7F, 0x7F, 0x7F], []), ([0x7F, kind, 0x7F], []), ([], [])),
                     HostLinkingModuleBinary.Imports(
                         ("env", "a", 1, [kind, 1, 4, 4]),
                         ("env", "b", 1, [kind, 1, 4, 4]),

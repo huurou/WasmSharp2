@@ -9,10 +9,7 @@ internal partial class ModuleValidator_ValidateTests
     [Arguments(0x03, 0)]
     [Arguments(0x04, 0)]
     [Arguments(0x04, -1)]
-    public async Task 制御の通常経路へ全値型を渡す_結果のbit列と参照と宣言順を保持する(
-        int opcode,
-        int condition
-    )
+    public async Task 制御の通常経路へ全値型を渡す_結果のbit列と参照と宣言順を保持する(int opcode, int condition)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();

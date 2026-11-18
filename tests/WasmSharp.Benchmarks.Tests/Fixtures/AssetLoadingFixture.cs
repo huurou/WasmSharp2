@@ -43,25 +43,17 @@ internal sealed class AssetLoadingFixture : IDisposable
     internal static List<BenchmarkCase> ReadCases(CaseJson json)
     {
         return JsonSerializer.Deserialize<List<BenchmarkCase>>(
-            File.ReadAllText(
-                Path.Combine(AppContext.BaseDirectory, "Fixtures", "Data", "cases.json")
-            ),
+            File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures", "Data", "cases.json")),
             json.Options
         )!;
     }
 
-    internal static BenchmarkCase WithInput(
-        BenchmarkCase definition,
-        CaseInput input,
-        CaseJson json
-    )
+    internal static BenchmarkCase WithInput(BenchmarkCase definition, CaseInput input, CaseJson json)
     {
         return definition with
         {
             Input = input,
-            InputHash = Convert.ToHexStringLower(
-                SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(input, json.Options))
-            ),
+            InputHash = Convert.ToHexStringLower(SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(input, json.Options))),
         };
     }
 
@@ -77,45 +69,36 @@ internal sealed class AssetLoadingFixture : IDisposable
 
     internal void SaveAssets(LoadedAssets assets)
     {
-        var binaries = assets.Catalog.Cases
-            .Select(x => x.AssetId)
-            .Distinct()
-            .ToDictionary(x => x, assets.GetBinary);
+        var binaries = assets.Catalog.Cases.Select(x => x.AssetId).Distinct().ToDictionary(x => x, assets.GetBinary);
         Definitions.Clear();
         foreach (var definition in assets.Catalog.Cases)
         {
-            Definitions.Add(definition with
-            {
-                AssetSha256 = Convert.ToHexStringLower(
-                    SHA256.HashData(binaries[definition.AssetId].AsSpan())
-                ),
-            });
+            Definitions.Add(
+                definition with
+                {
+                    AssetSha256 = Convert.ToHexStringLower(SHA256.HashData(binaries[definition.AssetId].AsSpan())),
+                }
+            );
         }
         foreach (var binary in binaries)
         {
-            File.WriteAllBytes(
-                Path.Combine(DirectoryPath, "wasm", binary.Key + ".wasm"),
-                binary.Value.AsSpan()
-            );
+            File.WriteAllBytes(Path.Combine(DirectoryPath, "wasm", binary.Key + ".wasm"), binary.Value.AsSpan());
         }
         SaveCases();
-        SaveManifest(Manifest with
-        {
-            Assets = [.. binaries.Keys.Select(x => new AssetDefinition(
-                x,
-                FileDefinition("wasm/" + x + ".wasm"),
-                [],
-                []
-            ))],
-        });
+        SaveManifest(
+            Manifest with
+            {
+                Assets =
+                [
+                    .. binaries.Keys.Select(x => new AssetDefinition(x, FileDefinition("wasm/" + x + ".wasm"), [], [])),
+                ],
+            }
+        );
     }
 
     internal void SaveManifest()
     {
-        File.WriteAllBytes(
-            ManifestPath,
-            JsonSerializer.SerializeToUtf8Bytes(Manifest, json_.Options)
-        );
+        File.WriteAllBytes(ManifestPath, JsonSerializer.SerializeToUtf8Bytes(Manifest, json_.Options));
     }
 
     internal void SaveManifest(AssetManifest manifest)
@@ -126,12 +109,7 @@ internal sealed class AssetLoadingFixture : IDisposable
 
     private ManifestFile FileDefinition(string path)
     {
-        return new(
-            path,
-            Convert.ToHexStringLower(
-                SHA256.HashData(File.ReadAllBytes(Path.Combine(DirectoryPath, path)))
-            )
-        );
+        return new(path, Convert.ToHexStringLower(SHA256.HashData(File.ReadAllBytes(Path.Combine(DirectoryPath, path)))));
     }
 
     public void Dispose()

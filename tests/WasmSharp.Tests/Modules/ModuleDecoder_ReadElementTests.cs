@@ -53,9 +53,7 @@ internal class ModuleDecoder_ReadElementTests
             {
                 await Assert.That(segment.ActiveTarget!.TableIndex).IsEqualTo(tableIndex);
                 await Assert.That(segment.ActiveTarget.OffsetExpression.Length).IsEqualTo(2);
-                await Assert
-                    .That(segment.ActiveTarget.OffsetExpression[0].Immediate.AsI32())
-                    .IsEqualTo(4);
+                await Assert.That(segment.ActiveTarget.OffsetExpression[0].Immediate.AsI32()).IsEqualTo(4);
                 await Assert
                     .That(segment.ActiveTarget.OffsetExpression[0].ByteOffset)
                     .IsEqualTo(tableIndex == 0 ? 42L : 47L);
@@ -109,23 +107,15 @@ internal class ModuleDecoder_ReadElementTests
                 await Assert.That(expression[0].Opcode).IsEqualTo(new OpcodeKey(0, 0xD0));
                 await Assert
                     .That(expression[0].Immediate)
-                    .IsEqualTo(
-                        index == 0 ? WasmValue.FromFuncRef(null) : WasmValue.FromExternRef(null)
-                    );
-                await Assert
-                    .That(expression[0].ByteOffset)
-                    .IsEqualTo(firstExpressionOffset + index * 3);
+                    .IsEqualTo(index == 0 ? WasmValue.FromFuncRef(null) : WasmValue.FromExternRef(null));
+                await Assert.That(expression[0].ByteOffset).IsEqualTo(firstExpressionOffset + index * 3);
                 await Assert.That(expression[1].Opcode).IsEqualTo(new OpcodeKey(0, 0x0B));
-                await Assert
-                    .That(expression[1].ByteOffset)
-                    .IsEqualTo(firstExpressionOffset + index * 3 + 2);
+                await Assert.That(expression[1].ByteOffset).IsEqualTo(firstExpressionOffset + index * 3 + 2);
             }
             if (mode == ElementMode.Active)
             {
                 await Assert.That(segment.ActiveTarget!.TableIndex).IsEqualTo(tableIndex);
-                await Assert
-                    .That(segment.ActiveTarget.OffsetExpression[0].Immediate.AsI32())
-                    .IsEqualTo(4);
+                await Assert.That(segment.ActiveTarget.OffsetExpression[0].Immediate.AsI32()).IsEqualTo(4);
                 await Assert
                     .That(segment.ActiveTarget.OffsetExpression[0].ByteOffset)
                     .IsEqualTo(tableIndex == 0 ? 42L : 44L);
@@ -193,9 +183,7 @@ internal class ModuleDecoder_ReadElementTests
     public async Task 型と添字と定数式規則が不正である_静的検証をせず後続検証へ渡す()
     {
         // Arrange
-        var bytes = Convert.FromHexString(
-            "0206FFFFFFFF0F42000B6F030141000B23FFFFFFFF0F0BD2FFFFFFFF0F0B010001FFFFFFFF0F"
-        );
+        var bytes = Convert.FromHexString("0206FFFFFFFF0F42000B6F030141000B23FFFFFFFF0F0BD2FFFFFFFF0F0B010001FFFFFFFF0F");
         var reader = new ModuleBinaryReader(bytes, 40, 9);
 
         // Act
@@ -207,19 +195,11 @@ internal class ModuleDecoder_ReadElementTests
         {
             await Assert.That(segments.Count).IsEqualTo(2);
             await Assert.That(segments[0].ActiveTarget!.TableIndex).IsEqualTo(uint.MaxValue);
-            await Assert
-                .That(segments[0].ActiveTarget!.OffsetExpression[0].Immediate.Kind)
-                .IsEqualTo(WasmValueKind.I64);
+            await Assert.That(segments[0].ActiveTarget!.OffsetExpression[0].Immediate.Kind).IsEqualTo(WasmValueKind.I64);
             await Assert.That(segments[0].ElementType).IsEqualTo(WasmValueKind.ExternRef);
-            await Assert
-                .That(segments[0].Initializers[0][1].Immediate.Kind)
-                .IsEqualTo(WasmValueKind.I32);
-            await Assert
-                .That(segments[0].Initializers[0][0].Opcode)
-                .IsEqualTo(new OpcodeKey(0, 0x01));
-            await Assert
-                .That(segments[0].Initializers[1][0].Opcode)
-                .IsEqualTo(new OpcodeKey(0, 0x23));
+            await Assert.That(segments[0].Initializers[0][1].Immediate.Kind).IsEqualTo(WasmValueKind.I32);
+            await Assert.That(segments[0].Initializers[0][0].Opcode).IsEqualTo(new OpcodeKey(0, 0x01));
+            await Assert.That(segments[0].Initializers[1][0].Opcode).IsEqualTo(new OpcodeKey(0, 0x23));
             await Assert.That(segments[0].Initializers[1][0].Index).IsEqualTo(uint.MaxValue);
             await Assert.That(segments[0].Initializers[2][0].Index).IsEqualTo(uint.MaxValue);
             await Assert.That(segments[1].Mode).IsEqualTo(ElementMode.Passive);
@@ -249,11 +229,7 @@ internal class ModuleDecoder_ReadElementTests
     [Arguments("03", 40L, "length out of bounds")]
     [Arguments("01010003", 43L, "length out of bounds")]
     [Arguments("01057003", 43L, "length out of bounds")]
-    public async Task 構文の値か符号化が不正である_Decode診断と入力位置を保持する(
-        string hex,
-        long offset,
-        string message
-    )
+    public async Task 構文の値か符号化が不正である_Decode診断と入力位置を保持する(string hex, long offset, string message)
     {
         // Arrange
         var bytes = Convert.FromHexString(hex);
@@ -269,12 +245,8 @@ internal class ModuleDecoder_ReadElementTests
                 .ThrowsExactly<WasmDecodeException>();
             using (Assert.Multiple())
             {
-                await Assert
-                    .That(exception!.Message.StartsWith(message, StringComparison.Ordinal))
-                    .IsTrue();
-                await Assert
-                    .That(exception.Location)
-                    .IsEqualTo(new(WasmProcessingStage.Decode, offset, null, 9));
+                await Assert.That(exception!.Message.StartsWith(message, StringComparison.Ordinal)).IsTrue();
+                await Assert.That(exception.Location).IsEqualTo(new(WasmProcessingStage.Decode, offset, null, 9));
             }
         }
     }
@@ -310,9 +282,7 @@ internal class ModuleDecoder_ReadElementTests
             WasmDecodeException failure;
             if (mode == ModuleReadMode.Bounded)
             {
-                var exception = await Assert
-                    .That(read)
-                    .ThrowsExactly<ModuleReadBoundaryException>();
+                var exception = await Assert.That(read).ThrowsExactly<ModuleReadBoundaryException>();
                 failure = exception!.Fallback;
             }
             else
@@ -322,16 +292,9 @@ internal class ModuleDecoder_ReadElementTests
             using (Assert.Multiple())
             {
                 await Assert
-                    .That(
-                        failure.Message.StartsWith(
-                            "unexpected end of section or function",
-                            StringComparison.Ordinal
-                        )
-                    )
+                    .That(failure.Message.StartsWith("unexpected end of section or function", StringComparison.Ordinal))
                     .IsTrue();
-                await Assert
-                    .That(failure.Location)
-                    .IsEqualTo(new(WasmProcessingStage.Decode, 40L + bytes.Length, null, 9));
+                await Assert.That(failure.Location).IsEqualTo(new(WasmProcessingStage.Decode, 40L + bytes.Length, null, 9));
             }
         }
     }
@@ -353,9 +316,7 @@ internal class ModuleDecoder_ReadElementTests
                 ModuleDecoder.ReadElement(ref reader, 100);
             })
             .ThrowsExactly<ModuleReadBoundaryException>();
-        await Assert
-            .That(exception!.Fallback.Location)
-            .IsEqualTo(new(WasmProcessingStage.Decode, 40L + length, null, 9));
+        await Assert.That(exception!.Fallback.Location).IsEqualTo(new(WasmProcessingStage.Decode, 40L + length, null, 9));
     }
 
     [Test]
@@ -381,9 +342,7 @@ internal class ModuleDecoder_ReadElementTests
             WasmDecodeException failure;
             if (mode == ModuleReadMode.Bounded)
             {
-                var exception = await Assert
-                    .That(read)
-                    .ThrowsExactly<ModuleReadBoundaryException>();
+                var exception = await Assert.That(read).ThrowsExactly<ModuleReadBoundaryException>();
                 failure = exception!.Fallback;
             }
             else
@@ -393,16 +352,9 @@ internal class ModuleDecoder_ReadElementTests
             using (Assert.Multiple())
             {
                 await Assert
-                    .That(
-                        failure.Message.StartsWith(
-                            "unexpected end of section or function",
-                            StringComparison.Ordinal
-                        )
-                    )
+                    .That(failure.Message.StartsWith("unexpected end of section or function", StringComparison.Ordinal))
                     .IsTrue();
-                await Assert
-                    .That(failure.Location)
-                    .IsEqualTo(new(WasmProcessingStage.Decode, offset, null, 9));
+                await Assert.That(failure.Location).IsEqualTo(new(WasmProcessingStage.Decode, offset, null, 9));
             }
         }
     }
@@ -410,9 +362,7 @@ internal class ModuleDecoder_ReadElementTests
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task 要素式に完全なV128定数がある_即値をDecodeして要求型との不一致をValidateで返す(
-        bool initializer
-    )
+    public async Task 要素式に完全なV128定数がある_即値をDecodeして要求型との不一致をValidateで返す(bool initializer)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
@@ -425,9 +375,7 @@ internal class ModuleDecoder_ReadElementTests
 
             // Act
             var segments = ModuleDecoder.ReadElement(ref reader, 100);
-            var expression = initializer
-                ? segments[0].Initializers[0]
-                : segments[0].ActiveTarget!.OffsetExpression;
+            var expression = initializer ? segments[0].Initializers[0] : segments[0].ActiveTarget!.OffsetExpression;
 
             // Assert
             using (Assert.Multiple())
@@ -448,20 +396,12 @@ internal class ModuleDecoder_ReadElementTests
             : module.ElementSegments[0].ActiveTarget!.OffsetExpression[^1].ByteOffset;
 
         // Act & Assert
-        var failure = await Assert
-            .That(() => module.Validate())
-            .ThrowsExactly<WasmValidateException>();
+        var failure = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
         using (Assert.Multiple())
         {
-            await Assert
-                .That(failure!.Message.StartsWith("type mismatch", StringComparison.Ordinal))
-                .IsTrue();
-            await Assert
-                .That(failure.Location)
-                .IsEqualTo(new(WasmProcessingStage.Validate, expectedOffset, null, 9));
-            await Assert
-                .That(() => module.Instantiate(executionContext, []))
-                .ThrowsExactly<InvalidOperationException>();
+            await Assert.That(failure!.Message.StartsWith("type mismatch", StringComparison.Ordinal)).IsTrue();
+            await Assert.That(failure.Location).IsEqualTo(new(WasmProcessingStage.Validate, expectedOffset, null, 9));
+            await Assert.That(() => module.Instantiate(executionContext, [])).ThrowsExactly<InvalidOperationException>();
         }
     }
 }

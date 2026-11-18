@@ -6,18 +6,8 @@ namespace WasmSharp.Tests.Execution;
 internal class Interpreter_I64x2ExtendLowI32x4UTests
 {
     [Test]
-    [Arguments(
-        0x7FFFFFFF80000000UL,
-        0x00000000FFFFFFFFUL,
-        0x0000000080000000UL,
-        0x000000007FFFFFFFUL
-    )]
-    [Arguments(
-        0x00000000FFFFFFFFUL,
-        0x800000007FFFFFFFUL,
-        0x00000000FFFFFFFFUL,
-        0x0000000000000000UL
-    )]
+    [Arguments(0x7FFFFFFF80000000UL, 0x00000000FFFFFFFFUL, 0x0000000080000000UL, 0x000000007FFFFFFFUL)]
+    [Arguments(0x00000000FFFFFFFFUL, 0x800000007FFFFFFFUL, 0x00000000FFFFFFFFUL, 0x0000000000000000UL)]
     public async Task 上下で異なる符号境界のlane_選択した半分を順に拡張する(
         ulong firstLow64,
         ulong firstHigh64,

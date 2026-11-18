@@ -42,11 +42,7 @@ internal sealed record AssetSource(string RelativePath, string Revision, string 
 /// <summary>
 /// 素材生成またはprofile検査で使用したツールと、順序を保った引数
 /// </summary>
-internal sealed record AssetGenerationStep(
-    AssetTool Tool,
-    List<string> Arguments,
-    string ArgumentsSha256
-);
+internal sealed record AssetGenerationStep(AssetTool Tool, List<string> Arguments, string ArgumentsSha256);
 
 /// <summary>
 /// 生成ツールの固定版・revision・実行ファイル・ビルド条件

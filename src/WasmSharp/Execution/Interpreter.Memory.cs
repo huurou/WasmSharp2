@@ -69,20 +69,13 @@ internal static partial class Interpreter
     /// <param name="context">現在の関数とコピー先・コピー元・バイト数を持つ実行コンテキスト</param>
     /// <param name="instruction">データインデックスを保持する検証済みのmemory.init命令</param>
     /// <returns>実行の成功またはメモリを変更しない範囲外アクセスのtrap</returns>
-    internal static ExecutionResult MemoryInit(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult MemoryInit(InterpreterContext context, in Instruction instruction)
     {
         var length = unchecked((uint)context.PopValue().AsI32());
         var source = unchecked((uint)context.PopValue().AsI32());
         var destination = unchecked((uint)context.PopValue().AsI32());
         var instance = context.CurrentFunction.Instance;
-        if (
-            !instance
-                .DataSegments[(int)instruction.Index]
-                .TryInitialize(instance.Memories[0], destination, source, length)
-        )
+        if (!instance.DataSegments[(int)instruction.Index].TryInitialize(instance.Memories[0], destination, source, length))
         {
             return ExecutionResult.Trap(
                 WasmTrapReason.MemoryOutOfBounds,
@@ -142,14 +135,9 @@ internal static partial class Interpreter
     internal static ExecutionResult Load(InterpreterContext context, in Instruction instruction)
     {
         var signature = instruction.MemoryAccessSignature;
-        var address =
-            (ulong)unchecked((uint)context.PopValue().AsI32()) + instruction.MemoryArgument.Offset;
+        var address = (ulong)unchecked((uint)context.PopValue().AsI32()) + instruction.MemoryArgument.Offset;
         Span<byte> bytes = stackalloc byte[8];
-        if (
-            !context
-                .CurrentFunction.Instance.Memories[0]
-                .TryRead(address, bytes[..signature.ByteWidth])
-        )
+        if (!context.CurrentFunction.Instance.Memories[0].TryRead(address, bytes[..signature.ByteWidth]))
         {
             return ExecutionResult.Trap(
                 WasmTrapReason.MemoryOutOfBounds,
@@ -195,8 +183,7 @@ internal static partial class Interpreter
     {
         var signature = instruction.MemoryAccessSignature;
         var value = context.PopValue();
-        var address =
-            (ulong)unchecked((uint)context.PopValue().AsI32()) + instruction.MemoryArgument.Offset;
+        var address = (ulong)unchecked((uint)context.PopValue().AsI32()) + instruction.MemoryArgument.Offset;
         var bits = signature.ValueType switch
         {
             WasmValueKind.I32 => unchecked((uint)value.AsI32()),
@@ -207,11 +194,7 @@ internal static partial class Interpreter
         };
         Span<byte> bytes = stackalloc byte[8];
         BinaryPrimitives.WriteUInt64LittleEndian(bytes, bits);
-        if (
-            !context
-                .CurrentFunction.Instance.Memories[0]
-                .TryWrite(address, bytes[..signature.ByteWidth])
-        )
+        if (!context.CurrentFunction.Instance.Memories[0].TryWrite(address, bytes[..signature.ByteWidth]))
         {
             return ExecutionResult.Trap(
                 WasmTrapReason.MemoryOutOfBounds,

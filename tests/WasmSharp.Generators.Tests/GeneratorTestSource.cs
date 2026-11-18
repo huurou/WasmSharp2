@@ -1,8 +1,8 @@
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
 using System.Collections.Immutable;
 using System.Reflection;
 using System.Runtime.Loader;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 
 namespace WasmSharp.Generators.Tests;
 
@@ -42,10 +42,7 @@ internal static class GeneratorTestSource
             .Select(x => MetadataReference.CreateFromFile(x)),
     ];
 
-    public static CSharpCompilation CreateCompilation(
-        string declarations,
-        string? executionContracts = null
-    )
+    public static CSharpCompilation CreateCompilation(string declarations, string? executionContracts = null)
     {
         var assembly = typeof(GeneratorTestSource).Assembly;
         // WasmValueKindは命令宣言にも必要なため、常にInstructionContractsから取り込む。
@@ -106,9 +103,7 @@ internal static class GeneratorTestSource
             await Assert.That(diagnostics[0].Severity).IsEqualTo(DiagnosticSeverity.Error);
             await Assert.That(diagnostics[0].Descriptor.IsEnabledByDefault).IsTrue();
             await Assert.That(diagnostics[0].Descriptor.Title.ToString()).IsNotEmpty();
-            await Assert
-                .That(diagnostics[0].Descriptor.Category)
-                .IsEqualTo("InstructionGeneration");
+            await Assert.That(diagnostics[0].Descriptor.Category).IsEqualTo("InstructionGeneration");
             await Assert.That(diagnostics[0].GetMessage()).IsNotEmpty();
             await Assert.That(diagnostics[0].Location.IsInSource).IsTrue();
             await Assert.That(driver.GetRunResult().GeneratedTrees).IsEmpty();
@@ -133,12 +128,7 @@ internal static class GeneratorTestSource
         using var stream = new MemoryStream();
         var emit = output.Emit(stream);
         await Assert
-            .That(
-                string.Join(
-                    Environment.NewLine,
-                    emit.Diagnostics.Where(x => x.Severity >= DiagnosticSeverity.Warning)
-                )
-            )
+            .That(string.Join(Environment.NewLine, emit.Diagnostics.Where(x => x.Severity >= DiagnosticSeverity.Warning)))
             .IsEqualTo("");
         await Assert.That(emit.Success).IsTrue();
         stream.Position = 0;
@@ -146,9 +136,7 @@ internal static class GeneratorTestSource
         try
         {
             var assembly = loadContext.LoadFromStream(stream);
-            var run = assembly
-                .GetType("Probe")!
-                .GetMethod("Run", BindingFlags.Public | BindingFlags.Static)!;
+            var run = assembly.GetType("Probe")!.GetMethod("Run", BindingFlags.Public | BindingFlags.Static)!;
             await Assert.That((bool)run.Invoke(null, null)!).IsTrue();
         }
         finally

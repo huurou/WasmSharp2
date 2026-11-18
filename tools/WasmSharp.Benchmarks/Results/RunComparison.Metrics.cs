@@ -17,10 +17,7 @@ internal sealed partial class RunComparison
         MetricChange? change =
             baseline is null || current is null
                 ? null
-                : new(
-                    current.Median - baseline.Median,
-                    baseline.Median == 0 ? null : current.Median / baseline.Median
-                );
+                : new(current.Median - baseline.Median, baseline.Median == 0 ? null : current.Median / baseline.Median);
         var reasons = prerequisites.ToList();
         if (baselineValues.Count < (minimumRuns ?? 3) || currentValues.Count < (minimumRuns ?? 3))
         {
@@ -31,8 +28,7 @@ internal sealed partial class RunComparison
                 )
             );
         }
-        var validPolicy =
-            policy is not null && baseline is not null && IsValidPolicy(policy, baseline.Median);
+        var validPolicy = policy is not null && baseline is not null && IsValidPolicy(policy, baseline.Median);
         if (policy is not null && baseline is not null && !validPolicy)
         {
             reasons.Add(
@@ -60,42 +56,19 @@ internal sealed partial class RunComparison
         }
         if (reasons.Any(x => IsBlocking(x.Kind)) || !validPolicy || change is null)
         {
-            return new(
-                baseline,
-                current,
-                change,
-                ComparisonDecision.Indeterminate,
-                null,
-                false,
-                reasons
-            );
+            return new(baseline, current, change, ComparisonDecision.Indeterminate, null, false, reasons);
         }
         var difference = change.AbsoluteDifference;
         var allowed = difference <= Width(policy!.AllowedIncrease, baseline!.Median);
         if (!allowed)
         {
-            reasons.Add(
-                new(
-                    ComparisonReasonKind.AllowedIncreaseExceeded,
-                    $"{metric}: 事前の許容増加幅を超えています。"
-                )
-            );
-            return new(
-                baseline,
-                current,
-                change,
-                ComparisonDecision.Regressed,
-                false,
-                false,
-                reasons
-            );
+            reasons.Add(new(ComparisonReasonKind.AllowedIncreaseExceeded, $"{metric}: 事前の許容増加幅を超えています。"));
+            return new(baseline, current, change, ComparisonDecision.Regressed, false, false, reasons);
         }
         var reduction = -difference;
         var beyondNoise = reduction > Width(policy.Noise, baseline.Median);
         var targetAchieved =
-            policy.ReductionTarget is not null
-            && reduction >= Width(policy.ReductionTarget, baseline.Median)
-            && beyondNoise;
+            policy.ReductionTarget is not null && reduction >= Width(policy.ReductionTarget, baseline.Median) && beyondNoise;
         if (targetAchieved)
         {
             reasons.Add(
@@ -109,11 +82,7 @@ internal sealed partial class RunComparison
         var equivalent =
             difference >= -Width(policy.Equivalence.Decrease, baseline.Median)
             && difference <= Width(policy.Equivalence.Increase, baseline.Median);
-        if (
-            untargeted
-            && reduction > Width(policy.Equivalence.Decrease, baseline.Median)
-            && beyondNoise
-        )
+        if (untargeted && reduction > Width(policy.Equivalence.Decrease, baseline.Median) && beyondNoise)
         {
             reasons.Add(
                 new(
@@ -121,23 +90,12 @@ internal sealed partial class RunComparison
                     $"{metric}: 非対象caseで同等範囲と基準ノイズ幅を超えて削減しています。"
                 )
             );
-            return new(
-                baseline,
-                current,
-                change,
-                ComparisonDecision.Improved,
-                true,
-                false,
-                reasons
-            );
+            return new(baseline, current, change, ComparisonDecision.Improved, true, false, reasons);
         }
         if (policy.ReductionTarget is not null)
         {
             reasons.Add(
-                new(
-                    ComparisonReasonKind.TargetNotReached,
-                    $"{metric}: 削減目標または基準ノイズ幅超過を満たしません。"
-                )
+                new(ComparisonReasonKind.TargetNotReached, $"{metric}: 削減目標または基準ノイズ幅超過を満たしません。")
             );
         }
         reasons.Add(
@@ -168,9 +126,7 @@ internal sealed partial class RunComparison
         var ordered = values.Select(x => x.Value).Order().ToArray();
         var middle = ordered.Length / 2;
         var median =
-            ordered.Length % 2 == 0
-                ? ordered[middle - 1] + (ordered[middle] - ordered[middle - 1]) / 2
-                : ordered[middle];
+            ordered.Length % 2 == 0 ? ordered[middle - 1] + (ordered[middle] - ordered[middle - 1]) / 2 : ordered[middle];
         return new(values, median, ordered[0], ordered[^1]);
     }
 
@@ -186,13 +142,8 @@ internal sealed partial class RunComparison
         return thresholds.All(x => IsValidThreshold(x, false))
             && IsValidThreshold(policy.RunVariation, false)
             && (policy.ReductionTarget is null || IsValidThreshold(policy.ReductionTarget, true))
-            && (
-                baseline != 0
-                || thresholds.All(x => x is AbsoluteThreshold)
-                    && policy.ReductionTarget is not RatioThreshold
-            )
-            && Width(policy.Equivalence.Increase, baseline)
-                <= Width(policy.AllowedIncrease, baseline);
+            && (baseline != 0 || thresholds.All(x => x is AbsoluteThreshold) && policy.ReductionTarget is not RatioThreshold)
+            && Width(policy.Equivalence.Increase, baseline) <= Width(policy.AllowedIncrease, baseline);
     }
 
     private static bool IsValidThreshold(MetricThreshold threshold, bool positive)

@@ -6,12 +6,7 @@ namespace WasmSharp.Tests.Execution;
 internal class Interpreter_I32x4ExtAddPairwiseI16x8STests
 {
     [Test]
-    [Arguments(
-        0x7FFF7FFF80008000UL,
-        0xFFFEFFFF7FFF8000UL,
-        0x0000FFFEFFFF0000UL,
-        0xFFFFFFFDFFFFFFFFUL
-    )]
+    [Arguments(0x7FFF7FFF80008000UL, 0xFFFEFFFF7FFF8000UL, 0x0000FFFEFFFF0000UL, 0xFFFFFFFDFFFFFFFFUL)]
     public async Task 上下で異なる符号境界のlane_隣接対を拡張して順に加算する(
         ulong firstLow64,
         ulong firstHigh64,

@@ -21,11 +21,7 @@ internal partial class WasmModule_DecodeTests
             HostLinkingModuleBinary.Code(([], body))
         );
         using var stream = new ChunkedReadStream(new MemoryStream(bytes), 1);
-        Func<WasmModule>[] decoders =
-        [
-            () => WasmModule.Decode(bytes),
-            () => WasmModule.Decode(stream),
-        ];
+        Func<WasmModule>[] decoders = [() => WasmModule.Decode(bytes), () => WasmModule.Decode(stream)];
 
         // Act & Assert
         foreach (var decode in decoders)
@@ -38,18 +34,11 @@ internal partial class WasmModule_DecodeTests
                 await Assert.That(instructions.Length).IsEqualTo(16);
                 await Assert.That(instructions[0].BlockType.Kind).IsEqualTo(BlockTypeKind.Empty);
                 await Assert.That(instructions[1].BlockType.TypeIndex).IsEqualTo(uint.MaxValue);
-                await Assert
-                    .That(instructions[2].BlockType.Kind)
-                    .IsEqualTo(BlockTypeKind.TypeIndex);
+                await Assert.That(instructions[2].BlockType.Kind).IsEqualTo(BlockTypeKind.TypeIndex);
                 await Assert.That(instructions[2].BlockType.TypeIndex).IsEqualTo(0u);
                 await Assert.That(instructions[6].SelectTypes.IsEmpty).IsTrue();
                 await Assert
-                    .That(
-                        instructions[7]
-                            .SelectTypes.SequenceEqual(
-                                new[] { WasmValueKind.I32, WasmValueKind.I64 }
-                            )
-                    )
+                    .That(instructions[7].SelectTypes.SequenceEqual(new[] { WasmValueKind.I32, WasmValueKind.I64 }))
                     .IsTrue();
                 await Assert.That(instructions[8].Index).IsEqualTo(uint.MaxValue);
                 await Assert.That(instructions[9].Index).IsEqualTo(0u);
@@ -82,11 +71,7 @@ internal partial class WasmModule_DecodeTests
             HostLinkingModuleBinary.Code(([], Convert.FromHexString(body)))
         );
         using var stream = new ChunkedReadStream(new MemoryStream(bytes));
-        Func<WasmModule>[] decoders =
-        [
-            () => WasmModule.Decode(bytes),
-            () => WasmModule.Decode(stream),
-        ];
+        Func<WasmModule>[] decoders = [() => WasmModule.Decode(bytes), () => WasmModule.Decode(stream)];
 
         // Act & Assert
         foreach (var decode in decoders)
@@ -94,12 +79,8 @@ internal partial class WasmModule_DecodeTests
             var exception = await Assert.That(decode).ThrowsExactly<WasmDecodeException>();
             using (Assert.Multiple())
             {
-                await Assert
-                    .That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal))
-                    .IsTrue();
-                await Assert
-                    .That(exception.Location)
-                    .IsEqualTo(new(WasmProcessingStage.Decode, 23 + relativeOffset, 0, 10));
+                await Assert.That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal)).IsTrue();
+                await Assert.That(exception.Location).IsEqualTo(new(WasmProcessingStage.Decode, 23 + relativeOffset, 0, 10));
             }
         }
     }
@@ -121,11 +102,7 @@ internal partial class WasmModule_DecodeTests
             HostLinkingModuleBinary.Section(10, Convert.FromHexString("01040002400B" + following))
         );
         using var stream = new ChunkedReadStream(new MemoryStream(bytes));
-        Func<WasmModule>[] decoders =
-        [
-            () => WasmModule.Decode(bytes),
-            () => WasmModule.Decode(stream),
-        ];
+        Func<WasmModule>[] decoders = [() => WasmModule.Decode(bytes), () => WasmModule.Decode(stream)];
 
         // Act & Assert
         foreach (var decode in decoders)
@@ -133,12 +110,8 @@ internal partial class WasmModule_DecodeTests
             var exception = await Assert.That(decode).ThrowsExactly<WasmDecodeException>();
             using (Assert.Multiple())
             {
-                await Assert
-                    .That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal))
-                    .IsTrue();
-                await Assert
-                    .That(exception.Location)
-                    .IsEqualTo(new(WasmProcessingStage.Decode, offset, 0, 10));
+                await Assert.That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal)).IsTrue();
+                await Assert.That(exception.Location).IsEqualTo(new(WasmProcessingStage.Decode, offset, 0, 10));
             }
         }
     }
@@ -167,11 +140,7 @@ internal partial class WasmModule_DecodeTests
         // Arrange
         var bytes = Convert.FromHexString("0061736D01000000" + sections);
         using var stream = new ChunkedReadStream(new MemoryStream(bytes));
-        Func<WasmModule>[] decoders =
-        [
-            () => WasmModule.Decode(bytes),
-            () => WasmModule.Decode(stream),
-        ];
+        Func<WasmModule>[] decoders = [() => WasmModule.Decode(bytes), () => WasmModule.Decode(stream)];
 
         // Act & Assert
         foreach (var decode in decoders)
@@ -179,9 +148,7 @@ internal partial class WasmModule_DecodeTests
             var exception = await Assert.That(decode).ThrowsExactly<WasmDecodeException>();
             using (Assert.Multiple())
             {
-                await Assert
-                    .That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal))
-                    .IsTrue();
+                await Assert.That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal)).IsTrue();
                 await Assert
                     .That(exception.Location)
                     .IsEqualTo(new(WasmProcessingStage.Decode, offset, functionIndex, sectionId));
@@ -202,11 +169,7 @@ internal partial class WasmModule_DecodeTests
         // Arrange
         var bytes = Convert.FromHexString("0061736D01000000030201000A03010100" + instruction);
         using var stream = new ChunkedReadStream(new MemoryStream(bytes));
-        Func<WasmModule>[] decoders =
-        [
-            () => WasmModule.Decode(bytes),
-            () => WasmModule.Decode(stream),
-        ];
+        Func<WasmModule>[] decoders = [() => WasmModule.Decode(bytes), () => WasmModule.Decode(stream)];
 
         // Act & Assert
         foreach (var decode in decoders)
@@ -215,16 +178,9 @@ internal partial class WasmModule_DecodeTests
             using (Assert.Multiple())
             {
                 await Assert
-                    .That(
-                        exception!.Message.StartsWith(
-                            "unexpected end of section or function",
-                            StringComparison.Ordinal
-                        )
-                    )
+                    .That(exception!.Message.StartsWith("unexpected end of section or function", StringComparison.Ordinal))
                     .IsTrue();
-                await Assert
-                    .That(exception.Location)
-                    .IsEqualTo(new(WasmProcessingStage.Decode, offset, 0, 10));
+                await Assert.That(exception.Location).IsEqualTo(new(WasmProcessingStage.Decode, offset, 0, 10));
             }
         }
     }
@@ -261,11 +217,7 @@ internal partial class WasmModule_DecodeTests
         // Arrange
         var bytes = Convert.FromHexString(hex);
         using var stream = new ChunkedReadStream(new MemoryStream(bytes));
-        Func<WasmModule>[] decoders =
-        [
-            () => WasmModule.Decode(bytes),
-            () => WasmModule.Decode(stream),
-        ];
+        Func<WasmModule>[] decoders = [() => WasmModule.Decode(bytes), () => WasmModule.Decode(stream)];
 
         // Act & Assert
         foreach (var decode in decoders)
@@ -296,11 +248,7 @@ internal partial class WasmModule_DecodeTests
         // Arrange
         var bytes = ConstantModuleBinary.Create(0x7F, Convert.FromHexString(instructions));
         using var stream = new MemoryStream(bytes);
-        Func<WasmModule>[] decoders =
-        [
-            () => WasmModule.Decode(bytes),
-            () => WasmModule.Decode(stream),
-        ];
+        Func<WasmModule>[] decoders = [() => WasmModule.Decode(bytes), () => WasmModule.Decode(stream)];
 
         // Act & Assert
         foreach (var decode in decoders)
@@ -308,12 +256,8 @@ internal partial class WasmModule_DecodeTests
             var exception = await Assert.That(decode).ThrowsExactly<WasmDecodeException>();
             using (Assert.Multiple())
             {
-                await Assert
-                    .That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal))
-                    .IsTrue();
-                await Assert
-                    .That(exception.Location)
-                    .IsEqualTo(new(WasmProcessingStage.Decode, offset, 0, 10));
+                await Assert.That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal)).IsTrue();
+                await Assert.That(exception.Location).IsEqualTo(new(WasmProcessingStage.Decode, offset, 0, 10));
             }
         }
     }
@@ -321,9 +265,7 @@ internal partial class WasmModule_DecodeTests
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task 空要素sectionの後に破損がある_両入力で後続sectionの位置を通知する(
-        bool useStream
-    )
+    public async Task 空要素sectionの後に破損がある_両入力で後続sectionの位置を通知する(bool useStream)
     {
         // Arrange
         var bytes = Convert.FromHexString("0061736D010000000901000D00");
@@ -333,9 +275,7 @@ internal partial class WasmModule_DecodeTests
         var exception = await Assert
             .That(() => useStream ? WasmModule.Decode(stream) : WasmModule.Decode(bytes))
             .ThrowsExactly<WasmDecodeException>();
-        await Assert
-            .That(exception!.Location)
-            .IsEqualTo(new(WasmProcessingStage.Decode, 11, null, 13));
+        await Assert.That(exception!.Location).IsEqualTo(new(WasmProcessingStage.Decode, 11, null, 13));
     }
 
     [Test]
@@ -414,9 +354,7 @@ internal partial class WasmModule_DecodeTests
         stream.Dispose();
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => WasmModule.Decode(stream))
-            .ThrowsExactly<ArgumentException>();
+        var exception = await Assert.That(() => WasmModule.Decode(stream)).ThrowsExactly<ArgumentException>();
         await Assert.That(exception!.ParamName).IsEqualTo("stream");
     }
 
@@ -428,9 +366,7 @@ internal partial class WasmModule_DecodeTests
         using var stream = new ThrowingReadStream(expected);
 
         // Act & Assert
-        var actual = await Assert
-            .That(() => WasmModule.Decode(stream))
-            .ThrowsExactly<IOException>();
+        var actual = await Assert.That(() => WasmModule.Decode(stream)).ThrowsExactly<IOException>();
         await Assert.That(actual).IsSameReferenceAs(expected);
     }
 
@@ -443,9 +379,7 @@ internal partial class WasmModule_DecodeTests
         using var stream = new ChunkedReadStream(input);
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => WasmModule.Decode(stream))
-            .ThrowsExactly<WasmDecodeException>();
+        var exception = await Assert.That(() => WasmModule.Decode(stream)).ThrowsExactly<WasmDecodeException>();
         using (Assert.Multiple())
         {
             await Assert.That(exception!.Location).IsEqualTo(new(WasmProcessingStage.Decode, 1));
@@ -457,11 +391,7 @@ internal partial class WasmModule_DecodeTests
     [Test]
     [Arguments("FD0C", 35L, "unexpected end of section or function")]
     [Arguments("FD0C000000000000000000000000000000", 35L, "unexpected end of section or function")]
-    [Arguments(
-        "FD0C00000000000000000000000000000000",
-        51L,
-        "unexpected end of section or function"
-    )]
+    [Arguments("FD0C00000000000000000000000000000000", 51L, "unexpected end of section or function")]
     [Arguments("FD8C80808010", 38L, "integer too large")]
     [Arguments("FD8C8080808000", 39L, "integer representation too long")]
     public async Task V128定数の即値か命令番号か終端が破損_両入力でDecode診断と元位置を保持する(
@@ -473,11 +403,7 @@ internal partial class WasmModule_DecodeTests
         // Arrange
         var bytes = ConstantModuleBinary.Create(0x7B, Convert.FromHexString(instructions));
         using var stream = new ChunkedReadStream(new MemoryStream(bytes));
-        Func<WasmModule>[] decoders =
-        [
-            () => WasmModule.Decode(bytes),
-            () => WasmModule.Decode(stream),
-        ];
+        Func<WasmModule>[] decoders = [() => WasmModule.Decode(bytes), () => WasmModule.Decode(stream)];
 
         // Act & Assert
         foreach (var decode in decoders)
@@ -485,12 +411,8 @@ internal partial class WasmModule_DecodeTests
             var exception = await Assert.That(decode).ThrowsExactly<WasmDecodeException>();
             using (Assert.Multiple())
             {
-                await Assert
-                    .That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal))
-                    .IsTrue();
-                await Assert
-                    .That(exception.Location)
-                    .IsEqualTo(new(WasmProcessingStage.Decode, offset, 0, 10));
+                await Assert.That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal)).IsTrue();
+                await Assert.That(exception.Location).IsEqualTo(new(WasmProcessingStage.Decode, offset, 0, 10));
             }
         }
     }
@@ -498,9 +420,7 @@ internal partial class WasmModule_DecodeTests
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task 公開Decodeでメモリ即値が切断される_両入力でデコーダーの境界診断を保持する(
-        bool useStream
-    )
+    public async Task 公開Decodeでメモリ即値が切断される_両入力でデコーダーの境界診断を保持する(bool useStream)
     {
         // Arrange
         var bytes = ConstantModuleBinary.Create(0x7F, Convert.FromHexString("FD0105"));
@@ -513,16 +433,9 @@ internal partial class WasmModule_DecodeTests
         using (Assert.Multiple())
         {
             await Assert
-                .That(
-                    exception!.Message.StartsWith(
-                        "unexpected end of section or function",
-                        StringComparison.Ordinal
-                    )
-                )
+                .That(exception!.Message.StartsWith("unexpected end of section or function", StringComparison.Ordinal))
                 .IsTrue();
-            await Assert
-                .That(exception.Location)
-                .IsEqualTo(new(WasmProcessingStage.Decode, bytes.Length, 0, 10));
+            await Assert.That(exception.Location).IsEqualTo(new(WasmProcessingStage.Decode, bytes.Length, 0, 10));
             await Assert.That(stream.CanRead).IsTrue();
         }
     }

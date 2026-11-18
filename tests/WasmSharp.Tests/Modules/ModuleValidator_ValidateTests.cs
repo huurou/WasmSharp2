@@ -48,18 +48,11 @@ internal partial class ModuleValidator_ValidateTests
     {
         // Arrange
         var module = WasmModule.Decode(
-            Convert.FromHexString(
-                "0061736D0100000001060160017F017F"
-                    + functions
-                    + exports
-                    + "0A0B02040041010B040041020B"
-            )
+            Convert.FromHexString("0061736D0100000001060160017F017F" + functions + exports + "0A0B02040041010B040041020B")
         );
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => ModuleValidator.Validate(module))
-            .ThrowsExactly<WasmValidateException>();
+        var exception = await Assert.That(() => ModuleValidator.Validate(module)).ThrowsExactly<WasmValidateException>();
         await Assert.That(exception!.Location!.Stage).IsEqualTo(WasmProcessingStage.Validate);
         await Assert.That(exception.Location.FunctionIndex).IsEqualTo(index);
         await Assert.That(exception.Location.SectionId).IsEqualTo(section);
@@ -73,21 +66,14 @@ internal partial class ModuleValidator_ValidateTests
     [Arguments("6000027E7F", "00410142020B")]
     [Arguments("60017F017E", "0041010B")]
     [Arguments("6000017E", "01017F41010B")]
-    public async Task 結果の型や個数や順序が不一致_終端位置付き検証失敗になる(
-        string signature,
-        string body
-    )
+    public async Task 結果の型や個数や順序が不一致_終端位置付き検証失敗になる(string signature, string body)
     {
         // Arrange
         var module = DecodeFunction(signature, body);
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => ModuleValidator.Validate(module))
-            .ThrowsExactly<WasmValidateException>();
-        await Assert
-            .That(exception!.Location)
-            .IsEqualTo(new(WasmProcessingStage.Validate, module.InputLength - 1, 0, 10));
+        var exception = await Assert.That(() => ModuleValidator.Validate(module)).ThrowsExactly<WasmValidateException>();
+        await Assert.That(exception!.Location).IsEqualTo(new(WasmProcessingStage.Validate, module.InputLength - 1, 0, 10));
         await Assert.That(module.FunctionCodes.IsEmpty).IsTrue();
     }
 
@@ -159,23 +145,15 @@ internal partial class ModuleValidator_ValidateTests
         // Act & Assert
         for (var attempt = 0; attempt < 2; attempt++)
         {
-            var exception = await Assert
-                .That(() => module.Validate())
-                .ThrowsExactly<WasmValidateException>();
+            var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
             using (Assert.Multiple())
             {
-                await Assert
-                    .That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal))
-                    .IsTrue();
-                await Assert
-                    .That(exception.Location!.Stage)
-                    .IsEqualTo(WasmProcessingStage.Validate);
+                await Assert.That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal)).IsTrue();
+                await Assert.That(exception.Location!.Stage).IsEqualTo(WasmProcessingStage.Validate);
                 await Assert.That(exception.Location.SectionId).IsEqualTo(sectionId);
                 await Assert.That(module.FunctionCodes.IsEmpty).IsTrue();
                 await Assert.That(module.FunctionExportIndices.IsEmpty).IsTrue();
-                await Assert
-                    .That(() => module.Instantiate(executionContext, []))
-                    .ThrowsExactly<InvalidOperationException>();
+                await Assert.That(() => module.Instantiate(executionContext, [])).ThrowsExactly<InvalidOperationException>();
             }
         }
     }

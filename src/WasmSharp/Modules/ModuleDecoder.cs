@@ -44,10 +44,7 @@ internal static class ModuleDecoder
     /// <param name="bytes">通常解析に使用した入力バイナリ全体</param>
     /// <param name="failure">通常解析で確定した境界失敗</param>
     /// <returns>再走査の構文診断 未対応・実装上限・正常終了の場合は元の診断</returns>
-    private static WasmDecodeException ResolveBoundaryFailure(
-        ReadOnlySpan<byte> bytes,
-        ModuleReadBoundaryException failure
-    )
+    private static WasmDecodeException ResolveBoundaryFailure(ReadOnlySpan<byte> bytes, ModuleReadBoundaryException failure)
     {
         try
         {
@@ -112,9 +109,7 @@ internal static class ModuleDecoder
                     var remaining = section.DeclaredRemaining;
                     if (remaining < 0)
                     {
-                        throw section.Error(
-                            "unexpected end of section or function: custom名が宣言範囲を超えています。"
-                        );
+                        throw section.Error("unexpected end of section or function: custom名が宣言範囲を超えています。");
                     }
 
                     section.ReadBytes((uint)remaining);
@@ -212,14 +207,7 @@ internal static class ModuleDecoder
             ModuleBinaryFormat.RequireEnd(ref section);
         }
 
-        RequireSectionCounts(
-            ref reader,
-            functionTypes.Count,
-            declaredCodeCount,
-            functions,
-            dataCount,
-            declaredDataCount
-        );
+        RequireSectionCounts(ref reader, functionTypes.Count, declaredCodeCount, functions, dataCount, declaredDataCount);
 
         return new WasmModule(
             CollectionsMarshal.AsSpan(types),
@@ -272,9 +260,7 @@ internal static class ModuleDecoder
             && functions.Any(x =>
                 x.Instructions.Any(x =>
                     InstructionSet.TryGet(x.Opcode, out var descriptor)
-                    && descriptor.Immediate
-                        is ImmediateKind.DataIndexMemoryZero
-                            or ImmediateKind.DataIndex
+                    && descriptor.Immediate is ImmediateKind.DataIndexMemoryZero or ImmediateKind.DataIndex
                 )
             )
         )
@@ -295,10 +281,7 @@ internal static class ModuleDecoder
     /// <exception cref="ModuleReadBoundaryException">限定された範囲内で構文を読み終えられない場合</exception>
     /// <exception cref="WasmUnsupportedFeatureException">式で未実装の命令に遭遇した場合</exception>
     /// <exception cref="WasmImplementationLimitException">宣言件数または命令数がコレクションの保持上限を超える場合</exception>
-    internal static List<ElementDefinition> ReadElement(
-        ref ModuleBinaryReader reader,
-        int inputLength
-    )
+    internal static List<ElementDefinition> ReadElement(ref ModuleBinaryReader reader, int inputLength)
     {
         var count = ModuleBinaryFormat.ReadCount(ref reader);
         List<ElementDefinition> segments = [];
@@ -315,10 +298,7 @@ internal static class ModuleDecoder
                 case 6:
                     var tableIndex = flags is 0 or 4 ? 0 : reader.ReadU32();
                     var expression = ExpressionDecoder.Read(ref reader, inputLength);
-                    target = new ActiveElementTarget(
-                        tableIndex,
-                        CollectionsMarshal.AsSpan(expression)
-                    );
+                    target = new ActiveElementTarget(tableIndex, CollectionsMarshal.AsSpan(expression));
                     break;
 
                 case 1:
@@ -370,8 +350,7 @@ internal static class ModuleDecoder
 
             var initializerSpan = CollectionsMarshal.AsSpan(initializers);
             segments.Add(
-                target is { } activeTarget
-                    ? ElementDefinition.Active(elementType, initializerSpan, activeTarget, offset)
+                target is { } activeTarget ? ElementDefinition.Active(elementType, initializerSpan, activeTarget, offset)
                 : flags is 1 or 5 ? ElementDefinition.Passive(elementType, initializerSpan, offset)
                 : ElementDefinition.Declarative(elementType, initializerSpan, offset)
             );
@@ -391,11 +370,7 @@ internal static class ModuleDecoder
     /// <exception cref="ModuleReadBoundaryException">限定された範囲内で構文を読み終えられない場合</exception>
     /// <exception cref="WasmUnsupportedFeatureException">オフセット式で未実装の命令に遭遇した場合</exception>
     /// <exception cref="WasmImplementationLimitException">宣言件数、データ長または命令数がコレクションの保持上限を超える場合</exception>
-    internal static List<DataDefinition> ReadData(
-        ref ModuleBinaryReader reader,
-        int inputLength,
-        out uint declaredCount
-    )
+    internal static List<DataDefinition> ReadData(ref ModuleBinaryReader reader, int inputLength, out uint declaredCount)
     {
         declaredCount = ModuleBinaryFormat.ReadCount(ref reader);
         List<DataDefinition> segments = [];
@@ -410,10 +385,7 @@ internal static class ModuleDecoder
                 case 2:
                     var memoryIndex = flags == 0 ? 0 : reader.ReadU32();
                     var expression = ExpressionDecoder.Read(ref reader, inputLength);
-                    target = new ActiveDataTarget(
-                        memoryIndex,
-                        CollectionsMarshal.AsSpan(expression)
-                    );
+                    target = new ActiveDataTarget(memoryIndex, CollectionsMarshal.AsSpan(expression));
                     break;
 
                 case 1:
@@ -477,10 +449,7 @@ internal static class ModuleDecoder
     /// <exception cref="ModuleReadBoundaryException">限定された範囲内で構文を読み終えられない場合</exception>
     /// <exception cref="WasmUnsupportedFeatureException">初期化式で未実装の命令に遭遇した場合</exception>
     /// <exception cref="WasmImplementationLimitException">宣言件数または命令数がコレクションの保持上限を超える場合</exception>
-    private static List<GlobalDefinition> ReadGlobals(
-        ref ModuleBinaryReader reader,
-        int inputLength
-    )
+    private static List<GlobalDefinition> ReadGlobals(ref ModuleBinaryReader reader, int inputLength)
     {
         var count = ModuleBinaryFormat.ReadCount(ref reader);
         List<GlobalDefinition> globals = [];
@@ -630,10 +599,7 @@ internal static class ModuleDecoder
 
         if (overflowOffset is not null)
         {
-            throw reader.Error(
-                "too many locals: localsの合計がCore 2.0の上限を超えています。",
-                overflowOffset
-            );
+            throw reader.Error("too many locals: localsの合計がCore 2.0の上限を超えています。", overflowOffset);
         }
 
         return locals;

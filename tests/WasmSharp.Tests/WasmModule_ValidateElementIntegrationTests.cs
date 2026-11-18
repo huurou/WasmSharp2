@@ -33,32 +33,22 @@ internal partial class WasmModule_ValidateTests
         var segmentOffset = bytes.Length - section.Length + 3;
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => module.Validate())
-            .ThrowsExactly<WasmValidateException>();
+        var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
         using (Assert.Multiple())
         {
-            await Assert
-                .That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal))
-                .IsTrue();
+            await Assert.That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal)).IsTrue();
             await Assert
                 .That(exception.Location)
-                .IsEqualTo(
-                    new(WasmProcessingStage.Validate, segmentOffset + relativeOffset, null, 9)
-                );
+                .IsEqualTo(new(WasmProcessingStage.Validate, segmentOffset + relativeOffset, null, 9));
             await Assert.That(module.FunctionCodes.IsEmpty).IsTrue();
-            await Assert
-                .That(() => module.Instantiate(executionContext, []))
-                .ThrowsExactly<InvalidOperationException>();
+            await Assert.That(() => module.Instantiate(executionContext, [])).ThrowsExactly<InvalidOperationException>();
         }
     }
 
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task 要素から定義globalかmutableImportを参照する_定数式として拒否する(
-        bool definedGlobal
-    )
+    public async Task 要素から定義globalかmutableImportを参照する_定数式として拒否する(bool definedGlobal)
     {
         // Arrange
         var bytes = HostLinkingModuleBinary.Create(
@@ -69,9 +59,7 @@ internal partial class WasmModule_ValidateTests
         var module = WasmModule.Decode(bytes);
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => module.Validate())
-            .ThrowsExactly<WasmValidateException>();
+        var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
         using (Assert.Multiple())
         {
             await Assert

@@ -66,20 +66,14 @@ internal partial class WasmModule_ValidateTests
         var module = WasmModule.Decode(bytes);
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => module.Validate())
-            .ThrowsExactly<WasmValidateException>();
+        var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
         using (Assert.Multiple())
         {
-            await Assert
-                .That(exception!.Message.StartsWith(diagnostic, StringComparison.Ordinal))
-                .IsTrue();
+            await Assert.That(exception!.Message.StartsWith(diagnostic, StringComparison.Ordinal)).IsTrue();
             await Assert
                 .That(exception.Location)
                 .IsEqualTo(new(WasmProcessingStage.Validate, bytes.Length - offsetFromEnd, 0, 10));
-            await Assert
-                .That(() => module.Instantiate(executionContext, []))
-                .ThrowsExactly<InvalidOperationException>();
+            await Assert.That(() => module.Instantiate(executionContext, [])).ThrowsExactly<InvalidOperationException>();
         }
     }
 
@@ -125,23 +119,16 @@ internal partial class WasmModule_ValidateTests
                 HostLinkingModuleBinary.Types(([], [])),
                 HostLinkingModuleBinary.Functions(0, 0),
                 HostLinkingModuleBinary.Memories((1, null)),
-                HostLinkingModuleBinary.Code(
-                    ([], [0x41, 0, 0x28, 2, 0, 0x1A, 0x0B]),
-                    ([], [0x28, 3, 0, 0x0B])
-                )
+                HostLinkingModuleBinary.Code(([], [0x41, 0, 0x28, 2, 0, 0x1A, 0x0B]), ([], [0x28, 3, 0, 0x0B]))
             )
         );
 
         // Act & Assert
         for (var attempt = 0; attempt < 2; attempt++)
         {
-            var exception = await Assert
-                .That(() => module.Validate())
-                .ThrowsExactly<WasmValidateException>();
+            var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
             await Assert.That(exception!.Location!.FunctionIndex).IsEqualTo(1u);
-            await Assert
-                .That(() => module.Instantiate(executionContext, []))
-                .ThrowsExactly<InvalidOperationException>();
+            await Assert.That(() => module.Instantiate(executionContext, [])).ThrowsExactly<InvalidOperationException>();
         }
     }
 }

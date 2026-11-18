@@ -52,9 +52,7 @@ internal class WasmInstance_GetMemoryTests
         }
         // Act & Assert
         await Assert.That(() => first.GetMemory("M")).ThrowsExactly<ArgumentException>();
-        var exception = await Assert
-            .That(() => first.GetMemory(null!))
-            .ThrowsExactly<ArgumentNullException>();
+        var exception = await Assert.That(() => first.GetMemory(null!)).ThrowsExactly<ArgumentNullException>();
         await Assert.That(exception!.ParamName).IsEqualTo("name");
     }
 
@@ -72,9 +70,7 @@ internal class WasmInstance_GetMemoryTests
             .Instantiate(executionContext, []);
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => instance.GetMemory(name))
-            .ThrowsExactly<ArgumentException>();
+        var exception = await Assert.That(() => instance.GetMemory(name)).ThrowsExactly<ArgumentException>();
         await Assert.That(exception!.ParamName).IsEqualTo("name");
     }
 }

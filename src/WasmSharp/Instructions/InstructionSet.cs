@@ -68,24 +68,8 @@ namespace WasmSharp.Instructions;
     ValidationRule.Return,
     nameof(Interpreter.Return)
 )]
-[Instruction(
-    0,
-    0x10,
-    "call",
-    ImmediateKind.Index,
-    StackEffectKind.Call,
-    ValidationRule.Call,
-    nameof(Interpreter.Call)
-)]
-[Instruction(
-    0,
-    0x1A,
-    "drop",
-    ImmediateKind.None,
-    StackEffectKind.Drop,
-    ValidationRule.Drop,
-    nameof(Interpreter.Drop)
-)]
+[Instruction(0, 0x10, "call", ImmediateKind.Index, StackEffectKind.Call, ValidationRule.Call, nameof(Interpreter.Call))]
+[Instruction(0, 0x1A, "drop", ImmediateKind.None, StackEffectKind.Drop, ValidationRule.Drop, nameof(Interpreter.Drop))]
 [Instruction(
     0,
     0x20,
@@ -131,15 +115,7 @@ namespace WasmSharp.Instructions;
     ValidationRule.GlobalSet,
     nameof(Interpreter.GlobalSet)
 )]
-[Instruction(
-    0,
-    0x01,
-    "nop",
-    ImmediateKind.None,
-    StackEffectKind.None,
-    ValidationRule.None,
-    nameof(Interpreter.NoOp)
-)]
+[Instruction(0, 0x01, "nop", ImmediateKind.None, StackEffectKind.None, ValidationRule.None, nameof(Interpreter.NoOp))]
 [Instruction(
     0,
     0x02,
@@ -149,15 +125,7 @@ namespace WasmSharp.Instructions;
     ValidationRule.Block,
     nameof(Interpreter.NoOp)
 )]
-[Instruction(
-    0,
-    0x03,
-    "loop",
-    ImmediateKind.BlockType,
-    StackEffectKind.Loop,
-    ValidationRule.Loop,
-    nameof(Interpreter.NoOp)
-)]
+[Instruction(0, 0x03, "loop", ImmediateKind.BlockType, StackEffectKind.Loop, ValidationRule.Loop, nameof(Interpreter.NoOp))]
 [Instruction(
     0,
     0x04,
@@ -167,24 +135,8 @@ namespace WasmSharp.Instructions;
     ValidationRule.If,
     nameof(Interpreter.BranchIfZero)
 )]
-[Instruction(
-    0,
-    0x05,
-    "else",
-    ImmediateKind.None,
-    StackEffectKind.Else,
-    ValidationRule.Else,
-    nameof(Interpreter.Branch)
-)]
-[Instruction(
-    0,
-    0x0C,
-    "br",
-    ImmediateKind.Index,
-    StackEffectKind.Branch,
-    ValidationRule.Branch,
-    nameof(Interpreter.Branch)
-)]
+[Instruction(0, 0x05, "else", ImmediateKind.None, StackEffectKind.Else, ValidationRule.Else, nameof(Interpreter.Branch))]
+[Instruction(0, 0x0C, "br", ImmediateKind.Index, StackEffectKind.Branch, ValidationRule.Branch, nameof(Interpreter.Branch))]
 [Instruction(
     0,
     0x0D,

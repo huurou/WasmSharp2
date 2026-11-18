@@ -37,13 +37,7 @@ internal class Instruction_ConstructorTests
         const long BYTE_OFFSET = 12345678901;
 
         // Act
-        var instruction = new Instruction(
-            ExecutionOpcode.Op0B,
-            default,
-            BYTE_OFFSET,
-            INDEX,
-            targetCount
-        );
+        var instruction = new Instruction(ExecutionOpcode.Op0B, default, BYTE_OFFSET, INDEX, targetCount);
 
         // Assert
         using (Assert.Multiple())

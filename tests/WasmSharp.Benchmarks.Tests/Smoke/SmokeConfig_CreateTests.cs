@@ -1,9 +1,9 @@
+using System.Text.Json;
 using BenchmarkDotNet.Diagnosers;
 using BenchmarkDotNet.Engines;
 using BenchmarkDotNet.Exporters.Csv;
 using BenchmarkDotNet.Exporters.Json;
 using BenchmarkDotNet.Jobs;
-using System.Text.Json;
 using WasmSharp.Benchmarks.Smoke;
 
 namespace WasmSharp.Benchmarks.Tests.Smoke;
@@ -16,10 +16,7 @@ internal class SmokeConfig_CreateTests
         // Arrange
         // Act
         var job = SmokeConfig.Create().GetJobs().Single();
-        var factory = job.ResolveValue(
-            InfrastructureMode.EngineFactoryCharacteristic,
-            EngineParameters.DefaultResolver
-        );
+        var factory = job.ResolveValue(InfrastructureMode.EngineFactoryCharacteristic, EngineParameters.DefaultResolver);
 
         // Assert
         await Assert.That(factory.GetType().Name).IsEqualTo("WasmAllocationEngineFactory");
@@ -30,9 +27,7 @@ internal class SmokeConfig_CreateTests
     {
         // Arrange
         using var fixture = JsonDocument.Parse(
-            await File.ReadAllTextAsync(
-                Path.Combine(AppContext.BaseDirectory, "Fixtures", "Data", "smoke-config.json")
-            )
+            await File.ReadAllTextAsync(Path.Combine(AppContext.BaseDirectory, "Fixtures", "Data", "smoke-config.json"))
         );
         var expected = fixture.RootElement;
 
@@ -43,33 +38,17 @@ internal class SmokeConfig_CreateTests
         using (Assert.Multiple())
         {
             await Assert.That(job.Id).IsEqualTo(expected.GetProperty("jobId").GetString());
-            await Assert
-                .That(job.Environment.Runtime?.Name)
-                .IsEqualTo(expected.GetProperty("runtime").GetString());
-            await Assert
-                .That(job.Environment.Platform.ToString())
-                .IsEqualTo(expected.GetProperty("platform").GetString());
+            await Assert.That(job.Environment.Runtime?.Name).IsEqualTo(expected.GetProperty("runtime").GetString());
+            await Assert.That(job.Environment.Platform.ToString()).IsEqualTo(expected.GetProperty("platform").GetString());
             await Assert
                 .That(job.Infrastructure.BuildConfiguration)
                 .IsEqualTo(expected.GetProperty("buildConfiguration").GetString());
-            await Assert
-                .That(job.Run.RunStrategy.ToString())
-                .IsEqualTo(expected.GetProperty("runStrategy").GetString());
-            await Assert
-                .That(job.Run.LaunchCount)
-                .IsEqualTo(expected.GetProperty("launchCount").GetInt32());
-            await Assert
-                .That(job.Run.WarmupCount)
-                .IsEqualTo(expected.GetProperty("warmupCount").GetInt32());
-            await Assert
-                .That(job.Run.IterationCount)
-                .IsEqualTo(expected.GetProperty("iterationCount").GetInt32());
-            await Assert
-                .That(job.Run.InvocationCount)
-                .IsEqualTo(expected.GetProperty("invocationCount").GetInt64());
-            await Assert
-                .That(job.Run.UnrollFactor)
-                .IsEqualTo(expected.GetProperty("unrollFactor").GetInt32());
+            await Assert.That(job.Run.RunStrategy.ToString()).IsEqualTo(expected.GetProperty("runStrategy").GetString());
+            await Assert.That(job.Run.LaunchCount).IsEqualTo(expected.GetProperty("launchCount").GetInt32());
+            await Assert.That(job.Run.WarmupCount).IsEqualTo(expected.GetProperty("warmupCount").GetInt32());
+            await Assert.That(job.Run.IterationCount).IsEqualTo(expected.GetProperty("iterationCount").GetInt32());
+            await Assert.That(job.Run.InvocationCount).IsEqualTo(expected.GetProperty("invocationCount").GetInt64());
+            await Assert.That(job.Run.UnrollFactor).IsEqualTo(expected.GetProperty("unrollFactor").GetInt32());
             await Assert
                 .That(job.Run.MemoryRandomization)
                 .IsEqualTo(expected.GetProperty("memoryRandomization").GetBoolean());

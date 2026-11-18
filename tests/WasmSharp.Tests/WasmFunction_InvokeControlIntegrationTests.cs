@@ -20,9 +20,7 @@ internal partial class WasmFunction_InvokeTests
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
-        var candidates = emptyCandidates
-            ? HostLinkingModuleBinary.LabelVector()
-            : HostLinkingModuleBinary.LabelVector(0, 1);
+        var candidates = emptyCandidates ? HostLinkingModuleBinary.LabelVector() : HostLinkingModuleBinary.LabelVector(0, 1);
         var module = WasmModule.Decode(
             HostLinkingModuleBinary.Create(
                 HostLinkingModuleBinary.Types(([0x7F, 0x7F, 0x7F], [0x7F, 0x7F]), ([0x7F], [0x7F])),
@@ -96,12 +94,7 @@ internal partial class WasmFunction_InvokeTests
             )
         );
         var function = module.Validate().Instantiate(executionContext, [], new(1)).GetFunction("run");
-        WasmValue[] arguments =
-        [
-            WasmValue.FromI32(10000),
-            WasmValue.FromI32(condition),
-            WasmValue.FromI32(selector),
-        ];
+        WasmValue[] arguments = [WasmValue.FromI32(10000), WasmValue.FromI32(condition), WasmValue.FromI32(selector)];
 
         // Act
         var first = function.Invoke(executionContext, arguments);
@@ -110,11 +103,7 @@ internal partial class WasmFunction_InvokeTests
         // Assert
         using (Assert.Multiple())
         {
-            await Assert
-                .That(
-                    first.Values.SequenceEqual([WasmValue.FromI32(42), WasmValue.FromI32(expected)])
-                )
-                .IsTrue();
+            await Assert.That(first.Values.SequenceEqual([WasmValue.FromI32(42), WasmValue.FromI32(expected)])).IsTrue();
             await Assert.That(second.Values.SequenceEqual(first.Values)).IsTrue();
         }
     }

@@ -9,10 +9,10 @@ internal class CompletionPolicy_VerifyTests
     private readonly Core2ProfileLoader profileLoader_ = new Core2ProfileLoader();
 
     private static readonly string[] expectedReasons_ =
-                    [
-                        "入力単位のrunner_errorが2件あります。",
-                        "操作全体の診断が1件あります。",
-                    ];
+    [
+        "入力単位のrunner_errorが2件あります。",
+        "操作全体の診断が1件あります。",
+    ];
 
     [Test]
     public async Task 全ケースpassedでも複数入力の異常と操作診断がある_合計件数を不合格理由にする()
@@ -28,21 +28,13 @@ internal class CompletionPolicy_VerifyTests
         report = report with { Summary = report.Summarize() };
 
         // Act
-        var decision = CompletionPolicy.Verify(
-            report,
-            ReportStore.Validate(report),
-            report.Corpus.Profile.ToProfile()
-        );
+        var decision = CompletionPolicy.Verify(report, ReportStore.Validate(report), report.Corpus.Profile.ToProfile());
 
         // Assert
         using (Assert.Multiple())
         {
             await Assert.That(decision.ExitCode).IsEqualTo(1);
-            await Assert
-                .That(decision.Reasons)
-                .IsEquivalentTo(
-                    expectedReasons_
-                );
+            await Assert.That(decision.Reasons).IsEquivalentTo(expectedReasons_);
         }
     }
 
@@ -57,11 +49,7 @@ internal class CompletionPolicy_VerifyTests
         );
 
         // Act
-        var decision = CompletionPolicy.Verify(
-            report,
-            ReportStore.Validate(report),
-            report.Corpus.Profile.ToProfile()
-        );
+        var decision = CompletionPolicy.Verify(report, ReportStore.Validate(report), report.Corpus.Profile.ToProfile());
 
         // Assert
         using (Assert.Multiple())
@@ -78,23 +66,15 @@ internal class CompletionPolicy_VerifyTests
         var report = RunReportFixture.CreateSample();
 
         // Act
-        var decision = CompletionPolicy.Verify(
-            report,
-            ReportStore.Validate(report),
-            report.Corpus.Profile.ToProfile()
-        );
+        var decision = CompletionPolicy.Verify(report, ReportStore.Validate(report), report.Corpus.Profile.ToProfile());
 
         // Assert
         using (Assert.Multiple())
         {
             await Assert.That(decision.ExitCode).IsEqualTo(1);
             await Assert.That(decision.Reasons.Any(x => x.StartsWith("failedが1件"))).IsTrue();
-            await Assert
-                .That(decision.Reasons.Any(x => x.StartsWith("runtime_unsupportedが1件")))
-                .IsTrue();
-            await Assert
-                .That(decision.Reasons.Any(x => x.StartsWith("command単位のrunner_errorが1件")))
-                .IsTrue();
+            await Assert.That(decision.Reasons.Any(x => x.StartsWith("runtime_unsupportedが1件"))).IsTrue();
+            await Assert.That(decision.Reasons.Any(x => x.StartsWith("command単位のrunner_errorが1件"))).IsTrue();
             await Assert.That(decision.Reasons.Any(x => x.StartsWith("blockedが1件"))).IsTrue();
         }
     }
@@ -116,11 +96,7 @@ internal class CompletionPolicy_VerifyTests
         report = report with { Summary = report.Summarize() };
 
         // Act
-        var decision = CompletionPolicy.Verify(
-            report,
-            ReportStore.Validate(report),
-            report.Corpus.Profile.ToProfile()
-        );
+        var decision = CompletionPolicy.Verify(report, ReportStore.Validate(report), report.Corpus.Profile.ToProfile());
 
         // Assert
         using (Assert.Multiple())
@@ -128,9 +104,7 @@ internal class CompletionPolicy_VerifyTests
             await Assert.That(decision.ExitCode).IsEqualTo(1);
             await Assert.That(decision.Reasons.Any(x => x.Contains("a.wast#1"))).IsTrue();
             await Assert.That(decision.Reasons.Any(x => x.Contains("未確定"))).IsTrue();
-            await Assert
-                .That(decision.Reasons.Any(x => x.StartsWith("入力単位のrunner_errorが1件")))
-                .IsTrue();
+            await Assert.That(decision.Reasons.Any(x => x.StartsWith("入力単位のrunner_errorが1件"))).IsTrue();
         }
     }
 
@@ -138,16 +112,10 @@ internal class CompletionPolicy_VerifyTests
     public async Task 固定profileと異なる入力集合の結果_全passedでも用途不合格の1を返す()
     {
         // Arrange
-        var report = RunReportFixture.Create(
-            RunReportFixture.Case("a.wast", 0, CaseCategory.Setup, CaseOutcome.Passed)
-        );
+        var report = RunReportFixture.Create(RunReportFixture.Case("a.wast", 0, CaseCategory.Setup, CaseOutcome.Passed));
 
         // Act
-        var decision = CompletionPolicy.Verify(
-            report,
-            ReportStore.Validate(report),
-            profileLoader_.Load()
-        );
+        var decision = CompletionPolicy.Verify(report, ReportStore.Validate(report), profileLoader_.Load());
 
         // Assert
         using (Assert.Multiple())

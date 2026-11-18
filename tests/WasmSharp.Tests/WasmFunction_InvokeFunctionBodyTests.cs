@@ -1,4 +1,3 @@
-using WasmSharp.Exceptions;
 using WasmSharp.Tests.Fixtures;
 
 namespace WasmSharp.Tests;
@@ -8,9 +7,7 @@ internal partial class WasmFunction_InvokeTests
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task 全値型の引数とlocalsを扱う_ビット列と参照と型別初期値を保つ(
-        bool zeroInitialized
-    )
+    public async Task 全値型の引数とlocalsを扱う_ビット列と参照と型別初期値を保つ(bool zeroInitialized)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
@@ -69,15 +66,9 @@ internal partial class WasmFunction_InvokeTests
         // Assert
         using (Assert.Multiple())
         {
-            await Assert
-                .That(result.Values.SequenceEqual(zeroInitialized ? zeros : values))
-                .IsTrue();
-            await Assert
-                .That(result.Values[5].AsFuncRef())
-                .IsSameReferenceAs(zeroInitialized ? null : functionReference);
-            await Assert
-                .That(result.Values[6].AsExternRef())
-                .IsSameReferenceAs(zeroInitialized ? null : reference);
+            await Assert.That(result.Values.SequenceEqual(zeroInitialized ? zeros : values)).IsTrue();
+            await Assert.That(result.Values[5].AsFuncRef()).IsSameReferenceAs(zeroInitialized ? null : functionReference);
+            await Assert.That(result.Values[6].AsExternRef()).IsSameReferenceAs(zeroInitialized ? null : reference);
         }
     }
 
@@ -99,9 +90,7 @@ internal partial class WasmFunction_InvokeTests
 
         // Act
         var instance = WasmModule.Decode(bytes).Validate().Instantiate(executionContext, []);
-        var result = instance
-            .GetFunction("run")
-            .Invoke(executionContext, [WasmValue.FromI32(42), WasmValue.FromI64(73)]);
+        var result = instance.GetFunction("run").Invoke(executionContext, [WasmValue.FromI32(42), WasmValue.FromI64(73)]);
 
         // Assert
         using (Assert.Multiple())
@@ -123,9 +112,7 @@ internal partial class WasmFunction_InvokeTests
                 HostLinkingModuleBinary.Types(([0x7F, 0x7E], [0x7F, 0x7E])),
                 HostLinkingModuleBinary.Functions(0),
                 HostLinkingModuleBinary.Exports(("run", 0, 0)),
-                HostLinkingModuleBinary.Code(
-                    ([(1, 0x7F)], [0x20, 0, 0x22, 2, 0x1A, 0x20, 2, 0x20, 1, 0x0B])
-                )
+                HostLinkingModuleBinary.Code(([(1, 0x7F)], [0x20, 0, 0x22, 2, 0x1A, 0x20, 2, 0x20, 1, 0x0B]))
             )
         );
 

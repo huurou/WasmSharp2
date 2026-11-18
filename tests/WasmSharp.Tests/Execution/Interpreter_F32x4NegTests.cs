@@ -6,18 +6,8 @@ namespace WasmSharp.Tests.Execution;
 internal class Interpreter_F32x4NegTests
 {
     [Test]
-    [Arguments(
-        0x0000000080000000UL,
-        0x7F800000FF800000UL,
-        0x8000000000000000UL,
-        0xFF8000007F800000UL
-    )]
-    [Arguments(
-        0x7FC54321FF812345UL,
-        0x3FC0000080000001UL,
-        0xFFC543217F812345UL,
-        0xBFC0000000000001UL
-    )]
+    [Arguments(0x0000000080000000UL, 0x7F800000FF800000UL, 0x8000000000000000UL, 0xFF8000007F800000UL)]
+    [Arguments(0x7FC54321FF812345UL, 0x3FC0000080000001UL, 0xFFC543217F812345UL, 0xBFC0000000000001UL)]
     public async Task 符号とNaNpayloadを含むlane_符号bitだけを反転する(
         ulong inputLow64,
         ulong inputHigh64,

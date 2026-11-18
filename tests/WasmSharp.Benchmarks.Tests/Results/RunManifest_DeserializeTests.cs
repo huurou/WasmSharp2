@@ -41,18 +41,14 @@ internal class RunManifest_DeserializeTests
 
         // Act & Assert
         var exception = await Assert
-            .That(() =>
-                JsonSerializer.Deserialize<RunFixture>(fixture.ToJsonString(), json_.Options)
-            )
+            .That(() => JsonSerializer.Deserialize<RunFixture>(fixture.ToJsonString(), json_.Options))
             .ThrowsExactly<ArgumentException>();
         await Assert.That(exception!.Message).Contains("指標").And.Contains("理由が必要");
     }
 
     private static Task<string> ReadFixtureAsync(string name)
     {
-        return File.ReadAllTextAsync(
-            Path.Combine(AppContext.BaseDirectory, "Fixtures", "Data", name)
-        );
+        return File.ReadAllTextAsync(Path.Combine(AppContext.BaseDirectory, "Fixtures", "Data", name));
     }
 
     private sealed record RunFixture(

@@ -1,8 +1,3 @@
-using BenchmarkDotNet.Characteristics;
-using BenchmarkDotNet.Configs;
-using BenchmarkDotNet.Environments;
-using BenchmarkDotNet.Jobs;
-using Microsoft.Win32;
 using System.Collections;
 using System.ComponentModel;
 using System.Reflection;
@@ -10,6 +5,11 @@ using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text.Json;
+using BenchmarkDotNet.Characteristics;
+using BenchmarkDotNet.Configs;
+using BenchmarkDotNet.Environments;
+using BenchmarkDotNet.Jobs;
+using Microsoft.Win32;
 using WasmSharp.Benchmarks.Results;
 
 namespace WasmSharp.Benchmarks.Measurements;
@@ -54,11 +54,7 @@ internal sealed partial class EnvironmentCapture
         "EnableEventPipe",
     ];
 
-    internal RunEnvironment Capture(
-        RunStore store,
-        CommandInvocation command,
-        IEnumerable<ProcessConfiguration> processes
-    )
+    internal RunEnvironment Capture(RunStore store, CommandInvocation command, IEnumerable<ProcessConfiguration> processes)
     {
         var variables = Environment
             .GetEnvironmentVariables()
@@ -68,9 +64,7 @@ internal sealed partial class EnvironmentCapture
             .OrderBy(x => x.Name, StringComparer.Ordinal)
             .ToList();
         var configurations = processes.Select(SnapshotProcess).ToList();
-        configurations.Add(
-            new("Collector", "", 1, [], RuntimeConfiguration(store), [.. variables])
-        );
+        configurations.Add(new("Collector", "", 1, [], RuntimeConfiguration(store), [.. variables]));
         var gc = GC.GetConfigurationVariables()
             .Select(x => new NamedSetting(
                 "GC." + x.Key,
@@ -80,12 +74,7 @@ internal sealed partial class EnvironmentCapture
             .ToList();
         gc.Add(new("GCSettings.IsServerGC", GCSettings.IsServerGC.ToString()));
         gc.Add(new("GCSettings.LatencyMode", GCSettings.LatencyMode.ToString()));
-        gc.Add(
-            new(
-                "GCSettings.LargeObjectHeapCompactionMode",
-                GCSettings.LargeObjectHeapCompactionMode.ToString()
-            )
-        );
+        gc.Add(new("GCSettings.LargeObjectHeapCompactionMode", GCSettings.LargeObjectHeapCompactionMode.ToString()));
 
         return new(
             Cpu(),
@@ -96,33 +85,16 @@ internal sealed partial class EnvironmentCapture
             ReadCommand("dotnet", command.WorkingDirectory, "--version"),
             CurrentRuntimeVersion,
             Version(typeof(DefaultConfig).Assembly),
-            typeof(BenchmarkRun)
-                .Assembly.GetCustomAttribute<AssemblyConfigurationAttribute>()
-                ?.Configuration
+            typeof(BenchmarkRun).Assembly.GetCustomAttribute<AssemblyConfigurationAttribute>()?.Configuration
                 ?? "Unavailable: assemblyにビルド構成がありません。",
             gc,
             [
                 new("JitInfo", HostEnvironmentInfo.GetCurrent().JitInfo),
-                new(
-                    "RuntimeFeature.IsDynamicCodeSupported",
-                    RuntimeFeature.IsDynamicCodeSupported.ToString()
-                ),
-                new(
-                    "RuntimeFeature.IsDynamicCodeCompiled",
-                    RuntimeFeature.IsDynamicCodeCompiled.ToString()
-                ),
-                new(
-                    "Effective.TieredCompilation",
-                    "Unavailable: 実行processの実効値を取得する公開APIがありません。"
-                ),
-                new(
-                    "Effective.TieredPGO",
-                    "Unavailable: 実行processの実効値を取得する公開APIがありません。"
-                ),
-                new(
-                    "Effective.ReadyToRun",
-                    "Unavailable: assemblyごとの適用状態を取得する公開APIがありません。"
-                ),
+                new("RuntimeFeature.IsDynamicCodeSupported", RuntimeFeature.IsDynamicCodeSupported.ToString()),
+                new("RuntimeFeature.IsDynamicCodeCompiled", RuntimeFeature.IsDynamicCodeCompiled.ToString()),
+                new("Effective.TieredCompilation", "Unavailable: 実行processの実効値を取得する公開APIがありません。"),
+                new("Effective.TieredPGO", "Unavailable: 実行processの実効値を取得する公開APIがありません。"),
+                new("Effective.ReadyToRun", "Unavailable: assemblyごとの適用状態を取得する公開APIがありません。"),
             ],
             variables,
             Power(),
@@ -140,8 +112,7 @@ internal sealed partial class EnvironmentCapture
         {
             JobSettings = [.. process.JobSettings],
             RuntimeConfiguration = [.. process.RuntimeConfiguration],
-            EnvironmentVariables = [.. process
-                .EnvironmentVariables.Where(x => IsProcessVariable(x.Name))],
+            EnvironmentVariables = [.. process.EnvironmentVariables.Where(x => IsProcessVariable(x.Name))],
         };
     }
 
@@ -151,40 +122,33 @@ internal sealed partial class EnvironmentCapture
             role,
             job.Id,
             job.Run.LaunchCount,
-            [.. CharacteristicHelper
-                .GetAllCharacteristics(job)
-                .Where(x =>
-                    !x.HasChildCharacteristics && x.Id is not "Id" and not "EnvironmentVariables"
-                )
-                .OrderBy(x => x.FullId, StringComparer.Ordinal)
-                .Select(x => new NamedSetting(
-                    x.FullId,
-                    job.HasValue(x)
-                        ? Convert.ToString(
-                            x[job],
-                            System.Globalization.CultureInfo.InvariantCulture
-                        ) ?? "null"
-                        : "Default"
-                ))],
+            [
+                .. CharacteristicHelper
+                    .GetAllCharacteristics(job)
+                    .Where(x => !x.HasChildCharacteristics && x.Id is not "Id" and not "EnvironmentVariables")
+                    .OrderBy(x => x.FullId, StringComparer.Ordinal)
+                    .Select(x => new NamedSetting(
+                        x.FullId,
+                        job.HasValue(x)
+                            ? Convert.ToString(x[job], System.Globalization.CultureInfo.InvariantCulture) ?? "null"
+                            : "Default"
+                    )),
+            ],
             [],
-            [.. (job.Environment.EnvironmentVariables ?? [])
-                .Where(x => IsProcessVariable(x.Key))
-                .Select(x => new NamedSetting(x.Key, x.Value))]
+            [
+                .. (job.Environment.EnvironmentVariables ?? [])
+                    .Where(x => IsProcessVariable(x.Key))
+                    .Select(x => new NamedSetting(x.Key, x.Value)),
+            ]
         );
     }
 
     private static List<NamedSetting> RuntimeConfiguration(RunStore store)
     {
-        var path = Path.ChangeExtension(
-            Assembly.GetEntryAssembly()?.Location,
-            ".runtimeconfig.json"
-        );
+        var path = Path.ChangeExtension(Assembly.GetEntryAssembly()?.Location, ".runtimeconfig.json");
         if (!File.Exists(path))
         {
-            return
-            [
-                new("RuntimeConfig", "Unavailable: 採取processのruntimeconfigが見つかりません。"),
-            ];
+            return [new("RuntimeConfig", "Unavailable: 採取processのruntimeconfigが見つかりません。")];
         }
 
         var bytes = File.ReadAllBytes(path);
@@ -205,11 +169,7 @@ internal sealed partial class EnvironmentCapture
         {
             foreach (var property in element.EnumerateObject())
             {
-                Flatten(
-                    property.Value,
-                    prefix.Length == 0 ? property.Name : prefix + "." + property.Name,
-                    settings
-                );
+                Flatten(property.Value, prefix.Length == 0 ? property.Name : prefix + "." + property.Name, settings);
             }
         }
         else
@@ -260,14 +220,10 @@ internal sealed partial class EnvironmentCapture
     private static string Version(Assembly assembly)
     {
         return assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion
-        ?? "Unavailable: assemblyに完全版がありません。";
+            ?? "Unavailable: assemblyに完全版がありません。";
     }
 
-    private static string ReadCommand(
-        string executable,
-        string directory,
-        params string[] arguments
-    )
+    private static string ReadCommand(string executable, string directory, params string[] arguments)
     {
         try
         {
@@ -283,11 +239,8 @@ internal sealed partial class EnvironmentCapture
     {
         if (OperatingSystem.IsWindows())
         {
-            using var key = Registry.LocalMachine.OpenSubKey(
-                @"HARDWARE\DESCRIPTION\System\CentralProcessor\0"
-            );
-            return key?.GetValue("ProcessorNameString")?.ToString()?.Trim()
-                ?? "Unavailable: CPU名を取得できません。";
+            using var key = Registry.LocalMachine.OpenSubKey(@"HARDWARE\DESCRIPTION\System\CentralProcessor\0");
+            return key?.GetValue("ProcessorNameString")?.ToString()?.Trim() ?? "Unavailable: CPU名を取得できません。";
         }
 
         if (OperatingSystem.IsLinux() && File.Exists("/proc/cpuinfo"))
@@ -306,11 +259,7 @@ internal sealed partial class EnvironmentCapture
     {
         if (!OperatingSystem.IsWindows())
         {
-            return new(
-                "Unavailable",
-                "Unavailable: このOSの電源採取には対応していません。",
-                PowerSource.Unknown
-            );
+            return new("Unavailable", "Unavailable: このOSの電源採取には対応していません。", PowerSource.Unknown);
         }
 
         var source = GetSystemPowerStatus(out var status)
@@ -332,14 +281,7 @@ internal sealed partial class EnvironmentCapture
             uint size = 0;
             PowerReadFriendlyName(IntPtr.Zero, ref id, IntPtr.Zero, IntPtr.Zero, null, ref size);
             var buffer = new byte[size];
-            var result = PowerReadFriendlyName(
-                IntPtr.Zero,
-                ref id,
-                IntPtr.Zero,
-                IntPtr.Zero,
-                buffer,
-                ref size
-            );
+            var result = PowerReadFriendlyName(IntPtr.Zero, ref id, IntPtr.Zero, IntPtr.Zero, buffer, ref size);
             var name =
                 result == 0
                     ? System.Text.Encoding.Unicode.GetString(buffer).TrimEnd('\0')

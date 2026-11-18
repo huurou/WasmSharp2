@@ -8,12 +8,7 @@ internal class Interpreter_V128NotTests
     [Test]
     [Arguments(0UL, 0UL, 0xFFFFFFFFFFFFFFFFUL, 0xFFFFFFFFFFFFFFFFUL)]
     [Arguments(0xFFFFFFFFFFFFFFFFUL, 0xFFFFFFFFFFFFFFFFUL, 0UL, 0UL)]
-    [Arguments(
-        0x0123456789ABCDEFUL,
-        0xFEDCBA9876543210UL,
-        0xFEDCBA9876543210UL,
-        0x0123456789ABCDEFUL
-    )]
+    [Arguments(0x0123456789ABCDEFUL, 0xFEDCBA9876543210UL, 0xFEDCBA9876543210UL, 0x0123456789ABCDEFUL)]
     public async Task ゼロと全bit1と混在bit_上下64bitすべてを反転する(
         ulong operandLow64,
         ulong operandHigh64,

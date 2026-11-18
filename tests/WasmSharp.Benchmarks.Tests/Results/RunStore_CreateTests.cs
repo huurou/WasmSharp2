@@ -19,9 +19,7 @@ internal class RunStore_CreateTests
         {
             Directory.CreateDirectory(fixture.DirectoryPath);
         }
-        var existingPath = directory
-            ? Path.Combine(fixture.DirectoryPath, "existing.txt")
-            : fixture.DirectoryPath;
+        var existingPath = directory ? Path.Combine(fixture.DirectoryPath, "existing.txt") : fixture.DirectoryPath;
         File.WriteAllText(existingPath, "採用済み性能基準値");
 
         try

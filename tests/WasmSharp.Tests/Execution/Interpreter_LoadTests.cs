@@ -12,20 +12,10 @@ internal class Interpreter_LoadTests
         // Arrange
         var memory = new WasmMemory(new(1, null));
         memory.Write(9, [0xEF, 0xCD, 0xAB, 0x89]);
-        var instruction = MemoryHandlerFixture.CreateInstruction(
-            WasmValueKind.I32,
-            4,
-            offset: 6,
-            alignment: 2
-        );
+        var instruction = MemoryHandlerFixture.CreateInstruction(WasmValueKind.I32, 4, offset: 6, alignment: 2);
 
         // Act
-        var actual = MemoryHandlerFixture.Execute(
-            Interpreter.Load,
-            memory,
-            in instruction,
-            [WasmValue.FromI32(3)]
-        );
+        var actual = MemoryHandlerFixture.Execute(Interpreter.Load, memory, in instruction, [WasmValue.FromI32(3)]);
 
         // Assert
         using (Assert.Multiple())
@@ -46,19 +36,10 @@ internal class Interpreter_LoadTests
         // Arrange
         var memory = new WasmMemory(new(2, null));
         memory.Write((ulong)address, [0x10, 0x32, 0x54, 0x76, 0x98, 0xBA, 0xDC, 0xFE]);
-        var instruction = MemoryHandlerFixture.CreateInstruction(
-            WasmValueKind.I64,
-            8,
-            alignment: 3
-        );
+        var instruction = MemoryHandlerFixture.CreateInstruction(WasmValueKind.I64, 8, alignment: 3);
 
         // Act
-        var actual = MemoryHandlerFixture.Execute(
-            Interpreter.Load,
-            memory,
-            in instruction,
-            [WasmValue.FromI32(address)]
-        );
+        var actual = MemoryHandlerFixture.Execute(Interpreter.Load, memory, in instruction, [WasmValue.FromI32(address)]);
 
         // Assert
         using (Assert.Multiple())
@@ -96,12 +77,7 @@ internal class Interpreter_LoadTests
         var instruction = MemoryHandlerFixture.CreateInstruction(valueType, byteWidth, signExtend);
 
         // Act
-        var actual = MemoryHandlerFixture.Execute(
-            Interpreter.Load,
-            memory,
-            in instruction,
-            [WasmValue.FromI32(address)]
-        );
+        var actual = MemoryHandlerFixture.Execute(Interpreter.Load, memory, in instruction, [WasmValue.FromI32(address)]);
 
         // Assert
         using (Assert.Multiple())
@@ -131,19 +107,10 @@ internal class Interpreter_LoadTests
         // Arrange
         var memory = new WasmMemory(new(1, null));
         memory.Write(0, [0x7F, 0x7E, 0x7D, 0x7C]);
-        var instruction = MemoryHandlerFixture.CreateInstruction(
-            valueType,
-            byteWidth,
-            signExtend: true
-        );
+        var instruction = MemoryHandlerFixture.CreateInstruction(valueType, byteWidth, signExtend: true);
 
         // Act
-        var actual = MemoryHandlerFixture.Execute(
-            Interpreter.Load,
-            memory,
-            in instruction,
-            [WasmValue.FromI32(0)]
-        );
+        var actual = MemoryHandlerFixture.Execute(Interpreter.Load, memory, in instruction, [WasmValue.FromI32(0)]);
 
         // Assert
         using (Assert.Multiple())
@@ -164,33 +131,13 @@ internal class Interpreter_LoadTests
     [Arguments(WasmValueKind.F32, 0xFF812345UL, new byte[] { 0x45, 0x23, 0x81, 0xFF })]
     [Arguments(WasmValueKind.F32, 0x7FC54321UL, new byte[] { 0x21, 0x43, 0xC5, 0x7F })]
     [Arguments(WasmValueKind.F32, 0xFFC54321UL, new byte[] { 0x21, 0x43, 0xC5, 0xFF })]
-    [Arguments(
-        WasmValueKind.F64,
-        0x3FF0000000000001UL,
-        new byte[] { 1, 0, 0, 0, 0, 0, 0xF0, 0x3F }
-    )]
+    [Arguments(WasmValueKind.F64, 0x3FF0000000000001UL, new byte[] { 1, 0, 0, 0, 0, 0, 0xF0, 0x3F })]
     [Arguments(WasmValueKind.F64, 0x0000000000000000UL, new byte[] { 0, 0, 0, 0, 0, 0, 0, 0 })]
     [Arguments(WasmValueKind.F64, 0x8000000000000000UL, new byte[] { 0, 0, 0, 0, 0, 0, 0, 0x80 })]
-    [Arguments(
-        WasmValueKind.F64,
-        0x7FF0123456789ABCUL,
-        new byte[] { 0xBC, 0x9A, 0x78, 0x56, 0x34, 0x12, 0xF0, 0x7F }
-    )]
-    [Arguments(
-        WasmValueKind.F64,
-        0xFFF0123456789ABCUL,
-        new byte[] { 0xBC, 0x9A, 0x78, 0x56, 0x34, 0x12, 0xF0, 0xFF }
-    )]
-    [Arguments(
-        WasmValueKind.F64,
-        0x7FF8543210ABCDEFUL,
-        new byte[] { 0xEF, 0xCD, 0xAB, 0x10, 0x32, 0x54, 0xF8, 0x7F }
-    )]
-    [Arguments(
-        WasmValueKind.F64,
-        0xFFF8543210ABCDEFUL,
-        new byte[] { 0xEF, 0xCD, 0xAB, 0x10, 0x32, 0x54, 0xF8, 0xFF }
-    )]
+    [Arguments(WasmValueKind.F64, 0x7FF0123456789ABCUL, new byte[] { 0xBC, 0x9A, 0x78, 0x56, 0x34, 0x12, 0xF0, 0x7F })]
+    [Arguments(WasmValueKind.F64, 0xFFF0123456789ABCUL, new byte[] { 0xBC, 0x9A, 0x78, 0x56, 0x34, 0x12, 0xF0, 0xFF })]
+    [Arguments(WasmValueKind.F64, 0x7FF8543210ABCDEFUL, new byte[] { 0xEF, 0xCD, 0xAB, 0x10, 0x32, 0x54, 0xF8, 0x7F })]
+    [Arguments(WasmValueKind.F64, 0xFFF8543210ABCDEFUL, new byte[] { 0xEF, 0xCD, 0xAB, 0x10, 0x32, 0x54, 0xF8, 0xFF })]
     public async Task 浮動小数点の通常値と正負の0とNaN_リトルエンディアンの全ビットを保持する(
         WasmValueKind valueType,
         ulong expectedBits,
@@ -203,12 +150,7 @@ internal class Interpreter_LoadTests
         var instruction = MemoryHandlerFixture.CreateInstruction(valueType, (byte)bytes.Length);
 
         // Act
-        var actual = MemoryHandlerFixture.Execute(
-            Interpreter.Load,
-            memory,
-            in instruction,
-            [WasmValue.FromI32(65535)]
-        );
+        var actual = MemoryHandlerFixture.Execute(Interpreter.Load, memory, in instruction, [WasmValue.FromI32(65535)]);
 
         // Assert
         using (Assert.Multiple())
@@ -216,11 +158,7 @@ internal class Interpreter_LoadTests
             await Assert.That(actual.Result.Status).IsEqualTo(ExecutionStatus.Success);
             await Assert.That(actual.Value.Kind).IsEqualTo(valueType);
             await Assert
-                .That(
-                    valueType == WasmValueKind.F32
-                        ? actual.Value.AsF32Bits()
-                        : actual.Value.AsF64Bits()
-                )
+                .That(valueType == WasmValueKind.F32 ? actual.Value.AsF32Bits() : actual.Value.AsF64Bits())
                 .IsEqualTo(expectedBits);
             await Assert.That(actual.Sentinel).IsEqualTo(NumericHandlerFixture.Sentinel);
             await Assert.That(actual.ValueCount).IsEqualTo(2);
@@ -244,19 +182,10 @@ internal class Interpreter_LoadTests
     {
         // Arrange
         var memory = new WasmMemory(new(pages, null));
-        var instruction = MemoryHandlerFixture.CreateInstruction(
-            WasmValueKind.I32,
-            4,
-            offset: offset
-        );
+        var instruction = MemoryHandlerFixture.CreateInstruction(WasmValueKind.I32, 4, offset: offset);
 
         // Act
-        var actual = MemoryHandlerFixture.Execute(
-            Interpreter.Load,
-            memory,
-            in instruction,
-            [WasmValue.FromI32(address)]
-        );
+        var actual = MemoryHandlerFixture.Execute(Interpreter.Load, memory, in instruction, [WasmValue.FromI32(address)]);
 
         // Assert
         using (Assert.Multiple())

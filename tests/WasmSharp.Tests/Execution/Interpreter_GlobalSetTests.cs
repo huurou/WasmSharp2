@@ -15,17 +15,9 @@ internal class Interpreter_GlobalSetTests
         var reference = new object();
         var found = InstructionSet.TryGet(new(0, 0x24), out var descriptor);
         var numberGlobal = new WasmGlobal(new(WasmValueKind.F64, true), WasmValue.FromF64Bits(0));
-        var externGlobal = new WasmGlobal(
-            new(WasmValueKind.ExternRef, true),
-            WasmValue.FromExternRef(null)
-        );
+        var externGlobal = new WasmGlobal(new(WasmValueKind.ExternRef, true), WasmValue.FromExternRef(null));
         var instance = ExecutionInstanceFixture.Create(
-            [
-                new(
-                    [WasmValueKind.F64, WasmValueKind.ExternRef],
-                    [WasmValueKind.I32, WasmValueKind.F64]
-                ),
-            ],
+            [new([WasmValueKind.F64, WasmValueKind.ExternRef], [WasmValueKind.I32, WasmValueKind.F64])],
             [
                 (
                     0,
@@ -127,12 +119,7 @@ internal class Interpreter_GlobalSetTests
         // Act
         try
         {
-            result = Interpreter.Run(
-                context,
-                (DefinedFunction)importer.Functions[1],
-                [],
-                WasmProcessingStage.Invoke
-            );
+            result = Interpreter.Run(context, (DefinedFunction)importer.Functions[1], [], WasmProcessingStage.Invoke);
         }
         finally
         {

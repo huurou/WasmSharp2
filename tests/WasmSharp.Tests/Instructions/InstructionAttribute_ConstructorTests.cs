@@ -29,16 +29,9 @@ internal class InstructionAttribute_ConstructorTests
         {
             await Assert.That(declaration.NumericSignature).IsNotNull();
             await Assert
-                .That(
-                    declaration.NumericSignature!.Value.InputTypes.SequenceEqual([
-                        WasmValueKind.V128,
-                        WasmValueKind.I32,
-                    ])
-                )
+                .That(declaration.NumericSignature!.Value.InputTypes.SequenceEqual([WasmValueKind.V128, WasmValueKind.I32]))
                 .IsTrue();
-            await Assert
-                .That(declaration.NumericSignature.Value.ResultType)
-                .IsEqualTo(WasmValueKind.V128);
+            await Assert.That(declaration.NumericSignature.Value.ResultType).IsEqualTo(WasmValueKind.V128);
         }
     }
 
@@ -64,16 +57,9 @@ internal class InstructionAttribute_ConstructorTests
         {
             await Assert.That(declaration.NumericSignature).IsNotNull();
             await Assert
-                .That(
-                    declaration.NumericSignature!.Value.InputTypes.SequenceEqual([
-                        WasmValueKind.I64,
-                        WasmValueKind.I64,
-                    ])
-                )
+                .That(declaration.NumericSignature!.Value.InputTypes.SequenceEqual([WasmValueKind.I64, WasmValueKind.I64]))
                 .IsTrue();
-            await Assert
-                .That(declaration.NumericSignature.Value.ResultType)
-                .IsEqualTo(WasmValueKind.I64);
+            await Assert.That(declaration.NumericSignature.Value.ResultType).IsEqualTo(WasmValueKind.I64);
         }
     }
 

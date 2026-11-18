@@ -16,16 +16,12 @@ internal sealed class ScriptState(string inputPath)
     /// <summary>
     /// module識別子に対応する成功実体または利用不能状態
     /// </summary>
-    private readonly Dictionary<string, ScriptBinding<InstantiatedModule>> modules_ = new(
-        StringComparer.Ordinal
-    );
+    private readonly Dictionary<string, ScriptBinding<InstantiatedModule>> modules_ = [with(StringComparer.Ordinal)];
 
     /// <summary>
     /// importの登録名に対応する最新の提供元または利用不能状態
     /// </summary>
-    private readonly Dictionary<string, ScriptBinding<WasmHostModule>> registrations_ = new(
-        StringComparer.Ordinal
-    );
+    private readonly Dictionary<string, ScriptBinding<WasmHostModule>> registrations_ = [with(StringComparer.Ordinal)];
 
     /// <summary>
     /// 入力内のexternref番号ごとに割り当てたホスト値
@@ -35,16 +31,12 @@ internal sealed class ScriptState(string inputPath)
     /// <summary>
     /// 割り当てたホスト値から参照の同一性で引く元のexternref番号
     /// </summary>
-    private readonly Dictionary<object, uint> externrefNumbers_ = new(
-        ReferenceEqualityComparer.Instance
-    );
+    private readonly Dictionary<object, uint> externrefNumbers_ = [with(ReferenceEqualityComparer.Instance)];
 
     /// <summary>
     /// 保存用の非null参照token 内容の等値性を使わず初出順に割り当てる対応
     /// </summary>
-    private readonly Dictionary<object, int> referenceTokens_ = new(
-        ReferenceEqualityComparer.Instance
-    );
+    private readonly Dictionary<object, int> referenceTokens_ = [with(ReferenceEqualityComparer.Instance)];
 
     /// <summary>
     /// 現在のcommandのprint呼出順の記録

@@ -69,23 +69,7 @@ internal class RunReport_SummarizeTests
         OutcomeCounts zero = new(0, 0, 0, 0, 0, 0);
         await Assert
             .That(summary)
-            .IsEqualTo(
-                new RunSummary(
-                    2,
-                    0,
-                    1,
-                    1,
-                    1,
-                    1,
-                    2,
-                    4,
-                    2,
-                    new(1, 0, 0, 0, 0, 0),
-                    zero,
-                    new(1, 0, 0, 0, 0, 0),
-                    0
-                )
-            );
+            .IsEqualTo(new RunSummary(2, 0, 1, 1, 1, 1, 2, 4, 2, new(1, 0, 0, 0, 0, 0), zero, new(1, 0, 0, 0, 0, 0), 0));
     }
 
     [Test]

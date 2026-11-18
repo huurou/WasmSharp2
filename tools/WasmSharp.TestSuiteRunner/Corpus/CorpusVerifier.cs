@@ -73,10 +73,7 @@ internal static class CorpusVerifier
     /// <param name="inputs">固定した全入力</param>
     /// <param name="inputRoot">入力の相対pathの基準となるtest/coreの配置</param>
     /// <returns>入力の欠落・読取失敗・hash不一致と、固定集合にない入力や列挙失敗の診断 問題がなければ空</returns>
-    internal static ImmutableArray<CorpusDiagnostic> VerifySources(
-        IEnumerable<SourceInput> inputs,
-        string inputRoot
-    )
+    internal static ImmutableArray<CorpusDiagnostic> VerifySources(IEnumerable<SourceInput> inputs, string inputRoot)
     {
         return
         [
@@ -100,21 +97,14 @@ internal static class CorpusVerifier
             CommandCount = document.CommandCount,
             Commands =
             [
-                .. document.Commands.Select(x => new ArtifactCommand(
-                    x.Index,
-                    x.Line,
-                    x.Type,
-                    x.ModuleType,
-                    x.Filename
-                )),
+                .. document.Commands.Select(x => new ArtifactCommand(x.Index, x.Line, x.Type, x.ModuleType, x.Filename)),
             ],
             // 素材領域外を指す参照名は対応する生成物がないため、参照一覧へ含めない。
             References =
             [
                 .. document
                     .Commands.Select(x =>
-                        x.Filename is { } filename
-                        && ResolveReference(jsonPath, filename) is { } path
+                        x.Filename is { } filename && ResolveReference(jsonPath, filename) is { } path
                             ? new ArtifactReference(x.Index, filename, path)
                             : null
                     )
@@ -185,18 +175,13 @@ internal static class CorpusVerifier
             issues.Add(sourceIssue);
         }
 
-        var checks = input
-            .Artifacts.Select(x => CheckArtifact(x, input.Input.Path, root, recordCounts))
-            .ToArray();
+        var checks = input.Artifacts.Select(x => CheckArtifact(x, input.Input.Path, root, recordCounts)).ToArray();
         var document = ReadDocument(input.Input, checks, issues);
         if (document is null)
         {
             // 実行しない入力では、module素材の異常も入力異常として残す。
             issues.AddRange(
-                checks
-                    .Where(x => x.Artifact.Kind != ArtifactKind.Json)
-                    .Select(x => x.Issue)
-                    .OfType<CorpusDiagnostic>()
+                checks.Where(x => x.Artifact.Kind != ArtifactKind.Json).Select(x => x.Issue).OfType<CorpusDiagnostic>()
             );
             return new(input.Input, null, issues.ToImmutable(), [], []);
         }
@@ -264,27 +249,18 @@ internal static class CorpusVerifier
 
         foreach (
             var check in checks.Where(x =>
-                x.Artifact.Kind != ArtifactKind.Json
-                && !referenceCounts.ContainsKey(x.Artifact.Path)
+                x.Artifact.Kind != ArtifactKind.Json && !referenceCounts.ContainsKey(x.Artifact.Path)
             )
         )
         {
-            issues.Add(
-                new(OPERATION, "どのcommandからも参照されていない素材です。", check.Artifact.Path)
-            );
+            issues.Add(new(OPERATION, "どのcommandからも参照されていない素材です。", check.Artifact.Path));
             if (check.Issue is { } issue)
             {
                 issues.Add(issue);
             }
         }
 
-        return new(
-            input.Input,
-            document,
-            issues.ToImmutable(),
-            modules.ToImmutable(),
-            moduleIssues.ToImmutable()
-        );
+        return new(input.Input, document, issues.ToImmutable(), modules.ToImmutable(), moduleIssues.ToImmutable());
     }
 
     /// <summary>
@@ -321,13 +297,7 @@ internal static class CorpusVerifier
         var expectedPath = GetScriptPath(input.Path);
         if (script.Artifact.Path != expectedPath)
         {
-            issues.Add(
-                new(
-                    OPERATION,
-                    $"JSONの生成物は{expectedPath}に配置する必要があります。",
-                    script.Artifact.Path
-                )
-            );
+            issues.Add(new(OPERATION, $"JSONの生成物は{expectedPath}に配置する必要があります。", script.Artifact.Path));
             return null;
         }
 
@@ -355,11 +325,7 @@ internal static class CorpusVerifier
         if (!Matches(script.Artifact.Script, CreateScript(document, script.Artifact.Path)))
         {
             issues.Add(
-                new(
-                    OPERATION,
-                    "manifestに記録したcommand一覧または素材参照が生成JSONと一致しません。",
-                    script.Artifact.Path
-                )
+                new(OPERATION, "manifestに記録したcommand一覧または素材参照が生成JSONと一致しません。", script.Artifact.Path)
             );
             return null;
         }
@@ -385,11 +351,7 @@ internal static class CorpusVerifier
         var path = artifact.Path;
         if (!IsMaterialPath(path))
         {
-            return new(
-                artifact,
-                [],
-                new(OPERATION, $"素材領域{MATERIAL_ROOT}/内の/区切り相対pathではありません。", path)
-            );
+            return new(artifact, [], new(OPERATION, $"素材領域{MATERIAL_ROOT}/内の/区切り相対pathではありません。", path));
         }
 
         if (GetKind(path) != artifact.Kind)
@@ -397,25 +359,13 @@ internal static class CorpusVerifier
             return new(
                 artifact,
                 [],
-                new(
-                    OPERATION,
-                    $"拡張子が記録した素材の種類{FormatKind(artifact.Kind)}と対応しません。",
-                    path
-                )
+                new(OPERATION, $"拡張子が記録した素材の種類{FormatKind(artifact.Kind)}と対応しません。", path)
             );
         }
 
         if (recordCounts[path] > 1)
         {
-            return new(
-                artifact,
-                [],
-                new(
-                    OPERATION,
-                    $"同じ素材がmanifestに{recordCounts[path]}件記録されています。",
-                    path
-                )
-            );
+            return new(artifact, [], new(OPERATION, $"同じ素材がmanifestに{recordCounts[path]}件記録されています。", path));
         }
 
         if (artifact.InputPath != inputPath)
@@ -423,11 +373,7 @@ internal static class CorpusVerifier
             return new(
                 artifact,
                 [],
-                new(
-                    OPERATION,
-                    $"{inputPath}の素材として記録されていますが、所有入力は{artifact.InputPath}です。",
-                    path
-                )
+                new(OPERATION, $"{inputPath}の素材として記録されていますが、所有入力は{artifact.InputPath}です。", path)
             );
         }
 
@@ -436,11 +382,7 @@ internal static class CorpusVerifier
         {
             if (FindLink(root, path) is { } link)
             {
-                return new(
-                    artifact,
-                    [],
-                    new(OPERATION, $"素材root内のリンク{link}を経由しています。", path)
-                );
+                return new(artifact, [], new(OPERATION, $"素材root内のリンク{link}を経由しています。", path));
             }
 
             var fullPath = Path.Combine(root, path);
@@ -453,11 +395,7 @@ internal static class CorpusVerifier
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            return new(
-                artifact,
-                [],
-                new(OPERATION, $"素材を読み取れません: {ex.Message}", path, ex.GetType().FullName)
-            );
+            return new(artifact, [], new(OPERATION, $"素材を読み取れません: {ex.Message}", path, ex.GetType().FullName));
         }
 
         var hash = Sha256(content);
@@ -466,11 +404,7 @@ internal static class CorpusVerifier
             : new(
                 artifact,
                 [],
-                new(
-                    OPERATION,
-                    $"SHA-256が記録と一致しません。記録は{artifact.Sha256}、実際は{hash}です。",
-                    path
-                )
+                new(OPERATION, $"SHA-256が記録と一致しません。記録は{artifact.Sha256}、実際は{hash}です。", path)
             );
     }
 
@@ -495,12 +429,7 @@ internal static class CorpusVerifier
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            return new(
-                OPERATION,
-                $"元入力を読み取れません: {ex.Message}",
-                input.Path,
-                ex.GetType().FullName
-            );
+            return new(OPERATION, $"元入力を読み取れません: {ex.Message}", input.Path, ex.GetType().FullName);
         }
 
         var hash = Sha256(content);
@@ -519,10 +448,7 @@ internal static class CorpusVerifier
     /// <param name="inputs">固定profileに含まれる全入力</param>
     /// <param name="inputRoot">列挙するtest/coreの配置</param>
     /// <returns>余剰入力を相対pathのOrdinal順に並べた診断、または列挙失敗の診断 ディレクトリが存在しない場合は空</returns>
-    private static List<CorpusDiagnostic> FindExtraSources(
-        IEnumerable<SourceInput> inputs,
-        string inputRoot
-    )
+    private static List<CorpusDiagnostic> FindExtraSources(IEnumerable<SourceInput> inputs, string inputRoot)
     {
         if (!Directory.Exists(inputRoot))
         {
@@ -537,30 +463,15 @@ internal static class CorpusVerifier
             [
                 .. Directory
                     .EnumerateFiles(inputRoot, "*.wast", SearchOption.AllDirectories)
-                    .Select(x =>
-                        Path.GetRelativePath(inputRoot, x).Replace(Path.DirectorySeparatorChar, '/')
-                    )
-                    .Where(x =>
-                        x.EndsWith(".wast", StringComparison.Ordinal) && !expected.Contains(x)
-                    )
+                    .Select(x => Path.GetRelativePath(inputRoot, x).Replace(Path.DirectorySeparatorChar, '/'))
+                    .Where(x => x.EndsWith(".wast", StringComparison.Ordinal) && !expected.Contains(x))
                     .Order(StringComparer.Ordinal)
-                    .Select(x => new CorpusDiagnostic(
-                        OPERATION,
-                        "固定profileにない元入力があります。",
-                        x
-                    )),
+                    .Select(x => new CorpusDiagnostic(OPERATION, "固定profileにない元入力があります。", x)),
             ];
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            return
-            [
-                new(
-                    OPERATION,
-                    $"元入力の一覧を列挙できません: {ex.Message}",
-                    ExceptionType: ex.GetType().FullName
-                ),
-            ];
+            return [new(OPERATION, $"元入力の一覧を列挙できません: {ex.Message}", ExceptionType: ex.GetType().FullName)];
         }
     }
 
@@ -582,14 +493,7 @@ internal static class CorpusVerifier
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            diagnostics.Add(
-                new(
-                    OPERATION,
-                    $"素材領域を列挙できません: {ex.Message}",
-                    MATERIAL_ROOT,
-                    ex.GetType().FullName
-                )
-            );
+            diagnostics.Add(new(OPERATION, $"素材領域を列挙できません: {ex.Message}", MATERIAL_ROOT, ex.GetType().FullName));
         }
 
         return [.. diagnostics.OrderBy(x => x.Path, StringComparer.Ordinal)];
@@ -600,9 +504,7 @@ internal static class CorpusVerifier
             {
                 if (!directories.Contains(path))
                 {
-                    diagnostics.Add(
-                        new(OPERATION, "manifestに記録されていないリンクがあります。", path)
-                    );
+                    diagnostics.Add(new(OPERATION, "manifestに記録されていないリンクがあります。", path));
                 }
 
                 return;
@@ -622,15 +524,11 @@ internal static class CorpusVerifier
                 }
                 else if (entry.LinkTarget is not null && !known.Contains(entryPath))
                 {
-                    diagnostics.Add(
-                        new(OPERATION, "manifestに記録されていないリンクがあります。", entryPath)
-                    );
+                    diagnostics.Add(new(OPERATION, "manifestに記録されていないリンクがあります。", entryPath));
                 }
                 else if (!known.Contains(entryPath))
                 {
-                    diagnostics.Add(
-                        new(OPERATION, "manifestに記録されていない素材があります。", entryPath)
-                    );
+                    diagnostics.Add(new(OPERATION, "manifestに記録されていない素材があります。", entryPath));
                 }
             }
         }
@@ -690,8 +588,7 @@ internal static class CorpusVerifier
     /// <returns>modules/で始まり、空・.・..の要素や禁止文字を含まない相対pathの場合はtrue</returns>
     private static bool IsMaterialPath(string path)
     {
-        return path.StartsWith($"{MATERIAL_ROOT}/", StringComparison.Ordinal)
-            && IsRelativePath(path);
+        return path.StartsWith($"{MATERIAL_ROOT}/", StringComparison.Ordinal) && IsRelativePath(path);
     }
 
     /// <summary>
@@ -702,8 +599,8 @@ internal static class CorpusVerifier
     private static bool IsRelativePath(string path)
     {
         // 区切りを/に固定し、絶対path・ドライブ指定・root外への移動・空の要素を受け付けない。
-        return !path.Any(x => x is '\\' or ':' || char.IsControl(x)) &&
-            path.Split('/').All(x => x is not ("" or "." or ".."));
+        return !path.Any(x => x is '\\' or ':' || char.IsControl(x))
+            && path.Split('/').All(x => x is not ("" or "." or ".."));
     }
 
     /// <summary>
@@ -767,9 +664,5 @@ internal static class CorpusVerifier
     /// <param name="Artifact">照合した記録</param>
     /// <param name="Content">照合に成功した生バイト列 失敗時は空</param>
     /// <param name="Issue">照合に失敗した理由 成功時はnull</param>
-    private sealed record ArtifactCheck(
-        Artifact Artifact,
-        ImmutableArray<byte> Content,
-        CorpusDiagnostic? Issue
-    );
+    private sealed record ArtifactCheck(Artifact Artifact, ImmutableArray<byte> Content, CorpusDiagnostic? Issue);
 }

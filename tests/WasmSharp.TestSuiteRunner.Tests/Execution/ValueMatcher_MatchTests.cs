@@ -66,9 +66,7 @@ internal class ValueMatcher_MatchTests
         // Assert
         using (Assert.Multiple())
         {
-            await Assert
-                .That(Positions(mismatches).SequenceEqual([(ValueMismatchKind.Count, null, null)]))
-                .IsTrue();
+            await Assert.That(Positions(mismatches).SequenceEqual([(ValueMismatchKind.Count, null, null)])).IsTrue();
             await Assert.That(mismatches[0].Message).Contains($"{count}個");
         }
     }
@@ -131,11 +129,7 @@ internal class ValueMatcher_MatchTests
         // Assert
         await Assert
             .That(
-                Positions(mismatches)
-                    .SequenceEqual([
-                        (ValueMismatchKind.Type, 0, null),
-                        (ValueMismatchKind.Type, 1, null),
-                    ])
+                Positions(mismatches).SequenceEqual([(ValueMismatchKind.Type, 0, null), (ValueMismatchKind.Type, 1, null)])
             )
             .IsTrue();
     }
@@ -169,10 +163,7 @@ internal class ValueMatcher_MatchTests
             await Assert
                 .That(
                     Positions(mismatches)
-                        .SequenceEqual([
-                            (ValueMismatchKind.Value, 1, null),
-                            (ValueMismatchKind.Value, 3, null),
-                        ])
+                        .SequenceEqual([(ValueMismatchKind.Value, 1, null), (ValueMismatchKind.Value, 3, null)])
                 )
                 .IsTrue();
             await Assert.That(mismatches[0].Message).Contains("0x8000000000000000");
@@ -201,10 +192,7 @@ internal class ValueMatcher_MatchTests
     {
         // Arrange
         var state = new ScriptState("a.wast");
-        var value =
-            kind == WasmValueKind.F32
-                ? WasmValue.FromF32Bits((uint)actual)
-                : WasmValue.FromF64Bits(actual);
+        var value = kind == WasmValueKind.F32 ? WasmValue.FromF32Bits((uint)actual) : WasmValue.FromF64Bits(actual);
 
         // Act
         var mismatches = Match(state, [Scalar(kind, expected)], value);
@@ -236,11 +224,7 @@ internal class ValueMatcher_MatchTests
         };
 
         // Act
-        var mismatches = Match(
-            state,
-            [Scalar(WasmValueKind.ExternRef, expected)],
-            WasmValue.FromExternRef(reference)
-        );
+        var mismatches = Match(state, [Scalar(WasmValueKind.ExternRef, expected)], WasmValue.FromExternRef(reference));
 
         // Assert
         await Assert.That(Positions(mismatches).SequenceEqual(Expected(matched))).IsTrue();
@@ -272,9 +256,7 @@ internal class ValueMatcher_MatchTests
         );
 
         // Assert
-        await Assert
-            .That(Positions(mismatches).SequenceEqual([(ValueMismatchKind.Value, 1, null)]))
-            .IsTrue();
+        await Assert.That(Positions(mismatches).SequenceEqual([(ValueMismatchKind.Value, 1, null)])).IsTrue();
     }
 
     [Test]
@@ -313,10 +295,7 @@ internal class ValueMatcher_MatchTests
     {
         // Arrange
         var state = new ScriptState("a.wast");
-        var value =
-            kind == WasmValueKind.F32
-                ? WasmValue.FromF32Bits((uint)actual)
-                : WasmValue.FromF64Bits(actual);
+        var value = kind == WasmValueKind.F32 ? WasmValue.FromF32Bits((uint)actual) : WasmValue.FromF64Bits(actual);
 
         // Act
         var mismatches = Match(state, [Scalar(kind, pattern)], value);
@@ -328,25 +307,7 @@ internal class ValueMatcher_MatchTests
     [Test]
     [Arguments(
         LaneType.I8,
-        new[]
-        {
-            "0",
-            "1",
-            "2",
-            "3",
-            "4",
-            "5",
-            "6",
-            "7",
-            "8",
-            "9",
-            "10",
-            "11",
-            "12",
-            "13",
-            "14",
-            "15",
-        },
+        new[] { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15" },
         0x07060504030201FFUL,
         0xFF0E0D0C0B0A0908UL,
         new[] { 0, 15 }
@@ -365,20 +326,8 @@ internal class ValueMatcher_MatchTests
         0xFFFFFFFF00000003UL,
         new int[] { }
     )]
-    [Arguments(
-        LaneType.I32,
-        new[] { "1", "2", "3", "4294967295" },
-        0x0000000200000001UL,
-        0xFFFFFFFE00000003UL,
-        new[] { 3 }
-    )]
-    [Arguments(
-        LaneType.I64,
-        new[] { "1", "18446744073709551615" },
-        0x1UL,
-        0x7FFFFFFFFFFFFFFFUL,
-        new[] { 1 }
-    )]
+    [Arguments(LaneType.I32, new[] { "1", "2", "3", "4294967295" }, 0x0000000200000001UL, 0xFFFFFFFE00000003UL, new[] { 3 })]
+    [Arguments(LaneType.I64, new[] { "1", "18446744073709551615" }, 0x1UL, 0x7FFFFFFFFFFFFFFFUL, new[] { 1 })]
     [Arguments(
         LaneType.F32,
         new[] { "nan:canonical", "nan:arithmetic", "0", "2147483648" },
@@ -438,10 +387,7 @@ internal class ValueMatcher_MatchTests
         // Assert
         await Assert
             .That(
-                Positions(mismatches)
-                    .SequenceEqual(
-                        mismatchedLanes.Select(x => (ValueMismatchKind.Value, (int?)0, (int?)x))
-                    )
+                Positions(mismatches).SequenceEqual(mismatchedLanes.Select(x => (ValueMismatchKind.Value, (int?)0, (int?)x)))
             )
             .IsTrue();
     }
@@ -463,9 +409,7 @@ internal class ValueMatcher_MatchTests
         // Assert
         using (Assert.Multiple())
         {
-            await Assert
-                .That(Positions(mismatches).SequenceEqual([(ValueMismatchKind.Value, 1, 1)]))
-                .IsTrue();
+            await Assert.That(Positions(mismatches).SequenceEqual([(ValueMismatchKind.Value, 1, 1)])).IsTrue();
             await Assert.That(mismatches[0].Message).Contains("lane1");
             await Assert.That(mismatches[0].Message).Contains("nan:arithmetic");
             await Assert.That(mismatches[0].Message).Contains("0x7fa00000");
@@ -478,11 +422,7 @@ internal class ValueMatcher_MatchTests
         params WasmValue[] actual
     )
     {
-        return ValueMatcher.Match(
-            ValueMatcher.Parse([.. expected]),
-            new WasmResults(actual),
-            state
-        );
+        return ValueMatcher.Match(ValueMatcher.Parse([.. expected]), new WasmResults(actual), state);
     }
 
     private static (ValueMismatchKind, int?, int?)[] Expected(bool matched)
@@ -500,9 +440,7 @@ internal class ValueMatcher_MatchTests
         return new(kind, value, null, []);
     }
 
-    private static IEnumerable<(ValueMismatchKind, int?, int?)> Positions(
-        ImmutableArray<ValueMismatch> mismatches
-    )
+    private static IEnumerable<(ValueMismatchKind, int?, int?)> Positions(ImmutableArray<ValueMismatch> mismatches)
     {
         return mismatches.Select(x => (x.Kind, x.Index, x.Lane));
     }

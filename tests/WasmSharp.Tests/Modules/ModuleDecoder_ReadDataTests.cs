@@ -25,15 +25,9 @@ internal class ModuleDecoder_ReadDataTests
             await Assert.That(segments[0].ByteOffset).IsEqualTo(41L);
             await Assert.That(segments[0].ActiveTarget!.MemoryIndex).IsEqualTo(0u);
             await Assert.That(segments[0].ActiveTarget!.OffsetExpression.Length).IsEqualTo(2);
-            await Assert
-                .That(segments[0].ActiveTarget!.OffsetExpression[0].Immediate.AsI32())
-                .IsEqualTo(4);
-            await Assert
-                .That(segments[0].ActiveTarget!.OffsetExpression[0].ByteOffset)
-                .IsEqualTo(43L);
-            await Assert
-                .That(segments[0].ActiveTarget!.OffsetExpression[1].ByteOffset)
-                .IsEqualTo(45L);
+            await Assert.That(segments[0].ActiveTarget!.OffsetExpression[0].Immediate.AsI32()).IsEqualTo(4);
+            await Assert.That(segments[0].ActiveTarget!.OffsetExpression[0].ByteOffset).IsEqualTo(43L);
+            await Assert.That(segments[0].ActiveTarget!.OffsetExpression[1].ByteOffset).IsEqualTo(45L);
             await Assert.That(Convert.ToHexString(segments[1].Bytes.AsSpan())).IsEqualTo("CC");
             await Assert.That(segments[1].ActiveTarget).IsNull();
             await Assert.That(segments[1].ByteOffset).IsEqualTo(49L);
@@ -42,9 +36,7 @@ internal class ModuleDecoder_ReadDataTests
             await Assert.That(segments[2].ByteOffset).IsEqualTo(52L);
             await Assert.That(segments[2].ActiveTarget!.MemoryIndex).IsEqualTo(uint.MaxValue);
             await Assert.That(segments[2].ActiveTarget!.OffsetExpression[0].Index).IsEqualTo(3u);
-            await Assert
-                .That(segments[2].ActiveTarget!.OffsetExpression[0].ByteOffset)
-                .IsEqualTo(59L);
+            await Assert.That(segments[2].ActiveTarget!.OffsetExpression[0].ByteOffset).IsEqualTo(59L);
             await Assert.That(remaining).IsEqualTo(0);
         }
     }
@@ -71,10 +63,7 @@ internal class ModuleDecoder_ReadDataTests
     [Arguments("03", 41L)]
     [Arguments("8300", 42L)]
     [Arguments("FFFFFFFF0F", 45L)]
-    public async Task フラグが定義された値ではない_最終バイト位置で構文違反を報告する(
-        string flags,
-        long offset
-    )
+    public async Task フラグが定義された値ではない_最終バイト位置で構文違反を報告する(string flags, long offset)
     {
         // Arrange
         var bytes = Convert.FromHexString("01" + flags);
@@ -90,16 +79,9 @@ internal class ModuleDecoder_ReadDataTests
         using (Assert.Multiple())
         {
             await Assert
-                .That(
-                    exception!.Message.StartsWith(
-                        "malformed data segment kind",
-                        StringComparison.Ordinal
-                    )
-                )
+                .That(exception!.Message.StartsWith("malformed data segment kind", StringComparison.Ordinal))
                 .IsTrue();
-            await Assert
-                .That(exception.Location)
-                .IsEqualTo(new(WasmProcessingStage.Decode, offset, null, 11));
+            await Assert.That(exception.Location).IsEqualTo(new(WasmProcessingStage.Decode, offset, null, 11));
         }
     }
 }

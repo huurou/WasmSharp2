@@ -30,8 +30,7 @@ internal sealed class StrictEnumConverter : JsonConverterFactory
     /// <returns>指定された列挙型専用の変換器</returns>
     public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options)
     {
-        return (JsonConverter)
-            Activator.CreateInstance(typeof(EnumConverter<>).MakeGenericType(typeToConvert))!;
+        return (JsonConverter)Activator.CreateInstance(typeof(EnumConverter<>).MakeGenericType(typeToConvert))!;
     }
 
     /// <summary>
@@ -44,8 +43,7 @@ internal sealed class StrictEnumConverter : JsonConverterFactory
         /// <summary>
         /// 定義済みの保存名と列挙値の対応表 名前は大文字と小文字を区別する
         /// </summary>
-        private readonly Dictionary<string, T> values_ = Enum.GetValues<T>()
-            .ToDictionary(GetName, StringComparer.Ordinal);
+        private readonly Dictionary<string, T> values_ = Enum.GetValues<T>().ToDictionary(GetName, StringComparer.Ordinal);
 
         /// <summary>
         /// 保存名と完全に一致するJSON文字列を、定義済みの列挙値へ変換する。
@@ -55,16 +53,10 @@ internal sealed class StrictEnumConverter : JsonConverterFactory
         /// <param name="options">シリアライザーから渡される設定</param>
         /// <returns>保存名に対応する列挙値</returns>
         /// <exception cref="JsonException">JSON値が文字列でない場合、または定義済みの保存名と一致しない場合</exception>
-        public override T Read(
-            ref Utf8JsonReader reader,
-            Type typeToConvert,
-            JsonSerializerOptions options
-        )
+        public override T Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             // 位置情報付きの標準の読取失敗にするため、メッセージを指定しない。
-            return
-                reader.TokenType == JsonTokenType.String
-                && values_.TryGetValue(reader.GetString()!, out var value)
+            return reader.TokenType == JsonTokenType.String && values_.TryGetValue(reader.GetString()!, out var value)
                 ? value
                 : throw new JsonException();
         }
@@ -88,11 +80,7 @@ internal sealed class StrictEnumConverter : JsonConverterFactory
         private static string GetName(T value)
         {
             var name = value.ToString();
-            return typeof(T)
-                    .GetField(name)
-                    ?.GetCustomAttribute<JsonStringEnumMemberNameAttribute>()
-                    ?.Name
-                ?? name;
+            return typeof(T).GetField(name)?.GetCustomAttribute<JsonStringEnumMemberNameAttribute>()?.Name ?? name;
         }
     }
 }

@@ -1,4 +1,3 @@
-using WasmSharp.Exceptions;
 using WasmSharp.Tests.Fixtures;
 
 namespace WasmSharp.Tests;
@@ -28,9 +27,7 @@ internal partial class WasmFunction_InvokeTests
 
         // Act & Assert
         var exception = await Assert
-            .That(() =>
-                withInstance ? function.Invoke(null!, instance, []) : function.Invoke(null!, [])
-            )
+            .That(() => withInstance ? function.Invoke(null!, instance, []) : function.Invoke(null!, []))
             .ThrowsExactly<ArgumentNullException>();
         using (Assert.Multiple())
         {
@@ -42,9 +39,7 @@ internal partial class WasmFunction_InvokeTests
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task Instance必須hostへ省略またはnullを渡す_callbackの実行前に拒否する(
-        bool explicitNull
-    )
+    public async Task Instance必須hostへ省略またはnullを渡す_callbackの実行前に拒否する(bool explicitNull)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
@@ -67,9 +62,7 @@ internal partial class WasmFunction_InvokeTests
     [Test]
     [Arguments("")]
     [Arguments("00060161FF0B0D00")]
-    public async Task 非最短LEBと個数0のlocals宣言とcustomがある_両入力で定数の結果を変えない(
-        string custom
-    )
+    public async Task 非最短LEBと個数0のlocals宣言とcustomがある_両入力で定数の結果を変えない(string custom)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
@@ -132,10 +125,7 @@ internal partial class WasmFunction_InvokeTests
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
-        var bytes = ConstantModuleBinary.Create(
-            (byte)resultType,
-            Convert.FromHexString(instructions)
-        );
+        var bytes = ConstantModuleBinary.Create((byte)resultType, Convert.FromHexString(instructions));
         using var stream = new ChunkedReadStream(new MemoryStream(bytes));
 
         // Act

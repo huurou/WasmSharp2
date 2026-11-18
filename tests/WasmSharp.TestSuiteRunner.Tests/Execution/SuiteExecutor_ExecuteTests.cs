@@ -13,11 +13,7 @@ public class SuiteExecutor_ExecuteTests
     {
         // Arrange
         using var fixture = CorpusFixture.Create();
-        fixture.WriteArtifact(
-            CorpusFixture.A,
-            "modules/a.2.wasm",
-            ScriptExecutionFixture.Exports()
-        );
+        fixture.WriteArtifact(CorpusFixture.A, "modules/a.2.wasm", ScriptExecutionFixture.Exports());
         File.WriteAllBytes(fixture.GetPath("modules/a.0.wasm"), [1]);
 
         // Act
@@ -28,9 +24,7 @@ public class SuiteExecutor_ExecuteTests
         {
             await Assert.That(report.Inputs[0].Cases[0].Outcome).IsEqualTo(CaseOutcome.RunnerError);
             await Assert.That(report.Inputs[0].Cases[0].LastStage).IsNull();
-            await Assert
-                .That(report.Inputs[0].Cases.Count(x => x.Outcome == CaseOutcome.RunnerError))
-                .IsEqualTo(1);
+            await Assert.That(report.Inputs[0].Cases.Count(x => x.Outcome == CaseOutcome.RunnerError)).IsEqualTo(1);
             await Assert.That(report.Inputs[0].Cases[3].Outcome).IsEqualTo(CaseOutcome.Passed);
             await Assert.That(report.Inputs[0].Issues.Count).IsEqualTo(0);
         }
@@ -71,18 +65,7 @@ public class SuiteExecutor_ExecuteTests
                     0,
                 ]
             ),
-            (
-                7,
-                [
-                    2,
-                    .. ScriptExecutionFixture.Name("f"),
-                    0,
-                    0,
-                    .. ScriptExecutionFixture.Name("g"),
-                    3,
-                    0,
-                ]
-            )
+            (7, [2, .. ScriptExecutionFixture.Name("f"), 0, 0, .. ScriptExecutionFixture.Name("g"), 3, 0])
         );
         fixture.WriteArtifact(CorpusFixture.A, "modules/a.0.wasm", spectest);
         fixture.WriteArtifact(
@@ -99,11 +82,7 @@ public class SuiteExecutor_ExecuteTests
             )
         );
         fixture.WriteArtifact(CorpusFixture.B, "modules/simd/b.0.wasm", spectest);
-        fixture.WriteArtifact(
-            CorpusFixture.B,
-            "modules/simd/b.1.wasm",
-            ScriptExecutionFixture.ImportFunctions("shared")
-        );
+        fixture.WriteArtifact(CorpusFixture.B, "modules/simd/b.1.wasm", ScriptExecutionFixture.ImportFunctions("shared"));
         var manifest = Complete(fixture.Manifest);
 
         // Act
@@ -112,23 +91,15 @@ public class SuiteExecutor_ExecuteTests
         // Assert
         using (Assert.Multiple())
         {
-            await Assert
-                .That(report.Inputs.All(x => x.Status == InputRunStatus.Processed))
-                .IsTrue();
+            await Assert.That(report.Inputs.All(x => x.Status == InputRunStatus.Processed)).IsTrue();
             await Assert.That(report.Summary.EnumeratedCommandCount).IsEqualTo(8);
-            await Assert
-                .That(report.Inputs.SelectMany(x => x.Cases).Select(x => x.Id).Distinct().Count())
-                .IsEqualTo(8);
-            await Assert
-                .That(report.Inputs[0].Cases.All(x => x.Outcome == CaseOutcome.Passed))
-                .IsTrue();
+            await Assert.That(report.Inputs.SelectMany(x => x.Cases).Select(x => x.Id).Distinct().Count()).IsEqualTo(8);
+            await Assert.That(report.Inputs[0].Cases.All(x => x.Outcome == CaseOutcome.Passed)).IsTrue();
             await Assert.That(report.Inputs[0].Cases[2].Prints[0].Function).IsEqualTo("print");
             await Assert.That(report.Inputs[1].Cases[0].Outcome).IsEqualTo(CaseOutcome.RunnerError);
             await Assert.That(report.Inputs[1].Cases[2].Outcome).IsEqualTo(CaseOutcome.Passed);
             await Assert.That(report.Inputs[1].Cases[3].Outcome).IsEqualTo(CaseOutcome.Failed);
-            await Assert
-                .That(report.Inputs[1].Cases[3].Diagnostics[0].Reason)
-                .IsEqualTo("MissingImport");
+            await Assert.That(report.Inputs[1].Cases[3].Diagnostics[0].Reason).IsEqualTo("MissingImport");
             await Assert.That(report.ExecutionPolicy.MaxCallDepth).IsEqualTo(1024);
             await Assert.That(report.Provenance.RuntimeVersion).IsNotNull();
         }
@@ -151,11 +122,7 @@ public class SuiteExecutor_ExecuteTests
                 """
             )
         );
-        fixture.WriteArtifact(
-            CorpusFixture.B,
-            "modules/simd/b.0.wat",
-            Encoding.UTF8.GetBytes("(module")
-        );
+        fixture.WriteArtifact(CorpusFixture.B, "modules/simd/b.0.wat", Encoding.UTF8.GetBytes("(module"));
         File.Delete(fixture.GetPath("modules/simd/b.0.wat"));
 
         // Act
@@ -241,16 +208,10 @@ public class SuiteExecutor_ExecuteTests
         // Assert
         await Assert
             .That(report.Diagnostics)
-            .IsEquivalentTo(
-                [
-                    diagnostic,
-                    new CorpusDiagnostic(
-                        "verify",
-                        "manifestに記録されていない素材があります。",
-                        "modules/extra.wasm"
-                    ),
-                ]
-            );
+            .IsEquivalentTo([
+                diagnostic,
+                new CorpusDiagnostic("verify", "manifestに記録されていない素材があります。", "modules/extra.wasm"),
+            ]);
     }
 
     [Test]
@@ -262,11 +223,7 @@ public class SuiteExecutor_ExecuteTests
         List<string> progress = [];
 
         // Act
-        var report = SuiteExecutor.Execute(
-            Complete(fixture.Manifest),
-            fixture.ManifestPath,
-            progress.Add
-        );
+        var report = SuiteExecutor.Execute(Complete(fixture.Manifest), fixture.ManifestPath, progress.Add);
 
         // Assert
         using (Assert.Multiple())
@@ -277,19 +234,9 @@ public class SuiteExecutor_ExecuteTests
             await Assert.That(report.Inputs[0].Cases).IsEmpty();
             await Assert
                 .That(report.Inputs[0].Issues)
-                .IsEquivalentTo(
-                    [
-                        new CorpusDiagnostic(
-                            "verify",
-                            "manifestに対象入力の記録がありません。",
-                            CorpusFixture.A
-                        ),
-                    ]
-                );
+                .IsEquivalentTo([new CorpusDiagnostic("verify", "manifestに対象入力の記録がありません。", CorpusFixture.A)]);
             await Assert.That(report.Inputs[1].Cases[0].Outcome).IsEqualTo(CaseOutcome.Passed);
-            await Assert
-                .That(report.Diagnostics.Any(x => x.Operation == "execute_suite"))
-                .IsFalse();
+            await Assert.That(report.Diagnostics.Any(x => x.Operation == "execute_suite")).IsFalse();
         }
     }
 
@@ -364,16 +311,7 @@ public class SuiteExecutor_ExecuteTests
             "modules/a.0.wasm",
             ScriptExecutionFixture.Binary(
                 (1, [1, 0x60, 0, 0]),
-                (
-                    2,
-                    [
-                        1,
-                        .. ScriptExecutionFixture.Name("host"),
-                        .. ScriptExecutionFixture.Name("f"),
-                        0,
-                        0,
-                    ]
-                ),
+                (2, [1, .. ScriptExecutionFixture.Name("host"), .. ScriptExecutionFixture.Name("f"), 0, 0]),
                 (7, [1, .. ScriptExecutionFixture.Name("f"), 0, 0])
             )
         );

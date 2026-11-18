@@ -24,18 +24,8 @@ internal partial class WasmFunction_InvokeTests
         "FF7FFF7FFF7FFF7FFF7FFF7FFF7FFF7F"
     )]
     [Arguments("8001", "00800080FF7F0100FFFF00000200FEFF", "", "00800080FF7F01000100000002000200")]
-    [Arguments(
-        "808100",
-        "00800080FF7F0100FFFF00000200FEFF",
-        "",
-        "00800080FF7F01000100000002000200"
-    )]
-    [Arguments(
-        "8081808000",
-        "00800080FF7F0100FFFF00000200FEFF",
-        "",
-        "00800080FF7F01000100000002000200"
-    )]
+    [Arguments("808100", "00800080FF7F0100FFFF00000200FEFF", "", "00800080FF7F01000100000002000200")]
+    [Arguments("8081808000", "00800080FF7F0100FFFF00000200FEFF", "", "00800080FF7F01000100000002000200")]
     [Arguments("A801", "01000200030004000080FFFFFF7F0000", "", "0080FFFFFFFFFFFFFF7F000000000000")]
     [Arguments(
         "DF01",
@@ -65,12 +55,9 @@ internal partial class WasmFunction_InvokeTests
             HostLinkingModuleBinary.Types((parameters, [0x7B])),
             HostLinkingModuleBinary.Functions(0),
             HostLinkingModuleBinary.Exports(("run", 0, 0)),
-            HostLinkingModuleBinary.Code(
-                ([], [.. pushes, 0xFD, .. Convert.FromHexString(opcode), 0x0B])
-            )
+            HostLinkingModuleBinary.Code(([], [.. pushes, 0xFD, .. Convert.FromHexString(opcode), 0x0B]))
         );
-        WasmValue[] operands =
-            second.Length == 0 ? [Vector(first)] : [Vector(first), Vector(second)];
+        WasmValue[] operands = second.Length == 0 ? [Vector(first)] : [Vector(first), Vector(second)];
         using var stream = new ChunkedReadStream(new MemoryStream(bytes));
 
         // Act
@@ -138,9 +125,7 @@ internal partial class WasmFunction_InvokeTests
             HostLinkingModuleBinary.Types((parameters, [0x7B])),
             HostLinkingModuleBinary.Functions(0),
             HostLinkingModuleBinary.Exports(("run", 0, 0)),
-            HostLinkingModuleBinary.Code(
-                ([], [0x20, 0, 0x20, 1, 0xFD, .. HostLinkingModuleBinary.Unsigned(opcode), 0x0B])
-            )
+            HostLinkingModuleBinary.Code(([], [0x20, 0, 0x20, 1, 0xFD, .. HostLinkingModuleBinary.Unsigned(opcode), 0x0B]))
         );
     }
 

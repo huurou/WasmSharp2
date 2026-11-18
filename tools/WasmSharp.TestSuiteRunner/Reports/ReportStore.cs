@@ -30,10 +30,7 @@ internal sealed class ReportStore
     /// <summary>
     /// 重複キーを構文破損と同様に拒否するJSON読取設定
     /// </summary>
-    private readonly JsonDocumentOptions documentOptions_ = new JsonDocumentOptions
-    {
-        AllowDuplicateProperties = false,
-    };
+    private readonly JsonDocumentOptions documentOptions_ = new JsonDocumentOptions { AllowDuplicateProperties = false };
 
     /// <summary>
     /// 未知のpropertyや必須項目の欠落、数値や複合表記による未定義の分類を無言で読み替えないDTO読取設定
@@ -66,11 +63,7 @@ internal sealed class ReportStore
     /// <exception cref="ReportStoreException">保存を確定できない場合</exception>
     internal void Save(CorpusManifest manifest, string path)
     {
-        Write(
-            path,
-            replaceExisting: false,
-            x => JsonSerializer.Serialize(x, manifest, writeOptions_)
-        );
+        Write(path, replaceExisting: false, x => JsonSerializer.Serialize(x, manifest, writeOptions_));
     }
 
     /// <summary>
@@ -81,11 +74,7 @@ internal sealed class ReportStore
     /// <exception cref="ReportStoreException">保存を確定できない場合</exception>
     internal void Save(RunReport report, string path)
     {
-        Write(
-            path,
-            replaceExisting: false,
-            x => JsonSerializer.Serialize(x, report, writeOptions_)
-        );
+        Write(path, replaceExisting: false, x => JsonSerializer.Serialize(x, report, writeOptions_));
     }
 
     /// <summary>
@@ -96,11 +85,7 @@ internal sealed class ReportStore
     /// <exception cref="ReportStoreException">保存を確定できない場合</exception>
     internal void Save(ComparisonReport report, string path)
     {
-        Write(
-            path,
-            replaceExisting: false,
-            x => JsonSerializer.Serialize(x, report, writeOptions_)
-        );
+        Write(path, replaceExisting: false, x => JsonSerializer.Serialize(x, report, writeOptions_));
     }
 
     /// <summary>
@@ -135,14 +120,7 @@ internal sealed class ReportStore
         );
         try
         {
-            using (
-                var stream = new FileStream(
-                    temporaryPath,
-                    FileMode.CreateNew,
-                    FileAccess.Write,
-                    FileShare.None
-                )
-            )
+            using (var stream = new FileStream(temporaryPath, FileMode.CreateNew, FileAccess.Write, FileShare.None))
             {
                 write(stream);
                 stream.Flush(flushToDisk: true);
@@ -152,11 +130,7 @@ internal sealed class ReportStore
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            throw new ReportStoreException(
-                $"{fullPath}へ結果を保存できません: {ex.Message}",
-                fullPath,
-                ex
-            );
+            throw new ReportStoreException($"{fullPath}へ結果を保存できません: {ex.Message}", fullPath, ex);
         }
         finally
         {
@@ -191,11 +165,7 @@ internal sealed class ReportStore
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            throw new ReportStoreException(
-                $"{fullPath}を読み取れません: {ex.Message}",
-                fullPath,
-                ex
-            );
+            throw new ReportStoreException($"{fullPath}を読み取れません: {ex.Message}", fullPath, ex);
         }
     }
 
@@ -283,11 +253,7 @@ internal sealed class ReportStore
     internal static ImmutableArray<RecordIssue> Validate(CorpusManifest manifest)
     {
         var issues = ImmutableArray.CreateBuilder<RecordIssue>();
-        AddInputSetIssues(
-            manifest.Profile.Inputs,
-            manifest.Inputs.Select(x => x.Input.Path),
-            issues
-        );
+        AddInputSetIssues(manifest.Profile.Inputs, manifest.Inputs.Select(x => x.Input.Path), issues);
         foreach (var input in manifest.Inputs.Where(x => x.Status == ConversionStatus.Unprocessed))
         {
             issues.Add(new(RecordIssueKind.Unprocessed, $"{input.Input.Path}は未処理です。"));
@@ -316,22 +282,13 @@ internal sealed class ReportStore
     {
         var issues = ImmutableArray.CreateBuilder<RecordIssue>();
         // 重複した素材からcommand件数の基準を黙って選ばないよう、素材スナップショットの入力集合と集計も確かめる。
-        AddInputSetIssues(
-            report.Corpus.Profile.Inputs,
-            report.Corpus.Inputs.Select(x => x.Input.Path),
-            issues,
-            "素材の"
-        );
+        AddInputSetIssues(report.Corpus.Profile.Inputs, report.Corpus.Inputs.Select(x => x.Input.Path), issues, "素材の");
         if (report.Corpus.Summarize() != report.Corpus.Summary)
         {
             issues.Add(new(RecordIssueKind.Inconsistent, "素材の集計が記録内容と一致しません。"));
         }
 
-        AddInputSetIssues(
-            report.Corpus.Profile.Inputs,
-            report.Inputs.Select(x => x.InputPath),
-            issues
-        );
+        AddInputSetIssues(report.Corpus.Profile.Inputs, report.Inputs.Select(x => x.InputPath), issues);
         var materialCommandCounts = report
             .Corpus.Inputs.DistinctBy(x => x.Input.Path, StringComparer.Ordinal)
             .ToDictionary(x => x.Input.Path, GetCommandCount, StringComparer.Ordinal);
@@ -399,10 +356,7 @@ internal sealed class ReportStore
             || kind.GetString() is not (MANIFEST_KIND or RUN_REPORT_KIND)
         )
         {
-            throw new ReportStoreException(
-                $"{path}のkindは{MANIFEST_KIND}または{RUN_REPORT_KIND}ではありません。",
-                path
-            );
+            throw new ReportStoreException($"{path}のkindは{MANIFEST_KIND}または{RUN_REPORT_KIND}ではありません。", path);
         }
 
         return kind.GetString()!;
@@ -460,11 +414,7 @@ internal sealed class ReportStore
     {
         foreach (var input in report.Inputs)
         {
-            foreach (
-                var item in input.Cases.Where(x =>
-                    x.Id.CommandIndex < 0 || x.Id.InputPath != input.InputPath
-                )
-            )
+            foreach (var item in input.Cases.Where(x => x.Id.CommandIndex < 0 || x.Id.InputPath != input.InputPath))
             {
                 throw new ReportStoreException(
                     $"{path}のケース識別{item.Id}を{input.InputPath}の記録として読み取れません。",
@@ -505,9 +455,7 @@ internal sealed class ReportStore
     )
     {
         var expectedPaths = expected.Select(x => x.Path).ToArray();
-        var counts = actual
-            .CountBy(x => x, StringComparer.Ordinal)
-            .ToDictionary(StringComparer.Ordinal);
+        var counts = actual.CountBy(x => x, StringComparer.Ordinal).ToDictionary(StringComparer.Ordinal);
         foreach (var path in expectedPaths.Where(x => !counts.ContainsKey(x)))
         {
             issues.Add(new(RecordIssueKind.Missing, $"{prefix}{path}の記録がありません。"));
@@ -517,19 +465,12 @@ internal sealed class ReportStore
         {
             if (count > 1)
             {
-                issues.Add(
-                    new(RecordIssueKind.Duplicate, $"{prefix}{path}の記録が{count}件あります。")
-                );
+                issues.Add(new(RecordIssueKind.Duplicate, $"{prefix}{path}の記録が{count}件あります。"));
             }
 
             if (!expectedPaths.Contains(path, StringComparer.Ordinal))
             {
-                issues.Add(
-                    new(
-                        RecordIssueKind.Unexpected,
-                        $"{prefix}{path}はprofileの対象入力ではありません。"
-                    )
-                );
+                issues.Add(new(RecordIssueKind.Unexpected, $"{prefix}{path}はprofileの対象入力ではありません。"));
             }
         }
     }
@@ -575,10 +516,7 @@ internal sealed class ReportStore
             issues.Add(new(RecordIssueKind.Undetermined, $"{path}のcommand件数が未確定です。"));
         }
 
-        if (
-            input.CommandCount is { } count
-            && (count != input.EnumeratedCount || count != materialCommandCount)
-        )
+        if (input.CommandCount is { } count && (count != input.EnumeratedCount || count != materialCommandCount))
         {
             issues.Add(
                 new(
@@ -606,9 +544,7 @@ internal sealed class ReportStore
             var id = new CaseId(path, group.Key);
             if (group.Count() > 1)
             {
-                issues.Add(
-                    new(RecordIssueKind.Duplicate, $"{id}の結果が{group.Count()}件あります。")
-                );
+                issues.Add(new(RecordIssueKind.Duplicate, $"{id}の結果が{group.Count()}件あります。"));
             }
 
             if (group.Key >= processedCount)
@@ -620,23 +556,12 @@ internal sealed class ReportStore
         var recorded = input.Cases.Select(x => x.Id.CommandIndex).ToHashSet();
         foreach (var index in Enumerable.Range(0, processedCount).Where(x => !recorded.Contains(x)))
         {
-            issues.Add(
-                new(RecordIssueKind.Missing, $"{new CaseId(path, index)}の結果がありません。")
-            );
+            issues.Add(new(RecordIssueKind.Missing, $"{new CaseId(path, index)}の結果がありません。"));
         }
 
-        foreach (
-            var item in input.Cases.Where(x =>
-                x.Category is null && x.Outcome != CaseOutcome.RunnerError
-            )
-        )
+        foreach (var item in input.Cases.Where(x => x.Category is null && x.Outcome != CaseOutcome.RunnerError))
         {
-            issues.Add(
-                new(
-                    RecordIssueKind.Inconsistent,
-                    $"種類未確定の{item.Id}がrunner_error以外に分類されています。"
-                )
-            );
+            issues.Add(new(RecordIssueKind.Inconsistent, $"種類未確定の{item.Id}がrunner_error以外に分類されています。"));
         }
     }
 
@@ -660,12 +585,7 @@ internal sealed class ReportStore
         }
         else if (hasUnprocessed)
         {
-            issues.Add(
-                new(
-                    RecordIssueKind.Inconsistent,
-                    "処理の完了が記録されていますが、未処理の対象があります。"
-                )
-            );
+            issues.Add(new(RecordIssueKind.Inconsistent, "処理の完了が記録されていますが、未処理の対象があります。"));
         }
 
         if (!outputComplete)

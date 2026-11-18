@@ -26,10 +26,7 @@ internal class Interpreter_F32NearestTests
     [Arguments(0xFFC00000u, 0x7FC00000u)]
     [Arguments(0xFFC12345u, 0x7FC00000u)]
     [Arguments(0x7F812345u, 0x7FC00000u)]
-    public async Task 入力の同距離と隣接値と特殊値_最近接偶数へ整数値化する(
-        uint operandBits,
-        uint expectedBits
-    )
+    public async Task 入力の同距離と隣接値と特殊値_最近接偶数へ整数値化する(uint operandBits, uint expectedBits)
     {
         // Arrange
         WasmValue[] operands = [WasmValue.FromF32Bits(operandBits)];

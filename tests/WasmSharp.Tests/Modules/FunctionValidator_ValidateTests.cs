@@ -19,9 +19,7 @@ internal partial class FunctionValidator_ValidateTests
                 HostLinkingModuleBinary.Functions(1),
                 HostLinkingModuleBinary.Globals((0x7E, true, [0x42, 0, 0x0B])),
                 HostLinkingModuleBinary.Exports(("run", 0, 1)),
-                HostLinkingModuleBinary.Code(
-                    ([(1, 0x7E)], Convert.FromHexString("200024002301210220001000220223000F1A0B"))
-                )
+                HostLinkingModuleBinary.Code(([(1, 0x7E)], Convert.FromHexString("200024002301210220001000220223000F1A0B")))
             )
         );
         WasmFunctionType[] functionTypes = [module.Types[0], module.Types[1]];
@@ -52,19 +50,13 @@ internal partial class FunctionValidator_ValidateTests
             {
                 var decoded = definition.Instructions[index];
                 InstructionSet.TryGet(decoded.Opcode, out var descriptor);
-                await Assert
-                    .That(code.Instructions[index].Opcode)
-                    .IsEqualTo(descriptor.ExecutionOpcode);
+                await Assert.That(code.Instructions[index].Opcode).IsEqualTo(descriptor.ExecutionOpcode);
                 await Assert.That(code.Instructions[index].Index).IsEqualTo(decoded.Index);
-                await Assert
-                    .That(code.Instructions[index].ByteOffset)
-                    .IsEqualTo(decoded.ByteOffset);
+                await Assert.That(code.Instructions[index].ByteOffset).IsEqualTo(decoded.ByteOffset);
             }
             for (var index = 0; index < functionTypes.Length; index++)
             {
-                await Assert
-                    .That(functionTypes[index])
-                    .IsSameReferenceAs(originalFunctionTypes[index]);
+                await Assert.That(functionTypes[index]).IsSameReferenceAs(originalFunctionTypes[index]);
             }
             for (var index = 0; index < globalTypes.Length; index++)
             {
@@ -73,9 +65,7 @@ internal partial class FunctionValidator_ValidateTests
             await Assert.That(module.Functions[0]).IsSameReferenceAs(definition);
             await Assert.That(module.FunctionCodes.IsEmpty).IsTrue();
             await Assert.That(module.FunctionExportIndices.IsEmpty).IsTrue();
-            await Assert
-                .That(() => module.Instantiate(executionContext, []))
-                .ThrowsExactly<InvalidOperationException>();
+            await Assert.That(() => module.Instantiate(executionContext, [])).ThrowsExactly<InvalidOperationException>();
         }
     }
 
@@ -111,23 +101,17 @@ internal partial class FunctionValidator_ValidateTests
             .ThrowsExactly<WasmValidateException>();
         using (Assert.Multiple())
         {
-            await Assert
-                .That(exception!.Message.StartsWith("type mismatch", StringComparison.Ordinal))
-                .IsTrue();
+            await Assert.That(exception!.Message.StartsWith("type mismatch", StringComparison.Ordinal)).IsTrue();
             await Assert
                 .That(exception.Location)
-                .IsEqualTo(
-                    new(WasmProcessingStage.Validate, definition.Instructions[^1].ByteOffset, 1, 10)
-                );
+                .IsEqualTo(new(WasmProcessingStage.Validate, definition.Instructions[^1].ByteOffset, 1, 10));
             await Assert.That(functionTypes[0]).IsSameReferenceAs(module.Types[0]);
             await Assert.That(functionTypes[1]).IsSameReferenceAs(module.Types[0]);
             await Assert.That(globalTypes.Length).IsEqualTo(0);
             await Assert.That(module.Functions[0]).IsSameReferenceAs(definition);
             await Assert.That(module.FunctionCodes.IsEmpty).IsTrue();
             await Assert.That(module.FunctionExportIndices.IsEmpty).IsTrue();
-            await Assert
-                .That(() => module.Instantiate(executionContext, []))
-                .ThrowsExactly<InvalidOperationException>();
+            await Assert.That(() => module.Instantiate(executionContext, [])).ThrowsExactly<InvalidOperationException>();
         }
     }
 }

@@ -39,9 +39,7 @@ internal class BenchmarkRun_DescribeProcessTests
                 .That(process.JobSettings.Single(x => x.Name == "RunMode.RunStrategy").Value)
                 .IsEqualTo("Throughput");
             await Assert
-                .That(
-                    process.JobSettings.Single(x => x.Name == "EnvironmentMode.PowerPlanMode").Value
-                )
+                .That(process.JobSettings.Single(x => x.Name == "EnvironmentMode.PowerPlanMode").Value)
                 .IsEqualTo("00000000-0000-0000-0000-000000000000");
             await Assert
                 .That(process.JobSettings.Single(x => x.Name == "RunMode.IterationCount").Value)
@@ -49,9 +47,7 @@ internal class BenchmarkRun_DescribeProcessTests
             await Assert
                 .That(process.EnvironmentVariables.Select(x => x.Name))
                 .IsEquivalentTo(["DOTNET_EnableHWIntrinsic", "WASMSHARP_BENCHMARK_RUN_CONFIG"]);
-            await Assert
-                .That(process.JobSettings.Any(x => x.Value.Contains("must not be saved")))
-                .IsFalse();
+            await Assert.That(process.JobSettings.Any(x => x.Value.Contains("must not be saved"))).IsFalse();
         }
     }
 }

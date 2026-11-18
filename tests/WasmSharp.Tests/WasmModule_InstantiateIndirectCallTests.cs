@@ -80,10 +80,7 @@ internal partial class WasmModule_InstantiateTests
                         ([], [0x41, 3, 0x41, 0, 0x41, 1, 0xFC, 0x0C, 0, 0, 0x0B]),
                         ([], [0x41, 3, 0x41, 0, 0x41, 1, 0xFC, 0x0C, 4, 0, 0x0B])
                     ),
-                    HostLinkingModuleBinary.Section(
-                        11,
-                        [1, 0, 0x41, .. HostLinkingModuleBinary.Signed(65536), 0x0B, 1, 22]
-                    )
+                    HostLinkingModuleBinary.Section(11, [1, 0, 0x41, .. HostLinkingModuleBinary.Signed(65536), 0x0B, 1, 22])
                 )
             )
             .Validate();
@@ -93,11 +90,7 @@ internal partial class WasmModule_InstantiateTests
                     HostLinkingModuleBinary.Types(([], []), ([], [0x7F])),
                     HostLinkingModuleBinary.Imports(("env", "t", 1, [0x70, 0, 4])),
                     HostLinkingModuleBinary.Functions(1, 0, 0),
-                    HostLinkingModuleBinary.Exports(
-                        ("read", 0, 0),
-                        ("dropped", 0, 1),
-                        ("later", 0, 2)
-                    ),
+                    HostLinkingModuleBinary.Exports(("read", 0, 0), ("dropped", 0, 1), ("later", 0, 2)),
                     HostLinkingModuleBinary.Code(
                         ([], [0x41, 0, 0x11, 1, 0, 0x0B]),
                         ([], [0x41, 1, 0x11, 0, 0, 0x0B]),
@@ -114,9 +107,7 @@ internal partial class WasmModule_InstantiateTests
             .ThrowsExactly<WasmTrapException>();
         await Assert
             .That(exception!.Reason)
-            .IsEqualTo(
-                elementFailure ? WasmTrapReason.TableOutOfBounds : WasmTrapReason.MemoryOutOfBounds
-            );
+            .IsEqualTo(elementFailure ? WasmTrapReason.TableOutOfBounds : WasmTrapReason.MemoryOutOfBounds);
         await Assert.That(exception.Location!.Stage).IsEqualTo(WasmProcessingStage.Instantiate);
         await Assert.That(exception.Location!.SectionId).IsEqualTo(elementFailure ? (byte?)9 : 11);
         await Assert.That(caller.GetFunction("read").Invoke(executionContext, []).Values[0].AsI32()).IsEqualTo(141);
@@ -129,9 +120,7 @@ internal partial class WasmModule_InstantiateTests
         {
             await Assert.That(() => caller.GetFunction("later").Invoke(executionContext, [])).ThrowsNothing();
             await Assert.That(table.Get(3).AsFuncRef()).IsSameReferenceAs(table.Get(0).AsFuncRef());
-            await Assert
-                .That(table.Get(3).AsFuncRef()!.Invoke(executionContext, []).Values[0].AsI32())
-                .IsEqualTo(141);
+            await Assert.That(table.Get(3).AsFuncRef()!.Invoke(executionContext, []).Values[0].AsI32()).IsEqualTo(141);
         }
         else
         {

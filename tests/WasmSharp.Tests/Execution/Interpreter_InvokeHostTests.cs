@@ -40,10 +40,7 @@ internal class Interpreter_InvokeHostTests
         // Arrange
         var executionContext = new WasmExecutionContext();
         var expected = new InvalidOperationException("ホストの失敗");
-        var function = WasmFunction.CreateHost(
-            new([], []),
-            (WasmHostCallback)((_, _) => throw expected)
-        );
+        var function = WasmFunction.CreateHost(new([], []), (WasmHostCallback)((_, _) => throw expected));
 
         // Act & Assert
         var actual = await Assert
@@ -55,16 +52,11 @@ internal class Interpreter_InvokeHostTests
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task 両形式のcallbackを呼ぶ_引数の順序と参照を保ち呼出し専用コピーと指定instanceを渡す(
-        bool withInstance
-    )
+    public async Task 両形式のcallbackを呼ぶ_引数の順序と参照を保ち呼出し専用コピーと指定instanceを渡す(bool withInstance)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
-        var instance = WasmModule
-            .Decode(HostLinkingModuleBinary.Create())
-            .Validate()
-            .Instantiate(executionContext, []);
+        var instance = WasmModule.Decode(HostLinkingModuleBinary.Create()).Validate().Instantiate(executionContext, []);
         var reference = new object();
         WasmValue[] arguments = [WasmValue.FromI32(42), WasmValue.FromExternRef(reference)];
         WasmInstance? observedInstance = null;

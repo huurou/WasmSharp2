@@ -53,9 +53,7 @@ internal partial class WasmFunction_InvokeTests
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task 定義関数へnullまたは別instanceを指定する_指定を無視し定義元の上限で実行する(
-        bool explicitNull
-    )
+    public async Task 定義関数へnullまたは別instanceを指定する_指定を無視し定義元の上限で実行する(bool explicitNull)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
@@ -79,10 +77,7 @@ internal partial class WasmFunction_InvokeTests
     [Arguments(false, true)]
     [Arguments(true, false)]
     [Arguments(true, true)]
-    public async Task Hostへ個数または型が異なる引数を渡す_両Invoke形式で実行前に拒否する(
-        bool withInstance,
-        bool wrongCount
-    )
+    public async Task Hostへ個数または型が異なる引数を渡す_両Invoke形式で実行前に拒否する(bool withInstance, bool wrongCount)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
@@ -102,7 +97,9 @@ internal partial class WasmFunction_InvokeTests
         // Act & Assert
         var exception = await Assert
             .That(() =>
-                withInstance ? function.Invoke(executionContext, instance, arguments) : function.Invoke(executionContext, arguments)
+                withInstance
+                    ? function.Invoke(executionContext, instance, arguments)
+                    : function.Invoke(executionContext, arguments)
             )
             .ThrowsExactly<ArgumentException>();
         using (Assert.Multiple())
@@ -115,9 +112,7 @@ internal partial class WasmFunction_InvokeTests
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task 単独hostからWasmを順に呼ぶ_各入口の上限を選びホストへ戻るたびにcontextを解除する(
-        bool withInstance
-    )
+    public async Task 単独hostからWasmを順に呼ぶ_各入口の上限を選びホストへ戻るたびにcontextを解除する(bool withInstance)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
@@ -172,9 +167,7 @@ internal partial class WasmFunction_InvokeTests
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task 単独hostを両形式で呼ぶ_指定instanceとcontextを渡し実行状態を作らず結果を返す(
-        bool withInstance
-    )
+    public async Task 単独hostを両形式で呼ぶ_指定instanceとcontextを渡し実行状態を作らず結果を返す(bool withInstance)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();

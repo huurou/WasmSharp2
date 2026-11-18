@@ -83,11 +83,7 @@ internal class Interpreter_V128LoadSplatTests
     {
         // Arrange
         var memory = new WasmMemory(new(1, null));
-        var instruction = MemoryHandlerFixture.CreateInstruction(
-            WasmValueKind.V128,
-            (byte)byteWidth,
-            offset: offset
-        );
+        var instruction = MemoryHandlerFixture.CreateInstruction(WasmValueKind.V128, (byte)byteWidth, offset: offset);
 
         // Act
         var actual = MemoryHandlerFixture.Execute(

@@ -22,19 +22,12 @@ internal class ComparisonPolicy_DeserializeTests
         // Act
         await JsonSerializer.SerializeAsync(stream, fixture, json_.Options);
         stream.Position = 0;
-        var restored = await JsonSerializer.DeserializeAsync<ComparisonFixture>(
-            stream,
-            json_.Options
-        );
+        var restored = await JsonSerializer.DeserializeAsync<ComparisonFixture>(stream, json_.Options);
         var actual = JsonSerializer.SerializeToNode(restored, json_.Options);
 
         // Assert
         await Assert.That(JsonNode.DeepEquals(JsonNode.Parse(json), actual)).IsTrue();
     }
 
-    private sealed record ComparisonFixture(
-        ComparisonPolicy Policy,
-        ComparisonRequest Request,
-        ComparisonReport Report
-    );
+    private sealed record ComparisonFixture(ComparisonPolicy Policy, ComparisonRequest Request, ComparisonReport Report);
 }

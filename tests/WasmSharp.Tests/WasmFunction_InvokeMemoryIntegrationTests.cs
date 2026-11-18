@@ -23,10 +23,7 @@ internal partial class WasmFunction_InvokeTests
             .Decode(
                 HostLinkingModuleBinary.Create(
                     HostLinkingModuleBinary.Types(([0x7F, 0x7F, 0x7F], []), ([], [])),
-                    HostLinkingModuleBinary.Imports(
-                        ("source", "init", 0, [0]),
-                        ("source", "drop", 0, [1])
-                    ),
+                    HostLinkingModuleBinary.Imports(("source", "init", 0, [0]), ("source", "drop", 0, [1])),
                     HostLinkingModuleBinary.Functions(0, 1),
                     HostLinkingModuleBinary.Memories((1, null)),
                     HostLinkingModuleBinary.Exports(
@@ -37,10 +34,7 @@ internal partial class WasmFunction_InvokeTests
                         ("memory", 2, 0)
                     ),
                     HostLinkingModuleBinary.Section(12, [2]),
-                    HostLinkingModuleBinary.Code(
-                        ([], [0x20, 0, 0x20, 1, 0x20, 2, 0x10, 0, 0x0B]),
-                        ([], [0xFC, 9, 1, 0x0B])
-                    ),
+                    HostLinkingModuleBinary.Code(([], [0x20, 0, 0x20, 1, 0x20, 2, 0x10, 0, 0x0B]), ([], [0xFC, 9, 1, 0x0B])),
                     HostLinkingModuleBinary.Section(11, [2, 1, 1, 0xCC, 1, 1, 0xDD])
                 )
             )
@@ -67,12 +61,8 @@ internal partial class WasmFunction_InvokeTests
         // Assert
         using (Assert.Multiple())
         {
-            await Assert
-                .That(relay.GetFunction("init"))
-                .IsSameReferenceAs(source.GetFunction("init"));
-            await Assert
-                .That(relay.GetFunction("drop"))
-                .IsSameReferenceAs(source.GetFunction("drop"));
+            await Assert.That(relay.GetFunction("init")).IsSameReferenceAs(source.GetFunction("init"));
+            await Assert.That(relay.GetFunction("drop")).IsSameReferenceAs(source.GetFunction("drop"));
             await Assert.That(Convert.ToHexString(sourceBytes)).IsEqualTo("A1000000112233442233");
             await Assert.That(Convert.ToHexString(relayBytes)).IsEqualTo("B2000000000000000000");
             await Assert.That(Convert.ToHexString(siblingBytes)).IsEqualTo("C3000000000000000000");
@@ -142,10 +132,7 @@ internal partial class WasmFunction_InvokeTests
         var outer = WasmModule
             .Decode(
                 HostLinkingModuleBinary.Create(
-                    HostLinkingModuleBinary.Types(
-                        ([], []),
-                        ([0x7F, 0x6F], [0x7F, 0x6F, 0x7F, 0x7F, 0x7F, 0x7F])
-                    ),
+                    HostLinkingModuleBinary.Types(([], []), ([0x7F, 0x6F], [0x7F, 0x6F, 0x7F, 0x7F, 0x7F, 0x7F])),
                     HostLinkingModuleBinary.Imports(("env", "reenter", 0, [0])),
                     HostLinkingModuleBinary.Functions(1),
                     HostLinkingModuleBinary.Memories((1, 2)),
@@ -195,10 +182,7 @@ internal partial class WasmFunction_InvokeTests
             .Decode(
                 HostLinkingModuleBinary.Create(
                     HostLinkingModuleBinary.Types(([], [])),
-                    HostLinkingModuleBinary.Imports(
-                        ("env", "probe", 0, [0]),
-                        ("env", "m", 2, [1, 1, 2])
-                    ),
+                    HostLinkingModuleBinary.Imports(("env", "probe", 0, [0]), ("env", "m", 2, [1, 1, 2])),
                     HostLinkingModuleBinary.Functions(0),
                     HostLinkingModuleBinary.Exports(("run", 0, 1), ("memory", 2, 0)),
                     HostLinkingModuleBinary.Section(12, [1]),
@@ -211,15 +195,7 @@ internal partial class WasmFunction_InvokeTests
                                 .. HostLinkingModuleBinary.Signed(65536),
                                 .. Convert.FromHexString("41004101FC0800001000"),
                                 .. outcome == 1
-                                    ? (byte[])
-                                        [
-                                            0x41,
-                                            .. HostLinkingModuleBinary.Signed(131072),
-                                            0x2D,
-                                            0,
-                                            0,
-                                            0x1A,
-                                        ]
+                                    ? (byte[])[0x41, .. HostLinkingModuleBinary.Signed(131072), 0x2D, 0, 0, 0x1A]
                                     : [],
                                 0x0B,
                             ]
@@ -260,9 +236,7 @@ internal partial class WasmFunction_InvokeTests
             await Assert.That(copy[0]).IsEqualTo((byte)7);
             await Assert.That(current[0]).IsEqualTo((byte)9);
             await Assert.That(Convert.ToHexString(added)).IsEqualTo("B6AB");
-            await Assert
-                .That(innerInstance.GetMemory("memory"))
-                .IsSameReferenceAs(outer.GetMemory("memory"));
+            await Assert.That(innerInstance.GetMemory("memory")).IsSameReferenceAs(outer.GetMemory("memory"));
             await Assert
                 .That(
                     first.Values.SequenceEqual([
@@ -287,9 +261,7 @@ internal partial class WasmFunction_InvokeTests
                     ])
                 )
                 .IsTrue();
-            await Assert
-                .That(independentExhaustion!.Reason)
-                .IsEqualTo(WasmExhaustionReason.CallDepthLimit);
+            await Assert.That(independentExhaustion!.Reason).IsEqualTo(WasmExhaustionReason.CallDepthLimit);
             await Assert.That(independentExhaustion.Limit).IsEqualTo(1);
             await Assert.That(outerCallers.Count).IsEqualTo(2);
             foreach (var caller in outerCallers)
@@ -319,9 +291,7 @@ internal partial class WasmFunction_InvokeTests
                 {
                     await Assert.That(exception).IsTypeOf<WasmExhaustionException>();
                     var exhaustion = (WasmExhaustionException)exception;
-                    await Assert
-                        .That(exhaustion.Reason)
-                        .IsEqualTo(WasmExhaustionReason.CallDepthLimit);
+                    await Assert.That(exhaustion.Reason).IsEqualTo(WasmExhaustionReason.CallDepthLimit);
                     await Assert.That(exhaustion.Limit).IsEqualTo(3);
                 }
             }

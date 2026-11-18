@@ -1,6 +1,5 @@
 using WasmSharp.Exceptions;
 using WasmSharp.Instructions;
-using WasmSharp.Modules;
 using WasmSharp.Tests.Fixtures;
 
 namespace WasmSharp.Tests.Modules;
@@ -21,9 +20,7 @@ internal partial class ModuleDecoder_DecodeTests
             HostLinkingModuleBinary.Types(([], [])),
             HostLinkingModuleBinary.Imports(("env", "f", 0, [0])),
             HostLinkingModuleBinary.Functions(0),
-            HostLinkingModuleBinary.Code(
-                ([], [opcode, 0, opcode, 0x80, 1, opcode, 0xFF, 0xFF, 0xFF, 0xFF, 0x0F, 0x0B])
-            )
+            HostLinkingModuleBinary.Code(([], [opcode, 0, opcode, 0x80, 1, opcode, 0xFF, 0xFF, 0xFF, 0xFF, 0x0F, 0x0B]))
         );
 
         // Act
@@ -34,25 +31,14 @@ internal partial class ModuleDecoder_DecodeTests
         using (Assert.Multiple())
         {
             await Assert
-                .That(
-                    instructions
-                        .Select(x => x.Index)
-                        .SequenceEqual(new uint[] { 0, 128, uint.MaxValue, 0 })
-                )
+                .That(instructions.Select(x => x.Index).SequenceEqual(new uint[] { 0, 128, uint.MaxValue, 0 }))
                 .IsTrue();
-            await Assert
-                .That(instructions.Take(3).All(x => x.Opcode == new OpcodeKey(0, opcode)))
-                .IsTrue();
+            await Assert.That(instructions.Take(3).All(x => x.Opcode == new OpcodeKey(0, opcode))).IsTrue();
             await Assert
                 .That(
                     instructions
                         .Select(x => x.ByteOffset)
-                        .SequenceEqual([
-                            bytes.Length - 12,
-                            bytes.Length - 10,
-                            bytes.Length - 7,
-                            bytes.Length - 1,
-                        ])
+                        .SequenceEqual([bytes.Length - 12, bytes.Length - 10, bytes.Length - 7, bytes.Length - 1])
                 )
                 .IsTrue();
         }
@@ -66,10 +52,7 @@ internal partial class ModuleDecoder_DecodeTests
     [Arguments("2380", 0)]
     [Arguments("2480", 0)]
     [Arguments("10FFFFFFFF1F", 1)]
-    public async Task 添字即値が破損している_元関数添字を持つDecode失敗になる(
-        string instructions,
-        int offsetFromEnd
-    )
+    public async Task 添字即値が破損している_元関数添字を持つDecode失敗になる(string instructions, int offsetFromEnd)
     {
         // Arrange
         var bytes = HostLinkingModuleBinary.Create(
@@ -80,9 +63,7 @@ internal partial class ModuleDecoder_DecodeTests
         );
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => WasmModule.Decode(bytes))
-            .ThrowsExactly<WasmDecodeException>();
+        var exception = await Assert.That(() => WasmModule.Decode(bytes)).ThrowsExactly<WasmDecodeException>();
         await Assert
             .That(exception!.Location)
             .IsEqualTo(new(WasmProcessingStage.Decode, bytes.Length - offsetFromEnd, 1, 10));
@@ -99,22 +80,13 @@ internal partial class ModuleDecoder_DecodeTests
         );
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => WasmModule.Decode(bytes))
-            .ThrowsExactly<WasmDecodeException>();
+        var exception = await Assert.That(() => WasmModule.Decode(bytes)).ThrowsExactly<WasmDecodeException>();
         using (Assert.Multiple())
         {
             await Assert
-                .That(
-                    exception!.Message.StartsWith(
-                        "unexpected end of section or function",
-                        StringComparison.Ordinal
-                    )
-                )
+                .That(exception!.Message.StartsWith("unexpected end of section or function", StringComparison.Ordinal))
                 .IsTrue();
-            await Assert
-                .That(exception.Location)
-                .IsEqualTo(new(WasmProcessingStage.Decode, bytes.Length, 0, 10));
+            await Assert.That(exception.Location).IsEqualTo(new(WasmProcessingStage.Decode, bytes.Length, 0, 10));
         }
     }
 }

@@ -35,9 +35,7 @@ internal static class ExecutionStackFixture
         // CLRの予約領域を残した時点で止め、枯渇させずに境界の1回の呼び出しだけを行う。
         Span<byte> reservation = stackalloc byte[4096];
         reservation[0] = 1;
-        var result = RuntimeHelpers.TryEnsureSufficientExecutionStack()
-            ? Descend(action)
-            : action();
+        var result = RuntimeHelpers.TryEnsureSufficientExecutionStack() ? Descend(action) : action();
         GC.KeepAlive(reservation[0]);
         return result;
     }

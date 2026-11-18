@@ -23,9 +23,7 @@ internal class WasmModule_InspectImportsTests
         await Assert.That(fromBytes.Imports.IsEmpty).IsTrue();
         await Assert.That(fromStream.Imports.IsEmpty).IsTrue();
         await Assert.That(fromBytes.UnverifiedRanges.Length).IsEqualTo(2);
-        await Assert
-            .That(fromStream.UnverifiedRanges.SequenceEqual(fromBytes.UnverifiedRanges))
-            .IsTrue();
+        await Assert.That(fromStream.UnverifiedRanges.SequenceEqual(fromBytes.UnverifiedRanges)).IsTrue();
 
         // Act & Assert
         await Assert.That(() => WasmModule.Decode(bytes)).ThrowsExactly<WasmDecodeException>();
@@ -43,11 +41,7 @@ internal class WasmModule_InspectImportsTests
     [Arguments("0061736D010000000208020000037F0001FF", 17L, (byte)2)]
     [Arguments("0061736D01000000020100020100", 11L, (byte)2)]
     [Arguments("0061736D01000000010A00", 9L, (byte)1)]
-    public async Task 必要な構文が破損_両入力で元位置とDecode診断を保持する(
-        string hex,
-        long offset,
-        byte? sectionId
-    )
+    public async Task 必要な構文が破損_両入力で元位置とDecode診断を保持する(string hex, long offset, byte? sectionId)
     {
         // Arrange
         var bytes = Convert.FromHexString(hex);
@@ -61,26 +55,18 @@ internal class WasmModule_InspectImportsTests
         // Act & Assert
         foreach (var inspect in inspectors)
         {
-            var exception = await Assert
-                .That(inspect)
-                .ThrowsExactly<WasmImportInspectionException>();
+            var exception = await Assert.That(inspect).ThrowsExactly<WasmImportInspectionException>();
             using (Assert.Multiple())
             {
-                await Assert
-                    .That(exception!.Reason)
-                    .IsEqualTo(WasmImportInspectionReason.MalformedBinary);
+                await Assert.That(exception!.Reason).IsEqualTo(WasmImportInspectionReason.MalformedBinary);
                 await Assert.That(exception.Feature).IsNull();
                 await Assert
                     .That(exception.Location)
-                    .IsEqualTo(
-                        new WasmFailureLocation(WasmProcessingStage.Decode, offset, null, sectionId)
-                    );
+                    .IsEqualTo(new WasmFailureLocation(WasmProcessingStage.Decode, offset, null, sectionId));
                 await Assert.That(exception.InnerException).IsTypeOf<WasmDecodeException>();
                 await Assert.That(exception.UnverifiedRanges[0].StartOffset).IsEqualTo(offset);
                 await Assert.That(exception.UnverifiedRanges[0].EndOffset).IsEqualTo(bytes.Length);
-                await Assert
-                    .That(exception.UnverifiedRanges[^1].Stage)
-                    .IsEqualTo(WasmProcessingStage.Validate);
+                await Assert.That(exception.UnverifiedRanges[^1].Stage).IsEqualTo(WasmProcessingStage.Validate);
             }
         }
     }
@@ -133,9 +119,7 @@ internal class WasmModule_InspectImportsTests
         Stream stream = null!;
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => WasmModule.InspectImports(stream))
-            .ThrowsExactly<ArgumentNullException>();
+        var exception = await Assert.That(() => WasmModule.InspectImports(stream)).ThrowsExactly<ArgumentNullException>();
         await Assert.That(exception!.ParamName).IsEqualTo("stream");
     }
 
@@ -147,9 +131,7 @@ internal class WasmModule_InspectImportsTests
         stream.Dispose();
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => WasmModule.InspectImports(stream))
-            .ThrowsExactly<ArgumentException>();
+        var exception = await Assert.That(() => WasmModule.InspectImports(stream)).ThrowsExactly<ArgumentException>();
         await Assert.That(exception!.ParamName).IsEqualTo("stream");
     }
 
@@ -161,9 +143,7 @@ internal class WasmModule_InspectImportsTests
         using var stream = new FailingReadStream(expected);
 
         // Act & Assert
-        var actual = await Assert
-            .That(() => WasmModule.InspectImports(stream))
-            .ThrowsExactly<IOException>();
+        var actual = await Assert.That(() => WasmModule.InspectImports(stream)).ThrowsExactly<IOException>();
         await Assert.That(actual).IsSameReferenceAs(expected);
         await Assert.That(stream.CanRead).IsTrue();
     }
@@ -176,9 +156,7 @@ internal class WasmModule_InspectImportsTests
         using var stream = new FailingReadStream(expected);
 
         // Act & Assert
-        var actual = await Assert
-            .That(() => WasmModule.InspectImports(stream))
-            .ThrowsExactly<OutOfMemoryException>();
+        var actual = await Assert.That(() => WasmModule.InspectImports(stream)).ThrowsExactly<OutOfMemoryException>();
         await Assert.That(actual).IsSameReferenceAs(expected);
         await Assert.That(stream.CanRead).IsTrue();
     }
@@ -188,10 +166,7 @@ internal class WasmModule_InspectImportsTests
     [Arguments(true, 0u)]
     [Arguments(false, uint.MaxValue)]
     [Arguments(true, uint.MaxValue)]
-    public async Task 関数型が存在しない_破損やimportなしと区別して宣言位置で失敗する(
-        bool useStream,
-        uint index
-    )
+    public async Task 関数型が存在しない_破損やimportなしと区別して宣言位置で失敗する(bool useStream, uint index)
     {
         // Arrange
         var bytes = HostLinkingModuleBinary.Create(
@@ -201,14 +176,10 @@ internal class WasmModule_InspectImportsTests
 
         // Act & Assert
         var exception = await Assert
-            .That(() =>
-                useStream ? WasmModule.InspectImports(stream) : WasmModule.InspectImports(bytes)
-            )
+            .That(() => useStream ? WasmModule.InspectImports(stream) : WasmModule.InspectImports(bytes))
             .ThrowsExactly<WasmImportInspectionException>();
         await Assert.That(exception!.Reason).IsEqualTo(WasmImportInspectionReason.UnresolvedType);
-        await Assert
-            .That(exception.Location)
-            .IsEqualTo(new WasmFailureLocation(WasmProcessingStage.Decode, 11, null, 2));
+        await Assert.That(exception.Location).IsEqualTo(new WasmFailureLocation(WasmProcessingStage.Decode, 11, null, 2));
         await Assert.That(exception.UnverifiedRanges[0].StartOffset).IsEqualTo(11L);
         await Assert.That(exception.UnverifiedRanges[^1].EndOffset).IsEqualTo(bytes.Length);
     }
@@ -216,9 +187,7 @@ internal class WasmModule_InspectImportsTests
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task 読み飛ばしたpayloadの後が破損_元の診断と全未確認範囲を保持し部分一覧を返さない(
-        bool useStream
-    )
+    public async Task 読み飛ばしたpayloadの後が破損_元の診断と全未確認範囲を保持し部分一覧を返さない(bool useStream)
     {
         // Arrange
         var bytes = HostLinkingModuleBinary.Create(
@@ -231,34 +200,24 @@ internal class WasmModule_InspectImportsTests
 
         // Act & Assert
         var exception = await Assert
-            .That(() =>
-                result = useStream
-                    ? WasmModule.InspectImports(stream)
-                    : WasmModule.InspectImports(bytes)
-            )
+            .That(() => result = useStream ? WasmModule.InspectImports(stream) : WasmModule.InspectImports(bytes))
             .ThrowsExactly<WasmImportInspectionException>();
         using (Assert.Multiple())
         {
             await Assert.That(result).IsNull();
-            await Assert
-                .That(exception!.Reason)
-                .IsEqualTo(WasmImportInspectionReason.MalformedBinary);
+            await Assert.That(exception!.Reason).IsEqualTo(WasmImportInspectionReason.MalformedBinary);
             await Assert.That(exception.Feature).IsNull();
             await Assert
                 .That(exception.Location)
                 .IsEqualTo(new WasmFailureLocation(WasmProcessingStage.Decode, 21, null, 11));
             await Assert.That(exception.InnerException).IsTypeOf<WasmDecodeException>();
-            await Assert
-                .That(((WasmException)exception.InnerException!).Location)
-                .IsEqualTo(exception.Location);
+            await Assert.That(((WasmException)exception.InnerException!).Location).IsEqualTo(exception.Location);
             await Assert.That(exception.UnverifiedRanges.Length).IsEqualTo(3);
             await Assert.That(exception.UnverifiedRanges[0].StartOffset).IsEqualTo(18L);
             await Assert.That(exception.UnverifiedRanges[0].EndOffset).IsEqualTo(19L);
             await Assert.That(exception.UnverifiedRanges[1].StartOffset).IsEqualTo(21L);
             await Assert.That(exception.UnverifiedRanges[1].EndOffset).IsEqualTo(22L);
-            await Assert
-                .That(exception.UnverifiedRanges[^1].Stage)
-                .IsEqualTo(WasmProcessingStage.Validate);
+            await Assert.That(exception.UnverifiedRanges[^1].Stage).IsEqualTo(WasmProcessingStage.Validate);
             await Assert.That(exception.UnverifiedRanges[^1].StartOffset).IsEqualTo(0L);
             await Assert.That(exception.UnverifiedRanges[^1].EndOffset).IsEqualTo(22L);
         }
@@ -267,9 +226,7 @@ internal class WasmModule_InspectImportsTests
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task メモリ命令とstartと巨大limitsがある_生成や実行を要求せず全種類を取得する(
-        bool useStream
-    )
+    public async Task メモリ命令とstartと巨大limitsがある_生成や実行を要求せず全種類を取得する(bool useStream)
     {
         // Arrange
         var bytes = HostLinkingModuleBinary.Create(
@@ -288,9 +245,7 @@ internal class WasmModule_InspectImportsTests
         using var stream = new ChunkedReadStream(new MemoryStream(bytes));
 
         // Act
-        var result = useStream
-            ? WasmModule.InspectImports(stream)
-            : WasmModule.InspectImports(bytes);
+        var result = useStream ? WasmModule.InspectImports(stream) : WasmModule.InspectImports(bytes);
 
         // Assert
         using (Assert.Multiple())
@@ -308,25 +263,15 @@ internal class WasmModule_InspectImportsTests
                         ])
                 )
                 .IsTrue();
-            await Assert
-                .That(((WasmImportInfo.Function)result.Imports[0]).Type.Parameters.IsEmpty)
-                .IsTrue();
+            await Assert.That(((WasmImportInfo.Function)result.Imports[0]).Type.Parameters.IsEmpty).IsTrue();
             await Assert.That(((WasmImportInfo.Function)result.Imports[0]).Type.Results).IsEmpty();
             await Assert
                 .That(((WasmImportInfo.Global)result.Imports[1]).Type)
                 .IsEqualTo(new WasmGlobalType(WasmValueKind.V128, true));
-            await Assert
-                .That(((WasmImportInfo.Memory)result.Imports[2]).Limits)
-                .IsEqualTo(new WasmLimits(uint.MaxValue));
-            await Assert
-                .That(((WasmImportInfo.Table)result.Imports[3]).ElementType)
-                .IsEqualTo(WasmValueKind.FuncRef);
-            await Assert
-                .That(((WasmImportInfo.Table)result.Imports[3]).Limits)
-                .IsEqualTo(new WasmLimits(uint.MaxValue));
-            await Assert
-                .That(result.UnverifiedRanges[^1].Stage)
-                .IsEqualTo(WasmProcessingStage.Validate);
+            await Assert.That(((WasmImportInfo.Memory)result.Imports[2]).Limits).IsEqualTo(new WasmLimits(uint.MaxValue));
+            await Assert.That(((WasmImportInfo.Table)result.Imports[3]).ElementType).IsEqualTo(WasmValueKind.FuncRef);
+            await Assert.That(((WasmImportInfo.Table)result.Imports[3]).Limits).IsEqualTo(new WasmLimits(uint.MaxValue));
+            await Assert.That(result.UnverifiedRanges[^1].Stage).IsEqualTo(WasmProcessingStage.Validate);
         }
 
         // Act
@@ -356,13 +301,7 @@ internal class WasmModule_InspectImportsTests
         {
             await Assert.That(result.Imports.Length).IsEqualTo(2);
             await Assert.That(first.Parameters.Single()).IsEqualTo(WasmValueKind.I64);
-            await Assert
-                .That(
-                    first.Results.SequenceEqual(
-                        new[] { WasmValueKind.ExternRef, WasmValueKind.V128 }
-                    )
-                )
-                .IsTrue();
+            await Assert.That(first.Results.SequenceEqual(new[] { WasmValueKind.ExternRef, WasmValueKind.V128 })).IsTrue();
             await Assert.That(second.Parameters.Single()).IsEqualTo(WasmValueKind.I32);
             await Assert.That(second.Results.IsEmpty).IsTrue();
         }
@@ -372,9 +311,7 @@ internal class WasmModule_InspectImportsTests
     [Arguments("i8x16.shuffle")]
     [Arguments("v128.load")]
     [Arguments("v128.const")]
-    public async Task メモリ命令とデータにSIMDが併存する_DecodeとValidateは実行せずimport調査範囲を保つ(
-        string feature
-    )
+    public async Task メモリ命令とデータにSIMDが併存する_DecodeとValidateは実行せずimport調査範囲を保つ(string feature)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
@@ -439,13 +376,9 @@ internal class WasmModule_InspectImportsTests
             using var decodeStream = new ChunkedReadStream(new MemoryStream(bytes));
 
             // Act
-            var inspection = useStream
-                ? WasmModule.InspectImports(inspectionStream)
-                : WasmModule.InspectImports(bytes);
+            var inspection = useStream ? WasmModule.InspectImports(inspectionStream) : WasmModule.InspectImports(bytes);
 
-            var module = (
-                useStream ? WasmModule.Decode(decodeStream) : WasmModule.Decode(bytes)
-            ).Validate();
+            var module = (useStream ? WasmModule.Decode(decodeStream) : WasmModule.Decode(bytes)).Validate();
             var actual = new byte[1];
             memory.Read(0, actual);
 
@@ -464,9 +397,7 @@ internal class WasmModule_InspectImportsTests
                             ])
                     )
                     .IsTrue();
-                await Assert
-                    .That(((WasmImportInfo.Memory)inspection.Imports[0]).Limits)
-                    .IsEqualTo(new WasmLimits(1));
+                await Assert.That(((WasmImportInfo.Memory)inspection.Imports[0]).Limits).IsEqualTo(new WasmLimits(1));
                 var functionType = ((WasmImportInfo.Function)inspection.Imports[1]).Type;
                 await Assert.That(functionType.Parameters).IsEmpty();
                 await Assert.That(functionType.Results).IsEmpty();
@@ -489,13 +420,9 @@ internal class WasmModule_InspectImportsTests
                         )
                     )
                     .IsTrue();
-                await Assert
-                    .That(inspection.UnverifiedRanges[^1].Stage)
-                    .IsEqualTo(WasmProcessingStage.Validate);
+                await Assert.That(inspection.UnverifiedRanges[^1].Stage).IsEqualTo(WasmProcessingStage.Validate);
                 await Assert.That(inspection.UnverifiedRanges[^1].StartOffset).IsEqualTo(0L);
-                await Assert
-                    .That(inspection.UnverifiedRanges[^1].EndOffset)
-                    .IsEqualTo(bytes.Length);
+                await Assert.That(inspection.UnverifiedRanges[^1].EndOffset).IsEqualTo(bytes.Length);
                 await Assert.That(inspectionStream.CanRead).IsTrue();
                 await Assert.That(decodeStream.CanRead).IsTrue();
             }

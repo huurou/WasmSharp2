@@ -12,11 +12,7 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult I8x16Abs(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdIntegerUnary(
-            context,
-            8,
-            static x => (x & 0x80UL) == 0 ? x : unchecked(0UL - x)
-        );
+        return ExecuteSimdIntegerUnary(context, 8, static x => (x & 0x80UL) == 0 ? x : unchecked(0UL - x));
     }
 
     /// <summary>
@@ -36,10 +32,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI8x16Popcnt命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I8x16Popcnt(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I8x16Popcnt(InterpreterContext context, in Instruction instruction)
     {
         return ExecuteSimdIntegerUnary(context, 8, static x => (ulong)BitOperations.PopCount(x));
     }
@@ -50,10 +43,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI8x16NarrowI16x8S命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I8x16NarrowI16x8S(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I8x16NarrowI16x8S(InterpreterContext context, in Instruction instruction)
     {
         return ExecuteSimdIntegerNarrow(
             context,
@@ -68,16 +58,9 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI8x16NarrowI16x8U命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I8x16NarrowI16x8U(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I8x16NarrowI16x8U(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdIntegerNarrow(
-            context,
-            16,
-            static x => SaturateSimdInteger(unchecked((short)x), 0, byte.MaxValue)
-        );
+        return ExecuteSimdIntegerNarrow(context, 16, static x => SaturateSimdInteger(unchecked((short)x), 0, byte.MaxValue));
     }
 
     /// <summary>
@@ -97,16 +80,12 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI8x16AddSatS命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I8x16AddSatS(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I8x16AddSatS(InterpreterContext context, in Instruction instruction)
     {
         return ExecuteSimdIntegerBinary(
             context,
             8,
-            static (x, y) =>
-                SaturateSimdInteger(unchecked((sbyte)x + (sbyte)y), sbyte.MinValue, sbyte.MaxValue)
+            static (x, y) => SaturateSimdInteger(unchecked((sbyte)x + (sbyte)y), sbyte.MinValue, sbyte.MaxValue)
         );
     }
 
@@ -116,16 +95,9 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI8x16AddSatU命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I8x16AddSatU(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I8x16AddSatU(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdIntegerBinary(
-            context,
-            8,
-            static (x, y) => SaturateSimdInteger((int)x + (int)y, 0, byte.MaxValue)
-        );
+        return ExecuteSimdIntegerBinary(context, 8, static (x, y) => SaturateSimdInteger((int)x + (int)y, 0, byte.MaxValue));
     }
 
     /// <summary>
@@ -145,16 +117,12 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI8x16SubSatS命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I8x16SubSatS(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I8x16SubSatS(InterpreterContext context, in Instruction instruction)
     {
         return ExecuteSimdIntegerBinary(
             context,
             8,
-            static (x, y) =>
-                SaturateSimdInteger(unchecked((sbyte)x - (sbyte)y), sbyte.MinValue, sbyte.MaxValue)
+            static (x, y) => SaturateSimdInteger(unchecked((sbyte)x - (sbyte)y), sbyte.MinValue, sbyte.MaxValue)
         );
     }
 
@@ -164,16 +132,9 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI8x16SubSatU命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I8x16SubSatU(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I8x16SubSatU(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdIntegerBinary(
-            context,
-            8,
-            static (x, y) => SaturateSimdInteger((int)x - (int)y, 0, byte.MaxValue)
-        );
+        return ExecuteSimdIntegerBinary(context, 8, static (x, y) => SaturateSimdInteger((int)x - (int)y, 0, byte.MaxValue));
     }
 
     /// <summary>
@@ -182,16 +143,9 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI8x16MinS命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I8x16MinS(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I8x16MinS(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdIntegerBinary(
-            context,
-            8,
-            static (x, y) => unchecked((ulong)Math.Min((sbyte)x, (sbyte)y))
-        );
+        return ExecuteSimdIntegerBinary(context, 8, static (x, y) => unchecked((ulong)Math.Min((sbyte)x, (sbyte)y)));
     }
 
     /// <summary>
@@ -200,10 +154,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI8x16MinU命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I8x16MinU(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I8x16MinU(InterpreterContext context, in Instruction instruction)
     {
         return ExecuteSimdIntegerBinary(context, 8, Math.Min);
     }
@@ -214,16 +165,9 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI8x16MaxS命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I8x16MaxS(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I8x16MaxS(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdIntegerBinary(
-            context,
-            8,
-            static (x, y) => unchecked((ulong)Math.Max((sbyte)x, (sbyte)y))
-        );
+        return ExecuteSimdIntegerBinary(context, 8, static (x, y) => unchecked((ulong)Math.Max((sbyte)x, (sbyte)y)));
     }
 
     /// <summary>
@@ -232,10 +176,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI8x16MaxU命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I8x16MaxU(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I8x16MaxU(InterpreterContext context, in Instruction instruction)
     {
         return ExecuteSimdIntegerBinary(context, 8, Math.Max);
     }
@@ -246,10 +187,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI8x16AvgrU命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I8x16AvgrU(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I8x16AvgrU(InterpreterContext context, in Instruction instruction)
     {
         return ExecuteSimdIntegerBinary(context, 8, static (x, y) => (x + y + 1) >> 1);
     }
@@ -271,16 +209,9 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI8x16ShrS命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I8x16ShrS(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I8x16ShrS(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdIntegerShift(
-            context,
-            8,
-            static (x, shift) => unchecked((ulong)((sbyte)x >> shift))
-        );
+        return ExecuteSimdIntegerShift(context, 8, static (x, shift) => unchecked((ulong)((sbyte)x >> shift)));
     }
 
     /// <summary>
@@ -289,10 +220,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI8x16ShrU命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I8x16ShrU(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I8x16ShrU(InterpreterContext context, in Instruction instruction)
     {
         return ExecuteSimdIntegerShift(context, 8, static (x, shift) => x >> shift);
     }
@@ -305,11 +233,7 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult I16x8Abs(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdIntegerUnary(
-            context,
-            16,
-            static x => (x & 0x8000UL) == 0 ? x : unchecked(0UL - x)
-        );
+        return ExecuteSimdIntegerUnary(context, 16, static x => (x & 0x8000UL) == 0 ? x : unchecked(0UL - x));
     }
 
     /// <summary>
@@ -329,20 +253,13 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI16x8Q15MulRSatS命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I16x8Q15MulRSatS(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I16x8Q15MulRSatS(InterpreterContext context, in Instruction instruction)
     {
         return ExecuteSimdIntegerBinary(
             context,
             16,
             static (x, y) =>
-                SaturateSimdInteger(
-                    unchecked(((short)x * (short)y + 0x4000) >> 15),
-                    short.MinValue,
-                    short.MaxValue
-                )
+                SaturateSimdInteger(unchecked(((short)x * (short)y + 0x4000) >> 15), short.MinValue, short.MaxValue)
         );
     }
 
@@ -352,10 +269,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI16x8NarrowI32x4S命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I16x8NarrowI32x4S(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I16x8NarrowI32x4S(InterpreterContext context, in Instruction instruction)
     {
         return ExecuteSimdIntegerNarrow(
             context,
@@ -370,16 +284,9 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI16x8NarrowI32x4U命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I16x8NarrowI32x4U(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I16x8NarrowI32x4U(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdIntegerNarrow(
-            context,
-            32,
-            static x => SaturateSimdInteger(unchecked((int)x), 0, ushort.MaxValue)
-        );
+        return ExecuteSimdIntegerNarrow(context, 32, static x => SaturateSimdInteger(unchecked((int)x), 0, ushort.MaxValue));
     }
 
     /// <summary>
@@ -399,16 +306,12 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI16x8AddSatS命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I16x8AddSatS(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I16x8AddSatS(InterpreterContext context, in Instruction instruction)
     {
         return ExecuteSimdIntegerBinary(
             context,
             16,
-            static (x, y) =>
-                SaturateSimdInteger(unchecked((short)x + (short)y), short.MinValue, short.MaxValue)
+            static (x, y) => SaturateSimdInteger(unchecked((short)x + (short)y), short.MinValue, short.MaxValue)
         );
     }
 
@@ -418,10 +321,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI16x8AddSatU命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I16x8AddSatU(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I16x8AddSatU(InterpreterContext context, in Instruction instruction)
     {
         return ExecuteSimdIntegerBinary(
             context,
@@ -447,16 +347,12 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI16x8SubSatS命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I16x8SubSatS(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I16x8SubSatS(InterpreterContext context, in Instruction instruction)
     {
         return ExecuteSimdIntegerBinary(
             context,
             16,
-            static (x, y) =>
-                SaturateSimdInteger(unchecked((short)x - (short)y), short.MinValue, short.MaxValue)
+            static (x, y) => SaturateSimdInteger(unchecked((short)x - (short)y), short.MinValue, short.MaxValue)
         );
     }
 
@@ -466,10 +362,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI16x8SubSatU命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I16x8SubSatU(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I16x8SubSatU(InterpreterContext context, in Instruction instruction)
     {
         return ExecuteSimdIntegerBinary(
             context,
@@ -495,16 +388,9 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI16x8MinS命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I16x8MinS(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I16x8MinS(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdIntegerBinary(
-            context,
-            16,
-            static (x, y) => unchecked((ulong)Math.Min((short)x, (short)y))
-        );
+        return ExecuteSimdIntegerBinary(context, 16, static (x, y) => unchecked((ulong)Math.Min((short)x, (short)y)));
     }
 
     /// <summary>
@@ -513,10 +399,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI16x8MinU命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I16x8MinU(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I16x8MinU(InterpreterContext context, in Instruction instruction)
     {
         return ExecuteSimdIntegerBinary(context, 16, Math.Min);
     }
@@ -527,16 +410,9 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI16x8MaxS命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I16x8MaxS(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I16x8MaxS(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdIntegerBinary(
-            context,
-            16,
-            static (x, y) => unchecked((ulong)Math.Max((short)x, (short)y))
-        );
+        return ExecuteSimdIntegerBinary(context, 16, static (x, y) => unchecked((ulong)Math.Max((short)x, (short)y)));
     }
 
     /// <summary>
@@ -545,10 +421,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI16x8MaxU命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I16x8MaxU(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I16x8MaxU(InterpreterContext context, in Instruction instruction)
     {
         return ExecuteSimdIntegerBinary(context, 16, Math.Max);
     }
@@ -559,10 +432,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI16x8AvgrU命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I16x8AvgrU(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I16x8AvgrU(InterpreterContext context, in Instruction instruction)
     {
         return ExecuteSimdIntegerBinary(context, 16, static (x, y) => (x + y + 1) >> 1);
     }
@@ -584,16 +454,9 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI16x8ShrS命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I16x8ShrS(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I16x8ShrS(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdIntegerShift(
-            context,
-            16,
-            static (x, shift) => unchecked((ulong)((short)x >> shift))
-        );
+        return ExecuteSimdIntegerShift(context, 16, static (x, shift) => unchecked((ulong)((short)x >> shift)));
     }
 
     /// <summary>
@@ -602,10 +465,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI16x8ShrU命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I16x8ShrU(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I16x8ShrU(InterpreterContext context, in Instruction instruction)
     {
         return ExecuteSimdIntegerShift(context, 16, static (x, shift) => x >> shift);
     }
@@ -618,11 +478,7 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult I32x4Abs(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdIntegerUnary(
-            context,
-            32,
-            static x => (x & 0x80000000UL) == 0 ? x : unchecked(0UL - x)
-        );
+        return ExecuteSimdIntegerUnary(context, 32, static x => (x & 0x80000000UL) == 0 ? x : unchecked(0UL - x));
     }
 
     /// <summary>
@@ -675,16 +531,9 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI32x4MinS命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I32x4MinS(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I32x4MinS(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdIntegerBinary(
-            context,
-            32,
-            static (x, y) => unchecked((ulong)Math.Min((int)x, (int)y))
-        );
+        return ExecuteSimdIntegerBinary(context, 32, static (x, y) => unchecked((ulong)Math.Min((int)x, (int)y)));
     }
 
     /// <summary>
@@ -693,10 +542,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI32x4MinU命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I32x4MinU(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I32x4MinU(InterpreterContext context, in Instruction instruction)
     {
         return ExecuteSimdIntegerBinary(context, 32, Math.Min);
     }
@@ -707,16 +553,9 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI32x4MaxS命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I32x4MaxS(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I32x4MaxS(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdIntegerBinary(
-            context,
-            32,
-            static (x, y) => unchecked((ulong)Math.Max((int)x, (int)y))
-        );
+        return ExecuteSimdIntegerBinary(context, 32, static (x, y) => unchecked((ulong)Math.Max((int)x, (int)y)));
     }
 
     /// <summary>
@@ -725,10 +564,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI32x4MaxU命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I32x4MaxU(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I32x4MaxU(InterpreterContext context, in Instruction instruction)
     {
         return ExecuteSimdIntegerBinary(context, 32, Math.Max);
     }
@@ -750,16 +586,9 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI32x4ShrS命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I32x4ShrS(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I32x4ShrS(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdIntegerShift(
-            context,
-            32,
-            static (x, shift) => unchecked((ulong)((int)x >> shift))
-        );
+        return ExecuteSimdIntegerShift(context, 32, static (x, shift) => unchecked((ulong)((int)x >> shift)));
     }
 
     /// <summary>
@@ -768,10 +597,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI32x4ShrU命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I32x4ShrU(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I32x4ShrU(InterpreterContext context, in Instruction instruction)
     {
         return ExecuteSimdIntegerShift(context, 32, static (x, shift) => x >> shift);
     }
@@ -784,11 +610,7 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult I64x2Abs(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdIntegerUnary(
-            context,
-            64,
-            static x => (x & 0x8000000000000000UL) == 0 ? x : unchecked(0UL - x)
-        );
+        return ExecuteSimdIntegerUnary(context, 64, static x => (x & 0x8000000000000000UL) == 0 ? x : unchecked(0UL - x));
     }
 
     /// <summary>
@@ -852,16 +674,9 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI64x2ShrS命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I64x2ShrS(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I64x2ShrS(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdIntegerShift(
-            context,
-            64,
-            static (x, shift) => unchecked((ulong)((long)x >> shift))
-        );
+        return ExecuteSimdIntegerShift(context, 64, static (x, shift) => unchecked((ulong)((long)x >> shift)));
     }
 
     /// <summary>
@@ -870,10 +685,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI64x2ShrU命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I64x2ShrU(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I64x2ShrU(InterpreterContext context, in Instruction instruction)
     {
         return ExecuteSimdIntegerShift(context, 64, static (x, shift) => x >> shift);
     }
@@ -884,17 +696,9 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI16x8ExtendLowI8x16S命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I16x8ExtendLowI8x16S(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I16x8ExtendLowI8x16S(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdIntegerExtend(
-            context,
-            8,
-            high: false,
-            static x => unchecked((ulong)(sbyte)x)
-        );
+        return ExecuteSimdIntegerExtend(context, 8, high: false, static x => unchecked((ulong)(sbyte)x));
     }
 
     /// <summary>
@@ -903,10 +707,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI16x8ExtendLowI8x16U命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I16x8ExtendLowI8x16U(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I16x8ExtendLowI8x16U(InterpreterContext context, in Instruction instruction)
     {
         return ExecuteSimdIntegerExtend(context, 8, high: false, static x => x);
     }
@@ -917,17 +718,9 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI16x8ExtendHighI8x16S命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I16x8ExtendHighI8x16S(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I16x8ExtendHighI8x16S(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdIntegerExtend(
-            context,
-            8,
-            high: true,
-            static x => unchecked((ulong)(sbyte)x)
-        );
+        return ExecuteSimdIntegerExtend(context, 8, high: true, static x => unchecked((ulong)(sbyte)x));
     }
 
     /// <summary>
@@ -936,10 +729,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI16x8ExtendHighI8x16U命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I16x8ExtendHighI8x16U(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I16x8ExtendHighI8x16U(InterpreterContext context, in Instruction instruction)
     {
         return ExecuteSimdIntegerExtend(context, 8, high: true, static x => x);
     }
@@ -950,10 +740,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI16x8ExtMulLowI8x16S命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I16x8ExtMulLowI8x16S(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I16x8ExtMulLowI8x16S(InterpreterContext context, in Instruction instruction)
     {
         return ExecuteSimdIntegerExtMul(
             context,
@@ -969,10 +756,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI16x8ExtMulLowI8x16U命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I16x8ExtMulLowI8x16U(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I16x8ExtMulLowI8x16U(InterpreterContext context, in Instruction instruction)
     {
         return ExecuteSimdIntegerExtMul(context, 8, high: false, static (x, y) => x * y);
     }
@@ -983,10 +767,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI16x8ExtMulHighI8x16S命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I16x8ExtMulHighI8x16S(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I16x8ExtMulHighI8x16S(InterpreterContext context, in Instruction instruction)
     {
         return ExecuteSimdIntegerExtMul(
             context,
@@ -1002,10 +783,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI16x8ExtMulHighI8x16U命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I16x8ExtMulHighI8x16U(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I16x8ExtMulHighI8x16U(InterpreterContext context, in Instruction instruction)
     {
         return ExecuteSimdIntegerExtMul(context, 8, high: true, static (x, y) => x * y);
     }
@@ -1016,17 +794,9 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI32x4ExtendLowI16x8S命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I32x4ExtendLowI16x8S(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I32x4ExtendLowI16x8S(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdIntegerExtend(
-            context,
-            16,
-            high: false,
-            static x => unchecked((ulong)(short)x)
-        );
+        return ExecuteSimdIntegerExtend(context, 16, high: false, static x => unchecked((ulong)(short)x));
     }
 
     /// <summary>
@@ -1035,10 +805,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI32x4ExtendLowI16x8U命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I32x4ExtendLowI16x8U(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I32x4ExtendLowI16x8U(InterpreterContext context, in Instruction instruction)
     {
         return ExecuteSimdIntegerExtend(context, 16, high: false, static x => x);
     }
@@ -1049,17 +816,9 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI32x4ExtendHighI16x8S命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I32x4ExtendHighI16x8S(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I32x4ExtendHighI16x8S(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdIntegerExtend(
-            context,
-            16,
-            high: true,
-            static x => unchecked((ulong)(short)x)
-        );
+        return ExecuteSimdIntegerExtend(context, 16, high: true, static x => unchecked((ulong)(short)x));
     }
 
     /// <summary>
@@ -1068,10 +827,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI32x4ExtendHighI16x8U命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I32x4ExtendHighI16x8U(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I32x4ExtendHighI16x8U(InterpreterContext context, in Instruction instruction)
     {
         return ExecuteSimdIntegerExtend(context, 16, high: true, static x => x);
     }
@@ -1082,10 +838,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI32x4ExtMulLowI16x8S命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I32x4ExtMulLowI16x8S(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I32x4ExtMulLowI16x8S(InterpreterContext context, in Instruction instruction)
     {
         return ExecuteSimdIntegerExtMul(
             context,
@@ -1101,10 +854,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI32x4ExtMulLowI16x8U命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I32x4ExtMulLowI16x8U(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I32x4ExtMulLowI16x8U(InterpreterContext context, in Instruction instruction)
     {
         return ExecuteSimdIntegerExtMul(context, 16, high: false, static (x, y) => x * y);
     }
@@ -1115,10 +865,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI32x4ExtMulHighI16x8S命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I32x4ExtMulHighI16x8S(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I32x4ExtMulHighI16x8S(InterpreterContext context, in Instruction instruction)
     {
         return ExecuteSimdIntegerExtMul(
             context,
@@ -1134,10 +881,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI32x4ExtMulHighI16x8U命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I32x4ExtMulHighI16x8U(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I32x4ExtMulHighI16x8U(InterpreterContext context, in Instruction instruction)
     {
         return ExecuteSimdIntegerExtMul(context, 16, high: true, static (x, y) => x * y);
     }
@@ -1148,17 +892,9 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI64x2ExtendLowI32x4S命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I64x2ExtendLowI32x4S(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I64x2ExtendLowI32x4S(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdIntegerExtend(
-            context,
-            32,
-            high: false,
-            static x => unchecked((ulong)(int)x)
-        );
+        return ExecuteSimdIntegerExtend(context, 32, high: false, static x => unchecked((ulong)(int)x));
     }
 
     /// <summary>
@@ -1167,10 +903,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI64x2ExtendLowI32x4U命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I64x2ExtendLowI32x4U(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I64x2ExtendLowI32x4U(InterpreterContext context, in Instruction instruction)
     {
         return ExecuteSimdIntegerExtend(context, 32, high: false, static x => x);
     }
@@ -1181,17 +914,9 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI64x2ExtendHighI32x4S命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I64x2ExtendHighI32x4S(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I64x2ExtendHighI32x4S(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdIntegerExtend(
-            context,
-            32,
-            high: true,
-            static x => unchecked((ulong)(int)x)
-        );
+        return ExecuteSimdIntegerExtend(context, 32, high: true, static x => unchecked((ulong)(int)x));
     }
 
     /// <summary>
@@ -1200,10 +925,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI64x2ExtendHighI32x4U命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I64x2ExtendHighI32x4U(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I64x2ExtendHighI32x4U(InterpreterContext context, in Instruction instruction)
     {
         return ExecuteSimdIntegerExtend(context, 32, high: true, static x => x);
     }
@@ -1214,10 +936,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI64x2ExtMulLowI32x4S命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I64x2ExtMulLowI32x4S(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I64x2ExtMulLowI32x4S(InterpreterContext context, in Instruction instruction)
     {
         return ExecuteSimdIntegerExtMul(
             context,
@@ -1233,10 +952,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI64x2ExtMulLowI32x4U命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I64x2ExtMulLowI32x4U(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I64x2ExtMulLowI32x4U(InterpreterContext context, in Instruction instruction)
     {
         return ExecuteSimdIntegerExtMul(context, 32, high: false, static (x, y) => x * y);
     }
@@ -1247,17 +963,9 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI64x2ExtMulHighI32x4S命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I64x2ExtMulHighI32x4S(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I64x2ExtMulHighI32x4S(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdIntegerExtMul(
-            context,
-            32,
-            high: true,
-            static (x, y) => unchecked((ulong)((long)(int)x * (int)y))
-        );
+        return ExecuteSimdIntegerExtMul(context, 32, high: true, static (x, y) => unchecked((ulong)((long)(int)x * (int)y)));
     }
 
     /// <summary>
@@ -1266,10 +974,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI64x2ExtMulHighI32x4U命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I64x2ExtMulHighI32x4U(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I64x2ExtMulHighI32x4U(InterpreterContext context, in Instruction instruction)
     {
         return ExecuteSimdIntegerExtMul(context, 32, high: true, static (x, y) => x * y);
     }
@@ -1280,16 +985,9 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI16x8ExtAddPairwiseI8x16S命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I16x8ExtAddPairwiseI8x16S(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I16x8ExtAddPairwiseI8x16S(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdIntegerUnary(
-            context,
-            16,
-            static x => unchecked((ulong)((sbyte)x + (sbyte)(x >> 8)))
-        );
+        return ExecuteSimdIntegerUnary(context, 16, static x => unchecked((ulong)((sbyte)x + (sbyte)(x >> 8))));
     }
 
     /// <summary>
@@ -1298,10 +996,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI16x8ExtAddPairwiseI8x16U命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I16x8ExtAddPairwiseI8x16U(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I16x8ExtAddPairwiseI8x16U(InterpreterContext context, in Instruction instruction)
     {
         return ExecuteSimdIntegerUnary(context, 16, static x => (x & 0xFFUL) + (x >> 8));
     }
@@ -1312,16 +1007,9 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI32x4ExtAddPairwiseI16x8S命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I32x4ExtAddPairwiseI16x8S(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I32x4ExtAddPairwiseI16x8S(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdIntegerUnary(
-            context,
-            32,
-            static x => unchecked((ulong)((short)x + (short)(x >> 16)))
-        );
+        return ExecuteSimdIntegerUnary(context, 32, static x => unchecked((ulong)((short)x + (short)(x >> 16))));
     }
 
     /// <summary>
@@ -1330,10 +1018,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI32x4ExtAddPairwiseI16x8U命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I32x4ExtAddPairwiseI16x8U(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I32x4ExtAddPairwiseI16x8U(InterpreterContext context, in Instruction instruction)
     {
         return ExecuteSimdIntegerUnary(context, 32, static x => (x & 0xFFFFUL) + (x >> 16));
     }
@@ -1344,19 +1029,13 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI32x4DotI16x8S命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I32x4DotI16x8S(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I32x4DotI16x8S(InterpreterContext context, in Instruction instruction)
     {
         // 2つの最小i16の積和は2147483648になるためlongで加算してから32bitへ折り返す
         return ExecuteSimdIntegerBinary(
             context,
             32,
-            static (x, y) =>
-                unchecked(
-                    (ulong)((long)(short)x * (short)y + (long)(short)(x >> 16) * (short)(y >> 16))
-                )
+            static (x, y) => unchecked((ulong)((long)(short)x * (short)y + (long)(short)(x >> 16) * (short)(y >> 16)))
         );
     }
 
@@ -1397,9 +1076,7 @@ internal static partial class Interpreter
     {
         var second = SimdValue.FromValue(context.PopValue());
         var first = SimdValue.FromValue(context.PopValue());
-        context.PushValue(
-            MapSimdIntegerExtMul(first, second, sourceBitWidth, high, multiply).ToValue()
-        );
+        context.PushValue(MapSimdIntegerExtMul(first, second, sourceBitWidth, high, multiply).ToValue());
         return default;
     }
 
@@ -1411,12 +1088,7 @@ internal static partial class Interpreter
     /// <param name="high">上側の半分を選択するか</param>
     /// <param name="extend">laneごとの純粋な拡張演算</param>
     /// <returns>倍のlane幅へ拡張したビット列</returns>
-    private static SimdValue MapSimdIntegerExtend(
-        SimdValue vector,
-        int sourceBitWidth,
-        bool high,
-        Func<ulong, ulong> extend
-    )
+    private static SimdValue MapSimdIntegerExtend(SimdValue vector, int sourceBitWidth, bool high, Func<ulong, ulong> extend)
     {
         var result = default(SimdValue);
         var destinationBitWidth = sourceBitWidth * 2;
@@ -1461,10 +1133,7 @@ internal static partial class Interpreter
             result = result.WithLane(
                 destinationBitWidth,
                 laneIndex,
-                multiply(
-                    first.GetLane(sourceBitWidth, sourceLaneIndex),
-                    second.GetLane(sourceBitWidth, sourceLaneIndex)
-                )
+                multiply(first.GetLane(sourceBitWidth, sourceLaneIndex), second.GetLane(sourceBitWidth, sourceLaneIndex))
             );
         }
 
@@ -1565,20 +1234,12 @@ internal static partial class Interpreter
     /// <param name="bitWidth">laneの幅</param>
     /// <param name="operation">laneごとの純粋な整数演算</param>
     /// <returns>演算後のビット列</returns>
-    private static SimdValue MapSimdIntegerUnary(
-        SimdValue vector,
-        int bitWidth,
-        Func<ulong, ulong> operation
-    )
+    private static SimdValue MapSimdIntegerUnary(SimdValue vector, int bitWidth, Func<ulong, ulong> operation)
     {
         var result = default(SimdValue);
         for (var laneIndex = 0; laneIndex < 128 / bitWidth; laneIndex++)
         {
-            result = result.WithLane(
-                bitWidth,
-                laneIndex,
-                operation(vector.GetLane(bitWidth, laneIndex))
-            );
+            result = result.WithLane(bitWidth, laneIndex, operation(vector.GetLane(bitWidth, laneIndex)));
         }
 
         return result;
@@ -1602,10 +1263,7 @@ internal static partial class Interpreter
         var result = default(SimdValue);
         for (var laneIndex = 0; laneIndex < 128 / bitWidth; laneIndex++)
         {
-            var bits = operation(
-                first.GetLane(bitWidth, laneIndex),
-                second.GetLane(bitWidth, laneIndex)
-            );
+            var bits = operation(first.GetLane(bitWidth, laneIndex), second.GetLane(bitWidth, laneIndex));
             result = result.WithLane(bitWidth, laneIndex, bits);
         }
 
@@ -1632,11 +1290,7 @@ internal static partial class Interpreter
         var sourceLaneCount = 128 / sourceBitWidth;
         for (var laneIndex = 0; laneIndex < sourceLaneCount; laneIndex++)
         {
-            result = result.WithLane(
-                destinationBitWidth,
-                laneIndex,
-                saturate(first.GetLane(sourceBitWidth, laneIndex))
-            );
+            result = result.WithLane(destinationBitWidth, laneIndex, saturate(first.GetLane(sourceBitWidth, laneIndex)));
             result = result.WithLane(
                 destinationBitWidth,
                 laneIndex + sourceLaneCount,
@@ -1665,11 +1319,7 @@ internal static partial class Interpreter
         var result = default(SimdValue);
         for (var laneIndex = 0; laneIndex < 128 / bitWidth; laneIndex++)
         {
-            result = result.WithLane(
-                bitWidth,
-                laneIndex,
-                operation(vector.GetLane(bitWidth, laneIndex), shift)
-            );
+            result = result.WithLane(bitWidth, laneIndex, operation(vector.GetLane(bitWidth, laneIndex), shift));
         }
 
         return result;

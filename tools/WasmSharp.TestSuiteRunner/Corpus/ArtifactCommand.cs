@@ -8,10 +8,4 @@ namespace WasmSharp.TestSuiteRunner.Corpus;
 /// <param name="Type">元JSONのcommand種別 取得できない場合はnull</param>
 /// <param name="ModuleType">元JSONのmodule_type 未指定または取得できない場合はnull</param>
 /// <param name="Filename">元JSONのfilename 未指定または取得できない場合はnull</param>
-internal sealed record ArtifactCommand(
-    int Index,
-    int? Line,
-    string? Type,
-    string? ModuleType,
-    string? Filename
-);
+internal sealed record ArtifactCommand(int Index, int? Line, string? Type, string? ModuleType, string? Filename);

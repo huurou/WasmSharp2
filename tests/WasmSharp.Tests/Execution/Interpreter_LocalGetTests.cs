@@ -24,12 +24,7 @@ internal class Interpreter_LocalGetTests
             ],
             new(
                 [WasmValueKind.ExternRef, WasmValueKind.V128],
-                [
-                    WasmValueKind.V128,
-                    WasmValueKind.ExternRef,
-                    WasmValueKind.F32,
-                    WasmValueKind.ExternRef,
-                ]
+                [WasmValueKind.V128, WasmValueKind.ExternRef, WasmValueKind.F32, WasmValueKind.ExternRef]
             ),
             [new(1, WasmValueKind.F32)],
             4
@@ -51,10 +46,7 @@ internal class Interpreter_LocalGetTests
             result = Interpreter.Run(
                 context,
                 function,
-                [
-                    WasmValue.FromExternRef(reference),
-                    WasmValue.FromV128(0x0123456789ABCDEF, 0xFEDCBA9876543210),
-                ],
+                [WasmValue.FromExternRef(reference), WasmValue.FromV128(0x0123456789ABCDEF, 0xFEDCBA9876543210)],
                 WasmProcessingStage.Invoke
             );
             actualOuter = context.GetValue(0);
@@ -74,9 +66,7 @@ internal class Interpreter_LocalGetTests
             await Assert.That(descriptor.Validation).IsEqualTo(ValidationRule.LocalGet);
             await Assert.That(result.Status).IsEqualTo(ExecutionStatus.Success);
             await Assert.That(result.Values.Length).IsEqualTo(4);
-            await Assert
-                .That(result.Values[0].AsV128())
-                .IsEqualTo((0x0123456789ABCDEFUL, 0xFEDCBA9876543210UL));
+            await Assert.That(result.Values[0].AsV128()).IsEqualTo((0x0123456789ABCDEFUL, 0xFEDCBA9876543210UL));
             await Assert.That(result.Values[1].AsExternRef()).IsSameReferenceAs(reference);
             await Assert.That(result.Values[2]).IsEqualTo(WasmValue.FromF32Bits(0));
             await Assert.That(result.Values[3].AsExternRef()).IsSameReferenceAs(reference);

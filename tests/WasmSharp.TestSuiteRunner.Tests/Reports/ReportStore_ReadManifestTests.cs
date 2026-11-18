@@ -15,9 +15,7 @@ internal class ReportStore_ReadManifestTests
         var path = await directory.WriteJsonAsync("run.json", RunReportFixture.CreateSample());
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => reportStore_.ReadManifest(path))
-            .ThrowsExactly<ReportStoreException>();
+        var exception = await Assert.That(() => reportStore_.ReadManifest(path)).ThrowsExactly<ReportStoreException>();
         await Assert.That(exception!.Message).Contains("corpus_manifest");
     }
 }

@@ -25,10 +25,7 @@ internal class Interpreter_I64TruncSatF64STests
     [Arguments(0x7FF8000000000000UL, 0L)]
     [Arguments(0xFFF8123456789ABCUL, 0L)]
     [Arguments(0x7FF0123456789ABCUL, 0L)]
-    public async Task 入力が有限値または特殊値_切捨てと飽和した整数をtrapなしで返す(
-        ulong operandBits,
-        long expected
-    )
+    public async Task 入力が有限値または特殊値_切捨てと飽和した整数をtrapなしで返す(ulong operandBits, long expected)
     {
         // Arrange
         WasmValue[] operands = [WasmValue.FromF64Bits(operandBits)];

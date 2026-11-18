@@ -25,12 +25,7 @@ internal class Interpreter_TableGrowTests
         var peer = TableHandlerFixture.CreateFunction([table]);
 
         // Act
-        var actual = TableHandlerFixture.Execute(
-            Interpreter.TableGrow,
-            function,
-            1,
-            [added, WasmValue.FromI32(2)]
-        );
+        var actual = TableHandlerFixture.Execute(Interpreter.TableGrow, function, 1, [added, WasmValue.FromI32(2)]);
         var shared = TableHandlerFixture.Execute(Interpreter.TableSize, peer, 0, []);
 
         // Assert
@@ -86,10 +81,7 @@ internal class Interpreter_TableGrowTests
     [Arguments(1U, 1)]
     [Arguments(null, -1)]
     [Arguments(null, int.MinValue)]
-    public async Task 宣言上限または符号なし増分が保持上限を超える_内容を変えずマイナス1を返す(
-        uint? maximum,
-        int delta
-    )
+    public async Task 宣言上限または符号なし増分が保持上限を超える_内容を変えずマイナス1を返す(uint? maximum, int delta)
     {
         // Arrange
         var table = new WasmTable(WasmValueKind.ExternRef, new(1, maximum));

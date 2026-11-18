@@ -33,12 +33,8 @@ internal partial class FunctionValidator_ValidateTests
         // Assert
         using (Assert.Multiple())
         {
-            await Assert
-                .That(code.Instructions[2].MemoryArgument)
-                .IsEqualTo(new MemoryArgument(2, 2));
-            await Assert
-                .That(code.Instructions[3].MemoryArgument)
-                .IsEqualTo(new MemoryArgument(2, 3));
+            await Assert.That(code.Instructions[2].MemoryArgument).IsEqualTo(new MemoryArgument(2, 2));
+            await Assert.That(code.Instructions[3].MemoryArgument).IsEqualTo(new MemoryArgument(2, 3));
             await Assert
                 .That(code.Instructions[2].MemoryAccessSignature)
                 .IsEqualTo(new MemoryAccessSignature(WasmValueKind.I32, 4, false));

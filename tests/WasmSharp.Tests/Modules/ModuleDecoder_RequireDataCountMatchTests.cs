@@ -11,10 +11,7 @@ internal class ModuleDecoder_RequireDataCountMatchTests
     [Arguments(null, 3u)]
     [Arguments(0u, 0u)]
     [Arguments(3u, 3u)]
-    public async Task データ数宣言がないか実数と一致する_受理する(
-        uint? declaredCount,
-        uint segmentCount
-    )
+    public async Task データ数宣言がないか実数と一致する_受理する(uint? declaredCount, uint segmentCount)
     {
         // Arrange
         DataCountDefinition? declaration = declaredCount is { } count ? new(count, 40) : null;
@@ -60,9 +57,7 @@ internal class ModuleDecoder_RequireDataCountMatchTests
                     )
                 )
                 .IsTrue();
-            await Assert
-                .That(exception.Location)
-                .IsEqualTo(new(WasmProcessingStage.Decode, 80, null, 11));
+            await Assert.That(exception.Location).IsEqualTo(new(WasmProcessingStage.Decode, 80, null, 11));
         }
     }
 }

@@ -39,32 +39,20 @@ internal class Core2ProfileLoader_LoadTests
             await Assert.That(profile.Id).IsEqualTo("core2");
             await Assert
                 .That(profile.Spec)
-                .IsEqualTo(
-                    new SourceRevision("https://github.com/WebAssembly/spec.git", SPEC_COMMIT)
-                );
+                .IsEqualTo(new SourceRevision("https://github.com/WebAssembly/spec.git", SPEC_COMMIT));
             await Assert
                 .That(profile.Wabt)
-                .IsEqualTo(
-                    new SourceRevision("https://github.com/WebAssembly/wabt.git", WABT_COMMIT)
-                );
+                .IsEqualTo(new SourceRevision("https://github.com/WebAssembly/wabt.git", WABT_COMMIT));
             await Assert.That(profile.Inputs.Length).IsEqualTo(147);
-            await Assert
-                .That(
-                    profile.Inputs.Count(x => x.Path.StartsWith("simd/", StringComparison.Ordinal))
-                )
-                .IsEqualTo(57);
+            await Assert.That(profile.Inputs.Count(x => x.Path.StartsWith("simd/", StringComparison.Ordinal))).IsEqualTo(57);
             await Assert
                 .That(
                     profile
                         .Inputs.Select(x => x.Path)
-                        .SequenceEqual(
-                            profile.Inputs.Select(x => x.Path).Order(StringComparer.Ordinal)
-                        )
+                        .SequenceEqual(profile.Inputs.Select(x => x.Path).Order(StringComparer.Ordinal))
                 )
                 .IsTrue();
-            await Assert
-                .That(profile.Inputs.Select(x => x.Path).Distinct(StringComparer.Ordinal).Count())
-                .IsEqualTo(147);
+            await Assert.That(profile.Inputs.Select(x => x.Path).Distinct(StringComparer.Ordinal).Count()).IsEqualTo(147);
             await Assert
                 .That(
                     profile.Inputs.All(x =>
@@ -77,8 +65,7 @@ internal class Core2ProfileLoader_LoadTests
             await Assert
                 .That(
                     profile.Inputs.All(x =>
-                        x.Sha256.Length == 64
-                        && x.Sha256.All(y => y is >= '0' and <= '9' or >= 'a' and <= 'f')
+                        x.Sha256.Length == 64 && x.Sha256.All(y => y is >= '0' and <= '9' or >= 'a' and <= 'f')
                     )
                 )
                 .IsTrue();
@@ -124,12 +111,8 @@ internal class Core2ProfileLoader_LoadTests
         using (Assert.Multiple())
         {
             await Assert.That(profile.Features.Length).IsEqualTo(21);
-            await Assert
-                .That(profile.Features.Where(x => x.Enabled).Select(x => x.Name))
-                .IsEquivalentTo(enabled);
-            await Assert
-                .That(profile.Features.Where(x => !x.Enabled).Select(x => x.Name))
-                .IsEquivalentTo(disabled);
+            await Assert.That(profile.Features.Where(x => x.Enabled).Select(x => x.Name)).IsEquivalentTo(enabled);
+            await Assert.That(profile.Features.Where(x => !x.Enabled).Select(x => x.Name)).IsEquivalentTo(disabled);
             await Assert
                 .That(profile.Features.Where(x => x.DefaultEnabled).Select(x => x.Name))
                 .IsEquivalentTo([
@@ -142,9 +125,7 @@ internal class Core2ProfileLoader_LoadTests
                     "extended-const",
                     "relaxed-simd",
                 ]);
-            await Assert
-                .That(profile.Conversion)
-                .IsEqualTo(new ConversionOptions(true, true, false, false));
+            await Assert.That(profile.Conversion).IsEqualTo(new ConversionOptions(true, true, false, false));
             await Assert.That(profile.WorkingDirectory).IsEqualTo("test/core");
             await Assert
                 .That(
@@ -192,13 +173,9 @@ internal class Core2ProfileLoader_LoadTests
         {
             await Assert.That(profile.Id).IsEqualTo("fixture");
             await Assert.That(profile.Inputs.Length).IsEqualTo(1);
-            await Assert
-                .That(profile.Inputs[0])
-                .IsEqualTo(new SourceInput("sample.wast", "sample-hash"));
+            await Assert.That(profile.Inputs[0]).IsEqualTo(new SourceInput("sample.wast", "sample-hash"));
             await Assert.That(changedInputs.Length).IsEqualTo(2);
-            await Assert
-                .That(profile.Features[0])
-                .IsEqualTo(new FeatureSetting("simd", true, true));
+            await Assert.That(profile.Features[0]).IsEqualTo(new FeatureSetting("simd", true, true));
             await Assert.That(profile.Conversion.Check).IsTrue();
         }
     }

@@ -53,8 +53,7 @@ internal static class FunctionValidator
         List<WasmValueKind?> stack = [];
         List<ControlFrame> frames = [new(ValidationRule.FunctionEnd, [], type.Results, 0, 0)];
         var maxOperandStack = 0;
-        var hasMemory =
-            !module.Memories.IsEmpty || module.Imports.Any(x => x.Kind == WasmExternalKind.Memory);
+        var hasMemory = !module.Memories.IsEmpty || module.Imports.Any(x => x.Kind == WasmExternalKind.Memory);
         foreach (var instruction in function.Instructions)
         {
             if (!InstructionSet.TryGet(instruction.Opcode, out var descriptor))
@@ -74,10 +73,7 @@ internal static class FunctionValidator
                 case ValidationRule.Block:
                 case ValidationRule.Loop:
                 case ValidationRule.If:
-                    var (parameters, results) = ResolveBlockType(
-                        instruction.BlockType,
-                        instruction.ByteOffset
-                    );
+                    var (parameters, results) = ResolveBlockType(instruction.BlockType, instruction.ByteOffset);
                     if (descriptor.Validation == ValidationRule.If)
                     {
                         Pop(WasmValueKind.I32, instruction.ByteOffset);
@@ -125,9 +121,7 @@ internal static class FunctionValidator
                             StackEffectKind.PushF64 => WasmValueKind.F64,
                             StackEffectKind.PushV128 => WasmValueKind.V128,
                             StackEffectKind.PushReference => instruction.Immediate.Kind,
-                            _ => throw new InvalidOperationException(
-                                "定数命令のスタック効果が不正です。"
-                            ),
+                            _ => throw new InvalidOperationException("定数命令のスタック効果が不正です。"),
                         }
                     );
                     break;
@@ -147,12 +141,7 @@ internal static class FunctionValidator
                         throw ValidationDiagnostics.ValidationFailure(
                             "undeclared function reference",
                             "参照する関数が宣言されていません。",
-                            new(
-                                WasmProcessingStage.Validate,
-                                instruction.ByteOffset,
-                                moduleFunctionIndex,
-                                10
-                            )
+                            new(WasmProcessingStage.Validate, instruction.ByteOffset, moduleFunctionIndex, 10)
                         );
                     }
                     stack.Add(WasmValueKind.FuncRef);
@@ -160,16 +149,9 @@ internal static class FunctionValidator
 
                 case ValidationRule.RefIsNull:
                     var referenceType = Pop(null, instruction.ByteOffset);
-                    if (
-                        referenceType is
-                    { }
-                        and not (WasmValueKind.FuncRef or WasmValueKind.ExternRef)
-                    )
+                    if (referenceType is { } and not (WasmValueKind.FuncRef or WasmValueKind.ExternRef))
                     {
-                        throw CreateException(
-                            "null判定の入力には参照型が必要です。",
-                            instruction.ByteOffset
-                        );
+                        throw CreateException("null判定の入力には参照型が必要です。", instruction.ByteOffset);
                     }
                     stack.Add(WasmValueKind.I32);
                     break;
@@ -178,11 +160,7 @@ internal static class FunctionValidator
                     switch (descriptor.Immediate)
                     {
                         case ImmediateKind.LaneIndex:
-                            ValidateLaneIndex(
-                                instruction.LaneIndex,
-                                descriptor.LaneCount,
-                                instruction.ByteOffset
-                            );
+                            ValidateLaneIndex(instruction.LaneIndex, descriptor.LaneCount, instruction.ByteOffset);
                             break;
                         case ImmediateKind.Shuffle:
                             foreach (var laneIndex in instruction.ShuffleLanes)
@@ -192,8 +170,7 @@ internal static class FunctionValidator
                             break;
                     }
                     var numericSignature =
-                        descriptor.NumericSignature
-                        ?? throw new InvalidOperationException("数値命令の型情報がありません。");
+                        descriptor.NumericSignature ?? throw new InvalidOperationException("数値命令の型情報がありません。");
                     for (var index = numericSignature.InputTypes.Length - 1; index >= 0; index--)
                     {
                         Pop(numericSignature.InputTypes[index], instruction.ByteOffset);
@@ -206,17 +183,9 @@ internal static class FunctionValidator
                 case ValidationRule.MemoryLoadLane:
                 case ValidationRule.MemoryStoreLane:
                     var memorySignature = ValidateMemoryAccess(instruction, descriptor);
-                    if (
-                        descriptor.Validation
-                        is ValidationRule.MemoryLoadLane
-                            or ValidationRule.MemoryStoreLane
-                    )
+                    if (descriptor.Validation is ValidationRule.MemoryLoadLane or ValidationRule.MemoryStoreLane)
                     {
-                        ValidateLaneIndex(
-                            instruction.LaneIndex,
-                            descriptor.LaneCount,
-                            instruction.ByteOffset
-                        );
+                        ValidateLaneIndex(instruction.LaneIndex, descriptor.LaneCount, instruction.ByteOffset);
                     }
                     if (
                         descriptor.Validation
@@ -228,11 +197,7 @@ internal static class FunctionValidator
                         Pop(memorySignature.ValueType, instruction.ByteOffset);
                     }
                     Pop(WasmValueKind.I32, instruction.ByteOffset);
-                    if (
-                        descriptor.Validation
-                        is ValidationRule.MemoryLoad
-                            or ValidationRule.MemoryLoadLane
-                    )
+                    if (descriptor.Validation is ValidationRule.MemoryLoad or ValidationRule.MemoryLoadLane)
                     {
                         stack.Add(memorySignature.ValueType);
                     }
@@ -279,10 +244,7 @@ internal static class FunctionValidator
                 case ValidationRule.TableGrow:
                 case ValidationRule.TableSize:
                 case ValidationRule.TableFill:
-                    var tableElementType = GetTableElementType(
-                        instruction.Index,
-                        instruction.ByteOffset
-                    );
+                    var tableElementType = GetTableElementType(instruction.Index, instruction.ByteOffset);
                     switch (descriptor.Validation)
                     {
                         case ValidationRule.TableGet:
@@ -310,14 +272,8 @@ internal static class FunctionValidator
                     break;
 
                 case ValidationRule.TableCopy:
-                    var destinationType = GetTableElementType(
-                        instruction.Index,
-                        instruction.ByteOffset
-                    );
-                    var sourceType = GetTableElementType(
-                        instruction.SecondaryIndex,
-                        instruction.ByteOffset
-                    );
+                    var destinationType = GetTableElementType(instruction.Index, instruction.ByteOffset);
+                    var sourceType = GetTableElementType(instruction.SecondaryIndex, instruction.ByteOffset);
                     if (destinationType != sourceType)
                     {
                         throw CreateException(
@@ -330,10 +286,7 @@ internal static class FunctionValidator
 
                 case ValidationRule.TableInit:
                     // バイナリの即値順と分け、テーブル、要素、型、operandの順に検査する。
-                    var initializationTableType = GetTableElementType(
-                        instruction.SecondaryIndex,
-                        instruction.ByteOffset
-                    );
+                    var initializationTableType = GetTableElementType(instruction.SecondaryIndex, instruction.ByteOffset);
                     var elementType = GetElementType(instruction.Index, instruction.ByteOffset);
                     if (initializationTableType != elementType)
                     {
@@ -355,10 +308,7 @@ internal static class FunctionValidator
                     if (endedFrame.Kind == ValidationRule.If)
                     {
                         if (
-                            !endedFrame.HasElse
-                            && !endedFrame
-                                .Parameters.AsSpan()
-                                .SequenceEqual(endedFrame.Results.AsSpan())
+                            !endedFrame.HasElse && !endedFrame.Parameters.AsSpan().SequenceEqual(endedFrame.Results.AsSpan())
                         )
                         {
                             throw CreateException(
@@ -367,10 +317,7 @@ internal static class FunctionValidator
                             );
                         }
                         var currentPc = instructions.Count;
-                        PatchTarget(
-                            endedFrame.IfFalseTarget,
-                            endedFrame.HasElse ? endedFrame.ElsePc : currentPc
-                        );
+                        PatchTarget(endedFrame.IfFalseTarget, endedFrame.HasElse ? endedFrame.ElsePc : currentPc);
                     }
                     // 関数frameの前方参照も、配列末尾ではなく末尾ReturnのPcへ接続する。
                     foreach (var targetIndex in endedFrame.ForwardTargets)
@@ -402,10 +349,7 @@ internal static class FunctionValidator
 
                 case ValidationRule.CallIndirect:
                     // バイナリの即値順と分け、テーブル、型、funcref制約、operandの順に検査する。
-                    var indirectTableType = GetTableElementType(
-                        instruction.SecondaryIndex,
-                        instruction.ByteOffset
-                    );
+                    var indirectTableType = GetTableElementType(instruction.SecondaryIndex, instruction.ByteOffset);
                     if (instruction.Index >= (uint)module.Types.Length)
                     {
                         throw CreateUnknownIndex(
@@ -417,10 +361,7 @@ internal static class FunctionValidator
                     }
                     if (indirectTableType != WasmValueKind.FuncRef)
                     {
-                        throw CreateException(
-                            "間接呼び出し先のテーブルにはfuncrefが必要です。",
-                            instruction.ByteOffset
-                        );
+                        throw CreateException("間接呼び出し先のテーブルにはfuncrefが必要です。", instruction.ByteOffset);
                     }
                     var indirectCalleeType = module.Types[(int)instruction.Index];
                     Pop(WasmValueKind.I32, instruction.ByteOffset);
@@ -467,15 +408,8 @@ internal static class FunctionValidator
                     for (var index = 0; index < outputTargetCount; index++)
                     {
                         // 候補は入力順に解決し、型適合を確認してから次のラベルへ進む。
-                        var candidateLabel = GetLabel(
-                            instruction.Labels[index],
-                            instruction.ByteOffset
-                        );
-                        CheckLabelTypes(
-                            branchTypes,
-                            candidateLabel.LabelTypes,
-                            instruction.ByteOffset
-                        );
+                        var candidateLabel = GetLabel(instruction.Labels[index], instruction.ByteOffset);
+                        CheckLabelTypes(branchTypes, candidateLabel.LabelTypes, instruction.ByteOffset);
                         AddLabelTarget(candidateLabel);
                     }
                     AddLabelTarget(defaultLabel);
@@ -514,12 +448,7 @@ internal static class FunctionValidator
                             throw ValidationDiagnostics.ValidationFailure(
                                 "global is immutable",
                                 "immutable globalは更新できません。",
-                                new(
-                                    WasmProcessingStage.Validate,
-                                    instruction.ByteOffset,
-                                    moduleFunctionIndex,
-                                    10
-                                )
+                                new(WasmProcessingStage.Validate, instruction.ByteOffset, moduleFunctionIndex, 10)
                             );
                         }
                         Pop(globalType.ValueKind, instruction.ByteOffset);
@@ -532,20 +461,13 @@ internal static class FunctionValidator
 
                 case ValidationRule.Select:
                 case ValidationRule.TypedSelect:
-                    ValidateSelect(
-                        instruction,
-                        descriptor.Validation == ValidationRule.TypedSelect
-                    );
+                    ValidateSelect(instruction, descriptor.Validation == ValidationRule.TypedSelect);
                     break;
 
                 case ValidationRule.LocalGet:
                 case ValidationRule.LocalSet:
                 case ValidationRule.LocalTee:
-                    var localType = GetLocalType(
-                        instruction.Index,
-                        instruction.ByteOffset,
-                        localEnds
-                    );
+                    var localType = GetLocalType(instruction.Index, instruction.ByteOffset, localEnds);
                     if (descriptor.Validation != ValidationRule.LocalGet)
                     {
                         Pop(localType, instruction.ByteOffset);
@@ -598,12 +520,7 @@ internal static class FunctionValidator
         {
             if (index >= (uint)references.TableElementTypes.Length)
             {
-                throw CreateUnknownIndex(
-                    "table",
-                    index,
-                    "参照するテーブルが存在しません。",
-                    byteOffset
-                );
+                throw CreateUnknownIndex("table", index, "参照するテーブルが存在しません。", byteOffset);
             }
             return references.TableElementTypes[(int)index];
         }
@@ -612,12 +529,7 @@ internal static class FunctionValidator
         {
             if (index >= (uint)references.ElementTypes.Length)
             {
-                throw CreateUnknownIndex(
-                    "elem segment",
-                    index,
-                    "参照する要素セグメントが存在しません。",
-                    byteOffset
-                );
+                throw CreateUnknownIndex("elem segment", index, "参照する要素セグメントが存在しません。", byteOffset);
             }
             return references.ElementTypes[(int)index];
         }
@@ -642,38 +554,27 @@ internal static class FunctionValidator
             }
         }
 
-        MemoryAccessSignature ValidateMemoryAccess(
-            DecodedInstruction instruction,
-            InstructionDescriptor descriptor
-        )
+        MemoryAccessSignature ValidateMemoryAccess(DecodedInstruction instruction, InstructionDescriptor descriptor)
         {
             RequireMemory(instruction.ByteOffset);
             var memorySignature =
                 descriptor.MemoryAccessSignature
                 ?? throw new InvalidOperationException("メモリ命令のアクセス情報がありません。");
-            if (
-                instruction.MemoryArgument.Alignment
-                > (uint)BitOperations.Log2(memorySignature.ByteWidth)
-            )
+            if (instruction.MemoryArgument.Alignment > (uint)BitOperations.Log2(memorySignature.ByteWidth))
             {
                 throw ValidationDiagnostics.ValidationFailure(
                     "alignment must not be larger than natural",
                     "アラインメントが命令のアクセス幅を超えています。",
-                    new(
-                        WasmProcessingStage.Validate,
-                        instruction.ByteOffset,
-                        moduleFunctionIndex,
-                        10
-                    )
+                    new(WasmProcessingStage.Validate, instruction.ByteOffset, moduleFunctionIndex, 10)
                 );
             }
             return memorySignature;
         }
 
-        (
-            ImmutableArray<WasmValueKind> Parameters,
-            ImmutableArray<WasmValueKind> Results
-        ) ResolveBlockType(BlockType blockType, long byteOffset)
+        (ImmutableArray<WasmValueKind> Parameters, ImmutableArray<WasmValueKind> Results) ResolveBlockType(
+            BlockType blockType,
+            long byteOffset
+        )
         {
             switch (blockType.Kind)
             {
@@ -684,12 +585,7 @@ internal static class FunctionValidator
                 case BlockTypeKind.TypeIndex:
                     if (blockType.TypeIndex >= (uint)module.Types.Length)
                     {
-                        throw CreateUnknownIndex(
-                            "type",
-                            blockType.TypeIndex,
-                            "参照する型が存在しません。",
-                            byteOffset
-                        );
+                        throw CreateUnknownIndex("type", blockType.TypeIndex, "参照する型が存在しません。", byteOffset);
                     }
                     var blockSignature = module.Types[(int)blockType.TypeIndex];
                     return (blockSignature.Parameters, blockSignature.Results);
@@ -709,12 +605,7 @@ internal static class FunctionValidator
                     throw ValidationDiagnostics.ValidationFailure(
                         "invalid result arity",
                         "型注釈付きselectの結果型は1個である必要があります。",
-                        new(
-                            WasmProcessingStage.Validate,
-                            instruction.ByteOffset,
-                            moduleFunctionIndex,
-                            10
-                        )
+                        new(WasmProcessingStage.Validate, instruction.ByteOffset, moduleFunctionIndex, 10)
                     );
                 }
                 candidateType = instruction.SelectTypes[0];
@@ -728,10 +619,7 @@ internal static class FunctionValidator
                     || firstType is WasmValueKind.FuncRef or WasmValueKind.ExternRef
                 )
                 {
-                    throw CreateException(
-                        "型注釈のないselectの候補には参照型を使えません。",
-                        instruction.ByteOffset
-                    );
+                    throw CreateException("型注釈のないselectの候補には参照型を使えません。", instruction.ByteOffset);
                 }
                 // Unknownはframeの底側に限られるため、第2候補がUnknownなら第1候補もUnknownになる。
                 candidateType = secondType;
@@ -749,10 +637,7 @@ internal static class FunctionValidator
             PopTypes(frame.Results.AsSpan(), byteOffset);
             if (stack.Count != frame.Height)
             {
-                throw CreateException(
-                    "制御の結果の型・個数・順序が宣言と一致しません。",
-                    byteOffset
-                );
+                throw CreateException("制御の結果の型・個数・順序が宣言と一致しません。", byteOffset);
             }
         }
 
@@ -767,12 +652,7 @@ internal static class FunctionValidator
         {
             if (depth >= (uint)frames.Count)
             {
-                throw CreateUnknownIndex(
-                    "label",
-                    depth,
-                    "参照するラベルが存在しません。",
-                    byteOffset
-                );
+                throw CreateUnknownIndex("label", depth, "参照するラベルが存在しません。", byteOffset);
             }
             return frames[frames.Count - 1 - (int)depth];
         }
@@ -860,11 +740,7 @@ internal static class FunctionValidator
             }
         }
 
-        void CheckLabelTypes(
-            WasmValueKind?[] actual,
-            ImmutableArray<WasmValueKind> expected,
-            long byteOffset
-        )
+        void CheckLabelTypes(WasmValueKind?[] actual, ImmutableArray<WasmValueKind> expected, long byteOffset)
         {
             if (actual.Length != expected.Length)
             {
@@ -909,12 +785,7 @@ internal static class FunctionValidator
             );
         }
 
-        WasmValidateException CreateUnknownIndex(
-            string category,
-            uint index,
-            string message,
-            long byteOffset
-        )
+        WasmValidateException CreateUnknownIndex(string category, uint index, string message, long byteOffset)
         {
             return ValidationDiagnostics.UnknownIndex(
                 category,
@@ -959,8 +830,7 @@ internal static class FunctionValidator
         /// <summary>
         /// loopは入口引数、それ以外は結果を分岐値の型として扱う
         /// </summary>
-        internal ImmutableArray<WasmValueKind> LabelTypes =>
-            Kind == ValidationRule.Loop ? Parameters : Results;
+        internal ImmutableArray<WasmValueKind> LabelTypes => Kind == ValidationRule.Loop ? Parameters : Results;
 
         /// <summary>
         /// 制御が消費できるoperand範囲の底

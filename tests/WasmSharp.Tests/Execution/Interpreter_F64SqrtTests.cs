@@ -15,10 +15,7 @@ internal class Interpreter_F64SqrtTests
     [Arguments(0xBFF0000000000000ul, 0x7FF8000000000000ul)]
     [Arguments(0xFFF8123456789ABCul, 0x7FF8000000000000ul)]
     [Arguments(0x7FF0123456789ABCul, 0x7FF8000000000000ul)]
-    public async Task 通常値と境界値とNaN_64bitの平方根結果を返す(
-        ulong operandBits,
-        ulong expectedBits
-    )
+    public async Task 通常値と境界値とNaN_64bitの平方根結果を返す(ulong operandBits, ulong expectedBits)
     {
         // Arrange
         WasmValue[] operands = [WasmValue.FromF64Bits(operandBits)];

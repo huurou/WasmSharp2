@@ -12,18 +12,20 @@ internal class InvokeBenchmarks_CleanupTests
     [Test]
     [Arguments(StatePolicy.ReadOnly)]
     [Arguments(StatePolicy.FixedPoint)]
-    public async Task 最後の結果が固定期待値と異なる_追加Invokeせず保持した不一致を返す(
-        StatePolicy statePolicy
-    )
+    public async Task 最後の結果が固定期待値と異なる_追加Invokeせず保持した不一致を返す(StatePolicy statePolicy)
     {
         // Arrange
         var benchmark = new InvokeBenchmarks();
         var original = InvokeFixture.CreateDriftingAssets(json_, methods_);
         var definition = original.Catalog.Get("invoke.single");
         var assets = InvokeFixture.BuildAssets(
-            definition with { StatePolicy = statePolicy },
+            definition with
+            {
+                StatePolicy = statePolicy,
+            },
             original.GetBinary(definition.AssetId),
-            json_, methods_
+            json_,
+            methods_
         );
         benchmark.Initialize(assets, "invoke.single", json_);
         if (statePolicy == StatePolicy.ReadOnly)

@@ -8,10 +8,7 @@ internal partial class WasmFunction_InvokeTests
     [Test]
     [Arguments(1, true)]
     [Arguments(2, false)]
-    public async Task Hostから別contextで呼ぶ_内側の上限を使い外側の実行状態を保つ(
-        int innerCallDepth,
-        bool exhausts
-    )
+    public async Task Hostから別contextで呼ぶ_内側の上限を使い外側の実行状態を保つ(int innerCallDepth, bool exhausts)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
@@ -36,9 +33,9 @@ internal partial class WasmFunction_InvokeTests
                     caught = exception;
                 }
                 outerPreserved =
-                    ReferenceEquals(callbackContext, executionContext) &&
-                    ReferenceEquals(callbackContext.Current, outer) &&
-                    (outer.FrameCount, outer.ValueCount, outer.CallDepth) == before;
+                    ReferenceEquals(callbackContext, executionContext)
+                    && ReferenceEquals(callbackContext.Current, outer)
+                    && (outer.FrameCount, outer.ValueCount, outer.CallDepth) == before;
                 innerCleared = independentContext.Current is null;
                 return new WasmResults([]);
             }
@@ -72,9 +69,7 @@ internal partial class WasmFunction_InvokeTests
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task Host経由で同じ関数へ一度だけ再入する_異なる引数とlocalsを内側と外側で分離する(
-        bool withInstance
-    )
+    public async Task Host経由で同じ関数へ一度だけ再入する_異なる引数とlocalsを内側と外側で分離する(bool withInstance)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
@@ -105,9 +100,7 @@ internal partial class WasmFunction_InvokeTests
                     HostLinkingModuleBinary.Imports(("env", "host", 0, [0])),
                     HostLinkingModuleBinary.Functions(1),
                     HostLinkingModuleBinary.Exports(("run", 0, 1)),
-                    HostLinkingModuleBinary.Code(
-                        ([(1, 0x7F)], [0x20, 0, 0x21, 1, 0x20, 0, 0x10, 0, 0x20, 0, 0x20, 1, 0x0B])
-                    )
+                    HostLinkingModuleBinary.Code(([(1, 0x7F)], [0x20, 0, 0x21, 1, 0x20, 0, 0x10, 0, 0x20, 0, 0x20, 1, 0x0B]))
                 )
             )
             .Validate()
@@ -123,22 +116,10 @@ internal partial class WasmFunction_InvokeTests
         {
             await Assert.That(calls).IsEqualTo(2);
             await Assert
-                .That(
-                    outer.Values.SequenceEqual([
-                        WasmValue.FromI32(42),
-                        WasmValue.FromI32(42),
-                        WasmValue.FromI32(42),
-                    ])
-                )
+                .That(outer.Values.SequenceEqual([WasmValue.FromI32(42), WasmValue.FromI32(42), WasmValue.FromI32(42)]))
                 .IsTrue();
             await Assert
-                .That(
-                    inner!.Values.SequenceEqual([
-                        WasmValue.FromI32(99),
-                        WasmValue.FromI32(99),
-                        WasmValue.FromI32(99),
-                    ])
-                )
+                .That(inner!.Values.SequenceEqual([WasmValue.FromI32(99), WasmValue.FromI32(99), WasmValue.FromI32(99)]))
                 .IsTrue();
         }
     }
@@ -288,9 +269,7 @@ internal partial class WasmFunction_InvokeTests
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task 進行中のhostから別hostを公開Invokeする_同じcontextの深さへ数え終了時に復元する(
-        bool withInstance
-    )
+    public async Task 進行中のhostから別hostを公開Invokeする_同じcontextの深さへ数え終了時に復元する(bool withInstance)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
@@ -339,9 +318,7 @@ internal partial class WasmFunction_InvokeTests
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task Guestからhostを繰り返し呼ぶ_上限到達時は実行せず正常終了ごとに深さを解放する(
-        bool withInstance
-    )
+    public async Task Guestからhostを繰り返し呼ぶ_上限到達時は実行せず正常終了ごとに深さを解放する(bool withInstance)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
@@ -358,8 +335,7 @@ internal partial class WasmFunction_InvokeTests
             ? WasmFunction.CreateHost(new([], []), (callbackContext, _, values) => Callback(callbackContext, values))
             : WasmFunction.CreateHost(new([], []), Callback);
         var limited = CreateHostCallingInstance(executionContext, host, 1).GetFunction("run");
-        var enough = CreateHostCallingInstance(executionContext, host, 2, [0x10, 0, 0x10, 0, 0x0B])
-            .GetFunction("run");
+        var enough = CreateHostCallingInstance(executionContext, host, 2, [0x10, 0, 0x10, 0, 0x0B]).GetFunction("run");
         var cleared = false;
 
         // Act & Assert

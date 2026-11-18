@@ -1,6 +1,6 @@
+using System.Collections.Immutable;
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Engines;
-using System.Collections.Immutable;
 using WasmSharp.Benchmarks.Cases;
 
 namespace WasmSharp.Benchmarks.Measurements;
@@ -184,9 +184,7 @@ public class InvokeBenchmarks
             "scan.scalar" => lastScanScalarResults_,
             "scan.simd" => lastScanSimdResults_,
             "kernel.matrix" => lastMatrixResults_,
-            _ => throw new InvalidOperationException(
-                $"ケース'{definition_.CaseId}'はInvoke測定ではありません。"
-            ),
+            _ => throw new InvalidOperationException($"ケース'{definition_.CaseId}'はInvoke測定ではありません。"),
         };
         Verify(new InvokeObservation(instance_, results));
     }

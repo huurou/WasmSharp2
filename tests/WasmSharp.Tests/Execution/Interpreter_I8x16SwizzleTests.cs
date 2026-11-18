@@ -6,12 +6,7 @@ namespace WasmSharp.Tests.Execution;
 internal class Interpreter_I8x16SwizzleTests
 {
     [Test]
-    [Arguments(
-        0x010E080700FF100FUL,
-        0x07010E0008FF0F10UL,
-        0x818E88878000008FUL,
-        0x87818E8088008F00UL
-    )]
+    [Arguments(0x010E080700FF100FUL, 0x07010E0008FF0F10UL, 0x818E88878000008FUL, 0x87818E8088008F00UL)]
     [Arguments(0xFFFFFFFFFFFFFFFFUL, 0x1010101010101010UL, 0UL, 0UL)]
     public async Task Indexに15と16と255を含む_範囲内のbyteを選択し範囲外をゼロにする(
         ulong indexLow64,

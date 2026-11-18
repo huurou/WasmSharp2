@@ -29,13 +29,9 @@ internal class ScriptDocument_GetJsonTests
         {
             await Assert.That(Encoding.UTF8.GetString(first.Span)).IsEqualTo(FIRST);
             await Assert.That(Encoding.UTF8.GetString(second.Span)).IsEqualTo(SECOND);
+            await Assert.That(document.Commands[1].Start).IsEqualTo(json.IndexOf(SECOND, StringComparison.Ordinal));
             await Assert
-                .That(document.Commands[1].Start)
-                .IsEqualTo(json.IndexOf(SECOND, StringComparison.Ordinal));
-            await Assert
-                .That(
-                    parsed.RootElement.GetProperty("expected")[0].GetProperty("value").GetString()
-                )
+                .That(parsed.RootElement.GetProperty("expected")[0].GetProperty("value").GetString())
                 .IsEqualTo("nan:canonical");
         }
     }

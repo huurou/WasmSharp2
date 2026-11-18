@@ -9,10 +9,7 @@ internal class Interpreter_BranchTests
     [Test]
     [Arguments(1U, 3)]
     [Arguments(2U, 0)]
-    public async Task 前方または後方へ繰り返し分岐する_保持値と下位値を保ち値数と深さを増やさない(
-        uint index,
-        int expectedPc
-    )
+    public async Task 前方または後方へ繰り返し分岐する_保持値と下位値を保ち値数と深さを増やさない(uint index, int expectedPc)
     {
         // Arrange
         WasmValue[] operands =
@@ -25,12 +22,7 @@ internal class Interpreter_BranchTests
         BranchTarget[] targets = [new(1, 0, 0), new(3, 1, 2), new(0, 1, 2)];
 
         // Act
-        var actual = ControlHandlerFixture.Execute(
-            RepeatBranch,
-            in instruction,
-            operands,
-            [.. targets]
-        );
+        var actual = ControlHandlerFixture.Execute(RepeatBranch, in instruction, operands, [.. targets]);
 
         // Assert
         using (Assert.Multiple())
@@ -51,10 +43,7 @@ internal class Interpreter_BranchTests
         }
     }
 
-    private static ExecutionResult RepeatBranch(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    private static ExecutionResult RepeatBranch(InterpreterContext context, in Instruction instruction)
     {
         ExecutionResult result = default;
         for (var i = 0; i < 32; i++)

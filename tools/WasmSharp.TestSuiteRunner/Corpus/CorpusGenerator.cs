@@ -60,48 +60,28 @@ internal static class CorpusGenerator
         if (!preconditions.Diagnostics.IsEmpty)
         {
             // 前提が揃わないまま生成した素材を残さないよう、変換を開始せず全入力を未処理のまま記録する。
-            return Save(
-                manifest with
-                {
-                    Diagnostics = [.. preconditions.Diagnostics],
-                },
-                manifestPath,
-                reportStore
-            );
+            return Save(manifest with { Diagnostics = [.. preconditions.Diagnostics] }, manifestPath, reportStore);
         }
 
-        HashSet<string> seen = new(StringComparer.Ordinal);
+        HashSet<string> seen = [with(StringComparer.Ordinal)];
         foreach (
             var index in Enumerable
                 .Range(0, manifest.Inputs.Count)
                 .OrderBy(x => manifest.Inputs[x].Input.Path, StringComparer.Ordinal)
         )
         {
-            manifest.Inputs[index] = Record(
-                request.OutputRoot,
-                Convert(request, manifest.Inputs[index]),
-                seen
-            );
+            manifest.Inputs[index] = Record(request.OutputRoot, Convert(request, manifest.Inputs[index]), seen);
             progress?.Invoke(manifest.Inputs[index].Input.Path);
         }
 
         // 後続の入力による上書きや素材領域の余剰も検出するよう、全入力の変換後にまとめて照合する。
-        var verification = CorpusVerifier.Verify(
-            manifest,
-            manifestPath,
-            VerificationMode.Generation,
-            request.SpecRoot
-        );
+        var verification = CorpusVerifier.Verify(manifest, manifestPath, VerificationMode.Generation, request.SpecRoot);
         for (var i = 0; i < manifest.Inputs.Count; i++)
         {
             manifest.Inputs[i] = Complete(manifest.Inputs[i], verification.Inputs[i]);
         }
 
-        return Save(
-            manifest with { Diagnostics = [.. verification.Diagnostics] },
-            manifestPath,
-            reportStore
-        );
+        return Save(manifest with { Diagnostics = [.. verification.Diagnostics] }, manifestPath, reportStore);
     }
 
     /// <summary>
@@ -118,16 +98,11 @@ internal static class CorpusGenerator
         var profile = request.Profile;
         var diagnostics = ImmutableArray.CreateBuilder<CorpusDiagnostic>();
         diagnostics.AddRange(
-            CorpusVerifier.VerifySources(
-                profile.Inputs,
-                Path.Combine(request.SpecRoot, profile.WorkingDirectory)
-            )
+            CorpusVerifier.VerifySources(profile.Inputs, Path.Combine(request.SpecRoot, profile.WorkingDirectory))
         );
         // 親ディレクトリの無関係なGitをspecの版として扱わないよう、spec-root直下のGit情報だけを見る。
         var specCheckout = IsCheckout(request.SpecRoot);
-        var specHead = specCheckout
-            ? ReadHead(request.SpecRoot, "spec", profile.Spec, diagnostics)
-            : null;
+        var specHead = specCheckout ? ReadHead(request.SpecRoot, "spec", profile.Spec, diagnostics) : null;
         string? wabtHead = null;
         if (IsCheckout(request.WabtRoot))
         {
@@ -136,10 +111,7 @@ internal static class CorpusGenerator
         else
         {
             diagnostics.Add(
-                new(
-                    PREPARE,
-                    $"WABTの配置{request.WabtRoot}は、固定commitを確認できるGitのcheckoutではありません。"
-                )
+                new(PREPARE, $"WABTの配置{request.WabtRoot}は、固定commitを確認できるGitのcheckoutではありません。")
             );
         }
 
@@ -174,14 +146,9 @@ internal static class CorpusGenerator
     /// <param name="request">CLIで解決済みの配置を持つ要求</param>
     /// <param name="input">変換する入力の記録</param>
     /// <returns>起動引数と観測できた終了値・出力を追加した記録 出力先作成失敗・起動失敗・終了値0以外はRunnerError</returns>
-    internal static InputConversionResult Convert(
-        GenerateRequest request,
-        InputConversionResult input
-    )
+    internal static InputConversionResult Convert(GenerateRequest request, InputConversionResult input)
     {
-        var outputPath = Path.GetFullPath(
-            Path.Combine(request.OutputRoot, CorpusVerifier.GetScriptPath(input.Input.Path))
-        );
+        var outputPath = Path.GetFullPath(Path.Combine(request.OutputRoot, CorpusVerifier.GetScriptPath(input.Input.Path)));
         var arguments = request
             .Profile.LogicalArguments.Select(x =>
                 x switch
@@ -223,12 +190,7 @@ internal static class CorpusGenerator
             return Fail(started, $"変換器を起動できません: {ex.Message}", ex);
         }
 
-        var result = started with
-        {
-            ExitCode = run.ExitCode,
-            StandardOutput = run.Output,
-            StandardError = run.Error,
-        };
+        var result = started with { ExitCode = run.ExitCode, StandardOutput = run.Output, StandardError = run.Error };
         return run.ExitCode == 0
             ? result with
             {
@@ -244,20 +206,12 @@ internal static class CorpusGenerator
     /// <param name="message">変換に失敗した理由</param>
     /// <param name="exception">失敗時に観測した例外 変換器の終了値による失敗ではnull</param>
     /// <returns>既存の診断に変換失敗の診断を追加した入力記録</returns>
-    private static InputConversionResult Fail(
-        InputConversionResult input,
-        string message,
-        Exception? exception
-    )
+    private static InputConversionResult Fail(InputConversionResult input, string message, Exception? exception)
     {
         return input with
         {
             Status = ConversionStatus.RunnerError,
-            Diagnostics =
-            [
-                .. input.Diagnostics,
-                new(CONVERT, message, input.Input.Path, exception?.GetType().FullName),
-            ],
+            Diagnostics = [.. input.Diagnostics, new(CONVERT, message, input.Input.Path, exception?.GetType().FullName)],
         };
     }
 
@@ -268,11 +222,7 @@ internal static class CorpusGenerator
     /// <param name="input">生成物を関連付ける入力の記録 変換失敗時の部分生成物も収集する</param>
     /// <param name="seen">全入力で共有する既出pathの集合 今回列挙したpathを追加する</param>
     /// <returns>収集できた生成物と、未対応の拡張子や列挙・読取の失敗理由を追加した入力記録</returns>
-    private static InputConversionResult Record(
-        string outputRoot,
-        InputConversionResult input,
-        HashSet<string> seen
-    )
+    private static InputConversionResult Record(string outputRoot, InputConversionResult input, HashSet<string> seen)
     {
         // 変換器はJSONと同じディレクトリへ素材を書くため、そこで新たに現れたファイルをこの入力の生成物とする。
         var scriptPath = CorpusVerifier.GetScriptPath(input.Input.Path);
@@ -301,19 +251,11 @@ internal static class CorpusGenerator
 
                 var content = File.ReadAllBytes(Path.Combine(outputRoot, path));
                 artifacts.Add(
-                    new(
-                        path,
-                        kind.Value,
-                        System.Convert.ToHexStringLower(SHA256.HashData(content)),
-                        input.Input.Path
-                    )
+                    new(path, kind.Value, System.Convert.ToHexStringLower(SHA256.HashData(content)), input.Input.Path)
                     {
                         Script =
                             kind == ArtifactKind.Json
-                                ? CorpusVerifier.CreateScript(
-                                    ScriptDocument.Parse(content, path),
-                                    path
-                                )
+                                ? CorpusVerifier.CreateScript(ScriptDocument.Parse(content, path), path)
                                 : null,
                     }
                 );
@@ -321,14 +263,7 @@ internal static class CorpusGenerator
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            diagnostics.Add(
-                new(
-                    RECORD,
-                    $"生成物を記録できません: {ex.Message}",
-                    input.Input.Path,
-                    ex.GetType().FullName
-                )
-            );
+            diagnostics.Add(new(RECORD, $"生成物を記録できません: {ex.Message}", input.Input.Path, ex.GetType().FullName));
         }
 
         return input with
@@ -344,10 +279,7 @@ internal static class CorpusGenerator
     /// <param name="input">起動結果と部分生成物を持つ変換記録</param>
     /// <param name="verification">全入力の変換後に得た、この入力のJSON・素材の照合結果</param>
     /// <returns>変換と照合に成功した入力記録 いずれかが不成立の場合は素材と照合理由を保持したRunnerErrorの記録</returns>
-    private static InputConversionResult Complete(
-        InputConversionResult input,
-        InputVerification verification
-    )
+    private static InputConversionResult Complete(InputConversionResult input, InputVerification verification)
     {
         var issues = verification
             .Issues.Concat(verification.ModuleIssues.OrderBy(x => x.Key).Select(x => x.Value))
@@ -378,19 +310,12 @@ internal static class CorpusGenerator
     /// <param name="manifestPath">manifestの保存先 親ディレクトリがなければ作成する</param>
     /// <param name="reportStore">変換記録の確定保存に使用する保存処理</param>
     /// <returns>保存したmanifestと保存先 保存に失敗した場合は出力未完了のmanifestと失敗理由</returns>
-    private static GenerateResult Save(
-        CorpusManifest manifest,
-        string manifestPath,
-        ReportStore reportStore
-    )
+    private static GenerateResult Save(CorpusManifest manifest, string manifestPath, ReportStore reportStore)
     {
         var recorded = manifest with
         {
             Summary = manifest.Summarize(),
-            Completion = new(
-                manifest.Inputs.All(x => x.Status != ConversionStatus.Unprocessed),
-                false
-            ),
+            Completion = new(manifest.Inputs.All(x => x.Status != ConversionStatus.Unprocessed), false),
         };
         // 保存する内容には出力の完了を記録し、確定保存に失敗した場合だけ未完了のまま返す。
         var saved = recorded with
@@ -462,12 +387,7 @@ internal static class CorpusGenerator
         var head = output.Trim();
         if (head != revision.Commit)
         {
-            diagnostics.Add(
-                new(
-                    PREPARE,
-                    $"{name}の配置{root}のHEAD {head}が固定commit {revision.Commit}と一致しません。"
-                )
-            );
+            diagnostics.Add(new(PREPARE, $"{name}の配置{root}のHEAD {head}が固定commit {revision.Commit}と一致しません。"));
         }
 
         return head;
@@ -480,9 +400,7 @@ internal static class CorpusGenerator
     /// <returns>前後の空白を除いたoriginのURL Gitを起動できないかコマンドが失敗した場合はnull</returns>
     private static string? ReadOrigin(string root)
     {
-        return RunGit(root, "remote", "get-url", "origin") is (0, var output, _)
-            ? output.Trim()
-            : null;
+        return RunGit(root, "remote", "get-url", "origin") is (0, var output, _) ? output.Trim() : null;
     }
 
     /// <summary>
@@ -491,18 +409,14 @@ internal static class CorpusGenerator
     /// <param name="root">Gitの-Cへ渡す配置</param>
     /// <param name="arguments">-Cと配置に続けて渡すコマンドと引数</param>
     /// <returns>終了値・標準出力・標準エラー Gitを起動できない場合は終了値がnull、標準出力が空、標準エラーが失敗理由</returns>
-    private static (int? ExitCode, string Output, string Error) RunGit(
-        string root,
-        params string[] arguments
-    )
+    private static (int? ExitCode, string Output, string Error) RunGit(string root, params string[] arguments)
     {
         var fullRoot = Path.TrimEndingDirectorySeparator(Path.GetFullPath(root));
         var startInfo = new ProcessStartInfo("git");
         // 呼出し元の環境変数で別のリポジトリを参照せず、指定した配置より上の無関係なGitも探索しない。
         startInfo.Environment.Remove("GIT_DIR");
         startInfo.Environment.Remove("GIT_WORK_TREE");
-        startInfo.Environment["GIT_CEILING_DIRECTORIES"] =
-            Path.GetDirectoryName(fullRoot) ?? fullRoot;
+        startInfo.Environment["GIT_CEILING_DIRECTORIES"] = Path.GetDirectoryName(fullRoot) ?? fullRoot;
         startInfo.ArgumentList.Add("-C");
         startInfo.ArgumentList.Add(root);
         foreach (var argument in arguments)
@@ -527,10 +441,7 @@ internal static class CorpusGenerator
     /// <param name="path">hashを記録する実行ファイルの配置</param>
     /// <param name="diagnostics">読取に失敗した場合に理由と例外型を追加する診断一覧</param>
     /// <returns>小文字hex64桁のSHA-256 読取に失敗した場合はnull</returns>
-    private static string? HashExecutable(
-        string path,
-        ImmutableArray<CorpusDiagnostic>.Builder diagnostics
-    )
+    private static string? HashExecutable(string path, ImmutableArray<CorpusDiagnostic>.Builder diagnostics)
     {
         try
         {
@@ -556,9 +467,7 @@ internal static class CorpusGenerator
     /// <param name="startInfo">起動する実行ファイルと引数 シェル・ウィンドウ・出力転送・文字コードの設定をこのメソッドで変更する</param>
     /// <returns>終了値と、加工していない標準出力・標準エラー</returns>
     /// <exception cref="Win32Exception">プロセスを起動できない場合</exception>
-    private static (int ExitCode, string Output, string Error) RunProcess(
-        ProcessStartInfo startInfo
-    )
+    private static (int ExitCode, string Output, string Error) RunProcess(ProcessStartInfo startInfo)
     {
         startInfo.UseShellExecute = false;
         startInfo.CreateNoWindow = true;

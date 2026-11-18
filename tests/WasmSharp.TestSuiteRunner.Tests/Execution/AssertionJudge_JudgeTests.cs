@@ -1,4 +1,3 @@
-using System.Collections.Immutable;
 using System.Text.Json;
 using WasmSharp.Exceptions;
 using WasmSharp.TestSuiteRunner.Execution;
@@ -22,11 +21,7 @@ internal class AssertionJudge_JudgeTests
     [Arguments("assert_trap", CaseStage.Get, "trap")]
     [Arguments("assert_exhaustion", CaseStage.Invoke, "exhaustion")]
     [Arguments("assert_exhaustion", CaseStage.Get, "exhaustion")]
-    public async Task 否定assertionの段階と失敗が一致する_Passedと診断を返す(
-        string type,
-        CaseStage stage,
-        string failure
-    )
+    public async Task 否定assertionの段階と失敗が一致する_Passedと診断を返す(string type, CaseStage stage, string failure)
     {
         // Arrange
         var command = Negative(type, stage);
@@ -43,9 +38,7 @@ internal class AssertionJudge_JudgeTests
             await Assert.That(result.ExpectedText).IsEqualTo("expected");
             await Assert.That(result.LastStage).IsEqualTo(stage);
             await Assert.That(result.Diagnostics[0].Message).IsEqualTo(exception.Message);
-            await Assert
-                .That(result.Diagnostics[0].ExceptionType)
-                .IsEqualTo(exception.GetType().FullName);
+            await Assert.That(result.Diagnostics[0].ExceptionType).IsEqualTo(exception.GetType().FullName);
             await Assert.That(result.Diagnostics[0].Operation).IsEqualTo("public_call");
         }
     }
@@ -113,31 +106,20 @@ internal class AssertionJudge_JudgeTests
     [Arguments("platform", CaseOutcome.RunnerError)]
     [Arguments("argument", CaseOutcome.RunnerError)]
     [Arguments("unknown", CaseOutcome.RunnerError)]
-    public async Task 判定できない例外_期待失敗へ置き換えず原因を保存する(
-        string failure,
-        CaseOutcome outcome
-    )
+    public async Task 判定できない例外_期待失敗へ置き換えず原因を保存する(string failure, CaseOutcome outcome)
     {
         // Arrange
         var command = Negative("assert_exhaustion", CaseStage.Invoke);
         var exception = Failure(failure);
 
         // Act
-        var result = AssertionJudge.Judge(
-            command,
-            Observe(CaseStage.Invoke) with
-            {
-                Exception = exception,
-            }
-        );
+        var result = AssertionJudge.Judge(command, Observe(CaseStage.Invoke) with { Exception = exception });
 
         // Assert
         using (Assert.Multiple())
         {
             await Assert.That(result.Outcome).IsEqualTo(outcome);
-            await Assert
-                .That(result.Diagnostics[0].ExceptionType)
-                .IsEqualTo(exception.GetType().FullName);
+            await Assert.That(result.Diagnostics[0].ExceptionType).IsEqualTo(exception.GetType().FullName);
             await Assert.That(result.Diagnostics[0].Message).IsEqualTo("expected");
         }
     }
@@ -153,11 +135,7 @@ internal class AssertionJudge_JudgeTests
     {
         // Arrange
         var exception = Failure(failure);
-        var observation = Observe(CaseStage.Invoke) with
-        {
-            Exception = exception,
-            CallbackException = exception,
-        };
+        var observation = Observe(CaseStage.Invoke) with { Exception = exception, CallbackException = exception };
 
         // Act
         var result = AssertionJudge.Judge(Negative("assert_trap", CaseStage.Invoke), observation);
@@ -196,10 +174,7 @@ internal class AssertionJudge_JudgeTests
     [Arguments("register", CaseStage.Register)]
     [Arguments("action", CaseStage.Invoke)]
     [Arguments("action", CaseStage.Get)]
-    public async Task セットアップと単独actionが正常完了する_Passedと結果を返す(
-        string type,
-        CaseStage stage
-    )
+    public async Task セットアップと単独actionが正常完了する_Passedと結果を返す(string type, CaseStage stage)
     {
         // Arrange
         ScriptCommand command = type switch
@@ -226,10 +201,7 @@ internal class AssertionJudge_JudgeTests
     [Test]
     [Arguments(false, CaseOutcome.Passed)]
     [Arguments(true, CaseOutcome.Failed)]
-    public async Task Assert_returnの値比較_相違に応じて分類し全実値を保存する(
-        bool differs,
-        CaseOutcome outcome
-    )
+    public async Task Assert_returnの値比較_相違に応じて分類し全実値を保存する(bool differs, CaseOutcome outcome)
     {
         // Arrange
         var expected = new ExpectedValue(WasmValueKind.I32, "1", null, []);
@@ -250,9 +222,7 @@ internal class AssertionJudge_JudgeTests
         {
             await Assert.That(result.Outcome).IsEqualTo(outcome);
             await Assert.That(result.ExpectedValues[0].Value).IsEqualTo("1");
-            await Assert
-                .That(result.ActualValues[0].Bits)
-                .IsEqualTo(differs ? "00000002" : "00000001");
+            await Assert.That(result.ActualValues[0].Bits).IsEqualTo(differs ? "00000002" : "00000001");
             await Assert.That(result.Diagnostics.Count).IsEqualTo(differs ? 1 : 0);
             if (differs)
             {
@@ -323,9 +293,7 @@ internal class AssertionJudge_JudgeTests
         {
             await Assert.That(result.Outcome).IsEqualTo(CaseOutcome.RuntimeUnsupported);
             await Assert.That(result.Diagnostics[0].Feature).IsEqualTo("simd");
-            await Assert
-                .That(result.Diagnostics[0].Location)
-                .IsEqualTo(new FailureLocationRecord("Validate", 7, 2, 10));
+            await Assert.That(result.Diagnostics[0].Location).IsEqualTo(new FailureLocationRecord("Validate", 7, 2, 10));
             await Assert
                 .That(result.Diagnostics[0].UnverifiedRanges[0])
                 .IsEqualTo(new UnverifiedRangeRecord("Validate", 7, 20, "remaining"));
@@ -340,10 +308,7 @@ internal class AssertionJudge_JudgeTests
         var observation = Observe(CaseStage.Validate) with { BlockedBy = [cause] };
 
         // Act
-        var result = AssertionJudge.Judge(
-            Negative("assert_unlinkable", CaseStage.Instantiate),
-            observation
-        );
+        var result = AssertionJudge.Judge(Negative("assert_unlinkable", CaseStage.Instantiate), observation);
 
         // Assert
         using (Assert.Multiple())
@@ -363,13 +328,7 @@ internal class AssertionJudge_JudgeTests
         ScriptCommand command =
             type == "module"
                 ? new ModuleCommand(2, 3, null, "missing.wat", ScriptModuleType.Text)
-                : new AssertMalformedCommand(
-                    2,
-                    3,
-                    "missing.wat",
-                    "expected",
-                    ScriptModuleType.Text
-                );
+                : new AssertMalformedCommand(2, 3, "missing.wat", "expected", ScriptModuleType.Text);
 
         // Act
         var result = AssertionJudge.Judge(command, Observe(null));
@@ -413,11 +372,7 @@ internal class AssertionJudge_JudgeTests
     [Arguments("action", CaseStage.Invoke, "trap")]
     [Arguments("action", CaseStage.Invoke, "exhaustion")]
     [Arguments("return", CaseStage.Invoke, "trap")]
-    public async Task 正常完了を期待した処理でWasm失敗を観測する_Failedを返す(
-        string type,
-        CaseStage stage,
-        string failure
-    )
+    public async Task 正常完了を期待した処理でWasm失敗を観測する_Failedを返す(string type, CaseStage stage, string failure)
     {
         // Arrange
         ScriptCommand command = type switch
@@ -428,13 +383,7 @@ internal class AssertionJudge_JudgeTests
         };
 
         // Act
-        var result = AssertionJudge.Judge(
-            command,
-            Observe(stage) with
-            {
-                Exception = Failure(failure),
-            }
-        );
+        var result = AssertionJudge.Judge(command, Observe(stage) with { Exception = Failure(failure) });
 
         // Assert
         await Assert.That(result.Outcome).IsEqualTo(CaseOutcome.Failed);
@@ -446,22 +395,14 @@ internal class AssertionJudge_JudgeTests
         // Arrange
         var value = new ValueRecord("i32") { Bits = "00000001" };
         var print = new PrintRecord("print_i32") { Arguments = [value] };
-        var diagnostic = new CaseDiagnostic("verify", "bad hash")
-        {
-            UnverifiedRanges = [new("Decode", 1, 2, "range")],
-        };
+        var diagnostic = new CaseDiagnostic("verify", "bad hash") { UnverifiedRanges = [new("Decode", 1, 2, "range")] };
         var command = new AssertReturnCommand(
             2,
             3,
             Action(CaseStage.Invoke),
             [new(WasmValueKind.V128, null, LaneType.I64, ["1", "2"])]
         );
-        var observation = Observe(CaseStage.Invoke) with
-        {
-            Values = [value],
-            Prints = [print],
-            Diagnostics = [diagnostic],
-        };
+        var observation = Observe(CaseStage.Invoke) with { Values = [value], Prints = [print], Diagnostics = [diagnostic] };
 
         // Act
         var first = AssertionJudge.Judge(command, observation);
@@ -524,14 +465,10 @@ internal class AssertionJudge_JudgeTests
             await Assert.That(saved.Outcome).IsEqualTo(CaseOutcome.Failed);
             await Assert.That(saved.ExpectedText).IsEqualTo("expected");
             await Assert.That(saved.Diagnostics[0].Message).IsEqualTo("different diagnostic");
-            await Assert
-                .That(saved.Diagnostics[0].ExceptionType)
-                .IsEqualTo(exception.GetType().FullName);
+            await Assert.That(saved.Diagnostics[0].ExceptionType).IsEqualTo(exception.GetType().FullName);
             await Assert.That(saved.LastStage).IsEqualTo(stage);
             await Assert.That(saved.Diagnostics[0].Stage).IsEqualTo(stage);
-            await Assert
-                .That(JsonSerializer.Serialize(saved))
-                .IsEqualTo(JsonSerializer.Serialize(result));
+            await Assert.That(JsonSerializer.Serialize(saved)).IsEqualTo(JsonSerializer.Serialize(result));
         }
     }
 
@@ -550,10 +487,7 @@ internal class AssertionJudge_JudgeTests
     {
         // Arrange
         var command = Negative(type, stage);
-        var observation = Observe(stage) with
-        {
-            Exception = Failure(failure, "expected: offset=42"),
-        };
+        var observation = Observe(stage) with { Exception = Failure(failure, "expected: offset=42") };
 
         // Act
         var result = AssertionJudge.Judge(command, observation);
@@ -589,13 +523,7 @@ internal class AssertionJudge_JudgeTests
         var exception = Failure("trap", actual);
 
         // Act
-        var result = AssertionJudge.Judge(
-            command,
-            Observe(CaseStage.Invoke) with
-            {
-                Exception = exception,
-            }
-        );
+        var result = AssertionJudge.Judge(command, Observe(CaseStage.Invoke) with { Exception = exception });
 
         // Assert
         using (Assert.Multiple())
@@ -604,9 +532,7 @@ internal class AssertionJudge_JudgeTests
             await Assert.That(result.ExpectedText).IsEqualTo(expected);
             await Assert.That(result.Diagnostics[0].Message).IsEqualTo(actual);
             await Assert.That(result.Diagnostics[0].Reason).IsEqualTo("Unreachable");
-            await Assert
-                .That(result.Diagnostics[0].Location)
-                .IsEqualTo(new FailureLocationRecord("Invoke", 7, null, null));
+            await Assert.That(result.Diagnostics[0].Location).IsEqualTo(new FailureLocationRecord("Invoke", 7, null, null));
         }
     }
 
@@ -617,43 +543,17 @@ internal class AssertionJudge_JudgeTests
 
     private static ScriptAction Action(CaseStage stage)
     {
-        return stage == CaseStage.Get
-            ? new GetAction(null, "value")
-            : new InvokeAction(null, "run", []);
+        return stage == CaseStage.Get ? new GetAction(null, "value") : new InvokeAction(null, "run", []);
     }
 
     private static ScriptCommand Negative(string type, CaseStage stage, string text = "expected")
     {
         return type switch
         {
-            "assert_malformed" => new AssertMalformedCommand(
-                2,
-                3,
-                "a.wasm",
-                text,
-                ScriptModuleType.Binary
-            ),
-            "assert_invalid" => new AssertInvalidCommand(
-                2,
-                3,
-                "a.wasm",
-                text,
-                ScriptModuleType.Binary
-            ),
-            "assert_unlinkable" => new AssertUnlinkableCommand(
-                2,
-                3,
-                "a.wasm",
-                text,
-                ScriptModuleType.Binary
-            ),
-            "assert_uninstantiable" => new AssertUninstantiableCommand(
-                2,
-                3,
-                "a.wasm",
-                text,
-                ScriptModuleType.Binary
-            ),
+            "assert_malformed" => new AssertMalformedCommand(2, 3, "a.wasm", text, ScriptModuleType.Binary),
+            "assert_invalid" => new AssertInvalidCommand(2, 3, "a.wasm", text, ScriptModuleType.Binary),
+            "assert_unlinkable" => new AssertUnlinkableCommand(2, 3, "a.wasm", text, ScriptModuleType.Binary),
+            "assert_uninstantiable" => new AssertUninstantiableCommand(2, 3, "a.wasm", text, ScriptModuleType.Binary),
             "assert_trap" => new AssertTrapCommand(2, 3, Action(stage), text, []),
             _ => new AssertExhaustionCommand(2, 3, Action(stage), text, []),
         };
@@ -677,11 +577,7 @@ internal class AssertionJudge_JudgeTests
                 new(WasmProcessingStage.Instantiate, 7)
             ),
             "unknown_link" => new WasmInstantiateException(message),
-            "trap" => new WasmTrapException(
-                message,
-                WasmTrapReason.Unreachable,
-                new(WasmProcessingStage.Invoke, 7)
-            ),
+            "trap" => new WasmTrapException(message, WasmTrapReason.Unreachable, new(WasmProcessingStage.Invoke, 7)),
             "exhaustion" => new WasmExhaustionException(
                 message,
                 WasmExhaustionReason.CallDepthLimit,
@@ -689,11 +585,7 @@ internal class AssertionJudge_JudgeTests
                 new(WasmProcessingStage.Invoke, 7)
             ),
             "unsupported" => new WasmUnsupportedFeatureException(message),
-            "limit" => new WasmImplementationLimitException(
-                message,
-                WasmImplementationLimitReason.CollectionSize,
-                10
-            ),
+            "limit" => new WasmImplementationLimitException(message, WasmImplementationLimitReason.CollectionSize, 10),
             "oom" => new OutOfMemoryException(message),
             "invoke" => new WasmInvokeException(message),
             "platform" => new WasmPlatformCapabilityException(message),

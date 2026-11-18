@@ -123,9 +123,7 @@ internal class DecodedInstruction_WithBranchTableTests
         // Assert
         using (Assert.Multiple())
         {
-            await Assert
-                .That(instruction.Labels.SequenceEqual([2u, 0u, uint.MaxValue, 5u]))
-                .IsTrue();
+            await Assert.That(instruction.Labels.SequenceEqual([2u, 0u, uint.MaxValue, 5u])).IsTrue();
             await Assert.That(instruction.Labels.IsDefault).IsFalse();
             await Assert.That(instruction.Immediate).IsEqualTo(default);
             await Assert.That(instruction.Index).IsEqualTo(0u);

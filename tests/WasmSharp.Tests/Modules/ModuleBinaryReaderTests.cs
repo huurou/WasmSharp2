@@ -124,17 +124,8 @@ internal class ModuleBinaryReader_ReadNameTests
             .ThrowsExactly<WasmDecodeException>();
         using (Assert.Multiple())
         {
-            await Assert
-                .That(exception!.Location)
-                .IsEqualTo(new(WasmProcessingStage.Decode, 41, null, 7));
-            await Assert
-                .That(
-                    exception.Message.StartsWith(
-                        "malformed UTF-8 encoding",
-                        StringComparison.Ordinal
-                    )
-                )
-                .IsTrue();
+            await Assert.That(exception!.Location).IsEqualTo(new(WasmProcessingStage.Decode, 41, null, 7));
+            await Assert.That(exception.Message.StartsWith("malformed UTF-8 encoding", StringComparison.Ordinal)).IsTrue();
         }
     }
 
@@ -152,9 +143,7 @@ internal class ModuleBinaryReader_ReadNameTests
                 reader.ReadName();
             })
             .ThrowsExactly<ModuleReadBoundaryException>();
-        await Assert
-            .That(exception!.Fallback.Location)
-            .IsEqualTo(new(WasmProcessingStage.Decode, 41, null, 7));
+        await Assert.That(exception!.Fallback.Location).IsEqualTo(new(WasmProcessingStage.Decode, 41, null, 7));
     }
 }
 
@@ -163,10 +152,7 @@ internal class ModuleBinaryReader_ReadU32Tests
     [Test]
     [Arguments("", 20L)]
     [Arguments("80", 21L)]
-    public async Task 診断用モードの物理EOF_内部境界通知を出さずDecode失敗にする(
-        string hex,
-        long offset
-    )
+    public async Task 診断用モードの物理EOF_内部境界通知を出さずDecode失敗にする(string hex, long offset)
     {
         // Arrange
         var bytes = Convert.FromHexString(hex);
@@ -182,16 +168,9 @@ internal class ModuleBinaryReader_ReadU32Tests
         using (Assert.Multiple())
         {
             await Assert
-                .That(
-                    exception!.Message.StartsWith(
-                        "unexpected end of section or function",
-                        StringComparison.Ordinal
-                    )
-                )
+                .That(exception!.Message.StartsWith("unexpected end of section or function", StringComparison.Ordinal))
                 .IsTrue();
-            await Assert
-                .That(exception.Location)
-                .IsEqualTo(new(WasmProcessingStage.Decode, offset, 2, 10));
+            await Assert.That(exception.Location).IsEqualTo(new(WasmProcessingStage.Decode, offset, 2, 10));
         }
     }
 
@@ -200,11 +179,7 @@ internal class ModuleBinaryReader_ReadU32Tests
     [Arguments("FFFFFFFF8F00", "integer representation too long", 25L)]
     [Arguments("FFFFFFFF10", "integer too large", 24L)]
     [Arguments("FFFFFFFF90", "integer too large", 24L)]
-    public async Task 最終payloadと継続bitが不正_値超過を先に選び追加読取りしない(
-        string hex,
-        string prefix,
-        long offset
-    )
+    public async Task 最終payloadと継続bitが不正_値超過を先に選び追加読取りしない(string hex, string prefix, long offset)
     {
         // Arrange
         var bytes = Convert.FromHexString(hex);
@@ -219,12 +194,8 @@ internal class ModuleBinaryReader_ReadU32Tests
             .ThrowsExactly<WasmDecodeException>();
         using (Assert.Multiple())
         {
-            await Assert
-                .That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal))
-                .IsTrue();
-            await Assert
-                .That(exception.Location)
-                .IsEqualTo(new(WasmProcessingStage.Decode, offset, 2, 10));
+            await Assert.That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal)).IsTrue();
+            await Assert.That(exception.Location).IsEqualTo(new(WasmProcessingStage.Decode, offset, 2, 10));
         }
     }
 
@@ -294,9 +265,7 @@ internal class ModuleBinaryReader_ReadU32Tests
                 reader.ReadU32();
             })
             .ThrowsExactly<ModuleReadBoundaryException>();
-        await Assert
-            .That(exception!.Fallback.Location)
-            .IsEqualTo(new(WasmProcessingStage.Decode, offset, 2, 10));
+        await Assert.That(exception!.Fallback.Location).IsEqualTo(new(WasmProcessingStage.Decode, offset, 2, 10));
     }
 }
 
@@ -307,11 +276,7 @@ internal class ModuleBinaryReader_ReadS32Tests
     [Arguments("FFFFFFFFFF00", "integer representation too long", 25L)]
     [Arguments("FFFFFFFF08", "integer too large", 24L)]
     [Arguments("80808080F7", "integer too large", 24L)]
-    public async Task 最終payloadと継続bitが不正_符号拡張違反を先に選ぶ(
-        string hex,
-        string prefix,
-        long offset
-    )
+    public async Task 最終payloadと継続bitが不正_符号拡張違反を先に選ぶ(string hex, string prefix, long offset)
     {
         // Arrange
         var bytes = Convert.FromHexString(hex);
@@ -326,12 +291,8 @@ internal class ModuleBinaryReader_ReadS32Tests
             .ThrowsExactly<WasmDecodeException>();
         using (Assert.Multiple())
         {
-            await Assert
-                .That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal))
-                .IsTrue();
-            await Assert
-                .That(exception.Location)
-                .IsEqualTo(new(WasmProcessingStage.Decode, offset, 2, 10));
+            await Assert.That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal)).IsTrue();
+            await Assert.That(exception.Location).IsEqualTo(new(WasmProcessingStage.Decode, offset, 2, 10));
         }
     }
 
@@ -403,9 +364,7 @@ internal class ModuleBinaryReader_ReadS32Tests
                 reader.ReadS32();
             })
             .ThrowsExactly<ModuleReadBoundaryException>();
-        await Assert
-            .That(exception!.Fallback.Location)
-            .IsEqualTo(new(WasmProcessingStage.Decode, offset, 2, 10));
+        await Assert.That(exception!.Fallback.Location).IsEqualTo(new(WasmProcessingStage.Decode, offset, 2, 10));
     }
 }
 
@@ -422,10 +381,7 @@ internal class ModuleBinaryReader_ReadS33Tests
     [Arguments("FFFFFFFF7F", -1L)]
     [Arguments("FF7F", -1L)]
     [Arguments("C07F", -64L)]
-    public async Task 合法なs33表現_境界と非最短と負の多byte値を整数のまま読み取る(
-        string hex,
-        long expected
-    )
+    public async Task 合法なs33表現_境界と非最短と負の多byte値を整数のまま読み取る(string hex, long expected)
     {
         // Arrange
         var reader = new ModuleBinaryReader(Convert.FromHexString(hex), 20);
@@ -450,11 +406,7 @@ internal class ModuleBinaryReader_ReadS33Tests
     [Arguments("FFFFFFFF10", "integer too large", 24L)]
     [Arguments("FFFFFFFF90", "integer too large", 24L)]
     [Arguments("808080806F", "integer too large", 24L)]
-    public async Task 幅や符号拡張が不正_既存の原因選択と位置を保持する(
-        string hex,
-        string prefix,
-        long offset
-    )
+    public async Task 幅や符号拡張が不正_既存の原因選択と位置を保持する(string hex, string prefix, long offset)
     {
         // Arrange
         var bytes = Convert.FromHexString(hex);
@@ -469,12 +421,8 @@ internal class ModuleBinaryReader_ReadS33Tests
             .ThrowsExactly<WasmDecodeException>();
         using (Assert.Multiple())
         {
-            await Assert
-                .That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal))
-                .IsTrue();
-            await Assert
-                .That(exception.Location)
-                .IsEqualTo(new(WasmProcessingStage.Decode, offset, 2, 10));
+            await Assert.That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal)).IsTrue();
+            await Assert.That(exception.Location).IsEqualTo(new(WasmProcessingStage.Decode, offset, 2, 10));
         }
     }
 
@@ -497,15 +445,10 @@ internal class ModuleBinaryReader_ReadS33Tests
             .ThrowsExactly<ModuleReadBoundaryException>();
         using (Assert.Multiple())
         {
-            await Assert
-                .That(exception!.Fallback.Location)
-                .IsEqualTo(new(WasmProcessingStage.Decode, offset, 2, 10));
+            await Assert.That(exception!.Fallback.Location).IsEqualTo(new(WasmProcessingStage.Decode, offset, 2, 10));
             await Assert
                 .That(
-                    exception.Fallback.Message.StartsWith(
-                        "unexpected end of section or function",
-                        StringComparison.Ordinal
-                    )
+                    exception.Fallback.Message.StartsWith("unexpected end of section or function", StringComparison.Ordinal)
                 )
                 .IsTrue();
         }
@@ -526,18 +469,13 @@ internal class ModuleBinaryReader_ReadS33Tests
                 child.ReadS33();
             })
             .ThrowsExactly<ModuleReadBoundaryException>();
-        await Assert
-            .That(exception!.Fallback.Location)
-            .IsEqualTo(new(WasmProcessingStage.Decode, 21, 2, 10));
+        await Assert.That(exception!.Fallback.Location).IsEqualTo(new(WasmProcessingStage.Decode, 21, 2, 10));
     }
 
     [Test]
     [Arguments("", 20L)]
     [Arguments("80", 21L)]
-    public async Task 診断用モードの物理EOF_内部境界通知を出さずDecode失敗にする(
-        string hex,
-        long offset
-    )
+    public async Task 診断用モードの物理EOF_内部境界通知を出さずDecode失敗にする(string hex, long offset)
     {
         // Arrange
         var bytes = Convert.FromHexString(hex);
@@ -553,16 +491,9 @@ internal class ModuleBinaryReader_ReadS33Tests
         using (Assert.Multiple())
         {
             await Assert
-                .That(
-                    exception!.Message.StartsWith(
-                        "unexpected end of section or function",
-                        StringComparison.Ordinal
-                    )
-                )
+                .That(exception!.Message.StartsWith("unexpected end of section or function", StringComparison.Ordinal))
                 .IsTrue();
-            await Assert
-                .That(exception.Location)
-                .IsEqualTo(new(WasmProcessingStage.Decode, offset, 2, 10));
+            await Assert.That(exception.Location).IsEqualTo(new(WasmProcessingStage.Decode, offset, 2, 10));
         }
     }
 }
@@ -574,11 +505,7 @@ internal class ModuleBinaryReader_ReadS64Tests
     [Arguments("FFFFFFFFFFFFFFFFFFFF00", "integer representation too long", 30L)]
     [Arguments("80808080808080808001", "integer too large", 29L)]
     [Arguments("FFFFFFFFFFFFFFFFFFFE", "integer too large", 29L)]
-    public async Task 最終payloadと継続bitが不正_64bitの原因と位置を区別する(
-        string hex,
-        string prefix,
-        long offset
-    )
+    public async Task 最終payloadと継続bitが不正_64bitの原因と位置を区別する(string hex, string prefix, long offset)
     {
         // Arrange
         var bytes = Convert.FromHexString(hex);
@@ -593,12 +520,8 @@ internal class ModuleBinaryReader_ReadS64Tests
             .ThrowsExactly<WasmDecodeException>();
         using (Assert.Multiple())
         {
-            await Assert
-                .That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal))
-                .IsTrue();
-            await Assert
-                .That(exception.Location)
-                .IsEqualTo(new(WasmProcessingStage.Decode, offset, 2, 10));
+            await Assert.That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal)).IsTrue();
+            await Assert.That(exception.Location).IsEqualTo(new(WasmProcessingStage.Decode, offset, 2, 10));
         }
     }
 
@@ -668,9 +591,7 @@ internal class ModuleBinaryReader_ReadS64Tests
                 reader.ReadS64();
             })
             .ThrowsExactly<ModuleReadBoundaryException>();
-        await Assert
-            .That(exception!.Fallback.Location)
-            .IsEqualTo(new(WasmProcessingStage.Decode, offset, 2, 10));
+        await Assert.That(exception!.Fallback.Location).IsEqualTo(new(WasmProcessingStage.Decode, offset, 2, 10));
     }
 }
 
@@ -679,11 +600,7 @@ internal class ModuleBinaryReader_TryPeekByteTests
     [Test]
     [Arguments("", false, (byte)0)]
     [Arguments("AB", true, (byte)0xAB)]
-    public async Task 次byteを確認する_位置を進めず終端を区別する(
-        string hex,
-        bool expected,
-        byte expectedValue
-    )
+    public async Task 次byteを確認する_位置を進めず終端を区別する(string hex, bool expected, byte expectedValue)
     {
         // Arrange
         var reader = new ModuleBinaryReader(Convert.FromHexString(hex), 20);
@@ -708,11 +625,7 @@ internal class ModuleBinaryReader_ReadLengthTests
     [Arguments("0261", 2u, 1)]
     [Arguments("8100", 1u, 0)]
     [Arguments("00", 0u, 0)]
-    public async Task Prefix前の物理残量以内_取得前に長さだけを返す(
-        string hex,
-        uint expected,
-        int expectedRemaining
-    )
+    public async Task Prefix前の物理残量以内_取得前に長さだけを返す(string hex, uint expected, int expectedRemaining)
     {
         // Arrange
         var reader = new ModuleBinaryReader(Convert.FromHexString(hex), 100);
@@ -764,14 +677,8 @@ internal class ModuleBinaryReader_ReadLengthTests
             .ThrowsExactly<WasmDecodeException>();
         using (Assert.Multiple())
         {
-            await Assert
-                .That(
-                    exception!.Message.StartsWith("length out of bounds", StringComparison.Ordinal)
-                )
-                .IsTrue();
-            await Assert
-                .That(exception.Location)
-                .IsEqualTo(new(WasmProcessingStage.Decode, 100, null, 7));
+            await Assert.That(exception!.Message.StartsWith("length out of bounds", StringComparison.Ordinal)).IsTrue();
+            await Assert.That(exception.Location).IsEqualTo(new(WasmProcessingStage.Decode, 100, null, 7));
         }
     }
 }
@@ -798,11 +705,7 @@ internal class ModuleBinaryReader_ReadU1Tests
     [Arguments("82", "integer too large", 20L)]
     [Arguments("80", "integer representation too long", 21L)]
     [Arguments("8100", "integer representation too long", 21L)]
-    public async Task 値超過と継続bit_追加読取りせず原因を区別する(
-        string hex,
-        string prefix,
-        long offset
-    )
+    public async Task 値超過と継続bit_追加読取りせず原因を区別する(string hex, string prefix, long offset)
     {
         // Arrange
         var bytes = Convert.FromHexString(hex);
@@ -817,9 +720,7 @@ internal class ModuleBinaryReader_ReadU1Tests
             .ThrowsExactly<WasmDecodeException>();
         using (Assert.Multiple())
         {
-            await Assert
-                .That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal))
-                .IsTrue();
+            await Assert.That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal)).IsTrue();
             await Assert.That(exception.Location!.ByteOffset).IsEqualTo(offset);
         }
     }
@@ -863,12 +764,7 @@ internal class ModuleBinaryReader_ReadS7Tests
         using (Assert.Multiple())
         {
             await Assert
-                .That(
-                    exception!.Message.StartsWith(
-                        "integer representation too long",
-                        StringComparison.Ordinal
-                    )
-                )
+                .That(exception!.Message.StartsWith("integer representation too long", StringComparison.Ordinal))
                 .IsTrue();
             await Assert.That(exception.Location!.ByteOffset).IsEqualTo(21L);
         }
@@ -896,9 +792,7 @@ internal class ModuleBinaryReader_ReadRangeTests
         var location = child.Location();
 
         // Assert
-        await Assert
-            .That(location)
-            .IsEqualTo(new(WasmProcessingStage.Decode, 100, expectedFunctionIndex, 10));
+        await Assert.That(location).IsEqualTo(new(WasmProcessingStage.Decode, 100, expectedFunctionIndex, 10));
     }
 
     [Test]
@@ -932,12 +826,7 @@ internal class ModuleBinaryReader_ReadRangeTests
     public async Task 診断用モードの名前長が宣言境界を越える_同じ長さとUTF8処理を使う()
     {
         // Arrange
-        var parent = new ModuleBinaryReader(
-            [0x81, 0, 0x61],
-            100,
-            0,
-            mode: ModuleReadMode.Diagnostic
-        );
+        var parent = new ModuleBinaryReader([0x81, 0, 0x61], 100, 0, mode: ModuleReadMode.Diagnostic);
         var child = parent.ReadRange(1);
 
         // Act
@@ -1028,9 +917,7 @@ internal class ModuleBinaryReader_ReadRangeTests
                 reader.ReadRange(length);
             })
             .ThrowsExactly<ModuleReadBoundaryException>();
-        await Assert
-            .That(exception!.Fallback.Location)
-            .IsEqualTo(new(WasmProcessingStage.Decode, 100, 3, 10));
+        await Assert.That(exception!.Fallback.Location).IsEqualTo(new(WasmProcessingStage.Decode, 100, 3, 10));
     }
 
     [Test]

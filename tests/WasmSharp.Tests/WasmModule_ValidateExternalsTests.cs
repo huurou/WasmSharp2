@@ -8,9 +8,7 @@ internal partial class WasmModule_ValidateTests
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task 外部要素の検証に成功_関数exportだけを全体添字で確定し再検証できる(
-        bool useStream
-    )
+    public async Task 外部要素の検証に成功_関数exportだけを全体添字で確定し再検証できる(bool useStream)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
@@ -63,9 +61,7 @@ internal partial class WasmModule_ValidateTests
         // Arrange
         var executionContext = new WasmExecutionContext();
         var module = WasmModule.Decode(
-            HostLinkingModuleBinary.Create(
-                HostLinkingModuleBinary.Section(id, Convert.FromHexString(hex))
-            )
+            HostLinkingModuleBinary.Create(HostLinkingModuleBinary.Section(id, Convert.FromHexString(hex)))
         );
 
         // Act
@@ -95,15 +91,11 @@ internal partial class WasmModule_ValidateTests
         // Act & Assert
         for (var attempt = 0; attempt < 2; attempt++)
         {
-            var exception = await Assert
-                .That(() => module.Validate())
-                .ThrowsExactly<WasmValidateException>();
+            var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
             await Assert.That(exception!.Location!.FunctionIndex).IsEqualTo(2u);
             await Assert.That(module.FunctionCodes.IsEmpty).IsTrue();
             await Assert.That(module.FunctionExportIndices.IsEmpty).IsTrue();
-            await Assert
-                .That(() => module.Instantiate(executionContext, []))
-                .ThrowsExactly<InvalidOperationException>();
+            await Assert.That(() => module.Instantiate(executionContext, [])).ThrowsExactly<InvalidOperationException>();
         }
     }
 }

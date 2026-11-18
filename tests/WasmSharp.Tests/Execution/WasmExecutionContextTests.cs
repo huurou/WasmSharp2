@@ -36,8 +36,7 @@ internal class WasmExecutionContext_EnterTests
             {
                 executionContext.Exit(isInnerOutermost);
             }
-            outerRemains =
-                ReferenceEquals(executionContext.Current, outer) && outer.CallDepth == 50;
+            outerRemains = ReferenceEquals(executionContext.Current, outer) && outer.CallDepth == 50;
         }
         finally
         {

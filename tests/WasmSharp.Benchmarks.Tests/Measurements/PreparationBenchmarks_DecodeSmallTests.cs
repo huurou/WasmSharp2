@@ -27,9 +27,7 @@ internal class PreparationBenchmarks_DecodeSmallTests
         {
             await Assert.That(ReferenceEquals(first, second)).IsFalse();
             await Assert.That(benchmark.Cleanup).ThrowsNothing();
-            await Assert
-                .That(() => second.Instantiate(context_, CaseVerifier.CreateImports()))
-                .ThrowsNothing();
+            await Assert.That(() => second.Instantiate(context_, CaseVerifier.CreateImports())).ThrowsNothing();
             // Act & Assert
             await Assert
                 .That(() => first.Instantiate(context_, CaseVerifier.CreateImports()))

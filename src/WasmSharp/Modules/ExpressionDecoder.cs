@@ -31,20 +31,12 @@ internal static class ExpressionDecoder
             var offset = reader.Position;
             var code = reader.ReadByte();
 
-            var opcode = code is 0xFC or 0xFD
-                ? new OpcodeKey(code, reader.ReadU32())
-                : new OpcodeKey(0, code);
+            var opcode = code is 0xFC or 0xFD ? new OpcodeKey(code, reader.ReadU32()) : new OpcodeKey(0, code);
             if (!InstructionSet.TryGet(opcode, out var descriptor))
             {
                 // 固定参照は0xFCだけprefixを表示し、0xFDは命令番号だけを表示する。
-                var opcodeText =
-                    opcode.Prefix == 0xFC
-                        ? $"{opcode.Prefix:x2} {opcode.Code:x2}"
-                        : $"{opcode.Code:x2}";
-                throw reader.Error(
-                    $"illegal opcode {opcodeText}: Core 2.0に割り当てられていないopcodeです。",
-                    offset
-                );
+                var opcodeText = opcode.Prefix == 0xFC ? $"{opcode.Prefix:x2} {opcode.Code:x2}" : $"{opcode.Code:x2}";
+                throw reader.Error($"illegal opcode {opcodeText}: Core 2.0に割り当てられていないopcodeです。", offset);
             }
 
             var immediateKind = descriptor.Immediate;
@@ -67,16 +59,8 @@ internal static class ExpressionDecoder
                     reader.ReadU32(),
                     offset
                 ),
-                ImmediateKind.I32 => DecodedInstruction.WithImmediate(
-                    opcode,
-                    WasmValue.FromI32(reader.ReadS32()),
-                    offset
-                ),
-                ImmediateKind.I64 => DecodedInstruction.WithImmediate(
-                    opcode,
-                    WasmValue.FromI64(reader.ReadS64()),
-                    offset
-                ),
+                ImmediateKind.I32 => DecodedInstruction.WithImmediate(opcode, WasmValue.FromI32(reader.ReadS32()), offset),
+                ImmediateKind.I64 => DecodedInstruction.WithImmediate(opcode, WasmValue.FromI64(reader.ReadS64()), offset),
                 ImmediateKind.F32Bits => DecodedInstruction.WithImmediate(
                     opcode,
                     WasmValue.FromF32Bits(reader.ReadF32Bits()),
@@ -92,21 +76,9 @@ internal static class ExpressionDecoder
                     SimdValue.FromLittleEndian(reader.ReadBytes(16)).ToValue(),
                     offset
                 ),
-                ImmediateKind.Shuffle => DecodedInstruction.WithShuffleLanes(
-                    opcode,
-                    reader.ReadBytes(16),
-                    offset
-                ),
-                ImmediateKind.LaneIndex => DecodedInstruction.WithLaneIndex(
-                    opcode,
-                    reader.ReadByte(),
-                    offset
-                ),
-                ImmediateKind.BlockType => DecodedInstruction.WithBlockType(
-                    opcode,
-                    ReadBlockType(ref reader),
-                    offset
-                ),
+                ImmediateKind.Shuffle => DecodedInstruction.WithShuffleLanes(opcode, reader.ReadBytes(16), offset),
+                ImmediateKind.LaneIndex => DecodedInstruction.WithLaneIndex(opcode, reader.ReadByte(), offset),
+                ImmediateKind.BlockType => DecodedInstruction.WithBlockType(opcode, ReadBlockType(ref reader), offset),
                 ImmediateKind.BranchTable => ReadBranchTable(opcode, offset, ref reader),
                 ImmediateKind.TypeVector => ReadSelectTypes(opcode, offset, ref reader),
                 ImmediateKind.ReferenceType => DecodedInstruction.WithImmediate(
@@ -121,20 +93,15 @@ internal static class ExpressionDecoder
                     new(reader.ReadU32(), reader.ReadU32()),
                     offset
                 ),
-                ImmediateKind.MemoryArgumentLaneIndex =>
-                    DecodedInstruction.WithMemoryArgumentLaneIndex(
-                        opcode,
-                        new(reader.ReadU32(), reader.ReadU32()),
-                        reader.ReadByte(),
-                        offset
-                    ),
+                ImmediateKind.MemoryArgumentLaneIndex => DecodedInstruction.WithMemoryArgumentLaneIndex(
+                    opcode,
+                    new(reader.ReadU32(), reader.ReadU32()),
+                    reader.ReadByte(),
+                    offset
+                ),
                 ImmediateKind.MemoryZero => ReadMemoryZero(opcode, offset, ref reader),
                 ImmediateKind.MemoryPairZero => ReadMemoryPairZero(opcode, offset, ref reader),
-                ImmediateKind.DataIndexMemoryZero => ReadDataIndexMemoryZero(
-                    opcode,
-                    offset,
-                    ref reader
-                ),
+                ImmediateKind.DataIndexMemoryZero => ReadDataIndexMemoryZero(opcode, offset, ref reader),
                 _ => throw new InvalidOperationException("対応済み命令の即値情報が不正です。"),
             };
 
@@ -172,11 +139,7 @@ internal static class ExpressionDecoder
     /// <param name="offset">命令の入力位置</param>
     /// <param name="reader">データインデックスの先頭にある読み取り状態</param>
     /// <returns>データインデックスを保持する命令</returns>
-    private static DecodedInstruction ReadDataIndexMemoryZero(
-        OpcodeKey opcode,
-        long offset,
-        ref ModuleBinaryReader reader
-    )
+    private static DecodedInstruction ReadDataIndexMemoryZero(OpcodeKey opcode, long offset, ref ModuleBinaryReader reader)
     {
         var index = reader.ReadU32();
         RequireMemoryZero(ref reader);
@@ -190,11 +153,7 @@ internal static class ExpressionDecoder
     /// <param name="offset">命令の入力位置</param>
     /// <param name="reader">予約バイトの先頭にある読み取り状態</param>
     /// <returns>予約バイトの構文を検査した命令</returns>
-    private static DecodedInstruction ReadMemoryZero(
-        OpcodeKey opcode,
-        long offset,
-        ref ModuleBinaryReader reader
-    )
+    private static DecodedInstruction ReadMemoryZero(OpcodeKey opcode, long offset, ref ModuleBinaryReader reader)
     {
         RequireMemoryZero(ref reader);
         return DecodedInstruction.WithoutImmediate(opcode, offset);
@@ -207,11 +166,7 @@ internal static class ExpressionDecoder
     /// <param name="offset">命令の入力位置</param>
     /// <param name="reader">コピー先の予約バイトの先頭にある読み取り状態</param>
     /// <returns>両方の予約バイトの構文を検査した命令</returns>
-    private static DecodedInstruction ReadMemoryPairZero(
-        OpcodeKey opcode,
-        long offset,
-        ref ModuleBinaryReader reader
-    )
+    private static DecodedInstruction ReadMemoryPairZero(OpcodeKey opcode, long offset, ref ModuleBinaryReader reader)
     {
         RequireMemoryZero(ref reader);
         return ReadMemoryZero(opcode, offset, ref reader);
@@ -225,10 +180,7 @@ internal static class ExpressionDecoder
     {
         if (reader.ReadByte() != 0)
         {
-            throw reader.Error(
-                "zero byte expected: 予約バイトには0x00が必要です。",
-                reader.Position - 1
-            );
+            throw reader.Error("zero byte expected: 予約バイトには0x00が必要です。", reader.Position - 1);
         }
     }
 
@@ -258,10 +210,7 @@ internal static class ExpressionDecoder
         if (typeIndex < 0)
         {
             // 固定参照が負のs33を拒否した後、s7として先頭byteを読む場合と同じ診断位置
-            throw reader.Error(
-                "integer representation too long: 制御型の値型は単一byteで符号化します。",
-                offset + 1
-            );
+            throw reader.Error("integer representation too long: 制御型の値型は単一byteで符号化します。", offset + 1);
         }
 
         return BlockType.FromTypeIndex((uint)typeIndex);
@@ -274,11 +223,7 @@ internal static class ExpressionDecoder
     /// <param name="offset">命令の入力位置</param>
     /// <param name="reader">候補vectorの先頭にある読取り状態 既定ラベルの終端まで進める</param>
     /// <returns>候補と既定ラベルを保持する入力命令</returns>
-    private static DecodedInstruction ReadBranchTable(
-        OpcodeKey opcode,
-        long offset,
-        ref ModuleBinaryReader reader
-    )
+    private static DecodedInstruction ReadBranchTable(OpcodeKey opcode, long offset, ref ModuleBinaryReader reader)
     {
         var countOffset = reader.Position;
         var count = ModuleBinaryFormat.ReadCount(ref reader);
@@ -296,12 +241,7 @@ internal static class ExpressionDecoder
         }
 
         var defaultLabel = reader.ReadU32();
-        return DecodedInstruction.WithBranchTable(
-            opcode,
-            CollectionsMarshal.AsSpan(labels),
-            defaultLabel,
-            offset
-        );
+        return DecodedInstruction.WithBranchTable(opcode, CollectionsMarshal.AsSpan(labels), defaultLabel, offset);
     }
 
     /// <summary>
@@ -311,11 +251,7 @@ internal static class ExpressionDecoder
     /// <param name="offset">命令の入力位置</param>
     /// <param name="reader">型vectorの先頭にある読取り状態 即値の終端まで進める</param>
     /// <returns>宣言順の値型を保持する入力命令</returns>
-    private static DecodedInstruction ReadSelectTypes(
-        OpcodeKey opcode,
-        long offset,
-        ref ModuleBinaryReader reader
-    )
+    private static DecodedInstruction ReadSelectTypes(OpcodeKey opcode, long offset, ref ModuleBinaryReader reader)
     {
         var count = ModuleBinaryFormat.ReadCount(ref reader);
         List<WasmValueKind> types = [];

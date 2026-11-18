@@ -37,16 +37,9 @@ internal class BenchmarkRun_CaptureSourceBeforeTests
         // Act
         var source = benchmarkRun_.CaptureSourceBefore(fixture.RepositoryDirectory, store, []);
         fixture.Git("restore", "--source=HEAD", "--staged", "--worktree", "--", RELATIVE_PATH);
-        fixture.Git(
-            "apply",
-            "--index",
-            Path.Combine(fixture.Run.DirectoryPath, source.IndexDiff.RelativePath)
-        );
+        fixture.Git("apply", "--index", Path.Combine(fixture.Run.DirectoryPath, source.IndexDiff.RelativePath));
         var restoredIndex = File.ReadAllBytes(path);
-        fixture.Git(
-            "apply",
-            Path.Combine(fixture.Run.DirectoryPath, source.WorktreeDiff.RelativePath)
-        );
+        fixture.Git("apply", Path.Combine(fixture.Run.DirectoryPath, source.WorktreeDiff.RelativePath));
 
         // Assert
         using (Assert.Multiple())
@@ -73,34 +66,23 @@ internal class BenchmarkRun_CaptureSourceBeforeTests
         // Act
         var source = benchmarkRun_.CaptureSourceBefore(fixture.RepositoryDirectory, store, []);
         fixture.Git("restore", "--source=HEAD", "--staged", "--worktree", "--", RELATIVE_PATH);
-        fixture.Git(
-            "apply",
-            "--index",
-            Path.Combine(fixture.Run.DirectoryPath, source.IndexDiff.RelativePath)
-        );
+        fixture.Git("apply", "--index", Path.Combine(fixture.Run.DirectoryPath, source.IndexDiff.RelativePath));
         var restoredIndex = File.ReadAllText(path);
-        fixture.Git(
-            "apply",
-            Path.Combine(fixture.Run.DirectoryPath, source.WorktreeDiff.RelativePath)
-        );
+        fixture.Git("apply", Path.Combine(fixture.Run.DirectoryPath, source.WorktreeDiff.RelativePath));
 
         // Assert
         using (Assert.Multiple())
         {
             await Assert.That(restoredIndex).IsEqualTo(INDEX_CONTENT);
             await Assert.That(File.ReadAllText(path)).IsEqualTo(WORKTREE_CONTENT);
-            await Assert
-                .That(fixture.Git("show", ":" + RELATIVE_PATH))
-                .IsEqualTo(INDEX_CONTENT.Trim());
+            await Assert.That(fixture.Git("show", ":" + RELATIVE_PATH)).IsEqualTo(INDEX_CONTENT.Trim());
         }
     }
 
     [Test]
     [Arguments(true)]
     [Arguments(false)]
-    public async Task Gitの色表示を強制する_保存した差分からindexとworktreeを復元できる(
-        bool indexDiff
-    )
+    public async Task Gitの色表示を強制する_保存した差分からindexとworktreeを復元できる(bool indexDiff)
     {
         // Arrange
         using var fixture = new SourceCaptureFixture();
@@ -133,12 +115,8 @@ internal class BenchmarkRun_CaptureSourceBeforeTests
         // Assert
         using (Assert.Multiple())
         {
-            await Assert
-                .That(File.ReadAllText(path))
-                .IsEqualTo(indexDiff ? INDEX_CONTENT : WORKTREE_CONTENT);
-            await Assert
-                .That(fixture.Git("show", ":" + RELATIVE_PATH))
-                .IsEqualTo(INDEX_CONTENT.Trim());
+            await Assert.That(File.ReadAllText(path)).IsEqualTo(indexDiff ? INDEX_CONTENT : WORKTREE_CONTENT);
+            await Assert.That(fixture.Git("show", ":" + RELATIVE_PATH)).IsEqualTo(INDEX_CONTENT.Trim());
         }
     }
 
@@ -175,9 +153,7 @@ internal class BenchmarkRun_CaptureSourceBeforeTests
             foreach (var set in new[] { source.Runtime, source.Harness })
             {
                 var paths = set.Files.Select(x => x.RelativePath);
-                await Assert
-                    .That(paths.SequenceEqual(paths.Order(StringComparer.Ordinal)))
-                    .IsTrue();
+                await Assert.That(paths.SequenceEqual(paths.Order(StringComparer.Ordinal))).IsTrue();
             }
             await Assert.That(savedSource.Head).IsEqualTo(source.Head);
             await Assert.That(savedSource.Runtime.Revision).IsEqualTo(source.Runtime.Revision);
@@ -194,37 +170,18 @@ internal class BenchmarkRun_CaptureSourceBeforeTests
             await Assert
                 .That(source.Runtime.Files.Select(x => x.RelativePath))
                 .Contains("src/WasmSharp.Generators/Releases.md");
-            await Assert
-                .That(
-                    source.Harness.Files.Select(x => x.RelativePath).Any(x => x.StartsWith("src/"))
-                )
-                .IsFalse();
+            await Assert.That(source.Harness.Files.Select(x => x.RelativePath).Any(x => x.StartsWith("src/"))).IsFalse();
             await Assert
                 .That(source.UntrackedFiles.Select(x => x.RelativePath))
                 .IsEquivalentTo(["tools/WasmSharp.Benchmarks/New.cs"]);
             await Assert
-                .That(
-                    File.ReadAllText(
-                        Path.Combine(fixture.Run.DirectoryPath, source.IndexDiff.RelativePath)
-                    )
-                )
+                .That(File.ReadAllText(Path.Combine(fixture.Run.DirectoryPath, source.IndexDiff.RelativePath)))
                 .Contains("staged");
             await Assert
-                .That(
-                    File.ReadAllText(
-                        Path.Combine(fixture.Run.DirectoryPath, source.WorktreeDiff.RelativePath)
-                    )
-                )
+                .That(File.ReadAllText(Path.Combine(fixture.Run.DirectoryPath, source.WorktreeDiff.RelativePath)))
                 .Contains("worktree");
             await Assert
-                .That(
-                    File.ReadAllText(
-                        Path.Combine(
-                            fixture.Run.DirectoryPath,
-                            source.UntrackedFiles.Single().RelativePath
-                        )
-                    )
-                )
+                .That(File.ReadAllText(Path.Combine(fixture.Run.DirectoryPath, source.UntrackedFiles.Single().RelativePath)))
                 .IsEqualTo("class New {}\n");
             await Assert.That(source.AssembliesBefore.Single().Path).IsEqualTo(assembly);
             await Assert

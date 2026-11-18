@@ -15,24 +15,8 @@ internal partial class BenchmarkCase_DeserializeTests
         var json = await ReadKernelCasesAsync();
         ArrayInput[] inputs =
         [
-            new(
-                "memory",
-                65536,
-                ArrayElementType.U32,
-                1024,
-                ArrayInputPattern.SeededU32,
-                0x12345678,
-                null
-            ),
-            new(
-                "memory",
-                69632,
-                ArrayElementType.U32,
-                1024,
-                ArrayInputPattern.SeededU32,
-                0x9e3779b9,
-                null
-            ),
+            new("memory", 65536, ArrayElementType.U32, 1024, ArrayInputPattern.SeededU32, 0x12345678, null),
+            new("memory", 69632, ArrayElementType.U32, 1024, ArrayInputPattern.SeededU32, 0x9e3779b9, null),
         ];
         NumericValue[] arguments =
         [
@@ -60,19 +44,15 @@ internal partial class BenchmarkCase_DeserializeTests
             await Assert.That(definition.Input.Arrays.SequenceEqual(inputs)).IsTrue();
             await Assert
                 .That(definition.Workload)
-                .IsEquivalentTo(
-                    [
-                        new WorkloadQuantity("matrix_output", 1024, WorkloadUnit.Elements),
-                        new WorkloadQuantity("multiply_accumulate", 32768, WorkloadUnit.Iterations),
-                    ]
-                );
+                .IsEquivalentTo([
+                    new WorkloadQuantity("matrix_output", 1024, WorkloadUnit.Elements),
+                    new WorkloadQuantity("multiply_accumulate", 32768, WorkloadUnit.Iterations),
+                ]);
             await Assert
                 .That(definition.InputHash)
                 .IsEqualTo(
                     Convert.ToHexStringLower(
-                        SHA256.HashData(
-                            JsonSerializer.SerializeToUtf8Bytes(definition.Input, json_.Options)
-                        )
+                        SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(definition.Input, json_.Options))
                     )
                 );
             await Assert.That(definition.ExpectedResult.Values.Count).IsEqualTo(0);
@@ -97,18 +77,12 @@ internal partial class BenchmarkCase_DeserializeTests
             // 積和は桁あふれしない整数で計算し、最後にだけmod2^32を取る。
             var exact = Enumerable
                 .Range(0, 32)
-                .Aggregate(
-                    BigInteger.Zero,
-                    (sum, x) => sum + (BigInteger)left[row * 32 + x] * right[x * 32 + column]
-                );
+                .Aggregate(BigInteger.Zero, (sum, x) => sum + (BigInteger)left[row * 32 + x] * right[x * 32 + column]);
             if (exact > uint.MaxValue)
             {
                 wrappedElements++;
             }
-            BinaryPrimitives.WriteUInt32LittleEndian(
-                output.AsSpan(index * sizeof(uint)),
-                (uint)(exact & uint.MaxValue)
-            );
+            BinaryPrimitives.WriteUInt32LittleEndian(output.AsSpan(index * sizeof(uint)), (uint)(exact & uint.MaxValue));
         }
         var digest = Convert.ToHexStringLower(SHA256.HashData(output));
 
@@ -123,9 +97,7 @@ internal partial class BenchmarkCase_DeserializeTests
             await Assert.That(wrappedElements).IsEqualTo(1024);
             await Assert
                 .That(definition.ExpectedResult.Arrays.Single())
-                .IsEqualTo(
-                    new ArrayDigest("memory", 73728, ArrayElementType.U32, 1024, "sha256", digest)
-                );
+                .IsEqualTo(new ArrayDigest("memory", 73728, ArrayElementType.U32, 1024, "sha256", digest));
         }
     }
 
@@ -145,8 +117,6 @@ internal partial class BenchmarkCase_DeserializeTests
 
     private static Task<string> ReadKernelCasesAsync()
     {
-        return File.ReadAllTextAsync(
-            Path.Combine(AppContext.BaseDirectory, "Fixtures", "Data", "cases.json")
-        );
+        return File.ReadAllTextAsync(Path.Combine(AppContext.BaseDirectory, "Fixtures", "Data", "cases.json"));
     }
 }

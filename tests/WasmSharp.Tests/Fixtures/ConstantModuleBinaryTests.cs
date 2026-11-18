@@ -129,10 +129,7 @@ internal class ConstantModuleBinary_CreateTests
         var name = new string('a', 128);
 
         // Act
-        var actual = ConstantModuleBinary.Create(
-            [(0x7F, [0x41, 0x00, 0x0B])],
-            [(name, uint.MaxValue)]
-        );
+        var actual = ConstantModuleBinary.Create([(0x7F, [0x41, 0x00, 0x0B])], [(name, uint.MaxValue)]);
 
         // Assert
         using (Assert.Multiple())
@@ -140,24 +137,10 @@ internal class ConstantModuleBinary_CreateTests
             // exportのpayload長137、名前長128、関数添字u32最大値
             await Assert
                 .That(actual[19..25])
-                .IsEquivalentTo([
-                    (byte)0x07,
-                    (byte)0x89,
-                    (byte)0x01,
-                    (byte)0x01,
-                    (byte)0x80,
-                    (byte)0x01,
-                ]);
+                .IsEquivalentTo([(byte)0x07, (byte)0x89, (byte)0x01, (byte)0x01, (byte)0x80, (byte)0x01]);
             await Assert
                 .That(actual[153..159])
-                .IsEquivalentTo([
-                    (byte)0x00,
-                    (byte)0xFF,
-                    (byte)0xFF,
-                    (byte)0xFF,
-                    (byte)0xFF,
-                    (byte)0x0F,
-                ]);
+                .IsEquivalentTo([(byte)0x00, (byte)0xFF, (byte)0xFF, (byte)0xFF, (byte)0xFF, (byte)0x0F]);
         }
     }
 
@@ -180,30 +163,22 @@ internal class ConstantModuleBinary_CreateTests
             await Assert
                 .That(invalidLength)
                 .IsEquivalentTo(
-                    Convert.FromHexString(
-                        "0061736D010000000105016000017F030201000707010372756E00000A07010400412A0B"
-                    )
+                    Convert.FromHexString("0061736D010000000105016000017F030201000707010372756E00000A07010400412A0B")
                 );
             await Assert
                 .That(invalidIndex)
                 .IsEquivalentTo(
-                    Convert.FromHexString(
-                        "0061736D010000000105016000017F030201010707010372756E00000A06010400412A0B"
-                    )
+                    Convert.FromHexString("0061736D010000000105016000017F030201010707010372756E00000A06010400412A0B")
                 );
             await Assert
                 .That(invalidInstruction)
                 .IsEquivalentTo(
-                    Convert.FromHexString(
-                        "0061736D010000000105016000017F030201000707010372756E00000A05010300FF0B"
-                    )
+                    Convert.FromHexString("0061736D010000000105016000017F030201000707010372756E00000A05010300FF0B")
                 );
             await Assert
                 .That(valid)
                 .IsEquivalentTo(
-                    Convert.FromHexString(
-                        "0061736D010000000105016000017F030201000707010372756E00000A06010400412A0B"
-                    )
+                    Convert.FromHexString("0061736D010000000105016000017F030201000707010372756E00000A06010400412A0B")
                 );
         }
     }

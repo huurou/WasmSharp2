@@ -49,9 +49,7 @@ internal static class CaseVerifier
                 definition,
                 new InvokeObservation(
                     instance,
-                    instance
-                        .GetFunction(input.FunctionExport)
-                        .Invoke(context, input.Arguments.AsSpan())
+                    instance.GetFunction(input.FunctionExport).Invoke(context, input.Arguments.AsSpan())
                 ),
                 json
             );
@@ -81,11 +79,7 @@ internal static class CaseVerifier
         {
             switch (definition.MeasurementStage, observation)
             {
-                case (
-                    MeasurementStage.Decode
-                        or MeasurementStage.DecodeValidate,
-                    ModuleObservation decoded
-                ):
+                case (MeasurementStage.Decode or MeasurementStage.DecodeValidate, ModuleObservation decoded):
                     if (definition.MeasurementStage == MeasurementStage.Decode)
                     {
                         stage = "Validate";
@@ -95,18 +89,10 @@ internal static class CaseVerifier
                     var instance = decoded.Module.Instantiate(context, CreateImports());
                     return VerifyInstance(context, definition, instance, ref stage, json);
                 case (MeasurementStage.Instantiate, InstanceObservation instantiated):
-                    return VerifyInstance(
-                        context,
-                        definition,
-                        instantiated.Instance,
-                        ref stage,
-                        json
-                    );
+                    return VerifyInstance(context, definition, instantiated.Instance, ref stage, json);
                 case (MeasurementStage.Invoke, InvokeObservation invoked):
                     var result = VerifyResults(definition, invoked.Results);
-                    return result.Succeeded
-                        ? VerifyState(definition, invoked.Instance, stage, json) ?? result
-                        : result;
+                    return result.Succeeded ? VerifyState(definition, invoked.Instance, stage, json) ?? result : result;
                 default:
                     return new(
                         false,
@@ -115,9 +101,7 @@ internal static class CaseVerifier
                         "observation",
                         definition.MeasurementStage switch
                         {
-                            MeasurementStage.Decode or MeasurementStage.DecodeValidate => nameof(
-                                ModuleObservation
-                            ),
+                            MeasurementStage.Decode or MeasurementStage.DecodeValidate => nameof(ModuleObservation),
                             MeasurementStage.Instantiate => nameof(InstanceObservation),
                             _ => nameof(InvokeObservation),
                         },
@@ -198,14 +182,7 @@ internal static class CaseVerifier
         {
             if (array.HashAlgorithm != "sha256")
             {
-                return new(
-                    false,
-                    definition.CaseId,
-                    stage,
-                    "hash_algorithm",
-                    "sha256",
-                    array.HashAlgorithm
-                );
+                return new(false, definition.CaseId, stage, "hash_algorithm", "sha256", array.HashAlgorithm);
             }
             var bytes = new byte[ByteLength(array.ElementType, array.Length)];
             instance.GetMemory(array.MemoryExport).Read(array.Offset, bytes);
@@ -258,14 +235,7 @@ internal static class CaseVerifier
             var expected = $"{global.Value.Type}:{global.Value.Bits}";
             if (actual != expected)
             {
-                return new(
-                    false,
-                    definition.CaseId,
-                    stage,
-                    $"global.{global.ExportName}",
-                    expected,
-                    actual
-                );
+                return new(false, definition.CaseId, stage, $"global.{global.ExportName}", expected, actual);
             }
         }
         foreach (var table in definition.ExpectedResult.Tables)
@@ -295,9 +265,7 @@ internal static class CaseVerifier
             }
             foreach (var element in table.Elements)
             {
-                var wanted = element.FunctionExport is null
-                    ? null
-                    : instance.GetFunction(element.FunctionExport);
+                var wanted = element.FunctionExport is null ? null : instance.GetFunction(element.FunctionExport);
                 var observed = actual.Get(element.Index).AsFuncRef();
                 if (!ReferenceEquals(wanted, observed))
                 {

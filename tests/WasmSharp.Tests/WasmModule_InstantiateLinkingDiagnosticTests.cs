@@ -10,10 +10,7 @@ internal partial class WasmModule_InstantiateTests
     [Arguments(true, false)]
     [Arguments(false, true)]
     [Arguments(true, true)]
-    public async Task 名前不足と不適合importがある_宣言順によらず名前不足を選ぶ(
-        bool missingFirst,
-        bool kindMismatch
-    )
+    public async Task 名前不足と不適合importがある_宣言順によらず名前不足を選ぶ(bool missingFirst, bool kindMismatch)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
@@ -48,23 +45,14 @@ internal partial class WasmModule_InstantiateTests
         using (Assert.Multiple())
         {
             await Assert.That(exception!.Reason).IsEqualTo(WasmInstantiateReason.MissingImport);
-            await Assert
-                .That(exception.Message.StartsWith("unknown import", StringComparison.Ordinal))
-                .IsTrue();
+            await Assert.That(exception.Message.StartsWith("unknown import", StringComparison.Ordinal)).IsTrue();
             await Assert.That(exception.ImportOrdinal).IsEqualTo(ordinal);
             await Assert.That(exception.ModuleName).IsEqualTo("missing");
             await Assert.That(exception.ImportName).IsEqualTo("g");
             await Assert.That(exception.ExpectedKind).IsEqualTo(WasmExternalKind.Global);
             await Assert
                 .That(exception.Location)
-                .IsEqualTo(
-                    new(
-                        WasmProcessingStage.Instantiate,
-                        module.Imports[ordinal].ByteOffset,
-                        null,
-                        2
-                    )
-                );
+                .IsEqualTo(new(WasmProcessingStage.Instantiate, module.Imports[ordinal].ByteOffset, null, 2));
         }
     }
 
@@ -76,10 +64,7 @@ internal partial class WasmModule_InstantiateTests
         var module = WasmModule
             .Decode(
                 HostLinkingModuleBinary.Create(
-                    HostLinkingModuleBinary.Imports(
-                        ("first", "g", 3, [0x7F, 0]),
-                        ("last", "t", 1, [0x70, 0, 0])
-                    )
+                    HostLinkingModuleBinary.Imports(("first", "g", 3, [0x7F, 0]), ("last", "t", 1, [0x70, 0, 0]))
                 )
             )
             .Validate();
@@ -91,18 +76,14 @@ internal partial class WasmModule_InstantiateTests
         using (Assert.Multiple())
         {
             await Assert.That(exception!.Reason).IsEqualTo(WasmInstantiateReason.MissingImport);
-            await Assert
-                .That(exception.Message.StartsWith("unknown import", StringComparison.Ordinal))
-                .IsTrue();
+            await Assert.That(exception.Message.StartsWith("unknown import", StringComparison.Ordinal)).IsTrue();
             await Assert.That(exception.ImportOrdinal).IsEqualTo(0);
             await Assert.That(exception.ModuleName).IsEqualTo("first");
             await Assert.That(exception.ImportName).IsEqualTo("g");
             await Assert.That(exception.ExpectedKind).IsEqualTo(WasmExternalKind.Global);
             await Assert
                 .That(exception.Location)
-                .IsEqualTo(
-                    new(WasmProcessingStage.Instantiate, module.Imports[0].ByteOffset, null, 2)
-                );
+                .IsEqualTo(new(WasmProcessingStage.Instantiate, module.Imports[0].ByteOffset, null, 2));
         }
     }
 
@@ -111,10 +92,7 @@ internal partial class WasmModule_InstantiateTests
     [Arguments(true, false)]
     [Arguments(false, true)]
     [Arguments(true, true)]
-    public async Task 複数importの種類または型が不適合_最後の宣言を選ぶ(
-        bool firstKindMismatch,
-        bool lastKindMismatch
-    )
+    public async Task 複数importの種類または型が不適合_最後の宣言を選ぶ(bool firstKindMismatch, bool lastKindMismatch)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
@@ -122,10 +100,7 @@ internal partial class WasmModule_InstantiateTests
             .Decode(
                 HostLinkingModuleBinary.Create(
                     HostLinkingModuleBinary.Types(([], [])),
-                    HostLinkingModuleBinary.Imports(
-                        ("first", "f", 0, [0]),
-                        ("last", "g", 3, [0x7F, 0])
-                    )
+                    HostLinkingModuleBinary.Imports(("first", "f", 0, [0]), ("last", "g", 3, [0x7F, 0]))
                 )
             )
             .Validate();
@@ -156,28 +131,15 @@ internal partial class WasmModule_InstantiateTests
         {
             await Assert
                 .That(exception!.Reason)
-                .IsEqualTo(
-                    lastKindMismatch
-                        ? WasmInstantiateReason.KindMismatch
-                        : WasmInstantiateReason.TypeMismatch
-                );
-            await Assert
-                .That(
-                    exception.Message.StartsWith(
-                        "incompatible import type",
-                        StringComparison.Ordinal
-                    )
-                )
-                .IsTrue();
+                .IsEqualTo(lastKindMismatch ? WasmInstantiateReason.KindMismatch : WasmInstantiateReason.TypeMismatch);
+            await Assert.That(exception.Message.StartsWith("incompatible import type", StringComparison.Ordinal)).IsTrue();
             await Assert.That(exception.ImportOrdinal).IsEqualTo(1);
             await Assert.That(exception.ModuleName).IsEqualTo("last");
             await Assert.That(exception.ImportName).IsEqualTo("g");
             await Assert.That(exception.ExpectedKind).IsEqualTo(WasmExternalKind.Global);
             await Assert
                 .That(exception.Location)
-                .IsEqualTo(
-                    new(WasmProcessingStage.Instantiate, module.Imports[1].ByteOffset, null, 2)
-                );
+                .IsEqualTo(new(WasmProcessingStage.Instantiate, module.Imports[1].ByteOffset, null, 2));
         }
     }
 }

@@ -6,10 +6,10 @@ namespace WasmSharp.TestSuiteRunner.Tests.Reports;
 internal class CompletionPolicy_RunTests
 {
     private static readonly string[] expectedReasons_ =
-                    [
-                        "入力単位のrunner_errorが2件あります。",
-                        "操作全体の診断が1件あります。",
-                    ];
+    [
+        "入力単位のrunner_errorが2件あります。",
+        "操作全体の診断が1件あります。",
+    ];
 
     [Test]
     public async Task 複数入力の異常と操作全体の診断がある_各種類の合計件数を報告する()
@@ -31,38 +31,25 @@ internal class CompletionPolicy_RunTests
         using (Assert.Multiple())
         {
             await Assert.That(decision.ExitCode).IsEqualTo(1);
-            await Assert
-                .That(decision.Reasons)
-                .IsEquivalentTo(
-                    expectedReasons_
-                );
+            await Assert.That(decision.Reasons).IsEquivalentTo(expectedReasons_);
         }
     }
 
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task Blockedの起点に未対応以外の結果が混在する_一部が未対応でも不合格理由を残す(
-        bool duplicateOrigin
-    )
+    public async Task Blockedの起点に未対応以外の結果が混在する_一部が未対応でも不合格理由を残す(bool duplicateOrigin)
     {
         // Arrange
         var report = RunReportFixture.Create(
             RunReportFixture.Case("a.wast", 0, CaseCategory.Setup, CaseOutcome.RuntimeUnsupported),
-            RunReportFixture.Case(
-                "a.wast",
-                duplicateOrigin ? 0 : 1,
-                CaseCategory.Setup,
-                CaseOutcome.Passed
-            ),
+            RunReportFixture.Case("a.wast", duplicateOrigin ? 0 : 1, CaseCategory.Setup, CaseOutcome.Passed),
             RunReportFixture.Case("a.wast", 2, CaseCategory.Action, CaseOutcome.Blocked) with
             {
                 Cause = new CaseCause
                 {
                     Direct = [new("a.wast", 0), new("a.wast", 1)],
-                    Origins = duplicateOrigin
-                        ? [new("a.wast", 0)]
-                        : [new("a.wast", 0), new("a.wast", 1)],
+                    Origins = duplicateOrigin ? [new("a.wast", 0)] : [new("a.wast", 0), new("a.wast", 1)],
                 },
             }
         );
@@ -71,9 +58,7 @@ internal class CompletionPolicy_RunTests
         var decision = CompletionPolicy.Run(report, ReportStore.Validate(report), saved: true);
 
         // Assert
-        await Assert
-            .That(decision.Reasons)
-            .Contains("runtime_unsupported以外を原因とするblockedが1件あります。");
+        await Assert.That(decision.Reasons).Contains("runtime_unsupported以外を原因とするblockedが1件あります。");
     }
 
     [Test]
@@ -115,9 +100,7 @@ internal class CompletionPolicy_RunTests
         {
             await Assert.That(decision.ExitCode).IsEqualTo(1);
             await Assert.That(decision.Reasons.Any(x => x.StartsWith("failedが1件"))).IsTrue();
-            await Assert
-                .That(decision.Reasons.Any(x => x.StartsWith("command単位のrunner_errorが1件")))
-                .IsTrue();
+            await Assert.That(decision.Reasons.Any(x => x.StartsWith("command単位のrunner_errorが1件"))).IsTrue();
             await Assert.That(decision.Reasons.Any(x => x.Contains("blocked"))).IsFalse();
         }
     }
@@ -142,11 +125,7 @@ internal class CompletionPolicy_RunTests
         {
             await Assert.That(decision.ExitCode).IsEqualTo(1);
             await Assert
-                .That(
-                    decision.Reasons.Any(x =>
-                        x.StartsWith("runtime_unsupported以外を原因とするblockedが1件")
-                    )
-                )
+                .That(decision.Reasons.Any(x => x.StartsWith("runtime_unsupported以外を原因とするblockedが1件")))
                 .IsTrue();
         }
     }
@@ -155,9 +134,7 @@ internal class CompletionPolicy_RunTests
     public async Task 入力異常によりcommand件数が未確定の入力を記録した_用途不合格の1を返す()
     {
         // Arrange
-        var report = RunReportFixture.Create(
-            RunReportFixture.Case("a.wast", 0, CaseCategory.Setup, CaseOutcome.Passed)
-        );
+        var report = RunReportFixture.Create(RunReportFixture.Case("a.wast", 0, CaseCategory.Setup, CaseOutcome.Passed));
         report.Inputs[0] = report.Inputs[0] with
         {
             CommandCount = null,
@@ -173,9 +150,7 @@ internal class CompletionPolicy_RunTests
         {
             await Assert.That(decision.ExitCode).IsEqualTo(1);
             await Assert.That(decision.Reasons.Any(x => x.Contains("未確定"))).IsTrue();
-            await Assert
-                .That(decision.Reasons.Any(x => x.StartsWith("入力単位のrunner_errorが1件")))
-                .IsTrue();
+            await Assert.That(decision.Reasons.Any(x => x.StartsWith("入力単位のrunner_errorが1件"))).IsTrue();
         }
     }
 
@@ -190,11 +165,7 @@ internal class CompletionPolicy_RunTests
             UnprocessedCount = 1,
             Cases = [report.Inputs[1].Cases[0]],
         };
-        report = report with
-        {
-            Summary = report.Summarize(),
-            Completion = new RunCompletion(false, true),
-        };
+        report = report with { Summary = report.Summarize(), Completion = new RunCompletion(false, true) };
 
         // Act
         var decision = CompletionPolicy.Run(report, ReportStore.Validate(report), saved: true);
@@ -212,9 +183,7 @@ internal class CompletionPolicy_RunTests
     public async Task 全件passedだが結果を保存できなかった_未完了の2を返す()
     {
         // Arrange
-        var report = RunReportFixture.Create(
-            RunReportFixture.Case("a.wast", 0, CaseCategory.Setup, CaseOutcome.Passed)
-        );
+        var report = RunReportFixture.Create(RunReportFixture.Case("a.wast", 0, CaseCategory.Setup, CaseOutcome.Passed));
 
         // Act
         var decision = CompletionPolicy.Run(report, ReportStore.Validate(report), saved: false);

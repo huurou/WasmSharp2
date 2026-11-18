@@ -14,13 +14,7 @@ internal class CaptureCommand_RunBytesTests
 
         // Act & Assert
         await Assert
-            .That(() =>
-                CaptureCommand.RunBytes(
-                    "git",
-                    fixture.DirectoryPath,
-                    "wasmsharp-nonexistent-command"
-                )
-            )
+            .That(() => CaptureCommand.RunBytes("git", fixture.DirectoryPath, "wasmsharp-nonexistent-command"))
             .ThrowsExactly<InvalidOperationException>();
     }
 }

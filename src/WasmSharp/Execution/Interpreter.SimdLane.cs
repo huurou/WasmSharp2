@@ -8,10 +8,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI8x16Splat命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I8x16Splat(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I8x16Splat(InterpreterContext context, in Instruction instruction)
     {
         return SplatSimdLane(context, 8, unchecked((uint)context.PopValue().AsI32()));
     }
@@ -22,10 +19,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI16x8Splat命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I16x8Splat(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I16x8Splat(InterpreterContext context, in Instruction instruction)
     {
         return SplatSimdLane(context, 16, unchecked((uint)context.PopValue().AsI32()));
     }
@@ -36,10 +30,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI32x4Splat命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I32x4Splat(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I32x4Splat(InterpreterContext context, in Instruction instruction)
     {
         return SplatSimdLane(context, 32, unchecked((uint)context.PopValue().AsI32()));
     }
@@ -50,10 +41,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI64x2Splat命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I64x2Splat(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I64x2Splat(InterpreterContext context, in Instruction instruction)
     {
         return SplatSimdLane(context, 64, unchecked((ulong)context.PopValue().AsI64()));
     }
@@ -64,10 +52,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのF32x4Splat命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult F32x4Splat(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult F32x4Splat(InterpreterContext context, in Instruction instruction)
     {
         return SplatSimdLane(context, 32, context.PopValue().AsF32Bits());
     }
@@ -78,10 +63,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのF64x2Splat命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult F64x2Splat(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult F64x2Splat(InterpreterContext context, in Instruction instruction)
     {
         return SplatSimdLane(context, 64, context.PopValue().AsF64Bits());
     }
@@ -92,10 +74,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI8x16ExtractLaneS命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I8x16ExtractLaneS(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I8x16ExtractLaneS(InterpreterContext context, in Instruction instruction)
     {
         var bits = ExtractSimdLane(context, in instruction, 8);
         context.PushValue(WasmValue.FromI32(unchecked((sbyte)bits)));
@@ -108,10 +87,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI8x16ExtractLaneU命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I8x16ExtractLaneU(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I8x16ExtractLaneU(InterpreterContext context, in Instruction instruction)
     {
         var bits = ExtractSimdLane(context, in instruction, 8);
         context.PushValue(WasmValue.FromI32((byte)bits));
@@ -124,10 +100,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI16x8ExtractLaneS命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I16x8ExtractLaneS(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I16x8ExtractLaneS(InterpreterContext context, in Instruction instruction)
     {
         var bits = ExtractSimdLane(context, in instruction, 16);
         context.PushValue(WasmValue.FromI32(unchecked((short)bits)));
@@ -140,10 +113,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI16x8ExtractLaneU命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I16x8ExtractLaneU(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I16x8ExtractLaneU(InterpreterContext context, in Instruction instruction)
     {
         var bits = ExtractSimdLane(context, in instruction, 16);
         context.PushValue(WasmValue.FromI32((ushort)bits));
@@ -156,10 +126,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI32x4ExtractLane命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I32x4ExtractLane(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I32x4ExtractLane(InterpreterContext context, in Instruction instruction)
     {
         var bits = ExtractSimdLane(context, in instruction, 32);
         context.PushValue(WasmValue.FromI32(unchecked((int)bits)));
@@ -172,10 +139,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI64x2ExtractLane命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I64x2ExtractLane(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I64x2ExtractLane(InterpreterContext context, in Instruction instruction)
     {
         var bits = ExtractSimdLane(context, in instruction, 64);
         context.PushValue(WasmValue.FromI64(unchecked((long)bits)));
@@ -188,10 +152,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのF32x4ExtractLane命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult F32x4ExtractLane(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult F32x4ExtractLane(InterpreterContext context, in Instruction instruction)
     {
         var bits = ExtractSimdLane(context, in instruction, 32);
         context.PushValue(WasmValue.FromF32Bits((uint)bits));
@@ -204,10 +165,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのF64x2ExtractLane命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult F64x2ExtractLane(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult F64x2ExtractLane(InterpreterContext context, in Instruction instruction)
     {
         var bits = ExtractSimdLane(context, in instruction, 64);
         context.PushValue(WasmValue.FromF64Bits(bits));
@@ -220,10 +178,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI8x16ReplaceLane命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I8x16ReplaceLane(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I8x16ReplaceLane(InterpreterContext context, in Instruction instruction)
     {
         var bits = unchecked((uint)context.PopValue().AsI32());
         return ReplaceSimdLane(context, in instruction, 8, bits);
@@ -235,10 +190,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI16x8ReplaceLane命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I16x8ReplaceLane(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I16x8ReplaceLane(InterpreterContext context, in Instruction instruction)
     {
         var bits = unchecked((uint)context.PopValue().AsI32());
         return ReplaceSimdLane(context, in instruction, 16, bits);
@@ -250,10 +202,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI32x4ReplaceLane命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I32x4ReplaceLane(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I32x4ReplaceLane(InterpreterContext context, in Instruction instruction)
     {
         var bits = unchecked((uint)context.PopValue().AsI32());
         return ReplaceSimdLane(context, in instruction, 32, bits);
@@ -265,10 +214,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI64x2ReplaceLane命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I64x2ReplaceLane(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I64x2ReplaceLane(InterpreterContext context, in Instruction instruction)
     {
         var bits = unchecked((ulong)context.PopValue().AsI64());
         return ReplaceSimdLane(context, in instruction, 64, bits);
@@ -280,10 +226,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのF32x4ReplaceLane命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult F32x4ReplaceLane(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult F32x4ReplaceLane(InterpreterContext context, in Instruction instruction)
     {
         var bits = context.PopValue().AsF32Bits();
         return ReplaceSimdLane(context, in instruction, 32, bits);
@@ -295,10 +238,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのF64x2ReplaceLane命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult F64x2ReplaceLane(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult F64x2ReplaceLane(InterpreterContext context, in Instruction instruction)
     {
         var bits = context.PopValue().AsF64Bits();
         return ReplaceSimdLane(context, in instruction, 64, bits);
@@ -310,10 +250,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI8x16Shuffle命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I8x16Shuffle(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I8x16Shuffle(InterpreterContext context, in Instruction instruction)
     {
         var second = SimdValue.FromValue(context.PopValue());
         var first = SimdValue.FromValue(context.PopValue());
@@ -335,10 +272,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI8x16Swizzle命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I8x16Swizzle(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I8x16Swizzle(InterpreterContext context, in Instruction instruction)
     {
         var indices = SimdValue.FromValue(context.PopValue());
         var vector = SimdValue.FromValue(context.PopValue());
@@ -377,9 +311,7 @@ internal static partial class Interpreter
     {
         var second = context.PopValue().AsV128();
         var first = context.PopValue().AsV128();
-        context.PushValue(
-            WasmValue.FromV128(first.Low64 & second.Low64, first.High64 & second.High64)
-        );
+        context.PushValue(WasmValue.FromV128(first.Low64 & second.Low64, first.High64 & second.High64));
         return default;
     }
 
@@ -389,16 +321,11 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのV128AndNot命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult V128AndNot(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult V128AndNot(InterpreterContext context, in Instruction instruction)
     {
         var second = context.PopValue().AsV128();
         var first = context.PopValue().AsV128();
-        context.PushValue(
-            WasmValue.FromV128(first.Low64 & ~second.Low64, first.High64 & ~second.High64)
-        );
+        context.PushValue(WasmValue.FromV128(first.Low64 & ~second.Low64, first.High64 & ~second.High64));
         return default;
     }
 
@@ -412,9 +339,7 @@ internal static partial class Interpreter
     {
         var second = context.PopValue().AsV128();
         var first = context.PopValue().AsV128();
-        context.PushValue(
-            WasmValue.FromV128(first.Low64 | second.Low64, first.High64 | second.High64)
-        );
+        context.PushValue(WasmValue.FromV128(first.Low64 | second.Low64, first.High64 | second.High64));
         return default;
     }
 
@@ -428,9 +353,7 @@ internal static partial class Interpreter
     {
         var second = context.PopValue().AsV128();
         var first = context.PopValue().AsV128();
-        context.PushValue(
-            WasmValue.FromV128(first.Low64 ^ second.Low64, first.High64 ^ second.High64)
-        );
+        context.PushValue(WasmValue.FromV128(first.Low64 ^ second.Low64, first.High64 ^ second.High64));
         return default;
     }
 
@@ -440,10 +363,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのV128Bitselect命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult V128Bitselect(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult V128Bitselect(InterpreterContext context, in Instruction instruction)
     {
         var mask = context.PopValue().AsV128();
         var second = context.PopValue().AsV128();
@@ -487,11 +407,7 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult I8x16LtS(InterpreterContext context, in Instruction instruction)
     {
-        return CompareSimdLanes(
-            context,
-            8,
-            static (x, y) => unchecked((sbyte)x) < unchecked((sbyte)y)
-        );
+        return CompareSimdLanes(context, 8, static (x, y) => unchecked((sbyte)x) < unchecked((sbyte)y));
     }
 
     /// <summary>
@@ -513,11 +429,7 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult I8x16GtS(InterpreterContext context, in Instruction instruction)
     {
-        return CompareSimdLanes(
-            context,
-            8,
-            static (x, y) => unchecked((sbyte)x) > unchecked((sbyte)y)
-        );
+        return CompareSimdLanes(context, 8, static (x, y) => unchecked((sbyte)x) > unchecked((sbyte)y));
     }
 
     /// <summary>
@@ -539,11 +451,7 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult I8x16LeS(InterpreterContext context, in Instruction instruction)
     {
-        return CompareSimdLanes(
-            context,
-            8,
-            static (x, y) => unchecked((sbyte)x) <= unchecked((sbyte)y)
-        );
+        return CompareSimdLanes(context, 8, static (x, y) => unchecked((sbyte)x) <= unchecked((sbyte)y));
     }
 
     /// <summary>
@@ -565,11 +473,7 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult I8x16GeS(InterpreterContext context, in Instruction instruction)
     {
-        return CompareSimdLanes(
-            context,
-            8,
-            static (x, y) => unchecked((sbyte)x) >= unchecked((sbyte)y)
-        );
+        return CompareSimdLanes(context, 8, static (x, y) => unchecked((sbyte)x) >= unchecked((sbyte)y));
     }
 
     /// <summary>
@@ -613,11 +517,7 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult I16x8LtS(InterpreterContext context, in Instruction instruction)
     {
-        return CompareSimdLanes(
-            context,
-            16,
-            static (x, y) => unchecked((short)x) < unchecked((short)y)
-        );
+        return CompareSimdLanes(context, 16, static (x, y) => unchecked((short)x) < unchecked((short)y));
     }
 
     /// <summary>
@@ -639,11 +539,7 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult I16x8GtS(InterpreterContext context, in Instruction instruction)
     {
-        return CompareSimdLanes(
-            context,
-            16,
-            static (x, y) => unchecked((short)x) > unchecked((short)y)
-        );
+        return CompareSimdLanes(context, 16, static (x, y) => unchecked((short)x) > unchecked((short)y));
     }
 
     /// <summary>
@@ -665,11 +561,7 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult I16x8LeS(InterpreterContext context, in Instruction instruction)
     {
-        return CompareSimdLanes(
-            context,
-            16,
-            static (x, y) => unchecked((short)x) <= unchecked((short)y)
-        );
+        return CompareSimdLanes(context, 16, static (x, y) => unchecked((short)x) <= unchecked((short)y));
     }
 
     /// <summary>
@@ -691,11 +583,7 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult I16x8GeS(InterpreterContext context, in Instruction instruction)
     {
-        return CompareSimdLanes(
-            context,
-            16,
-            static (x, y) => unchecked((short)x) >= unchecked((short)y)
-        );
+        return CompareSimdLanes(context, 16, static (x, y) => unchecked((short)x) >= unchecked((short)y));
     }
 
     /// <summary>
@@ -739,11 +627,7 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult I32x4LtS(InterpreterContext context, in Instruction instruction)
     {
-        return CompareSimdLanes(
-            context,
-            32,
-            static (x, y) => unchecked((int)x) < unchecked((int)y)
-        );
+        return CompareSimdLanes(context, 32, static (x, y) => unchecked((int)x) < unchecked((int)y));
     }
 
     /// <summary>
@@ -765,11 +649,7 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult I32x4GtS(InterpreterContext context, in Instruction instruction)
     {
-        return CompareSimdLanes(
-            context,
-            32,
-            static (x, y) => unchecked((int)x) > unchecked((int)y)
-        );
+        return CompareSimdLanes(context, 32, static (x, y) => unchecked((int)x) > unchecked((int)y));
     }
 
     /// <summary>
@@ -791,11 +671,7 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult I32x4LeS(InterpreterContext context, in Instruction instruction)
     {
-        return CompareSimdLanes(
-            context,
-            32,
-            static (x, y) => unchecked((int)x) <= unchecked((int)y)
-        );
+        return CompareSimdLanes(context, 32, static (x, y) => unchecked((int)x) <= unchecked((int)y));
     }
 
     /// <summary>
@@ -817,11 +693,7 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult I32x4GeS(InterpreterContext context, in Instruction instruction)
     {
-        return CompareSimdLanes(
-            context,
-            32,
-            static (x, y) => unchecked((int)x) >= unchecked((int)y)
-        );
+        return CompareSimdLanes(context, 32, static (x, y) => unchecked((int)x) >= unchecked((int)y));
     }
 
     /// <summary>
@@ -865,11 +737,7 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult I64x2LtS(InterpreterContext context, in Instruction instruction)
     {
-        return CompareSimdLanes(
-            context,
-            64,
-            static (x, y) => unchecked((long)x) < unchecked((long)y)
-        );
+        return CompareSimdLanes(context, 64, static (x, y) => unchecked((long)x) < unchecked((long)y));
     }
 
     /// <summary>
@@ -880,11 +748,7 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult I64x2GtS(InterpreterContext context, in Instruction instruction)
     {
-        return CompareSimdLanes(
-            context,
-            64,
-            static (x, y) => unchecked((long)x) > unchecked((long)y)
-        );
+        return CompareSimdLanes(context, 64, static (x, y) => unchecked((long)x) > unchecked((long)y));
     }
 
     /// <summary>
@@ -895,11 +759,7 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult I64x2LeS(InterpreterContext context, in Instruction instruction)
     {
-        return CompareSimdLanes(
-            context,
-            64,
-            static (x, y) => unchecked((long)x) <= unchecked((long)y)
-        );
+        return CompareSimdLanes(context, 64, static (x, y) => unchecked((long)x) <= unchecked((long)y));
     }
 
     /// <summary>
@@ -910,11 +770,7 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult I64x2GeS(InterpreterContext context, in Instruction instruction)
     {
-        return CompareSimdLanes(
-            context,
-            64,
-            static (x, y) => unchecked((long)x) >= unchecked((long)y)
-        );
+        return CompareSimdLanes(context, 64, static (x, y) => unchecked((long)x) >= unchecked((long)y));
     }
 
     /// <summary>
@@ -928,8 +784,7 @@ internal static partial class Interpreter
         return CompareSimdLanes(
             context,
             32,
-            static (x, y) =>
-                BitConverter.UInt32BitsToSingle((uint)x) == BitConverter.UInt32BitsToSingle((uint)y)
+            static (x, y) => BitConverter.UInt32BitsToSingle((uint)x) == BitConverter.UInt32BitsToSingle((uint)y)
         );
     }
 
@@ -944,8 +799,7 @@ internal static partial class Interpreter
         return CompareSimdLanes(
             context,
             32,
-            static (x, y) =>
-                BitConverter.UInt32BitsToSingle((uint)x) != BitConverter.UInt32BitsToSingle((uint)y)
+            static (x, y) => BitConverter.UInt32BitsToSingle((uint)x) != BitConverter.UInt32BitsToSingle((uint)y)
         );
     }
 
@@ -960,8 +814,7 @@ internal static partial class Interpreter
         return CompareSimdLanes(
             context,
             32,
-            static (x, y) =>
-                BitConverter.UInt32BitsToSingle((uint)x) < BitConverter.UInt32BitsToSingle((uint)y)
+            static (x, y) => BitConverter.UInt32BitsToSingle((uint)x) < BitConverter.UInt32BitsToSingle((uint)y)
         );
     }
 
@@ -976,8 +829,7 @@ internal static partial class Interpreter
         return CompareSimdLanes(
             context,
             32,
-            static (x, y) =>
-                BitConverter.UInt32BitsToSingle((uint)x) > BitConverter.UInt32BitsToSingle((uint)y)
+            static (x, y) => BitConverter.UInt32BitsToSingle((uint)x) > BitConverter.UInt32BitsToSingle((uint)y)
         );
     }
 
@@ -992,8 +844,7 @@ internal static partial class Interpreter
         return CompareSimdLanes(
             context,
             32,
-            static (x, y) =>
-                BitConverter.UInt32BitsToSingle((uint)x) <= BitConverter.UInt32BitsToSingle((uint)y)
+            static (x, y) => BitConverter.UInt32BitsToSingle((uint)x) <= BitConverter.UInt32BitsToSingle((uint)y)
         );
     }
 
@@ -1008,8 +859,7 @@ internal static partial class Interpreter
         return CompareSimdLanes(
             context,
             32,
-            static (x, y) =>
-                BitConverter.UInt32BitsToSingle((uint)x) >= BitConverter.UInt32BitsToSingle((uint)y)
+            static (x, y) => BitConverter.UInt32BitsToSingle((uint)x) >= BitConverter.UInt32BitsToSingle((uint)y)
         );
     }
 
@@ -1024,8 +874,7 @@ internal static partial class Interpreter
         return CompareSimdLanes(
             context,
             64,
-            static (x, y) =>
-                BitConverter.UInt64BitsToDouble(x) == BitConverter.UInt64BitsToDouble(y)
+            static (x, y) => BitConverter.UInt64BitsToDouble(x) == BitConverter.UInt64BitsToDouble(y)
         );
     }
 
@@ -1040,8 +889,7 @@ internal static partial class Interpreter
         return CompareSimdLanes(
             context,
             64,
-            static (x, y) =>
-                BitConverter.UInt64BitsToDouble(x) != BitConverter.UInt64BitsToDouble(y)
+            static (x, y) => BitConverter.UInt64BitsToDouble(x) != BitConverter.UInt64BitsToDouble(y)
         );
     }
 
@@ -1086,8 +934,7 @@ internal static partial class Interpreter
         return CompareSimdLanes(
             context,
             64,
-            static (x, y) =>
-                BitConverter.UInt64BitsToDouble(x) <= BitConverter.UInt64BitsToDouble(y)
+            static (x, y) => BitConverter.UInt64BitsToDouble(x) <= BitConverter.UInt64BitsToDouble(y)
         );
     }
 
@@ -1102,8 +949,7 @@ internal static partial class Interpreter
         return CompareSimdLanes(
             context,
             64,
-            static (x, y) =>
-                BitConverter.UInt64BitsToDouble(x) >= BitConverter.UInt64BitsToDouble(y)
+            static (x, y) => BitConverter.UInt64BitsToDouble(x) >= BitConverter.UInt64BitsToDouble(y)
         );
     }
 
@@ -1113,10 +959,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのV128AnyTrue命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult V128AnyTrue(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult V128AnyTrue(InterpreterContext context, in Instruction instruction)
     {
         return AnyTrueSimdLanes(context);
     }
@@ -1127,10 +970,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI8x16AllTrue命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I8x16AllTrue(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I8x16AllTrue(InterpreterContext context, in Instruction instruction)
     {
         return AllTrueSimdLanes(context, 8);
     }
@@ -1141,10 +981,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI8x16Bitmask命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I8x16Bitmask(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I8x16Bitmask(InterpreterContext context, in Instruction instruction)
     {
         return BitmaskSimdLanes(context, 8);
     }
@@ -1155,10 +992,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI16x8AllTrue命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I16x8AllTrue(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I16x8AllTrue(InterpreterContext context, in Instruction instruction)
     {
         return AllTrueSimdLanes(context, 16);
     }
@@ -1169,10 +1003,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI16x8Bitmask命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I16x8Bitmask(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I16x8Bitmask(InterpreterContext context, in Instruction instruction)
     {
         return BitmaskSimdLanes(context, 16);
     }
@@ -1183,10 +1014,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI32x4AllTrue命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I32x4AllTrue(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I32x4AllTrue(InterpreterContext context, in Instruction instruction)
     {
         return AllTrueSimdLanes(context, 32);
     }
@@ -1197,10 +1025,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI32x4Bitmask命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I32x4Bitmask(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I32x4Bitmask(InterpreterContext context, in Instruction instruction)
     {
         return BitmaskSimdLanes(context, 32);
     }
@@ -1211,10 +1036,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI64x2AllTrue命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I64x2AllTrue(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I64x2AllTrue(InterpreterContext context, in Instruction instruction)
     {
         return AllTrueSimdLanes(context, 64);
     }
@@ -1225,10 +1047,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI64x2Bitmask命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I64x2Bitmask(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I64x2Bitmask(InterpreterContext context, in Instruction instruction)
     {
         return BitmaskSimdLanes(context, 64);
     }
@@ -1251,10 +1070,7 @@ internal static partial class Interpreter
         var result = default(SimdValue);
         for (var laneIndex = 0; laneIndex < 128 / bitWidth; laneIndex++)
         {
-            var matched = compare(
-                first.GetLane(bitWidth, laneIndex),
-                second.GetLane(bitWidth, laneIndex)
-            );
+            var matched = compare(first.GetLane(bitWidth, laneIndex), second.GetLane(bitWidth, laneIndex));
             result = result.WithLane(bitWidth, laneIndex, matched ? ulong.MaxValue : 0);
         }
 
@@ -1320,11 +1136,7 @@ internal static partial class Interpreter
     /// <param name="bitWidth">laneの幅</param>
     /// <param name="bits">複製するスカラーのビット列</param>
     /// <returns>実行の成功</returns>
-    private static ExecutionResult SplatSimdLane(
-        InterpreterContext context,
-        int bitWidth,
-        ulong bits
-    )
+    private static ExecutionResult SplatSimdLane(InterpreterContext context, int bitWidth, ulong bits)
     {
         var vector = default(SimdValue);
         for (var laneIndex = 0; laneIndex < 128 / bitWidth; laneIndex++)
@@ -1343,11 +1155,7 @@ internal static partial class Interpreter
     /// <param name="instruction">検証済みlane即値を保持する命令</param>
     /// <param name="bitWidth">laneの幅</param>
     /// <returns>指定laneのビット列</returns>
-    private static ulong ExtractSimdLane(
-        InterpreterContext context,
-        in Instruction instruction,
-        int bitWidth
-    )
+    private static ulong ExtractSimdLane(InterpreterContext context, in Instruction instruction, int bitWidth)
     {
         return SimdValue.FromValue(context.PopValue()).GetLane(bitWidth, instruction.LaneIndex);
     }

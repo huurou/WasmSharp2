@@ -9,9 +9,7 @@ internal partial class WasmModule_DecodeTests
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task 外部要素と巨大な未検証limits_両入力で実体を割り当てず静的定義を保持する(
-        bool useStream
-    )
+    public async Task 外部要素と巨大な未検証limits_両入力で実体を割り当てず静的定義を保持する(bool useStream)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
@@ -25,12 +23,7 @@ internal partial class WasmModule_DecodeTests
         var functions = HostLinkingModuleBinary.Functions(0);
         var tables = HostLinkingModuleBinary.Tables((0x6F, uint.MaxValue, 0), (0x70, 0, null));
         var memories = HostLinkingModuleBinary.Memories((uint.MaxValue, 0), (0, null));
-        var exports = HostLinkingModuleBinary.Exports(
-            ("f", 0, 1),
-            ("m", 2, uint.MaxValue),
-            ("g", 3, 0),
-            ("t", 1, 2)
-        );
+        var exports = HostLinkingModuleBinary.Exports(("f", 0, 1), ("m", 2, uint.MaxValue), ("g", 3, 0), ("t", 1, 2));
         var bytes = HostLinkingModuleBinary.Create(
             types,
             imports,
@@ -53,12 +46,8 @@ internal partial class WasmModule_DecodeTests
             await Assert.That(module.Imports[0].Kind).IsEqualTo(WasmExternalKind.Global);
             await Assert.That(module.Imports[0].ByteOffset).IsEqualTo(8L + types.Length + 3);
             await Assert.That(((FunctionImport)module.Imports[1]).TypeIndex).IsEqualTo(0u);
-            await Assert
-                .That(((MemoryImport)module.Imports[2]).Type.Limits)
-                .IsEqualTo(new WasmLimits(1, 2));
-            await Assert
-                .That(((TableImport)module.Imports[3]).Type.ElementKind)
-                .IsEqualTo(WasmValueKind.FuncRef);
+            await Assert.That(((MemoryImport)module.Imports[2]).Type.Limits).IsEqualTo(new WasmLimits(1, 2));
+            await Assert.That(((TableImport)module.Imports[3]).Type.ElementKind).IsEqualTo(WasmValueKind.FuncRef);
             await Assert.That(module.Functions.Length).IsEqualTo(1);
             await Assert.That(module.Functions[0].TypeIndex).IsEqualTo(0u);
             await Assert.That(module.Functions[0].Instructions[0].Immediate.AsI32()).IsEqualTo(42);
@@ -70,14 +59,10 @@ internal partial class WasmModule_DecodeTests
                 .IsEqualTo(8L + types.Length + imports.Length + functions.Length + 3);
             await Assert.That(module.Tables[1].Limits).IsEqualTo(new WasmLimits(0));
             await Assert.That(module.Memories.Length).IsEqualTo(2);
-            await Assert
-                .That(module.Memories[0].Limits)
-                .IsEqualTo(new WasmLimits(uint.MaxValue, 0));
+            await Assert.That(module.Memories[0].Limits).IsEqualTo(new WasmLimits(uint.MaxValue, 0));
             await Assert
                 .That(module.Memories[0].ByteOffset)
-                .IsEqualTo(
-                    8L + types.Length + imports.Length + functions.Length + tables.Length + 3
-                );
+                .IsEqualTo(8L + types.Length + imports.Length + functions.Length + tables.Length + 3);
             await Assert.That(module.Exports.Length).IsEqualTo(4);
             await Assert.That(module.Exports[0].Kind).IsEqualTo(WasmExternalKind.Function);
             await Assert.That(module.Exports[0].Index).IsEqualTo(1u);
@@ -106,30 +91,18 @@ internal partial class WasmModule_DecodeTests
     [Arguments((byte)5, "010100", 13L)]
     [Arguments((byte)7, "010002", 13L)]
     [Arguments((byte)7, "01000380", 14L)]
-    public async Task 外部要素の構文が不正_両入力で元位置付きDecode失敗になる(
-        byte id,
-        string hex,
-        long offset
-    )
+    public async Task 外部要素の構文が不正_両入力で元位置付きDecode失敗になる(byte id, string hex, long offset)
     {
         // Arrange
-        var bytes = HostLinkingModuleBinary.Create(
-            HostLinkingModuleBinary.Section(id, Convert.FromHexString(hex))
-        );
+        var bytes = HostLinkingModuleBinary.Create(HostLinkingModuleBinary.Section(id, Convert.FromHexString(hex)));
         using var stream = new ChunkedReadStream(new MemoryStream(bytes));
-        Func<WasmModule>[] decoders =
-        [
-            () => WasmModule.Decode(bytes),
-            () => WasmModule.Decode(stream),
-        ];
+        Func<WasmModule>[] decoders = [() => WasmModule.Decode(bytes), () => WasmModule.Decode(stream)];
 
         // Act & Assert
         foreach (var decode in decoders)
         {
             var exception = await Assert.That(decode).ThrowsExactly<WasmDecodeException>();
-            await Assert
-                .That(exception!.Location)
-                .IsEqualTo(new(WasmProcessingStage.Decode, offset, null, id));
+            await Assert.That(exception!.Location).IsEqualTo(new(WasmProcessingStage.Decode, offset, null, id));
         }
     }
 
@@ -138,48 +111,28 @@ internal partial class WasmModule_DecodeTests
     {
         // Arrange
         var types = HostLinkingModuleBinary.Types(([], [0x7F]));
-        var imports = HostLinkingModuleBinary.Imports(
-            ("m", "f", 0, [0]),
-            ("m", "g", 3, [0x7F, 0]),
-            ("m", "f", 0, [0])
-        );
+        var imports = HostLinkingModuleBinary.Imports(("m", "f", 0, [0]), ("m", "g", 3, [0x7F, 0]), ("m", "f", 0, [0]));
         var functions = HostLinkingModuleBinary.Functions(0);
-        var bytes = HostLinkingModuleBinary.Create(
-            types,
-            imports,
-            functions,
-            HostLinkingModuleBinary.Code(([], [0xFF]))
-        );
+        var bytes = HostLinkingModuleBinary.Create(types, imports, functions, HostLinkingModuleBinary.Code(([], [0xFF])));
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => WasmModule.Decode(bytes))
-            .ThrowsExactly<WasmDecodeException>();
-        await Assert
-            .That(exception!.Location)
-            .IsEqualTo(new(WasmProcessingStage.Decode, bytes.Length - 1, 2, 10));
+        var exception = await Assert.That(() => WasmModule.Decode(bytes)).ThrowsExactly<WasmDecodeException>();
+        await Assert.That(exception!.Location).IsEqualTo(new(WasmProcessingStage.Decode, bytes.Length - 1, 2, 10));
     }
 
     [Test]
     [Arguments((byte)2, "0100000000")]
     [Arguments((byte)7, "01000300")]
-    public async Task 読取済みの型やexport参照が不正_検証済みにせずInstantiateを拒否する(
-        byte id,
-        string hex
-    )
+    public async Task 読取済みの型やexport参照が不正_検証済みにせずInstantiateを拒否する(byte id, string hex)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
         var module = WasmModule.Decode(
-            HostLinkingModuleBinary.Create(
-                HostLinkingModuleBinary.Section(id, Convert.FromHexString(hex))
-            )
+            HostLinkingModuleBinary.Create(HostLinkingModuleBinary.Section(id, Convert.FromHexString(hex)))
         );
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => module.Validate())
-            .ThrowsExactly<WasmValidateException>();
+        var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
         using (Assert.Multiple())
         {
             await Assert.That(exception!.Location!.Stage).IsEqualTo(WasmProcessingStage.Validate);

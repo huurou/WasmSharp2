@@ -9,11 +9,7 @@ internal class Interpreter_I32LeUTests
     [Arguments(-1, 1, 0)]
     [Arguments(1, -1, 1)]
     [Arguments(int.MinValue, int.MinValue, 1)]
-    public async Task 上位bitと等値を含むoperand_i32で符号なし比較を返す(
-        int left,
-        int right,
-        int expected
-    )
+    public async Task 上位bitと等値を含むoperand_i32で符号なし比較を返す(int left, int right, int expected)
     {
         // Arrange
         WasmValue[] operands = [WasmValue.FromI32(left), WasmValue.FromI32(right)];

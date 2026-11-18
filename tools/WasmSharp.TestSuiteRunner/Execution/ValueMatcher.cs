@@ -88,9 +88,7 @@ internal static class ValueMatcher
         ];
 
         // 順序や型が揃わない場合は、値を比較しない。
-        return types.IsEmpty
-            ? [.. values.SelectMany((x, i) => MatchValue(expected[i], x, i, state))]
-            : types;
+        return types.IsEmpty ? [.. values.SelectMany((x, i) => MatchValue(expected[i], x, i, state))] : types;
     }
 
     /// <summary>
@@ -108,19 +106,14 @@ internal static class ValueMatcher
             { Kind: WasmValueKind.I64 } => ParseNumber(value, 64, false, path),
             { Kind: WasmValueKind.F32 } => ParseNumber(value, 32, true, path),
             { Kind: WasmValueKind.F64 } => ParseNumber(value, 64, true, path),
-            { Kind: WasmValueKind.V128, LaneType: { } laneType } => ParseVector(
-                laneType,
-                value.Lanes,
-                path
-            ),
-            { Kind: WasmValueKind.FuncRef or WasmValueKind.ExternRef, Value: ValueCodec.NULL } =>
-                new(value.Kind, 0, [], null),
-            { Kind: WasmValueKind.ExternRef } => new(
+            { Kind: WasmValueKind.V128, LaneType: { } laneType } => ParseVector(laneType, value.Lanes, path),
+            { Kind: WasmValueKind.FuncRef or WasmValueKind.ExternRef, Value: ValueCodec.NULL } => new(
                 value.Kind,
                 0,
                 [],
-                (uint)ValueCodec.ParseBits(value.Value, 32, path)
+                null
             ),
+            { Kind: WasmValueKind.ExternRef } => new(value.Kind, 0, [], (uint)ValueCodec.ParseBits(value.Value, 32, path)),
             _ => throw new ScriptFormatException(
                 $"{path}の{value.Value}は固定形式にない{ValueCodec.GetTypeName(value.Kind)}の期待値です。"
             ),
@@ -136,12 +129,7 @@ internal static class ValueMatcher
     /// <param name="path">値の異常を報告するJSON上の位置</param>
     /// <returns>元の値型と幅を持つ1個の数値の比較条件</returns>
     /// <exception cref="ScriptFormatException">文字列が許容するNaN patternでも指定幅の符号なし10進数でもない場合</exception>
-    private static ValuePattern ParseNumber(
-        ExpectedValue value,
-        int width,
-        bool floating,
-        string path
-    )
+    private static ValuePattern ParseNumber(ExpectedValue value, int width, bool floating, string path)
     {
         return new(value.Kind, width, [ParseBits(value.Value, width, floating, path)], null);
     }
@@ -154,11 +142,7 @@ internal static class ValueMatcher
     /// <param name="path">lane数やlane値の異常を報告するJSON上の位置</param>
     /// <returns>laneの幅と順序を持つv128の比較条件</returns>
     /// <exception cref="ScriptFormatException">lane数が型と合わないか、lane値が許容するNaN patternでも指定幅の符号なし10進数でもない場合</exception>
-    private static ValuePattern ParseVector(
-        LaneType laneType,
-        ImmutableArray<string> lanes,
-        string path
-    )
+    private static ValuePattern ParseVector(LaneType laneType, ImmutableArray<string> lanes, string path)
     {
         var width = ValueCodec.GetLaneWidth(laneType, lanes.Length, path);
         var floating = laneType is LaneType.F32 or LaneType.F64;
@@ -210,22 +194,9 @@ internal static class ValueMatcher
             WasmValueKind.FuncRef => MatchReference(expected, actual.AsFuncRef(), index, state),
             WasmValueKind.ExternRef => MatchReference(expected, actual.AsExternRef(), index, state),
             WasmValueKind.V128 => expected.Bits.SelectMany(
-                (x, i) =>
-                    MatchBits(
-                        x,
-                        ValueCodec.GetLane(actual, expected.Width, i),
-                        expected.Width,
-                        index,
-                        i
-                    )
+                (x, i) => MatchBits(x, ValueCodec.GetLane(actual, expected.Width, i), expected.Width, index, i)
             ),
-            _ => MatchBits(
-                expected.Bits[0],
-                ValueCodec.GetBits(actual),
-                expected.Width,
-                index,
-                null
-            ),
+            _ => MatchBits(expected.Bits[0], ValueCodec.GetBits(actual), expected.Width, index, null),
         };
     }
 
@@ -238,13 +209,7 @@ internal static class ValueMatcher
     /// <param name="index">結果の0始まり位置</param>
     /// <param name="lane">v128の0始まりlane位置 scalarの場合はnull</param>
     /// <returns>一致した場合は空 不一致の場合はNaN条件またはhexと実際のhexを示す1件の相違</returns>
-    private static IEnumerable<ValueMismatch> MatchBits(
-        BitsPattern expected,
-        ulong actual,
-        int width,
-        int index,
-        int? lane
-    )
+    private static IEnumerable<ValueMismatch> MatchBits(BitsPattern expected, ulong actual, int width, int index, int? lane)
     {
         return Matches(expected, actual, width)
             ? []
@@ -328,19 +293,9 @@ internal static class ValueMatcher
     /// <param name="expected">診断に表示する期待条件</param>
     /// <param name="actual">診断に表示する実際の値</param>
     /// <returns>位置と双方の表現を含むValue分類の相違</returns>
-    private static ValueMismatch CreateValueMismatch(
-        int index,
-        int? lane,
-        string expected,
-        string actual
-    )
+    private static ValueMismatch CreateValueMismatch(int index, int? lane, string expected, string actual)
     {
         var position = lane is null ? $"結果{index}" : $"結果{index}のlane{lane}";
-        return new(
-            ValueMismatchKind.Value,
-            index,
-            lane,
-            $"{position}の値が期待した{expected}ではなく{actual}です。"
-        );
+        return new(ValueMismatchKind.Value, index, lane, $"{position}の値が期待した{expected}ではなく{actual}です。");
     }
 }

@@ -15,10 +15,7 @@ internal class Interpreter_F32AbsTests
     [Arguments(0xFF812345u, 0x7F812345u)]
     [Arguments(0x7FC12345u, 0x7FC12345u)]
     [Arguments(0x7F812345u, 0x7F812345u)]
-    public async Task 入力の符号と生NaN_符号bitだけを正へ変更する(
-        uint operandBits,
-        uint expectedBits
-    )
+    public async Task 入力の符号と生NaN_符号bitだけを正へ変更する(uint operandBits, uint expectedBits)
     {
         // Arrange
         WasmValue[] operands = [WasmValue.FromF32Bits(operandBits)];

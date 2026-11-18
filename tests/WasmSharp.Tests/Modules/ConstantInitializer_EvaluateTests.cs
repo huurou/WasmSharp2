@@ -9,9 +9,7 @@ internal class ConstantInitializer_EvaluateTests
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task 検証済みの定数またはglobal取得式を渡す_I32の値を保持して評価する(
-        bool useGlobal
-    )
+    public async Task 検証済みの定数またはglobal取得式を渡す_I32の値を保持して評価する(bool useGlobal)
     {
         // Arrange
         ImmutableArray<DecodedInstruction> expression =
@@ -40,10 +38,7 @@ internal class ConstantInitializer_EvaluateTests
     public async Task 参照null式を渡す_参照型を保持してnullを返す(WasmValueKind kind)
     {
         // Arrange
-        var value =
-            kind == WasmValueKind.FuncRef
-                ? WasmValue.FromFuncRef(null)
-                : WasmValue.FromExternRef(null);
+        var value = kind == WasmValueKind.FuncRef ? WasmValue.FromFuncRef(null) : WasmValue.FromExternRef(null);
         ImmutableArray<DecodedInstruction> expression =
         [
             DecodedInstruction.WithImmediate(new(0, 0xD0), value, 40),
@@ -57,9 +52,7 @@ internal class ConstantInitializer_EvaluateTests
         using (Assert.Multiple())
         {
             await Assert.That(result.Kind).IsEqualTo(kind);
-            await Assert
-                .That(kind == WasmValueKind.FuncRef ? result.AsFuncRef() : result.AsExternRef())
-                .IsNull();
+            await Assert.That(kind == WasmValueKind.FuncRef ? result.AsFuncRef() : result.AsExternRef()).IsNull();
         }
     }
 
@@ -80,14 +73,7 @@ internal class ConstantInitializer_EvaluateTests
                 )
             )
             .Validate();
-        var instance = new WasmInstance(
-            module,
-            WasmExecutionOptions.Default,
-            [hostFunction],
-            [],
-            [],
-            []
-        );
+        var instance = new WasmInstance(module, WasmExecutionOptions.Default, [hostFunction], [], [], []);
         ImmutableArray<DecodedInstruction> expression =
         [
             DecodedInstruction.WithIndex(new(0, 0xD2), index, 40),
@@ -113,10 +99,7 @@ internal class ConstantInitializer_EvaluateTests
         // Arrange
         var function = WasmFunction.CreateHost(new([], []), (_, _) => new([]));
         var external = new object();
-        var value =
-            kind == WasmValueKind.FuncRef
-                ? WasmValue.FromFuncRef(function)
-                : WasmValue.FromExternRef(external);
+        var value = kind == WasmValueKind.FuncRef ? WasmValue.FromFuncRef(function) : WasmValue.FromExternRef(external);
         WasmGlobal[] globals = [new(new(kind, false), value)];
         ImmutableArray<DecodedInstruction> expression =
         [

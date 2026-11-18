@@ -22,32 +22,9 @@ internal class Interpreter_V128StoreTests
         var expected = new byte[pages * 65536];
         Array.Fill(expected, (byte)0xA5);
         memory.Write(0, expected);
-        byte[] payload =
-        [
-            0x10,
-            0x32,
-            0x54,
-            0x76,
-            0x98,
-            0xBA,
-            0xDC,
-            0xFE,
-            0xEF,
-            0xCD,
-            0xAB,
-            0x89,
-            0x67,
-            0x45,
-            0x23,
-            0x01,
-        ];
+        byte[] payload = [0x10, 0x32, 0x54, 0x76, 0x98, 0xBA, 0xDC, 0xFE, 0xEF, 0xCD, 0xAB, 0x89, 0x67, 0x45, 0x23, 0x01];
         payload.CopyTo(expected, effectiveAddress);
-        var instruction = MemoryHandlerFixture.CreateInstruction(
-            WasmValueKind.V128,
-            16,
-            offset: offset,
-            alignment: 4
-        );
+        var instruction = MemoryHandlerFixture.CreateInstruction(WasmValueKind.V128, 16, offset: offset, alignment: 4);
         var bytes = new byte[expected.Length];
 
         // Act
@@ -55,10 +32,7 @@ internal class Interpreter_V128StoreTests
             Interpreter.V128Store,
             memory,
             in instruction,
-            [
-                WasmValue.FromI32(address),
-                WasmValue.FromV128(0xFEDCBA9876543210UL, 0x0123456789ABCDEFUL),
-            ]
+            [WasmValue.FromI32(address), WasmValue.FromV128(0xFEDCBA9876543210UL, 0x0123456789ABCDEFUL)]
         );
         memory.Read(0, bytes);
 
@@ -93,11 +67,7 @@ internal class Interpreter_V128StoreTests
         var before = new byte[pages * 65536];
         Array.Fill(before, (byte)0xA5);
         memory.Write(0, before);
-        var instruction = MemoryHandlerFixture.CreateInstruction(
-            WasmValueKind.V128,
-            16,
-            offset: offset
-        );
+        var instruction = MemoryHandlerFixture.CreateInstruction(WasmValueKind.V128, 16, offset: offset);
         var after = new byte[before.Length];
 
         // Act
@@ -105,10 +75,7 @@ internal class Interpreter_V128StoreTests
             Interpreter.V128Store,
             memory,
             in instruction,
-            [
-                WasmValue.FromI32(address),
-                WasmValue.FromV128(0xFEDCBA9876543210UL, 0x0123456789ABCDEFUL),
-            ]
+            [WasmValue.FromI32(address), WasmValue.FromV128(0xFEDCBA9876543210UL, 0x0123456789ABCDEFUL)]
         );
         memory.Read(0, after);
 

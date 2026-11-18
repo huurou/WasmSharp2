@@ -8,29 +8,9 @@ internal class SimdValue_WriteLittleEndianTests
     public async Task 上下64ビットを書き出す_低位からLittleEndianの16バイトを返す()
     {
         // Arrange
-        var value = SimdValue.FromValue(
-            WasmValue.FromV128(0x0123456789ABCDEFUL, 0xFEDCBA9876543210UL)
-        );
+        var value = SimdValue.FromValue(WasmValue.FromV128(0x0123456789ABCDEFUL, 0xFEDCBA9876543210UL));
         var bytes = new byte[16];
-        byte[] expected =
-        [
-            0xEF,
-            0xCD,
-            0xAB,
-            0x89,
-            0x67,
-            0x45,
-            0x23,
-            0x01,
-            0x10,
-            0x32,
-            0x54,
-            0x76,
-            0x98,
-            0xBA,
-            0xDC,
-            0xFE,
-        ];
+        byte[] expected = [0xEF, 0xCD, 0xAB, 0x89, 0x67, 0x45, 0x23, 0x01, 0x10, 0x32, 0x54, 0x76, 0x98, 0xBA, 0xDC, 0xFE];
 
         // Act
         value.WriteLittleEndian(bytes);

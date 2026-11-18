@@ -76,11 +76,7 @@ internal class DataInstance_TryInitializeTests
     [Arguments(1u, 65536u, 0u)]
     [Arguments(1u, 0u, 4u)]
     [Arguments(1u, 65536u, 4u)]
-    public async Task 長さがゼロで両開始位置が領域内または末尾にある_成功する(
-        uint pages,
-        uint destination,
-        uint source
-    )
+    public async Task 長さがゼロで両開始位置が領域内または末尾にある_成功する(uint pages, uint destination, uint source)
     {
         // Arrange
         var data = new DataInstance(new DataDefinition([10, 20, 30, 40], null, 0));

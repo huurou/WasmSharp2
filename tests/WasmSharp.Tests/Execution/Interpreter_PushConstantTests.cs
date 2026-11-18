@@ -14,10 +14,7 @@ internal class Interpreter_PushConstantTests
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
-        var value =
-            kind == WasmValueKind.FuncRef
-                ? WasmValue.FromFuncRef(null)
-                : WasmValue.FromExternRef(null);
+        var value = kind == WasmValueKind.FuncRef ? WasmValue.FromFuncRef(null) : WasmValue.FromExternRef(null);
         var instruction = new Instruction(default, value, 1001, 0);
         var context = executionContext.Enter(new(10), out var isOutermost);
         ExecutionResult result;
@@ -77,27 +74,12 @@ internal class Interpreter_PushConstantTests
             _ => WasmValue.FromF64Bits(0xFFF8123456789ABC),
         };
         var found = InstructionSet.TryGet(new(0, (uint)opcode), out var descriptor);
-        var code = new FunctionCode(
-            [new(descriptor.ExecutionOpcode!.Value, value, 12345678901, 0)],
-            [],
-            1
-        );
-        var module = new WasmModule(
-            [new([], [value.Kind])],
-            [new(0, 30, [], [])],
-            [],
-            40,
-            [],
-            [],
-            [],
-            [],
-            null
-        )
+        var code = new FunctionCode([new(descriptor.ExecutionOpcode!.Value, value, 12345678901, 0)], [], 1);
+        var module = new WasmModule([new([], [value.Kind])], [new(0, 30, [], [])], [], 40, [], [], [], [], null)
         {
             FunctionCodes = [code],
         };
-        var function = (DefinedFunction)
-            new WasmInstance(module, WasmExecutionOptions.Default).Functions[0];
+        var function = (DefinedFunction)new WasmInstance(module, WasmExecutionOptions.Default).Functions[0];
         var context = executionContext.Enter(WasmExecutionOptions.Default, out var isOutermost);
         Instruction instruction;
         ExecutionResult result;

@@ -35,11 +35,7 @@ internal enum MeasurementStage
 /// <summary>
 /// 公開操作の回数と状態復元を計時へ含めるかの定義 guestの仕事量とは分けて保持する。
 /// </summary>
-internal sealed record OperationDefinition(
-    string Description,
-    uint OperationsPerInvoke,
-    bool IncludesStateRestoration
-);
+internal sealed record OperationDefinition(string Description, uint OperationsPerInvoke, bool IncludesStateRestoration);
 
 /// <summary>
 /// 1操作で処理する仕事量 Countは符号なし64ビット整数

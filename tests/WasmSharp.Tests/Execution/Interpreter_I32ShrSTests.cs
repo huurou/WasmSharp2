@@ -12,11 +12,7 @@ internal class Interpreter_I32ShrSTests
     [Arguments(unchecked((int)0x80000001), -1, -1)]
     [Arguments(-1, 1, -1)]
     [Arguments(unchecked((int)0x40000000), 1, unchecked((int)0x20000000))]
-    public async Task 幅境界と負の移動量を含む値_幅で剰余化して符号拡張する(
-        int left,
-        int right,
-        int expected
-    )
+    public async Task 幅境界と負の移動量を含む値_幅で剰余化して符号拡張する(int left, int right, int expected)
     {
         // Arrange
         WasmValue[] operands = [WasmValue.FromI32(left), WasmValue.FromI32(right)];

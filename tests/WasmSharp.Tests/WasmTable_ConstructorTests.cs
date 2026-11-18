@@ -29,9 +29,7 @@ internal class WasmTable_ConstructorTests
             {
                 var value = table.Get(index);
                 await Assert.That(value.Kind).IsEqualTo(kind);
-                await Assert
-                    .That(kind == WasmValueKind.FuncRef ? value.AsFuncRef() : value.AsExternRef())
-                    .IsNull();
+                await Assert.That(kind == WasmValueKind.FuncRef ? value.AsFuncRef() : value.AsExternRef()).IsNull();
             }
         }
     }
@@ -65,18 +63,14 @@ internal class WasmTable_ConstructorTests
     public async Task 最小値が最大値を超える_契約違反として拒否する()
     {
         // Act & Assert
-        await Assert
-            .That(() => new WasmTable(WasmValueKind.FuncRef, new WasmLimits(2, 1)))
-            .Throws<ArgumentException>();
+        await Assert.That(() => new WasmTable(WasmValueKind.FuncRef, new WasmLimits(2, 1))).Throws<ArgumentException>();
     }
 
     [Test]
     public async Task Limitsがnullである_引数例外として拒否する()
     {
         // Act & Assert
-        await Assert
-            .That(() => new WasmTable(WasmValueKind.FuncRef, null!))
-            .ThrowsExactly<ArgumentNullException>();
+        await Assert.That(() => new WasmTable(WasmValueKind.FuncRef, null!)).ThrowsExactly<ArgumentNullException>();
     }
 
     [Test]
@@ -91,9 +85,7 @@ internal class WasmTable_ConstructorTests
             .ThrowsExactly<WasmImplementationLimitException>();
         using (Assert.Multiple())
         {
-            await Assert
-                .That(exception!.Reason)
-                .IsEqualTo(WasmImplementationLimitReason.CollectionSize);
+            await Assert.That(exception!.Reason).IsEqualTo(WasmImplementationLimitReason.CollectionSize);
             await Assert.That(exception.Limit).IsEqualTo(Array.MaxLength);
             await Assert.That(exception.Location).IsNull();
         }

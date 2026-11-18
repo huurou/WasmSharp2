@@ -12,11 +12,7 @@ internal class Interpreter_I32RotlTests
     [Arguments(unchecked((int)0x80000001), -1, unchecked((int)0xC0000000))]
     [Arguments(unchecked((int)0x80000000), 1, 1)]
     [Arguments(-1, 17, -1)]
-    public async Task 幅境界と負の移動量を含む値_幅で剰余化して左回転する(
-        int left,
-        int right,
-        int expected
-    )
+    public async Task 幅境界と負の移動量を含む値_幅で剰余化して左回転する(int left, int right, int expected)
     {
         // Arrange
         WasmValue[] operands = [WasmValue.FromI32(left), WasmValue.FromI32(right)];

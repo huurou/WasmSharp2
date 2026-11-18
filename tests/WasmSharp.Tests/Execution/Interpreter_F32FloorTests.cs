@@ -19,10 +19,7 @@ internal class Interpreter_F32FloorTests
     [Arguments(0xFFC00000u, 0x7FC00000u)]
     [Arguments(0xFFC12345u, 0x7FC00000u)]
     [Arguments(0x7F812345u, 0x7FC00000u)]
-    public async Task 入力の通常値と境界値とNaN_負の無限大方向へ整数値化する(
-        uint operandBits,
-        uint expectedBits
-    )
+    public async Task 入力の通常値と境界値とNaN_負の無限大方向へ整数値化する(uint operandBits, uint expectedBits)
     {
         // Arrange
         WasmValue[] operands = [WasmValue.FromF32Bits(operandBits)];

@@ -51,10 +51,7 @@ internal partial class WasmFunction_InvokeTests
             arguments.CopyTo(buffer);
             return new(buffer);
         }
-        var type = new WasmFunctionType(
-            values.Select(x => x.Kind).ToArray(),
-            values.Select(x => x.Kind).ToArray()
-        );
+        var type = new WasmFunctionType(values.Select(x => x.Kind).ToArray(), values.Select(x => x.Kind).ToArray());
         var host = new WasmHostModule("env");
         host.Define(
             "echo",
@@ -95,18 +92,10 @@ internal partial class WasmFunction_InvokeTests
             await Assert.That(second.Values.SequenceEqual(otherValues)).IsTrue();
             if (count == 7)
             {
-                await Assert
-                    .That(first.Values[5].AsFuncRef())
-                    .IsSameReferenceAs(values[5].AsFuncRef());
-                await Assert
-                    .That(first.Values[6].AsExternRef())
-                    .IsSameReferenceAs(values[6].AsExternRef());
-                await Assert
-                    .That(second.Values[5].AsFuncRef())
-                    .IsSameReferenceAs(otherValues[5].AsFuncRef());
-                await Assert
-                    .That(second.Values[6].AsExternRef())
-                    .IsSameReferenceAs(otherValues[6].AsExternRef());
+                await Assert.That(first.Values[5].AsFuncRef()).IsSameReferenceAs(values[5].AsFuncRef());
+                await Assert.That(first.Values[6].AsExternRef()).IsSameReferenceAs(values[6].AsExternRef());
+                await Assert.That(second.Values[5].AsFuncRef()).IsSameReferenceAs(otherValues[5].AsFuncRef());
+                await Assert.That(second.Values[6].AsExternRef()).IsSameReferenceAs(otherValues[6].AsExternRef());
             }
         }
     }
@@ -181,9 +170,7 @@ internal partial class WasmFunction_InvokeTests
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task Importした定義関数でglobalを更新する_元の共有実体を使いreturnとtrapの後を実行しない(
-        bool trap
-    )
+    public async Task Importした定義関数でglobalを更新する_元の共有実体を使いreturnとtrapの後を実行しない(bool trap)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
@@ -263,14 +250,8 @@ internal partial class WasmFunction_InvokeTests
             // Assert
             using (Assert.Multiple())
             {
-                await Assert
-                    .That(first.Values.SequenceEqual([WasmValue.FromI32(7), WasmValue.FromI32(42)]))
-                    .IsTrue();
-                await Assert
-                    .That(
-                        second.Values.SequenceEqual([WasmValue.FromI32(11), WasmValue.FromI32(42)])
-                    )
-                    .IsTrue();
+                await Assert.That(first.Values.SequenceEqual([WasmValue.FromI32(7), WasmValue.FromI32(42)])).IsTrue();
+                await Assert.That(second.Values.SequenceEqual([WasmValue.FromI32(11), WasmValue.FromI32(42)])).IsTrue();
             }
         }
         using (Assert.Multiple())

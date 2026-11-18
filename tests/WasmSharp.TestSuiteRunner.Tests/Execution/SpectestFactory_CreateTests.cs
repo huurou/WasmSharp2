@@ -77,16 +77,12 @@ internal class SpectestFactory_CreateTests
         using (Assert.Multiple())
         {
             await Assert.That(host.Name).IsEqualTo("spectest");
-            await Assert
-                .That(function.Type.Parameters.SequenceEqual(arguments[index].Select(x => x.Kind)))
-                .IsTrue();
+            await Assert.That(function.Type.Parameters.SequenceEqual(arguments[index].Select(x => x.Kind))).IsTrue();
             await Assert.That(function.Type.Results.IsEmpty).IsTrue();
             await Assert.That(results.Values.IsEmpty).IsTrue();
             await Assert.That(state.CurrentCommand).IsEqualTo(new CaseId("a.wast", 3));
             await Assert.That(state.Prints.Length).IsEqualTo(1);
-            await Assert
-                .That(state.Prints[0].Function)
-                .IsEqualTo(SpectestModuleFixture.functionNames_[index]);
+            await Assert.That(state.Prints[0].Function).IsEqualTo(SpectestModuleFixture.functionNames_[index]);
             await Assert.That(state.Prints[0].Arguments.SequenceEqual(expected[index])).IsTrue();
             await Assert.That(state.CallbackException).IsNull();
         }
@@ -128,9 +124,7 @@ internal class SpectestFactory_CreateTests
             await Assert.That(table.ElementType).IsEqualTo(WasmValueKind.FuncRef);
             await Assert.That(table.Count).IsEqualTo(10U);
             await Assert.That(table.MaximumElements).IsEqualTo(20U);
-            await Assert
-                .That(Enumerable.Range(0, 10).All(x => table.Get((uint)x).AsFuncRef() is null))
-                .IsTrue();
+            await Assert.That(Enumerable.Range(0, 10).All(x => table.Get((uint)x).AsFuncRef() is null)).IsTrue();
             var memory = instance.GetMemory("memory");
             var bytes = new byte[65536];
             memory.Read(0, bytes);
@@ -152,9 +146,7 @@ internal class SpectestFactory_CreateTests
         first.GetMemory("memory").Write(0, [0xAB]);
         var memoryGrown = first.GetMemory("memory").TryGrow(1, out _);
         first.GetTable("table").Set(0, WasmValue.FromFuncRef(reference));
-        var tableGrown = first
-            .GetTable("table")
-            .TryGrow(10, WasmValue.FromFuncRef(reference), out _);
+        var tableGrown = first.GetTable("table").TryGrow(10, WasmValue.FromFuncRef(reference), out _);
         var second = SpectestModuleFixture.Instantiate(context_, host);
 
         // Assert
@@ -162,19 +154,13 @@ internal class SpectestFactory_CreateTests
         {
             foreach (var name in SpectestModuleFixture.functionNames_)
             {
-                await Assert
-                    .That(second.GetFunction(name))
-                    .IsSameReferenceAs(first.GetFunction(name));
+                await Assert.That(second.GetFunction(name)).IsSameReferenceAs(first.GetFunction(name));
             }
             foreach (var name in new[] { "global_i32", "global_i64", "global_f32", "global_f64" })
             {
-                await Assert
-                    .That(second.GetGlobalResource(name))
-                    .IsSameReferenceAs(first.GetGlobalResource(name));
+                await Assert.That(second.GetGlobalResource(name)).IsSameReferenceAs(first.GetGlobalResource(name));
             }
-            await Assert
-                .That(second.GetMemory("memory"))
-                .IsSameReferenceAs(first.GetMemory("memory"));
+            await Assert.That(second.GetMemory("memory")).IsSameReferenceAs(first.GetMemory("memory"));
             await Assert.That(second.GetTable("table")).IsSameReferenceAs(first.GetTable("table"));
             var bytes = new byte[1];
             second.GetMemory("memory").Read(0, bytes);
@@ -183,16 +169,10 @@ internal class SpectestFactory_CreateTests
             await Assert.That(second.GetMemory("memory").PageCount).IsEqualTo(2U);
             await Assert.That(tableGrown).IsTrue();
             await Assert.That(second.GetTable("table").Count).IsEqualTo(20U);
-            await Assert
-                .That(second.GetTable("table").Get(0).AsFuncRef())
-                .IsSameReferenceAs(reference);
-            await Assert
-                .That(second.GetTable("table").Get(19).AsFuncRef())
-                .IsSameReferenceAs(reference);
+            await Assert.That(second.GetTable("table").Get(0).AsFuncRef()).IsSameReferenceAs(reference);
+            await Assert.That(second.GetTable("table").Get(19).AsFuncRef()).IsSameReferenceAs(reference);
             await Assert.That(second.GetMemory("memory").TryGrow(1, out _)).IsFalse();
-            await Assert
-                .That(second.GetTable("table").TryGrow(1, WasmValue.FromFuncRef(null), out _))
-                .IsFalse();
+            await Assert.That(second.GetTable("table").TryGrow(1, WasmValue.FromFuncRef(null), out _)).IsFalse();
         }
     }
 
@@ -218,38 +198,21 @@ internal class SpectestFactory_CreateTests
         {
             foreach (var name in SpectestModuleFixture.functionNames_)
             {
-                await Assert
-                    .That(ReferenceEquals(second.GetFunction(name), first.GetFunction(name)))
-                    .IsFalse();
+                await Assert.That(ReferenceEquals(second.GetFunction(name), first.GetFunction(name))).IsFalse();
             }
             foreach (var name in new[] { "global_i32", "global_i64", "global_f32", "global_f64" })
             {
-                await Assert
-                    .That(
-                        ReferenceEquals(
-                            second.GetGlobalResource(name),
-                            first.GetGlobalResource(name)
-                        )
-                    )
-                    .IsFalse();
+                await Assert.That(ReferenceEquals(second.GetGlobalResource(name), first.GetGlobalResource(name))).IsFalse();
             }
-            await Assert
-                .That(ReferenceEquals(second.GetMemory("memory"), first.GetMemory("memory")))
-                .IsFalse();
-            await Assert
-                .That(ReferenceEquals(second.GetTable("table"), first.GetTable("table")))
-                .IsFalse();
+            await Assert.That(ReferenceEquals(second.GetMemory("memory"), first.GetMemory("memory"))).IsFalse();
+            await Assert.That(ReferenceEquals(second.GetTable("table"), first.GetTable("table"))).IsFalse();
             var bytes = new byte[65536];
             second.GetMemory("memory").Read(0, bytes);
             await Assert.That(bytes.All(x => x == 0)).IsTrue();
             await Assert.That(second.GetMemory("memory").PageCount).IsEqualTo(1U);
             await Assert.That(second.GetTable("table").Count).IsEqualTo(10U);
             await Assert
-                .That(
-                    Enumerable
-                        .Range(0, 10)
-                        .All(x => second.GetTable("table").Get((uint)x).AsFuncRef() is null)
-                )
+                .That(Enumerable.Range(0, 10).All(x => second.GetTable("table").Get((uint)x).AsFuncRef() is null))
                 .IsTrue();
             await Assert.That(secondState.Prints.IsEmpty).IsTrue();
             await Assert.That(secondState.CallbackException).IsNull();
@@ -274,9 +237,7 @@ internal class SpectestFactory_CreateTests
         // Assert
         using (Assert.Multiple())
         {
-            await Assert
-                .That(previous.Select(x => x.Function).SequenceEqual(["print_i32", "print"]))
-                .IsTrue();
+            await Assert.That(previous.Select(x => x.Function).SequenceEqual(["print_i32", "print"])).IsTrue();
             await Assert.That(previous[0].Arguments[0].Bits).IsEqualTo("00000001");
             await Assert.That(state.Prints.Length).IsEqualTo(1);
             await Assert.That(state.Prints[0].Arguments[0].Bits).IsEqualTo("00000002");
@@ -297,9 +258,7 @@ internal class SpectestFactory_CreateTests
             .ThrowsExactly<InvalidOperationException>();
         using (Assert.Multiple())
         {
-            await Assert
-                .That(exception!.Message)
-                .IsEqualTo("printの記録には処理中のcommandが必要です。");
+            await Assert.That(exception!.Message).IsEqualTo("printの記録には処理中のcommandが必要です。");
             await Assert.That(state.CallbackException).IsSameReferenceAs(exception);
             await Assert.That(state.Prints.IsEmpty).IsTrue();
         }

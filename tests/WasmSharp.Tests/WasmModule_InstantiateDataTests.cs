@@ -24,13 +24,7 @@ internal partial class WasmModule_InstantiateTests
         var observed = new byte[4];
         var host = new WasmHostModule("env");
         host.Define("memory", memory);
-        host.Define(
-            "offset",
-            new WasmGlobal(
-                new(WasmValueKind.I32, false),
-                WasmValue.FromI32(outOfBounds ? 65535 : 2)
-            )
-        );
+        host.Define("offset", new WasmGlobal(new(WasmValueKind.I32, false), WasmValue.FromI32(outOfBounds ? 65535 : 2)));
         host.Define(
             "start",
             WasmFunction.CreateHost(
@@ -43,30 +37,7 @@ internal partial class WasmModule_InstantiateTests
                 }
             )
         );
-        byte[] data =
-        [
-            3,
-            0,
-            0x41,
-            0,
-            0x0B,
-            1,
-            11,
-            2,
-            0,
-            0x23,
-            0,
-            0x0B,
-            2,
-            22,
-            33,
-            0,
-            0x41,
-            0,
-            0x0B,
-            1,
-            55,
-        ];
+        byte[] data = [3, 0, 0x41, 0, 0x0B, 1, 11, 2, 0, 0x23, 0, 0x0B, 2, 22, 33, 0, 0x41, 0, 0x0B, 1, 55];
         var bytes = HostLinkingModuleBinary.Create(
             HostLinkingModuleBinary.Types(([], [])),
             HostLinkingModuleBinary.Imports(
@@ -91,23 +62,11 @@ internal partial class WasmModule_InstantiateTests
             {
                 await Assert.That(exception!.Reason).IsEqualTo(WasmTrapReason.MemoryOutOfBounds);
                 await Assert
-                    .That(
-                        exception.Message.StartsWith(
-                            "out of bounds memory access",
-                            StringComparison.Ordinal
-                        )
-                    )
+                    .That(exception.Message.StartsWith("out of bounds memory access", StringComparison.Ordinal))
                     .IsTrue();
                 await Assert
                     .That(exception.Location)
-                    .IsEqualTo(
-                        new(
-                            WasmProcessingStage.Instantiate,
-                            bytes.Length - data.Length + 7,
-                            null,
-                            11
-                        )
-                    );
+                    .IsEqualTo(new(WasmProcessingStage.Instantiate, bytes.Length - data.Length + 7, null, 11));
                 await Assert.That(calls).IsEqualTo(0);
             }
         }
@@ -132,11 +91,7 @@ internal partial class WasmModule_InstantiateTests
         memory.Read(65535, end);
         using (Assert.Multiple())
         {
-            await Assert
-                .That(
-                    actual.SequenceEqual(outOfBounds ? new byte[] { 11, 9, 9, 9 } : [55, 9, 22, 33])
-                )
-                .IsTrue();
+            await Assert.That(actual.SequenceEqual(outOfBounds ? new byte[] { 11, 9, 9, 9 } : [55, 9, 22, 33])).IsTrue();
             await Assert.That(end[0]).IsEqualTo((byte)88);
         }
     }
@@ -169,22 +124,14 @@ internal partial class WasmModule_InstantiateTests
         {
             await Assert.That(actual.SequenceEqual(new byte[] { 0, 11, 44, 55, 0 })).IsTrue();
             await Assert.That(instance.DataSegments.Length).IsEqualTo(3);
-            await Assert
-                .That(
-                    instance
-                        .DataSegments.Select(x => x.Length)
-                        .SequenceEqual(new uint[] { 0, 2, 0 })
-                )
-                .IsTrue();
+            await Assert.That(instance.DataSegments.Select(x => x.Length).SequenceEqual(new uint[] { 0, 2, 0 })).IsTrue();
         }
     }
 
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task パッシブデータを定義する_メモリの有無にかかわらず内容を保持して初期化時には書き込まない(
-        bool hasMemory
-    )
+    public async Task パッシブデータを定義する_メモリの有無にかかわらず内容を保持して初期化時には書き込まない(bool hasMemory)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
@@ -254,24 +201,16 @@ internal partial class WasmModule_InstantiateTests
         // Assert
         using (Assert.Multiple())
         {
-            await Assert
-                .That(ReferenceEquals(first.DataSegments[0], second.DataSegments[0]))
-                .IsFalse();
-            await Assert
-                .That(ReferenceEquals(first.DataSegments[1], second.DataSegments[1]))
-                .IsFalse();
+            await Assert.That(ReferenceEquals(first.DataSegments[0], second.DataSegments[0])).IsFalse();
+            await Assert.That(ReferenceEquals(first.DataSegments[1], second.DataSegments[1])).IsFalse();
             await Assert.That(first.DataSegments[1].Length).IsEqualTo(0u);
             await Assert.That(second.DataSegments[0].Length).IsEqualTo(0u);
             await Assert.That(second.DataSegments[1].Length).IsEqualTo(2u);
             await Assert.That(copied).IsTrue();
             await Assert.That(firstBytes.SequenceEqual(new byte[] { 99, 0, 0 })).IsTrue();
             await Assert.That(secondBytes.SequenceEqual(new byte[] { 11, 22, 33 })).IsTrue();
-            await Assert
-                .That(module.DataSegments[0].Bytes.SequenceEqual(new byte[] { 11 }))
-                .IsTrue();
-            await Assert
-                .That(module.DataSegments[1].Bytes.SequenceEqual(new byte[] { 22, 33 }))
-                .IsTrue();
+            await Assert.That(module.DataSegments[0].Bytes.SequenceEqual(new byte[] { 11 })).IsTrue();
+            await Assert.That(module.DataSegments[1].Bytes.SequenceEqual(new byte[] { 22, 33 })).IsTrue();
         }
     }
 
@@ -285,10 +224,7 @@ internal partial class WasmModule_InstantiateTests
         var host = new WasmHostModule("env");
         host.Define("memory", memory);
         host.Define("unused", new WasmGlobal(new(WasmValueKind.I64, false), WasmValue.FromI64(0)));
-        host.Define(
-            "offset",
-            new WasmGlobal(new(WasmValueKind.I32, false), WasmValue.FromI32(65535))
-        );
+        host.Define("offset", new WasmGlobal(new(WasmValueKind.I32, false), WasmValue.FromI32(65535)));
         var module = new WasmModule(
             [],
             [],
@@ -385,10 +321,7 @@ internal partial class WasmModule_InstantiateTests
                     ]
                 ),
             ],
-            [
-                new("memory", 0, 35, WasmExternalKind.Memory),
-                new("read", 1, 36, WasmExternalKind.Function),
-            ],
+            [new("memory", 0, 35, WasmExternalKind.Memory), new("read", 1, 36, WasmExternalKind.Function)],
             100,
             [new FunctionImport("env", "start", 0, 20)],
             [],
@@ -459,19 +392,12 @@ internal partial class WasmModule_InstantiateTests
             [],
             [],
             100,
-            [
-                new MemoryImport("env", "memory", new(new(1, null), 20), 20),
-                new FunctionImport("env", "start", 0, 25),
-            ],
+            [new MemoryImport("env", "memory", new(new(1, null), 20), 20), new FunctionImport("env", "start", 0, 25)],
             [],
             [],
             [],
             new(0, 40),
-            [
-                ActiveData([11], 0, 50),
-                ActiveData(empty ? [] : [22, 33], offset, 60),
-                ActiveData([44], 1, 70),
-            ]
+            [ActiveData([11], 0, 50), ActiveData(empty ? [] : [22, 33], offset, 60), ActiveData([44], 1, 70)]
         ).Validate();
         WasmInstance? returned = null;
 
@@ -485,16 +411,9 @@ internal partial class WasmModule_InstantiateTests
         {
             await Assert.That(exception!.Reason).IsEqualTo(WasmTrapReason.MemoryOutOfBounds);
             await Assert
-                .That(
-                    exception.Message.StartsWith(
-                        "out of bounds memory access",
-                        StringComparison.Ordinal
-                    )
-                )
+                .That(exception.Message.StartsWith("out of bounds memory access", StringComparison.Ordinal))
                 .IsTrue();
-            await Assert
-                .That(exception.Location)
-                .IsEqualTo(new(WasmProcessingStage.Instantiate, 60, null, 11));
+            await Assert.That(exception.Location).IsEqualTo(new(WasmProcessingStage.Instantiate, 60, null, 11));
             await Assert.That(actual.SequenceEqual(expected)).IsTrue();
             await Assert.That(calls).IsEqualTo(0);
             await Assert.That(returned).IsNull();
@@ -539,9 +458,7 @@ internal partial class WasmModule_InstantiateTests
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task データ初期化後のStartが失敗する_初期化と変更を保持して保存済み参照を引き続き使える(
-        bool hostFailure
-    )
+    public async Task データ初期化後のStartが失敗する_初期化と変更を保持して保存済み参照を引き続き使える(bool hostFailure)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
@@ -593,15 +510,9 @@ internal partial class WasmModule_InstantiateTests
                     ]
                 ),
             ],
-            [
-                new("memory", 0, 35, WasmExternalKind.Memory),
-                new("read", 1, 36, WasmExternalKind.Function),
-            ],
+            [new("memory", 0, 35, WasmExternalKind.Memory), new("read", 1, 36, WasmExternalKind.Function)],
             100,
-            [
-                new MemoryImport("env", "memory", new(new(1, null), 20), 20),
-                new FunctionImport("env", "save", 0, 25),
-            ],
+            [new MemoryImport("env", "memory", new(new(1, null), 20), 20), new FunctionImport("env", "save", 0, 25)],
             [],
             [],
             [],
@@ -657,10 +568,7 @@ internal partial class WasmModule_InstantiateTests
             [],
             [],
             100,
-            [
-                new MemoryImport("env", "memory", new(new(1, null), 20), 20),
-                new FunctionImport("env", "missing", 0, 25),
-            ],
+            [new MemoryImport("env", "memory", new(new(1, null), 20), 20), new FunctionImport("env", "missing", 0, 25)],
             [],
             [],
             [],
@@ -669,9 +577,7 @@ internal partial class WasmModule_InstantiateTests
         ).Validate();
 
         // Act & Assert
-        await Assert
-            .That(() => module.Instantiate(executionContext, [host]))
-            .ThrowsExactly<WasmInstantiateException>();
+        await Assert.That(() => module.Instantiate(executionContext, [host])).ThrowsExactly<WasmInstantiateException>();
         var actual = new byte[1];
         memory.Read(0, actual);
         await Assert.That(actual[0]).IsEqualTo((byte)99);
@@ -684,11 +590,7 @@ internal partial class WasmModule_InstantiateTests
             new(
                 0,
                 [
-                    DecodedInstruction.WithImmediate(
-                        new(0, 0x41),
-                        WasmValue.FromI32(offset),
-                        byteOffset + 1
-                    ),
+                    DecodedInstruction.WithImmediate(new(0, 0x41), WasmValue.FromI32(offset), byteOffset + 1),
                     DecodedInstruction.WithoutImmediate(new(0, 0x0B), byteOffset + 3),
                 ]
             ),

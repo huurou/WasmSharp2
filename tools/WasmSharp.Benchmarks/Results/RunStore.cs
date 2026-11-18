@@ -40,29 +40,29 @@ internal sealed class RunStore
     /// <summary>
     /// 追記した検査snapshotを保存参照とともに読み出す
     /// </summary>
-    internal static List<(ManifestFile File, ProcessCheck Check)> ReadChecks(
-        string outputDirectory,
-        CaseJson json
-    )
+    internal static List<(ManifestFile File, ProcessCheck Check)> ReadChecks(string outputDirectory, CaseJson json)
     {
         var directory = Path.Combine(outputDirectory, "checks");
         if (!Directory.Exists(directory))
         {
             return [];
         }
-        return [.. Directory
-            .GetFiles(directory, "*.json")
-            .Select(x =>
-            {
-                var bytes = File.ReadAllBytes(x);
-                return (
-                    new ManifestFile(
-                        Path.GetRelativePath(outputDirectory, x).Replace('\\', '/'),
-                        Convert.ToHexStringLower(SHA256.HashData(bytes))
-                    ),
-                    JsonSerializer.Deserialize<ProcessCheck>(bytes, json.Options)!
-                );
-            })];
+        return
+        [
+            .. Directory
+                .GetFiles(directory, "*.json")
+                .Select(x =>
+                {
+                    var bytes = File.ReadAllBytes(x);
+                    return (
+                        new ManifestFile(
+                            Path.GetRelativePath(outputDirectory, x).Replace('\\', '/'),
+                            Convert.ToHexStringLower(SHA256.HashData(bytes))
+                        ),
+                        JsonSerializer.Deserialize<ProcessCheck>(bytes, json.Options)!
+                    );
+                }),
+        ];
     }
 
     /// <summary>
@@ -164,14 +164,7 @@ internal sealed class RunStore
     /// </summary>
     internal void SaveInputs(ManifestFile assets, ManifestFile cases, ManifestFile job)
     {
-        SaveManifest(
-            manifest_ with
-            {
-                AssetManifestFile = assets,
-                CasesFile = cases,
-                JobSettingsFile = job,
-            }
-        );
+        SaveManifest(manifest_ with { AssetManifestFile = assets, CasesFile = cases, JobSettingsFile = job });
     }
 
     /// <summary>
@@ -179,10 +172,7 @@ internal sealed class RunStore
     /// </summary>
     internal void SaveEnvironment(RunEnvironment environment)
     {
-        var file = SaveFile(
-            "environment.json",
-            JsonSerializer.SerializeToUtf8Bytes(environment, json_.Options)
-        );
+        var file = SaveFile("environment.json", JsonSerializer.SerializeToUtf8Bytes(environment, json_.Options));
         SaveManifest(manifest_ with { EnvironmentFile = file });
     }
 
@@ -206,10 +196,7 @@ internal sealed class RunStore
     {
         if (check.RunId != manifest_.RunId || !manifest_.PlannedCaseIds.Contains(check.CaseId))
         {
-            throw new ArgumentException(
-                "検査のrunまたはケースが保存先と一致しません。",
-                nameof(check)
-            );
+            throw new ArgumentException("検査のrunまたはケースが保存先と一致しません。", nameof(check));
         }
 
         return SaveFile(
@@ -272,8 +259,8 @@ internal sealed class RunStore
     private static bool HasCompletedCases(RunManifest manifest)
     {
         return manifest.Cases.Count == manifest.PlannedCaseIds.Count
-        && manifest.Cases.All(x => x.Status != ResultStatus.Incomplete)
-        && manifest.Cases.Select(x => x.CaseId).ToHashSet().SetEquals(manifest.PlannedCaseIds);
+            && manifest.Cases.All(x => x.Status != ResultStatus.Incomplete)
+            && manifest.Cases.Select(x => x.CaseId).ToHashSet().SetEquals(manifest.PlannedCaseIds);
     }
 
     private static RunManifest AsIncomplete(RunManifest manifest, string reason)
@@ -285,15 +272,7 @@ internal sealed class RunStore
             Failures =
             [
                 .. manifest.Failures,
-                new(
-                    null,
-                    RunStage.Saving,
-                    null,
-                    "runの完了が確定していません。",
-                    null,
-                    null,
-                    reason
-                ),
+                new(null, RunStage.Saving, null, "runの完了が確定していません。", null, null, reason),
             ],
         };
     }
@@ -314,10 +293,8 @@ internal sealed class RunStore
         }
 
         var source =
-            JsonSerializer.Deserialize<RunSource>(
-                ReadSavedFile(manifest_.SourceFile),
-                json_.Options
-            ) ?? throw new InvalidDataException("source情報が保存されていません。");
+            JsonSerializer.Deserialize<RunSource>(ReadSavedFile(manifest_.SourceFile), json_.Options)
+            ?? throw new InvalidDataException("source情報が保存されていません。");
         ReadSavedFile(source.IndexDiff);
         ReadSavedFile(source.WorktreeDiff);
         foreach (var file in source.UntrackedFiles)
@@ -345,10 +322,7 @@ internal sealed class RunStore
                     continue;
                 }
 
-                var check = JsonSerializer.Deserialize<ProcessCheck>(
-                    ReadSavedFile(file),
-                    json_.Options
-                )!;
+                var check = JsonSerializer.Deserialize<ProcessCheck>(ReadSavedFile(file), json_.Options)!;
                 if (
                     check.RunId != manifest_.RunId
                     || check.CaseId != result.CaseId
@@ -391,16 +365,10 @@ internal sealed class RunStore
         var path = Path.GetFullPath(Path.Combine(outputDirectory_, relativePath));
         if (
             Path.IsPathRooted(relativePath)
-            || !path.StartsWith(
-                outputDirectory_ + Path.DirectorySeparatorChar,
-                StringComparison.OrdinalIgnoreCase
-            )
+            || !path.StartsWith(outputDirectory_ + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)
         )
         {
-            throw new ArgumentException(
-                "保存先はrun内の相対pathで指定してください。",
-                nameof(relativePath)
-            );
+            throw new ArgumentException("保存先はrun内の相対pathで指定してください。", nameof(relativePath));
         }
 
         return path;

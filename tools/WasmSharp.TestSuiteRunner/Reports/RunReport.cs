@@ -8,11 +8,7 @@ namespace WasmSharp.TestSuiteRunner.Reports;
 /// <param name="Corpus">実行に使用したmanifestのスナップショット profileと素材一覧/hashを含む</param>
 /// <param name="Provenance">ケース同一性に含めない実行時の参考出典</param>
 /// <param name="ExecutionPolicy">全instanceへ明示した実行ポリシー</param>
-internal sealed record RunReport(
-    CorpusManifest Corpus,
-    RunProvenance Provenance,
-    RunExecutionPolicy ExecutionPolicy
-)
+internal sealed record RunReport(CorpusManifest Corpus, RunProvenance Provenance, RunExecutionPolicy ExecutionPolicy)
 {
     /// <summary>
     /// 永続形式の版
@@ -51,11 +47,7 @@ internal sealed record RunReport(
     /// <param name="provenance">実行時の参考出典</param>
     /// <param name="executionPolicy">全instanceへ適用する実行ポリシーの記録</param>
     /// <returns>profileの全入力が未処理で、初期集計を持つ実行結果</returns>
-    internal static RunReport Create(
-        CorpusManifest manifest,
-        RunProvenance provenance,
-        RunExecutionPolicy executionPolicy
-    )
+    internal static RunReport Create(CorpusManifest manifest, RunProvenance provenance, RunExecutionPolicy executionPolicy)
     {
         var report = new RunReport(manifest.CreateSnapshot(), provenance, executionPolicy)
         {

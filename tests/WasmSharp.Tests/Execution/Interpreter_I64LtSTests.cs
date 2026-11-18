@@ -10,11 +10,7 @@ internal class Interpreter_I64LtSTests
     [Arguments(1L, -1L, 0)]
     [Arguments(long.MinValue, long.MinValue, 0)]
     [Arguments(4294967296L, 4294967295L, 0)]
-    public async Task 上位bitと等値を含むoperand_i32で符号付き比較を返す(
-        long left,
-        long right,
-        int expected
-    )
+    public async Task 上位bitと等値を含むoperand_i32で符号付き比較を返す(long left, long right, int expected)
     {
         // Arrange
         WasmValue[] operands = [WasmValue.FromI64(left), WasmValue.FromI64(right)];

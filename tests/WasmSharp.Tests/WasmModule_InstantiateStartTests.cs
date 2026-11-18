@@ -8,9 +8,7 @@ internal partial class WasmModule_InstantiateTests
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task Start中のcallbackからexportを使う_定義資源と関数は初期化済みで再入できる(
-        bool definedStart
-    )
+    public async Task Start中のcallbackからexportを使う_定義資源と関数は初期化済みで再入できる(bool definedStart)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
@@ -23,12 +21,7 @@ internal partial class WasmModule_InstantiateTests
                     HostLinkingModuleBinary.Tables((0x6F, 1, null)),
                     HostLinkingModuleBinary.Memories((1, null)),
                     HostLinkingModuleBinary.Globals((0x7F, true, [0x41, 0x2A, 0x0B])),
-                    HostLinkingModuleBinary.Exports(
-                        ("read", 0, 1),
-                        ("memory", 2, 0),
-                        ("table", 1, 0),
-                        ("value", 3, 0)
-                    ),
+                    HostLinkingModuleBinary.Exports(("read", 0, 1), ("memory", 2, 0), ("table", 1, 0), ("value", 3, 0)),
                     HostLinkingModuleBinary.Start(definedStart ? 2U : 0U),
                     HostLinkingModuleBinary.Code(
                         ([], [0x23, 0x00, 0x0B]),
@@ -156,9 +149,7 @@ internal partial class WasmModule_InstantiateTests
         using (Assert.Multiple())
         {
             await Assert.That(ReferenceEquals(received, source)).IsTrue();
-            await Assert
-                .That(ReferenceEquals(owner.GetFunction("start"), source.GetFunction("start")))
-                .IsTrue();
+            await Assert.That(ReferenceEquals(owner.GetFunction("start"), source.GetFunction("start"))).IsTrue();
             await Assert.That(source.GetGlobal("value").AsI32()).IsEqualTo(7);
             await Assert.That(owner.GetGlobal("value").AsI32()).IsEqualTo(42);
         }
@@ -212,20 +203,12 @@ internal partial class WasmModule_InstantiateTests
             .Decode(
                 HostLinkingModuleBinary.Create(
                     HostLinkingModuleBinary.Types(([], []), ([], [0x7F])),
-                    HostLinkingModuleBinary.Imports(
-                        ("env", "save", 0, [0]),
-                        ("env", "shared", 3, [0x7F, 1])
-                    ),
+                    HostLinkingModuleBinary.Imports(("env", "save", 0, [0]), ("env", "shared", 3, [0x7F, 1])),
                     HostLinkingModuleBinary.Functions(0, 1),
                     HostLinkingModuleBinary.Tables((0x6F, 1, null)),
                     HostLinkingModuleBinary.Memories((1, null)),
                     HostLinkingModuleBinary.Globals((0x7F, true, [0x41, 0x2A, 0x0B])),
-                    HostLinkingModuleBinary.Exports(
-                        ("read", 0, 2),
-                        ("memory", 2, 0),
-                        ("table", 1, 0),
-                        ("value", 3, 1)
-                    ),
+                    HostLinkingModuleBinary.Exports(("read", 0, 2), ("memory", 2, 0), ("table", 1, 0), ("value", 3, 1)),
                     HostLinkingModuleBinary.Start(1),
                     HostLinkingModuleBinary.Code(
                         (
@@ -269,9 +252,7 @@ internal partial class WasmModule_InstantiateTests
                 var exhaustion = (WasmExhaustionException)exception!;
                 await Assert.That(exhaustion.Reason).IsEqualTo(WasmExhaustionReason.CallDepthLimit);
                 await Assert.That(exhaustion.Limit).IsEqualTo(2);
-                await Assert
-                    .That(exhaustion.Location!.Stage)
-                    .IsEqualTo(WasmProcessingStage.Instantiate);
+                await Assert.That(exhaustion.Location!.Stage).IsEqualTo(WasmProcessingStage.Instantiate);
             }
             else
             {

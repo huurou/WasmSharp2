@@ -1,6 +1,6 @@
-using BenchmarkDotNet.Jobs;
 using System.Security.Cryptography;
 using System.Text.Json;
+using BenchmarkDotNet.Jobs;
 using WasmSharp.Benchmarks.Cases;
 using WasmSharp.Benchmarks.Measurements;
 using WasmSharp.Benchmarks.Results;
@@ -40,11 +40,7 @@ internal class RunComparison_CompareConditionsTests
         {
             Command = baseline.Environment.Command with
             {
-                ExecutablePath = Path.Combine(
-                    baseline.RepositoryDirectory,
-                    "bin",
-                    "WasmSharp.Benchmarks.exe"
-                ),
+                ExecutablePath = Path.Combine(baseline.RepositoryDirectory, "bin", "WasmSharp.Benchmarks.exe"),
             },
         };
         current.Environment = current.Environment with
@@ -60,12 +56,8 @@ internal class RunComparison_CompareConditionsTests
             {
                 fixture.Source = fixture.Source with
                 {
-                    AssembliesBefore = [.. fixture.Source.AssembliesBefore.Where(x =>
-                        x.Role != AssemblyRole.Harness
-                    )],
-                    AssembliesAfter = [.. fixture.Source.AssembliesAfter.Where(x =>
-                        x.Role != AssemblyRole.Harness
-                    )],
+                    AssembliesBefore = [.. fixture.Source.AssembliesBefore.Where(x => x.Role != AssemblyRole.Harness)],
+                    AssembliesAfter = [.. fixture.Source.AssembliesAfter.Where(x => x.Role != AssemblyRole.Harness)],
                 };
             }
         }
@@ -73,11 +65,7 @@ internal class RunComparison_CompareConditionsTests
         current.Save();
 
         // Act
-        var actual = comparison_.CompareConditions(
-            baseline.DirectoryPath,
-            current.DirectoryPath,
-            "invoke.single"
-        );
+        var actual = comparison_.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
 
         // Assert
         using (Assert.Multiple())
@@ -87,12 +75,10 @@ internal class RunComparison_CompareConditionsTests
             {
                 var difference = actual.Differences.Single();
                 await Assert.That(difference.Condition).IsEqualTo("command.executable");
-                await Assert.That(difference.Baseline).IsEqualTo(hasHarnessAssembly
-                    ? "assembly:Harness"
-                    : "repository:bin/WasmSharp.Benchmarks.exe");
                 await Assert
-                    .That(difference.Current)
-                    .IsEqualTo("repository:elsewhere/" + executable);
+                    .That(difference.Baseline)
+                    .IsEqualTo(hasHarnessAssembly ? "assembly:Harness" : "repository:bin/WasmSharp.Benchmarks.exe");
+                await Assert.That(difference.Current).IsEqualTo("repository:elsewhere/" + executable);
             }
         }
     }
@@ -136,27 +122,19 @@ internal class RunComparison_CompareConditionsTests
         );
 
         // Act
-        var actual = comparison_.CompareConditions(
-            baseline.DirectoryPath,
-            current.DirectoryPath,
-            "invoke.single"
-        );
+        var actual = comparison_.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
 
         // Assert
         using (Assert.Multiple())
         {
             await Assert.That(actual.IsComparable).IsFalse();
-            await Assert
-                .That(actual.Reasons.Single().Kind)
-                .IsEqualTo(ComparisonReasonKind.ConditionMismatch);
+            await Assert.That(actual.Reasons.Single().Kind).IsEqualTo(ComparisonReasonKind.ConditionMismatch);
             await Assert
                 .That(actual.Reasons.Single().Description)
                 .Contains(
-                    launches == 0
-                        ? current.DirectoryPath
-                        : missingReport
-                        ? "全予定子processのaffinity観測が揃っていません"
-                        : "子processのaffinity検査がありません"
+                    launches == 0 ? current.DirectoryPath
+                    : missingReport ? "全予定子processのaffinity観測が揃っていません"
+                    : "子processのaffinity検査がありません"
                 );
         }
     }
@@ -164,9 +142,7 @@ internal class RunComparison_CompareConditionsTests
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task 成功caseに対応する保存定義または素材がない_比較条件の読込失敗として報告する(
-        bool missingAsset
-    )
+    public async Task 成功caseに対応する保存定義または素材がない_比較条件の読込失敗として報告する(bool missingAsset)
     {
         // Arrange
         using var baseline = new RunComparisonFixture("before", "before");
@@ -183,11 +159,7 @@ internal class RunComparison_CompareConditionsTests
         current.Save();
 
         // Act
-        var actual = comparison_.CompareConditions(
-            baseline.DirectoryPath,
-            current.DirectoryPath,
-            "invoke.single"
-        );
+        var actual = comparison_.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
 
         // Assert
         var reason = actual.Reasons.Single();
@@ -195,10 +167,7 @@ internal class RunComparison_CompareConditionsTests
         {
             await Assert.That(actual.IsComparable).IsFalse();
             await Assert.That(reason.Kind).IsEqualTo(ComparisonReasonKind.ConditionMismatch);
-            await Assert
-                .That(reason.Description)
-                .Contains(current.DirectoryPath)
-                .And.Contains("比較条件を読めません");
+            await Assert.That(reason.Description).Contains(current.DirectoryPath).And.Contains("比較条件を読めません");
         }
     }
 
@@ -219,22 +188,14 @@ internal class RunComparison_CompareConditionsTests
         current.Save();
 
         // Act
-        var actual = comparison_.CompareConditions(
-            baseline.DirectoryPath,
-            current.DirectoryPath,
-            "invoke.single"
-        );
+        var actual = comparison_.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
 
         // Assert
         using (Assert.Multiple())
         {
             await Assert.That(actual.IsComparable).IsFalse();
-            await Assert
-                .That(actual.Reasons.Single().Kind)
-                .IsEqualTo(ComparisonReasonKind.ConditionMismatch);
-            await Assert
-                .That(actual.Reasons.Single().Description)
-                .Contains("同じJobの子process間でaffinityが異なります");
+            await Assert.That(actual.Reasons.Single().Kind).IsEqualTo(ComparisonReasonKind.ConditionMismatch);
+            await Assert.That(actual.Reasons.Single().Description).Contains("同じJobの子process間でaffinityが異なります");
         }
     }
 
@@ -252,22 +213,13 @@ internal class RunComparison_CompareConditionsTests
             {
                 Command = fixture.Environment.Command with
                 {
-                    ExecutablePath = Path.Combine(
-                        toolRoot,
-                        fixture.Manifest.RunId == "before" ? "dotnet.exe" : "dotnet"
-                    ),
+                    ExecutablePath = Path.Combine(toolRoot, fixture.Manifest.RunId == "before" ? "dotnet.exe" : "dotnet"),
                     Arguments =
                     [
                         .. fixture.Environment.Command.Arguments,
                         "--working-root=" + root,
-                        "--runtime="
-                            + fixture
-                                .Source.AssembliesBefore.Single(x => x.Role == AssemblyRole.Runtime)
-                                .Path,
-                        "--harness="
-                            + fixture
-                                .Source.AssembliesBefore.Single(x => x.Role == AssemblyRole.Harness)
-                                .Path,
+                        "--runtime=" + fixture.Source.AssembliesBefore.Single(x => x.Role == AssemblyRole.Runtime).Path,
+                        "--harness=" + fixture.Source.AssembliesBefore.Single(x => x.Role == AssemblyRole.Harness).Path,
                         "--settings=" + Path.Combine(root, "settings", "settings.json"),
                     ],
                 },
@@ -282,11 +234,7 @@ internal class RunComparison_CompareConditionsTests
         }
 
         // Act
-        var actual = comparison_.CompareConditions(
-            baseline.DirectoryPath,
-            current.DirectoryPath,
-            "invoke.single"
-        );
+        var actual = comparison_.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
 
         // Assert
         using (Assert.Multiple())
@@ -320,11 +268,7 @@ internal class RunComparison_CompareConditionsTests
         current.Save();
 
         // Act
-        var actual = comparison_.CompareConditions(
-            baseline.DirectoryPath,
-            current.DirectoryPath,
-            "invoke.single"
-        );
+        var actual = comparison_.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
 
         // Assert
         using (Assert.Multiple())
@@ -363,11 +307,7 @@ internal class RunComparison_CompareConditionsTests
         }
 
         // Act
-        var actual = comparison_.CompareConditions(
-            baseline.DirectoryPath,
-            current.DirectoryPath,
-            "invoke.single"
-        );
+        var actual = comparison_.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
 
         // Assert
         var difference = actual.Differences.Single();
@@ -383,44 +323,24 @@ internal class RunComparison_CompareConditionsTests
     [Test]
     [Arguments(true)]
     [Arguments(false)]
-    public async Task 生成素材の引数を別pathで指定する_相対絶対の表記差だけを同じ素材として扱う(
-        bool sameAsset
-    )
+    public async Task 生成素材の引数を別pathで指定する_相対絶対の表記差だけを同じ素材として扱う(bool sameAsset)
     {
         // Arrange
         using var baseline = new RunComparisonFixture("before", "before");
         using var current = new RunComparisonFixture("after", "after");
         var asset = current.Assets.Assets.Single();
         var relative = asset.Sources.Single().RelativePath;
-        var argument = sameAsset
-            ? Path.Combine(current.RepositoryDirectory, "assets", relative)
-            : "not-" + relative;
+        var argument = sameAsset ? Path.Combine(current.RepositoryDirectory, "assets", relative) : "not-" + relative;
         var step = asset.GenerationSteps.Single();
         current.Assets = current.Assets with
         {
-            Assets =
-            [
-                asset with
-                {
-                    GenerationSteps =
-                    [
-                        step with
-                        {
-                            Arguments = [argument, .. step.Arguments.Skip(1)],
-                        },
-                    ],
-                },
-            ],
+            Assets = [asset with { GenerationSteps = [step with { Arguments = [argument, .. step.Arguments.Skip(1)] }] }],
         };
         baseline.Save();
         current.Save();
 
         // Act
-        var actual = comparison_.CompareConditions(
-            baseline.DirectoryPath,
-            current.DirectoryPath,
-            "invoke.single"
-        );
+        var actual = comparison_.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
 
         // Assert
         using (Assert.Multiple())
@@ -434,9 +354,7 @@ internal class RunComparison_CompareConditionsTests
             else
             {
                 var difference = actual.Differences.Single();
-                await Assert
-                    .That(difference.Condition)
-                    .IsEqualTo("asset.generation[0].arguments[0]");
+                await Assert.That(difference.Condition).IsEqualTo("asset.generation[0].arguments[0]");
                 await Assert.That(difference.Baseline).IsEqualTo("asset:" + relative);
                 await Assert.That(difference.Current).IsEqualTo(argument);
             }
@@ -446,9 +364,7 @@ internal class RunComparison_CompareConditionsTests
     [Test]
     [Arguments(true)]
     [Arguments(false)]
-    public async Task 素材参照の末尾が重なる_別のsourceとprofileまたはbinaryを同一視しない(
-        bool profile
-    )
+    public async Task 素材参照の末尾が重なる_別のsourceとprofileまたはbinaryを同一視しない(bool profile)
     {
         // Arrange
         using var baseline = new RunComparisonFixture("before", "before");
@@ -460,9 +376,7 @@ internal class RunComparison_CompareConditionsTests
             var asset = fixture.Assets.Assets.Single();
             fixture.Assets = fixture.Assets with
             {
-                Profile = profile
-                    ? fixture.Assets.Profile with { RelativePath = SHORT_PATH }
-                    : fixture.Assets.Profile,
+                Profile = profile ? fixture.Assets.Profile with { RelativePath = SHORT_PATH } : fixture.Assets.Profile,
                 Assets =
                 [
                     asset with
@@ -483,16 +397,10 @@ internal class RunComparison_CompareConditionsTests
         }
 
         // Act
-        var actual = comparison_.CompareConditions(
-            baseline.DirectoryPath,
-            current.DirectoryPath,
-            "invoke.single"
-        );
+        var actual = comparison_.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
 
         // Assert
-        var difference = actual.Differences.Single(x =>
-            x.Condition == "asset.generation[0].arguments[0]"
-        );
+        var difference = actual.Differences.Single(x => x.Condition == "asset.generation[0].arguments[0]");
         using (Assert.Multiple())
         {
             await Assert.That(actual.IsComparable).IsFalse();
@@ -507,10 +415,7 @@ internal class RunComparison_CompareConditionsTests
     [Arguments("harness", "assembly:Harness")]
     [Arguments("settings", "repository:settings/settings.json")]
     [Arguments("project", "project:tools/WasmSharp.Benchmarks/WasmSharp.Benchmarks.csproj")]
-    public async Task 役割を持つpathが空引数へ変わる_配置の正規化で意味のある差を消さない(
-        string role,
-        string expected
-    )
+    public async Task 役割を持つpathが空引数へ変わる_配置の正規化で意味のある差を消さない(string role, string expected)
     {
         // Arrange
         using var baseline = new RunComparisonFixture("before", "before");
@@ -518,15 +423,13 @@ internal class RunComparison_CompareConditionsTests
         var value = role switch
         {
             "root" => baseline.RepositoryDirectory,
-            "runtime" => baseline
-                .Source.AssembliesBefore.Single(x => x.Role == AssemblyRole.Runtime)
-                .Path,
-            "harness" => baseline
-                .Source.AssembliesBefore.Single(x => x.Role == AssemblyRole.Harness)
-                .Path,
+            "runtime" => baseline.Source.AssembliesBefore.Single(x => x.Role == AssemblyRole.Runtime).Path,
+            "harness" => baseline.Source.AssembliesBefore.Single(x => x.Role == AssemblyRole.Harness).Path,
             "project" => Path.Combine(
                 baseline.RepositoryDirectory,
-                "tools", "WasmSharp.Benchmarks", "WasmSharp.Benchmarks.csproj"
+                "tools",
+                "WasmSharp.Benchmarks",
+                "WasmSharp.Benchmarks.csproj"
             ),
             _ => Path.Combine(baseline.RepositoryDirectory, "settings", "settings.json"),
         };
@@ -534,11 +437,7 @@ internal class RunComparison_CompareConditionsTests
         {
             Command = baseline.Environment.Command with
             {
-                Arguments =
-                [
-                    .. baseline.Environment.Command.Arguments,
-                    "--inspection-path=" + value,
-                ],
+                Arguments = [.. baseline.Environment.Command.Arguments, "--inspection-path=" + value],
             },
         };
         current.Environment = current.Environment with
@@ -552,11 +451,7 @@ internal class RunComparison_CompareConditionsTests
         current.Save();
 
         // Act
-        var actual = comparison_.CompareConditions(
-            baseline.DirectoryPath,
-            current.DirectoryPath,
-            "invoke.single"
-        );
+        var actual = comparison_.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
 
         // Assert
         var difference = actual.Differences.Single();
@@ -581,16 +476,10 @@ internal class RunComparison_CompareConditionsTests
         current.Save();
 
         // Act
-        var actual = comparison_.CompareConditions(
-            baseline.DirectoryPath,
-            current.DirectoryPath,
-            "invoke.single"
-        );
+        var actual = comparison_.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
 
         // Assert
-        var difference = actual.Differences.Single(x =>
-            x.Condition == "process.runtime[0].version"
-        );
+        var difference = actual.Differences.Single(x => x.Condition == "process.runtime[0].version");
         using (Assert.Multiple())
         {
             await Assert.That(actual.IsComparable).IsFalse();
@@ -613,17 +502,12 @@ internal class RunComparison_CompareConditionsTests
         current.ProcessRuntimeVersion = baseline.ProcessRuntimeVersion;
         baseline.Jobs.Add(baseline.Jobs.Single() with { JobId = "secondary" });
         current.Jobs.Add(current.Jobs.Single() with { JobId = "secondary" });
-        current.ProcessRuntimeVersions[(current.Jobs[0].JobId, "invoke.other")] =
-            ".NET 10.0.14; corelib-after";
+        current.ProcessRuntimeVersions[(current.Jobs[0].JobId, "invoke.other")] = ".NET 10.0.14; corelib-after";
         baseline.Save();
         current.Save();
 
         // Act
-        var actual = comparison_.CompareConditions(
-            baseline.DirectoryPath,
-            current.DirectoryPath,
-            "invoke.single"
-        );
+        var actual = comparison_.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
 
         // Assert
         var reason = actual.Reasons.Single();
@@ -631,9 +515,7 @@ internal class RunComparison_CompareConditionsTests
         {
             await Assert.That(actual.IsComparable).IsFalse();
             await Assert.That(reason.Kind).IsEqualTo(ComparisonReasonKind.ConditionMismatch);
-            await Assert
-                .That(reason.Description)
-                .Contains("同じJobの子process間でruntimeが異なります。");
+            await Assert.That(reason.Description).Contains("同じJobの子process間でruntimeが異なります。");
         }
     }
 
@@ -650,19 +532,13 @@ internal class RunComparison_CompareConditionsTests
         current.Save();
 
         // Act
-        var actual = comparison_.CompareConditions(
-            baseline.DirectoryPath,
-            current.DirectoryPath,
-            "invoke.single"
-        );
+        var actual = comparison_.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
 
         // Assert
         using (Assert.Multiple())
         {
             await Assert.That(actual.IsComparable).IsFalse();
-            await Assert
-                .That(actual.Reasons.Single().Description)
-                .Contains("子processのruntime観測がありません");
+            await Assert.That(actual.Reasons.Single().Description).Contains("子processのruntime観測がありません");
         }
     }
 
@@ -674,29 +550,37 @@ internal class RunComparison_CompareConditionsTests
         using var current = new RunComparisonFixture("after", "after");
         baseline.Jobs =
         [
-            baseline.Jobs.Single() with { LaunchCount = 2 },
-            baseline.Jobs.Single() with { JobId = "secondary", LaunchCount = 1 },
+            baseline.Jobs.Single() with
+            {
+                LaunchCount = 2,
+            },
+            baseline.Jobs.Single() with
+            {
+                JobId = "secondary",
+                LaunchCount = 1,
+            },
         ];
         current.Jobs =
         [
-            current.Jobs.Single() with { LaunchCount = 2 },
-            current.Jobs.Single() with { JobId = "secondary", LaunchCount = 1 },
+            current.Jobs.Single() with
+            {
+                LaunchCount = 2,
+            },
+            current.Jobs.Single() with
+            {
+                JobId = "secondary",
+                LaunchCount = 1,
+            },
         ];
         baseline.Save();
         current.Save();
 
         // Act
-        var actual = comparison_.CompareConditions(
-            baseline.DirectoryPath,
-            current.DirectoryPath,
-            "invoke.single"
-        );
+        var actual = comparison_.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
 
         // Assert
         await Assert.That(actual.IsComparable).IsFalse();
-        await Assert
-            .That(actual.Reasons.All(x => x.Description.Contains("全予定子process")))
-            .IsTrue();
+        await Assert.That(actual.Reasons.All(x => x.Description.Contains("全予定子process"))).IsTrue();
     }
 
     [Test]
@@ -705,11 +589,7 @@ internal class RunComparison_CompareConditionsTests
     [Arguments(0, 0, null)]
     [Arguments(16384, 1, null)]
     [Arguments(null, null, "未対応OS")]
-    public async Task 子processの実行位置が欠落または前後不一致_比較を受け入れない(
-        long? before,
-        long? after,
-        string? reason
-    )
+    public async Task 子processの実行位置が欠落または前後不一致_比較を受け入れない(long? before, long? after, string? reason)
     {
         // Arrange
         using var baseline = new RunComparisonFixture("before", "before");
@@ -721,25 +601,15 @@ internal class RunComparison_CompareConditionsTests
         current.Save();
 
         // Act
-        var actual = comparison_.CompareConditions(
-            baseline.DirectoryPath,
-            current.DirectoryPath,
-            "invoke.single"
-        );
+        var actual = comparison_.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
 
         // Assert
         using (Assert.Multiple())
         {
             await Assert.That(actual.IsComparable).IsFalse();
-            await Assert
-                .That(actual.Reasons.Any(x => x.Kind == ComparisonReasonKind.ConditionMismatch))
-                .IsTrue();
+            await Assert.That(actual.Reasons.Any(x => x.Kind == ComparisonReasonKind.ConditionMismatch)).IsTrue();
             var description = actual.Reasons.Single().Description;
-            await Assert
-                .That(description)
-                .Contains("invoke.single")
-                .And.Contains("PID=")
-                .And.Contains("affinity");
+            await Assert.That(description).Contains("invoke.single").And.Contains("PID=").And.Contains("affinity");
             if (reason is not null)
             {
                 await Assert.That(description).Contains(reason);
@@ -759,11 +629,7 @@ internal class RunComparison_CompareConditionsTests
         current.Save();
 
         // Act
-        var actual = comparison_.CompareConditions(
-            baseline.DirectoryPath,
-            current.DirectoryPath,
-            "invoke.single"
-        );
+        var actual = comparison_.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
 
         // Assert
         var difference = actual.Differences.Single(x => x.Condition == "process.affinity[0].mask");
@@ -783,19 +649,12 @@ internal class RunComparison_CompareConditionsTests
         using var current = new RunComparisonFixture("after", "after");
         var job = BenchmarkConfig.Create().GetJobs().Single();
         baseline.Jobs = [benchmarkRun_.DescribeProcess("Measurement", job.WithAffinity((IntPtr)1))];
-        current.Jobs =
-        [
-            benchmarkRun_.DescribeProcess("Measurement", job.WithAffinity((IntPtr)16384)),
-        ];
+        current.Jobs = [benchmarkRun_.DescribeProcess("Measurement", job.WithAffinity((IntPtr)16384))];
         baseline.Save();
         current.Save();
 
         // Act
-        var actual = comparison_.CompareConditions(
-            baseline.DirectoryPath,
-            current.DirectoryPath,
-            "invoke.single"
-        );
+        var actual = comparison_.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
 
         // Assert
         var difference = actual.Differences.Single(x =>
@@ -826,15 +685,12 @@ internal class RunComparison_CompareConditionsTests
             {
                 Revision = "new-runtime",
                 Sha256 = "new-runtime-hash",
-                Files = [.. current
-                    .Source.Runtime.Files.Select(x =>
-                        x.RelativePath.EndsWith(".cs", StringComparison.Ordinal)
-                            ? x with
-                            {
-                                Sha256 = "changed-code",
-                            }
-                            : x
-                    )],
+                Files =
+                [
+                    .. current.Source.Runtime.Files.Select(x =>
+                        x.RelativePath.EndsWith(".cs", StringComparison.Ordinal) ? x with { Sha256 = "changed-code" } : x
+                    ),
+                ],
             },
             Harness = current.Source.Harness with { Revision = "new-head" },
         };
@@ -847,11 +703,7 @@ internal class RunComparison_CompareConditionsTests
             .ToArray();
 
         // Act
-        var actual = comparison_.CompareConditions(
-            baseline.DirectoryPath,
-            current.DirectoryPath,
-            "invoke.single"
-        );
+        var actual = comparison_.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
 
         // Assert
         using (Assert.Multiple())
@@ -880,14 +732,8 @@ internal class RunComparison_CompareConditionsTests
     [Arguments("workload", "case.workload[0].count")]
     [Arguments("stage", "case.measurement_stage")]
     [Arguments("state", "case.state_policy")]
-    [Arguments(
-        "harness",
-        "source.files[tools/WasmSharp.Benchmarks/WasmSharp.Benchmarks.csproj].sha256"
-    )]
-    [Arguments(
-        "harness-code",
-        "source.files[tools/WasmSharp.Benchmarks/Measurements/InvokeBenchmarks.cs].sha256"
-    )]
+    [Arguments("harness", "source.files[tools/WasmSharp.Benchmarks/WasmSharp.Benchmarks.csproj].sha256")]
+    [Arguments("harness-code", "source.files[tools/WasmSharp.Benchmarks/Measurements/InvokeBenchmarks.cs].sha256")]
     [Arguments("runtime-project", "source.files[src/WasmSharp/WasmSharp.csproj].sha256")]
     [Arguments("shared-build", "source.files[Directory.Build.props].sha256")]
     [Arguments("dependency", "environment.benchmark_dot_net_version")]
@@ -913,10 +759,7 @@ internal class RunComparison_CompareConditionsTests
     [Arguments("generation", "asset.generation[0].arguments[0]")]
     [Arguments("run-schema", "run.schema_version")]
     [Arguments("assets-schema", "assets.schema_version")]
-    public async Task 比較条件の内容が違う_具体的な条件名と両値とrunを返す(
-        string scenario,
-        string condition
-    )
+    public async Task 比較条件の内容が違う_具体的な条件名と両値とrunを返す(string scenario, string condition)
     {
         // Arrange
         using var baseline = new RunComparisonFixture("before", "before");
@@ -926,11 +769,7 @@ internal class RunComparison_CompareConditionsTests
         current.Save();
 
         // Act
-        var actual = comparison_.CompareConditions(
-            baseline.DirectoryPath,
-            current.DirectoryPath,
-            "invoke.single"
-        );
+        var actual = comparison_.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
 
         // Assert
         var difference = actual.Differences.Single(x => x.Condition == condition);
@@ -949,27 +788,15 @@ internal class RunComparison_CompareConditionsTests
             await Assert.That(difference.Baseline).IsNotEqualTo(difference.Current);
             await Assert.That(difference.BaselineRunId).IsEqualTo("before");
             await Assert.That(difference.CurrentRunId).IsEqualTo("after");
-            await Assert
-                .That(actual.Reasons.Any(x => x.Kind == ComparisonReasonKind.ConditionMismatch))
-                .IsTrue();
+            await Assert.That(actual.Reasons.Any(x => x.Kind == ComparisonReasonKind.ConditionMismatch)).IsTrue();
         }
     }
 
     [Test]
     [Arguments("planned-case", "run.planned_cases[0]", "invoke.single", "invoke.empty")]
-    [Arguments(
-        "binary-path",
-        "asset.binary.path",
-        "binary:wasm/invoke.wasm",
-        "binary:wasm/other.wasm"
-    )]
+    [Arguments("binary-path", "asset.binary.path", "binary:wasm/invoke.wasm", "binary:wasm/other.wasm")]
     [Arguments("binary-hash", "asset.binary.sha256", null, "different-binary")]
-    [Arguments(
-        "source-path",
-        "asset.sources[0].relative_path",
-        "sources/invoke.wat",
-        "sources/other.wat"
-    )]
+    [Arguments("source-path", "asset.sources[0].relative_path", "sources/invoke.wat", "sources/other.wat")]
     [Arguments("source-hash", "asset.sources[0].sha256", "wat-hash", "different-source")]
     [Arguments("submodule", "source.submodules[0].revision", "before-revision", "after-revision")]
     public async Task 素材や使用sourceや予定caseの条件が違う_保存先の差と区別して具体値を返す(
@@ -986,9 +813,7 @@ internal class RunComparison_CompareConditionsTests
         {
             var additional = JsonSerializer
                 .Deserialize<List<BenchmarkCase>>(
-                    File.ReadAllBytes(
-                        Path.Combine(AppContext.BaseDirectory, "Fixtures", "Data", "cases.json")
-                    ),
+                    File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "Fixtures", "Data", "cases.json")),
                     json_.Options
                 )!
                 .Single(x => x.CaseId == "invoke.empty");
@@ -996,14 +821,8 @@ internal class RunComparison_CompareConditionsTests
         }
         else if (scenario == "submodule")
         {
-            baseline.Source = baseline.Source with
-            {
-                Submodules = [new("test/spec", "before-revision", false)],
-            };
-            current.Source = current.Source with
-            {
-                Submodules = [new("test/spec", "after-revision", false)],
-            };
+            baseline.Source = baseline.Source with { Submodules = [new("test/spec", "before-revision", false)] };
+            current.Source = current.Source with { Submodules = [new("test/spec", "after-revision", false)] };
         }
         else
         {
@@ -1016,18 +835,9 @@ internal class RunComparison_CompareConditionsTests
                 [
                     scenario switch
                     {
-                        "binary-path" => asset with
-                        {
-                            Binary = asset.Binary with { RelativePath = "wasm/other.wasm" },
-                        },
-                        "binary-hash" => asset with
-                        {
-                            Binary = asset.Binary with { Sha256 = expectedCurrent },
-                        },
-                        "source-path" => asset with
-                        {
-                            Sources = [source with { RelativePath = expectedCurrent }],
-                        },
+                        "binary-path" => asset with { Binary = asset.Binary with { RelativePath = "wasm/other.wasm" } },
+                        "binary-hash" => asset with { Binary = asset.Binary with { Sha256 = expectedCurrent } },
+                        "source-path" => asset with { Sources = [source with { RelativePath = expectedCurrent }] },
                         _ => asset with { Sources = [source with { Sha256 = expectedCurrent }] },
                     },
                 ],
@@ -1037,27 +847,19 @@ internal class RunComparison_CompareConditionsTests
         current.Save();
 
         // Act
-        var actual = comparison_.CompareConditions(
-            baseline.DirectoryPath,
-            current.DirectoryPath,
-            "invoke.single"
-        );
+        var actual = comparison_.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
 
         // Assert
         var difference = actual.Differences.Single(x => x.Condition == condition);
         using (Assert.Multiple())
         {
-            await Assert
-                .That(RunStore.Load(current.DirectoryPath, json_).Status)
-                .IsEqualTo(ResultStatus.Succeeded);
+            await Assert.That(RunStore.Load(current.DirectoryPath, json_).Status).IsEqualTo(ResultStatus.Succeeded);
             await Assert.That(actual.IsComparable).IsFalse();
             await Assert.That(difference.Baseline).IsEqualTo(expectedBaseline);
             await Assert.That(difference.Current).IsEqualTo(expectedCurrent);
             await Assert.That(difference.BaselineRunId).IsEqualTo("before");
             await Assert.That(difference.CurrentRunId).IsEqualTo("after");
-            await Assert
-                .That(actual.Reasons.Single().Kind)
-                .IsEqualTo(ComparisonReasonKind.ConditionMismatch);
+            await Assert.That(actual.Reasons.Single().Kind).IsEqualTo(ComparisonReasonKind.ConditionMismatch);
         }
     }
 
@@ -1065,10 +867,7 @@ internal class RunComparison_CompareConditionsTests
     [Arguments("--artifacts", false)]
     [Arguments("--run-id", true)]
     [Arguments("--run-config", false)]
-    public async Task 識別や保存だけに使うコマンド引数が違う_測定条件の差に含めない(
-        string option,
-        bool inline
-    )
+    public async Task 識別や保存だけに使うコマンド引数が違う_測定条件の差に含めない(string option, bool inline)
     {
         // Arrange
         using var baseline = new RunComparisonFixture("before", "before");
@@ -1096,11 +895,7 @@ internal class RunComparison_CompareConditionsTests
         }
 
         // Act
-        var actual = comparison_.CompareConditions(
-            baseline.DirectoryPath,
-            current.DirectoryPath,
-            "invoke.single"
-        );
+        var actual = comparison_.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
 
         // Assert
         using (Assert.Multiple())
@@ -1125,11 +920,7 @@ internal class RunComparison_CompareConditionsTests
         current.Save();
 
         // Act
-        var actual = comparison_.CompareConditions(
-            baseline.DirectoryPath,
-            current.DirectoryPath,
-            "invoke.single"
-        );
+        var actual = comparison_.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
 
         // Assert
         await Assert.That(actual.IsComparable).IsFalse();
@@ -1154,11 +945,7 @@ internal class RunComparison_CompareConditionsTests
         current.Save();
 
         // Act
-        var actual = comparison_.CompareConditions(
-            baseline.DirectoryPath,
-            current.DirectoryPath,
-            "invoke.single"
-        );
+        var actual = comparison_.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
 
         // Assert
         await Assert.That(actual.IsComparable).IsFalse();
@@ -1186,25 +973,25 @@ internal class RunComparison_CompareConditionsTests
             Changes = listed ? [new(kind, "changed", "before", "after")] : [],
             AssembliesAfter = listed
                 ? current.Source.AssembliesAfter
-                : [.. current
-                    .Source.AssembliesAfter.Select(x =>
-                        x.Role != AssemblyRole.Runtime ? x : assemblyChange switch
-                        {
-                            "path" => x with { Path = x.Path + ".moved" },
-                            "role" => x with { Role = AssemblyRole.Harness },
-                            _ => x with { Sha256 = "changed-runtime" },
-                        }
-                    )],
+                :
+                [
+                    .. current.Source.AssembliesAfter.Select(x =>
+                        x.Role != AssemblyRole.Runtime
+                            ? x
+                            : assemblyChange switch
+                            {
+                                "path" => x with { Path = x.Path + ".moved" },
+                                "role" => x with { Role = AssemblyRole.Harness },
+                                _ => x with { Sha256 = "changed-runtime" },
+                            }
+                    ),
+                ],
         };
         baseline.Save();
         current.Save();
 
         // Act
-        var actual = comparison_.CompareConditions(
-            baseline.DirectoryPath,
-            current.DirectoryPath,
-            "invoke.single"
-        );
+        var actual = comparison_.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
 
         // Assert
         await Assert.That(actual.IsComparable).IsFalse();
@@ -1222,11 +1009,7 @@ internal class RunComparison_CompareConditionsTests
         File.WriteAllText(Path.Combine(current.DirectoryPath, "cases.json"), "[]");
 
         // Act
-        var actual = comparison_.CompareConditions(
-            baseline.DirectoryPath,
-            current.DirectoryPath,
-            "invoke.single"
-        );
+        var actual = comparison_.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
 
         // Assert
         await Assert.That(actual.IsComparable).IsFalse();
@@ -1236,9 +1019,7 @@ internal class RunComparison_CompareConditionsTests
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task 同じprojectを相対pathまたは別build先の実行ファイルで指定する_役割と内容で比較できる(
-        bool executable
-    )
+    public async Task 同じprojectを相対pathまたは別build先の実行ファイルで指定する_役割と内容で比較できる(bool executable)
     {
         // Arrange
         using var baseline = new RunComparisonFixture("before", "before");
@@ -1249,10 +1030,7 @@ internal class RunComparison_CompareConditionsTests
             {
                 Command = baseline.Environment.Command with
                 {
-                    ExecutablePath = Path.Combine(
-                        baseline.RepositoryDirectory,
-                        "bin/WasmSharp.Benchmarks.exe"
-                    ),
+                    ExecutablePath = Path.Combine(baseline.RepositoryDirectory, "bin/WasmSharp.Benchmarks.exe"),
                     Arguments = ["--case", "invoke.single"],
                 },
             };
@@ -1260,10 +1038,7 @@ internal class RunComparison_CompareConditionsTests
             {
                 Command = current.Environment.Command with
                 {
-                    ExecutablePath = Path.Combine(
-                        current.RepositoryDirectory,
-                        "elsewhere/WasmSharp.Benchmarks.exe"
-                    ),
+                    ExecutablePath = Path.Combine(current.RepositoryDirectory, "elsewhere/WasmSharp.Benchmarks.exe"),
                     Arguments = ["--case", "invoke.single"],
                 },
             };
@@ -1274,12 +1049,14 @@ internal class RunComparison_CompareConditionsTests
             {
                 Command = current.Environment.Command with
                 {
-                    Arguments = [.. current
-                        .Environment.Command.Arguments.Select(x =>
+                    Arguments =
+                    [
+                        .. current.Environment.Command.Arguments.Select(x =>
                             x.EndsWith(".csproj", StringComparison.Ordinal)
                                 ? "tools/WasmSharp.Benchmarks/WasmSharp.Benchmarks.csproj"
                                 : x
-                        )],
+                        ),
+                    ],
                 },
             };
         }
@@ -1287,11 +1064,7 @@ internal class RunComparison_CompareConditionsTests
         current.Save();
 
         // Act
-        var actual = comparison_.CompareConditions(
-            baseline.DirectoryPath,
-            current.DirectoryPath,
-            "invoke.single"
-        );
+        var actual = comparison_.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
 
         // Assert
         await Assert.That(actual.IsComparable).IsTrue();
@@ -1301,24 +1074,9 @@ internal class RunComparison_CompareConditionsTests
     [Test]
     [Arguments("WasmSharp.Benchmarks.csproj", true, null, false)]
     [Arguments("Other.csproj", false, null, false)]
-    [Arguments(
-        "WasmSharp.Benchmarks.csproj",
-        true,
-        "tools/WasmSharp.Benchmarks/Measurements/InvokeBenchmarks.cs",
-        true
-    )]
-    [Arguments(
-        "WasmSharp.Benchmarks.csproj",
-        true,
-        "othertools/WasmSharp.Benchmarks/WasmSharp.Benchmarks.csproj",
-        true
-    )]
-    [Arguments(
-        "WasmSharp.Benchmarks.csproj",
-        true,
-        "tools/WasmSharp.Benchmarks/WasmSharp.Benchmarks.csproj",
-        false
-    )]
+    [Arguments("WasmSharp.Benchmarks.csproj", true, "tools/WasmSharp.Benchmarks/Measurements/InvokeBenchmarks.cs", true)]
+    [Arguments("WasmSharp.Benchmarks.csproj", true, "othertools/WasmSharp.Benchmarks/WasmSharp.Benchmarks.csproj", true)]
+    [Arguments("WasmSharp.Benchmarks.csproj", true, "tools/WasmSharp.Benchmarks/WasmSharp.Benchmarks.csproj", false)]
     public async Task Project配下のcwdから相対指定する_未知引数があっても同じprojectだけを同条件として扱う(
         string project,
         bool comparable,
@@ -1333,23 +1091,18 @@ internal class RunComparison_CompareConditionsTests
         {
             Command = current.Environment.Command with
             {
-                WorkingDirectory = Path.Combine(
-                    current.RepositoryDirectory,
-                    "tools/WasmSharp.Benchmarks"
-                ),
-                Arguments = [.. current
-                    .Environment.Command.Arguments.Select(x =>
+                WorkingDirectory = Path.Combine(current.RepositoryDirectory, "tools/WasmSharp.Benchmarks"),
+                Arguments =
+                [
+                    .. current.Environment.Command.Arguments.Select(x =>
                         x.EndsWith(".csproj", StringComparison.Ordinal) ? project : x
-                    )],
+                    ),
+                ],
             },
         };
         if (externalRelativePath is not null)
         {
-            var externalPath = Path.Combine(
-                Path.GetTempPath(),
-                "wasm-other-build",
-                externalRelativePath
-            );
+            var externalPath = Path.Combine(Path.GetTempPath(), "wasm-other-build", externalRelativePath);
             foreach (var fixture in new[] { baseline, current })
             {
                 var arguments = fixture.Environment.Command.Arguments.ToList();
@@ -1364,11 +1117,7 @@ internal class RunComparison_CompareConditionsTests
         current.Save();
 
         // Act
-        var actual = comparison_.CompareConditions(
-            baseline.DirectoryPath,
-            current.DirectoryPath,
-            "invoke.single"
-        );
+        var actual = comparison_.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
 
         // Assert
         await Assert.That(actual.IsComparable).IsEqualTo(comparable);
@@ -1378,9 +1127,7 @@ internal class RunComparison_CompareConditionsTests
         }
         else
         {
-            await Assert
-                .That(actual.Differences.Single().Condition)
-                .IsEqualTo("command.arguments[2]");
+            await Assert.That(actual.Differences.Single().Condition).IsEqualTo("command.arguments[2]");
         }
     }
 
@@ -1412,13 +1159,7 @@ internal class RunComparison_CompareConditionsTests
                     {
                         ExpectedResult = definition.ExpectedResult with
                         {
-                            Values =
-                            [
-                                definition.ExpectedResult.Values.Single() with
-                                {
-                                    Bits = "00000002",
-                                },
-                            ],
+                            Values = [definition.ExpectedResult.Values.Single() with { Bits = "00000002" }],
                         },
                     },
                 ];
@@ -1428,10 +1169,7 @@ internal class RunComparison_CompareConditionsTests
                 [
                     definition with
                     {
-                        OperationDefinition = definition.OperationDefinition with
-                        {
-                            OperationsPerInvoke = 2,
-                        },
+                        OperationDefinition = definition.OperationDefinition with { OperationsPerInvoke = 2 },
                     },
                 ];
                 break;
@@ -1440,21 +1178,12 @@ internal class RunComparison_CompareConditionsTests
                 [
                     definition with
                     {
-                        OperationDefinition = definition.OperationDefinition with
-                        {
-                            IncludesStateRestoration = true,
-                        },
+                        OperationDefinition = definition.OperationDefinition with { IncludesStateRestoration = true },
                     },
                 ];
                 break;
             case "workload":
-                fixture.Cases =
-                [
-                    definition with
-                    {
-                        Workload = [definition.Workload.Single() with { Count = 2 }],
-                    },
-                ];
+                fixture.Cases = [definition with { Workload = [definition.Workload.Single() with { Count = 2 }] }];
                 break;
             case "stage":
                 fixture.Cases = [definition with { MeasurementStage = MeasurementStage.Decode }];
@@ -1472,40 +1201,33 @@ internal class RunComparison_CompareConditionsTests
                 {
                     Harness = fixture.Source.Harness with
                     {
-                        Files = [.. fixture
-                            .Source.Harness.Files.Select(x =>
-                                x.RelativePath == harnessPath
-                                    ? x with
-                                    {
-                                        Sha256 = "different-harness",
-                                    }
-                                    : x
-                            )],
+                        Files =
+                        [
+                            .. fixture.Source.Harness.Files.Select(x =>
+                                x.RelativePath == harnessPath ? x with { Sha256 = "different-harness" } : x
+                            ),
+                        ],
                     },
                 };
                 break;
             case "runtime-project":
             case "shared-build":
-                var path =
-                    scenario == "runtime-project"
-                        ? "src/WasmSharp/WasmSharp.csproj"
-                        : "Directory.Build.props";
+                var path = scenario == "runtime-project" ? "src/WasmSharp/WasmSharp.csproj" : "Directory.Build.props";
                 fixture.Source = fixture.Source with
                 {
                     Runtime = fixture.Source.Runtime with
                     {
-                        Files = [.. fixture
-                            .Source.Runtime.Files.Select(x =>
+                        Files =
+                        [
+                            .. fixture.Source.Runtime.Files.Select(x =>
                                 x.RelativePath == path ? x with { Sha256 = "different-build" } : x
-                            )],
+                            ),
+                        ],
                     },
                 };
                 break;
             case "dependency":
-                fixture.Environment = environment with
-                {
-                    BenchmarkDotNetVersion = "0.15.8+different-full-version",
-                };
+                fixture.Environment = environment with { BenchmarkDotNetVersion = "0.15.8+different-full-version" };
                 break;
             case "sdk":
                 fixture.Environment = environment with { SdkVersion = "10.0.403" };
@@ -1529,25 +1251,15 @@ internal class RunComparison_CompareConditionsTests
                 fixture.Environment = environment with { GcSettings = [new("ServerGC", "true")] };
                 break;
             case "jit":
-                fixture.Environment = environment with
-                {
-                    JitSettings = [new("TieredCompilation", "false")],
-                };
+                fixture.Environment = environment with { JitSettings = [new("TieredCompilation", "false")] };
                 break;
             case "env":
-                fixture.Environment = environment with
-                {
-                    EnvironmentVariables = [new("DOTNET_EnableHWIntrinsic", "0")],
-                };
+                fixture.Environment = environment with { EnvironmentVariables = [new("DOTNET_EnableHWIntrinsic", "0")] };
                 break;
             case "env-added":
                 fixture.Environment = environment with
                 {
-                    EnvironmentVariables =
-                    [
-                        .. environment.EnvironmentVariables,
-                        new("DOTNET_JitMinOpts", "1"),
-                    ],
+                    EnvironmentVariables = [.. environment.EnvironmentVariables, new("DOTNET_JitMinOpts", "1")],
                 };
                 break;
             case "power":
@@ -1557,13 +1269,7 @@ internal class RunComparison_CompareConditionsTests
                 };
                 break;
             case "job":
-                fixture.Jobs =
-                [
-                    fixture.Jobs.Single() with
-                    {
-                        JobSettings = [new("Strategy", "ColdStart")],
-                    },
-                ];
+                fixture.Jobs = [fixture.Jobs.Single() with { JobSettings = [new("Strategy", "ColdStart")] }];
                 break;
             case "runtimeconfig":
                 fixture.Environment = environment with
@@ -1588,8 +1294,7 @@ internal class RunComparison_CompareConditionsTests
                 {
                     Command = environment.Command with
                     {
-                        Arguments = [.. environment
-                            .Command.Arguments.Select(x => x == "-c" ? "--verbosity" : x)],
+                        Arguments = [.. environment.Command.Arguments.Select(x => x == "-c" ? "--verbosity" : x)],
                     },
                 };
                 break;
@@ -1598,15 +1303,14 @@ internal class RunComparison_CompareConditionsTests
                 {
                     Command = environment.Command with
                     {
-                        Arguments = [.. environment
-                            .Command.Arguments.Select(x =>
+                        Arguments =
+                        [
+                            .. environment.Command.Arguments.Select(x =>
                                 x.EndsWith(".csproj", StringComparison.Ordinal)
-                                    ? Path.Combine(
-                                        fixture.RepositoryDirectory,
-                                        "alternate/Benchmarks.csproj"
-                                    )
+                                    ? Path.Combine(fixture.RepositoryDirectory, "alternate/Benchmarks.csproj")
                                     : x
-                            )],
+                            ),
+                        ],
                     },
                 };
                 break;
@@ -1623,26 +1327,14 @@ internal class RunComparison_CompareConditionsTests
                 var step = asset.GenerationSteps.Single();
                 step = scenario switch
                 {
-                    "tool" => step with
-                    {
-                        Tool = step.Tool with { Version = "1.0.42+different-full-version" },
-                    },
+                    "tool" => step with { Tool = step.Tool with { Version = "1.0.42+different-full-version" } },
                     "tool-hash" => step with
                     {
-                        Tool = step.Tool with
-                        {
-                            Executable = step.Tool.Executable with
-                            {
-                                Sha256 = "different-executable",
-                            },
-                        },
+                        Tool = step.Tool with { Executable = step.Tool.Executable with { Sha256 = "different-executable" } },
                     },
                     _ => step with { Arguments = ["--enable-feature", .. step.Arguments] },
                 };
-                fixture.Assets = fixture.Assets with
-                {
-                    Assets = [asset with { GenerationSteps = [step] }],
-                };
+                fixture.Assets = fixture.Assets with { Assets = [asset with { GenerationSteps = [step] }] };
                 break;
         }
     }

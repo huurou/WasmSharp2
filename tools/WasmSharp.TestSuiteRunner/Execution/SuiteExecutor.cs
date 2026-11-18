@@ -73,17 +73,9 @@ internal static class SuiteExecutor
                 VerificationMode.Execution,
                 sourceRoot: null
             );
-            report.Diagnostics.AddRange(
-                report.Corpus.Diagnostics.Concat(verification.Diagnostics).Distinct()
-            );
-            var inputs = verification.Inputs.ToDictionary(
-                x => x.Input.Path,
-                StringComparer.Ordinal
-            );
-            var conversions = report.Corpus.Inputs.ToDictionary(
-                x => x.Input.Path,
-                StringComparer.Ordinal
-            );
+            report.Diagnostics.AddRange(report.Corpus.Diagnostics.Concat(verification.Diagnostics).Distinct());
+            var inputs = verification.Inputs.ToDictionary(x => x.Input.Path, StringComparer.Ordinal);
+            var conversions = report.Corpus.Inputs.ToDictionary(x => x.Input.Path, StringComparer.Ordinal);
             for (var i = 0; i < report.Inputs.Count; i++)
             {
                 var path = report.Inputs[i].InputPath;
@@ -98,10 +90,7 @@ internal static class SuiteExecutor
                     progress?.Invoke(path);
                     continue;
                 }
-                input = input with
-                {
-                    Issues = [.. conversions[path].Diagnostics.Concat(input.Issues).Distinct()],
-                };
+                input = input with { Issues = [.. conversions[path].Diagnostics.Concat(input.Issues).Distinct()] };
                 var state = new ScriptState(path);
                 state.Register(SpectestFactory.Create(state));
                 var (result, interruption) = executeInput(input, state, cancellationToken);
@@ -119,9 +108,7 @@ internal static class SuiteExecutor
         }
         catch (Exception exception)
         {
-            report.Diagnostics.Add(
-                new("execute_suite", exception.Message, null, exception.GetType().FullName)
-            );
+            report.Diagnostics.Add(new("execute_suite", exception.Message, null, exception.GetType().FullName));
         }
         return report with
         {
@@ -210,12 +197,7 @@ internal static class SuiteExecutor
                 {
                     UnprocessedCount = result.EnumeratedCount - result.Cases.Count,
                 },
-                new(
-                    "execute_input",
-                    exception.Message,
-                    input.Input.Path,
-                    exception.GetType().FullName
-                )
+                new("execute_input", exception.Message, input.Input.Path, exception.GetType().FullName)
             );
         }
     }

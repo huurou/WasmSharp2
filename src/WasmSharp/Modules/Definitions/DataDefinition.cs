@@ -8,11 +8,7 @@ namespace WasmSharp.Modules.Definitions;
 /// <param name="bytes">構築時にコピーする初期バイト列</param>
 /// <param name="activeTarget">アクティブデータセグメントの初期化先 パッシブの場合はnull</param>
 /// <param name="byteOffset">入力バイナリ上のデータセグメントのバイト位置</param>
-internal sealed class DataDefinition(
-    ReadOnlySpan<byte> bytes,
-    ActiveDataTarget? activeTarget,
-    long byteOffset
-)
+internal sealed class DataDefinition(ReadOnlySpan<byte> bytes, ActiveDataTarget? activeTarget, long byteOffset)
 {
     /// <summary>
     /// 入力から独立した初期バイト列
@@ -35,10 +31,7 @@ internal sealed class DataDefinition(
 /// </summary>
 /// <param name="memoryIndex">初期化先の未検証のメモリインデックス</param>
 /// <param name="offsetExpression">構築時にコピーするオフセット式の命令列</param>
-internal sealed class ActiveDataTarget(
-    uint memoryIndex,
-    ReadOnlySpan<DecodedInstruction> offsetExpression
-)
+internal sealed class ActiveDataTarget(uint memoryIndex, ReadOnlySpan<DecodedInstruction> offsetExpression)
 {
     /// <summary>
     /// 初期化先の未検証のメモリインデックス
@@ -48,8 +41,7 @@ internal sealed class ActiveDataTarget(
     /// <summary>
     /// 終端を含む未評価のオフセット式
     /// </summary>
-    internal ImmutableArray<DecodedInstruction> OffsetExpression { get; } =
-        ImmutableArray.Create(offsetExpression);
+    internal ImmutableArray<DecodedInstruction> OffsetExpression { get; } = ImmutableArray.Create(offsetExpression);
 }
 
 /// <summary>

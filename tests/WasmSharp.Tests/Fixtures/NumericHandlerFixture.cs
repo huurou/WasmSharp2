@@ -9,12 +9,10 @@ internal static class NumericHandlerFixture
 
     public delegate ExecutionResult Handler(InterpreterContext context, in Instruction instruction);
 
-    public static (
-        ExecutionResult Result,
-        WasmValue Value,
-        WasmValue Sentinel,
-        int ValueCount
-    ) Execute(Handler handler, ReadOnlySpan<WasmValue> operands)
+    public static (ExecutionResult Result, WasmValue Value, WasmValue Sentinel, int ValueCount) Execute(
+        Handler handler,
+        ReadOnlySpan<WasmValue> operands
+    )
     {
         var executionContext = new WasmExecutionContext();
         var function = ExecutionFunctionFixture.Create([], maxOperandStack: operands.Length + 1);

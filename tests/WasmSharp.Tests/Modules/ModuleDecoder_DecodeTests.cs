@@ -20,27 +20,17 @@ internal partial class ModuleDecoder_DecodeTests
     [Arguments("0062736D", "magic header not detected", 1L)]
     [Arguments("0061736DFF", "unexpected end", 5L)]
     [Arguments("0061736D01000100", "unknown binary version", 6L)]
-    public async Task ヘッダーの途中EOFと完全不一致_4byte取得後に原因を選ぶ(
-        string hex,
-        string prefix,
-        long offset
-    )
+    public async Task ヘッダーの途中EOFと完全不一致_4byte取得後に原因を選ぶ(string hex, string prefix, long offset)
     {
         // Arrange
         var bytes = Convert.FromHexString(hex);
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => ModuleDecoder.Decode(bytes))
-            .ThrowsExactly<WasmDecodeException>();
+        var exception = await Assert.That(() => ModuleDecoder.Decode(bytes)).ThrowsExactly<WasmDecodeException>();
         using (Assert.Multiple())
         {
-            await Assert
-                .That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal))
-                .IsTrue();
-            await Assert
-                .That(exception.Location)
-                .IsEqualTo(new(WasmProcessingStage.Decode, offset));
+            await Assert.That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal)).IsTrue();
+            await Assert.That(exception.Location).IsEqualTo(new(WasmProcessingStage.Decode, offset));
         }
     }
 
@@ -71,17 +61,11 @@ internal partial class ModuleDecoder_DecodeTests
         var bytes = Convert.FromHexString("0061736D01000000" + sections);
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => ModuleDecoder.Decode(bytes))
-            .ThrowsExactly<WasmDecodeException>();
+        var exception = await Assert.That(() => ModuleDecoder.Decode(bytes)).ThrowsExactly<WasmDecodeException>();
         using (Assert.Multiple())
         {
-            await Assert
-                .That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal))
-                .IsTrue();
-            await Assert
-                .That(exception.Location)
-                .IsEqualTo(new(WasmProcessingStage.Decode, offset, null, sectionId));
+            await Assert.That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal)).IsTrue();
+            await Assert.That(exception.Location).IsEqualTo(new(WasmProcessingStage.Decode, offset, null, sectionId));
         }
     }
 
@@ -104,17 +88,11 @@ internal partial class ModuleDecoder_DecodeTests
         var bytes = Convert.FromHexString("0061736D01000000" + sections);
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => ModuleDecoder.Decode(bytes))
-            .ThrowsExactly<WasmDecodeException>();
+        var exception = await Assert.That(() => ModuleDecoder.Decode(bytes)).ThrowsExactly<WasmDecodeException>();
         using (Assert.Multiple())
         {
-            await Assert
-                .That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal))
-                .IsTrue();
-            await Assert
-                .That(exception.Location)
-                .IsEqualTo(new(WasmProcessingStage.Decode, offset, null, sectionId));
+            await Assert.That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal)).IsTrue();
+            await Assert.That(exception.Location).IsEqualTo(new(WasmProcessingStage.Decode, offset, null, sectionId));
         }
     }
 
@@ -122,9 +100,7 @@ internal partial class ModuleDecoder_DecodeTests
     public async Task 型にCore2の全値型がある_引数と結果を順番どおり保持する()
     {
         // Arrange
-        var bytes = Convert.FromHexString(
-            "0061736D0100000001120160077F7E7D7C7B706F077F7E7D7C7B706F"
-        );
+        var bytes = Convert.FromHexString("0061736D0100000001120160077F7E7D7C7B706F077F7E7D7C7B706F");
         WasmValueKind[] expected =
         [
             WasmValueKind.I32,
@@ -156,18 +132,11 @@ internal partial class ModuleDecoder_DecodeTests
     [Test]
     [Arguments("")]
     [Arguments("00020161")]
-    public async Task Customを各所に配置しexport名と添字が未検証_構文だけ読み定義を保持する(
-        string custom
-    )
+    public async Task Customを各所に配置しexport名と添字が未検証_構文だけ読み定義を保持する(string custom)
     {
         // Arrange
         var bytes = Convert.FromHexString(
-            "0061736D01000000"
-                + custom
-                + "010401600000"
-                + custom
-                + "070B020000FFFFFFFF0F000000"
-                + custom
+            "0061736D01000000" + custom + "010401600000" + custom + "070B020000FFFFFFFF0F000000" + custom
         );
         var firstExportOffset = 17L + 2 * (custom.Length / 2);
 
@@ -220,22 +189,14 @@ internal partial class ModuleDecoder_DecodeTests
     [Arguments("000201FF", 11L, (byte)0)]
     [Arguments("07050101FF0000", 12L, (byte)7)]
     [Arguments("070401000400", 12L, (byte)7)]
-    public async Task Sectionや型や名前の構文が不正_検証段階へ渡さず破損になる(
-        string sections,
-        long offset,
-        byte sectionId
-    )
+    public async Task Sectionや型や名前の構文が不正_検証段階へ渡さず破損になる(string sections, long offset, byte sectionId)
     {
         // Arrange
         var bytes = Convert.FromHexString("0061736D01000000" + sections);
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => ModuleDecoder.Decode(bytes))
-            .ThrowsExactly<WasmDecodeException>();
-        await Assert
-            .That(exception!.Location)
-            .IsEqualTo(new(WasmProcessingStage.Decode, offset, null, sectionId));
+        var exception = await Assert.That(() => ModuleDecoder.Decode(bytes)).ThrowsExactly<WasmDecodeException>();
+        await Assert.That(exception!.Location).IsEqualTo(new(WasmProcessingStage.Decode, offset, null, sectionId));
     }
 
     [Test]
@@ -269,9 +230,7 @@ internal partial class ModuleDecoder_DecodeTests
         var bytes = Convert.FromHexString(hex);
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => ModuleDecoder.Decode(bytes))
-            .ThrowsExactly<WasmDecodeException>();
+        var exception = await Assert.That(() => ModuleDecoder.Decode(bytes)).ThrowsExactly<WasmDecodeException>();
         await Assert.That(exception!.Location).IsEqualTo(new(WasmProcessingStage.Decode, offset));
     }
 }

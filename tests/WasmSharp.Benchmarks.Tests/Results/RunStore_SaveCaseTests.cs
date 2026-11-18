@@ -41,9 +41,7 @@ internal class RunStore_SaveCaseTests
         using (Assert.Multiple())
         {
             await Assert.That(saveFailure is IOException or UnauthorizedAccessException).IsTrue();
-            await Assert
-                .That(completionFailure!.Message)
-                .Contains("保存に失敗したrunは完了できません");
+            await Assert.That(completionFailure!.Message).Contains("保存に失敗したrunは完了できません");
             await Assert.That(actual.Status).IsEqualTo(ResultStatus.Incomplete);
             await Assert.That(actual.CompletedAtUtc).IsNull();
         }

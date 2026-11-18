@@ -59,10 +59,7 @@ internal class Interpreter_TableCopyTests
     [Test]
     [Arguments(1, 0)]
     [Arguments(0, 1)]
-    public async Task 別添字が同じtableの重複範囲を指す_コピー前の参照列に相当する結果になる(
-        int destination,
-        int source
-    )
+    public async Task 別添字が同じtableの重複範囲を指す_コピー前の参照列に相当する結果になる(int destination, int source)
     {
         // Arrange
         var values = Enumerable
@@ -89,9 +86,7 @@ internal class Interpreter_TableCopyTests
             for (var index = 0; index < 4; index++)
             {
                 var expected =
-                    index >= destination && index < destination + 3
-                        ? values[source + index - destination]
-                        : values[index];
+                    index >= destination && index < destination + 3 ? values[source + index - destination] : values[index];
                 await Assert.That(table.Get((uint)index)).IsEqualTo(expected);
             }
         }

@@ -30,12 +30,8 @@ internal class CaseObservation_ConstructorTests
             await Assert.That(decoded is ModuleObservation).IsTrue();
             await Assert.That(instantiated is InstanceObservation).IsTrue();
             await Assert.That(invoked is InvokeObservation).IsTrue();
-            await Assert
-                .That(ReferenceEquals(((ModuleObservation)decoded).Module, module))
-                .IsTrue();
-            await Assert
-                .That(ReferenceEquals(((InstanceObservation)instantiated).Instance, instance))
-                .IsTrue();
+            await Assert.That(ReferenceEquals(((ModuleObservation)decoded).Module, module)).IsTrue();
+            await Assert.That(ReferenceEquals(((InstanceObservation)instantiated).Instance, instance)).IsTrue();
             var actual = (InvokeObservation)invoked;
             await Assert.That(ReferenceEquals(actual.Instance, instance)).IsTrue();
             await Assert.That(ReferenceEquals(actual.Results, results)).IsTrue();

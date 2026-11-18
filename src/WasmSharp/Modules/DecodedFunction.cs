@@ -35,6 +35,5 @@ internal sealed class DecodedFunction(
     /// <summary>
     /// 入力順にデコードした命令を保持する不変配列
     /// </summary>
-    internal ImmutableArray<DecodedInstruction> Instructions { get; } =
-        ImmutableArray.Create(instructions);
+    internal ImmutableArray<DecodedInstruction> Instructions { get; } = ImmutableArray.Create(instructions);
 }

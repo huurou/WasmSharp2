@@ -21,10 +21,7 @@ internal sealed record UnavailableCause(CaseId Command, ImmutableArray<CaseId> O
         return new()
         {
             Direct = [.. values.Select(x => x.Command).Distinct().OrderBy(x => x.CommandIndex)],
-            Origins =
-            [
-                .. values.SelectMany(x => x.Origins).Distinct().OrderBy(x => x.CommandIndex),
-            ],
+            Origins = [.. values.SelectMany(x => x.Origins).Distinct().OrderBy(x => x.CommandIndex)],
         };
     }
 }

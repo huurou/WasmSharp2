@@ -35,9 +35,7 @@ internal partial class WasmFunction_InvokeTests
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task パッシブデータを部分コピーして再利用する_指定範囲だけを書き込み元データを保持する(
-        bool imported
-    )
+    public async Task パッシブデータを部分コピーして再利用する_指定範囲だけを書き込み元データを保持する(bool imported)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
@@ -152,12 +150,7 @@ internal partial class WasmFunction_InvokeTests
         {
             instance.GetFunction("drop").Invoke(executionContext, []);
         }
-        var arguments = new[]
-        {
-            WasmValue.FromI32(destination),
-            WasmValue.FromI32(source),
-            WasmValue.FromI32(length),
-        };
+        var arguments = new[] { WasmValue.FromI32(destination), WasmValue.FromI32(source), WasmValue.FromI32(length) };
 
         if (succeeds)
         {
@@ -177,18 +170,11 @@ internal partial class WasmFunction_InvokeTests
             {
                 await Assert.That(exception!.Reason).IsEqualTo(WasmTrapReason.MemoryOutOfBounds);
                 await Assert
-                    .That(
-                        exception.Message.StartsWith(
-                            "out of bounds memory access",
-                            StringComparison.Ordinal
-                        )
-                    )
+                    .That(exception.Message.StartsWith("out of bounds memory access", StringComparison.Ordinal))
                     .IsTrue();
                 await Assert
                     .That(exception.Location)
-                    .IsEqualTo(
-                        new(WasmProcessingStage.Invoke, Array.IndexOf(bytes, (byte)0xFC), 0)
-                    );
+                    .IsEqualTo(new(WasmProcessingStage.Invoke, Array.IndexOf(bytes, (byte)0xFC), 0));
             }
         }
         var actual = new byte[original.Length];
@@ -203,10 +189,7 @@ internal partial class WasmFunction_InvokeTests
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
-        var instance = WasmModule
-            .Decode(CreateDataInitializationModule(true))
-            .Validate()
-            .Instantiate(executionContext, []);
+        var instance = WasmModule.Decode(CreateDataInitializationModule(true)).Validate().Instantiate(executionContext, []);
         var memory = instance.GetMemory("memory");
         var actual = new byte[4];
         memory.Read(2, actual);
@@ -239,24 +222,10 @@ internal partial class WasmFunction_InvokeTests
             HostLinkingModuleBinary.Memories((1, null)),
             HostLinkingModuleBinary.Exports(("init", 0, 0), ("drop", 0, 1), ("memory", 2, 0)),
             HostLinkingModuleBinary.Section(12, [2]),
-            HostLinkingModuleBinary.Code(
-                ([], [0x20, 0, 0x20, 1, 0x20, 2, 0xFC, 8, 1, 0, 0x0B]),
-                ([], [0xFC, 9, 1, 0x0B])
-            ),
+            HostLinkingModuleBinary.Code(([], [0x20, 0, 0x20, 1, 0x20, 2, 0xFC, 8, 1, 0, 0x0B]), ([], [0xFC, 9, 1, 0x0B])),
             HostLinkingModuleBinary.Section(
                 11,
-                [
-                    2,
-                    1,
-                    1,
-                    0x99,
-                    .. active ? new byte[] { 0, 0x41, 2, 0x0B } : [1],
-                    4,
-                    0x11,
-                    0x22,
-                    0x33,
-                    0x44,
-                ]
+                [2, 1, 1, 0x99, .. active ? new byte[] { 0, 0x41, 2, 0x0B } : [1], 4, 0x11, 0x22, 0x33, 0x44]
             )
         );
     }

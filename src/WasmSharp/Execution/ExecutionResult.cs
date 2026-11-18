@@ -8,7 +8,6 @@ namespace WasmSharp.Execution;
 /// </summary>
 internal readonly struct ExecutionResult
 {
-
     /// <summary>
     /// 正常終了、trapまたは実行資源の上限到達の区分
     /// </summary>

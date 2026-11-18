@@ -15,10 +15,7 @@ internal class AssetManifest_LoadTests
     [Arguments("duplicate", "重複")]
     [Arguments("missing", "存在しない")]
     [Arguments("rooted", "相対path")]
-    public async Task Manifestの版や素材参照が不正_理由を示して読み込みを拒否する(
-        string scenario,
-        string reason
-    )
+    public async Task Manifestの版や素材参照が不正_理由を示して読み込みを拒否する(string scenario, string reason)
     {
         // Arrange
         using var fixture = new AssetLoadingFixture();
@@ -33,10 +30,7 @@ internal class AssetManifest_LoadTests
                 {
                     Profile = manifest.Profile with
                     {
-                        RelativePath = Path.Combine(
-                            fixture.DirectoryPath,
-                            manifest.Profile.RelativePath
-                        ),
+                        RelativePath = Path.Combine(fixture.DirectoryPath, manifest.Profile.RelativePath),
                     },
                 },
             }
@@ -52,10 +46,7 @@ internal class AssetManifest_LoadTests
     [Test]
     [Arguments("null", "JSONがnull")]
     [Arguments("{", "JSON形式が不正")]
-    public async Task ManifestのJSONがnullまたは破損している_対象pathと理由を示して拒否する(
-        string json,
-        string reason
-    )
+    public async Task ManifestのJSONがnullまたは破損している_対象pathと理由を示して拒否する(string json, string reason)
     {
         // Arrange
         using var fixture = new AssetLoadingFixture();
@@ -83,9 +74,7 @@ internal class AssetManifest_LoadTests
             .Decode(loaded.GetBinary(definition.AssetId).AsSpan())
             .Validate()
             .Instantiate(context_, new WasmImports());
-        var results = instance
-            .GetFunction(input.FunctionExport)
-            .Invoke(context_, input.Arguments.AsSpan());
+        var results = instance.GetFunction(input.FunctionExport).Invoke(context_, input.Arguments.AsSpan());
 
         // Assert
         using (Assert.Multiple())
@@ -118,9 +107,7 @@ internal class AssetManifest_LoadTests
     [Arguments("cases")]
     [Arguments("binary")]
     [Arguments("source")]
-    public async Task 相対参照が同じ接頭辞の隣接ディレクトリを指す_manifest配下からの逸脱を拒否する(
-        string reference
-    )
+    public async Task 相対参照が同じ接頭辞の隣接ディレクトリを指す_manifest配下からの逸脱を拒否する(string reference)
     {
         // Arrange
         using var fixture = new AssetLoadingFixture();
@@ -134,29 +121,17 @@ internal class AssetManifest_LoadTests
         Directory.CreateDirectory(outsideDirectory);
         var outsidePath = Path.Combine(outsideDirectory, Path.GetFileName(original.RelativePath));
         File.Copy(Path.Combine(fixture.DirectoryPath, original.RelativePath), outsidePath);
-        var escaped = original with
-        {
-            RelativePath = Path.GetRelativePath(fixture.DirectoryPath, outsidePath),
-        };
+        var escaped = original with { RelativePath = Path.GetRelativePath(fixture.DirectoryPath, outsidePath) };
         var manifest = fixture.Manifest;
         fixture.SaveManifest(
             reference switch
             {
                 "profile" => manifest with { Profile = escaped },
                 "cases" => manifest with { Cases = escaped },
-                "binary" => manifest with
-                {
-                    Assets = [manifest.Assets[0] with { Binary = escaped }],
-                },
+                "binary" => manifest with { Assets = [manifest.Assets[0] with { Binary = escaped }] },
                 _ => manifest with
                 {
-                    Assets =
-                    [
-                        manifest.Assets[0] with
-                        {
-                            Sources = [new(escaped.RelativePath, "fixture", escaped.Sha256)],
-                        },
-                    ],
+                    Assets = [manifest.Assets[0] with { Sources = [new(escaped.RelativePath, "fixture", escaped.Sha256)] }],
                 },
             }
         );
@@ -165,10 +140,7 @@ internal class AssetManifest_LoadTests
         var exception = await Assert
             .That(() => AssetManifest.Load(fixture.ManifestPath, json_, methods_))
             .Throws<InvalidDataException>();
-        await Assert
-            .That(exception!.Message)
-            .Contains(escaped.RelativePath)
-            .And.Contains("manifest配下");
+        await Assert.That(exception!.Message).Contains(escaped.RelativePath).And.Contains("manifest配下");
     }
 
     [Test]
@@ -183,10 +155,7 @@ internal class AssetManifest_LoadTests
             Path.Combine(directory, "profile.json"),
             File.ReadAllBytes(Path.Combine(fixture.DirectoryPath, profile.RelativePath))
         );
-        fixture.SaveManifest(fixture.Manifest with
-        {
-            Profile = profile with { RelativePath = "../ASSETS/profile.json" },
-        });
+        fixture.SaveManifest(fixture.Manifest with { Profile = profile with { RelativePath = "../ASSETS/profile.json" } });
 
         if (OperatingSystem.IsWindows())
         {
@@ -194,8 +163,7 @@ internal class AssetManifest_LoadTests
             var loaded = AssetManifest.Load(fixture.ManifestPath, json_, methods_);
 
             // Assert
-            await Assert.That(loaded.Catalog.Get("invoke.single").InputHash)
-                .IsEqualTo(fixture.Definitions[0].InputHash);
+            await Assert.That(loaded.Catalog.Get("invoke.single").InputHash).IsEqualTo(fixture.Definitions[0].InputHash);
         }
         else
         {

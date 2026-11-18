@@ -32,9 +32,7 @@ internal class WasmHostModule_ConstructorTests
     public async Task 名前がnull_生成時に拒否する()
     {
         // Act & Assert
-        var exception = await Assert
-            .That(() => new WasmHostModule(null!))
-            .ThrowsExactly<ArgumentNullException>();
+        var exception = await Assert.That(() => new WasmHostModule(null!)).ThrowsExactly<ArgumentNullException>();
         await Assert.That(exception!.ParamName).IsEqualTo("name");
     }
 }

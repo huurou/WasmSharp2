@@ -52,9 +52,7 @@ internal class WasmInstance_GetFunctionTests
             await Assert.That(second.GetFunction("run")).IsSameReferenceAs(original);
             await Assert.That(result.Values[0].AsI32()).IsEqualTo(42);
             await Assert.That(first.GetFunction("own").Invoke(executionContext, []).Values[0].AsI32()).IsEqualTo(7);
-            await Assert
-                .That(ReferenceEquals(first.GetFunction("own"), second.GetFunction("own")))
-                .IsFalse();
+            await Assert.That(ReferenceEquals(first.GetFunction("own"), second.GetFunction("own"))).IsFalse();
             var defined = (WasmSharp.Execution.DefinedFunction)reexported;
             await Assert.That(defined.Instance).IsSameReferenceAs(source);
             await Assert.That(defined.FunctionIndex).IsEqualTo(1u);
@@ -64,9 +62,7 @@ internal class WasmInstance_GetFunctionTests
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task ホスト関数を別名と再exportで取得する_取得元へ固定せず同じ実体を返す(
-        bool receivesInstance
-    )
+    public async Task ホスト関数を別名と再exportで取得する_取得元へ固定せず同じ実体を返す(bool receivesInstance)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
@@ -103,15 +99,10 @@ internal class WasmInstance_GetFunctionTests
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
-        var instance = WasmModule
-            .Decode(HostLinkingModuleBinary.Create())
-            .Validate()
-            .Instantiate(executionContext, []);
+        var instance = WasmModule.Decode(HostLinkingModuleBinary.Create()).Validate().Instantiate(executionContext, []);
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => instance.GetFunction(null!))
-            .ThrowsExactly<ArgumentNullException>();
+        var exception = await Assert.That(() => instance.GetFunction(null!)).ThrowsExactly<ArgumentNullException>();
         await Assert.That(exception!.ParamName).IsEqualTo("name");
     }
 
@@ -131,9 +122,7 @@ internal class WasmInstance_GetFunctionTests
             .Instantiate(executionContext, []);
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => instance.GetFunction("g"))
-            .ThrowsExactly<ArgumentException>();
+        var exception = await Assert.That(() => instance.GetFunction("g")).ThrowsExactly<ArgumentException>();
         await Assert.That(exception!.ParamName).IsEqualTo("name");
     }
 
@@ -195,9 +184,7 @@ internal class WasmInstance_GetFunctionTests
             .Instantiate(executionContext, []);
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => instance.GetFunction(name))
-            .ThrowsExactly<ArgumentException>();
+        var exception = await Assert.That(() => instance.GetFunction(name)).ThrowsExactly<ArgumentException>();
         await Assert.That(exception!.ParamName).IsEqualTo("name");
     }
 }

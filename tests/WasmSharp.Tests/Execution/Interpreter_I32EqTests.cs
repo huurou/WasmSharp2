@@ -9,11 +9,7 @@ internal class Interpreter_I32EqTests
     [Arguments(int.MinValue, int.MinValue, 1)]
     [Arguments(int.MinValue, int.MaxValue, 0)]
     [Arguments(0, 0, 1)]
-    public async Task 幅境界と等値のoperand_i32で全bitの等値比較を返す(
-        int left,
-        int right,
-        int expected
-    )
+    public async Task 幅境界と等値のoperand_i32で全bitの等値比較を返す(int left, int right, int expected)
     {
         // Arrange
         WasmValue[] operands = [WasmValue.FromI32(left), WasmValue.FromI32(right)];

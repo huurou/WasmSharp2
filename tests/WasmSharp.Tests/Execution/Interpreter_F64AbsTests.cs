@@ -15,10 +15,7 @@ internal class Interpreter_F64AbsTests
     [Arguments(0xFFF0123456789ABCul, 0x7FF0123456789ABCul)]
     [Arguments(0x7FF8123456789ABCul, 0x7FF8123456789ABCul)]
     [Arguments(0x7FF0123456789ABCul, 0x7FF0123456789ABCul)]
-    public async Task 入力の符号と生NaN_符号bitだけを正へ変更する(
-        ulong operandBits,
-        ulong expectedBits
-    )
+    public async Task 入力の符号と生NaN_符号bitだけを正へ変更する(ulong operandBits, ulong expectedBits)
     {
         // Arrange
         WasmValue[] operands = [WasmValue.FromF64Bits(operandBits)];

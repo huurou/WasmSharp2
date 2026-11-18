@@ -13,11 +13,7 @@ internal sealed class CaseCatalog
 
     internal IEnumerable<BenchmarkCase> Cases => definitions_.Values;
 
-    internal CaseCatalog(
-        IEnumerable<BenchmarkCase> definitions,
-        CaseJson json,
-        MeasurementMethods methods
-    )
+    internal CaseCatalog(IEnumerable<BenchmarkCase> definitions, CaseJson json, MeasurementMethods methods)
     {
         methods_ = methods;
         var cases = new Dictionary<string, BenchmarkCase>(StringComparer.Ordinal);
@@ -40,9 +36,7 @@ internal sealed class CaseCatalog
             && scalar.ComparisonGroup != simd.ComparisonGroup
         )
         {
-            throw new InvalidDataException(
-                "ケース'scan.scalar'と'scan.simd'のcomparison_groupが一致しません。"
-            );
+            throw new InvalidDataException("ケース'scan.scalar'と'scan.simd'のcomparison_groupが一致しません。");
         }
 
         foreach (var group in Cases.GroupBy(x => x.ComparisonGroup, StringComparer.Ordinal))
@@ -50,18 +44,8 @@ internal sealed class CaseCatalog
             var first = group.First();
             foreach (var other in group.Skip(1))
             {
-                CheckEqual(
-                    first,
-                    other,
-                    "arguments",
-                    first.Input.Arguments.SequenceEqual(other.Input.Arguments)
-                );
-                CheckEqual(
-                    first,
-                    other,
-                    "arrays",
-                    first.Input.Arrays.SequenceEqual(other.Input.Arrays)
-                );
+                CheckEqual(first, other, "arguments", first.Input.Arguments.SequenceEqual(other.Input.Arguments));
+                CheckEqual(first, other, "arrays", first.Input.Arrays.SequenceEqual(other.Input.Arrays));
                 CheckEqual(first, other, "workload", first.Workload.SequenceEqual(other.Workload));
                 CheckEqual(
                     first,
@@ -74,8 +58,7 @@ internal sealed class CaseCatalog
                     first,
                     other,
                     "operation/state",
-                    first.OperationDefinition.OperationsPerInvoke
-                        == other.OperationDefinition.OperationsPerInvoke
+                    first.OperationDefinition.OperationsPerInvoke == other.OperationDefinition.OperationsPerInvoke
                         && first.OperationDefinition.IncludesStateRestoration
                             == other.OperationDefinition.IncludesStateRestoration
                         && first.MeasurementStage == other.MeasurementStage
@@ -97,12 +80,7 @@ internal sealed class CaseCatalog
         return methods_.GetMeasurementMethod(Get(caseId).CaseId);
     }
 
-    private static void CheckEqual(
-        BenchmarkCase first,
-        BenchmarkCase other,
-        string condition,
-        bool equal
-    )
+    private static void CheckEqual(BenchmarkCase first, BenchmarkCase other, string condition, bool equal)
     {
         if (!equal)
         {

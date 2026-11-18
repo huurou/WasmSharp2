@@ -10,11 +10,7 @@ if (args.Length == 0 || outputIndex < 1 || outputIndex + 1 >= args.Length)
     return 2;
 }
 
-Console.WriteLine(
-    JsonSerializer.Serialize(
-        new { arguments = args, working_directory = Environment.CurrentDirectory }
-    )
-);
+Console.WriteLine(JsonSerializer.Serialize(new { arguments = args, working_directory = Environment.CurrentDirectory }));
 var inputPath = args[0];
 var outputPath = Path.GetFullPath(args[outputIndex + 1]);
 try
@@ -37,9 +33,7 @@ static int Convert(string inputPath, string outputPath)
     }
 
     var moduleName = Path.GetFileNameWithoutExtension(outputPath) + ".0.wasm";
-    var script = JsonNode.Parse(
-        File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Data", "minimal-script.json"))
-    )!;
+    var script = JsonNode.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Data", "minimal-script.json")))!;
     script["source_filename"] = inputPath;
     script["commands"]![0]!["filename"] = moduleName;
     if (Path.GetFileName(inputPath) == "partial-modules.wast")
@@ -50,10 +44,7 @@ static int Convert(string inputPath, string outputPath)
     }
 
     File.WriteAllText(outputPath, script.ToJsonString());
-    if (
-        Path.GetFileName(inputPath) is
-        "partial.wast" or "partial-failure.wast" or "partial-modules.wast"
-    )
+    if (Path.GetFileName(inputPath) is "partial.wast" or "partial-failure.wast" or "partial-modules.wast")
     {
         Console.Error.WriteLine("JSONのみ生成しました。参照先binaryは欠落しています。");
         return Path.GetFileName(inputPath) == "partial-failure.wast" ? 1 : 0;

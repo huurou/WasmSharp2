@@ -141,12 +141,16 @@ internal class ReferenceValidationContext_CreateTests
                 ),
                 ElementDefinition.Passive(
                     WasmValueKind.FuncRef,
-                    [[DecodedInstruction.WithIndex(new(0, 0xD2), 4, 41)]],
+                    [
+                        [DecodedInstruction.WithIndex(new(0, 0xD2), 4, 41)],
+                    ],
                     40
                 ),
                 ElementDefinition.Declarative(
                     WasmValueKind.FuncRef,
-                    [[DecodedInstruction.WithIndex(new(0, 0xD2), 5, 61)]],
+                    [
+                        [DecodedInstruction.WithIndex(new(0, 0xD2), 5, 61)],
+                    ],
                     60
                 ),
             ]
@@ -203,7 +207,9 @@ internal class ReferenceValidationContext_CreateTests
             [
                 ElementDefinition.Active(
                     WasmValueKind.ExternRef,
-                    [[DecodedInstruction.WithIndex(new(0, 0x10), 7, 61)]],
+                    [
+                        [DecodedInstruction.WithIndex(new(0, 0x10), 7, 61)],
+                    ],
                     new(0, [DecodedInstruction.WithIndex(new(0, 0x10), 8, 63)]),
                     60
                 ),
@@ -214,9 +220,7 @@ internal class ReferenceValidationContext_CreateTests
         var references = ReferenceValidationContext.Create(module, 0);
 
         // Assert
-        await Assert
-            .That(references.DeclaredFunctions)
-            .IsEquivalentTo([1u, 6u, 7u, 8u, uint.MaxValue]);
+        await Assert.That(references.DeclaredFunctions).IsEquivalentTo([1u, 6u, 7u, 8u, uint.MaxValue]);
     }
 
     [Test]

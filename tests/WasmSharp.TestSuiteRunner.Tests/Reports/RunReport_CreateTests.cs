@@ -29,9 +29,7 @@ internal class RunReport_CreateTests
             await Assert.That(report.Kind).IsEqualTo("run_report");
             await Assert
                 .That(
-                    report
-                        .Inputs.Select(x => x.InputPath)
-                        .SequenceEqual(["failed.wast", "success.wast", "unprocessed.wast"])
+                    report.Inputs.Select(x => x.InputPath).SequenceEqual(["failed.wast", "success.wast", "unprocessed.wast"])
                 )
                 .IsTrue();
             await Assert
@@ -46,15 +44,11 @@ internal class RunReport_CreateTests
                     )
                 )
                 .IsTrue();
-            await Assert
-                .That(report.Summary)
-                .IsEqualTo(new RunSummary(3, 0, 0, 3, 0, 0, 0, 0, 0, zero, zero, zero, 0));
+            await Assert.That(report.Summary).IsEqualTo(new RunSummary(3, 0, 0, 3, 0, 0, 0, 0, 0, zero, zero, zero, 0));
             await Assert.That(report.Completion).IsEqualTo(new RunCompletion(false, false));
             await Assert.That(report.Provenance).IsEqualTo(provenance);
             await Assert.That(report.ExecutionPolicy).IsEqualTo(executionPolicy);
-            await Assert
-                .That(JsonSerializer.Serialize(report.Corpus))
-                .IsEqualTo(JsonSerializer.Serialize(manifest));
+            await Assert.That(JsonSerializer.Serialize(report.Corpus)).IsEqualTo(JsonSerializer.Serialize(manifest));
         }
     }
 

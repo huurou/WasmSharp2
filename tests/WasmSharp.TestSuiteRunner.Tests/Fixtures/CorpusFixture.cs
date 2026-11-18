@@ -88,10 +88,7 @@ internal sealed class CorpusFixture : IDisposable
         {
             Script =
                 kind == ArtifactKind.Json
-                    ? CorpusVerifier.CreateScript(
-                        ScriptDocument.Parse(content, artifactPath),
-                        artifactPath
-                    )
+                    ? CorpusVerifier.CreateScript(ScriptDocument.Parse(content, artifactPath), artifactPath)
                     : null,
         };
         UpdateInput(
@@ -106,10 +103,7 @@ internal sealed class CorpusFixture : IDisposable
         );
     }
 
-    internal void UpdateInput(
-        string inputPath,
-        Func<InputConversionResult, InputConversionResult> update
-    )
+    internal void UpdateInput(string inputPath, Func<InputConversionResult, InputConversionResult> update)
     {
         var index = Manifest.Inputs.FindIndex(x => x.Input.Path == inputPath);
         Manifest.Inputs[index] = update(Manifest.Inputs[index]);

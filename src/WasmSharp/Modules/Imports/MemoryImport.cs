@@ -9,12 +9,8 @@ namespace WasmSharp.Modules.Imports;
 /// <param name="Name">要求するmemoryの名前</param>
 /// <param name="Type">要求するmemoryのlimitsと型記述のバイト位置</param>
 /// <param name="ByteOffset">入力バイナリ上のimport宣言のバイト位置</param>
-internal sealed record MemoryImport(
-    string ModuleName,
-    string Name,
-    MemoryDefinition Type,
-    long ByteOffset
-) : ModuleImport(ModuleName, Name, ByteOffset)
+internal sealed record MemoryImport(string ModuleName, string Name, MemoryDefinition Type, long ByteOffset)
+    : ModuleImport(ModuleName, Name, ByteOffset)
 {
     /// <inheritdoc />
     internal override WasmExternalKind Kind => WasmExternalKind.Memory;

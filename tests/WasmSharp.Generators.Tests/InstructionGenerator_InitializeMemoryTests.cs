@@ -46,11 +46,7 @@ internal partial class InstructionGenerator_InitializeTests
         GeneratorDriver driver = CSharpGeneratorDriver.Create(new InstructionGenerator());
 
         // Act
-        driver = driver.RunGeneratorsAndUpdateCompilation(
-            compilation,
-            out var output,
-            out var diagnostics
-        );
+        driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out var output, out var diagnostics);
 
         // Assert
         await Assert.That(diagnostics).IsEmpty();
@@ -79,15 +75,7 @@ internal partial class InstructionGenerator_InitializeTests
     [Arguments("MemoryArgumentLaneIndex", "MemoryLoadLane", "MemoryLoadLane", "V128", 2, false, 0)]
     [Arguments("MemoryArgumentLaneIndex", "MemoryLoadLane", "MemoryLoadLane", "V128", 2, false, 4)]
     [Arguments("MemoryArgumentLaneIndex", "MemoryLoadLane", "MemoryLoadLane", "I32", 4, false, 4)]
-    [Arguments(
-        "MemoryArgumentLaneIndex",
-        "MemoryStoreLane",
-        "MemoryStoreLane",
-        "V128",
-        1,
-        true,
-        16
-    )]
+    [Arguments("MemoryArgumentLaneIndex", "MemoryStoreLane", "MemoryStoreLane", "V128", 1, true, 16)]
     [Arguments("MemoryArgument", "MemoryLoadLane", "MemoryLoadLane", "V128", 2, false, 8)]
     [Arguments("MemoryArgumentLaneIndex", "MemoryLoad", "MemoryLoad", "V128", 2, false, 8)]
     [Arguments("MemoryArgumentLaneIndex", "MemoryLoadLane", "MemoryStoreLane", "V128", 2, false, 8)]
@@ -179,11 +167,7 @@ internal partial class InstructionGenerator_InitializeTests
         GeneratorDriver driver = CSharpGeneratorDriver.Create(new InstructionGenerator());
 
         // Act
-        driver = driver.RunGeneratorsAndUpdateCompilation(
-            compilation,
-            out var output,
-            out var diagnostics
-        );
+        driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out var output, out var diagnostics);
 
         // Assert
         await Assert.That(diagnostics).IsEmpty();

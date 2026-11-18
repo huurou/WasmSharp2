@@ -1,11 +1,11 @@
-using BenchmarkDotNet.Engines;
-using BenchmarkDotNet.Jobs;
-using BenchmarkDotNet.Reports;
-using BenchmarkDotNet.Running;
 using System.Collections.Immutable;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using BenchmarkDotNet.Engines;
+using BenchmarkDotNet.Jobs;
+using BenchmarkDotNet.Reports;
+using BenchmarkDotNet.Running;
 using WasmSharp.Benchmarks.Cases;
 using WasmSharp.Benchmarks.Results;
 
@@ -54,15 +54,9 @@ internal sealed class BenchmarkRun(CaseJson json, MeasurementMethods methods)
             {
                 assets.Catalog.Get(caseId);
             }
-            if (
-                request.CaseIds.Count == 0
-                || request.CaseIds.Distinct().Count() != request.CaseIds.Count
-            )
+            if (request.CaseIds.Count == 0 || request.CaseIds.Distinct().Count() != request.CaseIds.Count)
             {
-                throw new ArgumentException(
-                    "予定ケースは重複のない1件以上で指定してください。",
-                    nameof(request)
-                );
+                throw new ArgumentException("予定ケースは重複のない1件以上で指定してください。", nameof(request));
             }
             var jobs = request
                 .Config.GetJobs()
@@ -85,11 +79,7 @@ internal sealed class BenchmarkRun(CaseJson json, MeasurementMethods methods)
                     );
                 })
                 .ToImmutableArray();
-            CaptureInputs(
-                store,
-                request.AssetManifestPath,
-                jobs.Select(x => DescribeProcess(request.Kind.ToString(), x))
-            );
+            CaptureInputs(store, request.AssetManifestPath, jobs.Select(x => DescribeProcess(request.Kind.ToString(), x)));
             return new(store, runId, jobs);
         }
         catch (Exception exception)
@@ -120,10 +110,7 @@ internal sealed class BenchmarkRun(CaseJson json, MeasurementMethods methods)
     /// <summary>
     /// BDNの実行を受け取り、使用条件の採取と観測結果の保存を管理する
     /// </summary>
-    internal RunManifest Run(
-        RunRequest request,
-        Func<BenchmarkRunInfo[], Summary[]> runBenchmarks
-    )
+    internal RunManifest Run(RunRequest request, Func<BenchmarkRunInfo[], Summary[]> runBenchmarks)
     {
         var prepared = Prepare(request);
         var stage = RunStage.Preparation;
@@ -146,43 +133,32 @@ internal sealed class BenchmarkRun(CaseJson json, MeasurementMethods methods)
             try
             {
                 var catalog = AssetManifest
-                    .Load(
-                        Path.Combine(
-                            request.OutputDirectory,
-                            "inputs",
-                            "assets",
-                            "asset-manifest.json"
-                        ),
-                        json_,
-                        methods_
-                    )
+                    .Load(Path.Combine(request.OutputDirectory, "inputs", "assets", "asset-manifest.json"), json_, methods_)
                     .Catalog;
                 var methods = request.CaseIds.Select(catalog.GetMeasurementMethod).ToHashSet();
                 var config = BenchmarkDotNet
                     .Configs.ManualConfig.Create(request.Config)
-                    .WithArtifactsPath(
-                        Path.Combine(Path.GetFullPath(request.OutputDirectory), "raw", "bdn")
-                    );
+                    .WithArtifactsPath(Path.Combine(Path.GetFullPath(request.OutputDirectory), "raw", "bdn"));
                 var infos = new[] { typeof(InvokeBenchmarks), typeof(PreparationBenchmarks) }
                     .Select(type =>
                         (
                             Type: type,
-                            Methods: type.GetMethods()
-                                .Where(x => methods.Contains(type.Name + "." + x.Name))
-                                .ToArray()
+                            Methods: type.GetMethods().Where(x => methods.Contains(type.Name + "." + x.Name)).ToArray()
                         )
                     )
                     .Where(x => x.Methods.Length > 0)
                     .Select(x => BenchmarkConverter.MethodsToBenchmarks(x.Type, x.Methods, config))
                     .Select(info => new BenchmarkRunInfo(
-                        [.. info.BenchmarksCases.Select(x =>
+                        [
+                            .. info.BenchmarksCases.Select(x =>
                                 BenchmarkDotNet.Running.BenchmarkCase.Create(
                                     x.Descriptor,
                                     prepared.Jobs.Single(job => job.Id == x.Job.Id),
                                     x.Parameters,
                                     x.Config
                                 )
-                            )],
+                            ),
+                        ],
                         info.Type,
                         info.Config
                     ))
@@ -218,11 +194,7 @@ internal sealed class BenchmarkRun(CaseJson json, MeasurementMethods methods)
     /// <summary>
     /// BDNの観測を予定caseと対応付け、採用判定後に保存全体の完了を確認する
     /// </summary>
-    internal void SaveReports(
-        RunRequest request,
-        PreparedRun prepared,
-        IEnumerable<Summary> summaries
-    )
+    internal void SaveReports(RunRequest request, PreparedRun prepared, IEnumerable<Summary> summaries)
     {
         var summaryList = summaries.ToList();
         var rawDirectory = Path.Combine(request.OutputDirectory, "raw");
@@ -242,9 +214,7 @@ internal sealed class BenchmarkRun(CaseJson json, MeasurementMethods methods)
                 .SelectMany(x => x.Reports)
                 .Where(x =>
                     methods_.GetCaseId(
-                        x.BenchmarkCase.Descriptor.Type.Name
-                            + "."
-                            + x.BenchmarkCase.Descriptor.WorkloadMethod.Name
+                        x.BenchmarkCase.Descriptor.Type.Name + "." + x.BenchmarkCase.Descriptor.WorkloadMethod.Name
                     ) == caseId
                 )
                 .ToList();
@@ -336,17 +306,11 @@ internal sealed class BenchmarkRun(CaseJson json, MeasurementMethods methods)
 
         if (
             reports.Count != prepared.Jobs.Length
-            || !reports
-                .Select(x => x.BenchmarkCase.Job.Id)
-                .ToHashSet()
-                .SetEquals(prepared.Jobs.Select(x => x.Id))
+            || !reports.Select(x => x.BenchmarkCase.Job.Id).ToHashSet().SetEquals(prepared.Jobs.Select(x => x.Id))
         )
         {
             incomplete = true;
-            AddFailure(
-                RunStage.BenchmarkProcessExit,
-                "予定したcase/JobのBDN reportが揃っていません。"
-            );
+            AddFailure(RunStage.BenchmarkProcessExit, "予定したcase/JobのBDN reportが揃っていません。");
         }
         if (reports.Any(x => !x.BuildResult.IsBuildSuccess))
         {
@@ -356,9 +320,7 @@ internal sealed class BenchmarkRun(CaseJson json, MeasurementMethods methods)
                 "BDNのbuildが成功していません。",
                 message: string.Join(
                     Environment.NewLine,
-                    reports
-                        .Where(x => !x.BuildResult.IsBuildSuccess)
-                        .Select(x => x.BuildResult.ErrorMessage)
+                    reports.Where(x => !x.BuildResult.IsBuildSuccess).Select(x => x.BuildResult.ErrorMessage)
                 )
             );
         }
@@ -370,20 +332,14 @@ internal sealed class BenchmarkRun(CaseJson json, MeasurementMethods methods)
                 "BDNのvalidationに失敗しました。",
                 message: string.Join(
                     Environment.NewLine,
-                    summaries
-                        .SelectMany(x => x.ValidationErrors)
-                        .Where(x => x.IsCritical)
-                        .Select(x => x.Message)
+                    summaries.SelectMany(x => x.ValidationErrors).Where(x => x.IsCritical).Select(x => x.Message)
                 )
             );
         }
         if (result.BenchmarkReport.Processes.Count == 0)
         {
             incomplete = true;
-            AddFailure(
-                RunStage.BenchmarkProcessExit,
-                "予定したbenchmark processの実行記録がありません。"
-            );
+            AddFailure(RunStage.BenchmarkProcessExit, "予定したbenchmark processの実行記録がありません。");
         }
         foreach (var process in result.BenchmarkReport.Processes)
         {
@@ -413,20 +369,13 @@ internal sealed class BenchmarkRun(CaseJson json, MeasurementMethods methods)
             {
                 if (
                     correctness is not null
-                    && (
-                        correctness.Status == ResultStatus.Failed
-                        || correctness.Observations.Any(x => !x.Matches)
-                    )
+                    && (correctness.Status == ResultStatus.Failed || correctness.Observations.Any(x => !x.Matches))
                 )
                 {
                     failed = true;
                     if (!failures.Any(x => x.Stage == stage))
                     {
-                        AddFailure(
-                            stage,
-                            "固定期待値との照合に失敗しました。",
-                            check?.LastConfirmedStage
-                        );
+                        AddFailure(stage, "固定期待値との照合に失敗しました。", check?.LastConfirmedStage);
                     }
                 }
             }
@@ -456,8 +405,7 @@ internal sealed class BenchmarkRun(CaseJson json, MeasurementMethods methods)
         var status =
             failed ? ResultStatus.Failed
             : incomplete ? ResultStatus.Incomplete
-            : metrics.Time is null || metrics.Allocation is null || metrics.Gc is null
-                ? ResultStatus.Unavailable
+            : metrics.Time is null || metrics.Allocation is null || metrics.Gc is null ? ResultStatus.Unavailable
             : ResultStatus.Succeeded;
         return result with { Status = status, Failures = failures };
     }
@@ -475,9 +423,7 @@ internal sealed class BenchmarkRun(CaseJson json, MeasurementMethods methods)
     {
         var checks = RunStore
             .ReadChecks(outputDirectory, json_)
-            .Where(x =>
-                x.Check.RunId == runId && x.Check.CaseId == caseId && x.Check.JobId == jobId
-            )
+            .Where(x => x.Check.RunId == runId && x.Check.CaseId == caseId && x.Check.JobId == jobId)
             .GroupBy(x => x.Check.ProcessId)
             .Select(x => x.MaxBy(y => GetCheckPriority(y.Check)))
             .ToDictionary(x => x.Check.ProcessId);
@@ -485,18 +431,11 @@ internal sealed class BenchmarkRun(CaseJson json, MeasurementMethods methods)
             .Select(x =>
                 x with
                 {
-                    CheckFile =
-                        x.ProcessId is int pid && checks.TryGetValue(pid, out var check)
-                            ? check.File
-                            : null,
+                    CheckFile = x.ProcessId is int pid && checks.TryGetValue(pid, out var check) ? check.File : null,
                 }
             )
             .ToList();
-        foreach (
-            var check in checks.Values.Where(x =>
-                !results.Any(y => y.ProcessId == x.Check.ProcessId)
-            )
-        )
+        foreach (var check in checks.Values.Where(x => !results.Any(y => y.ProcessId == x.Check.ProcessId)))
         {
             results.Add(new(jobId, check.Check.ProcessId, null, [], false, check.File));
         }
@@ -560,11 +499,7 @@ internal sealed class BenchmarkRun(CaseJson json, MeasurementMethods methods)
                 statistics.Mean,
                 statistics.Median,
                 statistics.StandardDeviation,
-                new(
-                    statistics.ConfidenceInterval.Lower,
-                    statistics.ConfidenceInterval.Upper,
-                    0.999
-                ),
+                new(statistics.ConfidenceInterval.Lower, statistics.ConfidenceInterval.Upper, 0.999),
                 measurements
             );
         }
@@ -595,18 +530,9 @@ internal sealed class BenchmarkRun(CaseJson json, MeasurementMethods methods)
             }
             gc = new(
                 gcStats.TotalOperations,
-                new(
-                    gcStats.Gen0Collections,
-                    gcStats.Gen0Collections / (double)gcStats.TotalOperations * 1000
-                ),
-                new(
-                    gcStats.Gen1Collections,
-                    gcStats.Gen1Collections / (double)gcStats.TotalOperations * 1000
-                ),
-                new(
-                    gcStats.Gen2Collections,
-                    gcStats.Gen2Collections / (double)gcStats.TotalOperations * 1000
-                ),
+                new(gcStats.Gen0Collections, gcStats.Gen0Collections / (double)gcStats.TotalOperations * 1000),
+                new(gcStats.Gen1Collections, gcStats.Gen1Collections / (double)gcStats.TotalOperations * 1000),
+                new(gcStats.Gen2Collections, gcStats.Gen2Collections / (double)gcStats.TotalOperations * 1000),
                 ObservationIteration.SeparateFromTiming
             );
         }
@@ -615,9 +541,7 @@ internal sealed class BenchmarkRun(CaseJson json, MeasurementMethods methods)
                 time,
                 time is null ? "BDNの時間統計または99.9%信頼区間を取得できませんでした。" : null,
                 allocation,
-                allocation is null
-                    ? "BDNのmanaged割り当て総量またはGC観測操作数を取得できませんでした。"
-                    : null,
+                allocation is null ? "BDNのmanaged割り当て総量またはGC観測操作数を取得できませんでした。" : null,
                 gc,
                 gc is null ? "BDNのGC観測操作数を取得できませんでした。" : null
             ),
@@ -646,20 +570,14 @@ internal sealed class BenchmarkRun(CaseJson json, MeasurementMethods methods)
     /// <summary>
     /// 採用済み素材の内容を照合して、ケース定義・Job設定とともにrunへ保存する
     /// </summary>
-    internal void CaptureInputs(
-        RunStore store,
-        string assetManifestPath,
-        IEnumerable<ProcessConfiguration> processes
-    )
+    internal void CaptureInputs(RunStore store, string assetManifestPath, IEnumerable<ProcessConfiguration> processes)
     {
         var loaded = AssetManifest.Load(assetManifestPath, json_, methods_);
         var directory = Path.GetDirectoryName(Path.GetFullPath(assetManifestPath))!;
         var files = new[] { loaded.Manifest.Profile, loaded.Manifest.Cases }
             .Concat(loaded.Manifest.Assets.Select(x => x.Binary))
             .Concat(
-                loaded
-                    .Manifest.Assets.SelectMany(x => x.Sources)
-                    .Select(x => new ManifestFile(x.RelativePath, x.Sha256))
+                loaded.Manifest.Assets.SelectMany(x => x.Sources).Select(x => new ManifestFile(x.RelativePath, x.Sha256))
             )
             .DistinctBy(x => x.RelativePath);
         ManifestFile? cases = null;
@@ -668,9 +586,7 @@ internal sealed class BenchmarkRun(CaseJson json, MeasurementMethods methods)
             var bytes = File.ReadAllBytes(Path.Combine(directory, file.RelativePath));
             if (Convert.ToHexStringLower(SHA256.HashData(bytes)) != file.Sha256)
             {
-                throw new InvalidDataException(
-                    "コピーする素材のSHA-256が一致しません: " + file.RelativePath
-                );
+                throw new InvalidDataException("コピーする素材のSHA-256が一致しません: " + file.RelativePath);
             }
 
             var saved = store.SaveFile("inputs/assets/" + file.RelativePath, bytes);
@@ -680,10 +596,7 @@ internal sealed class BenchmarkRun(CaseJson json, MeasurementMethods methods)
             }
         }
 
-        var manifest = store.SaveFile(
-            "inputs/assets/asset-manifest.json",
-            File.ReadAllBytes(assetManifestPath)
-        );
+        var manifest = store.SaveFile("inputs/assets/asset-manifest.json", File.ReadAllBytes(assetManifestPath));
         var job = store.SaveFile(
             "inputs/job.json",
             JsonSerializer.SerializeToUtf8Bytes(
@@ -725,11 +638,7 @@ internal sealed class BenchmarkRun(CaseJson json, MeasurementMethods methods)
     /// <summary>
     /// 実行前に使用したファイルと新しい使用sourceの内容変化を照合して追記する
     /// </summary>
-    internal RunSource CaptureSourceAfter(
-        string repositoryDirectory,
-        RunStore store,
-        RunSource before
-    )
+    internal RunSource CaptureSourceAfter(string repositoryDirectory, RunStore store, RunSource before)
     {
         var source = new SourceCapture(repositoryDirectory, json_).After(before);
         store.SaveSource(source);

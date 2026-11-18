@@ -17,11 +17,7 @@ internal class Interpreter_I64RotlTests
         unchecked((long)0x8000000000000000UL),
         unchecked((long)0x8000000000000001UL)
     )]
-    public async Task 幅境界と負の移動量を含む値_幅で剰余化して左回転する(
-        long left,
-        long right,
-        long expected
-    )
+    public async Task 幅境界と負の移動量を含む値_幅で剰余化して左回転する(long left, long right, long expected)
     {
         // Arrange
         WasmValue[] operands = [WasmValue.FromI64(left), WasmValue.FromI64(right)];

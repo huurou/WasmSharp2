@@ -6,48 +6,12 @@ namespace WasmSharp.Tests.Execution;
 internal class Interpreter_I16x8ShrSTests
 {
     [Test]
-    [Arguments(
-        0x0001FFFF7FFF8000UL,
-        0x7FFEFFFE80010002UL,
-        0,
-        0x0001FFFF7FFF8000UL,
-        0x7FFEFFFE80010002UL
-    )]
-    [Arguments(
-        0x0001FFFF7FFF8000UL,
-        0x7FFEFFFE80010002UL,
-        16,
-        0x0001FFFF7FFF8000UL,
-        0x7FFEFFFE80010002UL
-    )]
-    [Arguments(
-        0x0001FFFF7FFF8000UL,
-        0x7FFEFFFE80010002UL,
-        17,
-        0x0000FFFF3FFFC000UL,
-        0x3FFFFFFFC0000001UL
-    )]
-    [Arguments(
-        0x0001FFFF7FFF8000UL,
-        0x7FFEFFFE80010002UL,
-        -1,
-        0x0000FFFF0000FFFFUL,
-        0x0000FFFFFFFF0000UL
-    )]
-    [Arguments(
-        0x0001FFFF7FFF8000UL,
-        0x7FFEFFFE80010002UL,
-        -2147483648,
-        0x0001FFFF7FFF8000UL,
-        0x7FFEFFFE80010002UL
-    )]
-    [Arguments(
-        0x0001FFFF7FFF8000UL,
-        0x7FFEFFFE80010002UL,
-        1,
-        0x0000FFFF3FFFC000UL,
-        0x3FFFFFFFC0000001UL
-    )]
+    [Arguments(0x0001FFFF7FFF8000UL, 0x7FFEFFFE80010002UL, 0, 0x0001FFFF7FFF8000UL, 0x7FFEFFFE80010002UL)]
+    [Arguments(0x0001FFFF7FFF8000UL, 0x7FFEFFFE80010002UL, 16, 0x0001FFFF7FFF8000UL, 0x7FFEFFFE80010002UL)]
+    [Arguments(0x0001FFFF7FFF8000UL, 0x7FFEFFFE80010002UL, 17, 0x0000FFFF3FFFC000UL, 0x3FFFFFFFC0000001UL)]
+    [Arguments(0x0001FFFF7FFF8000UL, 0x7FFEFFFE80010002UL, -1, 0x0000FFFF0000FFFFUL, 0x0000FFFFFFFF0000UL)]
+    [Arguments(0x0001FFFF7FFF8000UL, 0x7FFEFFFE80010002UL, -2147483648, 0x0001FFFF7FFF8000UL, 0x7FFEFFFE80010002UL)]
+    [Arguments(0x0001FFFF7FFF8000UL, 0x7FFEFFFE80010002UL, 1, 0x0000FFFF3FFFC000UL, 0x3FFFFFFFC0000001UL)]
     public async Task シフト量がゼロや幅以上や負数_幅の剰余で各laneをシフトする(
         ulong inputLow64,
         ulong inputHigh64,
@@ -57,11 +21,7 @@ internal class Interpreter_I16x8ShrSTests
     )
     {
         // Arrange
-        WasmValue[] operands =
-        [
-            WasmValue.FromV128(inputLow64, inputHigh64),
-            WasmValue.FromI32(shift),
-        ];
+        WasmValue[] operands = [WasmValue.FromV128(inputLow64, inputHigh64), WasmValue.FromI32(shift)];
 
         // Act
         var actual = SimdHandlerFixture.Execute(Interpreter.I16x8ShrS, operands);

@@ -62,12 +62,7 @@ internal class ValueCodec_CreateArgumentsTests
                 .That(
                     values
                         .Select(x => x.Kind)
-                        .SequenceEqual([
-                            WasmValueKind.F64,
-                            WasmValueKind.ExternRef,
-                            WasmValueKind.I32,
-                            WasmValueKind.I64,
-                        ])
+                        .SequenceEqual([WasmValueKind.F64, WasmValueKind.ExternRef, WasmValueKind.I32, WasmValueKind.I64])
                 )
                 .IsTrue();
             await Assert.That(values[0].AsF64Bits()).IsEqualTo(1UL);
@@ -123,9 +118,7 @@ internal class ValueCodec_CreateArgumentsTests
             await Assert.That(values[1].AsExternRef()).IsSameReferenceAs(state.GetExternref(2));
             await Assert.That(values[1].AsExternRef()).IsNotSameReferenceAs(assigned);
             await Assert.That(values[2].AsExternRef()).IsSameReferenceAs(assigned);
-            await Assert
-                .That(values[3].AsExternRef())
-                .IsSameReferenceAs(state.GetExternref(uint.MaxValue));
+            await Assert.That(values[3].AsExternRef()).IsSameReferenceAs(state.GetExternref(uint.MaxValue));
         }
     }
 
@@ -157,12 +150,7 @@ internal class ValueCodec_CreateArgumentsTests
 
         // Act & Assert
         var exception = await Assert
-            .That(() =>
-                ValueCodec.CreateArguments(
-                    [Scalar(WasmValueKind.I32, "0"), Scalar(kind, text)],
-                    state
-                )
-            )
+            .That(() => ValueCodec.CreateArguments([Scalar(WasmValueKind.I32, "0"), Scalar(kind, text)], state))
             .ThrowsExactly<ScriptFormatException>();
         await Assert.That(exception!.Message).Contains("action.args[1].value");
     }
@@ -170,25 +158,7 @@ internal class ValueCodec_CreateArgumentsTests
     [Test]
     [Arguments(
         LaneType.I8,
-        new[]
-        {
-            "0",
-            "1",
-            "2",
-            "3",
-            "4",
-            "5",
-            "6",
-            "7",
-            "8",
-            "9",
-            "10",
-            "11",
-            "12",
-            "13",
-            "14",
-            "255",
-        },
+        new[] { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "255" },
         0x0706050403020100UL,
         0xFF0E0D0C0B0A0908UL
     )]
@@ -198,12 +168,7 @@ internal class ValueCodec_CreateArgumentsTests
         0x0004000300020001UL,
         0xFFFF000700060005UL
     )]
-    [Arguments(
-        LaneType.I32,
-        new[] { "1", "2", "3", "4294967295" },
-        0x0000000200000001UL,
-        0xFFFFFFFF00000003UL
-    )]
+    [Arguments(LaneType.I32, new[] { "1", "2", "3", "4294967295" }, 0x0000000200000001UL, 0xFFFFFFFF00000003UL)]
     [Arguments(LaneType.I64, new[] { "1", "18446744073709551615" }, 0x1UL, 0xFFFFFFFFFFFFFFFFUL)]
     [Arguments(
         LaneType.F32,
@@ -276,11 +241,7 @@ internal class ValueCodec_CreateArgumentsTests
     [Arguments(LaneType.I64, 0, 2)]
     [Arguments(LaneType.F32, 8, 4)]
     [Arguments(LaneType.F64, 1, 2)]
-    public async Task V128のlane数がlane型と一致しない_位置を示して拒否する(
-        LaneType laneType,
-        int count,
-        int expectedCount
-    )
+    public async Task V128のlane数がlane型と一致しない_位置を示して拒否する(LaneType laneType, int count, int expectedCount)
     {
         // Arrange
         var state = new ScriptState("a.wast");

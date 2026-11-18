@@ -28,10 +28,7 @@ internal static class ValueCodec
     /// <param name="state">externrefの番号にホスト値を割り当てる入力の状態</param>
     /// <returns>順序とビット列を保持する新しいvalueの配列 参照値は入力内の同じ番号の実体を共有する</returns>
     /// <exception cref="ScriptFormatException">値の文字列が固定形式にない場合</exception>
-    internal static ImmutableArray<WasmValue> CreateArguments(
-        ImmutableArray<ArgumentValue> values,
-        ScriptState state
-    )
+    internal static ImmutableArray<WasmValue> CreateArguments(ImmutableArray<ArgumentValue> values, ScriptState state)
     {
         return [.. values.Select((x, i) => CreateArgument(x, $"action.args[{i}].value", state))];
     }
@@ -50,14 +47,8 @@ internal static class ValueCodec
         var record = new ValueRecord(GetTypeName(value.Kind));
         return value.Kind switch
         {
-            WasmValueKind.I32 or WasmValueKind.F32 => record with
-            {
-                Bits = ToHex(GetBits(value), 32),
-            },
-            WasmValueKind.I64 or WasmValueKind.F64 => record with
-            {
-                Bits = ToHex(GetBits(value), 64),
-            },
+            WasmValueKind.I32 or WasmValueKind.F32 => record with { Bits = ToHex(GetBits(value), 32) },
+            WasmValueKind.I64 or WasmValueKind.F64 => record with { Bits = ToHex(GetBits(value), 64) },
             WasmValueKind.V128 => record with
             {
                 Low64 = ToHex(value.AsV128().Low64, 64),
@@ -123,9 +114,7 @@ internal static class ValueCodec
         };
         return count == 128 / width
             ? width
-            : throw new ScriptFormatException(
-                $"{path}のlane数{count}は{width}ビットlaneの{128 / width}個と一致しません。"
-            );
+            : throw new ScriptFormatException($"{path}のlane数{count}は{width}ビットlaneの{128 / width}個と一致しません。");
     }
 
     /// <summary>
@@ -161,9 +150,7 @@ internal static class ValueCodec
             && ulong.TryParse(text, NumberStyles.None, CultureInfo.InvariantCulture, out var bits)
             && (bits & ~GetMask(width)) == 0
             ? bits
-            : throw new ScriptFormatException(
-                $"{path}の{text}は{width}ビットの符号なし10進数ではありません。"
-            );
+            : throw new ScriptFormatException($"{path}の{text}は{width}ビットの符号なし10進数ではありません。");
     }
 
     /// <summary>
@@ -189,21 +176,11 @@ internal static class ValueCodec
     {
         return value switch
         {
-            { Kind: WasmValueKind.I32 } => WasmValue.FromI32(
-                unchecked((int)ParseBits(value.Value, 32, path))
-            ),
-            { Kind: WasmValueKind.I64 } => WasmValue.FromI64(
-                unchecked((long)ParseBits(value.Value, 64, path))
-            ),
-            { Kind: WasmValueKind.F32 } => WasmValue.FromF32Bits(
-                (uint)ParseBits(value.Value, 32, path)
-            ),
+            { Kind: WasmValueKind.I32 } => WasmValue.FromI32(unchecked((int)ParseBits(value.Value, 32, path))),
+            { Kind: WasmValueKind.I64 } => WasmValue.FromI64(unchecked((long)ParseBits(value.Value, 64, path))),
+            { Kind: WasmValueKind.F32 } => WasmValue.FromF32Bits((uint)ParseBits(value.Value, 32, path)),
             { Kind: WasmValueKind.F64 } => WasmValue.FromF64Bits(ParseBits(value.Value, 64, path)),
-            { Kind: WasmValueKind.V128, LaneType: { } laneType } => CreateV128(
-                laneType,
-                value.Lanes,
-                path
-            ),
+            { Kind: WasmValueKind.V128, LaneType: { } laneType } => CreateV128(laneType, value.Lanes, path),
             { Kind: WasmValueKind.FuncRef, Value: NULL } => WasmValue.FromFuncRef(null),
             { Kind: WasmValueKind.ExternRef, Value: NULL } => WasmValue.FromExternRef(null),
             { Kind: WasmValueKind.ExternRef } => WasmValue.FromExternRef(
@@ -223,11 +200,7 @@ internal static class ValueCodec
     /// <param name="path">lane数やlane値の異常を報告するJSON上の位置</param>
     /// <returns>すべてのlaneのビット列を順序どおりに配置したv128のvalue</returns>
     /// <exception cref="ScriptFormatException">lane数が型と合わないか、lane値が固定形式外または幅に収まらない場合</exception>
-    private static WasmValue CreateV128(
-        LaneType laneType,
-        ImmutableArray<string> lanes,
-        string path
-    )
+    private static WasmValue CreateV128(LaneType laneType, ImmutableArray<string> lanes, string path)
     {
         var width = GetLaneWidth(laneType, lanes.Length, path);
         ulong low64 = 0;
@@ -257,11 +230,7 @@ internal static class ValueCodec
     /// <param name="reference">funcrefまたはexternrefの参照先 nullも許容する</param>
     /// <param name="state">参照tokenと、割り当てたexternrefの元番号を管理する入力の状態</param>
     /// <returns>nullならIsNullだけを設定し、非nullならtokenと取得できたexternref番号を追加した記録</returns>
-    private static ValueRecord RecordReference(
-        ValueRecord record,
-        object? reference,
-        ScriptState state
-    )
+    private static ValueRecord RecordReference(ValueRecord record, object? reference, ScriptState state)
     {
         // 番号はランナーが割り当てたexternrefだけが持ち、funcrefや未知の参照ではnullになる。
         return reference is null

@@ -29,9 +29,7 @@ internal class ProfileSnapshot_ToProfileTests
             await Assert.That(profile.Conversion).IsEqualTo(original.Conversion);
             await Assert.That(profile.Inputs.SequenceEqual(original.Inputs)).IsTrue();
             await Assert.That(profile.Features.SequenceEqual(original.Features)).IsTrue();
-            await Assert
-                .That(profile.LogicalArguments.SequenceEqual(original.LogicalArguments))
-                .IsTrue();
+            await Assert.That(profile.LogicalArguments.SequenceEqual(original.LogicalArguments)).IsTrue();
         }
     }
 }

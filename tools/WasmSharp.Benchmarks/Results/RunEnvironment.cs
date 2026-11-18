@@ -44,11 +44,7 @@ internal enum PowerSource
 /// <summary>
 /// 実行したコマンドと作業ディレクトリ 引数は順序を保持する。
 /// </summary>
-internal sealed record CommandInvocation(
-    string ExecutablePath,
-    List<string> Arguments,
-    string WorkingDirectory
-);
+internal sealed record CommandInvocation(string ExecutablePath, List<string> Arguments, string WorkingDirectory);
 
 /// <summary>
 /// 測定・診断processの構成 Job識別子と実効設定を区別して保持する。

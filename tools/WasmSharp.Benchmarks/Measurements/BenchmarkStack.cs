@@ -1,6 +1,5 @@
-using BenchmarkDotNet.Engines;
-using BenchmarkDotNet.Reports;
 using System.Runtime.CompilerServices;
+using BenchmarkDotNet.Engines;
 
 namespace WasmSharp.Benchmarks.Measurements;
 

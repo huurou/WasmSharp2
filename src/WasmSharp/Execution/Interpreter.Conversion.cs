@@ -15,10 +15,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのF32ConvertI32S命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult F32ConvertI32S(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult F32ConvertI32S(InterpreterContext context, in Instruction instruction)
     {
         var operand = context.PopValue().AsI32();
         context.PushValue(WasmValue.FromF32((float)operand));
@@ -31,10 +28,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのF32ConvertI32U命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult F32ConvertI32U(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult F32ConvertI32U(InterpreterContext context, in Instruction instruction)
     {
         var operand = unchecked((uint)context.PopValue().AsI32());
         context.PushValue(WasmValue.FromF32((float)operand));
@@ -47,10 +41,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのF32ConvertI64S命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult F32ConvertI64S(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult F32ConvertI64S(InterpreterContext context, in Instruction instruction)
     {
         var operand = context.PopValue().AsI64();
         // doubleを経由せず、整数からf32へ1回だけ丸める。
@@ -64,10 +55,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのF32ConvertI64U命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult F32ConvertI64U(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult F32ConvertI64U(InterpreterContext context, in Instruction instruction)
     {
         var operand = unchecked((ulong)context.PopValue().AsI64());
         // doubleを経由せず、整数からf32へ1回だけ丸める。
@@ -81,10 +69,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのF64ConvertI32S命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult F64ConvertI32S(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult F64ConvertI32S(InterpreterContext context, in Instruction instruction)
     {
         var operand = context.PopValue().AsI32();
         context.PushValue(WasmValue.FromF64((double)operand));
@@ -97,10 +82,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのF64ConvertI32U命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult F64ConvertI32U(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult F64ConvertI32U(InterpreterContext context, in Instruction instruction)
     {
         var operand = unchecked((uint)context.PopValue().AsI32());
         context.PushValue(WasmValue.FromF64((double)operand));
@@ -113,10 +95,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのF64ConvertI64S命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult F64ConvertI64S(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult F64ConvertI64S(InterpreterContext context, in Instruction instruction)
     {
         var operand = context.PopValue().AsI64();
         context.PushValue(WasmValue.FromF64((double)operand));
@@ -129,10 +108,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのF64ConvertI64U命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult F64ConvertI64U(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult F64ConvertI64U(InterpreterContext context, in Instruction instruction)
     {
         var operand = unchecked((ulong)context.PopValue().AsI64());
         context.PushValue(WasmValue.FromF64((double)operand));
@@ -145,10 +121,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのF32DemoteF64命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult F32DemoteF64(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult F32DemoteF64(InterpreterContext context, in Instruction instruction)
     {
         var operand = context.PopValue().AsF64();
         context.PushValue(F32ArithmeticResult((float)operand));
@@ -161,10 +134,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのF64PromoteF32命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult F64PromoteF32(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult F64PromoteF32(InterpreterContext context, in Instruction instruction)
     {
         var operand = context.PopValue().AsF32();
         context.PushValue(F64ArithmeticResult((double)operand));
@@ -177,10 +147,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI32TruncF32S命令</param>
     /// <returns>実行の成功または整数変換のtrap</returns>
-    internal static ExecutionResult I32TruncF32S(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I32TruncF32S(InterpreterContext context, in Instruction instruction)
     {
         var operand = context.PopValue().AsF32();
         return TruncateI32(operand, true, context, in instruction);
@@ -192,10 +159,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI32TruncF32U命令</param>
     /// <returns>実行の成功または整数変換のtrap</returns>
-    internal static ExecutionResult I32TruncF32U(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I32TruncF32U(InterpreterContext context, in Instruction instruction)
     {
         var operand = context.PopValue().AsF32();
         return TruncateI32(operand, false, context, in instruction);
@@ -207,10 +171,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI32TruncF64S命令</param>
     /// <returns>実行の成功または整数変換のtrap</returns>
-    internal static ExecutionResult I32TruncF64S(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I32TruncF64S(InterpreterContext context, in Instruction instruction)
     {
         var operand = context.PopValue().AsF64();
         return TruncateI32(operand, true, context, in instruction);
@@ -222,10 +183,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI32TruncF64U命令</param>
     /// <returns>実行の成功または整数変換のtrap</returns>
-    internal static ExecutionResult I32TruncF64U(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I32TruncF64U(InterpreterContext context, in Instruction instruction)
     {
         var operand = context.PopValue().AsF64();
         return TruncateI32(operand, false, context, in instruction);
@@ -237,10 +195,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI64TruncF32S命令</param>
     /// <returns>実行の成功または整数変換のtrap</returns>
-    internal static ExecutionResult I64TruncF32S(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I64TruncF32S(InterpreterContext context, in Instruction instruction)
     {
         var operand = context.PopValue().AsF32();
         return TruncateI64(operand, true, context, in instruction);
@@ -252,10 +207,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI64TruncF32U命令</param>
     /// <returns>実行の成功または整数変換のtrap</returns>
-    internal static ExecutionResult I64TruncF32U(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I64TruncF32U(InterpreterContext context, in Instruction instruction)
     {
         var operand = context.PopValue().AsF32();
         return TruncateI64(operand, false, context, in instruction);
@@ -267,10 +219,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI64TruncF64S命令</param>
     /// <returns>実行の成功または整数変換のtrap</returns>
-    internal static ExecutionResult I64TruncF64S(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I64TruncF64S(InterpreterContext context, in Instruction instruction)
     {
         var operand = context.PopValue().AsF64();
         return TruncateI64(operand, true, context, in instruction);
@@ -282,10 +231,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI64TruncF64U命令</param>
     /// <returns>実行の成功または整数変換のtrap</returns>
-    internal static ExecutionResult I64TruncF64U(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I64TruncF64U(InterpreterContext context, in Instruction instruction)
     {
         var operand = context.PopValue().AsF64();
         return TruncateI64(operand, false, context, in instruction);
@@ -297,10 +243,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI32TruncSatF32S命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I32TruncSatF32S(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I32TruncSatF32S(InterpreterContext context, in Instruction instruction)
     {
         var operand = context.PopValue().AsF32();
         context.PushValue(WasmValue.FromI32(TruncateSaturatingI32(operand, true)));
@@ -313,10 +256,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI32TruncSatF32U命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I32TruncSatF32U(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I32TruncSatF32U(InterpreterContext context, in Instruction instruction)
     {
         var operand = context.PopValue().AsF32();
         context.PushValue(WasmValue.FromI32(TruncateSaturatingI32(operand, false)));
@@ -329,10 +269,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI32TruncSatF64S命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I32TruncSatF64S(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I32TruncSatF64S(InterpreterContext context, in Instruction instruction)
     {
         var operand = context.PopValue().AsF64();
         context.PushValue(WasmValue.FromI32(TruncateSaturatingI32(operand, true)));
@@ -345,10 +282,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI32TruncSatF64U命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I32TruncSatF64U(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I32TruncSatF64U(InterpreterContext context, in Instruction instruction)
     {
         var operand = context.PopValue().AsF64();
         context.PushValue(WasmValue.FromI32(TruncateSaturatingI32(operand, false)));
@@ -361,10 +295,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI64TruncSatF32S命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I64TruncSatF32S(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I64TruncSatF32S(InterpreterContext context, in Instruction instruction)
     {
         var operand = context.PopValue().AsF32();
         context.PushValue(WasmValue.FromI64(TruncateSaturatingI64(operand, true)));
@@ -377,10 +308,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI64TruncSatF32U命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I64TruncSatF32U(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I64TruncSatF32U(InterpreterContext context, in Instruction instruction)
     {
         var operand = context.PopValue().AsF32();
         context.PushValue(WasmValue.FromI64(TruncateSaturatingI64(operand, false)));
@@ -393,10 +321,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI64TruncSatF64S命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I64TruncSatF64S(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I64TruncSatF64S(InterpreterContext context, in Instruction instruction)
     {
         var operand = context.PopValue().AsF64();
         context.PushValue(WasmValue.FromI64(TruncateSaturatingI64(operand, true)));
@@ -409,10 +334,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI64TruncSatF64U命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I64TruncSatF64U(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I64TruncSatF64U(InterpreterContext context, in Instruction instruction)
     {
         var operand = context.PopValue().AsF64();
         context.PushValue(WasmValue.FromI64(TruncateSaturatingI64(operand, false)));
@@ -432,9 +354,7 @@ internal static partial class Interpreter
             return 0;
         }
 
-        return signed
-            ? int.CreateSaturating(operand)
-            : unchecked((int)uint.CreateSaturating(operand));
+        return signed ? int.CreateSaturating(operand) : unchecked((int)uint.CreateSaturating(operand));
     }
 
     /// <summary>
@@ -450,9 +370,7 @@ internal static partial class Interpreter
             return 0;
         }
 
-        return signed
-            ? long.CreateSaturating(operand)
-            : unchecked((long)ulong.CreateSaturating(operand));
+        return signed ? long.CreateSaturating(operand) : unchecked((long)ulong.CreateSaturating(operand));
     }
 
     /// <summary>
@@ -483,9 +401,7 @@ internal static partial class Interpreter
             return result;
         }
 
-        context.PushValue(
-            WasmValue.FromI32(signed ? (int)truncated : unchecked((int)(uint)truncated))
-        );
+        context.PushValue(WasmValue.FromI32(signed ? (int)truncated : unchecked((int)(uint)truncated)));
         return default;
     }
 
@@ -517,9 +433,7 @@ internal static partial class Interpreter
             return result;
         }
 
-        context.PushValue(
-            WasmValue.FromI64(signed ? (long)truncated : unchecked((long)(ulong)truncated))
-        );
+        context.PushValue(WasmValue.FromI64(signed ? (long)truncated : unchecked((long)(ulong)truncated)));
         return default;
     }
 
@@ -564,10 +478,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI32WrapI64命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I32WrapI64(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I32WrapI64(InterpreterContext context, in Instruction instruction)
     {
         var operand = context.PopValue().AsI64();
         context.PushValue(WasmValue.FromI32(unchecked((int)operand)));
@@ -580,10 +491,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI64ExtendI32S命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I64ExtendI32S(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I64ExtendI32S(InterpreterContext context, in Instruction instruction)
     {
         var operand = context.PopValue().AsI32();
         context.PushValue(WasmValue.FromI64(operand));
@@ -596,10 +504,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI64ExtendI32U命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I64ExtendI32U(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I64ExtendI32U(InterpreterContext context, in Instruction instruction)
     {
         var operand = context.PopValue().AsI32();
         context.PushValue(WasmValue.FromI64(unchecked((uint)operand)));
@@ -612,10 +517,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI32Extend8S命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I32Extend8S(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I32Extend8S(InterpreterContext context, in Instruction instruction)
     {
         var operand = context.PopValue().AsI32();
         context.PushValue(WasmValue.FromI32(unchecked((sbyte)operand)));
@@ -628,10 +530,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI32Extend16S命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I32Extend16S(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I32Extend16S(InterpreterContext context, in Instruction instruction)
     {
         var operand = context.PopValue().AsI32();
         context.PushValue(WasmValue.FromI32(unchecked((short)operand)));
@@ -644,10 +543,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI64Extend8S命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I64Extend8S(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I64Extend8S(InterpreterContext context, in Instruction instruction)
     {
         var operand = context.PopValue().AsI64();
         context.PushValue(WasmValue.FromI64(unchecked((sbyte)operand)));
@@ -660,10 +556,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI64Extend16S命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I64Extend16S(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I64Extend16S(InterpreterContext context, in Instruction instruction)
     {
         var operand = context.PopValue().AsI64();
         context.PushValue(WasmValue.FromI64(unchecked((short)operand)));
@@ -676,10 +569,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI64Extend32S命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I64Extend32S(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I64Extend32S(InterpreterContext context, in Instruction instruction)
     {
         var operand = context.PopValue().AsI64();
         context.PushValue(WasmValue.FromI64(unchecked((int)operand)));
@@ -692,10 +582,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI32ReinterpretF32命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I32ReinterpretF32(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I32ReinterpretF32(InterpreterContext context, in Instruction instruction)
     {
         var operand = context.PopValue().AsF32Bits();
         context.PushValue(WasmValue.FromI32(unchecked((int)operand)));
@@ -708,10 +595,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのI64ReinterpretF64命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult I64ReinterpretF64(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult I64ReinterpretF64(InterpreterContext context, in Instruction instruction)
     {
         var operand = context.PopValue().AsF64Bits();
         context.PushValue(WasmValue.FromI64(unchecked((long)operand)));
@@ -724,10 +608,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのF32ReinterpretI32命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult F32ReinterpretI32(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult F32ReinterpretI32(InterpreterContext context, in Instruction instruction)
     {
         var operand = context.PopValue().AsI32();
         context.PushValue(WasmValue.FromF32Bits(unchecked((uint)operand)));
@@ -740,10 +621,7 @@ internal static partial class Interpreter
     /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのF64ReinterpretI64命令</param>
     /// <returns>実行の成功</returns>
-    internal static ExecutionResult F64ReinterpretI64(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult F64ReinterpretI64(InterpreterContext context, in Instruction instruction)
     {
         var operand = context.PopValue().AsI64();
         context.PushValue(WasmValue.FromF64Bits(unchecked((ulong)operand)));

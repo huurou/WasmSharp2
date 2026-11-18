@@ -14,10 +14,7 @@ internal class WasmHostModule_DefineTests
     [Arguments(WasmExternalKind.Global, true)]
     [Arguments(WasmExternalKind.Memory, true)]
     [Arguments(WasmExternalKind.Table, true)]
-    public async Task 名前または実体がnull_既存定義を保って拒否する(
-        WasmExternalKind kind,
-        bool nullName
-    )
+    public async Task 名前または実体がnull_既存定義を保って拒否する(WasmExternalKind kind, bool nullName)
     {
         // Arrange
         var module = new WasmHostModule();
@@ -30,15 +27,10 @@ internal class WasmHostModule_DefineTests
             .ThrowsExactly<ArgumentNullException>();
         using (Assert.Multiple())
         {
-            await Assert
-                .That(exception!.ParamName)
-                .IsEqualTo(nullName ? "name" : kind.ToString().ToLowerInvariant());
+            await Assert.That(exception!.ParamName).IsEqualTo(nullName ? "name" : kind.ToString().ToLowerInvariant());
             await Assert.That(module.Snapshot.Count).IsEqualTo(1);
             await Assert
-                .That(
-                    module.Snapshot["keep"] is FunctionExternalValue f
-                        && ReferenceEquals(f.Value, original)
-                )
+                .That(module.Snapshot["keep"] is FunctionExternalValue f && ReferenceEquals(f.Value, original))
                 .IsTrue();
         }
     }
@@ -61,10 +53,7 @@ internal class WasmHostModule_DefineTests
         {
             await Assert.That(module.Snapshot.Count).IsEqualTo(1);
             await Assert
-                .That(
-                    module.Snapshot["same"] is FunctionExternalValue f
-                        && ReferenceEquals(f.Value, original)
-                )
+                .That(module.Snapshot["same"] is FunctionExternalValue f && ReferenceEquals(f.Value, original))
                 .IsTrue();
         }
     }
@@ -91,27 +80,14 @@ internal class WasmHostModule_DefineTests
         {
             await Assert.That(module.Name).IsEqualTo("env");
             await Assert.That(items.Count).IsEqualTo(4);
-            await Assert
-                .That(items[""] is FunctionExternalValue f && ReferenceEquals(f.Value, function))
-                .IsTrue();
-            await Assert
-                .That(items["value"] is GlobalExternalValue g && ReferenceEquals(g.Value, global))
-                .IsTrue();
-            await Assert
-                .That(items["Value"] is MemoryExternalValue m && ReferenceEquals(m.Value, memory))
-                .IsTrue();
-            await Assert
-                .That(items["table"] is TableExternalValue t && ReferenceEquals(t.Value, table))
-                .IsTrue();
+            await Assert.That(items[""] is FunctionExternalValue f && ReferenceEquals(f.Value, function)).IsTrue();
+            await Assert.That(items["value"] is GlobalExternalValue g && ReferenceEquals(g.Value, global)).IsTrue();
+            await Assert.That(items["Value"] is MemoryExternalValue m && ReferenceEquals(m.Value, memory)).IsTrue();
+            await Assert.That(items["table"] is TableExternalValue t && ReferenceEquals(t.Value, table)).IsTrue();
         }
     }
 
-    private static void Define(
-        WasmHostModule module,
-        string name,
-        WasmExternalKind kind,
-        bool nullValue = false
-    )
+    private static void Define(WasmHostModule module, string name, WasmExternalKind kind, bool nullValue = false)
     {
         switch (kind)
         {
@@ -120,12 +96,7 @@ internal class WasmHostModule_DefineTests
                 break;
 
             case WasmExternalKind.Global:
-                module.Define(
-                    name,
-                    nullValue
-                        ? null!
-                        : new WasmGlobal(new(WasmValueKind.I32, true), WasmValue.FromI32(1))
-                );
+                module.Define(name, nullValue ? null! : new WasmGlobal(new(WasmValueKind.I32, true), WasmValue.FromI32(1)));
                 break;
 
             case WasmExternalKind.Memory:
@@ -133,10 +104,7 @@ internal class WasmHostModule_DefineTests
                 break;
 
             case WasmExternalKind.Table:
-                module.Define(
-                    name,
-                    nullValue ? null! : new WasmTable(WasmValueKind.FuncRef, new(0))
-                );
+                module.Define(name, nullValue ? null! : new WasmTable(WasmValueKind.FuncRef, new(0)));
                 break;
         }
     }

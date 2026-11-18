@@ -8,11 +8,7 @@ namespace WasmSharp.Modules.Definitions;
 /// <param name="type">globalの値型と可変性</param>
 /// <param name="initializer">構築時にコピーする初期化式の命令列</param>
 /// <param name="byteOffset">入力バイナリ上のglobal宣言のバイト位置</param>
-internal sealed class GlobalDefinition(
-    WasmGlobalType type,
-    ReadOnlySpan<DecodedInstruction> initializer,
-    long byteOffset
-)
+internal sealed class GlobalDefinition(WasmGlobalType type, ReadOnlySpan<DecodedInstruction> initializer, long byteOffset)
 {
     /// <summary>
     /// globalの値型と可変性
@@ -22,8 +18,7 @@ internal sealed class GlobalDefinition(
     /// <summary>
     /// 終端を含む未評価の初期化式
     /// </summary>
-    internal ImmutableArray<DecodedInstruction> Initializer { get; } =
-        ImmutableArray.Create(initializer);
+    internal ImmutableArray<DecodedInstruction> Initializer { get; } = ImmutableArray.Create(initializer);
 
     /// <summary>
     /// 入力バイナリ上のglobal宣言のバイト位置

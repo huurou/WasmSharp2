@@ -25,11 +25,10 @@ internal partial class WasmFunction_InvokeTests
         // Act
         var result = instance
             .GetFunction("bulk")
-            .Invoke(executionContext, [
-                WasmValue.FromI32(65532 + destination),
-                WasmValue.FromI32(65532 + source),
-                WasmValue.FromI32(6),
-            ]);
+            .Invoke(
+                executionContext,
+                [WasmValue.FromI32(65532 + destination), WasmValue.FromI32(65532 + source), WasmValue.FromI32(6)]
+            );
         memory.Read(65532, actual);
 
         // Assert
@@ -44,10 +43,7 @@ internal partial class WasmFunction_InvokeTests
     [Arguments(0x123, "CCCC23232323CCCC")]
     [Arguments(-1, "CCCCFFFFFFFFCCCC")]
     [Arguments(0x100, "CCCC00000000CCCC")]
-    public async Task メモリの指定範囲を値で埋める_ページ境界をまたいで下位8ビットだけを書き込む(
-        int value,
-        string expected
-    )
+    public async Task メモリの指定範囲を値で埋める_ページ境界をまたいで下位8ビットだけを書き込む(int value, string expected)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
@@ -131,18 +127,11 @@ internal partial class WasmFunction_InvokeTests
             {
                 await Assert.That(exception!.Reason).IsEqualTo(WasmTrapReason.MemoryOutOfBounds);
                 await Assert
-                    .That(
-                        exception.Message.StartsWith(
-                            "out of bounds memory access",
-                            StringComparison.Ordinal
-                        )
-                    )
+                    .That(exception.Message.StartsWith("out of bounds memory access", StringComparison.Ordinal))
                     .IsTrue();
                 await Assert
                     .That(exception.Location)
-                    .IsEqualTo(
-                        new(WasmProcessingStage.Invoke, Array.IndexOf(bytes, (byte)0xFC), 0)
-                    );
+                    .IsEqualTo(new(WasmProcessingStage.Invoke, Array.IndexOf(bytes, (byte)0xFC), 0));
             }
         }
         var actual = new byte[original.Length];
@@ -159,10 +148,7 @@ internal partial class WasmFunction_InvokeTests
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
-        var instance = WasmModule
-            .Decode(CreateBulkMemoryModule(opcode, 0))
-            .Validate()
-            .Instantiate(executionContext, []);
+        var instance = WasmModule.Decode(CreateBulkMemoryModule(opcode, 0)).Validate().Instantiate(executionContext, []);
 
         // Act
         var result = instance

@@ -45,16 +45,7 @@ internal sealed class SourceCaptureFixture : IDisposable
         Write(".gitignore", "**/bin/\n**/obj/\n");
         Git("init", "--quiet");
         Git("add", ".");
-        Git(
-            "-c",
-            "user.name=Fixture",
-            "-c",
-            "user.email=fixture@example.invalid",
-            "commit",
-            "--quiet",
-            "-m",
-            "初期素材"
-        );
+        Git("-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid", "commit", "--quiet", "-m", "初期素材");
     }
 
     internal string Write(string relativePath, string content)
@@ -93,13 +84,7 @@ internal sealed class SourceCaptureFixture : IDisposable
     public void Dispose()
     {
         Run.Dispose();
-        foreach (
-            var path in Directory.EnumerateFiles(
-                RepositoryDirectory,
-                "*",
-                SearchOption.AllDirectories
-            )
-        )
+        foreach (var path in Directory.EnumerateFiles(RepositoryDirectory, "*", SearchOption.AllDirectories))
         {
             File.SetAttributes(path, FileAttributes.Normal);
         }

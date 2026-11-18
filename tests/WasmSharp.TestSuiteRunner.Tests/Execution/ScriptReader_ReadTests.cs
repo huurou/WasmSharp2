@@ -58,23 +58,16 @@ internal class ScriptReader_ReadTests
     [Test]
     [Arguments("binary", ScriptModuleType.Binary)]
     [Arguments("text", ScriptModuleType.Text)]
-    public async Task 通常moduleがmodule_typeを持つ_指定された形式を保持する(
-        string moduleType,
-        ScriptModuleType expected
-    )
+    public async Task 通常moduleがmodule_typeを持つ_指定された形式を保持する(string moduleType, ScriptModuleType expected)
     {
         // Arrange
-        var document = Parse(
-            $$"""{"type": "module", "line": 1, "filename": "a.0.wasm", "module_type": "{{moduleType}}"}"""
-        );
+        var document = Parse($$"""{"type": "module", "line": 1, "filename": "a.0.wasm", "module_type": "{{moduleType}}"}""");
 
         // Act
         var result = ScriptReader.Read(document, INPUT_PATH);
 
         // Assert
-        await Assert
-            .That(result.Commands[0])
-            .IsEqualTo(new ModuleCommand(0, 1, null, "a.0.wasm", expected));
+        await Assert.That(result.Commands[0]).IsEqualTo(new ModuleCommand(0, 1, null, "a.0.wasm", expected));
     }
 
     [Test]
@@ -186,10 +179,7 @@ internal class ScriptReader_ReadTests
     [Arguments("i64", LaneType.I64)]
     [Arguments("f32", LaneType.F32)]
     [Arguments("f64", LaneType.F64)]
-    public async Task V128のlane型を読む_lane型とlane0から順の文字列を保持する(
-        string laneType,
-        LaneType expected
-    )
+    public async Task V128のlane型を読む_lane型とlane0から順の文字列を保持する(string laneType, LaneType expected)
     {
         // Arrange
         var document = Parse(
@@ -270,62 +260,22 @@ internal class ScriptReader_ReadTests
         {
             await Assert
                 .That(result.Commands[0])
-                .IsEqualTo(
-                    new AssertMalformedCommand(
-                        0,
-                        1,
-                        "a.0.wat",
-                        "unexpected token",
-                        ScriptModuleType.Text
-                    )
-                );
+                .IsEqualTo(new AssertMalformedCommand(0, 1, "a.0.wat", "unexpected token", ScriptModuleType.Text));
             await Assert
                 .That(result.Commands[1])
                 .IsEqualTo(
-                    new AssertMalformedCommand(
-                        1,
-                        2,
-                        "a.1.wasm",
-                        "magic header not detected",
-                        ScriptModuleType.Binary
-                    )
+                    new AssertMalformedCommand(1, 2, "a.1.wasm", "magic header not detected", ScriptModuleType.Binary)
                 );
             await Assert
                 .That(result.Commands[2])
-                .IsEqualTo(
-                    new AssertInvalidCommand(
-                        2,
-                        3,
-                        "a.2.wasm",
-                        "type mismatch",
-                        ScriptModuleType.Binary
-                    )
-                );
+                .IsEqualTo(new AssertInvalidCommand(2, 3, "a.2.wasm", "type mismatch", ScriptModuleType.Binary));
             await Assert
                 .That(result.Commands[3])
-                .IsEqualTo(
-                    new AssertUnlinkableCommand(
-                        3,
-                        4,
-                        "a.3.wasm",
-                        "unknown import",
-                        ScriptModuleType.Binary
-                    )
-                );
+                .IsEqualTo(new AssertUnlinkableCommand(3, 4, "a.3.wasm", "unknown import", ScriptModuleType.Binary));
             await Assert
                 .That(result.Commands[4])
-                .IsEqualTo(
-                    new AssertUninstantiableCommand(
-                        4,
-                        5,
-                        "a.4.wasm",
-                        "unreachable",
-                        ScriptModuleType.Binary
-                    )
-                );
-            await Assert
-                .That(result.Commands.All(x => x.Category == CaseCategory.Assertion))
-                .IsTrue();
+                .IsEqualTo(new AssertUninstantiableCommand(4, 5, "a.4.wasm", "unreachable", ScriptModuleType.Binary));
+            await Assert.That(result.Commands.All(x => x.Category == CaseCategory.Assertion)).IsTrue();
         }
     }
 
@@ -364,9 +314,7 @@ internal class ScriptReader_ReadTests
             await Assert.That(unknown.Type).IsEqualTo("assert_exception");
             await Assert.That(unknown.Category).IsNull();
             await Assert.That(unknown.Diagnostic.Message).Contains("assert_exception");
-            await Assert
-                .That(unknown.Diagnostic.SourceJson)
-                .StartsWith("""{"type": "assert_exception",""");
+            await Assert.That(unknown.Diagnostic.SourceJson).StartsWith("""{"type": "assert_exception",""");
             await Assert.That(result.Commands[3]).IsEqualTo(new RegisterCommand(3, 4, null, "M"));
         }
     }
@@ -436,30 +384,18 @@ internal class ScriptReader_ReadTests
         """{"type": "action", "line": 7, "action": {"type": "invoke", "args": []}, "expected": []}""",
         "action.field"
     )]
-    [Arguments(
-        """{"type": "action", "line": 7, "action": {"type": "invoke", "field": "f", "args": []}}""",
-        "expected"
-    )]
+    [Arguments("""{"type": "action", "line": 7, "action": {"type": "invoke", "field": "f", "args": []}}""", "expected")]
     [Arguments(
         """{"type": "assert_trap", "line": 7, "action": {"type": "invoke", "field": "f", "args": []}, "expected": []}""",
         "text"
     )]
-    [Arguments(
-        """{"type": "assert_invalid", "line": 7, "filename": "a.0.wasm", "text": "type mismatch"}""",
-        "module_type"
-    )]
+    [Arguments("""{"type": "assert_invalid", "line": 7, "filename": "a.0.wasm", "text": "type mismatch"}""", "module_type")]
     [Arguments(
         """{"type": "assert_invalid", "line": 7, "filename": "a.0.wasm", "text": "type mismatch", "module_type": "quote"}""",
         "quote"
     )]
-    [Arguments(
-        """{"type": "module", "line": 7, "filename": "a.0.wasm", "name": "$A", "extra": true}""",
-        "extra"
-    )]
-    [Arguments(
-        """{"type": "module", "line": 7, "filename": "a.0.wasm", "filename": "a.1.wasm"}""",
-        "filename"
-    )]
+    [Arguments("""{"type": "module", "line": 7, "filename": "a.0.wasm", "name": "$A", "extra": true}""", "extra")]
+    [Arguments("""{"type": "module", "line": 7, "filename": "a.0.wasm", "filename": "a.1.wasm"}""", "filename")]
     [Arguments("""{"type": "register", "line": 7}""", "as")]
     [Arguments("""{"type": "module", "line": 0, "filename": "a.0.wasm"}""", "line")]
     [Arguments("""{"type": "module", "filename": "a.0.wasm"}""", "line")]
@@ -509,34 +445,14 @@ internal class ScriptReader_ReadTests
 
     [Test]
     [Arguments("""{"type": "module", "line": 1, "name": "$M"}""", "$M", null)]
-    [Arguments(
-        """{"type":"module","line":1,"name":"$M","\uD800abc":"$other","filename":"a.0.wasm"}""",
-        "$M",
-        null
-    )]
-    [Arguments(
-        """{"type": "module", "line": 1, "name": 1, "filename": "a.0.wasm", "x": 0}""",
-        null,
-        null
-    )]
-    [Arguments(
-        """{"type":"module","line":1,"name":"\uD800","filename":"a.0.wasm"}""",
-        null,
-        null
-    )]
-    [Arguments(
-        """{"type": "module", "line": 1, "name": "$A", "name": "$B", "filename": "a.0.wasm"}""",
-        null,
-        null
-    )]
+    [Arguments("""{"type":"module","line":1,"name":"$M","\uD800abc":"$other","filename":"a.0.wasm"}""", "$M", null)]
+    [Arguments("""{"type": "module", "line": 1, "name": 1, "filename": "a.0.wasm", "x": 0}""", null, null)]
+    [Arguments("""{"type":"module","line":1,"name":"\uD800","filename":"a.0.wasm"}""", null, null)]
+    [Arguments("""{"type": "module", "line": 1, "name": "$A", "name": "$B", "filename": "a.0.wasm"}""", null, null)]
     [Arguments("""{"type": "register", "line": 2, "name": "$M", "as": "M", "x": 0}""", null, "M")]
     [Arguments("""{"type": "register", "line": 2, "as": ["M"]}""", null, null)]
     [Arguments("""{"type":"register","line":2,"as":"\uD800"}""", null, null)]
-    [Arguments(
-        """{"type": "assert_invalid", "line": 3, "name": "$M", "as": "M", "filename": "a.0.wasm"}""",
-        null,
-        null
-    )]
+    [Arguments("""{"type": "assert_invalid", "line": 3, "name": "$M", "as": "M", "filename": "a.0.wasm"}""", null, null)]
     public async Task 不正なmoduleとregisterを読む_読み取れた更新対象の名前だけを保持する(
         string json,
         string? name,
@@ -614,10 +530,7 @@ internal class ScriptReader_ReadTests
         """{"type":"action","line":1,"action":{"type":"invoke","field":"f","args":[{"type":"v128","lane_type":"i32","value":["1","2","3","4"],"extra":0}]},"expected":[]}""",
         "action.args[0].extra"
     )]
-    public async Task 固定形式にない項目を各階層に含む_項目の位置を診断してcommandを拒否する(
-        string json,
-        string path
-    )
+    public async Task 固定形式にない項目を各階層に含む_項目の位置を診断してcommandを拒否する(string json, string path)
     {
         // Arrange
         var document = Parse(json);
@@ -627,36 +540,22 @@ internal class ScriptReader_ReadTests
 
         // Assert
         var command = await Assert.That(result.Commands[0]).IsTypeOf<InvalidCommand>();
-        await Assert
-            .That(command!.Diagnostic.Message)
-            .IsEqualTo($"固定形式にない{path}があります。");
+        await Assert.That(command!.Diagnostic.Message).IsEqualTo($"固定形式にない{path}があります。");
     }
 
     [Test]
-    [Arguments(
-        """{"type":"action","line":1,"action":null,"expected":[]}""",
-        "actionがobjectではありません。"
-    )]
+    [Arguments("""{"type":"action","line":1,"action":null,"expected":[]}""", "actionがobjectではありません。")]
     [Arguments("""{"line":1}""", "typeがありません。")]
     [Arguments("""{"type":"module","line":1}""", "filenameがありません。")]
-    [Arguments(
-        """{"type":"module","line":1,"name":null,"filename":"a.0.wasm"}""",
-        "nameが文字列ではありません。"
-    )]
+    [Arguments("""{"type":"module","line":1,"name":null,"filename":"a.0.wasm"}""", "nameが文字列ではありません。")]
     [Arguments(
         """{"type":"module","line":1,"filename":"a.0.wasm","module_type":null}""",
         "module_typeが文字列ではありません。"
     )]
-    [Arguments(
-        """{"type":"register","line":1,"name":null,"as":"M"}""",
-        "nameが文字列ではありません。"
-    )]
+    [Arguments("""{"type":"register","line":1,"name":null,"as":"M"}""", "nameが文字列ではありません。")]
     [Arguments("""{"type":"register","line":1}""", "asがありません。")]
     [Arguments("""{"type":"action","line":1,"expected":[]}""", "actionがありません。")]
-    [Arguments(
-        """{"type":"action","line":1,"action":{"type":"invoke","field":"f","args":[]}}""",
-        "expectedがありません。"
-    )]
+    [Arguments("""{"type":"action","line":1,"action":{"type":"invoke","field":"f","args":[]}}""", "expectedがありません。")]
     [Arguments(
         """{"type":"assert_return","line":1,"action":{"type":"invoke","field":"f","args":[]}}""",
         "expectedがありません。"
@@ -665,31 +564,13 @@ internal class ScriptReader_ReadTests
         """{"type":"assert_trap","line":1,"action":{"type":"invoke","field":"f","args":[]},"expected":[]}""",
         "textがありません。"
     )]
-    [Arguments(
-        """{"type":"assert_invalid","line":1,"text":"invalid","module_type":"binary"}""",
-        "filenameがありません。"
-    )]
-    [Arguments(
-        """{"type":"assert_invalid","line":1,"filename":"a.0.wasm","module_type":"binary"}""",
-        "textがありません。"
-    )]
-    [Arguments(
-        """{"type":"assert_invalid","line":1,"filename":"a.0.wasm","text":"invalid"}""",
-        "module_typeがありません。"
-    )]
+    [Arguments("""{"type":"assert_invalid","line":1,"text":"invalid","module_type":"binary"}""", "filenameがありません。")]
+    [Arguments("""{"type":"assert_invalid","line":1,"filename":"a.0.wasm","module_type":"binary"}""", "textがありません。")]
+    [Arguments("""{"type":"assert_invalid","line":1,"filename":"a.0.wasm","text":"invalid"}""", "module_typeがありません。")]
     [Arguments("""{"type":"module","filename":"a.0.wasm"}""", "lineがありません。")]
-    [Arguments(
-        """{"type":"module","line":1,"filename":"\uD800"}""",
-        "filenameを文字列として取得できません。"
-    )]
-    [Arguments(
-        """{"type":"module","line":1,"name":"\uD800","filename":"a.0.wasm"}""",
-        "nameを文字列として取得できません。"
-    )]
-    [Arguments(
-        """{"type":"register","line":1,"as":"\uD800"}""",
-        "asを文字列として取得できません。"
-    )]
+    [Arguments("""{"type":"module","line":1,"filename":"\uD800"}""", "filenameを文字列として取得できません。")]
+    [Arguments("""{"type":"module","line":1,"name":"\uD800","filename":"a.0.wasm"}""", "nameを文字列として取得できません。")]
+    [Arguments("""{"type":"register","line":1,"as":"\uD800"}""", "asを文字列として取得できません。")]
     [Arguments(
         """{"type":"module","line":1,"filename":"a.0.wasm","\uD800":0}""",
         "commandに文字列として取得できない項目名があります。"
@@ -737,12 +618,7 @@ internal class ScriptReader_ReadTests
         return Format(value.Kind, value.Value, value.LaneType, value.Lanes);
     }
 
-    private static string Format(
-        WasmValueKind kind,
-        string? value,
-        LaneType? laneType,
-        ImmutableArray<string> lanes
-    )
+    private static string Format(WasmValueKind kind, string? value, LaneType? laneType, ImmutableArray<string> lanes)
     {
         var type = kind.ToString().ToLowerInvariant();
         return laneType is { } lane

@@ -35,25 +35,15 @@ internal class ReportStore_SaveTests
             await Assert.That(Encoding.UTF8.GetString(content)).Contains("\n  \"schema_version\": 1");
             await Assert.That(root.GetProperty("schema_version").GetInt32()).IsEqualTo(1);
             await Assert.That(root.GetProperty("kind").GetString()).IsEqualTo("run_report");
-            await Assert
-                .That(root.GetProperty("inputs")[0].GetProperty("status").GetString())
-                .IsEqualTo("processed");
-            await Assert
-                .That(cases[1].GetProperty("id").GetProperty("command_index").GetInt32())
-                .IsEqualTo(1);
+            await Assert.That(root.GetProperty("inputs")[0].GetProperty("status").GetString()).IsEqualTo("processed");
+            await Assert.That(cases[1].GetProperty("id").GetProperty("command_index").GetInt32()).IsEqualTo(1);
             await Assert.That(cases[1].GetProperty("line").GetInt32()).IsEqualTo(2);
             await Assert.That(cases[2].GetProperty("line").GetInt32()).IsEqualTo(2);
             await Assert.That(cases[2].GetProperty("outcome").GetString()).IsEqualTo("failed");
-            await Assert
-                .That(cases[3].GetProperty("category").ValueKind)
-                .IsEqualTo(JsonValueKind.Null);
-            await Assert
-                .That(cases[3].GetProperty("outcome").GetString())
-                .IsEqualTo("runner_error");
+            await Assert.That(cases[3].GetProperty("category").ValueKind).IsEqualTo(JsonValueKind.Null);
+            await Assert.That(cases[3].GetProperty("outcome").GetString()).IsEqualTo("runner_error");
             await Assert.That(stored.Issues).IsEmpty();
-            await Assert
-                .That(JsonSerializer.Serialize(stored.Report))
-                .IsEqualTo(JsonSerializer.Serialize(report));
+            await Assert.That(JsonSerializer.Serialize(stored.Report)).IsEqualTo(JsonSerializer.Serialize(report));
             await Assert.That(reportStore_.ReadManifest(manifestPath).Issues).IsEmpty();
             await Assert.That(Directory.GetFiles(directory.Root, "*.tmp")).IsEmpty();
         }
@@ -64,12 +54,7 @@ internal class ReportStore_SaveTests
     {
         // Arrange
         using var directory = new TemporaryDirectory();
-        var baseline = RunReportFixture.Case(
-            "a.wast",
-            2,
-            CaseCategory.Assertion,
-            CaseOutcome.Passed
-        );
+        var baseline = RunReportFixture.Case("a.wast", 2, CaseCategory.Assertion, CaseOutcome.Passed);
         var report = new ComparisonReport(
             ComparisonType.Run,
             new ComparedReport("/baseline.json") { RunId = "run-1" },
@@ -101,17 +86,11 @@ internal class ReportStore_SaveTests
             await Assert.That(root.GetProperty("schema_version").GetInt32()).IsEqualTo(1);
             await Assert.That(root.GetProperty("kind").GetString()).IsEqualTo("comparison_report");
             await Assert.That(root.GetProperty("comparison").GetString()).IsEqualTo("run");
-            await Assert
-                .That(root.GetProperty("current").GetProperty("run_id").GetString())
-                .IsEqualTo("run-2");
+            await Assert.That(root.GetProperty("current").GetProperty("run_id").GetString()).IsEqualTo("run-2");
             await Assert.That(item.GetProperty("change").GetString()).IsEqualTo("changed");
             await Assert.That(item.GetProperty("regression").GetBoolean()).IsTrue();
-            await Assert
-                .That(item.GetProperty("baseline").GetProperty("outcome").GetString())
-                .IsEqualTo("passed");
-            await Assert
-                .That(item.GetProperty("current").GetProperty("outcome").GetString())
-                .IsEqualTo("failed");
+            await Assert.That(item.GetProperty("baseline").GetProperty("outcome").GetString()).IsEqualTo("passed");
+            await Assert.That(item.GetProperty("current").GetProperty("outcome").GetString()).IsEqualTo("failed");
         }
     }
 
@@ -119,9 +98,7 @@ internal class ReportStore_SaveTests
     [Arguments("corpus_manifest")]
     [Arguments("run_report")]
     [Arguments("comparison_report")]
-    public async Task 保存先に既存ファイルがある_上書きせず既存内容を保持して保存先と理由を報告する(
-        string kind
-    )
+    public async Task 保存先に既存ファイルがある_上書きせず既存内容を保持して保存先と理由を報告する(string kind)
     {
         // Arrange
         using var directory = new TemporaryDirectory();
@@ -132,11 +109,7 @@ internal class ReportStore_SaveTests
         {
             "corpus_manifest" => () => reportStore_.Save(report.Corpus, path),
             "run_report" => () => reportStore_.Save(report, path),
-            _ => () =>
-                reportStore_.Save(
-                    new ComparisonReport(ComparisonType.Run, new("/baseline.json"), new(path)),
-                    path
-                ),
+            _ => () => reportStore_.Save(new ComparisonReport(ComparisonType.Run, new("/baseline.json"), new(path)), path),
         };
 
         // Act & Assert

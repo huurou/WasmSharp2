@@ -1,5 +1,5 @@
-using BenchmarkDotNet.Attributes;
 using System.Collections.Immutable;
+using BenchmarkDotNet.Attributes;
 using WasmSharp.Benchmarks.Cases;
 
 namespace WasmSharp.Benchmarks.Measurements;

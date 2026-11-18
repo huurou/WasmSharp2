@@ -1,6 +1,5 @@
 using WasmSharp.Exceptions;
 using WasmSharp.Execution;
-using WasmSharp.Instructions;
 
 namespace WasmSharp.Tests.Fixtures;
 
@@ -24,12 +23,7 @@ internal static class MemoryHandlerFixture
         );
     }
 
-    public static (
-        ExecutionResult Result,
-        WasmValue Value,
-        WasmValue Sentinel,
-        int ValueCount
-    ) Execute(
+    public static (ExecutionResult Result, WasmValue Value, WasmValue Sentinel, int ValueCount) Execute(
         NumericHandlerFixture.Handler handler,
         WasmMemory memory,
         in Instruction instruction,
@@ -37,13 +31,7 @@ internal static class MemoryHandlerFixture
     )
     {
         var executionContext = new WasmExecutionContext();
-        var function = ExecutionFunctionFixture.Create(
-            [],
-            new([], []),
-            [],
-            operands.Length + 1,
-            memories: [memory]
-        );
+        var function = ExecutionFunctionFixture.Create([], new([], []), [], operands.Length + 1, memories: [memory]);
         var context = executionContext.Enter(WasmExecutionOptions.Default, out var isOutermost);
         try
         {

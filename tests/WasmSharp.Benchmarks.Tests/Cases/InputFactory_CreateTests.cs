@@ -21,57 +21,24 @@ internal class InputFactory_CreateTests
     {
         // Arrange
         var original = AssetLoadingFixture.ReadCases(json_).Single(x => x.CaseId == "kernel.matrix");
-        var array = new ArrayInput(
-            "memory",
-            0,
-            ArrayElementType.U8,
-            1,
-            ArrayInputPattern.RepeatedByte,
-            null,
-            1
-        );
+        var array = new ArrayInput("memory", 0, ArrayElementType.U8, 1, ArrayInputPattern.RepeatedByte, null, 1);
         array = scenario switch
         {
             "repeated-type" => array with { ElementType = ArrayElementType.U32 },
             "repeated-no-fill" => array with { FillByte = null },
             "repeated-seed" => array with { Seed = 1 },
-            "indexed-seed" => array with
-            {
-                Pattern = ArrayInputPattern.IndexModulo256,
-                Seed = 1,
-                FillByte = null,
-            },
+            "indexed-seed" => array with { Pattern = ArrayInputPattern.IndexModulo256, Seed = 1, FillByte = null },
             "indexed-fill" => array with { Pattern = ArrayInputPattern.IndexModulo256 },
-            "seeded-type" => array with
-            {
-                Pattern = ArrayInputPattern.SeededU32,
-                Seed = 1,
-                FillByte = null,
-            },
-            _ => array with
-            {
-                Pattern = ArrayInputPattern.SeededU32,
-                ElementType = ArrayElementType.U32,
-                Seed = 1,
-            },
+            "seeded-type" => array with { Pattern = ArrayInputPattern.SeededU32, Seed = 1, FillByte = null },
+            _ => array with { Pattern = ArrayInputPattern.SeededU32, ElementType = ArrayElementType.U32, Seed = 1 },
         };
-        var definition = AssetLoadingFixture.WithInput(
-            original,
-            original.Input with
-            {
-                Arrays = [array],
-            },
-            json_
-        );
+        var definition = AssetLoadingFixture.WithInput(original, original.Input with { Arrays = [array] }, json_);
 
         // Act & Assert
         var exception = await Assert
             .That(() => InputFactory.Create(definition, json_))
             .ThrowsExactly<InvalidDataException>();
-        await Assert
-            .That(exception!.Message)
-            .Contains("kernel.matrix")
-            .And.Contains("一致しません");
+        await Assert.That(exception!.Message).Contains("kernel.matrix").And.Contains("一致しません");
     }
 
     [Test]
@@ -85,15 +52,7 @@ internal class InputFactory_CreateTests
             {
                 Arrays =
                 [
-                    new(
-                        "memory",
-                        0,
-                        ArrayElementType.U8,
-                        uint.MaxValue,
-                        ArrayInputPattern.IndexModulo256,
-                        null,
-                        null
-                    ),
+                    new("memory", 0, ArrayElementType.U8, uint.MaxValue, ArrayInputPattern.IndexModulo256, null, null),
                 ],
             },
             json_
@@ -127,9 +86,7 @@ internal class InputFactory_CreateTests
         using (Assert.Multiple())
         {
             await Assert.That(input.Arguments[0].AsI32()).IsEqualTo(unchecked((int)0x89abcdef));
-            await Assert
-                .That(input.Arguments[1].AsI64())
-                .IsEqualTo(unchecked((long)0xfedcba9876543210));
+            await Assert.That(input.Arguments[1].AsI64()).IsEqualTo(unchecked((long)0xfedcba9876543210));
             await Assert.That(input.Arguments[2].AsF64Bits()).IsEqualTo(0x8000000000000000UL);
             await Assert.That(input.Arguments[3].AsF32Bits()).IsEqualTo(0x7fc12345U);
         }
@@ -142,23 +99,15 @@ internal class InputFactory_CreateTests
         var definitions = AssetLoadingFixture.ReadCases(json_);
 
         // Act & Assert
-        foreach (
-            var definition in definitions.Where(x =>
-                x.CaseId is "memory.copy-fill" or "scan.scalar" or "scan.simd"
-            )
-        )
+        foreach (var definition in definitions.Where(x => x.CaseId is "memory.copy-fill" or "scan.scalar" or "scan.simd"))
         {
             var input = InputFactory.Create(definition, json_);
             using (Assert.Multiple())
             {
-                await Assert
-                    .That(input.Arrays.Length)
-                    .IsEqualTo(definition.ExpectedResult.Arrays.Count);
+                await Assert.That(input.Arrays.Length).IsEqualTo(definition.ExpectedResult.Arrays.Count);
                 foreach (var array in input.Arrays)
                 {
-                    var expected = definition.ExpectedResult.Arrays.Single(x =>
-                        x.Offset == array.Offset
-                    );
+                    var expected = definition.ExpectedResult.Arrays.Single(x => x.Offset == array.Offset);
                     await Assert.That(array.MemoryExport).IsEqualTo(expected.MemoryExport);
                     await Assert
                         .That(Convert.ToHexStringLower(SHA256.HashData(array.Bytes.AsSpan())))
@@ -181,9 +130,7 @@ internal class InputFactory_CreateTests
         // Assert
         using (Assert.Multiple())
         {
-            await Assert
-                .That(input.Arrays.Select(x => x.Offset))
-                .IsEquivalentTo(new uint[] { 65536, 69632 });
+            await Assert.That(input.Arrays.Select(x => x.Offset)).IsEquivalentTo(new uint[] { 65536, 69632 });
             await Assert.That(input.Arrays.All(x => x.Bytes.Length == 4096)).IsTrue();
             await Assert
                 .That(BinaryPrimitives.ReadUInt32LittleEndian(input.Arrays[0].Bytes.AsSpan()))
@@ -195,11 +142,7 @@ internal class InputFactory_CreateTests
                 .That(BinaryPrimitives.ReadUInt32LittleEndian(input.Arrays[1].Bytes.AsSpan()))
                 .IsEqualTo(0x510c4619U);
             await Assert
-                .That(
-                    input
-                        .Arrays.Zip(repeated.Arrays)
-                        .All(x => x.First.Bytes.SequenceEqual(x.Second.Bytes))
-                )
+                .That(input.Arrays.Zip(repeated.Arrays).All(x => x.First.Bytes.SequenceEqual(x.Second.Bytes)))
                 .IsTrue();
         }
     }
@@ -222,9 +165,7 @@ internal class InputFactory_CreateTests
         );
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => InputFactory.Create(definition, json_))
-            .Throws<InvalidDataException>();
+        var exception = await Assert.That(() => InputFactory.Create(definition, json_)).Throws<InvalidDataException>();
         await Assert.That(exception!.Message).Contains("invoke.single").And.Contains("I32");
     }
 
@@ -243,9 +184,7 @@ internal class InputFactory_CreateTests
         );
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => InputFactory.Create(definition, json_))
-            .Throws<InvalidDataException>();
+        var exception = await Assert.That(() => InputFactory.Create(definition, json_)).Throws<InvalidDataException>();
         await Assert.That(exception!.Message).Contains("kernel.matrix").And.Contains("SeededU32");
     }
 }

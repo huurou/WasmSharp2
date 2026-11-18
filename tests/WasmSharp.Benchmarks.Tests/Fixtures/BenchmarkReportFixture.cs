@@ -1,9 +1,9 @@
+using System.Globalization;
 using BenchmarkDotNet.Environments;
 using BenchmarkDotNet.Reports;
 using BenchmarkDotNet.Running;
 using BenchmarkDotNet.Toolchains.Results;
 using BenchmarkDotNet.Validators;
-using System.Globalization;
 using WasmSharp.Benchmarks.Cases;
 using WasmSharp.Benchmarks.Measurements;
 using WasmSharp.Benchmarks.Results;
@@ -38,11 +38,7 @@ internal sealed class BenchmarkReportFixture : IDisposable
         caseId_ = methods_.GetCaseId(nameof(InvokeBenchmarks) + "." + benchmarkMethod);
         var config = BenchmarkConfig.Create();
         var benchmark = BenchmarkConverter
-            .MethodsToBenchmarks(
-                typeof(InvokeBenchmarks),
-                [typeof(InvokeBenchmarks).GetMethod(benchmarkMethod)!],
-                config
-            )
+            .MethodsToBenchmarks(typeof(InvokeBenchmarks), [typeof(InvokeBenchmarks).GetMethod(benchmarkMethod)!], config)
             .BenchmarksCases.Single();
         var output = (lines ?? ReadLines()).ToArray();
         var execute = new ExecuteResult(
@@ -59,9 +55,7 @@ internal sealed class BenchmarkReportFixture : IDisposable
             true,
             benchmark,
             generate,
-            buildSucceeded
-                ? BuildResult.Success(generate)
-                : BuildResult.Failure(generate, "fixture build failure"),
+            buildSucceeded ? BuildResult.Success(generate) : BuildResult.Failure(generate, "fixture build failure"),
             executed ? [execute, .. additionalProcesses ?? []] : [],
             []
         );
@@ -73,20 +67,11 @@ internal sealed class BenchmarkReportFixture : IDisposable
             Path.Combine(DirectoryPath, "fixture.log"),
             TimeSpan.Zero,
             CultureInfo.InvariantCulture,
-            validationSucceeded
-                ? []
-                : [new ValidationError(true, "fixture validation failure", benchmark)],
+            validationSucceeded ? [] : [new ValidationError(true, "fixture validation failure", benchmark)],
             []
         );
         Prepared = new(
-            RunStore.Create(
-                DirectoryPath,
-                run_.Manifest with
-                {
-                    PlannedCaseIds = plannedCaseIds ?? [caseId_],
-                },
-                json_
-            ),
+            RunStore.Create(DirectoryPath, run_.Manifest with { PlannedCaseIds = plannedCaseIds ?? [caseId_] }, json_),
             run_.Manifest.RunId,
             [benchmark.Job]
         );
@@ -99,17 +84,12 @@ internal sealed class BenchmarkReportFixture : IDisposable
             "",
             new("fixture", [], "")
         );
-        Prepared.Store.SaveFile(
-            "raw/bdn-output.txt",
-            System.Text.Encoding.UTF8.GetBytes(string.Join('\n', output))
-        );
+        Prepared.Store.SaveFile("raw/bdn-output.txt", System.Text.Encoding.UTF8.GetBytes(string.Join('\n', output)));
     }
 
     internal static string[] ReadLines()
     {
-        return File.ReadAllLines(
-            Path.Combine(AppContext.BaseDirectory, "Fixtures", "Data", "bdn-0.15.8-metrics.txt")
-        );
+        return File.ReadAllLines(Path.Combine(AppContext.BaseDirectory, "Fixtures", "Data", "bdn-0.15.8-metrics.txt"));
     }
 
     internal void SaveConditions()
@@ -119,12 +99,7 @@ internal sealed class BenchmarkReportFixture : IDisposable
 
     internal ProcessCheck SuccessfulCheck(int processId = 123)
     {
-        return run_.Check with
-        {
-            CaseId = caseId_,
-            JobId = Prepared.Jobs.Single().Id,
-            ProcessId = processId,
-        };
+        return run_.Check with { CaseId = caseId_, JobId = Prepared.Jobs.Single().Id, ProcessId = processId };
     }
 
     public void Dispose()

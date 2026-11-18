@@ -78,14 +78,8 @@ internal class BaselineStore_SaveTests
     [Arguments("ケース欠落", "a.wast#0の結果がありません。")]
     [Arguments("ケース重複", "a.wast#0の結果が2件あります。")]
     [Arguments("集計不整合", "集計が記録内容と一致しません。")]
-    [Arguments(
-        "処理と出力の未完了",
-        "処理の完了が記録されていません。 出力の完了が記録されていません。"
-    )]
-    public async Task 実行結果の記録が未完了_理由を報告し既存baselineを保持する(
-        string issue,
-        string reason
-    )
+    [Arguments("処理と出力の未完了", "処理の完了が記録されていません。 出力の完了が記録されていません。")]
+    public async Task 実行結果の記録が未完了_理由を報告し既存baselineを保持する(string issue, string reason)
     {
         // Arrange
         using var directory = new TemporaryDirectory();
@@ -141,9 +135,7 @@ internal class BaselineStore_SaveTests
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task Manifestに未処理または出力失敗が残る_既存baselineを保持する(
-        bool outputFailure
-    )
+    public async Task Manifestに未処理または出力失敗が残る_既存baselineを保持する(bool outputFailure)
     {
         // Arrange
         using var directory = new TemporaryDirectory();
@@ -173,9 +165,7 @@ internal class BaselineStore_SaveTests
             await Assert.That(exception.Message).Contains(inputPath);
             await Assert
                 .That(exception.Message)
-                .Contains(
-                    outputFailure ? "出力の完了が記録されていません。" : "a.wastは未処理です。"
-                );
+                .Contains(outputFailure ? "出力の完了が記録されていません。" : "a.wastは未処理です。");
             await Assert.That(await File.ReadAllTextAsync(outputPath)).IsEqualTo("旧baseline");
         }
     }
@@ -191,9 +181,7 @@ internal class BaselineStore_SaveTests
         await File.WriteAllTextAsync(outputPath, "旧baseline");
 
         // Act & Assert
-        await Assert
-            .That(() => BaselineStore.Save(inputPath, outputPath, reportStore_))
-            .Throws<ReportStoreException>();
+        await Assert.That(() => BaselineStore.Save(inputPath, outputPath, reportStore_)).Throws<ReportStoreException>();
         await Assert.That(await File.ReadAllTextAsync(outputPath)).IsEqualTo("旧baseline");
     }
 
@@ -241,9 +229,7 @@ internal class BaselineStore_SaveTests
         using (Assert.Multiple())
         {
             await Assert.That(exception!.Path).IsEqualTo(path);
-            await Assert
-                .That(exception.Message)
-                .IsEqualTo("入力自身をbaselineの保存先には指定できません。");
+            await Assert.That(exception.Message).IsEqualTo("入力自身をbaselineの保存先には指定できません。");
             await Assert
                 .That(Convert.ToHexString(await File.ReadAllBytesAsync(path)))
                 .IsEqualTo(Convert.ToHexString(original));
@@ -269,9 +255,7 @@ internal class BaselineStore_SaveTests
             using (Assert.Multiple())
             {
                 await Assert.That(exception!.Path).IsEqualTo(outputPath);
-                await Assert
-                    .That(exception.Message)
-                    .IsEqualTo("入力自身をbaselineの保存先には指定できません。");
+                await Assert.That(exception.Message).IsEqualTo("入力自身をbaselineの保存先には指定できません。");
                 await Assert
                     .That(Convert.ToHexString(await File.ReadAllBytesAsync(inputPath)))
                     .IsEqualTo(Convert.ToHexString(original));

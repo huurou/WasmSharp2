@@ -8,9 +8,7 @@ internal partial class WasmFunction_InvokeTests
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task Ifから直接または相互再帰する_小さい深さ上限で止まり保持状態と新しいlocalsで再実行できる(
-        bool mutual
-    )
+    public async Task Ifから直接または相互再帰する_小さい深さ上限で止まり保持状態と新しいlocalsで再実行できる(bool mutual)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
@@ -50,16 +48,11 @@ internal partial class WasmFunction_InvokeTests
         var savedReference = new object();
         var failedReference = new object();
         var nextReference = new object();
-        var saved = function.Invoke(executionContext, [
-            WasmValue.FromI32(0),
-            WasmValue.FromExternRef(savedReference),
-        ]);
+        var saved = function.Invoke(executionContext, [WasmValue.FromI32(0), WasmValue.FromExternRef(savedReference)]);
 
         // Act & Assert
         var exception = await Assert
-            .That(() =>
-                function.Invoke(executionContext, [WasmValue.FromI32(10), WasmValue.FromExternRef(failedReference)])
-            )
+            .That(() => function.Invoke(executionContext, [WasmValue.FromI32(10), WasmValue.FromExternRef(failedReference)]))
             .ThrowsExactly<WasmExhaustionException>();
         var afterFailure = instance.GetGlobal("state").AsI32();
         var next = function.Invoke(executionContext, [WasmValue.FromI32(1), WasmValue.FromExternRef(nextReference)]);
@@ -67,11 +60,7 @@ internal partial class WasmFunction_InvokeTests
         {
             await Assert.That(exception!.Reason).IsEqualTo(WasmExhaustionReason.CallDepthLimit);
             await Assert.That(exception.Limit).IsEqualTo(4);
-            await Assert
-                .That(
-                    exception.Message.StartsWith("call stack exhausted", StringComparison.Ordinal)
-                )
-                .IsTrue();
+            await Assert.That(exception.Message.StartsWith("call stack exhausted", StringComparison.Ordinal)).IsTrue();
             await Assert.That(exception.Location!.Stage).IsEqualTo(WasmProcessingStage.Invoke);
             await Assert.That(exception.Location.FunctionIndex).IsEqualTo(0U);
             await Assert.That(afterFailure).IsEqualTo(5);
@@ -202,14 +191,8 @@ internal partial class WasmFunction_InvokeTests
         var module = WasmModule
             .Decode(
                 HostLinkingModuleBinary.Create(
-                    HostLinkingModuleBinary.Types(
-                        ([0x7F, 0x6F], [0x7F, 0x6F]),
-                        ([0x7F, 0x6F], [0x7F, 0x6F, 0x7F, 0x6F])
-                    ),
-                    HostLinkingModuleBinary.Imports(
-                        ("env", "host", 0, [0]),
-                        ("env", "state", 3, [0x7F, 1])
-                    ),
+                    HostLinkingModuleBinary.Types(([0x7F, 0x6F], [0x7F, 0x6F]), ([0x7F, 0x6F], [0x7F, 0x6F, 0x7F, 0x6F])),
+                    HostLinkingModuleBinary.Imports(("env", "host", 0, [0]), ("env", "state", 3, [0x7F, 1])),
                     HostLinkingModuleBinary.Functions(1),
                     HostLinkingModuleBinary.Exports(("run", 0, 1), ("state", 3, 0)),
                     HostLinkingModuleBinary.Code(
@@ -240,10 +223,10 @@ internal partial class WasmFunction_InvokeTests
         // Act & Assert
         var actual = await Assert
             .That(() =>
-                outer.Invoke(executionContext, [
-                    WasmValue.FromI32(failure == 0 ? 1 : 2),
-                    WasmValue.FromExternRef(failedReference),
-                ])
+                outer.Invoke(
+                    executionContext,
+                    [WasmValue.FromI32(failure == 0 ? 1 : 2), WasmValue.FromExternRef(failedReference)]
+                )
             )
             .Throws<Exception>();
         var afterFailure = outerInstance.GetGlobal("state").AsI32();
@@ -251,10 +234,7 @@ internal partial class WasmFunction_InvokeTests
         remaining = 0;
         var next = outer.Invoke(executionContext, [WasmValue.FromI32(2), WasmValue.FromExternRef(nextReference)]);
         remaining = 5;
-        var independent = inner.Invoke(executionContext, [
-            WasmValue.FromI32(2),
-            WasmValue.FromExternRef(nextReference),
-        ]);
+        var independent = inner.Invoke(executionContext, [WasmValue.FromI32(2), WasmValue.FromExternRef(nextReference)]);
         using (Assert.Multiple())
         {
             if (failure == 0)
@@ -277,9 +257,7 @@ internal partial class WasmFunction_InvokeTests
                 await Assert.That(actual).IsSameReferenceAs(expected);
             }
             await Assert.That(afterFailure).IsEqualTo(failure == 1 ? 13 : 12);
-            await Assert
-                .That(outerInstance.GetGlobal("state").AsI32())
-                .IsEqualTo(failure == 1 ? 90 : 89);
+            await Assert.That(outerInstance.GetGlobal("state").AsI32()).IsEqualTo(failure == 1 ? 90 : 89);
             await Assert.That(innerInstance.GetGlobalResource("state")).IsSameReferenceAs(state);
             await Assert.That(saved.Values[0].AsI32()).IsEqualTo(0);
             await Assert.That(saved.Values[1].AsExternRef()).IsNull();

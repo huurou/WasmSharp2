@@ -8,11 +8,7 @@ internal partial class WasmFunction_InvokeTests
     [Test]
     [Arguments("410141006D", WasmTrapReason.IntegerDivideByZero, "integer divide by zero")]
     [Arguments("418080808078417F6D", WasmTrapReason.IntegerOverflow, "integer overflow")]
-    [Arguments(
-        "430000C07FA8",
-        WasmTrapReason.InvalidConversionToInteger,
-        "invalid conversion to integer"
-    )]
+    [Arguments("430000C07FA8", WasmTrapReason.InvalidConversionToInteger, "invalid conversion to integer")]
     public async Task 数値trapに到達する_原因別の公開診断とInvokeの元位置を保ち以後の副作用を実行しない(
         string numericInstructions,
         WasmTrapReason reason,
@@ -42,10 +38,7 @@ internal partial class WasmFunction_InvokeTests
             HostLinkingModuleBinary.Globals((0x7F, true, [0x41, 0, 0x0B])),
             HostLinkingModuleBinary.Exports(("run", 0, 1), ("value", 3, 0)),
             HostLinkingModuleBinary.Code(
-                (
-                    [],
-                    [0x41, 7, 0x24, 0, .. Convert.FromHexString(numericInstructions), .. afterTrap]
-                )
+                ([], [0x41, 7, 0x24, 0, .. Convert.FromHexString(numericInstructions), .. afterTrap])
             )
         );
         var instance = WasmModule.Decode(bytes).Validate().Instantiate(executionContext, [host]);
@@ -53,15 +46,11 @@ internal partial class WasmFunction_InvokeTests
         var expectedOffset = bytes.Length - afterTrap.Length - 1;
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => function.Invoke(executionContext, []))
-            .ThrowsExactly<WasmTrapException>();
+        var exception = await Assert.That(() => function.Invoke(executionContext, [])).ThrowsExactly<WasmTrapException>();
         using (Assert.Multiple())
         {
             await Assert.That(exception!.Reason).IsEqualTo(reason);
-            await Assert
-                .That(exception.Message.StartsWith(expectedMessage, StringComparison.Ordinal))
-                .IsTrue();
+            await Assert.That(exception.Message.StartsWith(expectedMessage, StringComparison.Ordinal)).IsTrue();
             await Assert
                 .That(exception.Location)
                 .IsEqualTo(new WasmFailureLocation(WasmProcessingStage.Invoke, expectedOffset, 1));

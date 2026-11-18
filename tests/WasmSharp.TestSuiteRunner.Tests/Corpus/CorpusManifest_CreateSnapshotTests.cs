@@ -11,10 +11,7 @@ internal class CorpusManifest_CreateSnapshotTests
     {
         // Arrange
         var manifest = CorpusManifestFixture.Create();
-        var options = new JsonSerializerOptions
-        {
-            PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
-        };
+        var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower };
 
         // Act
         var snapshot = manifest.CreateSnapshot();
@@ -51,42 +48,24 @@ internal class CorpusManifest_CreateSnapshotTests
             await Assert
                 .That(restored.Inputs[0].Artifacts[0].Script!.References[0])
                 .IsEqualTo(new ArtifactReference(0, "failed.0.wat", "modules/failed.0.wat"));
-            await Assert
-                .That(restored.Inputs[0].Diagnostics[1].ExceptionType)
-                .IsEqualTo("System.Text.Json.JsonException");
+            await Assert.That(restored.Inputs[0].Diagnostics[1].ExceptionType).IsEqualTo("System.Text.Json.JsonException");
             await Assert.That(restored.Inputs[1].Artifacts[0].Script!.EnumerationComplete).IsTrue();
             await Assert.That(restored.Inputs[1].Artifacts[1].Kind).IsEqualTo(ArtifactKind.Wasm);
             await Assert.That(restored.Inputs[2].Artifacts.Count).IsEqualTo(0);
             await Assert.That(restored.Provenance).IsEqualTo(manifest.Provenance);
+            await Assert.That(restored.Profile.Spec.Url).IsEqualTo("https://github.com/WebAssembly/spec.git");
+            await Assert.That(restored.Provenance.SpecOrigin).IsEqualTo("https://mirror.invalid/spec");
+            await Assert.That(serializedInputs[0].GetProperty("status").GetString()).IsEqualTo("runner_error");
+            await Assert.That(serializedInputs[1].GetProperty("status").GetString()).IsEqualTo("succeeded");
+            await Assert.That(serializedInputs[2].GetProperty("status").GetString()).IsEqualTo("unprocessed");
             await Assert
-                .That(restored.Profile.Spec.Url)
-                .IsEqualTo("https://github.com/WebAssembly/spec.git");
-            await Assert
-                .That(restored.Provenance.SpecOrigin)
-                .IsEqualTo("https://mirror.invalid/spec");
-            await Assert
-                .That(serializedInputs[0].GetProperty("status").GetString())
-                .IsEqualTo("runner_error");
-            await Assert
-                .That(serializedInputs[1].GetProperty("status").GetString())
-                .IsEqualTo("succeeded");
-            await Assert
-                .That(serializedInputs[2].GetProperty("status").GetString())
-                .IsEqualTo("unprocessed");
-            await Assert
-                .That(
-                    serializedInputs[0].GetProperty("artifacts")[0].GetProperty("kind").GetString()
-                )
+                .That(serializedInputs[0].GetProperty("artifacts")[0].GetProperty("kind").GetString())
                 .IsEqualTo("json");
             await Assert
-                .That(
-                    serializedInputs[0].GetProperty("artifacts")[1].GetProperty("kind").GetString()
-                )
+                .That(serializedInputs[0].GetProperty("artifacts")[1].GetProperty("kind").GetString())
                 .IsEqualTo("wat");
             await Assert
-                .That(
-                    serializedInputs[1].GetProperty("artifacts")[1].GetProperty("kind").GetString()
-                )
+                .That(serializedInputs[1].GetProperty("artifacts")[1].GetProperty("kind").GetString())
                 .IsEqualTo("wasm");
             await Assert.That(JsonSerializer.Serialize(restored, options)).IsEqualTo(json);
         }

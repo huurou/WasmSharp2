@@ -12,28 +12,28 @@ internal class SourceCapture_BeforeTests
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task 共有projectへ複数経路や循環で参照する_依存sourceを一度だけruntimeへ含める(
-        bool cyclic
-    )
+    public async Task 共有projectへ複数経路や循環で参照する_依存sourceを一度だけruntimeへ含める(bool cyclic)
     {
         // Arrange
         using var fixture = new SourceCaptureFixture();
         fixture.Write(
             "src/Shared/Shared.csproj",
             "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup>"
-                + (cyclic
-                    ? "<ItemGroup><ProjectReference Include=\"../WasmSharp/WasmSharp.csproj\" /></ItemGroup>"
-                    : "")
+                + (cyclic ? "<ItemGroup><ProjectReference Include=\"../WasmSharp/WasmSharp.csproj\" /></ItemGroup>" : "")
                 + "</Project>"
         );
         fixture.Write("src/Shared/Shared.cs", "class Shared {}\n");
         foreach (var name in new[] { "WasmSharp", "WasmSharp.Generators" })
         {
             var path = Path.Combine(fixture.RepositoryDirectory, "src", name, name + ".csproj");
-            File.WriteAllText(path, File.ReadAllText(path).Replace(
-                "</Project>",
-                "<ItemGroup><ProjectReference Include=\"../Shared/Shared.csproj\" /></ItemGroup></Project>"
-            ));
+            File.WriteAllText(
+                path,
+                File.ReadAllText(path)
+                    .Replace(
+                        "</Project>",
+                        "<ItemGroup><ProjectReference Include=\"../Shared/Shared.csproj\" /></ItemGroup></Project>"
+                    )
+            );
         }
         var store = RunStore.Create(fixture.Run.DirectoryPath, fixture.Run.Manifest, json_);
         var capture = new SourceCapture(fixture.RepositoryDirectory, json_);
@@ -62,10 +62,7 @@ internal class SourceCapture_BeforeTests
         fixture.Write("src/WasmSharp/obj/Generated.cs", "class IntermediateGenerated {}");
         fixture.Write("src/WasmSharp/Included.txt", "used additional file");
         fixture.Write("src/WasmSharp/DebugOnly.txt", "unused additional file");
-        var projectPath = Path.Combine(
-            fixture.RepositoryDirectory,
-            "src/WasmSharp/WasmSharp.csproj"
-        );
+        var projectPath = Path.Combine(fixture.RepositoryDirectory, "src/WasmSharp/WasmSharp.csproj");
         File.WriteAllText(
             projectPath,
             File.ReadAllText(projectPath)
@@ -117,9 +114,7 @@ internal class SourceCapture_BeforeTests
         var capture = new SourceCapture(fixture.RepositoryDirectory, json_);
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => capture.Before(store, []))
-            .ThrowsExactly<FileNotFoundException>();
+        var exception = await Assert.That(() => capture.Before(store, [])).ThrowsExactly<FileNotFoundException>();
         using (Assert.Multiple())
         {
             await Assert.That(exception!.FileName).IsEqualTo(path);
@@ -132,12 +127,7 @@ internal class SourceCapture_BeforeTests
     {
         // Arrange
         using var fixture = new SourceCaptureFixture();
-        string[] settings =
-        [
-            "Directory.Build.props",
-            "Directory.Build.targets",
-            "Directory.Packages.props",
-        ];
+        string[] settings = ["Directory.Build.props", "Directory.Build.targets", "Directory.Packages.props"];
         foreach (var setting in settings)
         {
             fixture.Write(setting, "<Project />");
@@ -151,9 +141,7 @@ internal class SourceCapture_BeforeTests
         fixture.Write("NuGet.Config", "<configuration />");
         fixture.Write(".editorconfig", "root = true\n");
         fixture.Write("packages.lock.json", "{}");
-        var expected = settings
-            .Concat(["global.json", "NuGet.Config", ".editorconfig", "packages.lock.json"])
-            .ToList();
+        var expected = settings.Concat(["global.json", "NuGet.Config", ".editorconfig", "packages.lock.json"]).ToList();
         var store = RunStore.Create(fixture.Run.DirectoryPath, fixture.Run.Manifest, json_);
         var capture = new SourceCapture(fixture.RepositoryDirectory, json_);
 
@@ -166,15 +154,9 @@ internal class SourceCapture_BeforeTests
         {
             foreach (var setting in expected)
             {
-                await Assert
-                    .That(source.Runtime.Files.Select(x => x.RelativePath))
-                    .Contains(setting);
-                await Assert
-                    .That(source.Harness.Files.Select(x => x.RelativePath))
-                    .Contains(setting);
-                await Assert
-                    .That(source.UntrackedFiles.Select(x => x.RelativePath))
-                    .Contains(setting);
+                await Assert.That(source.Runtime.Files.Select(x => x.RelativePath)).Contains(setting);
+                await Assert.That(source.Harness.Files.Select(x => x.RelativePath)).Contains(setting);
+                await Assert.That(source.UntrackedFiles.Select(x => x.RelativePath)).Contains(setting);
             }
             await Assert.That(untrackedPaths.SequenceEqual(untrackedPaths.Order(StringComparer.Ordinal))).IsTrue();
         }
@@ -195,22 +177,15 @@ internal class SourceCapture_BeforeTests
         var capture = new SourceCapture(fixture.RepositoryDirectory, json_);
 
         // Act & Assert
-        var exception = await Assert
-            .That(() => capture.Before(store, []))
-            .ThrowsExactly<InvalidOperationException>();
-        await Assert
-            .That(exception!.Message)
-            .IsEqualTo("使用project/sourceがリポジトリ外にあります: " + externalPath);
+        var exception = await Assert.That(() => capture.Before(store, [])).ThrowsExactly<InvalidOperationException>();
+        await Assert.That(exception!.Message).IsEqualTo("使用project/sourceがリポジトリ外にあります: " + externalPath);
     }
 
     [Test]
     [Arguments("clean", false)]
     [Arguments("untracked", true)]
     [Arguments("uninitialized", false)]
-    public async Task Submoduleの状態が異なる_revisionと未コミット変更を記録する(
-        string state,
-        bool dirty
-    )
+    public async Task Submoduleの状態が異なる_revisionと未コミット変更を記録する(string state, bool dirty)
     {
         // Arrange
         using var dependency = new SourceCaptureFixture();

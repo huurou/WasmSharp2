@@ -33,9 +33,7 @@ internal partial class BenchmarkCase_DeserializeTests
                 await Assert.That(definition.CaseRevision).IsEqualTo(1U);
                 await Assert.That(definition.MeasurementStage).IsEqualTo(stages[definition.CaseId]);
                 await Assert.That(definition.OperationDefinition.OperationsPerInvoke).IsEqualTo(1U);
-                await Assert
-                    .That(definition.OperationDefinition.IncludesStateRestoration)
-                    .IsFalse();
+                await Assert.That(definition.OperationDefinition.IncludesStateRestoration).IsFalse();
                 await Assert
                     .That(definition.StatePolicy)
                     .IsEqualTo(
@@ -45,12 +43,10 @@ internal partial class BenchmarkCase_DeserializeTests
                     );
                 await Assert
                     .That(definition.Workload)
-                    .IsEquivalentTo(
-                        [
-                            new WorkloadQuantity("defined_functions", 256, WorkloadUnit.Functions),
-                            new WorkloadQuantity("data", 65536, WorkloadUnit.Bytes),
-                        ]
-                    );
+                    .IsEquivalentTo([
+                        new WorkloadQuantity("defined_functions", 256, WorkloadUnit.Functions),
+                        new WorkloadQuantity("data", 65536, WorkloadUnit.Bytes),
+                    ]);
                 await Assert.That(definition.Input.FunctionExport).IsEqualTo("f254");
                 await Assert
                     .That(definition.Input.Arguments.Single())
@@ -60,12 +56,7 @@ internal partial class BenchmarkCase_DeserializeTests
                     .That(definition.InputHash)
                     .IsEqualTo(
                         Convert.ToHexStringLower(
-                            SHA256.HashData(
-                                JsonSerializer.SerializeToUtf8Bytes(
-                                    definition.Input,
-                                    json_.Options
-                                )
-                            )
+                            SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(definition.Input, json_.Options))
                         )
                     );
             }
@@ -99,44 +90,30 @@ internal partial class BenchmarkCase_DeserializeTests
                     .IsEqualTo(new NumericValue(NumericType.I32, (17 + 254).ToString("x8")));
                 await Assert
                     .That(definition.ExpectedResult.Arrays.Single())
-                    .IsEqualTo(
-                        new ArrayDigest("memory", 0, ArrayElementType.U8, 65536, "sha256", digest)
-                    );
+                    .IsEqualTo(new ArrayDigest("memory", 0, ArrayElementType.U8, 65536, "sha256", digest));
                 await Assert
                     .That(definition.ExpectedResult.Globals)
-                    .IsEquivalentTo(
-                        [
-                            new GlobalExpectation(
-                                "seed",
-                                new NumericValue(NumericType.I32, 41.ToString("x8"))
-                            ),
-                            new GlobalExpectation(
-                                "start_result",
-                                new NumericValue(NumericType.I32, (41 + 1).ToString("x8"))
-                            ),
-                        ]
-                    );
+                    .IsEquivalentTo([
+                        new GlobalExpectation("seed", new NumericValue(NumericType.I32, 41.ToString("x8"))),
+                        new GlobalExpectation("start_result", new NumericValue(NumericType.I32, (41 + 1).ToString("x8"))),
+                    ]);
                 var table = definition.ExpectedResult.Tables.Single();
                 await Assert.That(table.ExportName).IsEqualTo("functions");
                 await Assert.That(table.Length).IsEqualTo(4U);
                 await Assert
                     .That(table.Elements)
-                    .IsEquivalentTo(
-                        [
-                            new TableElementExpectation(0, "f000"),
-                            new TableElementExpectation(1, "f127"),
-                            new TableElementExpectation(2, "f254"),
-                            new TableElementExpectation(3, null),
-                        ]
-                    );
+                    .IsEquivalentTo([
+                        new TableElementExpectation(0, "f000"),
+                        new TableElementExpectation(1, "f127"),
+                        new TableElementExpectation(2, "f254"),
+                        new TableElementExpectation(3, null),
+                    ]);
             }
         }
     }
 
     private static Task<string> ReadPreparationCasesAsync()
     {
-        return File.ReadAllTextAsync(
-            Path.Combine(AppContext.BaseDirectory, "Fixtures", "Data", "cases.json")
-        );
+        return File.ReadAllTextAsync(Path.Combine(AppContext.BaseDirectory, "Fixtures", "Data", "cases.json"));
     }
 }

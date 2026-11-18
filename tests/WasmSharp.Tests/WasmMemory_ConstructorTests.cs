@@ -26,10 +26,7 @@ internal class WasmMemory_ConstructorTests
     [Arguments(0u, null)]
     [Arguments(2u, 3u)]
     [Arguments(0u, 65536u)]
-    public async Task 有効なlimitsで生成する_現在サイズと最大値を保持してゼロ初期化する(
-        uint minimum,
-        uint? maximum
-    )
+    public async Task 有効なlimitsで生成する_現在サイズと最大値を保持してゼロ初期化する(uint minimum, uint? maximum)
     {
         // Arrange
         var limits = new WasmLimits(minimum, maximum);

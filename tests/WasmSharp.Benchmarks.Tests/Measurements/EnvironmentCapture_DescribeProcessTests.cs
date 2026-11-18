@@ -11,9 +11,7 @@ internal class EnvironmentCapture_DescribeProcessTests
     public async Task Jobの識別子と環境変数を指定する_値を持つ末端の設定だけをJob設定へ保存する()
     {
         // Arrange
-        var job = Job
-            .Default.WithId("job-identity")
-            .WithEnvironmentVariable("DOTNET_PRIVATE_API_TOKEN", "private-token");
+        var job = Job.Default.WithId("job-identity").WithEnvironmentVariable("DOTNET_PRIVATE_API_TOKEN", "private-token");
 
         // Act
         var process = environmentCapture_.DescribeProcess("Measurement", job);
@@ -34,11 +32,7 @@ internal class EnvironmentCapture_DescribeProcessTests
                 .IsFalse();
             await Assert.That(process.JobSettings.All(x => x.Name.Contains('.'))).IsTrue();
             await Assert
-                .That(
-                    process.JobSettings.Any(x =>
-                        x.Value.Contains("private-token", StringComparison.Ordinal)
-                    )
-                )
+                .That(process.JobSettings.Any(x => x.Value.Contains("private-token", StringComparison.Ordinal)))
                 .IsFalse();
             await Assert.That(process.EnvironmentVariables).IsEmpty();
         }

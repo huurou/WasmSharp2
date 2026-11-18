@@ -23,11 +23,7 @@ internal static class ValidationDiagnostics
         WasmFailureLocation location
     )
     {
-        return ValidationFailure(
-            $"unknown {category} {index.ToString(CultureInfo.InvariantCulture)}",
-            message,
-            location
-        );
+        return ValidationFailure($"unknown {category} {index.ToString(CultureInfo.InvariantCulture)}", message, location);
     }
 
     /// <summary>
@@ -37,11 +33,7 @@ internal static class ValidationDiagnostics
     /// <param name="message">原因の補助説明</param>
     /// <param name="location">原因の位置</param>
     /// <returns>原因と位置が一致する検証例外</returns>
-    internal static WasmValidateException ValidationFailure(
-        string prefix,
-        string message,
-        WasmFailureLocation location
-    )
+    internal static WasmValidateException ValidationFailure(string prefix, string message, WasmFailureLocation location)
     {
         return new WasmValidateException($"{prefix}: {message}", location, null);
     }

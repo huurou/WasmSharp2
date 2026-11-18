@@ -10,10 +10,7 @@ internal class Interpreter_I32Extend8STests
     [Arguments(0x12345680, -128)]
     [Arguments(0x123456FF, -1)]
     [Arguments(unchecked((int)0x87654300u), 0)]
-    public async Task 上位bitと下位8bitの符号境界_下位8bitだけを符号拡張する(
-        int operand,
-        int expected
-    )
+    public async Task 上位bitと下位8bitの符号境界_下位8bitだけを符号拡張する(int operand, int expected)
     {
         // Arrange
         WasmValue[] operands = [WasmValue.FromI32(operand)];

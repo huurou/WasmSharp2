@@ -54,9 +54,7 @@ internal class HostLinkingModuleBinary_CreateTests
     [Arguments("1C027F")]
     [Arguments("FC80")]
     [Arguments("0204050B0B")]
-    public async Task 切断した即値や不正な制御をrawで指定する_不足値や終端を補わない(
-        string instructions
-    )
+    public async Task 切断した即値や不正な制御をrawで指定する_不足値や終端を補わない(string instructions)
     {
         // Arrange
         var raw = Convert.FromHexString(instructions);
@@ -152,19 +150,13 @@ internal class HostLinkingModuleBinary_CreateTests
             HostLinkingModuleBinary.Code(([], [0x41, 0x80]))
         );
         using var stream = new ChunkedReadStream(new MemoryStream(bytes));
-        Func<WasmModule>[] decoders =
-        [
-            () => WasmModule.Decode(bytes),
-            () => WasmModule.Decode(stream),
-        ];
+        Func<WasmModule>[] decoders = [() => WasmModule.Decode(bytes), () => WasmModule.Decode(stream)];
 
         // Act & Assert
         foreach (var decode in decoders)
         {
             var exception = await Assert.That(decode).ThrowsExactly<WasmDecodeException>();
-            await Assert
-                .That(exception!.Location)
-                .IsEqualTo(new(WasmProcessingStage.Decode, 26, 0, 10));
+            await Assert.That(exception!.Location).IsEqualTo(new(WasmProcessingStage.Decode, 26, 0, 10));
         }
     }
 
@@ -209,19 +201,13 @@ internal class HostLinkingModuleBinary_CreateTests
     )
     {
         // Arrange
-        var section = HostLinkingModuleBinary.Section(
-            id,
-            Convert.FromHexString(payload),
-            declaredLength
-        );
+        var section = HostLinkingModuleBinary.Section(id, Convert.FromHexString(payload), declaredLength);
 
         // Act
         var bytes = HostLinkingModuleBinary.Create(section);
 
         // Assert
-        await Assert
-            .That(Convert.ToHexString(bytes))
-            .IsEqualTo("0061736D01000000" + expectedSection);
+        await Assert.That(Convert.ToHexString(bytes)).IsEqualTo("0061736D01000000" + expectedSection);
 
         // Act & Assert
         await Assert.That(() => WasmModule.Decode(bytes)).ThrowsExactly<WasmDecodeException>();
@@ -245,9 +231,7 @@ internal class HostLinkingModuleBinary_CreateTests
 
         // Act & Assert
         await Assert.That(() => WasmModule.Decode(bytes)).ThrowsExactly<WasmDecodeException>();
-        await Assert
-            .That(() => WasmModule.Decode(bytes.AsSpan()[..^1]))
-            .ThrowsExactly<WasmDecodeException>();
+        await Assert.That(() => WasmModule.Decode(bytes.AsSpan()[..^1])).ThrowsExactly<WasmDecodeException>();
     }
 
     [Test]
@@ -281,8 +265,7 @@ internal class HostLinkingModuleBinary_CreateTests
     public async Task 定数関数のsectionを組み合わせる_既知のバイナリと一致する()
     {
         // Arrange
-        const string EXPECTED =
-            "0061736D010000000105016000017F030201000707010372756E00000A06010400412A0B";
+        const string EXPECTED = "0061736D010000000105016000017F030201000707010372756E00000A06010400412A0B";
 
         // Act
         var actual = HostLinkingModuleBinary.Create(
@@ -327,9 +310,7 @@ internal class HostLinkingModuleBinary_CreateTests
             HostLinkingModuleBinary.Globals((0x7F, true, [0x41, 0x2A, 0x0B])),
             HostLinkingModuleBinary.Exports(("f", 0, 1), ("t", 1, 0), ("m", 2, 0), ("g", 3, 0)),
             HostLinkingModuleBinary.Start(0),
-            HostLinkingModuleBinary.Code(
-                ([(2, 0x7F), (1, 0x6F)], [0x20, 0x01, 0x10, 0, 0x1A, 0x0B])
-            )
+            HostLinkingModuleBinary.Code(([(2, 0x7F), (1, 0x6F)], [0x20, 0x01, 0x10, 0, 0x1A, 0x0B]))
         );
 
         // Assert

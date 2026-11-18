@@ -12,18 +12,11 @@ internal static partial class Interpreter
     /// <returns>呼び出しの成功、対象解決のtrap、または呼び出し前に検出した資源枯渇</returns>
     /// <exception cref="WasmImplementationLimitException">呼び出す定義関数に必要なフレーム数または値スタックの容量が配列の保持上限を超える場合</exception>
     /// <exception cref="InvalidOperationException">ホスト関数の結果がnullまたは宣言型と一致しない場合</exception>
-    internal static ExecutionResult CallIndirect(
-        InterpreterContext context,
-        in Instruction instruction
-    )
+    internal static ExecutionResult CallIndirect(InterpreterContext context, in Instruction instruction)
     {
         var function = context.CurrentFunction;
         var selector = unchecked((uint)context.PopValue().AsI32());
-        if (
-            !function
-                .Instance.Tables[(int)instruction.SecondaryIndex]
-                .TryGet(selector, out var value)
-        )
+        if (!function.Instance.Tables[(int)instruction.SecondaryIndex].TryGet(selector, out var value))
         {
             return ExecutionResult.Trap(
                 WasmTrapReason.TableOutOfBounds,
@@ -91,12 +84,7 @@ internal static partial class Interpreter
         {
             var argumentBase = context.ValueCount - callee.Type.Parameters.Length;
             var arguments = context.GetValues(argumentBase, callee.Type.Parameters.Length);
-            var results = RunHost(
-                context.ExecutionContext,
-                callee,
-                context.CurrentFunction.Instance,
-                arguments
-            );
+            var results = RunHost(context.ExecutionContext, callee, context.CurrentFunction.Instance, arguments);
             if (results.Status != ExecutionStatus.Success)
             {
                 return results;

@@ -53,10 +53,7 @@ internal class WasmGlobal_ValueTests
             }
         }
 
-        var functionGlobal = new WasmGlobal(
-            new WasmGlobalType(WasmValueKind.FuncRef, true),
-            WasmValue.FromFuncRef(null)
-        );
+        var functionGlobal = new WasmGlobal(new WasmGlobalType(WasmValueKind.FuncRef, true), WasmValue.FromFuncRef(null));
         var externalGlobal = new WasmGlobal(
             new WasmGlobalType(WasmValueKind.ExternRef, true),
             WasmValue.FromExternRef(null)
@@ -70,9 +67,7 @@ internal class WasmGlobal_ValueTests
         using (Assert.Multiple())
         {
             await Assert.That(ReferenceEquals(functionGlobal.Value.AsFuncRef(), function)).IsTrue();
-            await Assert
-                .That(ReferenceEquals(externalGlobal.Value.AsExternRef(), reference))
-                .IsTrue();
+            await Assert.That(ReferenceEquals(externalGlobal.Value.AsExternRef(), reference)).IsTrue();
         }
     }
 
@@ -80,10 +75,7 @@ internal class WasmGlobal_ValueTests
     public async Task 可変globalを共有参照から更新する_現在値を更新し取得済みの値は保持する()
     {
         // Arrange
-        var global = new WasmGlobal(
-            new WasmGlobalType(WasmValueKind.I32, true),
-            WasmValue.FromI32(1)
-        );
+        var global = new WasmGlobal(new WasmGlobalType(WasmValueKind.I32, true), WasmValue.FromI32(1));
         var alias = global;
         var previous = global.Value;
 
@@ -102,15 +94,10 @@ internal class WasmGlobal_ValueTests
     public async Task 可変globalへ型違いを設定する_引数例外で拒否して元の値を保つ()
     {
         // Arrange
-        var global = new WasmGlobal(
-            new WasmGlobalType(WasmValueKind.I32, true),
-            WasmValue.FromI32(42)
-        );
+        var global = new WasmGlobal(new WasmGlobalType(WasmValueKind.I32, true), WasmValue.FromI32(42));
 
         // Act & Assert
-        await Assert
-            .That(() => global.Value = WasmValue.FromI64(7))
-            .ThrowsExactly<ArgumentException>();
+        await Assert.That(() => global.Value = WasmValue.FromI64(7)).ThrowsExactly<ArgumentException>();
         await Assert.That(global.Value.AsI32()).IsEqualTo(42);
     }
 
@@ -118,10 +105,7 @@ internal class WasmGlobal_ValueTests
     public async Task 不変globalを更新する_状態例外で拒否して元の値を保つ()
     {
         // Arrange
-        var global = new WasmGlobal(
-            new WasmGlobalType(WasmValueKind.I32, false),
-            WasmValue.FromI32(42)
-        );
+        var global = new WasmGlobal(new WasmGlobalType(WasmValueKind.I32, false), WasmValue.FromI32(42));
 
         // Act & Assert
         var exception = await Assert
