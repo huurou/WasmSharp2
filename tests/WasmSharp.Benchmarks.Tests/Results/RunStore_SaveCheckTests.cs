@@ -7,7 +7,7 @@ namespace WasmSharp.Benchmarks.Tests.Results;
 
 internal class RunStore_SaveCheckTests
 {
-    private readonly CaseJson json_ = new CaseJson();
+    private readonly CaseJson _json = new CaseJson();
 
     [Test]
     [Arguments("other-run", "invoke.single")]
@@ -16,7 +16,7 @@ internal class RunStore_SaveCheckTests
     {
         // Arrange
         using var fixture = new RunStoreFixture();
-        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, json_);
+        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, _json);
         var check = fixture.Check with { RunId = runId, CaseId = caseId };
 
         // Act & Assert
@@ -29,7 +29,7 @@ internal class RunStore_SaveCheckTests
     {
         // Arrange
         using var fixture = new RunStoreFixture();
-        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, json_);
+        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, _json);
         var precheck = fixture.Check with
         {
             ExecutionStarted = false,
@@ -49,10 +49,10 @@ internal class RunStore_SaveCheckTests
         var last = store.SaveCheck(fixture.Check);
         var restored = JsonSerializer.Deserialize<ProcessCheck>(
             File.ReadAllBytes(Path.Combine(fixture.DirectoryPath, first.RelativePath)),
-            json_.Options
+            _json.Options
         )!;
         File.WriteAllText(Path.Combine(fixture.DirectoryPath, "checks", "notes.txt"), "検査JSONではないファイル");
-        var checks = RunStore.ReadChecks(fixture.DirectoryPath, json_);
+        var checks = RunStore.ReadChecks(fixture.DirectoryPath, _json);
 
         // Assert
         using (Assert.Multiple())

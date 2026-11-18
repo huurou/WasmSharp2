@@ -30,12 +30,12 @@ internal sealed class ReportStore
     /// <summary>
     /// 重複キーを構文破損と同様に拒否するJSON読取設定
     /// </summary>
-    private readonly JsonDocumentOptions documentOptions_ = new JsonDocumentOptions { AllowDuplicateProperties = false };
+    private readonly JsonDocumentOptions _documentOptions = new JsonDocumentOptions { AllowDuplicateProperties = false };
 
     /// <summary>
     /// 未知のpropertyや必須項目の欠落、数値や複合表記による未定義の分類を無言で読み替えないDTO読取設定
     /// </summary>
-    private readonly JsonSerializerOptions readOptions_ = new JsonSerializerOptions
+    private readonly JsonSerializerOptions _readOptions = new JsonSerializerOptions
     {
         PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
         UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
@@ -47,7 +47,7 @@ internal sealed class ReportStore
     /// <summary>
     /// OSに依存しない改行で、日本語の診断を読める形のまま書き出す設定
     /// </summary>
-    private readonly JsonSerializerOptions writeOptions_ = new JsonSerializerOptions
+    private readonly JsonSerializerOptions _writeOptions = new JsonSerializerOptions
     {
         PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
         WriteIndented = true,
@@ -63,7 +63,7 @@ internal sealed class ReportStore
     /// <exception cref="ReportStoreException">保存を確定できない場合</exception>
     internal void Save(CorpusManifest manifest, string path)
     {
-        Write(path, replaceExisting: false, x => JsonSerializer.Serialize(x, manifest, writeOptions_));
+        Write(path, replaceExisting: false, x => JsonSerializer.Serialize(x, manifest, _writeOptions));
     }
 
     /// <summary>
@@ -74,7 +74,7 @@ internal sealed class ReportStore
     /// <exception cref="ReportStoreException">保存を確定できない場合</exception>
     internal void Save(RunReport report, string path)
     {
-        Write(path, replaceExisting: false, x => JsonSerializer.Serialize(x, report, writeOptions_));
+        Write(path, replaceExisting: false, x => JsonSerializer.Serialize(x, report, _writeOptions));
     }
 
     /// <summary>
@@ -85,7 +85,7 @@ internal sealed class ReportStore
     /// <exception cref="ReportStoreException">保存を確定できない場合</exception>
     internal void Save(ComparisonReport report, string path)
     {
-        Write(path, replaceExisting: false, x => JsonSerializer.Serialize(x, report, writeOptions_));
+        Write(path, replaceExisting: false, x => JsonSerializer.Serialize(x, report, _writeOptions));
     }
 
     /// <summary>
@@ -180,7 +180,7 @@ internal sealed class ReportStore
     {
         try
         {
-            using var document = JsonDocument.Parse(content, documentOptions_);
+            using var document = JsonDocument.Parse(content, _documentOptions);
             return ReadResult(document.RootElement, content, fullPath);
         }
         catch (JsonException ex)
@@ -372,7 +372,7 @@ internal sealed class ReportStore
     private T Deserialize<T>(JsonElement root)
     {
         EnsureNoNullElements(root);
-        return root.Deserialize<T>(readOptions_)!;
+        return root.Deserialize<T>(_readOptions)!;
     }
 
     /// <summary>

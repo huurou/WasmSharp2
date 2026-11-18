@@ -4,13 +4,13 @@ namespace WasmSharp.TestSuiteRunner.Tests.Corpus;
 
 internal class ProfileSnapshot_MatchesTests
 {
-    private readonly Core2ProfileLoader profileLoader_ = new Core2ProfileLoader();
+    private readonly Core2ProfileLoader _profileLoader = new Core2ProfileLoader();
 
     [Test]
     public async Task 同じprofileから保存した条件と比べる_一致すると判定する()
     {
         // Arrange
-        var profile = profileLoader_.Load();
+        var profile = _profileLoader.Load();
         var snapshot = ProfileSnapshot.FromProfile(profile);
 
         // Act
@@ -24,7 +24,7 @@ internal class ProfileSnapshot_MatchesTests
     public async Task 入力を1件欠いた条件と比べる_一致しないと判定する()
     {
         // Arrange
-        var profile = profileLoader_.Load();
+        var profile = _profileLoader.Load();
         var snapshot = ProfileSnapshot.FromProfile(profile);
         snapshot.Inputs.RemoveAt(snapshot.Inputs.Count - 1);
 
@@ -46,7 +46,7 @@ internal class ProfileSnapshot_MatchesTests
     public async Task 入力集合が同じでも生成条件の1項目が異なる_一致しないと判定する(string condition)
     {
         // Arrange
-        var profile = profileLoader_.Load();
+        var profile = _profileLoader.Load();
         var snapshot = ProfileSnapshot.FromProfile(profile);
         snapshot = condition switch
         {

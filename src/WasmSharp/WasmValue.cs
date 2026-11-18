@@ -8,17 +8,17 @@ public readonly struct WasmValue
     /// <summary>
     /// 数値スカラーのビット列またはv128の下位64ビット
     /// </summary>
-    private readonly ulong low64_;
+    private readonly ulong _low64;
 
     /// <summary>
     /// v128の上位64ビット
     /// </summary>
-    private readonly ulong high64_;
+    private readonly ulong _high64;
 
     /// <summary>
     /// 参照値の参照先
     /// </summary>
-    private readonly object? reference_;
+    private readonly object? _reference;
 
     /// <summary>
     /// 格納されたvalueの種類
@@ -35,9 +35,9 @@ public readonly struct WasmValue
     private WasmValue(WasmValueKind kind, ulong low64, ulong high64, object? reference)
     {
         Kind = kind;
-        low64_ = low64;
-        high64_ = high64;
-        reference_ = reference;
+        _low64 = low64;
+        _high64 = high64;
+        _reference = reference;
     }
 
     /// <summary>
@@ -58,7 +58,7 @@ public readonly struct WasmValue
     public int AsI32()
     {
         EnsureKind(WasmValueKind.I32);
-        return unchecked((int)low64_);
+        return unchecked((int)_low64);
     }
 
     /// <summary>
@@ -79,7 +79,7 @@ public readonly struct WasmValue
     public long AsI64()
     {
         EnsureKind(WasmValueKind.I64);
-        return unchecked((long)low64_);
+        return unchecked((long)_low64);
     }
 
     /// <summary>
@@ -120,7 +120,7 @@ public readonly struct WasmValue
     public uint AsF32Bits()
     {
         EnsureKind(WasmValueKind.F32);
-        return (uint)low64_;
+        return (uint)_low64;
     }
 
     /// <summary>
@@ -161,7 +161,7 @@ public readonly struct WasmValue
     public ulong AsF64Bits()
     {
         EnsureKind(WasmValueKind.F64);
-        return low64_;
+        return _low64;
     }
 
     /// <summary>
@@ -183,7 +183,7 @@ public readonly struct WasmValue
     public (ulong Low64, ulong High64) AsV128()
     {
         EnsureKind(WasmValueKind.V128);
-        return (low64_, high64_);
+        return (_low64, _high64);
     }
 
     /// <summary>
@@ -204,7 +204,7 @@ public readonly struct WasmValue
     public WasmFunction? AsFuncRef()
     {
         EnsureKind(WasmValueKind.FuncRef);
-        return (WasmFunction?)reference_;
+        return (WasmFunction?)_reference;
     }
 
     /// <summary>
@@ -225,7 +225,7 @@ public readonly struct WasmValue
     public object? AsExternRef()
     {
         EnsureKind(WasmValueKind.ExternRef);
-        return reference_;
+        return _reference;
     }
 
     /// <summary>

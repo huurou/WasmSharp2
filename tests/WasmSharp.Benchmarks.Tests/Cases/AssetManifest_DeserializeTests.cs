@@ -5,9 +5,9 @@ namespace WasmSharp.Benchmarks.Tests.Cases;
 
 internal class AssetManifest_DeserializeTests
 {
-    private readonly CaseJson json_ = new CaseJson();
+    private readonly CaseJson _json = new CaseJson();
 
-    private static readonly string[] expectedArguments_ = ["sources/fixture.wat", "-o", "wasm/fixture.wasm"];
+    private static readonly string[] __expectedArguments = ["sources/fixture.wat", "-o", "wasm/fixture.wasm"];
 
     [Test]
     public async Task 小さい素材fixtureを読む_相対pathと生成条件のhashを復元する()
@@ -18,10 +18,10 @@ internal class AssetManifest_DeserializeTests
         );
 
         // Act
-        var manifest = JsonSerializer.Deserialize<AssetManifest>(json, json_.Options)!;
+        var manifest = JsonSerializer.Deserialize<AssetManifest>(json, _json.Options)!;
         var restored = JsonSerializer.Deserialize<AssetManifest>(
-            JsonSerializer.Serialize(manifest, json_.Options),
-            json_.Options
+            JsonSerializer.Serialize(manifest, _json.Options),
+            _json.Options
         )!;
         var asset = restored.Assets.Single();
         var step = asset.GenerationSteps.Single();
@@ -43,7 +43,7 @@ internal class AssetManifest_DeserializeTests
             await Assert.That(step.Tool.Revision).IsEqualTo("fixture-tool-revision");
             await Assert.That(step.Tool.BuildConfiguration).IsEqualTo("Release");
             await Assert.That(step.Tool.Executable.Sha256).IsEqualTo(new string('4', 64));
-            await Assert.That(step.Arguments.SequenceEqual(expectedArguments_)).IsTrue();
+            await Assert.That(step.Arguments.SequenceEqual(__expectedArguments)).IsTrue();
             await Assert.That(step.ArgumentsSha256).IsEqualTo(new string('5', 64));
         }
     }

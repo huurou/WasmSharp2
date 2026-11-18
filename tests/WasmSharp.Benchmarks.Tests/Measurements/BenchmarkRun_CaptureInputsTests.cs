@@ -9,13 +9,13 @@ namespace WasmSharp.Benchmarks.Tests.Measurements;
 
 internal class BenchmarkRun_CaptureInputsTests
 {
-    private readonly CaseJson json_ = new CaseJson();
-    private readonly MeasurementMethods methods_ = new MeasurementMethods();
-    private readonly BenchmarkRun benchmarkRun_;
+    private readonly CaseJson _json = new CaseJson();
+    private readonly MeasurementMethods _methods = new MeasurementMethods();
+    private readonly BenchmarkRun _benchmarkRun;
 
     public BenchmarkRun_CaptureInputsTests()
     {
-        benchmarkRun_ = new BenchmarkRun(json_, methods_);
+        _benchmarkRun = new BenchmarkRun(_json, _methods);
     }
 
     [Test]
@@ -42,24 +42,24 @@ internal class BenchmarkRun_CaptureInputsTests
             }
         );
         using var run = new RunStoreFixture();
-        var store = RunStore.Create(run.DirectoryPath, run.Manifest, json_);
+        var store = RunStore.Create(run.DirectoryPath, run.Manifest, _json);
         var processes = new List<ProcessConfiguration>
         {
             new("Measurement", "job-1", 1, [new("Strategy", "Throughput")], [], []),
         };
 
         // Act
-        benchmarkRun_.CaptureInputs(store, fixture.ManifestPath, processes);
+        _benchmarkRun.CaptureInputs(store, fixture.ManifestPath, processes);
 
         // Assert
         var manifest = JsonSerializer.Deserialize<RunManifest>(
             File.ReadAllBytes(Path.Combine(run.DirectoryPath, "run.json")),
-            json_.Options
+            _json.Options
         )!;
         var copied = AssetManifest.Load(
             Path.Combine(run.DirectoryPath, manifest.AssetManifestFile!.RelativePath),
-            json_,
-            methods_
+            _json,
+            _methods
         );
         using (Assert.Multiple())
         {
@@ -74,7 +74,7 @@ internal class BenchmarkRun_CaptureInputsTests
                     JsonSerializer
                         .Deserialize<List<ProcessConfiguration>>(
                             File.ReadAllBytes(Path.Combine(run.DirectoryPath, manifest.JobSettingsFile!.RelativePath)),
-                            json_.Options
+                            _json.Options
                         )!
                         .Single()
                         .Role
@@ -113,11 +113,11 @@ internal class BenchmarkRun_CaptureInputsTests
         );
         File.WriteAllText(sourcePath, "(module (func))");
         using var run = new RunStoreFixture();
-        var store = RunStore.Create(run.DirectoryPath, run.Manifest, json_);
+        var store = RunStore.Create(run.DirectoryPath, run.Manifest, _json);
 
         // Act & Assert
         var exception = await Assert
-            .That(() => benchmarkRun_.CaptureInputs(store, fixture.ManifestPath, []))
+            .That(() => _benchmarkRun.CaptureInputs(store, fixture.ManifestPath, []))
             .ThrowsExactly<InvalidDataException>();
         using (Assert.Multiple())
         {

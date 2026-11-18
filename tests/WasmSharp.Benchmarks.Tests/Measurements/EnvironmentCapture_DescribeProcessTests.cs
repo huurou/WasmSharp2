@@ -5,7 +5,7 @@ namespace WasmSharp.Benchmarks.Tests.Measurements;
 
 internal class EnvironmentCapture_DescribeProcessTests
 {
-    private readonly EnvironmentCapture environmentCapture_ = new EnvironmentCapture();
+    private readonly EnvironmentCapture _environmentCapture = new EnvironmentCapture();
 
     [Test]
     public async Task Jobの識別子と環境変数を指定する_値を持つ末端の設定だけをJob設定へ保存する()
@@ -14,7 +14,7 @@ internal class EnvironmentCapture_DescribeProcessTests
         var job = Job.Default.WithId("job-identity").WithEnvironmentVariable("DOTNET_PRIVATE_API_TOKEN", "private-token");
 
         // Act
-        var process = environmentCapture_.DescribeProcess("Measurement", job);
+        var process = _environmentCapture.DescribeProcess("Measurement", job);
 
         // Assert
         var settingNames = process.JobSettings.Select(x => x.Name);

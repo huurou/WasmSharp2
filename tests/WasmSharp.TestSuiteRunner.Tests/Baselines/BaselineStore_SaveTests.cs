@@ -7,7 +7,7 @@ namespace WasmSharp.TestSuiteRunner.Tests.Baselines;
 
 internal class BaselineStore_SaveTests
 {
-    private readonly ReportStore reportStore_ = new ReportStore();
+    private readonly ReportStore _reportStore = new ReportStore();
 
     [Test]
     public async Task 全件記録済みでfailedとrunner_errorと未対応を含む_バイト列を変えず既存baselineへ保存する()
@@ -16,13 +16,13 @@ internal class BaselineStore_SaveTests
         using var directory = new TemporaryDirectory();
         var inputPath = directory.Combine("input.json");
         var outputPath = directory.Combine("baseline.json");
-        reportStore_.Save(RunReportFixture.CreateSample(), inputPath);
+        _reportStore.Save(RunReportFixture.CreateSample(), inputPath);
         await File.AppendAllTextAsync(inputPath, "\n  \n");
         await File.WriteAllTextAsync(outputPath, "旧baseline");
         var original = await File.ReadAllBytesAsync(inputPath);
 
         // Act
-        BaselineStore.Save(inputPath, outputPath, reportStore_);
+        BaselineStore.Save(inputPath, outputPath, _reportStore);
 
         // Assert
         using (Assert.Multiple())
@@ -33,7 +33,7 @@ internal class BaselineStore_SaveTests
             await Assert
                 .That(Convert.ToHexString(await File.ReadAllBytesAsync(inputPath)))
                 .IsEqualTo(Convert.ToHexString(original));
-            await Assert.That(reportStore_.ReadRunReport(outputPath).Issues).IsEmpty();
+            await Assert.That(_reportStore.ReadRunReport(outputPath).Issues).IsEmpty();
             await Assert.That(Directory.GetFiles(directory.Root, "*.tmp")).IsEmpty();
         }
     }
@@ -54,10 +54,10 @@ internal class BaselineStore_SaveTests
         manifest = manifest with { Summary = manifest.Summarize() };
         var inputPath = directory.Combine("input.json");
         var outputPath = directory.Combine("baseline.json");
-        reportStore_.Save(manifest, inputPath);
+        _reportStore.Save(manifest, inputPath);
 
         // Act
-        BaselineStore.Save(inputPath, outputPath, reportStore_);
+        BaselineStore.Save(inputPath, outputPath, _reportStore);
 
         // Assert
         using (Assert.Multiple())
@@ -66,7 +66,7 @@ internal class BaselineStore_SaveTests
                 .That(Convert.ToHexString(await File.ReadAllBytesAsync(outputPath)))
                 .IsEqualTo(Convert.ToHexString(await File.ReadAllBytesAsync(inputPath)));
             await Assert
-                .That(reportStore_.ReadManifest(outputPath).Manifest.Inputs[0].Status)
+                .That(_reportStore.ReadManifest(outputPath).Manifest.Inputs[0].Status)
                 .IsEqualTo(ConversionStatus.RunnerError);
         }
     }
@@ -116,12 +116,12 @@ internal class BaselineStore_SaveTests
 
         var inputPath = directory.Combine("input.json");
         var outputPath = directory.Combine("baseline.json");
-        reportStore_.Save(report, inputPath);
+        _reportStore.Save(report, inputPath);
         await File.WriteAllTextAsync(outputPath, "旧baseline");
 
         // Act & Assert
         var exception = await Assert
-            .That(() => BaselineStore.Save(inputPath, outputPath, reportStore_))
+            .That(() => BaselineStore.Save(inputPath, outputPath, _reportStore))
             .Throws<ReportStoreException>();
         using (Assert.Multiple())
         {
@@ -152,12 +152,12 @@ internal class BaselineStore_SaveTests
 
         var inputPath = directory.Combine("input.json");
         var outputPath = directory.Combine("baseline.json");
-        reportStore_.Save(manifest, inputPath);
+        _reportStore.Save(manifest, inputPath);
         await File.WriteAllTextAsync(outputPath, "旧baseline");
 
         // Act & Assert
         var exception = await Assert
-            .That(() => BaselineStore.Save(inputPath, outputPath, reportStore_))
+            .That(() => BaselineStore.Save(inputPath, outputPath, _reportStore))
             .Throws<ReportStoreException>();
         using (Assert.Multiple())
         {
@@ -181,7 +181,7 @@ internal class BaselineStore_SaveTests
         await File.WriteAllTextAsync(outputPath, "旧baseline");
 
         // Act & Assert
-        await Assert.That(() => BaselineStore.Save(inputPath, outputPath, reportStore_)).Throws<ReportStoreException>();
+        await Assert.That(() => BaselineStore.Save(inputPath, outputPath, _reportStore)).Throws<ReportStoreException>();
         await Assert.That(await File.ReadAllTextAsync(outputPath)).IsEqualTo("旧baseline");
     }
 
@@ -192,7 +192,7 @@ internal class BaselineStore_SaveTests
         using var directory = new TemporaryDirectory();
         var inputPath = directory.Combine("input.json");
         var outputPath = directory.Combine("baseline.json");
-        reportStore_.Save(RunReportFixture.CreateSample(), inputPath);
+        _reportStore.Save(RunReportFixture.CreateSample(), inputPath);
         Directory.CreateDirectory(outputPath);
         var markerPath = Path.Combine(outputPath, "existing.txt");
         await File.WriteAllTextAsync(markerPath, "既存内容");
@@ -200,7 +200,7 @@ internal class BaselineStore_SaveTests
 
         // Act & Assert
         var exception = await Assert
-            .That(() => BaselineStore.Save(inputPath, outputPath, reportStore_))
+            .That(() => BaselineStore.Save(inputPath, outputPath, _reportStore))
             .Throws<ReportStoreException>();
         using (Assert.Multiple())
         {
@@ -219,12 +219,12 @@ internal class BaselineStore_SaveTests
         // Arrange
         using var directory = new TemporaryDirectory();
         var path = directory.Combine("input.json");
-        reportStore_.Save(RunReportFixture.CreateSample(), path);
+        _reportStore.Save(RunReportFixture.CreateSample(), path);
         var original = await File.ReadAllBytesAsync(path);
 
         // Act & Assert
         var exception = await Assert
-            .That(() => BaselineStore.Save(path, directory.Combine("./input.json"), reportStore_))
+            .That(() => BaselineStore.Save(path, directory.Combine("./input.json"), _reportStore))
             .Throws<ReportStoreException>();
         using (Assert.Multiple())
         {
@@ -243,14 +243,14 @@ internal class BaselineStore_SaveTests
         using var directory = new TemporaryDirectory();
         var inputPath = directory.Combine("input.json");
         var outputPath = directory.Combine("INPUT.json");
-        reportStore_.Save(RunReportFixture.CreateSample(), inputPath);
+        _reportStore.Save(RunReportFixture.CreateSample(), inputPath);
         var original = await File.ReadAllBytesAsync(inputPath);
 
         if (OperatingSystem.IsWindows())
         {
             // Act & Assert
             var exception = await Assert
-                .That(() => BaselineStore.Save(inputPath, outputPath, reportStore_))
+                .That(() => BaselineStore.Save(inputPath, outputPath, _reportStore))
                 .ThrowsExactly<ReportStoreException>();
             using (Assert.Multiple())
             {
@@ -264,7 +264,7 @@ internal class BaselineStore_SaveTests
         else
         {
             // Act
-            BaselineStore.Save(inputPath, outputPath, reportStore_);
+            BaselineStore.Save(inputPath, outputPath, _reportStore);
 
             // Assert
             using (Assert.Multiple())

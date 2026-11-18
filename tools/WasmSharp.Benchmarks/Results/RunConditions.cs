@@ -8,7 +8,7 @@ namespace WasmSharp.Benchmarks.Results;
 /// </summary>
 internal sealed class RunConditions(string runId, CaseJson json)
 {
-    private readonly CaseJson json_ = json;
+    private readonly CaseJson _json = json;
 
     internal string RunId { get; } = runId;
     internal Dictionary<string, string> Values { get; } = [with(StringComparer.Ordinal)];
@@ -158,13 +158,13 @@ internal sealed class RunConditions(string runId, CaseJson json)
         [
             .. processes
                 .Select(x => Process(x, paths))
-                .OrderBy(x => JsonSerializer.Serialize(x, json_.Options), StringComparer.Ordinal),
+                .OrderBy(x => JsonSerializer.Serialize(x, _json.Options), StringComparer.Ordinal),
         ];
     }
 
     private void Add<T>(string name, T value)
     {
-        Flatten(name, JsonSerializer.SerializeToElement(value, json_.Options));
+        Flatten(name, JsonSerializer.SerializeToElement(value, _json.Options));
     }
 
     private void Flatten(string name, JsonElement value)
@@ -196,17 +196,17 @@ internal sealed class RunConditions(string runId, CaseJson json)
 /// </summary>
 internal sealed class ConditionPaths
 {
-    private readonly CommandInvocation command_;
-    private readonly RunSource source_;
-    private readonly AssetManifest assets_;
-    private readonly string root_;
+    private readonly CommandInvocation _command;
+    private readonly RunSource _source;
+    private readonly AssetManifest _assets;
+    private readonly string _root;
 
     internal ConditionPaths(CommandInvocation command, RunSource source, AssetManifest assets)
     {
-        command_ = command;
-        source_ = source;
-        assets_ = assets;
-        root_ = Normalize(command.WorkingDirectory).TrimEnd('/');
+        _command = command;
+        _source = source;
+        _assets = assets;
+        _root = Normalize(command.WorkingDirectory).TrimEnd('/');
         // 保存cwdを基点にprojectを解決し、source集合の相対pathからリポジトリ基準を復元する
         foreach (var argument in command.Arguments)
         {
@@ -217,7 +217,7 @@ internal sealed class ConditionPaths
             );
             if (project is not null)
             {
-                root_ = normalized[..^(project.RelativePath.Length + 1)];
+                _root = normalized[..^(project.RelativePath.Length + 1)];
                 break;
             }
         }
@@ -225,12 +225,12 @@ internal sealed class ConditionPaths
 
     internal string CommandExecutable()
     {
-        var name = FileName(command_.ExecutablePath);
+        var name = FileName(_command.ExecutablePath);
         if (name is "dotnet" or "dotnet.exe")
         {
             return "tool:dotnet";
         }
-        var harness = source_.AssembliesBefore.FirstOrDefault(x => x.Role == AssemblyRole.Harness);
+        var harness = _source.AssembliesBefore.FirstOrDefault(x => x.Role == AssemblyRole.Harness);
         if (harness is not null)
         {
             // 名前に含まれるドットと、実行形式の拡張子を区別する。
@@ -240,15 +240,15 @@ internal sealed class ConditionPaths
                 return "assembly:Harness";
             }
         }
-        return Value(command_.ExecutablePath);
+        return Value(_command.ExecutablePath);
     }
 
     internal string[] CommandArguments()
     {
         var values = new List<string>();
-        for (var index = 0; index < command_.Arguments.Count; index++)
+        for (var index = 0; index < _command.Arguments.Count; index++)
         {
-            var argument = command_.Arguments[index];
+            var argument = _command.Arguments[index];
             var parts = argument.Split('=', 2);
             if (parts[0] is "--output" or "--artifacts" or "--run-id" or "--run-config")
             {
@@ -275,20 +275,20 @@ internal sealed class ConditionPaths
     internal string Value(string value)
     {
         var path = ProjectPath(value);
-        if (path.Equals(root_, StringComparison.OrdinalIgnoreCase))
+        if (path.Equals(_root, StringComparison.OrdinalIgnoreCase))
         {
             return "repository-root";
         }
-        var assembly = source_.AssembliesBefore.FirstOrDefault(x =>
+        var assembly = _source.AssembliesBefore.FirstOrDefault(x =>
             Normalize(x.Path).Equals(path, StringComparison.OrdinalIgnoreCase)
         );
         if (assembly is not null)
         {
             return "assembly:" + assembly.Role;
         }
-        if (path.StartsWith(root_ + "/", StringComparison.OrdinalIgnoreCase))
+        if (path.StartsWith(_root + "/", StringComparison.OrdinalIgnoreCase))
         {
-            var relative = path[(root_.Length + 1)..];
+            var relative = path[(_root.Length + 1)..];
             return (relative.EndsWith(".csproj", StringComparison.OrdinalIgnoreCase) ? "project:" : "repository:")
                 + relative;
         }
@@ -303,9 +303,9 @@ internal sealed class ConditionPaths
     internal string AssetArgument(string value)
     {
         var path = Normalize(value);
-        var references = assets_
+        var references = _assets
             .Assets.SelectMany(x => x.Sources.Select(y => y.RelativePath).Append(x.Binary.RelativePath))
-            .Append(assets_.Profile.RelativePath);
+            .Append(_assets.Profile.RelativePath);
         foreach (var reference in references)
         {
             var relative = Normalize(reference);
@@ -325,7 +325,7 @@ internal sealed class ConditionPaths
     private string ProjectPath(string path)
     {
         return path.EndsWith(".csproj", StringComparison.OrdinalIgnoreCase)
-            ? Normalize(Path.GetFullPath(path, command_.WorkingDirectory))
+            ? Normalize(Path.GetFullPath(path, _command.WorkingDirectory))
             : Normalize(path);
     }
 

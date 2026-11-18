@@ -9,12 +9,12 @@ internal sealed class ElementInstance(ReadOnlySpan<WasmValue> values)
     /// <summary>
     /// 現在保持している参照列
     /// </summary>
-    private WasmValue[] values_ = values.ToArray();
+    private WasmValue[] _values = values.ToArray();
 
     /// <summary>
     /// 現在保持している要素数 破棄後は0
     /// </summary>
-    internal uint Length => (uint)values_.Length;
+    internal uint Length => (uint)_values.Length;
 
     /// <summary>
     /// 指定範囲をtableへ転送し、供給元の参照列を保持する
@@ -27,12 +27,12 @@ internal sealed class ElementInstance(ReadOnlySpan<WasmValue> values)
     internal bool TryInitialize(WasmTable table, uint destination, uint source, uint length)
     {
         // 全範囲が配列に収まることを確かめてから、Span用のintへ変換する。
-        if ((ulong)source + length > (ulong)values_.Length)
+        if ((ulong)source + length > (ulong)_values.Length)
         {
             return false;
         }
 
-        return table.TryWrite(destination, values_.AsSpan((int)source, (int)length));
+        return table.TryWrite(destination, _values.AsSpan((int)source, (int)length));
     }
 
     /// <summary>
@@ -40,6 +40,6 @@ internal sealed class ElementInstance(ReadOnlySpan<WasmValue> values)
     /// </summary>
     internal void Drop()
     {
-        values_ = [];
+        _values = [];
     }
 }

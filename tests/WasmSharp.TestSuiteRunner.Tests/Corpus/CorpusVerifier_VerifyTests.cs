@@ -756,7 +756,7 @@ internal class CorpusVerifier_VerifyTests
         }
     }
 
-    private static readonly int[] expectedCommandIndices_ = [0, 2];
+    private static readonly int[] __expectedCommandIndices = [0, 2];
 
     [Test]
     public async Task 同じ素材を複数commandが参照する_両方のcommandに参照数の理由を残す()
@@ -777,7 +777,7 @@ internal class CorpusVerifier_VerifyTests
         using (Assert.Multiple())
         {
             await Assert.That(input.Modules).IsEmpty();
-            await Assert.That(input.ModuleIssues.Keys).IsEquivalentTo(expectedCommandIndices_);
+            await Assert.That(input.ModuleIssues.Keys).IsEquivalentTo(__expectedCommandIndices);
             foreach (var issue in input.ModuleIssues.Values)
             {
                 await Assert.That(issue.Path).IsEqualTo("modules/a.0.wasm");

@@ -19,12 +19,12 @@ public sealed class WasmMemory
     /// <summary>
     /// ページ単位の記憶領域
     /// </summary>
-    private byte[][] pages_;
+    private byte[][] _pages;
 
     /// <summary>
     /// 現在のページ数
     /// </summary>
-    public uint PageCount => (uint)pages_.Length;
+    public uint PageCount => (uint)_pages.Length;
 
     /// <summary>
     /// 宣言された最大ページ数 指定がなければnull
@@ -51,10 +51,10 @@ public sealed class WasmMemory
             throw new ArgumentException("memoryのlimitsがCore 2.0の制約を満たしません。", nameof(limits));
         }
 
-        pages_ = new byte[limits.Minimum][];
-        for (var index = 0; index < pages_.Length; index++)
+        _pages = new byte[limits.Minimum][];
+        for (var index = 0; index < _pages.Length; index++)
         {
-            pages_[index] = new byte[PAGE_SIZE];
+            _pages[index] = new byte[PAGE_SIZE];
         }
         MaximumPages = limits.Maximum;
     }
@@ -111,13 +111,13 @@ public sealed class WasmMemory
 
         // 追加領域の割当が全件成功するまで、既存のページ表を変更しない。
         var pages = new byte[(int)nextPageCount][];
-        pages_.CopyTo(pages, 0);
-        for (var index = pages_.Length; index < pages.Length; index++)
+        _pages.CopyTo(pages, 0);
+        for (var index = _pages.Length; index < pages.Length; index++)
         {
             pages[index] = new byte[PAGE_SIZE];
         }
 
-        pages_ = pages;
+        _pages = pages;
         return true;
     }
 
@@ -161,7 +161,7 @@ public sealed class WasmMemory
         {
             var pageOffset = (int)(offset % PAGE_SIZE);
             var length = Math.Min(PAGE_SIZE - pageOffset, destination.Length);
-            pages_[(int)(offset / PAGE_SIZE)].AsSpan(pageOffset, length).CopyTo(destination);
+            _pages[(int)(offset / PAGE_SIZE)].AsSpan(pageOffset, length).CopyTo(destination);
             offset += (uint)length;
             destination = destination[length..];
         }
@@ -186,7 +186,7 @@ public sealed class WasmMemory
         {
             var pageOffset = (int)(offset % PAGE_SIZE);
             var length = Math.Min(PAGE_SIZE - pageOffset, source.Length);
-            source[..length].CopyTo(pages_[(int)(offset / PAGE_SIZE)].AsSpan(pageOffset, length));
+            source[..length].CopyTo(_pages[(int)(offset / PAGE_SIZE)].AsSpan(pageOffset, length));
             offset += (uint)length;
             source = source[length..];
         }
@@ -218,9 +218,9 @@ public sealed class WasmMemory
                 var destinationOffset = (int)((destinationEnd - 1) % PAGE_SIZE) + 1;
                 var sourceOffset = (int)((sourceEnd - 1) % PAGE_SIZE) + 1;
                 var count = (int)Math.Min(length, (ulong)Math.Min(destinationOffset, sourceOffset));
-                pages_[(int)((sourceEnd - 1) / PAGE_SIZE)]
+                _pages[(int)((sourceEnd - 1) / PAGE_SIZE)]
                     .AsSpan(sourceOffset - count, count)
-                    .CopyTo(pages_[(int)((destinationEnd - 1) / PAGE_SIZE)].AsSpan(destinationOffset - count, count));
+                    .CopyTo(_pages[(int)((destinationEnd - 1) / PAGE_SIZE)].AsSpan(destinationOffset - count, count));
                 destinationEnd -= (uint)count;
                 sourceEnd -= (uint)count;
                 length -= (uint)count;
@@ -234,9 +234,9 @@ public sealed class WasmMemory
             var destinationOffset = (int)(destination % PAGE_SIZE);
             var sourceOffset = (int)(source % PAGE_SIZE);
             var count = (int)Math.Min(length, (ulong)Math.Min(PAGE_SIZE - destinationOffset, PAGE_SIZE - sourceOffset));
-            pages_[(int)(source / PAGE_SIZE)]
+            _pages[(int)(source / PAGE_SIZE)]
                 .AsSpan(sourceOffset, count)
-                .CopyTo(pages_[(int)(destination / PAGE_SIZE)].AsSpan(destinationOffset, count));
+                .CopyTo(_pages[(int)(destination / PAGE_SIZE)].AsSpan(destinationOffset, count));
             destination += (uint)count;
             source += (uint)count;
             length -= (uint)count;
@@ -263,7 +263,7 @@ public sealed class WasmMemory
         {
             var pageOffset = (int)(destination % PAGE_SIZE);
             var count = (int)Math.Min(length, (ulong)(PAGE_SIZE - pageOffset));
-            pages_[(int)(destination / PAGE_SIZE)].AsSpan(pageOffset, count).Fill(value);
+            _pages[(int)(destination / PAGE_SIZE)].AsSpan(pageOffset, count).Fill(value);
             destination += (uint)count;
             length -= (uint)count;
         }

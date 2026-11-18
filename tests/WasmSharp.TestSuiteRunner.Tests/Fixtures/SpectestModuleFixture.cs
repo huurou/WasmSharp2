@@ -4,7 +4,7 @@ namespace WasmSharp.TestSuiteRunner.Tests.Fixtures;
 
 internal static class SpectestModuleFixture
 {
-    internal static readonly string[] functionNames_ =
+    internal static readonly string[] FunctionNames =
     [
         "print",
         "print_i32",
@@ -15,7 +15,7 @@ internal static class SpectestModuleFixture
         "print_f64_f64",
     ];
 
-    internal static readonly byte[][] parameterTypes_ =
+    internal static readonly byte[][] ParameterTypes =
     [
         [],
         [0x7F],
@@ -35,7 +35,7 @@ internal static class SpectestModuleFixture
 
     internal static WasmModule Create()
     {
-        var imports = functionNames_.Select((x, i) => (x, (byte)0, new byte[] { (byte)i })).ToList();
+        var imports = FunctionNames.Select((x, i) => (x, (byte)0, new byte[] { (byte)i })).ToList();
         imports.AddRange([
             ("global_i32", 3, new byte[] { 0x7F, 0 }),
             ("global_i64", 3, new byte[] { 0x7E, 0 }),
@@ -60,7 +60,7 @@ internal static class SpectestModuleFixture
     private static WasmModule Create(bool start, params (string Name, byte Kind, byte[] Type)[] imports)
     {
         var indices = new uint[4];
-        byte[] types = [7, .. parameterTypes_.SelectMany(x => (byte[])[0x60, (byte)x.Length, .. x, 0])];
+        byte[] types = [7, .. ParameterTypes.SelectMany(x => (byte[])[0x60, (byte)x.Length, .. x, 0])];
         byte[] declarations =
         [
             .. Unsigned((uint)imports.Length),

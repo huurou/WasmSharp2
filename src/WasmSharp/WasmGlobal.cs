@@ -9,7 +9,7 @@ public sealed class WasmGlobal
     /// <summary>
     /// 現在の値
     /// </summary>
-    private WasmValue value_;
+    private WasmValue _value;
 
     /// <summary>
     /// globalの型と可変性
@@ -24,7 +24,7 @@ public sealed class WasmGlobal
     /// <exception cref="ArgumentException">設定する値の型がglobalの型と一致しない場合 現在値は変更しない</exception>
     public WasmValue Value
     {
-        get => value_;
+        get => _value;
         set
         {
             if (!Type.IsMutable)
@@ -37,7 +37,7 @@ public sealed class WasmGlobal
                 throw new ArgumentException("globalの型と値の型が一致しません。", nameof(value));
             }
 
-            value_ = value;
+            _value = value;
         }
     }
 
@@ -74,7 +74,7 @@ public sealed class WasmGlobal
 
         Type = type;
         // 不変globalへの更新は禁止するが、生成時の初期値は直接設定する。
-        value_ = initialValue;
+        _value = initialValue;
     }
 
     /// <summary>
@@ -83,6 +83,6 @@ public sealed class WasmGlobal
     /// <param name="value">検証で型とglobalの可変性を確認済みの値</param>
     internal void SetValidatedValue(WasmValue value)
     {
-        value_ = value;
+        _value = value;
     }
 }

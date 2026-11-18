@@ -5,7 +5,7 @@ namespace WasmSharp.TestSuiteRunner.Tests.Execution;
 
 internal class ScriptState_ResolveModuleTests
 {
-    private readonly WasmExecutionContext context_ = new WasmExecutionContext();
+    private readonly WasmExecutionContext _context = new WasmExecutionContext();
 
     [Test]
     public async Task 通常moduleを処理する前に識別子を省略する_nullを返す()
@@ -25,7 +25,7 @@ internal class ScriptState_ResolveModuleTests
     {
         // Arrange
         var state = new ScriptState("a.wast");
-        state.SetModule(ModuleFixture.CreateCommand(0, "$M"), ModuleFixture.Instantiate(context_));
+        state.SetModule(ModuleFixture.CreateCommand(0, "$M"), ModuleFixture.Instantiate(_context));
 
         // Act
         var binding = state.ResolveModule("$N");
@@ -39,8 +39,8 @@ internal class ScriptState_ResolveModuleTests
     {
         // Arrange
         var state = new ScriptState("a.wast");
-        var named = ModuleFixture.Instantiate(context_);
-        var last = ModuleFixture.Instantiate(context_);
+        var named = ModuleFixture.Instantiate(_context);
+        var last = ModuleFixture.Instantiate(_context);
         state.SetModule(ModuleFixture.CreateCommand(0, "$M"), named);
         state.SetModule(ModuleFixture.CreateCommand(1, "$N"), last);
 
@@ -56,8 +56,8 @@ internal class ScriptState_ResolveModuleTests
     {
         // Arrange
         var state = new ScriptState("a.wast");
-        var last = ModuleFixture.Instantiate(context_);
-        state.SetModule(ModuleFixture.CreateCommand(0, "$M"), ModuleFixture.Instantiate(context_));
+        var last = ModuleFixture.Instantiate(_context);
+        state.SetModule(ModuleFixture.CreateCommand(0, "$M"), ModuleFixture.Instantiate(_context));
         state.SetModule(ModuleFixture.CreateCommand(1, null), last);
 
         // Act

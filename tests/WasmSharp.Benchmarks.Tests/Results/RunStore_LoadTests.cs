@@ -8,25 +8,25 @@ namespace WasmSharp.Benchmarks.Tests.Results;
 
 internal class RunStore_LoadTests
 {
-    private readonly CaseJson json_ = new CaseJson();
+    private readonly CaseJson _json = new CaseJson();
 
     [Test]
     public async Task 完了時刻があっても予定ケースが欠落している_未完了と原因を返す()
     {
         // Arrange
         using var fixture = new RunStoreFixture();
-        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, json_);
+        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, _json);
         fixture.SaveConditions(store);
         fixture.SaveSucceededCase(store);
         store.Complete(ResultStatus.Succeeded);
-        var completed = RunStore.Load(fixture.DirectoryPath, json_);
+        var completed = RunStore.Load(fixture.DirectoryPath, _json);
         File.WriteAllBytes(
             Path.Combine(fixture.DirectoryPath, "run.json"),
-            JsonSerializer.SerializeToUtf8Bytes(completed with { Cases = [] }, json_.Options)
+            JsonSerializer.SerializeToUtf8Bytes(completed with { Cases = [] }, _json.Options)
         );
 
         // Act
-        var actual = RunStore.Load(fixture.DirectoryPath, json_);
+        var actual = RunStore.Load(fixture.DirectoryPath, _json);
 
         // Assert
         using (Assert.Multiple())
@@ -42,21 +42,21 @@ internal class RunStore_LoadTests
     {
         // Arrange
         using var fixture = new RunStoreFixture();
-        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, json_);
+        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, _json);
         fixture.SaveConditions(store);
         fixture.SaveSucceededCase(store);
         store.Complete(ResultStatus.Succeeded);
-        var completed = RunStore.Load(fixture.DirectoryPath, json_);
+        var completed = RunStore.Load(fixture.DirectoryPath, _json);
         var content = "null"u8.ToArray();
         var source = completed.SourceFile! with { Sha256 = Convert.ToHexStringLower(SHA256.HashData(content)) };
         File.WriteAllBytes(Path.Combine(fixture.DirectoryPath, source.RelativePath), content);
         File.WriteAllBytes(
             Path.Combine(fixture.DirectoryPath, "run.json"),
-            JsonSerializer.SerializeToUtf8Bytes(completed with { SourceFile = source }, json_.Options)
+            JsonSerializer.SerializeToUtf8Bytes(completed with { SourceFile = source }, _json.Options)
         );
 
         // Act
-        var actual = RunStore.Load(fixture.DirectoryPath, json_);
+        var actual = RunStore.Load(fixture.DirectoryPath, _json);
 
         // Assert
         using (Assert.Multiple())
@@ -78,7 +78,7 @@ internal class RunStore_LoadTests
     {
         // Arrange
         using var fixture = new RunStoreFixture();
-        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, json_);
+        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, _json);
         fixture.SaveConditions(store);
         fixture.SaveSucceededCase(store);
         store.Complete(ResultStatus.Succeeded);
@@ -93,7 +93,7 @@ internal class RunStore_LoadTests
         }
 
         // Act
-        var actual = RunStore.Load(fixture.DirectoryPath, json_);
+        var actual = RunStore.Load(fixture.DirectoryPath, _json);
 
         // Assert
         using (Assert.Multiple())
@@ -111,14 +111,14 @@ internal class RunStore_LoadTests
     {
         // Arrange
         using var fixture = new RunStoreFixture();
-        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, json_);
+        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, _json);
         fixture.SaveConditions(store);
         fixture.SaveSucceededCase(store);
         store.Complete(ResultStatus.Succeeded);
         File.WriteAllText(Path.Combine(fixture.DirectoryPath, relativePath), "破損");
 
         // Act
-        var actual = RunStore.Load(fixture.DirectoryPath, json_);
+        var actual = RunStore.Load(fixture.DirectoryPath, _json);
 
         // Assert
         await Assert.That(actual.Status).IsEqualTo(ResultStatus.Incomplete);
@@ -135,11 +135,11 @@ internal class RunStore_LoadTests
     {
         // Arrange
         using var fixture = new RunStoreFixture();
-        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, json_);
+        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, _json);
         fixture.SaveConditions(store);
         var result = fixture.SaveSucceededCase(store);
         store.Complete(ResultStatus.Succeeded);
-        var completed = RunStore.Load(fixture.DirectoryPath, json_);
+        var completed = RunStore.Load(fixture.DirectoryPath, _json);
         var missing = new ManifestFile("raw/missing-measurements.csv", "missing-hash");
         var changed = completed with
         {
@@ -153,11 +153,11 @@ internal class RunStore_LoadTests
         };
         File.WriteAllBytes(
             Path.Combine(fixture.DirectoryPath, "run.json"),
-            JsonSerializer.SerializeToUtf8Bytes(changed, json_.Options)
+            JsonSerializer.SerializeToUtf8Bytes(changed, _json.Options)
         );
 
         // Act
-        var actual = RunStore.Load(fixture.DirectoryPath, json_);
+        var actual = RunStore.Load(fixture.DirectoryPath, _json);
 
         // Assert
         using (Assert.Multiple())
@@ -178,11 +178,11 @@ internal class RunStore_LoadTests
         Directory.CreateDirectory(fixture.DirectoryPath);
         File.WriteAllBytes(
             Path.Combine(fixture.DirectoryPath, "run.json"),
-            JsonSerializer.SerializeToUtf8Bytes(fixture.Manifest with { CompletedAtUtc = null }, json_.Options)
+            JsonSerializer.SerializeToUtf8Bytes(fixture.Manifest with { CompletedAtUtc = null }, _json.Options)
         );
 
         // Act
-        var actual = RunStore.Load(fixture.DirectoryPath, json_);
+        var actual = RunStore.Load(fixture.DirectoryPath, _json);
 
         // Assert
         using (Assert.Multiple())
@@ -200,7 +200,7 @@ internal class RunStore_LoadTests
     {
         // Arrange
         using var fixture = new RunStoreFixture();
-        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, json_);
+        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, _json);
         var precheck = fixture.Check with
         {
             ExecutionStarted = false,
@@ -210,10 +210,10 @@ internal class RunStore_LoadTests
 
         // Act
         var file = store.SaveCheck(precheck);
-        var actual = RunStore.Load(fixture.DirectoryPath, json_);
+        var actual = RunStore.Load(fixture.DirectoryPath, _json);
         var saved = JsonSerializer.Deserialize<ProcessCheck>(
             File.ReadAllBytes(Path.Combine(fixture.DirectoryPath, file.RelativePath)),
-            json_.Options
+            _json.Options
         )!;
 
         // Assert

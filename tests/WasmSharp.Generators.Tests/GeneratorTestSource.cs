@@ -9,7 +9,6 @@ namespace WasmSharp.Generators.Tests;
 internal static class GeneratorTestSource
 {
     public const string EXECUTION_CONTRACTS = """
-        global using System;
         namespace WasmSharp
         {
             public sealed class WasmFunction;
@@ -35,7 +34,7 @@ internal static class GeneratorTestSource
         }
         """;
 
-    private static readonly ImmutableArray<MetadataReference> references_ =
+    private static readonly ImmutableArray<MetadataReference> __references =
     [
         .. ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
             .Split(Path.PathSeparator)
@@ -64,15 +63,17 @@ internal static class GeneratorTestSource
                 using var reader = new StreamReader(assembly.GetManifestResourceStream(x)!);
                 return CSharpSyntaxTree.ParseText(reader.ReadToEnd());
             });
+        // Roslynで直接コンパイルするため、埋め込んだソースに必要な暗黙のusingを補う
+        var implicitUsings = CSharpSyntaxTree.ParseText("global using System;\nglobal using System.Linq;");
         return CSharpCompilation.Create(
             "GeneratedInstructions_" + Guid.NewGuid().ToString("N"),
             contracts
+                .Append(implicitUsings)
                 .Append(CSharpSyntaxTree.ParseText(declarations))
                 .Append(
                     CSharpSyntaxTree.ParseText(
                         executionContracts
                             ?? """
-                            global using System;
                             namespace WasmSharp.Execution
                             {
                                 internal readonly struct ExecutionResult;
@@ -82,7 +83,7 @@ internal static class GeneratorTestSource
                             """
                     )
                 ),
-            references_,
+            __references,
             new CSharpCompilationOptions(
                 OutputKind.DynamicallyLinkedLibrary,
                 nullableContextOptions: NullableContextOptions.Enable

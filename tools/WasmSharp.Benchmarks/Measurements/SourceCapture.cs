@@ -10,8 +10,8 @@ namespace WasmSharp.Benchmarks.Measurements;
 /// </summary>
 internal sealed class SourceCapture(string repositoryDirectory, CaseJson json)
 {
-    private readonly string repositoryDirectory_ = Path.GetFullPath(repositoryDirectory);
-    private readonly CaseJson json_ = json;
+    private readonly string _repositoryDirectory = Path.GetFullPath(repositoryDirectory);
+    private readonly CaseJson _json = json;
 
     internal RunSource Before(RunStore store, IEnumerable<(AssemblyRole Role, string Path)> assemblies)
     {
@@ -31,7 +31,7 @@ internal sealed class SourceCapture(string repositoryDirectory, CaseJson json)
                 "source/index.diff",
                 CaptureCommand.RunBytes(
                     "git",
-                    repositoryDirectory_,
+                    _repositoryDirectory,
                     "diff",
                     "--no-color",
                     "--src-prefix=a/",
@@ -47,7 +47,7 @@ internal sealed class SourceCapture(string repositoryDirectory, CaseJson json)
                 "source/worktree.diff",
                 CaptureCommand.RunBytes(
                     "git",
-                    repositoryDirectory_,
+                    _repositoryDirectory,
                     "diff",
                     "--no-color",
                     "--src-prefix=a/",
@@ -158,7 +158,7 @@ internal sealed class SourceCapture(string repositoryDirectory, CaseJson json)
         using var evaluation = JsonDocument.Parse(
             CaptureCommand.Run(
                 "dotnet",
-                repositoryDirectory_,
+                _repositoryDirectory,
                 "msbuild",
                 projectPath,
                 "-property:Configuration=Release",
@@ -202,7 +202,7 @@ internal sealed class SourceCapture(string repositoryDirectory, CaseJson json)
                 }
             }
 
-            if (directory == repositoryDirectory_)
+            if (directory == _repositoryDirectory)
             {
                 break;
             }
@@ -222,7 +222,7 @@ internal sealed class SourceCapture(string repositoryDirectory, CaseJson json)
     {
         var files = paths.Order(StringComparer.Ordinal).Select(x => new ManifestFile(x, Hash(FullPath(x)))).ToList();
         // pathと内容hashを別々のJSON要素にし、並びと区切りを固定する
-        var identity = JsonSerializer.SerializeToUtf8Bytes(files, json_.Options);
+        var identity = JsonSerializer.SerializeToUtf8Bytes(files, _json.Options);
         return new(head, Convert.ToHexStringLower(SHA256.HashData(identity)), files);
     }
 
@@ -252,7 +252,7 @@ internal sealed class SourceCapture(string repositoryDirectory, CaseJson json)
 
     private string RelativePath(string path)
     {
-        var relativePath = Path.GetRelativePath(repositoryDirectory_, Path.GetFullPath(path)).Replace('\\', '/');
+        var relativePath = Path.GetRelativePath(_repositoryDirectory, Path.GetFullPath(path)).Replace('\\', '/');
         if (
             relativePath == ".."
             || relativePath.StartsWith("../", StringComparison.Ordinal)
@@ -267,12 +267,12 @@ internal sealed class SourceCapture(string repositoryDirectory, CaseJson json)
 
     private string FullPath(string path)
     {
-        return Path.Combine(repositoryDirectory_, path);
+        return Path.Combine(_repositoryDirectory, path);
     }
 
     private string Git(params string[] arguments)
     {
-        return CaptureCommand.Run("git", repositoryDirectory_, arguments);
+        return CaptureCommand.Run("git", _repositoryDirectory, arguments);
     }
 
     private static string Hash(string path)

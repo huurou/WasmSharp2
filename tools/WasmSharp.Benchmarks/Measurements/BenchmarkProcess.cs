@@ -12,26 +12,26 @@ namespace WasmSharp.Benchmarks.Measurements;
 /// </summary>
 internal sealed class BenchmarkProcess
 {
-    private readonly CaseJson json_ = new CaseJson();
-    private readonly MeasurementMethods methods_ = new MeasurementMethods();
-    private readonly RunConfiguration configuration_;
-    private readonly RunStore store_;
-    private ProcessCheck check_;
+    private readonly CaseJson _json = new CaseJson();
+    private readonly MeasurementMethods _methods = new MeasurementMethods();
+    private readonly RunConfiguration _configuration;
+    private readonly RunStore _store;
+    private ProcessCheck _check;
 
     private BenchmarkProcess(string measurementMethod)
     {
         var path =
             Environment.GetEnvironmentVariable(RunConfiguration.ENVIRONMENT_VARIABLE)
             ?? throw new InvalidOperationException("run設定の環境変数がありません。");
-        var configuration = JsonSerializer.Deserialize<RunConfiguration>(File.ReadAllBytes(path), json_.Options)!;
-        var caseId = methods_.GetCaseId(measurementMethod);
+        var configuration = JsonSerializer.Deserialize<RunConfiguration>(File.ReadAllBytes(path), _json.Options)!;
+        var caseId = _methods.GetCaseId(measurementMethod);
         if (!configuration.PlannedCaseIds.Contains(caseId))
         {
             throw new InvalidDataException("測定メソッドがrunの予定ケースにありません。");
         }
-        configuration_ = configuration;
-        store_ = RunStore.OpenChecks(configuration.OutputDirectory, configuration.RunId, json_);
-        check_ = new(
+        _configuration = configuration;
+        _store = RunStore.OpenChecks(configuration.OutputDirectory, configuration.RunId, _json);
+        _check = new(
             configuration.RunId,
             caseId,
             configuration.JobId,
@@ -58,7 +58,7 @@ internal sealed class BenchmarkProcess
             () =>
             {
                 CaptureAffinity(after: false);
-                check_ = check_ with
+                _check = _check with
                 {
                     LoadedAssemblies =
                     [
@@ -78,11 +78,11 @@ internal sealed class BenchmarkProcess
         Save();
         RunChecked(
             RunStage.Precheck,
-            () => initialize(AssetManifest.Load(configuration_.AssetManifestPath, json_, methods_), check_.CaseId, json_)
+            () => initialize(AssetManifest.Load(_configuration.AssetManifestPath, _json, _methods), _check.CaseId, _json)
         );
-        check_ = check_ with { Precheck = Success(), LastConfirmedStage = RunStage.Precheck };
+        _check = _check with { Precheck = Success(), LastConfirmedStage = RunStage.Precheck };
         Save();
-        Save(check_ with { ExecutionStarted = true, LastConfirmedStage = RunStage.ExecutionStarted });
+        Save(_check with { ExecutionStarted = true, LastConfirmedStage = RunStage.ExecutionStarted });
     }
 
     internal void Cleanup(Action verify)
@@ -95,7 +95,7 @@ internal sealed class BenchmarkProcess
                 verify();
             }
         );
-        check_ = check_ with { Postcheck = Success(), LastConfirmedStage = RunStage.Postcheck };
+        _check = _check with { Postcheck = Success(), LastConfirmedStage = RunStage.Postcheck };
         Save();
     }
 
@@ -144,12 +144,12 @@ internal sealed class BenchmarkProcess
             reason = "processのaffinity観測はWindows/Linuxだけに対応しています。";
         }
 
-        check_ = check_ with
+        _check = _check with
         {
-            AffinityBefore = after ? check_.AffinityBefore : mask,
-            AffinityAfter = after ? mask : check_.AffinityAfter,
+            AffinityBefore = after ? _check.AffinityBefore : mask,
+            AffinityAfter = after ? mask : _check.AffinityAfter,
             AffinityUnavailableReason = reason is null
-                ? check_.AffinityUnavailableReason
+                ? _check.AffinityUnavailableReason
                 : (after ? "後観測: " : "前観測: ") + reason,
         };
     }
@@ -160,10 +160,10 @@ internal sealed class BenchmarkProcess
             ResultStatus.Failed,
             [new("固定期待値との照合", "全項目一致", exception.Message, false)]
         );
-        check_ = check_ with
+        _check = _check with
         {
-            Precheck = stage == RunStage.Precheck ? failed : check_.Precheck,
-            Postcheck = stage == RunStage.Postcheck ? failed : check_.Postcheck,
+            Precheck = stage == RunStage.Precheck ? failed : _check.Precheck,
+            Postcheck = stage == RunStage.Postcheck ? failed : _check.Postcheck,
         };
         AddFailure(stage, "計時外の準備または検査に失敗しました。", exception);
         try
@@ -178,15 +178,15 @@ internal sealed class BenchmarkProcess
 
     private void AddFailure(RunStage stage, string reason, Exception exception)
     {
-        check_ = check_ with
+        _check = _check with
         {
             Failures =
             [
-                .. check_.Failures,
+                .. _check.Failures,
                 new(
-                    check_.CaseId,
+                    _check.CaseId,
                     stage,
-                    check_.LastConfirmedStage,
+                    _check.LastConfirmedStage,
                     reason,
                     exception.GetType().FullName,
                     exception.Message,
@@ -198,16 +198,16 @@ internal sealed class BenchmarkProcess
 
     private void Save(ProcessCheck? snapshot = null)
     {
-        var saved = snapshot ?? check_;
+        var saved = snapshot ?? _check;
         try
         {
-            store_.SaveCheck(saved);
+            _store.SaveCheck(saved);
         }
         catch (Exception exception)
         {
             AddFailure(RunStage.Saving, "検査snapshotの保存に失敗しました。", exception);
             throw;
         }
-        check_ = saved;
+        _check = saved;
     }
 }

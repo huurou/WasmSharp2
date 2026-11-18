@@ -4,7 +4,7 @@ namespace WasmSharp.Benchmarks.Tests.Smoke;
 
 internal class SmokeBenchmarks_CleanupTests
 {
-    private readonly WasmExecutionContext context_ = new WasmExecutionContext();
+    private readonly WasmExecutionContext _context = new WasmExecutionContext();
 
     [Test]
     public async Task 最後のデコード結果を後検査する_最新moduleだけがインスタンス化できる状態になる()
@@ -19,8 +19,8 @@ internal class SmokeBenchmarks_CleanupTests
         benchmark.Cleanup();
 
         // Assert
-        await Assert.That(() => last.Instantiate(context_, new WasmImports())).ThrowsNothing();
+        await Assert.That(() => last.Instantiate(_context, new WasmImports())).ThrowsNothing();
         // Act & Assert
-        await Assert.That(() => first.Instantiate(context_, new WasmImports())).ThrowsExactly<InvalidOperationException>();
+        await Assert.That(() => first.Instantiate(_context, new WasmImports())).ThrowsExactly<InvalidOperationException>();
     }
 }

@@ -4,13 +4,13 @@ namespace WasmSharp.TestSuiteRunner.Tests.Corpus;
 
 internal class ProfileSnapshot_ToProfileTests
 {
-    private readonly Core2ProfileLoader profileLoader_ = new Core2ProfileLoader();
+    private readonly Core2ProfileLoader _profileLoader = new Core2ProfileLoader();
 
     [Test]
     public async Task 保存用profileを不変モデルへ戻す_全条件を保持してコレクションをコピーする()
     {
         // Arrange
-        var original = profileLoader_.Load();
+        var original = _profileLoader.Load();
         var snapshot = ProfileSnapshot.FromProfile(original);
 
         // Act

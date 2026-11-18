@@ -6,14 +6,14 @@ namespace WasmSharp.Benchmarks.Tests.Results;
 
 internal class RunStore_SaveFileTests
 {
-    private readonly CaseJson json_ = new CaseJson();
+    private readonly CaseJson _json = new CaseJson();
 
     [Test]
     public async Task Runの外を保存先に指定する_書き込みを拒否する()
     {
         // Arrange
         using var fixture = new RunStoreFixture();
-        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, json_);
+        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, _json);
 
         // Act & Assert
         var failure = await Assert

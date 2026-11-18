@@ -6,13 +6,13 @@ namespace WasmSharp.Benchmarks.Tests.Measurements;
 
 internal class BenchmarkRun_DescribeProcessTests
 {
-    private readonly CaseJson json_ = new CaseJson();
-    private readonly MeasurementMethods methods_ = new MeasurementMethods();
-    private readonly BenchmarkRun benchmarkRun_;
+    private readonly CaseJson _json = new CaseJson();
+    private readonly MeasurementMethods _methods = new MeasurementMethods();
+    private readonly BenchmarkRun _benchmarkRun;
 
     public BenchmarkRun_DescribeProcessTests()
     {
-        benchmarkRun_ = new BenchmarkRun(json_, methods_);
+        _benchmarkRun = new BenchmarkRun(_json, _methods);
     }
 
     [Test]
@@ -28,7 +28,7 @@ internal class BenchmarkRun_DescribeProcessTests
             .WithEnvironmentVariable("UNRELATED_API_TOKEN", "must not be saved");
 
         // Act
-        var process = benchmarkRun_.DescribeProcess("Measurement", job);
+        var process = _benchmarkRun.DescribeProcess("Measurement", job);
 
         // Assert
         using (Assert.Multiple())

@@ -5,7 +5,7 @@ namespace WasmSharp.TestSuiteRunner.Tests.Reports;
 
 internal class CompletionPolicy_RunTests
 {
-    private static readonly string[] expectedReasons_ =
+    private static readonly string[] __expectedReasons =
     [
         "入力単位のrunner_errorが2件あります。",
         "操作全体の診断が1件あります。",
@@ -31,7 +31,7 @@ internal class CompletionPolicy_RunTests
         using (Assert.Multiple())
         {
             await Assert.That(decision.ExitCode).IsEqualTo(1);
-            await Assert.That(decision.Reasons).IsEquivalentTo(expectedReasons_);
+            await Assert.That(decision.Reasons).IsEquivalentTo(__expectedReasons);
         }
     }
 

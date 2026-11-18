@@ -15,8 +15,8 @@ namespace WasmSharp.Benchmarks.Tests.Measurements;
 
 internal partial class EnvironmentCapture_CaptureTests
 {
-    private readonly CaseJson json_ = new CaseJson();
-    private readonly EnvironmentCapture environmentCapture_ = new EnvironmentCapture();
+    private readonly CaseJson _json = new CaseJson();
+    private readonly EnvironmentCapture _environmentCapture = new EnvironmentCapture();
 
     [Test]
     [NotInParallel]
@@ -26,7 +26,7 @@ internal partial class EnvironmentCapture_CaptureTests
         const string FIRST_VARIABLE = "DOTNET_GC_CUSTOM_A";
         const string LAST_VARIABLE = "DOTNET_GC_CUSTOM_Z";
         using var fixture = new RunStoreFixture();
-        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, json_);
+        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, _json);
         var command = new CommandInvocation(Environment.ProcessPath!, [], Environment.CurrentDirectory);
         var previousFirst = Environment.GetEnvironmentVariable(FIRST_VARIABLE);
         var previousLast = Environment.GetEnvironmentVariable(LAST_VARIABLE);
@@ -36,7 +36,7 @@ internal partial class EnvironmentCapture_CaptureTests
             Environment.SetEnvironmentVariable(FIRST_VARIABLE, "a");
 
             // Act
-            var captured = environmentCapture_.Capture(store, command, []);
+            var captured = _environmentCapture.Capture(store, command, []);
 
             // Assert
             var names = captured.EnvironmentVariables.Select(x => x.Name);
@@ -59,12 +59,12 @@ internal partial class EnvironmentCapture_CaptureTests
     {
         // Arrange
         using var fixture = new RunStoreFixture();
-        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, json_);
+        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, _json);
         var command = new CommandInvocation(Environment.ProcessPath!, [], Environment.CurrentDirectory);
         var windowsBefore = OperatingSystem.IsWindows() ? await ReadWindowsEnvironment() : null;
 
         // Act
-        var captured = environmentCapture_.Capture(store, command, []);
+        var captured = _environmentCapture.Capture(store, command, []);
         var windowsAfter = OperatingSystem.IsWindows() ? await ReadWindowsEnvironment() : null;
 
         // Assert
@@ -139,11 +139,11 @@ internal partial class EnvironmentCapture_CaptureTests
     {
         // Arrange
         using var fixture = new RunStoreFixture();
-        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, json_);
+        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, _json);
         var command = new CommandInvocation(Environment.ProcessPath!, [], Path.Combine(fixture.DirectoryPath, "missing"));
 
         // Act
-        var captured = environmentCapture_.Capture(store, command, []);
+        var captured = _environmentCapture.Capture(store, command, []);
 
         // Assert
         await Assert.That(captured.SdkVersion).StartsWith("Unavailable: ");

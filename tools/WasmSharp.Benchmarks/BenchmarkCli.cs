@@ -13,13 +13,13 @@ namespace WasmSharp.Benchmarks;
 /// </summary>
 internal sealed class BenchmarkCli
 {
-    private readonly CaseJson json_ = new CaseJson();
-    private readonly MeasurementMethods methods_ = new MeasurementMethods();
-    private readonly WasmExecutionContext context_ = new WasmExecutionContext();
+    private readonly CaseJson _json = new CaseJson();
+    private readonly MeasurementMethods _methods = new MeasurementMethods();
+    private readonly WasmExecutionContext _context = new WasmExecutionContext();
 
     internal int Run(string[] args, TextWriter output, TextWriter error)
     {
-        return Run(args, output, error, new BenchmarkRun(json_, methods_).Run);
+        return Run(args, output, error, new BenchmarkRun(_json, _methods).Run);
     }
 
     /// <summary>
@@ -71,7 +71,7 @@ internal sealed class BenchmarkCli
             _ => throw new ArgumentException("用途はmeasurementまたはsmokeを指定してください。"),
         };
         var manifestPath = Path.GetFullPath(options["--assets"]);
-        var assets = AssetManifest.Load(manifestPath, json_, methods_);
+        var assets = AssetManifest.Load(manifestPath, _json, _methods);
         var caseIds =
             options["--case"] == "all"
                 ? [.. assets.Catalog.Cases.Select(x => x.CaseId).Order(StringComparer.Ordinal)]
@@ -118,11 +118,11 @@ internal sealed class BenchmarkCli
 
     private int Check(string path, TextWriter output, TextWriter error)
     {
-        var assets = AssetManifest.Load(path, json_, methods_);
+        var assets = AssetManifest.Load(path, _json, _methods);
         var succeeded = true;
         foreach (var definition in assets.Catalog.Cases.OrderBy(x => x.CaseId, StringComparer.Ordinal))
         {
-            var result = CaseVerifier.Verify(context_, assets, definition.CaseId, json_);
+            var result = CaseVerifier.Verify(_context, assets, definition.CaseId, _json);
             output.WriteLine($"{result.CaseId}: {(result.Succeeded ? "Succeeded" : "Failed")} ({result.Stage})");
             if (!result.Succeeded)
             {
@@ -153,13 +153,13 @@ internal sealed class BenchmarkCli
                 throw new IOException("比較入力run内へ出力できません。");
             }
         }
-        var runs = baseline.Concat(current).Select(x => RunStore.Load(x, json_)).ToList();
+        var runs = baseline.Concat(current).Select(x => RunStore.Load(x, _json)).ToList();
         var policyPath = Path.GetFullPath(options["--policy"]);
         var policyBytes = File.ReadAllBytes(policyPath);
         var policy =
-            JsonSerializer.Deserialize<ComparisonPolicy>(policyBytes, json_.Options)
+            JsonSerializer.Deserialize<ComparisonPolicy>(policyBytes, _json.Options)
             ?? throw new InvalidDataException("policyのJSONがnullです。");
-        var report = new RunComparison(json_).Compare(
+        var report = new RunComparison(_json).Compare(
             new(
                 baseline,
                 current,
@@ -176,7 +176,7 @@ internal sealed class BenchmarkCli
         Directory.CreateDirectory(directory);
         using (var stream = new FileStream(Path.Combine(directory, "comparison.json"), FileMode.CreateNew))
         {
-            JsonSerializer.Serialize(stream, report, json_.Options);
+            JsonSerializer.Serialize(stream, report, _json.Options);
         }
         foreach (var result in report.Cases)
         {

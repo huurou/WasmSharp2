@@ -9,15 +9,15 @@ namespace WasmSharp.Benchmarks.Measurements;
 /// </summary>
 public class PreparationBenchmarks
 {
-    private readonly WasmExecutionContext context_ = new WasmExecutionContext();
-    private CaseJson json_ = null!;
-    private ImmutableArray<byte> moduleBytes_;
-    private BenchmarkProcess? process_;
-    private BenchmarkCase definition_ = null!;
-    private WasmModule validatedModule_ = null!;
-    private WasmImports imports_ = null!;
-    private WasmModule lastModule_ = null!;
-    private WasmInstance lastInstance_ = null!;
+    private readonly WasmExecutionContext _context = new WasmExecutionContext();
+    private CaseJson _json = null!;
+    private ImmutableArray<byte> _moduleBytes;
+    private BenchmarkProcess? _process;
+    private BenchmarkCase _definition = null!;
+    private WasmModule _validatedModule = null!;
+    private WasmImports _imports = null!;
+    private WasmModule _lastModule = null!;
+    private WasmInstance _lastInstance = null!;
 
     [GlobalSetup(Target = nameof(DecodeSmall))]
     public void SetupDecodeSmall()
@@ -28,7 +28,7 @@ public class PreparationBenchmarks
     [Benchmark(OperationsPerInvoke = 1)]
     public WasmModule DecodeSmall()
     {
-        return lastModule_ = WasmModule.Decode(moduleBytes_.AsSpan());
+        return _lastModule = WasmModule.Decode(_moduleBytes.AsSpan());
     }
 
     [GlobalSetup(Target = nameof(DecodeLarge))]
@@ -40,7 +40,7 @@ public class PreparationBenchmarks
     [Benchmark(OperationsPerInvoke = 1)]
     public WasmModule DecodeLarge()
     {
-        return lastModule_ = WasmModule.Decode(moduleBytes_.AsSpan());
+        return _lastModule = WasmModule.Decode(_moduleBytes.AsSpan());
     }
 
     [GlobalSetup(Target = nameof(DecodeValidateSmall))]
@@ -52,7 +52,7 @@ public class PreparationBenchmarks
     [Benchmark(OperationsPerInvoke = 1)]
     public WasmModule DecodeValidateSmall()
     {
-        return lastModule_ = WasmModule.Decode(moduleBytes_.AsSpan()).Validate();
+        return _lastModule = WasmModule.Decode(_moduleBytes.AsSpan()).Validate();
     }
 
     [GlobalSetup(Target = nameof(DecodeValidateLarge))]
@@ -64,7 +64,7 @@ public class PreparationBenchmarks
     [Benchmark(OperationsPerInvoke = 1)]
     public WasmModule DecodeValidateLarge()
     {
-        return lastModule_ = WasmModule.Decode(moduleBytes_.AsSpan()).Validate();
+        return _lastModule = WasmModule.Decode(_moduleBytes.AsSpan()).Validate();
     }
 
     [GlobalSetup(Target = nameof(InstantiateLarge))]
@@ -76,63 +76,63 @@ public class PreparationBenchmarks
     [Benchmark(OperationsPerInvoke = 1)]
     public WasmInstance InstantiateLarge()
     {
-        return lastInstance_ = validatedModule_.Instantiate(context_, imports_);
+        return _lastInstance = _validatedModule.Instantiate(_context, _imports);
     }
 
     [GlobalCleanup]
     public void Cleanup()
     {
-        if (process_ is null)
+        if (_process is null)
         {
             CheckLastResult();
             return;
         }
-        process_.Cleanup(CheckLastResult);
+        _process.Cleanup(CheckLastResult);
     }
 
     private void CheckLastResult()
     {
         Verify(
-            definition_.MeasurementStage == MeasurementStage.Instantiate
-                ? new InstanceObservation(lastInstance_)
-                : new ModuleObservation(lastModule_)
+            _definition.MeasurementStage == MeasurementStage.Instantiate
+                ? new InstanceObservation(_lastInstance)
+                : new ModuleObservation(_lastModule)
         );
     }
 
     internal void Initialize(LoadedAssets assets, string caseId, CaseJson json)
     {
-        json_ = json;
-        definition_ = assets.Catalog.Get(caseId);
-        moduleBytes_ = assets.GetBinary(definition_.AssetId);
-        var before = WasmModule.Decode(moduleBytes_.AsSpan());
-        if (definition_.MeasurementStage != MeasurementStage.Decode)
+        _json = json;
+        _definition = assets.Catalog.Get(caseId);
+        _moduleBytes = assets.GetBinary(_definition.AssetId);
+        var before = WasmModule.Decode(_moduleBytes.AsSpan());
+        if (_definition.MeasurementStage != MeasurementStage.Decode)
         {
             before.Validate();
         }
         Verify(
-            definition_.MeasurementStage == MeasurementStage.Instantiate
-                ? new InstanceObservation(before.Instantiate(context_, CaseVerifier.CreateImports()))
+            _definition.MeasurementStage == MeasurementStage.Instantiate
+                ? new InstanceObservation(before.Instantiate(_context, CaseVerifier.CreateImports()))
                 : new ModuleObservation(before)
         );
 
-        if (definition_.MeasurementStage == MeasurementStage.Instantiate)
+        if (_definition.MeasurementStage == MeasurementStage.Instantiate)
         {
-            validatedModule_ = WasmModule.Decode(moduleBytes_.AsSpan()).Validate();
-            imports_ = CaseVerifier.CreateImports();
+            _validatedModule = WasmModule.Decode(_moduleBytes.AsSpan()).Validate();
+            _imports = CaseVerifier.CreateImports();
         }
-        lastModule_ = null!;
-        lastInstance_ = null!;
+        _lastModule = null!;
+        _lastInstance = null!;
     }
 
     private void Setup(string method)
     {
-        process_ = BenchmarkProcess.Start(nameof(PreparationBenchmarks) + "." + method);
-        process_.Setup(Initialize);
+        _process = BenchmarkProcess.Start(nameof(PreparationBenchmarks) + "." + method);
+        _process.Setup(Initialize);
     }
 
     private void Verify(CaseObservation observation)
     {
-        var result = CaseVerifier.Verify(context_, definition_, observation, json_);
+        var result = CaseVerifier.Verify(_context, _definition, observation, _json);
         if (!result.Succeeded)
         {
             throw new InvalidOperationException(

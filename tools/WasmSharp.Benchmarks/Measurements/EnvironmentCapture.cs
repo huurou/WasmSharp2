@@ -22,7 +22,7 @@ internal sealed partial class EnvironmentCapture
     internal static string CurrentRuntimeVersion =>
         RuntimeInformation.FrameworkDescription + "; " + Version(typeof(object).Assembly);
 
-    private readonly string[] runtimeSettingPrefixes_ =
+    private readonly string[] _runtimeSettingPrefixes =
     [
         "GC",
         "Jit",
@@ -195,7 +195,7 @@ internal sealed partial class EnvironmentCapture
             }
 
             var setting = name[prefix.Length..];
-            return runtimeSettingPrefixes_.Any(x => setting.StartsWith(x, StringComparison.OrdinalIgnoreCase))
+            return _runtimeSettingPrefixes.Any(x => setting.StartsWith(x, StringComparison.OrdinalIgnoreCase))
                 || setting
                     is "ServerGC"
                         or "ConcurrentGC"

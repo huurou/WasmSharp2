@@ -15,7 +15,7 @@ public sealed class WasmModule
     /// <summary>
     /// 静的検証が成功し、実行コードとexport索引が確定しているかどうか
     /// </summary>
-    private bool isValidated_;
+    private bool _isValidated;
 
     /// <summary>
     /// 検証成功時に確定するordinalのexport名と、importを含むmodule全体の関数indexの対応
@@ -248,7 +248,7 @@ public sealed class WasmModule
     /// <exception cref="WasmValidateException">参照、リソース宣言、初期化式、startまたは関数の型・構造の規則に違反する場合</exception>
     public WasmModule Validate()
     {
-        if (isValidated_)
+        if (_isValidated)
         {
             return this;
         }
@@ -261,7 +261,7 @@ public sealed class WasmModule
         // 全成果が揃ってから反映し、最後に検証成功状態にする。
         FunctionCodes = functionCodes;
         FunctionExportIndices = functionExportIndices;
-        isValidated_ = true;
+        _isValidated = true;
 
         return this;
     }
@@ -342,7 +342,7 @@ public sealed class WasmModule
     /// <exception cref="InvalidOperationException">静的検証が完了していない場合</exception>
     private void RequireValidated()
     {
-        if (!isValidated_)
+        if (!_isValidated)
         {
             throw new InvalidOperationException("インスタンス化には検証の成功が必要です。");
         }

@@ -6,7 +6,7 @@ namespace WasmSharp.Benchmarks.Tests.Cases;
 
 internal partial class BenchmarkCase_DeserializeTests
 {
-    private static readonly string[] expectedCallCaseIds_ =
+    private static readonly string[] __expectedCallCaseIds =
     [
         "invoke.empty",
         "invoke.single",
@@ -24,14 +24,14 @@ internal partial class BenchmarkCase_DeserializeTests
 
         // Act
         var definitions = JsonSerializer
-            .Deserialize<List<BenchmarkCase>>(json, json_.Options)!
+            .Deserialize<List<BenchmarkCase>>(json, _json.Options)!
             .Where(x => x.MeasurementStage == MeasurementStage.Invoke && x.AssetId is "invoke" or "calls")
             .ToArray();
 
         // Assert
         using (Assert.Multiple())
         {
-            await Assert.That(definitions.Select(x => x.CaseId)).IsEquivalentTo(expectedCallCaseIds_);
+            await Assert.That(definitions.Select(x => x.CaseId)).IsEquivalentTo(__expectedCallCaseIds);
             foreach (var definition in definitions)
             {
                 await Assert.That(definition.CaseRevision).IsEqualTo(1U);
@@ -70,7 +70,7 @@ internal partial class BenchmarkCase_DeserializeTests
         var indirect = 17 + ITERATIONS / 2 * 4;
 
         // Act
-        var definitions = JsonSerializer.Deserialize<List<BenchmarkCase>>(json, json_.Options)!.ToDictionary(x => x.CaseId);
+        var definitions = JsonSerializer.Deserialize<List<BenchmarkCase>>(json, _json.Options)!.ToDictionary(x => x.CaseId);
 
         // Assert
         using (Assert.Multiple())
@@ -124,7 +124,7 @@ internal partial class BenchmarkCase_DeserializeTests
 
         // Act
         var definition = JsonSerializer
-            .Deserialize<List<BenchmarkCase>>(json, json_.Options)!
+            .Deserialize<List<BenchmarkCase>>(json, _json.Options)!
             .Single(x => x.CaseId == "loop.indirect");
 
         // Assert

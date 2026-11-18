@@ -11,12 +11,12 @@ internal sealed class InterpreterContext
     /// <summary>
     /// 関数呼び出しのフレームを保持する配列
     /// </summary>
-    private ExecutionFrame[] frames_ = [];
+    private ExecutionFrame[] _frames = [];
 
     /// <summary>
     /// 引数、localsとoperandを共有して保持する値スタックの配列
     /// </summary>
-    private WasmValue[] values_ = [];
+    private WasmValue[] _values = [];
 
     /// <summary>
     /// この実行状態を所有し、ホストへの受け渡しに使うコンテキスト
@@ -26,7 +26,7 @@ internal sealed class InterpreterContext
     /// <summary>
     /// 実行中のフレームの定義関数
     /// </summary>
-    internal DefinedFunction CurrentFunction => frames_[FrameCount - 1].Function;
+    internal DefinedFunction CurrentFunction => _frames[FrameCount - 1].Function;
 
     /// <summary>
     /// 最外側の呼び出しで固定した呼び出し深さの上限
@@ -96,15 +96,15 @@ internal sealed class InterpreterContext
     internal void EnsureCapacity(ulong operandBase, int maxOperandStack, DefinedFunction function)
     {
         // 加算前に広げ、両方の必要数を検査してから配列を拡張する。
-        var frameCapacity = CalculateCapacity(frames_.Length, (ulong)FrameCount + 1, function);
-        var valueCapacity = CalculateCapacity(values_.Length, operandBase + (ulong)maxOperandStack, function);
-        if (frameCapacity != frames_.Length)
+        var frameCapacity = CalculateCapacity(_frames.Length, (ulong)FrameCount + 1, function);
+        var valueCapacity = CalculateCapacity(_values.Length, operandBase + (ulong)maxOperandStack, function);
+        if (frameCapacity != _frames.Length)
         {
-            Array.Resize(ref frames_, frameCapacity);
+            Array.Resize(ref _frames, frameCapacity);
         }
-        if (valueCapacity != values_.Length)
+        if (valueCapacity != _values.Length)
         {
-            Array.Resize(ref values_, valueCapacity);
+            Array.Resize(ref _values, valueCapacity);
         }
     }
 
@@ -141,7 +141,7 @@ internal sealed class InterpreterContext
     /// <param name="frame">追加する関数呼び出しのフレーム</param>
     internal void PushFrame(ExecutionFrame frame)
     {
-        frames_[FrameCount++] = frame;
+        _frames[FrameCount++] = frame;
     }
 
     /// <summary>
@@ -156,7 +156,7 @@ internal sealed class InterpreterContext
         foreach (var local in function.Code.Locals)
         {
             var count = (int)local.Count;
-            values_.AsSpan(ValueCount, count).Fill(local.Value);
+            _values.AsSpan(ValueCount, count).Fill(local.Value);
             ValueCount += count;
         }
         PushFrame(new ExecutionFrame(function, stackBase, ValueCount));
@@ -168,7 +168,7 @@ internal sealed class InterpreterContext
     /// <param name="value">値スタックへ積む値</param>
     internal void PushValue(WasmValue value)
     {
-        values_[ValueCount++] = value;
+        _values[ValueCount++] = value;
     }
 
     /// <summary>
@@ -177,8 +177,8 @@ internal sealed class InterpreterContext
     /// <returns>取り除いた値</returns>
     internal WasmValue PopValue()
     {
-        var value = values_[--ValueCount];
-        values_[ValueCount] = default;
+        var value = _values[--ValueCount];
+        _values[ValueCount] = default;
         return value;
     }
 
@@ -188,7 +188,7 @@ internal sealed class InterpreterContext
     /// <returns>最上位の値</returns>
     internal WasmValue PeekValue()
     {
-        return values_[ValueCount - 1];
+        return _values[ValueCount - 1];
     }
 
     /// <summary>
@@ -198,7 +198,7 @@ internal sealed class InterpreterContext
     /// <returns>localの現在値</returns>
     internal WasmValue GetLocal(uint index)
     {
-        return values_[frames_[FrameCount - 1].StackBase + (int)index];
+        return _values[_frames[FrameCount - 1].StackBase + (int)index];
     }
 
     /// <summary>
@@ -208,7 +208,7 @@ internal sealed class InterpreterContext
     /// <param name="value">設定する値</param>
     internal void SetLocal(uint index, WasmValue value)
     {
-        values_[frames_[FrameCount - 1].StackBase + (int)index] = value;
+        _values[_frames[FrameCount - 1].StackBase + (int)index] = value;
     }
 
     /// <summary>
@@ -218,7 +218,7 @@ internal sealed class InterpreterContext
     /// <returns>指定位置のフレームの値</returns>
     internal ExecutionFrame GetFrame(int index)
     {
-        return frames_[index];
+        return _frames[index];
     }
 
     /// <summary>
@@ -228,9 +228,9 @@ internal sealed class InterpreterContext
     internal Instruction ReadNextInstruction()
     {
         var frameIndex = FrameCount - 1;
-        var frame = frames_[frameIndex];
+        var frame = _frames[frameIndex];
         var instruction = frame.Function.Code.Instructions[frame.Pc];
-        frames_[frameIndex].Pc++;
+        _frames[frameIndex].Pc++;
         return instruction;
     }
 
@@ -251,12 +251,12 @@ internal sealed class InterpreterContext
     internal void Branch(in BranchTarget target)
     {
         var frameIndex = FrameCount - 1;
-        var destination = frames_[frameIndex].OperandBase + target.StackHeight;
+        var destination = _frames[frameIndex].OperandBase + target.StackHeight;
         var newEnd = destination + target.KeepCount;
-        Array.Copy(values_, ValueCount - target.KeepCount, values_, destination, target.KeepCount);
-        Array.Clear(values_, newEnd, ValueCount - newEnd);
+        Array.Copy(_values, ValueCount - target.KeepCount, _values, destination, target.KeepCount);
+        Array.Clear(_values, newEnd, ValueCount - newEnd);
         ValueCount = newEnd;
-        frames_[frameIndex].Pc = target.TargetPc;
+        _frames[frameIndex].Pc = target.TargetPc;
     }
 
     /// <summary>
@@ -264,9 +264,9 @@ internal sealed class InterpreterContext
     /// </summary>
     internal void CompleteFrame()
     {
-        var frame = frames_[FrameCount - 1];
+        var frame = _frames[FrameCount - 1];
         var resultCount = frame.Function.Type.Results.Length;
-        Array.Copy(values_, ValueCount - resultCount, values_, frame.StackBase, resultCount);
+        Array.Copy(_values, ValueCount - resultCount, _values, frame.StackBase, resultCount);
         Restore(FrameCount - 1, frame.StackBase + resultCount, CallDepth - 1);
     }
 
@@ -277,7 +277,7 @@ internal sealed class InterpreterContext
     /// <returns>指定位置の値</returns>
     internal WasmValue GetValue(int index)
     {
-        return values_[index];
+        return _values[index];
     }
 
     /// <summary>
@@ -288,7 +288,7 @@ internal sealed class InterpreterContext
     /// <returns>後続の実行やスタック復元に影響されない値の不変配列</returns>
     internal ImmutableArray<WasmValue> CopyValues(int start, int count)
     {
-        return ImmutableArray.Create(values_.AsSpan(start, count));
+        return ImmutableArray.Create(_values.AsSpan(start, count));
     }
 
     /// <summary>
@@ -299,7 +299,7 @@ internal sealed class InterpreterContext
     /// <returns>共有値スタックの参照 保持する場合はスタックの更新前にコピーする</returns>
     internal ReadOnlySpan<WasmValue> GetValues(int start, int count)
     {
-        return values_.AsSpan(start, count);
+        return _values.AsSpan(start, count);
     }
 
     /// <summary>
@@ -310,8 +310,8 @@ internal sealed class InterpreterContext
     /// <param name="callDepth">復元する呼び出し前の深さ</param>
     internal void Restore(int frameCount, int valueCount, int callDepth)
     {
-        Array.Clear(frames_, frameCount, FrameCount - frameCount);
-        Array.Clear(values_, valueCount, ValueCount - valueCount);
+        Array.Clear(_frames, frameCount, FrameCount - frameCount);
+        Array.Clear(_values, valueCount, ValueCount - valueCount);
         FrameCount = frameCount;
         ValueCount = valueCount;
         CallDepth = callDepth;

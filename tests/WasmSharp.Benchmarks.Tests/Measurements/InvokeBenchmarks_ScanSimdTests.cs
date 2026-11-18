@@ -6,15 +6,15 @@ namespace WasmSharp.Benchmarks.Tests.Measurements;
 
 internal class InvokeBenchmarks_ScanSimdTests
 {
-    private readonly CaseJson json_ = new CaseJson();
-    private readonly MeasurementMethods methods_ = new MeasurementMethods();
+    private readonly CaseJson _json = new CaseJson();
+    private readonly MeasurementMethods _methods = new MeasurementMethods();
 
     [Test]
     public async Task 固定入力で反復する_最後の結果と状態が固定期待値に一致する()
     {
         // Arrange
         var benchmark = new InvokeBenchmarks();
-        benchmark.Initialize(InvokeFixture.CreateAssets("scan.simd", json_, methods_), "scan.simd", json_);
+        benchmark.Initialize(InvokeFixture.CreateAssets("scan.simd", _json, _methods), "scan.simd", _json);
 
         // Act
         for (var iteration = 0; iteration < 8; iteration++)

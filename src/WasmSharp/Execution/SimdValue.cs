@@ -10,20 +10,20 @@ internal readonly struct SimdValue
     /// <summary>
     /// 下位64ビット
     /// </summary>
-    private readonly ulong low64_;
+    private readonly ulong _low64;
 
     /// <summary>
     /// 上位64ビット
     /// </summary>
-    private readonly ulong high64_;
+    private readonly ulong _high64;
 
     /// <summary>
     /// 上下64ビットを保持する
     /// </summary>
     private SimdValue(ulong low64, ulong high64)
     {
-        low64_ = low64;
-        high64_ = high64;
+        _low64 = low64;
+        _high64 = high64;
     }
 
     /// <summary>
@@ -40,7 +40,7 @@ internal readonly struct SimdValue
     /// </summary>
     internal WasmValue ToValue()
     {
-        return WasmValue.FromV128(low64_, high64_);
+        return WasmValue.FromV128(_low64, _high64);
     }
 
     /// <summary>
@@ -59,8 +59,8 @@ internal readonly struct SimdValue
     /// </summary>
     internal void WriteLittleEndian(Span<byte> destination)
     {
-        BinaryPrimitives.WriteUInt64LittleEndian(destination, low64_);
-        BinaryPrimitives.WriteUInt64LittleEndian(destination[8..], high64_);
+        BinaryPrimitives.WriteUInt64LittleEndian(destination, _low64);
+        BinaryPrimitives.WriteUInt64LittleEndian(destination[8..], _high64);
     }
 
     /// <summary>
@@ -69,7 +69,7 @@ internal readonly struct SimdValue
     internal ulong GetLane(int bitWidth, int laneIndex)
     {
         var bitOffset = bitWidth * laneIndex;
-        var half = bitOffset < 64 ? low64_ : high64_;
+        var half = bitOffset < 64 ? _low64 : _high64;
         // 64ビットの左シフトはシフト量が0になるため全ビット1を右シフトする
         var mask = ulong.MaxValue >> (64 - bitWidth);
         return (half >> bitOffset) & mask;
@@ -85,7 +85,7 @@ internal readonly struct SimdValue
         var laneMask = mask << bitOffset;
         var replacement = (bits & mask) << bitOffset;
         return bitOffset < 64
-            ? new SimdValue((low64_ & ~laneMask) | replacement, high64_)
-            : new SimdValue(low64_, (high64_ & ~laneMask) | replacement);
+            ? new SimdValue((_low64 & ~laneMask) | replacement, _high64)
+            : new SimdValue(_low64, (_high64 & ~laneMask) | replacement);
     }
 }

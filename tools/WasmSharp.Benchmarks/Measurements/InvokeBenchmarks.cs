@@ -10,24 +10,24 @@ namespace WasmSharp.Benchmarks.Measurements;
 /// </summary>
 public class InvokeBenchmarks
 {
-    private readonly WasmExecutionContext context_ = new WasmExecutionContext();
-    private CaseJson json_ = null!;
-    private readonly Consumer consumer_ = new();
-    private BenchmarkProcess? process_;
-    private BenchmarkCase definition_ = null!;
-    private WasmInstance instance_ = null!;
-    private WasmFunction function_ = null!;
-    private ImmutableArray<WasmValue> arguments_;
-    private WasmResults lastEmptyResults_ = null!;
-    private WasmResults lastSingleResults_ = null!;
-    private WasmResults lastMultiResults_ = null!;
-    private WasmResults lastIntegerDirectResults_ = null!;
-    private WasmResults lastFloatHostResults_ = null!;
-    private WasmResults lastIndirectResults_ = null!;
-    private WasmResults lastCopyFillResults_ = null!;
-    private WasmResults lastScanScalarResults_ = null!;
-    private WasmResults lastScanSimdResults_ = null!;
-    private WasmResults lastMatrixResults_ = null!;
+    private readonly WasmExecutionContext _context = new WasmExecutionContext();
+    private CaseJson _json = null!;
+    private readonly Consumer _consumer = new();
+    private BenchmarkProcess? _process;
+    private BenchmarkCase _definition = null!;
+    private WasmInstance _instance = null!;
+    private WasmFunction _function = null!;
+    private ImmutableArray<WasmValue> _arguments;
+    private WasmResults _lastEmptyResults = null!;
+    private WasmResults _lastSingleResults = null!;
+    private WasmResults _lastMultiResults = null!;
+    private WasmResults _lastIntegerDirectResults = null!;
+    private WasmResults _lastFloatHostResults = null!;
+    private WasmResults _lastIndirectResults = null!;
+    private WasmResults _lastCopyFillResults = null!;
+    private WasmResults _lastScanScalarResults = null!;
+    private WasmResults _lastScanSimdResults = null!;
+    private WasmResults _lastMatrixResults = null!;
 
     [GlobalSetup(Target = nameof(Empty))]
     public void SetupEmpty()
@@ -38,8 +38,8 @@ public class InvokeBenchmarks
     [Benchmark(OperationsPerInvoke = 1)]
     public void Empty()
     {
-        lastEmptyResults_ = function_.Invoke(context_, arguments_.AsSpan());
-        consumer_.Consume(lastEmptyResults_);
+        _lastEmptyResults = _function.Invoke(_context, _arguments.AsSpan());
+        _consumer.Consume(_lastEmptyResults);
     }
 
     [GlobalSetup(Target = nameof(Single))]
@@ -51,8 +51,8 @@ public class InvokeBenchmarks
     [Benchmark(OperationsPerInvoke = 1)]
     public void Single()
     {
-        lastSingleResults_ = function_.Invoke(context_, arguments_.AsSpan());
-        consumer_.Consume(lastSingleResults_);
+        _lastSingleResults = _function.Invoke(_context, _arguments.AsSpan());
+        _consumer.Consume(_lastSingleResults);
     }
 
     [GlobalSetup(Target = nameof(Multi))]
@@ -64,8 +64,8 @@ public class InvokeBenchmarks
     [Benchmark(OperationsPerInvoke = 1)]
     public void Multi()
     {
-        lastMultiResults_ = function_.Invoke(context_, arguments_.AsSpan());
-        consumer_.Consume(lastMultiResults_);
+        _lastMultiResults = _function.Invoke(_context, _arguments.AsSpan());
+        _consumer.Consume(_lastMultiResults);
     }
 
     [GlobalSetup(Target = nameof(IntegerDirect))]
@@ -77,8 +77,8 @@ public class InvokeBenchmarks
     [Benchmark(OperationsPerInvoke = 1)]
     public void IntegerDirect()
     {
-        lastIntegerDirectResults_ = function_.Invoke(context_, arguments_.AsSpan());
-        consumer_.Consume(lastIntegerDirectResults_);
+        _lastIntegerDirectResults = _function.Invoke(_context, _arguments.AsSpan());
+        _consumer.Consume(_lastIntegerDirectResults);
     }
 
     [GlobalSetup(Target = nameof(FloatHost))]
@@ -90,8 +90,8 @@ public class InvokeBenchmarks
     [Benchmark(OperationsPerInvoke = 1)]
     public void FloatHost()
     {
-        lastFloatHostResults_ = function_.Invoke(context_, arguments_.AsSpan());
-        consumer_.Consume(lastFloatHostResults_);
+        _lastFloatHostResults = _function.Invoke(_context, _arguments.AsSpan());
+        _consumer.Consume(_lastFloatHostResults);
     }
 
     [GlobalSetup(Target = nameof(Indirect))]
@@ -103,8 +103,8 @@ public class InvokeBenchmarks
     [Benchmark(OperationsPerInvoke = 1)]
     public void Indirect()
     {
-        lastIndirectResults_ = function_.Invoke(context_, arguments_.AsSpan());
-        consumer_.Consume(lastIndirectResults_);
+        _lastIndirectResults = _function.Invoke(_context, _arguments.AsSpan());
+        _consumer.Consume(_lastIndirectResults);
     }
 
     [GlobalSetup(Target = nameof(CopyFill))]
@@ -116,8 +116,8 @@ public class InvokeBenchmarks
     [Benchmark(OperationsPerInvoke = 1)]
     public void CopyFill()
     {
-        lastCopyFillResults_ = function_.Invoke(context_, arguments_.AsSpan());
-        consumer_.Consume(lastCopyFillResults_);
+        _lastCopyFillResults = _function.Invoke(_context, _arguments.AsSpan());
+        _consumer.Consume(_lastCopyFillResults);
     }
 
     [GlobalSetup(Target = nameof(ScanScalar))]
@@ -129,8 +129,8 @@ public class InvokeBenchmarks
     [Benchmark(OperationsPerInvoke = 1)]
     public void ScanScalar()
     {
-        lastScanScalarResults_ = function_.Invoke(context_, arguments_.AsSpan());
-        consumer_.Consume(lastScanScalarResults_);
+        _lastScanScalarResults = _function.Invoke(_context, _arguments.AsSpan());
+        _consumer.Consume(_lastScanScalarResults);
     }
 
     [GlobalSetup(Target = nameof(ScanSimd))]
@@ -142,8 +142,8 @@ public class InvokeBenchmarks
     [Benchmark(OperationsPerInvoke = 1)]
     public void ScanSimd()
     {
-        lastScanSimdResults_ = function_.Invoke(context_, arguments_.AsSpan());
-        consumer_.Consume(lastScanSimdResults_);
+        _lastScanSimdResults = _function.Invoke(_context, _arguments.AsSpan());
+        _consumer.Consume(_lastScanSimdResults);
     }
 
     [GlobalSetup(Target = nameof(Matrix))]
@@ -155,77 +155,77 @@ public class InvokeBenchmarks
     [Benchmark(OperationsPerInvoke = 1)]
     public void Matrix()
     {
-        lastMatrixResults_ = function_.Invoke(context_, arguments_.AsSpan());
-        consumer_.Consume(lastMatrixResults_);
+        _lastMatrixResults = _function.Invoke(_context, _arguments.AsSpan());
+        _consumer.Consume(_lastMatrixResults);
     }
 
     [GlobalCleanup]
     public void Cleanup()
     {
-        if (process_ is null)
+        if (_process is null)
         {
             CheckLastResult();
             return;
         }
-        process_.Cleanup(CheckLastResult);
+        _process.Cleanup(CheckLastResult);
     }
 
     private void CheckLastResult()
     {
-        var results = definition_.CaseId switch
+        var results = _definition.CaseId switch
         {
-            "invoke.empty" => lastEmptyResults_,
-            "invoke.single" => lastSingleResults_,
-            "invoke.multi" => lastMultiResults_,
-            "loop.integer-direct" => lastIntegerDirectResults_,
-            "loop.float-host" => lastFloatHostResults_,
-            "loop.indirect" => lastIndirectResults_,
-            "memory.copy-fill" => lastCopyFillResults_,
-            "scan.scalar" => lastScanScalarResults_,
-            "scan.simd" => lastScanSimdResults_,
-            "kernel.matrix" => lastMatrixResults_,
-            _ => throw new InvalidOperationException($"ケース'{definition_.CaseId}'はInvoke測定ではありません。"),
+            "invoke.empty" => _lastEmptyResults,
+            "invoke.single" => _lastSingleResults,
+            "invoke.multi" => _lastMultiResults,
+            "loop.integer-direct" => _lastIntegerDirectResults,
+            "loop.float-host" => _lastFloatHostResults,
+            "loop.indirect" => _lastIndirectResults,
+            "memory.copy-fill" => _lastCopyFillResults,
+            "scan.scalar" => _lastScanScalarResults,
+            "scan.simd" => _lastScanSimdResults,
+            "kernel.matrix" => _lastMatrixResults,
+            _ => throw new InvalidOperationException($"ケース'{_definition.CaseId}'はInvoke測定ではありません。"),
         };
-        Verify(new InvokeObservation(instance_, results));
+        Verify(new InvokeObservation(_instance, results));
     }
 
     internal void Initialize(LoadedAssets assets, string caseId, CaseJson json)
     {
-        json_ = json;
-        definition_ = assets.Catalog.Get(caseId);
+        _json = json;
+        _definition = assets.Catalog.Get(caseId);
         var input = assets.GetInput(caseId);
-        var module = WasmModule.Decode(assets.GetBinary(definition_.AssetId).AsSpan()).Validate();
+        var module = WasmModule.Decode(assets.GetBinary(_definition.AssetId).AsSpan()).Validate();
         var before = CreateInstance(module, input);
         Verify(
             new InvokeObservation(
                 before,
-                before.GetFunction(input.FunctionExport).Invoke(context_, input.Arguments.AsSpan())
+                before.GetFunction(input.FunctionExport).Invoke(_context, input.Arguments.AsSpan())
             )
         );
 
-        instance_ = CreateInstance(module, input);
-        function_ = instance_.GetFunction(input.FunctionExport);
-        arguments_ = input.Arguments;
-        if (definition_.StatePolicy == StatePolicy.FixedPoint)
+        _instance = CreateInstance(module, input);
+        _function = _instance.GetFunction(input.FunctionExport);
+        _arguments = input.Arguments;
+        if (_definition.StatePolicy == StatePolicy.FixedPoint)
         {
             // 計時前に最終状態へ揃え、JIT・pilot・warmup・割り当て観測でも同じ開始条件にする。
-            function_.Invoke(context_, arguments_.AsSpan());
+            _function.Invoke(_context, _arguments.AsSpan());
         }
-        lastEmptyResults_ = null!;
-        lastSingleResults_ = null!;
-        lastMultiResults_ = null!;
-        lastIntegerDirectResults_ = null!;
-        lastFloatHostResults_ = null!;
-        lastIndirectResults_ = null!;
-        lastCopyFillResults_ = null!;
-        lastScanScalarResults_ = null!;
-        lastScanSimdResults_ = null!;
-        lastMatrixResults_ = null!;
+        _lastEmptyResults = null!;
+        _lastSingleResults = null!;
+        _lastMultiResults = null!;
+        _lastIntegerDirectResults = null!;
+        _lastFloatHostResults = null!;
+        _lastIndirectResults = null!;
+        _lastCopyFillResults = null!;
+        _lastScanScalarResults = null!;
+        _lastScanSimdResults = null!;
+        _lastMatrixResults = null!;
     }
 
     private WasmInstance CreateInstance(WasmModule module, PreparedInput input)
     {
-        var instance = module.Instantiate(context_, CaseVerifier.CreateImports());
+        var instance = module.Instantiate(_context, CaseVerifier.CreateImports());
         foreach (var array in input.Arrays)
         {
             instance.GetMemory(array.MemoryExport).Write(array.Offset, array.Bytes.AsSpan());
@@ -235,13 +235,13 @@ public class InvokeBenchmarks
 
     private void Setup(string method)
     {
-        process_ = BenchmarkProcess.Start(nameof(InvokeBenchmarks) + "." + method);
-        process_.Setup(Initialize);
+        _process = BenchmarkProcess.Start(nameof(InvokeBenchmarks) + "." + method);
+        _process.Setup(Initialize);
     }
 
     private void Verify(InvokeObservation observation)
     {
-        var result = CaseVerifier.Verify(context_, definition_, observation, json_);
+        var result = CaseVerifier.Verify(_context, _definition, observation, _json);
         if (!result.Succeeded)
         {
             throw new InvalidOperationException(

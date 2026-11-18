@@ -8,8 +8,8 @@ namespace WasmSharp.Benchmarks.Tests.Cases;
 
 internal partial class BenchmarkCase_DeserializeTests
 {
-    private static readonly string[] expectedMemoryCaseIds_ = ["memory.copy-fill", "scan.scalar", "scan.simd"];
-    private static readonly string[] expectedFunctionExports_ = ["scalar", "simd"];
+    private static readonly string[] __expectedMemoryCaseIds = ["memory.copy-fill", "scan.scalar", "scan.simd"];
+    private static readonly string[] __expectedFunctionExports = ["scalar", "simd"];
 
     [Test]
     public async Task メモリ素材の固定ケースを読む_公開操作数と入力hashを保持する()
@@ -19,14 +19,14 @@ internal partial class BenchmarkCase_DeserializeTests
 
         // Act
         var definitions = JsonSerializer
-            .Deserialize<List<BenchmarkCase>>(json, json_.Options)!
+            .Deserialize<List<BenchmarkCase>>(json, _json.Options)!
             .Where(x => x.AssetId is "memory" or "scan")
             .ToArray();
 
         // Assert
         using (Assert.Multiple())
         {
-            await Assert.That(definitions.Select(x => x.CaseId)).IsEquivalentTo(expectedMemoryCaseIds_);
+            await Assert.That(definitions.Select(x => x.CaseId)).IsEquivalentTo(__expectedMemoryCaseIds);
             foreach (var definition in definitions)
             {
                 await Assert.That(definition.CaseRevision).IsEqualTo(1U);
@@ -40,7 +40,7 @@ internal partial class BenchmarkCase_DeserializeTests
                     .That(definition.InputHash)
                     .IsEqualTo(
                         Convert.ToHexStringLower(
-                            SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(definition.Input, json_.Options))
+                            SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(definition.Input, _json.Options))
                         )
                     );
             }
@@ -71,7 +71,7 @@ internal partial class BenchmarkCase_DeserializeTests
 
         // Act
         var definition = JsonSerializer
-            .Deserialize<List<BenchmarkCase>>(json, json_.Options)!
+            .Deserialize<List<BenchmarkCase>>(json, _json.Options)!
             .Single(x => x.CaseId == "memory.copy-fill");
 
         // Assert
@@ -113,7 +113,7 @@ internal partial class BenchmarkCase_DeserializeTests
 
         // Act
         var definitions = JsonSerializer
-            .Deserialize<List<BenchmarkCase>>(json, json_.Options)!
+            .Deserialize<List<BenchmarkCase>>(json, _json.Options)!
             .Where(x => x.CaseId is "scan.scalar" or "scan.simd")
             .OrderBy(x => x.CaseId)
             .ToArray();
@@ -123,7 +123,7 @@ internal partial class BenchmarkCase_DeserializeTests
         {
             await Assert.That(definitions.Length).IsEqualTo(2);
             await Assert.That(sum).IsEqualTo(2088960U);
-            await Assert.That(definitions.Select(x => x.Input.FunctionExport)).IsEquivalentTo(expectedFunctionExports_);
+            await Assert.That(definitions.Select(x => x.Input.FunctionExport)).IsEquivalentTo(__expectedFunctionExports);
             await Assert.That(definitions.Select(x => x.AssetSha256).Distinct().Count()).IsEqualTo(1);
             foreach (var definition in definitions)
             {

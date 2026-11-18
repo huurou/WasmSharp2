@@ -4,11 +4,11 @@ namespace WasmSharp.TestSuiteRunner.Tests.Fixtures;
 
 internal static class ModuleFixture
 {
-    private static readonly byte[] emptyModule_ = [0x00, 0x61, 0x73, 0x6D, 0x01, 0x00, 0x00, 0x00];
+    private static readonly byte[] __emptyModule = [0x00, 0x61, 0x73, 0x6D, 0x01, 0x00, 0x00, 0x00];
 
     internal static InstantiatedModule Instantiate(WasmExecutionContext context)
     {
-        var module = WasmModule.Decode(emptyModule_).Validate();
+        var module = WasmModule.Decode(__emptyModule).Validate();
         return new(module, module.Instantiate(context, new WasmImports()));
     }
 

@@ -4,7 +4,7 @@ namespace WasmSharp.Benchmarks.Tests.Smoke;
 
 internal class SmokeBenchmarks_DecodeTests
 {
-    private readonly WasmExecutionContext context_ = new WasmExecutionContext();
+    private readonly WasmExecutionContext _context = new WasmExecutionContext();
 
     [Test]
     public async Task 空moduleのデコードを反復する_毎回新しい未検証moduleを返す()
@@ -25,10 +25,10 @@ internal class SmokeBenchmarks_DecodeTests
             await Assert.That(second.GetExports()).IsEmpty();
             // Act & Assert
             await Assert
-                .That(() => first.Instantiate(context_, new WasmImports()))
+                .That(() => first.Instantiate(_context, new WasmImports()))
                 .ThrowsExactly<InvalidOperationException>();
             await Assert
-                .That(() => second.Instantiate(context_, new WasmImports()))
+                .That(() => second.Instantiate(_context, new WasmImports()))
                 .ThrowsExactly<InvalidOperationException>();
         }
     }

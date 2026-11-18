@@ -10,15 +10,15 @@ namespace WasmSharp.Benchmarks.Tests.Results;
 
 internal class RunComparison_CompareConditionsTests
 {
-    private readonly CaseJson json_ = new CaseJson();
-    private readonly MeasurementMethods methods_ = new MeasurementMethods();
-    private readonly RunComparison comparison_;
-    private readonly BenchmarkRun benchmarkRun_;
+    private readonly CaseJson _json = new CaseJson();
+    private readonly MeasurementMethods _methods = new MeasurementMethods();
+    private readonly RunComparison _comparison;
+    private readonly BenchmarkRun _benchmarkRun;
 
     public RunComparison_CompareConditionsTests()
     {
-        comparison_ = new RunComparison(json_);
-        benchmarkRun_ = new BenchmarkRun(json_, methods_);
+        _comparison = new RunComparison(_json);
+        _benchmarkRun = new BenchmarkRun(_json, _methods);
     }
 
     [Test]
@@ -65,7 +65,7 @@ internal class RunComparison_CompareConditionsTests
         current.Save();
 
         // Act
-        var actual = comparison_.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
+        var actual = _comparison.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
 
         // Assert
         using (Assert.Multiple())
@@ -98,7 +98,7 @@ internal class RunComparison_CompareConditionsTests
         current.Jobs = [current.Jobs.Single() with { LaunchCount = launches }];
         baseline.Save();
         current.Save();
-        var manifest = RunStore.Load(current.DirectoryPath, json_);
+        var manifest = RunStore.Load(current.DirectoryPath, _json);
         var result = manifest.Cases.Single();
         var report = result.BenchmarkReport!;
         var changed = manifest with
@@ -118,11 +118,11 @@ internal class RunComparison_CompareConditionsTests
         };
         File.WriteAllBytes(
             Path.Combine(current.DirectoryPath, "run.json"),
-            JsonSerializer.SerializeToUtf8Bytes(changed, json_.Options)
+            JsonSerializer.SerializeToUtf8Bytes(changed, _json.Options)
         );
 
         // Act
-        var actual = comparison_.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
+        var actual = _comparison.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
 
         // Assert
         using (Assert.Multiple())
@@ -159,7 +159,7 @@ internal class RunComparison_CompareConditionsTests
         current.Save();
 
         // Act
-        var actual = comparison_.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
+        var actual = _comparison.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
 
         // Assert
         var reason = actual.Reasons.Single();
@@ -188,7 +188,7 @@ internal class RunComparison_CompareConditionsTests
         current.Save();
 
         // Act
-        var actual = comparison_.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
+        var actual = _comparison.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
 
         // Assert
         using (Assert.Multiple())
@@ -234,7 +234,7 @@ internal class RunComparison_CompareConditionsTests
         }
 
         // Act
-        var actual = comparison_.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
+        var actual = _comparison.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
 
         // Assert
         using (Assert.Multiple())
@@ -268,7 +268,7 @@ internal class RunComparison_CompareConditionsTests
         current.Save();
 
         // Act
-        var actual = comparison_.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
+        var actual = _comparison.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
 
         // Assert
         using (Assert.Multiple())
@@ -307,7 +307,7 @@ internal class RunComparison_CompareConditionsTests
         }
 
         // Act
-        var actual = comparison_.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
+        var actual = _comparison.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
 
         // Assert
         var difference = actual.Differences.Single();
@@ -340,7 +340,7 @@ internal class RunComparison_CompareConditionsTests
         current.Save();
 
         // Act
-        var actual = comparison_.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
+        var actual = _comparison.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
 
         // Assert
         using (Assert.Multiple())
@@ -397,7 +397,7 @@ internal class RunComparison_CompareConditionsTests
         }
 
         // Act
-        var actual = comparison_.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
+        var actual = _comparison.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
 
         // Assert
         var difference = actual.Differences.Single(x => x.Condition == "asset.generation[0].arguments[0]");
@@ -451,7 +451,7 @@ internal class RunComparison_CompareConditionsTests
         current.Save();
 
         // Act
-        var actual = comparison_.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
+        var actual = _comparison.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
 
         // Assert
         var difference = actual.Differences.Single();
@@ -476,7 +476,7 @@ internal class RunComparison_CompareConditionsTests
         current.Save();
 
         // Act
-        var actual = comparison_.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
+        var actual = _comparison.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
 
         // Assert
         var difference = actual.Differences.Single(x => x.Condition == "process.runtime[0].version");
@@ -507,7 +507,7 @@ internal class RunComparison_CompareConditionsTests
         current.Save();
 
         // Act
-        var actual = comparison_.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
+        var actual = _comparison.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
 
         // Assert
         var reason = actual.Reasons.Single();
@@ -532,7 +532,7 @@ internal class RunComparison_CompareConditionsTests
         current.Save();
 
         // Act
-        var actual = comparison_.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
+        var actual = _comparison.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
 
         // Assert
         using (Assert.Multiple())
@@ -576,7 +576,7 @@ internal class RunComparison_CompareConditionsTests
         current.Save();
 
         // Act
-        var actual = comparison_.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
+        var actual = _comparison.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
 
         // Assert
         await Assert.That(actual.IsComparable).IsFalse();
@@ -601,7 +601,7 @@ internal class RunComparison_CompareConditionsTests
         current.Save();
 
         // Act
-        var actual = comparison_.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
+        var actual = _comparison.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
 
         // Assert
         using (Assert.Multiple())
@@ -629,7 +629,7 @@ internal class RunComparison_CompareConditionsTests
         current.Save();
 
         // Act
-        var actual = comparison_.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
+        var actual = _comparison.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
 
         // Assert
         var difference = actual.Differences.Single(x => x.Condition == "process.affinity[0].mask");
@@ -648,13 +648,13 @@ internal class RunComparison_CompareConditionsTests
         using var baseline = new RunComparisonFixture("before", "before");
         using var current = new RunComparisonFixture("after", "after");
         var job = BenchmarkConfig.Create().GetJobs().Single();
-        baseline.Jobs = [benchmarkRun_.DescribeProcess("Measurement", job.WithAffinity((IntPtr)1))];
-        current.Jobs = [benchmarkRun_.DescribeProcess("Measurement", job.WithAffinity((IntPtr)16384))];
+        baseline.Jobs = [_benchmarkRun.DescribeProcess("Measurement", job.WithAffinity((IntPtr)1))];
+        current.Jobs = [_benchmarkRun.DescribeProcess("Measurement", job.WithAffinity((IntPtr)16384))];
         baseline.Save();
         current.Save();
 
         // Act
-        var actual = comparison_.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
+        var actual = _comparison.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
 
         // Assert
         var difference = actual.Differences.Single(x =>
@@ -703,7 +703,7 @@ internal class RunComparison_CompareConditionsTests
             .ToArray();
 
         // Act
-        var actual = comparison_.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
+        var actual = _comparison.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
 
         // Assert
         using (Assert.Multiple())
@@ -769,7 +769,7 @@ internal class RunComparison_CompareConditionsTests
         current.Save();
 
         // Act
-        var actual = comparison_.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
+        var actual = _comparison.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
 
         // Assert
         var difference = actual.Differences.Single(x => x.Condition == condition);
@@ -814,7 +814,7 @@ internal class RunComparison_CompareConditionsTests
             var additional = JsonSerializer
                 .Deserialize<List<BenchmarkCase>>(
                     File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "Fixtures", "Data", "cases.json")),
-                    json_.Options
+                    _json.Options
                 )!
                 .Single(x => x.CaseId == "invoke.empty");
             current.SetCases([current.Cases.Single(), additional]);
@@ -847,13 +847,13 @@ internal class RunComparison_CompareConditionsTests
         current.Save();
 
         // Act
-        var actual = comparison_.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
+        var actual = _comparison.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
 
         // Assert
         var difference = actual.Differences.Single(x => x.Condition == condition);
         using (Assert.Multiple())
         {
-            await Assert.That(RunStore.Load(current.DirectoryPath, json_).Status).IsEqualTo(ResultStatus.Succeeded);
+            await Assert.That(RunStore.Load(current.DirectoryPath, _json).Status).IsEqualTo(ResultStatus.Succeeded);
             await Assert.That(actual.IsComparable).IsFalse();
             await Assert.That(difference.Baseline).IsEqualTo(expectedBaseline);
             await Assert.That(difference.Current).IsEqualTo(expectedCurrent);
@@ -895,7 +895,7 @@ internal class RunComparison_CompareConditionsTests
         }
 
         // Act
-        var actual = comparison_.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
+        var actual = _comparison.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
 
         // Assert
         using (Assert.Multiple())
@@ -920,7 +920,7 @@ internal class RunComparison_CompareConditionsTests
         current.Save();
 
         // Act
-        var actual = comparison_.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
+        var actual = _comparison.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
 
         // Assert
         await Assert.That(actual.IsComparable).IsFalse();
@@ -945,7 +945,7 @@ internal class RunComparison_CompareConditionsTests
         current.Save();
 
         // Act
-        var actual = comparison_.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
+        var actual = _comparison.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
 
         // Assert
         await Assert.That(actual.IsComparable).IsFalse();
@@ -991,7 +991,7 @@ internal class RunComparison_CompareConditionsTests
         current.Save();
 
         // Act
-        var actual = comparison_.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
+        var actual = _comparison.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
 
         // Assert
         await Assert.That(actual.IsComparable).IsFalse();
@@ -1009,7 +1009,7 @@ internal class RunComparison_CompareConditionsTests
         File.WriteAllText(Path.Combine(current.DirectoryPath, "cases.json"), "[]");
 
         // Act
-        var actual = comparison_.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
+        var actual = _comparison.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
 
         // Assert
         await Assert.That(actual.IsComparable).IsFalse();
@@ -1064,7 +1064,7 @@ internal class RunComparison_CompareConditionsTests
         current.Save();
 
         // Act
-        var actual = comparison_.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
+        var actual = _comparison.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
 
         // Assert
         await Assert.That(actual.IsComparable).IsTrue();
@@ -1117,7 +1117,7 @@ internal class RunComparison_CompareConditionsTests
         current.Save();
 
         // Act
-        var actual = comparison_.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
+        var actual = _comparison.CompareConditions(baseline.DirectoryPath, current.DirectoryPath, "invoke.single");
 
         // Assert
         await Assert.That(actual.IsComparable).IsEqualTo(comparable);

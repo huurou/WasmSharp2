@@ -6,17 +6,17 @@ namespace WasmSharp.Benchmarks.Tests.Measurements;
 
 internal class PreparationBenchmarks_DecodeValidateLargeTests
 {
-    private readonly WasmExecutionContext context_ = new WasmExecutionContext();
+    private readonly WasmExecutionContext _context = new WasmExecutionContext();
 
-    private readonly CaseJson json_ = new CaseJson();
-    private readonly MeasurementMethods methods_ = new MeasurementMethods();
+    private readonly CaseJson _json = new CaseJson();
+    private readonly MeasurementMethods _methods = new MeasurementMethods();
 
     [Test]
     public async Task 固定素材から反復する_毎回新しい検証済みmoduleを返す()
     {
         // Arrange
         var benchmark = new PreparationBenchmarks();
-        benchmark.Initialize(PreparationFixture.CreateAssets(json_, methods_), "decode-validate.large", json_);
+        benchmark.Initialize(PreparationFixture.CreateAssets(_json, _methods), "decode-validate.large", _json);
 
         // Act
         var first = benchmark.DecodeValidateLarge();
@@ -26,7 +26,7 @@ internal class PreparationBenchmarks_DecodeValidateLargeTests
         using (Assert.Multiple())
         {
             await Assert.That(ReferenceEquals(first, second)).IsFalse();
-            await Assert.That(() => first.Instantiate(context_, CaseVerifier.CreateImports())).ThrowsNothing();
+            await Assert.That(() => first.Instantiate(_context, CaseVerifier.CreateImports())).ThrowsNothing();
             await Assert.That(benchmark.Cleanup).ThrowsNothing();
         }
     }

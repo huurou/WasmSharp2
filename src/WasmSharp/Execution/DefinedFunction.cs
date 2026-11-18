@@ -13,7 +13,7 @@ internal sealed class DefinedFunction(WasmInstance instance, uint functionIndex,
     /// <summary>
     /// importを含まないmodule内の定義配列の添字
     /// </summary>
-    private readonly uint definitionIndex_ = definitionIndex;
+    private readonly uint _definitionIndex = definitionIndex;
 
     /// <summary>
     /// この関数が所属するinstance
@@ -28,12 +28,12 @@ internal sealed class DefinedFunction(WasmInstance instance, uint functionIndex,
     /// <summary>
     /// 所属するmoduleが保持するデコード済み関数定義
     /// </summary>
-    internal DecodedFunction Definition => Instance.Module.Functions[(int)definitionIndex_];
+    internal DecodedFunction Definition => Instance.Module.Functions[(int)_definitionIndex];
 
     /// <summary>
     /// 所属するmoduleが定義配列の添字に保持する実行コード
     /// </summary>
-    internal FunctionCode Code => Instance.Module.FunctionCodes[(int)definitionIndex_];
+    internal FunctionCode Code => Instance.Module.FunctionCodes[(int)_definitionIndex];
 
     /// <inheritdoc />
     public override WasmFunctionType Type => Instance.Module.Types[(int)Definition.TypeIndex];

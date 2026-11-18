@@ -5,17 +5,17 @@ namespace WasmSharp.TestSuiteRunner.Tests.Corpus;
 
 internal sealed class DirectoryReadRestriction : IDisposable
 {
-    private readonly DirectoryInfo directory_;
-    private readonly byte[]? originalSecurity_;
-    private readonly UnixFileMode originalMode_;
+    private readonly DirectoryInfo _directory;
+    private readonly byte[]? _originalSecurity;
+    private readonly UnixFileMode _originalMode;
 
     internal DirectoryReadRestriction(string path)
     {
-        directory_ = new DirectoryInfo(path);
+        _directory = new DirectoryInfo(path);
         if (OperatingSystem.IsWindows())
         {
-            var security = directory_.GetAccessControl(AccessControlSections.Access);
-            originalSecurity_ = security.GetSecurityDescriptorBinaryForm();
+            var security = _directory.GetAccessControl(AccessControlSections.Access);
+            _originalSecurity = security.GetSecurityDescriptorBinaryForm();
             security.AddAccessRule(
                 new FileSystemAccessRule(
                     new SecurityIdentifier(WellKnownSidType.WorldSid, null),
@@ -23,14 +23,14 @@ internal sealed class DirectoryReadRestriction : IDisposable
                     AccessControlType.Deny
                 )
             );
-            directory_.SetAccessControl(security);
+            _directory.SetAccessControl(security);
         }
         else
         {
-            originalMode_ = File.GetUnixFileMode(path);
+            _originalMode = File.GetUnixFileMode(path);
             File.SetUnixFileMode(
                 path,
-                originalMode_ & ~(UnixFileMode.UserRead | UnixFileMode.GroupRead | UnixFileMode.OtherRead)
+                _originalMode & ~(UnixFileMode.UserRead | UnixFileMode.GroupRead | UnixFileMode.OtherRead)
             );
         }
     }
@@ -40,12 +40,12 @@ internal sealed class DirectoryReadRestriction : IDisposable
         if (OperatingSystem.IsWindows())
         {
             var security = new DirectorySecurity();
-            security.SetSecurityDescriptorBinaryForm(originalSecurity_!, AccessControlSections.Access);
-            directory_.SetAccessControl(security);
+            security.SetSecurityDescriptorBinaryForm(_originalSecurity!, AccessControlSections.Access);
+            _directory.SetAccessControl(security);
         }
         else
         {
-            File.SetUnixFileMode(directory_.FullName, originalMode_);
+            File.SetUnixFileMode(_directory.FullName, _originalMode);
         }
     }
 }

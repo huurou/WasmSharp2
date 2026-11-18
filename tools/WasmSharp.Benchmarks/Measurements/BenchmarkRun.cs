@@ -16,9 +16,9 @@ namespace WasmSharp.Benchmarks.Measurements;
 /// </summary>
 internal sealed class BenchmarkRun(CaseJson json, MeasurementMethods methods)
 {
-    private readonly CaseJson json_ = json;
-    private readonly MeasurementMethods methods_ = methods;
-    private readonly EnvironmentCapture environmentCapture_ = new EnvironmentCapture();
+    private readonly CaseJson _json = json;
+    private readonly MeasurementMethods _methods = methods;
+    private readonly EnvironmentCapture _environmentCapture = new EnvironmentCapture();
 
     /// <summary>
     /// 予定を未完了runへ保存してから、Job別の子process設定と素材コピーを用意する
@@ -45,11 +45,11 @@ internal sealed class BenchmarkRun(CaseJson json, MeasurementMethods methods)
                 null,
                 []
             ),
-            json_
+            _json
         );
         try
         {
-            var assets = AssetManifest.Load(request.AssetManifestPath, json_, methods_);
+            var assets = AssetManifest.Load(request.AssetManifestPath, _json, _methods);
             foreach (var caseId in request.CaseIds)
             {
                 assets.Catalog.Get(caseId);
@@ -71,7 +71,7 @@ internal sealed class BenchmarkRun(CaseJson json, MeasurementMethods methods)
                     );
                     var file = store.SaveFile(
                         "inputs/run-" + Guid.NewGuid().ToString() + ".json",
-                        JsonSerializer.SerializeToUtf8Bytes(configuration, json_.Options)
+                        JsonSerializer.SerializeToUtf8Bytes(configuration, _json.Options)
                     );
                     return job.WithEnvironmentVariable(
                         RunConfiguration.ENVIRONMENT_VARIABLE,
@@ -133,7 +133,7 @@ internal sealed class BenchmarkRun(CaseJson json, MeasurementMethods methods)
             try
             {
                 var catalog = AssetManifest
-                    .Load(Path.Combine(request.OutputDirectory, "inputs", "assets", "asset-manifest.json"), json_, methods_)
+                    .Load(Path.Combine(request.OutputDirectory, "inputs", "assets", "asset-manifest.json"), _json, _methods)
                     .Catalog;
                 var methods = request.CaseIds.Select(catalog.GetMeasurementMethod).ToHashSet();
                 var config = BenchmarkDotNet
@@ -188,7 +188,7 @@ internal sealed class BenchmarkRun(CaseJson json, MeasurementMethods methods)
             );
             throw;
         }
-        return RunStore.Load(request.OutputDirectory, json_);
+        return RunStore.Load(request.OutputDirectory, _json);
     }
 
     /// <summary>
@@ -213,7 +213,7 @@ internal sealed class BenchmarkRun(CaseJson json, MeasurementMethods methods)
             var reports = summaryList
                 .SelectMany(x => x.Reports)
                 .Where(x =>
-                    methods_.GetCaseId(
+                    _methods.GetCaseId(
                         x.BenchmarkCase.Descriptor.Type.Name + "." + x.BenchmarkCase.Descriptor.WorkloadMethod.Name
                     ) == caseId
                 )
@@ -422,7 +422,7 @@ internal sealed class BenchmarkRun(CaseJson json, MeasurementMethods methods)
     )
     {
         var checks = RunStore
-            .ReadChecks(outputDirectory, json_)
+            .ReadChecks(outputDirectory, _json)
             .Where(x => x.Check.RunId == runId && x.Check.CaseId == caseId && x.Check.JobId == jobId)
             .GroupBy(x => x.Check.ProcessId)
             .Select(x => x.MaxBy(y => GetCheckPriority(y.Check)))
@@ -555,7 +555,7 @@ internal sealed class BenchmarkRun(CaseJson json, MeasurementMethods methods)
             ? null
             : JsonSerializer.Deserialize<ProcessCheck>(
                 File.ReadAllBytes(Path.Combine(outputDirectory, file.RelativePath)),
-                json_.Options
+                _json.Options
             );
     }
 
@@ -564,7 +564,7 @@ internal sealed class BenchmarkRun(CaseJson json, MeasurementMethods methods)
     /// </summary>
     internal ProcessConfiguration DescribeProcess(string role, Job job)
     {
-        return environmentCapture_.DescribeProcess(role, job);
+        return _environmentCapture.DescribeProcess(role, job);
     }
 
     /// <summary>
@@ -572,7 +572,7 @@ internal sealed class BenchmarkRun(CaseJson json, MeasurementMethods methods)
     /// </summary>
     internal void CaptureInputs(RunStore store, string assetManifestPath, IEnumerable<ProcessConfiguration> processes)
     {
-        var loaded = AssetManifest.Load(assetManifestPath, json_, methods_);
+        var loaded = AssetManifest.Load(assetManifestPath, _json, _methods);
         var directory = Path.GetDirectoryName(Path.GetFullPath(assetManifestPath))!;
         var files = new[] { loaded.Manifest.Profile, loaded.Manifest.Cases }
             .Concat(loaded.Manifest.Assets.Select(x => x.Binary))
@@ -600,8 +600,8 @@ internal sealed class BenchmarkRun(CaseJson json, MeasurementMethods methods)
         var job = store.SaveFile(
             "inputs/job.json",
             JsonSerializer.SerializeToUtf8Bytes(
-                processes.Select(environmentCapture_.SnapshotProcess).ToList(),
-                json_.Options
+                processes.Select(_environmentCapture.SnapshotProcess).ToList(),
+                _json.Options
             )
         );
         store.SaveInputs(manifest, cases!, job);
@@ -616,7 +616,7 @@ internal sealed class BenchmarkRun(CaseJson json, MeasurementMethods methods)
         IEnumerable<ProcessConfiguration> processes
     )
     {
-        var environment = environmentCapture_.Capture(store, command, processes);
+        var environment = _environmentCapture.Capture(store, command, processes);
         store.SaveEnvironment(environment);
         return environment;
     }
@@ -630,7 +630,7 @@ internal sealed class BenchmarkRun(CaseJson json, MeasurementMethods methods)
         IEnumerable<(AssemblyRole Role, string Path)> assemblies
     )
     {
-        var source = new SourceCapture(repositoryDirectory, json_).Before(store, assemblies);
+        var source = new SourceCapture(repositoryDirectory, _json).Before(store, assemblies);
         store.SaveSource(source);
         return source;
     }
@@ -640,7 +640,7 @@ internal sealed class BenchmarkRun(CaseJson json, MeasurementMethods methods)
     /// </summary>
     internal RunSource CaptureSourceAfter(string repositoryDirectory, RunStore store, RunSource before)
     {
-        var source = new SourceCapture(repositoryDirectory, json_).After(before);
+        var source = new SourceCapture(repositoryDirectory, _json).After(before);
         store.SaveSource(source);
         return source;
     }

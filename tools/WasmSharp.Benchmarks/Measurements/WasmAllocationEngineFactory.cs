@@ -7,14 +7,14 @@ namespace WasmSharp.Benchmarks.Measurements;
 /// </summary>
 public sealed class WasmAllocationEngineFactory : IEngineFactory
 {
-    private readonly IEngineFactory timingFactory_;
+    private readonly IEngineFactory _timingFactory;
 
     public WasmAllocationEngineFactory()
         : this(new EngineFactory()) { }
 
     internal WasmAllocationEngineFactory(IEngineFactory timingFactory)
     {
-        timingFactory_ = timingFactory;
+        _timingFactory = timingFactory;
     }
 
     public IEngine CreateReadyToRun(EngineParameters engineParameters)
@@ -23,7 +23,7 @@ public sealed class WasmAllocationEngineFactory : IEngineFactory
         engineParameters.MeasureExtraStats = false;
         try
         {
-            var timingEngine = timingFactory_.CreateReadyToRun(engineParameters);
+            var timingEngine = _timingFactory.CreateReadyToRun(engineParameters);
             return measureExtraStats
                 ? new AllocationEngine(
                     timingEngine,

@@ -10,7 +10,7 @@ internal sealed class Core2ProfileLoader
     /// <summary>
     /// 埋込みprofileのsnake_case名に対応する読取設定
     /// </summary>
-    private readonly JsonSerializerOptions jsonOptions_ = new JsonSerializerOptions
+    private readonly JsonSerializerOptions _jsonOptions = new JsonSerializerOptions
     {
         PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
     };
@@ -34,7 +34,7 @@ internal sealed class Core2ProfileLoader
     /// <exception cref="JsonException">JSONをprofileとして読み取れない、または読み取った値がnullの場合</exception>
     internal Core2Profile Load(Stream stream)
     {
-        return JsonSerializer.Deserialize<Core2Profile>(stream, jsonOptions_)
+        return JsonSerializer.Deserialize<Core2Profile>(stream, _jsonOptions)
             ?? throw new JsonException("profileがnullです。");
     }
 }

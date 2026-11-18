@@ -7,13 +7,13 @@ namespace WasmSharp.Benchmarks.Tests.Measurements;
 
 internal class BenchmarkRun_AttachChecksTests
 {
-    private readonly CaseJson json_ = new CaseJson();
-    private readonly MeasurementMethods methods_ = new MeasurementMethods();
-    private readonly BenchmarkRun benchmarkRun_;
+    private readonly CaseJson _json = new CaseJson();
+    private readonly MeasurementMethods _methods = new MeasurementMethods();
+    private readonly BenchmarkRun _benchmarkRun;
 
     public BenchmarkRun_AttachChecksTests()
     {
-        benchmarkRun_ = new BenchmarkRun(json_, methods_);
+        _benchmarkRun = new BenchmarkRun(_json, _methods);
     }
 
     [Test]
@@ -24,7 +24,7 @@ internal class BenchmarkRun_AttachChecksTests
     {
         // Arrange
         using var fixture = new RunStoreFixture();
-        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, json_);
+        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, _json);
         var check = fixture.Check;
         var earlier = stage switch
         {
@@ -47,7 +47,7 @@ internal class BenchmarkRun_AttachChecksTests
         var expected = store.SaveCheck(later);
 
         // Act
-        var results = benchmarkRun_.AttachChecks(
+        var results = _benchmarkRun.AttachChecks(
             fixture.DirectoryPath,
             check.RunId,
             check.CaseId,
@@ -64,7 +64,7 @@ internal class BenchmarkRun_AttachChecksTests
     {
         // Arrange
         using var fixture = new RunStoreFixture();
-        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, json_);
+        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, _json);
         var check = fixture.Check;
         store.SaveCheck(check);
         var expected = store.SaveCheck(
@@ -78,7 +78,7 @@ internal class BenchmarkRun_AttachChecksTests
         );
 
         // Act
-        var results = benchmarkRun_.AttachChecks(
+        var results = _benchmarkRun.AttachChecks(
             fixture.DirectoryPath,
             check.RunId,
             check.CaseId,
@@ -98,12 +98,12 @@ internal class BenchmarkRun_AttachChecksTests
     {
         // Arrange
         using var fixture = new RunStoreFixture();
-        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, json_);
+        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, _json);
         var check = fixture.Check;
         store.SaveCheck(check);
 
         // Act
-        var results = benchmarkRun_.AttachChecks(
+        var results = _benchmarkRun.AttachChecks(
             fixture.DirectoryPath,
             different == "run" ? "other-run" : check.RunId,
             different == "case" ? "other-case" : check.CaseId,
@@ -128,7 +128,7 @@ internal class BenchmarkRun_AttachChecksTests
         };
 
         // Act
-        var results = benchmarkRun_.AttachChecks(fixture.DirectoryPath, check.RunId, check.CaseId, check.JobId, processes);
+        var results = _benchmarkRun.AttachChecks(fixture.DirectoryPath, check.RunId, check.CaseId, check.JobId, processes);
 
         // Assert
         await Assert.That(results).IsEquivalentTo(processes);
@@ -139,7 +139,7 @@ internal class BenchmarkRun_AttachChecksTests
     {
         // Arrange
         using var fixture = new RunStoreFixture();
-        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, json_);
+        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, _json);
         var check = fixture.Check;
         store.SaveCheck(check with { Postcheck = null, LastConfirmedStage = RunStage.ExecutionStarted });
         var final = store.SaveCheck(check);
@@ -147,7 +147,7 @@ internal class BenchmarkRun_AttachChecksTests
         var diagnostic = store.SaveCheck(check with { ProcessId = check.ProcessId + 1 });
 
         // Act
-        var results = benchmarkRun_.AttachChecks(
+        var results = _benchmarkRun.AttachChecks(
             fixture.DirectoryPath,
             check.RunId,
             check.CaseId,

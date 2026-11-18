@@ -6,14 +6,14 @@ namespace WasmSharp.Benchmarks.Tests.Results;
 
 internal class RunStore_SaveCaseTests
 {
-    private readonly CaseJson json_ = new CaseJson();
+    private readonly CaseJson _json = new CaseJson();
 
     [Test]
     public async Task Manifest保存に失敗した後に保存先を復旧する_同じstoreは完了できない()
     {
         // Arrange
         using var fixture = new RunStoreFixture();
-        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, json_);
+        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, _json);
         fixture.SaveConditions(store);
         var result = fixture.SaveSucceededCase(store);
         var manifestPath = Path.Combine(fixture.DirectoryPath, "run.json");
@@ -35,7 +35,7 @@ internal class RunStore_SaveCaseTests
         var completionFailure = await Assert
             .That(() => store.Complete(ResultStatus.Succeeded))
             .ThrowsExactly<InvalidOperationException>();
-        var actual = RunStore.Load(fixture.DirectoryPath, json_);
+        var actual = RunStore.Load(fixture.DirectoryPath, _json);
 
         // Assert
         using (Assert.Multiple())
@@ -52,7 +52,7 @@ internal class RunStore_SaveCaseTests
     {
         // Arrange
         using var fixture = new RunStoreFixture();
-        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, json_);
+        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, _json);
         fixture.SaveConditions(store);
         var result = fixture.SaveSucceededCase(store);
 
@@ -60,7 +60,7 @@ internal class RunStore_SaveCaseTests
         result.RawFiles.Clear();
         result.BenchmarkReport!.Processes.Clear();
         store.Complete(ResultStatus.Succeeded);
-        var actual = RunStore.Load(fixture.DirectoryPath, json_);
+        var actual = RunStore.Load(fixture.DirectoryPath, _json);
 
         // Assert
         await Assert.That(actual.Cases.Single().RawFiles.Count).IsEqualTo(2);

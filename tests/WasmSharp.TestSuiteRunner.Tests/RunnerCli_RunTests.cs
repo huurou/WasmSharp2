@@ -8,9 +8,9 @@ namespace WasmSharp.TestSuiteRunner.Tests;
 
 internal class RunnerCli_RunTests
 {
-    private readonly ReportStore reportStore_ = new ReportStore();
+    private readonly ReportStore _reportStore = new ReportStore();
 
-    private readonly Core2ProfileLoader profileLoader_ = new Core2ProfileLoader();
+    private readonly Core2ProfileLoader _profileLoader = new Core2ProfileLoader();
 
     [Test]
     [Arguments("", "有効な操作")]
@@ -28,7 +28,7 @@ internal class RunnerCli_RunTests
         var args = arguments.Split(' ', StringSplitOptions.RemoveEmptyEntries);
 
         // Act
-        var result = Run(profileLoader_.Load(), args);
+        var result = Run(_profileLoader.Load(), args);
 
         // Assert
         using (Assert.Multiple())
@@ -50,7 +50,7 @@ internal class RunnerCli_RunTests
         var args = arguments.Split(' ');
 
         // Act
-        var result = Run(profileLoader_.Load(), args);
+        var result = Run(_profileLoader.Load(), args);
 
         // Assert
         using (Assert.Multiple())
@@ -84,7 +84,7 @@ internal class RunnerCli_RunTests
 
         // Act
         var result = Run(profile, GenerateArguments(workspace, workspace.OutputRoot));
-        var manifest = reportStore_.ReadManifest(Path.Combine(workspace.OutputRoot, "manifest.json")).Manifest;
+        var manifest = _reportStore.ReadManifest(Path.Combine(workspace.OutputRoot, "manifest.json")).Manifest;
 
         // Assert
         using (Assert.Multiple())
@@ -125,7 +125,7 @@ internal class RunnerCli_RunTests
 
         // Act
         var result = Run(profile, GenerateArguments(workspace, relative));
-        var manifest = reportStore_.ReadManifest(Path.Combine(workspace.OutputRoot, "manifest.json")).Manifest;
+        var manifest = _reportStore.ReadManifest(Path.Combine(workspace.OutputRoot, "manifest.json")).Manifest;
 
         // Assert
         using (Assert.Multiple())
@@ -195,13 +195,13 @@ internal class RunnerCli_RunTests
         {
             manifest.Diagnostics.Add(new("generate", "生成時に記録された操作全体の異常"));
         }
-        reportStore_.Save(manifest, fixture.ManifestPath);
+        _reportStore.Save(manifest, fixture.ManifestPath);
         Directory.Delete(fixture.SourceRoot, recursive: true);
         var outputPath = Path.Combine(fixture.Root, "run.json");
 
         // Act
         var result = Run(manifest.Profile.ToProfile(), "run", "--manifest", fixture.ManifestPath, "--output", outputPath);
-        var report = reportStore_.ReadRunReport(outputPath).Report;
+        var report = _reportStore.ReadRunReport(outputPath).Report;
 
         // Assert
         using (Assert.Multiple())
@@ -245,17 +245,17 @@ internal class RunnerCli_RunTests
         // Arrange
         using var fixture = CorpusFixture.Create();
         var manifest = Complete(fixture.Manifest);
-        reportStore_.Save(manifest, fixture.ManifestPath);
+        _reportStore.Save(manifest, fixture.ManifestPath);
         var outputPath = Path.Combine(fixture.Root, "run.json");
         var reportPath = Path.Combine(fixture.Root, "existing-run.json");
-        reportStore_.Save(RunReportFixture.CreateSample(), reportPath);
+        _reportStore.Save(RunReportFixture.CreateSample(), reportPath);
         string[] args =
             operation == "run"
                 ? ["run", "--manifest", fixture.ManifestPath, "--output", outputPath]
                 : ["verify", "--input", reportPath];
 
         // Act
-        var result = Run(profileLoader_.Load(), args);
+        var result = Run(_profileLoader.Load(), args);
 
         // Assert
         using (Assert.Multiple())
@@ -274,11 +274,11 @@ internal class RunnerCli_RunTests
         var report = RunReportFixture.CreateSample();
         var input = directory.Combine("input.json");
         var baseline = directory.Combine("baseline.json");
-        reportStore_.Save(report, input);
+        _reportStore.Save(report, input);
         File.WriteAllText(baseline, "古いbaseline");
 
         // Act
-        var result = Run(profileLoader_.Load(), "baseline-save", "--input", input, "--output", baseline);
+        var result = Run(_profileLoader.Load(), "baseline-save", "--input", input, "--output", baseline);
 
         // Assert
         using (Assert.Multiple())
@@ -299,11 +299,11 @@ internal class RunnerCli_RunTests
         var report = RunReportFixture.CreateSample() with { Completion = new(false, true) };
         var input = directory.Combine("incomplete.json");
         var baseline = directory.Combine("baseline.json");
-        reportStore_.Save(report, input);
+        _reportStore.Save(report, input);
         File.WriteAllText(baseline, "旧baseline");
 
         // Act
-        var result = Run(profileLoader_.Load(), "baseline-save", "--input", input, "--output", baseline);
+        var result = Run(_profileLoader.Load(), "baseline-save", "--input", input, "--output", baseline);
 
         // Assert
         using (Assert.Multiple())
@@ -368,19 +368,19 @@ internal class RunnerCli_RunTests
         }
         if (operation == "compare-run")
         {
-            reportStore_.Save(baseline, baselinePath);
-            reportStore_.Save(current, currentPath);
+            _reportStore.Save(baseline, baselinePath);
+            _reportStore.Save(current, currentPath);
         }
         else
         {
-            reportStore_.Save(baseline.Corpus, baselinePath);
-            reportStore_.Save(current.Corpus, currentPath);
+            _reportStore.Save(baseline.Corpus, baselinePath);
+            _reportStore.Save(current.Corpus, currentPath);
         }
         var original = File.ReadAllBytes(baselinePath);
 
         // Act
         var result = Run(
-            profileLoader_.Load(),
+            _profileLoader.Load(),
             operation,
             "--baseline",
             baselinePath,
@@ -456,10 +456,10 @@ internal class RunnerCli_RunTests
         var profile = report.Corpus.Profile.ToProfile();
         if (scenario == "profile")
         {
-            profile = profileLoader_.Load();
+            profile = _profileLoader.Load();
         }
         var input = directory.Combine("run.json");
-        reportStore_.Save(report, input);
+        _reportStore.Save(report, input);
         var original = File.ReadAllBytes(input);
 
         // Act
@@ -490,7 +490,7 @@ internal class RunnerCli_RunTests
         // Arrange
         using var directory = new TemporaryDirectory();
         var input = directory.Combine("input.json");
-        reportStore_.Save(RunReportFixture.CreateSample(), input);
+        _reportStore.Save(RunReportFixture.CreateSample(), input);
         var original = File.ReadAllBytes(input);
         var args = operation switch
         {
@@ -500,7 +500,7 @@ internal class RunnerCli_RunTests
         };
 
         // Act
-        var result = Run(profileLoader_.Load(), args);
+        var result = Run(_profileLoader.Load(), args);
 
         // Assert
         using (Assert.Multiple())
@@ -521,7 +521,7 @@ internal class RunnerCli_RunTests
         using var directory = new TemporaryDirectory();
         var input = directory.Combine("input.json");
         var output = directory.Combine("baseline.json");
-        reportStore_.Save(RunReportFixture.CreateSample(), input);
+        _reportStore.Save(RunReportFixture.CreateSample(), input);
         File.WriteAllText(output, "保持するbaseline");
         var args =
             operation == "run"
@@ -529,7 +529,7 @@ internal class RunnerCli_RunTests
                 : [operation, "--baseline", input, "--current", input, "--output", output];
 
         // Act
-        var result = Run(profileLoader_.Load(), args);
+        var result = Run(_profileLoader.Load(), args);
 
         // Assert
         using (Assert.Multiple())
@@ -547,7 +547,7 @@ internal class RunnerCli_RunTests
         using var fixture = CorpusFixture.Create();
         PrepareScript(fixture, "passed");
         var manifest = Complete(fixture.Manifest);
-        reportStore_.Save(manifest, fixture.ManifestPath);
+        _reportStore.Save(manifest, fixture.ManifestPath);
         var parent = Path.Combine(fixture.Root, "file");
         File.WriteAllText(parent, "親はファイル");
         var output = Path.Combine(parent, "run.json");
@@ -575,7 +575,7 @@ internal class RunnerCli_RunTests
         using var fixture = CorpusFixture.Create();
         PrepareScript(fixture, "passed");
         var manifest = Complete(fixture.Manifest);
-        reportStore_.Save(manifest, fixture.ManifestPath);
+        _reportStore.Save(manifest, fixture.ManifestPath);
         var outputPath =
             operation == "run"
                 ? Path.Combine(fixture.Root, "run.json")
@@ -643,7 +643,7 @@ internal class RunnerCli_RunTests
 
         // Act
         var result = Run(profile, GenerateArguments(workspace, workspace.OutputRoot));
-        var manifest = reportStore_.ReadManifest(Path.Combine(workspace.OutputRoot, "manifest.json")).Manifest;
+        var manifest = _reportStore.ReadManifest(Path.Combine(workspace.OutputRoot, "manifest.json")).Manifest;
 
         // Assert
         using (Assert.Multiple())
@@ -682,7 +682,7 @@ internal class RunnerCli_RunTests
         };
 
         // Act
-        var result = Run(profileLoader_.Load(), args);
+        var result = Run(_profileLoader.Load(), args);
 
         // Assert
         using (Assert.Multiple())
@@ -700,7 +700,7 @@ internal class RunnerCli_RunTests
     public async Task Path引数が空白か次のoption_不足した引数名を示して終了2になる(string path)
     {
         // Arrange
-        var profile = profileLoader_.Load();
+        var profile = _profileLoader.Load();
 
         // Act
         var result = Run(profile, "verify", "--input", path);
@@ -723,12 +723,12 @@ internal class RunnerCli_RunTests
         using var directory = new TemporaryDirectory();
         var baseline = directory.Combine("baseline.json");
         var current = directory.Combine("current.json");
-        reportStore_.Save(RunReportFixture.CreateSample(), baseline);
-        reportStore_.Save(RunReportFixture.CreateSample(), current);
+        _reportStore.Save(RunReportFixture.CreateSample(), baseline);
+        _reportStore.Save(RunReportFixture.CreateSample(), current);
 
         // Act
         var result = Run(
-            profileLoader_.Load(),
+            _profileLoader.Load(),
             "compare-run",
             "--baseline",
             baseline,
@@ -753,11 +753,11 @@ internal class RunnerCli_RunTests
         using var directory = new TemporaryDirectory();
         var input = directory.Combine("result.json");
         var output = directory.Combine("result");
-        reportStore_.Save(RunReportFixture.CreateSample(), input);
+        _reportStore.Save(RunReportFixture.CreateSample(), input);
         var original = File.ReadAllBytes(input);
 
         // Act
-        var result = Run(profileLoader_.Load(), "baseline-save", "--input", input, "--output", output);
+        var result = Run(_profileLoader.Load(), "baseline-save", "--input", input, "--output", output);
 
         // Assert
         using (Assert.Multiple())
@@ -777,7 +777,7 @@ internal class RunnerCli_RunTests
         using var directory = new TemporaryDirectory();
         var actualDirectory = Directory.CreateDirectory(directory.Combine("actual")).FullName;
         var input = Path.Combine(actualDirectory, "run.json");
-        reportStore_.Save(RunReportFixture.CreateSample(), input);
+        _reportStore.Save(RunReportFixture.CreateSample(), input);
         var original = File.ReadAllBytes(input);
         var firstLink = directory.Combine("first");
         var secondLink = directory.Combine("second");
@@ -796,7 +796,7 @@ internal class RunnerCli_RunTests
         }
 
         // Act
-        var result = Run(profileLoader_.Load(), "baseline-save", "--input", alias, "--output", input);
+        var result = Run(_profileLoader.Load(), "baseline-save", "--input", alias, "--output", input);
 
         // Assert
         using (Assert.Multiple())
@@ -839,7 +839,7 @@ internal class RunnerCli_RunTests
 
         // Act
         var result = Run(
-            profileLoader_.Load(),
+            _profileLoader.Load(),
             "generate",
             "--spec-root",
             Path.GetPathRoot(directory.Root)!,

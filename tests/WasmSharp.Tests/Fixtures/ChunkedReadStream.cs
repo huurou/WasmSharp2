@@ -2,10 +2,10 @@ namespace WasmSharp.Tests.Fixtures;
 
 internal sealed class ChunkedReadStream : Stream
 {
-    private readonly Stream inner_;
-    private readonly int chunkSize_;
+    private readonly Stream _inner;
+    private readonly int _chunkSize;
 
-    public override bool CanRead => inner_.CanRead;
+    public override bool CanRead => _inner.CanRead;
     public override bool CanSeek => false;
     public override bool CanWrite => false;
     public override long Length => throw new NotSupportedException();
@@ -19,8 +19,8 @@ internal sealed class ChunkedReadStream : Stream
     public ChunkedReadStream(Stream inner, int chunkSize = 1)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(chunkSize);
-        inner_ = inner;
-        chunkSize_ = chunkSize;
+        _inner = inner;
+        _chunkSize = chunkSize;
     }
 
     public override int Read(byte[] buffer, int offset, int count)
@@ -30,7 +30,7 @@ internal sealed class ChunkedReadStream : Stream
 
     public override int Read(Span<byte> buffer)
     {
-        return inner_.Read(buffer[..Math.Min(buffer.Length, chunkSize_)]);
+        return _inner.Read(buffer[..Math.Min(buffer.Length, _chunkSize)]);
     }
 
     public override long Seek(long offset, SeekOrigin origin)
@@ -57,7 +57,7 @@ internal sealed class ChunkedReadStream : Stream
     {
         if (disposing)
         {
-            inner_.Dispose();
+            _inner.Dispose();
         }
 
         base.Dispose(disposing);

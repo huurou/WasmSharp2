@@ -4,7 +4,7 @@ namespace WasmSharp.Tests.Fixtures;
 
 internal static class HostLinkingModuleBinary
 {
-    private static readonly UTF8Encoding utf8_ = new(false, true);
+    private static readonly UTF8Encoding __utf8 = new(false, true);
 
     public static byte[] Create(params byte[][] sections)
     {
@@ -127,7 +127,7 @@ internal static class HostLinkingModuleBinary
 
     private static byte[] Name(string value)
     {
-        var bytes = utf8_.GetBytes(value);
+        var bytes = __utf8.GetBytes(value);
         return [.. Unsigned((uint)bytes.Length), .. bytes];
     }
 

@@ -11,7 +11,7 @@ public sealed class WasmImports
     /// <summary>
     /// module名とitem名から共有する外部実体への対応
     /// </summary>
-    private ImmutableDictionary<string, ImmutableDictionary<string, ExternalValue>> modules_ = ImmutableDictionary.Create<
+    private ImmutableDictionary<string, ImmutableDictionary<string, ExternalValue>> _modules = ImmutableDictionary.Create<
         string,
         ImmutableDictionary<string, ExternalValue>
     >(StringComparer.Ordinal);
@@ -30,7 +30,7 @@ public sealed class WasmImports
     {
         ArgumentNullException.ThrowIfNull(module);
         var items = module.Snapshot;
-        if (!modules_.TryGetValue(module.Name, out var existing))
+        if (!_modules.TryGetValue(module.Name, out var existing))
         {
             existing = ImmutableDictionary.Create<string, ExternalValue>(StringComparer.Ordinal);
         }
@@ -42,7 +42,7 @@ public sealed class WasmImports
             }
         }
         // 全件の照合と新しい対応表の作成が成功してから登録を確定する。
-        modules_ = modules_.SetItem(module.Name, existing.AddRange(items));
+        _modules = _modules.SetItem(module.Name, existing.AddRange(items));
     }
 
     /// <summary>
@@ -51,6 +51,6 @@ public sealed class WasmImports
     /// <returns>現在の対応表 表が参照する関数とリソースは共有する</returns>
     internal ImmutableDictionary<string, ImmutableDictionary<string, ExternalValue>> Snapshot()
     {
-        return modules_;
+        return _modules;
     }
 }

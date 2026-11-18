@@ -7,7 +7,7 @@ namespace WasmSharp.Benchmarks.Tests.Results;
 
 internal class RunStore_CompleteTests
 {
-    private readonly CaseJson json_ = new CaseJson();
+    private readonly CaseJson _json = new CaseJson();
 
     [Test]
     [Arguments("source/index.patch", false)]
@@ -23,7 +23,7 @@ internal class RunStore_CompleteTests
     {
         // Arrange
         using var fixture = new RunStoreFixture();
-        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, json_);
+        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, _json);
         fixture.SaveConditions(store);
         fixture.SaveSucceededCase(store);
         var path = Path.Combine(fixture.DirectoryPath, relativePath);
@@ -39,7 +39,7 @@ internal class RunStore_CompleteTests
 
         // Act & Assert
         await Assert.That(() => store.Complete(ResultStatus.Succeeded)).Throws<IOException>();
-        var actual = RunStore.Load(fixture.DirectoryPath, json_);
+        var actual = RunStore.Load(fixture.DirectoryPath, _json);
         await Assert.That(actual.Status).IsEqualTo(ResultStatus.Incomplete);
         await Assert.That(actual.CompletedAtUtc).IsNull();
         File.WriteAllBytes(path, original);
@@ -56,7 +56,7 @@ internal class RunStore_CompleteTests
     {
         // Arrange
         using var fixture = new RunStoreFixture();
-        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, json_);
+        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, _json);
         fixture.SaveConditions(store);
         var failure = new RunFailure(
             "invoke.single",
@@ -73,7 +73,7 @@ internal class RunStore_CompleteTests
 
         // Act
         store.Complete(status, [failure]);
-        var actual = RunStore.Load(fixture.DirectoryPath, json_);
+        var actual = RunStore.Load(fixture.DirectoryPath, _json);
 
         // Assert
         using (Assert.Multiple())
@@ -97,7 +97,7 @@ internal class RunStore_CompleteTests
     {
         // Arrange
         using var fixture = new RunStoreFixture();
-        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, json_);
+        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, _json);
         fixture.SaveConditions(store);
         var result = fixture.SaveSucceededCase(store);
         var rawPath = Path.Combine(fixture.DirectoryPath, result.RawFiles[0].RelativePath);
@@ -112,7 +112,7 @@ internal class RunStore_CompleteTests
 
         // Act & Assert
         await Assert.That(() => store.Complete(ResultStatus.Succeeded)).Throws<IOException>();
-        await Assert.That(RunStore.Load(fixture.DirectoryPath, json_).Status).IsEqualTo(ResultStatus.Incomplete);
+        await Assert.That(RunStore.Load(fixture.DirectoryPath, _json).Status).IsEqualTo(ResultStatus.Incomplete);
     }
 
     [Test]
@@ -124,7 +124,7 @@ internal class RunStore_CompleteTests
     {
         // Arrange
         using var fixture = new RunStoreFixture();
-        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, json_);
+        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, _json);
         fixture.SaveConditions(store);
         var mismatched = different switch
         {
@@ -133,7 +133,7 @@ internal class RunStore_CompleteTests
             "job" => fixture.Check with { JobId = "other-job" },
             _ => fixture.Check with { ProcessId = 9999 },
         };
-        var check = store.SaveFile("checks/mismatched.json", JsonSerializer.SerializeToUtf8Bytes(mismatched, json_.Options));
+        var check = store.SaveFile("checks/mismatched.json", JsonSerializer.SerializeToUtf8Bytes(mismatched, _json.Options));
         var result = fixture.Manifest.Cases.Single() with
         {
             Metrics = new(null, "未取得", null, "未取得", null, "未取得"),
@@ -148,7 +148,7 @@ internal class RunStore_CompleteTests
         // Act & Assert
         var failure = await Assert.That(() => store.Complete(ResultStatus.Succeeded)).ThrowsExactly<InvalidDataException>();
         await Assert.That(failure!.Message).Contains("ケース").And.Contains("process検査").And.Contains("一致しません");
-        await Assert.That(RunStore.Load(fixture.DirectoryPath, json_).Status).IsEqualTo(ResultStatus.Incomplete);
+        await Assert.That(RunStore.Load(fixture.DirectoryPath, _json).Status).IsEqualTo(ResultStatus.Incomplete);
     }
 
     [Test]
@@ -158,7 +158,7 @@ internal class RunStore_CompleteTests
     {
         // Arrange
         using var fixture = new RunStoreFixture();
-        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, json_);
+        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, _json);
         fixture.SaveConditions(store);
         var result = fixture.SaveSucceededCase(store);
         store.Complete(ResultStatus.Succeeded);
@@ -183,7 +183,7 @@ internal class RunStore_CompleteTests
     {
         // Arrange
         using var fixture = new RunStoreFixture();
-        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, json_);
+        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, _json);
         fixture.SaveSucceededCase(store);
 
         // Act & Assert
@@ -191,7 +191,7 @@ internal class RunStore_CompleteTests
             .That(() => store.Complete(ResultStatus.Succeeded))
             .ThrowsExactly<InvalidOperationException>();
         await Assert.That(failure!.Message).Contains("runの条件").And.Contains("保存されていません");
-        await Assert.That(RunStore.Load(fixture.DirectoryPath, json_).Status).IsEqualTo(ResultStatus.Incomplete);
+        await Assert.That(RunStore.Load(fixture.DirectoryPath, _json).Status).IsEqualTo(ResultStatus.Incomplete);
     }
 
     [Test]
@@ -199,14 +199,14 @@ internal class RunStore_CompleteTests
     {
         // Arrange
         using var fixture = new RunStoreFixture();
-        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, json_);
+        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, _json);
         fixture.SaveConditions(store);
         fixture.SaveSucceededCase(store);
 
         // Act & Assert
         await Assert.That(() => store.SaveFile("raw/full.json", "上書き"u8)).ThrowsExactly<IOException>();
         await Assert.That(() => store.Complete(ResultStatus.Succeeded)).ThrowsExactly<InvalidOperationException>();
-        var actual = RunStore.Load(fixture.DirectoryPath, json_);
+        var actual = RunStore.Load(fixture.DirectoryPath, _json);
         await Assert.That(actual.Status).IsEqualTo(ResultStatus.Incomplete);
         await Assert.That(actual.CompletedAtUtc).IsNull();
         await Assert
@@ -219,7 +219,7 @@ internal class RunStore_CompleteTests
     {
         // Arrange
         using var fixture = new RunStoreFixture();
-        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, json_);
+        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, _json);
         fixture.SaveConditions(store);
         fixture.SaveSucceededCase(store);
 
@@ -251,7 +251,7 @@ internal class RunStore_CompleteTests
             }
         }
 
-        var actual = RunStore.Load(fixture.DirectoryPath, json_);
+        var actual = RunStore.Load(fixture.DirectoryPath, _json);
         await Assert.That(actual.Status).IsEqualTo(ResultStatus.Incomplete);
         await Assert.That(actual.CompletedAtUtc).IsNull();
     }
@@ -261,7 +261,7 @@ internal class RunStore_CompleteTests
     {
         // Arrange
         using var fixture = new RunStoreFixture();
-        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, json_);
+        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, _json);
         fixture.SaveConditions(store);
 
         // Act & Assert
@@ -269,7 +269,7 @@ internal class RunStore_CompleteTests
             .That(() => store.Complete(ResultStatus.Succeeded))
             .ThrowsExactly<InvalidOperationException>();
         await Assert.That(failure!.Message).Contains("予定ケース").And.Contains("完了していません");
-        var actual = RunStore.Load(fixture.DirectoryPath, json_);
+        var actual = RunStore.Load(fixture.DirectoryPath, _json);
         await Assert.That(actual.Status).IsEqualTo(ResultStatus.Incomplete);
         await Assert.That(actual.CompletedAtUtc).IsNull();
     }
@@ -285,7 +285,7 @@ internal class RunStore_CompleteTests
             {
                 PlannedCaseIds = ["invoke.single", "invoke.empty"],
             },
-            json_
+            _json
         );
         fixture.SaveConditions(store);
         fixture.SaveSucceededCase(store);
@@ -295,7 +295,7 @@ internal class RunStore_CompleteTests
 
         // Act & Assert
         await Assert.That(() => store.Complete(ResultStatus.Succeeded)).ThrowsExactly<InvalidOperationException>();
-        var actual = RunStore.Load(fixture.DirectoryPath, json_);
+        var actual = RunStore.Load(fixture.DirectoryPath, _json);
         using (Assert.Multiple())
         {
             await Assert.That(actual.Status).IsEqualTo(ResultStatus.Incomplete);
@@ -315,7 +315,7 @@ internal class RunStore_CompleteTests
     {
         // Arrange
         using var fixture = new RunStoreFixture();
-        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, json_);
+        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, _json);
         fixture.SaveConditions(store);
         var raw = store.SaveFile("raw/full.json", "{\"case\":\"invoke.single\"}"u8);
         var measurements = store.SaveFile("raw/measurements.csv", "operation,ns\n1,125.25"u8);
@@ -334,10 +334,10 @@ internal class RunStore_CompleteTests
 
         // Act
         store.Complete(ResultStatus.Succeeded);
-        var actual = RunStore.Load(fixture.DirectoryPath, json_);
+        var actual = RunStore.Load(fixture.DirectoryPath, _json);
         var restoredCheck = JsonSerializer.Deserialize<ProcessCheck>(
             File.ReadAllBytes(Path.Combine(fixture.DirectoryPath, check.RelativePath)),
-            json_.Options
+            _json.Options
         )!;
 
         // Assert

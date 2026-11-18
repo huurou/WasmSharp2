@@ -6,14 +6,14 @@ namespace WasmSharp.Benchmarks.Tests.Fixtures;
 
 internal sealed class AssetLoadingFixture : IDisposable
 {
-    private readonly CaseJson json_ = new CaseJson();
+    private readonly CaseJson _json = new CaseJson();
 
-    private readonly string rootDirectory_ = Path.Combine(
+    private readonly string _rootDirectory = Path.Combine(
         Path.GetTempPath(),
         "wasm-benchmark-assets-" + Guid.NewGuid().ToString("N")
     );
 
-    internal string DirectoryPath => Path.Combine(rootDirectory_, "assets");
+    internal string DirectoryPath => Path.Combine(_rootDirectory, "assets");
     internal string ManifestPath => Path.Combine(DirectoryPath, "asset-manifest.json");
     internal AssetManifest Manifest { get; private set; }
     internal List<BenchmarkCase> Definitions { get; }
@@ -26,10 +26,10 @@ internal sealed class AssetLoadingFixture : IDisposable
             Path.Combine(DirectoryPath, "wasm", "invoke.wasm")
         );
         File.WriteAllText(Path.Combine(DirectoryPath, "profile.json"), "{}");
-        Definitions = [ReadCases(json_).Single(x => x.CaseId == "invoke.single")];
+        Definitions = [ReadCases(_json).Single(x => x.CaseId == "invoke.single")];
         File.WriteAllBytes(
             Path.Combine(DirectoryPath, "cases.json"),
-            JsonSerializer.SerializeToUtf8Bytes(Definitions, json_.Options)
+            JsonSerializer.SerializeToUtf8Bytes(Definitions, _json.Options)
         );
         Manifest = new(
             1,
@@ -61,7 +61,7 @@ internal sealed class AssetLoadingFixture : IDisposable
     {
         File.WriteAllBytes(
             Path.Combine(DirectoryPath, "cases.json"),
-            JsonSerializer.SerializeToUtf8Bytes(Definitions, json_.Options)
+            JsonSerializer.SerializeToUtf8Bytes(Definitions, _json.Options)
         );
         Manifest = Manifest with { Cases = FileDefinition("cases.json") };
         SaveManifest();
@@ -98,7 +98,7 @@ internal sealed class AssetLoadingFixture : IDisposable
 
     internal void SaveManifest()
     {
-        File.WriteAllBytes(ManifestPath, JsonSerializer.SerializeToUtf8Bytes(Manifest, json_.Options));
+        File.WriteAllBytes(ManifestPath, JsonSerializer.SerializeToUtf8Bytes(Manifest, _json.Options));
     }
 
     internal void SaveManifest(AssetManifest manifest)
@@ -114,6 +114,6 @@ internal sealed class AssetLoadingFixture : IDisposable
 
     public void Dispose()
     {
-        Directory.Delete(rootDirectory_, recursive: true);
+        Directory.Delete(_rootDirectory, recursive: true);
     }
 }

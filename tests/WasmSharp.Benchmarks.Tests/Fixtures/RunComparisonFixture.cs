@@ -6,11 +6,11 @@ namespace WasmSharp.Benchmarks.Tests.Fixtures;
 
 internal sealed class RunComparisonFixture : IDisposable
 {
-    private readonly CaseJson json_ = new CaseJson();
+    private readonly CaseJson _json = new CaseJson();
 
-    private readonly RunStoreFixture template_ = new();
+    private readonly RunStoreFixture _template = new();
 
-    internal string DirectoryPath => template_.DirectoryPath;
+    internal string DirectoryPath => _template.DirectoryPath;
     internal string RepositoryDirectory { get; }
     internal RunManifest Manifest { get; set; }
     internal RunEnvironment Environment { get; set; }
@@ -29,8 +29,8 @@ internal sealed class RunComparisonFixture : IDisposable
     {
         var root = Path.Combine(Path.GetTempPath(), "wasm-run-comparison", repositoryName);
         RepositoryDirectory = root;
-        Manifest = template_.Manifest with { RunId = runId, Kind = RunKind.Measurement };
-        Environment = template_.Environment with
+        Manifest = _template.Manifest with { RunId = runId, Kind = RunKind.Measurement };
+        Environment = _template.Environment with
         {
             Command = new(
                 root + "/dotnet/dotnet.exe",
@@ -50,12 +50,12 @@ internal sealed class RunComparisonFixture : IDisposable
             ),
             Processes =
             [
-                template_.Environment.Processes.Single() with
+                _template.Environment.Processes.Single() with
                 {
                     JobId = "auto-" + runId,
                     RuntimeConfiguration =
                     [
-                        .. template_.Environment.Processes.Single().RuntimeConfiguration,
+                        .. _template.Environment.Processes.Single().RuntimeConfiguration,
                         new("RuntimeConfigFile.RelativePath", root + "/config-" + runId + ".json"),
                         new("RuntimeConfigFile.Sha256", "runtimeconfig-hash"),
                     ],
@@ -67,7 +67,7 @@ internal sealed class RunComparisonFixture : IDisposable
             ],
         };
         ProcessRuntimeVersion = Environment.RuntimeVersion;
-        Source = template_.Source with
+        Source = _template.Source with
         {
             AssembliesBefore =
             [
@@ -79,20 +79,20 @@ internal sealed class RunComparisonFixture : IDisposable
                 new(AssemblyRole.Runtime, root + "/bin/WasmSharp.dll", runId + "-runtime"),
                 new(AssemblyRole.Harness, root + "/bin/WasmSharp.Benchmarks.dll", runId + "-harness"),
             ],
-            Runtime = template_.Source.Runtime with
+            Runtime = _template.Source.Runtime with
             {
                 Files =
                 [
-                    .. template_.Source.Runtime.Files,
+                    .. _template.Source.Runtime.Files,
                     new("src/WasmSharp/WasmSharp.csproj", "runtime-project"),
                     new("Directory.Build.props", "build-props"),
                 ],
             },
-            Harness = template_.Source.Harness with
+            Harness = _template.Source.Harness with
             {
                 Files =
                 [
-                    .. template_.Source.Harness.Files,
+                    .. _template.Source.Harness.Files,
                     new("tools/WasmSharp.Benchmarks/Measurements/InvokeBenchmarks.cs", "harness-code"),
                 ],
             },
@@ -102,7 +102,7 @@ internal sealed class RunComparisonFixture : IDisposable
             .. JsonSerializer
                 .Deserialize<List<BenchmarkCase>>(
                     File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "Fixtures", "Data", "cases.json")),
-                    json_.Options
+                    _json.Options
                 )!
                 .Where(x => x.CaseId == "invoke.single")
                 .Select(x => x with { Workload = [new("calls", 1, WorkloadUnit.Iterations)] }),
@@ -141,7 +141,7 @@ internal sealed class RunComparisonFixture : IDisposable
         Manifest = Manifest with
         {
             PlannedCaseIds = [.. cases.Select(x => x.CaseId)],
-            Cases = [.. cases.Select(x => template_.Manifest.Cases.Single() with { CaseId = x.CaseId })],
+            Cases = [.. cases.Select(x => _template.Manifest.Cases.Single() with { CaseId = x.CaseId })],
         };
         Assets = Assets with
         {
@@ -162,7 +162,7 @@ internal sealed class RunComparisonFixture : IDisposable
 
     internal void Save()
     {
-        var store = RunStore.Create(DirectoryPath, Manifest, json_);
+        var store = RunStore.Create(DirectoryPath, Manifest, _json);
         store.SaveInputs(
             SaveJson(store, "assets/asset-manifest.json", Assets),
             SaveJson(store, "cases.json", Cases),
@@ -188,7 +188,7 @@ internal sealed class RunComparisonFixture : IDisposable
                 var key = (job.JobId, result.CaseId);
                 var hasAffinity = ProcessAffinities.TryGetValue(key, out var affinity);
                 var check = store.SaveCheck(
-                    template_.Check with
+                    _template.Check with
                     {
                         RunId = Manifest.RunId,
                         CaseId = result.CaseId,
@@ -230,11 +230,11 @@ internal sealed class RunComparisonFixture : IDisposable
 
     private ManifestFile SaveJson<T>(RunStore store, string path, T value)
     {
-        return store.SaveFile(path, JsonSerializer.SerializeToUtf8Bytes(value, json_.Options));
+        return store.SaveFile(path, JsonSerializer.SerializeToUtf8Bytes(value, _json.Options));
     }
 
     public void Dispose()
     {
-        template_.Dispose();
+        _template.Dispose();
     }
 }

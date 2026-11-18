@@ -40,7 +40,7 @@ internal sealed partial class RunComparison
         {
             try
             {
-                var manifest = RunStore.Load(directory, json_);
+                var manifest = RunStore.Load(directory, _json);
                 var path = Path.Combine(directory, "run.json");
                 runs.Add(
                     new(
@@ -79,7 +79,7 @@ internal sealed partial class RunComparison
                     $"policyのSHA-256が一致しません。指定={request.PolicySha256}, 保存内容={hash}"
                 );
             }
-            var policy = JsonSerializer.Deserialize<ComparisonPolicy>(content, json_.Options)!;
+            var policy = JsonSerializer.Deserialize<ComparisonPolicy>(content, _json.Options)!;
             if (policy is null || policy.SchemaVersion != 1 || string.IsNullOrWhiteSpace(policy.PolicyId))
             {
                 throw new InvalidDataException("policyの版または識別子が不正です。");

@@ -8,18 +8,18 @@ namespace WasmSharp.Benchmarks.Cases;
 /// </summary>
 internal sealed class CaseCatalog
 {
-    private readonly MeasurementMethods methods_;
-    private readonly FrozenDictionary<string, BenchmarkCase> definitions_;
+    private readonly MeasurementMethods _methods;
+    private readonly FrozenDictionary<string, BenchmarkCase> _definitions;
 
-    internal IEnumerable<BenchmarkCase> Cases => definitions_.Values;
+    internal IEnumerable<BenchmarkCase> Cases => _definitions.Values;
 
     internal CaseCatalog(IEnumerable<BenchmarkCase> definitions, CaseJson json, MeasurementMethods methods)
     {
-        methods_ = methods;
+        _methods = methods;
         var cases = new Dictionary<string, BenchmarkCase>(StringComparer.Ordinal);
         foreach (var definition in definitions)
         {
-            if (!methods_.ContainsCase(definition.CaseId))
+            if (!_methods.ContainsCase(definition.CaseId))
             {
                 throw new InvalidDataException($"ケース'{definition.CaseId}'は未登録です。");
             }
@@ -29,7 +29,7 @@ internal sealed class CaseCatalog
             }
         }
 
-        definitions_ = cases.ToFrozenDictionary(StringComparer.Ordinal);
+        _definitions = cases.ToFrozenDictionary(StringComparer.Ordinal);
         if (
             cases.TryGetValue("scan.scalar", out var scalar)
             && cases.TryGetValue("scan.simd", out var simd)
@@ -70,14 +70,14 @@ internal sealed class CaseCatalog
 
     internal BenchmarkCase Get(string caseId)
     {
-        return definitions_.TryGetValue(caseId, out var definition)
+        return _definitions.TryGetValue(caseId, out var definition)
             ? definition
             : throw new InvalidDataException($"ケース'{caseId}'は未登録です。");
     }
 
     internal string GetMeasurementMethod(string caseId)
     {
-        return methods_.GetMeasurementMethod(Get(caseId).CaseId);
+        return _methods.GetMeasurementMethod(Get(caseId).CaseId);
     }
 
     private static void CheckEqual(BenchmarkCase first, BenchmarkCase other, string condition, bool equal)

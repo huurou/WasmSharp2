@@ -8,7 +8,7 @@ namespace WasmSharp.TestSuiteRunner.Tests.Reports;
 
 internal class ReportStore_SaveTests
 {
-    private readonly ReportStore reportStore_ = new ReportStore();
+    private readonly ReportStore _reportStore = new ReportStore();
 
     [Test]
     public async Task 実行結果とmanifestを保存する_schemaとkindを持つsnake_caseのUTF8JSONとして読み戻せる()
@@ -20,15 +20,15 @@ internal class ReportStore_SaveTests
         var manifestPath = directory.Combine("manifest.json");
 
         // Act
-        reportStore_.Save(report, reportPath);
-        reportStore_.Save(report.Corpus, manifestPath);
+        _reportStore.Save(report, reportPath);
+        _reportStore.Save(report.Corpus, manifestPath);
 
         // Assert
         var content = await File.ReadAllBytesAsync(reportPath);
         using var document = JsonDocument.Parse(content);
         var root = document.RootElement;
         var cases = root.GetProperty("inputs")[0].GetProperty("cases");
-        var stored = reportStore_.ReadRunReport(reportPath);
+        var stored = _reportStore.ReadRunReport(reportPath);
         using (Assert.Multiple())
         {
             await Assert.That(content[0]).IsEqualTo((byte)'{');
@@ -44,7 +44,7 @@ internal class ReportStore_SaveTests
             await Assert.That(cases[3].GetProperty("outcome").GetString()).IsEqualTo("runner_error");
             await Assert.That(stored.Issues).IsEmpty();
             await Assert.That(JsonSerializer.Serialize(stored.Report)).IsEqualTo(JsonSerializer.Serialize(report));
-            await Assert.That(reportStore_.ReadManifest(manifestPath).Issues).IsEmpty();
+            await Assert.That(_reportStore.ReadManifest(manifestPath).Issues).IsEmpty();
             await Assert.That(Directory.GetFiles(directory.Root, "*.tmp")).IsEmpty();
         }
     }
@@ -75,7 +75,7 @@ internal class ReportStore_SaveTests
         var path = directory.Combine("comparison.json");
 
         // Act
-        reportStore_.Save(report, path);
+        _reportStore.Save(report, path);
 
         // Assert
         using var document = JsonDocument.Parse(await File.ReadAllBytesAsync(path));
@@ -107,9 +107,9 @@ internal class ReportStore_SaveTests
         var report = RunReportFixture.CreateSample();
         Action save = kind switch
         {
-            "corpus_manifest" => () => reportStore_.Save(report.Corpus, path),
-            "run_report" => () => reportStore_.Save(report, path),
-            _ => () => reportStore_.Save(new ComparisonReport(ComparisonType.Run, new("/baseline.json"), new(path)), path),
+            "corpus_manifest" => () => _reportStore.Save(report.Corpus, path),
+            "run_report" => () => _reportStore.Save(report, path),
+            _ => () => _reportStore.Save(new ComparisonReport(ComparisonType.Run, new("/baseline.json"), new(path)), path),
         };
 
         // Act & Assert
@@ -133,7 +133,7 @@ internal class ReportStore_SaveTests
 
         // Act & Assert
         var exception = await Assert
-            .That(() => reportStore_.Save(RunReportFixture.CreateSample(), path))
+            .That(() => _reportStore.Save(RunReportFixture.CreateSample(), path))
             .ThrowsExactly<ReportStoreException>();
         using (Assert.Multiple())
         {

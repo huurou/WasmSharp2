@@ -9,9 +9,9 @@ namespace WasmSharp.Benchmarks.Tests;
 
 internal class BenchmarkCli_RunTests
 {
-    private readonly CaseJson json_ = new CaseJson();
-    private readonly MeasurementMethods methods_ = new MeasurementMethods();
-    private readonly BenchmarkCli cli_ = new BenchmarkCli();
+    private readonly CaseJson _json = new CaseJson();
+    private readonly MeasurementMethods _methods = new MeasurementMethods();
+    private readonly BenchmarkCli _cli = new BenchmarkCli();
 
     [Test]
     [Arguments(ResultStatus.Succeeded, 0, false)]
@@ -26,7 +26,7 @@ internal class BenchmarkCli_RunTests
     {
         // Arrange
         using var assets = new AssetLoadingFixture();
-        assets.SaveAssets(PreparationFixture.CreateAssets(json_, methods_));
+        assets.SaveAssets(PreparationFixture.CreateAssets(_json, _methods));
         using var run = new RunStoreFixture();
         using var output = new StringWriter();
         using var error = new StringWriter();
@@ -92,7 +92,7 @@ internal class BenchmarkCli_RunTests
         var calls = 0;
 
         // Act
-        var exitCode = cli_.Run(
+        var exitCode = _cli.Run(
             [.. arguments],
             output,
             error,
@@ -161,7 +161,7 @@ internal class BenchmarkCli_RunTests
         using var error = new StringWriter();
 
         // Act
-        var exitCode = cli_.Run(
+        var exitCode = _cli.Run(
             ["run", "--assets", assets.ManifestPath, "--case", "invoke.single", "--output", run.DirectoryPath],
             output,
             error,
@@ -190,7 +190,7 @@ internal class BenchmarkCli_RunTests
         string[] args = operation.Length == 0 ? ["--help"] : [operation, "--help"];
 
         // Act
-        var exitCode = cli_.Run(args, output, error);
+        var exitCode = _cli.Run(args, output, error);
 
         // Assert
         using (Assert.Multiple())
@@ -221,7 +221,7 @@ internal class BenchmarkCli_RunTests
         var args = input.Length == 0 ? [] : input.Split('|');
 
         // Act
-        var exitCode = cli_.Run(args, output, error);
+        var exitCode = _cli.Run(args, output, error);
 
         // Assert
         using (Assert.Multiple())
@@ -244,7 +244,7 @@ internal class BenchmarkCli_RunTests
         using var error = new StringWriter();
 
         // Act
-        var exitCode = cli_.Run(
+        var exitCode = _cli.Run(
             [
                 "compare",
                 "--baseline",
@@ -287,7 +287,7 @@ internal class BenchmarkCli_RunTests
             Environment.SetEnvironmentVariable("PATH", assets.DirectoryPath);
 
             // Act
-            var exitCode = cli_.Run(
+            var exitCode = _cli.Run(
                 ["run", "--assets", assets.ManifestPath, "--case", caseId, "--output", directory],
                 output,
                 error
@@ -317,13 +317,13 @@ internal class BenchmarkCli_RunTests
         using var assets = new AssetLoadingFixture();
         if (preparation)
         {
-            assets.SaveAssets(PreparationFixture.CreateAssets(json_, methods_));
+            assets.SaveAssets(PreparationFixture.CreateAssets(_json, _methods));
         }
         using var output = new StringWriter();
         using var error = new StringWriter();
 
         // Act
-        var exitCode = cli_.Run(["check", "--assets", assets.ManifestPath], output, error);
+        var exitCode = _cli.Run(["check", "--assets", assets.ManifestPath], output, error);
 
         // Assert
         var displayedCaseIds = output
@@ -367,7 +367,7 @@ internal class BenchmarkCli_RunTests
         using var error = new StringWriter();
 
         // Act
-        var exitCode = cli_.Run(["check", "--assets", assets.ManifestPath], output, error);
+        var exitCode = _cli.Run(["check", "--assets", assets.ManifestPath], output, error);
 
         // Assert
         using (Assert.Multiple())
@@ -414,7 +414,7 @@ internal class BenchmarkCli_RunTests
         var runCalled = false;
 
         // Act
-        var exitCode = cli_.Run(
+        var exitCode = _cli.Run(
             args,
             output,
             error,
@@ -473,7 +473,7 @@ internal class BenchmarkCli_RunTests
         try
         {
             // Act
-            var exitCode = cli_.Run(
+            var exitCode = _cli.Run(
                 [
                     "compare",
                     "--baseline",
@@ -505,7 +505,7 @@ internal class BenchmarkCli_RunTests
                 {
                     var report = JsonSerializer.Deserialize<ComparisonReport>(
                         File.ReadAllBytes(Path.Combine(directory, "comparison.json")),
-                        json_.Options
+                        _json.Options
                     )!;
                     await Assert.That(report.IsAccepted).IsFalse();
                     await Assert.That(report.Cases.Single().Decision).IsEqualTo(ComparisonDecision.Indeterminate);
@@ -569,7 +569,7 @@ internal class BenchmarkCli_RunTests
         try
         {
             // Act
-            var exitCode = cli_.Run(
+            var exitCode = _cli.Run(
                 [
                     "compare",
                     "--baseline",
@@ -621,7 +621,7 @@ internal class BenchmarkCli_RunTests
         ];
 
         // Act
-        var exitCode = cli_.Run(args, output, error);
+        var exitCode = _cli.Run(args, output, error);
 
         // Assert
         using (Assert.Multiple())
@@ -649,7 +649,7 @@ internal class BenchmarkCli_RunTests
         try
         {
             // Act
-            var exitCode = cli_.Run(
+            var exitCode = _cli.Run(
                 [
                     "compare",
                     "--baseline",
@@ -666,7 +666,7 @@ internal class BenchmarkCli_RunTests
             );
             var report = JsonSerializer.Deserialize<ComparisonReport>(
                 File.ReadAllBytes(Path.Combine(directory, "comparison.json")),
-                json_.Options
+                _json.Options
             )!;
 
             // Assert

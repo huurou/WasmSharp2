@@ -14,7 +14,7 @@ internal sealed class RunnerCli(Core2Profile profile)
     /// <summary>
     /// CLI操作内でJSON設定を共有する保存済み結果の読取・保存処理
     /// </summary>
-    private readonly ReportStore reportStore_ = new ReportStore();
+    private readonly ReportStore _reportStore = new ReportStore();
 
     /// <summary>
     /// 引数から一つの操作を実行し、終了値を返す。
@@ -228,7 +228,7 @@ internal sealed class RunnerCli(Core2Profile profile)
                 paths["--wast2json"],
                 paths["--output"]
             ),
-            reportStore_,
+            _reportStore,
             path => output.WriteLine($"[{++processed}/{profile.Inputs.Length}] 変換・記録: {path}")
         );
         WriteConversion(result.Manifest, output);
@@ -261,7 +261,7 @@ internal sealed class RunnerCli(Core2Profile profile)
     /// <returns>通常実行の終了値</returns>
     private int Execute(Dictionary<string, string> paths, TextWriter output, TextWriter error)
     {
-        var manifest = reportStore_.ReadManifest(paths["--manifest"]).Manifest;
+        var manifest = _reportStore.ReadManifest(paths["--manifest"]).Manifest;
         if (!manifest.Profile.Matches(profile))
         {
             throw new ReportStoreException(
@@ -274,7 +274,7 @@ internal sealed class RunnerCli(Core2Profile profile)
             manifest,
             paths["--manifest"],
             paths["--output"],
-            reportStore_,
+            _reportStore,
             progress: path => output.WriteLine($"[{++processed}/{profile.Inputs.Length}] 実行・記録: {path}")
         );
         WriteRun(result.Report, output);
@@ -299,7 +299,7 @@ internal sealed class RunnerCli(Core2Profile profile)
     /// <returns>保存成功時は0 失敗は呼出側で終了2へ変換する</returns>
     private int SaveBaseline(Dictionary<string, string> paths, TextWriter output)
     {
-        BaselineStore.Save(paths["--input"], paths["--output"], reportStore_);
+        BaselineStore.Save(paths["--input"], paths["--output"], _reportStore);
         output.WriteLine("baseline保存: 完了");
         output.WriteLine($"保存先: {paths["--output"]}");
         return 0;
@@ -318,18 +318,18 @@ internal sealed class RunnerCli(Core2Profile profile)
         var report =
             operation == "compare-conversion"
                 ? BaselineComparer.CompareConversion(
-                    reportStore_.ReadManifest(paths["--baseline"]).Manifest,
-                    reportStore_.ReadManifest(paths["--current"]).Manifest,
+                    _reportStore.ReadManifest(paths["--baseline"]).Manifest,
+                    _reportStore.ReadManifest(paths["--current"]).Manifest,
                     paths["--baseline"],
                     paths["--current"]
                 )
                 : BaselineComparer.CompareRun(
-                    reportStore_.ReadRunReport(paths["--baseline"]).Report,
-                    reportStore_.ReadRunReport(paths["--current"]).Report,
+                    _reportStore.ReadRunReport(paths["--baseline"]).Report,
+                    _reportStore.ReadRunReport(paths["--current"]).Report,
                     paths["--baseline"],
                     paths["--current"]
                 );
-        reportStore_.Save(report, paths["--output"]);
+        _reportStore.Save(report, paths["--output"]);
         output.WriteLine($"比較成立: {(report.Established ? "成立" : "未成立")}");
         output.WriteLine($"比較完了: {(report.Complete ? "完了" : "未完了")}");
         var summary = report.Summary;
@@ -362,7 +362,7 @@ internal sealed class RunnerCli(Core2Profile profile)
     /// <returns>合格は0、読取可能な結果の条件不成立は1</returns>
     private int Verify(string path, TextWriter output)
     {
-        var stored = reportStore_.ReadRunReport(path);
+        var stored = _reportStore.ReadRunReport(path);
         var decision = CompletionPolicy.Verify(stored.Report, stored.Issues, profile);
         output.WriteLine($"最終判定: {(decision.ExitCode == 0 ? "合格" : "不合格")}");
         foreach (var reason in decision.Reasons)

@@ -6,7 +6,7 @@ namespace WasmSharp.TestSuiteRunner.Tests;
 
 internal class Program_MainTests
 {
-    private readonly ReportStore reportStore_ = new ReportStore();
+    private readonly ReportStore _reportStore = new ReportStore();
 
     [Test]
     public async Task ヘルプを指定してビルド済みCLIを直接起動する_説明を表示して正常終了する()
@@ -42,7 +42,7 @@ internal class Program_MainTests
         var report = RunReportFixture.CreateSample();
         var input = directory.Combine("run.json");
         var output = directory.Combine("baseline.json");
-        reportStore_.Save(report, input);
+        _reportStore.Save(report, input);
         var executablePath = Path.Combine(
             AppContext.BaseDirectory,
             OperatingSystem.IsWindows() ? "WasmSharp.TestSuiteRunner.exe" : "WasmSharp.TestSuiteRunner"

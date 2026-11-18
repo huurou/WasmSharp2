@@ -11,8 +11,8 @@ namespace WasmSharp.Benchmarks.Tests.Measurements;
 [NotInParallel]
 internal class BenchmarkProcess_SetupTests
 {
-    private readonly CaseJson json_ = new CaseJson();
-    private readonly MeasurementMethods methods_ = new MeasurementMethods();
+    private readonly CaseJson _json = new CaseJson();
+    private readonly MeasurementMethods _methods = new MeasurementMethods();
 
     [Test]
     public async Task 前検査成功後の保存が失敗_検査成功と未開始を保持して保存失敗を記録する()
@@ -27,7 +27,7 @@ internal class BenchmarkProcess_SetupTests
             .Throws<IOException>();
         fixture.RestoreCheckWrites();
         process.Cleanup(() => { });
-        var failed = RunStore.ReadChecks(fixture.Run.DirectoryPath, json_).Single(x => x.Check.Failures.Count > 0).Check;
+        var failed = RunStore.ReadChecks(fixture.Run.DirectoryPath, _json).Single(x => x.Check.Failures.Count > 0).Check;
         using (Assert.Multiple())
         {
             await Assert.That(failed.Precheck!.Status).IsEqualTo(ResultStatus.Succeeded);
@@ -76,14 +76,14 @@ internal class BenchmarkProcess_SetupTests
                 process.Setup(
                     (_, id, json) =>
                         benchmark.Initialize(
-                            InvokeFixture.CreateAssets("invoke.single", json, methods_, invalidResult: true),
+                            InvokeFixture.CreateAssets("invoke.single", json, _methods, invalidResult: true),
                             id,
                             json
                         )
                 )
             )
             .Throws<InvalidOperationException>();
-        var failed = RunStore.ReadChecks(fixture.Run.DirectoryPath, json_).Single(x => x.Check.Failures.Count > 0).Check;
+        var failed = RunStore.ReadChecks(fixture.Run.DirectoryPath, _json).Single(x => x.Check.Failures.Count > 0).Check;
         using (Assert.Multiple())
         {
             await Assert.That(failed.Precheck!.Status).IsEqualTo(ResultStatus.Failed);
@@ -124,11 +124,11 @@ internal class BenchmarkProcess_SetupTests
         var preparation = caseId.StartsWith("decode", StringComparison.Ordinal) || caseId == "instantiate.large";
         assets.SaveAssets(
             preparation
-                ? PreparationFixture.CreateAssets(json_, methods_)
-                : InvokeFixture.CreateAssets(caseId, json_, methods_)
+                ? PreparationFixture.CreateAssets(_json, _methods)
+                : InvokeFixture.CreateAssets(caseId, _json, _methods)
         );
         using var run = new RunStoreFixture();
-        RunStore.Create(run.DirectoryPath, run.Manifest with { PlannedCaseIds = [caseId] }, json_);
+        RunStore.Create(run.DirectoryPath, run.Manifest with { PlannedCaseIds = [caseId] }, _json);
         var configuration = new RunConfiguration(
             run.Manifest.RunId,
             run.DirectoryPath,
@@ -137,7 +137,7 @@ internal class BenchmarkProcess_SetupTests
             [caseId]
         );
         var path = Path.Combine(run.DirectoryPath, "config.json");
-        File.WriteAllBytes(path, JsonSerializer.SerializeToUtf8Bytes(configuration, json_.Options));
+        File.WriteAllBytes(path, JsonSerializer.SerializeToUtf8Bytes(configuration, _json.Options));
         var previous = Environment.GetEnvironmentVariable(RunConfiguration.ENVIRONMENT_VARIABLE);
         Environment.SetEnvironmentVariable(RunConfiguration.ENVIRONMENT_VARIABLE, path);
         try
@@ -151,7 +151,7 @@ internal class BenchmarkProcess_SetupTests
             type.GetMethod(nameof(InvokeBenchmarks.Cleanup))!.Invoke(benchmark, null);
 
             // Assert
-            var checks = RunStore.ReadChecks(run.DirectoryPath, json_).Select(x => x.Check).ToList();
+            var checks = RunStore.ReadChecks(run.DirectoryPath, _json).Select(x => x.Check).ToList();
             var prechecked = checks.Single(x => x.Precheck?.Status == ResultStatus.Succeeded && !x.ExecutionStarted);
             var completed = checks.Single(x => x.Postcheck is not null);
             using (Assert.Multiple())

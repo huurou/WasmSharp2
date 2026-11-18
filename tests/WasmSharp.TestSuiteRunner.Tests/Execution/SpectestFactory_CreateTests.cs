@@ -7,7 +7,7 @@ namespace WasmSharp.TestSuiteRunner.Tests.Execution;
 
 internal class SpectestFactory_CreateTests
 {
-    private readonly WasmExecutionContext context_ = new WasmExecutionContext();
+    private readonly WasmExecutionContext _context = new WasmExecutionContext();
 
     [Test]
     public async Task InstantiateのstartでPrintが呼ばれる_現在のmodulecommandへ記録する()
@@ -20,7 +20,7 @@ internal class SpectestFactory_CreateTests
         state.BeginCommand(4);
 
         // Act
-        var instance = module.Instantiate(context_, imports);
+        var instance = module.Instantiate(_context, imports);
 
         // Assert
         using (Assert.Multiple())
@@ -46,9 +46,9 @@ internal class SpectestFactory_CreateTests
         // Arrange
         var state = new ScriptState("a.wast");
         var host = SpectestFactory.Create(state);
-        var instance = SpectestModuleFixture.Instantiate(context_, host);
+        var instance = SpectestModuleFixture.Instantiate(_context, host);
         state.BeginCommand(3);
-        var function = instance.GetFunction(SpectestModuleFixture.functionNames_[index]);
+        var function = instance.GetFunction(SpectestModuleFixture.FunctionNames[index]);
         WasmValue[][] arguments =
         [
             [],
@@ -71,7 +71,7 @@ internal class SpectestFactory_CreateTests
         ];
 
         // Act
-        var results = function.Invoke(context_, arguments[index]);
+        var results = function.Invoke(_context, arguments[index]);
 
         // Assert
         using (Assert.Multiple())
@@ -82,7 +82,7 @@ internal class SpectestFactory_CreateTests
             await Assert.That(results.Values.IsEmpty).IsTrue();
             await Assert.That(state.CurrentCommand).IsEqualTo(new CaseId("a.wast", 3));
             await Assert.That(state.Prints.Length).IsEqualTo(1);
-            await Assert.That(state.Prints[0].Function).IsEqualTo(SpectestModuleFixture.functionNames_[index]);
+            await Assert.That(state.Prints[0].Function).IsEqualTo(SpectestModuleFixture.FunctionNames[index]);
             await Assert.That(state.Prints[0].Arguments.SequenceEqual(expected[index])).IsTrue();
             await Assert.That(state.CallbackException).IsNull();
         }
@@ -95,7 +95,7 @@ internal class SpectestFactory_CreateTests
         var state = new ScriptState("a.wast");
 
         // Act
-        var instance = SpectestModuleFixture.Instantiate(context_, SpectestFactory.Create(state));
+        var instance = SpectestModuleFixture.Instantiate(_context, SpectestFactory.Create(state));
 
         // Assert
         using (Assert.Multiple())
@@ -139,7 +139,7 @@ internal class SpectestFactory_CreateTests
     {
         // Arrange
         var host = SpectestFactory.Create(new ScriptState("a.wast"));
-        var first = SpectestModuleFixture.Instantiate(context_, host);
+        var first = SpectestModuleFixture.Instantiate(_context, host);
         var reference = first.GetFunction("print");
 
         // Act
@@ -147,12 +147,12 @@ internal class SpectestFactory_CreateTests
         var memoryGrown = first.GetMemory("memory").TryGrow(1, out _);
         first.GetTable("table").Set(0, WasmValue.FromFuncRef(reference));
         var tableGrown = first.GetTable("table").TryGrow(10, WasmValue.FromFuncRef(reference), out _);
-        var second = SpectestModuleFixture.Instantiate(context_, host);
+        var second = SpectestModuleFixture.Instantiate(_context, host);
 
         // Assert
         using (Assert.Multiple())
         {
-            foreach (var name in SpectestModuleFixture.functionNames_)
+            foreach (var name in SpectestModuleFixture.FunctionNames)
             {
                 await Assert.That(second.GetFunction(name)).IsSameReferenceAs(first.GetFunction(name));
             }
@@ -181,9 +181,9 @@ internal class SpectestFactory_CreateTests
     {
         // Arrange
         var firstState = new ScriptState("a.wast");
-        var first = SpectestModuleFixture.Instantiate(context_, SpectestFactory.Create(firstState));
+        var first = SpectestModuleFixture.Instantiate(_context, SpectestFactory.Create(firstState));
         firstState.BeginCommand(0);
-        first.GetFunction("print").Invoke(context_, []);
+        first.GetFunction("print").Invoke(_context, []);
         first.GetMemory("memory").Write(0, [0xAB]);
         first.GetMemory("memory").TryGrow(1, out _);
         first.GetTable("table").Set(0, WasmValue.FromFuncRef(first.GetFunction("print")));
@@ -191,12 +191,12 @@ internal class SpectestFactory_CreateTests
         var secondState = new ScriptState("b.wast");
 
         // Act
-        var second = SpectestModuleFixture.Instantiate(context_, SpectestFactory.Create(secondState));
+        var second = SpectestModuleFixture.Instantiate(_context, SpectestFactory.Create(secondState));
 
         // Assert
         using (Assert.Multiple())
         {
-            foreach (var name in SpectestModuleFixture.functionNames_)
+            foreach (var name in SpectestModuleFixture.FunctionNames)
             {
                 await Assert.That(ReferenceEquals(second.GetFunction(name), first.GetFunction(name))).IsFalse();
             }
@@ -224,15 +224,15 @@ internal class SpectestFactory_CreateTests
     {
         // Arrange
         var state = new ScriptState("a.wast");
-        var instance = SpectestModuleFixture.Instantiate(context_, SpectestFactory.Create(state));
+        var instance = SpectestModuleFixture.Instantiate(_context, SpectestFactory.Create(state));
         state.BeginCommand(0);
 
         // Act
-        instance.GetFunction("print_i32").Invoke(context_, [WasmValue.FromI32(1)]);
-        instance.GetFunction("print").Invoke(context_, []);
+        instance.GetFunction("print_i32").Invoke(_context, [WasmValue.FromI32(1)]);
+        instance.GetFunction("print").Invoke(_context, []);
         var previous = state.Prints;
         state.BeginCommand(2);
-        instance.GetFunction("print_i32").Invoke(context_, [WasmValue.FromI32(2)]);
+        instance.GetFunction("print_i32").Invoke(_context, [WasmValue.FromI32(2)]);
 
         // Assert
         using (Assert.Multiple())
@@ -250,11 +250,11 @@ internal class SpectestFactory_CreateTests
     {
         // Arrange
         var state = new ScriptState("a.wast");
-        var instance = SpectestModuleFixture.Instantiate(context_, SpectestFactory.Create(state));
+        var instance = SpectestModuleFixture.Instantiate(_context, SpectestFactory.Create(state));
 
         // Act & Assert
         var exception = await Assert
-            .That(() => instance.GetFunction("print").Invoke(context_, []))
+            .That(() => instance.GetFunction("print").Invoke(_context, []))
             .ThrowsExactly<InvalidOperationException>();
         using (Assert.Multiple())
         {
@@ -265,7 +265,7 @@ internal class SpectestFactory_CreateTests
 
         // Act
         state.BeginCommand(0);
-        instance.GetFunction("print").Invoke(context_, []);
+        instance.GetFunction("print").Invoke(_context, []);
 
         // Assert
         using (Assert.Multiple())
@@ -280,13 +280,13 @@ internal class SpectestFactory_CreateTests
     {
         // Arrange
         var state = new ScriptState("a.wast");
-        var instance = SpectestModuleFixture.Instantiate(context_, SpectestFactory.Create(state));
+        var instance = SpectestModuleFixture.Instantiate(_context, SpectestFactory.Create(state));
         state.BeginCommand(0);
         var output = TestContext.Current!.Output;
         var before = output.GetStandardOutput();
 
         // Act
-        foreach (var name in SpectestModuleFixture.functionNames_)
+        foreach (var name in SpectestModuleFixture.FunctionNames)
         {
             var function = instance.GetFunction(name);
             var arguments = function
@@ -300,7 +300,7 @@ internal class SpectestFactory_CreateTests
                     }
                 )
                 .ToArray();
-            function.Invoke(context_, arguments);
+            function.Invoke(_context, arguments);
         }
 
         // Assert
@@ -336,12 +336,12 @@ internal class SpectestFactory_CreateTests
 
         // Act & Assert
         var exception = await Assert
-            .That(() => module.Instantiate(context_, imports))
+            .That(() => module.Instantiate(_context, imports))
             .ThrowsExactly<WasmInstantiateException>();
         await Assert.That(exception!.Reason).IsEqualTo(reason);
 
         // Assert
-        var valid = SpectestModuleFixture.Instantiate(context_, host);
+        var valid = SpectestModuleFixture.Instantiate(_context, host);
         using (Assert.Multiple())
         {
             await Assert.That(valid.GetMemory("memory").PageCount).IsEqualTo(1U);

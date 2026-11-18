@@ -6,8 +6,8 @@ namespace WasmSharp.Benchmarks.Tests.Measurements;
 
 internal class InvokeBenchmarks_CleanupTests
 {
-    private readonly CaseJson json_ = new CaseJson();
-    private readonly MeasurementMethods methods_ = new MeasurementMethods();
+    private readonly CaseJson _json = new CaseJson();
+    private readonly MeasurementMethods _methods = new MeasurementMethods();
 
     [Test]
     [Arguments(StatePolicy.ReadOnly)]
@@ -16,7 +16,7 @@ internal class InvokeBenchmarks_CleanupTests
     {
         // Arrange
         var benchmark = new InvokeBenchmarks();
-        var original = InvokeFixture.CreateDriftingAssets(json_, methods_);
+        var original = InvokeFixture.CreateDriftingAssets(_json, _methods);
         var definition = original.Catalog.Get("invoke.single");
         var assets = InvokeFixture.BuildAssets(
             definition with
@@ -24,10 +24,10 @@ internal class InvokeBenchmarks_CleanupTests
                 StatePolicy = statePolicy,
             },
             original.GetBinary(definition.AssetId),
-            json_,
-            methods_
+            _json,
+            _methods
         );
-        benchmark.Initialize(assets, "invoke.single", json_);
+        benchmark.Initialize(assets, "invoke.single", _json);
         if (statePolicy == StatePolicy.ReadOnly)
         {
             benchmark.Single();

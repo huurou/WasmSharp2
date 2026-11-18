@@ -6,7 +6,7 @@ namespace WasmSharp.Benchmarks.Tests.Results;
 
 internal class RunStore_OpenChecksTests
 {
-    private readonly CaseJson json_ = new CaseJson();
+    private readonly CaseJson _json = new CaseJson();
 
     [Test]
     [Arguments(false)]
@@ -15,7 +15,7 @@ internal class RunStore_OpenChecksTests
     {
         // Arrange
         using var fixture = new RunStoreFixture();
-        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, json_);
+        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, _json);
         if (completed)
         {
             fixture.SaveConditions(store);
@@ -26,7 +26,7 @@ internal class RunStore_OpenChecksTests
 
         // Act & Assert
         var exception = await Assert
-            .That(() => RunStore.OpenChecks(fixture.DirectoryPath, completed ? fixture.Manifest.RunId : "other-run", json_))
+            .That(() => RunStore.OpenChecks(fixture.DirectoryPath, completed ? fixture.Manifest.RunId : "other-run", _json))
             .ThrowsExactly<InvalidDataException>();
         using (Assert.Multiple())
         {

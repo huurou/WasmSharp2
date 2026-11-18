@@ -27,11 +27,11 @@ internal sealed class CorpusFixture : IDisposable
 
     internal static byte[] Text { get; } = Encoding.UTF8.GetBytes("(module\n");
 
-    private readonly TemporaryDirectory directory_ = new();
+    private readonly TemporaryDirectory _directory = new();
 
-    internal string Root => directory_.Root;
+    internal string Root => _directory.Root;
 
-    internal string SourceRoot => directory_.Combine("source");
+    internal string SourceRoot => _directory.Combine("source");
 
     internal string InputRoot => Path.Combine(SourceRoot, "test", "core");
 
@@ -43,7 +43,7 @@ internal sealed class CorpusFixture : IDisposable
 
     private CorpusFixture()
     {
-        OutputRoot = directory_.Combine("output");
+        OutputRoot = _directory.Combine("output");
         WriteSource(A, "(module)\n");
         WriteSource(B, "(module)\n");
         var profile = new Core2ProfileLoader().Load() with
@@ -111,7 +111,7 @@ internal sealed class CorpusFixture : IDisposable
 
     internal void MoveOutput()
     {
-        var destination = directory_.Combine(Path.Combine("移動 先", "output"));
+        var destination = _directory.Combine(Path.Combine("移動 先", "output"));
         Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
         Directory.Move(OutputRoot, destination);
         OutputRoot = destination;
@@ -124,7 +124,7 @@ internal sealed class CorpusFixture : IDisposable
 
     public void Dispose()
     {
-        directory_.Dispose();
+        _directory.Dispose();
     }
 
     private byte[] ReadSource(string inputPath)

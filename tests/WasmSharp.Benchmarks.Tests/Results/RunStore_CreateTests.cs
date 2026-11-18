@@ -6,7 +6,7 @@ namespace WasmSharp.Benchmarks.Tests.Results;
 
 internal class RunStore_CreateTests
 {
-    private readonly CaseJson json_ = new CaseJson();
+    private readonly CaseJson _json = new CaseJson();
 
     [Test]
     [Arguments(false)]
@@ -26,7 +26,7 @@ internal class RunStore_CreateTests
         {
             // Act & Assert
             var failure = await Assert
-                .That(() => RunStore.Create(fixture.DirectoryPath, fixture.Manifest, json_))
+                .That(() => RunStore.Create(fixture.DirectoryPath, fixture.Manifest, _json))
                 .ThrowsExactly<IOException>();
             await Assert.That(failure!.Message).Contains("出力先").And.Contains("既に存在");
             await Assert.That(File.ReadAllText(existingPath)).IsEqualTo("採用済み性能基準値");
@@ -47,8 +47,8 @@ internal class RunStore_CreateTests
         using var fixture = new RunStoreFixture();
 
         // Act
-        RunStore.Create(fixture.DirectoryPath, fixture.Manifest, json_);
-        var actual = RunStore.Load(fixture.DirectoryPath, json_);
+        RunStore.Create(fixture.DirectoryPath, fixture.Manifest, _json);
+        var actual = RunStore.Load(fixture.DirectoryPath, _json);
 
         // Assert
         using (Assert.Multiple())

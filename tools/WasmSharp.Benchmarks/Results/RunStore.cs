@@ -9,16 +9,16 @@ namespace WasmSharp.Benchmarks.Results;
 /// </summary>
 internal sealed class RunStore
 {
-    private readonly string outputDirectory_;
-    private readonly CaseJson json_;
-    private RunManifest manifest_;
-    private bool savingFailed_;
+    private readonly string _outputDirectory;
+    private readonly CaseJson _json;
+    private RunManifest _manifest;
+    private bool _savingFailed;
 
     private RunStore(string outputDirectory, RunManifest manifest, CaseJson json)
     {
-        outputDirectory_ = Path.TrimEndingDirectorySeparator(Path.GetFullPath(outputDirectory));
-        json_ = json;
-        manifest_ = manifest;
+        _outputDirectory = Path.TrimEndingDirectorySeparator(Path.GetFullPath(outputDirectory));
+        _json = json;
+        _manifest = manifest;
     }
 
     /// <summary>
@@ -93,7 +93,7 @@ internal sealed class RunStore
             },
             json
         );
-        store.SaveManifest(store.manifest_, overwrite: false);
+        store.SaveManifest(store._manifest, overwrite: false);
         return store;
     }
 
@@ -148,13 +148,13 @@ internal sealed class RunStore
             using var stream = new FileStream(path, FileMode.CreateNew, FileAccess.Write);
             stream.Write(content);
             return new(
-                Path.GetRelativePath(outputDirectory_, path).Replace('\\', '/'),
+                Path.GetRelativePath(_outputDirectory, path).Replace('\\', '/'),
                 Convert.ToHexStringLower(SHA256.HashData(content))
             );
         }
         catch
         {
-            savingFailed_ = true;
+            _savingFailed = true;
             throw;
         }
     }
@@ -164,7 +164,7 @@ internal sealed class RunStore
     /// </summary>
     internal void SaveInputs(ManifestFile assets, ManifestFile cases, ManifestFile job)
     {
-        SaveManifest(manifest_ with { AssetManifestFile = assets, CasesFile = cases, JobSettingsFile = job });
+        SaveManifest(_manifest with { AssetManifestFile = assets, CasesFile = cases, JobSettingsFile = job });
     }
 
     /// <summary>
@@ -172,8 +172,8 @@ internal sealed class RunStore
     /// </summary>
     internal void SaveEnvironment(RunEnvironment environment)
     {
-        var file = SaveFile("environment.json", JsonSerializer.SerializeToUtf8Bytes(environment, json_.Options));
-        SaveManifest(manifest_ with { EnvironmentFile = file });
+        var file = SaveFile("environment.json", JsonSerializer.SerializeToUtf8Bytes(environment, _json.Options));
+        SaveManifest(_manifest with { EnvironmentFile = file });
     }
 
     /// <summary>
@@ -184,9 +184,9 @@ internal sealed class RunStore
     {
         var file = SaveFile(
             "source/source-" + Guid.NewGuid().ToString() + ".json",
-            JsonSerializer.SerializeToUtf8Bytes(source, json_.Options)
+            JsonSerializer.SerializeToUtf8Bytes(source, _json.Options)
         );
-        SaveManifest(manifest_ with { SourceFile = file });
+        SaveManifest(_manifest with { SourceFile = file });
     }
 
     /// <summary>
@@ -194,14 +194,14 @@ internal sealed class RunStore
     /// </summary>
     internal ManifestFile SaveCheck(ProcessCheck check)
     {
-        if (check.RunId != manifest_.RunId || !manifest_.PlannedCaseIds.Contains(check.CaseId))
+        if (check.RunId != _manifest.RunId || !_manifest.PlannedCaseIds.Contains(check.CaseId))
         {
             throw new ArgumentException("検査のrunまたはケースが保存先と一致しません。", nameof(check));
         }
 
         return SaveFile(
             "checks/" + Guid.NewGuid().ToString() + ".json",
-            JsonSerializer.SerializeToUtf8Bytes(check, json_.Options)
+            JsonSerializer.SerializeToUtf8Bytes(check, _json.Options)
         );
     }
 
@@ -210,7 +210,7 @@ internal sealed class RunStore
     /// </summary>
     internal void SaveCase(CaseRunResult result)
     {
-        SaveManifest(manifest_ with { Cases = [.. manifest_.Cases, result] });
+        SaveManifest(_manifest with { Cases = [.. _manifest.Cases, result] });
     }
 
     /// <summary>
@@ -218,7 +218,7 @@ internal sealed class RunStore
     /// </summary>
     internal void SaveFailure(RunFailure failure)
     {
-        SaveManifest(manifest_ with { Failures = [.. manifest_.Failures, failure] });
+        SaveManifest(_manifest with { Failures = [.. _manifest.Failures, failure] });
     }
 
     /// <summary>
@@ -227,12 +227,12 @@ internal sealed class RunStore
     internal void Complete(ResultStatus status, List<RunFailure>? failures = null)
     {
         EnsureOpen();
-        if (savingFailed_)
+        if (_savingFailed)
         {
             throw new InvalidOperationException("保存に失敗したrunは完了できません。");
         }
 
-        if (status == ResultStatus.Incomplete || !HasCompletedCases(manifest_))
+        if (status == ResultStatus.Incomplete || !HasCompletedCases(_manifest))
         {
             throw new InvalidOperationException("予定ケースが完了していません。");
         }
@@ -241,7 +241,7 @@ internal sealed class RunStore
         {
             VerifyReferences();
             SaveManifest(
-                manifest_ with
+                _manifest with
                 {
                     Status = status,
                     CompletedAtUtc = DateTimeOffset.UtcNow,
@@ -251,7 +251,7 @@ internal sealed class RunStore
         }
         catch
         {
-            savingFailed_ = true;
+            _savingFailed = true;
             throw;
         }
     }
@@ -282,10 +282,10 @@ internal sealed class RunStore
         foreach (
             var file in new[]
             {
-                manifest_.EnvironmentFile,
-                manifest_.AssetManifestFile,
-                manifest_.CasesFile,
-                manifest_.JobSettingsFile,
+                _manifest.EnvironmentFile,
+                _manifest.AssetManifestFile,
+                _manifest.CasesFile,
+                _manifest.JobSettingsFile,
             }
         )
         {
@@ -293,7 +293,7 @@ internal sealed class RunStore
         }
 
         var source =
-            JsonSerializer.Deserialize<RunSource>(ReadSavedFile(manifest_.SourceFile), json_.Options)
+            JsonSerializer.Deserialize<RunSource>(ReadSavedFile(_manifest.SourceFile), _json.Options)
             ?? throw new InvalidDataException("source情報が保存されていません。");
         ReadSavedFile(source.IndexDiff);
         ReadSavedFile(source.WorktreeDiff);
@@ -302,7 +302,7 @@ internal sealed class RunStore
             ReadSavedFile(file);
         }
 
-        foreach (var result in manifest_.Cases)
+        foreach (var result in _manifest.Cases)
         {
             foreach (var file in result.RawFiles)
             {
@@ -322,9 +322,9 @@ internal sealed class RunStore
                     continue;
                 }
 
-                var check = JsonSerializer.Deserialize<ProcessCheck>(ReadSavedFile(file), json_.Options)!;
+                var check = JsonSerializer.Deserialize<ProcessCheck>(ReadSavedFile(file), _json.Options)!;
                 if (
-                    check.RunId != manifest_.RunId
+                    check.RunId != _manifest.RunId
                     || check.CaseId != result.CaseId
                     || check.JobId != process.JobId
                     || check.ProcessId != process.ProcessId
@@ -354,7 +354,7 @@ internal sealed class RunStore
 
     private void EnsureOpen()
     {
-        if (manifest_.CompletedAtUtc is not null)
+        if (_manifest.CompletedAtUtc is not null)
         {
             throw new InvalidOperationException("完了したrunは変更できません。");
         }
@@ -362,10 +362,10 @@ internal sealed class RunStore
 
     private string GetPath(string relativePath)
     {
-        var path = Path.GetFullPath(Path.Combine(outputDirectory_, relativePath));
+        var path = Path.GetFullPath(Path.Combine(_outputDirectory, relativePath));
         if (
             Path.IsPathRooted(relativePath)
-            || !path.StartsWith(outputDirectory_ + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)
+            || !path.StartsWith(_outputDirectory + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)
         )
         {
             throw new ArgumentException("保存先はrun内の相対pathで指定してください。", nameof(relativePath));
@@ -379,17 +379,17 @@ internal sealed class RunStore
         EnsureOpen();
         try
         {
-            var temporaryPath = Path.Combine(outputDirectory_, Guid.NewGuid().ToString());
-            var content = JsonSerializer.SerializeToUtf8Bytes(manifest, json_.Options);
+            var temporaryPath = Path.Combine(_outputDirectory, Guid.NewGuid().ToString());
+            var content = JsonSerializer.SerializeToUtf8Bytes(manifest, _json.Options);
             // 呼出元がDTOの一覧を変更しても、保存済みの対応を変えない
-            var snapshot = JsonSerializer.Deserialize<RunManifest>(content, json_.Options)!;
+            var snapshot = JsonSerializer.Deserialize<RunManifest>(content, _json.Options)!;
             File.WriteAllBytes(temporaryPath, content);
-            File.Move(temporaryPath, Path.Combine(outputDirectory_, "run.json"), overwrite);
-            manifest_ = snapshot;
+            File.Move(temporaryPath, Path.Combine(_outputDirectory, "run.json"), overwrite);
+            _manifest = snapshot;
         }
         catch
         {
-            savingFailed_ = true;
+            _savingFailed = true;
             throw;
         }
     }

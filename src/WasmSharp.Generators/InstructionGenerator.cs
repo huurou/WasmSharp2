@@ -16,7 +16,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
     /// <summary>
     /// prefixと命令番号が重複する命令宣言の診断
     /// </summary>
-    private readonly DiagnosticDescriptor duplicateOpcode_ = new DiagnosticDescriptor(
+    private readonly DiagnosticDescriptor _duplicateOpcode = new DiagnosticDescriptor(
         "WSIG001",
         "命令番号の重複",
         "命令 '{0}' のprefixと命令番号が重複しています。",
@@ -28,7 +28,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
     /// <summary>
     /// 命令の名前または実行に必要な宣言情報が不足する場合の診断
     /// </summary>
-    private readonly DiagnosticDescriptor incompleteDeclaration_ = new DiagnosticDescriptor(
+    private readonly DiagnosticDescriptor _incompleteDeclaration = new DiagnosticDescriptor(
         "WSIG002",
         "命令宣言の不足",
         "命令 '{0}' の名前・即値・スタック効果・検証規則・handlerを確認してください。",
@@ -40,7 +40,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
     /// <summary>
     /// 宣言で指定したhandlerがInterpreterに存在しない場合の診断
     /// </summary>
-    private readonly DiagnosticDescriptor missingHandler_ = new DiagnosticDescriptor(
+    private readonly DiagnosticDescriptor _missingHandler = new DiagnosticDescriptor(
         "WSIG003",
         "命令handlerの不在",
         "命令 '{0}' のhandlerがInterpreterに存在しません。",
@@ -52,7 +52,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
     /// <summary>
     /// 指定したhandlerが生成する呼び出しの契約を満たさない場合の診断
     /// </summary>
-    private readonly DiagnosticDescriptor invalidHandler_ = new DiagnosticDescriptor(
+    private readonly DiagnosticDescriptor _invalidHandler = new DiagnosticDescriptor(
         "WSIG004",
         "命令handlerの契約不一致",
         "命令 '{0}' のhandlerは static ExecutionResult Handler(InterpreterContext context, in Instruction instruction) にしてください。",
@@ -64,7 +64,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
     /// <summary>
     /// ロード命令・ストア命令のアクセス情報が規則や値型と整合しない場合の診断
     /// </summary>
-    private readonly DiagnosticDescriptor invalidMemoryAccess_ = new DiagnosticDescriptor(
+    private readonly DiagnosticDescriptor _invalidMemoryAccess = new DiagnosticDescriptor(
         "WSIG005",
         "メモリアクセス情報の不整合",
         "命令 '{0}' のメモリアクセス情報・即値・スタック効果・検証規則を確認してください。",
@@ -108,7 +108,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
                     if (!keys.Add((instruction.Prefix, instruction.Code)))
                     {
                         context.ReportDiagnostic(
-                            Diagnostic.Create(duplicateOpcode_, instruction.Location, instruction.Name)
+                            Diagnostic.Create(_duplicateOpcode, instruction.Location, instruction.Name)
                         );
                         hasErrors = true;
                     }
@@ -148,7 +148,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
             || attribute.NamedArguments.Count(x => x.Key == "LaneCount") > 1
         )
         {
-            return (null, Diagnostic.Create(incompleteDeclaration_, location, ""));
+            return (null, Diagnostic.Create(_incompleteDeclaration, location, ""));
         }
         var declaration = new InstructionDeclaration(
             (byte)arguments[0].Value!,
@@ -192,11 +192,11 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
             )
         )
         {
-            return (null, Diagnostic.Create(incompleteDeclaration_, location, declaration.Name));
+            return (null, Diagnostic.Create(_incompleteDeclaration, location, declaration.Name));
         }
         if (!HasValidMemoryAccess(declaration))
         {
-            return (null, Diagnostic.Create(invalidMemoryAccess_, location, declaration.Name));
+            return (null, Diagnostic.Create(_invalidMemoryAccess, location, declaration.Name));
         }
         var numericStackEffect = declaration.StackEffect == "Numeric";
         var numericValidation = declaration.Validation == "Numeric";
@@ -215,7 +215,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
             || !HasValidSimdImmediate(declaration)
         )
         {
-            return (null, Diagnostic.Create(incompleteDeclaration_, location, declaration.Name));
+            return (null, Diagnostic.Create(_incompleteDeclaration, location, declaration.Name));
         }
         if (declaration.Handler == null)
         {
@@ -226,11 +226,11 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
         var methods = interpreter?.GetMembers(declaration.Handler).OfType<IMethodSymbol>().ToArray();
         if (methods == null || methods.Length == 0)
         {
-            return (null, Diagnostic.Create(missingHandler_, location, declaration.Name));
+            return (null, Diagnostic.Create(_missingHandler, location, declaration.Name));
         }
         return methods.Any(IsHandler)
             ? (declaration, null)
-            : (null, Diagnostic.Create(invalidHandler_, location, declaration.Name));
+            : (null, Diagnostic.Create(_invalidHandler, location, declaration.Name));
     }
 
     /// <summary>

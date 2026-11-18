@@ -7,7 +7,7 @@ namespace WasmSharp.TestSuiteRunner.Tests.Corpus;
 
 internal class CorpusGenerator_GenerateTests
 {
-    private readonly ReportStore reportStore_ = new ReportStore();
+    private readonly ReportStore _reportStore = new ReportStore();
 
     [Test]
     public async Task 生成の前提が揃わない_変換を開始せず全入力を未処理のまま診断を保存する()
@@ -18,11 +18,11 @@ internal class CorpusGenerator_GenerateTests
         profile = profile with { Wabt = profile.Wabt with { Commit = "0000000000000000000000000000000000000000" } };
 
         // Act
-        var result = CorpusGenerator.Generate(workspace.CreateRequest(profile), reportStore_);
+        var result = CorpusGenerator.Generate(workspace.CreateRequest(profile), _reportStore);
 
         // Assert
         var manifest = result.Manifest;
-        var stored = reportStore_.ReadManifest(result.ManifestPath);
+        var stored = _reportStore.ReadManifest(result.ManifestPath);
         using (Assert.Multiple())
         {
             await Assert.That(result.SaveFailure).IsNull();
@@ -62,11 +62,11 @@ internal class CorpusGenerator_GenerateTests
         List<string> progress = [];
 
         // Act
-        var result = CorpusGenerator.Generate(request, reportStore_, progress.Add);
+        var result = CorpusGenerator.Generate(request, _reportStore, progress.Add);
 
         // Assert
         var manifest = result.Manifest;
-        var stored = reportStore_.ReadManifest(result.ManifestPath);
+        var stored = _reportStore.ReadManifest(result.ManifestPath);
         var success = Get(manifest, "success.wast");
         var failure = Get(manifest, "failure.wast");
         var partial = Get(manifest, "partial.wast");
@@ -126,10 +126,10 @@ internal class CorpusGenerator_GenerateTests
         var request = workspace.CreateRequest(profile) with { SpecRoot = specRoot };
 
         // Act
-        var result = CorpusGenerator.Generate(request, reportStore_);
+        var result = CorpusGenerator.Generate(request, _reportStore);
 
         // Assert
-        var stored = reportStore_.ReadManifest(result.ManifestPath);
+        var stored = _reportStore.ReadManifest(result.ManifestPath);
         using (Assert.Multiple())
         {
             await Assert.That(result.SaveFailure).IsNull();
@@ -155,11 +155,11 @@ internal class CorpusGenerator_GenerateTests
         };
 
         // Act
-        var result = CorpusGenerator.Generate(request, reportStore_);
+        var result = CorpusGenerator.Generate(request, _reportStore);
 
         // Assert
         var input = result.Manifest.Inputs.Single();
-        var stored = reportStore_.ReadManifest(result.ManifestPath);
+        var stored = _reportStore.ReadManifest(result.ManifestPath);
         using (Assert.Multiple())
         {
             await Assert.That(result.SaveFailure).IsNull();
@@ -189,10 +189,10 @@ internal class CorpusGenerator_GenerateTests
         List<string> progress = [];
 
         // Act
-        var result = CorpusGenerator.Generate(request, reportStore_, progress.Add);
+        var result = CorpusGenerator.Generate(request, _reportStore, progress.Add);
 
         // Assert
-        var stored = reportStore_.ReadManifest(result.ManifestPath);
+        var stored = _reportStore.ReadManifest(result.ManifestPath);
         using (Assert.Multiple())
         {
             await Assert.That(result.SaveFailure).IsNull();
@@ -226,8 +226,8 @@ internal class CorpusGenerator_GenerateTests
         };
 
         // Act
-        var firstResult = CorpusGenerator.Generate(first, reportStore_);
-        var secondResult = CorpusGenerator.Generate(second, reportStore_);
+        var firstResult = CorpusGenerator.Generate(first, _reportStore);
+        var secondResult = CorpusGenerator.Generate(second, _reportStore);
 
         // Assert
         var firstArtifacts = firstResult
@@ -261,7 +261,7 @@ internal class CorpusGenerator_GenerateTests
         await File.WriteAllTextAsync(manifestPath, "既存の結果");
 
         // Act
-        var result = CorpusGenerator.Generate(workspace.CreateRequest(workspace.CreateProfile()), reportStore_);
+        var result = CorpusGenerator.Generate(workspace.CreateRequest(workspace.CreateProfile()), _reportStore);
 
         // Assert
         using (Assert.Multiple())
@@ -284,7 +284,7 @@ internal class CorpusGenerator_GenerateTests
         // Act
         var result = CorpusGenerator.Generate(
             request,
-            reportStore_,
+            _reportStore,
             path =>
             {
                 if (path == "partial.wast")
@@ -319,7 +319,7 @@ internal class CorpusGenerator_GenerateTests
             // Act
             var result = CorpusGenerator.Generate(
                 request,
-                reportStore_,
+                _reportStore,
                 path =>
                 {
                     if (path == "partial.wast")
@@ -337,7 +337,7 @@ internal class CorpusGenerator_GenerateTests
             // Assert
             var input = Get(result.Manifest, "success.wast");
             var diagnostic = input.Diagnostics.Single(x => x.Operation == "record");
-            var stored = reportStore_.ReadManifest(result.ManifestPath);
+            var stored = _reportStore.ReadManifest(result.ManifestPath);
             using (Assert.Multiple())
             {
                 await Assert.That(result.SaveFailure).IsNull();
@@ -371,7 +371,7 @@ internal class CorpusGenerator_GenerateTests
         var request = workspace.CreateRequest(workspace.CreateProfile()) with { OutputRoot = outputRoot };
 
         // Act
-        var result = CorpusGenerator.Generate(request, reportStore_);
+        var result = CorpusGenerator.Generate(request, _reportStore);
 
         // Assert
         using (Assert.Multiple())

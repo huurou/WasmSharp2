@@ -12,13 +12,13 @@ namespace WasmSharp.Benchmarks.Tests.Fixtures;
 
 internal sealed class BenchmarkReportFixture : IDisposable
 {
-    private readonly CaseJson json_ = new CaseJson();
-    private readonly MeasurementMethods methods_ = new MeasurementMethods();
+    private readonly CaseJson _json = new CaseJson();
+    private readonly MeasurementMethods _methods = new MeasurementMethods();
 
-    private readonly RunStoreFixture run_ = new();
-    private readonly string caseId_;
+    private readonly RunStoreFixture _run = new();
+    private readonly string _caseId;
 
-    internal string DirectoryPath => run_.DirectoryPath;
+    internal string DirectoryPath => _run.DirectoryPath;
     internal RunRequest Request { get; }
     internal PreparedRun Prepared { get; }
     internal BenchmarkReport Report { get; }
@@ -35,7 +35,7 @@ internal sealed class BenchmarkReportFixture : IDisposable
         string benchmarkMethod = nameof(InvokeBenchmarks.Single)
     )
     {
-        caseId_ = methods_.GetCaseId(nameof(InvokeBenchmarks) + "." + benchmarkMethod);
+        _caseId = _methods.GetCaseId(nameof(InvokeBenchmarks) + "." + benchmarkMethod);
         var config = BenchmarkConfig.Create();
         var benchmark = BenchmarkConverter
             .MethodsToBenchmarks(typeof(InvokeBenchmarks), [typeof(InvokeBenchmarks).GetMethod(benchmarkMethod)!], config)
@@ -71,14 +71,14 @@ internal sealed class BenchmarkReportFixture : IDisposable
             []
         );
         Prepared = new(
-            RunStore.Create(DirectoryPath, run_.Manifest with { PlannedCaseIds = plannedCaseIds ?? [caseId_] }, json_),
-            run_.Manifest.RunId,
+            RunStore.Create(DirectoryPath, _run.Manifest with { PlannedCaseIds = plannedCaseIds ?? [_caseId] }, _json),
+            _run.Manifest.RunId,
             [benchmark.Job]
         );
         Request = new(
             DirectoryPath,
             "fixtureで素材を読み込まない",
-            plannedCaseIds ?? [caseId_],
+            plannedCaseIds ?? [_caseId],
             RunKind.Smoke,
             config,
             "",
@@ -94,16 +94,16 @@ internal sealed class BenchmarkReportFixture : IDisposable
 
     internal void SaveConditions()
     {
-        run_.SaveConditions(Prepared.Store);
+        _run.SaveConditions(Prepared.Store);
     }
 
     internal ProcessCheck SuccessfulCheck(int processId = 123)
     {
-        return run_.Check with { CaseId = caseId_, JobId = Prepared.Jobs.Single().Id, ProcessId = processId };
+        return _run.Check with { CaseId = _caseId, JobId = Prepared.Jobs.Single().Id, ProcessId = processId };
     }
 
     public void Dispose()
     {
-        run_.Dispose();
+        _run.Dispose();
     }
 }

@@ -7,12 +7,12 @@ namespace WasmSharp.Benchmarks.Tests.Results;
 
 internal class RunComparison_CompareTests
 {
-    private readonly CaseJson json_ = new CaseJson();
-    private readonly RunComparison comparison_;
+    private readonly CaseJson _json = new CaseJson();
+    private readonly RunComparison _comparison;
 
     public RunComparison_CompareTests()
     {
-        comparison_ = new RunComparison(json_);
+        _comparison = new RunComparison(_json);
     }
 
     [Test]
@@ -28,7 +28,7 @@ internal class RunComparison_CompareTests
         var request = fixture.Save();
 
         // Act
-        var report = comparison_.Compare(request);
+        var report = _comparison.Compare(request);
 
         // Assert
         using (Assert.Multiple())
@@ -50,7 +50,7 @@ internal class RunComparison_CompareTests
         var request = fixture.Save();
 
         // Act
-        var report = comparison_.Compare(request);
+        var report = _comparison.Compare(request);
         var actual = report.Cases.Single();
 
         // Assert
@@ -184,7 +184,7 @@ internal class RunComparison_CompareTests
         var request = fixture.Save();
 
         // Act
-        var report = comparison_.Compare(request);
+        var report = _comparison.Compare(request);
         var actual = report.Cases.Single();
 
         // Assert
@@ -254,7 +254,7 @@ internal class RunComparison_CompareTests
         var request = fixture.Save();
 
         // Act
-        var actual = comparison_.Compare(request).Cases.Single();
+        var actual = _comparison.Compare(request).Cases.Single();
 
         // Assert
         using (Assert.Multiple())
@@ -301,7 +301,7 @@ internal class RunComparison_CompareTests
         var request = fixture.Save();
 
         // Act
-        var report = comparison_.Compare(request);
+        var report = _comparison.Compare(request);
         var actual = report.Cases.Single();
 
         // Assert
@@ -351,7 +351,7 @@ internal class RunComparison_CompareTests
         var request = fixture.Save();
 
         // Act
-        var report = comparison_.Compare(request);
+        var report = _comparison.Compare(request);
         var actual = report.Cases.Single();
 
         // Assert
@@ -392,7 +392,7 @@ internal class RunComparison_CompareTests
         var request = fixture.Save();
 
         // Act
-        var actual = comparison_.Compare(request).Cases.Single();
+        var actual = _comparison.Compare(request).Cases.Single();
 
         // Assert
         using (Assert.Multiple())
@@ -430,7 +430,7 @@ internal class RunComparison_CompareTests
         var request = fixture.Save();
 
         // Act
-        var report = comparison_.Compare(request);
+        var report = _comparison.Compare(request);
         var actual = report.Cases.Single();
 
         // Assert
@@ -550,7 +550,7 @@ internal class RunComparison_CompareTests
         };
 
         // Act
-        var report = comparison_.Compare(request);
+        var report = _comparison.Compare(request);
         var actual = report.Cases.Single();
 
         // Assert
@@ -625,7 +625,7 @@ internal class RunComparison_CompareTests
         var request = fixture.Save();
 
         // Act
-        var actual = comparison_.Compare(request).Cases.Single();
+        var actual = _comparison.Compare(request).Cases.Single();
 
         // Assert
         using (Assert.Multiple())
@@ -732,7 +732,7 @@ internal class RunComparison_CompareTests
         };
 
         // Act
-        var report = comparison_.Compare(request);
+        var report = _comparison.Compare(request);
         var actual = report.Cases.Single();
 
         // Assert
@@ -817,7 +817,7 @@ internal class RunComparison_CompareTests
         var request = fixture.Save();
 
         // Act
-        var report = comparison_.Compare(request);
+        var report = _comparison.Compare(request);
         var actual = report.Cases.Single();
 
         // Assert
@@ -888,7 +888,7 @@ internal class RunComparison_CompareTests
         var request = fixture.Save();
 
         // Act
-        var report = comparison_.Compare(request);
+        var report = _comparison.Compare(request);
         var other = report.Cases.Single(x => x.CaseId == otherCase);
 
         // Assert
@@ -947,9 +947,9 @@ internal class RunComparison_CompareTests
         var finalRequest = final.Save();
 
         // Act
-        var firstReport = comparison_.Compare(firstRequest);
-        var secondReport = comparison_.Compare(secondRequest);
-        var finalReport = comparison_.Compare(finalRequest);
+        var firstReport = _comparison.Compare(firstRequest);
+        var secondReport = _comparison.Compare(secondRequest);
+        var finalReport = _comparison.Compare(finalRequest);
 
         // Assert
         using (Assert.Multiple())
@@ -999,7 +999,7 @@ internal class RunComparison_CompareTests
         var request = fixture.Save();
 
         // Act
-        var actual = comparison_.Compare(request).Cases.Single();
+        var actual = _comparison.Compare(request).Cases.Single();
 
         // Assert
         using (Assert.Multiple())
@@ -1023,7 +1023,7 @@ internal class RunComparison_CompareTests
         var before = FileHashes(fixture);
 
         // Act
-        var report = comparison_.Compare(request);
+        var report = _comparison.Compare(request);
         var after = FileHashes(fixture);
 
         // Assert

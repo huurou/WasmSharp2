@@ -7,7 +7,7 @@ namespace WasmSharp.Benchmarks.Cases;
 /// </summary>
 internal sealed class MeasurementMethods
 {
-    private readonly FrozenDictionary<string, string> methods_ = new Dictionary<string, string>(StringComparer.Ordinal)
+    private readonly FrozenDictionary<string, string> _methods = new Dictionary<string, string>(StringComparer.Ordinal)
     {
         ["invoke.empty"] = "InvokeBenchmarks.Empty",
         ["invoke.single"] = "InvokeBenchmarks.Single",
@@ -28,16 +28,16 @@ internal sealed class MeasurementMethods
 
     internal bool ContainsCase(string caseId)
     {
-        return methods_.ContainsKey(caseId);
+        return _methods.ContainsKey(caseId);
     }
 
     internal string GetMeasurementMethod(string caseId)
     {
-        return methods_[caseId];
+        return _methods[caseId];
     }
 
     internal string GetCaseId(string measurementMethod)
     {
-        return methods_.Single(x => x.Value == measurementMethod).Key;
+        return _methods.Single(x => x.Value == measurementMethod).Key;
     }
 }

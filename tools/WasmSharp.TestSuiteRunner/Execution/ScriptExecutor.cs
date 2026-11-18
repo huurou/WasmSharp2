@@ -15,7 +15,7 @@ internal sealed class ScriptExecutor(InputVerification input)
     /// </summary>
     internal const int MAX_CALL_DEPTH = 1024;
 
-    private readonly WasmExecutionContext context_ = new WasmExecutionContext();
+    private readonly WasmExecutionContext _context = new WasmExecutionContext();
 
     /// <summary>
     /// 全commandを一度ずつ処理し、公開操作の観測から結果を記録する。
@@ -133,7 +133,7 @@ internal sealed class ScriptExecutor(InputVerification input)
             return;
         }
         observation = observation with { Operation = "instantiate", LastStage = CaseStage.Instantiate };
-        var instance = module.Instantiate(context_, state.CreateImports(), new WasmExecutionOptions(MAX_CALL_DEPTH));
+        var instance = module.Instantiate(_context, state.CreateImports(), new WasmExecutionOptions(MAX_CALL_DEPTH));
         if (command is ModuleCommand normal)
         {
             state.SetModule(normal, new(module, instance));
@@ -234,7 +234,7 @@ internal sealed class ScriptExecutor(InputVerification input)
         };
         var actual =
             action is InvokeAction
-                ? module.Instance.GetFunction(action.Field).Invoke(context_, arguments.AsSpan())
+                ? module.Instance.GetFunction(action.Field).Invoke(_context, arguments.AsSpan())
                 : new WasmResults([module.Instance.GetGlobal(action.Field)]);
         observation = observation with { Operation = "record_values" };
         observation = observation with { Values = [.. actual.Values.Select(x => ValueCodec.Record(x, state))] };

@@ -5,14 +5,14 @@ namespace WasmSharp.Benchmarks.Tests.Cases;
 
 internal class CaseCatalog_GetTests
 {
-    private readonly CaseJson json_ = new CaseJson();
-    private readonly MeasurementMethods methods_ = new MeasurementMethods();
+    private readonly CaseJson _json = new CaseJson();
+    private readonly MeasurementMethods _methods = new MeasurementMethods();
 
     [Test]
     public async Task 存在しないケースIDを選ぶ_選択IDを示して拒否する()
     {
         // Arrange
-        var catalog = new CaseCatalog(AssetLoadingFixture.ReadCases(json_), json_, methods_);
+        var catalog = new CaseCatalog(AssetLoadingFixture.ReadCases(_json), _json, _methods);
 
         // Act & Assert
         var exception = await Assert.That(() => catalog.Get("unknown.case")).Throws<InvalidDataException>();

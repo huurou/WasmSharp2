@@ -6,15 +6,15 @@ namespace WasmSharp.TestSuiteRunner.Tests.Fixtures;
 
 internal sealed class SuiteWorkspace : IDisposable
 {
-    private readonly Core2ProfileLoader profileLoader_ = new Core2ProfileLoader();
+    private readonly Core2ProfileLoader _profileLoader = new Core2ProfileLoader();
 
-    private readonly DirectoryInfo root_;
+    private readonly DirectoryInfo _root;
 
-    internal string SourceRoot => Path.Combine(root_.FullName, "source");
+    internal string SourceRoot => Path.Combine(_root.FullName, "source");
 
     internal string InputRoot => Path.Combine(SourceRoot, "test", "core");
 
-    internal string OutputRoot => Path.Combine(root_.FullName, "出力 先");
+    internal string OutputRoot => Path.Combine(_root.FullName, "出力 先");
 
     internal string Commit { get; private set; } = string.Empty;
 
@@ -27,7 +27,7 @@ internal sealed class SuiteWorkspace : IDisposable
 
     private SuiteWorkspace()
     {
-        root_ = Directory.CreateTempSubdirectory("WasmSharp.TestSuiteRunner.Tests ");
+        _root = Directory.CreateTempSubdirectory("WasmSharp.TestSuiteRunner.Tests ");
     }
 
     internal static async Task<SuiteWorkspace> CreateAsync()
@@ -37,7 +37,7 @@ internal sealed class SuiteWorkspace : IDisposable
         {
             Directory.CreateDirectory(workspace.InputRoot);
             Directory.CreateDirectory(workspace.OutputRoot);
-            Directory.CreateDirectory(Path.Combine(workspace.root_.FullName, "empty-template"));
+            Directory.CreateDirectory(Path.Combine(workspace._root.FullName, "empty-template"));
             foreach (var name in new[] { "success", "failure", "partial", "partial-failure" })
             {
                 await File.WriteAllTextAsync(Path.Combine(workspace.InputRoot, name + ".wast"), "(module)\n");
@@ -47,7 +47,7 @@ internal sealed class SuiteWorkspace : IDisposable
                 "init",
                 "--object-format=sha1",
                 "--initial-branch=main",
-                "--template=" + Path.Combine(workspace.root_.FullName, "empty-template"),
+                "--template=" + Path.Combine(workspace._root.FullName, "empty-template"),
                 "."
             );
             await workspace.GitAsync("add", "--", "test/core");
@@ -71,7 +71,7 @@ internal sealed class SuiteWorkspace : IDisposable
         }
 
         startInfo.Environment["GIT_CONFIG_NOSYSTEM"] = "1";
-        startInfo.Environment["GIT_CONFIG_GLOBAL"] = Path.Combine(root_.FullName, "empty-gitconfig");
+        startInfo.Environment["GIT_CONFIG_GLOBAL"] = Path.Combine(_root.FullName, "empty-gitconfig");
         startInfo.Environment["GIT_AUTHOR_NAME"] = "Test Suite Runner";
         startInfo.Environment["GIT_AUTHOR_EMAIL"] = "fixture@example.invalid";
         startInfo.Environment["GIT_COMMITTER_NAME"] = "Test Suite Runner";
@@ -96,7 +96,7 @@ internal sealed class SuiteWorkspace : IDisposable
 
     internal Core2Profile CreateProfile()
     {
-        return profileLoader_.Load() with
+        return _profileLoader.Load() with
         {
             Id = "fixture",
             Spec = new("https://github.com/WebAssembly/spec.git", Commit),
@@ -133,11 +133,11 @@ internal sealed class SuiteWorkspace : IDisposable
     public void Dispose()
     {
         // このfixtureが作成した一時領域内のGit objectには読み取り専用属性が付く。
-        foreach (var file in root_.EnumerateFiles("*", SearchOption.AllDirectories))
+        foreach (var file in _root.EnumerateFiles("*", SearchOption.AllDirectories))
         {
             file.Attributes &= ~FileAttributes.ReadOnly;
         }
 
-        root_.Delete(recursive: true);
+        _root.Delete(recursive: true);
     }
 }

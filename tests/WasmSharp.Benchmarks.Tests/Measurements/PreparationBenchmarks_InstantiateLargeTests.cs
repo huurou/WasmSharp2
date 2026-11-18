@@ -6,15 +6,15 @@ namespace WasmSharp.Benchmarks.Tests.Measurements;
 
 internal class PreparationBenchmarks_InstantiateLargeTests
 {
-    private readonly CaseJson json_ = new CaseJson();
-    private readonly MeasurementMethods methods_ = new MeasurementMethods();
+    private readonly CaseJson _json = new CaseJson();
+    private readonly MeasurementMethods _methods = new MeasurementMethods();
 
     [Test]
     public async Task 先行instanceを変更して反復する_資源とsegmentとstartを新しいinstanceで初期化する()
     {
         // Arrange
         var benchmark = new PreparationBenchmarks();
-        benchmark.Initialize(PreparationFixture.CreateAssets(json_, methods_), "instantiate.large", json_);
+        benchmark.Initialize(PreparationFixture.CreateAssets(_json, _methods), "instantiate.large", _json);
         var first = benchmark.InstantiateLarge();
         first.GetMemory("memory").Write(0, [0xff]);
         first.GetTable("functions").Set(0, WasmValue.FromFuncRef(null));

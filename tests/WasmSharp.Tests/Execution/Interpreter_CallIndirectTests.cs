@@ -7,7 +7,7 @@ namespace WasmSharp.Tests.Execution;
 internal class Interpreter_CallIndirectTests
 {
     private const long BYTE_OFFSET = 12345678901;
-    private readonly WasmValue sentinel_ = WasmValue.FromF64Bits(0xFFF8123456789ABC);
+    private readonly WasmValue _sentinel = WasmValue.FromF64Bits(0xFFF8123456789ABC);
 
     [Test]
     [Arguments(2)]
@@ -46,7 +46,7 @@ internal class Interpreter_CallIndirectTests
             await Assert.That(actual.FrameCount).IsEqualTo(1);
             await Assert.That(actual.CallDepth).IsEqualTo(1);
             await Assert.That(actual.Caller).IsEqualTo(actual.Before);
-            await Assert.That(actual.Values.SequenceEqual([sentinel_, WasmValue.FromI32(7), WasmValue.FromI64(9)])).IsTrue();
+            await Assert.That(actual.Values.SequenceEqual([_sentinel, WasmValue.FromI32(7), WasmValue.FromI64(9)])).IsTrue();
         }
     }
 
@@ -83,7 +83,7 @@ internal class Interpreter_CallIndirectTests
             await Assert.That(actual.FrameCount).IsEqualTo(1);
             await Assert.That(actual.CallDepth).IsEqualTo(1);
             await Assert.That(actual.Caller).IsEqualTo(actual.Before);
-            await Assert.That(actual.Values.SequenceEqual([sentinel_, WasmValue.FromI32(7), WasmValue.FromI64(9)])).IsTrue();
+            await Assert.That(actual.Values.SequenceEqual([_sentinel, WasmValue.FromI32(7), WasmValue.FromI64(9)])).IsTrue();
         }
     }
 
@@ -127,7 +127,7 @@ internal class Interpreter_CallIndirectTests
             await Assert.That(actual.FrameCount).IsEqualTo(1);
             await Assert.That(actual.CallDepth).IsEqualTo(1);
             await Assert.That(actual.Caller).IsEqualTo(actual.Before);
-            await Assert.That(actual.Values.SequenceEqual([sentinel_, WasmValue.FromI32(7), WasmValue.FromI64(9)])).IsTrue();
+            await Assert.That(actual.Values.SequenceEqual([_sentinel, WasmValue.FromI32(7), WasmValue.FromI64(9)])).IsTrue();
         }
     }
 
@@ -170,7 +170,7 @@ internal class Interpreter_CallIndirectTests
             await Assert.That(actual.CallDepth).IsEqualTo(1);
             await Assert.That(actual.Caller).IsEqualTo(actual.Before);
             await Assert
-                .That(actual.Values.SequenceEqual([sentinel_, WasmValue.FromI64(10), WasmValue.FromI32(9)]))
+                .That(actual.Values.SequenceEqual([_sentinel, WasmValue.FromI64(10), WasmValue.FromI32(9)]))
                 .IsTrue();
         }
     }
@@ -214,7 +214,7 @@ internal class Interpreter_CallIndirectTests
             await Assert.That(actual.Current.Function.Instance.Globals[0]).IsSameReferenceAs(global);
             await Assert.That(actual.Current.Function.Instance.Tables[0]).IsSameReferenceAs(table);
             await Assert.That(actual.Current.Function.Instance.Memories[0]).IsSameReferenceAs(memory);
-            await Assert.That(actual.Values.SequenceEqual([sentinel_, WasmValue.FromI32(7), WasmValue.FromI64(9)])).IsTrue();
+            await Assert.That(actual.Values.SequenceEqual([_sentinel, WasmValue.FromI32(7), WasmValue.FromI64(9)])).IsTrue();
         }
     }
 
@@ -276,7 +276,7 @@ internal class Interpreter_CallIndirectTests
             context.TryEnterCall();
             var frame = new ExecutionFrame(caller, 0, 0) { Pc = 1 };
             context.PushFrame(frame);
-            context.PushValue(sentinel_);
+            context.PushValue(_sentinel);
             foreach (var argument in arguments)
             {
                 context.PushValue(argument);

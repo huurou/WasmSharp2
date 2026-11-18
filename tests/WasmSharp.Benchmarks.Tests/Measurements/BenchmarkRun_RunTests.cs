@@ -9,13 +9,13 @@ namespace WasmSharp.Benchmarks.Tests.Measurements;
 
 internal class BenchmarkRun_RunTests
 {
-    private readonly CaseJson json_ = new CaseJson();
-    private readonly MeasurementMethods methods_ = new MeasurementMethods();
-    private readonly BenchmarkRun benchmarkRun_;
+    private readonly CaseJson _json = new CaseJson();
+    private readonly MeasurementMethods _methods = new MeasurementMethods();
+    private readonly BenchmarkRun _benchmarkRun;
 
     public BenchmarkRun_RunTests()
     {
-        benchmarkRun_ = new BenchmarkRun(json_, methods_);
+        _benchmarkRun = new BenchmarkRun(_json, _methods);
     }
 
     [Test]
@@ -43,21 +43,21 @@ internal class BenchmarkRun_RunTests
         var calls = 0;
 
         // Act
-        var actual = benchmarkRun_.Run(
+        var actual = _benchmarkRun.Run(
             request,
             infos =>
             {
                 captured = infos;
                 calls++;
-                before = RunStore.Load(request.OutputDirectory, json_);
+                before = RunStore.Load(request.OutputDirectory, _json);
                 var benchmark = infos.Single().BenchmarksCases.Single();
                 var path = benchmark
                     .Job.Environment.EnvironmentVariables.Single(x => x.Key == RunConfiguration.ENVIRONMENT_VARIABLE)
                     .Value;
-                configuration = JsonSerializer.Deserialize<RunConfiguration>(File.ReadAllBytes(path), json_.Options)!;
+                configuration = JsonSerializer.Deserialize<RunConfiguration>(File.ReadAllBytes(path), _json.Options)!;
                 var source = ReadSource(request.OutputDirectory, before);
                 RunStore
-                    .OpenChecks(request.OutputDirectory, before.RunId, json_)
+                    .OpenChecks(request.OutputDirectory, before.RunId, _json)
                     .SaveCheck(
                         report.SuccessfulCheck() with
                         {
@@ -136,7 +136,7 @@ internal class BenchmarkRun_RunTests
         // Act & Assert
         var exception = await Assert
             .That(() =>
-                benchmarkRun_.Run(
+                _benchmarkRun.Run(
                     request,
                     _ =>
                     {
@@ -152,7 +152,7 @@ internal class BenchmarkRun_RunTests
                 )
             )
             .Throws<Exception>();
-        var actual = RunStore.Load(request.OutputDirectory, json_);
+        var actual = RunStore.Load(request.OutputDirectory, _json);
         var source = ReadSource(request.OutputDirectory, actual);
         var failure = actual.Failures.Single(x => x.ExceptionType is not null);
         using (Assert.Multiple())
@@ -180,7 +180,7 @@ internal class BenchmarkRun_RunTests
     {
         return JsonSerializer.Deserialize<RunSource>(
             File.ReadAllBytes(Path.Combine(directory, manifest.SourceFile!.RelativePath)),
-            json_.Options
+            _json.Options
         )!;
     }
 }

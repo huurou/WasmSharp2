@@ -13,32 +13,32 @@ internal ref struct ModuleBinaryReader
     /// <summary>
     /// 不正なバイト列を置換せず、診断として扱う名前読み取り用のUTF-8符号化
     /// </summary>
-    private readonly UTF8Encoding utf8_;
+    private readonly UTF8Encoding _utf8;
 
     /// <summary>
     /// この読み取り範囲の入力バイト列
     /// </summary>
-    private readonly ReadOnlySpan<byte> bytes_;
+    private readonly ReadOnlySpan<byte> _bytes;
 
     /// <summary>
     /// 宣言範囲を越えるbyteを診断に使用できるかを示す読取りモード
     /// </summary>
-    private readonly ModuleReadMode mode_;
+    private readonly ModuleReadMode _mode;
 
     /// <summary>
     /// 読み取り範囲の先頭から数えた次の読み取り位置
     /// </summary>
-    private int position_;
+    private int _position;
 
     /// <summary>
     /// Decode開始位置を0とした、次の読み取り位置
     /// </summary>
-    internal readonly long Position => field + position_;
+    internal readonly long Position => field + _position;
 
     /// <summary>
     /// この範囲に残る未読み取りのバイト数
     /// </summary>
-    internal readonly int Remaining => bytes_.Length - position_;
+    internal readonly int Remaining => _bytes.Length - _position;
 
     /// <summary>
     /// 原入力の物理終端
@@ -115,13 +115,13 @@ internal ref struct ModuleBinaryReader
         UTF8Encoding utf8
     )
     {
-        utf8_ = utf8;
-        bytes_ = bytes;
+        _utf8 = utf8;
+        _bytes = bytes;
         Position = startOffset;
         InputEnd = inputEnd;
         DeclaredEnd = declaredEnd;
-        mode_ = mode;
-        position_ = 0;
+        _mode = mode;
+        _position = 0;
         SectionId = sectionId;
         FunctionIndex = functionIndex;
     }
@@ -144,7 +144,7 @@ internal ref struct ModuleBinaryReader
     /// <returns>次byteがある場合はtrue</returns>
     internal readonly bool TryPeekByte(out byte value)
     {
-        value = Remaining == 0 ? (byte)0 : bytes_[position_];
+        value = Remaining == 0 ? (byte)0 : _bytes[_position];
         return Remaining != 0;
     }
 
@@ -157,13 +157,13 @@ internal ref struct ModuleBinaryReader
     /// <exception cref="WasmDecodeException">診断用読取りで指定長が物理残量を超える場合</exception>
     internal ReadOnlySpan<byte> ReadBytes(uint length)
     {
-        if ((long)length > Remaining || (mode_ == ModuleReadMode.Bounded && (long)length > DeclaredRemaining))
+        if ((long)length > Remaining || (_mode == ModuleReadMode.Bounded && (long)length > DeclaredRemaining))
         {
             throw BoundaryError("unexpected end of section or function: 宣言された長さを取得できません。");
         }
 
-        var result = bytes_.Slice(position_, (int)length);
-        position_ += (int)length;
+        var result = _bytes.Slice(_position, (int)length);
+        _position += (int)length;
         return result;
     }
 
@@ -178,11 +178,11 @@ internal ref struct ModuleBinaryReader
     internal ModuleBinaryReader ReadRange(uint length, uint? functionIndex = null)
     {
         var start = Position;
-        if (mode_ == ModuleReadMode.Diagnostic)
+        if (_mode == ModuleReadMode.Diagnostic)
         {
             // 子は物理終端まで参照し、親は宣言長と物理残量の小さい方だけ進める。
-            var bytes = bytes_[position_..];
-            position_ += (int)Math.Min((long)length, Remaining);
+            var bytes = _bytes[_position..];
+            _position += (int)Math.Min((long)length, Remaining);
             return new ModuleBinaryReader(
                 bytes,
                 start,
@@ -190,8 +190,8 @@ internal ref struct ModuleBinaryReader
                 start + length,
                 SectionId,
                 functionIndex ?? FunctionIndex,
-                mode_,
-                utf8_
+                _mode,
+                _utf8
             );
         }
 
@@ -202,8 +202,8 @@ internal ref struct ModuleBinaryReader
             start + length,
             SectionId,
             functionIndex ?? FunctionIndex,
-            mode_,
-            utf8_
+            _mode,
+            _utf8
         );
     }
 
@@ -326,7 +326,7 @@ internal ref struct ModuleBinaryReader
         var bytes = ReadBytes(length);
         try
         {
-            return utf8_.GetString(bytes);
+            return _utf8.GetString(bytes);
         }
         catch (DecoderFallbackException exception)
         {
@@ -432,6 +432,6 @@ internal ref struct ModuleBinaryReader
     internal readonly Exception BoundaryError(string message, long? offset = null)
     {
         var error = Error(message, offset);
-        return mode_ == ModuleReadMode.Diagnostic ? error : new ModuleReadBoundaryException(error);
+        return _mode == ModuleReadMode.Diagnostic ? error : new ModuleReadBoundaryException(error);
     }
 }

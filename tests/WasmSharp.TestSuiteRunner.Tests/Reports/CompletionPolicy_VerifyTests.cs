@@ -6,9 +6,9 @@ namespace WasmSharp.TestSuiteRunner.Tests.Reports;
 
 internal class CompletionPolicy_VerifyTests
 {
-    private readonly Core2ProfileLoader profileLoader_ = new Core2ProfileLoader();
+    private readonly Core2ProfileLoader _profileLoader = new Core2ProfileLoader();
 
-    private static readonly string[] expectedReasons_ =
+    private static readonly string[] __expectedReasons =
     [
         "入力単位のrunner_errorが2件あります。",
         "操作全体の診断が1件あります。",
@@ -34,7 +34,7 @@ internal class CompletionPolicy_VerifyTests
         using (Assert.Multiple())
         {
             await Assert.That(decision.ExitCode).IsEqualTo(1);
-            await Assert.That(decision.Reasons).IsEquivalentTo(expectedReasons_);
+            await Assert.That(decision.Reasons).IsEquivalentTo(__expectedReasons);
         }
     }
 
@@ -115,7 +115,7 @@ internal class CompletionPolicy_VerifyTests
         var report = RunReportFixture.Create(RunReportFixture.Case("a.wast", 0, CaseCategory.Setup, CaseOutcome.Passed));
 
         // Act
-        var decision = CompletionPolicy.Verify(report, ReportStore.Validate(report), profileLoader_.Load());
+        var decision = CompletionPolicy.Verify(report, ReportStore.Validate(report), _profileLoader.Load());
 
         // Assert
         using (Assert.Multiple())

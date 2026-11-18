@@ -43,7 +43,7 @@ internal sealed class StrictEnumConverter : JsonConverterFactory
         /// <summary>
         /// 定義済みの保存名と列挙値の対応表 名前は大文字と小文字を区別する
         /// </summary>
-        private readonly Dictionary<string, T> values_ = Enum.GetValues<T>().ToDictionary(GetName, StringComparer.Ordinal);
+        private readonly Dictionary<string, T> _values = Enum.GetValues<T>().ToDictionary(GetName, StringComparer.Ordinal);
 
         /// <summary>
         /// 保存名と完全に一致するJSON文字列を、定義済みの列挙値へ変換する。
@@ -56,7 +56,7 @@ internal sealed class StrictEnumConverter : JsonConverterFactory
         public override T Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             // 位置情報付きの標準の読取失敗にするため、メッセージを指定しない。
-            return reader.TokenType == JsonTokenType.String && values_.TryGetValue(reader.GetString()!, out var value)
+            return reader.TokenType == JsonTokenType.String && _values.TryGetValue(reader.GetString()!, out var value)
                 ? value
                 : throw new JsonException();
         }

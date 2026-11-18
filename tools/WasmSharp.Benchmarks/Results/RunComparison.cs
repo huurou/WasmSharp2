@@ -8,7 +8,7 @@ namespace WasmSharp.Benchmarks.Results;
 /// </summary>
 internal sealed partial class RunComparison(CaseJson json)
 {
-    private readonly CaseJson json_ = json;
+    private readonly CaseJson _json = json;
 
     /// <summary>
     /// 保存済みの2runについて、指定caseの条件差と比較できない理由を返す
@@ -58,7 +58,7 @@ internal sealed partial class RunComparison(CaseJson json)
         try
         {
             // 保存参照の存在とhashはRunStoreに集約し、観測された外部pathを再読込しない
-            var run = savedRun ?? RunStore.Load(directory, json_);
+            var run = savedRun ?? RunStore.Load(directory, _json);
             var result = run.Cases.SingleOrDefault(x => x.CaseId == caseId);
             if (
                 run.Kind != RunKind.Measurement
@@ -80,7 +80,7 @@ internal sealed partial class RunComparison(CaseJson json)
                 reasons.Add(
                     new(
                         ComparisonReasonKind.ConditionMismatch,
-                        $"run '{run.RunId}': 使用source/project/assemblyの途中変更があります。changes={JsonSerializer.Serialize(source.Changes, json_.Options)}"
+                        $"run '{run.RunId}': 使用source/project/assemblyの途中変更があります。changes={JsonSerializer.Serialize(source.Changes, _json.Options)}"
                     )
                 );
                 return null;
@@ -101,7 +101,7 @@ internal sealed partial class RunComparison(CaseJson json)
                 source,
                 jobs,
                 checks,
-                json_
+                _json
             );
         }
         catch (Exception exception)
@@ -184,7 +184,7 @@ internal sealed partial class RunComparison(CaseJson json)
 
     private T Read<T>(string directory, ManifestFile file)
     {
-        return JsonSerializer.Deserialize<T>(File.ReadAllBytes(Path.Combine(directory, file.RelativePath)), json_.Options)!;
+        return JsonSerializer.Deserialize<T>(File.ReadAllBytes(Path.Combine(directory, file.RelativePath)), _json.Options)!;
     }
 }
 

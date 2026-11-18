@@ -5,15 +5,15 @@ namespace WasmSharp.Benchmarks.Tests.Cases;
 
 internal class LoadedAssets_GetBinaryTests
 {
-    private readonly CaseJson json_ = new CaseJson();
-    private readonly MeasurementMethods methods_ = new MeasurementMethods();
+    private readonly CaseJson _json = new CaseJson();
+    private readonly MeasurementMethods _methods = new MeasurementMethods();
 
     [Test]
     public async Task 未登録の素材を指定する_識別子と理由を示して拒否する()
     {
         // Arrange
         using var fixture = new AssetLoadingFixture();
-        var assets = AssetManifest.Load(fixture.ManifestPath, json_, methods_);
+        var assets = AssetManifest.Load(fixture.ManifestPath, _json, _methods);
 
         // Act & Assert
         var exception = await Assert.That(() => assets.GetBinary("unknown-asset")).ThrowsExactly<InvalidDataException>();

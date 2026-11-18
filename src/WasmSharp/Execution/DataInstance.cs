@@ -12,12 +12,12 @@ internal sealed class DataInstance(DataDefinition definition)
     /// <summary>
     /// 現在保持している不変のバイト列
     /// </summary>
-    private ImmutableArray<byte> bytes_ = definition.Bytes;
+    private ImmutableArray<byte> _bytes = definition.Bytes;
 
     /// <summary>
     /// 現在保持しているバイト数 破棄後は0
     /// </summary>
-    internal uint Length => (uint)bytes_.Length;
+    internal uint Length => (uint)_bytes.Length;
 
     /// <summary>
     /// 指定範囲をメモリへ転送し、データセグメントの内容を保持する
@@ -30,12 +30,12 @@ internal sealed class DataInstance(DataDefinition definition)
     internal bool TryInitialize(WasmMemory memory, uint destination, uint source, uint length)
     {
         // 全範囲が配列に収まることを確かめてから、Span用のintへ変換する。
-        if ((ulong)source + length > (ulong)bytes_.Length)
+        if ((ulong)source + length > (ulong)_bytes.Length)
         {
             return false;
         }
 
-        return memory.TryWrite(destination, bytes_.AsSpan((int)source, (int)length));
+        return memory.TryWrite(destination, _bytes.AsSpan((int)source, (int)length));
     }
 
     /// <summary>
@@ -43,6 +43,6 @@ internal sealed class DataInstance(DataDefinition definition)
     /// </summary>
     internal void Drop()
     {
-        bytes_ = [];
+        _bytes = [];
     }
 }

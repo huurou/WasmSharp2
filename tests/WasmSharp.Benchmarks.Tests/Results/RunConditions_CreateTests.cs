@@ -6,7 +6,7 @@ namespace WasmSharp.Benchmarks.Tests.Results;
 
 internal class RunConditions_CreateTests
 {
-    private readonly CaseJson json_ = new CaseJson();
+    private readonly CaseJson _json = new CaseJson();
 
     [Test]
     public async Task 複数の素材とprocessの列挙順だけが異なる_Jobごとの観測を保って昇順の条件を作る()
@@ -72,7 +72,7 @@ internal class RunConditions_CreateTests
         var environment = fixture.Environment with { Processes = jobs };
 
         // Act
-        var original = RunConditions.Create(fixture.Manifest, definition, assets, environment, source, jobs, checks, json_);
+        var original = RunConditions.Create(fixture.Manifest, definition, assets, environment, source, jobs, checks, _json);
         var reordered = RunConditions.Create(
             fixture.Manifest,
             definition with
@@ -93,7 +93,7 @@ internal class RunConditions_CreateTests
             },
             [.. jobs.AsEnumerable().Reverse()],
             [.. checks.AsEnumerable().Reverse()],
-            json_
+            _json
         );
 
         // Assert
@@ -138,7 +138,7 @@ internal class RunConditions_CreateTests
             fixture.Source,
             fixture.Jobs,
             [check],
-            json_
+            _json
         );
 
         // Assert

@@ -7,7 +7,7 @@ namespace WasmSharp.Benchmarks.Tests.Measurements;
 
 internal class SourceCapture_BeforeTests
 {
-    private readonly CaseJson json_ = new CaseJson();
+    private readonly CaseJson _json = new CaseJson();
 
     [Test]
     [Arguments(false)]
@@ -35,8 +35,8 @@ internal class SourceCapture_BeforeTests
                     )
             );
         }
-        var store = RunStore.Create(fixture.Run.DirectoryPath, fixture.Run.Manifest, json_);
-        var capture = new SourceCapture(fixture.RepositoryDirectory, json_);
+        var store = RunStore.Create(fixture.Run.DirectoryPath, fixture.Run.Manifest, _json);
+        var capture = new SourceCapture(fixture.RepositoryDirectory, _json);
 
         // Act
         var source = capture.Before(store, []);
@@ -82,8 +82,8 @@ internal class SourceCapture_BeforeTests
                     """
                 )
         );
-        var store = RunStore.Create(fixture.Run.DirectoryPath, fixture.Run.Manifest, json_);
-        var capture = new SourceCapture(fixture.RepositoryDirectory, json_);
+        var store = RunStore.Create(fixture.Run.DirectoryPath, fixture.Run.Manifest, _json);
+        var capture = new SourceCapture(fixture.RepositoryDirectory, _json);
 
         // Act
         var source = capture.Before(store, []);
@@ -110,8 +110,8 @@ internal class SourceCapture_BeforeTests
         using var fixture = new SourceCaptureFixture();
         var path = Path.Combine(fixture.RepositoryDirectory, "src/WasmSharp/WasmSharp.csproj");
         File.Delete(path);
-        var store = RunStore.Create(fixture.Run.DirectoryPath, fixture.Run.Manifest, json_);
-        var capture = new SourceCapture(fixture.RepositoryDirectory, json_);
+        var store = RunStore.Create(fixture.Run.DirectoryPath, fixture.Run.Manifest, _json);
+        var capture = new SourceCapture(fixture.RepositoryDirectory, _json);
 
         // Act & Assert
         var exception = await Assert.That(() => capture.Before(store, [])).ThrowsExactly<FileNotFoundException>();
@@ -142,8 +142,8 @@ internal class SourceCapture_BeforeTests
         fixture.Write(".editorconfig", "root = true\n");
         fixture.Write("packages.lock.json", "{}");
         var expected = settings.Concat(["global.json", "NuGet.Config", ".editorconfig", "packages.lock.json"]).ToList();
-        var store = RunStore.Create(fixture.Run.DirectoryPath, fixture.Run.Manifest, json_);
-        var capture = new SourceCapture(fixture.RepositoryDirectory, json_);
+        var store = RunStore.Create(fixture.Run.DirectoryPath, fixture.Run.Manifest, _json);
+        var capture = new SourceCapture(fixture.RepositoryDirectory, _json);
 
         // Act
         var source = capture.Before(store, []);
@@ -167,14 +167,14 @@ internal class SourceCapture_BeforeTests
     {
         // Arrange
         using var fixture = new SourceCaptureFixture();
-        var store = RunStore.Create(fixture.Run.DirectoryPath, fixture.Run.Manifest, json_);
+        var store = RunStore.Create(fixture.Run.DirectoryPath, fixture.Run.Manifest, _json);
         var externalPath = Path.Combine(fixture.Run.DirectoryPath, "External.cs");
         File.WriteAllText(externalPath, "class External {}");
         fixture.Write(
             "src/WasmSharp/WasmSharp.csproj",
             $"<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup><ItemGroup><Compile Include=\"{externalPath}\" /></ItemGroup></Project>"
         );
-        var capture = new SourceCapture(fixture.RepositoryDirectory, json_);
+        var capture = new SourceCapture(fixture.RepositoryDirectory, _json);
 
         // Act & Assert
         var exception = await Assert.That(() => capture.Before(store, [])).ThrowsExactly<InvalidOperationException>();
@@ -209,8 +209,8 @@ internal class SourceCapture_BeforeTests
             fixture.Git("submodule", "deinit", "--force", "--", RELATIVE_PATH);
         }
         var revision = dependency.Git("rev-parse", "HEAD");
-        var store = RunStore.Create(fixture.Run.DirectoryPath, fixture.Run.Manifest, json_);
-        var capture = new SourceCapture(fixture.RepositoryDirectory, json_);
+        var store = RunStore.Create(fixture.Run.DirectoryPath, fixture.Run.Manifest, _json);
+        var capture = new SourceCapture(fixture.RepositoryDirectory, _json);
 
         // Act
         var source = capture.Before(store, []);

@@ -4,7 +4,7 @@ namespace WasmSharp.TestSuiteRunner.Tests.Fixtures;
 
 internal sealed class TemporaryDirectory : IDisposable
 {
-    private static readonly JsonSerializerOptions jsonOptions_ = new()
+    private static readonly JsonSerializerOptions __jsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
     };
@@ -19,7 +19,7 @@ internal sealed class TemporaryDirectory : IDisposable
     internal async Task<string> WriteJsonAsync<T>(string name, T value)
     {
         var path = Combine(name);
-        await File.WriteAllTextAsync(path, JsonSerializer.Serialize(value, jsonOptions_));
+        await File.WriteAllTextAsync(path, JsonSerializer.Serialize(value, __jsonOptions));
         return path;
     }
 

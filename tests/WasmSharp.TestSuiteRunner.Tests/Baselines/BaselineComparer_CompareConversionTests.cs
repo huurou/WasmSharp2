@@ -8,9 +8,9 @@ namespace WasmSharp.TestSuiteRunner.Tests.Baselines;
 
 internal class BaselineComparer_CompareConversionTests
 {
-    private readonly string baselinePath_ = Path.GetFullPath("baseline.json");
-    private readonly string currentPath_ = Path.GetFullPath("current.json");
-    private readonly ReportStore reportStore_ = new ReportStore();
+    private readonly string _baselinePath = Path.GetFullPath("baseline.json");
+    private readonly string _currentPath = Path.GetFullPath("current.json");
+    private readonly ReportStore _reportStore = new ReportStore();
 
     [Test]
     public async Task 内容が同じで配置rootや日時や起動引数だけが異なる_再現性が一致する()
@@ -35,7 +35,7 @@ internal class BaselineComparer_CompareConversionTests
         current.Profile.Features.Reverse();
 
         // Act
-        var comparison = BaselineComparer.CompareConversion(baseline, current, baselinePath_, currentPath_);
+        var comparison = BaselineComparer.CompareConversion(baseline, current, _baselinePath, _currentPath);
 
         // Assert
         using (Assert.Multiple())
@@ -43,8 +43,8 @@ internal class BaselineComparer_CompareConversionTests
             await Assert.That(comparison.Comparison).IsEqualTo(ComparisonType.Conversion);
             await Assert.That(comparison.Established).IsTrue();
             await Assert.That(comparison.Complete).IsTrue();
-            await Assert.That(comparison.Baseline.Path).IsEqualTo(baselinePath_);
-            await Assert.That(comparison.Current.Path).IsEqualTo(currentPath_);
+            await Assert.That(comparison.Baseline.Path).IsEqualTo(_baselinePath);
+            await Assert.That(comparison.Current.Path).IsEqualTo(_currentPath);
             await Assert.That(comparison.Baseline.RunId).IsNull();
             await Assert.That(comparison.Current.RunId).IsNull();
             await Assert.That(comparison.ConditionDifferences).IsEmpty();
@@ -65,7 +65,7 @@ internal class BaselineComparer_CompareConversionTests
         };
 
         // Act
-        var comparison = BaselineComparer.CompareConversion(baseline, current, baselinePath_, currentPath_);
+        var comparison = BaselineComparer.CompareConversion(baseline, current, _baselinePath, _currentPath);
 
         // Assert
         using (Assert.Multiple())
@@ -106,7 +106,7 @@ internal class BaselineComparer_CompareConversionTests
         var current = ChangeCondition(baseline.CreateSnapshot(), condition);
 
         // Act
-        var comparison = BaselineComparer.CompareConversion(baseline, current, baselinePath_, currentPath_);
+        var comparison = BaselineComparer.CompareConversion(baseline, current, _baselinePath, _currentPath);
 
         // Assert
         var featureName = condition == "feature.added" ? "changed" : baseline.Profile.Features[0].Name;
@@ -170,7 +170,7 @@ internal class BaselineComparer_CompareConversionTests
         current = current with { Summary = current.Summarize() };
 
         // Act
-        var comparison = BaselineComparer.CompareConversion(baseline, current, baselinePath_, currentPath_);
+        var comparison = BaselineComparer.CompareConversion(baseline, current, _baselinePath, _currentPath);
 
         // Assert
         using (Assert.Multiple())
@@ -194,7 +194,7 @@ internal class BaselineComparer_CompareConversionTests
         var source = full.Profile.Inputs.Single(x => x.Path == "b.wast");
 
         // Act
-        var comparison = BaselineComparer.CompareConversion(baseline, current, baselinePath_, currentPath_);
+        var comparison = BaselineComparer.CompareConversion(baseline, current, _baselinePath, _currentPath);
 
         // Assert
         (string Property, string Value)[] expected =
@@ -229,7 +229,7 @@ internal class BaselineComparer_CompareConversionTests
         current = current with { Summary = current.Summarize() };
 
         // Act
-        var comparison = BaselineComparer.CompareConversion(baseline, current, baselinePath_, currentPath_);
+        var comparison = BaselineComparer.CompareConversion(baseline, current, _baselinePath, _currentPath);
 
         // Assert
         using (Assert.Multiple())
@@ -288,8 +288,8 @@ internal class BaselineComparer_CompareConversionTests
         var comparison = BaselineComparer.CompareConversion(
             baseline,
             baseline.CreateSnapshot(),
-            baselinePath_,
-            currentPath_
+            _baselinePath,
+            _currentPath
         );
 
         // Assert
@@ -314,8 +314,8 @@ internal class BaselineComparer_CompareConversionTests
         var comparison = BaselineComparer.CompareConversion(
             baseline,
             baseline.CreateSnapshot(),
-            baselinePath_,
-            currentPath_
+            _baselinePath,
+            _currentPath
         );
 
         // Assert
@@ -335,18 +335,18 @@ internal class BaselineComparer_CompareConversionTests
         var baselinePath = directory.Combine("baseline.json");
         var currentPath = directory.Combine("current.json");
         var outputPath = directory.Combine("comparison.json");
-        reportStore_.Save(CreateManifest(), baselinePath);
-        reportStore_.Save(CreateManifest(), currentPath);
+        _reportStore.Save(CreateManifest(), baselinePath);
+        _reportStore.Save(CreateManifest(), currentPath);
         var original = await File.ReadAllTextAsync(baselinePath);
 
         // Act
         var comparison = BaselineComparer.CompareConversion(
-            reportStore_.ReadManifest(baselinePath).Manifest,
-            reportStore_.ReadManifest(currentPath).Manifest,
+            _reportStore.ReadManifest(baselinePath).Manifest,
+            _reportStore.ReadManifest(currentPath).Manifest,
             baselinePath,
             currentPath
         );
-        reportStore_.Save(comparison, outputPath);
+        _reportStore.Save(comparison, outputPath);
 
         // Assert
         using var document = JsonDocument.Parse(await File.ReadAllTextAsync(outputPath));
@@ -376,7 +376,7 @@ internal class BaselineComparer_CompareConversionTests
         }
 
         // Act
-        var comparison = BaselineComparer.CompareConversion(baseline, current, baselinePath_, currentPath_);
+        var comparison = BaselineComparer.CompareConversion(baseline, current, _baselinePath, _currentPath);
 
         // Assert
         using (Assert.Multiple())
@@ -425,7 +425,7 @@ internal class BaselineComparer_CompareConversionTests
         }
 
         // Act
-        var comparison = BaselineComparer.CompareConversion(baseline, current, baselinePath_, currentPath_);
+        var comparison = BaselineComparer.CompareConversion(baseline, current, _baselinePath, _currentPath);
 
         // Assert
         var reason = comparison
@@ -440,7 +440,7 @@ internal class BaselineComparer_CompareConversionTests
         }
     }
 
-    private static readonly string[] expectedInputPaths_ = ["modules/a.json", "modules/b.json"];
+    private static readonly string[] __expectedInputPaths = ["modules/a.json", "modules/b.json"];
 
     [Test]
     public async Task 複数入力の素材が変化する_入力と生成物をそれぞれpath順に報告する()
@@ -455,10 +455,10 @@ internal class BaselineComparer_CompareConversionTests
         }
 
         // Act
-        var comparison = BaselineComparer.CompareConversion(baseline, current, baselinePath_, currentPath_);
+        var comparison = BaselineComparer.CompareConversion(baseline, current, _baselinePath, _currentPath);
 
         // Assert
-        await Assert.That(comparison.EntryDifferences.Select(x => x.Path).SequenceEqual(expectedInputPaths_)).IsTrue();
+        await Assert.That(comparison.EntryDifferences.Select(x => x.Path).SequenceEqual(__expectedInputPaths)).IsTrue();
     }
 
     private static CorpusManifest CreateManifest()

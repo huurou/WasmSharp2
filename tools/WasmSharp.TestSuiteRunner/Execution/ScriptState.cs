@@ -16,32 +16,32 @@ internal sealed class ScriptState(string inputPath)
     /// <summary>
     /// module識別子に対応する成功実体または利用不能状態
     /// </summary>
-    private readonly Dictionary<string, ScriptBinding<InstantiatedModule>> modules_ = [with(StringComparer.Ordinal)];
+    private readonly Dictionary<string, ScriptBinding<InstantiatedModule>> _modules = [with(StringComparer.Ordinal)];
 
     /// <summary>
     /// importの登録名に対応する最新の提供元または利用不能状態
     /// </summary>
-    private readonly Dictionary<string, ScriptBinding<WasmHostModule>> registrations_ = [with(StringComparer.Ordinal)];
+    private readonly Dictionary<string, ScriptBinding<WasmHostModule>> _registrations = [with(StringComparer.Ordinal)];
 
     /// <summary>
     /// 入力内のexternref番号ごとに割り当てたホスト値
     /// </summary>
-    private readonly Dictionary<uint, object> externrefs_ = [];
+    private readonly Dictionary<uint, object> _externrefs = [];
 
     /// <summary>
     /// 割り当てたホスト値から参照の同一性で引く元のexternref番号
     /// </summary>
-    private readonly Dictionary<object, uint> externrefNumbers_ = [with(ReferenceEqualityComparer.Instance)];
+    private readonly Dictionary<object, uint> _externrefNumbers = [with(ReferenceEqualityComparer.Instance)];
 
     /// <summary>
     /// 保存用の非null参照token 内容の等値性を使わず初出順に割り当てる対応
     /// </summary>
-    private readonly Dictionary<object, int> referenceTokens_ = [with(ReferenceEqualityComparer.Instance)];
+    private readonly Dictionary<object, int> _referenceTokens = [with(ReferenceEqualityComparer.Instance)];
 
     /// <summary>
     /// 現在のcommandのprint呼出順の記録
     /// </summary>
-    private readonly List<PrintRecord> prints_ = [];
+    private readonly List<PrintRecord> _prints = [];
 
     /// <summary>
     /// ケース識別に使うtest/core基準の入力相対path
@@ -61,7 +61,7 @@ internal sealed class ScriptState(string inputPath)
     /// <summary>
     /// 現在のcommandのprint記録を取得し、次のcommand開始後も取得済みの並びを保持する
     /// </summary>
-    internal ImmutableArray<PrintRecord> Prints => [.. prints_];
+    internal ImmutableArray<PrintRecord> Prints => [.. _prints];
 
     /// <summary>
     /// 現在のcommandでspectestのcallbackが投げた例外実体で、失敗していなければnull
@@ -77,7 +77,7 @@ internal sealed class ScriptState(string inputPath)
     {
         var id = new CaseId(InputPath, commandIndex);
         CurrentCommand = id;
-        prints_.Clear();
+        _prints.Clear();
         CallbackException = null;
         return id;
     }
@@ -93,7 +93,7 @@ internal sealed class ScriptState(string inputPath)
         {
             throw new InvalidOperationException("printの記録には処理中のcommandが必要です。");
         }
-        prints_.Add(print);
+        _prints.Add(print);
     }
 
     /// <summary>
@@ -103,7 +103,7 @@ internal sealed class ScriptState(string inputPath)
     /// <returns>成功実体か利用不能状態 存在しない識別子や、通常moduleを処理する前の省略ではnull</returns>
     internal ScriptBinding<InstantiatedModule>? ResolveModule(string? name)
     {
-        return name is null ? LastModule : modules_.GetValueOrDefault(name);
+        return name is null ? LastModule : _modules.GetValueOrDefault(name);
     }
 
     /// <summary>
@@ -113,7 +113,7 @@ internal sealed class ScriptState(string inputPath)
     /// <returns>成功した提供元か利用不能状態 一度も登録していない名前ではnull</returns>
     internal ScriptBinding<WasmHostModule>? GetRegistration(string name)
     {
-        return registrations_.GetValueOrDefault(name);
+        return _registrations.GetValueOrDefault(name);
     }
 
     /// <summary>
@@ -123,7 +123,7 @@ internal sealed class ScriptState(string inputPath)
     internal WasmImports CreateImports()
     {
         var imports = new WasmImports();
-        foreach (var registration in registrations_.Values)
+        foreach (var registration in _registrations.Values)
         {
             if (registration.Value is { } host)
             {
@@ -149,7 +149,7 @@ internal sealed class ScriptState(string inputPath)
     /// <param name="module">登録名をmodule名に持つ提供元</param>
     internal void Register(WasmHostModule module)
     {
-        registrations_[module.Name] = ScriptBinding<WasmHostModule>.Available(module);
+        _registrations[module.Name] = ScriptBinding<WasmHostModule>.Available(module);
     }
 
     /// <summary>
@@ -174,10 +174,10 @@ internal sealed class ScriptState(string inputPath)
                 UpdateModule(x.Name, ScriptBinding<InstantiatedModule>.Unavailable(unavailable));
                 break;
             case RegisterCommand x:
-                registrations_[x.As] = ScriptBinding<WasmHostModule>.Unavailable(unavailable);
+                _registrations[x.As] = ScriptBinding<WasmHostModule>.Unavailable(unavailable);
                 break;
             case InvalidCommand { Type: ScriptCommand.REGISTER, As: { } name }:
-                registrations_[name] = ScriptBinding<WasmHostModule>.Unavailable(unavailable);
+                _registrations[name] = ScriptBinding<WasmHostModule>.Unavailable(unavailable);
                 break;
         }
     }
@@ -189,12 +189,12 @@ internal sealed class ScriptState(string inputPath)
     /// <returns>指定番号に割り当てたホスト値 同じ入力の同じ番号では同じobjectを返す</returns>
     internal object GetExternref(uint number)
     {
-        if (!externrefs_.TryGetValue(number, out var externref))
+        if (!_externrefs.TryGetValue(number, out var externref))
         {
             // 内容を持たない専用objectを割り当て、参照の同一性だけで比較する。
             externref = new object();
-            externrefs_.Add(number, externref);
-            externrefNumbers_.Add(externref, number);
+            _externrefs.Add(number, externref);
+            _externrefNumbers.Add(externref, number);
         }
 
         return externref;
@@ -207,7 +207,7 @@ internal sealed class ScriptState(string inputPath)
     /// <returns>割り当てた番号 この入力で割り当てていない参照ではnull</returns>
     internal uint? GetExternrefNumber(object reference)
     {
-        return externrefNumbers_.TryGetValue(reference, out var number) ? number : null;
+        return _externrefNumbers.TryGetValue(reference, out var number) ? number : null;
     }
 
     /// <summary>
@@ -217,10 +217,10 @@ internal sealed class ScriptState(string inputPath)
     /// <returns>0始まりで初出順に割り当てたtoken 同じ参照の再取得では同じ値</returns>
     internal int GetReferenceToken(object reference)
     {
-        if (!referenceTokens_.TryGetValue(reference, out var token))
+        if (!_referenceTokens.TryGetValue(reference, out var token))
         {
-            token = referenceTokens_.Count;
-            referenceTokens_.Add(reference, token);
+            token = _referenceTokens.Count;
+            _referenceTokens.Add(reference, token);
         }
 
         return token;
@@ -236,7 +236,7 @@ internal sealed class ScriptState(string inputPath)
         LastModule = binding;
         if (name is not null)
         {
-            modules_[name] = binding;
+            _modules[name] = binding;
         }
     }
 }

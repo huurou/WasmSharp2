@@ -9,7 +9,7 @@ namespace WasmSharp.Benchmarks.Measurements;
 
 internal sealed class AllocationEngine(IEngine timingEngine, Action? iterationSetup, Action? iterationCleanup) : IEngine
 {
-    private long exceptionCount_;
+    private long _exceptionCount;
 
     public IHost Host => timingEngine.Host;
     public Job TargetJob => timingEngine.TargetJob;
@@ -38,7 +38,7 @@ internal sealed class AllocationEngine(IEngine timingEngine, Action? iterationSe
         try
         {
             var initialThreading = ThreadingStats.ReadInitial();
-            Interlocked.Exchange(ref exceptionCount_, 0);
+            Interlocked.Exchange(ref _exceptionCount, 0);
             EventHandler<FirstChanceExceptionEventArgs> listener = OnFirstChanceException;
             AppDomain.CurrentDomain.FirstChanceException += listener;
             GcStats gcStats;
@@ -62,7 +62,7 @@ internal sealed class AllocationEngine(IEngine timingEngine, Action? iterationSe
                 TargetJob.ResolveValue(AccuracyMode.OutlierModeCharacteristic, Resolver),
                 gcStats.WithTotalOperations(totalOperations),
                 threadingStats.WithTotalOperations(totalOperations),
-                Interlocked.Read(ref exceptionCount_) / (double)totalOperations
+                Interlocked.Read(ref _exceptionCount) / (double)totalOperations
             );
         }
         finally
@@ -73,7 +73,7 @@ internal sealed class AllocationEngine(IEngine timingEngine, Action? iterationSe
 
     private void OnFirstChanceException(object? sender, FirstChanceExceptionEventArgs arguments)
     {
-        Interlocked.Increment(ref exceptionCount_);
+        Interlocked.Increment(ref _exceptionCount);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]

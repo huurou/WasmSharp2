@@ -12,13 +12,13 @@ namespace WasmSharp.Benchmarks.Tests.Measurements;
 
 internal class BenchmarkRun_SaveReportsTests
 {
-    private readonly CaseJson json_ = new CaseJson();
-    private readonly MeasurementMethods methods_ = new MeasurementMethods();
-    private readonly BenchmarkRun benchmarkRun_;
+    private readonly CaseJson _json = new CaseJson();
+    private readonly MeasurementMethods _methods = new MeasurementMethods();
+    private readonly BenchmarkRun _benchmarkRun;
 
     public BenchmarkRun_SaveReportsTests()
     {
-        benchmarkRun_ = new BenchmarkRun(json_, methods_);
+        _benchmarkRun = new BenchmarkRun(_json, _methods);
     }
 
     [Test]
@@ -30,8 +30,8 @@ internal class BenchmarkRun_SaveReportsTests
         fixture.SaveConditions();
 
         // Act
-        benchmarkRun_.SaveReports(fixture.Request, fixture.Prepared, [fixture.Summary, fixture.Summary]);
-        var result = RunStore.Load(fixture.DirectoryPath, json_).Cases.Single();
+        _benchmarkRun.SaveReports(fixture.Request, fixture.Prepared, [fixture.Summary, fixture.Summary]);
+        var result = RunStore.Load(fixture.DirectoryPath, _json).Cases.Single();
 
         // Assert
         using (Assert.Multiple())
@@ -53,8 +53,8 @@ internal class BenchmarkRun_SaveReportsTests
         fixture.Prepared.Store.SaveCheck(fixture.SuccessfulCheck());
 
         // Act
-        benchmarkRun_.SaveReports(fixture.Request, fixture.Prepared, [fixture.Summary, failed.Summary]);
-        var result = RunStore.Load(fixture.DirectoryPath, json_).Cases.Single();
+        _benchmarkRun.SaveReports(fixture.Request, fixture.Prepared, [fixture.Summary, failed.Summary]);
+        var result = RunStore.Load(fixture.DirectoryPath, _json).Cases.Single();
 
         // Assert
         using (Assert.Multiple())
@@ -95,8 +95,8 @@ internal class BenchmarkRun_SaveReportsTests
         fixture.Prepared.Store.SaveCheck(check);
 
         // Act
-        benchmarkRun_.SaveReports(fixture.Request, fixture.Prepared, [fixture.Summary, other.Summary]);
-        var manifest = RunStore.Load(fixture.DirectoryPath, json_);
+        _benchmarkRun.SaveReports(fixture.Request, fixture.Prepared, [fixture.Summary, other.Summary]);
+        var manifest = RunStore.Load(fixture.DirectoryPath, _json);
 
         // Assert
         using (Assert.Multiple())
@@ -127,12 +127,12 @@ internal class BenchmarkRun_SaveReportsTests
             };
 
         // Act
-        benchmarkRun_.SaveReports(
+        _benchmarkRun.SaveReports(
             fixture.Request,
             prepared,
             duplicated ? [fixture.Summary, fixture.Summary] : [fixture.Summary]
         );
-        var manifest = RunStore.Load(fixture.DirectoryPath, json_);
+        var manifest = RunStore.Load(fixture.DirectoryPath, _json);
         var result = manifest.Cases.Single();
 
         // Assert
@@ -168,8 +168,8 @@ internal class BenchmarkRun_SaveReportsTests
         );
 
         // Act
-        benchmarkRun_.SaveReports(fixture.Request, fixture.Prepared, [fixture.Summary]);
-        var manifest = RunStore.Load(fixture.DirectoryPath, json_);
+        _benchmarkRun.SaveReports(fixture.Request, fixture.Prepared, [fixture.Summary]);
+        var manifest = RunStore.Load(fixture.DirectoryPath, _json);
         var result = manifest.Cases.Single();
 
         // Assert
@@ -212,8 +212,8 @@ internal class BenchmarkRun_SaveReportsTests
         fixture.Prepared.Store.SaveCheck(fixture.SuccessfulCheck(124));
 
         // Act
-        benchmarkRun_.SaveReports(fixture.Request, fixture.Prepared, [fixture.Summary]);
-        var result = RunStore.Load(fixture.DirectoryPath, json_).Cases.Single();
+        _benchmarkRun.SaveReports(fixture.Request, fixture.Prepared, [fixture.Summary]);
+        var result = RunStore.Load(fixture.DirectoryPath, _json).Cases.Single();
 
         // Assert
         using (Assert.Multiple())
@@ -235,8 +235,8 @@ internal class BenchmarkRun_SaveReportsTests
         fixture.Prepared.Store.SaveCheck(fixture.SuccessfulCheck());
 
         // Act
-        benchmarkRun_.SaveReports(fixture.Request, fixture.Prepared, [fixture.Summary]);
-        var manifest = RunStore.Load(fixture.DirectoryPath, json_);
+        _benchmarkRun.SaveReports(fixture.Request, fixture.Prepared, [fixture.Summary]);
+        var manifest = RunStore.Load(fixture.DirectoryPath, _json);
         var result = manifest.Cases.Single();
 
         // Assert
@@ -296,8 +296,8 @@ internal class BenchmarkRun_SaveReportsTests
         );
 
         // Act
-        benchmarkRun_.SaveReports(fixture.Request, fixture.Prepared, [fixture.Summary]);
-        var manifest = RunStore.Load(fixture.DirectoryPath, json_);
+        _benchmarkRun.SaveReports(fixture.Request, fixture.Prepared, [fixture.Summary]);
+        var manifest = RunStore.Load(fixture.DirectoryPath, _json);
 
         // Assert
         using (Assert.Multiple())
@@ -340,8 +340,8 @@ internal class BenchmarkRun_SaveReportsTests
         fixture.Prepared.Store.SaveCheck(fixture.SuccessfulCheck() with { Failures = [failure] });
 
         // Act
-        benchmarkRun_.SaveReports(fixture.Request, fixture.Prepared, [fixture.Summary]);
-        var manifest = RunStore.Load(fixture.DirectoryPath, json_);
+        _benchmarkRun.SaveReports(fixture.Request, fixture.Prepared, [fixture.Summary]);
+        var manifest = RunStore.Load(fixture.DirectoryPath, _json);
 
         // Assert
         using (Assert.Multiple())
@@ -362,8 +362,8 @@ internal class BenchmarkRun_SaveReportsTests
         fixture.Prepared.Store.SaveCheck(fixture.SuccessfulCheck());
 
         // Act
-        benchmarkRun_.SaveReports(fixture.Request, fixture.Prepared, [fixture.Summary]);
-        var manifest = RunStore.Load(fixture.DirectoryPath, json_);
+        _benchmarkRun.SaveReports(fixture.Request, fixture.Prepared, [fixture.Summary]);
+        var manifest = RunStore.Load(fixture.DirectoryPath, _json);
 
         // Assert
         using (Assert.Multiple())
@@ -393,8 +393,8 @@ internal class BenchmarkRun_SaveReportsTests
         fixture.Prepared.Store.SaveCheck(fixture.SuccessfulCheck());
 
         // Act
-        benchmarkRun_.SaveReports(fixture.Request, fixture.Prepared, [fixture.Summary]);
-        var manifest = RunStore.Load(fixture.DirectoryPath, json_);
+        _benchmarkRun.SaveReports(fixture.Request, fixture.Prepared, [fixture.Summary]);
+        var manifest = RunStore.Load(fixture.DirectoryPath, _json);
         var result = manifest.Cases.Single();
 
         // Assert
@@ -419,8 +419,8 @@ internal class BenchmarkRun_SaveReportsTests
         fixture.Prepared.Store.SaveCheck(fixture.SuccessfulCheck());
 
         // Act
-        benchmarkRun_.SaveReports(fixture.Request, fixture.Prepared, [fixture.Summary]);
-        var manifest = RunStore.Load(fixture.DirectoryPath, json_);
+        _benchmarkRun.SaveReports(fixture.Request, fixture.Prepared, [fixture.Summary]);
+        var manifest = RunStore.Load(fixture.DirectoryPath, _json);
 
         // Assert
         using (Assert.Multiple())
@@ -447,8 +447,8 @@ internal class BenchmarkRun_SaveReportsTests
         }
 
         // Act
-        benchmarkRun_.SaveReports(fixture.Request, fixture.Prepared, hasReport ? [fixture.Summary] : []);
-        var manifest = RunStore.Load(fixture.DirectoryPath, json_);
+        _benchmarkRun.SaveReports(fixture.Request, fixture.Prepared, hasReport ? [fixture.Summary] : []);
+        var manifest = RunStore.Load(fixture.DirectoryPath, _json);
         var missing = manifest.Cases.Single(x => x.CaseId == "decode.small");
 
         // Assert
@@ -482,8 +482,8 @@ internal class BenchmarkRun_SaveReportsTests
         fixture.Prepared.Store.SaveCheck(fixture.SuccessfulCheck());
 
         // Act
-        benchmarkRun_.SaveReports(fixture.Request, fixture.Prepared, [fixture.Summary]);
-        var result = RunStore.Load(fixture.DirectoryPath, json_).Cases.Single();
+        _benchmarkRun.SaveReports(fixture.Request, fixture.Prepared, [fixture.Summary]);
+        var result = RunStore.Load(fixture.DirectoryPath, _json).Cases.Single();
 
         // Assert
         using (Assert.Multiple())
@@ -511,11 +511,11 @@ internal class BenchmarkRun_SaveReportsTests
             "job" => check with { JobId = "OtherJob" },
             _ => check with { ProcessId = 124 },
         };
-        fixture.Prepared.Store.SaveFile("checks/foreign.json", JsonSerializer.SerializeToUtf8Bytes(check, json_.Options));
+        fixture.Prepared.Store.SaveFile("checks/foreign.json", JsonSerializer.SerializeToUtf8Bytes(check, _json.Options));
 
         // Act
-        benchmarkRun_.SaveReports(fixture.Request, fixture.Prepared, [fixture.Summary]);
-        var result = RunStore.Load(fixture.DirectoryPath, json_).Cases.Single();
+        _benchmarkRun.SaveReports(fixture.Request, fixture.Prepared, [fixture.Summary]);
+        var result = RunStore.Load(fixture.DirectoryPath, _json).Cases.Single();
 
         // Assert
         using (Assert.Multiple())
@@ -536,8 +536,8 @@ internal class BenchmarkRun_SaveReportsTests
         fixture.Prepared.Store.SaveCheck(fixture.SuccessfulCheck(124));
 
         // Act
-        benchmarkRun_.SaveReports(fixture.Request, fixture.Prepared, [fixture.Summary]);
-        var result = RunStore.Load(fixture.DirectoryPath, json_).Cases.Single();
+        _benchmarkRun.SaveReports(fixture.Request, fixture.Prepared, [fixture.Summary]);
+        var result = RunStore.Load(fixture.DirectoryPath, _json).Cases.Single();
         var diagnostic = result.BenchmarkReport!.Processes.Single(x => x.ProcessId == 124);
 
         // Assert
@@ -561,9 +561,9 @@ internal class BenchmarkRun_SaveReportsTests
 
         // Act & Assert
         await Assert
-            .That(() => benchmarkRun_.SaveReports(fixture.Request, fixture.Prepared, [fixture.Summary]))
+            .That(() => _benchmarkRun.SaveReports(fixture.Request, fixture.Prepared, [fixture.Summary]))
             .Throws<IOException>();
-        var manifest = RunStore.Load(fixture.DirectoryPath, json_);
+        var manifest = RunStore.Load(fixture.DirectoryPath, _json);
         using (Assert.Multiple())
         {
             await Assert.That(manifest.Status).IsEqualTo(ResultStatus.Incomplete);
@@ -581,8 +581,8 @@ internal class BenchmarkRun_SaveReportsTests
         fixture.Prepared.Store.SaveCheck(fixture.SuccessfulCheck());
 
         // Act
-        benchmarkRun_.SaveReports(fixture.Request, fixture.Prepared, [fixture.Summary]);
-        var manifest = RunStore.Load(fixture.DirectoryPath, json_);
+        _benchmarkRun.SaveReports(fixture.Request, fixture.Prepared, [fixture.Summary]);
+        var manifest = RunStore.Load(fixture.DirectoryPath, _json);
 
         // Assert
         using (Assert.Multiple())
@@ -609,8 +609,8 @@ internal class BenchmarkRun_SaveReportsTests
         ]);
 
         // Act
-        benchmarkRun_.SaveReports(fixture.Request, fixture.Prepared, [fixture.Summary]);
-        var result = RunStore.Load(fixture.DirectoryPath, json_).Cases.Single();
+        _benchmarkRun.SaveReports(fixture.Request, fixture.Prepared, [fixture.Summary]);
+        var result = RunStore.Load(fixture.DirectoryPath, _json).Cases.Single();
 
         // Assert
         using (Assert.Multiple())
@@ -639,8 +639,8 @@ internal class BenchmarkRun_SaveReportsTests
         using var fixture = new BenchmarkReportFixture(lines);
 
         // Act
-        benchmarkRun_.SaveReports(fixture.Request, fixture.Prepared, [fixture.Summary]);
-        var result = RunStore.Load(fixture.DirectoryPath, json_).Cases.Single();
+        _benchmarkRun.SaveReports(fixture.Request, fixture.Prepared, [fixture.Summary]);
+        var result = RunStore.Load(fixture.DirectoryPath, _json).Cases.Single();
 
         // Assert
         using (Assert.Multiple())
@@ -690,8 +690,8 @@ internal class BenchmarkRun_SaveReportsTests
         );
 
         // Act
-        benchmarkRun_.SaveReports(fixture.Request, fixture.Prepared, [fixture.Summary]);
-        var result = RunStore.Load(fixture.DirectoryPath, json_).Cases.Single();
+        _benchmarkRun.SaveReports(fixture.Request, fixture.Prepared, [fixture.Summary]);
+        var result = RunStore.Load(fixture.DirectoryPath, _json).Cases.Single();
 
         // Assert
         await Assert.That(result.Metrics.Allocation).IsNotNull();
@@ -735,8 +735,8 @@ internal class BenchmarkRun_SaveReportsTests
         using var fixture = new BenchmarkReportFixture();
 
         // Act
-        benchmarkRun_.SaveReports(fixture.Request, fixture.Prepared, [fixture.Summary]);
-        var manifest = RunStore.Load(fixture.DirectoryPath, json_);
+        _benchmarkRun.SaveReports(fixture.Request, fixture.Prepared, [fixture.Summary]);
+        var manifest = RunStore.Load(fixture.DirectoryPath, _json);
         var result = manifest.Cases.Single();
 
         // Assert

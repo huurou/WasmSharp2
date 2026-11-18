@@ -15,13 +15,13 @@ namespace WasmSharp.Benchmarks.Tests.Measurements;
 
 internal class BenchmarkConfig_CreateTests
 {
-    private readonly CaseJson json_ = new CaseJson();
-    private readonly MeasurementMethods methods_ = new MeasurementMethods();
-    private readonly BenchmarkRun benchmarkRun_;
+    private readonly CaseJson _json = new CaseJson();
+    private readonly MeasurementMethods _methods = new MeasurementMethods();
+    private readonly BenchmarkRun _benchmarkRun;
 
     public BenchmarkConfig_CreateTests()
     {
-        benchmarkRun_ = new BenchmarkRun(json_, methods_);
+        _benchmarkRun = new BenchmarkRun(_json, _methods);
     }
 
     [Test]
@@ -42,7 +42,7 @@ internal class BenchmarkConfig_CreateTests
         // Arrange
         // Act
         var job = BenchmarkConfig.Create().GetJobs().Single();
-        var saved = benchmarkRun_.DescribeProcess("Measurement", job);
+        var saved = _benchmarkRun.DescribeProcess("Measurement", job);
 
         // Assert
         using (Assert.Multiple())

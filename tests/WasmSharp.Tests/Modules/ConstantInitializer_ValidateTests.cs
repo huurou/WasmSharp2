@@ -7,7 +7,7 @@ namespace WasmSharp.Tests.Modules;
 
 internal class ConstantInitializer_ValidateTests
 {
-    private readonly ReferenceValidationContext references_ = ReferenceValidationContext.Create(
+    private readonly ReferenceValidationContext _references = ReferenceValidationContext.Create(
         WasmModule.Decode(HostLinkingModuleBinary.Create()),
         0
     );
@@ -29,7 +29,7 @@ internal class ConstantInitializer_ValidateTests
 
         // Act & Assert
         await Assert
-            .That(() => ConstantInitializer.Validate(expression, WasmValueKind.I32, importedGlobals, references_, 11))
+            .That(() => ConstantInitializer.Validate(expression, WasmValueKind.I32, importedGlobals, _references, 11))
             .ThrowsNothing();
     }
 
@@ -45,7 +45,7 @@ internal class ConstantInitializer_ValidateTests
 
         // Act & Assert
         var exception = await Assert
-            .That(() => ConstantInitializer.Validate(expression, WasmValueKind.I32, [], references_, 11))
+            .That(() => ConstantInitializer.Validate(expression, WasmValueKind.I32, [], _references, 11))
             .ThrowsExactly<WasmValidateException>();
         using (Assert.Multiple())
         {
@@ -68,7 +68,7 @@ internal class ConstantInitializer_ValidateTests
 
         // Act & Assert
         var exception = await Assert
-            .That(() => ConstantInitializer.Validate(expression, WasmValueKind.I32, [], references_, 11))
+            .That(() => ConstantInitializer.Validate(expression, WasmValueKind.I32, [], _references, 11))
             .ThrowsExactly<WasmValidateException>();
         using (Assert.Multiple())
         {

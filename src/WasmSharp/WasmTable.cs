@@ -11,7 +11,7 @@ public sealed class WasmTable
     /// <summary>
     /// 型付き参照の要素領域
     /// </summary>
-    private WasmValue[] elements_;
+    private WasmValue[] _elements;
 
     /// <summary>
     /// 要素の参照型
@@ -21,7 +21,7 @@ public sealed class WasmTable
     /// <summary>
     /// 現在の要素数
     /// </summary>
-    public uint Count => (uint)elements_.Length;
+    public uint Count => (uint)_elements.Length;
 
     /// <summary>
     /// 宣言された最大要素数 指定がなければnull
@@ -60,9 +60,9 @@ public sealed class WasmTable
 
         ElementType = elementType;
         MaximumElements = limits.Maximum;
-        elements_ = new WasmValue[limits.Minimum];
+        _elements = new WasmValue[limits.Minimum];
         Array.Fill(
-            elements_,
+            _elements,
             elementType == WasmValueKind.FuncRef ? WasmValue.FromFuncRef(null) : WasmValue.FromExternRef(null)
         );
     }
@@ -135,9 +135,9 @@ public sealed class WasmTable
 
         // コピーと追加要素の初期化が完了してから、要素領域を確定する。
         var elements = new WasmValue[(int)nextCount];
-        elements_.CopyTo(elements, 0);
-        Array.Fill(elements, initialValue, elements_.Length, (int)delta);
-        elements_ = elements;
+        _elements.CopyTo(elements, 0);
+        Array.Fill(elements, initialValue, _elements.Length, (int)delta);
+        _elements = elements;
         return true;
     }
 
@@ -165,7 +165,7 @@ public sealed class WasmTable
             return false;
         }
 
-        value = elements_[(int)index];
+        value = _elements[(int)index];
         return true;
     }
 
@@ -182,7 +182,7 @@ public sealed class WasmTable
             return false;
         }
 
-        elements_[(int)index] = value;
+        _elements[(int)index] = value;
         return true;
     }
 
@@ -199,7 +199,7 @@ public sealed class WasmTable
             return false;
         }
 
-        values.CopyTo(elements_.AsSpan((int)destination, values.Length));
+        values.CopyTo(_elements.AsSpan((int)destination, values.Length));
         return true;
     }
 
@@ -218,7 +218,7 @@ public sealed class WasmTable
             return false;
         }
 
-        source.elements_.AsSpan((int)sourceOffset, (int)length).CopyTo(elements_.AsSpan((int)destination, (int)length));
+        source._elements.AsSpan((int)sourceOffset, (int)length).CopyTo(_elements.AsSpan((int)destination, (int)length));
         return true;
     }
 
@@ -236,7 +236,7 @@ public sealed class WasmTable
             return false;
         }
 
-        elements_.AsSpan((int)destination, (int)length).Fill(value);
+        _elements.AsSpan((int)destination, (int)length).Fill(value);
         return true;
     }
 }

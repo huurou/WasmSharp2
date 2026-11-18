@@ -9,13 +9,13 @@ namespace WasmSharp.Benchmarks.Tests.Measurements;
 
 internal class BenchmarkRun_CaptureEnvironmentTests
 {
-    private readonly CaseJson json_ = new CaseJson();
-    private readonly MeasurementMethods methods_ = new MeasurementMethods();
-    private readonly BenchmarkRun benchmarkRun_;
+    private readonly CaseJson _json = new CaseJson();
+    private readonly MeasurementMethods _methods = new MeasurementMethods();
+    private readonly BenchmarkRun _benchmarkRun;
 
     public BenchmarkRun_CaptureEnvironmentTests()
     {
-        benchmarkRun_ = new BenchmarkRun(json_, methods_);
+        _benchmarkRun = new BenchmarkRun(_json, _methods);
     }
 
     [Test]
@@ -23,7 +23,7 @@ internal class BenchmarkRun_CaptureEnvironmentTests
     {
         // Arrange
         using var fixture = new RunStoreFixture();
-        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, json_);
+        var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, _json);
         var command = new CommandInvocation(
             Environment.ProcessPath!,
             ["--diagnose", "value with spaces"],
@@ -44,12 +44,12 @@ internal class BenchmarkRun_CaptureEnvironmentTests
         );
 
         // Act
-        var environment = benchmarkRun_.CaptureEnvironment(store, command, [process]);
+        var environment = _benchmarkRun.CaptureEnvironment(store, command, [process]);
 
         // Assert
         var saved = JsonSerializer.Deserialize<RunEnvironment>(
             File.ReadAllBytes(Path.Combine(fixture.DirectoryPath, "environment.json")),
-            json_.Options
+            _json.Options
         )!;
         using (Assert.Multiple())
         {

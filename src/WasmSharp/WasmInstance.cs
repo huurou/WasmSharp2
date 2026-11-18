@@ -14,7 +14,7 @@ public sealed class WasmInstance
     /// <summary>
     /// export名から種類とmodule内の添字への対応
     /// </summary>
-    private readonly ImmutableDictionary<string, ModuleExport> exports_;
+    private readonly ImmutableDictionary<string, ModuleExport> _exports;
 
     /// <summary>
     /// このinstanceの元となる静的なmodule定義
@@ -86,7 +86,7 @@ public sealed class WasmInstance
         ExecutionOptions = options;
         Memories = memories;
         Tables = tables;
-        exports_ = module.Exports.ToImmutableDictionary(x => x.Name, StringComparer.Ordinal);
+        _exports = module.Exports.ToImmutableDictionary(x => x.Name, StringComparer.Ordinal);
         var functions = ImmutableArray.CreateBuilder<WasmFunction>(importedFunctions.Length + module.Functions.Length);
         functions.AddRange(importedFunctions);
         for (var i = 0; i < module.Functions.Length; i++)
@@ -201,7 +201,7 @@ public sealed class WasmInstance
     private int GetExportIndex(string name, WasmExternalKind kind)
     {
         ArgumentNullException.ThrowIfNull(name);
-        if (!exports_.TryGetValue(name, out var export) || export.Kind != kind)
+        if (!_exports.TryGetValue(name, out var export) || export.Kind != kind)
         {
             throw new ArgumentException("指定した名前と種類のexportが存在しません。", nameof(name));
         }
