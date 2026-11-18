@@ -8,7 +8,8 @@ namespace WasmSharp.TestSuiteRunner.Execution;
 /// 照合済みの素材と入力の状態を使い、commandを順序どおりに実行する
 /// </summary>
 /// <param name="input">この入力の照合済みbinaryと素材異常</param>
-internal sealed class ScriptExecutor(InputVerification input)
+/// <param name="specVersion">全moduleのDecode・Validateに適用する仕様の版</param>
+internal sealed class ScriptExecutor(InputVerification input, WasmSpecVersion specVersion = WasmSpecVersion.Core2)
 {
     /// <summary>
     /// すべてのinstanceへ明示する呼び出し深さの上限
@@ -109,7 +110,7 @@ internal sealed class ScriptExecutor(InputVerification input)
         }
         var bytes = input.Modules[command.Index];
         observation = observation with { Operation = "decode", LastStage = CaseStage.Decode };
-        var module = WasmModule.Decode(bytes.AsSpan());
+        var module = WasmModule.Decode(bytes.AsSpan(), specVersion);
         if (command is AssertMalformedCommand)
         {
             return;

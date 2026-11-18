@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using WasmSharp.TestSuiteRunner.Corpus;
 
 namespace WasmSharp.TestSuiteRunner.Reports;
@@ -19,6 +20,12 @@ internal sealed record RunReport(CorpusManifest Corpus, RunProvenance Provenance
     /// 保存結果の種類
     /// </summary>
     public string Kind { get; init; } = "run_report";
+
+    /// <summary>
+    /// 全moduleのDecode・Validateに適用した仕様の版 版を記録していない従来の結果はCore 2.0として読み取る
+    /// </summary>
+    [JsonConverter(typeof(StrictEnumConverter))]
+    public WasmSpecVersion SpecVersion { get; init; } = WasmSpecVersion.Core2;
 
     /// <summary>
     /// 未処理を含む入力ごとの実行結果

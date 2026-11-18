@@ -1,6 +1,6 @@
 # Test Suite Runner
 
-固定したWebAssembly Core 2.0公式スイートを生成・実行し、保存済み結果との回帰比較を行うCLIです。WasmSharpの公開APIで全commandを処理し、結果と診断をJSONに保存します。Core 3.0では、公式テスト素材の生成と変換結果の比較を行えます。
+固定したWebAssembly Core 2.0公式スイートを生成・実行し、保存済み結果との回帰比較を行うCLIです。WasmSharpの公開APIで全commandを処理し、結果と診断をJSONに保存します。Core 3.0では、公式テスト素材の生成・変換結果の比較と、既存のランタイム機能による実行を行えます。
 
 ## 準備と起動
 
@@ -27,7 +27,7 @@ Linuxでは実行ファイル名を`WasmSharp.TestSuiteRunner`に読み替え、
 | --- | --- | --- |
 | `generate`（既定のCore 2.0） | `--spec-root`、`--wabt-root`、`--wast2json`、`--output` | 固定147入力を変換・照合し、出力ディレクトリに`manifest.json`と素材を保存する。 |
 | `generate --profile core3` | `--spec-root`、`--wasm-tools`、`--output` | 固定255入力を変換・照合し、出力ディレクトリに`manifest.json`と素材を保存する。 |
-| `run` | `--manifest`、`--output` | manifestと相対配置の素材から全commandを実行し、結果JSONを保存する。 |
+| `run` | `--manifest`、`--output` | manifestと相対配置の素材から全commandを実行し、結果JSONを保存する。manifestの`profile.id`に対応する固定profileの仕様の版でDecode・Validateする。 |
 | `baseline-save` | `--input`、`--output` | 完了したmanifestまたは実行結果JSONを同じ内容でコピーする。既存baselineの上書きもこの操作で行う。 |
 | `compare-conversion` | `--baseline`、`--current`、`--output` | 保存した2つのmanifestの入力・生成物・変換条件を比較する。 |
 | `compare-run` | `--baseline`、`--current`、`--output` | 保存した2つの実行結果をケース単位で比較し、以前passedだったケースの変化・欠落を回帰として記録する。 |
@@ -51,7 +51,19 @@ $wasmTools = './artifacts/wasm-tools-1.263.0-x86_64-windows/wasm-tools.exe'
 
 manifestは`profile.wasm_tools`に固定版とcommitを、`provenance`に実行ファイルの観測版とSHA-256を記録します。入力ごとに実際の引数、終了値、標準出力・標準エラー、生成物の相対pathとSHA-256、全commandと素材参照の一覧を保存します。変換器が出力したJSON、期待値・期待診断、不正バイナリを含む素材は書き換えません。`module_type: text`はテキスト素材として識別し、`binary_filename`が併記されていれば、そのバイナリも別の参照として保存・照合します。変換や照合に失敗した入力は`runner_error`として残ります。
 
-Windows x64の公式配布版で255入力、65,193command、JSON255件・Wasm5,898件・WAT1,241件を確認しました。異なる出力先での比較では条件差・出典差・入力と素材の差・未比較がいずれも0件でした。`run`と`verify`は引き続きCore 2.0専用です。Core 3.0の変換成功はWasmSharpでの実行や適合を意味しません。
+Windows x64の公式配布版で255入力、65,193command、JSON255件・Wasm5,898件・WAT1,241件を確認しました。異なる出力先での比較では条件差・出典差・入力と素材の差・未比較がいずれも0件でした。Core 3.0の変換成功はWasmSharpでの実行や適合を意味しません。
+
+## Core 3.0の実行
+
+生成したCore 3.0のmanifestは、Core 2.0と同じ`run`で実行します。`run`はmanifestの`profile.id`から固定profileを選び、条件や対象入力が固定profileと一致しない場合は別の版へ読み替えず終了2で拒否します。
+
+```powershell
+& $runner run --manifest artifacts/core3-corpus-1/manifest.json --output artifacts/core3-run-1.json
+```
+
+結果JSONの`spec_version`には、全moduleのDecode・Validateへ渡した仕様の版（`Core2`または`Core3`）を記録します。この項目がない従来の結果はCore 2.0の実行として読み取ります。`compare-run`は`spec_version`または`profile`が異なる結果を条件差として報告し、ケース単位の回帰を判定しません。
+
+公式入力はmanifestの`profile.inputs`に固定した`test/core`配下のWASTと、それを変換した素材だけです。`tests`配下の`core3-script.json`や変換器の代替プログラムはCLIの動作確認用の補助入力であり、公式ケースの結果には含めません。現時点では、ランナーが読み取れない`module_definition`・`module_instance`などのcommandは`runner_error`、ランタイムが未実装のCore 3.0機能を使うケースは`failed`などpassed以外の分類で残り、成立扱いにはなりません。`verify`は引き続きCore 2.0全体の最終判定専用です。
 
 ## Core 2.0の初回の生成・実行とbaseline保存
 

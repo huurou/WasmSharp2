@@ -16,6 +16,7 @@ internal static class SuiteExecutor
     /// <param name="manifestPath">相対配置の基準となるmanifestのpath</param>
     /// <param name="progress">入力の処理後に相対pathを通知する処理 中断した入力も通知する</param>
     /// <param name="cancellationToken">command間で通知を確認する中断要求 実行中のWasmを強制停止しない</param>
+    /// <param name="specVersion">全moduleのDecode・Validateに適用し、結果に記録する仕様の版</param>
     /// <returns>素材・実行条件と入力別の結果を持つ記録 中断時も確定済みの結果を残し、出力完了はfalse</returns>
     /// <exception cref="ArgumentException">manifestPathを絶対pathに変換できない場合</exception>
     /// <exception cref="NotSupportedException">manifestPathが未対応の形式の場合</exception>
@@ -23,10 +24,18 @@ internal static class SuiteExecutor
         CorpusManifest manifest,
         string manifestPath,
         Action<string>? progress = null,
-        CancellationToken cancellationToken = default
+        CancellationToken cancellationToken = default,
+        WasmSpecVersion specVersion = WasmSpecVersion.Core2
     )
     {
-        return Execute(manifest, manifestPath, progress, cancellationToken, ExecuteInput);
+        return Execute(
+            manifest,
+            manifestPath,
+            progress,
+            cancellationToken,
+            (input, state, token) => ExecuteInput(input, state, token, specVersion),
+            specVersion
+        );
     }
 
     /// <summary>
@@ -37,6 +46,7 @@ internal static class SuiteExecutor
     /// <param name="progress">入力の処理後に相対pathを通知する処理 中断した入力も通知する</param>
     /// <param name="cancellationToken">command間で通知を確認する中断要求</param>
     /// <param name="executeInput">入力ごとの状態で評価し、部分結果と中断診断を返す処理</param>
+    /// <param name="specVersion">入力評価に適用した仕様の版として結果に記録する版</param>
     /// <returns>確定済みの部分結果と中断診断を保持した実行記録</returns>
     internal static RunReport Execute(
         CorpusManifest manifest,
@@ -48,7 +58,8 @@ internal static class SuiteExecutor
             ScriptState,
             CancellationToken,
             (InputRunResult Result, CorpusDiagnostic? Interruption)
-        > executeInput
+        > executeInput,
+        WasmSpecVersion specVersion = WasmSpecVersion.Core2
     )
     {
         var absolutePath = Path.GetFullPath(manifestPath);
@@ -64,7 +75,10 @@ internal static class SuiteExecutor
                 ManifestPath = absolutePath,
             },
             new(ScriptExecutor.MAX_CALL_DEPTH)
-        );
+        ) with
+        {
+            SpecVersion = specVersion,
+        };
         try
         {
             var verification = CorpusVerifier.Verify(
@@ -126,6 +140,7 @@ internal static class SuiteExecutor
     /// <param name="reportStore">実行結果の確定保存に使用する保存処理</param>
     /// <param name="progress">入力の処理後に相対pathを通知する処理</param>
     /// <param name="cancellationToken">command間で確認する中断要求</param>
+    /// <param name="specVersion">全moduleのDecode・Validateに適用し、結果に記録する仕様の版</param>
     /// <returns>実行記録と保存先の絶対path 保存に成功した場合だけ出力完了をtrueにし、保存失敗はSaveFailureに保持する</returns>
     /// <exception cref="ArgumentException">manifestPathまたはoutputPathを絶対pathに変換できない場合</exception>
     /// <exception cref="NotSupportedException">manifestPathまたはoutputPathが未対応の形式の場合</exception>
@@ -135,11 +150,12 @@ internal static class SuiteExecutor
         string outputPath,
         ReportStore reportStore,
         Action<string>? progress = null,
-        CancellationToken cancellationToken = default
+        CancellationToken cancellationToken = default,
+        WasmSpecVersion specVersion = WasmSpecVersion.Core2
     )
     {
         var absoluteOutput = Path.GetFullPath(outputPath);
-        var report = Execute(manifest, manifestPath, progress, cancellationToken);
+        var report = Execute(manifest, manifestPath, progress, cancellationToken, specVersion);
         var stored = report with { Completion = report.Completion with { OutputComplete = true } };
         try
         {
@@ -161,11 +177,13 @@ internal static class SuiteExecutor
     /// <param name="input">照合済みdocumentとbinary、入力異常</param>
     /// <param name="state">この入力のために初期化した状態</param>
     /// <param name="cancellationToken">command間で確認する中断要求</param>
+    /// <param name="specVersion">この入力の全moduleのDecode・Validateに適用する仕様の版</param>
     /// <returns>処理済みケースを持つ入力の記録と、中断した場合の操作診断 中断時は列挙済みの未処理件数も記録する</returns>
     internal static (InputRunResult Result, CorpusDiagnostic? Interruption) ExecuteInput(
         InputVerification input,
         ScriptState state,
-        CancellationToken cancellationToken
+        CancellationToken cancellationToken,
+        WasmSpecVersion specVersion = WasmSpecVersion.Core2
     )
     {
         var result = new InputRunResult(input.Input.Path)
@@ -181,7 +199,7 @@ internal static class SuiteExecutor
             if (input.Document is { } document)
             {
                 var script = ScriptReader.Read(document, input.Input.Path);
-                var executor = new ScriptExecutor(input);
+                var executor = new ScriptExecutor(input, specVersion);
                 foreach (var command in script.Commands)
                 {
                     cancellationToken.ThrowIfCancellationRequested();

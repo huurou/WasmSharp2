@@ -5,7 +5,7 @@ using System.Text.Json.Serialization;
 namespace WasmSharp.TestSuiteRunner.Reports;
 
 /// <summary>
-/// 保存時の名前と完全に一致する単一の列挙値だけを読み取るJSON変換
+/// 保存時の名前と完全に一致する単一の列挙値だけを読み取り、同じ名前で書き出すJSON変換
 /// </summary>
 /// <remarks>
 /// 標準の文字列変換はFlagsでない列挙でもカンマ区切りの複合表記を受け付け、未定義値や別の分類へ読み替えるため、読取では使わない。
@@ -62,15 +62,17 @@ internal sealed class StrictEnumConverter : JsonConverterFactory
         }
 
         /// <summary>
-        /// 読取専用のため書込みを受け付けない。保存名による出力は列挙型の標準変換器が行う。
+        /// 列挙値を読取時と同じ保存名で書き出す。
         /// </summary>
+        /// <remarks>
+        /// 保存名の属性を付けられないランタイムの列挙型も、プロパティへ指定して同じ名前で往復できるようにする。
+        /// </remarks>
         /// <param name="writer">JSONの出力先</param>
-        /// <param name="value">書込みを要求された列挙値</param>
+        /// <param name="value">書き出す列挙値</param>
         /// <param name="options">シリアライザーから渡される設定</param>
-        /// <exception cref="NotSupportedException">書込みを要求した場合</exception>
         public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
         {
-            throw new NotSupportedException();
+            writer.WriteStringValue(GetName(value));
         }
 
         /// <summary>
