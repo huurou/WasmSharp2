@@ -6,13 +6,13 @@ using WasmSharp.TestSuiteRunner.Corpus;
 namespace WasmSharp.TestSuiteRunner.Execution;
 
 /// <summary>
-/// 列挙済みJSONのcommandを、固定WABT形式の種類別モデルへ読み取る
+/// 列挙済みJSONのcommandを、仕様版ごとの固定形式の種類別モデルへ読み取る
 /// </summary>
 /// <remarks>
 /// 種類・値型・lane型・module形式の名前と、項目の過不足・重複を固定形式に照らして確認する。
 /// 値の文字列は加工せず保持し、ビット列・参照・NaN patternとしての解釈は引数構築と結果の比較で行う。
 /// </remarks>
-internal static class ScriptReader
+internal sealed class ScriptReader(WasmSpecVersion specVersion)
 {
     /// <summary>
     /// commandの読み取り異常を診断へ記録する操作名
@@ -65,9 +65,14 @@ internal static class ScriptReader
     private const string EXPECTED = "expected";
 
     /// <summary>
-    /// actionの対象moduleの識別子を示すJSONの項目名
+    /// actionの対象moduleの識別子、またはmodule_instanceの定義名を示すJSONの項目名
     /// </summary>
     private const string MODULE = "module";
+
+    /// <summary>
+    /// module_instanceで生成するinstanceのmodule識別子を示すJSONの項目名
+    /// </summary>
+    private const string INSTANCE = "instance";
 
     /// <summary>
     /// actionの対象export名を示すJSONの項目名
@@ -94,12 +99,14 @@ internal static class ScriptReader
     /// </summary>
     /// <param name="document">照合済みのJSON</param>
     /// <param name="inputPath">test/core基準の入力相対path</param>
+    /// <param name="version">変換済みスクリプトの仕様版</param>
     /// <returns>列挙済みcommandのindexと順序を保つ読み取り結果 個々の構造異常はInvalidCommandとして残す</returns>
-    internal static ScriptReadResult Read(ScriptDocument document, string inputPath)
+    internal static ScriptReadResult Read(ScriptDocument document, string inputPath, WasmSpecVersion version = WasmSpecVersion.Core2)
     {
+        var reader = new ScriptReader(version);
         return new(
             inputPath,
-            [.. document.Commands.Select(x => ReadCommand(document.GetJson(x.Index), x))],
+            [.. document.Commands.Select(x => reader.ReadCommand(document.GetJson(x.Index), x))],
             document.EnumerationComplete
         );
     }
@@ -110,7 +117,7 @@ internal static class ScriptReader
     /// <param name="json">列挙時に構文と境界を確認したcommandのUTF-8バイト列</param>
     /// <param name="command">列挙時に確定したindexと、取得できた行番号・種類</param>
     /// <returns>型付きcommand 固定形式の種類・構造に合わない場合は元JSONと診断を持つInvalidCommand</returns>
-    private static ScriptCommand ReadCommand(ReadOnlyMemory<byte> json, EnumeratedCommand command)
+    private ScriptCommand ReadCommand(ReadOnlyMemory<byte> json, EnumeratedCommand command)
     {
         // 境界は列挙時に確定済みのため再読取は失敗しない。
         using var document = JsonDocument.Parse(json);
@@ -129,26 +136,34 @@ internal static class ScriptReader
                 new(OPERATION, ex.Message) { SourceJson = Encoding.UTF8.GetString(json.Span) }
             )
             {
-                Name = command.Type == ScriptCommand.MODULE ? GetSingleString(root, NAME) : null,
+                SpecVersion = specVersion,
+                Name = command.Type switch
+                {
+                    ScriptCommand.MODULE or ScriptCommand.MODULE_DEFINITION => GetSingleString(root, NAME),
+                    ScriptCommand.MODULE_INSTANCE => GetSingleString(root, INSTANCE),
+                    _ => null,
+                },
                 As = command.Type == ScriptCommand.REGISTER ? GetSingleString(root, AS) : null,
             };
         }
     }
 
     /// <summary>
-    /// commandの項目の重複と種類を確認し、固定した10種類のモデルへ読み取る。
+    /// commandの項目の重複と種類を確認し、仕様版に対応したモデルへ読み取る。
     /// </summary>
     /// <param name="element">1件のcommandを表すJSON要素</param>
     /// <param name="index">入力内の0始まりcommand index</param>
     /// <returns>種類ごとの必須項目を持つcommand</returns>
     /// <exception cref="ScriptFormatException">objectではない、項目が重複する、種類が未知、または種類ごとの構造に合わない場合</exception>
-    private static ScriptCommand ReadCommand(JsonElement element, int index)
+    private ScriptCommand ReadCommand(JsonElement element, int index)
     {
         var properties = ReadObject(element, "");
         var type = GetString(properties, "", TYPE);
         return type switch
         {
             ScriptCommand.MODULE => ReadModule(properties, index),
+            ScriptCommand.MODULE_DEFINITION when specVersion == WasmSpecVersion.Core3 => ReadModuleDefinition(properties, index),
+            ScriptCommand.MODULE_INSTANCE when specVersion == WasmSpecVersion.Core3 => ReadModuleInstance(properties, index),
             ScriptCommand.REGISTER => ReadRegister(properties, index),
             ScriptCommand.ACTION => ReadActionCommand(properties, index),
             ScriptCommand.ASSERT_RETURN => ReadAssertReturn(properties, index),
@@ -193,10 +208,59 @@ internal static class ScriptReader
     /// <param name="index">入力内の0始まりcommand index</param>
     /// <returns>module識別子が省略されていればNameがnullの通常module</returns>
     /// <exception cref="ScriptFormatException">項目の過不足、型、行番号、module形式が固定形式に合わない場合</exception>
-    private static ModuleCommand ReadModule(Dictionary<string, JsonElement> properties, int index)
+    private ModuleCommand ReadModule(Dictionary<string, JsonElement> properties, int index)
+    {
+        ReadTextBinaryFilename(properties);
+        return ReadModule(properties, index, static (i, l, n, f, t) => new ModuleCommand(i, l, n, f, t));
+    }
+
+    /// <summary>
+    /// module定義の行番号・定義名・素材名を、通常moduleと同じ形式で読み取る。
+    /// </summary>
+    /// <param name="properties">項目名の重複を検査済みのcommand</param>
+    /// <param name="index">入力内の0始まりcommand index</param>
+    /// <returns>定義名が省略されていればNameがnullのmodule定義</returns>
+    /// <exception cref="ScriptFormatException">項目の過不足、型、行番号、module形式が固定形式に合わない場合</exception>
+    private static ModuleDefinitionCommand ReadModuleDefinition(Dictionary<string, JsonElement> properties, int index)
+    {
+        return ReadModule(properties, index, static (i, l, n, f, t) => new ModuleDefinitionCommand(i, l, n, f, t));
+    }
+
+    /// <summary>
+    /// module_instanceの行番号と、どちらも省略できるinstanceのmodule識別子・定義名を読み取る。
+    /// </summary>
+    /// <param name="properties">項目名の重複を検査済みのcommand</param>
+    /// <param name="index">入力内の0始まりcommand index</param>
+    /// <returns>定義名が省略されていれば直近の定義を対象とするmodule_instance</returns>
+    /// <exception cref="ScriptFormatException">項目の過不足、型、行番号が固定形式に合わない場合</exception>
+    private static ModuleInstanceCommand ReadModuleInstance(Dictionary<string, JsonElement> properties, int index)
+    {
+        RejectUnknownNames(properties, "", TYPE, LINE, INSTANCE, MODULE);
+        return new ModuleInstanceCommand(
+            index,
+            ReadLine(properties),
+            GetOptionalString(properties, "", INSTANCE),
+            GetOptionalString(properties, "", MODULE)
+        );
+    }
+
+    /// <summary>
+    /// 素材を参照するmoduleの行番号・名前・素材名を読み、形式の省略はbinaryとする。
+    /// </summary>
+    /// <typeparam name="T">通常moduleまたはmodule定義の型</typeparam>
+    /// <param name="properties">項目名の重複を検査済みのcommand</param>
+    /// <param name="index">入力内の0始まりcommand index</param>
+    /// <param name="create">index・行番号・名前・素材名・素材形式から種類ごとのcommandを作る関数</param>
+    /// <returns>名前が省略されていればnullを渡して作ったcommand</returns>
+    /// <exception cref="ScriptFormatException">項目の過不足、型、行番号、module形式が固定形式に合わない場合</exception>
+    private static T ReadModule<T>(
+        Dictionary<string, JsonElement> properties,
+        int index,
+        Func<int, int, string?, string, ScriptModuleType, T> create
+    )
     {
         RejectUnknownNames(properties, "", TYPE, LINE, NAME, FILENAME, MODULE_TYPE);
-        return new(
+        return create(
             index,
             ReadLine(properties),
             GetOptionalString(properties, "", NAME),
@@ -205,6 +269,20 @@ internal static class ScriptReader
                 ? ParseModuleType(moduleType)
                 : ScriptModuleType.Binary
         );
+    }
+
+    /// <summary>
+    /// Core 3.0のテキスト素材に併記されたバイナリ名は素材照合にだけ使用する。
+    /// </summary>
+    private void ReadTextBinaryFilename(Dictionary<string, JsonElement> properties)
+    {
+        const string BinaryFilename = "binary_filename";
+        if (specVersion == WasmSpecVersion.Core3 && properties.ContainsKey(BinaryFilename)
+            && GetOptionalString(properties, "", MODULE_TYPE) == "text")
+        {
+            GetString(properties, "", BinaryFilename);
+            properties.Remove(BinaryFilename);
+        }
     }
 
     /// <summary>
@@ -227,7 +305,7 @@ internal static class ScriptReader
     /// <param name="index">入力内の0始まりcommand index</param>
     /// <returns>invokeまたはgetと型だけの結果宣言を持つ単独action</returns>
     /// <exception cref="ScriptFormatException">command・action・結果宣言の項目や型が固定形式に合わない場合</exception>
-    private static ActionCommand ReadActionCommand(Dictionary<string, JsonElement> properties, int index)
+    private ActionCommand ReadActionCommand(Dictionary<string, JsonElement> properties, int index)
     {
         RejectUnknownNames(properties, "", TYPE, LINE, ACTION, EXPECTED);
         return new(index, ReadLine(properties), ReadAction(properties), ReadResultTypes(properties));
@@ -259,7 +337,7 @@ internal static class ScriptReader
     /// <param name="create">index・行番号・action・期待診断・型だけの結果宣言から種類ごとのcommandを作る関数</param>
     /// <returns>期待診断を加工せず保持するassert_trapまたはassert_exhaustion</returns>
     /// <exception cref="ScriptFormatException">command・action・結果宣言の項目や型が固定形式に合わない場合</exception>
-    private static ScriptCommand ReadActionAssertion(
+    private ScriptCommand ReadActionAssertion(
         Dictionary<string, JsonElement> properties,
         int index,
         Func<int, int, ScriptAction, string, ImmutableArray<WasmValueKind>, ScriptCommand> create
@@ -283,12 +361,13 @@ internal static class ScriptReader
     /// <param name="create">index・行番号・素材名・期待診断・素材形式から種類ごとのcommandを作る関数</param>
     /// <returns>期待診断を加工せず保持するmoduleの否定assertion</returns>
     /// <exception cref="ScriptFormatException">項目の過不足、型、行番号、module形式が固定形式に合わない場合</exception>
-    private static ScriptCommand ReadModuleAssertion(
+    private ScriptCommand ReadModuleAssertion(
         Dictionary<string, JsonElement> properties,
         int index,
         Func<int, int, string, string, ScriptModuleType, ScriptCommand> create
     )
     {
+        ReadTextBinaryFilename(properties);
         RejectUnknownNames(properties, "", TYPE, LINE, FILENAME, TEXT, MODULE_TYPE);
         return create(
             index,
@@ -387,9 +466,14 @@ internal static class ScriptReader
     /// </summary>
     /// <param name="command">型だけのexpected配列を持つcommand</param>
     /// <returns>JSONの記載順の結果型 新しい配列として保持し、空の宣言なら空</returns>
-    /// <exception cref="ScriptFormatException">expectedがない、配列でない、または要素が既知のtypeだけを持つobjectではない場合</exception>
-    private static ImmutableArray<WasmValueKind> ReadResultTypes(Dictionary<string, JsonElement> command)
+    /// <exception cref="ScriptFormatException">Core 2.0でexpectedがない、配列でない、または要素が既知のtypeだけを持つobjectではない場合</exception>
+    private ImmutableArray<WasmValueKind> ReadResultTypes(Dictionary<string, JsonElement> command)
     {
+        if (specVersion == WasmSpecVersion.Core3 && !command.ContainsKey(EXPECTED))
+        {
+            return [];
+        }
+
         return
         [
             .. GetArray(command, "", EXPECTED)

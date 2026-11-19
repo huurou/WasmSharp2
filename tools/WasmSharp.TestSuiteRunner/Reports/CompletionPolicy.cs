@@ -126,6 +126,10 @@ internal static class CompletionPolicy
         {
             reasons.Add(new(CompletionStatus.Unsatisfied, $"固定profile {profile.Id}と条件が一致しない結果です。"));
         }
+        if (report.SpecVersion != WasmSpecVersion.Core2)
+        {
+            reasons.Add(new DecisionReason(CompletionStatus.Unsatisfied, $"実行時の仕様版{report.SpecVersion}が最終判定の対象Core2と一致しません。"));
+        }
 
         AddIssues(reasons, issues, _ => CompletionStatus.Unsatisfied);
         AddCount(reasons, report.Inputs.Sum(x => x.Issues.Count), "入力単位のrunner_error");

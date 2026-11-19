@@ -7,7 +7,7 @@ namespace WasmSharp.TestSuiteRunner.Execution;
 /// 1入力のcommand処理で共有する、名前の対応・参照値・現在のcommand
 /// </summary>
 /// <remarks>
-/// 入力ごとに新しく作り、別の入力の状態を持ち込まない。直近module・module識別子・登録名は別々に管理し、名前はOrdinalで比較する。
+/// 入力ごとに新しく作り、別の入力の状態を持ち込まない。直近module・module識別子・直近の定義・定義名・登録名は別々に管理し、名前はOrdinalで比較する。
 /// 名前は成功実体か原因付きの利用不能状態を指し、成立しなかったcommandの後に以前の成功へ戻さない。
 /// </remarks>
 /// <param name="inputPath">ケース識別に使うtest/core基準の入力相対path</param>
@@ -16,7 +16,12 @@ internal sealed class ScriptState(string inputPath)
     /// <summary>
     /// module識別子に対応する成功実体または利用不能状態
     /// </summary>
-    private readonly Dictionary<string, ScriptBinding<InstantiatedModule>> _modules = [with(StringComparer.Ordinal)];
+    private readonly Bindings<InstantiatedModule> _modules = new Bindings<InstantiatedModule>();
+
+    /// <summary>
+    /// 定義名に対応する検証済みの定義または利用不能状態 module識別子とは別の名前空間
+    /// </summary>
+    private readonly Bindings<ModuleDefinition> _definitions = new Bindings<ModuleDefinition>();
 
     /// <summary>
     /// importの登録名に対応する最新の提供元または利用不能状態
@@ -51,7 +56,7 @@ internal sealed class ScriptState(string inputPath)
     /// <summary>
     /// 直近の通常module まだ通常moduleを処理していない場合はnull
     /// </summary>
-    internal ScriptBinding<InstantiatedModule>? LastModule { get; private set; }
+    internal ScriptBinding<InstantiatedModule>? LastModule => _modules.Latest;
 
     /// <summary>
     /// 処理中のcommand まだ開始していない場合はnull
@@ -103,7 +108,7 @@ internal sealed class ScriptState(string inputPath)
     /// <returns>成功実体か利用不能状態 存在しない識別子や、通常moduleを処理する前の省略ではnull</returns>
     internal ScriptBinding<InstantiatedModule>? ResolveModule(string? name)
     {
-        return name is null ? LastModule : _modules.GetValueOrDefault(name);
+        return _modules.Resolve(name);
     }
 
     /// <summary>
@@ -134,13 +139,43 @@ internal sealed class ScriptState(string inputPath)
     }
 
     /// <summary>
-    /// 成功した通常moduleで直近moduleと指定識別子を更新する。
+    /// 成功したインスタンス化で直近moduleと指定識別子を更新する。
     /// </summary>
-    /// <param name="command">成功した通常module</param>
+    /// <param name="name">通常moduleまたはmodule_instanceが指定したmodule識別子 省略時はnull</param>
     /// <param name="module">生成したinstanceと生成元のmodule</param>
-    internal void SetModule(ModuleCommand command, InstantiatedModule module)
+    internal void SetModule(string? name, InstantiatedModule module)
     {
-        UpdateModule(command.Name, ScriptBinding<InstantiatedModule>.Available(module));
+        _modules.Update(name, ScriptBinding<InstantiatedModule>.Available(module));
+    }
+
+    /// <summary>
+    /// module_instanceの対象定義を解決する。
+    /// </summary>
+    /// <param name="name">定義名 省略時は直近の定義を示すnull</param>
+    /// <returns>検証済みの定義か利用不能状態 存在しない定義名や、定義を処理する前の省略ではnull</returns>
+    internal ScriptBinding<ModuleDefinition>? ResolveDefinition(string? name)
+    {
+        return _definitions.Resolve(name);
+    }
+
+    /// <summary>
+    /// 通常moduleまたはmodule定義のDecode・Validateの結果で、直近の定義と指定した定義名を更新する。
+    /// </summary>
+    /// <remarks>
+    /// Decode・Validateは他のcommandに依存しないため、定義が成立しなかった場合は定義したcommand自身を元の失敗とする。
+    /// </remarks>
+    /// <param name="command">定義を処理したcommand</param>
+    /// <param name="name">定義名 省略時はnull</param>
+    /// <param name="definition">検証済みの定義 成立しなかった場合はnull</param>
+    internal void Define(ScriptCommand command, string? name, ModuleDefinition? definition)
+    {
+        var id = new CaseId(InputPath, command.Index);
+        _definitions.Update(
+            name,
+            definition is null
+                ? ScriptBinding<ModuleDefinition>.Unavailable(new UnavailableCause(id, [id]))
+                : ScriptBinding<ModuleDefinition>.Available(definition)
+        );
     }
 
     /// <summary>
@@ -156,7 +191,8 @@ internal sealed class ScriptState(string inputPath)
     /// 成立しなかったcommandの種類に応じて、読み取れた更新対象の名前を利用不能にする。
     /// </summary>
     /// <remarks>
-    /// 通常moduleは直近moduleと識別子、registerは登録名を更新する。否定module・action・assertionと、更新対象を取得できない名前は変更しない。
+    /// 通常moduleとmodule_instanceは直近moduleと識別子、registerは登録名を更新する。読み取れない通常moduleとmodule定義は、直近の定義と定義名も更新する。
+    /// 読み取れたmodule定義と通常moduleの定義側はDefineで更新済みのため変更しない。否定module・action・assertionと、更新対象を取得できない名前は変更しない。
     /// </remarks>
     /// <param name="command">成立しなかったcommand</param>
     /// <param name="cause">commandがblockedの場合の原因 それ以外はnull</param>
@@ -168,10 +204,20 @@ internal sealed class ScriptState(string inputPath)
         switch (command)
         {
             case ModuleCommand x:
-                UpdateModule(x.Name, ScriptBinding<InstantiatedModule>.Unavailable(unavailable));
+                _modules.Update(x.Name, ScriptBinding<InstantiatedModule>.Unavailable(unavailable));
+                break;
+            case ModuleInstanceCommand x:
+                _modules.Update(x.Instance, ScriptBinding<InstantiatedModule>.Unavailable(unavailable));
                 break;
             case InvalidCommand { Type: ScriptCommand.MODULE } x:
-                UpdateModule(x.Name, ScriptBinding<InstantiatedModule>.Unavailable(unavailable));
+                _modules.Update(x.Name, ScriptBinding<InstantiatedModule>.Unavailable(unavailable));
+                _definitions.Update(x.Name, ScriptBinding<ModuleDefinition>.Unavailable(unavailable));
+                break;
+            case InvalidCommand { Type: ScriptCommand.MODULE_DEFINITION, SpecVersion: WasmSpecVersion.Core3 } x:
+                _definitions.Update(x.Name, ScriptBinding<ModuleDefinition>.Unavailable(unavailable));
+                break;
+            case InvalidCommand { Type: ScriptCommand.MODULE_INSTANCE, SpecVersion: WasmSpecVersion.Core3 } x:
+                _modules.Update(x.Name, ScriptBinding<InstantiatedModule>.Unavailable(unavailable));
                 break;
             case RegisterCommand x:
                 _registrations[x.As] = ScriptBinding<WasmHostModule>.Unavailable(unavailable);
@@ -227,16 +273,27 @@ internal sealed class ScriptState(string inputPath)
     }
 
     /// <summary>
-    /// 直近moduleを置き換え、識別子がある場合はその対応も同じ状態へ置き換える。
+    /// 同じ名前空間の直近の値と、識別子に対応する値を保持する。
     /// </summary>
-    /// <param name="name">更新するmodule識別子 指定されていない場合はnull</param>
-    /// <param name="binding">新しい成功実体または利用不能状態</param>
-    private void UpdateModule(string? name, ScriptBinding<InstantiatedModule> binding)
+    private sealed class Bindings<T>
+        where T : class
     {
-        LastModule = binding;
-        if (name is not null)
+        private readonly Dictionary<string, ScriptBinding<T>> _named = [with(StringComparer.Ordinal)];
+
+        internal ScriptBinding<T>? Latest { get; private set; }
+
+        internal ScriptBinding<T>? Resolve(string? name)
         {
-            _modules[name] = binding;
+            return name is null ? Latest : _named.GetValueOrDefault(name);
+        }
+
+        internal void Update(string? name, ScriptBinding<T> binding)
+        {
+            Latest = binding;
+            if (name is not null)
+            {
+                _named[name] = binding;
+            }
         }
     }
 }

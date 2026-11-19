@@ -18,6 +18,11 @@ public sealed class WasmModule
     private bool _isValidated;
 
     /// <summary>
+    /// デコード時に選択し、検証でも同じものを適用する仕様の版
+    /// </summary>
+    public WasmSpecVersion SpecVersion { get; }
+
+    /// <summary>
     /// 検証成功時に確定するordinalのexport名と、importを含むmodule全体の関数indexの対応
     /// </summary>
     internal ImmutableDictionary<string, int> FunctionExportIndices { get; private set; } =
@@ -103,6 +108,7 @@ public sealed class WasmModule
     /// <param name="dataSegments">定義順のデータセグメント</param>
     /// <param name="dataCount">省略可能なデータ数セクションの宣言</param>
     /// <param name="elementSegments">宣言順の要素セグメント</param>
+    /// <param name="specVersion">デコードと検証で前提とする仕様の版</param>
     internal WasmModule(
         ReadOnlySpan<WasmFunctionType> types,
         ReadOnlySpan<DecodedFunction> functions,
@@ -115,7 +121,8 @@ public sealed class WasmModule
         StartDefinition? start,
         ReadOnlySpan<DataDefinition> dataSegments = default,
         DataCountDefinition? dataCount = null,
-        ReadOnlySpan<ElementDefinition> elementSegments = default
+        ReadOnlySpan<ElementDefinition> elementSegments = default,
+        WasmSpecVersion specVersion = WasmSpecVersion.Core2
     )
     {
         Types = [.. types];
@@ -130,6 +137,7 @@ public sealed class WasmModule
         DataCount = dataCount;
         ElementSegments = [.. elementSegments];
         InputLength = inputLength;
+        SpecVersion = specVersion;
     }
 
     /// <summary>
@@ -144,6 +152,29 @@ public sealed class WasmModule
     public static WasmModule Decode(ReadOnlySpan<byte> bytes)
     {
         return ModuleDecoder.Decode(bytes);
+    }
+
+    /// <summary>
+    /// 指定した仕様の版で入力バイト列をmoduleにデコードする
+    /// </summary>
+    /// <remarks>
+    /// 選択した版はmoduleに保持し、<see cref="Validate"/>でも同じ版を適用する。
+    /// 静的定義は入力から独立して保持し、型や参照の検証、インスタンス化と実行は行わない
+    /// </remarks>
+    /// <param name="bytes">ヘッダーから始まる入力バイナリ全体</param>
+    /// <param name="specVersion">デコードと検証で前提とする仕様の版</param>
+    /// <returns>入力上の診断位置と選択した版を保持する、未検証のmodule</returns>
+    /// <exception cref="ArgumentOutOfRangeException">未定義の版を指定した場合</exception>
+    /// <exception cref="WasmDecodeException">対応する構文の符号化またはsectionの構成が不正な場合</exception>
+    /// <exception cref="WasmUnsupportedFeatureException">未実装のsectionまたは命令に遭遇した場合 入力全体の有効性は保証しない</exception>
+    /// <exception cref="WasmImplementationLimitException">宣言件数または命令数がコレクションの保持上限を超える場合</exception>
+    public static WasmModule Decode(ReadOnlySpan<byte> bytes, WasmSpecVersion specVersion)
+    {
+        if (!Enum.IsDefined(specVersion))
+        {
+            throw new ArgumentOutOfRangeException(nameof(specVersion), specVersion, "未定義の仕様の版です。");
+        }
+        return ModuleDecoder.Decode(bytes, specVersion);
     }
 
     /// <summary>
@@ -240,12 +271,14 @@ public sealed class WasmModule
     /// moduleがWasmの型規則と構造規則を満たすか検証する
     /// </summary>
     /// <remarks>
+    /// デコード時に選択した<see cref="SpecVersion"/>の規則を適用する。
     /// 全体の検証に成功した場合だけ、実行コードと検証済み状態を反映する。
     /// 成功後は同じmoduleと成果を再利用し、失敗時は検証前の状態を保持する。
     /// リソースの割り当て、importの接続とstartの実行は行わない
     /// </remarks>
     /// <returns>検証に成功した、このmodule自身</returns>
     /// <exception cref="WasmValidateException">参照、リソース宣言、初期化式、startまたは関数の型・構造の規則に違反する場合</exception>
+    /// <exception cref="WasmUnsupportedFeatureException">選択した版で有効だが未実装の構成に遭遇した場合 Core 3.0の複数メモリが該当する</exception>
     public WasmModule Validate()
     {
         if (_isValidated)

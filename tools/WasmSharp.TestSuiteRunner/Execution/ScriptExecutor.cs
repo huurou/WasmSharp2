@@ -8,7 +8,8 @@ namespace WasmSharp.TestSuiteRunner.Execution;
 /// 照合済みの素材と入力の状態を使い、commandを順序どおりに実行する
 /// </summary>
 /// <param name="input">この入力の照合済みbinaryと素材異常</param>
-internal sealed class ScriptExecutor(InputVerification input)
+/// <param name="specVersion">全moduleのDecode・Validateに適用する仕様の版</param>
+internal sealed class ScriptExecutor(InputVerification input, WasmSpecVersion specVersion)
 {
     /// <summary>
     /// すべてのinstanceへ明示する呼び出し深さの上限
@@ -42,10 +43,16 @@ internal sealed class ScriptExecutor(InputVerification input)
             switch (command)
             {
                 case ModuleCommand module:
-                    ExecuteModule(command, module.ModuleType, state, ref observation);
+                    ExecuteModule(module, state, ref observation);
+                    break;
+                case ModuleDefinitionCommand definition:
+                    DefineModule(definition, definition.Name, definition.ModuleType, state, ref observation);
+                    break;
+                case ModuleInstanceCommand instance:
+                    ExecuteInstance(instance, state, ref observation);
                     break;
                 case ModuleAssertionCommand assertion:
-                    ExecuteModule(command, assertion.ModuleType, state, ref observation);
+                    ExecuteModuleAssertion(assertion, state, ref observation);
                     break;
                 case RegisterCommand registration:
                     ExecuteRegister(registration, state, ref observation);
@@ -78,50 +85,113 @@ internal sealed class ScriptExecutor(InputVerification input)
     }
 
     /// <summary>
-    /// 素材・Decode・Validateを先に処理し、Instantiateへ進む場合だけ登録依存を調べる。
+    /// 通常moduleを定義し、成立した定義からinstanceを生成する。
     /// </summary>
-    /// <param name="command">通常moduleまたはmoduleを対象とする否定assertion</param>
-    /// <param name="type">素材の形式 textの場合は素材を開かず復帰する</param>
-    /// <param name="state">登録依存を解決する入力の状態 通常moduleの成功時だけ直近moduleと識別子を更新する</param>
+    /// <param name="command">定義とインスタンス化を行う通常module</param>
+    /// <param name="state">定義側の名前を更新し、インスタンス化の成功時だけ直近moduleと識別子を更新する入力の状態</param>
     /// <param name="observation">最後の処理段階、素材の異常、登録依存の失敗を反映する観測</param>
-    private void ExecuteModule(
-        ScriptCommand command,
-        ScriptModuleType type,
+    private void ExecuteModule(ModuleCommand command, ScriptState state, ref CommandObservation observation)
+    {
+        var definition = DefineModule(command, command.Name, command.ModuleType, state, ref observation);
+        if (definition is not null && Instantiate(definition, state, ref observation) is { } instance)
+        {
+            state.SetModule(command.Name, new InstantiatedModule(definition.Module, instance));
+        }
+    }
+
+    /// <summary>
+    /// 否定assertionが期待する段階まで処理し、直近moduleや名前の状態は更新しない。
+    /// </summary>
+    /// <param name="command">moduleの処理段階での失敗を期待する否定assertion</param>
+    /// <param name="state">Instantiateへ進む場合に登録依存を解決する入力の状態</param>
+    /// <param name="observation">最後の処理段階、素材の異常、登録依存の失敗を反映する観測</param>
+    private void ExecuteModuleAssertion(
+        ModuleAssertionCommand command,
         ScriptState state,
         ref CommandObservation observation
     )
     {
-        if (type == ScriptModuleType.Text)
+        var definition = Define(command, command.ModuleType, ref observation);
+        if (definition is not null && command is not AssertInvalidCommand)
         {
-            return;
+            Instantiate(definition, state, ref observation);
         }
-        observation = observation with { Operation = "verify_module" };
-        if (input.ModuleIssues.TryGetValue(command.Index, out var issue))
+    }
+
+    /// <summary>
+    /// 検証済みの定義を再Decode・再Validateせずにインスタンス化し、直近moduleと指定識別子を更新する。
+    /// </summary>
+    /// <param name="command">対象定義と生成するinstanceの識別子を持つmodule_instance</param>
+    /// <param name="state">定義を解決し、成功時に直近moduleと識別子を更新する入力の状態</param>
+    /// <param name="observation">対象定義の不在は診断、利用不能は依存する原因として反映する観測</param>
+    private void ExecuteInstance(ModuleInstanceCommand command, ScriptState state, ref CommandObservation observation)
+    {
+        observation = observation with { Operation = "resolve_definition" };
+        var binding = state.ResolveDefinition(command.Module);
+        if (binding is null)
         {
             observation = observation with
             {
                 Diagnostics =
                 [
-                    new(issue.Operation, issue.Message) { Path = issue.Path, ExceptionType = issue.ExceptionType },
+                    new CaseDiagnostic("resolve_definition", $"対象定義 {command.Module ?? "(直近)"}がありません。"),
                 ],
             };
             return;
         }
-        var bytes = input.Modules[command.Index];
-        observation = observation with { Operation = "decode", LastStage = CaseStage.Decode };
-        var module = WasmModule.Decode(bytes.AsSpan());
-        if (command is AssertMalformedCommand)
+        if (binding.Cause is { } cause)
         {
+            observation = observation with { BlockedBy = [cause] };
             return;
         }
-        observation = observation with { Operation = "validate", LastStage = CaseStage.Validate };
-        module.Validate();
-        if (command is AssertInvalidCommand)
+        var definition = binding.Value!;
+        if (Instantiate(definition, state, ref observation) is { } instance)
         {
-            return;
+            state.SetModule(command.Instance, new InstantiatedModule(definition.Module, instance));
         }
+    }
+
+    /// <summary>
+    /// 定義のDecode・Validateを行い、成否にかかわらず結果で直近の定義と指定した定義名を更新する。
+    /// </summary>
+    /// <param name="command">通常moduleまたはmodule定義</param>
+    /// <param name="name">定義名 省略時はnull</param>
+    /// <param name="type">素材の形式 textの場合は素材を開かず定義を不成立にする</param>
+    /// <param name="state">定義側の名前を更新する入力の状態</param>
+    /// <param name="observation">最後の処理段階と素材の異常を反映する観測</param>
+    /// <returns>検証済みの定義 成立しなかった場合はnull Decode・Validateの例外はそのまま送出する</returns>
+    private ModuleDefinition? DefineModule(
+        ScriptCommand command,
+        string? name,
+        ScriptModuleType type,
+        ScriptState state,
+        ref CommandObservation observation
+    )
+    {
+        ModuleDefinition? definition = null;
+        try
+        {
+            definition = Define(command, type, ref observation);
+            return definition;
+        }
+        finally
+        {
+            // 例外で終わった場合も、以前の定義へ戻さず不成立として記録する。
+            state.Define(command, name, definition);
+        }
+    }
+
+    /// <summary>
+    /// 登録依存を調べ、利用不能な提供元がなければ検証済みの定義をInstantiateする。
+    /// </summary>
+    /// <param name="definition">検証済みの定義と、import情報の取得に使う素材</param>
+    /// <param name="state">登録依存と提供表を解決する入力の状態</param>
+    /// <param name="observation">最後の処理段階と登録依存の失敗を反映する観測</param>
+    /// <returns>生成したinstance 登録依存が利用不能な場合はnull</returns>
+    private WasmInstance? Instantiate(ModuleDefinition definition, ScriptState state, ref CommandObservation observation)
+    {
         observation = observation with { Operation = "inspect_imports", LastStage = CaseStage.InspectImports };
-        var inspection = WasmModule.InspectImports(bytes.AsSpan());
+        var inspection = WasmModule.InspectImports(definition.Bytes.AsSpan());
         var causes = inspection
             .Imports.Select(x => state.GetRegistration(x.ModuleName)?.Cause)
             .OfType<UnavailableCause>()
@@ -130,14 +200,54 @@ internal sealed class ScriptExecutor(InputVerification input)
         if (!causes.IsEmpty)
         {
             observation = observation with { BlockedBy = causes };
-            return;
+            return null;
         }
         observation = observation with { Operation = "instantiate", LastStage = CaseStage.Instantiate };
-        var instance = module.Instantiate(_context, state.CreateImports(), new WasmExecutionOptions(MAX_CALL_DEPTH));
-        if (command is ModuleCommand normal)
+        return definition.Module.Instantiate(
+            _context,
+            state.CreateImports(),
+            new WasmExecutionOptions(MAX_CALL_DEPTH)
+        );
+    }
+
+    /// <summary>
+    /// 素材を照合し、DecodeとValidateだけを行う。リソースの割り当て・リンク・startの実行は行わない。
+    /// </summary>
+    /// <param name="command">素材を参照するmodule・module定義または否定assertion</param>
+    /// <param name="type">素材の形式 textの場合は素材を開かず復帰する</param>
+    /// <param name="observation">最後の処理段階と素材の異常を反映する観測</param>
+    /// <returns>検証済みの定義と素材 text・素材異常・assert_malformedではnull</returns>
+    private ModuleDefinition? Define(ScriptCommand command, ScriptModuleType type, ref CommandObservation observation)
+    {
+        if (type == ScriptModuleType.Text)
         {
-            state.SetModule(normal, new(module, instance));
+            return null;
         }
+        observation = observation with { Operation = "verify_module" };
+        if (input.ModuleIssues.TryGetValue(command.Index, out var issue))
+        {
+            observation = observation with
+            {
+                Diagnostics =
+                [
+                    new CaseDiagnostic(issue.Operation, issue.Message)
+                    {
+                        Path = issue.Path,
+                        ExceptionType = issue.ExceptionType,
+                    },
+                ],
+            };
+            return null;
+        }
+        var bytes = input.Modules[command.Index];
+        observation = observation with { Operation = "decode", LastStage = CaseStage.Decode };
+        var module = WasmModule.Decode(bytes.AsSpan(), specVersion);
+        if (command is AssertMalformedCommand)
+        {
+            return null;
+        }
+        observation = observation with { Operation = "validate", LastStage = CaseStage.Validate };
+        return new ModuleDefinition(module.Validate(), bytes);
     }
 
     /// <summary>
@@ -218,9 +328,9 @@ internal sealed class ScriptExecutor(InputVerification input)
     )
     {
         observation = observation with { Operation = "create_arguments" };
-        var arguments = action is InvokeAction invoke ? ValueCodec.CreateArguments(invoke.Arguments, state) : [];
+        var arguments = action is InvokeAction invoke ? ValueCodec.CreateArguments(invoke.Arguments, state, specVersion) : [];
         observation = observation with { Operation = "parse_expected" };
-        var patterns = ValueMatcher.Parse(expected);
+        var patterns = ValueMatcher.Parse(expected, specVersion);
         observation = observation with { Operation = "resolve_module" };
         var module = ResolveModule(action.Module, state, ref observation);
         if (module is null)

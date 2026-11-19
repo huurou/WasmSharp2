@@ -56,6 +56,30 @@ internal class ScriptReader_ReadTests
     }
 
     [Test]
+    public async Task Core3のテキスト素材にbinary_filenameを併記する_元のテキスト素材を保持する()
+    {
+        // Arrange
+        var document = Parse(
+            """
+            {"type":"module","line":1,"filename":"a.wat","module_type":"text","binary_filename":"a.wasm"},
+            {"type":"assert_invalid","line":2,"filename":"b.wat","module_type":"text","text":"invalid","binary_filename":"b.wasm"},
+            {"type":"module","line":3,"filename":"c.wasm","module_type":"binary","binary_filename":"other.wasm"}
+            """
+        );
+
+        // Act
+        var result = ScriptReader.Read(document, INPUT_PATH, WasmSpecVersion.Core3);
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(result.Commands[0]).IsEqualTo(new ModuleCommand(0, 1, null, "a.wat", ScriptModuleType.Text));
+            await Assert.That(result.Commands[1]).IsEqualTo(new AssertInvalidCommand(1, 2, "b.wat", "invalid", ScriptModuleType.Text));
+            await Assert.That(result.Commands[2]).IsTypeOf<InvalidCommand>();
+        }
+    }
+
+    [Test]
     [Arguments("binary", ScriptModuleType.Binary)]
     [Arguments("text", ScriptModuleType.Text)]
     public async Task 通常moduleがmodule_typeを持つ_指定された形式を保持する(string moduleType, ScriptModuleType expected)

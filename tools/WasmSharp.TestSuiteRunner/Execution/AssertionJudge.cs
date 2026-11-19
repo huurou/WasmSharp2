@@ -102,6 +102,7 @@ internal static class AssertionJudge
         if (
             command
             is ModuleCommand { ModuleType: ScriptModuleType.Text }
+                or ModuleDefinitionCommand { ModuleType: ScriptModuleType.Text }
                 or ModuleAssertionCommand { ModuleType: ScriptModuleType.Text }
         )
         {
@@ -111,6 +112,8 @@ internal static class AssertionJudge
         var completed = command switch
         {
             ModuleCommand => observation.LastStage == CaseStage.Instantiate,
+            ModuleDefinitionCommand => observation.LastStage == CaseStage.Validate,
+            ModuleInstanceCommand => observation.LastStage == CaseStage.Instantiate,
             RegisterCommand => observation.LastStage == CaseStage.Register,
             ActionCommand x => MatchesAction(x.Action, observation.LastStage),
             AssertReturnCommand x => MatchesAction(x.Action, observation.LastStage) && observation.Mismatches.IsEmpty,

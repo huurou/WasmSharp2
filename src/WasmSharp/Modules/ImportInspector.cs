@@ -129,7 +129,7 @@ internal static class ImportInspector
         var previousRank = 0;
         while (reader.Remaining != 0)
         {
-            var section = ModuleBinaryFormat.ReadSection(ref reader, ref previousRank);
+            var section = ModuleBinaryFormat.ReadSection(ref reader, ref previousRank, WasmSpecVersion.Core2);
             switch (section.SectionId)
             {
                 case 0:
