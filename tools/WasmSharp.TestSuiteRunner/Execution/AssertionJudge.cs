@@ -191,7 +191,7 @@ internal static class AssertionJudge
         {
             return
             [
-                .. assertion.Expected.Select(x => new ExpectedValueRecord(ValueCodec.GetTypeName(x.Kind))
+                .. assertion.Expected.Select(x => new ExpectedValueRecord(x.Type)
                 {
                     Value = x.Value,
                     LaneType = x.LaneType?.ToString().ToLowerInvariant(),

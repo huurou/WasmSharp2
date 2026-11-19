@@ -15,7 +15,7 @@ namespace WasmSharp.TestSuiteRunner.Execution;
 internal static class ValueCodec
 {
     /// <summary>
-    /// WABTが参照のnullに使う値の文字列
+    /// 変換器が参照のnullに使う値の文字列
     /// </summary>
     internal const string NULL = "null";
 
@@ -28,20 +28,33 @@ internal static class ValueCodec
     /// <param name="values">JSONの記載順の引数</param>
     /// <param name="state">externrefの番号にホスト値を割り当てる入力の状態</param>
     /// <param name="specVersion">値の表記を決める仕様版</param>
-    /// <returns>順序とビット列を保持する新しいvalueの配列 参照値は入力内の同じ番号の実体を共有する</returns>
+    /// <returns>ランタイムへ渡せる引数の配列 現行のWasmValueで表現できないanyrefを含む場合はnull</returns>
     /// <exception cref="ScriptFormatException">値の文字列が固定形式にない場合</exception>
-    internal static ImmutableArray<WasmValue> CreateArguments(
+    internal static ImmutableArray<WasmValue>? CreateArguments(
         ImmutableArray<ArgumentValue> values,
         ScriptState state,
         WasmSpecVersion specVersion = WasmSpecVersion.Core2
     )
     {
-        return
-        [
-            .. values.Select(
-                (x, i) => CreateArgument(x, $"action.args[{i}].value", state, specVersion == WasmSpecVersion.Core3)
-            ),
-        ];
+        var arguments = ImmutableArray.CreateBuilder<WasmValue>(values.Length);
+        for (var i = 0; i < values.Length; i++)
+        {
+            var value = values[i];
+            var path = $"action.args[{i}].value";
+            if (specVersion == WasmSpecVersion.Core3 && value.Type == "anyref")
+            {
+                // ref.hostをexternrefへ変換せず、moduleの成否を確認する前に番号の表記を検査する。
+                if (value.Value != NULL)
+                {
+                    ParseBits(value.Value, 32, path);
+                }
+            }
+            else
+            {
+                arguments.Add(CreateArgument(value, path, state, specVersion == WasmSpecVersion.Core3));
+            }
+        }
+        return arguments.Count == values.Length ? arguments.MoveToImmutable() : null;
     }
 
     /// <summary>
@@ -205,23 +218,15 @@ internal static class ValueCodec
     {
         return value switch
         {
-            { Kind: WasmValueKind.I32 } => WasmValue.FromI32(
-                unchecked((int)ParseBits(value.Value, 32, path, signedIntegers))
-            ),
-            { Kind: WasmValueKind.I64 } => WasmValue.FromI64(
-                unchecked((long)ParseBits(value.Value, 64, path, signedIntegers))
-            ),
-            { Kind: WasmValueKind.F32 } => WasmValue.FromF32Bits((uint)ParseBits(value.Value, 32, path)),
-            { Kind: WasmValueKind.F64 } => WasmValue.FromF64Bits(ParseBits(value.Value, 64, path)),
-            { Kind: WasmValueKind.V128, LaneType: { } laneType } => CreateV128(laneType, value.Lanes, path, signedIntegers),
-            { Kind: WasmValueKind.FuncRef, Value: NULL } => WasmValue.FromFuncRef(null),
-            { Kind: WasmValueKind.ExternRef, Value: NULL } => WasmValue.FromExternRef(null),
-            { Kind: WasmValueKind.ExternRef } => WasmValue.FromExternRef(
-                state.GetExternref((uint)ParseBits(value.Value, 32, path))
-            ),
-            _ => throw new ScriptFormatException(
-                $"{path}の{value.Value}は固定形式にない{GetTypeName(value.Kind)}の引数です。"
-            ),
+            { Type: "i32" } => WasmValue.FromI32(unchecked((int)ParseBits(value.Value, 32, path, signedIntegers))),
+            { Type: "i64" } => WasmValue.FromI64(unchecked((long)ParseBits(value.Value, 64, path, signedIntegers))),
+            { Type: "f32" } => WasmValue.FromF32Bits((uint)ParseBits(value.Value, 32, path)),
+            { Type: "f64" } => WasmValue.FromF64Bits(ParseBits(value.Value, 64, path)),
+            { Type: "v128", LaneType: { } laneType } => CreateV128(laneType, value.Lanes, path, signedIntegers),
+            { Type: "funcref", Value: NULL } => WasmValue.FromFuncRef(null),
+            { Type: "externref", Value: NULL } => WasmValue.FromExternRef(null),
+            { Type: "externref" } => WasmValue.FromExternRef(state.GetExternref((uint)ParseBits(value.Value, 32, path))),
+            _ => throw new ScriptFormatException($"{path}の{value.Value}は固定形式にない{value.Type}の引数です。"),
         };
     }
 
