@@ -67,6 +67,30 @@ Windows x64の公式配布版で255入力、65,193command、JSON255件・Wasm5,8
 
 公式入力はmanifestの`profile.inputs`に固定した`test/core`配下のWASTと、それを変換した素材だけです。`tests`配下の`core3-script.json`や変換器の代替プログラムはCLIの動作確認用の補助入力であり、公式ケースの結果には含めません。`assert_exception`は未捕捉のWasm例外を期待します。actionの正常終了、trap、exhaustionは`failed`、必要なセットアップの不成立は原因付きの`blocked`として記録します。ランタイムが未対応を報告したケースは`runtime_unsupported`になります。`verify`は引き続きCore 2.0全体の最終判定専用です。
 
+### Core 3.0の初回実行結果baseline
+
+Core 3.0の機能追加前に、WasmSharpとランナーのリビジョン`a092e8211188b9f23ca31061ac68d7e1eb5c3a06`で固定検証プロファイル`core3`（`spec_version`は`Core3`）を実行しました。後続の実行結果と比較できるよう、`baseline-save`が保存した`run-baseline.json`をZIPに収録しています。[Core 3.0の初回実行結果baseline](../../baselines/core3/initial-run.zip)
+
+1回の`run`で固定255入力の65,193ケースを処理しました。元入力の相対パスと0始まりのcommand順序を固定素材と照合し、重複・欠落・未処理・件数未確定はすべて0件でした。全入力で変換に成功し、素材のSHA-256の不一致と入力単位の`runner_error`も0件でした。
+
+| 公式ケース | `passed` | `failed` | `runtime_unsupported` | `runner_error` | `out_of_scope` | `blocked` |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| セットアップ | 1,762 | 450 | 31 | 0 | 7 | 59 |
+| 単独action | 188 | 0 | 0 | 0 | 0 | 157 |
+| assertion | 57,092 | 550 | 32 | 0 | 1,234 | 3,631 |
+| 合計 | 59,042 | 1,000 | 63 | 0 | 1,241 | 3,847 |
+
+`runtime_unsupported`の63件では、すべてランタイムが`WasmUnsupportedFeatureException`で未対応の機能を示しています。`out_of_scope`の1,241件はすべて`module_type`が`text`のケースです。`blocked`の3,847件は`cause.direct`をたどった起点がすべて`cause.origins`と一致し、`failed`に起因するものが3,704件、`runtime_unsupported`に起因するものが140件、`out_of_scope`に起因するものが3件でした。
+
+上記の`run`で作成した`artifacts/core3-run-1.json`を比較するには、リポジトリルートでZIPを展開します。展開後の`run-baseline.json`のSHA-256は`d838a6edc90a6a8eb3cc5f3d49eee1a6734917d47b7ba973db91a2419a671aae`です。
+
+```powershell
+Expand-Archive -LiteralPath ./baselines/core3/initial-run.zip -DestinationPath ./artifacts/core3-initial-baseline
+& $runner compare-run --baseline artifacts/core3-initial-baseline/run-baseline.json --current artifacts/core3-run-1.json --output artifacts/core3-initial-comparison.json
+```
+
+展開したbaselineと保存元を比較すると、条件差・出典差・入力と素材の差・ケースの変化・追加・欠落・未比較・回帰はすべて0件でした。`compare-run`は比較を完了し、比較対象に`failed`が1,000件あるため終了値1を返しました。
+
 ## Core 2.0の初回の生成・実行とbaseline保存
 
 次の各行を個別に実行し、終了値と結果を確認します。`$runner`は上記の起動例で設定した実行ファイルです。
