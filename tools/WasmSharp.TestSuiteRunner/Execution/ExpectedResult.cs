@@ -10,5 +10,5 @@ internal abstract record ExpectedResult
     /// <summary>
     /// Core 3.0のeitherに記載された順序で、結果位置が許容する候補を保持する。
     /// </summary>
-    internal sealed record Either(ImmutableArray<ExpectedValue> Candidates) : ExpectedResult;
+    internal sealed record Either(ImmutableArray<ExpectedResult> Candidates) : ExpectedResult;
 }

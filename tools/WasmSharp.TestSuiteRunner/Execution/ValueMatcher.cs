@@ -57,7 +57,7 @@ internal static class ValueMatcher
     {
         if (result is ExpectedResult.Either either)
         {
-            return [.. either.Candidates.Select((x, i) => Parse(x, $"{path}.values[{i}].value", core3))];
+            return [.. either.Candidates.SelectMany((x, i) => ParseCandidates(x, $"{path}.values[{i}]", core3))];
         }
 
         return [Parse((ExpectedValue)result, $"{path}.value", core3)];
@@ -150,9 +150,17 @@ internal static class ValueMatcher
     /// <exception cref="ScriptFormatException">値やlane数が固定形式に合わない場合</exception>
     private static ValuePattern Parse(ExpectedValue value, string path, bool core3)
     {
-        if (core3 && ExpectedValue.IsCore3ReferenceType(value.Type))
+        if (core3 && ExpectedValue.GetCore3ReferenceMatches(value.Type) is { } matches)
         {
-            return ParseCore3Reference(value, path);
+            var comparison = value.Value switch
+            {
+                null => matches.Omitted,
+                ValueCodec.NULL => matches.ExplicitNull,
+                _ => matches.Numbered,
+            } ?? throw new ScriptFormatException($"{path}の{value.Value}は固定形式にない{value.Type}の期待値です。");
+            uint? number =
+                comparison == Core3ReferenceMatch.Identity ? (uint)ValueCodec.ParseBits(value.Value, 32, path) : null;
+            return new ValuePattern(value.Type, 0, [], number) { Reference = comparison };
         }
 
         return value switch
@@ -166,24 +174,6 @@ internal static class ValueMatcher
             { Type: "externref" } => new(value.Type, 0, [], (uint)ValueCodec.ParseBits(value.Value, 32, path)),
             _ => throw new ScriptFormatException($"{path}の{value.Value}は固定形式にない{value.Type}の期待値です。"),
         };
-    }
-
-    /// <summary>
-    /// 元の表記からnull、参照の種類、番号付き参照の同一性のいずれを期待するか読み取る。
-    /// </summary>
-    private static ValuePattern ParseCore3Reference(ExpectedValue value, string path)
-    {
-        var comparison = (value.Type, value.Value) switch
-        {
-            ("refnull" or "nullref" or "nullfuncref" or "nullexternref" or "nullexnref", null) => Core3ReferenceMatch.Null,
-            ("funcref" or "externref" or "anyref" or "exnref", ValueCodec.NULL) => Core3ReferenceMatch.Null,
-            ("funcref" or "externref" or "arrayref" or "eqref" or "i31ref" or "structref", null) =>
-                Core3ReferenceMatch.HeapType,
-            ("externref" or "anyref", not null) => Core3ReferenceMatch.Identity,
-            _ => throw new ScriptFormatException($"{path}の{value.Value}は固定形式にない{value.Type}の期待値です。"),
-        };
-        uint? number = comparison == Core3ReferenceMatch.Identity ? (uint)ValueCodec.ParseBits(value.Value, 32, path) : null;
-        return new ValuePattern(value.Type, 0, [], number) { Reference = comparison };
     }
 
     /// <summary>
@@ -342,13 +332,19 @@ internal static class ValueMatcher
     {
         // 割り当てた番号は参照の同一性で引くため、番号の一致は同じ番号のホスト値と同じ参照であることを示す。
         var number = actual is null ? null : state.GetExternrefNumber(actual);
+        var isFunction = actualKind == WasmValueKind.FuncRef && actual is not null;
         var matched = expected.Reference switch
         {
             // Core 3.0では型を付けたref.nullも参照先がnullなら一致する。
             Core3ReferenceMatch.Null => actual is null,
-            // 固定版の参照実装では(ref.extern)が全ての参照に一致する。
-            Core3ReferenceMatch.HeapType => expected.Type == "externref"
-                || (expected.Type == "funcref" && actualKind == WasmValueKind.FuncRef && actual is not null),
+            // 固定版の参照実装では(ref.extern)は全ての参照に、(ref.any)は関数実体を除く参照に一致する。
+            Core3ReferenceMatch.HeapType => expected.Type switch
+            {
+                "externref" => true,
+                "anyref" => !isFunction,
+                "funcref" => isFunction,
+                _ => false,
+            },
             // ref.hostと、それを外部参照に包んだref.externは同じ番号でも異なる。
             Core3ReferenceMatch.Identity => expected.Type == "externref"
                 && actualKind == WasmValueKind.ExternRef

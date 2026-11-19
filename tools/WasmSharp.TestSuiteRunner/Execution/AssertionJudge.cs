@@ -190,14 +190,7 @@ internal static class AssertionJudge
     {
         if (command is AssertReturnCommand assertion)
         {
-            return
-            [
-                .. assertion.Expected.Select(x =>
-                    x is ExpectedResult.Either either
-                        ? new ExpectedValueRecord("either") { Values = [.. either.Candidates.Select(RecordValue)] }
-                        : RecordValue((ExpectedValue)x)
-                ),
-            ];
+            return [.. assertion.Expected.Select(RecordValue)];
         }
         var types = command switch
         {
@@ -210,10 +203,16 @@ internal static class AssertionJudge
     }
 
     /// <summary>
-    /// 単独の期待値とeitherの候補を同じ値の表現で保存する。
+    /// eitherの入れ子と候補の順序を保ち、値の表記を保存する。
     /// </summary>
-    private static ExpectedValueRecord RecordValue(ExpectedValue value)
+    private static ExpectedValueRecord RecordValue(ExpectedResult result)
     {
+        if (result is ExpectedResult.Either either)
+        {
+            return new ExpectedValueRecord("either") { Values = [.. either.Candidates.Select(RecordValue)] };
+        }
+
+        var value = (ExpectedValue)result;
         return new ExpectedValueRecord(value.Type)
         {
             Value = value.Value,

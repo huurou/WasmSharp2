@@ -34,7 +34,7 @@ internal class ScriptExecutor_ObserveTests
             new ModuleCommand(4, 5, null, "a.4.wasm", ScriptModuleType.Binary),
             new RegisterCommand(5, 6, "$A", "registered"),
             new ActionCommand(6, 7, get, [WasmValueKind.I32]),
-            new AssertReturnCommand(7, 8, get, [new ExpectedValue(WasmValueKind.I32, "0", null, [])]),
+            new AssertReturnCommand(7, 8, get, [new ExpectedValue("i32", "0", null, [])]),
         ];
         string[] expectedOperations =
         [

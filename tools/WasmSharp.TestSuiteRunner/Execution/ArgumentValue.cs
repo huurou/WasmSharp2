@@ -12,8 +12,4 @@ namespace WasmSharp.TestSuiteRunner.Execution;
 /// <param name="Value">scalarと参照の値の文字列 v128ではnull</param>
 /// <param name="LaneType">v128のlane型 v128以外ではnull</param>
 /// <param name="Lanes">v128のlane0から順の値の文字列 v128以外では空</param>
-internal sealed record ArgumentValue(string Type, string? Value, LaneType? LaneType, ImmutableArray<string> Lanes)
-{
-    internal ArgumentValue(WasmValueKind kind, string? value, LaneType? laneType, ImmutableArray<string> lanes)
-        : this(ValueCodec.GetTypeName(kind), value, laneType, lanes) { }
-}
+internal sealed record ArgumentValue(string Type, string? Value, LaneType? LaneType, ImmutableArray<string> Lanes);

@@ -341,18 +341,10 @@ internal sealed class ScriptReader(WasmSpecVersion specVersion)
             const string Values = "values";
             RejectUnknownNames(properties, path, TYPE, Values);
             return new ExpectedResult.Either(
-                ReadValues(GetArray(properties, path, Values), Join(path, Values), ReadExpectedValue)
+                ReadValues(GetArray(properties, path, Values), Join(path, Values), ReadExpectedResult)
             );
         }
 
-        return ReadExpectedValue(properties, path);
-    }
-
-    /// <summary>
-    /// 単独の期待値とeither内の各候補を同じ形式で読み取る。
-    /// </summary>
-    private ExpectedValue ReadExpectedValue(Dictionary<string, JsonElement> properties, string path)
-    {
         return ReadValue(properties, path, true, static (t, v, l, x) => new ExpectedValue(t, v, l, x));
     }
 
@@ -493,7 +485,10 @@ internal sealed class ScriptReader(WasmSpecVersion specVersion)
     )
     {
         var type = GetString(properties, path, TYPE);
-        if (specVersion == WasmSpecVersion.Core3 && (expected ? ExpectedValue.IsCore3ReferenceType(type) : type == "anyref"))
+        if (
+            specVersion == WasmSpecVersion.Core3
+            && (expected ? ExpectedValue.GetCore3ReferenceMatches(type) is not null : type == "anyref")
+        )
         {
             RejectUnknownNames(properties, path, TYPE, VALUE);
             var value = expected ? GetOptionalString(properties, path, VALUE) : GetString(properties, path, VALUE);

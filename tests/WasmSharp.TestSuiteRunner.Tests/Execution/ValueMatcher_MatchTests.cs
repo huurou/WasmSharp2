@@ -432,12 +432,12 @@ internal class ValueMatcher_MatchTests
 
     private static ExpectedValue Vector(LaneType laneType, params string[] lanes)
     {
-        return new(WasmValueKind.V128, null, laneType, [.. lanes]);
+        return new ExpectedValue("v128", null, laneType, [.. lanes]);
     }
 
     private static ExpectedValue Scalar(WasmValueKind kind, string value)
     {
-        return new(kind, value, null, []);
+        return new ExpectedValue(ValueCodec.GetTypeName(kind), value, null, []);
     }
 
     private static IEnumerable<(ValueMismatchKind, int?, int?)> Positions(ImmutableArray<ValueMismatch> mismatches)
