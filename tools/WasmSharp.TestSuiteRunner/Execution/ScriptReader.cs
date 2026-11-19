@@ -180,6 +180,10 @@ internal sealed class ScriptReader(WasmSpecVersion specVersion)
             ScriptCommand.ASSERT_EXHAUSTION => ReadActionAssertion(properties, index, static (i, l, a, t, r) =>
                 new AssertExhaustionCommand(i, l, a, t, r)
             ),
+            ScriptCommand.ASSERT_EXCEPTION when specVersion == WasmSpecVersion.Core3 => ReadAssertException(
+                properties,
+                index
+            ),
             ScriptCommand.ASSERT_MALFORMED => ReadModuleAssertion(properties, index, static (i, l, f, t, m) =>
                 new AssertMalformedCommand(i, l, f, t, m)
             ),
@@ -349,6 +353,18 @@ internal sealed class ScriptReader(WasmSpecVersion specVersion)
             GetString(properties, "", TEXT),
             ReadResultTypes(properties)
         );
+    }
+
+    /// <summary>
+    /// Core 3.0で未捕捉のWasm例外を期待するactionを読み取る。
+    /// </summary>
+    /// <param name="properties">項目名の重複を検査済みのcommand</param>
+    /// <param name="index">入力内の0始まりcommand index</param>
+    /// <returns>期待診断を持たないassert_exception</returns>
+    private static AssertExceptionCommand ReadAssertException(Dictionary<string, JsonElement> properties, int index)
+    {
+        RejectUnknownNames(properties, "", TYPE, LINE, ACTION);
+        return new AssertExceptionCommand(index, ReadLine(properties), ReadAction(properties));
     }
 
     /// <summary>

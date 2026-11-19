@@ -90,8 +90,9 @@ internal static class AssertionJudge
                 return CaseOutcome.RunnerError;
             }
             return
-                MatchesFailure(command, observation.LastStage, exception)
-                && exception.Message.StartsWith(ExpectedText(command)!, StringComparison.Ordinal)
+                ExpectedText(command) is { } expectedText
+                && MatchesFailure(command, observation.LastStage, exception)
+                && exception.Message.StartsWith(expectedText, StringComparison.Ordinal)
                 ? CaseOutcome.Passed
                 : CaseOutcome.Failed;
         }
