@@ -16,17 +16,12 @@ internal sealed class ScriptState(string inputPath)
     /// <summary>
     /// module識別子に対応する成功実体または利用不能状態
     /// </summary>
-    private readonly Dictionary<string, ScriptBinding<InstantiatedModule>> _modules = [with(StringComparer.Ordinal)];
+    private readonly Bindings<InstantiatedModule> _modules = new Bindings<InstantiatedModule>();
 
     /// <summary>
     /// 定義名に対応する検証済みの定義または利用不能状態 module識別子とは別の名前空間
     /// </summary>
-    private readonly Dictionary<string, ScriptBinding<ModuleDefinition>> _definitions = [with(StringComparer.Ordinal)];
-
-    /// <summary>
-    /// 直近の通常moduleまたはmodule定義による定義 まだ定義を処理していない場合はnull
-    /// </summary>
-    private ScriptBinding<ModuleDefinition>? _lastDefinition;
+    private readonly Bindings<ModuleDefinition> _definitions = new Bindings<ModuleDefinition>();
 
     /// <summary>
     /// importの登録名に対応する最新の提供元または利用不能状態
@@ -61,7 +56,7 @@ internal sealed class ScriptState(string inputPath)
     /// <summary>
     /// 直近の通常module まだ通常moduleを処理していない場合はnull
     /// </summary>
-    internal ScriptBinding<InstantiatedModule>? LastModule { get; private set; }
+    internal ScriptBinding<InstantiatedModule>? LastModule => _modules.Latest;
 
     /// <summary>
     /// 処理中のcommand まだ開始していない場合はnull
@@ -113,7 +108,7 @@ internal sealed class ScriptState(string inputPath)
     /// <returns>成功実体か利用不能状態 存在しない識別子や、通常moduleを処理する前の省略ではnull</returns>
     internal ScriptBinding<InstantiatedModule>? ResolveModule(string? name)
     {
-        return name is null ? LastModule : _modules.GetValueOrDefault(name);
+        return _modules.Resolve(name);
     }
 
     /// <summary>
@@ -150,7 +145,7 @@ internal sealed class ScriptState(string inputPath)
     /// <param name="module">生成したinstanceと生成元のmodule</param>
     internal void SetModule(string? name, InstantiatedModule module)
     {
-        UpdateModule(name, ScriptBinding<InstantiatedModule>.Available(module));
+        _modules.Update(name, ScriptBinding<InstantiatedModule>.Available(module));
     }
 
     /// <summary>
@@ -160,7 +155,7 @@ internal sealed class ScriptState(string inputPath)
     /// <returns>検証済みの定義か利用不能状態 存在しない定義名や、定義を処理する前の省略ではnull</returns>
     internal ScriptBinding<ModuleDefinition>? ResolveDefinition(string? name)
     {
-        return name is null ? _lastDefinition : _definitions.GetValueOrDefault(name);
+        return _definitions.Resolve(name);
     }
 
     /// <summary>
@@ -175,10 +170,10 @@ internal sealed class ScriptState(string inputPath)
     internal void Define(ScriptCommand command, string? name, ModuleDefinition? definition)
     {
         var id = new CaseId(InputPath, command.Index);
-        UpdateDefinition(
+        _definitions.Update(
             name,
             definition is null
-                ? ScriptBinding<ModuleDefinition>.Unavailable(new(id, [id]))
+                ? ScriptBinding<ModuleDefinition>.Unavailable(new UnavailableCause(id, [id]))
                 : ScriptBinding<ModuleDefinition>.Available(definition)
         );
     }
@@ -209,20 +204,20 @@ internal sealed class ScriptState(string inputPath)
         switch (command)
         {
             case ModuleCommand x:
-                UpdateModule(x.Name, ScriptBinding<InstantiatedModule>.Unavailable(unavailable));
+                _modules.Update(x.Name, ScriptBinding<InstantiatedModule>.Unavailable(unavailable));
                 break;
             case ModuleInstanceCommand x:
-                UpdateModule(x.Instance, ScriptBinding<InstantiatedModule>.Unavailable(unavailable));
+                _modules.Update(x.Instance, ScriptBinding<InstantiatedModule>.Unavailable(unavailable));
                 break;
             case InvalidCommand { Type: ScriptCommand.MODULE } x:
-                UpdateModule(x.Name, ScriptBinding<InstantiatedModule>.Unavailable(unavailable));
-                UpdateDefinition(x.Name, ScriptBinding<ModuleDefinition>.Unavailable(unavailable));
+                _modules.Update(x.Name, ScriptBinding<InstantiatedModule>.Unavailable(unavailable));
+                _definitions.Update(x.Name, ScriptBinding<ModuleDefinition>.Unavailable(unavailable));
                 break;
-            case InvalidCommand { Type: ScriptCommand.MODULE_DEFINITION } x:
-                UpdateDefinition(x.Name, ScriptBinding<ModuleDefinition>.Unavailable(unavailable));
+            case InvalidCommand { Type: ScriptCommand.MODULE_DEFINITION, SpecVersion: WasmSpecVersion.Core3 } x:
+                _definitions.Update(x.Name, ScriptBinding<ModuleDefinition>.Unavailable(unavailable));
                 break;
-            case InvalidCommand { Type: ScriptCommand.MODULE_INSTANCE } x:
-                UpdateModule(x.Name, ScriptBinding<InstantiatedModule>.Unavailable(unavailable));
+            case InvalidCommand { Type: ScriptCommand.MODULE_INSTANCE, SpecVersion: WasmSpecVersion.Core3 } x:
+                _modules.Update(x.Name, ScriptBinding<InstantiatedModule>.Unavailable(unavailable));
                 break;
             case RegisterCommand x:
                 _registrations[x.As] = ScriptBinding<WasmHostModule>.Unavailable(unavailable);
@@ -278,30 +273,27 @@ internal sealed class ScriptState(string inputPath)
     }
 
     /// <summary>
-    /// 直近moduleを置き換え、識別子がある場合はその対応も同じ状態へ置き換える。
+    /// 同じ名前空間の直近の値と、識別子に対応する値を保持する。
     /// </summary>
-    /// <param name="name">更新するmodule識別子 指定されていない場合はnull</param>
-    /// <param name="binding">新しい成功実体または利用不能状態</param>
-    private void UpdateModule(string? name, ScriptBinding<InstantiatedModule> binding)
+    private sealed class Bindings<T>
+        where T : class
     {
-        LastModule = binding;
-        if (name is not null)
-        {
-            _modules[name] = binding;
-        }
-    }
+        private readonly Dictionary<string, ScriptBinding<T>> _named = [with(StringComparer.Ordinal)];
 
-    /// <summary>
-    /// 直近の定義を置き換え、定義名がある場合はその対応も同じ状態へ置き換える。
-    /// </summary>
-    /// <param name="name">更新する定義名 指定されていない場合はnull</param>
-    /// <param name="binding">新しい検証済みの定義または利用不能状態</param>
-    private void UpdateDefinition(string? name, ScriptBinding<ModuleDefinition> binding)
-    {
-        _lastDefinition = binding;
-        if (name is not null)
+        internal ScriptBinding<T>? Latest { get; private set; }
+
+        internal ScriptBinding<T>? Resolve(string? name)
         {
-            _definitions[name] = binding;
+            return name is null ? Latest : _named.GetValueOrDefault(name);
+        }
+
+        internal void Update(string? name, ScriptBinding<T> binding)
+        {
+            Latest = binding;
+            if (name is not null)
+            {
+                _named[name] = binding;
+            }
         }
     }
 }

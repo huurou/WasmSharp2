@@ -1,15 +1,11 @@
 namespace WasmSharp.Tests.Fixtures;
 
-/// <summary>
-/// 固定版Core 3.0の公式素材から、版により扱いの異なる代表的なバイナリを同じバイト列で再現する
-/// </summary>
-/// <remarks>各バイト列のSHA-256は、固定素材のmanifestに記録された値と一致する</remarks>
+// 固定版Core 3.0の公式素材から、版により扱いの異なる代表的なバイナリを同じバイト列で再現する
+// 各バイト列のSHA-256は、固定素材のmanifestに記録された値と一致する
 internal static class Core3OfficialBinary
 {
-    /// <summary>
-    /// <c>exceptions/tag.wast</c>のcommand 0 offset 23に有効な外枠のタグsection（ID 13）を持つ
-    /// </summary>
-    /// <remarks>SHA-256: d0738731218389e7993ca0d69c3e64759e523f622cf6c95f1d32c7ee7ab3db16</remarks>
+    // exceptions/tag.wastのcommand 0 offset 23に有効な外枠のタグsection（ID 13）を持つ
+    // SHA-256: d0738731218389e7993ca0d69c3e64759e523f622cf6c95f1d32c7ee7ab3db16
     internal static byte[] Tag { get; } =
     [
         0x00, 0x61, 0x73, 0x6D, 0x01, 0x00, 0x00, 0x00,
@@ -23,10 +19,8 @@ internal static class Core3OfficialBinary
         0x00, 0x0C, 0x04, 0x6E, 0x61, 0x6D, 0x65, 0x0B, 0x05, 0x01, 0x03, 0x02, 0x74, 0x33,
     ];
 
-    /// <summary>
-    /// <c>multi-memory/exports0.wast</c>のcommand 4 32bit memoryを2つ定義する
-    /// </summary>
-    /// <remarks>SHA-256: 3985b170ed00e2383435e42c4a63451697e66b57ee0321d42abc58d047bfe1e3</remarks>
+    // multi-memory/exports0.wastのcommand 4 32bit memoryを2つ定義する
+    // SHA-256: 3985b170ed00e2383435e42c4a63451697e66b57ee0321d42abc58d047bfe1e3
     internal static byte[] MultipleMemories { get; } =
     [
         0x00, 0x61, 0x73, 0x6D, 0x01, 0x00, 0x00, 0x00,
@@ -35,10 +29,8 @@ internal static class Core3OfficialBinary
         0x07, 0x09, 0x02, 0x01, 0x61, 0x02, 0x00, 0x01, 0x62, 0x02, 0x01,
     ];
 
-    /// <summary>
-    /// <c>instance.wast</c>のcommand 0 offset 14の初期化式付きtableの後、offset 30にタグsectionを持つ
-    /// </summary>
-    /// <remarks>SHA-256: 87e38ab1ab1ce92348c8b039e1052c28e520b419b8593b8c282725411c4af2b2</remarks>
+    // instance.wastのcommand 0 offset 14の初期化式付きtableの後、offset 30にタグsectionを持つ
+    // SHA-256: 87e38ab1ab1ce92348c8b039e1052c28e520b419b8593b8c282725411c4af2b2
     internal static byte[] TagAfterTableInitializer { get; } =
     [
         0x00, 0x61, 0x73, 0x6D, 0x01, 0x00, 0x00, 0x00,
@@ -57,10 +49,8 @@ internal static class Core3OfficialBinary
         0x00, 0x09, 0x04, 0x6E, 0x61, 0x6D, 0x65, 0x00, 0x02, 0x01, 0x4D,
     ];
 
-    /// <summary>
-    /// <c>table.wast</c>のcommand 6 最小値0xFFFFFFFFの32bit tableを1つ定義する
-    /// </summary>
-    /// <remarks>SHA-256: 3835941cd7fd72985192992c6a7de7711be08c83723b29c2d5e7c3c5d94dc2ca</remarks>
+    // table.wastのcommand 6 最小値0xFFFFFFFFの32bit tableを1つ定義する
+    // SHA-256: 3835941cd7fd72985192992c6a7de7711be08c83723b29c2d5e7c3c5d94dc2ca
     internal static byte[] MaximumTable32 { get; } =
     [
         0x00, 0x61, 0x73, 0x6D, 0x01, 0x00, 0x00, 0x00,

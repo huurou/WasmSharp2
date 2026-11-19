@@ -95,7 +95,7 @@ internal sealed class ScriptExecutor(InputVerification input, WasmSpecVersion sp
         var definition = DefineModule(command, command.Name, command.ModuleType, state, ref observation);
         if (definition is not null && Instantiate(definition, state, ref observation) is { } instance)
         {
-            state.SetModule(command.Name, new(definition.Module, instance));
+            state.SetModule(command.Name, new InstantiatedModule(definition.Module, instance));
         }
     }
 
@@ -132,7 +132,10 @@ internal sealed class ScriptExecutor(InputVerification input, WasmSpecVersion sp
         {
             observation = observation with
             {
-                Diagnostics = [new("resolve_definition", $"対象定義 {command.Module ?? "(直近)"}がありません。")],
+                Diagnostics =
+                [
+                    new CaseDiagnostic("resolve_definition", $"対象定義 {command.Module ?? "(直近)"}がありません。"),
+                ],
             };
             return;
         }
@@ -144,7 +147,7 @@ internal sealed class ScriptExecutor(InputVerification input, WasmSpecVersion sp
         var definition = binding.Value!;
         if (Instantiate(definition, state, ref observation) is { } instance)
         {
-            state.SetModule(command.Instance, new(definition.Module, instance));
+            state.SetModule(command.Instance, new InstantiatedModule(definition.Module, instance));
         }
     }
 
@@ -227,7 +230,11 @@ internal sealed class ScriptExecutor(InputVerification input, WasmSpecVersion sp
             {
                 Diagnostics =
                 [
-                    new(issue.Operation, issue.Message) { Path = issue.Path, ExceptionType = issue.ExceptionType },
+                    new CaseDiagnostic(issue.Operation, issue.Message)
+                    {
+                        Path = issue.Path,
+                        ExceptionType = issue.ExceptionType,
+                    },
                 ],
             };
             return null;
@@ -240,7 +247,7 @@ internal sealed class ScriptExecutor(InputVerification input, WasmSpecVersion sp
             return null;
         }
         observation = observation with { Operation = "validate", LastStage = CaseStage.Validate };
-        return new(module.Validate(), bytes);
+        return new ModuleDefinition(module.Validate(), bytes);
     }
 
     /// <summary>
@@ -321,9 +328,9 @@ internal sealed class ScriptExecutor(InputVerification input, WasmSpecVersion sp
     )
     {
         observation = observation with { Operation = "create_arguments" };
-        var arguments = action is InvokeAction invoke ? ValueCodec.CreateArguments(invoke.Arguments, state) : [];
+        var arguments = action is InvokeAction invoke ? ValueCodec.CreateArguments(invoke.Arguments, state, specVersion) : [];
         observation = observation with { Operation = "parse_expected" };
-        var patterns = ValueMatcher.Parse(expected);
+        var patterns = ValueMatcher.Parse(expected, specVersion);
         observation = observation with { Operation = "resolve_module" };
         var module = ResolveModule(action.Module, state, ref observation);
         if (module is null)

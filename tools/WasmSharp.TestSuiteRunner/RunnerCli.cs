@@ -314,10 +314,11 @@ internal sealed class RunnerCli(ConversionProfile profile, Func<ConversionProfil
     {
         var manifest = _reportStore.ReadManifest(paths["--manifest"]).Manifest;
         // manifestのprofile識別で固定profileを選び、条件が一致しない場合は別の版へ読み替えず拒否する。
-        var core3Profile = LoadCore3();
         var (runProfile, specVersion) =
-            manifest.Profile.Id == core3Profile.Id ? (core3Profile, WasmSpecVersion.Core3) : (profile, WasmSpecVersion.Core2);
-        if (!manifest.Profile.Matches(runProfile))
+            manifest.Profile.Id == profile.Id ? (profile, WasmSpecVersion.Core2) : (LoadCore3(), WasmSpecVersion.Core3);
+        var fixedHashes = runProfile.Inputs.ToDictionary(x => x.Path, x => x.Sha256, StringComparer.Ordinal);
+        if (!manifest.Profile.Matches(runProfile)
+            || manifest.Inputs.Any(x => fixedHashes.TryGetValue(x.Input.Path, out var hash) && x.Input.Sha256 != hash))
         {
             throw new ReportStoreException(
                 $"固定profile{runProfile.Id}と条件・対象入力が一致しないmanifestです。",

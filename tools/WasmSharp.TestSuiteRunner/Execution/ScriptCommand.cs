@@ -77,10 +77,17 @@ internal abstract record ScriptCommand(int Index, int? Line)
     /// <summary>
     /// 集計区分 固定形式の種別として確定できない場合はnull
     /// </summary>
-    internal CaseCategory? Category =>
-        Type switch
+    internal virtual CaseCategory? Category => GetCategory(Type, WasmSpecVersion.Core3);
+
+    /// <summary>
+    /// 指定した仕様版で認識できるcommandの集計区分を返す。
+    /// </summary>
+    protected static CaseCategory? GetCategory(string? type, WasmSpecVersion version)
+    {
+        return type switch
         {
-            MODULE or MODULE_DEFINITION or MODULE_INSTANCE or REGISTER => CaseCategory.Setup,
+            MODULE or REGISTER => CaseCategory.Setup,
+            MODULE_DEFINITION or MODULE_INSTANCE when version == WasmSpecVersion.Core3 => CaseCategory.Setup,
             ACTION => CaseCategory.Action,
             ASSERT_RETURN
             or ASSERT_TRAP
@@ -91,4 +98,5 @@ internal abstract record ScriptCommand(int Index, int? Line)
             or ASSERT_UNINSTANTIABLE => CaseCategory.Assertion,
             _ => null,
         };
+    }
 }

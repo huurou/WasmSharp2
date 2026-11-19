@@ -21,6 +21,13 @@ internal sealed record InvalidCommand(int Index, int? Line, string? Type, CaseDi
     internal override string? Type { get; } = Type;
 
     /// <summary>
+    /// 未知のcommandを集計区分から除くための仕様版
+    /// </summary>
+    internal WasmSpecVersion SpecVersion { get; init; } = WasmSpecVersion.Core2;
+
+    internal override CaseCategory? Category => GetCategory(Type, SpecVersion);
+
+    /// <summary>
     /// 通常module・module定義で読み取れた名前、またはmodule_instanceで読み取れたinstanceのmodule識別子 それ以外の種別と、取得できない場合はnull
     /// </summary>
     internal string? Name { get; init; }

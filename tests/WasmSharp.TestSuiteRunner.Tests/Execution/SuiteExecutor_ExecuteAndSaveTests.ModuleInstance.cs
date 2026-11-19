@@ -1,4 +1,3 @@
-using System.Text;
 using WasmSharp.Tests.Fixtures;
 using WasmSharp.TestSuiteRunner.Execution;
 using WasmSharp.TestSuiteRunner.Reports;
@@ -13,8 +12,7 @@ public partial class SuiteExecutor_ExecuteAndSaveTests
     {
         // Arrange
         using var fixture = CorpusFixture.Create();
-        ReplaceScript(
-            fixture,
+        fixture.ReplaceScriptA(
             """{"type":"module_definition","line":9,"filename":"a.0.wasm","module_type":"binary"}""",
             Core3OfficialBinary.MaximumTable32
         );
@@ -48,13 +46,12 @@ public partial class SuiteExecutor_ExecuteAndSaveTests
     {
         // Arrange
         using var fixture = CorpusFixture.Create();
-        ReplaceScript(
-            fixture,
+        fixture.ReplaceScriptA(
             """
             {"type":"module_definition","line":1,"name":"D","filename":"a.0.wasm","module_type":"binary"},
             {"type":"module_instance","line":2,"instance":"I1","module":"D"},
             {"type":"module_instance","line":3,"instance":"I2","module":"D"},
-            {"type":"action","line":4,"action":{"type":"invoke","module":"I1","field":"inc","args":[]},"expected":[]},
+            {"type":"action","line":4,"action":{"type":"invoke","module":"I1","field":"inc","args":[]}},
             {"type":"assert_return","line":5,"action":{"type":"get","module":"I1","field":"g"},"expected":[{"type":"i32","value":"2"}]},
             {"type":"assert_return","line":6,"action":{"type":"get","module":"I2","field":"g"},"expected":[{"type":"i32","value":"1"}]},
             {"type":"module_instance","line":7},
@@ -83,10 +80,10 @@ public partial class SuiteExecutor_ExecuteAndSaveTests
             await Assert.That(cases[1].Category).IsEqualTo(CaseCategory.Setup);
             await Assert.That(cases[1].LastStage).IsEqualTo(CaseStage.Instantiate);
             await Assert.That(cases[2].LastStage).IsEqualTo(CaseStage.Instantiate);
-            await Assert.That(cases[4].ActualValues.Select(x => x.Bits)).IsEquivalentTo(["00000002"]);
-            await Assert.That(cases[5].ActualValues.Select(x => x.Bits)).IsEquivalentTo(["00000001"]);
+            await Assert.That(cases[4].ActualValues.Single().Bits).IsEqualTo("00000002");
+            await Assert.That(cases[5].ActualValues.Single().Bits).IsEqualTo("00000001");
             await Assert.That(cases[6].LastStage).IsEqualTo(CaseStage.Instantiate);
-            await Assert.That(cases[7].ActualValues.Select(x => x.Bits)).IsEquivalentTo(["00000001"]);
+            await Assert.That(cases[7].ActualValues.Single().Bits).IsEqualTo("00000001");
         }
     }
 
@@ -95,8 +92,7 @@ public partial class SuiteExecutor_ExecuteAndSaveTests
     {
         // Arrange
         using var fixture = CorpusFixture.Create();
-        ReplaceScript(
-            fixture,
+        fixture.ReplaceScriptA(
             """
             {"type":"module_definition","line":3,"name":"M","filename":"a.0.wasm","module_type":"binary"},
             {"type":"module_instance","line":10,"instance":"I1","module":"M"},
@@ -140,8 +136,7 @@ public partial class SuiteExecutor_ExecuteAndSaveTests
     {
         // Arrange
         using var fixture = CorpusFixture.Create();
-        ReplaceScript(
-            fixture,
+        fixture.ReplaceScriptA(
             """
             {"type":"module","line":1,"name":"M","filename":"a.0.wasm"},
             {"type":"module_instance","line":2,"instance":"I","module":"M"},
@@ -180,8 +175,7 @@ public partial class SuiteExecutor_ExecuteAndSaveTests
     {
         // Arrange
         using var fixture = CorpusFixture.Create();
-        ReplaceScript(
-            fixture,
+        fixture.ReplaceScriptA(
             """
             {"type":"module_definition","line":1,"name":"D","filename":"a.0.wasm","module_type":"binary"},
             {"type":"module_instance","line":2,"instance":"I","module":"D"},
@@ -221,14 +215,14 @@ public partial class SuiteExecutor_ExecuteAndSaveTests
     {
         // Arrange
         using var fixture = CorpusFixture.Create();
-        ReplaceScript(
-            fixture,
+        fixture.ReplaceScriptA(
             """
             {"type":"module_definition","line":1,"filename":"a.0.wasm","module_type":"binary"},
-            {"type":"module_definition","line":2,"filename":"a.0.wasm","module_type":7},
+            {"type":"module_definition","line":2,"filename":"a.1.wasm","module_type":7},
             {"type":"module_instance","line":3}
             """,
-            StartCounter
+            StartCounter,
+            CorpusFixture.FirstModule
         );
         var output = Path.Combine(fixture.OutputRoot, "invalid-definition.json");
 
@@ -245,6 +239,7 @@ public partial class SuiteExecutor_ExecuteAndSaveTests
         var cases = _reportStore.ReadRunReport(output).Report.Inputs[0].Cases;
         using (Assert.Multiple())
         {
+            await Assert.That(cases[0].Outcome).IsEqualTo(CaseOutcome.Passed);
             await Assert.That(cases[1].Outcome).IsEqualTo(CaseOutcome.RunnerError);
             await Assert.That(cases[2].Outcome).IsEqualTo(CaseOutcome.Blocked);
             await Assert.That(cases[2].Cause!.Direct).IsEquivalentTo([new CaseId("a.wast", 1)]);
@@ -267,19 +262,4 @@ public partial class SuiteExecutor_ExecuteAndSaveTests
         );
 
     private static byte[] IncrementBody => [9, 0, 0x23, 0, 0x41, 1, 0x6A, 0x24, 0, 0x0B];
-
-    // 入力Aの素材を、指定したcommandとa.{index}.wasmのbinaryだけへ置き換える。
-    private static void ReplaceScript(CorpusFixture fixture, string commands, params byte[][] modules)
-    {
-        fixture.UpdateInput(CorpusFixture.A, x => x with { Artifacts = [] });
-        fixture.WriteArtifact(
-            CorpusFixture.A,
-            "modules/a.json",
-            Encoding.UTF8.GetBytes("{\"source_filename\":\"a.wast\",\"commands\":[" + commands + "]}")
-        );
-        for (var i = 0; i < modules.Length; i++)
-        {
-            fixture.WriteArtifact(CorpusFixture.A, $"modules/a.{i}.wasm", modules[i]);
-        }
-    }
 }

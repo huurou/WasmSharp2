@@ -5,10 +5,10 @@ using WasmSharp.TestSuiteRunner.Reports;
 namespace WasmSharp.TestSuiteRunner.Execution;
 
 /// <summary>
-/// WABTの値の文字列からビット列と参照の同一性を保ったvalueを構築し、実値を保存用の表現へ写す
+/// 変換済みスクリプトの値の文字列からビット列と参照の同一性を保ったvalueを構築し、実値を保存用の表現へ写す
 /// </summary>
 /// <remarks>
-/// 整数と浮動小数点数の文字列は、同じ幅の符号なし10進数によるビット列として読み、範囲外の数を切り詰めない。
+/// 整数と浮動小数点数の文字列は、同じ幅の符号なし10進数によるビット列として読み、範囲外の数を切り詰めない。Core 3.0の整数は負の10進表記も読み取る。
 /// 参照は型付きnullか、入力内で番号ごとに割り当てたexternrefだけを構築し、非nullのfuncrefを番号から推測しない。
 /// </remarks>
 internal static class ValueCodec
@@ -26,11 +26,12 @@ internal static class ValueCodec
     /// </remarks>
     /// <param name="values">JSONの記載順の引数</param>
     /// <param name="state">externrefの番号にホスト値を割り当てる入力の状態</param>
+    /// <param name="specVersion">値の表記を決める仕様版</param>
     /// <returns>順序とビット列を保持する新しいvalueの配列 参照値は入力内の同じ番号の実体を共有する</returns>
     /// <exception cref="ScriptFormatException">値の文字列が固定形式にない場合</exception>
-    internal static ImmutableArray<WasmValue> CreateArguments(ImmutableArray<ArgumentValue> values, ScriptState state)
+    internal static ImmutableArray<WasmValue> CreateArguments(ImmutableArray<ArgumentValue> values, ScriptState state, WasmSpecVersion specVersion = WasmSpecVersion.Core2)
     {
-        return [.. values.Select((x, i) => CreateArgument(x, $"action.args[{i}].value", state))];
+        return [.. values.Select((x, i) => CreateArgument(x, $"action.args[{i}].value", state, specVersion == WasmSpecVersion.Core3))];
     }
 
     /// <summary>
@@ -134,23 +135,30 @@ internal static class ValueCodec
     }
 
     /// <summary>
-    /// 指定した幅の符号なし10進数を、切り詰めずにビット列として読む。
+    /// 10進表記の値が指定幅に収まることを確認し、そのビット列を返す。
     /// </summary>
     /// <param name="text">WABTが記録した値の文字列</param>
     /// <param name="width">ビット幅 8・16・32・64のいずれか</param>
     /// <param name="path">異常の報告に使うJSON上の位置</param>
-    /// <returns>指定幅に収まる符号なし整数として解釈したビット列</returns>
+    /// <param name="allowNegative">負の10進表記を許容するかどうか</param>
+    /// <returns>指定幅のビット列 負数は2の補数で表す</returns>
     /// <exception cref="ScriptFormatException">null・空文字列、ASCII数字以外や0以外の先頭の0を含む文字列、または幅に収まらない場合</exception>
-    internal static ulong ParseBits(string? text, int width, string path)
+    internal static ulong ParseBits(string? text, int width, string path, bool allowNegative = false)
     {
-        // 標準の解析は先頭の0や末尾のNULも受け付けるため、WABTの%u形式の文字だけに限定する。
-        return
-            text is ['0'] or [>= '1' and <= '9', ..]
-            && text.All(char.IsAsciiDigit)
-            && ulong.TryParse(text, NumberStyles.None, CultureInfo.InvariantCulture, out var bits)
-            && (bits & ~GetMask(width)) == 0
-            ? bits
-            : throw new ScriptFormatException($"{path}の{text}は{width}ビットの符号なし10進数ではありません。");
+        var negative = allowNegative && text is ['-', ..];
+        var digits = negative ? text.AsSpan(1) : text.AsSpan();
+        var limit = negative ? 1UL << (width - 1) : GetMask(width);
+        // 標準の解析が許容する先頭の0や末尾のNULを除き、固定形式のASCII数字だけを読む。
+        if (digits is ['0'] or [>= '1' and <= '9', ..]
+            && !digits.ContainsAnyExceptInRange('0', '9')
+            && ulong.TryParse(digits, NumberStyles.None, CultureInfo.InvariantCulture, out var magnitude)
+            && magnitude <= limit)
+        {
+            return negative ? unchecked(0UL - magnitude) & GetMask(width) : magnitude;
+        }
+
+        var format = negative ? "符号付き" : "符号なし";
+        throw new ScriptFormatException($"{path}の{text}は{width}ビットの{format}10進数ではありません。");
     }
 
     /// <summary>
@@ -170,17 +178,18 @@ internal static class ValueCodec
     /// <param name="value">WABT形式の引数 NaN patternは受け付けない</param>
     /// <param name="path">不正な値を報告するJSON上の位置</param>
     /// <param name="state">非nullのexternrefを番号ごとに割り当てる入力の状態</param>
+    /// <param name="signedIntegers">整数で負の10進表記を許容するかどうか</param>
     /// <returns>型とビット列を保持する引数のvalue externrefは同じ番号のホスト値を参照する</returns>
     /// <exception cref="ScriptFormatException">値の文字列やlane数が不正、または非nullのfuncrefなど固定形式外の引数の場合</exception>
-    private static WasmValue CreateArgument(ArgumentValue value, string path, ScriptState state)
+    private static WasmValue CreateArgument(ArgumentValue value, string path, ScriptState state, bool signedIntegers)
     {
         return value switch
         {
-            { Kind: WasmValueKind.I32 } => WasmValue.FromI32(unchecked((int)ParseBits(value.Value, 32, path))),
-            { Kind: WasmValueKind.I64 } => WasmValue.FromI64(unchecked((long)ParseBits(value.Value, 64, path))),
+            { Kind: WasmValueKind.I32 } => WasmValue.FromI32(unchecked((int)ParseBits(value.Value, 32, path, signedIntegers))),
+            { Kind: WasmValueKind.I64 } => WasmValue.FromI64(unchecked((long)ParseBits(value.Value, 64, path, signedIntegers))),
             { Kind: WasmValueKind.F32 } => WasmValue.FromF32Bits((uint)ParseBits(value.Value, 32, path)),
             { Kind: WasmValueKind.F64 } => WasmValue.FromF64Bits(ParseBits(value.Value, 64, path)),
-            { Kind: WasmValueKind.V128, LaneType: { } laneType } => CreateV128(laneType, value.Lanes, path),
+            { Kind: WasmValueKind.V128, LaneType: { } laneType } => CreateV128(laneType, value.Lanes, path, signedIntegers),
             { Kind: WasmValueKind.FuncRef, Value: NULL } => WasmValue.FromFuncRef(null),
             { Kind: WasmValueKind.ExternRef, Value: NULL } => WasmValue.FromExternRef(null),
             { Kind: WasmValueKind.ExternRef } => WasmValue.FromExternRef(
@@ -196,11 +205,12 @@ internal static class ValueCodec
     /// lane0を下位ビットとし、laneの文字列からCPUのendianに依存せずv128を作る。
     /// </summary>
     /// <param name="laneType">各laneの型と幅</param>
-    /// <param name="lanes">lane0から順の符号なし10進数によるビット列</param>
+    /// <param name="lanes">lane0から順の10進表記</param>
     /// <param name="path">lane数やlane値の異常を報告するJSON上の位置</param>
+    /// <param name="signedIntegers">整数で負の10進表記を許容するかどうか</param>
     /// <returns>すべてのlaneのビット列を順序どおりに配置したv128のvalue</returns>
     /// <exception cref="ScriptFormatException">lane数が型と合わないか、lane値が固定形式外または幅に収まらない場合</exception>
-    private static WasmValue CreateV128(LaneType laneType, ImmutableArray<string> lanes, string path)
+    private static WasmValue CreateV128(LaneType laneType, ImmutableArray<string> lanes, string path, bool signedIntegers)
     {
         var width = GetLaneWidth(laneType, lanes.Length, path);
         ulong low64 = 0;
@@ -208,7 +218,7 @@ internal static class ValueCodec
         for (var i = 0; i < lanes.Length; i++)
         {
             // メモリ上の並びを介さずシフトで配置し、CPUのendianに依存させない。
-            var bits = ParseBits(lanes[i], width, $"{path}[{i}]");
+            var bits = ParseBits(lanes[i], width, $"{path}[{i}]", signedIntegers && laneType is not (LaneType.F32 or LaneType.F64));
             var offset = i * width;
             if (offset < 64)
             {

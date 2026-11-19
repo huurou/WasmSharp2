@@ -49,13 +49,15 @@ internal static class ModuleDecoder
     /// </summary>
     /// <remarks>
     /// タグより前のpayloadにはCore 3.0で追加された未対応の構文がありうるため、payloadを読まずに判別する。
-    /// タグに至るまでの外枠が不正な場合は通知せず、通常のデコードで診断する
+    /// タグの後にあるsectionも外枠を確認し、不正があればその位置のデコード失敗を報告する。
     /// </remarks>
     /// <param name="bytes">ヘッダーから始まる入力バイナリ全体</param>
-    /// <exception cref="WasmUnsupportedFeatureException">タグsectionまでのID・長さ・順序が有効な場合</exception>
+    /// <exception cref="WasmUnsupportedFeatureException">すべての外枠が有効でタグsectionを含む場合</exception>
+    /// <exception cref="WasmDecodeException">タグsectionより後の外枠が不正な場合</exception>
     private static void RejectTagSection(ReadOnlySpan<byte> bytes)
     {
         var reader = new ModuleBinaryReader(bytes);
+        WasmFailureLocation? tagLocation = null;
         try
         {
             ModuleBinaryFormat.ReadHeader(ref reader);
@@ -67,31 +69,40 @@ internal static class ModuleDecoder
                 var section = ModuleBinaryFormat.ReadSection(ref reader, ref previousRank, WasmSpecVersion.Core3);
                 if (section.SectionId == 13)
                 {
-                    throw new WasmUnsupportedFeatureException(
-                        "未実装の機能に遭遇しました。",
-                        "tag section",
-                        section.Location(offset),
-                        [
-                            new WasmUnverifiedRange(
-                                WasmProcessingStage.Decode,
-                                firstSectionOffset,
-                                bytes.Length,
-                                "外枠以外のsectionのデコードが未完了です。"
-                            ),
-                            new WasmUnverifiedRange(
-                                WasmProcessingStage.Validate,
-                                0,
-                                bytes.Length,
-                                "入力全体の検証が未実施です。"
-                            ),
-                        ]
-                    );
+                    tagLocation = section.Location(offset);
                 }
             }
+
+            if (tagLocation is not null)
+            {
+                throw new WasmUnsupportedFeatureException(
+                    "未実装の機能に遭遇しました。",
+                    "tag section",
+                    tagLocation,
+                    [
+                        new WasmUnverifiedRange(
+                            WasmProcessingStage.Decode,
+                            firstSectionOffset,
+                            bytes.Length,
+                            "外枠以外のsectionのデコードが未完了です。"
+                        ),
+                        new WasmUnverifiedRange(
+                            WasmProcessingStage.Validate,
+                            0,
+                            bytes.Length,
+                            "入力全体の検証が未実施です。"
+                        ),
+                    ]
+                );
+            }
         }
-        catch (Exception exception) when (exception is WasmDecodeException or ModuleReadBoundaryException)
+        catch (Exception exception) when (tagLocation is null && exception is (WasmDecodeException or ModuleReadBoundaryException))
         {
-            // 外枠の不正を未実装へ読み替えず、通常のデコードに診断を委ねる。
+            // タグを確認する前の不正は通常のデコードで診断する。
+        }
+        catch (ModuleReadBoundaryException exception)
+        {
+            throw exception.Fallback;
         }
     }
 
@@ -267,7 +278,7 @@ internal static class ModuleDecoder
                     break;
 
                 case 13:
-                    // 外枠が有効なタグは事前に未実装として通知済みのため、ここでは長さ不足の診断だけを選ぶ。
+                    // タグの外枠自体が不正だった場合は、診断用の再走査で長さ不足を確認する。
                     section.ReadBytes((uint)section.DeclaredRemaining);
                     break;
             }
@@ -289,7 +300,8 @@ internal static class ModuleDecoder
             start,
             CollectionsMarshal.AsSpan(dataSegments),
             dataCount,
-            CollectionsMarshal.AsSpan(elementSegments)
+            CollectionsMarshal.AsSpan(elementSegments),
+            specVersion
         );
     }
 
