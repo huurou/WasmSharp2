@@ -39,10 +39,15 @@ internal class WasmMemory_WriteTests
         Array.Fill(source, (byte)99);
 
         // Act & Assert
-        await Assert.That(() => memory.Write(offset, source)).ThrowsExactly<ArgumentOutOfRangeException>();
+        var exception = await Assert.That(() => memory.Write(offset, source)).ThrowsExactly<ArgumentOutOfRangeException>();
         var actual = new byte[1];
         memory.Read(65535, actual);
-        await Assert.That(actual[0]).IsEqualTo((byte)42);
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.ParamName).IsEqualTo("offset");
+            await Assert.That(exception.Message).Contains("memoryの範囲外");
+            await Assert.That(actual[0]).IsEqualTo((byte)42);
+        }
     }
 
     [Test]

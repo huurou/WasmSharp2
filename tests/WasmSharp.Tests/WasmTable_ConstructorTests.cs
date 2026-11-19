@@ -56,14 +56,28 @@ internal class WasmTable_ConstructorTests
     public async Task 要素型が対応する参照型ではない_契約違反として拒否する(WasmValueKind kind)
     {
         // Act & Assert
-        await Assert.That(() => new WasmTable(kind, new WasmLimits(0))).Throws<ArgumentException>();
+        var exception = await Assert
+            .That(() => new WasmTable(kind, new WasmLimits(0)))
+            .ThrowsExactly<ArgumentOutOfRangeException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.ParamName).IsEqualTo("elementType");
+            await Assert.That(exception.Message).Contains("参照型");
+        }
     }
 
     [Test]
     public async Task 最小値が最大値を超える_契約違反として拒否する()
     {
         // Act & Assert
-        await Assert.That(() => new WasmTable(WasmValueKind.FuncRef, new WasmLimits(2, 1))).Throws<ArgumentException>();
+        var exception = await Assert
+            .That(() => new WasmTable(WasmValueKind.FuncRef, new WasmLimits(2, 1)))
+            .ThrowsExactly<ArgumentException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.ParamName).IsEqualTo("limits");
+            await Assert.That(exception.Message).Contains("最大要素数");
+        }
     }
 
     [Test]
@@ -86,6 +100,7 @@ internal class WasmTable_ConstructorTests
         using (Assert.Multiple())
         {
             await Assert.That(exception!.Reason).IsEqualTo(WasmImplementationLimitReason.CollectionSize);
+            await Assert.That(exception.Message).Contains("tableの要素数");
             await Assert.That(exception.Limit).IsEqualTo(Array.MaxLength);
             await Assert.That(exception.Location).IsNull();
         }

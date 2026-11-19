@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using System.Collections.Immutable;
 using System.Globalization;
 using WasmSharp.TestSuiteRunner.Reports;
@@ -128,10 +129,18 @@ internal static class ValueCodec
     /// <exception cref="InvalidOperationException">valueがv128ではない場合</exception>
     internal static ulong GetLane(WasmValue value, int width, int lane)
     {
-        // lane幅は64の約数のため、1つのlaneが下位と上位の64ビットにまたがらない。
         var (low64, high64) = value.AsV128();
-        var offset = lane * width;
-        return ((offset < 64 ? low64 : high64) >> offset) & GetMask(width);
+        Span<byte> bytes = stackalloc byte[16];
+        BinaryPrimitives.WriteUInt128LittleEndian(bytes, new UInt128(high64, low64));
+        var size = width / 8;
+        var laneBytes = bytes.Slice(lane * size, size);
+        return size switch
+        {
+            1 => laneBytes[0],
+            2 => BinaryPrimitives.ReadUInt16LittleEndian(laneBytes),
+            4 => BinaryPrimitives.ReadUInt32LittleEndian(laneBytes),
+            _ => BinaryPrimitives.ReadUInt64LittleEndian(laneBytes),
+        };
     }
 
     /// <summary>
@@ -213,24 +222,17 @@ internal static class ValueCodec
     private static WasmValue CreateV128(LaneType laneType, ImmutableArray<string> lanes, string path, bool signedIntegers)
     {
         var width = GetLaneWidth(laneType, lanes.Length, path);
-        ulong low64 = 0;
-        ulong high64 = 0;
+        var size = width / 8;
+        Span<byte> bytes = stackalloc byte[16];
+        Span<byte> laneBytes = stackalloc byte[sizeof(ulong)];
         for (var i = 0; i < lanes.Length; i++)
         {
-            // メモリ上の並びを介さずシフトで配置し、CPUのendianに依存させない。
             var bits = ParseBits(lanes[i], width, $"{path}[{i}]", signedIntegers && laneType is not (LaneType.F32 or LaneType.F64));
-            var offset = i * width;
-            if (offset < 64)
-            {
-                low64 |= bits << offset;
-            }
-            else
-            {
-                high64 |= bits << offset;
-            }
+            BinaryPrimitives.WriteUInt64LittleEndian(laneBytes, bits);
+            laneBytes[..size].CopyTo(bytes[(i * size)..]);
         }
 
-        return WasmValue.FromV128(low64, high64);
+        return WasmValue.FromV128(BinaryPrimitives.ReadUInt64LittleEndian(bytes), BinaryPrimitives.ReadUInt64LittleEndian(bytes[8..]));
     }
 
     /// <summary>

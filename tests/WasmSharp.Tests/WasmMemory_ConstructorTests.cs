@@ -12,7 +12,12 @@ internal class WasmMemory_ConstructorTests
         var limits = new WasmLimits(minimum, maximum);
 
         // Act & Assert
-        await Assert.That(() => new WasmMemory(limits)).Throws<ArgumentException>();
+        var exception = await Assert.That(() => new WasmMemory(limits)).ThrowsExactly<ArgumentException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.ParamName).IsEqualTo("limits");
+            await Assert.That(exception.Message).Contains("memory");
+        }
     }
 
     [Test]

@@ -238,11 +238,15 @@ internal partial class WasmModule_InstantiateTests
     }
 
     [Test]
-    [Arguments((byte)0, WasmExternalKind.Function)]
-    [Arguments((byte)1, WasmExternalKind.Table)]
-    [Arguments((byte)2, WasmExternalKind.Memory)]
-    [Arguments((byte)3, WasmExternalKind.Global)]
-    public async Task 提供実体の種類が異なる_要求種類と宣言位置付きで拒否する(byte kind, WasmExternalKind expected)
+    [Arguments((byte)0, WasmExternalKind.Function, WasmExternalKind.Global)]
+    [Arguments((byte)1, WasmExternalKind.Table, WasmExternalKind.Memory)]
+    [Arguments((byte)2, WasmExternalKind.Memory, WasmExternalKind.Table)]
+    [Arguments((byte)3, WasmExternalKind.Global, WasmExternalKind.Function)]
+    public async Task 提供実体の種類が異なる_要求種類と提供種類と宣言位置付きで拒否する(
+        byte kind,
+        WasmExternalKind expected,
+        WasmExternalKind provided
+    )
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
@@ -262,13 +266,20 @@ internal partial class WasmModule_InstantiateTests
             )
             .Validate();
         var host = new WasmHostModule();
-        if (kind == 0)
+        switch (provided)
         {
-            host.Define("", new WasmGlobal(new(WasmValueKind.I32, false), WasmValue.FromI32(0)));
-        }
-        else
-        {
-            host.Define("", WasmFunction.CreateHost(new([], []), (callbackContext, _) => new([])));
+            case WasmExternalKind.Function:
+                host.Define("", WasmFunction.CreateHost(new WasmFunctionType([], []), (_, _) => new WasmResults([])));
+                break;
+            case WasmExternalKind.Global:
+                host.Define("", new WasmGlobal(new WasmGlobalType(WasmValueKind.I32, false), WasmValue.FromI32(0)));
+                break;
+            case WasmExternalKind.Memory:
+                host.Define("", new WasmMemory(new WasmLimits(0)));
+                break;
+            case WasmExternalKind.Table:
+                host.Define("", new WasmTable(WasmValueKind.FuncRef, new WasmLimits(0)));
+                break;
         }
         var imports = new WasmImports();
         imports.Add(host);
@@ -280,7 +291,9 @@ internal partial class WasmModule_InstantiateTests
         using (Assert.Multiple())
         {
             await Assert.That(exception!.Reason).IsEqualTo(WasmInstantiateReason.KindMismatch);
-            await Assert.That(exception.Message.StartsWith("incompatible import type", StringComparison.Ordinal)).IsTrue();
+            await Assert.That(exception.Message).StartsWith("incompatible import type");
+            await Assert.That(exception.Message).Contains($"要求種類 {expected}");
+            await Assert.That(exception.Message).Contains($"提供種類は {provided}");
             await Assert.That(exception.ImportOrdinal).IsEqualTo(0);
             await Assert.That(exception.ModuleName).IsEqualTo("");
             await Assert.That(exception.ImportName).IsEqualTo("");

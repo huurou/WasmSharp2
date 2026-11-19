@@ -251,13 +251,13 @@ internal partial class FunctionValidator_ValidateTests
     [Arguments("00027F0B1A0B", "", 2, "type mismatch", null)]
     [Arguments("027F0042010B1A0B", "", 3, "type mismatch", null)]
     [Arguments("02400041010B0B", "", 3, "type mismatch", null)]
-    [Arguments("02400020000B0B", "", 2, "unknown local 0", null)]
+    [Arguments("02400020000B0B", "", 2, "unknown local 0", "localが存在しません")]
     [Arguments("420004400B0B", "", 1, "type mismatch", null)]
     [Arguments("4100047F41010B1A0B", "", 3, "type mismatch", "elseを省略したifの引数型と結果型")]
     [Arguments("4100047F4101050B1A0B", "", 4, "type mismatch", null)]
     [Arguments("4100047F41010542010B1A0B", "", 5, "type mismatch", null)]
     [Arguments("4101047F42010541010B1A0B", "", 3, "type mismatch", null)]
-    [Arguments("02010B0B", "", 0, "unknown type 1", null)]
+    [Arguments("02010B0B", "", 0, "unknown type 1", "型が存在しません")]
     [Arguments("02FFFFFFFF0F0B0B", "", 0, "unknown type 4294967295", null)]
     public async Task 制御の型や個数や添字が不正_元の命令位置で拒否しmoduleを未検証に保つ(
         string body,

@@ -38,12 +38,14 @@ internal partial class WasmModule_ValidateTests
         using (Assert.Multiple())
         {
             await Assert.That(exception!.Feature).IsEqualTo("multiple memories");
+            await Assert.That(exception.Message).Contains("未実装");
             await Assert
                 .That(exception.Location)
                 .IsEqualTo(new WasmFailureLocation(WasmProcessingStage.Validate, 13, null, 5));
             await Assert
                 .That(exception.UnverifiedRanges.Select(x => (x.Stage, x.StartOffset, x.EndOffset)))
                 .IsEquivalentTo([(WasmProcessingStage.Validate, 0L, (long)bytes.Length)]);
+            await Assert.That(exception.UnverifiedRanges.Single().Description).Contains("複数メモリ");
         }
 
         // Act & Assert
@@ -63,6 +65,10 @@ internal partial class WasmModule_ValidateTests
         var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
 
         // Assert
-        await Assert.That(exception!.Message).StartsWith("unknown memory");
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.Message).StartsWith("unknown memory");
+            await Assert.That(exception.Message).Contains("export");
+        }
     }
 }

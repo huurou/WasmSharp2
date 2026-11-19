@@ -496,7 +496,7 @@ internal static partial class Interpreter
     )
     {
         var vector = SimdValue.FromValue(context.PopValue());
-        context.PushValue(MapSimdFloatUnary(vector, bitWidth, operation).ToValue());
+        context.PushValue(vector.MapUnary(bitWidth, operation).ToValue());
         return default;
     }
 
@@ -515,50 +515,7 @@ internal static partial class Interpreter
     {
         var right = SimdValue.FromValue(context.PopValue());
         var left = SimdValue.FromValue(context.PopValue());
-        context.PushValue(MapSimdFloatBinary(left, right, bitWidth, operation).ToValue());
+        context.PushValue(left.MapBinary(right, bitWidth, operation).ToValue());
         return default;
-    }
-
-    /// <summary>
-    /// 各laneへ単項演算を適用し新しいvectorを構築する
-    /// </summary>
-    /// <param name="vector">入力のビット列</param>
-    /// <param name="bitWidth">laneの幅</param>
-    /// <param name="operation">laneの符号bit操作または純粋な浮動小数点演算</param>
-    /// <returns>演算後のビット列</returns>
-    private static SimdValue MapSimdFloatUnary(SimdValue vector, int bitWidth, Func<ulong, ulong> operation)
-    {
-        var result = default(SimdValue);
-        for (var laneIndex = 0; laneIndex < 128 / bitWidth; laneIndex++)
-        {
-            result = result.WithLane(bitWidth, laneIndex, operation(vector.GetLane(bitWidth, laneIndex)));
-        }
-
-        return result;
-    }
-
-    /// <summary>
-    /// 左右の各laneへ二項演算を適用し新しいvectorを構築する
-    /// </summary>
-    /// <param name="left">左operandのビット列</param>
-    /// <param name="right">右operandのビット列</param>
-    /// <param name="bitWidth">laneの幅</param>
-    /// <param name="operation">左右のlaneへ適用する純粋な浮動小数点演算</param>
-    /// <returns>演算後のビット列</returns>
-    private static SimdValue MapSimdFloatBinary(
-        SimdValue left,
-        SimdValue right,
-        int bitWidth,
-        Func<ulong, ulong, ulong> operation
-    )
-    {
-        var result = default(SimdValue);
-        for (var laneIndex = 0; laneIndex < 128 / bitWidth; laneIndex++)
-        {
-            var bits = operation(left.GetLane(bitWidth, laneIndex), right.GetLane(bitWidth, laneIndex));
-            result = result.WithLane(bitWidth, laneIndex, bits);
-        }
-
-        return result;
     }
 }

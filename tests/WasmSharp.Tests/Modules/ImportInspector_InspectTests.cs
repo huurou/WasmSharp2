@@ -7,6 +7,32 @@ namespace WasmSharp.Tests.Modules;
 internal class ImportInspector_InspectTests
 {
     [Test]
+    public async Task 読取りで保持上限を超える_追加前の位置と読み取った範囲の終端を区別する()
+    {
+        // Arrange
+        using var stream = new ChunkedReadStream(new MemoryStream([1, 2, 3, 4, 5, 6, 7]), 3);
+
+        // Act & Assert
+        var exception = await Assert
+            .That(() => ImportInspector.Inspect(stream, 5))
+            .ThrowsExactly<WasmImportInspectionException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.Reason).IsEqualTo(WasmImportInspectionReason.ImplementationLimit);
+            await Assert.That(exception.Location).IsEqualTo(new WasmFailureLocation(WasmProcessingStage.Decode, 3));
+            await Assert.That(exception.InnerException).IsTypeOf<WasmImplementationLimitException>();
+            await Assert.That(exception.Message).IsEqualTo(exception.InnerException!.Message);
+            await Assert
+                .That(exception.UnverifiedRanges.Select(x => (x.Stage, x.StartOffset, x.EndOffset)))
+                .IsEquivalentTo([(WasmProcessingStage.Decode, 0L, 6L), (WasmProcessingStage.Validate, 0L, 6L)]);
+            foreach (var range in exception.UnverifiedRanges)
+            {
+                await Assert.That(range.Description).Contains("入力終端");
+            }
+        }
+    }
+
+    [Test]
     public async Task 空のcodePayload_成功してもゼロ幅の構文未確認範囲を残す()
     {
         // Arrange

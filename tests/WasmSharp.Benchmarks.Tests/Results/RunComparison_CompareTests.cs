@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using System.Text.Json.Serialization.Metadata;
 using WasmSharp.Benchmarks.Cases;
 using WasmSharp.Benchmarks.Results;
 using WasmSharp.Benchmarks.Tests.Fixtures;
@@ -1039,6 +1040,51 @@ internal class RunComparison_CompareTests
             {
                 await Assert.That(run.Manifest.Sha256).IsEqualTo(before[run.Manifest.RelativePath]);
             }
+        }
+    }
+
+    [Test]
+    public async Task 読み取ったrunが別の記録に差し替わる_参照のhashと受入判定は読み取ったrunに対応する()
+    {
+        // Arrange
+        using var fixture = new ComparisonFixture();
+        var request = fixture.Save();
+        var baseline = fixture.Baseline[0];
+        var path = Path.Combine(baseline.DirectoryPath, "run.json");
+        var originalHash = Convert.ToHexStringLower(SHA256.HashData(File.ReadAllBytes(path)));
+        var replacement = File.ReadAllBytes(Path.Combine(fixture.Current[0].DirectoryPath, "run.json"));
+        var resolver = new DefaultJsonTypeInfoResolver();
+        resolver.Modifiers.Add(typeInfo =>
+        {
+            if (typeInfo.Type == typeof(RunManifest))
+            {
+                typeInfo.OnDeserialized = value =>
+                {
+                    if (((RunManifest)value).RunId == baseline.Manifest.RunId)
+                    {
+                        File.WriteAllBytes(path, replacement);
+                    }
+                };
+            }
+        });
+        _json.Options.TypeInfoResolver = resolver;
+
+        // Act
+        var (report, hasIncompleteRun) = _comparison.Compare(
+            request.BaselineRunDirectories,
+            request.CurrentRunDirectories,
+            request.PolicyPath
+        );
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(File.ReadAllBytes(path).SequenceEqual(replacement)).IsTrue();
+            await Assert
+                .That(report.BaselineRuns[0])
+                .IsEqualTo(new ComparedRun(baseline.Manifest.RunId, new(path, originalHash)));
+            await Assert.That(report.IsAccepted).IsTrue();
+            await Assert.That(hasIncompleteRun).IsFalse();
         }
     }
 

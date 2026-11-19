@@ -6,18 +6,19 @@ namespace WasmSharp.Tests;
 internal partial class WasmModule_ValidateTests
 {
     [Test]
-    [Arguments("01000101", "unknown function", 3)]
-    [Arguments("020141000B0000", "unknown table", 0)]
-    [Arguments("0042000B00", "type mismatch", 3)]
-    [Arguments("060041000B6F00", "type mismatch", 0)]
-    [Arguments("057001D06F0B", "type mismatch", 5)]
-    [Arguments("07700141000B", "type mismatch", 5)]
-    [Arguments("05700123000B", "unknown global", 3)]
-    [Arguments("057001D200D1700B", "constant expression required", 5)]
+    [Arguments("01000101", "unknown function", 3, null)]
+    [Arguments("020141000B0000", "unknown table 1", 0, "要素セグメント")]
+    [Arguments("0042000B00", "type mismatch", 3, null)]
+    [Arguments("060041000B6F00", "type mismatch", 0, null)]
+    [Arguments("057001D06F0B", "type mismatch", 5, null)]
+    [Arguments("07700141000B", "type mismatch", 5, null)]
+    [Arguments("05700123000B", "unknown global", 3, null)]
+    [Arguments("057001D200D1700B", "constant expression required", 5, null)]
     public async Task 要素の添字や型や定数式が不正_Decodeで保持しValidateで拒否してInstantiateを許可しない(
         string segment,
         string prefix,
-        int relativeOffset
+        int relativeOffset,
+        string? expectedDetail
     )
     {
         // Arrange
@@ -36,7 +37,11 @@ internal partial class WasmModule_ValidateTests
         var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
         using (Assert.Multiple())
         {
-            await Assert.That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal)).IsTrue();
+            await Assert.That(exception!.Message).StartsWith(prefix);
+            if (expectedDetail is not null)
+            {
+                await Assert.That(exception.Message).Contains(expectedDetail);
+            }
             await Assert
                 .That(exception.Location)
                 .IsEqualTo(new(WasmProcessingStage.Validate, segmentOffset + relativeOffset, null, 9));

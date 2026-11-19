@@ -18,7 +18,18 @@ internal sealed record ArrayInput(
     ArrayInputPattern Pattern,
     uint? Seed,
     byte? FillByte
-);
+)
+{
+    internal int GetBufferLength(string caseId)
+    {
+        var byteLength = ElementType.GetByteLength(Length);
+        if (byteLength > (ulong)Array.MaxLength)
+        {
+            throw new InvalidDataException($"ケース'{caseId}'の配列長{Length}が入力生成の上限を超えています。");
+        }
+        return (int)byteLength;
+    }
+}
 
 /// <summary>
 /// 固定ケースの配列要素型 複数バイトの要素はlittle-endianで配置する。
@@ -27,6 +38,19 @@ internal enum ArrayElementType
 {
     U8,
     U32,
+}
+
+internal static class ArrayElementTypeExtensions
+{
+    internal static ulong GetByteLength(this ArrayElementType type, uint length)
+    {
+        return type switch
+        {
+            ArrayElementType.U8 => length,
+            ArrayElementType.U32 => (ulong)length * sizeof(uint),
+            _ => throw new InvalidDataException($"配列要素型'{type}'は未対応です。"),
+        };
+    }
 }
 
 /// <summary>

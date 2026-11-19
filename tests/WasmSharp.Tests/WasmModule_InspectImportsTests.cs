@@ -166,6 +166,20 @@ internal class WasmModule_InspectImportsTests
     }
 
     [Test]
+    public async Task 入力元が保持上限の例外を送出する_元の例外を呼び出し側に返す()
+    {
+        // Arrange
+        var expected = new WasmImplementationLimitException("入力元の上限", WasmImplementationLimitReason.InputSize, 1);
+        using var stream = new FailingReadStream(expected);
+
+        // Act & Assert
+        var actual = await Assert
+            .That(() => WasmModule.InspectImports(stream))
+            .ThrowsExactly<WasmImplementationLimitException>();
+        await Assert.That(actual).IsSameReferenceAs(expected);
+    }
+
+    [Test]
     [Arguments(false, 0u)]
     [Arguments(true, 0u)]
     [Arguments(false, uint.MaxValue)]

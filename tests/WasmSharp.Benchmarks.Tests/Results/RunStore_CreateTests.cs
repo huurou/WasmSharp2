@@ -1,3 +1,5 @@
+using System.Text.Json;
+using System.Text.Json.Serialization.Metadata;
 using WasmSharp.Benchmarks.Cases;
 using WasmSharp.Benchmarks.Results;
 using WasmSharp.Benchmarks.Tests.Fixtures;
@@ -37,6 +39,33 @@ internal class RunStore_CreateTests
             {
                 File.Delete(existingPath);
             }
+        }
+    }
+
+    [Test]
+    public async Task 新規runの保存中に別のrunが先に確定する_保存を拒否して先の内容を保つ()
+    {
+        // Arrange
+        using var fixture = new RunStoreFixture();
+        var manifestPath = Path.Combine(fixture.DirectoryPath, "run.json");
+        var existing = JsonSerializer.Serialize(fixture.Manifest with { RunId = "first-run" }, new CaseJson().Options);
+        // 出力先の確認後、今回の記録を確定する前に別の書き手が保存した状態を作る。
+        var resolver = new DefaultJsonTypeInfoResolver();
+        resolver.Modifiers.Add(typeInfo =>
+        {
+            if (typeInfo.Type == typeof(RunManifest))
+            {
+                typeInfo.OnSerializing = _ => File.WriteAllText(manifestPath, existing);
+            }
+        });
+        _json.Options.TypeInfoResolver = resolver;
+
+        // Act & Assert
+        await Assert.That(() => RunStore.Create(fixture.DirectoryPath, fixture.Manifest, _json)).Throws<IOException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(File.ReadAllText(manifestPath)).IsEqualTo(existing);
+            await Assert.That(Directory.GetFileSystemEntries(fixture.DirectoryPath)).IsEquivalentTo([manifestPath]);
         }
     }
 

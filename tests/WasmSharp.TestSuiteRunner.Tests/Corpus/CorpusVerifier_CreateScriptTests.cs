@@ -7,6 +7,31 @@ namespace WasmSharp.TestSuiteRunner.Tests.Corpus;
 internal class CorpusVerifier_CreateScriptTests
 {
     [Test]
+    public async Task テキスト素材に変換済みバイナリを併記する_変換器に応じた参照だけを記録する()
+    {
+        // Arrange
+        const string Path = "modules/a.json";
+        var content = """
+            {"source_filename":"a.wast","commands":[{"type":"module","line":1,"filename":"a.wat","module_type":"text","binary_filename":"a.wasm"}]}
+            """u8;
+        var wabt = ScriptDocument.Parse(content, Path);
+        var wasmTools = ScriptDocument.Parse(content, Path, includeBinaryFilename: true);
+
+        // Act
+        var wabtScript = CorpusVerifier.CreateScript(wabt, Path);
+        var wasmToolsScript = CorpusVerifier.CreateScript(wasmTools, Path);
+
+        // Assert
+        var text = new ArtifactReference(0, "a.wat", "modules/a.wat");
+        var binary = new ArtifactReference(0, "a.wasm", "modules/a.wasm");
+        using (Assert.Multiple())
+        {
+            await Assert.That(wabtScript.References).IsEquivalentTo([text]);
+            await Assert.That(wasmToolsScript.References).IsEquivalentTo([text, binary]);
+        }
+    }
+
+    [Test]
     public async Task 入れ子の入力のJSONから作る_参照をJSONの親基準のmanifest相対pathへ解決する()
     {
         // Arrange

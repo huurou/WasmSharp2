@@ -39,6 +39,7 @@ internal class ProfileSnapshot_MatchesTests
     [Arguments("id")]
     [Arguments("spec")]
     [Arguments("wabt")]
+    [Arguments("wasm_tools")]
     [Arguments("working_directory")]
     [Arguments("conversion")]
     [Arguments("features")]
@@ -46,13 +47,14 @@ internal class ProfileSnapshot_MatchesTests
     public async Task 入力集合が同じでも生成条件の1項目が異なる_一致しないと判定する(string condition)
     {
         // Arrange
-        var profile = _profileLoader.Load();
+        var profile = condition == "wasm_tools" ? _profileLoader.LoadCore3() : _profileLoader.Load();
         var snapshot = ProfileSnapshot.FromProfile(profile);
         snapshot = condition switch
         {
             "id" => snapshot with { Id = "different-profile" },
             "spec" => snapshot with { Spec = snapshot.Spec with { Commit = new string('a', 40) } },
             "wabt" => snapshot with { Wabt = snapshot.Wabt! with { Commit = new string('b', 40) } },
+            "wasm_tools" => snapshot with { WasmTools = snapshot.WasmTools! with { Version = "1.263.1" } },
             "working_directory" => snapshot with { WorkingDirectory = "different-directory" },
             "conversion" => snapshot with { Conversion = snapshot.Conversion! with { Check = !snapshot.Conversion!.Check } },
             "features" => snapshot with { Features = [.. snapshot.Features.Skip(1)] },

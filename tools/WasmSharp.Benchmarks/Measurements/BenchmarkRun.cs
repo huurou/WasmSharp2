@@ -344,6 +344,7 @@ internal sealed class BenchmarkRun(CaseJson json, MeasurementMethods methods)
         foreach (var process in result.BenchmarkReport.Processes)
         {
             var check = LatestCheck(request.OutputDirectory, process.CheckFile);
+            var lastConfirmedStage = check?.LastConfirmedStage;
             if (check?.Failures.Count > 0)
             {
                 failed = true;
@@ -355,7 +356,7 @@ internal sealed class BenchmarkRun(CaseJson json, MeasurementMethods methods)
                 AddFailure(
                     RunStage.BenchmarkProcessExit,
                     "BDNのErrorsに測定失敗が記録されています。",
-                    check?.LastConfirmedStage,
+                    lastConfirmedStage,
                     string.Join(Environment.NewLine, process.Errors)
                 );
             }
@@ -375,7 +376,7 @@ internal sealed class BenchmarkRun(CaseJson json, MeasurementMethods methods)
                     failed = true;
                     if (!failures.Any(x => x.Stage == stage))
                     {
-                        AddFailure(stage, "固定期待値との照合に失敗しました。", check?.LastConfirmedStage);
+                        AddFailure(stage, "固定期待値との照合に失敗しました。", lastConfirmedStage);
                     }
                 }
             }
@@ -391,7 +392,7 @@ internal sealed class BenchmarkRun(CaseJson json, MeasurementMethods methods)
                 AddFailure(
                     RunStage.BenchmarkProcessExit,
                     "同じprocessの正常終了・Result測定行・前後検査完了が揃っていません。",
-                    check?.LastConfirmedStage,
+                    lastConfirmedStage,
                     interruption: "Job="
                         + process.JobId
                         + "; PID="

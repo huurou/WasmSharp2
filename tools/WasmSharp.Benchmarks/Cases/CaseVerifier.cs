@@ -184,7 +184,7 @@ internal static class CaseVerifier
             {
                 return new(false, definition.CaseId, stage, "hash_algorithm", "sha256", array.HashAlgorithm);
             }
-            var bytes = new byte[ByteLength(array.ElementType, array.Length)];
+            var bytes = new byte[checked((int)array.ElementType.GetByteLength(array.Length))];
             instance.GetMemory(array.MemoryExport).Read(array.Offset, bytes);
             var digest = Convert.ToHexStringLower(SHA256.HashData(bytes));
             if (digest != array.Digest)
@@ -208,7 +208,7 @@ internal static class CaseVerifier
                     definition.ExpectedResult.Arrays.Any(x =>
                         x.MemoryExport == input.MemoryExport
                         && x.Offset == input.Offset
-                        && ByteLength(x.ElementType, x.Length) == input.Bytes.Length
+                        && x.ElementType.GetByteLength(x.Length) == (ulong)input.Bytes.Length
                     )
                 )
                 {
@@ -281,17 +281,6 @@ internal static class CaseVerifier
             }
         }
         return null;
-    }
-
-    private static int ByteLength(ArrayElementType type, uint length)
-    {
-        var elementSize = type switch
-        {
-            ArrayElementType.U8 => 1,
-            ArrayElementType.U32 => sizeof(uint),
-            _ => throw new InvalidDataException($"配列要素型'{type}'は未対応です。"),
-        };
-        return checked((int)((ulong)length * (uint)elementSize));
     }
 
     private static VerificationResult VerifyResults(BenchmarkCase definition, WasmResults results)

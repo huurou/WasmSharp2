@@ -19,6 +19,36 @@ internal class BenchmarkRun_RunTests
     }
 
     [Test]
+    public async Task 未登録ケースを指定する_測定を開始せず準備失敗の理由と予定を保存する()
+    {
+        // Arrange
+        using var assets = new AssetLoadingFixture();
+        using var run = new RunStoreFixture();
+        var request = new RunRequest(
+            run.DirectoryPath,
+            assets.ManifestPath,
+            ["unknown"],
+            RunKind.Smoke,
+            BenchmarkConfig.Create(),
+            "",
+            new CommandInvocation("dotnet", [], "")
+        );
+
+        // Act & Assert
+        await Assert.That(() => _benchmarkRun.Run(request)).Throws<InvalidDataException>();
+        var manifest = RunStore.Load(run.DirectoryPath, _json);
+        using (Assert.Multiple())
+        {
+            await Assert.That(manifest.PlannedCaseIds).IsEquivalentTo(["unknown"]);
+            await Assert.That(manifest.Status).IsEqualTo(ResultStatus.Incomplete);
+            await Assert
+                .That(manifest.Failures.Any(x => x.Stage == RunStage.Preparation && x.Message!.Contains("unknown")))
+                .IsTrue();
+            await Assert.That(Directory.Exists(Path.Combine(run.DirectoryPath, "raw"))).IsFalse();
+        }
+    }
+
+    [Test]
     [Arguments(true, ResultStatus.Succeeded)]
     [Arguments(false, ResultStatus.Failed)]
     public async Task 測定reportを受け取る_保存済み条件で予定メソッドだけを実行し成否を確定する(

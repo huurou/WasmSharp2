@@ -36,7 +36,7 @@ internal sealed class FunctionCode(
     /// <summary>
     /// 引数を含まない追加localsの合計数
     /// </summary>
-    internal ulong LocalCount { get; } = CountLocals(locals);
+    internal ulong LocalCount { get; } = locals.IsEmpty ? 0u : locals[^1].EndIndex;
 
     /// <summary>
     /// 関数の実行に必要なoperand領域の最大要素数
@@ -51,28 +51,14 @@ internal sealed class FunctionCode(
     private static ImmutableArray<LocalInitializer> CreateLocals(ReadOnlySpan<LocalDeclaration> locals)
     {
         var initializers = ImmutableArray.CreateBuilder<LocalInitializer>(locals.Length);
+        uint previousEnd = 0;
         foreach (var local in locals)
         {
-            initializers.Add(new LocalInitializer(local.Count, CreateInitialValue(local.Type)));
+            initializers.Add(new LocalInitializer(local.EndIndex - previousEnd, CreateInitialValue(local.Type)));
+            previousEnd = local.EndIndex;
         }
 
         return initializers.MoveToImmutable();
-    }
-
-    /// <summary>
-    /// 追加localsの個数を巡回しない幅で合計する
-    /// </summary>
-    /// <param name="locals">追加localsの圧縮宣言</param>
-    /// <returns>追加localsの合計数</returns>
-    private static ulong CountLocals(ReadOnlySpan<LocalDeclaration> locals)
-    {
-        ulong count = 0;
-        foreach (var local in locals)
-        {
-            count += local.Count;
-        }
-
-        return count;
     }
 
     /// <summary>

@@ -28,7 +28,7 @@ internal sealed class DecodedFunction(
     internal long BodyOffset { get; } = bodyOffset;
 
     /// <summary>
-    /// 個数と型で圧縮したlocal宣言を保持する不変配列
+    /// 各宣言の終端と型で圧縮したlocal宣言を保持する不変配列
     /// </summary>
     internal ImmutableArray<LocalDeclaration> Locals { get; } = ImmutableArray.Create(locals);
 

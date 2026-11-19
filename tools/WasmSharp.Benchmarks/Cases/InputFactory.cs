@@ -76,13 +76,7 @@ internal static class InputFactory
             );
         }
 
-        var elementSize = input.ElementType == ArrayElementType.U8 ? 1 : sizeof(uint);
-        var byteLength = (ulong)input.Length * (uint)elementSize;
-        if (byteLength > (ulong)Array.MaxLength)
-        {
-            throw new InvalidDataException($"ケース'{caseId}'の配列長{input.Length}が入力生成の上限を超えています。");
-        }
-        var bytes = new byte[(int)byteLength];
+        var bytes = new byte[input.GetBufferLength(caseId)];
         if (input.Pattern == ArrayInputPattern.RepeatedByte)
         {
             bytes.AsSpan().Fill(input.FillByte!.Value);

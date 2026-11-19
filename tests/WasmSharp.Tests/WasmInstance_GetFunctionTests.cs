@@ -185,6 +185,10 @@ internal class WasmInstance_GetFunctionTests
 
         // Act & Assert
         var exception = await Assert.That(() => instance.GetFunction(name)).ThrowsExactly<ArgumentException>();
-        await Assert.That(exception!.ParamName).IsEqualTo("name");
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.ParamName).IsEqualTo("name");
+            await Assert.That(exception.Message).Contains("関数export");
+        }
     }
 }

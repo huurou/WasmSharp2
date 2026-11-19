@@ -312,12 +312,12 @@ internal static class ModuleValidator
         var names = new HashSet<string>(StringComparer.Ordinal);
         foreach (var export in module.Exports)
         {
-            var count = export.Kind switch
+            var (count, category) = export.Kind switch
             {
-                WasmExternalKind.Function => functionCount,
-                WasmExternalKind.Table => tableCount,
-                WasmExternalKind.Memory => memoryCount,
-                WasmExternalKind.Global => globalCount,
+                WasmExternalKind.Function => (functionCount, "function"),
+                WasmExternalKind.Table => (tableCount, "table"),
+                WasmExternalKind.Memory => (memoryCount, "memory"),
+                WasmExternalKind.Global => (globalCount, "global"),
                 _ => throw new InvalidOperationException("デコード済みexportの種類が不正です。"),
             };
             var location = new WasmFailureLocation(
@@ -328,14 +328,6 @@ internal static class ModuleValidator
             );
             if (export.Index >= count)
             {
-                var category = export.Kind switch
-                {
-                    WasmExternalKind.Function => "function",
-                    WasmExternalKind.Table => "table",
-                    WasmExternalKind.Memory => "memory",
-                    WasmExternalKind.Global => "global",
-                    _ => throw new InvalidOperationException("デコード済みexportの種類が不正です。"),
-                };
                 throw ValidationDiagnostics.UnknownIndex(
                     category,
                     export.Index,

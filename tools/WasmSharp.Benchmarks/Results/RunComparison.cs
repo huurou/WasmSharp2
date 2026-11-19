@@ -57,7 +57,7 @@ internal sealed partial class RunComparison(CaseJson json)
     {
         try
         {
-            // 保存参照の存在とhashはRunStoreに集約し、観測された外部pathを再読込しない
+            // 数値の比較では、run IDとhashの採取に使ったmanifestから同じcaseの条件を読む。
             var run = savedRun ?? RunStore.Load(directory, _json);
             var result = run.Cases.SingleOrDefault(x => x.CaseId == caseId);
             if (
@@ -104,15 +104,7 @@ internal sealed partial class RunComparison(CaseJson json)
                 _json
             );
         }
-        catch (Exception exception)
-            when (exception
-                    is IOException
-                        or InvalidDataException
-                        or JsonException
-                        or InvalidOperationException
-                        or ArgumentException
-                        or UnauthorizedAccessException
-            )
+        catch (Exception exception) when (IsReadFailure(exception))
         {
             reasons.Add(
                 new(

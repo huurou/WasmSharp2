@@ -192,18 +192,14 @@ internal static class ExpressionDecoder
     private static BlockType ReadBlockType(ref ModuleBinaryReader reader)
     {
         var offset = reader.Position;
-        if (reader.TryPeekByte(out var code))
+        if (reader.TryPeekByte(out var code) && code is >= 0x40 and < 0x80)
         {
             if (code == 0x40)
             {
                 reader.ReadByte();
                 return BlockType.Empty;
             }
-
-            if (code is > 0x40 and < 0x80)
-            {
-                return BlockType.FromValue(ModuleBinaryFormat.ReadValueType(ref reader));
-            }
+            return BlockType.FromValue(ModuleBinaryFormat.ReadValueType(ref reader));
         }
 
         var typeIndex = reader.ReadS33();
@@ -227,9 +223,8 @@ internal static class ExpressionDecoder
     {
         var countOffset = reader.Position;
         var count = ModuleBinaryFormat.ReadCount(ref reader);
-        ModuleBinaryFormat.EnsureCollectionSize(
+        reader.EnsureCollectionSize(
             (ulong)count + 1,
-            ref reader,
             countOffset,
             "既定を含むラベル数が配列の保持上限を超えています。"
         );
@@ -275,9 +270,8 @@ internal static class ExpressionDecoder
         ref ModuleBinaryReader reader
     )
     {
-        ModuleBinaryFormat.EnsureCollectionSize(
+        reader.EnsureCollectionSize(
             (ulong)instructions.Count + 1,
-            ref reader,
             instruction.ByteOffset,
             "命令数が配列の保持上限を超えています。"
         );

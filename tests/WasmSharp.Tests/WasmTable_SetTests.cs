@@ -69,8 +69,13 @@ internal class WasmTable_SetTests
             : WasmValue.FromFuncRef(null);
 
         // Act & Assert
-        await Assert.That(() => table.Set(0, invalid)).ThrowsExactly<ArgumentException>();
-        await Assert.That(table.Get(0)).IsEqualTo(original);
+        var exception = await Assert.That(() => table.Set(0, invalid)).ThrowsExactly<ArgumentException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.ParamName).IsEqualTo("value");
+            await Assert.That(exception.Message).Contains("要素型");
+            await Assert.That(table.Get(0)).IsEqualTo(original);
+        }
     }
 
     [Test]
@@ -84,10 +89,15 @@ internal class WasmTable_SetTests
         table.Set(0, WasmValue.FromExternRef(reference));
 
         // Act & Assert
-        await Assert
+        var exception = await Assert
             .That(() => table.Set(index, WasmValue.FromExternRef(null)))
             .ThrowsExactly<ArgumentOutOfRangeException>();
-        await Assert.That(ReferenceEquals(table.Get(0).AsExternRef(), reference)).IsTrue();
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.ParamName).IsEqualTo("index");
+            await Assert.That(exception.Message).Contains("tableの範囲外");
+            await Assert.That(table.Get(0).AsExternRef()).IsSameReferenceAs(reference);
+        }
     }
 
     [Test]

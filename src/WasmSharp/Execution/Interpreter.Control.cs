@@ -8,6 +8,7 @@ internal static partial class Interpreter
     /// <param name="context">現在の実行コンテキスト</param>
     /// <param name="instruction">検証済みのnopまたは制御入口のmarker</param>
     /// <returns>実行の成功</returns>
+    // Stryker disable once Block: nopは状態を変更せず、空の本体で返される既定値も実行の成功を表す
     internal static ExecutionResult NoOp(InterpreterContext context, in Instruction instruction)
     {
         return default;

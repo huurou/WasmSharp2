@@ -19,12 +19,25 @@ internal class WasmException_ConstructorTests
             new WasmValidateException(),
             new WasmValidateException(null),
             new WasmValidateException(null, null),
+            new WasmInstantiateException(),
+            new WasmInvokeException(),
+            new WasmPlatformCapabilityException(),
         ];
-        WasmException[] withMessage = [new WasmDecodeException("失敗"), new WasmValidateException("失敗")];
+        WasmException[] withMessage =
+        [
+            new WasmDecodeException("失敗"),
+            new WasmValidateException("失敗"),
+            new WasmInstantiateException("失敗"),
+            new WasmInvokeException("失敗"),
+            new WasmPlatformCapabilityException("失敗"),
+        ];
         WasmException[] withInnerException =
         [
             new WasmDecodeException("失敗", innerException),
             new WasmValidateException("失敗", innerException),
+            new WasmInstantiateException("失敗", innerException),
+            new WasmInvokeException("失敗", innerException),
+            new WasmPlatformCapabilityException("失敗", innerException),
         ];
 
         // Assert

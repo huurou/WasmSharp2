@@ -101,9 +101,13 @@ internal class WasmTable_TryGrowTests
         table.Set(0, WasmValue.FromExternRef(reference));
 
         // Act & Assert
-        await Assert.That(() => table.TryGrow(delta, WasmValue.FromFuncRef(null), out _)).ThrowsExactly<ArgumentException>();
+        var exception = await Assert
+            .That(() => table.TryGrow(delta, WasmValue.FromFuncRef(null), out _))
+            .ThrowsExactly<ArgumentException>();
         using (Assert.Multiple())
         {
+            await Assert.That(exception!.ParamName).IsEqualTo("initialValue");
+            await Assert.That(exception.Message).Contains("要素型");
             await Assert.That(table.Count).IsEqualTo(1u);
             await Assert.That(ReferenceEquals(table.Get(0).AsExternRef(), reference)).IsTrue();
         }

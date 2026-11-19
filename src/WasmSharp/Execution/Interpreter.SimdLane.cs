@@ -1119,10 +1119,11 @@ internal static partial class Interpreter
     {
         var vector = SimdValue.FromValue(context.PopValue());
         var mask = 0;
-        for (var laneIndex = 0; laneIndex < 128 / bitWidth; laneIndex++)
+        var signBit = 1UL << (bitWidth - 1);
+        for (var laneIndex = 128 / bitWidth - 1; laneIndex >= 0; laneIndex--)
         {
-            var signBit = vector.GetLane(bitWidth, laneIndex) >> (bitWidth - 1);
-            mask |= (int)signBit << laneIndex;
+            var lane = vector.GetLane(bitWidth, laneIndex);
+            mask = (mask << 1) | ((lane & signBit) != 0 ? 1 : 0);
         }
 
         context.PushValue(WasmValue.FromI32(mask));

@@ -33,21 +33,8 @@ internal static class FunctionValidator
         ReferenceValidationContext references
     )
     {
-        const int STACKALLOC_DECLARATION_LIMIT = 128;
-
         var function = module.Functions[definitionIndex];
         var type = functionTypes[(int)moduleFunctionIndex];
-        // 圧縮宣言ごとの累積終端を使い、localの個数に比例する配列は作らない。
-        var localEnds =
-            function.Locals.Length <= STACKALLOC_DECLARATION_LIMIT
-                ? stackalloc ulong[function.Locals.Length]
-                : new ulong[function.Locals.Length];
-        ulong localCount = 0;
-        for (var index = 0; index < function.Locals.Length; index++)
-        {
-            localCount += function.Locals[index].Count;
-            localEnds[index] = localCount;
-        }
         var instructions = ImmutableArray.CreateBuilder<Instruction>(function.Instructions.Length);
         var branchTargets = ImmutableArray.CreateBuilder<BranchTarget>();
         List<WasmValueKind?> stack = [];
@@ -467,7 +454,7 @@ internal static class FunctionValidator
                 case ValidationRule.LocalGet:
                 case ValidationRule.LocalSet:
                 case ValidationRule.LocalTee:
-                    var localType = GetLocalType(instruction.Index, instruction.ByteOffset, localEnds);
+                    var localType = GetLocalType(instruction.Index, instruction.ByteOffset);
                     if (descriptor.Validation != ValidationRule.LocalGet)
                     {
                         Pop(localType, instruction.ByteOffset);
@@ -676,7 +663,7 @@ internal static class FunctionValidator
             branchTargets[index] = branchTargets[index] with { TargetPc = targetPc };
         }
 
-        WasmValueKind GetLocalType(uint index, long byteOffset, ReadOnlySpan<ulong> ends)
+        WasmValueKind GetLocalType(uint index, long byteOffset)
         {
             if (index < (uint)type.Parameters.Length)
             {
@@ -684,12 +671,12 @@ internal static class FunctionValidator
             }
             var localIndex = index - (uint)type.Parameters.Length;
             var lower = 0;
-            var upper = ends.Length;
+            var upper = function.Locals.Length;
             // 個数0の宣言を飛ばすため、添字より大きい最初の終端を探す。
             while (lower < upper)
             {
                 var middle = lower + (upper - lower) / 2;
-                if (localIndex < ends[middle])
+                if (localIndex < function.Locals[middle].EndIndex)
                 {
                     upper = middle;
                 }
@@ -699,7 +686,7 @@ internal static class FunctionValidator
                 }
             }
 
-            if (lower < ends.Length)
+            if (lower < function.Locals.Length)
             {
                 return function.Locals[lower].Type;
             }

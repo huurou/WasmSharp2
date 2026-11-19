@@ -94,7 +94,12 @@ internal class WasmImports_AddTests
         candidate.Define("new-last", new WasmMemory(new(0)));
 
         // Act & Assert
-        await Assert.That(() => imports.Add(candidate)).ThrowsExactly<ArgumentException>();
+        var duplicate = await Assert.That(() => imports.Add(candidate)).ThrowsExactly<ArgumentException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(duplicate!.ParamName).IsEqualTo("module");
+            await Assert.That(duplicate.Message).Contains("同じmodule名とitem名");
+        }
         var instance = WasmModule
             .Decode(
                 HostLinkingModuleBinary.Create(

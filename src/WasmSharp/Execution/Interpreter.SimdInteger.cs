@@ -1,4 +1,5 @@
 using System.Numerics;
+using System.Runtime.Intrinsics;
 
 namespace WasmSharp.Execution;
 
@@ -71,7 +72,7 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult I8x16Add(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdIntegerBinary(context, 8, static (x, y) => unchecked(x + y));
+        return AddSimdIntegers<byte>(context);
     }
 
     /// <summary>
@@ -189,7 +190,7 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult I8x16AvgrU(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdIntegerBinary(context, 8, static (x, y) => (x + y + 1) >> 1);
+        return ExecuteSimdIntegerBinary(context, 8, static (x, y) => (x + y + 1) / 2);
     }
 
     /// <summary>
@@ -200,7 +201,7 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult I8x16Shl(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdIntegerShift(context, 8, static (x, shift) => x << shift);
+        return ExecuteSimdIntegerShift<byte>(context, Vector128.ShiftLeft);
     }
 
     /// <summary>
@@ -211,7 +212,7 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult I8x16ShrS(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdIntegerShift(context, 8, static (x, shift) => unchecked((ulong)((sbyte)x >> shift)));
+        return ExecuteSimdIntegerShift<sbyte>(context, Vector128.ShiftRightArithmetic);
     }
 
     /// <summary>
@@ -222,7 +223,7 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult I8x16ShrU(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdIntegerShift(context, 8, static (x, shift) => x >> shift);
+        return ExecuteSimdIntegerShift<byte>(context, Vector128.ShiftRightLogical);
     }
 
     /// <summary>
@@ -297,7 +298,7 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult I16x8Add(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdIntegerBinary(context, 16, static (x, y) => unchecked(x + y));
+        return AddSimdIntegers<ushort>(context);
     }
 
     /// <summary>
@@ -434,7 +435,7 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult I16x8AvgrU(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdIntegerBinary(context, 16, static (x, y) => (x + y + 1) >> 1);
+        return ExecuteSimdIntegerBinary(context, 16, static (x, y) => (x + y + 1) / 2);
     }
 
     /// <summary>
@@ -445,7 +446,7 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult I16x8Shl(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdIntegerShift(context, 16, static (x, shift) => x << shift);
+        return ExecuteSimdIntegerShift<ushort>(context, Vector128.ShiftLeft);
     }
 
     /// <summary>
@@ -456,7 +457,7 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult I16x8ShrS(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdIntegerShift(context, 16, static (x, shift) => unchecked((ulong)((short)x >> shift)));
+        return ExecuteSimdIntegerShift<short>(context, Vector128.ShiftRightArithmetic);
     }
 
     /// <summary>
@@ -467,7 +468,7 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult I16x8ShrU(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdIntegerShift(context, 16, static (x, shift) => x >> shift);
+        return ExecuteSimdIntegerShift<ushort>(context, Vector128.ShiftRightLogical);
     }
 
     /// <summary>
@@ -500,7 +501,7 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult I32x4Add(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdIntegerBinary(context, 32, static (x, y) => unchecked(x + y));
+        return AddSimdIntegers<uint>(context);
     }
 
     /// <summary>
@@ -577,7 +578,7 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult I32x4Shl(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdIntegerShift(context, 32, static (x, shift) => x << shift);
+        return ExecuteSimdIntegerShift<uint>(context, Vector128.ShiftLeft);
     }
 
     /// <summary>
@@ -588,7 +589,7 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult I32x4ShrS(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdIntegerShift(context, 32, static (x, shift) => unchecked((ulong)((int)x >> shift)));
+        return ExecuteSimdIntegerShift<int>(context, Vector128.ShiftRightArithmetic);
     }
 
     /// <summary>
@@ -599,7 +600,7 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult I32x4ShrU(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdIntegerShift(context, 32, static (x, shift) => x >> shift);
+        return ExecuteSimdIntegerShift<uint>(context, Vector128.ShiftRightLogical);
     }
 
     /// <summary>
@@ -632,7 +633,7 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult I64x2Add(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdIntegerBinary(context, 64, static (x, y) => unchecked(x + y));
+        return AddSimdIntegers<ulong>(context);
     }
 
     /// <summary>
@@ -665,7 +666,7 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult I64x2Shl(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdIntegerShift(context, 64, static (x, shift) => x << shift);
+        return ExecuteSimdIntegerShift<ulong>(context, Vector128.ShiftLeft);
     }
 
     /// <summary>
@@ -676,7 +677,7 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult I64x2ShrS(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdIntegerShift(context, 64, static (x, shift) => unchecked((ulong)((long)x >> shift)));
+        return ExecuteSimdIntegerShift<long>(context, Vector128.ShiftRightArithmetic);
     }
 
     /// <summary>
@@ -687,7 +688,7 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult I64x2ShrU(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdIntegerShift(context, 64, static (x, shift) => x >> shift);
+        return ExecuteSimdIntegerShift<ulong>(context, Vector128.ShiftRightLogical);
     }
 
     /// <summary>
@@ -987,7 +988,11 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult I16x8ExtAddPairwiseI8x16S(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdIntegerUnary(context, 16, static x => unchecked((ulong)((sbyte)x + (sbyte)(x >> 8))));
+        return ExecuteSimdIntegerUnary(context, 16, static x =>
+        {
+            var (high, low) = Math.DivRem(x, 0x100UL);
+            return unchecked((ulong)((sbyte)low + (sbyte)high));
+        });
     }
 
     /// <summary>
@@ -998,7 +1003,11 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult I16x8ExtAddPairwiseI8x16U(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdIntegerUnary(context, 16, static x => (x & 0xFFUL) + (x >> 8));
+        return ExecuteSimdIntegerUnary(context, 16, static x =>
+        {
+            var (high, low) = Math.DivRem(x, 0x100UL);
+            return low + high;
+        });
     }
 
     /// <summary>
@@ -1009,7 +1018,11 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult I32x4ExtAddPairwiseI16x8S(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdIntegerUnary(context, 32, static x => unchecked((ulong)((short)x + (short)(x >> 16))));
+        return ExecuteSimdIntegerUnary(context, 32, static x =>
+        {
+            var (high, low) = Math.DivRem(x, 0x1_0000UL);
+            return unchecked((ulong)((short)low + (short)high));
+        });
     }
 
     /// <summary>
@@ -1020,7 +1033,11 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult I32x4ExtAddPairwiseI16x8U(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdIntegerUnary(context, 32, static x => (x & 0xFFFFUL) + (x >> 16));
+        return ExecuteSimdIntegerUnary(context, 32, static x =>
+        {
+            var (high, low) = Math.DivRem(x, 0x1_0000UL);
+            return low + high;
+        });
     }
 
     /// <summary>
@@ -1035,7 +1052,12 @@ internal static partial class Interpreter
         return ExecuteSimdIntegerBinary(
             context,
             32,
-            static (x, y) => unchecked((ulong)((long)(short)x * (short)y + (long)(short)(x >> 16) * (short)(y >> 16)))
+            static (x, y) =>
+            {
+                var (leftHigh, leftLow) = Math.DivRem(x, 0x1_0000UL);
+                var (rightHigh, rightLow) = Math.DivRem(y, 0x1_0000UL);
+                return unchecked((ulong)((short)leftLow * (short)rightLow + (short)leftHigh * (short)rightHigh));
+            }
         );
     }
 
@@ -1154,7 +1176,7 @@ internal static partial class Interpreter
     )
     {
         var vector = SimdValue.FromValue(context.PopValue());
-        context.PushValue(MapSimdIntegerUnary(vector, bitWidth, operation).ToValue());
+        context.PushValue(vector.MapUnary(bitWidth, operation).ToValue());
         return default;
     }
 
@@ -1173,7 +1195,7 @@ internal static partial class Interpreter
     {
         var second = SimdValue.FromValue(context.PopValue());
         var first = SimdValue.FromValue(context.PopValue());
-        context.PushValue(MapSimdIntegerBinary(first, second, bitWidth, operation).ToValue());
+        context.PushValue(first.MapBinary(second, bitWidth, operation).ToValue());
         return default;
     }
 
@@ -1197,21 +1219,38 @@ internal static partial class Interpreter
     }
 
     /// <summary>
-    /// i32シフト量をlane幅で剰余化してvectorの演算結果を積む
+    /// 対応する整数幅で全laneを一括加算する。各和はそのlane幅で折り返す
     /// </summary>
-    /// <param name="context">検証済みのoperandを持つ実行コンテキスト</param>
-    /// <param name="bitWidth">laneの幅</param>
-    /// <param name="operation">laneのビット列と剰余化したシフト量へ適用する演算</param>
-    /// <returns>実行の成功</returns>
-    private static ExecutionResult ExecuteSimdIntegerShift(
-        InterpreterContext context,
-        int bitWidth,
-        Func<ulong, int, ulong> operation
-    )
+    private static ExecutionResult AddSimdIntegers<T>(InterpreterContext context)
+        where T : struct
     {
-        var shift = (int)(unchecked((uint)context.PopValue().AsI32()) % (uint)bitWidth);
-        var vector = SimdValue.FromValue(context.PopValue());
-        context.PushValue(MapSimdIntegerShift(vector, bitWidth, shift, operation).ToValue());
+        var (rightLow, rightHigh) = context.PopValue().AsV128();
+        var (leftLow, leftHigh) = context.PopValue().AsV128();
+        var left = Vector128.Create(leftLow, leftHigh).As<ulong, T>();
+        var right = Vector128.Create(rightLow, rightHigh).As<ulong, T>();
+        var result = Vector128.Add(left, right).AsUInt64();
+        context.PushValue(WasmValue.FromV128(result.GetElement(0), result.GetElement(1)));
+        return default;
+    }
+
+    /// <summary>
+    /// lane幅でシフト量を剰余化するVector128の整数演算を全laneへ適用する
+    /// </summary>
+    /// <typeparam name="T">シフトの幅と符号を定めるlaneの整数型</typeparam>
+    /// <param name="context">vectorとシフト量を持つ実行コンテキスト</param>
+    /// <param name="operation">命令に対応する128ビットのシフト演算</param>
+    /// <returns>実行の成功</returns>
+    private static ExecutionResult ExecuteSimdIntegerShift<T>(
+        InterpreterContext context,
+        Func<Vector128<T>, int, Vector128<T>> operation
+    )
+        where T : struct
+    {
+        var shift = context.PopValue().AsI32();
+        var (low64, high64) = context.PopValue().AsV128();
+        var vector = Vector128.Create(low64, high64).As<ulong, T>();
+        var result = operation(vector, shift).AsUInt64();
+        context.PushValue(WasmValue.FromV128(result.GetElement(0), result.GetElement(1)));
         return default;
     }
 
@@ -1225,49 +1264,6 @@ internal static partial class Interpreter
     private static ulong SaturateSimdInteger(int value, int minimum, int maximum)
     {
         return unchecked((ulong)Math.Clamp(value, minimum, maximum));
-    }
-
-    /// <summary>
-    /// 単項演算の結果をlane幅へ切り詰め新しいvectorを構築する
-    /// </summary>
-    /// <param name="vector">入力のビット列</param>
-    /// <param name="bitWidth">laneの幅</param>
-    /// <param name="operation">laneごとの純粋な整数演算</param>
-    /// <returns>演算後のビット列</returns>
-    private static SimdValue MapSimdIntegerUnary(SimdValue vector, int bitWidth, Func<ulong, ulong> operation)
-    {
-        var result = default(SimdValue);
-        for (var laneIndex = 0; laneIndex < 128 / bitWidth; laneIndex++)
-        {
-            result = result.WithLane(bitWidth, laneIndex, operation(vector.GetLane(bitWidth, laneIndex)));
-        }
-
-        return result;
-    }
-
-    /// <summary>
-    /// 二項演算の結果をlane幅へ切り詰め新しいvectorを構築する
-    /// </summary>
-    /// <param name="first">左operandのビット列</param>
-    /// <param name="second">右operandのビット列</param>
-    /// <param name="bitWidth">laneの幅</param>
-    /// <param name="operation">左右のlaneへ適用する純粋な整数演算</param>
-    /// <returns>演算後のビット列</returns>
-    private static SimdValue MapSimdIntegerBinary(
-        SimdValue first,
-        SimdValue second,
-        int bitWidth,
-        Func<ulong, ulong, ulong> operation
-    )
-    {
-        var result = default(SimdValue);
-        for (var laneIndex = 0; laneIndex < 128 / bitWidth; laneIndex++)
-        {
-            var bits = operation(first.GetLane(bitWidth, laneIndex), second.GetLane(bitWidth, laneIndex));
-            result = result.WithLane(bitWidth, laneIndex, bits);
-        }
-
-        return result;
     }
 
     /// <summary>
@@ -1296,30 +1292,6 @@ internal static partial class Interpreter
                 laneIndex + sourceLaneCount,
                 saturate(second.GetLane(sourceBitWidth, laneIndex))
             );
-        }
-
-        return result;
-    }
-
-    /// <summary>
-    /// シフト演算の結果をlane幅へ切り詰め新しいvectorを構築する
-    /// </summary>
-    /// <param name="vector">入力のビット列</param>
-    /// <param name="bitWidth">laneの幅</param>
-    /// <param name="shift">lane幅で剰余化したシフト量</param>
-    /// <param name="operation">各laneへ適用する純粋なシフト演算</param>
-    /// <returns>演算後のビット列</returns>
-    private static SimdValue MapSimdIntegerShift(
-        SimdValue vector,
-        int bitWidth,
-        int shift,
-        Func<ulong, int, ulong> operation
-    )
-    {
-        var result = default(SimdValue);
-        for (var laneIndex = 0; laneIndex < 128 / bitWidth; laneIndex++)
-        {
-            result = result.WithLane(bitWidth, laneIndex, operation(vector.GetLane(bitWidth, laneIndex), shift));
         }
 
         return result;

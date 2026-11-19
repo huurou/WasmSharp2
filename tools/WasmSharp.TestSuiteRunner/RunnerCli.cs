@@ -59,7 +59,7 @@ internal sealed class RunnerCli(ConversionProfile profile, Func<ConversionProfil
                 "baseline-save" => SaveBaseline(paths, output),
                 "compare-conversion" or "compare-run" => Compare(args[0], paths, output, error),
                 "verify" => Verify(paths["--input"], output),
-                _ => throw new InvalidOperationException("解析済みの操作が見つかりません。"),
+                _ => throw new System.Diagnostics.UnreachableException(),
             };
         }
         catch (Exception ex)
@@ -255,7 +255,7 @@ internal sealed class RunnerCli(ConversionProfile profile, Func<ConversionProfil
     /// <returns>同じ配置または配下の場合はtrue</returns>
     private static bool ContainsPath(string root, string path)
     {
-        var comparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+        var comparison = RunnerPaths.Current.Comparison;
         return string.Equals(root, path, comparison)
             || path.StartsWith(Path.EndsInDirectorySeparator(root) ? root : root + Path.DirectorySeparatorChar, comparison);
     }
@@ -529,9 +529,7 @@ internal sealed class RunnerCli(ConversionProfile profile, Func<ConversionProfil
     /// <param name="output">操作説明の表示先</param>
     private static void WriteHelp(TextWriter output)
     {
-        var converter = OperatingSystem.IsWindows()
-            ? "artifacts/wabt-core2-1.0.42-datacount/Release/wast2json.exe"
-            : "artifacts/wabt-core2-1.0.42-datacount/wast2json";
+        var converter = RunnerPaths.Current.Wast2Json;
         output.WriteLine(
             $$"""
             Test Suite Runner: WebAssembly Core 2.0の公式適合検証とCore 3.0の素材生成・実行ツール

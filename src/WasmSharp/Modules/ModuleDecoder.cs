@@ -653,7 +653,7 @@ internal static class ModuleDecoder
     /// 追加localsの圧縮宣言を取得し、合計個数がCore 2.0の上限以内であることを確認する
     /// </summary>
     /// <param name="reader">関数本体のlocal宣言の先頭にある読み取り状態 宣言の終端まで進める</param>
-    /// <returns>入力順の個数と値型の組 個々のlocalへの展開は行わない</returns>
+    /// <returns>宣言ごとの累積個数と値型の組 個々のlocalへの展開は行わない</returns>
     /// <exception cref="WasmDecodeException">宣言の符号化が不正か、追加localsの合計がu32の範囲を超える場合</exception>
     /// <exception cref="ModuleReadBoundaryException">限定された範囲内で構文を読み終えられない場合</exception>
     /// <exception cref="WasmImplementationLimitException">圧縮宣言の件数がコレクションの保持上限を超える場合</exception>
@@ -673,8 +673,10 @@ internal static class ModuleDecoder
             {
                 overflowOffset ??= offset;
             }
-
-            locals.Add(new LocalDeclaration(localCount, type));
+            else
+            {
+                locals.Add(new LocalDeclaration((uint)total, type));
+            }
         }
 
         if (overflowOffset is not null)

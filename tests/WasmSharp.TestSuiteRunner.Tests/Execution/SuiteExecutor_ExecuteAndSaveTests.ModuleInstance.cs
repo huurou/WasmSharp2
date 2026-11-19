@@ -132,7 +132,7 @@ public partial class SuiteExecutor_ExecuteAndSaveTests
     }
 
     [Test]
-    public async Task startでtrapした通常moduleの定義からinstanceを生成する_定義を不成立にせずインスタンス化の失敗として保存する()
+    public async Task 通常moduleのstartでtrapした後に定義からinstanceを生成する_定義を保ちインスタンス化の失敗として保存する()
     {
         // Arrange
         using var fixture = CorpusFixture.Create();
@@ -211,14 +211,16 @@ public partial class SuiteExecutor_ExecuteAndSaveTests
     }
 
     [Test]
-    public async Task 読み取れないmodule_definition_以前の定義へ戻さず直近の定義を使うinstanceを原因付きでblockedにする()
+    [Arguments("module_definition")]
+    [Arguments("module")]
+    public async Task 読み取れないmoduleの定義_以前の定義へ戻さず直近の定義を使うinstanceを原因付きでblockedにする(string commandType)
     {
         // Arrange
         using var fixture = CorpusFixture.Create();
         fixture.ReplaceScriptA(
-            """
+            $$"""
             {"type":"module_definition","line":1,"filename":"a.0.wasm","module_type":"binary"},
-            {"type":"module_definition","line":2,"filename":"a.1.wasm","module_type":7},
+            {"type":"{{commandType}}","line":2,"filename":"a.1.wasm","module_type":7},
             {"type":"module_instance","line":3}
             """,
             StartCounter,

@@ -1,10 +1,43 @@
 using System.Security.Cryptography;
 using System.Text.Json;
+using WasmSharp.Benchmarks.Cases;
 
 namespace WasmSharp.Benchmarks.Results;
 
 internal sealed partial class RunComparison
 {
+    /// <summary>
+    /// 保存runとpolicyに含まれる全caseを比較し、同じrunの記録から未完了の有無を返す
+    /// </summary>
+    internal (ComparisonReport Report, bool HasIncompleteRun) Compare(
+        List<string> baselineDirectories,
+        List<string> currentDirectories,
+        string policyPath
+    )
+    {
+        var baseline = baselineDirectories.Select(LoadRun).ToList();
+        var current = currentDirectories.Select(LoadRun).ToList();
+        var runs = baseline.Concat(current);
+        policyPath = Path.GetFullPath(policyPath);
+        var policyBytes = File.ReadAllBytes(policyPath);
+        var policy =
+            JsonSerializer.Deserialize<ComparisonPolicy>(policyBytes, _json.Options)
+            ?? throw new InvalidDataException("policyのJSONがnullです。");
+        var request = new ComparisonRequest(
+            baselineDirectories,
+            currentDirectories,
+            policyPath,
+            Convert.ToHexStringLower(SHA256.HashData(policyBytes)),
+            [
+                .. runs.SelectMany(x => x.Manifest.PlannedCaseIds)
+                    .Concat(policy.Cases.Select(x => x.CaseId))
+                    .Distinct(StringComparer.Ordinal)
+                    .Order(StringComparer.Ordinal),
+            ]
+        );
+        return (Compare(request, baseline, current, []), runs.Any(x => x.Manifest.Status == ResultStatus.Incomplete));
+    }
+
     /// <summary>
     /// 保存runディレクトリ群と指定hashの事前policyを読み、各caseの両指標を判定する
     /// </summary>
@@ -13,6 +46,16 @@ internal sealed partial class RunComparison
         var reasons = new List<ComparisonReason>();
         var baseline = ReadRuns(request.BaselineRunDirectories, reasons);
         var current = ReadRuns(request.CurrentRunDirectories, reasons);
+        return Compare(request, baseline, current, reasons);
+    }
+
+    private ComparisonReport Compare(
+        ComparisonRequest request,
+        List<ComparisonRun> baseline,
+        List<ComparisonRun> current,
+        List<ComparisonReason> reasons
+    )
+    {
         var policy = ReadPolicy(request, reasons);
         if (baseline.Select(x => x.Manifest.RunId).Intersect(current.Select(x => x.Manifest.RunId)).Any())
         {
@@ -40,15 +83,7 @@ internal sealed partial class RunComparison
         {
             try
             {
-                var manifest = RunStore.Load(directory, _json);
-                var path = Path.Combine(directory, "run.json");
-                runs.Add(
-                    new(
-                        directory,
-                        manifest,
-                        new(manifest.RunId, new(path, Convert.ToHexStringLower(SHA256.HashData(File.ReadAllBytes(path)))))
-                    )
-                );
+                runs.Add(LoadRun(directory));
             }
             catch (Exception exception) when (IsReadFailure(exception))
             {
@@ -65,6 +100,14 @@ internal sealed partial class RunComparison
             reasons.Add(new(ComparisonReasonKind.InsufficientMeasurements, "群内の独立run IDが重複しています。"));
         }
         return runs;
+    }
+
+    private ComparisonRun LoadRun(string directory)
+    {
+        var manifest = RunStore.Load(directory, _json, out var content);
+        var hash = Convert.ToHexStringLower(SHA256.HashData(content));
+        var file = new ManifestFile(Path.Combine(directory, "run.json"), hash);
+        return new(directory, manifest, new(manifest.RunId, file));
     }
 
     private ComparisonPolicy? ReadPolicy(ComparisonRequest request, List<ComparisonReason> reasons)
@@ -121,7 +164,7 @@ internal sealed partial class RunComparison
                     )
                 );
             }
-            var conditions = ReadConditions(run.Directory, caseId, reasons, run.Manifest);
+            var conditions = ReadConditions(run.Directory, caseId, reasons, savedRun: run.Manifest);
             if (conditions is not null)
             {
                 if (reference is null)

@@ -16,7 +16,7 @@ internal class FunctionCode_ConstructorTests
             new(ExecutionOpcode.Op44, WasmValue.FromF64Bits(0xFFF8123456789ABC), 12345678901, 0),
             new(ExecutionOpcode.Op0B, default, 12345678910, 0),
         ];
-        LocalDeclaration[] locals = [new(3, WasmValueKind.I32), new(2, WasmValueKind.ExternRef)];
+        LocalDeclaration[] locals = [new(3, WasmValueKind.I32), new(5, WasmValueKind.ExternRef)];
 
         // Act
         var code = new FunctionCode(instructions, locals, 7);

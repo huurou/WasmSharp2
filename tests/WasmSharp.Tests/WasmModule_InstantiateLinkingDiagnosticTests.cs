@@ -45,7 +45,8 @@ internal partial class WasmModule_InstantiateTests
         using (Assert.Multiple())
         {
             await Assert.That(exception!.Reason).IsEqualTo(WasmInstantiateReason.MissingImport);
-            await Assert.That(exception.Message.StartsWith("unknown import", StringComparison.Ordinal)).IsTrue();
+            await Assert.That(exception.Message).StartsWith("unknown import");
+            await Assert.That(exception.Message).Contains("提供登録");
             await Assert.That(exception.ImportOrdinal).IsEqualTo(ordinal);
             await Assert.That(exception.ModuleName).IsEqualTo("missing");
             await Assert.That(exception.ImportName).IsEqualTo("g");

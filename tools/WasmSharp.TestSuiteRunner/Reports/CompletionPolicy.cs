@@ -193,6 +193,7 @@ internal static class CompletionPolicy
         // 大量の欠落でも表示が膨らまないよう、種類ごとに代表例と件数へまとめる。
         foreach (var group in issues.GroupBy(x => x.Kind))
         {
+            // Stryker disable once Linq: GroupByが生成するグループは必ず要素を持ち、FirstOrDefaultも同じ先頭要素を返す。
             var first = group.First().Message;
             var count = group.Count();
             reasons.Add(new(getStatus(group.Key), count == 1 ? first : $"{first}ほか{count - 1}件"));

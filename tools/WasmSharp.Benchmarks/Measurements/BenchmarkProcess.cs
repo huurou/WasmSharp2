@@ -144,14 +144,7 @@ internal sealed class BenchmarkProcess
             reason = "processのaffinity観測はWindows/Linuxだけに対応しています。";
         }
 
-        _check = _check with
-        {
-            AffinityBefore = after ? _check.AffinityBefore : mask,
-            AffinityAfter = after ? mask : _check.AffinityAfter,
-            AffinityUnavailableReason = reason is null
-                ? _check.AffinityUnavailableReason
-                : (after ? "後観測: " : "前観測: ") + reason,
-        };
+        _check = _check.WithAffinityObservation(after, mask, reason);
     }
 
     private void Fail(RunStage stage, Exception exception)

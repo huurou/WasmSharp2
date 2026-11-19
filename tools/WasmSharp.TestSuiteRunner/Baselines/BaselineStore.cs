@@ -18,13 +18,7 @@ internal static class BaselineStore
     {
         var input = Path.GetFullPath(inputPath);
         var output = Path.GetFullPath(outputPath);
-        if (
-            string.Equals(
-                input,
-                output,
-                OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal
-            )
-        )
+        if (string.Equals(input, output, RunnerPaths.Current.Comparison))
         {
             throw new ReportStoreException("入力自身をbaselineの保存先には指定できません。", output);
         }

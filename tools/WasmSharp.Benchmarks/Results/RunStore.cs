@@ -102,10 +102,16 @@ internal sealed class RunStore
     /// </summary>
     internal static RunManifest Load(string outputDirectory, CaseJson json)
     {
-        var manifest = JsonSerializer.Deserialize<RunManifest>(
-            File.ReadAllBytes(Path.Combine(outputDirectory, "run.json")),
-            json.Options
-        )!;
+        return Load(outputDirectory, json, out _);
+    }
+
+    /// <summary>
+    /// 完了記録と保存参照を照合し、使用したrun.jsonのバイト列も返す
+    /// </summary>
+    internal static RunManifest Load(string outputDirectory, CaseJson json, out byte[] manifestContent)
+    {
+        manifestContent = File.ReadAllBytes(Path.Combine(outputDirectory, "run.json"));
+        var manifest = JsonSerializer.Deserialize<RunManifest>(manifestContent, json.Options)!;
         if (manifest.CompletedAtUtc is null)
         {
             return AsIncomplete(manifest, "完了記録がありません。");
@@ -379,17 +385,41 @@ internal sealed class RunStore
         EnsureOpen();
         try
         {
-            var temporaryPath = Path.Combine(_outputDirectory, Guid.NewGuid().ToString());
             var content = JsonSerializer.SerializeToUtf8Bytes(manifest, _json.Options);
             // 呼出元がDTOの一覧を変更しても、保存済みの対応を変えない
             var snapshot = JsonSerializer.Deserialize<RunManifest>(content, _json.Options)!;
-            File.WriteAllBytes(temporaryPath, content);
-            File.Move(temporaryPath, Path.Combine(_outputDirectory, "run.json"), overwrite);
+            WriteManifestFile(content, overwrite);
             _manifest = snapshot;
         }
         catch
         {
             _savingFailed = true;
+            throw;
+        }
+    }
+
+    private void WriteManifestFile(byte[] content, bool overwrite)
+    {
+        var temporaryPath = Path.Combine(_outputDirectory, Guid.NewGuid().ToString());
+        var stream = new FileStream(temporaryPath, FileMode.CreateNew, FileAccess.Write, FileShare.None);
+        try
+        {
+            using (stream)
+            {
+                stream.Write(content);
+            }
+            File.Move(temporaryPath, Path.Combine(_outputDirectory, "run.json"), overwrite);
+        }
+        catch
+        {
+            try
+            {
+                File.Delete(temporaryPath);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                // 片付けにも失敗した場合は、保存を中断した元の例外を伝える。
+            }
             throw;
         }
     }

@@ -421,7 +421,7 @@ internal class Interpreter_RunTests
         var function = ExecutionFunctionFixture.Create(
             [new(ExecutionOpcode.Op0B, default, 81, 0)],
             new([WasmValueKind.I32], []),
-            [new(firstCount, WasmValueKind.I32), new(secondCount, WasmValueKind.I64)],
+            [new(firstCount, WasmValueKind.I32), new(firstCount + secondCount, WasmValueKind.I64)],
             1
         );
         var frame = new ExecutionFrame(FunctionFixture.Create(), 0, 0) { Pc = 17 };

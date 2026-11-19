@@ -110,19 +110,17 @@ internal static partial class Interpreter
     {
         var memory = context.CurrentFunction.Instance.Memories[0];
         var deltaPages = unchecked((uint)context.PopValue().AsI32());
-        bool success;
-        uint previousPageCount;
+        int result;
         try
         {
-            success = memory.TryGrow(deltaPages, out previousPageCount);
+            result = memory.TryGrow(deltaPages, out var previousPageCount) ? (int)previousPageCount : -1;
         }
         catch (OutOfMemoryException)
         {
-            success = false;
-            previousPageCount = 0;
+            result = -1;
         }
 
-        context.PushValue(WasmValue.FromI32(success ? (int)previousPageCount : -1));
+        context.PushValue(WasmValue.FromI32(result));
         return default;
     }
 

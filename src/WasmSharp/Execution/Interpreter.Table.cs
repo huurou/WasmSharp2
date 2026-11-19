@@ -147,19 +147,17 @@ internal static partial class Interpreter
         var table = context.CurrentFunction.Instance.Tables[(int)instruction.Index];
         var delta = unchecked((uint)context.PopValue().AsI32());
         var value = context.PopValue();
-        bool success;
-        uint previousCount;
+        int result;
         try
         {
-            success = table.TryGrow(delta, value, out previousCount);
+            result = table.TryGrow(delta, value, out var previousCount) ? unchecked((int)previousCount) : -1;
         }
         catch (OutOfMemoryException)
         {
-            success = false;
-            previousCount = 0;
+            result = -1;
         }
 
-        context.PushValue(WasmValue.FromI32(success ? unchecked((int)previousCount) : -1));
+        context.PushValue(WasmValue.FromI32(result));
         return default;
     }
 }

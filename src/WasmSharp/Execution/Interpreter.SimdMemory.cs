@@ -160,22 +160,7 @@ internal static partial class Interpreter
 
         var bitWidth = byteWidth * 8;
         var bits = SimdValue.FromLittleEndian(bytes).GetLane(bitWidth, 0);
-        context.PushValue(SplatSimdMemoryLane(bits, bitWidth).ToValue());
-        return default;
-    }
-
-    /// <summary>
-    /// 指定幅のビット列を全laneへ複製する
-    /// </summary>
-    private static SimdValue SplatSimdMemoryLane(ulong bits, int bitWidth)
-    {
-        var value = default(SimdValue);
-        for (var lane = 0; lane < 128 / bitWidth; lane++)
-        {
-            value = value.WithLane(bitWidth, lane, bits);
-        }
-
-        return value;
+        return SplatSimdLane(context, bitWidth, bits);
     }
 
     /// <summary>

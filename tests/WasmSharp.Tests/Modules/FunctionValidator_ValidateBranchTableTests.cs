@@ -192,7 +192,7 @@ internal partial class FunctionValidator_ValidateTests
     }
 
     [Test]
-    [Arguments("42000E0101020B", 1, "unknown label 2", null)]
+    [Arguments("42000E0101020B", 1, "unknown label 2", "ラベルが存在しません")]
     [Arguments("027C430000000042000E0102000B1A0B", 3, "type mismatch", null)]
     [Arguments("027C0E0102000B1A0B", 1, "unknown label 2", null)]
     [Arguments("027D430000000042000E0102000B1A0B", 3, "unknown label 2", null)]

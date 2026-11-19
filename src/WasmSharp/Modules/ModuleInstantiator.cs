@@ -223,23 +223,6 @@ internal static class ModuleInstantiator
     /// <param name="ordinal">import section内の宣言順 0始まり</param>
     private static void ValidateImport(WasmModule module, ModuleImport import, ExternalValue value, int ordinal)
     {
-        var actualKind = value switch
-        {
-            FunctionExternalValue => WasmExternalKind.Function,
-            GlobalExternalValue => WasmExternalKind.Global,
-            MemoryExternalValue => WasmExternalKind.Memory,
-            TableExternalValue => WasmExternalKind.Table,
-            _ => throw new InvalidOperationException("外部要素の種類が不明です。"),
-        };
-        if (actualKind != import.Kind)
-        {
-            throw LinkFailure(
-                import,
-                ordinal,
-                WasmInstantiateReason.KindMismatch,
-                $"要求種類 {import.Kind} に対して提供種類は {actualKind} です。"
-            );
-        }
         var matches = (import, value) switch
         {
             (FunctionImport required, FunctionExternalValue provided) => module
@@ -254,7 +237,12 @@ internal static class ModuleInstantiator
             ),
             (TableImport required, TableExternalValue provided) => required.Type.ElementKind == provided.Value.ElementType
                 && MatchesLimits(required.Type.Limits, provided.Value.Count, provided.Value.MaximumElements),
-            _ => throw new InvalidOperationException("外部要素の種類が一致しません。"),
+            _ => throw LinkFailure(
+                import,
+                ordinal,
+                WasmInstantiateReason.KindMismatch,
+                $"要求種類 {import.Kind} に対して提供種類は {GetProvidedKind(value)} です。"
+            ),
         };
         if (!matches)
         {
@@ -265,6 +253,23 @@ internal static class ModuleInstantiator
                 $"要求型 {DescribeImport(module, import)} に対して提供型は {DescribeValue(value)} です。"
             );
         }
+    }
+
+    /// <summary>
+    /// importが要求する種類と異なる場合に、提供された実体の種類を診断へ含める
+    /// </summary>
+    /// <param name="value">名前で解決した提供実体</param>
+    /// <returns>提供実体の外部要素の種類</returns>
+    private static WasmExternalKind GetProvidedKind(ExternalValue value)
+    {
+        return value switch
+        {
+            FunctionExternalValue => WasmExternalKind.Function,
+            GlobalExternalValue => WasmExternalKind.Global,
+            MemoryExternalValue => WasmExternalKind.Memory,
+            TableExternalValue => WasmExternalKind.Table,
+            _ => throw new InvalidOperationException("外部要素の種類が不明です。"),
+        };
     }
 
     /// <summary>

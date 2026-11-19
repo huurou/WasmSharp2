@@ -208,27 +208,50 @@ public sealed class WasmMemory
             return false;
         }
 
-        if (destination > source)
+        // 同じ位置なら範囲確認だけで終え、異なる位置なら符号に応じた向きで転送する。
+        switch (Math.Sign(destination.CompareTo(source)))
         {
-            // 未転送のコピー元を上書きしないよう、後ろから転送する。
-            var destinationEnd = destination + length;
-            var sourceEnd = source + length;
-            while (length != 0)
-            {
-                var destinationOffset = (int)((destinationEnd - 1) % PAGE_SIZE) + 1;
-                var sourceOffset = (int)((sourceEnd - 1) % PAGE_SIZE) + 1;
-                var count = (int)Math.Min(length, (ulong)Math.Min(destinationOffset, sourceOffset));
-                _pages[(int)((sourceEnd - 1) / PAGE_SIZE)]
-                    .AsSpan(sourceOffset - count, count)
-                    .CopyTo(_pages[(int)((destinationEnd - 1) / PAGE_SIZE)].AsSpan(destinationOffset - count, count));
-                destinationEnd -= (uint)count;
-                sourceEnd -= (uint)count;
-                length -= (uint)count;
-            }
-
-            return true;
+            case 1:
+                CopyBackward(destination + length, source + length, length);
+                break;
+            case -1:
+                CopyForward(destination, source, length);
+                break;
         }
 
+        return true;
+    }
+
+    /// <summary>
+    /// コピー先が後ろにある場合は、重なっているコピー元を保つため、両範囲の終端から転送する
+    /// </summary>
+    /// <param name="destinationEnd">コピー先の最終バイトの次の位置</param>
+    /// <param name="sourceEnd">コピー元の最終バイトの次の位置</param>
+    /// <param name="length">範囲確認済みの転送バイト数</param>
+    private void CopyBackward(ulong destinationEnd, ulong sourceEnd, ulong length)
+    {
+        while (length != 0)
+        {
+            var destinationOffset = (int)((destinationEnd - 1) % PAGE_SIZE) + 1;
+            var sourceOffset = (int)((sourceEnd - 1) % PAGE_SIZE) + 1;
+            var count = (int)Math.Min(length, (ulong)Math.Min(destinationOffset, sourceOffset));
+            _pages[(int)((sourceEnd - 1) / PAGE_SIZE)]
+                .AsSpan(sourceOffset - count, count)
+                .CopyTo(_pages[(int)((destinationEnd - 1) / PAGE_SIZE)].AsSpan(destinationOffset - count, count));
+            destinationEnd -= (uint)count;
+            sourceEnd -= (uint)count;
+            length -= (uint)count;
+        }
+    }
+
+    /// <summary>
+    /// コピー先が前にある場合は、両範囲の先頭から転送する
+    /// </summary>
+    /// <param name="destination">コピー先の先頭バイト位置</param>
+    /// <param name="source">コピー元の先頭バイト位置</param>
+    /// <param name="length">範囲確認済みの転送バイト数</param>
+    private void CopyForward(ulong destination, ulong source, ulong length)
+    {
         while (length != 0)
         {
             var destinationOffset = (int)(destination % PAGE_SIZE);
@@ -241,8 +264,6 @@ public sealed class WasmMemory
             source += (uint)count;
             length -= (uint)count;
         }
-
-        return true;
     }
 
     /// <summary>

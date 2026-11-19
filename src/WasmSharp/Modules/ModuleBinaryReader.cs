@@ -13,7 +13,11 @@ internal ref struct ModuleBinaryReader
     /// <summary>
     /// 不正なバイト列を置換せず、診断として扱う名前読み取り用のUTF-8符号化
     /// </summary>
-    private readonly UTF8Encoding _utf8;
+    private static readonly Encoding __utf8 = Encoding.GetEncoding(
+        Encoding.UTF8.CodePage,
+        EncoderFallback.ExceptionFallback,
+        DecoderFallback.ExceptionFallback
+    );
 
     /// <summary>
     /// この読み取り範囲の入力バイト列
@@ -24,6 +28,11 @@ internal ref struct ModuleBinaryReader
     /// 宣言範囲を越えるbyteを診断に使用できるかを示す読取りモード
     /// </summary>
     private readonly ModuleReadMode _mode;
+
+    /// <summary>
+    /// 同じ入力のデコードで1つのコレクションに保持できる最大要素数
+    /// </summary>
+    private readonly int _maxCollectionLength;
 
     /// <summary>
     /// 読み取り範囲の先頭から数えた次の読み取り位置
@@ -74,12 +83,14 @@ internal ref struct ModuleBinaryReader
     /// <param name="sectionId">診断に使用するsection ID section外ではnull</param>
     /// <param name="functionIndex">診断に使用するmodule全体の関数index 関数外ではnull</param>
     /// <param name="mode">通常解析または境界失敗後の診断用読取り</param>
+    /// <param name="maxCollectionLength">保持できる最大要素数 省略時は配列の要素数上限</param>
     internal ModuleBinaryReader(
         ReadOnlySpan<byte> bytes,
         long startOffset = 0,
         byte? sectionId = null,
         uint? functionIndex = null,
-        ModuleReadMode mode = ModuleReadMode.Bounded
+        ModuleReadMode mode = ModuleReadMode.Bounded,
+        int? maxCollectionLength = null
     )
         : this(
             bytes,
@@ -89,7 +100,7 @@ internal ref struct ModuleBinaryReader
             sectionId,
             functionIndex,
             mode,
-            new UTF8Encoding(false, true)
+            maxCollectionLength ?? Array.MaxLength
         )
     { }
 
@@ -103,7 +114,7 @@ internal ref struct ModuleBinaryReader
     /// <param name="sectionId">診断に使用するsection ID</param>
     /// <param name="functionIndex">診断に使用するmodule全体の関数index</param>
     /// <param name="mode">通常解析または境界失敗後の診断用読取り</param>
-    /// <param name="utf8">同じ解析の読み取り範囲で共有する名前用のUTF-8符号化</param>
+    /// <param name="maxCollectionLength">親の読み取り範囲から引き継ぐ最大要素数</param>
     private ModuleBinaryReader(
         ReadOnlySpan<byte> bytes,
         long startOffset,
@@ -112,15 +123,15 @@ internal ref struct ModuleBinaryReader
         byte? sectionId,
         uint? functionIndex,
         ModuleReadMode mode,
-        UTF8Encoding utf8
+        int maxCollectionLength
     )
     {
-        _utf8 = utf8;
         _bytes = bytes;
         Position = startOffset;
         InputEnd = inputEnd;
         DeclaredEnd = declaredEnd;
         _mode = mode;
+        _maxCollectionLength = maxCollectionLength;
         _position = 0;
         SectionId = sectionId;
         FunctionIndex = functionIndex;
@@ -191,7 +202,7 @@ internal ref struct ModuleBinaryReader
                 SectionId,
                 functionIndex ?? FunctionIndex,
                 _mode,
-                _utf8
+                _maxCollectionLength
             );
         }
 
@@ -203,7 +214,7 @@ internal ref struct ModuleBinaryReader
             SectionId,
             functionIndex ?? FunctionIndex,
             _mode,
-            _utf8
+            _maxCollectionLength
         );
     }
 
@@ -326,7 +337,7 @@ internal ref struct ModuleBinaryReader
         var bytes = ReadBytes(length);
         try
         {
-            return _utf8.GetString(bytes);
+            return __utf8.GetString(bytes);
         }
         catch (DecoderFallbackException exception)
         {
@@ -345,15 +356,17 @@ internal ref struct ModuleBinaryReader
     private ulong ReadInteger(int width, bool signed)
     {
         ulong result = 0;
+        // 7ビット未満の桁があれば、その開始位置を求める。幅が7の倍数ならループの終端になる。
+        var partialByteShift = width - width % 7;
         for (var shift = 0; shift < width; shift += 7)
         {
             var offset = Position;
             var next = ReadByte();
             var payload = next & 0x7F;
-            var remainingBits = width - shift;
-            if (remainingBits < 7)
+            if (shift == partialByteShift)
             {
                 // 最終バイトの余ったビットは、符号なしなら0、符号付きなら符号拡張に限る。
+                var remainingBits = width - shift;
                 var positiveLimit = 1 << (signed ? remainingBits - 1 : remainingBits);
                 var validPayload = payload < positiveLimit || (signed && payload >= 128 - positiveLimit);
                 if (!validPayload)
@@ -362,19 +375,39 @@ internal ref struct ModuleBinaryReader
                 }
             }
 
-            result |= (ulong)payload << shift;
-            if ((next & 0x80) == 0)
+            var isLastByte = (next & 0x80) == 0;
+            if (isLastByte && signed && (payload & 0x40) != 0)
             {
-                if (signed && (next & 0x40) != 0 && shift + 7 < 64)
-                {
-                    result |= ulong.MaxValue << (shift + 7);
-                }
-
+                // 末尾の7bitを符号付きの値に戻してから配置する。64bitの最上位も同じ規則で扱う。
+                payload -= 0x80;
+            }
+            result += unchecked((ulong)payload) << shift;
+            if (isLastByte)
+            {
                 return result;
             }
         }
 
         throw Error("integer representation too long: 整数の表現長が幅を超えています。");
+    }
+
+    /// <summary>
+    /// 追加後の要素数を保持できるか確認し、超過時に宣言元の位置を通知する
+    /// </summary>
+    /// <param name="count">保持する要素数</param>
+    /// <param name="offset">保持上限を超えると分かった入力位置</param>
+    /// <param name="message">保持対象を示す説明</param>
+    internal readonly void EnsureCollectionSize(ulong count, long offset, string message)
+    {
+        if (count > (ulong)_maxCollectionLength)
+        {
+            throw new WasmImplementationLimitException(
+                message,
+                WasmImplementationLimitReason.CollectionSize,
+                _maxCollectionLength,
+                Location(offset)
+            );
+        }
     }
 
     /// <summary>

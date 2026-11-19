@@ -5,6 +5,25 @@ namespace WasmSharp.Tests.Instructions;
 internal class InstructionAttribute_ConstructorTests
 {
     [Test]
+    public async Task 番号と名前だけで命令を宣言する_検証と実行が未対応であることを示す()
+    {
+        // Act
+        var declaration = new InstructionAttribute(0xFD, 256, "test.instruction");
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(declaration.Prefix).IsEqualTo((byte)0xFD);
+            await Assert.That(declaration.Code).IsEqualTo(256u);
+            await Assert.That(declaration.Name).IsEqualTo("test.instruction");
+            await Assert.That(declaration.Immediate).IsEqualTo(ImmediateKind.Unsupported);
+            await Assert.That(declaration.StackEffect).IsEqualTo(StackEffectKind.Unsupported);
+            await Assert.That(declaration.Validation).IsEqualTo(ValidationRule.Unsupported);
+            await Assert.That(declaration.ExecutionHandler).IsNull();
+        }
+    }
+
+    [Test]
     public async Task 異なる入力型を持つ命令を宣言する_型の順序を保持し元配列から独立する()
     {
         // Arrange

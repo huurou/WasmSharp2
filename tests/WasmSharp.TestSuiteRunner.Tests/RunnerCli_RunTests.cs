@@ -22,6 +22,12 @@ internal partial class RunnerCli_RunTests
     [Arguments("verify --input", "--inputのpathが不足")]
     [Arguments("verify --input a --output b", "未知の引数です: --output")]
     [Arguments("verify --input a --profile b", "未知の引数です: --profile")]
+    [Arguments("generate --profile", "--profileの値が不足")]
+    [Arguments("generate --profile core4", "未知のprofileです: core4")]
+    [Arguments("generate --profile core3 --profile core2", "引数が重複しています: --profile")]
+    [Arguments("generate --wasm-tools converter --profile core2", "選択したprofileでは使用できない引数です: --wasm-tools")]
+    [Arguments("generate --profile core3 --wabt-root wabt", "選択したprofileでは使用できない引数です: --wabt-root")]
+    [Arguments("generate --profile core3 --spec-root spec --output result", "必須引数が不足しています: --wasm-tools")]
     public async Task 未知か重複か不足の引数_使用法を標準エラーへ出して終了2になる(string arguments, string reason)
     {
         // Arrange
@@ -288,6 +294,36 @@ internal partial class RunnerCli_RunTests
             await Assert.That(result.Output).Contains("baseline保存");
             await Assert.That(result.Output).Contains($"保存先: {baseline}");
             await Assert.That(result.Error).IsEqualTo(string.Empty);
+        }
+    }
+
+    [Test]
+    public async Task 比較基準の入出力名が大小文字だけ異なる_OSの規則に従って入力を保護し別ファイルなら保存する()
+    {
+        // Arrange
+        using var directory = new TemporaryDirectory();
+        var input = directory.Combine("input.json");
+        var output = directory.Combine("INPUT.json");
+        _reportStore.Save(RunReportFixture.CreateSample(), input);
+        var original = await File.ReadAllTextAsync(input);
+
+        // Act
+        var result = Run(_profileLoader.Load(), "baseline-save", "--input", input, "--output", output);
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(await File.ReadAllTextAsync(input)).IsEqualTo(original);
+            if (OperatingSystem.IsWindows())
+            {
+                await Assert.That(result.ExitCode).IsEqualTo(2);
+                await Assert.That(result.Error).Contains("入力自身を出力先には指定できません");
+            }
+            else
+            {
+                await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Error);
+                await Assert.That(await File.ReadAllTextAsync(output)).IsEqualTo(original);
+            }
         }
     }
 

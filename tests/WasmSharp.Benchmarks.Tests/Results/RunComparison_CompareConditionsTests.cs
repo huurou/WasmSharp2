@@ -959,6 +959,7 @@ internal class RunComparison_CompareConditionsTests
     [Arguments(ContentKind.Assembly, false, "hash")]
     [Arguments(ContentKind.Assembly, false, "path")]
     [Arguments(ContentKind.Assembly, false, "role")]
+    [Arguments(ContentKind.Assembly, false, "missing")]
     public async Task 使用物の途中変更がある_変更一覧またはassemblyの前後差から比較を拒否する(
         ContentKind kind,
         bool listed,
@@ -975,16 +976,18 @@ internal class RunComparison_CompareConditionsTests
                 ? current.Source.AssembliesAfter
                 :
                 [
-                    .. current.Source.AssembliesAfter.Select(x =>
-                        x.Role != AssemblyRole.Runtime
-                            ? x
-                            : assemblyChange switch
-                            {
-                                "path" => x with { Path = x.Path + ".moved" },
-                                "role" => x with { Role = AssemblyRole.Harness },
-                                _ => x with { Sha256 = "changed-runtime" },
-                            }
-                    ),
+                    .. current.Source.AssembliesAfter
+                        .Where(x => assemblyChange != "missing" || x.Role != AssemblyRole.Runtime)
+                        .Select(x =>
+                            x.Role != AssemblyRole.Runtime
+                                ? x
+                                : assemblyChange switch
+                                {
+                                    "path" => x with { Path = x.Path + ".moved" },
+                                    "role" => x with { Role = AssemblyRole.Harness },
+                                    _ => x with { Sha256 = "changed-runtime" },
+                                }
+                        ),
                 ],
         };
         baseline.Save();

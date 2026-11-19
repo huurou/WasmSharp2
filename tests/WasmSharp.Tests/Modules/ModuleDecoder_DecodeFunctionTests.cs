@@ -71,7 +71,7 @@ internal partial class ModuleDecoder_DecodeTests
         using (Assert.Multiple())
         {
             await Assert.That(function.Locals.Length).IsEqualTo(count);
-            await Assert.That(function.Locals.Sum(x => x.Count)).IsEqualTo(4294967295L);
+            await Assert.That(function.Locals[^1].EndIndex).IsEqualTo(uint.MaxValue);
             await Assert.That(function.Locals[0].Type).IsEqualTo(WasmValueKind.I32);
             await Assert.That(function.Instructions.Length).IsEqualTo(1);
             await Assert.That(function.Instructions[0].Opcode).IsEqualTo(new OpcodeKey(0, 0x0B));
@@ -92,7 +92,7 @@ internal partial class ModuleDecoder_DecodeTests
         {
             await Assert.That(module.Types[0].Parameters.Length).IsEqualTo(1);
             await Assert.That(module.Types[0].Results.Length).IsEqualTo(2);
-            await Assert.That(module.Functions[0].Locals[0].Count).IsEqualTo(1u);
+            await Assert.That(module.Functions[0].Locals[0].EndIndex).IsEqualTo(1u);
             await Assert.That(module.Functions[0].Instructions.Length).IsEqualTo(3);
         }
     }

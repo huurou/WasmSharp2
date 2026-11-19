@@ -48,8 +48,8 @@ internal partial class ModuleValidator_ValidateTests
     [Arguments("60017F017F", "00410022FFFFFFFF0F0B", 1, "unknown local 4294967295")]
     [Arguments("60017F017F", "0010000B", 0, "type mismatch")]
     [Arguments("60017F017F", "00420110000B", 1, "type mismatch")]
-    [Arguments("6000017F", "0010010B", 0, "unknown function 1")]
-    [Arguments("6000017F", "0010FFFFFFFF0F0B", 0, "unknown function 4294967295")]
+    [Arguments("6000017F", "0010010B", 0, "unknown function 1", "関数が存在しません")]
+    [Arguments("6000017F", "0010FFFFFFFF0F0B", 0, "unknown function 4294967295", "関数が存在しません")]
     [Arguments("60027F7E017F", "004101410210000B", 2, "type mismatch")]
     [Arguments("6000017F", "000F0B", 0, "type mismatch")]
     [Arguments("6000017F", "0042010F0B", 1, "type mismatch")]
@@ -59,7 +59,8 @@ internal partial class ModuleValidator_ValidateTests
         string signature,
         string body,
         int instructionIndex,
-        string prefix
+        string prefix,
+        string? expectedDetail = null
     )
     {
         // Arrange
@@ -72,6 +73,10 @@ internal partial class ModuleValidator_ValidateTests
         using (Assert.Multiple())
         {
             await Assert.That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal)).IsTrue();
+            if (expectedDetail is not null)
+            {
+                await Assert.That(exception.Message).Contains(expectedDetail);
+            }
             await Assert.That(exception!.Location).IsEqualTo(new(WasmProcessingStage.Validate, offset, 0, 10));
             await Assert.That(module.FunctionCodes.IsEmpty).IsTrue();
             await Assert.That(() => module.Instantiate(executionContext, [])).ThrowsExactly<InvalidOperationException>();
@@ -79,17 +84,18 @@ internal partial class ModuleValidator_ValidateTests
     }
 
     [Test]
-    [Arguments("23020B", 0, "unknown global 2")]
-    [Arguments("23FFFFFFFF0F0B", 0, "unknown global 4294967295")]
-    [Arguments("410024020B", 1, "unknown global 2")]
-    [Arguments("410024FFFFFFFF0F0B", 1, "unknown global 4294967295")]
-    [Arguments("410024000B", 1, "global is immutable")]
-    [Arguments("4200240141000B", 1, "type mismatch")]
-    [Arguments("240141000B", 0, "type mismatch")]
+    [Arguments("23020B", 0, "unknown global 2", "globalが存在しません")]
+    [Arguments("23FFFFFFFF0F0B", 0, "unknown global 4294967295", "globalが存在しません")]
+    [Arguments("410024020B", 1, "unknown global 2", "globalが存在しません")]
+    [Arguments("410024FFFFFFFF0F0B", 1, "unknown global 4294967295", "globalが存在しません")]
+    [Arguments("410024000B", 1, "global is immutable", "globalは更新できません")]
+    [Arguments("4200240141000B", 1, "type mismatch", "入力型が一致しません")]
+    [Arguments("240141000B", 0, "type mismatch", "入力値が不足")]
     public async Task Globalの添字や可変性や入力型が不正_元関数と命令位置付き検証失敗になる(
         string body,
         int instructionIndex,
-        string prefix
+        string prefix,
+        string expectedDetail
     )
     {
         // Arrange
@@ -108,6 +114,7 @@ internal partial class ModuleValidator_ValidateTests
         using (Assert.Multiple())
         {
             await Assert.That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal)).IsTrue();
+            await Assert.That(exception.Message).Contains(expectedDetail);
             await Assert
                 .That(exception!.Location)
                 .IsEqualTo(

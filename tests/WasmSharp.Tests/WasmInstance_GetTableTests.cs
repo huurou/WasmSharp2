@@ -76,6 +76,10 @@ internal class WasmInstance_GetTableTests
 
         // Act & Assert
         var exception = await Assert.That(() => instance.GetTable(name)).ThrowsExactly<ArgumentException>();
-        await Assert.That(exception!.ParamName).IsEqualTo("name");
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.ParamName).IsEqualTo("name");
+            await Assert.That(exception.Message).Contains("export");
+        }
     }
 }

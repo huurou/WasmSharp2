@@ -122,8 +122,7 @@ internal sealed class ReportStore
         {
             using (var stream = new FileStream(temporaryPath, FileMode.CreateNew, FileAccess.Write, FileShare.None))
             {
-                write(stream);
-                stream.Flush(flushToDisk: true);
+                WriteToDisk(stream, write);
             }
 
             File.Move(temporaryPath, fullPath, replaceExisting);
@@ -136,6 +135,15 @@ internal sealed class ReportStore
         {
             DeleteTemporaryFile(temporaryPath);
         }
+    }
+
+    /// <summary>
+    /// 一時ファイルへ全内容を書き、保存先へ移す前にディスクへの書き出しを完了する。
+    /// </summary>
+    internal static void WriteToDisk(FileStream stream, Action<Stream> write)
+    {
+        write(stream);
+        stream.Flush(flushToDisk: true);
     }
 
     /// <summary>

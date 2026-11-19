@@ -225,14 +225,20 @@ internal class BenchmarkRun_SaveReportsTests
     }
 
     [Test]
-    public async Task 子process終了0でもBDNのErrorsがある_原因とrawを残して失敗になる()
+    [Arguments(false)]
+    [Arguments(true)]
+    public async Task 子process終了0でもBDNのErrorsがある_原因と最後に確認した段階とrawを残して失敗になる(bool savedCheck)
     {
         // Arrange
         using var fixture = new BenchmarkReportFixture(
             BenchmarkReportFixture.ReadLines().Append("// ERROR: Exception during GlobalCleanup!")
         );
         fixture.SaveConditions();
-        fixture.Prepared.Store.SaveCheck(fixture.SuccessfulCheck());
+        var check = fixture.SuccessfulCheck();
+        if (savedCheck)
+        {
+            fixture.Prepared.Store.SaveCheck(check);
+        }
 
         // Act
         _benchmarkRun.SaveReports(fixture.Request, fixture.Prepared, [fixture.Summary]);
@@ -245,8 +251,9 @@ internal class BenchmarkRun_SaveReportsTests
             await Assert.That(manifest.Status).IsEqualTo(ResultStatus.Failed);
             await Assert.That(result.Status).IsEqualTo(ResultStatus.Failed);
             await Assert.That(result.BenchmarkReport!.Processes.Single().Errors).Contains("Exception during GlobalCleanup!");
-            await Assert.That(result.Failures.Any(x => x.Message!.Contains("GlobalCleanup"))).IsTrue();
-            await Assert.That(result.Failures.Any(x => x.Reason.Contains("BDNのErrors"))).IsTrue();
+            var failure = result.Failures.Single(x => x.Reason.Contains("BDNのErrors"));
+            await Assert.That(failure.Message).Contains("GlobalCleanup");
+            await Assert.That(failure.LastConfirmedStage).IsEqualTo(savedCheck ? check.LastConfirmedStage : null);
             await Assert.That(result.RawFiles.Count).IsEqualTo(2);
         }
     }

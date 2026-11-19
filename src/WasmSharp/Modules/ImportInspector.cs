@@ -13,49 +13,42 @@ internal static class ImportInspector
     /// 現在位置から入力終端まで読み、入力ストリームを閉じずにimport情報を調査する
     /// </summary>
     /// <param name="stream">呼び出し元で読み取り可能性を確認した入力ストリーム</param>
+    /// <param name="maxLength">保持できる入力の最大バイト数</param>
     /// <returns>完全取得したimport一覧と構文・検証の未確認範囲</returns>
-    internal static WasmImportInspection Inspect(Stream stream)
+    internal static WasmImportInspection Inspect(Stream stream, int maxLength)
     {
-        using var buffer = new MemoryStream();
-        Span<byte> chunk = stackalloc byte[4096];
-        while (true)
-        {
-            var count = stream.Read(chunk);
-            if (count == 0)
-            {
-                break;
-            }
-            try
-            {
-                ModuleBinaryFormat.EnsureInputSize(buffer.Length, count);
-            }
-            catch (WasmImplementationLimitException diagnostic)
-            {
-                throw new WasmImportInspectionException(
-                    diagnostic.Message,
-                    WasmImportInspectionReason.ImplementationLimit,
-                    null,
-                    diagnostic.Location!,
-                    [
-                        new WasmUnverifiedRange(
-                            WasmProcessingStage.Decode,
-                            0,
-                            buffer.Length + count,
-                            "読取済み範囲の構文は未確認です。入力終端にも未到達です。"
-                        ),
-                        new WasmUnverifiedRange(
-                            WasmProcessingStage.Validate,
-                            0,
-                            buffer.Length + count,
-                            "入力全体の検証は未実施で、入力終端も未確認です。"
-                        ),
-                    ],
-                    diagnostic
-                );
-            }
-            buffer.Write(chunk[..count]);
-        }
-        return Inspect(buffer.GetBuffer().AsSpan(0, (int)buffer.Length));
+        return Inspect(ModuleBinaryFormat.ReadInput(stream, maxLength, InputLimitFailure));
+    }
+
+    /// <summary>
+    /// 入力ストリームの保持上限を超えた際の未確認範囲を通知する
+    /// </summary>
+    /// <param name="diagnostic">上限を超えた読取りの開始位置を持つ元の例外</param>
+    /// <param name="readEnd">今回の読取りを含む入力範囲の終端</param>
+    /// <returns>元の例外と読取済みの未確認範囲を保持する取得失敗</returns>
+    private static WasmImportInspectionException InputLimitFailure(WasmImplementationLimitException diagnostic, long readEnd)
+    {
+        return new WasmImportInspectionException(
+            diagnostic.Message,
+            WasmImportInspectionReason.ImplementationLimit,
+            null,
+            diagnostic.Location!,
+            [
+                new WasmUnverifiedRange(
+                    WasmProcessingStage.Decode,
+                    0,
+                    readEnd,
+                    "読取済み範囲の構文は未確認です。入力終端にも未到達です。"
+                ),
+                new WasmUnverifiedRange(
+                    WasmProcessingStage.Validate,
+                    0,
+                    readEnd,
+                    "入力全体の検証は未実施で、入力終端も未確認です。"
+                ),
+            ],
+            diagnostic
+        );
     }
 
     /// <summary>

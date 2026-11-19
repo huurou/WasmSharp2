@@ -6,8 +6,8 @@ namespace WasmSharp.Tests;
 internal partial class WasmModule_ValidateTests
 {
     [Test]
-    [Arguments("1101010B", (byte)0x70, "unknown table 1", 0, null)]
-    [Arguments("1101000B", (byte)0x6F, "unknown type 1", 0, null)]
+    [Arguments("1101010B", (byte)0x70, "unknown table 1", 0, "テーブルが存在しません")]
+    [Arguments("1101000B", (byte)0x6F, "unknown type 1", 0, "型が存在しません")]
     [Arguments("1100000B", (byte)0x6F, "type mismatch", 0, "funcref")]
     [Arguments("001101010B", (byte)0x70, "unknown table 1", 1, null)]
     [Arguments("001101000B", (byte)0x6F, "unknown type 1", 1, null)]

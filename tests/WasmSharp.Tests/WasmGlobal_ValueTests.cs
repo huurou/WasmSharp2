@@ -97,8 +97,13 @@ internal class WasmGlobal_ValueTests
         var global = new WasmGlobal(new WasmGlobalType(WasmValueKind.I32, true), WasmValue.FromI32(42));
 
         // Act & Assert
-        await Assert.That(() => global.Value = WasmValue.FromI64(7)).ThrowsExactly<ArgumentException>();
-        await Assert.That(global.Value.AsI32()).IsEqualTo(42);
+        var exception = await Assert.That(() => global.Value = WasmValue.FromI64(7)).ThrowsExactly<ArgumentException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.ParamName).IsEqualTo("value");
+            await Assert.That(exception.Message).Contains("値の型");
+            await Assert.That(global.Value.AsI32()).IsEqualTo(42);
+        }
     }
 
     [Test]

@@ -370,19 +370,14 @@ internal sealed class ScriptDocument
     /// <returns>取得した文字列 文字列型でない、またはUTF-8やサロゲートが不正な場合はnull</returns>
     private static string? GetString(ref Utf8JsonReader reader)
     {
-        if (reader.TokenType != JsonTokenType.String)
-        {
-            return null;
-        }
-
         try
         {
             return reader.GetString();
         }
         catch (InvalidOperationException)
         {
-            // 不正なUTF-8やサロゲートを含む文字列は取得できない値とする。
-            return null;
+            // 文字列以外の値と、不正なUTF-8やサロゲートを含む文字列は取得できない。
         }
+        return null;
     }
 }

@@ -113,6 +113,7 @@ internal class WasmMemory_TryCopyTests
 
     [Test]
     [Arguments(65535UL, 0UL, 2UL)]
+    [Arguments(65535UL, 65535UL, 2UL)]
     [Arguments(0UL, 65535UL, 2UL)]
     [Arguments(65537UL, 0UL, 0UL)]
     [Arguments(0UL, 65537UL, 0UL)]

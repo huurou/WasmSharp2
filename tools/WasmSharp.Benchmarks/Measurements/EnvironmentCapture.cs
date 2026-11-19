@@ -253,14 +253,16 @@ internal sealed partial class EnvironmentCapture
 
         if (OperatingSystem.IsLinux() && File.Exists("/proc/cpuinfo"))
         {
-            return File.ReadLines("/proc/cpuinfo")
-                    .FirstOrDefault(x => x.StartsWith("model name", StringComparison.Ordinal))
-                    ?.Split(':', 2)[1]
-                    .Trim()
-                ?? "Unavailable: CPU名がありません。";
+            return ReadLinuxCpuName(File.ReadLines("/proc/cpuinfo"));
         }
 
         return "Unavailable: このOSのCPU名採取には対応していません。";
+    }
+
+    internal static string ReadLinuxCpuName(IEnumerable<string> cpuInfo)
+    {
+        return cpuInfo.FirstOrDefault(x => x.StartsWith("model name", StringComparison.Ordinal))?.Split(':', 2)[1].Trim()
+            ?? "Unavailable: CPU名がありません。";
     }
 
     private static PowerConfiguration Power()

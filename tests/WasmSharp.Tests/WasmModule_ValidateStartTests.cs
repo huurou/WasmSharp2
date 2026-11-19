@@ -172,7 +172,10 @@ internal partial class WasmModule_ValidateTests
         var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
         using (Assert.Multiple())
         {
-            await Assert.That(exception!.Message.StartsWith("start function", StringComparison.Ordinal)).IsTrue();
+            await Assert
+                .That(exception!.Message)
+                .StartsWith("start function must not have parameters or results", StringComparison.Ordinal);
+            await Assert.That(exception.Message).Contains("引数・結果とも0個");
             await Assert
                 .That(exception!.Location)
                 .IsEqualTo(new(WasmProcessingStage.Validate, module.Start!.Value.ByteOffset, 0, 8));
@@ -207,9 +210,8 @@ internal partial class WasmModule_ValidateTests
             var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
             using (Assert.Multiple())
             {
-                await Assert
-                    .That(exception!.Message.StartsWith($"unknown function {index}", StringComparison.Ordinal))
-                    .IsTrue();
+                await Assert.That(exception!.Message).StartsWith($"unknown function {index}");
+                await Assert.That(exception.Message).Contains("start");
                 await Assert
                     .That(exception!.Location)
                     .IsEqualTo(new(WasmProcessingStage.Validate, module.Start!.Value.ByteOffset, index, 8));

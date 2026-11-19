@@ -1,3 +1,4 @@
+using System.Numerics;
 using WasmSharp.Exceptions;
 
 namespace WasmSharp.Execution;
@@ -349,12 +350,7 @@ internal static partial class Interpreter
     /// <returns>NaNは0、それ以外は変換先の範囲へ飽和した整数のbit列</returns>
     private static int TruncateSaturatingI32(double operand, bool signed)
     {
-        if (double.IsNaN(operand))
-        {
-            return 0;
-        }
-
-        return signed ? int.CreateSaturating(operand) : unchecked((int)uint.CreateSaturating(operand));
+        return signed ? TruncateSaturating<int>(operand) : unchecked((int)TruncateSaturating<uint>(operand));
     }
 
     /// <summary>
@@ -365,12 +361,23 @@ internal static partial class Interpreter
     /// <returns>NaNは0、それ以外は変換先の範囲へ飽和した整数のbit列</returns>
     private static long TruncateSaturatingI64(double operand, bool signed)
     {
-        if (double.IsNaN(operand))
-        {
-            return 0;
-        }
+        return signed ? TruncateSaturating<long>(operand) : unchecked((long)TruncateSaturating<ulong>(operand));
+    }
 
-        return signed ? long.CreateSaturating(operand) : unchecked((long)ulong.CreateSaturating(operand));
+    /// <summary>
+    /// Wasmの規則に従ってNaNを0とし、ほかの値を指定した整数型に飽和させる
+    /// </summary>
+    /// <typeparam name="T">飽和値の範囲を定める整数型</typeparam>
+    /// <param name="operand">変換元の浮動小数点値</param>
+    /// <returns>0方向に切り捨てた飽和変換の結果</returns>
+    private static T TruncateSaturating<T>(double operand)
+        where T : IBinaryInteger<T>
+    {
+        return operand switch
+        {
+            double.NaN => T.Zero,
+            _ => T.CreateSaturating(operand),
+        };
     }
 
     /// <summary>

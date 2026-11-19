@@ -6,18 +6,19 @@ namespace WasmSharp.Tests;
 internal partial class WasmModule_ValidateTests
 {
     [Test]
-    [Arguments("D2001A0B", false, false, "undeclared function reference", 0)]
-    [Arguments("00D2001A0B", false, false, "undeclared function reference", 1)]
-    [Arguments("D2001A0B", true, false, "undeclared function reference", 0)]
-    [Arguments("D2001A0B", false, true, "undeclared function reference", 0)]
-    [Arguments("D2011A0B", false, false, "unknown function 1", 0)]
-    [Arguments("00D2FFFFFFFF0F1A0B", false, false, "unknown function 4294967295", 1)]
+    [Arguments("D2001A0B", false, false, "undeclared function reference", 0, "関数が宣言されていません")]
+    [Arguments("00D2001A0B", false, false, "undeclared function reference", 1, "関数が宣言されていません")]
+    [Arguments("D2001A0B", true, false, "undeclared function reference", 0, "関数が宣言されていません")]
+    [Arguments("D2001A0B", false, true, "undeclared function reference", 0, "関数が宣言されていません")]
+    [Arguments("D2011A0B", false, false, "unknown function 1", 0, "関数が存在しません")]
+    [Arguments("00D2FFFFFFFF0F1A0B", false, false, "unknown function 4294967295", 1, "関数が存在しません")]
     public async Task 関数本体とstartとimportだけが関数を参照する_宣言にならず未知添字を先に拒否する(
         string body,
         bool start,
         bool import,
         string prefix,
-        int instructionIndex
+        int instructionIndex,
+        string expectedDetail
     )
     {
         // Arrange
@@ -38,6 +39,7 @@ internal partial class WasmModule_ValidateTests
         using (Assert.Multiple())
         {
             await Assert.That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal)).IsTrue();
+            await Assert.That(exception.Message).Contains(expectedDetail);
             await Assert
                 .That(exception.Location)
                 .IsEqualTo(
@@ -57,6 +59,7 @@ internal partial class WasmModule_ValidateTests
     [Arguments("4100D10B", "type mismatch", 1, "参照型が必要")]
     [Arguments("4200D10B", "type mismatch", 1, null)]
     [Arguments("D070D07041001B1A0B", "type mismatch", 3, "参照型を使えません")]
+    [Arguments("D06F410041001B1A0B", "type mismatch", 3, "参照型を使えません")]
     [Arguments("D070D07041001C001A0B", "invalid result arity", 3, "結果型は1個")]
     [Arguments("00001C02706F1A0B", "invalid result arity", 2, null)]
     [Arguments("D070D06F41001C01701A0B", "type mismatch", 3, null)]

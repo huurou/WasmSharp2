@@ -76,7 +76,15 @@ internal class WasmFunctionType_ConstructorTests
         WasmValueKind[] results = [WasmValueKind.I64];
 
         // Act & Assert
-        await Assert.That(() => new WasmFunctionType(parameters, results)).ThrowsExactly<ArgumentOutOfRangeException>();
+        var exception = await Assert
+            .That(() => new WasmFunctionType(parameters, results))
+            .ThrowsExactly<ArgumentOutOfRangeException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.ParamName).IsEqualTo("parameters");
+            await Assert.That(exception.ActualValue).IsEqualTo(kind);
+            await Assert.That(exception.Message).Contains("valueの種類");
+        }
     }
 
     [Test]
@@ -90,6 +98,13 @@ internal class WasmFunctionType_ConstructorTests
         WasmValueKind[] results = [WasmValueKind.I64, kind];
 
         // Act & Assert
-        await Assert.That(() => new WasmFunctionType(parameters, results)).ThrowsExactly<ArgumentOutOfRangeException>();
+        var exception = await Assert
+            .That(() => new WasmFunctionType(parameters, results))
+            .ThrowsExactly<ArgumentOutOfRangeException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.ParamName).IsEqualTo("results");
+            await Assert.That(exception.ActualValue).IsEqualTo(kind);
+        }
     }
 }

@@ -3,7 +3,7 @@ using WasmSharp.Modules;
 
 namespace WasmSharp.Tests.Modules;
 
-internal class ModuleBinaryFormat_EnsureCollectionSizeTests
+internal class ModuleBinaryReader_EnsureCollectionSizeTests
 {
     [Test]
     [Arguments(-1)]
@@ -39,7 +39,7 @@ internal class ModuleBinaryFormat_EnsureCollectionSizeTests
     private static long CheckSize(ulong count)
     {
         var reader = new ModuleBinaryReader([], 19, 10, 3);
-        ModuleBinaryFormat.EnsureCollectionSize(count, ref reader, 17, "要素数の保持上限を超えました。");
+        reader.EnsureCollectionSize(count, 17, "要素数の保持上限を超えました。");
         return reader.Position;
     }
 }

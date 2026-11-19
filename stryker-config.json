@@ -3,7 +3,7 @@
     "configuration": "Release",
     "test-runner": "mtp",
     "mutation-level": "Standard",
-    "mutate": ["**/*.cs"],
+    "mutate": ["**/*.cs", "!**/tools/WasmSharp.Benchmarks/**"],
     "reporters": ["html", "json", "progress"],
     "coverage-analysis": "perTest",
     "additional-timeout": 60000

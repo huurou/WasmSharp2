@@ -7,6 +7,80 @@ namespace WasmSharp.Tests.Modules;
 internal class ExpressionDecoder_ReadTests
 {
     [Test]
+    public async Task 既定を含むラベル数とendを含む命令数が上限に一致する_分岐表と終端を保持する()
+    {
+        // Arrange
+        byte[] bytes = [0x0E, 1, 3, 4, 0x0B];
+        var reader = new ModuleBinaryReader(bytes, maxCollectionLength: 2);
+
+        // Act
+        var instructions = ExpressionDecoder.Read(ref reader, bytes.Length);
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(instructions.Count).IsEqualTo(2);
+            await Assert.That(instructions[0].Labels.AsSpan().SequenceEqual([3u, 4u])).IsTrue();
+            await Assert.That(instructions[1].Opcode).IsEqualTo(new OpcodeKey(0, 0x0B));
+        }
+    }
+
+    [Test]
+    [Arguments("0E03000000000B", 1, "要素数が配列の保持上限を超え")]
+    [Arguments("0E020000000B", 1, "既定を含むラベル数が配列の保持上限を超え")]
+    [Arguments("01010B", 2, "命令数が配列の保持上限を超え")]
+    public async Task 要素数または命令数が保持上限を超える_対象と宣言位置を通知する(
+        string hex,
+        int offset,
+        string expectedDetail
+    )
+    {
+        // Arrange
+        var bytes = Convert.FromHexString(hex);
+        foreach (var mode in new[] { ModuleReadMode.Bounded, ModuleReadMode.Diagnostic })
+        {
+            Action read = () =>
+            {
+                var reader = new ModuleBinaryReader(bytes, 40, 10, mode: mode, maxCollectionLength: 2);
+                var body = reader.ReadRange((uint)bytes.Length, 3);
+                ExpressionDecoder.Read(ref body, 40 + bytes.Length);
+            };
+
+            // Act & Assert
+            var exception = await Assert.That(read).ThrowsExactly<WasmImplementationLimitException>();
+            using (Assert.Multiple())
+            {
+                await Assert.That(exception!.Reason).IsEqualTo(WasmImplementationLimitReason.CollectionSize);
+                await Assert.That(exception.Limit).IsEqualTo(2);
+                await Assert
+                    .That(exception.Location)
+                    .IsEqualTo(new WasmFailureLocation(WasmProcessingStage.Decode, 40L + offset, 3, 10));
+                await Assert.That(exception.Message).Contains(expectedDetail);
+            }
+        }
+    }
+
+    [Test]
+    public async Task 分岐表の候補数が物理入力と保持上限をともに超える_候補数の位置で構文エラーを先に通知する()
+    {
+        // Arrange
+        byte[] bytes = [0x0E, 4, 0x0B];
+        Action read = () =>
+        {
+            var reader = new ModuleBinaryReader(bytes, 40, 10, 3, maxCollectionLength: 2);
+            ExpressionDecoder.Read(ref reader, 40 + bytes.Length);
+        };
+
+        // Act & Assert
+        var exception = await Assert.That(read).ThrowsExactly<WasmDecodeException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.Message).StartsWith("length out of bounds");
+            await Assert.That(exception.Location).IsEqualTo(new WasmFailureLocation(WasmProcessingStage.Decode, 41, 3, 10));
+        }
+    }
+
+    [Test]
     [Arguments(ModuleReadMode.Bounded)]
     [Arguments(ModuleReadMode.Diagnostic)]
     public async Task V128定数が続く_16byteの所有と即値後の命令位置を保持する(ModuleReadMode mode)

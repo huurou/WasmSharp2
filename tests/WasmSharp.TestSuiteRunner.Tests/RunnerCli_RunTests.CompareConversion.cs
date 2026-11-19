@@ -40,14 +40,17 @@ internal partial class RunnerCli_RunTests
         {
             await Assert.That(result.ExitCode).IsEqualTo(2);
             await Assert.That(result.Error).Contains("保存済み結果のJSONとして読み取れません");
+            await Assert.That(result.Error).Contains(field);
             await Assert.That(File.Exists(comparison)).IsFalse();
         }
     }
 
     [Test]
-    [Arguments(false)]
-    [Arguments(true)]
-    public async Task Core3を別の配置に再生成して比較する_変換器の版だけが異なる場合も識別する(bool changeVersion)
+    [Arguments(null, null)]
+    [Arguments("url", "https://mirror.invalid/wasm-tools.git")]
+    [Arguments("commit", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")]
+    [Arguments("version", "1.263.1")]
+    public async Task Core3を別の配置に再生成して比較する_変換器の取得元とcommitと版の差を報告する(string? field, string? changedValue)
     {
         // Arrange
         using var directory = new TemporaryDirectory();
@@ -57,10 +60,13 @@ internal partial class RunnerCli_RunTests
         await Assert.That(before.ExitCode).IsEqualTo(0).Because(before.Error);
         await Assert.That(after.ExitCode).IsEqualTo(0).Because(after.Error);
         var current = directory.Combine("after/manifest.json");
-        if (changeVersion)
+        string? originalValue = null;
+        if (field is not null)
         {
             var manifest = JsonNode.Parse(await File.ReadAllTextAsync(current))!;
-            manifest["profile"]!["wasm_tools"]!["version"] = "1.263.1";
+            var release = manifest["profile"]!["wasm_tools"]!;
+            originalValue = release[field]!.GetValue<string>();
+            release[field] = changedValue;
             await File.WriteAllTextAsync(current, manifest.ToJsonString());
         }
         var comparison = directory.Combine("comparison.json");
@@ -72,13 +78,16 @@ internal partial class RunnerCli_RunTests
         var report = JsonNode.Parse(await File.ReadAllTextAsync(comparison))!;
         using (Assert.Multiple())
         {
-            await Assert.That(exitCode).IsEqualTo(changeVersion ? 1 : 0).Because(error);
+            await Assert.That(exitCode).IsEqualTo(field is null ? 0 : 1).Because(error);
             await Assert.That(report["complete"]!.GetValue<bool>()).IsTrue();
             await Assert.That(report["entry_differences"]!.AsArray()).IsEmpty();
             var conditions = report["condition_differences"]!.AsArray();
-            if (changeVersion)
+            if (field is not null)
             {
-                await Assert.That(conditions.Single()!["name"]!.GetValue<string>()).IsEqualTo("wasm_tools.version");
+                var difference = conditions.Single()!;
+                await Assert.That(difference["name"]!.GetValue<string>()).IsEqualTo($"wasm_tools.{field}");
+                await Assert.That(difference["baseline"]!.GetValue<string>()).IsEqualTo(originalValue);
+                await Assert.That(difference["current"]!.GetValue<string>()).IsEqualTo(changedValue);
             }
             else
             {

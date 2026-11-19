@@ -422,19 +422,19 @@ internal static class CorpusGenerator
         ImmutableArray<CorpusDiagnostic>.Builder diagnostics
     )
     {
-        var (exitCode, output, error) = RunGit(root, "rev-parse", "--verify", "HEAD");
+        var (exitCode, message) = RunGit(root, "rev-parse", "--verify", "HEAD");
         if (exitCode != 0)
         {
             diagnostics.Add(
                 new(
                     PREPARE,
-                    $"{name}の配置{root}からGitのHEADを取得できません。終了値: {exitCode?.ToString() ?? "なし"}、標準エラー: {error.Trim()}"
+                    $"{name}の配置{root}からGitのHEADを取得できません。終了値: {exitCode?.ToString() ?? "なし"}、標準エラー: {message}"
                 )
             );
             return null;
         }
 
-        var head = output.Trim();
+        var head = message;
         if (head != revision.Commit)
         {
             diagnostics.Add(new(PREPARE, $"{name}の配置{root}のHEAD {head}が固定commit {revision.Commit}と一致しません。"));
@@ -450,7 +450,7 @@ internal static class CorpusGenerator
     /// <returns>前後の空白を除いたoriginのURL Gitを起動できないかコマンドが失敗した場合はnull</returns>
     private static string? ReadOrigin(string root)
     {
-        return RunGit(root, "remote", "get-url", "origin") is (0, var output, _) ? output.Trim() : null;
+        return RunGit(root, "remote", "get-url", "origin") is (0, var output) ? output : null;
     }
 
     /// <summary>
@@ -458,8 +458,8 @@ internal static class CorpusGenerator
     /// </summary>
     /// <param name="root">Gitの-Cへ渡す配置</param>
     /// <param name="arguments">-Cと配置に続けて渡すコマンドと引数</param>
-    /// <returns>終了値・標準出力・標準エラー Gitを起動できない場合は終了値がnull、標準出力が空、標準エラーが失敗理由</returns>
-    private static (int? ExitCode, string Output, string Error) RunGit(string root, params string[] arguments)
+    /// <returns>終了値と、成功時は標準出力、失敗時は標準エラーを返す。Gitを起動できない場合は終了値をnullとして理由を返す。</returns>
+    private static (int? ExitCode, string Message) RunGit(string root, params string[] arguments)
     {
         var fullRoot = Path.TrimEndingDirectorySeparator(Path.GetFullPath(root));
         var startInfo = new ProcessStartInfo("git");
@@ -476,12 +476,13 @@ internal static class CorpusGenerator
 
         try
         {
-            return RunProcess(startInfo);
+            var (exitCode, output, error) = RunProcess(startInfo);
+            return (exitCode, (exitCode == 0 ? output : error).Trim());
         }
         catch (Win32Exception ex)
         {
             // Gitを起動できない場合は、取得できない情報として理由とともに呼出し元へ返す。
-            return (null, string.Empty, $"gitを起動できません: {ex.Message}");
+            return (null, $"gitを起動できません: {ex.Message}".TrimEnd());
         }
     }
 

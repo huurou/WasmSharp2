@@ -1,5 +1,4 @@
 using System.ComponentModel;
-using System.Security.Cryptography;
 using System.Text.Json;
 using WasmSharp.Benchmarks.Cases;
 using WasmSharp.Benchmarks.Measurements;
@@ -34,13 +33,12 @@ internal sealed class BenchmarkCli
                 WriteHelp(output);
                 return 0;
             }
-            var options = Parse(args);
-            return args[0] switch
+            return args.FirstOrDefault() switch
             {
-                "check" => Check(options["--assets"], output, error),
-                "run" => Measure(options, output, run),
-                "compare" => Compare(options, output),
-                _ => throw new ArgumentException("有効な操作を指定してください。"),
+                "check" => Check(ParseOptions(args, "--assets")["--assets"], output, error),
+                "run" => Measure(ParseOptions(args, "--assets", "--case", "--output"), output, run),
+                "compare" => Compare(ParseOptions(args, "--baseline", "--current", "--policy", "--output"), output),
+                _ => throw new ArgumentException("check、run、compareのいずれかを指定してください。"),
             };
         }
         catch (Exception exception)
@@ -149,25 +147,10 @@ internal sealed class BenchmarkCli
                 throw new IOException("比較入力run内へ出力できません。");
             }
         }
-        var runs = baseline.Concat(current).Select(x => RunStore.Load(x, _json)).ToList();
-        var policyPath = Path.GetFullPath(options["--policy"]);
-        var policyBytes = File.ReadAllBytes(policyPath);
-        var policy =
-            JsonSerializer.Deserialize<ComparisonPolicy>(policyBytes, _json.Options)
-            ?? throw new InvalidDataException("policyのJSONがnullです。");
-        var report = new RunComparison(_json).Compare(
-            new(
-                baseline,
-                current,
-                policyPath,
-                Convert.ToHexStringLower(SHA256.HashData(policyBytes)),
-                [
-                    .. runs.SelectMany(x => x.PlannedCaseIds)
-                        .Concat(policy.Cases.Select(x => x.CaseId))
-                        .Distinct(StringComparer.Ordinal)
-                        .Order(StringComparer.Ordinal),
-                ]
-            )
+        var (report, hasIncompleteRun) = new RunComparison(_json).Compare(
+            baseline,
+            current,
+            options["--policy"]
         );
         Directory.CreateDirectory(directory);
         using (var stream = new FileStream(Path.Combine(directory, "comparison.json"), FileMode.CreateNew))
@@ -183,7 +166,7 @@ internal sealed class BenchmarkCli
             }
         }
         output.WriteLine($"受入: {report.IsAccepted}; 保存先: {directory}");
-        return runs.Any(x => x.Status == ResultStatus.Incomplete) ? 2
+        return hasIncompleteRun ? 2
             : report.IsAccepted ? 0
             : 1;
     }
@@ -206,15 +189,8 @@ internal sealed class BenchmarkCli
         }
     }
 
-    private static Dictionary<string, string> Parse(string[] args)
+    private static Dictionary<string, string> ParseOptions(string[] args, params string[] required)
     {
-        string[] required = args.FirstOrDefault() switch
-        {
-            "check" => ["--assets"],
-            "run" => ["--assets", "--case", "--output"],
-            "compare" => ["--baseline", "--current", "--policy", "--output"],
-            _ => throw new ArgumentException("check、run、compareのいずれかを指定してください。"),
-        };
         var values = new Dictionary<string, string>(StringComparer.Ordinal);
         for (var index = 1; index < args.Length; index += 2)
         {

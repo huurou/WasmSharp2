@@ -35,10 +35,18 @@ internal partial class WasmModule_DecodeTests
     public async Task 未定義の版を指定_デコードせず引数の範囲外として拒否する()
     {
         // Arrange
-        var bytes = ConstantModuleBinary.Create([(0x7F, [0x41, 0x01, 0x0B])], [("run", 0)]);
+        byte[] bytes = [];
 
         // Act & Assert
-        await Assert.That(() => WasmModule.Decode(bytes, (WasmSpecVersion)2)).ThrowsExactly<ArgumentOutOfRangeException>();
+        var exception = await Assert
+            .That(() => WasmModule.Decode(bytes, (WasmSpecVersion)2))
+            .ThrowsExactly<ArgumentOutOfRangeException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.ParamName).IsEqualTo("specVersion");
+            await Assert.That(exception.ActualValue).IsEqualTo((WasmSpecVersion)2);
+            await Assert.That(exception.Message).Contains("仕様の版");
+        }
     }
 
     [Test]
@@ -53,6 +61,7 @@ internal partial class WasmModule_DecodeTests
         using (Assert.Multiple())
         {
             await Assert.That(exception!.Message).StartsWith("malformed section id");
+            await Assert.That(exception.Message).Contains("Core 2.0");
             await Assert.That(exception.Location!.ByteOffset).IsEqualTo(23);
         }
     }
@@ -72,6 +81,7 @@ internal partial class WasmModule_DecodeTests
         using (Assert.Multiple())
         {
             await Assert.That(exception!.Feature).IsEqualTo("tag section");
+            await Assert.That(exception.Message).Contains("未実装");
             await Assert
                 .That(exception.Location)
                 .IsEqualTo(new WasmFailureLocation(WasmProcessingStage.Decode, 23, null, 13));
@@ -81,6 +91,12 @@ internal partial class WasmModule_DecodeTests
                     (WasmProcessingStage.Decode, 8L, (long)bytes.Length),
                     (WasmProcessingStage.Validate, 0L, (long)bytes.Length),
                 ]);
+            await Assert
+                .That(exception.UnverifiedRanges.Single(x => x.Stage == WasmProcessingStage.Decode).Description)
+                .Contains("外枠");
+            await Assert
+                .That(exception.UnverifiedRanges.Single(x => x.Stage == WasmProcessingStage.Validate).Description)
+                .Contains("入力全体");
         }
     }
 
@@ -127,6 +143,34 @@ internal partial class WasmModule_DecodeTests
             .ThrowsExactly<WasmDecodeException>();
 
         // Assert
-        await Assert.That(exception!.Message).StartsWith(prefix);
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.Message).StartsWith(prefix);
+            if (prefix == "malformed section id")
+            {
+                await Assert.That(exception.Message).Contains("Core 3.0");
+            }
+        }
+    }
+
+    [Test]
+    [Arguments(new byte[] { 0x0E, 0x00 })]
+    [Arguments(new byte[] { 0x0D })]
+    public async Task タグを確認する前に外枠の不正を見つける_それより先にある型sectionの構文エラーを報告する(byte[] trailingSection)
+    {
+        // Arrange
+        var bytes = HostLinkingModuleBinary.Create(HostLinkingModuleBinary.Section(1, [1, 0x61]), trailingSection);
+
+        // Act & Assert
+        var exception = await Assert
+            .That(() => WasmModule.Decode(bytes, WasmSpecVersion.Core3))
+            .ThrowsExactly<WasmDecodeException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.Message).StartsWith("malformed function type");
+            await Assert
+                .That(exception.Location)
+                .IsEqualTo(new WasmFailureLocation(WasmProcessingStage.Decode, 11, null, 1));
+        }
     }
 }

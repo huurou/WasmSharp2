@@ -487,9 +487,15 @@ internal static class CorpusVerifier
             return
             [
                 .. Directory
-                    .EnumerateFiles(inputRoot, "*.wast", SearchOption.AllDirectories)
+                    .EnumerateFiles(inputRoot, "*.wast", new EnumerationOptions
+                    {
+                        RecurseSubdirectories = true,
+                        MatchCasing = MatchCasing.CaseSensitive,
+                        AttributesToSkip = 0,
+                        IgnoreInaccessible = false,
+                    })
                     .Select(x => Path.GetRelativePath(inputRoot, x).Replace(Path.DirectorySeparatorChar, '/'))
-                    .Where(x => x.EndsWith(".wast", StringComparison.Ordinal) && !expected.Contains(x))
+                    .Where(x => !expected.Contains(x))
                     .Order(StringComparer.Ordinal)
                     .Select(x => new CorpusDiagnostic(OPERATION, "固定profileにない元入力があります。", x)),
             ];
@@ -566,7 +572,7 @@ internal static class CorpusVerifier
     /// <returns>最上位から順に並べた親ディレクトリの相対path 素材自身は含めない</returns>
     private static IEnumerable<string> GetParentPaths(string path)
     {
-        for (var i = path.IndexOf('/'); i >= 0; i = path.IndexOf('/', i + 1))
+        for (var i = path.IndexOf('/'); i != -1; i = path.IndexOf('/', i + 1))
         {
             yield return path[..i];
         }

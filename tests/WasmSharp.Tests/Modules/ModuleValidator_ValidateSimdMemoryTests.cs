@@ -44,7 +44,7 @@ internal partial class ModuleValidator_ValidateTests
 
         // Assert
         await Assert.That(valid.FunctionCodes.IsEmpty).IsFalse();
-        await AssertSimdMemoryValidationFailure(invalid, "alignment must not be larger than natural");
+        await AssertSimdMemoryValidationFailure(invalid, "alignment must not be larger than natural", "アクセス幅");
     }
 
     [Test]
@@ -67,7 +67,7 @@ internal partial class ModuleValidator_ValidateTests
 
         // Assert
         await Assert.That(valid.FunctionCodes.IsEmpty).IsFalse();
-        await AssertSimdMemoryValidationFailure(invalid, "invalid lane index");
+        await AssertSimdMemoryValidationFailure(invalid, "invalid lane index", "上限");
     }
 
     [Test]
@@ -161,7 +161,7 @@ internal partial class ModuleValidator_ValidateTests
         );
     }
 
-    private static async Task AssertSimdMemoryValidationFailure(WasmModule module, string diagnostic)
+    private static async Task AssertSimdMemoryValidationFailure(WasmModule module, string diagnostic, string? expectedDetail = null)
     {
         var executionContext = new WasmExecutionContext();
         var instruction = module.Functions[0].Instructions.Last(x => x.Opcode.Prefix == 0xFD);
@@ -171,7 +171,11 @@ internal partial class ModuleValidator_ValidateTests
             var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
             using (Assert.Multiple())
             {
-                await Assert.That(exception!.Message.StartsWith(diagnostic, StringComparison.Ordinal)).IsTrue();
+                await Assert.That(exception!.Message).StartsWith(diagnostic);
+                if (expectedDetail is not null)
+                {
+                    await Assert.That(exception.Message).Contains(expectedDetail);
+                }
                 await Assert
                     .That(exception.Location)
                     .IsEqualTo(new(WasmProcessingStage.Validate, instruction.ByteOffset, 0, 10));

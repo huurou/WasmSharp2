@@ -6,6 +6,25 @@ namespace WasmSharp.TestSuiteRunner.Tests;
 internal partial class RunnerCli_RunTests
 {
     [Test]
+    public async Task Core3の変換器自身を生成先に指定する_競合した引数を示して終了2になる()
+    {
+        // Arrange
+        using var directory = new TemporaryDirectory();
+        var fixture = await Core3ConversionFixture.CreateAsync(directory, "gc/sample.wast", "(module)\n");
+        var converter = SuiteWorkspace.ConverterPath;
+
+        // Act
+        var (exitCode, error) = fixture.Generate(converter);
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(exitCode).IsEqualTo(2);
+            await Assert.That(error).Contains($"生成先{converter}は--wasm-toolsの");
+        }
+    }
+
+    [Test]
     public async Task Core3を指定して生成する_公式commandとテキストおよびバイナリ素材を保持する()
     {
         // Arrange

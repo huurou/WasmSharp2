@@ -43,16 +43,50 @@ internal partial class RunnerCli_RunTests
         // Assert
         using (Assert.Multiple())
         {
-            await Assert.That(exitCode).IsNotEqualTo(2).Because(error);
+            await Assert.That(exitCode).IsEqualTo(1).Because(error);
             using var report = JsonDocument.Parse(await File.ReadAllBytesAsync(outputPath));
             await Assert.That(report.RootElement.GetProperty("spec_version").GetString()).IsEqualTo("Core3");
-            var cases = report.RootElement.GetProperty("inputs")[0].GetProperty("cases").EnumerateArray().ToArray();
+            var input = report.RootElement.GetProperty("inputs")[0];
+            var cases = input.GetProperty("cases").EnumerateArray().ToArray();
+            await Assert.That(cases[3].GetProperty("outcome").GetString()).IsEqualTo("runner_error");
+            await Assert.That(cases[5].GetProperty("outcome").GetString()).IsEqualTo("out_of_scope");
             await Assert
                 .That(cases.Select(x => x.GetProperty("id").GetProperty("input_path").GetString()!).Distinct())
                 .IsEquivalentTo(["gc/sample.wast"]);
             await Assert
                 .That(cases.Select(x => x.GetProperty("id").GetProperty("command_index").GetInt32()))
                 .IsEquivalentTo([0, 1, 2, 3, 4, 5, 6], CollectionOrdering.Matching);
+        }
+    }
+
+    [Test]
+    [Arguments(false, 0)]
+    [Arguments(true, 1)]
+    public async Task Core3のテキストに併記されたバイナリを照合する_欠落時だけ入力異常で終了する(bool missingCompanion, int expectedExit)
+    {
+        // Arrange
+        using var directory = new TemporaryDirectory();
+        var fixture = await Core3ConversionFixture.CreateAsync(directory, "gc/sample.wast", "text companion");
+        fixture.Generate("generated");
+        const string Companion = "modules/gc/sample.0.wasm";
+        string[] expectedIssuePaths = missingCompanion ? [Companion] : [];
+        if (missingCompanion)
+        {
+            File.Delete(directory.Combine($"generated/{Companion}"));
+        }
+        var outputPath = directory.Combine("run.json");
+
+        // Act
+        var (exitCode, error) = fixture.Run(["run", "--manifest", directory.Combine("generated/manifest.json"), "--output", outputPath]);
+
+        // Assert
+        var report = _reportStore.ReadRunReport(outputPath).Report;
+        var input = report.Inputs.Single();
+        using (Assert.Multiple())
+        {
+            await Assert.That(exitCode).IsEqualTo(expectedExit).Because(error);
+            await Assert.That(input.Cases.Single().Outcome).IsEqualTo(CaseOutcome.OutOfScope);
+            await Assert.That(input.Issues.Select(x => x.Path!)).IsEquivalentTo(expectedIssuePaths);
         }
     }
 
@@ -82,6 +116,32 @@ internal partial class RunnerCli_RunTests
 
         // Assert
         await Assert.That(result.ExitCode).IsEqualTo(expectedExit).Because(result.Output);
+        if (version is not null)
+        {
+            await Assert.That(result.Output).Contains($"実行時の仕様版{version}が最終判定の対象Core2と一致しません");
+        }
+    }
+
+    [Test]
+    public async Task 固定profileの複数の入力のうち1件だけhashが異なる_実行前にmanifestを拒否する()
+    {
+        // Arrange
+        using var fixture = CorpusFixture.Create();
+        var profile = fixture.Manifest.Profile.ToProfile();
+        fixture.UpdateInput(CorpusFixture.B, x => x with { Input = x.Input with { Sha256 = new string('b', 64) } });
+        _reportStore.Save(Complete(fixture.Manifest), fixture.ManifestPath);
+        var output = Path.Combine(fixture.Root, "run.json");
+
+        // Act
+        var result = Run(profile, "run", "--manifest", fixture.ManifestPath, "--output", output);
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(result.ExitCode).IsEqualTo(2);
+            await Assert.That(result.Error).Contains("固定profile");
+            await Assert.That(File.Exists(output)).IsFalse();
+        }
     }
 
     [Test]

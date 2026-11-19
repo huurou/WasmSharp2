@@ -253,13 +253,13 @@ internal class InterpreterContext_EnterFrameTests
             new([WasmValueKind.ExternRef], []),
             [
                 new(1, WasmValueKind.I32),
-                new(2, WasmValueKind.I64),
-                new(0, WasmValueKind.F64),
-                new(1, WasmValueKind.F32),
-                new(1, WasmValueKind.F64),
-                new(1, WasmValueKind.V128),
-                new(1, WasmValueKind.FuncRef),
-                new(1, WasmValueKind.ExternRef),
+                new(3, WasmValueKind.I64),
+                new(3, WasmValueKind.F64),
+                new(4, WasmValueKind.F32),
+                new(5, WasmValueKind.F64),
+                new(6, WasmValueKind.V128),
+                new(7, WasmValueKind.FuncRef),
+                new(8, WasmValueKind.ExternRef),
             ],
             0
         );

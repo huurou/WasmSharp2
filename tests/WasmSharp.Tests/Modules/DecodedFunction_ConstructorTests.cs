@@ -27,7 +27,7 @@ internal class DecodedFunction_ConstructorTests
             await Assert.That(function.TypeIndex).IsEqualTo(uint.MaxValue);
             await Assert.That(function.BodyOffset).IsEqualTo(30L);
             await Assert.That(function.Locals.Length).IsEqualTo(1);
-            await Assert.That(function.Locals[0].Count).IsEqualTo(uint.MaxValue);
+            await Assert.That(function.Locals[0].EndIndex).IsEqualTo(uint.MaxValue);
             await Assert.That(function.Locals[0].Type).IsEqualTo(WasmValueKind.I64);
             await Assert.That(function.Instructions.Length).IsEqualTo(2);
             await Assert.That(function.Instructions[0].Opcode).IsEqualTo(new OpcodeKey(0, 0x44));

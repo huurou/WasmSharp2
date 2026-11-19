@@ -6,14 +6,14 @@ namespace WasmSharp.Tests;
 internal partial class WasmModule_ValidateTests
 {
     [Test]
-    [Arguments(false, "FC0801000B", "unknown memory 0", 5)]
-    [Arguments(false, "00FC0801000B", "unknown memory 0", 5)]
-    [Arguments(true, "FC0801000B", "unknown data segment 1", 5)]
-    [Arguments(true, "00FC0801000B", "unknown data segment 1", 5)]
-    [Arguments(false, "FC09010B", "unknown data segment 1", 4)]
-    [Arguments(false, "00FC09010B", "unknown data segment 1", 4)]
-    [Arguments(true, "FC08FFFFFFFF0F000B", "unknown data segment 4294967295", 9)]
-    [Arguments(false, "00FC09FFFFFFFF0F0B", "unknown data segment 4294967295", 8)]
+    [Arguments(false, "FC0801000B", "unknown memory 0", 5, "メモリが存在しません")]
+    [Arguments(false, "00FC0801000B", "unknown memory 0", 5, "メモリが存在しません")]
+    [Arguments(true, "FC0801000B", "unknown data segment 1", 5, "データセグメントが存在しません")]
+    [Arguments(true, "00FC0801000B", "unknown data segment 1", 5, "データセグメントが存在しません")]
+    [Arguments(false, "FC09010B", "unknown data segment 1", 4, "データセグメントが存在しません")]
+    [Arguments(false, "00FC09010B", "unknown data segment 1", 4, "データセグメントが存在しません")]
+    [Arguments(true, "FC08FFFFFFFF0F000B", "unknown data segment 4294967295", 9, "データセグメントが存在しません")]
+    [Arguments(false, "00FC09FFFFFFFF0F0B", "unknown data segment 4294967295", 8, "データセグメントが存在しません")]
     [Arguments(true, "FC0800000B", "type mismatch", 5)]
     [Arguments(true, "410041004200FC0800000B", "type mismatch", 5)]
     [Arguments(true, "410042004100FC0800000B", "type mismatch", 5)]
@@ -24,7 +24,8 @@ internal partial class WasmModule_ValidateTests
         bool hasMemory,
         string instructions,
         string diagnostic,
-        int offsetFromEnd
+        int offsetFromEnd,
+        string? expectedDetail = null
     )
     {
         // Arrange
@@ -45,6 +46,10 @@ internal partial class WasmModule_ValidateTests
         using (Assert.Multiple())
         {
             await Assert.That(exception!.Message.StartsWith(diagnostic, StringComparison.Ordinal)).IsTrue();
+            if (expectedDetail is not null)
+            {
+                await Assert.That(exception.Message).Contains(expectedDetail);
+            }
             await Assert
                 .That(exception.Location)
                 .IsEqualTo(new(WasmProcessingStage.Validate, bytes.Length - data.Length - offsetFromEnd, 0, 10));

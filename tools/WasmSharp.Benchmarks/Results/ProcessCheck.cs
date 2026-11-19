@@ -20,7 +20,20 @@ internal sealed record ProcessCheck(
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] long? AffinityAfter = null,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? AffinityUnavailableReason = null,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? RuntimeVersion = null
-);
+)
+{
+    internal ProcessCheck WithAffinityObservation(bool after, long? mask, string? unavailableReason)
+    {
+        return this with
+        {
+            AffinityBefore = after ? AffinityBefore : mask,
+            AffinityAfter = after ? mask : AffinityAfter,
+            AffinityUnavailableReason = unavailableReason is null
+                ? AffinityUnavailableReason
+                : (after ? "後観測: " : "前観測: ") + unavailableReason,
+        };
+    }
+}
 
 /// <summary>
 /// 前検査または後検査の成立状態と、固定期待値に対する観測

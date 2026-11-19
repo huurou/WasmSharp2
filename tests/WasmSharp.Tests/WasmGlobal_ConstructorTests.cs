@@ -30,7 +30,11 @@ internal class WasmGlobal_ConstructorTests
         var exception = await Assert
             .That(() => new WasmGlobal(type, WasmValue.FromI32(1)))
             .ThrowsExactly<ArgumentException>();
-        await Assert.That(exception!.ParamName).IsEqualTo("initialValue");
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.ParamName).IsEqualTo("initialValue");
+            await Assert.That(exception.Message).Contains("初期値の型");
+        }
     }
 
     [Test]
@@ -45,7 +49,11 @@ internal class WasmGlobal_ConstructorTests
         var exception = await Assert
             .That(() => new WasmGlobal(type, WasmValue.FromI32(1)))
             .ThrowsExactly<ArgumentException>();
-        await Assert.That(exception!.ParamName).IsEqualTo("type");
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.ParamName).IsEqualTo("type");
+            await Assert.That(exception.Message).Contains("valueの種類");
+        }
     }
 
     [Test]

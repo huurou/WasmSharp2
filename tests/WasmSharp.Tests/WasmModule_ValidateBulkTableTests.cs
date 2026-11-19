@@ -15,7 +15,7 @@ internal partial class WasmModule_ValidateTests
     [Arguments("4200D06F4100FC11000B", "type mismatch", 3, null)]
     [Arguments("4100D06F4200FC11000B", "type mismatch", 3, null)]
     [Arguments("00FC0C01020B", "unknown table 2", 1, null)]
-    [Arguments("00FC0C01000B", "unknown elem segment 1", 1, null)]
+    [Arguments("00FC0C01000B", "unknown elem segment 1", 1, "要素セグメントが存在しません")]
     [Arguments("00FC0C00010B", "type mismatch", 1, "要素セグメントと対象テーブルの参照型")]
     [Arguments("00FC0D010B", "unknown elem segment 1", 1, null)]
     [Arguments("00FC0E02030B", "unknown table 2", 1, null)]

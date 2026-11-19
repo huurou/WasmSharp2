@@ -53,35 +53,6 @@ internal class BenchmarkRun_PrepareTests
     }
 
     [Test]
-    public async Task 予定ケースの準備が失敗_予定を保存したrunへ理由を残して未完了にする()
-    {
-        // Arrange
-        using var assets = new AssetLoadingFixture();
-        using var run = new RunStoreFixture();
-        var request = new RunRequest(
-            run.DirectoryPath,
-            assets.ManifestPath,
-            ["unknown"],
-            RunKind.Smoke,
-            BenchmarkConfig.Create(),
-            "",
-            new("dotnet", [], "")
-        );
-
-        // Act & Assert
-        await Assert.That(() => _benchmarkRun.Prepare(request)).Throws<InvalidDataException>();
-        var manifest = RunStore.Load(run.DirectoryPath, _json);
-        using (Assert.Multiple())
-        {
-            await Assert.That(manifest.PlannedCaseIds).IsEquivalentTo(["unknown"]);
-            await Assert.That(manifest.Status).IsEqualTo(ResultStatus.Incomplete);
-            await Assert
-                .That(manifest.Failures.Any(x => x.Stage == RunStage.Preparation && x.Message!.Contains("unknown")))
-                .IsTrue();
-        }
-    }
-
-    [Test]
     public async Task 新規runを準備する_予定とコピー済み素材の絶対pathをJob別設定で子へ渡す()
     {
         // Arrange

@@ -37,6 +37,19 @@ internal sealed class ScriptExecutor(InputVerification input, WasmSpecVersion sp
     /// <returns>観測した段階・値・例外・printを持つケース結果 command処理中の例外は診断として記録する</returns>
     internal CaseResult Execute(ScriptCommand command, ScriptState state)
     {
+        var result = AssertionJudge.Judge(command, Observe(command, state));
+        if (result.Outcome != CaseOutcome.Passed)
+        {
+            state.Fail(command, result.Cause);
+        }
+        return result;
+    }
+
+    /// <summary>
+    /// commandを実行し、最後に着手した操作と、判定に使う値・例外・依存関係を記録する。
+    /// </summary>
+    internal CommandObservation Observe(ScriptCommand command, ScriptState state)
+    {
         var observation = new CommandObservation(state.BeginCommand(command.Index), "read_command", null);
         try
         {
@@ -75,13 +88,7 @@ internal sealed class ScriptExecutor(InputVerification input, WasmSpecVersion sp
         {
             observation = observation with { Exception = exception };
         }
-        observation = observation with { Prints = state.Prints, CallbackException = state.CallbackException };
-        var result = AssertionJudge.Judge(command, observation);
-        if (result.Outcome != CaseOutcome.Passed)
-        {
-            state.Fail(command, result.Cause);
-        }
-        return result;
+        return observation with { Prints = state.Prints, CallbackException = state.CallbackException };
     }
 
     /// <summary>
@@ -134,7 +141,7 @@ internal sealed class ScriptExecutor(InputVerification input, WasmSpecVersion sp
             {
                 Diagnostics =
                 [
-                    new CaseDiagnostic("resolve_definition", $"対象定義 {command.Module ?? "(直近)"}がありません。"),
+                    new CaseDiagnostic(observation.Operation, $"対象定義 {command.Module ?? "(直近)"}がありません。"),
                 ],
             };
             return;
@@ -258,7 +265,6 @@ internal sealed class ScriptExecutor(InputVerification input, WasmSpecVersion sp
     /// <param name="observation">moduleの不在・利用不能状態またはRegister段階を反映する観測</param>
     private static void ExecuteRegister(RegisterCommand command, ScriptState state, ref CommandObservation observation)
     {
-        observation = observation with { Operation = "resolve_module" };
         var binding = ResolveModule(command.Name, state, ref observation);
         if (binding is null)
         {
@@ -296,12 +302,13 @@ internal sealed class ScriptExecutor(InputVerification input, WasmSpecVersion sp
     /// <returns>成功したmoduleとinstance 不在または利用不能の場合はnull</returns>
     private static InstantiatedModule? ResolveModule(string? name, ScriptState state, ref CommandObservation observation)
     {
+        observation = observation with { Operation = "resolve_module" };
         var binding = state.ResolveModule(name);
         if (binding is null)
         {
             observation = observation with
             {
-                Diagnostics = [new("resolve_module", $"対象module {name ?? "(直近)"}がありません。")],
+                Diagnostics = [new CaseDiagnostic(observation.Operation, $"対象module {name ?? "(直近)"}がありません。")],
             };
         }
         else if (binding.Cause is { } cause)
@@ -331,7 +338,6 @@ internal sealed class ScriptExecutor(InputVerification input, WasmSpecVersion sp
         var arguments = action is InvokeAction invoke ? ValueCodec.CreateArguments(invoke.Arguments, state, specVersion) : [];
         observation = observation with { Operation = "parse_expected" };
         var patterns = ValueMatcher.Parse(expected, specVersion);
-        observation = observation with { Operation = "resolve_module" };
         var module = ResolveModule(action.Module, state, ref observation);
         if (module is null)
         {

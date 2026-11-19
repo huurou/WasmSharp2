@@ -28,7 +28,8 @@ internal partial class ModuleValidator_ValidateTests
             var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
             using (Assert.Multiple())
             {
-                await Assert.That(exception!.Message.StartsWith("type mismatch", StringComparison.Ordinal)).IsTrue();
+                await Assert.That(exception!.Message).StartsWith("type mismatch");
+                await Assert.That(exception.Message).Contains("制御の結果");
                 await Assert
                     .That(exception.Location)
                     .IsEqualTo(new(WasmProcessingStage.Validate, definition.Instructions[^1].ByteOffset, 2, 10));

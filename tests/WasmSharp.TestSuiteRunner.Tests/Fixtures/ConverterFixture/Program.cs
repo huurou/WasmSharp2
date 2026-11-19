@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -6,6 +7,16 @@ Console.OutputEncoding = Encoding.UTF8;
 if (args is ["--version"])
 {
     Console.WriteLine("wasm-tools 1.263.0 (7a2fa422c 2026-10-30)");
+    return 0;
+}
+
+if (OperatingSystem.IsWindows() && args is ["--console-status"])
+{
+    Console.WriteLine(JsonSerializer.Serialize(new
+    {
+        has_window = WindowsConsole.GetConsoleWindow() != 0,
+        attached_process_count = WindowsConsole.GetConsoleProcessList(out _, 1),
+    }));
     return 0;
 }
 
@@ -35,6 +46,16 @@ static int ConvertCore3(string inputPath, string outputPath, string moduleDirect
 {
     var source = File.ReadAllText(inputPath);
     var script = Path.Combine(AppContext.BaseDirectory, "Data", "core3-script.json");
+    if (source == "text companion")
+    {
+        File.WriteAllText(outputPath, """
+            {"source_filename":"gc/sample.wast","commands":[
+            {"type":"module","line":1,"filename":"sample.0.wat","module_type":"text","binary_filename":"sample.0.wasm"}]}
+            """);
+        File.WriteAllText(Path.Combine(moduleDirectory, "sample.0.wat"), "(module)");
+        File.Copy(Path.Combine(AppContext.BaseDirectory, "Data", "module.wasm"), Path.Combine(moduleDirectory, "sample.0.wasm"));
+        return 0;
+    }
     if (source is "numeric companion" or "duplicate companion")
     {
         var binaryFilename = source == "numeric companion"
@@ -90,4 +111,13 @@ static int Convert(string inputPath, string outputPath)
         Path.Combine(Path.GetDirectoryName(outputPath)!, moduleName)
     );
     return 0;
+}
+
+internal static partial class WindowsConsole
+{
+    [LibraryImport("kernel32.dll")]
+    internal static partial nint GetConsoleWindow();
+
+    [LibraryImport("kernel32.dll")]
+    internal static partial uint GetConsoleProcessList(out uint processId, uint capacity);
 }

@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Text.Json;
+using TUnit.Core.Enums;
 using WasmSharp.TestSuiteRunner.Corpus;
 using WasmSharp.TestSuiteRunner.Tests.Fixtures;
 
@@ -7,6 +8,29 @@ namespace WasmSharp.TestSuiteRunner.Tests.Corpus;
 
 internal class CorpusGenerator_ConvertTests
 {
+    [Test]
+    [RunOn(OS.Windows)]
+    public async Task Windowsで変換器を起動する_コンソールを開かず親とも共有しない()
+    {
+        // Arrange
+        using var workspace = await SuiteWorkspace.CreateAsync();
+        var profile = workspace.CreateProfile() with { LogicalArguments = ["--console-status"] };
+        var request = workspace.CreateRequest(profile);
+        var input = new InputConversionResult(profile.Inputs[0]);
+
+        // Act
+        var result = CorpusGenerator.Convert(request, input);
+
+        // Assert
+        using var output = JsonDocument.Parse(result.StandardOutput);
+        using (Assert.Multiple())
+        {
+            await Assert.That(result.ExitCode).IsEqualTo(0);
+            await Assert.That(output.RootElement.GetProperty("has_window").GetBoolean()).IsFalse();
+            await Assert.That(output.RootElement.GetProperty("attached_process_count").GetUInt32()).IsLessThanOrEqualTo(1U);
+        }
+    }
+
     [Test]
     public async Task 機能を無効化するprofileで変換する_指定した引数を変換器へ渡す()
     {

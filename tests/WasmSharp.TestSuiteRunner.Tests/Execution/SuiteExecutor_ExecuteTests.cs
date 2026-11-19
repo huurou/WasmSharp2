@@ -9,18 +9,67 @@ namespace WasmSharp.TestSuiteRunner.Tests.Execution;
 public class SuiteExecutor_ExecuteTests
 {
     [Test]
-    [Arguments("i32", "-2147483648", "2147483648", CaseOutcome.Passed)]
-    [Arguments("i64", "9223372036854775808", "-9223372036854775808", CaseOutcome.Passed)]
-    [Arguments("i8", "-128", "128", CaseOutcome.Passed)]
-    [Arguments("i8", "255", "-1", CaseOutcome.Passed)]
-    [Arguments("i8", "-129", "127", CaseOutcome.RunnerError)]
-    [Arguments("i32", "2147483647", "-2147483649", CaseOutcome.RunnerError)]
-    internal async Task Core3で整数の引数と期待値を指定する_型の幅に収まる値を同じビット列として比較する(
-        string type, string argument, string expected, CaseOutcome outcome)
+    public async Task 未登録の定義をmodule_instanceが参照する_対象を診断し後続の依存をblockedにする()
     {
         // Arrange
         using var fixture = CorpusFixture.Create();
-        byte valueType = type switch { "i32" => 0x7f, "i64" => 0x7e, _ => 0x7b };
+        fixture.ReplaceScriptA(
+            """
+            {"type":"module_instance","line":1},
+            {"type":"module_definition","line":2,"name":"D","filename":"a.0.wasm","module_type":"binary"},
+            {"type":"module_instance","line":3,"instance":"I","module":"D"},
+            {"type":"module_instance","line":4,"instance":"J","module":"I"},
+            {"type":"register","line":5,"name":"J","as":"consumer"}
+            """,
+            ScriptExecutionFixture.Empty
+        );
+
+        // Act
+        var report = SuiteExecutor.Execute(Complete(fixture.Manifest), fixture.ManifestPath, WasmSpecVersion.Core3);
+
+        // Assert
+        var cases = report.Inputs[0].Cases;
+        using (Assert.Multiple())
+        {
+            await Assert.That(cases[0].Outcome).IsEqualTo(CaseOutcome.RunnerError);
+            await Assert.That(cases[0].Diagnostics.Single().Operation).IsEqualTo("resolve_definition");
+            await Assert.That(cases[0].Diagnostics.Single().Message).Contains("(直近)");
+            await Assert.That(cases[1].Outcome).IsEqualTo(CaseOutcome.Passed);
+            await Assert.That(cases[2].Outcome).IsEqualTo(CaseOutcome.Passed);
+            await Assert.That(cases[3].Outcome).IsEqualTo(CaseOutcome.RunnerError);
+            await Assert.That(cases[3].Diagnostics.Single().Message).Contains("対象定義 I");
+            await Assert.That(cases[4].Outcome).IsEqualTo(CaseOutcome.Blocked);
+            await Assert.That(cases[4].Cause!.Origins).IsEquivalentTo([new CaseId("a.wast", 3)]);
+        }
+    }
+
+    [Test]
+    [Arguments("i32", 0, "-2147483648", "2147483648", null, null)]
+    [Arguments("i64", 0, "9223372036854775808", "-9223372036854775808", null, null)]
+    [Arguments("i8", 16, "-128", "128", null, null)]
+    [Arguments("i8", 16, "255", "-1", null, null)]
+    [Arguments("i8", 16, "-129", "127", "create_arguments", "8ビットの符号付き10進数")]
+    [Arguments("i32", 0, "2147483647", "-2147483649", "parse_expected", "32ビットの符号付き10進数")]
+    [Arguments("i32", 0, "", "0", "create_arguments", "32ビットの符号なし10進数")]
+    [Arguments("i32", 0, "0", "-", "parse_expected", "32ビットの符号付き10進数")]
+    [Arguments("f32", 0, "-1", "4294967295", "create_arguments", "32ビットの符号なし10進数")]
+    [Arguments("f64", 0, "-1", "18446744073709551615", "create_arguments", "64ビットの符号なし10進数")]
+    [Arguments("f32", 4, "-1", "4294967295", "create_arguments", "32ビットの符号なし10進数")]
+    [Arguments("f64", 2, "18446744073709551615", "-1", "parse_expected", "64ビットの符号なし10進数")]
+    public async Task Core3の引数と期待値を比較する_整数だけは型の幅に収まる負数も同じビット列として扱う(
+        string type, int laneCount, string argument, string expected, string? failingOperation, string? numberFormat)
+    {
+        // Arrange
+        using var fixture = CorpusFixture.Create();
+        byte valueType = (type, laneCount) switch
+        {
+            (_, > 0) => 0x7b,
+            ("i32", 0) => 0x7f,
+            ("i64", 0) => 0x7e,
+            ("f32", 0) => 0x7d,
+            ("f64", 0) => 0x7c,
+            _ => throw new ArgumentOutOfRangeException(nameof(type)),
+        };
         var identity = ScriptExecutionFixture.Binary(
             (1, [1, 0x60, 1, valueType, 1, valueType]),
             (3, [1, 0]),
@@ -29,9 +78,9 @@ public class SuiteExecutor_ExecuteTests
         );
         string Value(string text)
         {
-            return type == "i8"
-            ? $$"""{"type":"v128","lane_type":"i8","value":{{System.Text.Json.JsonSerializer.Serialize(Enumerable.Repeat(text, 16))}}}"""
-            : $$"""{"type":"{{type}}","value":"{{text}}"}""";
+            return laneCount == 0
+                ? $$"""{"type":"{{type}}","value":"{{text}}"}"""
+                : $$"""{"type":"v128","lane_type":"{{type}}","value":{{System.Text.Json.JsonSerializer.Serialize(Enumerable.Repeat(text, laneCount))}}}""";
         }
 
         fixture.ReplaceScriptA(
@@ -46,7 +95,16 @@ public class SuiteExecutor_ExecuteTests
         var report = SuiteExecutor.Execute(Complete(fixture.Manifest), fixture.ManifestPath, WasmSpecVersion.Core3);
 
         // Assert
-        await Assert.That(report.Inputs[0].Cases[1].Outcome).IsEqualTo(outcome);
+        var result = report.Inputs[0].Cases[1];
+        using (Assert.Multiple())
+        {
+            await Assert.That(result.Outcome).IsEqualTo(failingOperation is null ? CaseOutcome.Passed : CaseOutcome.RunnerError);
+            await Assert.That(result.Diagnostics.SingleOrDefault()?.Operation).IsEqualTo(failingOperation);
+            if (numberFormat is not null)
+            {
+                await Assert.That(result.Diagnostics.Single().Message).Contains(numberFormat);
+            }
+        }
     }
 
     [Test]

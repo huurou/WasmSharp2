@@ -9,6 +9,63 @@ internal class CorpusGenerator_CheckPreconditionsTests
     private const string OTHER_COMMIT = "0000000000000000000000000000000000000000";
 
     [Test]
+    [Arguments("1.263.1", "7a2fa422cdf9aeeaf488a2acac8bc94a078bfa32")]
+    [Arguments("1.263.0", OTHER_COMMIT)]
+    public async Task WasmToolsの版またはcommitが固定条件と異なる_観測した版を出典に残して変換を拒否する(
+        string version,
+        string commit
+    )
+    {
+        // Arrange
+        using var directory = new TemporaryDirectory();
+        var profile = new ConversionProfileLoader().LoadCore3();
+        Directory.CreateDirectory(directory.Combine(profile.WorkingDirectory));
+        profile = profile with { Inputs = [], WasmTools = profile.WasmTools! with { Version = version, Commit = commit } };
+        var request = new GenerateRequest(profile, directory.Root, null, SuiteWorkspace.ConverterPath, directory.Combine("out"));
+
+        // Act
+        var preconditions = CorpusGenerator.CheckPreconditions(request);
+
+        // Assert
+        var diagnostic = preconditions.Diagnostics.Single();
+        const string ReportedVersion = "wasm-tools 1.263.0 (7a2fa422c 2026-10-30)";
+        using (Assert.Multiple())
+        {
+            await Assert.That(preconditions.Provenance.ExecutableVersion).IsEqualTo(ReportedVersion);
+            await Assert.That(diagnostic.Operation).IsEqualTo("prepare");
+            await Assert.That(diagnostic.Path).IsEqualTo(request.ConverterPath);
+            await Assert.That(diagnostic.Message).Contains($"{version} ({commit})");
+            await Assert.That(diagnostic.Message).Contains(ReportedVersion);
+        }
+    }
+
+    [Test]
+    public async Task WasmToolsのファイルを起動できない_hashと失敗したpathを残して版を未取得とする()
+    {
+        // Arrange
+        using var directory = new TemporaryDirectory();
+        var profile = new ConversionProfileLoader().LoadCore3() with { Inputs = [] };
+        Directory.CreateDirectory(directory.Combine(profile.WorkingDirectory));
+        var converter = directory.Combine("wasm-tools.exe");
+        await File.WriteAllTextAsync(converter, "wasm-tools");
+        var request = new GenerateRequest(profile, directory.Root, null, converter, directory.Combine("out"));
+
+        // Act
+        var preconditions = CorpusGenerator.CheckPreconditions(request);
+
+        // Assert
+        var diagnostic = preconditions.Diagnostics.Single();
+        using (Assert.Multiple())
+        {
+            await Assert.That(preconditions.Provenance.ExecutableSha256).IsEqualTo(Convert.ToHexStringLower(SHA256.HashData("wasm-tools"u8)));
+            await Assert.That(preconditions.Provenance.ExecutableVersion).IsNull();
+            await Assert.That(diagnostic.Path).IsEqualTo(converter);
+            await Assert.That(diagnostic.ExceptionType).IsEqualTo(typeof(System.ComponentModel.Win32Exception).FullName);
+            await Assert.That(diagnostic.Message).Contains("wasm-toolsの版を取得できません");
+        }
+    }
+
+    [Test]
     public async Task 固定commitのcheckoutと一致する入力を渡す_診断なしで版と変換器hashを出典に記録する()
     {
         // Arrange
@@ -131,7 +188,7 @@ internal class CorpusGenerator_CheckPreconditionsTests
         {
             await Assert.That(preconditions.Diagnostics.Length).IsEqualTo(1);
             await Assert.That(preconditions.Diagnostics[0].Message).Contains("HEADを取得できません");
-            await Assert.That(preconditions.Diagnostics[0].Message).Contains("標準エラー");
+            await Assert.That(preconditions.Diagnostics[0].Message).Matches(@"標準エラー: \S");
             await Assert.That(preconditions.Provenance.SpecHead).IsNull();
             await Assert.That(preconditions.Provenance.WabtHead).IsEqualTo(workspace.Commit);
         }
