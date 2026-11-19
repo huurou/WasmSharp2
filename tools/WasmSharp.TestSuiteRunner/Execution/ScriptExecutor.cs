@@ -82,6 +82,9 @@ internal sealed class ScriptExecutor(InputVerification input, WasmSpecVersion sp
                 case AssertExhaustionCommand assertion:
                     ExecuteAction(assertion.Action, [], false, state, ref observation);
                     break;
+                case AssertExceptionCommand assertion:
+                    ExecuteAction(assertion.Action, [], false, state, ref observation);
+                    break;
             }
         }
         catch (Exception exception)
