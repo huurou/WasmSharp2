@@ -259,11 +259,11 @@ internal class ScriptReader_ReadTests
         var expectedValue = (ExpectedValue)command.Expected[0];
         using (Assert.Multiple())
         {
-            await Assert.That(argument.Kind).IsEqualTo(WasmValueKind.V128);
+            await Assert.That(argument.Type).IsEqualTo("v128");
             await Assert.That(argument.LaneType).IsEqualTo(expected);
             await Assert.That(argument.Value).IsNull();
             await Assert.That(argument.Lanes.SequenceEqual(["1", "2"])).IsTrue();
-            await Assert.That(expectedValue.Kind).IsEqualTo(WasmValueKind.V128);
+            await Assert.That(expectedValue.Type).IsEqualTo("v128");
             await Assert.That(expectedValue.LaneType).IsEqualTo(expected);
             await Assert.That(expectedValue.Lanes.SequenceEqual(["3", "4"])).IsTrue();
         }
@@ -695,7 +695,7 @@ internal class ScriptReader_ReadTests
         return action switch
         {
             InvokeAction x =>
-                $"invoke {x.Module ?? "-"} {x.Field} [{string.Join(", ", x.Arguments.Select(y => Format(y.Kind, y.Value, y.LaneType, y.Lanes)))}]",
+                $"invoke {x.Module ?? "-"} {x.Field} [{string.Join(", ", x.Arguments.Select(y => Format(y.Type, y.Value, y.LaneType, y.Lanes)))}]",
             GetAction x => $"get {x.Module ?? "-"} {x.Field}",
             _ => throw new ArgumentOutOfRangeException(nameof(action)),
         };
@@ -703,12 +703,11 @@ internal class ScriptReader_ReadTests
 
     private static string Format(ExpectedValue value)
     {
-        return Format(value.Kind, value.Value, value.LaneType, value.Lanes);
+        return Format(value.Type, value.Value, value.LaneType, value.Lanes);
     }
 
-    private static string Format(WasmValueKind kind, string? value, LaneType? laneType, ImmutableArray<string> lanes)
+    private static string Format(string type, string? value, LaneType? laneType, ImmutableArray<string> lanes)
     {
-        var type = kind.ToString().ToLowerInvariant();
         return laneType is { } lane
             ? $"{type}:{lane.ToString().ToLowerInvariant()}({string.Join(",", lanes)}){value}"
             : $"{type}:{value}{string.Join(",", lanes)}";

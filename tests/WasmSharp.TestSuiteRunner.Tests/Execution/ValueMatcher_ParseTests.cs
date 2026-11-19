@@ -29,13 +29,13 @@ internal class ValueMatcher_ParseTests
                 patterns
                     .Select(Format)
                     .SequenceEqual([
-                        "I32/32/ffffffff:-/-",
-                        "I64/64/1:-/-",
-                        "F32/32/80000000:-/-",
-                        "F64/64/7ff0000000000001:-/-",
-                        "FuncRef/0//-",
-                        "ExternRef/0//-",
-                        "ExternRef/0//7",
+                        "i32/32/ffffffff:-/-",
+                        "i64/64/1:-/-",
+                        "f32/32/80000000:-/-",
+                        "f64/64/7ff0000000000001:-/-",
+                        "funcref/0//-",
+                        "externref/0//-",
+                        "externref/0//7",
                     ])
             )
             .IsTrue();
@@ -84,11 +84,11 @@ internal class ValueMatcher_ParseTests
                 patterns
                     .Select(Format)
                     .SequenceEqual([
-                        "F32/32/0:Canonical/-",
-                        "F64/64/0:Arithmetic/-",
-                        "V128/32/0:Canonical,0:Arithmetic,0:-,80000000:-/-",
-                        "V128/64/0:Arithmetic,7ff8000000000001:-/-",
-                        "V128/16/1:-,2:-,3:-,4:-,5:-,6:-,7:-,ffff:-/-",
+                        "f32/32/0:Canonical/-",
+                        "f64/64/0:Arithmetic/-",
+                        "v128/32/0:Canonical,0:Arithmetic,0:-,80000000:-/-",
+                        "v128/64/0:Arithmetic,7ff8000000000001:-/-",
+                        "v128/16/1:-,2:-,3:-,4:-,5:-,6:-,7:-,ffff:-/-",
                     ])
             )
             .IsTrue();
@@ -166,6 +166,6 @@ internal class ValueMatcher_ParseTests
     {
         var pattern = candidates.Single();
         var bits = string.Join(",", pattern.Bits.Select(x => $"{x.Bits:x}:{x.Nan?.ToString() ?? "-"}"));
-        return $"{pattern.Kind}/{pattern.Width}/{bits}/{pattern.Externref?.ToString() ?? "-"}";
+        return $"{pattern.Type}/{pattern.Width}/{bits}/{pattern.ReferenceNumber?.ToString() ?? "-"}";
     }
 }
