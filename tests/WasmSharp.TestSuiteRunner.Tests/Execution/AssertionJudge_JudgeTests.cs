@@ -400,7 +400,7 @@ internal class AssertionJudge_JudgeTests
             2,
             3,
             Action(CaseStage.Invoke),
-            [new(WasmValueKind.V128, null, LaneType.I64, ["1", "2"])]
+            [new ExpectedValue(WasmValueKind.V128, null, LaneType.I64, ["1", "2"])]
         );
         var observation = Observe(CaseStage.Invoke) with { Values = [value], Prints = [print], Diagnostics = [diagnostic] };
 

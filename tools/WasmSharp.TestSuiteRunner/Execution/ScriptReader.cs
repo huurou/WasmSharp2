@@ -180,6 +180,10 @@ internal sealed class ScriptReader(WasmSpecVersion specVersion)
             ScriptCommand.ASSERT_EXHAUSTION => ReadActionAssertion(properties, index, static (i, l, a, t, r) =>
                 new AssertExhaustionCommand(i, l, a, t, r)
             ),
+            ScriptCommand.ASSERT_EXCEPTION when specVersion == WasmSpecVersion.Core3 => ReadAssertException(
+                properties,
+                index
+            ),
             ScriptCommand.ASSERT_MALFORMED => ReadModuleAssertion(properties, index, static (i, l, f, t, m) =>
                 new AssertMalformedCommand(i, l, f, t, m)
             ),
@@ -323,20 +327,33 @@ internal sealed class ScriptReader(WasmSpecVersion specVersion)
             index,
             ReadLine(properties),
             ReadAction(properties),
-            [
-                .. GetArray(properties, "", EXPECTED)
-                    .EnumerateArray()
-                    .Select((x, i) => ReadExpectedValue(x, $"{EXPECTED}[{i}]")),
-            ]
+            ReadValues(GetArray(properties, "", EXPECTED), EXPECTED, ReadExpectedResult)
         );
     }
 
     /// <summary>
-    /// assert_returnの期待値を、元の表記を保持して読み取る。
+    /// 1つの結果位置に対する期待値を読み、eitherの候補を同じ位置にまとめる。
     /// </summary>
-    private ExpectedValue ReadExpectedValue(JsonElement element, string path)
+    private ExpectedResult ReadExpectedResult(Dictionary<string, JsonElement> properties, string path)
     {
-        return ReadValue(ReadObject(element, path), path, true, static (t, v, l, x) => new ExpectedValue(t, v, l, x));
+        if (specVersion == WasmSpecVersion.Core3 && GetString(properties, path, TYPE) == "either")
+        {
+            const string Values = "values";
+            RejectUnknownNames(properties, path, TYPE, Values);
+            return new ExpectedResult.Either(
+                ReadValues(GetArray(properties, path, Values), Join(path, Values), ReadExpectedValue)
+            );
+        }
+
+        return ReadExpectedValue(properties, path);
+    }
+
+    /// <summary>
+    /// 単独の期待値とeither内の各候補を同じ形式で読み取る。
+    /// </summary>
+    private ExpectedValue ReadExpectedValue(Dictionary<string, JsonElement> properties, string path)
+    {
+        return ReadValue(properties, path, true, static (t, v, l, x) => new ExpectedValue(t, v, l, x));
     }
 
     /// <summary>
@@ -361,6 +378,18 @@ internal sealed class ScriptReader(WasmSpecVersion specVersion)
             GetString(properties, "", TEXT),
             ReadResultTypes(properties)
         );
+    }
+
+    /// <summary>
+    /// Core 3.0で未捕捉のWasm例外を期待するactionを読み取る。
+    /// </summary>
+    /// <param name="properties">項目名の重複を検査済みのcommand</param>
+    /// <param name="index">入力内の0始まりcommand index</param>
+    /// <returns>期待診断を持たないassert_exception</returns>
+    private AssertExceptionCommand ReadAssertException(Dictionary<string, JsonElement> properties, int index)
+    {
+        RejectUnknownNames(properties, "", TYPE, LINE, ACTION);
+        return new AssertExceptionCommand(index, ReadLine(properties), ReadAction(properties));
     }
 
     /// <summary>
@@ -405,11 +434,9 @@ internal sealed class ScriptReader(WasmSpecVersion specVersion)
                 return new InvokeAction(
                     GetOptionalString(properties, ACTION, MODULE),
                     GetString(properties, ACTION, FIELD),
-                    [
-                        .. GetArray(properties, ACTION, ARGS)
-                            .EnumerateArray()
-                            .Select((x, i) => ReadArgument(x, $"{ACTION}.{ARGS}[{i}]")),
-                    ]
+                    ReadValues(GetArray(properties, ACTION, ARGS), Join(ACTION, ARGS), (p, path) =>
+                        ReadValue(p, path, false, static (t, v, l, x) => new ArgumentValue(t, v, l, x))
+                    )
                 );
             case "get":
                 RejectUnknownNames(properties, ACTION, TYPE, MODULE, FIELD);
@@ -420,11 +447,32 @@ internal sealed class ScriptReader(WasmSpecVersion specVersion)
     }
 
     /// <summary>
-    /// invokeの引数の型と値を読み取る。
+    /// 引数または値付き期待値の配列を順序どおりに読み、指定したモデルの新しい配列を作る。
     /// </summary>
-    private ArgumentValue ReadArgument(JsonElement element, string path)
+    /// <typeparam name="T">引数または値付き期待値のモデルの型</typeparam>
+    /// <param name="array">配列であることを確認済みのJSON要素</param>
+    /// <param name="path">配列のJSON上の位置 要素indexを加えて異常を報告する</param>
+    /// <param name="read">1個の値の項目を読み取る関数</param>
+    /// <returns>元JSONの順序を保持するモデルの配列 空配列なら空</returns>
+    /// <exception cref="ScriptFormatException">配列要素の項目や型が固定形式に合わない場合</exception>
+    private static ImmutableArray<T> ReadValues<T>(
+        JsonElement array,
+        string path,
+        Func<Dictionary<string, JsonElement>, string, T> read
+    )
     {
-        return ReadValue(ReadObject(element, path), path, false, static (t, v, l, x) => new ArgumentValue(t, v, l, x));
+        return
+        [
+            .. array
+                .EnumerateArray()
+                .Select(
+                    (x, i) =>
+                    {
+                        var itemPath = $"{path}[{i}]";
+                        return read(ReadObject(x, itemPath), itemPath);
+                    }
+                ),
+        ];
     }
 
     /// <summary>

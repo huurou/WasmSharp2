@@ -13,6 +13,7 @@ namespace WasmSharp.TestSuiteRunner.Execution;
 /// <param name="LaneType">v128のlane型 v128以外ではnull</param>
 /// <param name="Lanes">v128のlane0から順の値またはNaN patternの文字列 v128以外では空</param>
 internal sealed record ExpectedValue(string Type, string? Value, LaneType? LaneType, ImmutableArray<string> Lanes)
+    : ExpectedResult
 {
     internal ExpectedValue(WasmValueKind kind, string? value, LaneType? laneType, ImmutableArray<string> lanes)
         : this(ValueCodec.GetTypeName(kind), value, laneType, lanes) { }

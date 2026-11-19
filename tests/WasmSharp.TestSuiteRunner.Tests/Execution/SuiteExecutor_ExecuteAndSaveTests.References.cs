@@ -150,6 +150,44 @@ public partial class SuiteExecutor_ExecuteAndSaveTests
         }
     }
 
+    [Test]
+    [Arguments("refnull", true)]
+    [Arguments("funcref", false)]
+    public async Task 異なる参照条件を同じeitherに指定する_外部参照のnullに一致する候補と表記を保存する(
+        string secondType,
+        bool matched
+    )
+    {
+        // Arrange
+        using var fixture = CorpusFixture.Create();
+        var module = ScriptExecutionFixture.Binary(
+            (6, [1, 0x6f, 0, 0xd0, 0x6f, 0x0b]),
+            (7, [1, .. ScriptExecutionFixture.Name("g"), 3, 0])
+        );
+        fixture.ReplaceScriptA(
+            $$"""
+            {"type":"module","line":1,"filename":"a.0.wasm"},
+            {"type":"assert_return","line":2,"action":{"type":"get","field":"g"},"expected":[
+                {"type":"either","values":[{"type":"anyref","value":"7"},{"type":"{{secondType}}"}]}]}
+            """,
+            module
+        );
+
+        // Act
+        var cases = RunAndReadReferenceCases(fixture);
+
+        // Assert
+        var assertion = cases[1];
+        using (Assert.Multiple())
+        {
+            await Assert.That(assertion.Outcome).IsEqualTo(matched ? CaseOutcome.Passed : CaseOutcome.Failed);
+            await Assert.That(assertion.ExpectedValues.Single().Type).IsEqualTo("either");
+            await Assert
+                .That(assertion.ExpectedValues.Single().Values!.Select(x => (x.Type, x.Value)))
+                .IsEquivalentTo([("anyref", "7"), (secondType, null)], CollectionOrdering.Matching);
+        }
+    }
+
     private List<CaseResult> RunAndReadReferenceCases(CorpusFixture fixture, WasmSpecVersion version = WasmSpecVersion.Core3)
     {
         var output = Path.Combine(fixture.OutputRoot, "references.json");

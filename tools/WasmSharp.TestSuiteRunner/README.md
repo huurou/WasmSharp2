@@ -65,7 +65,7 @@ Windows x64の公式配布版で255入力、65,193command、JSON255件・Wasm5,8
 
 `module_definition`は素材のDecode・Validateだけを行い、リソースの割り当て・importのリンク・startの実行は行いません。`module_instance`は同じ検証済みの定義を再Decode・再Validateせずにインスタンス化し、成功するたびに独立したinstanceを生成します。定義名とmodule識別子は別々に管理し、名前を省略した`module_instance`は直近の定義から直近のinstanceを作ります。通常の`module`も、Validateに成功した定義を後続の`module_instance`へ提供します。定義が成立しなかった場合、それを参照する`module_instance`や、そのinstanceを使う後続commandは`blocked`となり、`cause.origins`から元の定義の分類をたどれます。
 
-公式入力はmanifestの`profile.inputs`に固定した`test/core`配下のWASTと、それを変換した素材だけです。`tests`配下の`core3-script.json`や変換器の代替プログラムはCLIの動作確認用の補助入力であり、公式ケースの結果には含めません。現時点では、ランナーが読み取れない`assert_exception`などのcommandは`runner_error`、ランタイムが未実装のCore 3.0機能を使うケースは`runtime_unsupported`や`failed`などpassed以外の分類で残り、成立扱いにはなりません。`verify`は引き続きCore 2.0全体の最終判定専用です。
+公式入力はmanifestの`profile.inputs`に固定した`test/core`配下のWASTと、それを変換した素材だけです。`tests`配下の`core3-script.json`や変換器の代替プログラムはCLIの動作確認用の補助入力であり、公式ケースの結果には含めません。`assert_exception`は未捕捉のWasm例外を期待します。actionの正常終了、trap、exhaustionは`failed`、必要なセットアップの不成立は原因付きの`blocked`として記録します。ランタイムが未対応を報告したケースは`runtime_unsupported`になります。`verify`は引き続きCore 2.0全体の最終判定専用です。
 
 ## Core 2.0の初回の生成・実行とbaseline保存
 
