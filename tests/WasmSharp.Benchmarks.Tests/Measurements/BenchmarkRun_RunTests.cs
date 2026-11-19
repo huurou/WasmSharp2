@@ -41,6 +41,7 @@ internal class BenchmarkRun_RunTests
         {
             await Assert.That(manifest.PlannedCaseIds).IsEquivalentTo(["unknown"]);
             await Assert.That(manifest.Status).IsEqualTo(ResultStatus.Incomplete);
+            await Assert.That(manifest.EnvironmentFile).IsNull();
             await Assert
                 .That(manifest.Failures.Any(x => x.Stage == RunStage.Preparation && x.Message!.Contains("unknown")))
                 .IsTrue();

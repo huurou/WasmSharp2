@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using TUnit.Assertions.Enums;
 using WasmSharp.TestSuiteRunner.Corpus;
 using WasmSharp.TestSuiteRunner.Execution;
 using WasmSharp.TestSuiteRunner.Reports;
@@ -51,8 +52,10 @@ internal class ScriptExecutor_ObserveTests
         // Assert
         using (Assert.Multiple())
         {
-            await Assert.That(observations.Select(x => x.Operation).SequenceEqual(expectedOperations)).IsTrue();
-            await Assert.That(observations.All(x => x.Exception is null)).IsTrue();
+            await Assert
+                .That(observations.Select(x => x.Operation))
+                .IsEquivalentTo(expectedOperations, CollectionOrdering.Matching);
+            await Assert.That(observations.Where(x => x.Exception is not null)).IsEmpty();
         }
     }
 }

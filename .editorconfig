@@ -8,6 +8,9 @@ end_of_line = crlf
 [*.{bash,fish,ksh,sh,zsh}]
 end_of_line = lf
 
+[.husky/pre-commit]
+end_of_line = lf
+
 # C# ファイル
 [*.cs]
 

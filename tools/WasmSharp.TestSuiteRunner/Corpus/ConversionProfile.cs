@@ -22,6 +22,9 @@ internal sealed record ConversionProfile(
     ImmutableArray<string> LogicalArguments
 )
 {
+    /// <summary>
+    /// wasm-toolsを使う場合の取得元、採用commit、リリース版
+    /// </summary>
     internal WasmToolsRelease? WasmTools { get; init; }
 
     /// <summary>

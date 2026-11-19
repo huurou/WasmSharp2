@@ -213,19 +213,23 @@ public partial class SuiteExecutor_ExecuteAndSaveTests
     }
 
     [Test]
-    [Arguments("module_definition")]
-    [Arguments("module")]
-    public async Task 読み取れないmoduleの定義_以前の定義へ戻さず直近の定義を使うinstanceを原因付きでblockedにする(
-        string commandType
+    [Arguments("module_definition", false)]
+    [Arguments("module", false)]
+    [Arguments("module_definition", true)]
+    public async Task 読み取れないmoduleの定義_以前の定義へ戻さずその定義を使うinstanceを原因付きでblockedにする(
+        string commandType,
+        bool useDefinitionName
     )
     {
         // Arrange
         using var fixture = CorpusFixture.Create();
+        var nameField = useDefinitionName ? ",\"name\":\"D\"" : "";
+        var moduleField = useDefinitionName ? ",\"module\":\"D\"" : "";
         fixture.ReplaceScriptA(
             $$"""
-            {"type":"module_definition","line":1,"filename":"a.0.wasm","module_type":"binary"},
-            {"type":"{{commandType}}","line":2,"filename":"a.1.wasm","module_type":7},
-            {"type":"module_instance","line":3}
+            {"type":"module_definition","line":1{{nameField}},"filename":"a.0.wasm","module_type":"binary"},
+            {"type":"{{commandType}}","line":2{{nameField}},"filename":"a.1.wasm","module_type":7},
+            {"type":"module_instance","line":3{{moduleField}}}
             """,
             StartCounter,
             CorpusFixture.FirstModule

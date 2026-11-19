@@ -30,7 +30,11 @@ internal partial class RunnerCli_RunTests
                 """
             );
         }
-        var parent = field == "default_enabled" ? profile["features"]![0]! : profile;
+        var parent =
+            field == "default_enabled"
+                ? profile["features"]!.AsArray().Single(x => x!["name"]!.GetValue<string>() == "simd")!
+                : profile;
+        var expectedField = field == "default_enabled" ? "features[simd].default_enabled" : field;
         parent[field] = null;
         await File.WriteAllTextAsync(input, json.ToJsonString());
 
@@ -51,7 +55,7 @@ internal partial class RunnerCli_RunTests
         {
             await Assert.That(result.ExitCode).IsEqualTo(2);
             await Assert.That(result.Error).Contains("保存済み結果のJSONとして読み取れません");
-            await Assert.That(result.Error).Contains(field);
+            await Assert.That(result.Error).Contains($"{expectedField}が必要です。");
             await Assert.That(File.Exists(comparison)).IsFalse();
         }
     }

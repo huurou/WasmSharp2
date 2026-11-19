@@ -516,6 +516,52 @@ internal class BenchmarkCli_RunTests
     }
 
     [Test]
+    [Arguments(true)]
+    [Arguments(false)]
+    public async Task 基準群または候補群に同じrunIDがある_独立測定の不足を記録して終了値1を返す(bool duplicateBaseline)
+    {
+        // Arrange
+        using var fixture = new ComparisonFixture();
+        using var comparisonOutput = new RunStoreFixture();
+        var group = duplicateBaseline ? fixture.Baseline : fixture.Current;
+        group[1].Manifest = group[1].Manifest with { RunId = group[0].Manifest.RunId };
+        var request = fixture.Save();
+
+        // Act
+        var exitCode = _cli.Run(
+            [
+                "compare",
+                "--baseline",
+                string.Join(',', request.BaselineRunDirectories),
+                "--current",
+                string.Join(',', request.CurrentRunDirectories),
+                "--policy",
+                request.PolicyPath,
+                "--output",
+                comparisonOutput.DirectoryPath,
+            ],
+            TextWriter.Null,
+            TextWriter.Null
+        );
+        var report = JsonSerializer.Deserialize<ComparisonReport>(
+            File.ReadAllBytes(Path.Combine(comparisonOutput.DirectoryPath, "comparison.json")),
+            _json.Options
+        )!;
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(exitCode).IsEqualTo(1);
+            await Assert.That(report.IsAccepted).IsFalse();
+            await Assert
+                .That(report.Cases.Single().Reasons)
+                .Contains(
+                    new ComparisonReason(ComparisonReasonKind.InsufficientMeasurements, "群内の独立run IDが重複しています。")
+                );
+        }
+    }
+
+    [Test]
     [Arguments(false, 0)]
     [Arguments(true, 1)]
     public async Task CLIコマンドを保存したrunを比較する_素材配置差だけを除き意味のある引数差を保持する(

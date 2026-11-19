@@ -49,13 +49,13 @@ internal partial class RunnerCli_RunTests
         ]);
 
         // Assert
+        await Assert.That(exitCode).IsEqualTo(1).Because(error);
+        using var report = JsonDocument.Parse(await File.ReadAllBytesAsync(outputPath));
+        var input = report.RootElement.GetProperty("inputs")[0];
+        var cases = input.GetProperty("cases").EnumerateArray().ToArray();
         using (Assert.Multiple())
         {
-            await Assert.That(exitCode).IsEqualTo(1).Because(error);
-            using var report = JsonDocument.Parse(await File.ReadAllBytesAsync(outputPath));
             await Assert.That(report.RootElement.GetProperty("spec_version").GetString()).IsEqualTo("Core3");
-            var input = report.RootElement.GetProperty("inputs")[0];
-            var cases = input.GetProperty("cases").EnumerateArray().ToArray();
             await Assert.That(cases[3].GetProperty("outcome").GetString()).IsEqualTo("runner_error");
             await Assert.That(cases[5].GetProperty("outcome").GetString()).IsEqualTo("out_of_scope");
             await Assert
@@ -135,10 +135,13 @@ internal partial class RunnerCli_RunTests
         var result = Run(report.Corpus.Profile.ToProfile(), "verify", "--input", path);
 
         // Assert
-        await Assert.That(result.ExitCode).IsEqualTo(expectedExit).Because(result.Output);
-        if (version is not null)
+        using (Assert.Multiple())
         {
-            await Assert.That(result.Output).Contains($"実行時の仕様版{version}が最終判定の対象Core2と一致しません");
+            await Assert.That(result.ExitCode).IsEqualTo(expectedExit).Because(result.Output);
+            if (version is not null)
+            {
+                await Assert.That(result.Output).Contains($"実行時の仕様版{version}が最終判定の対象Core2と一致しません");
+            }
         }
     }
 

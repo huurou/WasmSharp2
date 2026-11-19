@@ -30,7 +30,7 @@ internal sealed class ScriptExecutor(InputVerification input, WasmSpecVersion sp
     }
 
     /// <summary>
-    /// 一つのcommandを実行し、失敗した通常moduleと登録の対象を原因付きで利用不能にする。
+    /// 一つのcommandを実行し、定義・インスタンス化・登録が成立しなかった場合は対応する対象に原因を記録する。
     /// </summary>
     /// <param name="command">実行と判定を行う1件のcommand</param>
     /// <param name="state">この入力の名前と参照の対応 現在のcommandのprint・callback記録を初期化して使う</param>
@@ -292,7 +292,7 @@ internal sealed class ScriptExecutor(InputVerification input, WasmSpecVersion sp
     /// <summary>
     /// module参照の不在をスクリプト異常とし、既知の失敗だけをblockedの原因にする。
     /// </summary>
-    /// <param name="name">対象moduleの識別子 省略時は直近の通常moduleを示すnull</param>
+    /// <param name="name">対象moduleの識別子 省略時は直近の通常moduleまたはmodule_instanceの結果を示すnull</param>
     /// <param name="state">module識別子と直近moduleを保持する入力の状態</param>
     /// <param name="observation">対象が不在の場合は診断、利用不能の場合は依存する原因を反映する観測</param>
     /// <returns>成功したmoduleとinstance 不在または利用不能の場合はnull</returns>

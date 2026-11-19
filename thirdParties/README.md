@@ -145,7 +145,7 @@ cmake --build artifacts/wabt-datacount-tests --config Release --target run-tests
 
 ## Core 3.0の公式テスト素材
 
-公式の[`wasm-3.0`ブランチ](https://github.com/WebAssembly/spec/tree/wasm-3.0)のcommit [`d7aada502455b3d9176ca4cbe48be4724d511d2a`](https://github.com/WebAssembly/spec/tree/d7aada502455b3d9176ca4cbe48be4724d511d2a/test/core)から、`test/core/**/*.wast`の全255件を採用する。`gc`と`exceptions`の各ディレクトリも含み、Core 2.0の固定commit・検証プロファイル・baselineは置き換えない。[`core3-profile.json`](../tools/WasmSharp.TestSuiteRunner/Corpus/core3-profile.json)に各入力の相対pathとGit blobのSHA-256を固定する。
+公式の[`wasm-3.0`ブランチ](https://github.com/WebAssembly/spec/tree/wasm-3.0)のcommit [`d7aada502455b3d9176ca4cbe48be4724d511d2a`](https://github.com/WebAssembly/spec/tree/d7aada502455b3d9176ca4cbe48be4724d511d2a/test/core)から、`test/core/**/*.wast`の全255件を採用する。`gc`と`exceptions`の各ディレクトリも含み、Core 2.0の固定commit・検証プロファイル・baselineは置き換えない。[`core3-profile.json`](../tools/WasmSharp.TestSuiteRunner/Corpus/core3-profile.json)に各入力の相対pathと、固定commitに保存されたファイル内容の生バイト列のSHA-256を記録する。
 
 固定版の`wast2json`ではGCと例外処理の一部を変換できなかったため、[公式配布wasm-tools v1.263.0](https://github.com/bytecodealliance/wasm-tools/releases/tag/v1.263.0)（commit `7a2fa422cdf9aeeaf488a2acac8bc94a078bfa32`）の[`json-from-wast`](https://github.com/bytecodealliance/wasm-tools/blob/7a2fa422cdf9aeeaf488a2acac8bc94a078bfa32/src/bin/wasm-tools/json_from_wast.rs)を使用する。使用するOS・アーキテクチャのアーカイブを展開し、`wasm-tools --version`の版とcommitの先頭9桁を確認する。Windows x64公式配布版で確認した実行ファイルのSHA-256は`3be416990124225fb4b683c8add1d910ea5bccb67de0963dab13a5599b685829`
 
@@ -153,14 +153,14 @@ cmake --build artifacts/wabt-datacount-tests --config Release --target run-tests
 
 ### Core 2.0のcheckoutを変えずに取得する
 
-準備済みの`thirdParties/WebAssembly-spec`があるリポジトリルートで、PowerShellから以下を実行する。各コマンドの成功を確認してから次へ進む。`git archive`を使い、作業コピーの改行変換を経由せずに入力を展開する。
+準備済みの`thirdParties/WebAssembly-spec`があるリポジトリルートで、PowerShellから以下を実行する。各コマンドの成功を確認してから次へ進む。`git archive`の実行時に改行変換を無効にし、展開したWASTのSHA-256が固定値と一致するようにする。
 
 ```powershell
 $spec3 = 'd7aada502455b3d9176ca4cbe48be4724d511d2a'
 $spec3Root = New-Item -ItemType Directory -Path artifacts/core3-spec-d7aada50
 $archive = Join-Path $spec3Root.FullName 'source.tar'
 git -C thirdParties/WebAssembly-spec fetch --no-tags origin $spec3
-git -C thirdParties/WebAssembly-spec archive --format=tar --output="$archive" $spec3 LICENSE test/core
+git -C thirdParties/WebAssembly-spec -c core.autocrlf=false archive --format=tar --output="$archive" $spec3 LICENSE test/core
 tar -xf $archive -C $spec3Root.FullName
 ```
 

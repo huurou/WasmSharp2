@@ -8,9 +8,9 @@ namespace WasmSharp.TestSuiteRunner.Corpus;
 /// </summary>
 /// <param name="Id">profileの識別名</param>
 /// <param name="Spec">公式仕様の取得元と採用commit</param>
-/// <param name="Wabt">変換器ソースの取得元と採用commit</param>
+/// <param name="Wabt">WABTを使う場合の取得元と採用commit</param>
 /// <param name="WorkingDirectory">spec-root基準の変換作業ディレクトリ</param>
-/// <param name="Conversion">生成物に影響する固定option</param>
+/// <param name="Conversion">WABTを使う場合の生成物に影響する固定オプション</param>
 internal sealed record ProfileSnapshot(
     string Id,
     SourceRevision Spec,
@@ -43,12 +43,21 @@ internal sealed record ProfileSnapshot(
     void IJsonOnDeserialized.OnDeserialized()
     {
         // wasm_toolsの有無にかかわらず、Core 2.0では従来の必須項目を要求する。
-        if (
-            (Id == "core2" || WasmTools is null)
-            && (Wabt is null || Conversion is null || Features.Any(x => x is { DefaultEnabled: null }))
-        )
+        if (Id != "core2" && WasmTools is not null)
         {
-            throw new JsonException("WABTのprofileにはwabt、conversion、機能のdefault_enabledが必要です。");
+            return;
+        }
+        if (Wabt is null)
+        {
+            throw new JsonException("WABTのprofileにはwabtが必要です。");
+        }
+        if (Conversion is null)
+        {
+            throw new JsonException("WABTのprofileにはconversionが必要です。");
+        }
+        if (Features.Find(x => x is { DefaultEnabled: null }) is { } feature)
+        {
+            throw new JsonException($"WABTのprofileにはfeatures[{feature.Name}].default_enabledが必要です。");
         }
     }
 

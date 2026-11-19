@@ -1014,7 +1014,7 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult I32x4DotI16x8S(InterpreterContext context, in Instruction instruction)
     {
-        // 2つの最小i16の積和は2147483648になるためlongで加算してから32bitへ折り返す
+        // 符号付き16ビットの最小値同士の積を2つ足すとintの上限を超えるため、uncheckedで下位32ビットを残す
         return ExecuteSimdIntegerBinary(context, 32, static (x, y) =>
         {
             var (leftHigh, leftLow) = Math.DivRem(x, 0x1_0000UL);

@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using WasmSharp.Benchmarks.Cases;
@@ -24,6 +25,10 @@ internal class BenchmarkRun_CaptureEnvironmentTests
         // Arrange
         using var fixture = new RunStoreFixture();
         var store = RunStore.Create(fixture.DirectoryPath, fixture.Manifest, _json);
+        var buildConfiguration = typeof(BenchmarkRun)
+            .Assembly.GetCustomAttributes<AssemblyConfigurationAttribute>()
+            .Single()
+            .Configuration;
         var command = new CommandInvocation(
             Environment.ProcessPath!,
             ["--diagnose", "value with spaces"],
@@ -61,6 +66,7 @@ internal class BenchmarkRun_CaptureEnvironmentTests
             await Assert.That(environment.RuntimeVersion).Contains(Environment.Version.ToString());
             await Assert.That(environment.SdkVersion).IsNotEqualTo("10.0");
             await Assert.That(environment.BenchmarkDotNetVersion).Contains("0.15.8");
+            await Assert.That(saved.BuildConfiguration).IsEqualTo(buildConfiguration);
             await Assert
                 .That(environment.GcSettings.Single(x => x.Name == "GCSettings.IsServerGC").Value)
                 .IsEqualTo(System.Runtime.GCSettings.IsServerGC.ToString());

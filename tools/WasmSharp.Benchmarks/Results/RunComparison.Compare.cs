@@ -56,7 +56,15 @@ internal sealed partial class RunComparison
     )
     {
         var policy = ReadPolicy(request, reasons);
-        if (baseline.Select(x => x.Manifest.RunId).Intersect(current.Select(x => x.Manifest.RunId)).Any())
+        var baselineIds = baseline.Select(x => x.Manifest.RunId).ToHashSet(StringComparer.Ordinal);
+        var currentIds = current.Select(x => x.Manifest.RunId).ToHashSet(StringComparer.Ordinal);
+        if (baselineIds.Count != baseline.Count || currentIds.Count != current.Count)
+        {
+            reasons.Add(
+                new ComparisonReason(ComparisonReasonKind.InsufficientMeasurements, "群内の独立run IDが重複しています。")
+            );
+        }
+        if (baselineIds.Overlaps(currentIds))
         {
             reasons.Add(
                 new(ComparisonReasonKind.InsufficientMeasurements, "同じrun IDを基準群と候補群に重複使用できません。")
@@ -93,10 +101,6 @@ internal sealed partial class RunComparison
                     )
                 );
             }
-        }
-        if (runs.Select(x => x.Manifest.RunId).Distinct(StringComparer.Ordinal).Count() != runs.Count)
-        {
-            reasons.Add(new(ComparisonReasonKind.InsufficientMeasurements, "群内の独立run IDが重複しています。"));
         }
         return runs;
     }

@@ -54,7 +54,7 @@ internal sealed class ScriptState(string inputPath)
     internal string InputPath { get; } = inputPath;
 
     /// <summary>
-    /// 直近の通常module まだ通常moduleを処理していない場合はnull
+    /// 直近の通常moduleまたはmodule_instanceの結果 どちらもまだ処理していない場合はnull
     /// </summary>
     internal ScriptBinding<InstantiatedModule>? LastModule => _modules.Latest;
 
@@ -104,8 +104,8 @@ internal sealed class ScriptState(string inputPath)
     /// <summary>
     /// actionやregisterの対象moduleを解決する。
     /// </summary>
-    /// <param name="name">module識別子 省略時は直近の通常moduleを示すnull</param>
-    /// <returns>成功実体か利用不能状態 存在しない識別子や、通常moduleを処理する前の省略ではnull</returns>
+    /// <param name="name">module識別子 省略時は直近の通常moduleまたはmodule_instanceの結果を示すnull</param>
+    /// <returns>生成したinstanceか利用不能状態 指定した識別子が存在しない場合や、省略時にまだどちらのcommandも処理していない場合はnull</returns>
     internal ScriptBinding<InstantiatedModule>? ResolveModule(string? name)
     {
         return _modules.Resolve(name);

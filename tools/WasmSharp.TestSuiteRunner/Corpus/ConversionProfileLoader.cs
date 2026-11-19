@@ -3,7 +3,7 @@ using System.Text.Json;
 namespace WasmSharp.TestSuiteRunner.Corpus;
 
 /// <summary>
-/// 読取設定を共有し、固定Core 2.0 profileのJSONを読み取る
+/// Core 2.0とCore 3.0の固定検証プロファイルを同じJSON設定で読み取る
 /// </summary>
 internal sealed class ConversionProfileLoader
 {
@@ -16,7 +16,7 @@ internal sealed class ConversionProfileLoader
     };
 
     /// <summary>
-    /// 配置先やランタイムの実装状況に依存しない埋込みprofileを読み取る。
+    /// Core 2.0の公式入力とWABTの変換条件を埋込みプロファイルから読み取る。
     /// </summary>
     /// <returns>埋込みJSONに記録された固定の入力集合と変換条件</returns>
     /// <exception cref="JsonException">埋込みJSONをprofileとして読み取れない、または読み取った値がnullの場合</exception>
@@ -26,6 +26,11 @@ internal sealed class ConversionProfileLoader
         return Load(stream);
     }
 
+    /// <summary>
+    /// Core 3.0の公式入力とwasm-toolsの変換条件を埋込みプロファイルから読み取る。
+    /// </summary>
+    /// <returns>Core 3.0の固定入力、対象機能、変換器のリリースと論理引数</returns>
+    /// <exception cref="JsonException">埋込みJSONをプロファイルとして読み取れない、または読み取った値がnullの場合</exception>
     internal ConversionProfile LoadCore3()
     {
         using var stream = typeof(ConversionProfile).Assembly.GetManifestResourceStream("Core3.Profile")!;

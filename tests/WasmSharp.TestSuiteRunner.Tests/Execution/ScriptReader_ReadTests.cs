@@ -299,6 +299,33 @@ internal class ScriptReader_ReadTests
     }
 
     [Test]
+    [Arguments("assert_trap")]
+    [Arguments("assert_exhaustion")]
+    public async Task 否定actionでexpectedを省略する_Core3は結果型を空としCore2は必須項目の不足を報告する(string commandType)
+    {
+        // Arrange
+        var document = Parse(
+            $$"""{"type":"{{commandType}}","line":1,"action":{"type":"invoke","field":"f","args":[]},"text":"failure"}"""
+        );
+
+        // Act
+        var core3 = ScriptReader.Read(document, INPUT_PATH, WasmSpecVersion.Core3).Commands.Single();
+        var core2 = ScriptReader.Read(document, INPUT_PATH, WasmSpecVersion.Core2).Commands.Single();
+
+        // Assert
+        var resultTypes =
+            commandType == "assert_trap"
+                ? (await Assert.That(core3).IsTypeOf<AssertTrapCommand>())!.ResultTypes
+                : (await Assert.That(core3).IsTypeOf<AssertExhaustionCommand>())!.ResultTypes;
+        var invalid = await Assert.That(core2).IsTypeOf<InvalidCommand>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(resultTypes).IsEmpty();
+            await Assert.That(invalid!.Diagnostic.Message).IsEqualTo("expectedがありません。");
+        }
+    }
+
+    [Test]
     public async Task 否定module_assertionを読む_種類別に素材と期待診断と形式を保持する()
     {
         // Arrange
