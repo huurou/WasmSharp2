@@ -12,11 +12,7 @@ internal class WasmLimits_ConstructorTests
         var limits = new WasmLimits(minimum, maximum);
 
         // Act
-        var changed = limits with
-        {
-            Minimum = 0,
-            Maximum = 10,
-        };
+        var changed = limits with { Minimum = 0, Maximum = 10 };
 
         // Assert
         using (Assert.Multiple())

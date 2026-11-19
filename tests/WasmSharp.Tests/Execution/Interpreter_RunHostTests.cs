@@ -12,14 +12,11 @@ internal class Interpreter_RunHostTests
         // Arrange
         var executionContext = new WasmExecutionContext();
         var called = false;
-        var host = WasmFunction.CreateHost(
-            new([], []),
-            (_, _) =>
-            {
-                called = true;
-                return new([]);
-            }
-        );
+        var host = WasmFunction.CreateHost(new([], []), (_, _) =>
+        {
+            called = true;
+            return new([]);
+        });
 
         // Act
         var observed = ExecutionStackFixture.RunAtLimit(() =>

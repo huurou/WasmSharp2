@@ -24,16 +24,13 @@ internal partial class WasmFunction_InvokeTests
         host.Define("state", state);
         host.Define(
             "observe",
-            WasmFunction.CreateHost(
-                new([WasmValueKind.I32], [WasmValueKind.I32]),
-                (callbackContext, instance, arguments) =>
-                {
-                    var shared = instance.GetGlobalResource("state");
-                    observed.Add((arguments[0].AsI32(), shared.Value.AsI32()));
-                    shared.Value = WasmValue.FromI32(shared.Value.AsI32() + 10);
-                    return new(arguments);
-                }
-            )
+            WasmFunction.CreateHost(new([WasmValueKind.I32], [WasmValueKind.I32]), (callbackContext, instance, arguments) =>
+            {
+                var shared = instance.GetGlobalResource("state");
+                observed.Add((arguments[0].AsI32(), shared.Value.AsI32()));
+                shared.Value = WasmValue.FromI32(shared.Value.AsI32() + 10);
+                return new(arguments);
+            })
         );
         byte[] select = typed ? [0x1C, 1, 0x7F] : [0x1B];
         var module = WasmModule
@@ -97,17 +94,11 @@ internal partial class WasmFunction_InvokeTests
         var host = new WasmHostModule("env");
         host.Define("state", state);
         host.Define("constant", constant);
-        host.Define(
-            "observe",
-            WasmFunction.CreateHost(
-                new([WasmValueKind.I32], []),
-                (callbackContext, arguments) =>
-                {
-                    observed.Add((arguments[0].AsI32(), state.Value.AsI32()));
-                    return new([]);
-                }
-            )
-        );
+        host.Define("observe", WasmFunction.CreateHost(new([WasmValueKind.I32], []), (callbackContext, arguments) =>
+            {
+                observed.Add((arguments[0].AsI32(), state.Value.AsI32()));
+                return new([]);
+            }));
         var module = WasmModule
             .Decode(
                 HostLinkingModuleBinary.Create(
@@ -254,28 +245,16 @@ internal partial class WasmFunction_InvokeTests
         var afterCalled = false;
         var host = new WasmHostModule("env");
         host.Define("state", state);
-        host.Define(
-            "fail",
-            WasmFunction.CreateHost(
-                new([], []),
-                (callbackContext, instance, _) =>
-                {
-                    observed = instance;
-                    throw expected;
-                }
-            )
-        );
-        host.Define(
-            "after",
-            WasmFunction.CreateHost(
-                new([], []),
-                (callbackContext, _) =>
-                {
-                    afterCalled = true;
-                    return new([]);
-                }
-            )
-        );
+        host.Define("fail", WasmFunction.CreateHost(new([], []), (callbackContext, instance, _) =>
+            {
+                observed = instance;
+                throw expected;
+            }));
+        host.Define("after", WasmFunction.CreateHost(new([], []), (callbackContext, _) =>
+            {
+                afterCalled = true;
+                return new([]);
+            }));
         var instance = WasmModule
             .Decode(
                 HostLinkingModuleBinary.Create(
@@ -335,16 +314,13 @@ internal partial class WasmFunction_InvokeTests
         host.Define("state", state);
         host.Define(
             "observe",
-            WasmFunction.CreateHost(
-                new([WasmValueKind.I32], [WasmValueKind.I32]),
-                (callbackContext, arguments) =>
-                {
-                    var marker = arguments[0].AsI32();
-                    observed.Add(marker);
-                    state.Value = WasmValue.FromI32(state.Value.AsI32() + marker);
-                    return new(arguments);
-                }
-            )
+            WasmFunction.CreateHost(new([WasmValueKind.I32], [WasmValueKind.I32]), (callbackContext, arguments) =>
+            {
+                var marker = arguments[0].AsI32();
+                observed.Add(marker);
+                state.Value = WasmValue.FromI32(state.Value.AsI32() + marker);
+                return new(arguments);
+            })
         );
         var afterTrap = Convert.FromHexString("410310001B1A410410001A0B");
         var bytes = HostLinkingModuleBinary.Create(

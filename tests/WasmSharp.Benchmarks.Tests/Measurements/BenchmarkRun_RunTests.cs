@@ -73,35 +73,32 @@ internal class BenchmarkRun_RunTests
         var calls = 0;
 
         // Act
-        var actual = _benchmarkRun.Run(
-            request,
-            infos =>
-            {
-                captured = infos;
-                calls++;
-                before = RunStore.Load(request.OutputDirectory, _json);
-                var benchmark = infos.Single().BenchmarksCases.Single();
-                var path = benchmark
-                    .Job.Environment.EnvironmentVariables.Single(x => x.Key == RunConfiguration.ENVIRONMENT_VARIABLE)
-                    .Value;
-                configuration = JsonSerializer.Deserialize<RunConfiguration>(File.ReadAllBytes(path), _json.Options)!;
-                var source = ReadSource(request.OutputDirectory, before);
-                RunStore
-                    .OpenChecks(request.OutputDirectory, before.RunId, _json)
-                    .SaveCheck(
-                        report.SuccessfulCheck() with
-                        {
-                            RunId = before.RunId,
-                            LoadedAssemblies = source.AssembliesBefore,
-                            RuntimeVersion = EnvironmentCapture.CurrentRuntimeVersion,
-                        }
-                    );
-                var rawDirectory = Path.Combine(request.OutputDirectory, "raw", "bdn");
-                Directory.CreateDirectory(rawDirectory);
-                File.WriteAllText(Path.Combine(rawDirectory, "result.txt"), "BDNの保存出力");
-                return [report.Summary];
-            }
-        );
+        var actual = _benchmarkRun.Run(request, infos =>
+        {
+            captured = infos;
+            calls++;
+            before = RunStore.Load(request.OutputDirectory, _json);
+            var benchmark = infos.Single().BenchmarksCases.Single();
+            var path = benchmark
+                .Job.Environment.EnvironmentVariables.Single(x => x.Key == RunConfiguration.ENVIRONMENT_VARIABLE)
+                .Value;
+            configuration = JsonSerializer.Deserialize<RunConfiguration>(File.ReadAllBytes(path), _json.Options)!;
+            var source = ReadSource(request.OutputDirectory, before);
+            RunStore
+                .OpenChecks(request.OutputDirectory, before.RunId, _json)
+                .SaveCheck(
+                    report.SuccessfulCheck() with
+                    {
+                        RunId = before.RunId,
+                        LoadedAssemblies = source.AssembliesBefore,
+                        RuntimeVersion = EnvironmentCapture.CurrentRuntimeVersion,
+                    }
+                );
+            var rawDirectory = Path.Combine(request.OutputDirectory, "raw", "bdn");
+            Directory.CreateDirectory(rawDirectory);
+            File.WriteAllText(Path.Combine(rawDirectory, "result.txt"), "BDNの保存出力");
+            return [report.Summary];
+        });
         var sourceAfter = ReadSource(request.OutputDirectory, actual);
         var benchmarkInfo = captured!.Single();
 
@@ -165,22 +162,17 @@ internal class BenchmarkRun_RunTests
 
         // Act & Assert
         var exception = await Assert
-            .That(() =>
-                _benchmarkRun.Run(
-                    request,
-                    _ =>
+            .That(() => _benchmarkRun.Run(request, _ =>
+                {
+                    repository.Write("src/WasmSharp/Runtime.cs", "class ChangedRuntime {}\n");
+                    if (!savingFails)
                     {
-                        repository.Write("src/WasmSharp/Runtime.cs", "class ChangedRuntime {}\n");
-                        if (!savingFails)
-                        {
-                            throw expected;
-                        }
-                        Directory.CreateDirectory(Path.Combine(request.OutputDirectory, "raw"));
-                        File.WriteAllText(Path.Combine(request.OutputDirectory, "raw", "metrics"), "保存先を塞ぐファイル");
-                        return [report.Summary];
+                        throw expected;
                     }
-                )
-            )
+                    Directory.CreateDirectory(Path.Combine(request.OutputDirectory, "raw"));
+                    File.WriteAllText(Path.Combine(request.OutputDirectory, "raw", "metrics"), "保存先を塞ぐファイル");
+                    return [report.Summary];
+                }))
             .Throws<Exception>();
         var actual = RunStore.Load(request.OutputDirectory, _json);
         var source = ReadSource(request.OutputDirectory, actual);

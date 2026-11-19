@@ -12,14 +12,11 @@ internal partial class WasmFunction_InvokeTests
         // Arrange
         var executionContext = new WasmExecutionContext();
         var called = false;
-        var function = WasmFunction.CreateHost(
-            new WasmFunctionType([], []),
-            (_, _) =>
-            {
-                called = true;
-                return new WasmResults([]);
-            }
-        );
+        var function = WasmFunction.CreateHost(new WasmFunctionType([], []), (_, _) =>
+        {
+            called = true;
+            return new WasmResults([]);
+        });
         var instance = WasmModule
             .Decode(ConstantModuleBinary.Create(0x7F, 0x41, 0x2A, 0x0B))
             .Validate()

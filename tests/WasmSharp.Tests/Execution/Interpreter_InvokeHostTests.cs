@@ -16,16 +16,12 @@ internal class Interpreter_InvokeHostTests
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
-        var function = WasmFunction.CreateHost(
-            new([], [WasmValueKind.I32]),
-            (_, _) =>
-                invalidResult switch
-                {
-                    0 => null!,
-                    1 => new([]),
-                    _ => new([WasmValue.FromI64(42)]),
-                }
-        );
+        var function = WasmFunction.CreateHost(new([], [WasmValueKind.I32]), (_, _) => invalidResult switch
+            {
+                0 => null!,
+                1 => new([]),
+                _ => new([WasmValue.FromI64(42)]),
+            });
 
         // Act & Assert
         var exception = await Assert
@@ -71,16 +67,11 @@ internal class Interpreter_InvokeHostTests
             [WasmValueKind.I32, WasmValueKind.ExternRef],
             [WasmValueKind.ExternRef, WasmValueKind.I32]
         );
-        var function = withInstance
-            ? WasmFunction.CreateHost(
-                type,
-                (callbackContext, target, values) =>
-                {
-                    observedInstance = target;
-                    return Callback(callbackContext, values);
-                }
-            )
-            : WasmFunction.CreateHost(type, Callback);
+        var function = withInstance ? WasmFunction.CreateHost(type, (callbackContext, target, values) =>
+            {
+                observedInstance = target;
+                return Callback(callbackContext, values);
+            }) : WasmFunction.CreateHost(type, Callback);
 
         // Act
         var result = Interpreter.InvokeHost(executionContext, function, instance, arguments);

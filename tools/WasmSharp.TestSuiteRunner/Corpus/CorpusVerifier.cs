@@ -120,15 +120,22 @@ internal static class CorpusVerifier
             {
                 var isText = command.ModuleType == "text";
                 yield return new ModuleReference(
-                    command.Index, filename, ResolveReference(jsonPath, filename),
-                    isText ? ArtifactKind.Wat : ArtifactKind.Wasm, !isText
+                    command.Index,
+                    filename,
+                    ResolveReference(jsonPath, filename),
+                    isText ? ArtifactKind.Wat : ArtifactKind.Wasm,
+                    !isText
                 );
             }
             if (command.BinaryFilename is { } binaryFilename)
             {
                 // textに併記されたbinaryは保管・照合だけを行い、元のmodule_typeは変更しない。
                 yield return new ModuleReference(
-                    command.Index, binaryFilename, ResolveReference(jsonPath, binaryFilename), ArtifactKind.Wasm, false
+                    command.Index,
+                    binaryFilename,
+                    ResolveReference(jsonPath, binaryFilename),
+                    ArtifactKind.Wasm,
+                    false
                 );
             }
         }
@@ -331,9 +338,13 @@ internal static class CorpusVerifier
         issues.AddRange(document.Diagnostics);
         foreach (var command in document.Commands.Where(x => x.HasInvalidBinaryFilename))
         {
-            issues.Add(new CorpusDiagnostic(
-                OPERATION, $"#{command.Index}のbinary_filenameを一意な文字列として取得できません。", expectedPath
-            ));
+            issues.Add(
+                new CorpusDiagnostic(
+                    OPERATION,
+                    $"#{command.Index}のbinary_filenameを一意な文字列として取得できません。",
+                    expectedPath
+                )
+            );
         }
         if (document.SourceFilename is { } sourceFilename && sourceFilename != input.Path)
         {
@@ -487,13 +498,17 @@ internal static class CorpusVerifier
             return
             [
                 .. Directory
-                    .EnumerateFiles(inputRoot, "*.wast", new EnumerationOptions
-                    {
-                        RecurseSubdirectories = true,
-                        MatchCasing = MatchCasing.CaseSensitive,
-                        AttributesToSkip = 0,
-                        IgnoreInaccessible = false,
-                    })
+                    .EnumerateFiles(
+                        inputRoot,
+                        "*.wast",
+                        new EnumerationOptions
+                        {
+                            RecurseSubdirectories = true,
+                            MatchCasing = MatchCasing.CaseSensitive,
+                            AttributesToSkip = 0,
+                            IgnoreInaccessible = false,
+                        }
+                    )
                     .Select(x => Path.GetRelativePath(inputRoot, x).Replace(Path.DirectorySeparatorChar, '/'))
                     .Where(x => !expected.Contains(x))
                     .Order(StringComparer.Ordinal)

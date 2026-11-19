@@ -18,28 +18,25 @@ internal partial class WasmFunction_InvokeTests
         WasmExhaustionException? caught = null;
         var outerPreserved = false;
         var innerCleared = false;
-        var host = WasmFunction.CreateHost(
-            new WasmFunctionType([], []),
-            (callbackContext, _) =>
+        var host = WasmFunction.CreateHost(new WasmFunctionType([], []), (callbackContext, _) =>
+        {
+            var outer = callbackContext.Current!;
+            var before = (outer.FrameCount, outer.ValueCount, outer.CallDepth);
+            try
             {
-                var outer = callbackContext.Current!;
-                var before = (outer.FrameCount, outer.ValueCount, outer.CallDepth);
-                try
-                {
-                    innerResult = inner.Invoke(independentContext, []);
-                }
-                catch (WasmExhaustionException exception)
-                {
-                    caught = exception;
-                }
-                outerPreserved =
-                    ReferenceEquals(callbackContext, executionContext)
-                    && ReferenceEquals(callbackContext.Current, outer)
-                    && (outer.FrameCount, outer.ValueCount, outer.CallDepth) == before;
-                innerCleared = independentContext.Current is null;
-                return new WasmResults([]);
+                innerResult = inner.Invoke(independentContext, []);
             }
-        );
+            catch (WasmExhaustionException exception)
+            {
+                caught = exception;
+            }
+            outerPreserved =
+                ReferenceEquals(callbackContext, executionContext)
+                && ReferenceEquals(callbackContext.Current, outer)
+                && (outer.FrameCount, outer.ValueCount, outer.CallDepth) == before;
+            innerCleared = independentContext.Current is null;
+            return new WasmResults([]);
+        });
         var function = CreateHostCallingInstance(executionContext, host, 2).GetFunction("run");
 
         // Act
@@ -166,16 +163,11 @@ internal partial class WasmFunction_InvokeTests
             contextPreserved = ReferenceEquals(context, callbackContext.Current);
             return new(values);
         }
-        var host = withInstance
-            ? WasmFunction.CreateHost(
-                type,
-                (callbackContext, instance, values) =>
-                {
-                    target = instance;
-                    return Callback(callbackContext, values);
-                }
-            )
-            : WasmFunction.CreateHost(type, Callback);
+        var host = withInstance ? WasmFunction.CreateHost(type, (callbackContext, instance, values) =>
+            {
+                target = instance;
+                return Callback(callbackContext, values);
+            }) : WasmFunction.CreateHost(type, Callback);
         var provider = new WasmHostModule("env");
         provider.Define("host", host);
         var instance = WasmModule
@@ -242,14 +234,11 @@ internal partial class WasmFunction_InvokeTests
         // Arrange
         var executionContext = new WasmExecutionContext();
         List<WasmInstance> observed = [];
-        var host = WasmFunction.CreateHost(
-            new([], []),
-            (callbackContext, instance, _) =>
-            {
-                observed.Add(instance);
-                return new([]);
-            }
-        );
+        var host = WasmFunction.CreateHost(new([], []), (callbackContext, instance, _) =>
+        {
+            observed.Add(instance);
+            return new([]);
+        });
         var source = CreateHostCallingInstance(executionContext, host, 2);
         var throughDefinition = CreateHostCallingInstance(executionContext, source.GetFunction("run"), 3);
         var throughReexport = CreateHostCallingInstance(executionContext, source.GetFunction("host"), 2);
@@ -274,14 +263,11 @@ internal partial class WasmFunction_InvokeTests
         // Arrange
         var executionContext = new WasmExecutionContext();
         var nestedCalled = false;
-        var nested = WasmFunction.CreateHost(
-            new([], []),
-            (callbackContext, _) =>
-            {
-                nestedCalled = true;
-                return new([]);
-            }
-        );
+        var nested = WasmFunction.CreateHost(new([], []), (callbackContext, _) =>
+        {
+            nestedCalled = true;
+            return new([]);
+        });
         WasmResults Callback(WasmExecutionContext callbackContext, ReadOnlySpan<WasmValue> values)
         {
             return nested.Invoke(callbackContext, []);

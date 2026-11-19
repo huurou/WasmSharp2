@@ -43,8 +43,10 @@ internal sealed record ProfileSnapshot(
     void IJsonOnDeserialized.OnDeserialized()
     {
         // wasm_toolsの有無にかかわらず、Core 2.0では従来の必須項目を要求する。
-        if ((Id == "core2" || WasmTools is null)
-            && (Wabt is null || Conversion is null || Features.Any(x => x is { DefaultEnabled: null })))
+        if (
+            (Id == "core2" || WasmTools is null)
+            && (Wabt is null || Conversion is null || Features.Any(x => x is { DefaultEnabled: null }))
+        )
         {
             throw new JsonException("WABTのprofileにはwabt、conversion、機能のdefault_enabledが必要です。");
         }
@@ -57,7 +59,13 @@ internal sealed record ProfileSnapshot(
     /// <returns>feature、入力、論理引数をそれぞれ新しい一覧へコピーした保存用profile</returns>
     internal static ProfileSnapshot FromProfile(ConversionProfile profile)
     {
-        return new ProfileSnapshot(profile.Id, profile.Spec, profile.Wabt?.Revision, profile.WorkingDirectory, profile.Wabt?.Options)
+        return new ProfileSnapshot(
+            profile.Id,
+            profile.Spec,
+            profile.Wabt?.Revision,
+            profile.WorkingDirectory,
+            profile.Wabt?.Options
+        )
         {
             WasmTools = profile.WasmTools,
             Features = [.. profile.Features],
@@ -72,9 +80,8 @@ internal sealed record ProfileSnapshot(
     /// <returns>可変一覧の内容を不変配列へコピーしたprofile</returns>
     internal ConversionProfile ToProfile()
     {
-        var wabt = Wabt is { } revision && Conversion is { } options
-            ? new ConversionProfile.WabtSettings(revision, options)
-            : null;
+        var wabt =
+            Wabt is { } revision && Conversion is { } options ? new ConversionProfile.WabtSettings(revision, options) : null;
         return new ConversionProfile(Id, Spec, wabt, [.. Features], [.. Inputs], WorkingDirectory, [.. LogicalArguments])
         {
             WasmTools = WasmTools,

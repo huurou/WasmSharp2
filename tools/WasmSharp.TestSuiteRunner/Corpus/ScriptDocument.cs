@@ -247,7 +247,9 @@ internal sealed class ScriptDocument
             var start = (int)reader.TokenStartIndex;
             reader.Skip();
             var length = (int)reader.BytesConsumed - start;
-            commands.Add(CreateCommand(commands.Count, start, content.AsMemory().Slice(start, length), includeBinaryFilename));
+            commands.Add(
+                CreateCommand(commands.Count, start, content.AsMemory().Slice(start, length), includeBinaryFilename)
+            );
         }
     }
 
@@ -259,7 +261,12 @@ internal sealed class ScriptDocument
     /// <param name="json">構文確認済みのcommand要素を表すJSON</param>
     /// <param name="includeBinaryFilename">wasm-toolsの追加素材参照を読むかどうか</param>
     /// <returns>JSONの範囲と取得できた項目 objectでない要素、項目の欠落・重複・型不正は該当する値をnullにする</returns>
-    private static EnumeratedCommand CreateCommand(int index, int start, ReadOnlyMemory<byte> json, bool includeBinaryFilename)
+    private static EnumeratedCommand CreateCommand(
+        int index,
+        int start,
+        ReadOnlyMemory<byte> json,
+        bool includeBinaryFilename
+    )
     {
         // 境界は確定済みのため再読取は失敗しない。構造不正は取得できない項目としてnullにとどめる。
         using var document = JsonDocument.Parse(json);

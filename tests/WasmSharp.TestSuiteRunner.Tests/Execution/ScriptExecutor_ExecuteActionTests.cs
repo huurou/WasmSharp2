@@ -48,17 +48,11 @@ public partial class ScriptExecutor_ExecuteTests
         var state = new ScriptState("a.wast");
         var exception = new Exceptions.WasmTrapException("callback trap");
         var host = new WasmHostModule("host");
-        host.Define(
-            "f",
-            WasmFunction.CreateHost(
-                new([], []),
-                (_, _) =>
-                {
-                    state.CallbackException = exception;
-                    throw exception;
-                }
-            )
-        );
+        host.Define("f", WasmFunction.CreateHost(new([], []), (_, _) =>
+            {
+                state.CallbackException = exception;
+                throw exception;
+            }));
         state.Register(host);
         var binary = ScriptExecutionFixture.Binary(
             (1, [1, 0x60, 0, 0]),
@@ -170,17 +164,11 @@ public partial class ScriptExecutor_ExecuteTests
         var state = new ScriptState("a.wast");
         var count = 0;
         var host = new WasmHostModule("host");
-        host.Define(
-            "f",
-            WasmFunction.CreateHost(
-                new([WasmValueKind.I32], [WasmValueKind.I32]),
-                (_, x) =>
-                {
-                    count++;
-                    return new([x[0]]);
-                }
-            )
-        );
+        host.Define("f", WasmFunction.CreateHost(new([WasmValueKind.I32], [WasmValueKind.I32]), (_, x) =>
+            {
+                count++;
+                return new([x[0]]);
+            }));
         state.Register(host);
         var binary = ScriptExecutionFixture.Binary(
             (1, [1, 0x60, 1, 0x7F, 1, 0x7F]),

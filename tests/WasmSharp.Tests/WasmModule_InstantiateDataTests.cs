@@ -25,18 +25,12 @@ internal partial class WasmModule_InstantiateTests
         var host = new WasmHostModule("env");
         host.Define("memory", memory);
         host.Define("offset", new WasmGlobal(new(WasmValueKind.I32, false), WasmValue.FromI32(outOfBounds ? 65535 : 2)));
-        host.Define(
-            "start",
-            WasmFunction.CreateHost(
-                new([], []),
-                (callbackContext, instance, _) =>
-                {
-                    calls++;
-                    instance.GetMemory("memory").Read(0, observed);
-                    return new([]);
-                }
-            )
-        );
+        host.Define("start", WasmFunction.CreateHost(new([], []), (callbackContext, instance, _) =>
+            {
+                calls++;
+                instance.GetMemory("memory").Read(0, observed);
+                return new([]);
+            }));
         byte[] data = [3, 0, 0x41, 0, 0x0B, 1, 11, 2, 0, 0x23, 0, 0x0B, 2, 22, 33, 0, 0x41, 0, 0x0B, 1, 55];
         var bytes = HostLinkingModuleBinary.Create(
             HostLinkingModuleBinary.Types(([], [])),
@@ -284,21 +278,15 @@ internal partial class WasmModule_InstantiateTests
         uint[] lengths = [];
         var value = 0;
         var host = new WasmHostModule("env");
-        host.Define(
-            "start",
-            WasmFunction.CreateHost(
-                new([], []),
-                (callbackContext, instance, _) =>
-                {
-                    received = instance;
-                    calls++;
-                    instance.GetMemory("memory").Read(0, initial);
-                    lengths = [.. instance.DataSegments.Select(x => x.Length)];
-                    value = instance.GetFunction("read").Invoke(callbackContext, []).Values[0].AsI32();
-                    return new([]);
-                }
-            )
-        );
+        host.Define("start", WasmFunction.CreateHost(new([], []), (callbackContext, instance, _) =>
+            {
+                received = instance;
+                calls++;
+                instance.GetMemory("memory").Read(0, initial);
+                lengths = [.. instance.DataSegments.Select(x => x.Length)];
+                value = instance.GetFunction("read").Invoke(callbackContext, []).Values[0].AsI32();
+                return new([]);
+            }));
         var module = new WasmModule(
             [new([], []), new([], [WasmValueKind.I32])],
             [
@@ -376,17 +364,11 @@ internal partial class WasmModule_InstantiateTests
         var calls = 0;
         var host = new WasmHostModule("env");
         host.Define("memory", memory);
-        host.Define(
-            "start",
-            WasmFunction.CreateHost(
-                new([], []),
-                (callbackContext, _) =>
-                {
-                    calls++;
-                    return new([]);
-                }
-            )
-        );
+        host.Define("start", WasmFunction.CreateHost(new([], []), (callbackContext, _) =>
+            {
+                calls++;
+                return new([]);
+            }));
         var module = new WasmModule(
             [new([], [])],
             [],
@@ -469,24 +451,18 @@ internal partial class WasmModule_InstantiateTests
         WasmMemory? savedMemory = null;
         var host = new WasmHostModule("env");
         host.Define("memory", memory);
-        host.Define(
-            "save",
-            WasmFunction.CreateHost(
-                new([], []),
-                (callbackContext, instance, _) =>
+        host.Define("save", WasmFunction.CreateHost(new([], []), (callbackContext, instance, _) =>
+            {
+                saved = instance;
+                savedFunction = instance.GetFunction("read");
+                savedMemory = instance.GetMemory("memory");
+                savedMemory.Write(2, [33]);
+                if (hostFailure)
                 {
-                    saved = instance;
-                    savedFunction = instance.GetFunction("read");
-                    savedMemory = instance.GetMemory("memory");
-                    savedMemory.Write(2, [33]);
-                    if (hostFailure)
-                    {
-                        throw expected;
-                    }
-                    return new([]);
+                    throw expected;
                 }
-            )
-        );
+                return new([]);
+            }));
         var module = new WasmModule(
             [new([], []), new([], [WasmValueKind.I32])],
             [

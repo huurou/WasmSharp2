@@ -19,17 +19,11 @@ internal partial class WasmFunction_InvokeTests
         var executionContext = new WasmExecutionContext();
         var called = false;
         var host = new WasmHostModule("env");
-        host.Define(
-            "after",
-            WasmFunction.CreateHost(
-                new([], []),
-                (callbackContext, _) =>
-                {
-                    called = true;
-                    return new([]);
-                }
-            )
-        );
+        host.Define("after", WasmFunction.CreateHost(new([], []), (callbackContext, _) =>
+            {
+                called = true;
+                return new([]);
+            }));
         byte[] afterTrap = [0x1A, 0x41, 0x2A, 0x24, 0, 0x10, 0, 0x0B];
         var bytes = HostLinkingModuleBinary.Create(
             HostLinkingModuleBinary.Types(([], [])),

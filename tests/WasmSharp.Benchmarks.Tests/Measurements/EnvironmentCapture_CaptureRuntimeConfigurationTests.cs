@@ -25,7 +25,9 @@ internal class EnvironmentCapture_CaptureRuntimeConfigurationTests
         {
             await Assert.That(setting.Name).IsEqualTo("RuntimeConfig");
             await Assert.That(setting.Value).StartsWith("Unavailable:").And.Contains("runtimeconfigが見つかりません");
-            await Assert.That(File.Exists(Path.Combine(fixture.DirectoryPath, "settings", "collector.runtimeconfig.json"))).IsFalse();
+            await Assert
+                .That(File.Exists(Path.Combine(fixture.DirectoryPath, "settings", "collector.runtimeconfig.json")))
+                .IsFalse();
         }
     }
 }

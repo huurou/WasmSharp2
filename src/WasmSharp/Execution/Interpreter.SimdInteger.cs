@@ -46,10 +46,8 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult I8x16NarrowI16x8S(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdIntegerNarrow(
-            context,
-            16,
-            static x => SaturateSimdInteger(unchecked((short)x), sbyte.MinValue, sbyte.MaxValue)
+        return ExecuteSimdIntegerNarrow(context, 16, static x =>
+            SaturateSimdInteger(unchecked((short)x), sbyte.MinValue, sbyte.MaxValue)
         );
     }
 
@@ -83,10 +81,8 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult I8x16AddSatS(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdIntegerBinary(
-            context,
-            8,
-            static (x, y) => SaturateSimdInteger(unchecked((sbyte)x + (sbyte)y), sbyte.MinValue, sbyte.MaxValue)
+        return ExecuteSimdIntegerBinary(context, 8, static (x, y) =>
+            SaturateSimdInteger(unchecked((sbyte)x + (sbyte)y), sbyte.MinValue, sbyte.MaxValue)
         );
     }
 
@@ -120,10 +116,8 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult I8x16SubSatS(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdIntegerBinary(
-            context,
-            8,
-            static (x, y) => SaturateSimdInteger(unchecked((sbyte)x - (sbyte)y), sbyte.MinValue, sbyte.MaxValue)
+        return ExecuteSimdIntegerBinary(context, 8, static (x, y) =>
+            SaturateSimdInteger(unchecked((sbyte)x - (sbyte)y), sbyte.MinValue, sbyte.MaxValue)
         );
     }
 
@@ -256,11 +250,8 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult I16x8Q15MulRSatS(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdIntegerBinary(
-            context,
-            16,
-            static (x, y) =>
-                SaturateSimdInteger(unchecked(((short)x * (short)y + 0x4000) >> 15), short.MinValue, short.MaxValue)
+        return ExecuteSimdIntegerBinary(context, 16, static (x, y) =>
+            SaturateSimdInteger(unchecked(((short)x * (short)y + 0x4000) >> 15), short.MinValue, short.MaxValue)
         );
     }
 
@@ -272,10 +263,8 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult I16x8NarrowI32x4S(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdIntegerNarrow(
-            context,
-            32,
-            static x => SaturateSimdInteger(unchecked((int)x), short.MinValue, short.MaxValue)
+        return ExecuteSimdIntegerNarrow(context, 32, static x =>
+            SaturateSimdInteger(unchecked((int)x), short.MinValue, short.MaxValue)
         );
     }
 
@@ -309,10 +298,8 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult I16x8AddSatS(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdIntegerBinary(
-            context,
-            16,
-            static (x, y) => SaturateSimdInteger(unchecked((short)x + (short)y), short.MinValue, short.MaxValue)
+        return ExecuteSimdIntegerBinary(context, 16, static (x, y) =>
+            SaturateSimdInteger(unchecked((short)x + (short)y), short.MinValue, short.MaxValue)
         );
     }
 
@@ -324,10 +311,8 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult I16x8AddSatU(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdIntegerBinary(
-            context,
-            16,
-            static (x, y) => SaturateSimdInteger((int)x + (int)y, 0, ushort.MaxValue)
+        return ExecuteSimdIntegerBinary(context, 16, static (x, y) =>
+            SaturateSimdInteger((int)x + (int)y, 0, ushort.MaxValue)
         );
     }
 
@@ -350,10 +335,8 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult I16x8SubSatS(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdIntegerBinary(
-            context,
-            16,
-            static (x, y) => SaturateSimdInteger(unchecked((short)x - (short)y), short.MinValue, short.MaxValue)
+        return ExecuteSimdIntegerBinary(context, 16, static (x, y) =>
+            SaturateSimdInteger(unchecked((short)x - (short)y), short.MinValue, short.MaxValue)
         );
     }
 
@@ -365,10 +348,8 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult I16x8SubSatU(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdIntegerBinary(
-            context,
-            16,
-            static (x, y) => SaturateSimdInteger((int)x - (int)y, 0, ushort.MaxValue)
+        return ExecuteSimdIntegerBinary(context, 16, static (x, y) =>
+            SaturateSimdInteger((int)x - (int)y, 0, ushort.MaxValue)
         );
     }
 
@@ -743,11 +724,8 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult I16x8ExtMulLowI8x16S(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdIntegerExtMul(
-            context,
-            8,
-            high: false,
-            static (x, y) => unchecked((ulong)((long)(sbyte)x * (sbyte)y))
+        return ExecuteSimdIntegerExtMul(context, 8, high: false, static (x, y) =>
+            unchecked((ulong)((long)(sbyte)x * (sbyte)y))
         );
     }
 
@@ -770,11 +748,8 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult I16x8ExtMulHighI8x16S(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdIntegerExtMul(
-            context,
-            8,
-            high: true,
-            static (x, y) => unchecked((ulong)((long)(sbyte)x * (sbyte)y))
+        return ExecuteSimdIntegerExtMul(context, 8, high: true, static (x, y) =>
+            unchecked((ulong)((long)(sbyte)x * (sbyte)y))
         );
     }
 
@@ -841,11 +816,8 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult I32x4ExtMulLowI16x8S(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdIntegerExtMul(
-            context,
-            16,
-            high: false,
-            static (x, y) => unchecked((ulong)((long)(short)x * (short)y))
+        return ExecuteSimdIntegerExtMul(context, 16, high: false, static (x, y) =>
+            unchecked((ulong)((long)(short)x * (short)y))
         );
     }
 
@@ -868,11 +840,8 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult I32x4ExtMulHighI16x8S(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdIntegerExtMul(
-            context,
-            16,
-            high: true,
-            static (x, y) => unchecked((ulong)((long)(short)x * (short)y))
+        return ExecuteSimdIntegerExtMul(context, 16, high: true, static (x, y) =>
+            unchecked((ulong)((long)(short)x * (short)y))
         );
     }
 
@@ -939,11 +908,8 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult I64x2ExtMulLowI32x4S(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdIntegerExtMul(
-            context,
-            32,
-            high: false,
-            static (x, y) => unchecked((ulong)((long)(int)x * (int)y))
+        return ExecuteSimdIntegerExtMul(context, 32, high: false, static (x, y) =>
+            unchecked((ulong)((long)(int)x * (int)y))
         );
     }
 
@@ -1049,16 +1015,12 @@ internal static partial class Interpreter
     internal static ExecutionResult I32x4DotI16x8S(InterpreterContext context, in Instruction instruction)
     {
         // 2つの最小i16の積和は2147483648になるためlongで加算してから32bitへ折り返す
-        return ExecuteSimdIntegerBinary(
-            context,
-            32,
-            static (x, y) =>
-            {
-                var (leftHigh, leftLow) = Math.DivRem(x, 0x1_0000UL);
-                var (rightHigh, rightLow) = Math.DivRem(y, 0x1_0000UL);
-                return unchecked((ulong)((short)leftLow * (short)rightLow + (short)leftHigh * (short)rightHigh));
-            }
-        );
+        return ExecuteSimdIntegerBinary(context, 32, static (x, y) =>
+        {
+            var (leftHigh, leftLow) = Math.DivRem(x, 0x1_0000UL);
+            var (rightHigh, rightLow) = Math.DivRem(y, 0x1_0000UL);
+            return unchecked((ulong)((short)leftLow * (short)rightLow + (short)leftHigh * (short)rightHigh));
+        });
     }
 
     /// <summary>

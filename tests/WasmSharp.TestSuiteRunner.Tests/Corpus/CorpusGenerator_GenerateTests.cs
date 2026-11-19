@@ -283,17 +283,13 @@ internal class CorpusGenerator_GenerateTests
         var request = workspace.CreateRequest(workspace.CreateProfile());
 
         // Act
-        var result = CorpusGenerator.Generate(
-            request,
-            _reportStore,
-            path =>
+        var result = CorpusGenerator.Generate(request, _reportStore, path =>
+        {
+            if (path == "partial.wast")
             {
-                if (path == "partial.wast")
-                {
-                    File.WriteAllText(Path.Combine(workspace.OutputRoot, "modules", "extra.txt"), "未対応の生成物");
-                }
+                File.WriteAllText(Path.Combine(workspace.OutputRoot, "modules", "extra.txt"), "未対応の生成物");
             }
-        );
+        });
 
         // Assert
         var input = Get(result.Manifest, "success.wast");
@@ -318,22 +314,18 @@ internal class CorpusGenerator_GenerateTests
         try
         {
             // Act
-            var result = CorpusGenerator.Generate(
-                request,
-                _reportStore,
-                path =>
+            var result = CorpusGenerator.Generate(request, _reportStore, path =>
+            {
+                if (path == "partial.wast")
                 {
-                    if (path == "partial.wast")
-                    {
-                        locked = File.Open(
-                            Path.Combine(workspace.OutputRoot, "modules", "zz-locked.wasm"),
-                            FileMode.CreateNew,
-                            FileAccess.ReadWrite,
-                            FileShare.None
-                        );
-                    }
+                    locked = File.Open(
+                        Path.Combine(workspace.OutputRoot, "modules", "zz-locked.wasm"),
+                        FileMode.CreateNew,
+                        FileAccess.ReadWrite,
+                        FileShare.None
+                    );
                 }
-            );
+            });
 
             // Assert
             var input = Get(result.Manifest, "success.wast");

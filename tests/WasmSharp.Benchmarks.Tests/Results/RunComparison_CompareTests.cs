@@ -1033,9 +1033,7 @@ internal class RunComparison_CompareTests
             await Assert.That(after).IsEquivalentTo(before);
             await Assert.That(report.BaselineRuns.Select(x => x.RunId)).IsEquivalentTo(["before-0", "before-1", "before-2"]);
             await Assert.That(report.CurrentRuns.Select(x => x.RunId)).IsEquivalentTo(["after-0", "after-1", "after-2"]);
-            await Assert
-                .That(report.Policy)
-                .IsEqualTo(new ManifestFile(request.PolicyPath, request.PolicySha256));
+            await Assert.That(report.Policy).IsEqualTo(new ManifestFile(request.PolicyPath, request.PolicySha256));
             foreach (var run in report.BaselineRuns.Concat(report.CurrentRuns))
             {
                 await Assert.That(run.Manifest.Sha256).IsEqualTo(before[run.Manifest.RelativePath]);

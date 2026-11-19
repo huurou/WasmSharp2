@@ -36,9 +36,7 @@ internal class ModuleBinaryFormat_ReadInputTests
             await Assert.That(exception!.Reason).IsEqualTo(WasmImplementationLimitReason.InputSize);
             await Assert.That(exception.Message).Contains("入力バイナリが保持上限を超え");
             await Assert.That(exception.Limit).IsEqualTo(5);
-            await Assert
-                .That(exception.Location)
-                .IsEqualTo(new WasmFailureLocation(WasmProcessingStage.Decode, 3));
+            await Assert.That(exception.Location).IsEqualTo(new WasmFailureLocation(WasmProcessingStage.Decode, 3));
         }
     }
 }

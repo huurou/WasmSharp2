@@ -91,15 +91,13 @@ internal sealed class CorpusFixture : IDisposable
                     ? CorpusVerifier.CreateScript(ScriptDocument.Parse(content, artifactPath), artifactPath)
                     : null,
         };
-        UpdateInput(
-            inputPath,
-            x =>
-                x with
-                {
-                    Status = ConversionStatus.Succeeded,
-                    ExitCode = 0,
-                    Artifacts = [.. x.Artifacts.Where(y => y.Path != artifactPath), artifact],
-                }
+        UpdateInput(inputPath, x =>
+            x with
+            {
+                Status = ConversionStatus.Succeeded,
+                ExitCode = 0,
+                Artifacts = [.. x.Artifacts.Where(y => y.Path != artifactPath), artifact],
+            }
         );
     }
 

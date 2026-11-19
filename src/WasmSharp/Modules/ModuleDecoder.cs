@@ -96,7 +96,8 @@ internal static class ModuleDecoder
                 );
             }
         }
-        catch (Exception exception) when (tagLocation is null && exception is (WasmDecodeException or ModuleReadBoundaryException))
+        catch (Exception exception)
+            when (tagLocation is null && exception is (WasmDecodeException or ModuleReadBoundaryException))
         {
             // タグを確認する前の不正は通常のデコードで診断する。
         }

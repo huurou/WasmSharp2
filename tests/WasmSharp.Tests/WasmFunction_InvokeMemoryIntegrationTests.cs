@@ -99,36 +99,30 @@ internal partial class WasmFunction_InvokeTests
         var grown = false;
         uint previousPages = 0;
         var outerProvider = new WasmHostModule("env");
-        outerProvider.Define(
-            "reenter",
-            WasmFunction.CreateHost(
-                new([], []),
-                (callbackContext, instance, _) =>
+        outerProvider.Define("reenter", WasmFunction.CreateHost(new([], []), (callbackContext, instance, _) =>
+            {
+                outerCallers.Add(instance);
+                var memory = instance.GetMemory("memory");
+                if (memory.PageCount == 1)
                 {
-                    outerCallers.Add(instance);
-                    var memory = instance.GetMemory("memory");
-                    if (memory.PageCount == 1)
-                    {
-                        memory.Read(0, copy);
-                        grown = memory.TryGrow(1, out previousPages);
-                    }
-                    memory.Write(0, [9]);
-                    memory.Write(65537, [0xAB]);
-                    for (var i = 0; i < 2; i++)
-                    {
-                        try
-                        {
-                            inner.Invoke(callbackContext, []);
-                        }
-                        catch (Exception exception)
-                        {
-                            caught.Add(exception);
-                        }
-                    }
-                    return new([]);
+                    memory.Read(0, copy);
+                    grown = memory.TryGrow(1, out previousPages);
                 }
-            )
-        );
+                memory.Write(0, [9]);
+                memory.Write(65537, [0xAB]);
+                for (var i = 0; i < 2; i++)
+                {
+                    try
+                    {
+                        inner.Invoke(callbackContext, []);
+                    }
+                    catch (Exception exception)
+                    {
+                        caught.Add(exception);
+                    }
+                }
+                return new([]);
+            }));
         var outer = WasmModule
             .Decode(
                 HostLinkingModuleBinary.Create(
@@ -163,21 +157,15 @@ internal partial class WasmFunction_InvokeTests
             .Instantiate(executionContext, [outerProvider], new(outcome == 3 ? 3 : 4));
         var innerProvider = new WasmHostModule("env");
         innerProvider.Define("m", outer.GetMemory("memory"));
-        innerProvider.Define(
-            "probe",
-            WasmFunction.CreateHost(
-                new([], []),
-                (callbackContext, instance, _) =>
+        innerProvider.Define("probe", WasmFunction.CreateHost(new([], []), (callbackContext, instance, _) =>
+            {
+                innerCallers.Add(instance);
+                if (outcome == 2)
                 {
-                    innerCallers.Add(instance);
-                    if (outcome == 2)
-                    {
-                        throw expected;
-                    }
-                    return new([]);
+                    throw expected;
                 }
-            )
-        );
+                return new([]);
+            }));
         var innerModule = WasmModule
             .Decode(
                 HostLinkingModuleBinary.Create(

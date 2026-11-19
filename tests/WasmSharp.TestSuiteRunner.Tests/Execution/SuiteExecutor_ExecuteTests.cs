@@ -57,7 +57,13 @@ public class SuiteExecutor_ExecuteTests
     [Arguments("f32", 4, "-1", "4294967295", "create_arguments", "32ビットの符号なし10進数")]
     [Arguments("f64", 2, "18446744073709551615", "-1", "parse_expected", "64ビットの符号なし10進数")]
     public async Task Core3の引数と期待値を比較する_整数だけは型の幅に収まる負数も同じビット列として扱う(
-        string type, int laneCount, string argument, string expected, string? failingOperation, string? numberFormat)
+        string type,
+        int laneCount,
+        string argument,
+        string expected,
+        string? failingOperation,
+        string? numberFormat
+    )
     {
         // Arrange
         using var fixture = CorpusFixture.Create();
@@ -86,7 +92,9 @@ public class SuiteExecutor_ExecuteTests
         fixture.ReplaceScriptA(
             $$"""
             {"type":"module","line":1,"filename":"a.0.wasm"},
-            {"type":"assert_return","line":2,"action":{"type":"invoke","field":"id","args":[{{Value(argument)}}]},"expected":[{{Value(expected)}}]}
+            {"type":"assert_return","line":2,"action":{"type":"invoke","field":"id","args":[{{Value(
+                argument
+            )}}]},"expected":[{{Value(expected)}}]}
             """,
             identity
         );
@@ -98,7 +106,9 @@ public class SuiteExecutor_ExecuteTests
         var result = report.Inputs[0].Cases[1];
         using (Assert.Multiple())
         {
-            await Assert.That(result.Outcome).IsEqualTo(failingOperation is null ? CaseOutcome.Passed : CaseOutcome.RunnerError);
+            await Assert
+                .That(result.Outcome)
+                .IsEqualTo(failingOperation is null ? CaseOutcome.Passed : CaseOutcome.RunnerError);
             await Assert.That(result.Diagnostics.SingleOrDefault()?.Operation).IsEqualTo(failingOperation);
             if (numberFormat is not null)
             {
@@ -278,14 +288,12 @@ public class SuiteExecutor_ExecuteTests
     {
         // Arrange
         using var fixture = CorpusFixture.Create();
-        fixture.UpdateInput(
-            CorpusFixture.A,
-            x =>
-                x with
-                {
-                    Status = ConversionStatus.RunnerError,
-                    Diagnostics = [new("convert", "conversion failed", CorpusFixture.A)],
-                }
+        fixture.UpdateInput(CorpusFixture.A, x =>
+            x with
+            {
+                Status = ConversionStatus.RunnerError,
+                Diagnostics = [new("convert", "conversion failed", CorpusFixture.A)],
+            }
         );
 
         // Act
@@ -356,7 +364,12 @@ public class SuiteExecutor_ExecuteTests
         List<string> progress = [];
 
         // Act
-        var report = SuiteExecutor.Execute(Complete(fixture.Manifest), fixture.ManifestPath, WasmSpecVersion.Core2, progress.Add);
+        var report = SuiteExecutor.Execute(
+            Complete(fixture.Manifest),
+            fixture.ManifestPath,
+            WasmSpecVersion.Core2,
+            progress.Add
+        );
 
         // Assert
         using (Assert.Multiple())
@@ -416,17 +429,11 @@ public class SuiteExecutor_ExecuteTests
         using var fixture = CorpusFixture.Create();
         using var cancellation = new CancellationTokenSource();
         var host = new WasmHostModule("host");
-        host.Define(
-            "f",
-            WasmFunction.CreateHost(
-                new WasmFunctionType([], []),
-                (_, _) =>
-                {
-                    cancellation.Cancel();
-                    return new WasmResults([]);
-                }
-            )
-        );
+        host.Define("f", WasmFunction.CreateHost(new WasmFunctionType([], []), (_, _) =>
+            {
+                cancellation.Cancel();
+                return new WasmResults([]);
+            }));
         fixture.WriteArtifact(
             CorpusFixture.A,
             "modules/a.json",
@@ -457,12 +464,12 @@ public class SuiteExecutor_ExecuteTests
             fixture.ManifestPath,
             WasmSpecVersion.Core2,
             progress.Add,
-            cancellation.Token,
             (input, state, token) =>
             {
                 state.Register(host);
                 return SuiteExecutor.ExecuteInput(input, state, WasmSpecVersion.Core2, token);
-            }
+            },
+            cancellation.Token
         );
 
         // Assert

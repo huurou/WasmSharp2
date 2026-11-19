@@ -30,9 +30,18 @@ internal static class ValueCodec
     /// <param name="specVersion">値の表記を決める仕様版</param>
     /// <returns>順序とビット列を保持する新しいvalueの配列 参照値は入力内の同じ番号の実体を共有する</returns>
     /// <exception cref="ScriptFormatException">値の文字列が固定形式にない場合</exception>
-    internal static ImmutableArray<WasmValue> CreateArguments(ImmutableArray<ArgumentValue> values, ScriptState state, WasmSpecVersion specVersion = WasmSpecVersion.Core2)
+    internal static ImmutableArray<WasmValue> CreateArguments(
+        ImmutableArray<ArgumentValue> values,
+        ScriptState state,
+        WasmSpecVersion specVersion = WasmSpecVersion.Core2
+    )
     {
-        return [.. values.Select((x, i) => CreateArgument(x, $"action.args[{i}].value", state, specVersion == WasmSpecVersion.Core3))];
+        return
+        [
+            .. values.Select(
+                (x, i) => CreateArgument(x, $"action.args[{i}].value", state, specVersion == WasmSpecVersion.Core3)
+            ),
+        ];
     }
 
     /// <summary>
@@ -158,10 +167,12 @@ internal static class ValueCodec
         var digits = negative ? text.AsSpan(1) : text.AsSpan();
         var limit = negative ? 1UL << (width - 1) : GetMask(width);
         // 標準の解析が許容する先頭の0や末尾のNULを除き、固定形式のASCII数字だけを読む。
-        if (digits is ['0'] or [>= '1' and <= '9', ..]
+        if (
+            digits is ['0'] or [>= '1' and <= '9', ..]
             && !digits.ContainsAnyExceptInRange('0', '9')
             && ulong.TryParse(digits, NumberStyles.None, CultureInfo.InvariantCulture, out var magnitude)
-            && magnitude <= limit)
+            && magnitude <= limit
+        )
         {
             return negative ? unchecked(0UL - magnitude) & GetMask(width) : magnitude;
         }
@@ -194,8 +205,12 @@ internal static class ValueCodec
     {
         return value switch
         {
-            { Kind: WasmValueKind.I32 } => WasmValue.FromI32(unchecked((int)ParseBits(value.Value, 32, path, signedIntegers))),
-            { Kind: WasmValueKind.I64 } => WasmValue.FromI64(unchecked((long)ParseBits(value.Value, 64, path, signedIntegers))),
+            { Kind: WasmValueKind.I32 } => WasmValue.FromI32(
+                unchecked((int)ParseBits(value.Value, 32, path, signedIntegers))
+            ),
+            { Kind: WasmValueKind.I64 } => WasmValue.FromI64(
+                unchecked((long)ParseBits(value.Value, 64, path, signedIntegers))
+            ),
             { Kind: WasmValueKind.F32 } => WasmValue.FromF32Bits((uint)ParseBits(value.Value, 32, path)),
             { Kind: WasmValueKind.F64 } => WasmValue.FromF64Bits(ParseBits(value.Value, 64, path)),
             { Kind: WasmValueKind.V128, LaneType: { } laneType } => CreateV128(laneType, value.Lanes, path, signedIntegers),
@@ -227,12 +242,20 @@ internal static class ValueCodec
         Span<byte> laneBytes = stackalloc byte[sizeof(ulong)];
         for (var i = 0; i < lanes.Length; i++)
         {
-            var bits = ParseBits(lanes[i], width, $"{path}[{i}]", signedIntegers && laneType is not (LaneType.F32 or LaneType.F64));
+            var bits = ParseBits(
+                lanes[i],
+                width,
+                $"{path}[{i}]",
+                signedIntegers && laneType is not (LaneType.F32 or LaneType.F64)
+            );
             BinaryPrimitives.WriteUInt64LittleEndian(laneBytes, bits);
             laneBytes[..size].CopyTo(bytes[(i * size)..]);
         }
 
-        return WasmValue.FromV128(BinaryPrimitives.ReadUInt64LittleEndian(bytes), BinaryPrimitives.ReadUInt64LittleEndian(bytes[8..]));
+        return WasmValue.FromV128(
+            BinaryPrimitives.ReadUInt64LittleEndian(bytes),
+            BinaryPrimitives.ReadUInt64LittleEndian(bytes[8..])
+        );
     }
 
     /// <summary>

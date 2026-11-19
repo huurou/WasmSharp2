@@ -1,5 +1,3 @@
-using WasmSharp.Execution;
-
 namespace WasmSharp.Tests.Execution;
 
 internal class InterpreterContext_TryEnterCallTests

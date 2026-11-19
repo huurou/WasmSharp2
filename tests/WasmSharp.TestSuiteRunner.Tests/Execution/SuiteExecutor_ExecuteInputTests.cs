@@ -16,17 +16,11 @@ public class SuiteExecutor_ExecuteInputTests
         using var cancellation = new CancellationTokenSource();
         var state = new ScriptState("a.wast");
         var host = new WasmHostModule("host");
-        host.Define(
-            "f",
-            WasmFunction.CreateHost(
-                new([], []),
-                (_, _) =>
-                {
-                    cancellation.Cancel();
-                    return new([]);
-                }
-            )
-        );
+        host.Define("f", WasmFunction.CreateHost(new([], []), (_, _) =>
+            {
+                cancellation.Cancel();
+                return new([]);
+            }));
         state.Register(host);
         var binary = ScriptExecutionFixture.Binary(
             (1, [1, 0x60, 0, 0]),

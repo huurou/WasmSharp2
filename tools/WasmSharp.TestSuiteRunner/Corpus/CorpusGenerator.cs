@@ -112,9 +112,10 @@ internal static class CorpusGenerator
         }
 
         var executableHash = HashExecutable(request.ConverterPath, diagnostics);
-        var executableVersion = executableHash is not null && profile.WasmTools is { } release
-            ? CheckWasmToolsVersion(request.ConverterPath, release, diagnostics)
-            : null;
+        var executableVersion =
+            executableHash is not null && profile.WasmTools is { } release
+                ? CheckWasmToolsVersion(request.ConverterPath, release, diagnostics)
+                : null;
 
         return new GenerationPreconditions(
             new ConversionProvenance
@@ -258,7 +259,10 @@ internal static class CorpusGenerator
                     {
                         Script =
                             kind == ArtifactKind.Json
-                                ? CorpusVerifier.CreateScript(ScriptDocument.Parse(content, path, request.Profile.WasmTools is not null), path)
+                                ? CorpusVerifier.CreateScript(
+                                    ScriptDocument.Parse(content, path, request.Profile.WasmTools is not null),
+                                    path
+                                )
                                 : null,
                     }
                 );
@@ -321,10 +325,7 @@ internal static class CorpusGenerator
             Completion = new(manifest.Inputs.All(x => x.Status != ConversionStatus.Unprocessed), false),
         };
         // 保存する内容には出力の完了を記録し、確定保存に失敗した場合だけ未完了のまま返す。
-        var saved = recorded with
-        {
-            Completion = recorded.Completion with { OutputComplete = true },
-        };
+        var saved = recorded with { Completion = recorded.Completion with { OutputComplete = true } };
         try
         {
             // 未作成の出力先も受け付けるため、前提の不成立を記録する場合も保存先を用意する。
@@ -368,13 +369,21 @@ internal static class CorpusGenerator
             var expected = $"wasm-tools {release.Version} ({release.Commit[..9]} ";
             if (exitCode != 0 || !version.StartsWith(expected, StringComparison.Ordinal))
             {
-                diagnostics.Add(new CorpusDiagnostic(PREPARE, $"wasm-toolsの版が固定リリース {release.Version} ({release.Commit}) と一致しません。終了値: {exitCode}、標準出力: {version}、標準エラー: {error.Trim()}", path));
+                diagnostics.Add(
+                    new CorpusDiagnostic(
+                        PREPARE,
+                        $"wasm-toolsの版が固定リリース {release.Version} ({release.Commit}) と一致しません。終了値: {exitCode}、標準出力: {version}、標準エラー: {error.Trim()}",
+                        path
+                    )
+                );
             }
             return version;
         }
         catch (Win32Exception ex)
         {
-            diagnostics.Add(new CorpusDiagnostic(PREPARE, $"wasm-toolsの版を取得できません: {ex.Message}", path, ex.GetType().FullName));
+            diagnostics.Add(
+                new CorpusDiagnostic(PREPARE, $"wasm-toolsの版を取得できません: {ex.Message}", path, ex.GetType().FullName)
+            );
             return null;
         }
     }
@@ -393,7 +402,9 @@ internal static class CorpusGenerator
             return ReadHead(root, "WABT", revision, diagnostics);
         }
 
-        diagnostics.Add(new CorpusDiagnostic(PREPARE, $"WABTの配置{root}は、固定commitを確認できるGitのcheckoutではありません。"));
+        diagnostics.Add(
+            new CorpusDiagnostic(PREPARE, $"WABTの配置{root}は、固定commitを確認できるGitのcheckoutではありません。")
+        );
         return null;
     }
 

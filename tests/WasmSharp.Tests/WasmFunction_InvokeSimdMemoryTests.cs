@@ -226,18 +226,12 @@ internal partial class WasmFunction_InvokeTests
         var calls = 0;
         var host = new WasmHostModule("env");
         host.Define("memory", memory);
-        host.Define(
-            "save",
-            WasmFunction.CreateHost(
-                new([], []),
-                (callbackContext, instance, _) =>
-                {
-                    saved = instance;
-                    calls++;
-                    return new([]);
-                }
-            )
-        );
+        host.Define("save", WasmFunction.CreateHost(new([], []), (callbackContext, instance, _) =>
+            {
+                saved = instance;
+                calls++;
+                return new([]);
+            }));
         var code = HostLinkingModuleBinary.Code(
             (
                 [],

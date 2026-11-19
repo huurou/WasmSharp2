@@ -75,9 +75,12 @@ internal class ScriptReader_ReadTests
         using (Assert.Multiple())
         {
             await Assert.That(result.Commands[0]).IsEqualTo(new ModuleCommand(0, 1, null, "a.wat", ScriptModuleType.Text));
-            await Assert.That(result.Commands[1]).IsEqualTo(new AssertInvalidCommand(1, 2, "b.wat", "invalid", ScriptModuleType.Text));
+            await Assert
+                .That(result.Commands[1])
+                .IsEqualTo(new AssertInvalidCommand(1, 2, "b.wat", "invalid", ScriptModuleType.Text));
             await Assert.That(result.Commands[2]).IsTypeOf<InvalidCommand>();
-            await Assert.That(core2.Commands.OfType<InvalidCommand>().Select(x => x.Diagnostic.Message))
+            await Assert
+                .That(core2.Commands.OfType<InvalidCommand>().Select(x => x.Diagnostic.Message))
                 .IsEquivalentTo(Enumerable.Repeat("固定形式にないbinary_filenameがあります。", 3));
         }
     }
@@ -86,9 +89,18 @@ internal class ScriptReader_ReadTests
     [Arguments("""{"type":"module_instance","line":1,"extra":0}""", "固定形式にないextraがあります。")]
     [Arguments("""{"type":"module_instance","line":1,"instance":3}""", "instanceが文字列ではありません。")]
     [Arguments("""{"type":"module_instance","line":1,"module":3}""", "moduleが文字列ではありません。")]
-    [Arguments("""{"type":"module","line":1,"filename":"a.wat","module_type":3,"binary_filename":"a.wasm"}""", "module_typeが文字列ではありません。")]
-    [Arguments("""{"type":"module","line":1,"filename":"a.wat","module_type":"text","binary_filename":3}""", "binary_filenameが文字列ではありません。")]
-    public async Task Core3のcommandに未知の項目または文字列以外の参照がある_問題の項目名を診断する(string json, string message)
+    [Arguments(
+        """{"type":"module","line":1,"filename":"a.wat","module_type":3,"binary_filename":"a.wasm"}""",
+        "module_typeが文字列ではありません。"
+    )]
+    [Arguments(
+        """{"type":"module","line":1,"filename":"a.wat","module_type":"text","binary_filename":3}""",
+        "binary_filenameが文字列ではありません。"
+    )]
+    public async Task Core3のcommandに未知の項目または文字列以外の参照がある_問題の項目名を診断する(
+        string json,
+        string message
+    )
     {
         // Arrange
         var document = Parse(json);

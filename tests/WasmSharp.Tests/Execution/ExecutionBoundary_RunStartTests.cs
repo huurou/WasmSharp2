@@ -24,16 +24,11 @@ internal class ExecutionBoundary_RunStartTests
             calls++;
             return new([]);
         }
-        var function = withInstance
-            ? WasmFunction.CreateHost(
-                new([], []),
-                (callbackContext, current, _) =>
-                {
-                    received = current;
-                    return Callback(callbackContext);
-                }
-            )
-            : WasmFunction.CreateHost(new([], []), (callbackContext, _) => Callback(callbackContext));
+        var function = withInstance ? WasmFunction.CreateHost(new([], []), (callbackContext, current, _) =>
+            {
+                received = current;
+                return Callback(callbackContext);
+            }) : WasmFunction.CreateHost(new([], []), (callbackContext, _) => Callback(callbackContext));
 
         // Act
         ExecutionBoundary.RunStart(executionContext, instance, function);
@@ -155,16 +150,11 @@ internal class ExecutionBoundary_RunStartTests
         var executionContext = new WasmExecutionContext();
         var owner = CreateInstance(100);
         var called = false;
-        var function = host
-            ? WasmFunction.CreateHost(
-                new([], []),
-                (_, _) =>
-                {
-                    called = true;
-                    return new([]);
-                }
-            )
-            : ExecutionFunctionFixture.Create([InstructionFixture.Create(0x0B, 77)], new([], []), [], 0);
+        var function = host ? WasmFunction.CreateHost(new([], []), (_, _) =>
+            {
+                called = true;
+                return new([]);
+            }) : ExecutionFunctionFixture.Create([InstructionFixture.Create(0x0B, 77)], new([], []), [], 0);
         var sameContext = false;
         (int Frames, int Values, int Depth, WasmProcessingStage Stage, int Value) state = default;
 
@@ -228,21 +218,18 @@ internal class ExecutionBoundary_RunStartTests
         );
         Exception? original = null;
         var cleared = false;
-        var host = WasmFunction.CreateHost(
-            new([], []),
-            (callbackContext, _) =>
+        var host = WasmFunction.CreateHost(new([], []), (callbackContext, _) =>
+        {
+            try
             {
-                try
-                {
-                    return inner.Invoke(callbackContext, []);
-                }
-                catch (Exception exception)
-                {
-                    original = exception;
-                    throw;
-                }
+                return inner.Invoke(callbackContext, []);
             }
-        );
+            catch (Exception exception)
+            {
+                original = exception;
+                throw;
+            }
+        });
 
         // Act & Assert
         var actual = await Assert

@@ -33,8 +33,8 @@ internal static class SuiteExecutor
             manifestPath,
             specVersion,
             progress,
-            cancellationToken,
-            (input, state, token) => ExecuteInput(input, state, specVersion, token)
+            (input, state, token) => ExecuteInput(input, state, specVersion, token),
+            cancellationToken
         );
     }
 
@@ -45,21 +45,21 @@ internal static class SuiteExecutor
     /// <param name="manifestPath">相対配置の基準となるmanifestのpath</param>
     /// <param name="specVersion">入力評価に適用した仕様の版として結果に記録する版</param>
     /// <param name="progress">入力の処理後に相対pathを通知する処理 中断した入力も通知する</param>
-    /// <param name="cancellationToken">command間で通知を確認する中断要求</param>
     /// <param name="executeInput">入力ごとの状態で評価し、部分結果と中断診断を返す処理</param>
+    /// <param name="cancellationToken">command間で通知を確認する中断要求</param>
     /// <returns>確定済みの部分結果と中断診断を保持した実行記録</returns>
     internal static RunReport Execute(
         CorpusManifest manifest,
         string manifestPath,
         WasmSpecVersion specVersion,
         Action<string>? progress,
-        CancellationToken cancellationToken,
         Func<
             InputVerification,
             ScriptState,
             CancellationToken,
             (InputRunResult Result, CorpusDiagnostic? Interruption)
-        > executeInput
+        > executeInput,
+        CancellationToken cancellationToken
     )
     {
         var absolutePath = Path.GetFullPath(manifestPath);

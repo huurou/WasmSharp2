@@ -59,8 +59,7 @@ internal sealed record CommandInvocation(string ExecutablePath, List<string> Arg
         string workingDirectory
     )
     {
-        var isDotnet = Path.GetFileNameWithoutExtension(executablePath)
-            .Equals("dotnet", StringComparison.OrdinalIgnoreCase);
+        var isDotnet = Path.GetFileNameWithoutExtension(executablePath).Equals("dotnet", StringComparison.OrdinalIgnoreCase);
         return new CommandInvocation(executablePath, [.. arguments[(isDotnet ? 0 : 1)..]], workingDirectory);
     }
 }

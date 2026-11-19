@@ -19,8 +19,15 @@ internal sealed class Core3ConversionFixture(TemporaryDirectory directory, Runne
     internal (int ExitCode, string Error) Generate(string output)
     {
         return Run([
-            "generate", "--spec-root", directory.Combine("spec"), "--profile", "core3",
-            "--wasm-tools", SuiteWorkspace.ConverterPath, "--output", directory.Combine(output),
+            "generate",
+            "--spec-root",
+            directory.Combine("spec"),
+            "--profile",
+            "core3",
+            "--wasm-tools",
+            SuiteWorkspace.ConverterPath,
+            "--output",
+            directory.Combine(output),
         ]);
     }
 

@@ -298,8 +298,7 @@ internal sealed class RunStore
             ReadSavedFile(file);
         }
 
-        var source =
-            JsonSerializer.Deserialize<RunSource>(ReadSavedFile(_manifest.SourceFile), _json.Options)
+        var source = JsonSerializer.Deserialize<RunSource>(ReadSavedFile(_manifest.SourceFile), _json.Options)
             ?? throw new InvalidDataException("source情報が保存されていません。");
         ReadSavedFile(source.IndexDiff);
         ReadSavedFile(source.WorktreeDiff);

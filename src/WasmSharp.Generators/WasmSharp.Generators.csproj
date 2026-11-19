@@ -9,8 +9,6 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="WasmSharp.Generators.Tests" />
-    <AdditionalFiles Include="AnalyzerReleases.Shipped.md" />
-    <AdditionalFiles Include="AnalyzerReleases.Unshipped.md" />
     <PackageReference
       Include="Microsoft.CodeAnalysis.CSharp"
       Version="$(WasmSharpGeneratorRoslynVersion)"

@@ -22,17 +22,11 @@ internal partial class WasmModule_DecodeTests
         );
         var calls = 0;
         var host = new WasmHostModule("env");
-        host.Define(
-            "start",
-            WasmFunction.CreateHost(
-                new([], []),
-                (callbackContext, _) =>
-                {
-                    calls++;
-                    return new([]);
-                }
-            )
-        );
+        host.Define("start", WasmFunction.CreateHost(new([], []), (callbackContext, _) =>
+            {
+                calls++;
+                return new([]);
+            }));
         using var stream = new MemoryStream(bytes);
         using var inspectionStream = new MemoryStream(bytes);
 
@@ -136,17 +130,11 @@ internal partial class WasmModule_DecodeTests
         );
         var calls = 0;
         var host = new WasmHostModule("env");
-        host.Define(
-            "start",
-            WasmFunction.CreateHost(
-                new([], []),
-                (callbackContext, _) =>
-                {
-                    calls++;
-                    return new([]);
-                }
-            )
-        );
+        host.Define("start", WasmFunction.CreateHost(new([], []), (callbackContext, _) =>
+            {
+                calls++;
+                return new([]);
+            }));
         using var stream = new ChunkedReadStream(new MemoryStream(bytes));
         using var inspectionStream = new ChunkedReadStream(new MemoryStream(bytes));
 

@@ -18,15 +18,26 @@ dotnet husky install
 
 ランタイムのテストは、固定したCore 2.0仕様（`thirdParties/WebAssembly-spec`、commit `05ca4182176763112561ae20153975c12bd689e4`）の命令付録2ファイルをビルド時に埋め込みます。submoduleの取得はテストプロジェクトのビルドに必要です。WABTの取得・ビルドは基盤テストには不要です。
 
-Husky.NetとStryker.NETは、`.config/dotnet-tools.json`でバージョンを固定した.NETローカルツールです。ツールが対象とするランタイムが未導入なら、新しいランタイムで起動できます。整形にはSDKに含まれる`dotnet format`を使用するため、フォーマッターの追加インストールは不要です。
-コミット時に、`src/`、`tests/`、`tools/`配下のステージ済みC#ファイル（`.cs`）を、`WasmSharp2.slnx`とルートの`.editorconfig`に従って自動整形します。`--severity info`で提案レベル以上のコードスタイルも適用し、整形結果はHusky.Netが自動でステージへ反映します。`.csproj`や`.slnx`などのXMLファイルは整形対象に含みません。
+Husky.Net、CSharpier、Stryker.NETは、`.config/dotnet-tools.json`でバージョンを固定した.NETローカルツールです。ツールが対象とするランタイムが未導入なら、新しいランタイムで起動できます。
 
-`.editorconfig`はSyncGrid_2.0からコピーしています。通常の改行はCRLF、シェルスクリプトと`.husky/pre-commit`はLFです。`.husky/pre-commit`を編集する際もLFを維持してください。
+コミット時には、`src/`、`tests/`、`tools/`配下のステージ済みC#ファイル（`.cs`）を、ルートの`.editorconfig`に従って次の順で処理します。整形結果はHusky.Netがステージに反映します。
+
+1. SDKの`dotnet format style`と`dotnet format analyzers`で、提案レベル以上の指摘に自動修正を適用します。
+2. CSharpierでインデントや改行を整えます。
+3. スタイルとアナライザーを`--verify-no-changes`で再実行し、追加の修正が必要ならコミットを中断します。
 
 フックを手動で実行する場合は、次のコマンドを使用してください。
 
 ```sh
 git hook run pre-commit
+```
+
+全C#ファイルの整形結果を確認する場合は、リポジトリのルートで次のコマンドを実行してください。WindowsではGit Bashで実行できます。
+
+```sh
+dotnet format style WasmSharp2.slnx --severity info --verify-no-changes
+dotnet format analyzers WasmSharp2.slnx --severity info --verify-no-changes
+git ls-files -z -- 'src/*.cs' 'tests/*.cs' 'tools/*.cs' | xargs -0 -n 64 dotnet csharpier check
 ```
 
 ## ビルドとテスト
@@ -37,7 +48,6 @@ dotnet run --project tests/WasmSharp.Tests/WasmSharp.Tests.csproj -c Release --n
 dotnet run --project tests/WasmSharp.Generators.Tests/WasmSharp.Generators.Tests.csproj -c Release --no-build
 dotnet run --project tests/WasmSharp.TestSuiteRunner.Tests/WasmSharp.TestSuiteRunner.Tests.csproj -c Release --no-build
 dotnet run --project tests/WasmSharp.Benchmarks.Tests/WasmSharp.Benchmarks.Tests.csproj -c Release --no-build
-dotnet format WasmSharp2.slnx --severity info --verify-no-changes
 ```
 
 生成器テストは、命令宣言、値表現、実行コード、デコード結果に関するランタイムのソースを埋め込み、テスト内のRoslynコンパイルに使用します。埋め込み対象は[生成器テストのプロジェクト設定](tests/WasmSharp.Generators.Tests/WasmSharp.Generators.Tests.csproj)の`EmbeddedResource`で管理します。対象ファイルを移動・改名する場合は、この設定も更新してください。

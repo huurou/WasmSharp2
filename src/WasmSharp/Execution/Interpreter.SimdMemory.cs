@@ -179,9 +179,10 @@ internal static partial class Interpreter
             return result;
         }
 
-        var low64 = bytes.Length == sizeof(uint)
-            ? BinaryPrimitives.ReadUInt32LittleEndian(bytes)
-            : BinaryPrimitives.ReadUInt64LittleEndian(bytes);
+        var low64 =
+            bytes.Length == sizeof(uint)
+                ? BinaryPrimitives.ReadUInt32LittleEndian(bytes)
+                : BinaryPrimitives.ReadUInt64LittleEndian(bytes);
         context.PushValue(WasmValue.FromV128(low64, 0));
         return default;
     }

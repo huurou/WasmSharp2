@@ -39,10 +39,12 @@ internal readonly struct SimdValue
     /// </summary>
     internal static SimdValue FromLittleEndian(ReadOnlySpan<byte> bytes)
     {
-        return new SimdValue(Vector128.Create(
-            BinaryPrimitives.ReadUInt64LittleEndian(bytes),
-            BinaryPrimitives.ReadUInt64LittleEndian(bytes[8..])
-        ));
+        return new SimdValue(
+            Vector128.Create(
+                BinaryPrimitives.ReadUInt64LittleEndian(bytes),
+                BinaryPrimitives.ReadUInt64LittleEndian(bytes[8..])
+            )
+        );
     }
 
     /// <summary>

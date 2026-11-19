@@ -86,10 +86,7 @@ internal class CaseCatalog_ConstructorTests
     public async Task 未登録ケースを含む_ケースIDと理由を返す()
     {
         // Arrange
-        var definition = AssetLoadingFixture.ReadCases(_json)[0] with
-        {
-            CaseId = "unknown.case",
-        };
+        var definition = AssetLoadingFixture.ReadCases(_json)[0] with { CaseId = "unknown.case" };
 
         // Act & Assert
         var exception = await Assert

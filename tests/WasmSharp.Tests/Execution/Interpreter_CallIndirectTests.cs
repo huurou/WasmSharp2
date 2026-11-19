@@ -18,14 +18,11 @@ internal class Interpreter_CallIndirectTests
     {
         // Arrange
         var called = false;
-        var host = WasmFunction.CreateHost(
-            new([], []),
-            (_, _) =>
-            {
-                called = true;
-                return new([]);
-            }
-        );
+        var host = WasmFunction.CreateHost(new([], []), (_, _) =>
+        {
+            called = true;
+            return new([]);
+        });
         var table = new WasmTable(WasmValueKind.FuncRef, new(2));
         table.Set(0, WasmValue.FromFuncRef(host));
         var caller = CreateFunction([new([], []), new([WasmValueKind.I32, WasmValueKind.I64], [])], 0, [table]);
@@ -55,14 +52,11 @@ internal class Interpreter_CallIndirectTests
     {
         // Arrange
         var called = false;
-        var host = WasmFunction.CreateHost(
-            new([], []),
-            (_, _) =>
-            {
-                called = true;
-                return new([]);
-            }
-        );
+        var host = WasmFunction.CreateHost(new([], []), (_, _) =>
+        {
+            called = true;
+            return new([]);
+        });
         var table = new WasmTable(WasmValueKind.FuncRef, new(2));
         table.Set(0, WasmValue.FromFuncRef(host));
         var caller = CreateFunction([new([], []), new([WasmValueKind.I32, WasmValueKind.I64], [])], 0, [table]);

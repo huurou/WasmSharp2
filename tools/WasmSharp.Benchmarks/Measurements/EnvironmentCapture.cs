@@ -66,7 +66,14 @@ internal sealed partial class EnvironmentCapture
         var configurations = processes.Select(SnapshotProcess).ToList();
         var runtimeConfigurationPath = Path.ChangeExtension(Assembly.GetEntryAssembly()?.Location, ".runtimeconfig.json");
         configurations.Add(
-            new ProcessConfiguration("Collector", "", 1, [], CaptureRuntimeConfiguration(store, runtimeConfigurationPath), [.. variables])
+            new ProcessConfiguration(
+                "Collector",
+                "",
+                1,
+                [],
+                CaptureRuntimeConfiguration(store, runtimeConfigurationPath),
+                [.. variables]
+            )
         );
         var gc = GC.GetConfigurationVariables()
             .Select(x => new NamedSetting(

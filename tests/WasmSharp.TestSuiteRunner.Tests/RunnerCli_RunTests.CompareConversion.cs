@@ -24,16 +24,27 @@ internal partial class RunnerCli_RunTests
         var profile = json["profile"]!;
         if (hasWasmTools)
         {
-            profile["wasm_tools"] = JsonNode.Parse("""
+            profile["wasm_tools"] = JsonNode.Parse(
+                """
                 {"url":"https://github.com/bytecodealliance/wasm-tools.git","commit":"7a2fa422cdf9aeeaf488a2acac8bc94a078bfa32","version":"1.263.0"}
-                """);
+                """
+            );
         }
         var parent = field == "default_enabled" ? profile["features"]![0]! : profile;
         parent[field] = null;
         await File.WriteAllTextAsync(input, json.ToJsonString());
 
         // Act
-        var result = Run(_profileLoader.Load(), "compare-conversion", "--baseline", input, "--current", input, "--output", comparison);
+        var result = Run(
+            _profileLoader.Load(),
+            "compare-conversion",
+            "--baseline",
+            input,
+            "--current",
+            input,
+            "--output",
+            comparison
+        );
 
         // Assert
         using (Assert.Multiple())
@@ -50,7 +61,10 @@ internal partial class RunnerCli_RunTests
     [Arguments("url", "https://mirror.invalid/wasm-tools.git")]
     [Arguments("commit", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")]
     [Arguments("version", "1.263.1")]
-    public async Task Core3を別の配置に再生成して比較する_変換器の取得元とcommitと版の差を報告する(string? field, string? changedValue)
+    public async Task Core3を別の配置に再生成して比較する_変換器の取得元とcommitと版の差を報告する(
+        string? field,
+        string? changedValue
+    )
     {
         // Arrange
         using var directory = new TemporaryDirectory();
@@ -72,7 +86,15 @@ internal partial class RunnerCli_RunTests
         var comparison = directory.Combine("comparison.json");
 
         // Act
-        var (exitCode, error) = fixture.Run(["compare-conversion", "--baseline", directory.Combine("before/manifest.json"), "--current", current, "--output", comparison]);
+        var (exitCode, error) = fixture.Run([
+            "compare-conversion",
+            "--baseline",
+            directory.Combine("before/manifest.json"),
+            "--current",
+            current,
+            "--output",
+            comparison,
+        ]);
 
         // Assert
         var report = JsonNode.Parse(await File.ReadAllTextAsync(comparison))!;

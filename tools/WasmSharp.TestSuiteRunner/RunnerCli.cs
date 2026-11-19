@@ -49,12 +49,7 @@ internal sealed class RunnerCli(ConversionProfile profile, Func<ConversionProfil
             ProtectOutput(args[0], paths);
             return args[0] switch
             {
-                "generate" => Generate(
-                    core3 ? LoadCore3() : profile,
-                    paths,
-                    output,
-                    error
-                ),
+                "generate" => Generate(core3 ? LoadCore3() : profile, paths, output, error),
                 "run" => Execute(paths, output, error),
                 "baseline-save" => SaveBaseline(paths, output),
                 "compare-conversion" or "compare-run" => Compare(args[0], paths, output, error),
@@ -116,13 +111,15 @@ internal sealed class RunnerCli(ConversionProfile profile, Func<ConversionProfil
         core3 = false;
         var hasProfile = false;
         var generate = args is ["generate", ..];
-        var options =
-            (args.Length > 0 ? Options(args[0]) : null) ?? throw new ArgumentException("有効な操作を指定してください。");
+        var options = (args.Length > 0 ? Options(args[0]) : null)
+            ?? throw new ArgumentException("有効な操作を指定してください。");
         Dictionary<string, string> paths = [with(StringComparer.Ordinal)];
         for (var i = 1; i < args.Length; i += 2)
         {
             var option = args[i];
-            if (!options.Contains(option, StringComparer.Ordinal) && !(generate && option is ("--profile" or "--wasm-tools")))
+            if (
+                !options.Contains(option, StringComparer.Ordinal) && !(generate && option is ("--profile" or "--wasm-tools"))
+            )
             {
                 throw new ArgumentException($"未知の引数です: {option}");
             }
@@ -132,7 +129,9 @@ internal sealed class RunnerCli(ConversionProfile profile, Func<ConversionProfil
                 || args[i + 1].StartsWith("--", StringComparison.Ordinal)
             )
             {
-                throw new ArgumentException(option == "--profile" ? "--profileの値が不足しています。" : $"{option}のpathが不足しています。");
+                throw new ArgumentException(
+                    option == "--profile" ? "--profileの値が不足しています。" : $"{option}のpathが不足しています。"
+                );
             }
             if (option == "--profile")
             {
@@ -268,7 +267,12 @@ internal sealed class RunnerCli(ConversionProfile profile, Func<ConversionProfil
     /// <param name="output">進捗と集計の表示先</param>
     /// <param name="error">操作と保存の失敗の表示先</param>
     /// <returns>生成操作の終了値</returns>
-    private int Generate(ConversionProfile generationProfile, Dictionary<string, string> paths, TextWriter output, TextWriter error)
+    private int Generate(
+        ConversionProfile generationProfile,
+        Dictionary<string, string> paths,
+        TextWriter output,
+        TextWriter error
+    )
     {
         var processed = 0;
         var result = CorpusGenerator.Generate(
@@ -317,8 +321,10 @@ internal sealed class RunnerCli(ConversionProfile profile, Func<ConversionProfil
         var (runProfile, specVersion) =
             manifest.Profile.Id == profile.Id ? (profile, WasmSpecVersion.Core2) : (LoadCore3(), WasmSpecVersion.Core3);
         var fixedHashes = runProfile.Inputs.ToDictionary(x => x.Path, x => x.Sha256, StringComparer.Ordinal);
-        if (!manifest.Profile.Matches(runProfile)
-            || manifest.Inputs.Any(x => fixedHashes.TryGetValue(x.Input.Path, out var hash) && x.Input.Sha256 != hash))
+        if (
+            !manifest.Profile.Matches(runProfile)
+            || manifest.Inputs.Any(x => fixedHashes.TryGetValue(x.Input.Path, out var hash) && x.Input.Sha256 != hash)
+        )
         {
             throw new ReportStoreException(
                 $"固定profile{runProfile.Id}と条件・対象入力が一致しないmanifestです。",

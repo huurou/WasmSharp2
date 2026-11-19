@@ -163,7 +163,9 @@ public partial class SuiteExecutor_ExecuteAndSaveTests
             await Assert.That(cases[0].LastStage).IsEqualTo(CaseStage.Instantiate);
             await Assert.That(cases[1].Outcome).IsEqualTo(CaseOutcome.Failed);
             await Assert.That(cases[1].LastStage).IsEqualTo(CaseStage.Instantiate);
-            await Assert.That(cases[1].Diagnostics[0].ExceptionType).IsEqualTo(typeof(Exceptions.WasmTrapException).FullName);
+            await Assert
+                .That(cases[1].Diagnostics[0].ExceptionType)
+                .IsEqualTo(typeof(Exceptions.WasmTrapException).FullName);
             await Assert.That(cases[2].Outcome).IsEqualTo(CaseOutcome.Blocked);
             await Assert.That(cases[2].Cause!.Direct).IsEquivalentTo([new CaseId("a.wast", 1)]);
             await Assert.That(cases[2].Cause!.Origins).IsEquivalentTo([new CaseId("a.wast", 1)]);
@@ -213,7 +215,9 @@ public partial class SuiteExecutor_ExecuteAndSaveTests
     [Test]
     [Arguments("module_definition")]
     [Arguments("module")]
-    public async Task 読み取れないmoduleの定義_以前の定義へ戻さず直近の定義を使うinstanceを原因付きでblockedにする(string commandType)
+    public async Task 読み取れないmoduleの定義_以前の定義へ戻さず直近の定義を使うinstanceを原因付きでblockedにする(
+        string commandType
+    )
     {
         // Arrange
         using var fixture = CorpusFixture.Create();

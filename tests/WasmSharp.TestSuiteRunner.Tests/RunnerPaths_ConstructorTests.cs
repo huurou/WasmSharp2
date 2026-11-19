@@ -6,7 +6,9 @@ internal class RunnerPaths_ConstructorTests
     [Arguments(true, true, "artifacts/wabt-core2-1.0.42-datacount/Release/wast2json.exe")]
     [Arguments(false, false, "artifacts/wabt-core2-1.0.42-datacount/wast2json")]
     public async Task OSを指定する_パスの大小文字の扱いと変換器の配置が決まる(
-        bool isWindows, bool samePath, string expectedWast2Json
+        bool isWindows,
+        bool samePath,
+        string expectedWast2Json
     )
     {
         // Act

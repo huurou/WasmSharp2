@@ -39,7 +39,9 @@ internal partial class WasmModule_ValidateTests
         {
             await Assert
                 .That(exception!.Message)
-                .StartsWith(missingOperand ? "type mismatch: 命令の入力値が不足" : "type mismatch: 命令の入力型が一致しません");
+                .StartsWith(
+                    missingOperand ? "type mismatch: 命令の入力値が不足" : "type mismatch: 命令の入力型が一致しません"
+                );
             await Assert
                 .That(exception.Location)
                 .IsEqualTo(new(WasmProcessingStage.Validate, bytes.Length - opcodeLength - 2, 0, 10));

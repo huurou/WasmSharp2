@@ -32,12 +32,9 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult F32x4Add(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdFloatBinary(
-            context,
-            32,
-            static (x, y) =>
-                F32ArithmeticResult(BitConverter.UInt32BitsToSingle((uint)x) + BitConverter.UInt32BitsToSingle((uint)y))
-                    .AsF32Bits()
+        return ExecuteSimdFloatBinary(context, 32, static (x, y) =>
+            F32ArithmeticResult(BitConverter.UInt32BitsToSingle((uint)x) + BitConverter.UInt32BitsToSingle((uint)y))
+                .AsF32Bits()
         );
     }
 
@@ -49,12 +46,9 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult F32x4Sub(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdFloatBinary(
-            context,
-            32,
-            static (x, y) =>
-                F32ArithmeticResult(BitConverter.UInt32BitsToSingle((uint)x) - BitConverter.UInt32BitsToSingle((uint)y))
-                    .AsF32Bits()
+        return ExecuteSimdFloatBinary(context, 32, static (x, y) =>
+            F32ArithmeticResult(BitConverter.UInt32BitsToSingle((uint)x) - BitConverter.UInt32BitsToSingle((uint)y))
+                .AsF32Bits()
         );
     }
 
@@ -66,12 +60,9 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult F32x4Mul(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdFloatBinary(
-            context,
-            32,
-            static (x, y) =>
-                F32ArithmeticResult(BitConverter.UInt32BitsToSingle((uint)x) * BitConverter.UInt32BitsToSingle((uint)y))
-                    .AsF32Bits()
+        return ExecuteSimdFloatBinary(context, 32, static (x, y) =>
+            F32ArithmeticResult(BitConverter.UInt32BitsToSingle((uint)x) * BitConverter.UInt32BitsToSingle((uint)y))
+                .AsF32Bits()
         );
     }
 
@@ -83,12 +74,9 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult F32x4Div(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdFloatBinary(
-            context,
-            32,
-            static (x, y) =>
-                F32ArithmeticResult(BitConverter.UInt32BitsToSingle((uint)x) / BitConverter.UInt32BitsToSingle((uint)y))
-                    .AsF32Bits()
+        return ExecuteSimdFloatBinary(context, 32, static (x, y) =>
+            F32ArithmeticResult(BitConverter.UInt32BitsToSingle((uint)x) / BitConverter.UInt32BitsToSingle((uint)y))
+                .AsF32Bits()
         );
     }
 
@@ -100,10 +88,8 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult F32x4Sqrt(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdFloatUnary(
-            context,
-            32,
-            static x => F32ArithmeticResult(MathF.Sqrt(BitConverter.UInt32BitsToSingle((uint)x))).AsF32Bits()
+        return ExecuteSimdFloatUnary(context, 32, static x =>
+            F32ArithmeticResult(MathF.Sqrt(BitConverter.UInt32BitsToSingle((uint)x))).AsF32Bits()
         );
     }
 
@@ -115,15 +101,11 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult F32x4Ceil(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdFloatUnary(
-            context,
-            32,
-            static x =>
-            {
-                var operand = BitConverter.UInt32BitsToSingle((uint)x);
-                return F32ArithmeticResult(MathF.Ceiling(operand)).AsF32Bits();
-            }
-        );
+        return ExecuteSimdFloatUnary(context, 32, static x =>
+        {
+            var operand = BitConverter.UInt32BitsToSingle((uint)x);
+            return F32ArithmeticResult(MathF.Ceiling(operand)).AsF32Bits();
+        });
     }
 
     /// <summary>
@@ -134,15 +116,11 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult F32x4Floor(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdFloatUnary(
-            context,
-            32,
-            static x =>
-            {
-                var operand = BitConverter.UInt32BitsToSingle((uint)x);
-                return F32ArithmeticResult(MathF.Floor(operand)).AsF32Bits();
-            }
-        );
+        return ExecuteSimdFloatUnary(context, 32, static x =>
+        {
+            var operand = BitConverter.UInt32BitsToSingle((uint)x);
+            return F32ArithmeticResult(MathF.Floor(operand)).AsF32Bits();
+        });
     }
 
     /// <summary>
@@ -153,15 +131,11 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult F32x4Trunc(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdFloatUnary(
-            context,
-            32,
-            static x =>
-            {
-                var operand = BitConverter.UInt32BitsToSingle((uint)x);
-                return F32ArithmeticResult(MathF.Truncate(operand)).AsF32Bits();
-            }
-        );
+        return ExecuteSimdFloatUnary(context, 32, static x =>
+        {
+            var operand = BitConverter.UInt32BitsToSingle((uint)x);
+            return F32ArithmeticResult(MathF.Truncate(operand)).AsF32Bits();
+        });
     }
 
     /// <summary>
@@ -172,15 +146,11 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult F32x4Nearest(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdFloatUnary(
-            context,
-            32,
-            static x =>
-            {
-                var operand = BitConverter.UInt32BitsToSingle((uint)x);
-                return F32ArithmeticResult(MathF.Round(operand, MidpointRounding.ToEven)).AsF32Bits();
-            }
-        );
+        return ExecuteSimdFloatUnary(context, 32, static x =>
+        {
+            var operand = BitConverter.UInt32BitsToSingle((uint)x);
+            return F32ArithmeticResult(MathF.Round(operand, MidpointRounding.ToEven)).AsF32Bits();
+        });
     }
 
     /// <summary>
@@ -191,11 +161,8 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult F32x4Min(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdFloatBinary(
-            context,
-            32,
-            static (x, y) =>
-                F32MinResult(BitConverter.UInt32BitsToSingle((uint)x), BitConverter.UInt32BitsToSingle((uint)y)).AsF32Bits()
+        return ExecuteSimdFloatBinary(context, 32, static (x, y) =>
+            F32MinResult(BitConverter.UInt32BitsToSingle((uint)x), BitConverter.UInt32BitsToSingle((uint)y)).AsF32Bits()
         );
     }
 
@@ -207,11 +174,8 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult F32x4Max(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdFloatBinary(
-            context,
-            32,
-            static (x, y) =>
-                F32MaxResult(BitConverter.UInt32BitsToSingle((uint)x), BitConverter.UInt32BitsToSingle((uint)y)).AsF32Bits()
+        return ExecuteSimdFloatBinary(context, 32, static (x, y) =>
+            F32MaxResult(BitConverter.UInt32BitsToSingle((uint)x), BitConverter.UInt32BitsToSingle((uint)y)).AsF32Bits()
         );
     }
 
@@ -223,10 +187,8 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult F32x4Pmin(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdFloatBinary(
-            context,
-            32,
-            static (x, y) => BitConverter.UInt32BitsToSingle((uint)y) < BitConverter.UInt32BitsToSingle((uint)x) ? y : x
+        return ExecuteSimdFloatBinary(context, 32, static (x, y) =>
+            BitConverter.UInt32BitsToSingle((uint)y) < BitConverter.UInt32BitsToSingle((uint)x) ? y : x
         );
     }
 
@@ -238,10 +200,8 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult F32x4Pmax(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdFloatBinary(
-            context,
-            32,
-            static (x, y) => BitConverter.UInt32BitsToSingle((uint)x) < BitConverter.UInt32BitsToSingle((uint)y) ? y : x
+        return ExecuteSimdFloatBinary(context, 32, static (x, y) =>
+            BitConverter.UInt32BitsToSingle((uint)x) < BitConverter.UInt32BitsToSingle((uint)y) ? y : x
         );
     }
 
@@ -275,11 +235,8 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult F64x2Add(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdFloatBinary(
-            context,
-            64,
-            static (x, y) =>
-                F64ArithmeticResult(BitConverter.UInt64BitsToDouble(x) + BitConverter.UInt64BitsToDouble(y)).AsF64Bits()
+        return ExecuteSimdFloatBinary(context, 64, static (x, y) =>
+            F64ArithmeticResult(BitConverter.UInt64BitsToDouble(x) + BitConverter.UInt64BitsToDouble(y)).AsF64Bits()
         );
     }
 
@@ -291,11 +248,8 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult F64x2Sub(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdFloatBinary(
-            context,
-            64,
-            static (x, y) =>
-                F64ArithmeticResult(BitConverter.UInt64BitsToDouble(x) - BitConverter.UInt64BitsToDouble(y)).AsF64Bits()
+        return ExecuteSimdFloatBinary(context, 64, static (x, y) =>
+            F64ArithmeticResult(BitConverter.UInt64BitsToDouble(x) - BitConverter.UInt64BitsToDouble(y)).AsF64Bits()
         );
     }
 
@@ -307,11 +261,8 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult F64x2Mul(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdFloatBinary(
-            context,
-            64,
-            static (x, y) =>
-                F64ArithmeticResult(BitConverter.UInt64BitsToDouble(x) * BitConverter.UInt64BitsToDouble(y)).AsF64Bits()
+        return ExecuteSimdFloatBinary(context, 64, static (x, y) =>
+            F64ArithmeticResult(BitConverter.UInt64BitsToDouble(x) * BitConverter.UInt64BitsToDouble(y)).AsF64Bits()
         );
     }
 
@@ -323,11 +274,8 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult F64x2Div(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdFloatBinary(
-            context,
-            64,
-            static (x, y) =>
-                F64ArithmeticResult(BitConverter.UInt64BitsToDouble(x) / BitConverter.UInt64BitsToDouble(y)).AsF64Bits()
+        return ExecuteSimdFloatBinary(context, 64, static (x, y) =>
+            F64ArithmeticResult(BitConverter.UInt64BitsToDouble(x) / BitConverter.UInt64BitsToDouble(y)).AsF64Bits()
         );
     }
 
@@ -339,10 +287,8 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult F64x2Sqrt(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdFloatUnary(
-            context,
-            64,
-            static x => F64ArithmeticResult(Math.Sqrt(BitConverter.UInt64BitsToDouble(x))).AsF64Bits()
+        return ExecuteSimdFloatUnary(context, 64, static x =>
+            F64ArithmeticResult(Math.Sqrt(BitConverter.UInt64BitsToDouble(x))).AsF64Bits()
         );
     }
 
@@ -354,15 +300,11 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult F64x2Ceil(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdFloatUnary(
-            context,
-            64,
-            static x =>
-            {
-                var operand = BitConverter.UInt64BitsToDouble(x);
-                return F64ArithmeticResult(Math.Ceiling(operand)).AsF64Bits();
-            }
-        );
+        return ExecuteSimdFloatUnary(context, 64, static x =>
+        {
+            var operand = BitConverter.UInt64BitsToDouble(x);
+            return F64ArithmeticResult(Math.Ceiling(operand)).AsF64Bits();
+        });
     }
 
     /// <summary>
@@ -373,15 +315,11 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult F64x2Floor(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdFloatUnary(
-            context,
-            64,
-            static x =>
-            {
-                var operand = BitConverter.UInt64BitsToDouble(x);
-                return F64ArithmeticResult(Math.Floor(operand)).AsF64Bits();
-            }
-        );
+        return ExecuteSimdFloatUnary(context, 64, static x =>
+        {
+            var operand = BitConverter.UInt64BitsToDouble(x);
+            return F64ArithmeticResult(Math.Floor(operand)).AsF64Bits();
+        });
     }
 
     /// <summary>
@@ -392,15 +330,11 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult F64x2Trunc(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdFloatUnary(
-            context,
-            64,
-            static x =>
-            {
-                var operand = BitConverter.UInt64BitsToDouble(x);
-                return F64ArithmeticResult(Math.Truncate(operand)).AsF64Bits();
-            }
-        );
+        return ExecuteSimdFloatUnary(context, 64, static x =>
+        {
+            var operand = BitConverter.UInt64BitsToDouble(x);
+            return F64ArithmeticResult(Math.Truncate(operand)).AsF64Bits();
+        });
     }
 
     /// <summary>
@@ -411,15 +345,11 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult F64x2Nearest(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdFloatUnary(
-            context,
-            64,
-            static x =>
-            {
-                var operand = BitConverter.UInt64BitsToDouble(x);
-                return F64ArithmeticResult(Math.Round(operand, MidpointRounding.ToEven)).AsF64Bits();
-            }
-        );
+        return ExecuteSimdFloatUnary(context, 64, static x =>
+        {
+            var operand = BitConverter.UInt64BitsToDouble(x);
+            return F64ArithmeticResult(Math.Round(operand, MidpointRounding.ToEven)).AsF64Bits();
+        });
     }
 
     /// <summary>
@@ -430,10 +360,8 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult F64x2Min(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdFloatBinary(
-            context,
-            64,
-            static (x, y) => F64MinResult(BitConverter.UInt64BitsToDouble(x), BitConverter.UInt64BitsToDouble(y)).AsF64Bits()
+        return ExecuteSimdFloatBinary(context, 64, static (x, y) =>
+            F64MinResult(BitConverter.UInt64BitsToDouble(x), BitConverter.UInt64BitsToDouble(y)).AsF64Bits()
         );
     }
 
@@ -445,10 +373,8 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult F64x2Max(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdFloatBinary(
-            context,
-            64,
-            static (x, y) => F64MaxResult(BitConverter.UInt64BitsToDouble(x), BitConverter.UInt64BitsToDouble(y)).AsF64Bits()
+        return ExecuteSimdFloatBinary(context, 64, static (x, y) =>
+            F64MaxResult(BitConverter.UInt64BitsToDouble(x), BitConverter.UInt64BitsToDouble(y)).AsF64Bits()
         );
     }
 
@@ -460,10 +386,8 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult F64x2Pmin(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdFloatBinary(
-            context,
-            64,
-            static (x, y) => BitConverter.UInt64BitsToDouble(y) < BitConverter.UInt64BitsToDouble(x) ? y : x
+        return ExecuteSimdFloatBinary(context, 64, static (x, y) =>
+            BitConverter.UInt64BitsToDouble(y) < BitConverter.UInt64BitsToDouble(x) ? y : x
         );
     }
 
@@ -475,10 +399,8 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult F64x2Pmax(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdFloatBinary(
-            context,
-            64,
-            static (x, y) => BitConverter.UInt64BitsToDouble(x) < BitConverter.UInt64BitsToDouble(y) ? y : x
+        return ExecuteSimdFloatBinary(context, 64, static (x, y) =>
+            BitConverter.UInt64BitsToDouble(x) < BitConverter.UInt64BitsToDouble(y) ? y : x
         );
     }
 

@@ -9,6 +9,13 @@
       ],
       "rollForward": true
     },
+    "csharpier": {
+      "version": "1.4.0",
+      "commands": [
+        "csharpier"
+      ],
+      "rollForward": true
+    },
     "dotnet-stryker": {
       "version": "5.1.0",
       "commands": [

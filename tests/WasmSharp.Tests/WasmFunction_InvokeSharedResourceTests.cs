@@ -17,19 +17,13 @@ internal partial class WasmFunction_InvokeTests
         var host = new WasmHostModule("env");
         host.Define("m", memory);
         host.Define("t", table);
-        host.Define(
-            "grow",
-            WasmFunction.CreateHost(
-                new([], []),
-                (callbackContext, instance, arguments) =>
-                {
-                    grown = instance.GetMemory("m").TryGrow(1, out _);
-                    grown &= instance.GetTable("t").TryGrow(1, WasmValue.FromExternRef(reference), out _);
-                    instance.GetMemory("m").Write(0, [9]);
-                    return new([]);
-                }
-            )
-        );
+        host.Define("grow", WasmFunction.CreateHost(new([], []), (callbackContext, instance, arguments) =>
+            {
+                grown = instance.GetMemory("m").TryGrow(1, out _);
+                grown &= instance.GetTable("t").TryGrow(1, WasmValue.FromExternRef(reference), out _);
+                instance.GetMemory("m").Write(0, [9]);
+                return new([]);
+            }));
         var source = WasmModule
             .Decode(
                 HostLinkingModuleBinary.Create(
@@ -50,20 +44,14 @@ internal partial class WasmFunction_InvokeTests
         var provider = new WasmHostModule("env");
         provider.Define("m", source.GetMemory("m"));
         provider.Define("t", source.GetTable("t"));
-        provider.Define(
-            "roundtrip",
-            WasmFunction.CreateHost(
-                new([], []),
-                (callbackContext, instance, _) =>
-                {
-                    instance.GetMemory("m").Read(0, copy);
-                    source.GetFunction("grow").Invoke(callbackContext, []);
-                    instance.GetMemory("m").Write(65536, [42]);
-                    instance.GetTable("t").Set(0, instance.GetTable("t").Get(1));
-                    return new([]);
-                }
-            )
-        );
+        provider.Define("roundtrip", WasmFunction.CreateHost(new([], []), (callbackContext, instance, _) =>
+            {
+                instance.GetMemory("m").Read(0, copy);
+                source.GetFunction("grow").Invoke(callbackContext, []);
+                instance.GetMemory("m").Write(65536, [42]);
+                instance.GetTable("t").Set(0, instance.GetTable("t").Get(1));
+                return new([]);
+            }));
         var destination = WasmModule
             .Decode(
                 HostLinkingModuleBinary.Create(

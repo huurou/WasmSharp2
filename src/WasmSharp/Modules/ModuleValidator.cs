@@ -49,13 +49,7 @@ internal static class ModuleValidator
         {
             foreach (var initializer in element.Initializers)
             {
-                ConstantInitializer.Validate(
-                    initializer,
-                    element.ElementType,
-                    importedGlobals,
-                    references.FunctionCount,
-                    9
-                );
+                ConstantInitializer.Validate(initializer, element.ElementType, importedGlobals, references.FunctionCount, 9);
             }
             var target = element.ActiveTarget;
             if (target is null)

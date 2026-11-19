@@ -51,30 +51,24 @@ internal static class SpectestFactory
         ReadOnlySpan<WasmValueKind> parameters
     )
     {
-        host.Define(
-            name,
-            WasmFunction.CreateHost(
-                new(parameters, []),
-                (_, arguments) =>
+        host.Define(name, WasmFunction.CreateHost(new(parameters, []), (_, arguments) =>
+            {
+                try
                 {
-                    try
+                    var print = new PrintRecord(name);
+                    foreach (var argument in arguments)
                     {
-                        var print = new PrintRecord(name);
-                        foreach (var argument in arguments)
-                        {
-                            print.Arguments.Add(ValueCodec.Record(argument, state));
-                        }
-                        state.RecordPrint(print);
-                        return new WasmResults([]);
+                        print.Arguments.Add(ValueCodec.Record(argument, state));
                     }
-                    catch (Exception exception)
-                    {
-                        // 例外型だけではWasm由来と区別できないため、同じ例外実体を記録して伝播する。
-                        state.CallbackException = exception;
-                        throw;
-                    }
+                    state.RecordPrint(print);
+                    return new WasmResults([]);
                 }
-            )
-        );
+                catch (Exception exception)
+                {
+                    // 例外型だけではWasm由来と区別できないため、同じ例外実体を記録して伝播する。
+                    state.CallbackException = exception;
+                    throw;
+                }
+            }));
     }
 }

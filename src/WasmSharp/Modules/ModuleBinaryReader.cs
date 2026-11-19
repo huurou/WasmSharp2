@@ -101,8 +101,7 @@ internal ref struct ModuleBinaryReader
             functionIndex,
             mode,
             maxCollectionLength ?? Array.MaxLength
-        )
-    { }
+        ) { }
 
     /// <summary>
     /// モードに応じた入力参照と、物理終端・宣言終端を保持する

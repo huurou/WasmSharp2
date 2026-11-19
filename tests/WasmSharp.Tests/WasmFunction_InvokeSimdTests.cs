@@ -259,15 +259,12 @@ internal partial class WasmFunction_InvokeTests
         table.Set(
             0,
             WasmValue.FromFuncRef(
-                WasmFunction.CreateHost(
-                    new([WasmValueKind.V128], [WasmValueKind.V128]),
-                    (callbackContext, caller, values) =>
-                    {
-                        observed = caller;
-                        calls++;
-                        return new(values);
-                    }
-                )
+                WasmFunction.CreateHost(new([WasmValueKind.V128], [WasmValueKind.V128]), (callbackContext, caller, values) =>
+                {
+                    observed = caller;
+                    calls++;
+                    return new(values);
+                })
             )
         );
         var first = function.Invoke(executionContext, [value]);
@@ -388,19 +385,11 @@ internal partial class WasmFunction_InvokeTests
         }
         var type = new WasmFunctionType([WasmValueKind.V128], [WasmValueKind.V128]);
         var provider = new WasmHostModule("env");
-        provider.Define(
-            "host",
-            withInstance
-                ? WasmFunction.CreateHost(
-                    type,
-                    (callbackContext, caller, arguments) =>
-                    {
-                        observed.Add(caller);
-                        return Callback(callbackContext, arguments);
-                    }
-                )
-                : WasmFunction.CreateHost(type, Callback)
-        );
+        provider.Define("host", withInstance ? WasmFunction.CreateHost(type, (callbackContext, caller, arguments) =>
+                {
+                    observed.Add(caller);
+                    return Callback(callbackContext, arguments);
+                }) : WasmFunction.CreateHost(type, Callback));
         provider.Define("nested", WasmFunction.CreateHost(type, (callbackContext, _) => throw expected));
         instance = WasmModule
             .Decode(

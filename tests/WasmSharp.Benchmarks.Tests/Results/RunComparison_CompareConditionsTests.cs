@@ -976,8 +976,8 @@ internal class RunComparison_CompareConditionsTests
                 ? current.Source.AssembliesAfter
                 :
                 [
-                    .. current.Source.AssembliesAfter
-                        .Where(x => assemblyChange != "missing" || x.Role != AssemblyRole.Runtime)
+                    .. current
+                        .Source.AssembliesAfter.Where(x => assemblyChange != "missing" || x.Role != AssemblyRole.Runtime)
                         .Select(x =>
                             x.Role != AssemblyRole.Runtime
                                 ? x

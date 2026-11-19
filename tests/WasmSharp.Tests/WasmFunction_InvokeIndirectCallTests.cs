@@ -94,32 +94,16 @@ internal partial class WasmFunction_InvokeTests
         var executionContext = new WasmExecutionContext();
         var calls = 0;
         var table = new WasmTable(WasmValueKind.FuncRef, new(3));
-        table.Set(
-            1,
-            WasmValue.FromFuncRef(
-                WasmFunction.CreateHost(
-                    new([WasmValueKind.I32], []),
-                    (callbackContext, _) =>
-                    {
-                        calls++;
-                        return new([]);
-                    }
-                )
-            )
-        );
-        table.Set(
-            2,
-            WasmValue.FromFuncRef(
-                WasmFunction.CreateHost(
-                    new([], [WasmValueKind.I32]),
-                    (callbackContext, _) =>
-                    {
-                        calls++;
-                        return new([WasmValue.FromI32(1)]);
-                    }
-                )
-            )
-        );
+        table.Set(1, WasmValue.FromFuncRef(WasmFunction.CreateHost(new([WasmValueKind.I32], []), (callbackContext, _) =>
+                {
+                    calls++;
+                    return new([]);
+                })));
+        table.Set(2, WasmValue.FromFuncRef(WasmFunction.CreateHost(new([], [WasmValueKind.I32]), (callbackContext, _) =>
+                {
+                    calls++;
+                    return new([WasmValue.FromI32(1)]);
+                })));
         var (module, instance) = CreateIndirectVoidCaller(executionContext, table, maxCallDepth: 1);
         var run = instance.GetFunction("run");
 
@@ -150,23 +134,15 @@ internal partial class WasmFunction_InvokeTests
         var (_, instance) = CreateIndirectVoidCaller(executionContext, table);
         WasmInstance? observed = null;
         var expected = new InvalidOperationException("host failure");
-        table.Set(
-            0,
-            WasmValue.FromFuncRef(
-                WasmFunction.CreateHost(
-                    new([], []),
-                    (callbackContext, caller, _) =>
+        table.Set(0, WasmValue.FromFuncRef(WasmFunction.CreateHost(new([], []), (callbackContext, caller, _) =>
+                {
+                    observed = caller;
+                    if (throws)
                     {
-                        observed = caller;
-                        if (throws)
-                        {
-                            throw expected;
-                        }
-                        return new([]);
+                        throw expected;
                     }
-                )
-            )
-        );
+                    return new([]);
+                })));
 
         if (throws)
         {
@@ -213,21 +189,11 @@ internal partial class WasmFunction_InvokeTests
         var instance = module.Instantiate(executionContext, [host], new(3));
         var calls = 0;
         var run = instance.GetFunction("run");
-        table.Set(
-            0,
-            WasmValue.FromFuncRef(
-                hostReentry
-                    ? WasmFunction.CreateHost(
-                        new([], []),
-                        (callbackContext, _) =>
-                        {
-                            calls++;
-                            return run.Invoke(callbackContext, []);
-                        }
-                    )
-                    : run
-            )
-        );
+        table.Set(0, WasmValue.FromFuncRef(hostReentry ? WasmFunction.CreateHost(new([], []), (callbackContext, _) =>
+                    {
+                        calls++;
+                        return run.Invoke(callbackContext, []);
+                    }) : run));
 
         // Act & Assert
         var exception = await Assert.That(() => run.Invoke(executionContext, [])).ThrowsExactly<WasmExhaustionException>();
@@ -276,43 +242,27 @@ internal partial class WasmFunction_InvokeTests
         Exception? caught = null;
         WasmInstance? observed = null;
         var successes = 0;
-        table.Set(
-            0,
-            WasmValue.FromFuncRef(
-                WasmFunction.CreateHost(
-                    new([], []),
-                    (callbackContext, _) =>
+        table.Set(0, WasmValue.FromFuncRef(WasmFunction.CreateHost(new([], []), (callbackContext, _) =>
+                {
+                    try
                     {
-                        try
-                        {
-                            inner.GetFunction("run").Invoke(callbackContext, [WasmValue.FromI32(selector)]);
-                        }
-                        catch (Exception exception)
-                        {
-                            caught = exception;
-                        }
-                        inner.GetFunction("run").Invoke(callbackContext, [WasmValue.FromI32(4)]);
-                        return new([]);
+                        inner.GetFunction("run").Invoke(callbackContext, [WasmValue.FromI32(selector)]);
                     }
-                )
-            )
-        );
+                    catch (Exception exception)
+                    {
+                        caught = exception;
+                    }
+                    inner.GetFunction("run").Invoke(callbackContext, [WasmValue.FromI32(4)]);
+                    return new([]);
+                })));
         table.Set(2, WasmValue.FromFuncRef(inner.GetFunction("trap")));
         table.Set(3, WasmValue.FromFuncRef(WasmFunction.CreateHost(new([], []), (callbackContext, _) => throw expected)));
-        table.Set(
-            4,
-            WasmValue.FromFuncRef(
-                WasmFunction.CreateHost(
-                    new([], []),
-                    (callbackContext, caller, _) =>
-                    {
-                        observed = caller;
-                        successes++;
-                        return new([]);
-                    }
-                )
-            )
-        );
+        table.Set(4, WasmValue.FromFuncRef(WasmFunction.CreateHost(new([], []), (callbackContext, caller, _) =>
+                {
+                    observed = caller;
+                    successes++;
+                    return new([]);
+                })));
         table.Set(5, WasmValue.FromFuncRef(inner.GetFunction("loop")));
 
         // Act

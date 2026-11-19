@@ -106,17 +106,11 @@ internal partial class WasmModule_ValidateTests
             WasmFunction.CreateHost(new([WasmValueKind.I32], [WasmValueKind.I32]), (callbackContext, _) => new([]))
         );
         host.Define("t", new WasmTable(WasmValueKind.FuncRef, new(0)));
-        host.Define(
-            "start",
-            WasmFunction.CreateHost(
-                new([], []),
-                (callbackContext, _) =>
-                {
-                    calls++;
-                    return new([]);
-                }
-            )
-        );
+        host.Define("start", WasmFunction.CreateHost(new([], []), (callbackContext, _) =>
+            {
+                calls++;
+                return new([]);
+            }));
         var bytes = HostLinkingModuleBinary.Create(
             HostLinkingModuleBinary.Types(([0x7F], [0x7F]), ([], []), ([], [0x7F])),
             HostLinkingModuleBinary.Imports(

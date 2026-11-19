@@ -10,11 +10,8 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult I32x4TruncSatF32x4S(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdConversion(
-            context,
-            32,
-            32,
-            static x => unchecked((uint)TruncateSaturatingI32(BitConverter.UInt32BitsToSingle((uint)x), true))
+        return ExecuteSimdConversion(context, 32, 32, static x =>
+            unchecked((uint)TruncateSaturatingI32(BitConverter.UInt32BitsToSingle((uint)x), true))
         );
     }
 
@@ -26,11 +23,8 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult I32x4TruncSatF32x4U(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdConversion(
-            context,
-            32,
-            32,
-            static x => unchecked((uint)TruncateSaturatingI32(BitConverter.UInt32BitsToSingle((uint)x), false))
+        return ExecuteSimdConversion(context, 32, 32, static x =>
+            unchecked((uint)TruncateSaturatingI32(BitConverter.UInt32BitsToSingle((uint)x), false))
         );
     }
 
@@ -42,11 +36,8 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult I32x4TruncSatF64x2SZero(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdConversion(
-            context,
-            64,
-            32,
-            static x => unchecked((uint)TruncateSaturatingI32(BitConverter.UInt64BitsToDouble(x), true))
+        return ExecuteSimdConversion(context, 64, 32, static x =>
+            unchecked((uint)TruncateSaturatingI32(BitConverter.UInt64BitsToDouble(x), true))
         );
     }
 
@@ -58,11 +49,8 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult I32x4TruncSatF64x2UZero(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdConversion(
-            context,
-            64,
-            32,
-            static x => unchecked((uint)TruncateSaturatingI32(BitConverter.UInt64BitsToDouble(x), false))
+        return ExecuteSimdConversion(context, 64, 32, static x =>
+            unchecked((uint)TruncateSaturatingI32(BitConverter.UInt64BitsToDouble(x), false))
         );
     }
 
@@ -96,11 +84,8 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult F64x2ConvertLowI32x4S(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdConversion(
-            context,
-            32,
-            64,
-            static x => BitConverter.DoubleToUInt64Bits((double)unchecked((int)x))
+        return ExecuteSimdConversion(context, 32, 64, static x =>
+            BitConverter.DoubleToUInt64Bits((double)unchecked((int)x))
         );
     }
 
@@ -123,11 +108,8 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult F32x4DemoteF64x2Zero(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdConversion(
-            context,
-            64,
-            32,
-            static x => F32ArithmeticResult((float)BitConverter.UInt64BitsToDouble(x)).AsF32Bits()
+        return ExecuteSimdConversion(context, 64, 32, static x =>
+            F32ArithmeticResult((float)BitConverter.UInt64BitsToDouble(x)).AsF32Bits()
         );
     }
 
@@ -139,11 +121,8 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult F64x2PromoteLowF32x4(InterpreterContext context, in Instruction instruction)
     {
-        return ExecuteSimdConversion(
-            context,
-            32,
-            64,
-            static x => F64ArithmeticResult((double)BitConverter.UInt32BitsToSingle((uint)x)).AsF64Bits()
+        return ExecuteSimdConversion(context, 32, 64, static x =>
+            F64ArithmeticResult((double)BitConverter.UInt32BitsToSingle((uint)x)).AsF64Bits()
         );
     }
 

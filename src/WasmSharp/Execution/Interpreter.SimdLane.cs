@@ -781,10 +781,8 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult F32x4Eq(InterpreterContext context, in Instruction instruction)
     {
-        return CompareSimdLanes(
-            context,
-            32,
-            static (x, y) => BitConverter.UInt32BitsToSingle((uint)x) == BitConverter.UInt32BitsToSingle((uint)y)
+        return CompareSimdLanes(context, 32, static (x, y) =>
+            BitConverter.UInt32BitsToSingle((uint)x) == BitConverter.UInt32BitsToSingle((uint)y)
         );
     }
 
@@ -796,10 +794,8 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult F32x4Ne(InterpreterContext context, in Instruction instruction)
     {
-        return CompareSimdLanes(
-            context,
-            32,
-            static (x, y) => BitConverter.UInt32BitsToSingle((uint)x) != BitConverter.UInt32BitsToSingle((uint)y)
+        return CompareSimdLanes(context, 32, static (x, y) =>
+            BitConverter.UInt32BitsToSingle((uint)x) != BitConverter.UInt32BitsToSingle((uint)y)
         );
     }
 
@@ -811,10 +807,8 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult F32x4Lt(InterpreterContext context, in Instruction instruction)
     {
-        return CompareSimdLanes(
-            context,
-            32,
-            static (x, y) => BitConverter.UInt32BitsToSingle((uint)x) < BitConverter.UInt32BitsToSingle((uint)y)
+        return CompareSimdLanes(context, 32, static (x, y) =>
+            BitConverter.UInt32BitsToSingle((uint)x) < BitConverter.UInt32BitsToSingle((uint)y)
         );
     }
 
@@ -826,10 +820,8 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult F32x4Gt(InterpreterContext context, in Instruction instruction)
     {
-        return CompareSimdLanes(
-            context,
-            32,
-            static (x, y) => BitConverter.UInt32BitsToSingle((uint)x) > BitConverter.UInt32BitsToSingle((uint)y)
+        return CompareSimdLanes(context, 32, static (x, y) =>
+            BitConverter.UInt32BitsToSingle((uint)x) > BitConverter.UInt32BitsToSingle((uint)y)
         );
     }
 
@@ -841,10 +833,8 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult F32x4Le(InterpreterContext context, in Instruction instruction)
     {
-        return CompareSimdLanes(
-            context,
-            32,
-            static (x, y) => BitConverter.UInt32BitsToSingle((uint)x) <= BitConverter.UInt32BitsToSingle((uint)y)
+        return CompareSimdLanes(context, 32, static (x, y) =>
+            BitConverter.UInt32BitsToSingle((uint)x) <= BitConverter.UInt32BitsToSingle((uint)y)
         );
     }
 
@@ -856,10 +846,8 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult F32x4Ge(InterpreterContext context, in Instruction instruction)
     {
-        return CompareSimdLanes(
-            context,
-            32,
-            static (x, y) => BitConverter.UInt32BitsToSingle((uint)x) >= BitConverter.UInt32BitsToSingle((uint)y)
+        return CompareSimdLanes(context, 32, static (x, y) =>
+            BitConverter.UInt32BitsToSingle((uint)x) >= BitConverter.UInt32BitsToSingle((uint)y)
         );
     }
 
@@ -871,10 +859,8 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult F64x2Eq(InterpreterContext context, in Instruction instruction)
     {
-        return CompareSimdLanes(
-            context,
-            64,
-            static (x, y) => BitConverter.UInt64BitsToDouble(x) == BitConverter.UInt64BitsToDouble(y)
+        return CompareSimdLanes(context, 64, static (x, y) =>
+            BitConverter.UInt64BitsToDouble(x) == BitConverter.UInt64BitsToDouble(y)
         );
     }
 
@@ -886,10 +872,8 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult F64x2Ne(InterpreterContext context, in Instruction instruction)
     {
-        return CompareSimdLanes(
-            context,
-            64,
-            static (x, y) => BitConverter.UInt64BitsToDouble(x) != BitConverter.UInt64BitsToDouble(y)
+        return CompareSimdLanes(context, 64, static (x, y) =>
+            BitConverter.UInt64BitsToDouble(x) != BitConverter.UInt64BitsToDouble(y)
         );
     }
 
@@ -901,10 +885,8 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult F64x2Lt(InterpreterContext context, in Instruction instruction)
     {
-        return CompareSimdLanes(
-            context,
-            64,
-            static (x, y) => BitConverter.UInt64BitsToDouble(x) < BitConverter.UInt64BitsToDouble(y)
+        return CompareSimdLanes(context, 64, static (x, y) =>
+            BitConverter.UInt64BitsToDouble(x) < BitConverter.UInt64BitsToDouble(y)
         );
     }
 
@@ -916,10 +898,8 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult F64x2Gt(InterpreterContext context, in Instruction instruction)
     {
-        return CompareSimdLanes(
-            context,
-            64,
-            static (x, y) => BitConverter.UInt64BitsToDouble(x) > BitConverter.UInt64BitsToDouble(y)
+        return CompareSimdLanes(context, 64, static (x, y) =>
+            BitConverter.UInt64BitsToDouble(x) > BitConverter.UInt64BitsToDouble(y)
         );
     }
 
@@ -931,10 +911,8 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult F64x2Le(InterpreterContext context, in Instruction instruction)
     {
-        return CompareSimdLanes(
-            context,
-            64,
-            static (x, y) => BitConverter.UInt64BitsToDouble(x) <= BitConverter.UInt64BitsToDouble(y)
+        return CompareSimdLanes(context, 64, static (x, y) =>
+            BitConverter.UInt64BitsToDouble(x) <= BitConverter.UInt64BitsToDouble(y)
         );
     }
 
@@ -946,10 +924,8 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult F64x2Ge(InterpreterContext context, in Instruction instruction)
     {
-        return CompareSimdLanes(
-            context,
-            64,
-            static (x, y) => BitConverter.UInt64BitsToDouble(x) >= BitConverter.UInt64BitsToDouble(y)
+        return CompareSimdLanes(context, 64, static (x, y) =>
+            BitConverter.UInt64BitsToDouble(x) >= BitConverter.UInt64BitsToDouble(y)
         );
     }
 

@@ -130,9 +130,15 @@ internal partial class WasmModule_DecodeTests
     [Arguments(new byte[] { 0x0D, 0x01, 0x00, 0x0D, 0x01, 0x00 }, "unexpected content after last section")]
     [Arguments(new byte[] { 0x0D, 0x01, 0x00, 0x06, 0x02, 0x00 }, "unexpected end")]
     [Arguments(new byte[] { 0x0D, 0x04, 0x01, 0x00, 0x00 }, "unexpected end")]
-    [Arguments(new byte[] { 0x06, 0x06, 0x01, 0x7F, 0x00, 0x41, 0x00, 0x0B, 0x0D, 0x03, 0x01, 0x00, 0x00 }, "unexpected content after last section")]
+    [Arguments(
+        new byte[] { 0x06, 0x06, 0x01, 0x7F, 0x00, 0x41, 0x00, 0x0B, 0x0D, 0x03, 0x01, 0x00, 0x00 },
+        "unexpected content after last section"
+    )]
     [Arguments(new byte[] { 0x0E, 0x00 }, "malformed section id")]
-    public async Task 外枠が不正なsectionをCore3でデコード_未実装へ読み替えずデコード失敗にする(byte[] sections, string prefix)
+    public async Task 外枠が不正なsectionをCore3でデコード_未実装へ読み替えずデコード失敗にする(
+        byte[] sections,
+        string prefix
+    )
     {
         // Arrange
         byte[] bytes = [0x00, 0x61, 0x73, 0x6D, 0x01, 0x00, 0x00, 0x00, .. sections];
@@ -156,7 +162,9 @@ internal partial class WasmModule_DecodeTests
     [Test]
     [Arguments(new byte[] { 0x0E, 0x00 })]
     [Arguments(new byte[] { 0x0D })]
-    public async Task タグを確認する前に外枠の不正を見つける_それより先にある型sectionの構文エラーを報告する(byte[] trailingSection)
+    public async Task タグを確認する前に外枠の不正を見つける_それより先にある型sectionの構文エラーを報告する(
+        byte[] trailingSection
+    )
     {
         // Arrange
         var bytes = HostLinkingModuleBinary.Create(HostLinkingModuleBinary.Section(1, [1, 0x61]), trailingSection);

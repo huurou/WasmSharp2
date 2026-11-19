@@ -13,14 +13,11 @@ internal class Interpreter_CallTests
         // Arrange
         var executionContext = new WasmExecutionContext();
         var called = false;
-        var host = WasmFunction.CreateHost(
-            new([], []),
-            (_, _) =>
-            {
-                called = true;
-                return new([]);
-            }
-        );
+        var host = WasmFunction.CreateHost(new([], []), (_, _) =>
+        {
+            called = true;
+            return new([]);
+        });
         var instance = ExecutionInstanceFixture.Create(
             [new([], [])],
             [(0, [], [InstructionFixture.Create(0x10, 1001, 0), InstructionFixture.Create(0x0B, 1003)], 0)],
@@ -372,9 +369,8 @@ internal class Interpreter_CallTests
         // Arrange
         var executionContext = new WasmExecutionContext();
         var global = new WasmGlobal(new(WasmValueKind.I32, true), WasmValue.FromI32(0));
-        var host = WasmFunction.CreateHost(
-            new([], [WasmValueKind.I32]),
-            (_, _) => invalid ? new([]) : new([WasmValue.FromI32(42)])
+        var host = WasmFunction.CreateHost(new([], [WasmValueKind.I32]), (_, _) =>
+            invalid ? new([]) : new([WasmValue.FromI32(42)])
         );
         var instance = ExecutionInstanceFixture.Create(
             [new([], [])],

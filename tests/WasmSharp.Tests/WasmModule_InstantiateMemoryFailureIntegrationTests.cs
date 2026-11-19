@@ -24,25 +24,19 @@ internal partial class WasmModule_InstantiateTests
         var observed = new byte[3];
         var host = new WasmHostModule("env");
         host.Define("memory", memory);
-        host.Define(
-            "save",
-            WasmFunction.CreateHost(
-                new([], []),
-                (callbackContext, instance, _) =>
+        host.Define("save", WasmFunction.CreateHost(new([], []), (callbackContext, instance, _) =>
+            {
+                calls++;
+                savedInstance = instance;
+                savedFunction = instance.GetFunction("read");
+                savedMemory = instance.GetMemory("memory");
+                savedMemory.Read(0, observed);
+                if (hostFailure)
                 {
-                    calls++;
-                    savedInstance = instance;
-                    savedFunction = instance.GetFunction("read");
-                    savedMemory = instance.GetMemory("memory");
-                    savedMemory.Read(0, observed);
-                    if (hostFailure)
-                    {
-                        throw expected;
-                    }
-                    return new([]);
+                    throw expected;
                 }
-            )
-        );
+                return new([]);
+            }));
         var code = HostLinkingModuleBinary.Code(
             (
                 [],

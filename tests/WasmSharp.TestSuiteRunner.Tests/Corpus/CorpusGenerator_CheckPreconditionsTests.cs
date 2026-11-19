@@ -21,7 +21,13 @@ internal class CorpusGenerator_CheckPreconditionsTests
         var profile = new ConversionProfileLoader().LoadCore3();
         Directory.CreateDirectory(directory.Combine(profile.WorkingDirectory));
         profile = profile with { Inputs = [], WasmTools = profile.WasmTools! with { Version = version, Commit = commit } };
-        var request = new GenerateRequest(profile, directory.Root, null, SuiteWorkspace.ConverterPath, directory.Combine("out"));
+        var request = new GenerateRequest(
+            profile,
+            directory.Root,
+            null,
+            SuiteWorkspace.ConverterPath,
+            directory.Combine("out")
+        );
 
         // Act
         var preconditions = CorpusGenerator.CheckPreconditions(request);
@@ -57,7 +63,9 @@ internal class CorpusGenerator_CheckPreconditionsTests
         var diagnostic = preconditions.Diagnostics.Single();
         using (Assert.Multiple())
         {
-            await Assert.That(preconditions.Provenance.ExecutableSha256).IsEqualTo(Convert.ToHexStringLower(SHA256.HashData("wasm-tools"u8)));
+            await Assert
+                .That(preconditions.Provenance.ExecutableSha256)
+                .IsEqualTo(Convert.ToHexStringLower(SHA256.HashData("wasm-tools"u8)));
             await Assert.That(preconditions.Provenance.ExecutableVersion).IsNull();
             await Assert.That(diagnostic.Path).IsEqualTo(converter);
             await Assert.That(diagnostic.ExceptionType).IsEqualTo(typeof(System.ComponentModel.Win32Exception).FullName);

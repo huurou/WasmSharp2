@@ -175,16 +175,11 @@ internal partial class WasmFunction_InvokeTests
             [WasmValueKind.I32, WasmValueKind.ExternRef],
             [WasmValueKind.I32, WasmValueKind.ExternRef]
         );
-        var host = withInstance
-            ? WasmFunction.CreateHost(
-                type,
-                (callbackContext, instance, values) =>
-                {
-                    callers.Add(instance);
-                    return Callback(callbackContext, values);
-                }
-            )
-            : WasmFunction.CreateHost(type, Callback);
+        var host = withInstance ? WasmFunction.CreateHost(type, (callbackContext, instance, values) =>
+            {
+                callers.Add(instance);
+                return Callback(callbackContext, values);
+            }) : WasmFunction.CreateHost(type, Callback);
         var provider = new WasmHostModule("env");
         provider.Define("host", host);
         provider.Define("state", state);

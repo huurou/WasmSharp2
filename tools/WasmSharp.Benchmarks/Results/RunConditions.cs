@@ -96,10 +96,10 @@ internal sealed class RunConditions(string runId, CaseJson json)
         conditions.Add("environment.variables", Settings(environment.EnvironmentVariables, paths));
         conditions.Add("environment.processes", conditions.Processes(environment.Processes, paths));
         var jobConditions = jobs.Select(x => new
-        {
-            Configuration = Process(x, paths),
-            Check = checks.First(y => y.JobId == x.JobId),
-        })
+            {
+                Configuration = Process(x, paths),
+                Check = checks.First(y => y.JobId == x.JobId),
+            })
             .ToArray();
         conditions.Add(
             "job.processes",

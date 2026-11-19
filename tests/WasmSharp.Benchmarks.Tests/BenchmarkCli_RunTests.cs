@@ -92,17 +92,12 @@ internal class BenchmarkCli_RunTests
         var calls = 0;
 
         // Act
-        var exitCode = _cli.Run(
-            [.. arguments],
-            output,
-            error,
-            request =>
-            {
-                captured = request;
-                calls++;
-                return expected;
-            }
-        );
+        var exitCode = _cli.Run([.. arguments], output, error, request =>
+        {
+            captured = request;
+            calls++;
+            return expected;
+        });
 
         // Assert
         using (Assert.Multiple())
@@ -414,16 +409,11 @@ internal class BenchmarkCli_RunTests
         var runCalled = false;
 
         // Act
-        var exitCode = _cli.Run(
-            args,
-            output,
-            error,
-            _ =>
-            {
-                runCalled = true;
-                throw new InvalidOperationException("出力先検証を通過してはいけない");
-            }
-        );
+        var exitCode = _cli.Run(args, output, error, _ =>
+        {
+            runCalled = true;
+            throw new InvalidOperationException("出力先検証を通過してはいけない");
+        });
 
         // Assert
         using (Assert.Multiple())

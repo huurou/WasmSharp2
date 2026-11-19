@@ -110,14 +110,11 @@ internal partial class WasmModule_InstantiateTests
             )
             .Validate();
         var calls = 0;
-        var function = WasmFunction.CreateHost(
-            new([WasmValueKind.I32], [WasmValueKind.I64]),
-            (callbackContext, _) =>
-            {
-                calls++;
-                return new([]);
-            }
-        );
+        var function = WasmFunction.CreateHost(new([WasmValueKind.I32], [WasmValueKind.I64]), (callbackContext, _) =>
+        {
+            calls++;
+            return new([]);
+        });
         var global = new WasmGlobal(new(WasmValueKind.I32, true), WasmValue.FromI32(7));
         var other = WasmFunction.CreateHost(new([WasmValueKind.I32], [WasmValueKind.I64]), (callbackContext, _) => new([]));
         var host = new WasmHostModule();

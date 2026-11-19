@@ -223,11 +223,7 @@ internal static class ExpressionDecoder
     {
         var countOffset = reader.Position;
         var count = ModuleBinaryFormat.ReadCount(ref reader);
-        reader.EnsureCollectionSize(
-            (ulong)count + 1,
-            countOffset,
-            "既定を含むラベル数が配列の保持上限を超えています。"
-        );
+        reader.EnsureCollectionSize((ulong)count + 1, countOffset, "既定を含むラベル数が配列の保持上限を超えています。");
 
         List<uint> labels = [];
         for (uint index = 0; index < count; index++)

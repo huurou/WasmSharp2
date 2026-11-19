@@ -167,10 +167,7 @@ internal class ReportStore_ValidateTests
     public async Task 内容は揃うが完了と出力が記録されていない_未処理と出力失敗を報告する()
     {
         // Arrange
-        var report = RunReportFixture.CreateSample() with
-        {
-            Completion = new(false, false),
-        };
+        var report = RunReportFixture.CreateSample() with { Completion = new(false, false) };
 
         // Act
         var issues = ReportStore.Validate(report);
@@ -249,10 +246,7 @@ internal class ReportStore_ValidateTests
     public async Task 未処理の入力が残るのにmanifestの処理完了を記録する_入力と完了状態の矛盾を報告する()
     {
         // Arrange
-        var manifest = CorpusManifestFixture.Create() with
-        {
-            Completion = new ConversionCompletion(true, true),
-        };
+        var manifest = CorpusManifestFixture.Create() with { Completion = new ConversionCompletion(true, true) };
 
         // Act
         var issues = ReportStore.Validate(manifest);

@@ -101,7 +101,11 @@ internal sealed class ScriptReader(WasmSpecVersion specVersion)
     /// <param name="inputPath">test/core基準の入力相対path</param>
     /// <param name="version">変換済みスクリプトの仕様版</param>
     /// <returns>列挙済みcommandのindexと順序を保つ読み取り結果 個々の構造異常はInvalidCommandとして残す</returns>
-    internal static ScriptReadResult Read(ScriptDocument document, string inputPath, WasmSpecVersion version = WasmSpecVersion.Core2)
+    internal static ScriptReadResult Read(
+        ScriptDocument document,
+        string inputPath,
+        WasmSpecVersion version = WasmSpecVersion.Core2
+    )
     {
         var reader = new ScriptReader(version);
         return new(
@@ -162,40 +166,31 @@ internal sealed class ScriptReader(WasmSpecVersion specVersion)
         return type switch
         {
             ScriptCommand.MODULE => ReadModule(properties, index),
-            ScriptCommand.MODULE_DEFINITION when specVersion == WasmSpecVersion.Core3 => ReadModuleDefinition(properties, index),
+            ScriptCommand.MODULE_DEFINITION when specVersion == WasmSpecVersion.Core3 => ReadModuleDefinition(
+                properties,
+                index
+            ),
             ScriptCommand.MODULE_INSTANCE when specVersion == WasmSpecVersion.Core3 => ReadModuleInstance(properties, index),
             ScriptCommand.REGISTER => ReadRegister(properties, index),
             ScriptCommand.ACTION => ReadActionCommand(properties, index),
             ScriptCommand.ASSERT_RETURN => ReadAssertReturn(properties, index),
-            ScriptCommand.ASSERT_TRAP => ReadActionAssertion(
-                properties,
-                index,
-                static (i, l, a, t, r) => new AssertTrapCommand(i, l, a, t, r)
+            ScriptCommand.ASSERT_TRAP => ReadActionAssertion(properties, index, static (i, l, a, t, r) =>
+                new AssertTrapCommand(i, l, a, t, r)
             ),
-            ScriptCommand.ASSERT_EXHAUSTION => ReadActionAssertion(
-                properties,
-                index,
-                static (i, l, a, t, r) => new AssertExhaustionCommand(i, l, a, t, r)
+            ScriptCommand.ASSERT_EXHAUSTION => ReadActionAssertion(properties, index, static (i, l, a, t, r) =>
+                new AssertExhaustionCommand(i, l, a, t, r)
             ),
-            ScriptCommand.ASSERT_MALFORMED => ReadModuleAssertion(
-                properties,
-                index,
-                static (i, l, f, t, m) => new AssertMalformedCommand(i, l, f, t, m)
+            ScriptCommand.ASSERT_MALFORMED => ReadModuleAssertion(properties, index, static (i, l, f, t, m) =>
+                new AssertMalformedCommand(i, l, f, t, m)
             ),
-            ScriptCommand.ASSERT_INVALID => ReadModuleAssertion(
-                properties,
-                index,
-                static (i, l, f, t, m) => new AssertInvalidCommand(i, l, f, t, m)
+            ScriptCommand.ASSERT_INVALID => ReadModuleAssertion(properties, index, static (i, l, f, t, m) =>
+                new AssertInvalidCommand(i, l, f, t, m)
             ),
-            ScriptCommand.ASSERT_UNLINKABLE => ReadModuleAssertion(
-                properties,
-                index,
-                static (i, l, f, t, m) => new AssertUnlinkableCommand(i, l, f, t, m)
+            ScriptCommand.ASSERT_UNLINKABLE => ReadModuleAssertion(properties, index, static (i, l, f, t, m) =>
+                new AssertUnlinkableCommand(i, l, f, t, m)
             ),
-            ScriptCommand.ASSERT_UNINSTANTIABLE => ReadModuleAssertion(
-                properties,
-                index,
-                static (i, l, f, t, m) => new AssertUninstantiableCommand(i, l, f, t, m)
+            ScriptCommand.ASSERT_UNINSTANTIABLE => ReadModuleAssertion(properties, index, static (i, l, f, t, m) =>
+                new AssertUninstantiableCommand(i, l, f, t, m)
             ),
             _ => throw Unknown(TYPE, type),
         };
@@ -277,8 +272,11 @@ internal sealed class ScriptReader(WasmSpecVersion specVersion)
     private void ReadTextBinaryFilename(Dictionary<string, JsonElement> properties)
     {
         const string BinaryFilename = "binary_filename";
-        if (specVersion == WasmSpecVersion.Core3 && properties.ContainsKey(BinaryFilename)
-            && GetOptionalString(properties, "", MODULE_TYPE) == "text")
+        if (
+            specVersion == WasmSpecVersion.Core3
+            && properties.ContainsKey(BinaryFilename)
+            && GetOptionalString(properties, "", MODULE_TYPE) == "text"
+        )
         {
             GetString(properties, "", BinaryFilename);
             properties.Remove(BinaryFilename);
@@ -395,10 +393,8 @@ internal sealed class ScriptReader(WasmSpecVersion specVersion)
                 return new InvokeAction(
                     GetOptionalString(properties, ACTION, MODULE),
                     GetString(properties, ACTION, FIELD),
-                    ReadValues(
-                        GetArray(properties, ACTION, ARGS),
-                        Join(ACTION, ARGS),
-                        static (k, v, l, x) => new ArgumentValue(k, v, l, x)
+                    ReadValues(GetArray(properties, ACTION, ARGS), Join(ACTION, ARGS), static (k, v, l, x) =>
+                        new ArgumentValue(k, v, l, x)
                     )
                 );
             case "get":

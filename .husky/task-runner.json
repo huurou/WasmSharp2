@@ -2,15 +2,39 @@
   "$schema": "https://alirezanet.github.io/Husky.Net/schema.json",
   "tasks": [
     {
-      "name": "auto-format",
+      "name": "format-style",
       "group": "pre-commit",
       "command": "dotnet",
-      "args": ["format", "WasmSharp2.slnx", "--severity", "info", "--include", "${staged}"],
-      "include": [
-        "src/**/*.cs",
-        "tests/**/*.cs",
-        "tools/**/*.cs"
-      ]
+      "args": ["format", "style", "WasmSharp2.slnx", "--severity", "info", "--include", "${staged}"],
+      "include": ["src/**/*.cs", "tests/**/*.cs", "tools/**/*.cs"]
+    },
+    {
+      "name": "format-analyzers",
+      "group": "pre-commit",
+      "command": "dotnet",
+      "args": ["format", "analyzers", "WasmSharp2.slnx", "--severity", "info", "--include", "${staged}"],
+      "include": ["src/**/*.cs", "tests/**/*.cs", "tools/**/*.cs"]
+    },
+    {
+      "name": "csharpier",
+      "group": "pre-commit",
+      "command": "dotnet",
+      "args": ["csharpier", "format", "${staged}"],
+      "include": ["src/**/*.cs", "tests/**/*.cs", "tools/**/*.cs"]
+    },
+    {
+      "name": "verify-style",
+      "group": "pre-commit",
+      "command": "dotnet",
+      "args": ["format", "style", "WasmSharp2.slnx", "--severity", "info", "--verify-no-changes", "--include", "${staged}"],
+      "include": ["src/**/*.cs", "tests/**/*.cs", "tools/**/*.cs"]
+    },
+    {
+      "name": "verify-analyzers",
+      "group": "pre-commit",
+      "command": "dotnet",
+      "args": ["format", "analyzers", "WasmSharp2.slnx", "--severity", "info", "--verify-no-changes", "--include", "${staged}"],
+      "include": ["src/**/*.cs", "tests/**/*.cs", "tools/**/*.cs"]
     }
   ]
 }

@@ -140,11 +140,11 @@ internal static class AssertionJudge
             AssertUnlinkableCommand { ModuleType: ScriptModuleType.Binary } => stage == CaseStage.Instantiate
                 && exception
                     is WasmInstantiateException
-                {
-                    Reason: WasmInstantiateReason.MissingImport
+                    {
+                        Reason: WasmInstantiateReason.MissingImport
                             or WasmInstantiateReason.KindMismatch
                             or WasmInstantiateReason.TypeMismatch
-                },
+                    },
             AssertUninstantiableCommand { ModuleType: ScriptModuleType.Binary } => stage == CaseStage.Instantiate
                 && exception is WasmTrapException,
             AssertTrapCommand x => MatchesAction(x.Action, stage) && exception is WasmTrapException,

@@ -20,8 +20,7 @@ internal sealed partial class RunComparison
         var runs = baseline.Concat(current);
         policyPath = Path.GetFullPath(policyPath);
         var policyBytes = File.ReadAllBytes(policyPath);
-        var policy =
-            JsonSerializer.Deserialize<ComparisonPolicy>(policyBytes, _json.Options)
+        var policy = JsonSerializer.Deserialize<ComparisonPolicy>(policyBytes, _json.Options)
             ?? throw new InvalidDataException("policyのJSONがnullです。");
         var request = new ComparisonRequest(
             baselineDirectories,

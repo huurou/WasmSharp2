@@ -15,17 +15,13 @@ internal class ReportStore_WriteTests
         var existedDuringWrite = true;
 
         // Act
-        ReportStore.Write(
-            path,
-            replaceExisting: false,
-            x =>
-            {
-                x.Write("{}"u8);
-                x.Flush();
-                filesDuringWrite = Directory.GetFiles(directory.Root);
-                existedDuringWrite = File.Exists(path);
-            }
-        );
+        ReportStore.Write(path, replaceExisting: false, x =>
+        {
+            x.Write("{}"u8);
+            x.Flush();
+            filesDuringWrite = Directory.GetFiles(directory.Root);
+            existedDuringWrite = File.Exists(path);
+        });
 
         // Assert
         using (Assert.Multiple())
@@ -50,17 +46,11 @@ internal class ReportStore_WriteTests
 
         // Act & Assert
         await Assert
-            .That(() =>
-                ReportStore.Write(
-                    path,
-                    replaceExisting,
-                    x =>
-                    {
-                        x.Write("""{"schema_version": 1, "ki"""u8);
-                        throw new OperationCanceledException();
-                    }
-                )
-            )
+            .That(() => ReportStore.Write(path, replaceExisting, x =>
+                {
+                    x.Write("""{"schema_version": 1, "ki"""u8);
+                    throw new OperationCanceledException();
+                }))
             .ThrowsExactly<OperationCanceledException>();
         using (Assert.Multiple())
         {
@@ -78,17 +68,11 @@ internal class ReportStore_WriteTests
 
         // Act & Assert
         var exception = await Assert
-            .That(() =>
-                ReportStore.Write(
-                    path,
-                    replaceExisting: false,
-                    x =>
-                    {
-                        x.Write("{}"u8);
-                        File.WriteAllText(path, "競合した結果");
-                    }
-                )
-            )
+            .That(() => ReportStore.Write(path, replaceExisting: false, x =>
+                {
+                    x.Write("{}"u8);
+                    File.WriteAllText(path, "競合した結果");
+                }))
             .ThrowsExactly<ReportStoreException>();
         using (Assert.Multiple())
         {

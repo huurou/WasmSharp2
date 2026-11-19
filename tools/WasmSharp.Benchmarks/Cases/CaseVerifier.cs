@@ -127,16 +127,14 @@ internal static class CaseVerifier
         var module = new WasmHostModule("bench");
         module.Define(
             "half",
-            WasmFunction.CreateHost(
-                new([WasmValueKind.F64], [WasmValueKind.F64]),
-                (_, arguments) => new([WasmValue.FromF64(arguments[0].AsF64() * 0.5)])
+            WasmFunction.CreateHost(new([WasmValueKind.F64], [WasmValueKind.F64]), (_, arguments) =>
+                new([WasmValue.FromF64(arguments[0].AsF64() * 0.5)])
             )
         );
         module.Define(
             "add_one",
-            WasmFunction.CreateHost(
-                new([WasmValueKind.I32], [WasmValueKind.I32]),
-                (_, arguments) => new([WasmValue.FromI32(unchecked(arguments[0].AsI32() + 1))])
+            WasmFunction.CreateHost(new([WasmValueKind.I32], [WasmValueKind.I32]), (_, arguments) =>
+                new([WasmValue.FromI32(unchecked(arguments[0].AsI32() + 1))])
             )
         );
         var imports = new WasmImports();

@@ -123,28 +123,16 @@ internal partial class WasmModule_InstantiateTests
         var host = new WasmHostModule("env");
         host.Define("table", table);
         host.Define("memory", memory);
-        host.Define(
-            "observe",
-            WasmFunction.CreateHost(
-                new([], []),
-                (callbackContext, instance, _) =>
-                {
-                    retained = instance;
-                    return new([]);
-                }
-            )
-        );
-        host.Define(
-            "start",
-            WasmFunction.CreateHost(
-                new([], []),
-                (callbackContext, _) =>
-                {
-                    starts++;
-                    return new([]);
-                }
-            )
-        );
+        host.Define("observe", WasmFunction.CreateHost(new([], []), (callbackContext, instance, _) =>
+            {
+                retained = instance;
+                return new([]);
+            }));
+        host.Define("start", WasmFunction.CreateHost(new([], []), (callbackContext, _) =>
+            {
+                starts++;
+                return new([]);
+            }));
         byte[] declarative = [3, 0, 1, 2];
         byte[] first = [0, 0x41, 0, 0x0B, 1, 2];
         byte[] failing =
@@ -228,33 +216,21 @@ internal partial class WasmModule_InstantiateTests
         var host = new WasmHostModule("env");
         host.Define("table", table);
         host.Define("memory", memory);
-        host.Define(
-            "observe",
-            WasmFunction.CreateHost(
-                new([], []),
-                (callbackContext, instance, _) =>
-                {
-                    observed = instance;
-                    return new([]);
-                }
-            )
-        );
-        host.Define(
-            "start",
-            WasmFunction.CreateHost(
-                new([], []),
-                (callbackContext, instance, _) =>
-                {
-                    starts++;
-                    observed = instance;
-                    instance.GetMemory("memory").Read(0, atStart);
-                    elementsAtStart = [.. instance.ElementSegments.Select(x => x.Length)];
-                    dataAtStart = instance.DataSegments[0].Length;
-                    functionAtStart = instance.GetTable("table").Get(0).AsFuncRef();
-                    return new([]);
-                }
-            )
-        );
+        host.Define("observe", WasmFunction.CreateHost(new([], []), (callbackContext, instance, _) =>
+            {
+                observed = instance;
+                return new([]);
+            }));
+        host.Define("start", WasmFunction.CreateHost(new([], []), (callbackContext, instance, _) =>
+            {
+                starts++;
+                observed = instance;
+                instance.GetMemory("memory").Read(0, atStart);
+                elementsAtStart = [.. instance.ElementSegments.Select(x => x.Length)];
+                dataAtStart = instance.DataSegments[0].Length;
+                functionAtStart = instance.GetTable("table").Get(0).AsFuncRef();
+                return new([]);
+            }));
         var module = WasmModule
             .Decode(
                 HostLinkingModuleBinary.Create(
@@ -358,17 +334,11 @@ internal partial class WasmModule_InstantiateTests
         {
             host.Define("missing", new WasmGlobal(new(WasmValueKind.I64, false), WasmValue.FromI64(0)));
         }
-        host.Define(
-            "start",
-            WasmFunction.CreateHost(
-                new([], []),
-                (callbackContext, _) =>
-                {
-                    calls++;
-                    return new([]);
-                }
-            )
-        );
+        host.Define("start", WasmFunction.CreateHost(new([], []), (callbackContext, _) =>
+            {
+                calls++;
+                return new([]);
+            }));
         var module = WasmModule
             .Decode(
                 HostLinkingModuleBinary.Create(

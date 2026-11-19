@@ -210,11 +210,7 @@ internal sealed class ScriptExecutor(InputVerification input, WasmSpecVersion sp
             return null;
         }
         observation = observation with { Operation = "instantiate", LastStage = CaseStage.Instantiate };
-        return definition.Module.Instantiate(
-            _context,
-            state.CreateImports(),
-            new WasmExecutionOptions(MAX_CALL_DEPTH)
-        );
+        return definition.Module.Instantiate(_context, state.CreateImports(), new WasmExecutionOptions(MAX_CALL_DEPTH));
     }
 
     /// <summary>
@@ -335,7 +331,9 @@ internal sealed class ScriptExecutor(InputVerification input, WasmSpecVersion sp
     )
     {
         observation = observation with { Operation = "create_arguments" };
-        var arguments = action is InvokeAction invoke ? ValueCodec.CreateArguments(invoke.Arguments, state, specVersion) : [];
+        var arguments = action is InvokeAction invoke
+            ? ValueCodec.CreateArguments(invoke.Arguments, state, specVersion)
+            : [];
         observation = observation with { Operation = "parse_expected" };
         var patterns = ValueMatcher.Parse(expected, specVersion);
         var module = ResolveModule(action.Module, state, ref observation);

@@ -9,7 +9,10 @@ internal class CommandInvocation_FromProcessTests
     [Arguments("DOTNET.exe", true)]
     [Arguments("WasmSharp.Benchmarks", false)]
     [Arguments("WasmSharp.Benchmarks.exe", false)]
-    public async Task 起動方法がdotnetまたはapphost_同じコマンドを再現できる引数列を保持する(string program, bool includeAssembly)
+    public async Task 起動方法がdotnetまたはapphost_同じコマンドを再現できる引数列を保持する(
+        string program,
+        bool includeAssembly
+    )
     {
         // Arrange
         var executable = Path.Combine("bin", program);

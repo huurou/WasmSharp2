@@ -14,11 +14,7 @@ internal class WasmGlobalType_ConstructorTests
         var type = new WasmGlobalType(valueKind, isMutable);
 
         // Act
-        var changed = type with
-        {
-            ValueKind = WasmValueKind.I32,
-            IsMutable = !isMutable,
-        };
+        var changed = type with { ValueKind = WasmValueKind.I32, IsMutable = !isMutable };
 
         // Assert
         using (Assert.Multiple())

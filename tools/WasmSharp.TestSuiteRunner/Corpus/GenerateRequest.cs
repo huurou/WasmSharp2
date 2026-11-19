@@ -26,7 +26,13 @@ internal sealed record GenerateRequest
     /// <param name="wabtRoot">WABTソースのcheckoutの絶対path WABTを使わない場合は不要</param>
     /// <param name="converterPath">起動する変換器の絶対path</param>
     /// <param name="outputRoot">manifestと素材を保存する出力先の絶対path</param>
-    internal GenerateRequest(ConversionProfile profile, string specRoot, string? wabtRoot, string converterPath, string outputRoot)
+    internal GenerateRequest(
+        ConversionProfile profile,
+        string specRoot,
+        string? wabtRoot,
+        string converterPath,
+        string outputRoot
+    )
     {
         Profile = profile;
         SpecRoot = specRoot;

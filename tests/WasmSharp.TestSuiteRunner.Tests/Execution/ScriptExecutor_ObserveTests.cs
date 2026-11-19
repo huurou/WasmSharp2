@@ -17,8 +17,8 @@ internal class ScriptExecutor_ObserveTests
             new SourceInput("a.wast", new string('a', 64)),
             null,
             [],
-            ImmutableDictionary<int, ImmutableArray<byte>>.Empty
-                .Add(0, [.. ScriptExecutionFixture.Exports()])
+            ImmutableDictionary<int, ImmutableArray<byte>>
+                .Empty.Add(0, [.. ScriptExecutionFixture.Exports()])
                 .Add(4, [.. ScriptExecutionFixture.ImportFunctions("unavailable")]),
             ImmutableDictionary<int, CorpusDiagnostic>.Empty.Add(3, new CorpusDiagnostic("verify", "素材がありません。"))
         );
@@ -35,7 +35,15 @@ internal class ScriptExecutor_ObserveTests
             new ActionCommand(6, 7, get, [WasmValueKind.I32]),
             new AssertReturnCommand(7, 8, get, [new ExpectedValue(WasmValueKind.I32, "0", null, [])]),
         ];
-        string[] expectedOperations = ["read_command", "verify_module", "inspect_imports", "register", "record_values", "match_values"];
+        string[] expectedOperations =
+        [
+            "read_command",
+            "verify_module",
+            "inspect_imports",
+            "register",
+            "record_values",
+            "match_values",
+        ];
 
         // Act
         var observations = commands.Select(x => executor.Observe(x, state)).ToArray();

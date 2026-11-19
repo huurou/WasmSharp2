@@ -12,11 +12,15 @@ if (args is ["--version"])
 
 if (OperatingSystem.IsWindows() && args is ["--console-status"])
 {
-    Console.WriteLine(JsonSerializer.Serialize(new
-    {
-        has_window = WindowsConsole.GetConsoleWindow() != 0,
-        attached_process_count = WindowsConsole.GetConsoleProcessList(out _, 1),
-    }));
+    Console.WriteLine(
+        JsonSerializer.Serialize(
+            new
+            {
+                has_window = WindowsConsole.GetConsoleWindow() != 0,
+                attached_process_count = WindowsConsole.GetConsoleProcessList(out _, 1),
+            }
+        )
+    );
     return 0;
 }
 
@@ -48,21 +52,31 @@ static int ConvertCore3(string inputPath, string outputPath, string moduleDirect
     var script = Path.Combine(AppContext.BaseDirectory, "Data", "core3-script.json");
     if (source == "text companion")
     {
-        File.WriteAllText(outputPath, """
+        File.WriteAllText(
+            outputPath,
+            """
             {"source_filename":"gc/sample.wast","commands":[
             {"type":"module","line":1,"filename":"sample.0.wat","module_type":"text","binary_filename":"sample.0.wasm"}]}
-            """);
+            """
+        );
         File.WriteAllText(Path.Combine(moduleDirectory, "sample.0.wat"), "(module)");
-        File.Copy(Path.Combine(AppContext.BaseDirectory, "Data", "module.wasm"), Path.Combine(moduleDirectory, "sample.0.wasm"));
+        File.Copy(
+            Path.Combine(AppContext.BaseDirectory, "Data", "module.wasm"),
+            Path.Combine(moduleDirectory, "sample.0.wasm")
+        );
         return 0;
     }
     if (source is "numeric companion" or "duplicate companion")
     {
-        var binaryFilename = source == "numeric companion"
-            ? "\"binary_filename\":7"
-            : "\"binary_filename\":\"sample.2.wasm\",\"binary_filename\":\"duplicate.wasm\"";
-        File.WriteAllText(outputPath, File.ReadAllText(script).Replace(
-            "\"binary_filename\":\"sample.2.wasm\"", binaryFilename, StringComparison.Ordinal));
+        var binaryFilename =
+            source == "numeric companion"
+                ? "\"binary_filename\":7"
+                : "\"binary_filename\":\"sample.2.wasm\",\"binary_filename\":\"duplicate.wasm\"";
+        File.WriteAllText(
+            outputPath,
+            File.ReadAllText(script)
+                .Replace("\"binary_filename\":\"sample.2.wasm\"", binaryFilename, StringComparison.Ordinal)
+        );
     }
     else
     {
@@ -73,7 +87,10 @@ static int ConvertCore3(string inputPath, string outputPath, string moduleDirect
     File.WriteAllText(Path.Combine(moduleDirectory, "sample.2.wat"), "(module)");
     if (source is not ("missing companion" or "numeric companion" or "duplicate companion"))
     {
-        File.Copy(Path.Combine(AppContext.BaseDirectory, "Data", "module.wasm"), Path.Combine(moduleDirectory, "sample.2.wasm"));
+        File.Copy(
+            Path.Combine(AppContext.BaseDirectory, "Data", "module.wasm"),
+            Path.Combine(moduleDirectory, "sample.2.wasm")
+        );
     }
     File.WriteAllText(Path.Combine(moduleDirectory, "sample.3.wat"), "(module ?)");
     return 0;

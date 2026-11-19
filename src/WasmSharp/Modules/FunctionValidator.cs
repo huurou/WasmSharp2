@@ -156,8 +156,8 @@ internal static class FunctionValidator
                             }
                             break;
                     }
-                    var numericSignature =
-                        descriptor.NumericSignature ?? throw new InvalidOperationException("数値命令の型情報がありません。");
+                    var numericSignature = descriptor.NumericSignature
+                        ?? throw new InvalidOperationException("数値命令の型情報がありません。");
                     for (var index = numericSignature.InputTypes.Length - 1; index >= 0; index--)
                     {
                         Pop(numericSignature.InputTypes[index], instruction.ByteOffset);
@@ -544,8 +544,7 @@ internal static class FunctionValidator
         MemoryAccessSignature ValidateMemoryAccess(DecodedInstruction instruction, InstructionDescriptor descriptor)
         {
             RequireMemory(instruction.ByteOffset);
-            var memorySignature =
-                descriptor.MemoryAccessSignature
+            var memorySignature = descriptor.MemoryAccessSignature
                 ?? throw new InvalidOperationException("メモリ命令のアクセス情報がありません。");
             if (instruction.MemoryArgument.Alignment > (uint)BitOperations.Log2(memorySignature.ByteWidth))
             {

@@ -34,9 +34,8 @@ internal partial class WasmModule_InstantiateTests
         host.Define(
             "start",
             withInstance
-                ? WasmFunction.CreateHost(
-                    new([], []),
-                    (callbackContext, _, arguments) => Callback(callbackContext, arguments)
+                ? WasmFunction.CreateHost(new([], []), (callbackContext, _, arguments) =>
+                    Callback(callbackContext, arguments)
                 )
                 : WasmFunction.CreateHost(new([], []), Callback)
         );

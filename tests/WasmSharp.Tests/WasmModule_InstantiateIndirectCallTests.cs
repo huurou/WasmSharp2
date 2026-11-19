@@ -21,17 +21,11 @@ internal partial class WasmModule_InstantiateTests
         var host = new WasmHostModule("env");
         host.Define("t", table);
         host.Define("m", memory);
-        host.Define(
-            "start",
-            WasmFunction.CreateHost(
-                new([], []),
-                (callbackContext, _) =>
-                {
-                    starts++;
-                    return new([]);
-                }
-            )
-        );
+        host.Define("start", WasmFunction.CreateHost(new([], []), (callbackContext, _) =>
+            {
+                starts++;
+                return new([]);
+            }));
         var module = WasmModule
             .Decode(
                 HostLinkingModuleBinary.Create(

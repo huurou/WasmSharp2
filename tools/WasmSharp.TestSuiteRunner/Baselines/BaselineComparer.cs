@@ -304,13 +304,21 @@ internal static class BaselineComparer
         }
     }
 
-    private static void CompareWabtRevision(List<ConditionDifference> differences, SourceRevision? baseline, SourceRevision? current)
+    private static void CompareWabtRevision(
+        List<ConditionDifference> differences,
+        SourceRevision? baseline,
+        SourceRevision? current
+    )
     {
         AddDifference(differences, "wabt.url", baseline?.Url, current?.Url);
         AddDifference(differences, "wabt.commit", baseline?.Commit, current?.Commit);
     }
 
-    private static void CompareWabtOptions(List<ConditionDifference> differences, ConversionOptions? baseline, ConversionOptions? current)
+    private static void CompareWabtOptions(
+        List<ConditionDifference> differences,
+        ConversionOptions? baseline,
+        ConversionOptions? current
+    )
     {
         AddDifference(differences, "conversion.check", baseline?.Check, current?.Check);
         AddDifference(differences, "conversion.canonical_lebs", baseline?.CanonicalLebs, current?.CanonicalLebs);

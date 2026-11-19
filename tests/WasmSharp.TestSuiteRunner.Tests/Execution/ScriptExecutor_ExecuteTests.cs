@@ -143,10 +143,10 @@ public partial class ScriptExecutor_ExecuteTests
             null,
             [],
             [],
-            System.Collections.Immutable.ImmutableDictionary<
-                int,
-                TestSuiteRunner.Corpus.CorpusDiagnostic
-            >.Empty.Add(0, new("verify", "hash不一致", "a.0.wasm"))
+            System.Collections.Immutable.ImmutableDictionary<int, TestSuiteRunner.Corpus.CorpusDiagnostic>.Empty.Add(
+                0,
+                new("verify", "hash不一致", "a.0.wasm")
+            )
         );
         var script = new ScriptReadResult(
             "a.wast",

@@ -11,7 +11,8 @@ internal class CorpusVerifier_CreateScriptTests
     {
         // Arrange
         const string Path = "modules/a.json";
-        var content = """
+        var content =
+            """
             {"source_filename":"a.wast","commands":[{"type":"module","line":1,"filename":"a.wat","module_type":"text","binary_filename":"a.wasm"}]}
             """u8;
         var wabt = ScriptDocument.Parse(content, Path);

@@ -203,13 +203,11 @@ internal class CorpusVerifier_VerifyTests
         // Arrange
         using var fixture = CorpusFixture.Create();
         await File.WriteAllBytesAsync(Path.Combine(fixture.Root, "a.0.wasm"), CorpusFixture.FirstModule);
-        fixture.UpdateInput(
-            CorpusFixture.A,
-            x =>
-                x with
-                {
-                    Artifacts = [.. x.Artifacts.Select(y => y.Path == "modules/a.0.wasm" ? y with { Path = path } : y)],
-                }
+        fixture.UpdateInput(CorpusFixture.A, x =>
+            x with
+            {
+                Artifacts = [.. x.Artifacts.Select(y => y.Path == "modules/a.0.wasm" ? y with { Path = path } : y)],
+            }
         );
 
         // Act
@@ -238,22 +236,20 @@ internal class CorpusVerifier_VerifyTests
         using var fixture = CorpusFixture.Create();
         await File.WriteAllBytesAsync(Path.Combine(fixture.Root, "outside.wasm"), CorpusFixture.FirstModule);
         await File.WriteAllBytesAsync(fixture.GetPath("modules/b.0.wasm"), CorpusFixture.FirstModule);
-        fixture.UpdateInput(
-            CorpusFixture.B,
-            x =>
-                x with
-                {
-                    Artifacts =
-                    [
-                        .. x.Artifacts,
-                        new(
-                            "modules/b.0.wasm",
-                            ArtifactKind.Wasm,
-                            CorpusFixture.Sha256(CorpusFixture.FirstModule),
-                            CorpusFixture.B
-                        ),
-                    ],
-                }
+        fixture.UpdateInput(CorpusFixture.B, x =>
+            x with
+            {
+                Artifacts =
+                [
+                    .. x.Artifacts,
+                    new(
+                        "modules/b.0.wasm",
+                        ArtifactKind.Wasm,
+                        CorpusFixture.Sha256(CorpusFixture.FirstModule),
+                        CorpusFixture.B
+                    ),
+                ],
+            }
         );
         fixture.WriteArtifact(
             CorpusFixture.A,
@@ -288,18 +284,14 @@ internal class CorpusVerifier_VerifyTests
     {
         // Arrange
         using var fixture = CorpusFixture.Create();
-        fixture.UpdateInput(
-            CorpusFixture.A,
-            x =>
-                x with
-                {
-                    Artifacts =
-                    [
-                        .. x.Artifacts.Select(y =>
-                            y.Path == "modules/a.0.wasm" ? y with { InputPath = CorpusFixture.B } : y
-                        ),
-                    ],
-                }
+        fixture.UpdateInput(CorpusFixture.A, x =>
+            x with
+            {
+                Artifacts =
+                [
+                    .. x.Artifacts.Select(y => y.Path == "modules/a.0.wasm" ? y with { InputPath = CorpusFixture.B } : y),
+                ],
+            }
         );
 
         // Act
@@ -323,9 +315,11 @@ internal class CorpusVerifier_VerifyTests
         var shared = fixture
             .Manifest.Inputs.Single(x => x.Input.Path == CorpusFixture.A)
             .Artifacts.Single(x => x.Path == "modules/a.0.wasm");
-        fixture.UpdateInput(
-            CorpusFixture.B,
-            x => x with { Artifacts = [.. x.Artifacts, shared with { InputPath = CorpusFixture.B }] }
+        fixture.UpdateInput(CorpusFixture.B, x =>
+            x with
+            {
+                Artifacts = [.. x.Artifacts, shared with { InputPath = CorpusFixture.B }],
+            }
         );
 
         // Act
@@ -410,33 +404,26 @@ internal class CorpusVerifier_VerifyTests
     {
         // Arrange
         using var fixture = CorpusFixture.Create();
-        fixture.UpdateInput(
-            CorpusFixture.A,
-            x =>
-                x with
-                {
-                    Artifacts =
-                    [
-                        .. x.Artifacts.Select(y =>
-                            y.Script is { } script
-                                ? y with
+        fixture.UpdateInput(CorpusFixture.A, x => x with { Artifacts =
+                [
+                    .. x.Artifacts.Select(y =>
+                        y.Script is { } script
+                            ? y with
+                            {
+                                Script = field switch
                                 {
-                                    Script = field switch
-                                    {
-                                        "source_filename" => script with { SourceFilename = "other.wast" },
-                                        "enumeration_complete" => script with { EnumerationComplete = false },
-                                        "command_count" => script with { CommandCount = 3 },
-                                        "commands" => script with { Commands = [.. script.Commands.Take(3)] },
-                                        "references" => script with { References = [.. script.References.Skip(1)] },
-                                        "missing" => null,
-                                        _ => throw new ArgumentOutOfRangeException(nameof(field)),
-                                    },
-                                }
-                                : y
-                        ),
-                    ],
-                }
-        );
+                                    "source_filename" => script with { SourceFilename = "other.wast" },
+                                    "enumeration_complete" => script with { EnumerationComplete = false },
+                                    "command_count" => script with { CommandCount = 3 },
+                                    "commands" => script with { Commands = [.. script.Commands.Take(3)] },
+                                    "references" => script with { References = [.. script.References.Skip(1)] },
+                                    "missing" => null,
+                                    _ => throw new ArgumentOutOfRangeException(nameof(field)),
+                                },
+                            }
+                            : y
+                    ),
+                ] });
 
         // Act
         var result = Verify(fixture);
@@ -460,16 +447,14 @@ internal class CorpusVerifier_VerifyTests
         // Arrange
         using var fixture = CorpusFixture.Create();
         File.Move(fixture.GetPath("modules/a.json"), fixture.GetPath("modules/other.json"));
-        fixture.UpdateInput(
-            CorpusFixture.A,
-            x =>
-                x with
-                {
-                    Artifacts =
-                    [
-                        .. x.Artifacts.Select(y => y.Kind == ArtifactKind.Json ? y with { Path = "modules/other.json" } : y),
-                    ],
-                }
+        fixture.UpdateInput(CorpusFixture.A, x =>
+            x with
+            {
+                Artifacts =
+                [
+                    .. x.Artifacts.Select(y => y.Kind == ArtifactKind.Json ? y with { Path = "modules/other.json" } : y),
+                ],
+            }
         );
 
         // Act
@@ -523,16 +508,14 @@ internal class CorpusVerifier_VerifyTests
             "modules/a.json",
             Encoding.UTF8.GetBytes(CorpusFixture.A_JSON.Replace("\"a.0.wasm\"", "\"a.json\"", StringComparison.Ordinal))
         );
-        fixture.UpdateInput(
-            CorpusFixture.A,
-            x =>
-                x with
-                {
-                    Artifacts =
-                    [
-                        .. x.Artifacts.Select(y => y.Path == "modules/a.1.wat" ? y with { Kind = ArtifactKind.Wasm } : y),
-                    ],
-                }
+        fixture.UpdateInput(CorpusFixture.A, x =>
+            x with
+            {
+                Artifacts =
+                [
+                    .. x.Artifacts.Select(y => y.Path == "modules/a.1.wat" ? y with { Kind = ArtifactKind.Wasm } : y),
+                ],
+            }
         );
 
         // Act
@@ -559,17 +542,15 @@ internal class CorpusVerifier_VerifyTests
         // Arrange
         using var fixture = CorpusFixture.Create();
         await File.WriteAllBytesAsync(fixture.GetPath("modules/a.3.wat"), CorpusFixture.Text);
-        fixture.UpdateInput(
-            CorpusFixture.A,
-            x =>
-                x with
-                {
-                    Artifacts =
-                    [
-                        .. x.Artifacts,
-                        new("modules/a.3.wat", ArtifactKind.Wasm, CorpusFixture.Sha256(CorpusFixture.Text), CorpusFixture.A),
-                    ],
-                }
+        fixture.UpdateInput(CorpusFixture.A, x =>
+            x with
+            {
+                Artifacts =
+                [
+                    .. x.Artifacts,
+                    new("modules/a.3.wat", ArtifactKind.Wasm, CorpusFixture.Sha256(CorpusFixture.Text), CorpusFixture.A),
+                ],
+            }
         );
         fixture.WriteArtifact(
             CorpusFixture.A,
@@ -595,9 +576,11 @@ internal class CorpusVerifier_VerifyTests
     {
         // Arrange
         using var fixture = CorpusFixture.Create();
-        fixture.UpdateInput(
-            CorpusFixture.A,
-            x => x with { Artifacts = [.. x.Artifacts.Where(y => y.Kind != ArtifactKind.Json)] }
+        fixture.UpdateInput(CorpusFixture.A, x =>
+            x with
+            {
+                Artifacts = [.. x.Artifacts.Where(y => y.Kind != ArtifactKind.Json)],
+            }
         );
         File.Delete(fixture.GetPath("modules/a.json"));
         File.Delete(fixture.GetPath("modules/a.0.wasm"));
@@ -634,9 +617,12 @@ internal class CorpusVerifier_VerifyTests
     {
         // Arrange
         using var fixture = CorpusFixture.Create();
-        fixture.UpdateInput(
-            CorpusFixture.A,
-            x => x with { Status = status, ExitCode = status == ConversionStatus.RunnerError ? 1 : null }
+        fixture.UpdateInput(CorpusFixture.A, x =>
+            x with
+            {
+                Status = status,
+                ExitCode = status == ConversionStatus.RunnerError ? 1 : null,
+            }
         );
 
         // Act

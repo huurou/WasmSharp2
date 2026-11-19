@@ -17,7 +17,9 @@ internal partial class RunnerCli_RunTests
         var manifest = Complete(fixture.Manifest);
         _reportStore.Save(manifest, fixture.ManifestPath);
         var path = Path.Combine(fixture.Root, "run.json");
-        var cli = new RunnerCli(manifest.Profile.ToProfile(), () => throw new IOException("Core3プロファイルを読み取れません。"));
+        var cli = new RunnerCli(manifest.Profile.ToProfile(), () =>
+            throw new IOException("Core3プロファイルを読み取れません。")
+        );
         using var error = new StringWriter();
 
         // Act
@@ -38,7 +40,13 @@ internal partial class RunnerCli_RunTests
         var outputPath = directory.Combine("run.json");
 
         // Act
-        var (exitCode, error) = fixture.Run(["run", "--manifest", directory.Combine("generated/manifest.json"), "--output", outputPath]);
+        var (exitCode, error) = fixture.Run([
+            "run",
+            "--manifest",
+            directory.Combine("generated/manifest.json"),
+            "--output",
+            outputPath,
+        ]);
 
         // Assert
         using (Assert.Multiple())
@@ -62,7 +70,10 @@ internal partial class RunnerCli_RunTests
     [Test]
     [Arguments(false, 0)]
     [Arguments(true, 1)]
-    public async Task Core3のテキストに併記されたバイナリを照合する_欠落時だけ入力異常で終了する(bool missingCompanion, int expectedExit)
+    public async Task Core3のテキストに併記されたバイナリを照合する_欠落時だけ入力異常で終了する(
+        bool missingCompanion,
+        int expectedExit
+    )
     {
         // Arrange
         using var directory = new TemporaryDirectory();
@@ -77,7 +88,13 @@ internal partial class RunnerCli_RunTests
         var outputPath = directory.Combine("run.json");
 
         // Act
-        var (exitCode, error) = fixture.Run(["run", "--manifest", directory.Combine("generated/manifest.json"), "--output", outputPath]);
+        var (exitCode, error) = fixture.Run([
+            "run",
+            "--manifest",
+            directory.Combine("generated/manifest.json"),
+            "--output",
+            outputPath,
+        ]);
 
         // Assert
         var report = _reportStore.ReadRunReport(outputPath).Report;
@@ -93,7 +110,10 @@ internal partial class RunnerCli_RunTests
     [Test]
     [Arguments("Core3", 1)]
     [Arguments(null, 0)]
-    public async Task Core2の固定条件で全ケースが成立した結果を最終判定する_明示したCore3は不合格で仕様版の省略は合格になる(string? version, int expectedExit)
+    public async Task Core2の固定条件で全ケースが成立した結果を最終判定する_明示したCore3は不合格で仕様版の省略は合格になる(
+        string? version,
+        int expectedExit
+    )
     {
         // Arrange
         using var directory = new TemporaryDirectory();
@@ -187,7 +207,10 @@ internal partial class RunnerCli_RunTests
         var baselinePath = directory.Combine("baseline.json");
         var currentPath = directory.Combine("current.json");
         var outputPath = directory.Combine("comparison.json");
-        _reportStore.Save(RunReportFixture.Create(RunReportFixture.Case("a.wast", 0, CaseCategory.Setup, CaseOutcome.Passed)), baselinePath);
+        _reportStore.Save(
+            RunReportFixture.Create(RunReportFixture.Case("a.wast", 0, CaseCategory.Setup, CaseOutcome.Passed)),
+            baselinePath
+        );
         _reportStore.Save(
             RunReportFixture.Create(RunReportFixture.Case("a.wast", 0, CaseCategory.Setup, CaseOutcome.Failed)) with
             {
@@ -197,7 +220,16 @@ internal partial class RunnerCli_RunTests
         );
 
         // Act
-        var result = Run(_profileLoader.Load(), "compare-run", "--baseline", baselinePath, "--current", currentPath, "--output", outputPath);
+        var result = Run(
+            _profileLoader.Load(),
+            "compare-run",
+            "--baseline",
+            baselinePath,
+            "--current",
+            currentPath,
+            "--output",
+            outputPath
+        );
 
         // Assert
         using var json = JsonDocument.Parse(await File.ReadAllBytesAsync(outputPath));
@@ -229,7 +261,16 @@ internal partial class RunnerCli_RunTests
         await File.WriteAllTextAsync(baselinePath, legacy.ToJsonString());
 
         // Act
-        var result = Run(_profileLoader.Load(), "compare-run", "--baseline", baselinePath, "--current", currentPath, "--output", outputPath);
+        var result = Run(
+            _profileLoader.Load(),
+            "compare-run",
+            "--baseline",
+            baselinePath,
+            "--current",
+            currentPath,
+            "--output",
+            outputPath
+        );
 
         // Assert
         using (Assert.Multiple())

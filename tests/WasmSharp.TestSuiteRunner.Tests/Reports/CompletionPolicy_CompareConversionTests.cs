@@ -55,10 +55,7 @@ internal class CompletionPolicy_CompareConversionTests
     public async Task 比較が完了していないか比較結果を保存できなかった_未完了の2を返す(bool complete, bool saved)
     {
         // Arrange
-        var report = CreateReport(new(1, 0, 0, 0, 0, 0, 0, 0, 0, 0)) with
-        {
-            Complete = complete,
-        };
+        var report = CreateReport(new(1, 0, 0, 0, 0, 0, 0, 0, 0, 0)) with { Complete = complete };
 
         // Act
         var decision = CompletionPolicy.CompareConversion(report, saved);

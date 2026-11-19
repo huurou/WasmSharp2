@@ -15,17 +15,11 @@ internal partial class WasmModule_ValidateTests
         var global = new WasmGlobal(new(WasmValueKind.I32, true), WasmValue.FromI32(7));
         var host = new WasmHostModule("env");
         host.Define("g", global);
-        host.Define(
-            "callback",
-            WasmFunction.CreateHost(
-                new([], []),
-                (callbackContext, _) =>
-                {
-                    calls++;
-                    return new([]);
-                }
-            )
-        );
+        host.Define("callback", WasmFunction.CreateHost(new([], []), (callbackContext, _) =>
+            {
+                calls++;
+                return new([]);
+            }));
         var bytes = HostLinkingModuleBinary.Create(
             HostLinkingModuleBinary.Types(([], [])),
             HostLinkingModuleBinary.Imports(("env", "callback", 0, [0]), ("env", "g", 3, [0x7F, 1])),

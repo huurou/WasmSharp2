@@ -20,8 +20,7 @@ internal sealed class BenchmarkProcess
 
     private BenchmarkProcess(string measurementMethod)
     {
-        var path =
-            Environment.GetEnvironmentVariable(RunConfiguration.ENVIRONMENT_VARIABLE)
+        var path = Environment.GetEnvironmentVariable(RunConfiguration.ENVIRONMENT_VARIABLE)
             ?? throw new InvalidOperationException("run設定の環境変数がありません。");
         var configuration = JsonSerializer.Deserialize<RunConfiguration>(File.ReadAllBytes(path), _json.Options)!;
         var caseId = _methods.GetCaseId(measurementMethod);
@@ -53,32 +52,28 @@ internal sealed class BenchmarkProcess
 
     internal void Setup(Action<LoadedAssets, string, CaseJson> initialize)
     {
-        RunChecked(
-            RunStage.Precheck,
-            () =>
+        RunChecked(RunStage.Precheck, () =>
+        {
+            CaptureAffinity(after: false);
+            _check = _check with
             {
-                CaptureAffinity(after: false);
-                _check = _check with
-                {
-                    LoadedAssemblies =
-                    [
-                        .. new[]
-                        {
-                            (AssemblyRole.Runtime, typeof(WasmModule).Assembly.Location),
-                            (AssemblyRole.Harness, typeof(InvokeBenchmarks).Assembly.Location),
-                        }.Select(x => new AssemblyIdentity(
-                            x.Item1,
-                            x.Location,
-                            Convert.ToHexStringLower(SHA256.HashData(File.ReadAllBytes(x.Location)))
-                        )),
-                    ],
-                };
-            }
-        );
+                LoadedAssemblies =
+                [
+                    .. new[]
+                    {
+                        (AssemblyRole.Runtime, typeof(WasmModule).Assembly.Location),
+                        (AssemblyRole.Harness, typeof(InvokeBenchmarks).Assembly.Location),
+                    }.Select(x => new AssemblyIdentity(
+                        x.Item1,
+                        x.Location,
+                        Convert.ToHexStringLower(SHA256.HashData(File.ReadAllBytes(x.Location)))
+                    )),
+                ],
+            };
+        });
         Save();
-        RunChecked(
-            RunStage.Precheck,
-            () => initialize(AssetManifest.Load(_configuration.AssetManifestPath, _json, _methods), _check.CaseId, _json)
+        RunChecked(RunStage.Precheck, () =>
+            initialize(AssetManifest.Load(_configuration.AssetManifestPath, _json, _methods), _check.CaseId, _json)
         );
         _check = _check with { Precheck = Success(), LastConfirmedStage = RunStage.Precheck };
         Save();
@@ -87,14 +82,11 @@ internal sealed class BenchmarkProcess
 
     internal void Cleanup(Action verify)
     {
-        RunChecked(
-            RunStage.Postcheck,
-            () =>
-            {
-                CaptureAffinity(after: true);
-                verify();
-            }
-        );
+        RunChecked(RunStage.Postcheck, () =>
+        {
+            CaptureAffinity(after: true);
+            verify();
+        });
         _check = _check with { Postcheck = Success(), LastConfirmedStage = RunStage.Postcheck };
         Save();
     }

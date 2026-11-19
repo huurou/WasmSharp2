@@ -147,11 +147,7 @@ internal sealed class BenchmarkCli
                 throw new IOException("比較入力run内へ出力できません。");
             }
         }
-        var (report, hasIncompleteRun) = new RunComparison(_json).Compare(
-            baseline,
-            current,
-            options["--policy"]
-        );
+        var (report, hasIncompleteRun) = new RunComparison(_json).Compare(baseline, current, options["--policy"]);
         Directory.CreateDirectory(directory);
         using (var stream = new FileStream(Path.Combine(directory, "comparison.json"), FileMode.CreateNew))
         {

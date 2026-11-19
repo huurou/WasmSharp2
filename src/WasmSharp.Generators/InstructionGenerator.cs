@@ -85,46 +85,41 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
             (context, _) =>
                 context.Attributes.Select(x => ParseDeclaration(x, context.SemanticModel.Compilation)).ToImmutableArray()
         );
-        context.RegisterSourceOutput(
-            declarations.Collect(),
-            (context, declarations) =>
+        context.RegisterSourceOutput(declarations.Collect(), (context, declarations) =>
+        {
+            var parsedDeclarations = declarations.SelectMany(x => x).ToImmutableArray();
+            if (parsedDeclarations.IsEmpty)
             {
-                var parsedDeclarations = declarations.SelectMany(x => x).ToImmutableArray();
-                if (parsedDeclarations.IsEmpty)
+                return;
+            }
+            var keys = new HashSet<(byte, uint)>();
+            var hasErrors = false;
+            foreach (var parsedDeclaration in parsedDeclarations)
+            {
+                if (parsedDeclaration.Diagnostic != null)
                 {
-                    return;
+                    context.ReportDiagnostic(parsedDeclaration.Diagnostic);
+                    hasErrors = true;
+                    continue;
                 }
-                var keys = new HashSet<(byte, uint)>();
-                var hasErrors = false;
-                foreach (var parsedDeclaration in parsedDeclarations)
+                var instruction = parsedDeclaration.Declaration!;
+                if (!keys.Add((instruction.Prefix, instruction.Code)))
                 {
-                    if (parsedDeclaration.Diagnostic != null)
-                    {
-                        context.ReportDiagnostic(parsedDeclaration.Diagnostic);
-                        hasErrors = true;
-                        continue;
-                    }
-                    var instruction = parsedDeclaration.Declaration!;
-                    if (!keys.Add((instruction.Prefix, instruction.Code)))
-                    {
-                        context.ReportDiagnostic(
-                            Diagnostic.Create(_duplicateOpcode, instruction.Location, instruction.Name)
-                        );
-                        hasErrors = true;
-                    }
-                }
-                if (hasErrors)
-                {
-                    return;
-                }
-                var instructions = parsedDeclarations.Select(x => x.Declaration!).ToImmutableArray();
-                context.AddSource("InstructionSet.g.cs", GenerateInstructionSet(instructions));
-                if (instructions.Any(x => x.Handler != null))
-                {
-                    context.AddSource("Interpreter.g.cs", GenerateInterpreter(instructions));
+                    context.ReportDiagnostic(Diagnostic.Create(_duplicateOpcode, instruction.Location, instruction.Name));
+                    hasErrors = true;
                 }
             }
-        );
+            if (hasErrors)
+            {
+                return;
+            }
+            var instructions = parsedDeclarations.Select(x => x.Declaration!).ToImmutableArray();
+            context.AddSource("InstructionSet.g.cs", GenerateInstructionSet(instructions));
+            if (instructions.Any(x => x.Handler != null))
+            {
+                context.AddSource("Interpreter.g.cs", GenerateInterpreter(instructions));
+            }
+        });
     }
 
     /// <summary>
@@ -260,10 +255,10 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
     private static string GetEnumName(TypedConstant value)
     {
         return value
-                .Type!.GetMembers()
-                .OfType<IFieldSymbol>()
-                .SingleOrDefault(x => x.HasConstantValue && Equals(x.ConstantValue, value.Value))
-                ?.Name
+            .Type!.GetMembers()
+            .OfType<IFieldSymbol>()
+            .SingleOrDefault(x => x.HasConstantValue && Equals(x.ConstantValue, value.Value))
+            ?.Name
             ?? "Unsupported";
     }
 

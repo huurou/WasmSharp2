@@ -67,10 +67,7 @@ internal class CompletionPolicy_BaselineSaveTests
     public async Task 未処理の入力と出力未完了が残るmanifest_保存を拒否する未完了の2を返す()
     {
         // Arrange
-        var manifest = CorpusManifestFixture.Create() with
-        {
-            Completion = new(false, false),
-        };
+        var manifest = CorpusManifestFixture.Create() with { Completion = new(false, false) };
 
         // Act
         var decision = CompletionPolicy.BaselineSave(ReportStore.Validate(manifest), saved: true);

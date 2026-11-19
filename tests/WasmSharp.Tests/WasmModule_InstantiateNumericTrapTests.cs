@@ -29,35 +29,23 @@ internal partial class WasmModule_InstantiateTests
         WasmInstance? returned = null;
         var host = new WasmHostModule("env");
         host.Define("shared", shared);
-        host.Define(
-            "save",
-            WasmFunction.CreateHost(
-                new([], []),
-                (callbackContext, instance, _) =>
-                {
-                    saveCalls++;
-                    savedInstance = instance;
-                    savedFunction = instance.GetFunction("read");
-                    savedMemory = instance.GetMemory("memory");
-                    savedTable = instance.GetTable("table");
-                    savedGlobal = instance.GetGlobalResource("value");
-                    savedMemory.Write(0, [9]);
-                    savedTable.Set(0, WasmValue.FromExternRef(element));
-                    return new([]);
-                }
-            )
-        );
-        host.Define(
-            "after",
-            WasmFunction.CreateHost(
-                new([], []),
-                (callbackContext, _) =>
-                {
-                    afterCalled = true;
-                    return new([]);
-                }
-            )
-        );
+        host.Define("save", WasmFunction.CreateHost(new([], []), (callbackContext, instance, _) =>
+            {
+                saveCalls++;
+                savedInstance = instance;
+                savedFunction = instance.GetFunction("read");
+                savedMemory = instance.GetMemory("memory");
+                savedTable = instance.GetTable("table");
+                savedGlobal = instance.GetGlobalResource("value");
+                savedMemory.Write(0, [9]);
+                savedTable.Set(0, WasmValue.FromExternRef(element));
+                return new([]);
+            }));
+        host.Define("after", WasmFunction.CreateHost(new([], []), (callbackContext, _) =>
+            {
+                afterCalled = true;
+                return new([]);
+            }));
         byte[] afterTrap = [0x1A, 0x41, 0x2A, 0x24, 0, 0x41, 0, 0x24, 1, 0x10, 1, 0x0B, 0x0B];
         // 初期化済みglobalが42なら、数値計算で共有globalと定義globalを更新して参照を保存する。
         byte[] beforeTrap =

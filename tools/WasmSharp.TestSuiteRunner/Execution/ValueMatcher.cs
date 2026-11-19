@@ -42,7 +42,10 @@ internal static class ValueMatcher
     /// <param name="specVersion">値の表記を決める仕様版</param>
     /// <returns>元の順序を保持する新しい比較用配列 数値のビット列、NaN条件、externref番号を保持する</returns>
     /// <exception cref="ScriptFormatException">値の文字列が固定形式にない場合</exception>
-    internal static ImmutableArray<ValuePattern> Parse(ImmutableArray<ExpectedValue> expected, WasmSpecVersion specVersion = WasmSpecVersion.Core2)
+    internal static ImmutableArray<ValuePattern> Parse(
+        ImmutableArray<ExpectedValue> expected,
+        WasmSpecVersion specVersion = WasmSpecVersion.Core2
+    )
     {
         return [.. expected.Select((x, i) => Parse(x, $"expected[{i}].value", specVersion == WasmSpecVersion.Core3))];
     }
@@ -146,7 +149,12 @@ internal static class ValueMatcher
     /// <param name="signedIntegers">整数で負の10進表記を許容するかどうか</param>
     /// <returns>laneの幅と順序を持つv128の比較条件</returns>
     /// <exception cref="ScriptFormatException">lane数が型と合わないか、lane値が許容するNaN patternでも仕様版と型が許容する10進表記でもない場合</exception>
-    private static ValuePattern ParseVector(LaneType laneType, ImmutableArray<string> lanes, string path, bool signedIntegers)
+    private static ValuePattern ParseVector(
+        LaneType laneType,
+        ImmutableArray<string> lanes,
+        string path,
+        bool signedIntegers
+    )
     {
         var width = ValueCodec.GetLaneWidth(laneType, lanes.Length, path);
         var floating = laneType is LaneType.F32 or LaneType.F64;

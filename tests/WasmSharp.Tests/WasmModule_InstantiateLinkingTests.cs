@@ -24,17 +24,11 @@ internal partial class WasmModule_InstantiateTests
             .Validate();
         var host = new WasmHostModule("env");
         var calls = 0;
-        host.Define(
-            "f",
-            WasmFunction.CreateHost(
-                new([], []),
-                (callbackContext, _) =>
-                {
-                    calls++;
-                    return new([]);
-                }
-            )
-        );
+        host.Define("f", WasmFunction.CreateHost(new([], []), (callbackContext, _) =>
+            {
+                calls++;
+                return new([]);
+            }));
         if (provideGlobal)
         {
             host.Define("g", new WasmGlobal(new(WasmValueKind.I32, false), WasmValue.FromI32(0)));
@@ -86,17 +80,11 @@ internal partial class WasmModule_InstantiateTests
             )
             .Validate();
         var host = new WasmHostModule("env");
-        host.Define(
-            "start",
-            WasmFunction.CreateHost(
-                new([], []),
-                (callbackContext, _) =>
-                {
-                    calls++;
-                    return new([]);
-                }
-            )
-        );
+        host.Define("start", WasmFunction.CreateHost(new([], []), (callbackContext, _) =>
+            {
+                calls++;
+                return new([]);
+            }));
 
         // Act
         var first = module.Instantiate(executionContext, [host], new(1));
@@ -338,14 +326,11 @@ internal partial class WasmModule_InstantiateTests
             )
             .Validate();
         var calls = 0;
-        var function = WasmFunction.CreateHost(
-            new([], []),
-            (callbackContext, _) =>
-            {
-                calls++;
-                return new([]);
-            }
-        );
+        var function = WasmFunction.CreateHost(new([], []), (callbackContext, _) =>
+        {
+            calls++;
+            return new([]);
+        });
         var host = new WasmHostModule("env");
         host.Define("f", function);
         var imports = new WasmImports();

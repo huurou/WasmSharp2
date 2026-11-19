@@ -161,7 +161,11 @@ internal partial class ModuleValidator_ValidateTests
         );
     }
 
-    private static async Task AssertSimdMemoryValidationFailure(WasmModule module, string diagnostic, string? expectedDetail = null)
+    private static async Task AssertSimdMemoryValidationFailure(
+        WasmModule module,
+        string diagnostic,
+        string? expectedDetail = null
+    )
     {
         var executionContext = new WasmExecutionContext();
         var instruction = module.Functions[0].Instructions.Last(x => x.Opcode.Prefix == 0xFD);

@@ -123,7 +123,13 @@ public partial class SuiteExecutor_ExecuteAndSaveTests
         var output = Path.Combine(fixture.OutputRoot, "run.json");
 
         // Act
-        var result = SuiteExecutor.ExecuteAndSave(manifest, fixture.ManifestPath, WasmSpecVersion.Core2, output, _reportStore);
+        var result = SuiteExecutor.ExecuteAndSave(
+            manifest,
+            fixture.ManifestPath,
+            WasmSpecVersion.Core2,
+            output,
+            _reportStore
+        );
 
         // Assert
         var stored = _reportStore.ReadRunReport(output);

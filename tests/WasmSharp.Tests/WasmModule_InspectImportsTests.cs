@@ -374,17 +374,11 @@ internal class WasmModule_InspectImportsTests
         var calls = 0;
         var host = new WasmHostModule("env");
         host.Define("memory", memory);
-        host.Define(
-            "observe",
-            WasmFunction.CreateHost(
-                new([], []),
-                (callbackContext, _) =>
-                {
-                    calls++;
-                    return new([]);
-                }
-            )
-        );
+        host.Define("observe", WasmFunction.CreateHost(new([], []), (callbackContext, _) =>
+            {
+                calls++;
+                return new([]);
+            }));
 
         foreach (var useStream in new[] { false, true })
         {
