@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using TUnit.Assertions.Enums;
 using WasmSharp.TestSuiteRunner.Reports;
 using WasmSharp.TestSuiteRunner.Tests.Fixtures;
 
@@ -7,6 +8,26 @@ namespace WasmSharp.TestSuiteRunner.Tests;
 
 internal partial class RunnerCli_RunTests
 {
+    [Test]
+    public async Task Core3の固定条件を読み取れない_Core2の素材はCore2として実行できる()
+    {
+        // Arrange
+        using var fixture = CorpusFixture.Create();
+        PrepareScript(fixture, "passed");
+        var manifest = Complete(fixture.Manifest);
+        _reportStore.Save(manifest, fixture.ManifestPath);
+        var path = Path.Combine(fixture.Root, "run.json");
+        var cli = new RunnerCli(manifest.Profile.ToProfile(), () => throw new IOException("Core3プロファイルを読み取れません。"));
+        using var error = new StringWriter();
+
+        // Act
+        var exitCode = cli.Run(["run", "--manifest", fixture.ManifestPath, "--output", path], TextWriter.Null, error);
+
+        // Assert
+        await Assert.That(exitCode).IsEqualTo(0).Because(error.ToString());
+        await Assert.That(_reportStore.ReadRunReport(path).Report.SpecVersion).IsEqualTo(WasmSpecVersion.Core2);
+    }
+
     [Test]
     public async Task Core3の素材を実行する_使用した仕様版と元入力のcommand順序で結果を保存する()
     {
@@ -29,12 +50,44 @@ internal partial class RunnerCli_RunTests
             await Assert
                 .That(cases.Select(x => x.GetProperty("id").GetProperty("input_path").GetString()!).Distinct())
                 .IsEquivalentTo(["gc/sample.wast"]);
-            await Assert.That(cases.Select(x => x.GetProperty("id").GetProperty("command_index").GetInt32())).IsEquivalentTo([0, 1, 2, 3, 4, 5, 6]);
+            await Assert
+                .That(cases.Select(x => x.GetProperty("id").GetProperty("command_index").GetInt32()))
+                .IsEquivalentTo([0, 1, 2, 3, 4, 5, 6], CollectionOrdering.Matching);
         }
     }
 
     [Test]
-    public async Task Core3の固定条件と異なるmanifest_Core2へ読み替えず実行を拒否する()
+    [Arguments("Core3", 1)]
+    [Arguments(null, 0)]
+    public async Task Core2の固定条件で全ケースが成立した結果を最終判定する_明示したCore3は不合格で仕様版の省略は合格になる(string? version, int expectedExit)
+    {
+        // Arrange
+        using var directory = new TemporaryDirectory();
+        var path = directory.Combine("run.json");
+        var report = RunReportFixture.Create(RunReportFixture.Case("a.wast", 0, CaseCategory.Setup, CaseOutcome.Passed));
+        _reportStore.Save(report, path);
+        var json = JsonNode.Parse(await File.ReadAllBytesAsync(path))!.AsObject();
+        if (version is null)
+        {
+            json.Remove("spec_version");
+        }
+        else
+        {
+            json["spec_version"] = version;
+        }
+        await File.WriteAllTextAsync(path, json.ToJsonString());
+
+        // Act
+        var result = Run(report.Corpus.Profile.ToProfile(), "verify", "--input", path);
+
+        // Assert
+        await Assert.That(result.ExitCode).IsEqualTo(expectedExit).Because(result.Output);
+    }
+
+    [Test]
+    [Arguments(false)]
+    [Arguments(true)]
+    public async Task Core3の固定条件と異なるmanifest_Core2へ読み替えず実行を拒否する(bool replaceInputHash)
     {
         // Arrange
         using var directory = new TemporaryDirectory();
@@ -42,8 +95,15 @@ internal partial class RunnerCli_RunTests
         fixture.Generate("generated");
         var manifestPath = directory.Combine("generated/manifest.json");
         var manifest = JsonNode.Parse(await File.ReadAllBytesAsync(manifestPath))!;
-        var feature = manifest["profile"]!["features"]![0]!;
-        feature["enabled"] = !feature["enabled"]!.GetValue<bool>();
+        if (replaceInputHash)
+        {
+            manifest["inputs"]![0]!["input"]!["sha256"] = new string('a', 64);
+        }
+        else
+        {
+            var feature = manifest["profile"]!["features"]![0]!;
+            feature["enabled"] = !feature["enabled"]!.GetValue<bool>();
+        }
         await File.WriteAllTextAsync(manifestPath, manifest.ToJsonString());
         var outputPath = directory.Combine("run.json");
 

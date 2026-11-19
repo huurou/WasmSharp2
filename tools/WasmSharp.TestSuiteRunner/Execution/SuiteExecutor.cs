@@ -198,7 +198,7 @@ internal static class SuiteExecutor
             cancellationToken.ThrowIfCancellationRequested();
             if (input.Document is { } document)
             {
-                var script = ScriptReader.Read(document, input.Input.Path);
+                var script = ScriptReader.Read(document, input.Input.Path, specVersion);
                 var executor = new ScriptExecutor(input, specVersion);
                 foreach (var command in script.Commands)
                 {

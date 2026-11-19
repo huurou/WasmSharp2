@@ -3,7 +3,7 @@ using WasmSharp.Tests.Fixtures;
 
 namespace WasmSharp.Tests;
 
-internal class WasmModule_DecodeSpecVersionTests
+internal partial class WasmModule_DecodeTests
 {
     [Test]
     public async Task Core3を選択してデコード_検証後のmoduleが同じ仕様版を保持する()
@@ -109,6 +109,10 @@ internal class WasmModule_DecodeSpecVersionTests
     }
 
     [Test]
+    [Arguments(new byte[] { 0x0D, 0x01, 0x00, 0x0E, 0x00 }, "malformed section id")]
+    [Arguments(new byte[] { 0x0D, 0x01, 0x00, 0x05, 0x01, 0x00 }, "unexpected content after last section")]
+    [Arguments(new byte[] { 0x0D, 0x01, 0x00, 0x0D, 0x01, 0x00 }, "unexpected content after last section")]
+    [Arguments(new byte[] { 0x0D, 0x01, 0x00, 0x06, 0x02, 0x00 }, "unexpected end")]
     [Arguments(new byte[] { 0x0D, 0x04, 0x01, 0x00, 0x00 }, "unexpected end")]
     [Arguments(new byte[] { 0x06, 0x06, 0x01, 0x7F, 0x00, 0x41, 0x00, 0x0B, 0x0D, 0x03, 0x01, 0x00, 0x00 }, "unexpected content after last section")]
     [Arguments(new byte[] { 0x0E, 0x00 }, "malformed section id")]

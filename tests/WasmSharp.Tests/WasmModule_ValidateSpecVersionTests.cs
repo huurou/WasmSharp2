@@ -3,7 +3,7 @@ using WasmSharp.Tests.Fixtures;
 
 namespace WasmSharp.Tests;
 
-internal class WasmModule_ValidateSpecVersionTests
+internal partial class WasmModule_ValidateTests
 {
     [Test]
     public async Task 公式の複数メモリをCore2で検証_従来どおり検証段階で拒否する()
@@ -44,8 +44,10 @@ internal class WasmModule_ValidateSpecVersionTests
             await Assert
                 .That(exception.UnverifiedRanges.Select(x => (x.Stage, x.StartOffset, x.EndOffset)))
                 .IsEquivalentTo([(WasmProcessingStage.Validate, 0L, (long)bytes.Length)]);
-            await Assert.That(() => module.Instantiate(new WasmExecutionContext(), [])).Throws<InvalidOperationException>();
         }
+
+        // Act & Assert
+        await Assert.That(() => module.Instantiate(new WasmExecutionContext(), [])).Throws<InvalidOperationException>();
     }
 
     [Test]

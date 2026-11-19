@@ -103,6 +103,22 @@ internal sealed class CorpusFixture : IDisposable
         );
     }
 
+    internal void ReplaceScriptA(string commands, params byte[][] modules)
+    {
+        var input = Manifest.Inputs.Single(x => x.Input.Path == A);
+        foreach (var artifact in input.Artifacts)
+        {
+            File.Delete(GetPath(artifact.Path));
+        }
+        UpdateInput(A, x => x with { Artifacts = [] });
+        var json = "{\"source_filename\":\"a.wast\",\"commands\":[" + commands + "]}";
+        WriteArtifact(A, "modules/a.json", Encoding.UTF8.GetBytes(json));
+        for (var i = 0; i < modules.Length; i++)
+        {
+            WriteArtifact(A, $"modules/a.{i}.wasm", modules[i]);
+        }
+    }
+
     internal void UpdateInput(string inputPath, Func<InputConversionResult, InputConversionResult> update)
     {
         var index = Manifest.Inputs.FindIndex(x => x.Input.Path == inputPath);

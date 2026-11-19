@@ -39,11 +39,12 @@ internal static class ValueMatcher
     /// actionを実行する前に呼び、不正な期待値のcommandで副作用を起こさないようにする。
     /// </remarks>
     /// <param name="expected">JSONの記載順の値付き期待値</param>
+    /// <param name="specVersion">値の表記を決める仕様版</param>
     /// <returns>元の順序を保持する新しい比較用配列 数値のビット列、NaN条件、externref番号を保持する</returns>
     /// <exception cref="ScriptFormatException">値の文字列が固定形式にない場合</exception>
-    internal static ImmutableArray<ValuePattern> Parse(ImmutableArray<ExpectedValue> expected)
+    internal static ImmutableArray<ValuePattern> Parse(ImmutableArray<ExpectedValue> expected, WasmSpecVersion specVersion = WasmSpecVersion.Core2)
     {
-        return [.. expected.Select((x, i) => Parse(x, $"expected[{i}].value"))];
+        return [.. expected.Select((x, i) => Parse(x, $"expected[{i}].value", specVersion == WasmSpecVersion.Core3))];
     }
 
     /// <summary>
@@ -96,17 +97,18 @@ internal static class ValueMatcher
     /// </summary>
     /// <param name="value">値の文字列を加工せず保持した期待値</param>
     /// <param name="path">値の異常を報告するJSON上の位置</param>
+    /// <param name="signedIntegers">整数で負の10進表記を許容するかどうか</param>
     /// <returns>具体的なビット列またはNaN条件、型付きnull、externref番号の比較条件</returns>
     /// <exception cref="ScriptFormatException">値やlane数が不正、または非nullのfuncrefなど固定形式外の期待値の場合</exception>
-    private static ValuePattern Parse(ExpectedValue value, string path)
+    private static ValuePattern Parse(ExpectedValue value, string path, bool signedIntegers)
     {
         return value switch
         {
-            { Kind: WasmValueKind.I32 } => ParseNumber(value, 32, false, path),
-            { Kind: WasmValueKind.I64 } => ParseNumber(value, 64, false, path),
-            { Kind: WasmValueKind.F32 } => ParseNumber(value, 32, true, path),
-            { Kind: WasmValueKind.F64 } => ParseNumber(value, 64, true, path),
-            { Kind: WasmValueKind.V128, LaneType: { } laneType } => ParseVector(laneType, value.Lanes, path),
+            { Kind: WasmValueKind.I32 } => ParseNumber(value, 32, false, path, signedIntegers),
+            { Kind: WasmValueKind.I64 } => ParseNumber(value, 64, false, path, signedIntegers),
+            { Kind: WasmValueKind.F32 } => ParseNumber(value, 32, true, path, signedIntegers),
+            { Kind: WasmValueKind.F64 } => ParseNumber(value, 64, true, path, signedIntegers),
+            { Kind: WasmValueKind.V128, LaneType: { } laneType } => ParseVector(laneType, value.Lanes, path, signedIntegers),
             { Kind: WasmValueKind.FuncRef or WasmValueKind.ExternRef, Value: ValueCodec.NULL } => new(
                 value.Kind,
                 0,
@@ -127,11 +129,12 @@ internal static class ValueMatcher
     /// <param name="width">値型に対応する32または64のビット幅</param>
     /// <param name="floating">浮動小数点型としてNaN patternを許容するかどうか</param>
     /// <param name="path">値の異常を報告するJSON上の位置</param>
+    /// <param name="signedIntegers">整数で負の10進表記を許容するかどうか</param>
     /// <returns>元の値型と幅を持つ1個の数値の比較条件</returns>
-    /// <exception cref="ScriptFormatException">文字列が許容するNaN patternでも指定幅の符号なし10進数でもない場合</exception>
-    private static ValuePattern ParseNumber(ExpectedValue value, int width, bool floating, string path)
+    /// <exception cref="ScriptFormatException">文字列が許容するNaN patternでも仕様版と型が許容する10進表記でもない場合</exception>
+    private static ValuePattern ParseNumber(ExpectedValue value, int width, bool floating, string path, bool signedIntegers)
     {
-        return new(value.Kind, width, [ParseBits(value.Value, width, floating, path)], null);
+        return new(value.Kind, width, [ParseBits(value.Value, width, floating, path, signedIntegers)], null);
     }
 
     /// <summary>
@@ -140,16 +143,17 @@ internal static class ValueMatcher
     /// <param name="laneType">比較に使うlaneの型 浮動小数点laneだけNaN patternを許容する</param>
     /// <param name="lanes">lane0から順の値の文字列</param>
     /// <param name="path">lane数やlane値の異常を報告するJSON上の位置</param>
+    /// <param name="signedIntegers">整数で負の10進表記を許容するかどうか</param>
     /// <returns>laneの幅と順序を持つv128の比較条件</returns>
-    /// <exception cref="ScriptFormatException">lane数が型と合わないか、lane値が許容するNaN patternでも指定幅の符号なし10進数でもない場合</exception>
-    private static ValuePattern ParseVector(LaneType laneType, ImmutableArray<string> lanes, string path)
+    /// <exception cref="ScriptFormatException">lane数が型と合わないか、lane値が許容するNaN patternでも仕様版と型が許容する10進表記でもない場合</exception>
+    private static ValuePattern ParseVector(LaneType laneType, ImmutableArray<string> lanes, string path, bool signedIntegers)
     {
         var width = ValueCodec.GetLaneWidth(laneType, lanes.Length, path);
         var floating = laneType is LaneType.F32 or LaneType.F64;
         return new(
             WasmValueKind.V128,
             width,
-            [.. lanes.Select((x, i) => ParseBits(x, width, floating, $"{path}[{i}]"))],
+            [.. lanes.Select((x, i) => ParseBits(x, width, floating, $"{path}[{i}]", signedIntegers))],
             null
         );
     }
@@ -161,16 +165,17 @@ internal static class ValueMatcher
     /// <param name="width">値のビット幅 8・16・32・64のいずれか</param>
     /// <param name="floating">NaN patternを許容する浮動小数点数かどうか</param>
     /// <param name="path">値の異常を報告するJSON上の位置</param>
+    /// <param name="signedIntegers">整数で負の10進表記を許容するかどうか</param>
     /// <returns>canonical・arithmeticのNaN条件または指定幅に収まる具体的なビット列</returns>
-    /// <exception cref="ScriptFormatException">文字列が許容するNaN patternでも指定幅の符号なし10進数でもない場合</exception>
-    private static BitsPattern ParseBits(string? text, int width, bool floating, string path)
+    /// <exception cref="ScriptFormatException">文字列が許容するNaN patternでも仕様版と型が許容する10進表記でもない場合</exception>
+    private static BitsPattern ParseBits(string? text, int width, bool floating, string path, bool signedIntegers)
     {
         // NaN patternは浮動小数点数の値とlaneだけが持ち、整数では10進数として検査して拒否する。
         return (floating, text) switch
         {
             (true, CANONICAL) => new(0, NanPattern.Canonical),
             (true, ARITHMETIC) => new(0, NanPattern.Arithmetic),
-            _ => new(ValueCodec.ParseBits(text, width, path), null),
+            _ => new(ValueCodec.ParseBits(text, width, path, signedIntegers && !floating), null),
         };
     }
 
