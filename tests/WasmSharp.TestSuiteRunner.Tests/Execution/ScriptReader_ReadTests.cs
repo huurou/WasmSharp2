@@ -217,7 +217,8 @@ internal class ScriptReader_ReadTests
             await Assert
                 .That(
                     command
-                        .Expected.Select(Format)
+                        .Expected.Cast<ExpectedValue>()
+                        .Select(Format)
                         .SequenceEqual([
                             "i32:0",
                             "i64:9223372036854775808",
@@ -255,7 +256,7 @@ internal class ScriptReader_ReadTests
         // Assert
         var command = (AssertReturnCommand)result.Commands[0];
         var argument = ((InvokeAction)command.Action).Arguments[0];
-        var expectedValue = command.Expected[0];
+        var expectedValue = (ExpectedValue)command.Expected[0];
         using (Assert.Multiple())
         {
             await Assert.That(argument.Kind).IsEqualTo(WasmValueKind.V128);

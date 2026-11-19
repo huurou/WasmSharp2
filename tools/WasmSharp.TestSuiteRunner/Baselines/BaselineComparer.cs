@@ -147,7 +147,7 @@ internal static class BaselineComparer
     {
         return item with
         {
-            ExpectedValues = [.. item.ExpectedValues.Select(x => x with { Lanes = [.. x.Lanes] })],
+            ExpectedValues = [.. item.ExpectedValues.Select(x => x.CreateSnapshot())],
             ActualValues = [.. item.ActualValues],
             Diagnostics = [.. item.Diagnostics.Select(x => x with { UnverifiedRanges = [.. x.UnverifiedRanges] })],
             Prints = [.. item.Prints.Select(x => x with { Arguments = [.. x.Arguments] })],

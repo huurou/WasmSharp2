@@ -327,7 +327,7 @@ internal sealed class ScriptExecutor(InputVerification input, WasmSpecVersion sp
     /// <param name="observation">実行済みの操作と、例外・値比較を渡す観測</param>
     private void ExecuteAction(
         ScriptAction action,
-        ImmutableArray<ExpectedValue> expected,
+        ImmutableArray<ExpectedResult> expected,
         bool compareValues,
         ScriptState state,
         ref CommandObservation observation

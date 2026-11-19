@@ -42,12 +42,25 @@ internal static class ValueMatcher
     /// <param name="specVersion">値の表記を決める仕様版</param>
     /// <returns>元の順序を保持する新しい比較用配列 数値のビット列、NaN条件、externref番号を保持する</returns>
     /// <exception cref="ScriptFormatException">値の文字列が固定形式にない場合</exception>
-    internal static ImmutableArray<ValuePattern> Parse(
-        ImmutableArray<ExpectedValue> expected,
+    internal static ImmutableArray<ImmutableArray<ValuePattern>> Parse(
+        ImmutableArray<ExpectedResult> expected,
         WasmSpecVersion specVersion = WasmSpecVersion.Core2
     )
     {
-        return [.. expected.Select((x, i) => Parse(x, $"expected[{i}].value", specVersion == WasmSpecVersion.Core3))];
+        return [.. expected.Select((x, i) => ParseCandidates(x, $"expected[{i}]", specVersion == WasmSpecVersion.Core3))];
+    }
+
+    /// <summary>
+    /// 1つの結果位置で許容される値をすべて解析し、それぞれの値のJSON上の位置を診断に使用する。
+    /// </summary>
+    private static ImmutableArray<ValuePattern> ParseCandidates(ExpectedResult result, string path, bool signedIntegers)
+    {
+        if (result is ExpectedResult.Either either)
+        {
+            return [.. either.Candidates.Select((x, i) => Parse(x, $"{path}.values[{i}].value", signedIntegers))];
+        }
+
+        return [Parse((ExpectedValue)result, $"{path}.value", signedIntegers)];
     }
 
     /// <summary>
@@ -58,7 +71,7 @@ internal static class ValueMatcher
     /// <param name="state">externrefの番号と割り当てたホスト値を管理する入力の状態</param>
     /// <returns>相違箇所 全て一致した場合は空</returns>
     internal static ImmutableArray<ValueMismatch> Match(
-        ImmutableArray<ValuePattern> expected,
+        ImmutableArray<ImmutableArray<ValuePattern>> expected,
         WasmResults actual,
         ScriptState state
     )
@@ -82,17 +95,39 @@ internal static class ValueMatcher
         [
             .. Enumerable
                 .Range(0, values.Length)
-                .Where(x => expected[x].Kind != values[x].Kind)
+                .Where(x => !expected[x].Any(y => y.Kind == values[x].Kind))
                 .Select(x => new ValueMismatch(
                     ValueMismatchKind.Type,
                     x,
                     null,
-                    $"結果{x}の型が期待した{ValueCodec.GetTypeName(expected[x].Kind)}ではなく{ValueCodec.GetTypeName(values[x].Kind)}です。"
+                    expected[x].Length == 1
+                        ? $"結果{x}の型が期待した{ValueCodec.GetTypeName(expected[x][0].Kind)}ではなく{ValueCodec.GetTypeName(values[x].Kind)}です。"
+                        : $"結果{x}の型{ValueCodec.GetTypeName(values[x].Kind)}と一致する候補がありません。"
                 )),
         ];
 
         // 順序や型が揃わない場合は、値を比較しない。
-        return types.IsEmpty ? [.. values.SelectMany((x, i) => MatchValue(expected[i], x, i, state))] : types;
+        return types.IsEmpty ? [.. values.SelectMany((x, i) => MatchCandidates(expected[i], x, i, state))] : types;
+    }
+
+    /// <summary>
+    /// 1つの候補が値全体と一致するとき、その結果位置は成立する。
+    /// </summary>
+    private static IEnumerable<ValueMismatch> MatchCandidates(
+        ImmutableArray<ValuePattern> candidates,
+        WasmValue actual,
+        int index,
+        ScriptState state
+    )
+    {
+        if (candidates.Length == 1)
+        {
+            return MatchValue(candidates[0], actual, index, state);
+        }
+
+        return candidates.Any(x => x.Kind == actual.Kind && !MatchValue(x, actual, index, state).Any())
+            ? []
+            : [new ValueMismatch(ValueMismatchKind.Value, index, null, $"結果{index}の値がどの候補とも一致しません。")];
     }
 
     /// <summary>

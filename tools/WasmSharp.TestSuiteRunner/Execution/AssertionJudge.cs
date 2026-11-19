@@ -192,12 +192,11 @@ internal static class AssertionJudge
         {
             return
             [
-                .. assertion.Expected.Select(x => new ExpectedValueRecord(ValueCodec.GetTypeName(x.Kind))
-                {
-                    Value = x.Value,
-                    LaneType = x.LaneType?.ToString().ToLowerInvariant(),
-                    Lanes = [.. x.Lanes],
-                }),
+                .. assertion.Expected.Select(x =>
+                    x is ExpectedResult.Either either
+                        ? new ExpectedValueRecord("either") { Values = [.. either.Candidates.Select(RecordValue)] }
+                        : RecordValue((ExpectedValue)x)
+                ),
             ];
         }
         var types = command switch
@@ -208,6 +207,19 @@ internal static class AssertionJudge
             _ => [],
         };
         return [.. types.Select(x => new ExpectedValueRecord(ValueCodec.GetTypeName(x)))];
+    }
+
+    /// <summary>
+    /// 単独の期待値とeitherの候補を同じ値の表現で保存する。
+    /// </summary>
+    private static ExpectedValueRecord RecordValue(ExpectedValue value)
+    {
+        return new ExpectedValueRecord(ValueCodec.GetTypeName(value.Kind))
+        {
+            Value = value.Value,
+            LaneType = value.LaneType?.ToString().ToLowerInvariant(),
+            Lanes = [.. value.Lanes],
+        };
     }
 
     /// <summary>

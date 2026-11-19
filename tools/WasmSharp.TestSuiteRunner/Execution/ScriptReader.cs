@@ -320,15 +320,40 @@ internal sealed class ScriptReader(WasmSpecVersion specVersion)
     /// <param name="index">入力内の0始まりcommand index</param>
     /// <returns>値の文字列を加工せず保持するassert_return</returns>
     /// <exception cref="ScriptFormatException">command・action・期待値の項目や型が固定形式に合わない場合</exception>
-    private static AssertReturnCommand ReadAssertReturn(Dictionary<string, JsonElement> properties, int index)
+    private AssertReturnCommand ReadAssertReturn(Dictionary<string, JsonElement> properties, int index)
     {
         RejectUnknownNames(properties, "", TYPE, LINE, ACTION, EXPECTED);
         return new(
             index,
             ReadLine(properties),
             ReadAction(properties),
-            ReadValues(GetArray(properties, "", EXPECTED), EXPECTED, static (k, v, l, x) => new ExpectedValue(k, v, l, x))
+            ReadValues(GetArray(properties, "", EXPECTED), EXPECTED, ReadExpectedResult)
         );
+    }
+
+    /// <summary>
+    /// 1つの結果位置に対する期待値を読み、eitherの候補を同じ位置にまとめる。
+    /// </summary>
+    private ExpectedResult ReadExpectedResult(Dictionary<string, JsonElement> properties, string path)
+    {
+        if (specVersion == WasmSpecVersion.Core3 && GetString(properties, path, TYPE) == "either")
+        {
+            const string Values = "values";
+            RejectUnknownNames(properties, path, TYPE, Values);
+            return new ExpectedResult.Either(
+                ReadValues(GetArray(properties, path, Values), Join(path, Values), ReadExpectedValue)
+            );
+        }
+
+        return ReadExpectedValue(properties, path);
+    }
+
+    /// <summary>
+    /// 単独の期待値とeither内の各候補を同じ形式で読み取る。
+    /// </summary>
+    private static ExpectedValue ReadExpectedValue(Dictionary<string, JsonElement> properties, string path)
+    {
+        return ReadValue(properties, path, static (k, v, l, x) => new ExpectedValue(k, v, l, x));
     }
 
     /// <summary>
@@ -409,8 +434,8 @@ internal sealed class ScriptReader(WasmSpecVersion specVersion)
                 return new InvokeAction(
                     GetOptionalString(properties, ACTION, MODULE),
                     GetString(properties, ACTION, FIELD),
-                    ReadValues(GetArray(properties, ACTION, ARGS), Join(ACTION, ARGS), static (k, v, l, x) =>
-                        new ArgumentValue(k, v, l, x)
+                    ReadValues(GetArray(properties, ACTION, ARGS), Join(ACTION, ARGS), static (p, path) =>
+                        ReadValue(p, path, static (k, v, l, x) => new ArgumentValue(k, v, l, x))
                     )
                 );
             case "get":
@@ -427,34 +452,44 @@ internal sealed class ScriptReader(WasmSpecVersion specVersion)
     /// <typeparam name="T">引数または値付き期待値のモデルの型</typeparam>
     /// <param name="array">配列であることを確認済みのJSON要素</param>
     /// <param name="path">配列のJSON上の位置 要素indexを加えて異常を報告する</param>
-    /// <param name="create">値型・scalar文字列・lane型・lane文字列配列からモデルを作る関数</param>
+    /// <param name="read">1個の値の項目を読み取る関数</param>
     /// <returns>元JSONの順序を保持するモデルの配列 空配列なら空</returns>
     /// <exception cref="ScriptFormatException">配列要素の項目や型が固定形式に合わない場合</exception>
     private static ImmutableArray<T> ReadValues<T>(
         JsonElement array,
         string path,
-        Func<WasmValueKind, string?, LaneType?, ImmutableArray<string>, T> create
+        Func<Dictionary<string, JsonElement>, string, T> read
     )
     {
-        return [.. array.EnumerateArray().Select((x, i) => ReadValue(x, $"{path}[{i}]", create))];
+        return
+        [
+            .. array
+                .EnumerateArray()
+                .Select(
+                    (x, i) =>
+                    {
+                        var itemPath = $"{path}[{i}]";
+                        return read(ReadObject(x, itemPath), itemPath);
+                    }
+                ),
+        ];
     }
 
     /// <summary>
     /// 1個の値の構造と型を読み、scalar・参照の文字列またはv128のlane列を加工せず保持する。
     /// </summary>
     /// <typeparam name="T">引数または値付き期待値のモデルの型</typeparam>
-    /// <param name="element">1個の値を表すJSON要素</param>
+    /// <param name="properties">1個の値を表す項目</param>
     /// <param name="path">値のJSON上の位置</param>
     /// <param name="create">値型・scalar文字列・lane型・lane文字列配列からモデルを作る関数</param>
     /// <returns>種類に応じた文字列表現を持つモデル ビット列の解釈とlane数の検査は後続処理へ残す</returns>
     /// <exception cref="ScriptFormatException">項目の過不足・重複、値型、lane型、文字列や配列の構造が固定形式に合わない場合</exception>
     private static T ReadValue<T>(
-        JsonElement element,
+        Dictionary<string, JsonElement> properties,
         string path,
         Func<WasmValueKind, string?, LaneType?, ImmutableArray<string>, T> create
     )
     {
-        var properties = ReadObject(element, path);
         var kind = ParseValueKind(GetString(properties, path, TYPE), Join(path, TYPE));
         if (kind != WasmValueKind.V128)
         {

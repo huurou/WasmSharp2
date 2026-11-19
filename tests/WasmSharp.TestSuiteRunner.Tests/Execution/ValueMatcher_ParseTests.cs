@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using WasmSharp.TestSuiteRunner.Execution;
 
 namespace WasmSharp.TestSuiteRunner.Tests.Execution;
@@ -161,8 +162,9 @@ internal class ValueMatcher_ParseTests
         return new(kind, value, null, []);
     }
 
-    private static string Format(ValuePattern pattern)
+    private static string Format(ImmutableArray<ValuePattern> candidates)
     {
+        var pattern = candidates.Single();
         var bits = string.Join(",", pattern.Bits.Select(x => $"{x.Bits:x}:{x.Nan?.ToString() ?? "-"}"));
         return $"{pattern.Kind}/{pattern.Width}/{bits}/{pattern.Externref?.ToString() ?? "-"}";
     }
