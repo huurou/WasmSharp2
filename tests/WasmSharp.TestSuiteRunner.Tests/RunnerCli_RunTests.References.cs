@@ -1,17 +1,22 @@
 using TUnit.Assertions.Enums;
 using WasmSharp.Tests.Fixtures;
-using WasmSharp.TestSuiteRunner.Execution;
 using WasmSharp.TestSuiteRunner.Reports;
 using WasmSharp.TestSuiteRunner.Tests.Fixtures;
 
-namespace WasmSharp.TestSuiteRunner.Tests.Execution;
+namespace WasmSharp.TestSuiteRunner.Tests;
 
-public partial class SuiteExecutor_ExecuteAndSaveTests
+internal partial class RunnerCli_RunTests
 {
     [Test]
-    [Arguments("function", true)]
-    [Arguments("null", false)]
-    public async Task Core3の値を省略したfuncrefを比較する_関数実体の有無で判定して保存する(string export, bool matched)
+    [Arguments("funcref", "function", true)]
+    [Arguments("funcref", "null", false)]
+    [Arguments("anyref", "function", false)]
+    [Arguments("anyref", "null", true)]
+    public async Task Core3の値を省略した参照条件で関数参照を比較する_関数実体の有無に応じた結果を保存する(
+        string type,
+        string export,
+        bool matched
+    )
     {
         // Arrange
         using var fixture = CorpusFixture.Create();
@@ -25,13 +30,13 @@ public partial class SuiteExecutor_ExecuteAndSaveTests
         fixture.ReplaceScriptA(
             $$"""
             {"type":"module","line":1,"filename":"a.0.wasm"},
-            {"type":"assert_return","line":2,"action":{"type":"get","field":"{{export}}"},"expected":[{"type":"funcref"}]}
+            {"type":"assert_return","line":2,"action":{"type":"get","field":"{{export}}"},"expected":[{"type":"{{type}}"}]}
             """,
             module
         );
 
         // Act
-        var cases = RunAndReadReferenceCases(fixture);
+        var (_, cases) = RunAssertions(fixture, WasmSpecVersion.Core3);
 
         // Assert
         var assertion = cases[1];
@@ -39,9 +44,10 @@ public partial class SuiteExecutor_ExecuteAndSaveTests
         {
             await Assert.That(cases[0].Outcome).IsEqualTo(CaseOutcome.Passed);
             await Assert.That(assertion.Outcome).IsEqualTo(matched ? CaseOutcome.Passed : CaseOutcome.Failed);
-            await Assert.That(assertion.ExpectedValues.Single().Type).IsEqualTo("funcref");
+            await Assert.That(assertion.ExpectedValues.Single().Type).IsEqualTo(type);
             await Assert.That(assertion.ExpectedValues.Single().Value).IsNull();
-            await Assert.That(assertion.ActualValues.Single().IsNull).IsEqualTo(!matched);
+            await Assert.That(assertion.ActualValues.Single().Type).IsEqualTo("funcref");
+            await Assert.That(assertion.ActualValues.Single().IsNull).IsEqualTo(export == "null");
         }
     }
 
@@ -57,6 +63,9 @@ public partial class SuiteExecutor_ExecuteAndSaveTests
     [Arguments(WasmSpecVersion.Core3, "7", "externref", null, true)]
     [Arguments(WasmSpecVersion.Core3, "7", "externref", "7", true)]
     [Arguments(WasmSpecVersion.Core3, "7", "externref", "8", false)]
+    [Arguments(WasmSpecVersion.Core3, "null", "anyref", null, true)]
+    [Arguments(WasmSpecVersion.Core3, "7", "anyref", null, true)]
+    [Arguments(WasmSpecVersion.Core3, "7", "anyref", "null", false)]
     [Arguments(WasmSpecVersion.Core3, "7", "anyref", "7", false)]
     public async Task 番号付きまたはnullの外部参照を返す_指定された参照条件と比較して表記と結果を保存する(
         WasmSpecVersion version,
@@ -84,7 +93,7 @@ public partial class SuiteExecutor_ExecuteAndSaveTests
         );
 
         // Act
-        var cases = RunAndReadReferenceCases(fixture, version);
+        var (_, cases) = RunAssertions(fixture, version);
 
         // Assert
         var assertion = cases[1];
@@ -121,7 +130,7 @@ public partial class SuiteExecutor_ExecuteAndSaveTests
         );
 
         // Act
-        var cases = RunAndReadReferenceCases(fixture);
+        var (_, cases) = RunAssertions(fixture, WasmSpecVersion.Core3);
 
         // Assert
         var assertion = cases[1];
@@ -174,7 +183,7 @@ public partial class SuiteExecutor_ExecuteAndSaveTests
         );
 
         // Act
-        var cases = RunAndReadReferenceCases(fixture);
+        var (_, cases) = RunAssertions(fixture, WasmSpecVersion.Core3);
 
         // Assert
         var assertion = cases[1];
@@ -186,18 +195,5 @@ public partial class SuiteExecutor_ExecuteAndSaveTests
                 .That(assertion.ExpectedValues.Single().Values!.Select(x => (x.Type, x.Value)))
                 .IsEquivalentTo([("anyref", "7"), (secondType, null)], CollectionOrdering.Matching);
         }
-    }
-
-    private List<CaseResult> RunAndReadReferenceCases(CorpusFixture fixture, WasmSpecVersion version = WasmSpecVersion.Core3)
-    {
-        var output = Path.Combine(fixture.OutputRoot, "references.json");
-        SuiteExecutor.ExecuteAndSave(
-            SuiteExecutor_ExecuteTests.Complete(fixture.Manifest),
-            fixture.ManifestPath,
-            version,
-            output,
-            _reportStore
-        );
-        return _reportStore.ReadRunReport(output).Report.Inputs[0].Cases;
     }
 }

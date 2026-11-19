@@ -260,12 +260,12 @@ internal class ValueCodec_CreateArgumentsTests
 
     private static ArgumentValue Scalar(WasmValueKind kind, string value)
     {
-        return new(kind, value, null, []);
+        return new ArgumentValue(ValueCodec.GetTypeName(kind), value, null, []);
     }
 
     private static ArgumentValue Vector(LaneType laneType, string[] lanes)
     {
-        return new(WasmValueKind.V128, null, laneType, [.. lanes]);
+        return new ArgumentValue("v128", null, laneType, [.. lanes]);
     }
 
     private static ulong GetBits(WasmValue value)

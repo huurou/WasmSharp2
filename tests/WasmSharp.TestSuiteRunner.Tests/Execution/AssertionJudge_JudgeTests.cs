@@ -204,7 +204,7 @@ internal class AssertionJudge_JudgeTests
     public async Task Assert_returnの値比較_相違に応じて分類し全実値を保存する(bool differs, CaseOutcome outcome)
     {
         // Arrange
-        var expected = new ExpectedValue(WasmValueKind.I32, "1", null, []);
+        var expected = new ExpectedValue("i32", "1", null, []);
         var command = new AssertReturnCommand(2, 3, Action(CaseStage.Invoke), [expected]);
         var actual = new WasmResults([WasmValue.FromI32(differs ? 2 : 1)]);
         var state = new ScriptState("a.wast");
@@ -400,7 +400,7 @@ internal class AssertionJudge_JudgeTests
             2,
             3,
             Action(CaseStage.Invoke),
-            [new ExpectedValue(WasmValueKind.V128, null, LaneType.I64, ["1", "2"])]
+            [new ExpectedValue("v128", null, LaneType.I64, ["1", "2"])]
         );
         var observation = Observe(CaseStage.Invoke) with { Values = [value], Prints = [print], Diagnostics = [diagnostic] };
 

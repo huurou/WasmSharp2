@@ -15,27 +15,32 @@ namespace WasmSharp.TestSuiteRunner.Execution;
 internal sealed record ExpectedValue(string Type, string? Value, LaneType? LaneType, ImmutableArray<string> Lanes)
     : ExpectedResult
 {
-    internal ExpectedValue(WasmValueKind kind, string? value, LaneType? laneType, ImmutableArray<string> lanes)
-        : this(ValueCodec.GetTypeName(kind), value, laneType, lanes) { }
-
     /// <summary>
-    /// 固定したCore 3.0の参照期待値に使う型名か判定する。
+    /// Core 3.0の参照型で値を省略した場合、nullを明示した場合、番号を指定した場合の比較条件を返す。
     /// </summary>
-    internal static bool IsCore3ReferenceType(string type)
+    /// <returns>参照型でなければnull 固定形式にない表記は対応する比較条件がnullになる。</returns>
+    internal static (
+        Core3ReferenceMatch? Omitted,
+        Core3ReferenceMatch? ExplicitNull,
+        Core3ReferenceMatch? Numbered
+    )? GetCore3ReferenceMatches(string type)
     {
-        return type
-            is "refnull"
-                or "nullref"
-                or "nullfuncref"
-                or "nullexternref"
-                or "nullexnref"
-                or "funcref"
-                or "externref"
-                or "anyref"
-                or "exnref"
-                or "eqref"
-                or "i31ref"
-                or "arrayref"
-                or "structref";
+        return type switch
+        {
+            "refnull" or "nullref" or "nullfuncref" or "nullexternref" or "nullexnref" => (
+                Core3ReferenceMatch.Null,
+                null,
+                null
+            ),
+            "funcref" => (Core3ReferenceMatch.HeapType, Core3ReferenceMatch.Null, null),
+            "externref" or "anyref" => (
+                Core3ReferenceMatch.HeapType,
+                Core3ReferenceMatch.Null,
+                Core3ReferenceMatch.Identity
+            ),
+            "exnref" => (null, Core3ReferenceMatch.Null, null),
+            "eqref" or "i31ref" or "arrayref" or "structref" => (Core3ReferenceMatch.HeapType, null, null),
+            _ => null,
+        };
     }
 }
