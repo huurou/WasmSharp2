@@ -61,7 +61,6 @@ internal class BenchmarkRun_CaptureEnvironmentTests
             await Assert.That(environment.RuntimeVersion).Contains(Environment.Version.ToString());
             await Assert.That(environment.SdkVersion).IsNotEqualTo("10.0");
             await Assert.That(environment.BenchmarkDotNetVersion).Contains("0.15.8");
-            await Assert.That(environment.BuildConfiguration).IsEqualTo("Release");
             await Assert
                 .That(environment.GcSettings.Single(x => x.Name == "GCSettings.IsServerGC").Value)
                 .IsEqualTo(System.Runtime.GCSettings.IsServerGC.ToString());

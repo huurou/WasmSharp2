@@ -52,8 +52,10 @@ internal class CorpusGenerator_CheckPreconditionsTests
         using var directory = new TemporaryDirectory();
         var profile = new ConversionProfileLoader().LoadCore3() with { Inputs = [] };
         Directory.CreateDirectory(directory.Combine(profile.WorkingDirectory));
-        var converter = directory.Combine("wasm-tools.exe");
-        await File.WriteAllTextAsync(converter, "wasm-tools");
+        // クラスライブラリは読み取れるが、変換器として単独起動できない。
+        var libraryBytes = await File.ReadAllBytesAsync(typeof(WasmModule).Assembly.Location);
+        var converter = directory.Combine("wasm-tools.dll");
+        await File.WriteAllBytesAsync(converter, libraryBytes);
         var request = new GenerateRequest(profile, directory.Root, null, converter, directory.Combine("out"));
 
         // Act
@@ -65,7 +67,7 @@ internal class CorpusGenerator_CheckPreconditionsTests
         {
             await Assert
                 .That(preconditions.Provenance.ExecutableSha256)
-                .IsEqualTo(Convert.ToHexStringLower(SHA256.HashData("wasm-tools"u8)));
+                .IsEqualTo(Convert.ToHexStringLower(SHA256.HashData(libraryBytes)));
             await Assert.That(preconditions.Provenance.ExecutableVersion).IsNull();
             await Assert.That(diagnostic.Path).IsEqualTo(converter);
             await Assert.That(diagnostic.ExceptionType).IsEqualTo(typeof(System.ComponentModel.Win32Exception).FullName);
