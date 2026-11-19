@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace WasmSharp.TestSuiteRunner.Reports;
 
 /// <summary>
@@ -20,4 +22,18 @@ internal sealed record ExpectedValueRecord(string Type)
     /// v128のlane0から順の値またはNaN pattern
     /// </summary>
     public List<string> Lanes { get; init; } = [];
+
+    /// <summary>
+    /// Core 3.0のeitherでこの結果位置に許容される候補を指定順に保持する。
+    /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public List<ExpectedValueRecord>? Values { get; init; }
+
+    /// <summary>
+    /// 比較結果に含めるレーンと候補のリストを複製する。
+    /// </summary>
+    internal ExpectedValueRecord CreateSnapshot()
+    {
+        return this with { Lanes = [.. Lanes], Values = Values?.Select(x => x.CreateSnapshot()).ToList() };
+    }
 }
