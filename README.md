@@ -62,6 +62,6 @@ Stryker.NETによるテストの検出力の測定は[ミューテーション�
 
 ## GitHub Actions
 
-[Unit tests](.github/workflows/unit-tests.yml)は、push・pull request・手動実行で起動します。Ubuntu上で.NET 11と固定したCore 2.0仕様を取得し、警告をエラーとして扱うReleaseビルド後に、ランタイム・生成器・公式適合検証ランナー・測定ツールの4つのテストプロジェクトを実行します。測定ツールの契約テストは小さい保存データfixtureを使います。
+[Unit tests](.github/workflows/unit-tests.yml)は、`main`向けのプルリクエストの作成・再オープン時と、マージ元ブランチの更新時に自動で起動します。Actions画面から手動でも実行できます。Ubuntu上で.NET 11と固定したCore 2.0仕様を取得し、警告をエラーとして扱うReleaseビルド後に、ランタイム・生成器・公式適合検証ランナー・測定ツールの4つのテストプロジェクトを実行します。測定ツールの契約テストは小さい保存データfixtureを使います。
 
 テスト結果のTRXファイルは、各実行のArtifactsに`unit-test-results`として保存します。いずれかのテストが失敗した場合も、残りの実行と結果の保存を行います。
