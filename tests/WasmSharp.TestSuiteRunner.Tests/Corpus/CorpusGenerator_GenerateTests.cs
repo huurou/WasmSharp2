@@ -15,8 +15,7 @@ internal class CorpusGenerator_GenerateTests
         // Arrange
         using var workspace = await SuiteWorkspace.CreateAsync();
         var profile = workspace.CreateProfile();
-        var wabt = profile.Wabt!;
-        profile = profile with { Wabt = wabt with { Revision = wabt.Revision with { Commit = new string('0', 40) } } };
+        profile = profile with { Spec = profile.Spec with { Commit = new string('0', 40) } };
 
         // Act
         var result = CorpusGenerator.Generate(workspace.CreateRequest(profile), _reportStore);

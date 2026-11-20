@@ -36,7 +36,7 @@ Invokeの10ケースは1回の公開Invokeを1操作とする。loopの4096回�
 
 `scan.scalar`と`scan.simd`は1ページ固定のmemoryを使い、先頭から16384個のu32をlittle-endianで配置する。各要素は`i mod256`である。引数なしの`scalar: () → (i32)`は1要素ずつ、`simd: () → (i32)`はi32x4で4要素ずつ加算し、最後に4laneの和を求める。いずれも読み取る16384要素が仕事量であり、guestループ回数の違いを公開操作数へ換算しない。期待値は独立した閉形式`64*(255*256/2)=2088960`（`001fe000`）である。配列全体も前後に同じdigestと照合する。両ケースを`scan.sum-u32`で対応付ける。
 
-`input_hash`は`CaseInput`を`CaseJson.Options`でコンパクトJSONへ直列化したUTF-8バイト列のSHA-256。関数export名も含むためscalarとSIMDではhashが異なるが、引数と配列生成条件、期待値、仕事量は同じである。`asset_sha256`は固定WABTで変換したバイナリのSHA-256であり、生成ログにsource・profile・ツールとの対応を残す。素材または入力・期待値・操作を変更するときはケース版を更新する。
+`input_hash`は`CaseInput`を`CaseJson.Options`でコンパクトJSONへ直列化したUTF-8バイト列のSHA-256である。関数export名も含むためscalarとSIMDではhashが異なるが、引数と配列生成条件、期待値、仕事量は同じである。`asset_sha256`は測定に使用するバイナリのSHA-256であり、生成ログにsource・profile・ツールとの対応を残す。WATでは`wasm-tools parse`が識別子から生成する`name`カスタムセクションを`wasm-tools strip --delete '^name$'`で除き、従来と同じバイト列を生成する。素材または入力・期待値・操作を変更するときはケース版を更新する。
 
 ## C由来の整数行列積
 
@@ -56,13 +56,13 @@ Cのunsigned積和はmod2^32で計算する。固定期待値はC#の`BigInteger
 
 ClangとLLDは21.1.8の明示pathを指定し、コンパイルとlinkを分ける。固定引数は`sources.json`のkernelに保持し、下記の統合生成コマンドで使用する。`--no-entry`、`--export=matrix`、`--export-memory`、`--unresolved-symbols=report-all`、`--stack-first -z stack-size=65536`、`--initial-memory=131072 --max-memory=131072`でlinkする。
 
-`wasm-validate`へは既存`core2-profile.json`のenabled/default_enabled差分だけをfeature引数として渡し、生成物を検査する。公開`InspectImports`でimport0件を確認し、`Decode→Validate→Instantiate→Invoke`で固定digest、反復前後の入力全byte、出力全byteを照合する。出力を意図的に破壊してからのInvokeでも全要素の回復を確認する。生成・検証記録は`artifacts/runtime-performance/task-2.3-20261022T152628Z/`、再生成コマンドと終了値はその`generated/commands.json`に保持する。
+`wasm-tools validate --features wasm2`で生成物を検査する。公開`InspectImports`でimport0件を確認し、`Decode→Validate→Instantiate→Invoke`で固定digest、反復前後の入力全byte、出力全byteを照合する。出力を意図的に破壊してからのInvokeでも全要素の回復を確認する。生成コマンドと終了値は生成先の`commands.json`に保持する。
 
 通常TUnitは同じ`cases.json`をビルド時にコピーして読み、外部compilerやBDNを起動しない。WAT/Cの変換・Core2検査と生成物の公開API照合は、素材準備時に別途行う。
 
 ## 大きいmoduleの準備
 
-`Prepare-Assets.ps1`が`sources/preparation-large.wat`を新規出力先へ生成し、固定WABTで変換・Core2検査する。largeの固定形状は次のとおり。
+`Prepare-Assets.ps1`が`sources/preparation-large.wat`を新規出力先へ生成し、固定版wasm-toolsで変換・Core 2.0検査を行う。
 
 | 対象 | 固定条件 |
 | --- | --- |
@@ -83,13 +83,12 @@ ClangとLLDは21.1.8の明示pathを指定し、コンパイルとlinkを分け�
 
 ## 全素材の再生成
 
-PowerShell7.5以上、Windows x64で、リポジトリルートから固定ツールの明示pathと存在しない出力先を指定する。ツールの取得・固定版のビルドは[測定ツールの手順](../README.md#素材生成ツールの準備)を参照する。
+PowerShell7.5以上、Windows x64で、リポジトリルートから固定ツールの明示pathと存在しない出力先を指定する。[測定ツールの取得手順](../README.md#素材生成ツールの準備)
 
 ```powershell
 $assetSet = Join-Path (Get-Location) ('artifacts/runtime-performance/assets-' + [guid]::NewGuid().ToString('N'))
 ./tools/WasmSharp.Benchmarks/Assets/Prepare-Assets.ps1 `
-    -Wat2WasmPath $Wat2WasmPath `
-    -WasmValidatePath $WasmValidatePath `
+    -WasmToolsPath $WasmToolsPath `
     -ClangPath $ClangPath `
     -WasmLdPath $WasmLdPath `
     -OutputDirectory $assetSet

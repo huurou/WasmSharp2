@@ -334,11 +334,12 @@ internal sealed class ScriptExecutor(InputVerification input, WasmSpecVersion sp
     )
     {
         observation = observation with { Operation = "create_arguments" };
+        var signedIntegers = input.Document?.UsesWasmTools == true;
         var arguments = action is InvokeAction invoke
-            ? ValueCodec.CreateArguments(invoke.Arguments, state, specVersion)
+            ? ValueCodec.CreateArguments(invoke.Arguments, state, specVersion, signedIntegers)
             : [];
         observation = observation with { Operation = "parse_expected" };
-        var patterns = ValueMatcher.Parse(expected, specVersion);
+        var patterns = ValueMatcher.Parse(expected, specVersion, signedIntegers);
         var module = ResolveModule(action.Module, state, ref observation);
         if (module is null)
         {

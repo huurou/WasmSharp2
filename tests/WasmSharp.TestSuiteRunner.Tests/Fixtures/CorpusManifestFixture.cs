@@ -6,7 +6,7 @@ internal static class CorpusManifestFixture
 {
     internal static CorpusManifest Create()
     {
-        var profile = new ConversionProfileLoader().Load() with
+        var profile = new ConversionProfileLoader().LoadLegacyCore2() with
         {
             Id = "fixture",
             Inputs =

@@ -18,7 +18,7 @@ internal sealed record ConversionProvenance
     public string? ExecutablePath { get; init; }
 
     /// <summary>
-    /// wasm-toolsの--versionで観測した値 Core 2.0の保存形式には出力しない
+    /// wasm-toolsの--versionで観測した値 WABTの保存形式には出力しない
     /// </summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? ExecutableVersion { get; init; }

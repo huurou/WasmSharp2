@@ -6,19 +6,19 @@ WebAssembly Core 2.0のバイナリのデコード・検証・インスタンス
 
 Core 3.0は、`WasmModule.Decode(bytes, WasmSpecVersion.Core3)`で選択でき、検証にも同じ版を使います。公式ランナーでは実装済みの命令で動くケースを実行できます。例外タグを定義するタグセクションはデコード時に、複数メモリは検証時に未対応として報告します。Core 3.0固有の機能には未実装のものがあり、固定公式スイート全体はまだ合格していません。
 
-[固定入力と変換器の取得手順](thirdParties/README.md#core-30の公式テスト素材)、[素材の生成と比較](tools/WasmSharp.TestSuiteRunner/README.md#core-30の素材生成と比較)、[Core 3.0の実行手順](tools/WasmSharp.TestSuiteRunner/README.md#core-30の実行)を参照してください。
+両版の公式テストは、版ごとの仕様サブモジュールから取得し、同じ`wasm-tools 1.263.0`で変換します。[固定入力と変換器の取得手順](thirdParties/README.md)・[ランナーの操作ガイド](tools/WasmSharp.TestSuiteRunner/README.md)
 
 ## 開発環境のセットアップ
 
 .NET 11 SDKをインストールし、クローンしたリポジトリのルートで次のコマンドを実行してください。
 
 ```sh
-git -c core.autocrlf=false submodule update --init --checkout -- thirdParties/WebAssembly-spec
+git -c core.autocrlf=false submodule update --init --checkout
 dotnet tool restore
 dotnet husky install
 ```
 
-ランタイムのテストは、固定したCore 2.0仕様（`thirdParties/WebAssembly-spec`、commit `05ca4182176763112561ae20153975c12bd689e4`）の命令付録2ファイルをビルド時に埋め込みます。submoduleの取得はテストプロジェクトのビルドに必要です。WABTの取得・ビルドは基盤テストには不要です。
+ランタイムのテストは、`thirdParties/WebAssembly-spec-core2`の命令付録2ファイルをビルド時に埋め込みます。Core 3.0の仕様と公式テストは`thirdParties/WebAssembly-spec-core3`に配置されます。`wasm-tools`は公式テストやベンチマーク素材を再生成するときに使用します。
 
 Husky.Net、CSharpier、Stryker.NETは、`.config/dotnet-tools.json`でバージョンを固定した.NETローカルツールです。ツールが対象とするランタイムが未導入なら、新しいランタイムで起動できます。
 
@@ -58,10 +58,10 @@ Stryker.NETによるテストの検出力の測定は[ミューテーション�
 
 ## 公式スイートの検証
 
-[Test Suite Runnerの操作ガイド](tools/WasmSharp.TestSuiteRunner/README.md)を参照してください。固定Core 2.0素材の生成、全commandの実行、baselineの保存・比較、最終判定を個別のコマンドで行えます。
+両版の公式テスト素材の生成、全コマンドの実行、基準結果の保存・比較に対応しています。Core 2.0は最終合否も確認できます。[Test Suite Runnerの操作ガイド](tools/WasmSharp.TestSuiteRunner/README.md)
 
 ## GitHub Actions
 
-[Unit tests](.github/workflows/unit-tests.yml)は、push・pull request・手動実行で起動します。Ubuntu上で.NET 11と固定したCore 2.0仕様を取得し、警告をエラーとして扱うReleaseビルド後に、ランタイム・生成器・公式適合検証ランナー・測定ツールの4つのテストプロジェクトを実行します。測定ツールの契約テストは小さい保存データfixtureを使い、BDNの起動、性能の合否判定、Clang/WABTによる素材生成は行いません。
+[Unit tests](.github/workflows/unit-tests.yml)は、push・pull request・手動実行で起動します。Ubuntu上で.NET 11と固定したCore 2.0仕様を取得し、警告をエラーとして扱うReleaseビルド後に、ランタイム・生成器・公式適合検証ランナー・測定ツールの4つのテストプロジェクトを実行します。測定ツールの契約テストは小さい保存データfixtureを使います。
 
 テスト結果のTRXファイルは、各実行のArtifactsに`unit-test-results`として保存します。いずれかのテストが失敗した場合も、残りの実行と結果の保存を行います。

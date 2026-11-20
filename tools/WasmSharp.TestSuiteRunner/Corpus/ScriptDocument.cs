@@ -33,6 +33,11 @@ internal sealed class ScriptDocument
     internal ImmutableArray<byte> Content { get; }
 
     /// <summary>
+    /// wasm-toolsが出力するJSONの表記を使う場合はtrue
+    /// </summary>
+    internal bool UsesWasmTools { get; }
+
+    /// <summary>
     /// JSONに記録されたsource_filename 取得できない場合はnull
     /// </summary>
     internal string? SourceFilename { get; }
@@ -61,12 +66,14 @@ internal sealed class ScriptDocument
     /// コピー済みの元バイト列と、そこから確定できたcommand・診断を保持する。
     /// </summary>
     /// <param name="content">このdocumentが所有する生成JSONの生バイト列</param>
+    /// <param name="usesWasmTools">wasm-toolsの出力形式を使うかどうか</param>
     /// <param name="sourceFilename">取得できた元入力の相対path 取得できない場合はnull</param>
     /// <param name="commands">元バイト列の範囲が確定したcommandの順序付き一覧</param>
     /// <param name="enumerationComplete">唯一のcommands配列の列挙とJSON全体の構文確認を完了したかどうか</param>
     /// <param name="diagnostics">JSON全体の構文破損や必須項目の不正を示す診断</param>
     private ScriptDocument(
         ImmutableArray<byte> content,
+        bool usesWasmTools,
         string? sourceFilename,
         ImmutableArray<EnumeratedCommand> commands,
         bool enumerationComplete,
@@ -74,6 +81,7 @@ internal sealed class ScriptDocument
     )
     {
         Content = content;
+        UsesWasmTools = usesWasmTools;
         SourceFilename = sourceFilename;
         Commands = commands;
         EnumerationComplete = enumerationComplete;
@@ -85,9 +93,9 @@ internal sealed class ScriptDocument
     /// </summary>
     /// <param name="content">生成JSONの生バイト列</param>
     /// <param name="path">診断に記録するmanifest基準の相対path</param>
-    /// <param name="includeBinaryFilename">wasm-toolsのテキスト素材に併記されるバイナリも参照として読むかどうか</param>
+    /// <param name="usesWasmTools">wasm-toolsのJSON形式を使い、テキスト素材に併記されるバイナリも参照として読むかどうか</param>
     /// <returns>元バイト列のコピーと列挙結果 構文破損時も破損前に確定したcommandと失敗理由を保持し、総数を未確定にする</returns>
-    internal static ScriptDocument Parse(ReadOnlySpan<byte> content, string path, bool includeBinaryFilename = false)
+    internal static ScriptDocument Parse(ReadOnlySpan<byte> content, string path, bool usesWasmTools = false)
     {
         var owned = content.ToImmutableArray();
         var commands = ImmutableArray.CreateBuilder<EnumeratedCommand>();
@@ -97,7 +105,7 @@ internal sealed class ScriptDocument
         var reader = new Utf8JsonReader(owned.AsSpan());
         try
         {
-            complete = ReadRoot(ref reader, owned, commands, diagnostics, path, ref sourceFilename, includeBinaryFilename);
+            complete = ReadRoot(ref reader, owned, commands, diagnostics, path, ref sourceFilename, usesWasmTools);
         }
         catch (JsonException ex)
         {
@@ -114,7 +122,14 @@ internal sealed class ScriptDocument
             );
         }
 
-        return new(owned, sourceFilename, commands.ToImmutable(), complete, diagnostics.ToImmutable());
+        return new ScriptDocument(
+            owned,
+            usesWasmTools,
+            sourceFilename,
+            commands.ToImmutable(),
+            complete,
+            diagnostics.ToImmutable()
+        );
     }
 
     /// <summary>

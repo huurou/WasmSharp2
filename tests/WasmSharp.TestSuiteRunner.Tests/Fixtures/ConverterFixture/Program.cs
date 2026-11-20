@@ -25,18 +25,18 @@ if (OperatingSystem.IsWindows() && args is ["--console-status"])
 }
 
 var outputIndex = Array.IndexOf(args, "-o");
-if (args.Length == 0 || outputIndex < 1 || outputIndex + 1 >= args.Length)
+if (args.Length < 2 || args[0] != "json-from-wast" || outputIndex < 2 || outputIndex + 1 >= args.Length)
 {
-    Console.Error.WriteLine("使用法: ConverterFixture <input.wast> -o <output.json>");
+    Console.Error.WriteLine("使用法: ConverterFixture json-from-wast <input.wast> --wasm-dir <directory> -o <output.json>");
     return 2;
 }
 
 Console.WriteLine(JsonSerializer.Serialize(new { arguments = args, working_directory = Environment.CurrentDirectory }));
-var inputPath = args[0] == "json-from-wast" ? args[1] : args[0];
+var inputPath = args[1];
 var outputPath = Path.GetFullPath(args[outputIndex + 1]);
 try
 {
-    return args[0] == "json-from-wast" && inputPath != "failure.wast"
+    return inputPath == "gc/sample.wast"
         ? ConvertCore3(inputPath, outputPath, args[Array.IndexOf(args, "--wasm-dir") + 1])
         : Convert(inputPath, outputPath);
 }

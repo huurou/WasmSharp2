@@ -81,6 +81,18 @@ internal sealed class RunnerCli(ConversionProfile profile, Func<ConversionProfil
     }
 
     /// <summary>
+    /// 保存時の変換器に対応する固定Core 2.0 profileを選ぶ。
+    /// </summary>
+    /// <param name="snapshot">保存結果が記録した変換条件</param>
+    /// <returns>新規生成時のprofile、または過去のWABT結果の照合に使用するprofile</returns>
+    private ConversionProfile Core2For(ProfileSnapshot snapshot)
+    {
+        return snapshot.WasmTools is null && profile.WasmTools is not null
+            ? new ConversionProfileLoader().LoadLegacyCore2()
+            : profile;
+    }
+
+    /// <summary>
     /// 操作ごとに要求するpath引数の名前を返す。
     /// </summary>
     /// <param name="operation">操作名</param>
@@ -89,7 +101,7 @@ internal sealed class RunnerCli(ConversionProfile profile, Func<ConversionProfil
     {
         return operation switch
         {
-            "generate" => ["--spec-root", "--wabt-root", "--wast2json", "--output"],
+            "generate" => ["--spec-root", "--wasm-tools", "--output"],
             "run" => ["--manifest", "--output"],
             "baseline-save" => ["--input", "--output"],
             "compare-conversion" or "compare-run" => ["--baseline", "--current", "--output"],
@@ -117,9 +129,7 @@ internal sealed class RunnerCli(ConversionProfile profile, Func<ConversionProfil
         for (var i = 1; i < args.Length; i += 2)
         {
             var option = args[i];
-            if (
-                !options.Contains(option, StringComparer.Ordinal) && !(generate && option is ("--profile" or "--wasm-tools"))
-            )
+            if (!options.Contains(option, StringComparer.Ordinal) && !(generate && option == "--profile"))
             {
                 throw new ArgumentException($"未知の引数です: {option}");
             }
@@ -153,17 +163,6 @@ internal sealed class RunnerCli(ConversionProfile profile, Func<ConversionProfil
                 throw new ArgumentException($"引数が重複しています: {option}");
             }
         }
-        if (core3)
-        {
-            options = ["--spec-root", "--wasm-tools", "--output"];
-        }
-        foreach (var option in paths.Keys)
-        {
-            if (!options.Contains(option, StringComparer.Ordinal))
-            {
-                throw new ArgumentException($"選択したprofileでは使用できない引数です: {option}");
-            }
-        }
         foreach (var option in options)
         {
             if (!paths.ContainsKey(option))
@@ -189,13 +188,9 @@ internal sealed class RunnerCli(ConversionProfile profile, Func<ConversionProfil
         var resolvedOutput = ResolvePath(output);
         if (operation == "generate")
         {
-            foreach (var option in new[] { "--spec-root", "--wabt-root", "--wasm-tools" })
+            foreach (var option in new[] { "--spec-root", "--wasm-tools" })
             {
-                if (!paths.TryGetValue(option, out var sourcePath))
-                {
-                    continue;
-                }
-                var source = ResolvePath(sourcePath);
+                var source = ResolvePath(paths[option]);
                 if (ContainsPath(source, resolvedOutput) || ContainsPath(resolvedOutput, source))
                 {
                     throw new IOException($"生成先{output}は{option}のソース配下または祖先です。");
@@ -276,13 +271,7 @@ internal sealed class RunnerCli(ConversionProfile profile, Func<ConversionProfil
     {
         var processed = 0;
         var result = CorpusGenerator.Generate(
-            new GenerateRequest(
-                generationProfile,
-                paths["--spec-root"],
-                paths.GetValueOrDefault("--wabt-root"),
-                paths.GetValueOrDefault("--wasm-tools") ?? paths["--wast2json"],
-                paths["--output"]
-            ),
+            new GenerateRequest(generationProfile, paths["--spec-root"], paths["--wasm-tools"], paths["--output"]),
             _reportStore,
             path => output.WriteLine($"[{++processed}/{generationProfile.Inputs.Length}] 変換・記録: {path}")
         );
@@ -319,7 +308,9 @@ internal sealed class RunnerCli(ConversionProfile profile, Func<ConversionProfil
         var manifest = _reportStore.ReadManifest(paths["--manifest"]).Manifest;
         // manifestのprofile識別で固定profileを選び、条件が一致しない場合は別の版へ読み替えず拒否する。
         var (runProfile, specVersion) =
-            manifest.Profile.Id == profile.Id ? (profile, WasmSpecVersion.Core2) : (LoadCore3(), WasmSpecVersion.Core3);
+            manifest.Profile.Id == profile.Id
+                ? (Core2For(manifest.Profile), WasmSpecVersion.Core2)
+                : (LoadCore3(), WasmSpecVersion.Core3);
         var fixedHashes = runProfile.Inputs.ToDictionary(x => x.Path, x => x.Sha256, StringComparer.Ordinal);
         if (
             !manifest.Profile.Matches(runProfile)
@@ -426,7 +417,7 @@ internal sealed class RunnerCli(ConversionProfile profile, Func<ConversionProfil
     private int Verify(string path, TextWriter output)
     {
         var stored = _reportStore.ReadRunReport(path);
-        var decision = CompletionPolicy.Verify(stored.Report, stored.Issues, profile);
+        var decision = CompletionPolicy.Verify(stored.Report, stored.Issues, Core2For(stored.Report.Corpus.Profile));
         output.WriteLine($"最終判定: {(decision.ExitCode == 0 ? "合格" : "不合格")}");
         foreach (var reason in decision.Reasons)
         {
@@ -535,12 +526,12 @@ internal sealed class RunnerCli(ConversionProfile profile, Func<ConversionProfil
     /// <param name="output">操作説明の表示先</param>
     private static void WriteHelp(TextWriter output)
     {
-        var converter = RunnerPaths.Current.Wast2Json;
+        var converter = RunnerPaths.Current.WasmTools;
         output.WriteLine(
             $$"""
             Test Suite Runner: WebAssembly Core 2.0の公式適合検証とCore 3.0の素材生成・実行ツール
             使用法: WasmSharp.TestSuiteRunner <操作> <引数>
-              generate --spec-root <path> --wabt-root <path> --wast2json <path> --output <directory>
+              generate [--profile core2] --spec-root <path> --wasm-tools <path> --output <directory>
                 固定Core 2.0の全入力を変換・照合し、空の専用領域にmanifest.jsonと素材を保存します（既定）。
               generate --profile core3 --spec-root <path> --wasm-tools <path> --output <directory>
                 固定Core 3.0の全入力を変換・照合し、空の専用領域にmanifest.jsonと素材を保存します。
@@ -558,15 +549,16 @@ internal sealed class RunnerCli(ConversionProfile profile, Func<ConversionProfil
                 操作説明を表示します。
 
             初回の操作例（各行を個別に実行）:
-              generate --spec-root thirdParties/WebAssembly-spec --wabt-root thirdParties/wabt --wast2json {{converter}} --output artifacts/corpus
+              generate --spec-root thirdParties/WebAssembly-spec-core2 --wasm-tools {{converter}} --output artifacts/corpus
               run --manifest artifacts/corpus/manifest.json --output artifacts/run-1.json
               baseline-save --input artifacts/corpus/manifest.json --output artifacts/conversion-baseline.json
               baseline-save --input artifacts/run-1.json --output artifacts/run-baseline.json
+              generate --profile core3 --spec-root thirdParties/WebAssembly-spec-core3 --wasm-tools {{converter}} --output artifacts/core3-corpus
             後続の操作例（比較結果を確認してからbaselineを明示更新）:
               run --manifest artifacts/corpus/manifest.json --output artifacts/run-2.json
               compare-run --baseline artifacts/run-baseline.json --current artifacts/run-2.json --output artifacts/run-diff.json
               baseline-save --input artifacts/run-2.json --output artifacts/run-baseline.json
-              generate --spec-root thirdParties/WebAssembly-spec --wabt-root thirdParties/wabt --wast2json {{converter}} --output artifacts/corpus-2
+              generate --spec-root thirdParties/WebAssembly-spec-core2 --wasm-tools {{converter}} --output artifacts/corpus-2
               compare-conversion --baseline artifacts/conversion-baseline.json --current artifacts/corpus-2/manifest.json --output artifacts/conversion-diff.json
               baseline-save --input artifacts/corpus-2/manifest.json --output artifacts/conversion-baseline.json
               verify --input artifacts/run-2.json

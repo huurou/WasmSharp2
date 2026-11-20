@@ -16,7 +16,7 @@ internal class CorpusVerifier_CreateScriptTests
             {"source_filename":"a.wast","commands":[{"type":"module","line":1,"filename":"a.wat","module_type":"text","binary_filename":"a.wasm"}]}
             """u8;
         var wabt = ScriptDocument.Parse(content, Path);
-        var wasmTools = ScriptDocument.Parse(content, Path, includeBinaryFilename: true);
+        var wasmTools = ScriptDocument.Parse(content, Path, usesWasmTools: true);
 
         // Act
         var wabtScript = CorpusVerifier.CreateScript(wabt, Path);

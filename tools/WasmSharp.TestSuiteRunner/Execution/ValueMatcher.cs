@@ -13,12 +13,12 @@ namespace WasmSharp.TestSuiteRunner.Execution;
 internal static class ValueMatcher
 {
     /// <summary>
-    /// 符号を除いたcanonical NaNとの一致を期待するWABTの値表現
+    /// 符号を除いたcanonical NaNとの一致を期待する値表現
     /// </summary>
     private const string CANONICAL = "nan:canonical";
 
     /// <summary>
-    /// 指数部がすべて1でquiet bitが1のNaNを期待するWABTの値表現
+    /// 指数部がすべて1でquiet bitが1のNaNを期待する値表現
     /// </summary>
     private const string ARITHMETIC = "nan:arithmetic";
 
@@ -39,28 +39,40 @@ internal static class ValueMatcher
     /// actionを実行する前に呼び、不正な期待値のcommandで副作用を起こさないようにする。
     /// </remarks>
     /// <param name="expected">JSONの記載順の値付き期待値</param>
-    /// <param name="specVersion">値の表記を決める仕様版</param>
+    /// <param name="specVersion">参照の照合規則を決める仕様版</param>
+    /// <param name="signedIntegers">整数と整数laneで負の10進表記を受け付けるかどうか</param>
     /// <returns>結果位置ごとの候補配列 単独の期待値は1件、eitherは入れ子を展開した順に候補を保持する。</returns>
     /// <exception cref="ScriptFormatException">値の文字列が固定形式にない場合</exception>
     internal static ImmutableArray<ImmutableArray<ValuePattern>> Parse(
         ImmutableArray<ExpectedResult> expected,
-        WasmSpecVersion specVersion = WasmSpecVersion.Core2
+        WasmSpecVersion specVersion = WasmSpecVersion.Core2,
+        bool signedIntegers = false
     )
     {
-        return [.. expected.Select((x, i) => ParseCandidates(x, $"expected[{i}]", specVersion == WasmSpecVersion.Core3))];
+        return [.. expected.Select((x, i) => ParseCandidates(x, $"expected[{i}]", specVersion, signedIntegers))];
     }
 
     /// <summary>
     /// 1つの結果位置で許容される値をすべて解析し、それぞれの値のJSON上の位置を診断に使用する。
     /// </summary>
-    private static ImmutableArray<ValuePattern> ParseCandidates(ExpectedResult result, string path, bool core3)
+    private static ImmutableArray<ValuePattern> ParseCandidates(
+        ExpectedResult result,
+        string path,
+        WasmSpecVersion specVersion,
+        bool signedIntegers
+    )
     {
         if (result is ExpectedResult.Either either)
         {
-            return [.. either.Candidates.SelectMany((x, i) => ParseCandidates(x, $"{path}.values[{i}]", core3))];
+            return
+            [
+                .. either.Candidates.SelectMany(
+                    (x, i) => ParseCandidates(x, $"{path}.values[{i}]", specVersion, signedIntegers)
+                ),
+            ];
         }
 
-        return [Parse((ExpectedValue)result, $"{path}.value", core3)];
+        return [Parse((ExpectedValue)result, $"{path}.value", specVersion, signedIntegers)];
     }
 
     /// <summary>
@@ -145,12 +157,13 @@ internal static class ValueMatcher
     /// </summary>
     /// <param name="value">値の文字列を加工せず保持した期待値</param>
     /// <param name="path">値の異常を報告するJSON上の位置</param>
-    /// <param name="core3">Core 3.0の整数と参照の表記を使う場合はtrue</param>
+    /// <param name="specVersion">参照の照合規則を決める仕様版</param>
+    /// <param name="signedIntegers">整数と整数laneで負の10進表記を受け付けるかどうか</param>
     /// <returns>数値のビット列やNaN条件、または参照の比較条件</returns>
     /// <exception cref="ScriptFormatException">値やlane数が固定形式に合わない場合</exception>
-    private static ValuePattern Parse(ExpectedValue value, string path, bool core3)
+    private static ValuePattern Parse(ExpectedValue value, string path, WasmSpecVersion specVersion, bool signedIntegers)
     {
-        if (core3 && ExpectedValue.GetCore3ReferenceMatches(value.Type) is { } matches)
+        if (specVersion == WasmSpecVersion.Core3 && ExpectedValue.GetCore3ReferenceMatches(value.Type) is { } matches)
         {
             var comparison = value.Value switch
             {
@@ -165,11 +178,11 @@ internal static class ValueMatcher
 
         return value switch
         {
-            { Type: "i32" } => ParseNumber(value, 32, false, path, core3),
-            { Type: "i64" } => ParseNumber(value, 64, false, path, core3),
-            { Type: "f32" } => ParseNumber(value, 32, true, path, core3),
-            { Type: "f64" } => ParseNumber(value, 64, true, path, core3),
-            { Type: "v128", LaneType: { } laneType } => ParseVector(laneType, value.Lanes, path, core3),
+            { Type: "i32" } => ParseNumber(value, 32, false, path, signedIntegers),
+            { Type: "i64" } => ParseNumber(value, 64, false, path, signedIntegers),
+            { Type: "f32" } => ParseNumber(value, 32, true, path, signedIntegers),
+            { Type: "f64" } => ParseNumber(value, 64, true, path, signedIntegers),
+            { Type: "v128", LaneType: { } laneType } => ParseVector(laneType, value.Lanes, path, signedIntegers),
             { Type: "funcref" or "externref", Value: ValueCodec.NULL } => new(value.Type, 0, [], null),
             { Type: "externref" } => new(value.Type, 0, [], (uint)ValueCodec.ParseBits(value.Value, 32, path)),
             _ => throw new ScriptFormatException($"{path}の{value.Value}は固定形式にない{value.Type}の期待値です。"),
@@ -185,7 +198,7 @@ internal static class ValueMatcher
     /// <param name="path">値の異常を報告するJSON上の位置</param>
     /// <param name="signedIntegers">整数で負の10進表記を許容するかどうか</param>
     /// <returns>元の値型と幅を持つ1個の数値の比較条件</returns>
-    /// <exception cref="ScriptFormatException">文字列が許容するNaN patternでも仕様版と型が許容する10進表記でもない場合</exception>
+    /// <exception cref="ScriptFormatException">文字列が許容するNaN patternでも変換器と型が許容する10進表記でもない場合</exception>
     private static ValuePattern ParseNumber(ExpectedValue value, int width, bool floating, string path, bool signedIntegers)
     {
         return new(value.Type, width, [ParseBits(value.Value, width, floating, path, signedIntegers)], null);
@@ -199,7 +212,7 @@ internal static class ValueMatcher
     /// <param name="path">lane数やlane値の異常を報告するJSON上の位置</param>
     /// <param name="signedIntegers">整数で負の10進表記を許容するかどうか</param>
     /// <returns>laneの幅と順序を持つv128の比較条件</returns>
-    /// <exception cref="ScriptFormatException">lane数が型と合わないか、lane値が許容するNaN patternでも仕様版と型が許容する10進表記でもない場合</exception>
+    /// <exception cref="ScriptFormatException">lane数が型と合わないか、lane値が許容するNaN patternでも変換器と型が許容する10進表記でもない場合</exception>
     private static ValuePattern ParseVector(
         LaneType laneType,
         ImmutableArray<string> lanes,
@@ -226,7 +239,7 @@ internal static class ValueMatcher
     /// <param name="path">値の異常を報告するJSON上の位置</param>
     /// <param name="signedIntegers">整数で負の10進表記を許容するかどうか</param>
     /// <returns>canonical・arithmeticのNaN条件または指定幅に収まる具体的なビット列</returns>
-    /// <exception cref="ScriptFormatException">文字列が許容するNaN patternでも仕様版と型が許容する10進表記でもない場合</exception>
+    /// <exception cref="ScriptFormatException">文字列が許容するNaN patternでも変換器と型が許容する10進表記でもない場合</exception>
     private static BitsPattern ParseBits(string? text, int width, bool floating, string path, bool signedIntegers)
     {
         // NaN patternは浮動小数点数の値とlaneだけが持ち、整数では10進数として検査して拒否する。

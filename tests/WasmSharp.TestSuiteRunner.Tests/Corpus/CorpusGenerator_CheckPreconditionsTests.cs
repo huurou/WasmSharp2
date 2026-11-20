@@ -21,13 +21,7 @@ internal class CorpusGenerator_CheckPreconditionsTests
         var profile = new ConversionProfileLoader().LoadCore3();
         Directory.CreateDirectory(directory.Combine(profile.WorkingDirectory));
         profile = profile with { Inputs = [], WasmTools = profile.WasmTools! with { Version = version, Commit = commit } };
-        var request = new GenerateRequest(
-            profile,
-            directory.Root,
-            null,
-            SuiteWorkspace.ConverterPath,
-            directory.Combine("out")
-        );
+        var request = new GenerateRequest(profile, directory.Root, SuiteWorkspace.ConverterPath, directory.Combine("out"));
 
         // Act
         var preconditions = CorpusGenerator.CheckPreconditions(request);
@@ -56,7 +50,7 @@ internal class CorpusGenerator_CheckPreconditionsTests
         var libraryBytes = await File.ReadAllBytesAsync(typeof(WasmModule).Assembly.Location);
         var converter = directory.Combine("wasm-tools.dll");
         await File.WriteAllBytesAsync(converter, libraryBytes);
-        var request = new GenerateRequest(profile, directory.Root, null, converter, directory.Combine("out"));
+        var request = new GenerateRequest(profile, directory.Root, converter, directory.Combine("out"));
 
         // Act
         var preconditions = CorpusGenerator.CheckPreconditions(request);
@@ -91,7 +85,7 @@ internal class CorpusGenerator_CheckPreconditionsTests
         {
             await Assert.That(preconditions.Diagnostics).IsEmpty();
             await Assert.That(provenance.SpecHead).IsEqualTo(workspace.Commit);
-            await Assert.That(provenance.WabtHead).IsEqualTo(workspace.Commit);
+            await Assert.That(provenance.ExecutableVersion).IsEqualTo("wasm-tools 1.263.0 (7a2fa422c 2026-10-30)");
             await Assert
                 .That(provenance.ExecutableSha256)
                 .IsEqualTo(
@@ -99,7 +93,6 @@ internal class CorpusGenerator_CheckPreconditionsTests
                 );
             await Assert.That(provenance.ExecutablePath).IsEqualTo(SuiteWorkspace.ConverterPath);
             await Assert.That(provenance.SpecRoot).IsEqualTo(workspace.SourceRoot);
-            await Assert.That(provenance.WabtRoot).IsEqualTo(workspace.SourceRoot);
             await Assert.That(provenance.OutputRoot).IsEqualTo(workspace.OutputRoot);
             await Assert.That(provenance.SpecOrigin).IsNull();
             await Assert.That(provenance.OperatingSystem).IsNotNull();
@@ -123,7 +116,6 @@ internal class CorpusGenerator_CheckPreconditionsTests
         {
             await Assert.That(preconditions.Diagnostics).IsEmpty();
             await Assert.That(preconditions.Provenance.SpecOrigin).IsEqualTo("https://mirror.invalid/spec.git");
-            await Assert.That(preconditions.Provenance.WabtOrigin).IsEqualTo("https://mirror.invalid/spec.git");
             await Assert.That(request.Profile.Spec.Url).IsEqualTo("https://github.com/WebAssembly/spec.git");
         }
     }
@@ -163,7 +155,6 @@ internal class CorpusGenerator_CheckPreconditionsTests
             await Assert.That(preconditions.Diagnostics).IsEmpty();
             await Assert.That(preconditions.Provenance.SpecHead).IsNull();
             await Assert.That(preconditions.Provenance.SpecOrigin).IsNull();
-            await Assert.That(preconditions.Provenance.WabtHead).IsEqualTo(workspace.Commit);
         }
     }
 
@@ -200,28 +191,16 @@ internal class CorpusGenerator_CheckPreconditionsTests
             await Assert.That(preconditions.Diagnostics[0].Message).Contains("HEADを取得できません");
             await Assert.That(preconditions.Diagnostics[0].Message).Matches(@"標準エラー: \S");
             await Assert.That(preconditions.Provenance.SpecHead).IsNull();
-            await Assert.That(preconditions.Provenance.WabtHead).IsEqualTo(workspace.Commit);
         }
     }
 
     [Test]
-    [Arguments(true)]
-    [Arguments(false)]
-    public async Task HEADが固定commitと異なる_変換前提の診断として記録する(bool spec)
+    public async Task SpecのHEADが固定commitと異なる_変換前提の診断として記録する()
     {
         // Arrange
         using var workspace = await SuiteWorkspace.CreateAsync();
         var profile = workspace.CreateProfile();
-        var wabt = profile.Wabt!;
-        profile = spec
-            ? profile with
-            {
-                Spec = profile.Spec with { Commit = OTHER_COMMIT },
-            }
-            : profile with
-            {
-                Wabt = wabt with { Revision = wabt.Revision with { Commit = OTHER_COMMIT } },
-            };
+        profile = profile with { Spec = profile.Spec with { Commit = OTHER_COMMIT } };
 
         // Act
         var preconditions = CorpusGenerator.CheckPreconditions(workspace.CreateRequest(profile));
@@ -231,55 +210,9 @@ internal class CorpusGenerator_CheckPreconditionsTests
         {
             await Assert.That(preconditions.Diagnostics.Length).IsEqualTo(1);
             await Assert.That(preconditions.Diagnostics[0].Operation).IsEqualTo("prepare");
-            await Assert.That(preconditions.Diagnostics[0].Message).Contains(spec ? "spec" : "WABT");
+            await Assert.That(preconditions.Diagnostics[0].Message).Contains("spec");
             await Assert.That(preconditions.Diagnostics[0].Message).Contains(OTHER_COMMIT);
             await Assert.That(preconditions.Diagnostics[0].Message).Contains(workspace.Commit);
-        }
-    }
-
-    [Test]
-    public async Task WABT_rootがGitのcheckoutではない_変換前提の診断として記録する()
-    {
-        // Arrange
-        using var workspace = await SuiteWorkspace.CreateAsync();
-        var wabtRoot = Path.Combine(workspace.OutputRoot, "wabt");
-        Directory.CreateDirectory(wabtRoot);
-        var request = workspace.CreateRequest(workspace.CreateProfile(), wabtRoot);
-
-        // Act
-        var preconditions = CorpusGenerator.CheckPreconditions(request);
-
-        // Assert
-        using (Assert.Multiple())
-        {
-            await Assert.That(preconditions.Diagnostics.Length).IsEqualTo(1);
-            await Assert.That(preconditions.Diagnostics[0].Path).IsNull();
-            await Assert.That(preconditions.Diagnostics[0].Message).Contains(wabtRoot);
-            await Assert.That(preconditions.Provenance.WabtHead).IsNull();
-        }
-    }
-
-    [Test]
-    public async Task WABTのcheckoutにcommitがなくoriginだけがある_取得失敗を記録しoriginを出典に採用しない()
-    {
-        // Arrange
-        using var workspace = await SuiteWorkspace.CreateAsync();
-        var wabtRoot = Path.Combine(workspace.OutputRoot, "unborn-wabt");
-        await workspace.GitAsync("init", wabtRoot);
-        await workspace.GitAsync("-C", wabtRoot, "remote", "add", "origin", "https://unrelated.invalid/wabt.git");
-        var request = workspace.CreateRequest(workspace.CreateProfile(), wabtRoot);
-
-        // Act
-        var preconditions = CorpusGenerator.CheckPreconditions(request);
-
-        // Assert
-        using (Assert.Multiple())
-        {
-            await Assert.That(preconditions.Provenance.WabtHead).IsNull();
-            await Assert.That(preconditions.Provenance.WabtOrigin).IsNull();
-            await Assert.That(preconditions.Provenance.SpecHead).IsEqualTo(workspace.Commit);
-            await Assert.That(preconditions.Diagnostics.Length).IsEqualTo(1);
-            await Assert.That(preconditions.Diagnostics[0].Message).Contains("HEADを取得できません");
         }
     }
 
@@ -305,7 +238,6 @@ internal class CorpusGenerator_CheckPreconditionsTests
             {
                 await Assert.That(preconditions.Diagnostics).IsEmpty();
                 await Assert.That(preconditions.Provenance.SpecHead).IsEqualTo(workspace.Commit);
-                await Assert.That(preconditions.Provenance.WabtHead).IsEqualTo(workspace.Commit);
             }
         }
         finally
@@ -334,8 +266,7 @@ internal class CorpusGenerator_CheckPreconditionsTests
             using (Assert.Multiple())
             {
                 await Assert.That(preconditions.Provenance.SpecHead).IsNull();
-                await Assert.That(preconditions.Provenance.WabtHead).IsNull();
-                await Assert.That(preconditions.Diagnostics.Length).IsEqualTo(2);
+                await Assert.That(preconditions.Diagnostics.Length).IsEqualTo(1);
                 await Assert
                     .That(
                         preconditions.Diagnostics.All(x =>
@@ -374,33 +305,11 @@ internal class CorpusGenerator_CheckPreconditionsTests
     }
 
     [Test]
-    public async Task Git情報が破損したWABT配置で前提を確認する_HEAD取得失敗の終了値と配置を診断に残す()
-    {
-        // Arrange
-        using var workspace = await SuiteWorkspace.CreateAsync();
-        var wabtRoot = Path.Combine(workspace.OutputRoot, "broken-wabt");
-        Directory.CreateDirectory(Path.Combine(wabtRoot, ".git"));
-        var request = workspace.CreateRequest(workspace.CreateProfile(), wabtRoot);
-
-        // Act
-        var preconditions = CorpusGenerator.CheckPreconditions(request);
-
-        // Assert
-        using (Assert.Multiple())
-        {
-            await Assert.That(preconditions.Provenance.WabtHead).IsNull();
-            await Assert.That(preconditions.Diagnostics.Length).IsEqualTo(1);
-            await Assert.That(preconditions.Diagnostics[0].Message).Contains(wabtRoot);
-            await Assert.That(preconditions.Diagnostics[0].Message).Contains("HEADを取得できません。終了値: 128");
-        }
-    }
-
-    [Test]
     public async Task 変換器の実行ファイルがない_hashを記録せず変換前提の診断として記録する()
     {
         // Arrange
         using var workspace = await SuiteWorkspace.CreateAsync();
-        var converterPath = Path.Combine(workspace.OutputRoot, "missing-wast2json");
+        var converterPath = Path.Combine(workspace.OutputRoot, "missing-wasm-tools");
         var request = workspace.CreateRequest(workspace.CreateProfile()) with { ConverterPath = converterPath };
 
         // Act

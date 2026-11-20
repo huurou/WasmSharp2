@@ -28,7 +28,6 @@ internal class ConversionProfileLoader_LoadTests
     {
         // Arrange
         const string SPEC_COMMIT = "05ca4182176763112561ae20153975c12bd689e4";
-        const string WABT_COMMIT = "c8dc7b6eae42b3aa3e95b9014dc02b71f8e0e1db";
 
         // Act
         var profile = _profileLoader.Load();
@@ -41,8 +40,14 @@ internal class ConversionProfileLoader_LoadTests
                 .That(profile.Spec)
                 .IsEqualTo(new SourceRevision("https://github.com/WebAssembly/spec.git", SPEC_COMMIT));
             await Assert
-                .That(profile.Wabt?.Revision)
-                .IsEqualTo(new SourceRevision("https://github.com/WebAssembly/wabt.git", WABT_COMMIT));
+                .That(profile.WasmTools)
+                .IsEqualTo(
+                    new WasmToolsRelease(
+                        "https://github.com/bytecodealliance/wasm-tools.git",
+                        "7a2fa422cdf9aeeaf488a2acac8bc94a078bfa32",
+                        "1.263.0"
+                    )
+                );
             await Assert.That(profile.Inputs.Length).IsEqualTo(147);
             await Assert.That(profile.Inputs.Count(x => x.Path.StartsWith("simd/", StringComparison.Ordinal))).IsEqualTo(57);
             await Assert
@@ -73,7 +78,7 @@ internal class ConversionProfileLoader_LoadTests
     }
 
     [Test]
-    public async Task 埋込みprofileを読む_全21機能の既定値と実効値をCore2の条件に固定する()
+    public async Task 埋込みprofileを読む_Core2の全21機能と両版共通の変換引数を取得する()
     {
         // Arrange
         string[] enabled =
@@ -113,36 +118,10 @@ internal class ConversionProfileLoader_LoadTests
             await Assert.That(profile.Features.Length).IsEqualTo(21);
             await Assert.That(profile.Features.Where(x => x.Enabled).Select(x => x.Name)).IsEquivalentTo(enabled);
             await Assert.That(profile.Features.Where(x => !x.Enabled).Select(x => x.Name)).IsEquivalentTo(disabled);
-            await Assert
-                .That(profile.Features.Where(x => x.DefaultEnabled is true).Select(x => x.Name))
-                .IsEquivalentTo([
-                    .. enabled,
-                    "exceptions",
-                    "tail-call",
-                    "annotations",
-                    "memory64",
-                    "multi-memory",
-                    "extended-const",
-                    "relaxed-simd",
-                ]);
-            await Assert.That(profile.Wabt?.Options).IsEqualTo(new ConversionOptions(true, true, false, false));
+            await Assert.That(profile.Features.All(x => x.DefaultEnabled is null)).IsTrue();
+            await Assert.That(profile.Wabt).IsNull();
             await Assert.That(profile.WorkingDirectory).IsEqualTo("test/core");
-            await Assert
-                .That(
-                    profile.LogicalArguments.SequenceEqual([
-                        "<relative.wast>",
-                        "--disable-exceptions",
-                        "--disable-tail-call",
-                        "--disable-annotations",
-                        "--disable-memory64",
-                        "--disable-multi-memory",
-                        "--disable-extended-const",
-                        "--disable-relaxed-simd",
-                        "-o",
-                        "<output-root>/modules/<relative.json>",
-                    ])
-                )
-                .IsTrue();
+            await Assert.That(profile.LogicalArguments.SequenceEqual(_profileLoader.LoadCore3().LogicalArguments)).IsTrue();
         }
     }
 

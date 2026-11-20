@@ -4,12 +4,7 @@
 
 ## 準備と起動
 
-.NET 11を使用します。素材生成に必要な準備は仕様版によって異なります。
-
-- **Core 2.0**: Gitで固定版のspecとWABTを取得し、固定版の`wast2json`をビルドします。[外部ソースの取得・ビルド手順](../../thirdParties/README.md)を参照してください。生成済み素材の実行には元WASTやWABTは不要です。
-- **Core 3.0**: 固定版の公式入力と指定版の`wasm-tools`を用意します。WABTの取得やビルドは不要です。[固定入力と変換器の取得手順](../../thirdParties/README.md#core-30の公式テスト素材)を参照してください。
-
-どちらの版も、公式入力の改行を変えずに取得します。
+.NET 11と、各OS向けの公式配布版の`wasm-tools 1.263.0`を使用します。Core 2.0とCore 3.0の入力は版別の仕様サブモジュールにあり、両版の素材を同じ実行ファイルで変換できます。生成済み素材の実行にはmanifestとそこから参照されるファイルを使用します。[固定入力と変換器の取得手順](../../thirdParties/README.md)
 
 リポジトリルートでReleaseビルドを行い、生成されたapphostを起動します。以下はPowerShellでの例です。
 
@@ -19,13 +14,13 @@ $runner = './tools/WasmSharp.TestSuiteRunner/bin/Release/net11.0/WasmSharp.TestS
 & $runner --help
 ```
 
-Linuxでは実行ファイル名を`WasmSharp.TestSuiteRunner`に読み替え、`--wast2json`にもLinux用にビルドした変換器のpathを指定します。CLIの例は`artifacts/wabt-core2-1.0.42-datacount/wast2json`ですが、実際のビルド出力先に合わせてください。リンク先の変換器ビルド手順はWindows向けです。各操作の説明は`<操作> --help`でも表示できます。相対pathは起動時の作業ディレクトリが基準です。
+Linuxではランナーの実行ファイル名を`WasmSharp.TestSuiteRunner`に、変換器をLinux用の`wasm-tools`に読み替えます。各操作の説明は`<操作> --help`でも表示できます。相対pathは起動時の作業ディレクトリが基準です。
 
 ## 操作
 
 | 操作 | 必須引数 | 処理 |
 | --- | --- | --- |
-| `generate`（既定のCore 2.0） | `--spec-root`、`--wabt-root`、`--wast2json`、`--output` | 固定147入力を変換・照合し、出力ディレクトリに`manifest.json`と素材を保存する。 |
+| `generate`（既定のCore 2.0） | `--spec-root`、`--wasm-tools`、`--output` | 固定147入力を変換・照合し、出力ディレクトリに`manifest.json`と素材を保存する。 |
 | `generate --profile core3` | `--spec-root`、`--wasm-tools`、`--output` | 固定255入力を変換・照合し、出力ディレクトリに`manifest.json`と素材を保存する。 |
 | `run` | `--manifest`、`--output` | manifestと相対配置の素材から全commandを実行し、結果JSONを保存する。manifestの`profile.id`に対応する固定profileの仕様の版でDecode・Validateする。 |
 | `baseline-save` | `--input`、`--output` | 完了したmanifestまたは実行結果JSONを同じ内容でコピーする。既存baselineの上書きもこの操作で行う。 |
@@ -39,10 +34,10 @@ Linuxでは実行ファイル名を`WasmSharp.TestSuiteRunner`に読み替え、
 
 ## Core 3.0の素材生成と比較
 
-[固定入力と変換器の取得手順](../../thirdParties/README.md#core-30の公式テスト素材)に従い、入力と配布版`wasm-tools`を用意します。`--spec-root`には`test/core`を含む親ディレクトリを渡します。以下はWindows x64での例です。各コマンドで終了0を確認してから次へ進みます。
+[固定入力と変換器の取得手順](../../thirdParties/README.md)に従い、入力と配布版`wasm-tools`を用意します。`--spec-root`には`test/core`を含む親ディレクトリを渡します。以下はWindows x64での例です。各コマンドで終了0を確認してから次へ進みます。
 
 ```powershell
-$spec3Root = './artifacts/core3-spec-d7aada50'
+$spec3Root = './thirdParties/WebAssembly-spec-core3'
 $wasmTools = './artifacts/wasm-tools-1.263.0-x86_64-windows/wasm-tools.exe'
 & $runner generate --profile core3 --spec-root $spec3Root --wasm-tools $wasmTools --output artifacts/core3-corpus-1
 & $runner generate --profile core3 --spec-root $spec3Root --wasm-tools $wasmTools --output artifacts/core3-corpus-2
@@ -97,13 +92,29 @@ Expand-Archive -LiteralPath ./baselines/core3/initial-run.zip -DestinationPath .
 次の各行を個別に実行し、終了値と結果を確認します。`$runner`は上記の起動例で設定した実行ファイルです。
 
 ```powershell
-& $runner generate --spec-root thirdParties/WebAssembly-spec --wabt-root thirdParties/wabt --wast2json artifacts/wabt-core2-1.0.42-datacount/Release/wast2json.exe --output artifacts/corpus
+$wasmTools = './artifacts/wasm-tools-1.263.0-x86_64-windows/wasm-tools.exe'
+& $runner generate --spec-root thirdParties/WebAssembly-spec-core2 --wasm-tools $wasmTools --output artifacts/corpus
 & $runner run --manifest artifacts/corpus/manifest.json --output artifacts/run-1.json
 & $runner baseline-save --input artifacts/corpus/manifest.json --output artifacts/conversion-baseline.json
 & $runner baseline-save --input artifacts/run-1.json --output artifacts/run-baseline.json
 ```
 
 ランナーの初回受入で確認したspectest・register・共有リソースの公式ケースは、[当時の受入条件](https://github.com/huurou/WasmSharp2/blob/2409d0df7453b281996b27e66a8734ca8e471aa1/.kiro/specs/test-suite-runner/design.md#初回の実cliによる公式受入)を参照してください。現在のランタイムがCore 2.0の対象全件に合格するかは、別途`verify`で判定します。
+
+### Core 2.0の比較基準
+
+Core 2.0の各ZIPには、同じ生成・実行から保存した`conversion-baseline.json`と`run-baseline.json`を収録しています。新しい検証にはwasm-tools版を使用します。[wasm-tools 1.263.0版](../../baselines/core2/wasm-tools-1.263.0.zip)
+
+WABT版には、移行直前のCore 2.0の回帰確認で比較元に使った2026-11-18の結果を収録しています。実行IDは`3f6104ab-052d-4035-8c73-60127a2b5a21`、展開後の`run-baseline.json`のSHA-256は`9a900002c73bff54b6e3b9e59602d5b437c1654f8285096c5c26d18aded2f1b2`です。2026-10-26の受入で使った結果の保存先とSHA-256は、ベンチマークの受入記録にあります。[WABT 1.0.42版（DataCount修正を含む）](../../baselines/core2/wabt-1.0.42.zip)・[移行前の回帰確認](https://github.com/huurou/WasmSharp2/pull/37)・[ベンチマークの受入記録](../WasmSharp.Benchmarks/README.md#2026-10-26の公式受入で使用した比較元)
+
+変換器の移行時は、同じCore 2.0の147入力に対する結果を元のWASTの相対パスとコマンド順序で照合しました。生成物5,821件のうち2,970件でSHA-256が変わりましたが、全53,907ケースの判定は一致しました（成立52,830件、対象外1,077件）。Core 3.0では版別サブモジュールから生成した7,394件のSHA-256と、全65,193ケースの判定が移行前と一致しました。
+
+```powershell
+Expand-Archive -LiteralPath ./baselines/core2/wasm-tools-1.263.0.zip -DestinationPath ./artifacts/core2-wasm-tools-baseline
+& $runner compare-conversion --baseline artifacts/core2-wasm-tools-baseline/conversion-baseline.json --current artifacts/corpus/manifest.json --output artifacts/core2-conversion-diff.json
+& $runner compare-run --baseline artifacts/core2-wasm-tools-baseline/run-baseline.json --current artifacts/run-1.json --output artifacts/core2-run-diff.json
+& $runner verify --input artifacts/run-1.json
+```
 
 ## 機能追加後の実行・比較・更新
 
@@ -136,7 +147,7 @@ Expand-Archive -LiteralPath ./baselines/core3/initial-run.zip -DestinationPath .
 素材を再生成したときも、比較してから変換baselineを更新します。
 
 ```powershell
-& $runner generate --spec-root thirdParties/WebAssembly-spec --wabt-root thirdParties/wabt --wast2json artifacts/wabt-core2-1.0.42-datacount/Release/wast2json.exe --output artifacts/corpus-2
+& $runner generate --spec-root thirdParties/WebAssembly-spec-core2 --wasm-tools $wasmTools --output artifacts/corpus-2
 & $runner compare-conversion --baseline artifacts/conversion-baseline.json --current artifacts/corpus-2/manifest.json --output artifacts/conversion-diff.json
 & $runner baseline-save --input artifacts/corpus-2/manifest.json --output artifacts/conversion-baseline.json
 ```

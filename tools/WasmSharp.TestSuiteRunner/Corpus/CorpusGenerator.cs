@@ -103,19 +103,11 @@ internal static class CorpusGenerator
         // 親ディレクトリの無関係なGitをspecの版として扱わないよう、spec-root直下のGit情報だけを見る。
         var specCheckout = IsCheckout(request.SpecRoot);
         var specHead = specCheckout ? ReadHead(request.SpecRoot, "spec", profile.Spec, diagnostics) : null;
-        string? wabtHead = null;
-        string? wabtOrigin = null;
-        if (request.WabtCheckout is { } checkout)
-        {
-            wabtHead = CheckWabtCheckout(checkout.Root, checkout.Settings.Revision, diagnostics);
-            wabtOrigin = wabtHead is null ? null : ReadOrigin(checkout.Root);
-        }
-
+        var release = profile.WasmTools ?? throw new ArgumentException("素材生成にはwasm-toolsの固定リリースが必要です。");
         var executableHash = HashExecutable(request.ConverterPath, diagnostics);
-        var executableVersion =
-            executableHash is not null && profile.WasmTools is { } release
-                ? CheckWasmToolsVersion(request.ConverterPath, release, diagnostics)
-                : null;
+        var executableVersion = executableHash is not null
+            ? CheckWasmToolsVersion(request.ConverterPath, release, diagnostics)
+            : null;
 
         return new GenerationPreconditions(
             new ConversionProvenance
@@ -127,12 +119,9 @@ internal static class CorpusGenerator
                 OperatingSystem = RuntimeInformation.OSDescription,
                 Architecture = RuntimeInformation.OSArchitecture.ToString(),
                 SpecRoot = request.SpecRoot,
-                WabtRoot = request.WabtCheckout?.Root,
                 OutputRoot = request.OutputRoot,
                 SpecOrigin = specCheckout ? ReadOrigin(request.SpecRoot) : null,
-                WabtOrigin = wabtOrigin,
                 SpecHead = specHead,
-                WabtHead = wabtHead,
             },
             diagnostics.ToImmutable()
         );
@@ -259,10 +248,7 @@ internal static class CorpusGenerator
                     {
                         Script =
                             kind == ArtifactKind.Json
-                                ? CorpusVerifier.CreateScript(
-                                    ScriptDocument.Parse(content, path, request.Profile.WasmTools is not null),
-                                    path
-                                )
+                                ? CorpusVerifier.CreateScript(ScriptDocument.Parse(content, path, usesWasmTools: true), path)
                                 : null,
                     }
                 );
@@ -386,26 +372,6 @@ internal static class CorpusGenerator
             );
             return null;
         }
-    }
-
-    /// <summary>
-    /// Core 2.0の変換器は、修正済みWABTソースの固定checkoutを要求する。
-    /// </summary>
-    private static string? CheckWabtCheckout(
-        string root,
-        SourceRevision revision,
-        ImmutableArray<CorpusDiagnostic>.Builder diagnostics
-    )
-    {
-        if (IsCheckout(root))
-        {
-            return ReadHead(root, "WABT", revision, diagnostics);
-        }
-
-        diagnostics.Add(
-            new CorpusDiagnostic(PREPARE, $"WABTの配置{root}は、固定commitを確認できるGitのcheckoutではありません。")
-        );
-        return null;
     }
 
     /// <summary>

@@ -3,12 +3,12 @@ namespace WasmSharp.TestSuiteRunner.Tests;
 internal class RunnerPaths_ConstructorTests
 {
     [Test]
-    [Arguments(true, true, "artifacts/wabt-core2-1.0.42-datacount/Release/wast2json.exe")]
-    [Arguments(false, false, "artifacts/wabt-core2-1.0.42-datacount/wast2json")]
+    [Arguments(true, true, "artifacts/wasm-tools-1.263.0-x86_64-windows/wasm-tools.exe")]
+    [Arguments(false, false, "artifacts/wasm-tools-1.263.0-x86_64-linux/wasm-tools")]
     public async Task OSを指定する_パスの大小文字の扱いと変換器の配置が決まる(
         bool isWindows,
         bool samePath,
-        string expectedWast2Json
+        string expectedWasmTools
     )
     {
         // Act
@@ -18,7 +18,7 @@ internal class RunnerPaths_ConstructorTests
         using (Assert.Multiple())
         {
             await Assert.That(string.Equals("sample.wast", "SAMPLE.WAST", paths.Comparison)).IsEqualTo(samePath);
-            await Assert.That(paths.Wast2Json).IsEqualTo(expectedWast2Json);
+            await Assert.That(paths.WasmTools).IsEqualTo(expectedWasmTools);
         }
     }
 }

@@ -55,9 +55,9 @@ internal static class CorpusVerifier
         var owners = artifacts
             .DistinctBy(x => x.Artifact.Path, StringComparer.Ordinal)
             .ToDictionary(x => x.Artifact.Path, x => x.Owner, StringComparer.Ordinal);
-        var includeBinaryFilename = manifest.Profile.WasmTools is not null;
+        var usesWasmTools = manifest.Profile.WasmTools is not null;
         var inputs = manifest
-            .Inputs.Select(x => VerifyInput(x, root, mode, inputRoot, recordCounts, owners, includeBinaryFilename))
+            .Inputs.Select(x => VerifyInput(x, root, mode, inputRoot, recordCounts, owners, usesWasmTools))
             .ToImmutableArray();
         IEnumerable<CorpusDiagnostic> diagnostics = FindExtraMaterials(root, owners.Keys);
         if (inputRoot is not null)
@@ -176,7 +176,7 @@ internal static class CorpusVerifier
     /// <param name="inputRoot">元入力を照合するtest/coreの配置 元入力を照合しない場合はnull</param>
     /// <param name="recordCounts">素材pathごとの全入力を通じた記録数</param>
     /// <param name="owners">各素材pathを記録している入力の相対path</param>
-    /// <param name="includeBinaryFilename">wasm-toolsの追加素材参照を読むかどうか</param>
+    /// <param name="usesWasmTools">スクリプトをwasm-toolsのJSON形式で読み取るかどうか</param>
     /// <returns>照合できたJSON・binaryのバイト列と、入力全体または参照元commandに対応する失敗理由</returns>
     private static InputVerification VerifyInput(
         InputConversionResult input,
@@ -185,7 +185,7 @@ internal static class CorpusVerifier
         string? inputRoot,
         Dictionary<string, int> recordCounts,
         Dictionary<string, string> owners,
-        bool includeBinaryFilename
+        bool usesWasmTools
     )
     {
         var issues = ImmutableArray.CreateBuilder<CorpusDiagnostic>();
@@ -206,7 +206,7 @@ internal static class CorpusVerifier
         }
 
         var checks = input.Artifacts.Select(x => CheckArtifact(x, input.Input.Path, root, recordCounts)).ToArray();
-        var document = ReadDocument(input.Input, checks, issues, includeBinaryFilename);
+        var document = ReadDocument(input.Input, checks, issues, usesWasmTools);
         if (document is null)
         {
             // 実行しない入力では、module素材の異常も入力異常として残す。
@@ -296,13 +296,13 @@ internal static class CorpusVerifier
     /// <param name="input">JSONに対応する元入力</param>
     /// <param name="checks">この入力に属する全生成物の照合結果</param>
     /// <param name="issues">JSONの配置・内容・記録に異常がある場合に理由を追加する診断一覧</param>
-    /// <param name="includeBinaryFilename">wasm-toolsの追加素材参照を読むかどうか</param>
+    /// <param name="usesWasmTools">スクリプトをwasm-toolsのJSON形式で読み取るかどうか</param>
     /// <returns>hashと列挙記録が一致するJSON JSONを一意に特定できないか、配置・hash・記録が不正な場合はnull</returns>
     private static ScriptDocument? ReadDocument(
         SourceInput input,
         ArtifactCheck[] checks,
         ImmutableArray<CorpusDiagnostic>.Builder issues,
-        bool includeBinaryFilename
+        bool usesWasmTools
     )
     {
         var scripts = checks.Where(x => x.Artifact.Kind == ArtifactKind.Json).ToArray();
@@ -334,7 +334,7 @@ internal static class CorpusVerifier
             return null;
         }
 
-        var document = ScriptDocument.Parse(script.Content.AsSpan(), script.Artifact.Path, includeBinaryFilename);
+        var document = ScriptDocument.Parse(script.Content.AsSpan(), script.Artifact.Path, usesWasmTools);
         issues.AddRange(document.Diagnostics);
         foreach (var command in document.Commands.Where(x => x.HasInvalidBinaryFilename))
         {

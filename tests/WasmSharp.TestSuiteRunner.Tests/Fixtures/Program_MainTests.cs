@@ -127,8 +127,8 @@ internal class Program_MainTests
         var binary = await File.ReadAllBytesAsync(Path.Combine(workspace.OutputRoot, moduleName));
         using (Assert.Multiple())
         {
-            await Assert.That(arguments.RootElement.GetProperty("arguments").GetArrayLength()).IsEqualTo(3);
-            await Assert.That(arguments.RootElement.GetProperty("arguments")[2].GetString()).IsEqualTo(outputPath);
+            await Assert.That(arguments.RootElement.GetProperty("arguments").GetArrayLength()).IsEqualTo(6);
+            await Assert.That(arguments.RootElement.GetProperty("arguments")[5].GetString()).IsEqualTo(outputPath);
             await Assert
                 .That(arguments.RootElement.GetProperty("working_directory").GetString())
                 .IsEqualTo(workspace.InputRoot);

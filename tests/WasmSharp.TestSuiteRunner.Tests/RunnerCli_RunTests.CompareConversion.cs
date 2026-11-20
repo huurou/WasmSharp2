@@ -12,7 +12,7 @@ internal partial class RunnerCli_RunTests
     [Arguments("wabt", true)]
     [Arguments("conversion", true)]
     [Arguments("default_enabled", true)]
-    public async Task Core2の保存条件に必須のnullがある_変換比較は読取を拒否する(string field, bool hasWasmTools)
+    public async Task WABTの保存条件に不足または別の変換器がある_変換比較は読取を拒否する(string field, bool hasWasmTools)
     {
         // Arrange
         using var directory = new TemporaryDirectory();
@@ -55,7 +55,9 @@ internal partial class RunnerCli_RunTests
         {
             await Assert.That(result.ExitCode).IsEqualTo(2);
             await Assert.That(result.Error).Contains("保存済み結果のJSONとして読み取れません");
-            await Assert.That(result.Error).Contains($"{expectedField}が必要です。");
+            await Assert
+                .That(result.Error)
+                .Contains(hasWasmTools ? "wasm_toolsとWABTの変換条件は併用できません" : $"{expectedField}が必要です。");
             await Assert.That(File.Exists(comparison)).IsFalse();
         }
     }
