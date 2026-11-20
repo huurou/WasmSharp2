@@ -104,7 +104,7 @@ internal static class ExpressionDecoder
                     reader.ReadByte(),
                     offset
                 ),
-                ImmediateKind.MemoryZero => ReadMemoryZero(opcode, offset, ref reader),
+                ImmediateKind.MemoryIndex => DecodedInstruction.WithIndex(opcode, ReadMemoryIndex(ref reader), offset),
                 ImmediateKind.MemoryPairZero => ReadMemoryPairZero(opcode, offset, ref reader),
                 ImmediateKind.DataIndexMemoryZero => ReadDataIndexMemoryZero(opcode, offset, ref reader),
                 _ => throw new InvalidOperationException("対応済み命令の即値情報が不正です。"),
@@ -152,16 +152,19 @@ internal static class ExpressionDecoder
     }
 
     /// <summary>
-    /// メモリインデックス0を指定する単一の予約バイトを読む
+    /// 仕様の版に従ってメモリインデックスを読む
     /// </summary>
-    /// <param name="opcode">メモリ命令の識別子</param>
-    /// <param name="offset">命令の入力位置</param>
-    /// <param name="reader">予約バイトの先頭にある読み取り状態</param>
-    /// <returns>予約バイトの構文を検査した命令</returns>
-    private static DecodedInstruction ReadMemoryZero(OpcodeKey opcode, long offset, ref ModuleBinaryReader reader)
+    /// <param name="reader">メモリインデックスの先頭にある読み取り状態</param>
+    /// <returns>Core 3.0ではu32の値、Core 2.0では予約バイトが表す0</returns>
+    private static uint ReadMemoryIndex(ref ModuleBinaryReader reader)
     {
+        if (reader.SpecVersion == WasmSpecVersion.Core3)
+        {
+            return reader.ReadU32();
+        }
+
         RequireMemoryZero(ref reader);
-        return DecodedInstruction.WithoutImmediate(opcode, offset);
+        return 0;
     }
 
     /// <summary>
@@ -174,7 +177,8 @@ internal static class ExpressionDecoder
     private static DecodedInstruction ReadMemoryPairZero(OpcodeKey opcode, long offset, ref ModuleBinaryReader reader)
     {
         RequireMemoryZero(ref reader);
-        return ReadMemoryZero(opcode, offset, ref reader);
+        RequireMemoryZero(ref reader);
+        return DecodedInstruction.WithoutImmediate(opcode, offset);
     }
 
     /// <summary>

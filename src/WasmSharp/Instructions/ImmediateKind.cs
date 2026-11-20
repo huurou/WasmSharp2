@@ -61,9 +61,9 @@ internal enum ImmediateKind
     MemoryArgument,
 
     /// <summary>
-    /// メモリインデックス0を指定する予約バイト
+    /// メモリインデックス Core 2.0では0を表す予約バイト
     /// </summary>
-    MemoryZero,
+    MemoryIndex,
 
     /// <summary>
     /// コピー先とコピー元のメモリインデックス0を指定する2つの予約バイト
