@@ -6,6 +6,24 @@ namespace WasmSharp.Tests;
 internal partial class WasmModule_ValidateTests
 {
     [Test]
+    [Arguments((byte)0, "constant expression required")]
+    [Arguments((byte)1, "type mismatch")]
+    public async Task Core3のデータオフセットで可変globalまたはi64を参照する_検証で拒否する(byte index, string diagnostic)
+    {
+        // Arrange
+        var bytes = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Memories((1, null)),
+            HostLinkingModuleBinary.Globals((0x7F, true, [0x41, 0, 0x0B]), (0x7E, false, [0x42, 0, 0x0B])),
+            HostLinkingModuleBinary.Section(11, [1, 0, 0x23, index, 0x0B, 0])
+        );
+        var module = WasmModule.Decode(bytes, WasmSpecVersion.Core3);
+
+        // Act & Assert
+        var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
+        await Assert.That(exception!.Message).StartsWith(diagnostic);
+    }
+
+    [Test]
     [Arguments(false, "", "", "010041000B00", "unknown memory 0", 5, "データセグメント")]
     [Arguments(true, "", "", "01020141000B00", "unknown memory 1", 6, "データセグメント")]
     [Arguments(true, "", "", "010042000B00", "type mismatch", 2, null)]

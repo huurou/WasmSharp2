@@ -6,6 +6,39 @@ namespace WasmSharp.Tests;
 internal partial class WasmModule_ValidateTests
 {
     [Test]
+    [Arguments(WasmSpecVersion.Core3, "23010B", "D0700B", "type mismatch")] // 添字にfuncrefを使う。
+    [Arguments(WasmSpecVersion.Core3, "41000B", "23000B", "type mismatch")] // 要素にi32を使う。
+    [Arguments(WasmSpecVersion.Core3, "41000B", "23020B", "constant expression required")] // 可変のfuncrefを読む。
+    [Arguments(WasmSpecVersion.Core2, "23000B", "D0700B", "unknown global 0")]
+    [Arguments(WasmSpecVersion.Core2, "41000B", "23010B", "unknown global 1")]
+    public async Task 要素の添字か初期値で定義globalを不正に参照する_仕様版に対応する診断で拒否する(
+        WasmSpecVersion version,
+        string offset,
+        string element,
+        string diagnostic
+    )
+    {
+        // Arrange
+        var bytes = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Tables((0x70, 1, null)),
+            HostLinkingModuleBinary.Globals(
+                (0x7F, false, [0x41, 0, 0x0B]),
+                (0x70, false, [0xD0, 0x70, 0x0B]),
+                (0x70, true, [0xD0, 0x70, 0x0B])
+            ),
+            HostLinkingModuleBinary.Section(
+                9,
+                [1, 4, .. Convert.FromHexString(offset), 1, .. Convert.FromHexString(element)]
+            )
+        );
+        var module = WasmModule.Decode(bytes, version);
+
+        // Act & Assert
+        var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
+        await Assert.That(exception!.Message).StartsWith(diagnostic);
+    }
+
+    [Test]
     [Arguments("01000101", "unknown function", 3, null)]
     [Arguments("020141000B0000", "unknown table 1", 0, "要素セグメント")]
     [Arguments("0042000B00", "type mismatch", 3, null)]

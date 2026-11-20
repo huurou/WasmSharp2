@@ -25,10 +25,15 @@ internal static class ModuleValidator
             .. module.Imports.OfType<GlobalImport>().Select(x => x.Type),
             .. module.Globals.Select(x => x.Type),
         ];
-        ValidateInitializers(module, references.FunctionCount, globalTypes, (int)importedGlobalCount);
+        var segmentGlobalTypes = ValidateGlobalInitializers(
+            module,
+            references.FunctionCount,
+            globalTypes,
+            (int)importedGlobalCount
+        );
         ValidateResources(module);
-        ValidateElements(module, references);
-        ValidateData(module, memoryCount, references.FunctionCount);
+        ValidateElements(module, references, segmentGlobalTypes);
+        ValidateData(module, memoryCount, references.FunctionCount, segmentGlobalTypes);
         var codes = ValidateFunctions(module, references, globalTypes);
         ValidateStart(module);
         ValidateExports(
@@ -47,14 +52,25 @@ internal static class ModuleValidator
     /// </summary>
     /// <param name="module">global初期化式とリソース宣言の検証を終えたmodule</param>
     /// <param name="references">当該module検証で共有する参照情報</param>
-    private static void ValidateElements(WasmModule module, ReferenceValidationContext references)
+    /// <param name="visibleGlobals">セグメントの定数式から参照できるglobalの型</param>
+    private static void ValidateElements(
+        WasmModule module,
+        ReferenceValidationContext references,
+        ReadOnlySpan<WasmGlobalType> visibleGlobals
+    )
     {
-        var importedGlobals = module.Imports.OfType<GlobalImport>().Select(x => x.Type).ToArray();
         foreach (var element in module.ElementSegments)
         {
             foreach (var initializer in element.Initializers)
             {
-                ConstantInitializer.Validate(initializer, element.ElementType, importedGlobals, references.FunctionCount, 9);
+                ConstantInitializer.Validate(
+                    initializer,
+                    element.ElementType,
+                    visibleGlobals,
+                    references.FunctionCount,
+                    9,
+                    module.SpecVersion
+                );
             }
             var target = element.ActiveTarget;
             if (target is null)
@@ -82,9 +98,10 @@ internal static class ModuleValidator
             ConstantInitializer.Validate(
                 target.OffsetExpression,
                 WasmValueKind.I32,
-                importedGlobals,
+                visibleGlobals,
                 references.FunctionCount,
-                9
+                9,
+                module.SpecVersion
             );
         }
     }
@@ -95,10 +112,15 @@ internal static class ModuleValidator
     /// <param name="module">リソース宣言の検証を終えたmodule</param>
     /// <param name="importedMemoryCount">importしたmemoryの個数</param>
     /// <param name="functionCount">importと定義を合わせた関数の個数</param>
-    private static void ValidateData(WasmModule module, uint importedMemoryCount, uint functionCount)
+    /// <param name="visibleGlobals">セグメントの定数式から参照できるglobalの型</param>
+    private static void ValidateData(
+        WasmModule module,
+        uint importedMemoryCount,
+        uint functionCount,
+        ReadOnlySpan<WasmGlobalType> visibleGlobals
+    )
     {
         var memoryCount = importedMemoryCount + (uint)module.Memories.Length;
-        var importedGlobals = module.Imports.OfType<GlobalImport>().Select(x => x.Type).ToArray();
         foreach (var data in module.DataSegments)
         {
             var target = data.ActiveTarget;
@@ -115,7 +137,14 @@ internal static class ModuleValidator
                     new(WasmProcessingStage.Validate, data.ByteOffset, null, 11)
                 );
             }
-            ConstantInitializer.Validate(target.OffsetExpression, WasmValueKind.I32, importedGlobals, functionCount, 11);
+            ConstantInitializer.Validate(
+                target.OffsetExpression,
+                WasmValueKind.I32,
+                visibleGlobals,
+                functionCount,
+                11,
+                module.SpecVersion
+            );
         }
     }
 
@@ -163,18 +192,17 @@ internal static class ModuleValidator
     /// <param name="functionCount">importと定義を合わせた関数の個数</param>
     /// <param name="globalTypes">importを先頭にしたglobal添字順の型</param>
     /// <param name="importedGlobalCount">importしたglobalの個数</param>
-    private static void ValidateInitializers(
+    /// <returns>すべてのglobalの検証後にセグメントの定数式から参照できる型</returns>
+    private static ReadOnlySpan<WasmGlobalType> ValidateGlobalInitializers(
         WasmModule module,
         uint functionCount,
         ReadOnlySpan<WasmGlobalType> globalTypes,
         int importedGlobalCount
     )
     {
-        for (var index = 0; index < module.Globals.Length; index++)
+        var visibleGlobalCount = importedGlobalCount;
+        foreach (var global in module.Globals)
         {
-            var global = module.Globals[index];
-            var visibleGlobalCount =
-                module.SpecVersion == WasmSpecVersion.Core3 ? importedGlobalCount + index : importedGlobalCount;
             ConstantInitializer.Validate(
                 global.Initializer,
                 global.Type.ValueKind,
@@ -183,7 +211,12 @@ internal static class ModuleValidator
                 6,
                 module.SpecVersion
             );
+            if (module.SpecVersion == WasmSpecVersion.Core3)
+            {
+                visibleGlobalCount++;
+            }
         }
+        return globalTypes[..visibleGlobalCount];
     }
 
     /// <summary>
