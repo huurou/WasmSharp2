@@ -432,7 +432,7 @@ internal class WasmValue_FromFuncRefTests
         // Arrange
         var executionContext = new WasmExecutionContext();
         var function = WasmModule
-            .Decode(ConstantModuleBinary.Create(0x7F, 0x41, 0x2A, 0x0B))
+            .Decode(ConstantModuleBinary.Create(0x7F, 0x41, 0x2A, 0x0B), WasmSpecVersion.Core2)
             .Validate()
             .Instantiate(executionContext, [])
             .GetFunction("run");

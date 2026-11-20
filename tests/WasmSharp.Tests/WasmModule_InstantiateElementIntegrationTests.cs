@@ -59,7 +59,7 @@ internal partial class WasmModule_InstantiateTests
             HostLinkingModuleBinary.Code(([], [0x41, 42, 0x0B]))
         );
         using var stream = new MemoryStream(bytes);
-        var module = WasmModule.Decode(stream).Validate();
+        var module = WasmModule.Decode(stream, WasmSpecVersion.Core2).Validate();
 
         // Act
         var instance = module.Instantiate(executionContext, []);
@@ -114,7 +114,8 @@ internal partial class WasmModule_InstantiateTests
                         [2, 0, 0x23, 1, 0x0B, 1, 0, 6, 1, 0x23, 1, 0x0B, 0x6F, 1, 0x23, 0, 0x0B]
                     ),
                     HostLinkingModuleBinary.Code(([], [0x41, 42, 0x0B]))
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate();
 
@@ -191,7 +192,7 @@ internal partial class WasmModule_InstantiateTests
             code,
             data
         );
-        var module = WasmModule.Decode(bytes).Validate();
+        var module = WasmModule.Decode(bytes, WasmSpecVersion.Core2).Validate();
         var failureOffset =
             bytes.Length - code.Length - data.Length - elements.Length + 1 + declarative.Length * 2 + first.Length;
 
@@ -278,7 +279,8 @@ internal partial class WasmModule_InstantiateTests
                         11,
                         [1, 0, 0x41, .. HostLinkingModuleBinary.Signed(invalidData ? 65536 : 0), 0x0B, 1, 22]
                     )
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate();
 
@@ -331,7 +333,8 @@ internal partial class WasmModule_InstantiateTests
                 HostLinkingModuleBinary.Create(
                     HostLinkingModuleBinary.Tables((0x70, (uint)count, null)),
                     HostLinkingModuleBinary.Section(9, [1, 0, 0x41, (byte)count, 0x0B, 0])
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate();
 
@@ -380,7 +383,8 @@ internal partial class WasmModule_InstantiateTests
                     HostLinkingModuleBinary.Start(0),
                     HostLinkingModuleBinary.Section(9, [1, 4, 0x41, 0, 0x0B, 1, 0xD0, 0x70, 0x0B]),
                     HostLinkingModuleBinary.Section(11, [1, 0, 0x41, 0, 0x0B, 1, 22])
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate();
 

@@ -24,7 +24,11 @@ internal partial class ModuleValidator_ValidateTests
             HostLinkingModuleBinary.Code(([], [0, .. Convert.FromHexString(instruction), 0x1A, 0x0B]))
         );
         using var stream = new ChunkedReadStream(new MemoryStream(bytes));
-        WasmModule[] modules = [WasmModule.Decode(bytes), WasmModule.Decode(stream)];
+        WasmModule[] modules =
+        [
+            WasmModule.Decode(bytes, WasmSpecVersion.Core2),
+            WasmModule.Decode(stream, WasmSpecVersion.Core2),
+        ];
         var offset = Array.IndexOf(bytes, (byte)0xFD);
 
         foreach (var module in modules)
@@ -68,7 +72,7 @@ internal partial class ModuleValidator_ValidateTests
             HostLinkingModuleBinary.Functions(0),
             HostLinkingModuleBinary.Code(([], [.. pushes, .. Convert.FromHexString(instruction), 0x0B]))
         );
-        var module = WasmModule.Decode(bytes);
+        var module = WasmModule.Decode(bytes, WasmSpecVersion.Core2);
 
         // Act & Assert
         var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
@@ -97,7 +101,8 @@ internal partial class ModuleValidator_ValidateTests
                 HostLinkingModuleBinary.Types(([], [])),
                 HostLinkingModuleBinary.Functions(0),
                 HostLinkingModuleBinary.Code(([], [0, .. Convert.FromHexString(instruction), 0x1A, 0x0B]))
-            )
+            ),
+            WasmSpecVersion.Core2
         );
 
         // Act
@@ -120,7 +125,7 @@ internal partial class ModuleValidator_ValidateTests
                 (0x7B, false, [0xFD, 0x0C, .. new byte[16], .. Convert.FromHexString(instruction), 0x0B])
             )
         );
-        var module = WasmModule.Decode(bytes);
+        var module = WasmModule.Decode(bytes, WasmSpecVersion.Core2);
 
         // Act & Assert
         var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();

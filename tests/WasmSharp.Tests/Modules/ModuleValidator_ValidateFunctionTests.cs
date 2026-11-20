@@ -106,7 +106,8 @@ internal partial class ModuleValidator_ValidateTests
                 HostLinkingModuleBinary.Functions(0),
                 HostLinkingModuleBinary.Globals((0x7F, true, [0x41, 0, 0x0B])),
                 HostLinkingModuleBinary.Code(([], Convert.FromHexString(body)))
-            )
+            ),
+            WasmSpecVersion.Core2
         );
 
         // Act & Assert
@@ -133,7 +134,8 @@ internal partial class ModuleValidator_ValidateTests
                 HostLinkingModuleBinary.Imports(("env", "g", 3, [0x7F, 0]), ("env", "f", 0, [0])),
                 HostLinkingModuleBinary.Functions(1, 2),
                 HostLinkingModuleBinary.Code(([], [0x10, 2, 0x41, 42, 0x42, 7, 0x10, 0, 0x0B]), ([], [0x0B]))
-            )
+            ),
+            WasmSpecVersion.Core2
         );
 
         // Act
@@ -160,7 +162,8 @@ internal partial class ModuleValidator_ValidateTests
                 HostLinkingModuleBinary.Imports(("env", "g", 3, [0x7F, 0])),
                 HostLinkingModuleBinary.Functions(0),
                 HostLinkingModuleBinary.Code(([], [0x23, 0, 0x0B]))
-            )
+            ),
+            WasmSpecVersion.Core2
         );
 
         // Act
@@ -180,7 +183,8 @@ internal partial class ModuleValidator_ValidateTests
                 HostLinkingModuleBinary.Imports(("env", "f", 0, [0])),
                 HostLinkingModuleBinary.Functions(0),
                 HostLinkingModuleBinary.Code(([], [0x10, 0, 0x0B]))
-            )
+            ),
+            WasmSpecVersion.Core2
         );
 
         // Act
@@ -204,7 +208,8 @@ internal partial class ModuleValidator_ValidateTests
                         [0x20, 0, 0x20, 1, 0x20, 2, 0x20, 3, 0x0B]
                     )
                 )
-            )
+            ),
+            WasmSpecVersion.Core2
         );
 
         // Act
@@ -224,7 +229,8 @@ internal partial class ModuleValidator_ValidateTests
                 HostLinkingModuleBinary.Types(([0x7F], [0x7F])),
                 HostLinkingModuleBinary.Functions(0),
                 HostLinkingModuleBinary.Code(([(2, 0x7E), (0, 0x7F), (0, 0x7D)], [0x20, 3, 0x0B]))
-            )
+            ),
+            WasmSpecVersion.Core2
         );
 
         // Act & Assert
@@ -244,7 +250,8 @@ internal partial class ModuleValidator_ValidateTests
                 HostLinkingModuleBinary.Types(([], [0x7E])),
                 HostLinkingModuleBinary.Functions(0),
                 HostLinkingModuleBinary.Code((locals, [0x20, .. HostLinkingModuleBinary.Unsigned(1023), 0x0B]))
-            )
+            ),
+            WasmSpecVersion.Core2
         );
 
         // Act
@@ -271,7 +278,8 @@ internal partial class ModuleValidator_ValidateTests
                 HostLinkingModuleBinary.Code(
                     ([(0, 0x7D), (uint.MaxValue - 1, 0x7F), (1, 0x7E)], [0x20, 0xFF, 0xFF, 0xFF, 0xFF, 0x0F, 0x0B])
                 )
-            )
+            ),
+            WasmSpecVersion.Core2
         );
         var function = module.Validate().Instantiate(executionContext, []).GetFunction("run");
 
@@ -295,7 +303,8 @@ internal partial class ModuleValidator_ValidateTests
                 HostLinkingModuleBinary.Functions(0, 0),
                 HostLinkingModuleBinary.Exports(("run", 0, 0)),
                 HostLinkingModuleBinary.Code(([], [0x20, 0, 0x0B]), ([], [0x20, 1, 0x0B]))
-            )
+            ),
+            WasmSpecVersion.Core2
         );
 
         // Act & Assert

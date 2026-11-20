@@ -23,7 +23,9 @@ internal class ConstantInitializer_ValidateTests
 
         // Act & Assert
         await Assert
-            .That(() => ConstantInitializer.Validate(expression, WasmValueKind.I32, importedGlobals, 0, 11))
+            .That(() =>
+                ConstantInitializer.Validate(expression, WasmValueKind.I32, importedGlobals, 0, 11, WasmSpecVersion.Core2)
+            )
             .ThrowsNothing();
     }
 
@@ -62,7 +64,7 @@ internal class ConstantInitializer_ValidateTests
 
         // Act & Assert
         var exception = await Assert
-            .That(() => ConstantInitializer.Validate(expression, WasmValueKind.I32, [], 0, 11))
+            .That(() => ConstantInitializer.Validate(expression, WasmValueKind.I32, [], 0, 11, WasmSpecVersion.Core2))
             .ThrowsExactly<WasmValidateException>();
         using (Assert.Multiple())
         {
@@ -85,7 +87,7 @@ internal class ConstantInitializer_ValidateTests
 
         // Act & Assert
         var exception = await Assert
-            .That(() => ConstantInitializer.Validate(expression, WasmValueKind.I32, [], 0, 11))
+            .That(() => ConstantInitializer.Validate(expression, WasmValueKind.I32, [], 0, 11, WasmSpecVersion.Core2))
             .ThrowsExactly<WasmValidateException>();
         using (Assert.Multiple())
         {

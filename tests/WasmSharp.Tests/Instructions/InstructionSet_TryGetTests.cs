@@ -41,7 +41,7 @@ internal partial class InstructionSet_TryGetTests
                 .Replace("Andnot", "AndNot", StringComparison.Ordinal);
 
             // Act
-            var found = InstructionSet.TryGet(new(0xFD, item.Key), out var actual);
+            var found = InstructionSet.TryGet(new(0xFD, item.Key), WasmSpecVersion.Core2, out var actual);
 
             // Assert
             using (Assert.Multiple())
@@ -79,7 +79,7 @@ internal partial class InstructionSet_TryGetTests
         var actual = expected
             .Select(x =>
             {
-                InstructionSet.TryGet(new(0xFD, x.Key), out var descriptor);
+                InstructionSet.TryGet(new(0xFD, x.Key), WasmSpecVersion.Core2, out var descriptor);
                 return (Entry: x, Descriptor: descriptor);
             })
             .ToArray();
@@ -134,7 +134,7 @@ internal partial class InstructionSet_TryGetTests
         var actual = expected
             .Select(x =>
             {
-                InstructionSet.TryGet(new(0xFD, x.Key), out var descriptor);
+                InstructionSet.TryGet(new(0xFD, x.Key), WasmSpecVersion.Core2, out var descriptor);
                 return (Entry: x, Descriptor: descriptor);
             })
             .ToArray();
@@ -205,7 +205,7 @@ internal partial class InstructionSet_TryGetTests
                 : (lane ? StackEffectKind.MemoryLoadLane : StackEffectKind.MemoryLoad);
 
             // Act
-            var found = InstructionSet.TryGet(new(0xFD, item.Key), out var actual);
+            var found = InstructionSet.TryGet(new(0xFD, item.Key), WasmSpecVersion.Core2, out var actual);
 
             // Assert
             using (Assert.Multiple())
@@ -237,7 +237,7 @@ internal partial class InstructionSet_TryGetTests
             .Single(x => x.Prefix == 0xFD && x.Code == 0x0C);
 
         // Act
-        var found = InstructionSet.TryGet(new(0xFD, 0x0C), out var descriptor);
+        var found = InstructionSet.TryGet(new(0xFD, 0x0C), WasmSpecVersion.Core2, out var descriptor);
 
         // Assert
         using (Assert.Multiple())
@@ -269,7 +269,7 @@ internal partial class InstructionSet_TryGetTests
         // Act
         for (uint code = 0; code <= 255; code++)
         {
-            if (!InstructionSet.TryGet(new(prefix, code), out var descriptor))
+            if (!InstructionSet.TryGet(new(prefix, code), WasmSpecVersion.Core2, out var descriptor))
             {
                 continue;
             }
@@ -341,8 +341,8 @@ internal partial class InstructionSet_TryGetTests
                     : prefix == 0xFC ? Enumerable.Range(0, 18).Select(x => (uint)x)
                     : expected.Keys
                 );
-            await Assert.That(InstructionSet.TryGet(new(prefix, 256), out _)).IsFalse();
-            await Assert.That(InstructionSet.TryGet(new(prefix, uint.MaxValue), out _)).IsFalse();
+            await Assert.That(InstructionSet.TryGet(new(prefix, 256), WasmSpecVersion.Core2, out _)).IsFalse();
+            await Assert.That(InstructionSet.TryGet(new(prefix, uint.MaxValue), WasmSpecVersion.Core2, out _)).IsFalse();
         }
     }
 
@@ -376,7 +376,7 @@ internal partial class InstructionSet_TryGetTests
             .Single(x => x.Prefix == 0 && x.Code == code);
 
         // Act
-        var found = InstructionSet.TryGet(new(0, code), out var descriptor);
+        var found = InstructionSet.TryGet(new(0, code), WasmSpecVersion.Core2, out var descriptor);
 
         // Assert
         using (Assert.Multiple())
@@ -409,7 +409,7 @@ internal partial class InstructionSet_TryGetTests
         foreach (var code in codes)
         {
             var key = new OpcodeKey(prefix, (uint)code);
-            var found = InstructionSet.TryGet(key, out var descriptor);
+            var found = InstructionSet.TryGet(key, WasmSpecVersion.Core2, out var descriptor);
             var name = names[(uint)code];
             var handler = string.Concat(name.Split('.', '_').Select(x => char.ToUpperInvariant(x[0]) + x[1..]));
             var signature =
@@ -446,7 +446,7 @@ internal partial class InstructionSet_TryGetTests
         // Act & Assert
         foreach (var code in codes)
         {
-            InstructionSet.TryGet(new(0, code), out var descriptor);
+            InstructionSet.TryGet(new(0, code), WasmSpecVersion.Core2, out var descriptor);
             using (Assert.Multiple())
             {
                 await Assert.That(descriptor.Validation).IsEqualTo(ValidationRule.Constant);

@@ -68,7 +68,7 @@ internal partial class WasmModule_InstantiateTests
             HostLinkingModuleBinary.Section(12, [3]),
             HostLinkingModuleBinary.Section(11, data)
         );
-        var module = WasmModule.Decode(bytes).Validate();
+        var module = WasmModule.Decode(bytes, WasmSpecVersion.Core2).Validate();
 
         if (outOfBounds)
         {
@@ -129,6 +129,7 @@ internal partial class WasmModule_InstantiateTests
             [new(new(1, null), 30)],
             [],
             null,
+            WasmSpecVersion.Core2,
             [ActiveData([11, 22, 33], 1, 50), new([66, 77], null, 55), ActiveData([44, 55], 2, 60)]
         ).Validate();
 
@@ -163,6 +164,7 @@ internal partial class WasmModule_InstantiateTests
             hasMemory ? [new(new(1, null), 30)] : [],
             [],
             null,
+            WasmSpecVersion.Core2,
             [new([11, 22], null, 50)]
         ).Validate();
 
@@ -202,6 +204,7 @@ internal partial class WasmModule_InstantiateTests
             [new(new(1, null), 30)],
             [],
             null,
+            WasmSpecVersion.Core2,
             [ActiveData([11], 0, 50), new([22, 33], null, 60)]
         ).Validate();
         var first = module.Instantiate(executionContext, []);
@@ -257,6 +260,7 @@ internal partial class WasmModule_InstantiateTests
             [],
             [],
             null,
+            WasmSpecVersion.Core2,
             [
                 new(
                     [11, 22, 33],
@@ -349,6 +353,7 @@ internal partial class WasmModule_InstantiateTests
                 ),
             ],
             new(definedStart ? 2u : 0u, 45),
+            WasmSpecVersion.Core2,
             [ActiveData([11, 22], 0, 50), new([33, 44], null, 55), ActiveData([55], 1, 60)]
         ).Validate();
 
@@ -403,6 +408,7 @@ internal partial class WasmModule_InstantiateTests
             [],
             [],
             new(0, 40),
+            WasmSpecVersion.Core2,
             [ActiveData([11], 0, 50), ActiveData(empty ? [] : [22, 33], offset, 60), ActiveData([44], 1, 70)]
         ).Validate();
         WasmInstance? returned = null;
@@ -446,6 +452,7 @@ internal partial class WasmModule_InstantiateTests
             [new(new(pages, null), 30)],
             [],
             null,
+            WasmSpecVersion.Core2,
             [ActiveData([], offset, 50)]
         ).Validate();
 
@@ -517,6 +524,7 @@ internal partial class WasmModule_InstantiateTests
             [],
             [],
             new(2, 40),
+            WasmSpecVersion.Core2,
             [ActiveData([11, 22], 0, 50)]
         ).Validate();
 
@@ -573,6 +581,7 @@ internal partial class WasmModule_InstantiateTests
             [],
             [],
             new(0, 40),
+            WasmSpecVersion.Core2,
             [ActiveData([11], 0, 50)]
         ).Validate();
 

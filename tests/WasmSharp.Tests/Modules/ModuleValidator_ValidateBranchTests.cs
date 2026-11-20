@@ -24,7 +24,8 @@ internal partial class ModuleValidator_ValidateTests
                 HostLinkingModuleBinary.Functions(0),
                 HostLinkingModuleBinary.Exports(("run", 0, 0)),
                 HostLinkingModuleBinary.Code(([], Convert.FromHexString(body)))
-            )
+            ),
+            WasmSpecVersion.Core2
         );
 
         // Act
@@ -45,7 +46,8 @@ internal partial class ModuleValidator_ValidateTests
                 HostLinkingModuleBinary.Functions(0),
                 HostLinkingModuleBinary.Exports(("run", 0, 0)),
                 HostLinkingModuleBinary.Code(([], Convert.FromHexString("410902010240410A42140C01000B000B0B")))
-            )
+            ),
+            WasmSpecVersion.Core2
         );
 
         // Act
@@ -68,7 +70,8 @@ internal partial class ModuleValidator_ValidateTests
                     HostLinkingModuleBinary.Types(([0x7F], [0x7E])),
                     HostLinkingModuleBinary.Functions(0),
                     HostLinkingModuleBinary.Code(([], Convert.FromHexString("2000030041016B220020000D001A42070B0B")))
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate();
         var function = (DefinedFunction)module.Instantiate(executionContext, [], new(1)).Functions[0];
@@ -115,7 +118,8 @@ internal partial class ModuleValidator_ValidateTests
                         ([], Convert.FromHexString("412A10010B")),
                         ([], Convert.FromHexString(body))
                     )
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate();
         var function = (DefinedFunction)module.Instantiate(executionContext, [], new(2)).Functions[0];

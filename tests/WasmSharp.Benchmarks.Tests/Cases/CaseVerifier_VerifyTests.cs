@@ -214,37 +214,40 @@ internal class CaseVerifier_VerifyTests
         };
         // 要素数1のexternref tableだけをfunctionsとしてexportするmodule
         var instance = WasmModule
-            .Decode([
-                0,
-                0x61,
-                0x73,
-                0x6d,
-                1,
-                0,
-                0,
-                0,
-                4,
-                4,
-                1,
-                0x6f,
-                0,
-                1,
-                7,
-                13,
-                1,
-                9,
-                0x66,
-                0x75,
-                0x6e,
-                0x63,
-                0x74,
-                0x69,
-                0x6f,
-                0x6e,
-                0x73,
-                1,
-                0,
-            ])
+            .Decode(
+                [
+                    0,
+                    0x61,
+                    0x73,
+                    0x6d,
+                    1,
+                    0,
+                    0,
+                    0,
+                    4,
+                    4,
+                    1,
+                    0x6f,
+                    0,
+                    1,
+                    7,
+                    13,
+                    1,
+                    9,
+                    0x66,
+                    0x75,
+                    0x6e,
+                    0x63,
+                    0x74,
+                    0x69,
+                    0x6f,
+                    0x6e,
+                    0x73,
+                    1,
+                    0,
+                ],
+                WasmSpecVersion.Core2
+            )
             .Validate()
             .Instantiate(_context, new WasmImports());
 
@@ -633,7 +636,10 @@ internal class CaseVerifier_VerifyTests
             0,
             0x0b,
         };
-        var module = stage == MeasurementStage.Decode ? WasmModule.Decode(bytes) : VerificationFixture.Decode();
+        var module =
+            stage == MeasurementStage.Decode
+                ? WasmModule.Decode(bytes, WasmSpecVersion.Core2)
+                : VerificationFixture.Decode();
 
         // Act
         var result = CaseVerifier.Verify(_context, definition, new ModuleObservation(module), _json);
@@ -680,7 +686,8 @@ internal class CaseVerifier_VerifyTests
         // Arrange
         var definition = AssetLoadingFixture.ReadCases(_json).Single(x => x.CaseId == "decode.small");
         var module = WasmModule.Decode(
-            File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "Fixtures", "Data", "Loading", "invoke.wasm"))
+            File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "Fixtures", "Data", "Loading", "invoke.wasm")),
+            WasmSpecVersion.Core2
         );
 
         // Act
@@ -809,7 +816,7 @@ internal class CaseVerifier_VerifyTests
         // Arrange
         var definition = AssetLoadingFixture.ReadCases(_json).Single(x => x.CaseId == "invoke.multi");
         var instance = WasmModule
-            .Decode([0, 0x61, 0x73, 0x6d, 1, 0, 0, 0])
+            .Decode([0, 0x61, 0x73, 0x6d, 1, 0, 0, 0], WasmSpecVersion.Core2)
             .Validate()
             .Instantiate(_context, new WasmImports());
         var observation = new InvokeObservation(
@@ -830,6 +837,9 @@ internal class CaseVerifier_VerifyTests
 
     private WasmInstance EmptyInstance()
     {
-        return WasmModule.Decode([0, 0x61, 0x73, 0x6d, 1, 0, 0, 0]).Validate().Instantiate(_context, new WasmImports());
+        return WasmModule
+            .Decode([0, 0x61, 0x73, 0x6d, 1, 0, 0, 0], WasmSpecVersion.Core2)
+            .Validate()
+            .Instantiate(_context, new WasmImports());
     }
 }

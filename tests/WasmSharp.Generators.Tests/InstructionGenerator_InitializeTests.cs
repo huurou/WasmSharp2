@@ -13,7 +13,7 @@ internal partial class InstructionGenerator_InitializeTests
             """
             namespace WasmSharp.Instructions
             {
-                [Instruction(0xFD, 1, "simd.invalid", ImmediateKind.LaneIndex, StackEffectKind.Numeric,
+                [Instruction(WasmSpecVersion.Core2, 0xFD, 1, "simd.invalid", ImmediateKind.LaneIndex, StackEffectKind.Numeric,
                     ValidationRule.Numeric, nameof(Execution.Interpreter.Handler),
                     new WasmValueKind[] { WasmValueKind.V128 }, WasmValueKind.F32,
                     LaneCount = 4, LaneCount = 2)]
@@ -55,7 +55,7 @@ internal partial class InstructionGenerator_InitializeTests
             $$"""
             namespace WasmSharp.Instructions
             {
-                [Instruction(0xFD, 1, "simd.invalid", ImmediateKind.{{immediate}}, StackEffectKind.{{stackEffect}},
+                [Instruction(WasmSpecVersion.Core2, 0xFD, 1, "simd.invalid", ImmediateKind.{{immediate}}, StackEffectKind.{{stackEffect}},
                     ValidationRule.{{validation}}, nameof(Execution.Interpreter.Handler))]
                 internal static partial class InstructionSet;
             }
@@ -99,7 +99,7 @@ internal partial class InstructionGenerator_InitializeTests
             $$"""
             namespace WasmSharp.Instructions
             {
-                [Instruction(0xFD, 1, "simd.numeric", ImmediateKind.{{immediate}}, StackEffectKind.Numeric,
+                [Instruction(WasmSpecVersion.Core2, 0xFD, 1, "simd.numeric", ImmediateKind.{{immediate}}, StackEffectKind.Numeric,
                     ValidationRule.Numeric, nameof(Execution.Interpreter.Handler),
                     new WasmValueKind[] { {{inputTypes}} }, WasmValueKind.{{resultType}}, LaneCount = {{laneCount}})]
                 internal static partial class InstructionSet;
@@ -129,12 +129,12 @@ internal partial class InstructionGenerator_InitializeTests
                 "WasmSharp.WasmValueKind"
             )}} };
             var expected = System.Linq.Enumerable.ToArray(inputs);
-            var attribute = new WasmSharp.Instructions.InstructionAttribute(0xFD, 1, "simd.numeric",
+            var attribute = new WasmSharp.Instructions.InstructionAttribute(WasmSharp.WasmSpecVersion.Core2, 0xFD, 1, "simd.numeric",
                 WasmSharp.Instructions.ImmediateKind.{{immediate}}, WasmSharp.Instructions.StackEffectKind.Numeric,
                 WasmSharp.Instructions.ValidationRule.Numeric, "Handler", inputs, WasmSharp.WasmValueKind.{{resultType}})
                 { LaneCount = {{laneCount}} };
             inputs[0] = WasmSharp.WasmValueKind.ExternRef;
-            return WasmSharp.Instructions.InstructionSet.TryGet(new(0xFD, 1), out var descriptor)
+            return WasmSharp.Instructions.InstructionSet.TryGet(new(0xFD, 1), WasmSharp.WasmSpecVersion.Core2, out var descriptor)
                 && descriptor.Immediate == WasmSharp.Instructions.ImmediateKind.{{immediate}}
                 && descriptor.LaneCount == {{laneCount}} && attribute.LaneCount == {{laneCount}}
                 && descriptor.NumericSignature is { } generated && attribute.NumericSignature is { } owned
@@ -154,7 +154,7 @@ internal partial class InstructionGenerator_InitializeTests
             """
             namespace WasmSharp.Instructions
             {
-                [Instruction(0xFD, 12, "v128.const", ImmediateKind.V128, StackEffectKind.PushV128,
+                [Instruction(WasmSpecVersion.Core2, 0xFD, 12, "v128.const", ImmediateKind.V128, StackEffectKind.PushV128,
                     ValidationRule.Constant, nameof(Execution.Interpreter.Handler))]
                 internal static partial class InstructionSet;
             }
@@ -178,7 +178,7 @@ internal partial class InstructionGenerator_InitializeTests
         await GeneratorTestSource.AssertCompilesAndRuns(
             output,
             """
-            return WasmSharp.Instructions.InstructionSet.TryGet(new(0xFD, 12), out var descriptor)
+            return WasmSharp.Instructions.InstructionSet.TryGet(new(0xFD, 12), WasmSharp.WasmSpecVersion.Core2, out var descriptor)
                 && descriptor.Immediate == WasmSharp.Instructions.ImmediateKind.V128
                 && descriptor.StackEffect == WasmSharp.Instructions.StackEffectKind.PushV128
                 && descriptor.Validation == WasmSharp.Instructions.ValidationRule.Constant
@@ -222,7 +222,7 @@ internal partial class InstructionGenerator_InitializeTests
             $$"""
             namespace WasmSharp.Instructions
             {
-                [Instruction(0xFD, 1, "simd.invalid", ImmediateKind.{{immediate}}, StackEffectKind.Numeric,
+                [Instruction(WasmSpecVersion.Core2, 0xFD, 1, "simd.invalid", ImmediateKind.{{immediate}}, StackEffectKind.Numeric,
                     ValidationRule.Numeric, nameof(Execution.Interpreter.Handler), {{inputs}},
                     WasmValueKind.{{resultType}}, LaneCount = {{laneCount}})]
                 internal static partial class InstructionSet;
@@ -270,7 +270,7 @@ internal partial class InstructionGenerator_InitializeTests
             $$"""
             namespace WasmSharp.Instructions
             {
-                [Instruction({{prefix}}, {{code}}, "{{name}}", ImmediateKind.None, StackEffectKind.Numeric,
+                [Instruction(WasmSpecVersion.Core2, {{prefix}}, {{code}}, "{{name}}", ImmediateKind.None, StackEffectKind.Numeric,
                     ValidationRule.Numeric, nameof(Execution.Interpreter.Numeric), {{inputCount}},
                     WasmValueKind.{{inputType}}, WasmValueKind.{{resultType}}, IsConstantBinaryOperation = false)]
                 internal static partial class InstructionSet;
@@ -301,10 +301,10 @@ internal partial class InstructionGenerator_InitializeTests
         await GeneratorTestSource.AssertCompilesAndRuns(
             output,
             $$"""
-            var found = WasmSharp.Instructions.InstructionSet.TryGet(new({{prefix}}, {{code}}), out var descriptor);
+            var found = WasmSharp.Instructions.InstructionSet.TryGet(new({{prefix}}, {{code}}), WasmSharp.WasmSpecVersion.Core2, out var descriptor);
             var expected = new WasmSharp.Instructions.NumericSignature([{{inputTypes}}],
                 WasmSharp.WasmValueKind.{{resultType}});
-            var attribute = new WasmSharp.Instructions.InstructionAttribute({{prefix}}, {{code}}, "{{name}}",
+            var attribute = new WasmSharp.Instructions.InstructionAttribute(WasmSharp.WasmSpecVersion.Core2, {{prefix}}, {{code}}, "{{name}}",
                 WasmSharp.Instructions.ImmediateKind.None, WasmSharp.Instructions.StackEffectKind.Numeric,
                 WasmSharp.Instructions.ValidationRule.Numeric, "Numeric", {{inputCount}},
                 WasmSharp.WasmValueKind.{{inputType}}, WasmSharp.WasmValueKind.{{resultType}});
@@ -359,7 +359,7 @@ internal partial class InstructionGenerator_InitializeTests
             $$"""
             namespace WasmSharp.Instructions
             {
-                [Instruction(0, 0x6A, "i32.add", ImmediateKind.None, StackEffectKind.{{stackEffect}},
+                [Instruction(WasmSpecVersion.Core2, 0, 0x6A, "i32.add", ImmediateKind.None, StackEffectKind.{{stackEffect}},
                     ValidationRule.{{validation}}, nameof(Execution.Interpreter.Handler){{signature}})]
                 internal static partial class InstructionSet;
             }
@@ -406,7 +406,7 @@ internal partial class InstructionGenerator_InitializeTests
             $$"""
             namespace WasmSharp.Instructions
             {
-                [Instruction(0, 0x6A, "i32.add", ImmediateKind.None, StackEffectKind.Numeric,
+                [Instruction(WasmSpecVersion.Core2, 0, 0x6A, "i32.add", ImmediateKind.None, StackEffectKind.Numeric,
                     ValidationRule.Numeric, "Handler", {{signature}})]
                 internal static partial class InstructionSet;
             }
@@ -449,7 +449,7 @@ internal partial class InstructionGenerator_InitializeTests
             $$"""
             namespace WasmSharp.Instructions
             {
-                [Instruction(0, {{code}}, "{{name}}", ImmediateKind.{{immediate}}, StackEffectKind.{{rule}},
+                [Instruction(WasmSpecVersion.Core2, 0, {{code}}, "{{name}}", ImmediateKind.{{immediate}}, StackEffectKind.{{rule}},
                     ValidationRule.{{rule}}, nameof(Execution.Interpreter.Handler))]
                 internal static partial class InstructionSet;
             }
@@ -474,7 +474,7 @@ internal partial class InstructionGenerator_InitializeTests
         await GeneratorTestSource.AssertCompilesAndRuns(
             output,
             $$"""
-            return WasmSharp.Instructions.InstructionSet.TryGet(new(0, {{code}}), out var descriptor)
+            return WasmSharp.Instructions.InstructionSet.TryGet(new(0, {{code}}), WasmSharp.WasmSpecVersion.Core2, out var descriptor)
                 && descriptor.Name == "{{name}}"
                 && descriptor.Immediate == WasmSharp.Instructions.ImmediateKind.{{immediate}}
                 && descriptor.StackEffect == WasmSharp.Instructions.StackEffectKind.{{rule}}
@@ -506,7 +506,7 @@ internal partial class InstructionGenerator_InitializeTests
             $$"""
             namespace WasmSharp.Instructions
             {
-                [Instruction(0, {{code}}, "{{name}}", ImmediateKind.{{immediate}},
+                [Instruction(WasmSpecVersion.Core2, 0, {{code}}, "{{name}}", ImmediateKind.{{immediate}},
                     StackEffectKind.{{rule}}, ValidationRule.{{rule}}, nameof(Execution.Interpreter.Handler))]
                 internal static partial class InstructionSet;
             }
@@ -536,7 +536,7 @@ internal partial class InstructionGenerator_InitializeTests
         await GeneratorTestSource.AssertCompilesAndRuns(
             output,
             $$"""
-            var found = WasmSharp.Instructions.InstructionSet.TryGet(new(0, {{code}}), out var descriptor);
+            var found = WasmSharp.Instructions.InstructionSet.TryGet(new(0, {{code}}), WasmSharp.WasmSpecVersion.Core2, out var descriptor);
             var decoded = WasmSharp.Modules.DecodedInstruction.WithImmediate(new(0, {{code}}), WasmSharp.WasmValue.FromI64(42), 12345678901L);
             var indexed = WasmSharp.Modules.DecodedInstruction.WithIndex(new(0, {{code}}), uint.MaxValue, decoded.ByteOffset);
             var instruction = new WasmSharp.Execution.Instruction(descriptor.ExecutionOpcode!.Value,
@@ -565,23 +565,23 @@ internal partial class InstructionGenerator_InitializeTests
             """
             namespace WasmSharp.Instructions
             {
-                [Instruction(0, 0x00, "unreachable", ImmediateKind.None, StackEffectKind.Unreachable,
+                [Instruction(WasmSpecVersion.Core2, 0, 0x00, "unreachable", ImmediateKind.None, StackEffectKind.Unreachable,
                     ValidationRule.Unreachable, nameof(Execution.Interpreter.Unreachable))]
-                [Instruction(0, 0x0F, "return", ImmediateKind.None, StackEffectKind.Return,
+                [Instruction(WasmSpecVersion.Core2, 0, 0x0F, "return", ImmediateKind.None, StackEffectKind.Return,
                     ValidationRule.Return, nameof(Execution.Interpreter.Return))]
-                [Instruction(0, 0x10, "call", ImmediateKind.Index, StackEffectKind.Call,
+                [Instruction(WasmSpecVersion.Core2, 0, 0x10, "call", ImmediateKind.Index, StackEffectKind.Call,
                     ValidationRule.Call, nameof(Execution.Interpreter.Call))]
-                [Instruction(0, 0x1A, "drop", ImmediateKind.None, StackEffectKind.Drop,
+                [Instruction(WasmSpecVersion.Core2, 0, 0x1A, "drop", ImmediateKind.None, StackEffectKind.Drop,
                     ValidationRule.Drop, nameof(Execution.Interpreter.Drop))]
-                [Instruction(0, 0x20, "local.get", ImmediateKind.Index, StackEffectKind.LocalGet,
+                [Instruction(WasmSpecVersion.Core2, 0, 0x20, "local.get", ImmediateKind.Index, StackEffectKind.LocalGet,
                     ValidationRule.LocalGet, nameof(Execution.Interpreter.LocalGet))]
-                [Instruction(0, 0x21, "local.set", ImmediateKind.Index, StackEffectKind.LocalSet,
+                [Instruction(WasmSpecVersion.Core2, 0, 0x21, "local.set", ImmediateKind.Index, StackEffectKind.LocalSet,
                     ValidationRule.LocalSet, nameof(Execution.Interpreter.LocalSet))]
-                [Instruction(0, 0x22, "local.tee", ImmediateKind.Index, StackEffectKind.LocalTee,
+                [Instruction(WasmSpecVersion.Core2, 0, 0x22, "local.tee", ImmediateKind.Index, StackEffectKind.LocalTee,
                     ValidationRule.LocalTee, nameof(Execution.Interpreter.LocalTee))]
-                [Instruction(0, 0x23, "global.get", ImmediateKind.Index, StackEffectKind.GlobalGet,
+                [Instruction(WasmSpecVersion.Core2, 0, 0x23, "global.get", ImmediateKind.Index, StackEffectKind.GlobalGet,
                     ValidationRule.GlobalGet, nameof(Execution.Interpreter.GlobalGet))]
-                [Instruction(0, 0x24, "global.set", ImmediateKind.Index, StackEffectKind.GlobalSet,
+                [Instruction(WasmSpecVersion.Core2, 0, 0x24, "global.set", ImmediateKind.Index, StackEffectKind.GlobalSet,
                     ValidationRule.GlobalSet, nameof(Execution.Interpreter.GlobalSet))]
                 internal static partial class InstructionSet;
             }
@@ -636,7 +636,7 @@ internal partial class InstructionGenerator_InitializeTests
             """
             static WasmSharp.Execution.Instruction Create(uint code, long offset, uint index)
             {
-                WasmSharp.Instructions.InstructionSet.TryGet(new(0, code), out var descriptor);
+                WasmSharp.Instructions.InstructionSet.TryGet(new(0, code), WasmSharp.WasmSpecVersion.Core2, out var descriptor);
                 return new(descriptor.ExecutionOpcode!.Value, default, offset, index);
             }
             var returned = new WasmSharp.Execution.InterpreterContext(1)
@@ -680,7 +680,7 @@ internal partial class InstructionGenerator_InitializeTests
         const string DECLARATION = """
             namespace WasmSharp.Instructions
             {
-                [Instruction(0, 0x41, "i32.const", ImmediateKind.I32, StackEffectKind.PushI32,
+                [Instruction(WasmSpecVersion.Core2, 0, 0x41, "i32.const", ImmediateKind.I32, StackEffectKind.PushI32,
                     ValidationRule.Constant, nameof(Execution.Interpreter.First))]
                 internal static partial class InstructionSet;
             }
@@ -729,7 +729,7 @@ internal partial class InstructionGenerator_InitializeTests
         await GeneratorTestSource.AssertCompilesAndRuns(
             originalOutput,
             """
-            WasmSharp.Instructions.InstructionSet.TryGet(new(0, 0x41), out var descriptor);
+            WasmSharp.Instructions.InstructionSet.TryGet(new(0, 0x41), WasmSharp.WasmSpecVersion.Core2, out var descriptor);
             var context = new WasmSharp.Execution.InterpreterContext(1)
             {
                 Instructions = [new(descriptor.ExecutionOpcode!.Value, WasmSharp.WasmValue.FromI64(41), 100, 0)]
@@ -741,7 +741,7 @@ internal partial class InstructionGenerator_InitializeTests
         await GeneratorTestSource.AssertCompilesAndRuns(
             output,
             $$"""
-            var found = WasmSharp.Instructions.InstructionSet.TryGet(new(0, {{code}}), out var descriptor);
+            var found = WasmSharp.Instructions.InstructionSet.TryGet(new(0, {{code}}), WasmSharp.WasmSpecVersion.Core2, out var descriptor);
             var context = new WasmSharp.Execution.InterpreterContext(1)
             {
                 Instructions = [new(descriptor.ExecutionOpcode!.Value, WasmSharp.WasmValue.FromI64(41), 100, 0)]
@@ -750,7 +750,7 @@ internal partial class InstructionGenerator_InitializeTests
             return found && descriptor.Name == "{{name}}"
                 && descriptor.Immediate == WasmSharp.Instructions.ImmediateKind.{{immediate}}
                 && descriptor.StackEffect == WasmSharp.Instructions.StackEffectKind.{{stackEffect}}
-                && !WasmSharp.Instructions.InstructionSet.TryGet(new(0, 0x41), out _)
+                && !WasmSharp.Instructions.InstructionSet.TryGet(new(0, 0x41), WasmSharp.WasmSpecVersion.Core2, out _)
                 && result.Status == WasmSharp.Execution.ExecutionStatus.Success && context.Value.AsI64() == 42;
             """
         );
@@ -763,7 +763,7 @@ internal partial class InstructionGenerator_InitializeTests
         const string DECLARATION = """
             namespace WasmSharp.Instructions
             {
-                [Instruction(0, 0x41, "i32.const", ImmediateKind.I32, StackEffectKind.PushI32,
+                [Instruction(WasmSpecVersion.Core2, 0, 0x41, "i32.const", ImmediateKind.I32, StackEffectKind.PushI32,
                     ValidationRule.Constant, nameof(Execution.Interpreter.Handler))]
                 internal static partial class InstructionSet;
             }
@@ -825,7 +825,7 @@ internal partial class InstructionGenerator_InitializeTests
             $$"""
             namespace WasmSharp.Instructions
             {
-                [Instruction(0, 0x41, "i32.const", {{metadata}})]
+                [Instruction(WasmSpecVersion.Core2, 0, 0x41, "i32.const", {{metadata}})]
                 internal static partial class InstructionSet;
             }
             namespace WasmSharp.Execution
@@ -870,7 +870,7 @@ internal partial class InstructionGenerator_InitializeTests
             $$"""
             namespace WasmSharp.Instructions
             {
-                [Instruction(0, 0x41, "i32.const", ImmediateKind.I32, StackEffectKind.PushI32,
+                [Instruction(WasmSpecVersion.Core2, 0, 0x41, "i32.const", ImmediateKind.I32, StackEffectKind.PushI32,
                     ValidationRule.Constant, "Handler")]
                 internal static partial class InstructionSet;
             }
@@ -918,7 +918,7 @@ internal partial class InstructionGenerator_InitializeTests
             $$"""
             namespace WasmSharp.Instructions
             {
-                [Instruction(0, 0x41, "test.failure", {{metadata}})]
+                [Instruction(WasmSpecVersion.Core2, 0, 0x41, "test.failure", {{metadata}})]
                 internal static partial class InstructionSet;
             }
             namespace WasmSharp.Execution
@@ -943,7 +943,7 @@ internal partial class InstructionGenerator_InitializeTests
         await GeneratorTestSource.AssertCompilesAndRuns(
             output,
             $$"""
-            WasmSharp.Instructions.InstructionSet.TryGet(new(0, 0x41), out var descriptor);
+            WasmSharp.Instructions.InstructionSet.TryGet(new(0, 0x41), WasmSharp.WasmSpecVersion.Core2, out var descriptor);
             var context = new WasmSharp.Execution.InterpreterContext(2)
             {
                 Instructions = [new(descriptor.ExecutionOpcode!.Value, default, 12345678901L, 0)]
@@ -971,8 +971,8 @@ internal partial class InstructionGenerator_InitializeTests
             $$"""
             namespace WasmSharp.Instructions
             {
-                [Instruction(0xFD, 1, "first"{{metadata}})]
-                [Instruction(0xFD, 1, "second"{{metadata}})]
+                [Instruction(WasmSpecVersion.Core2, 0xFD, 1, "first"{{metadata}})]
+                [Instruction(WasmSpecVersion.Core2, 0xFD, 1, "second"{{metadata}})]
                 internal static partial class InstructionSet;
             }
             namespace WasmSharp.Execution
@@ -1011,9 +1011,9 @@ internal partial class InstructionGenerator_InitializeTests
             """
             namespace WasmSharp.Instructions
             {
-                [Instruction(0, 0x41, "i32.const", ImmediateKind.I32, StackEffectKind.PushI32,
+                [Instruction(WasmSpecVersion.Core2, 0, 0x41, "i32.const", ImmediateKind.I32, StackEffectKind.PushI32,
                     ValidationRule.Constant, nameof(Execution.Interpreter.PushConstant))]
-                [Instruction(0, 0x0B, "end", ImmediateKind.None, StackEffectKind.FunctionEnd,
+                [Instruction(WasmSpecVersion.Core2, 0, 0x0B, "end", ImmediateKind.None, StackEffectKind.FunctionEnd,
                     ValidationRule.FunctionEnd, nameof(Execution.Interpreter.Return))]
                 internal static partial class InstructionSet;
             }
@@ -1071,8 +1071,8 @@ internal partial class InstructionGenerator_InitializeTests
         await GeneratorTestSource.AssertCompilesAndRuns(
             output,
             $$"""
-            WasmSharp.Instructions.InstructionSet.TryGet(new(0, 0x41), out var constant);
-            WasmSharp.Instructions.InstructionSet.TryGet(new(0, 0x0B), out var end);
+            WasmSharp.Instructions.InstructionSet.TryGet(new(0, 0x41), WasmSharp.WasmSpecVersion.Core2, out var constant);
+            WasmSharp.Instructions.InstructionSet.TryGet(new(0, 0x0B), WasmSharp.WasmSpecVersion.Core2, out var end);
             var context = new WasmSharp.Execution.InterpreterContext({{entryFrameCount + 1}})
             {
                 Instructions = [new(constant.ExecutionOpcode!.Value, WasmSharp.WasmValue.FromI64(42), 100, 0),
@@ -1093,7 +1093,7 @@ internal partial class InstructionGenerator_InitializeTests
         const string DECLARATION = """
             namespace WasmSharp.Instructions
             {
-                [Instruction(0xFC, 0, "before")]
+                [Instruction(WasmSpecVersion.Core2, 0xFC, 0, "before")]
                 internal static partial class InstructionSet;
             }
             """;
@@ -1103,7 +1103,12 @@ internal partial class InstructionGenerator_InitializeTests
         var declarationTree = compilation.SyntaxTrees.Single(x => x.ToString() == DECLARATION);
         var updated = compilation.ReplaceSyntaxTree(
             declarationTree,
-            CSharpSyntaxTree.ParseText(DECLARATION.Replace("0xFC, 0, \"before\"", "0xFD, 0xFFFFFFFF, \"after\\\"name\""))
+            CSharpSyntaxTree.ParseText(
+                DECLARATION.Replace(
+                    "WasmSpecVersion.Core2, 0xFC, 0, \"before\"",
+                    "WasmSpecVersion.Core3, 0xFD, 0xFFFFFFFF, \"after\\\"name\""
+                )
+            )
         );
 
         // Act
@@ -1114,9 +1119,11 @@ internal partial class InstructionGenerator_InitializeTests
         await GeneratorTestSource.AssertCompilesAndRuns(
             output,
             """
-            return !WasmSharp.Instructions.InstructionSet.TryGet(new(0xFC, 0), out _)
-                && WasmSharp.Instructions.InstructionSet.TryGet(new(0xFD, uint.MaxValue), out var descriptor)
-                && descriptor.Opcode == new WasmSharp.Instructions.OpcodeKey(0xFD, uint.MaxValue)
+            var updatedOpcode = new WasmSharp.Instructions.OpcodeKey(0xFD, uint.MaxValue);
+            return !WasmSharp.Instructions.InstructionSet.TryGet(new(0xFC, 0), WasmSharp.WasmSpecVersion.Core2, out _)
+                && !WasmSharp.Instructions.InstructionSet.TryGet(updatedOpcode, WasmSharp.WasmSpecVersion.Core2, out _)
+                && WasmSharp.Instructions.InstructionSet.TryGet(updatedOpcode, WasmSharp.WasmSpecVersion.Core3, out var descriptor)
+                && descriptor.Opcode == updatedOpcode
                 && descriptor.Name == "after\"name"
                 && descriptor.ExecutionOpcode == null
                 && System.Enum.GetValues<WasmSharp.Instructions.ExecutionOpcode>().Length == 0;
@@ -1150,13 +1157,13 @@ internal partial class InstructionGenerator_InitializeTests
             """
             namespace WasmSharp.Instructions
             {
-                [Instruction(0xFD, 0x41, "extended.fd", ImmediateKind.I32, StackEffectKind.PushI32,
+                [Instruction(WasmSpecVersion.Core2, 0xFD, 0x41, "extended.fd", ImmediateKind.I32, StackEffectKind.PushI32,
                     ValidationRule.Constant, nameof(Execution.Interpreter.PushConstant))]
-                [Instruction(0, 0x41, "i32.const", ImmediateKind.I32, StackEffectKind.PushI32,
+                [Instruction(WasmSpecVersion.Core2, 0, 0x41, "i32.const", ImmediateKind.I32, StackEffectKind.PushI32,
                     ValidationRule.Constant, nameof(Execution.Interpreter.PushConstant))]
-                [Instruction(0xFC, 0x41, "extended.fc", ImmediateKind.I32, StackEffectKind.PushI32,
+                [Instruction(WasmSpecVersion.Core2, 0xFC, 0x41, "extended.fc", ImmediateKind.I32, StackEffectKind.PushI32,
                     ValidationRule.Constant, nameof(Execution.Interpreter.PushConstant))]
-                [Instruction(0xFC, 0, "i32.trunc_sat_f32_s")]
+                [Instruction(WasmSpecVersion.Core2, 0xFC, 0, "i32.trunc_sat_f32_s")]
                 internal static partial class InstructionSet;
             }
             namespace WasmSharp.Execution
@@ -1182,10 +1189,10 @@ internal partial class InstructionGenerator_InitializeTests
         await GeneratorTestSource.AssertCompilesAndRuns(
             output,
             """
-            var found = WasmSharp.Instructions.InstructionSet.TryGet(new(0, 0x41), out var constant);
-            var fcFound = WasmSharp.Instructions.InstructionSet.TryGet(new(0xFC, 0x41), out var fc);
-            var fdFound = WasmSharp.Instructions.InstructionSet.TryGet(new(0xFD, 0x41), out var fd);
-            var unsupportedFound = WasmSharp.Instructions.InstructionSet.TryGet(new(0xFC, 0), out var unsupported);
+            var found = WasmSharp.Instructions.InstructionSet.TryGet(new(0, 0x41), WasmSharp.WasmSpecVersion.Core2, out var constant);
+            var fcFound = WasmSharp.Instructions.InstructionSet.TryGet(new(0xFC, 0x41), WasmSharp.WasmSpecVersion.Core2, out var fc);
+            var fdFound = WasmSharp.Instructions.InstructionSet.TryGet(new(0xFD, 0x41), WasmSharp.WasmSpecVersion.Core2, out var fd);
+            var unsupportedFound = WasmSharp.Instructions.InstructionSet.TryGet(new(0xFC, 0), WasmSharp.WasmSpecVersion.Core2, out var unsupported);
             return found && constant.Name == "i32.const"
                 && constant.Immediate == WasmSharp.Instructions.ImmediateKind.I32
                 && constant.StackEffect == WasmSharp.Instructions.StackEffectKind.PushI32
@@ -1205,8 +1212,8 @@ internal partial class InstructionGenerator_InitializeTests
                 && unsupported.ExecutionOpcode == null
                 && unsupported.NumericSignature == null
                 && System.Enum.GetValues<WasmSharp.Instructions.ExecutionOpcode>().Length == 3
-                && !WasmSharp.Instructions.InstructionSet.TryGet(new(0, 0), out _)
-                && !WasmSharp.Instructions.InstructionSet.TryGet(new(0xFD, 0), out _);
+                && !WasmSharp.Instructions.InstructionSet.TryGet(new(0, 0), WasmSharp.WasmSpecVersion.Core2, out _)
+                && !WasmSharp.Instructions.InstructionSet.TryGet(new(0xFD, 0), WasmSharp.WasmSpecVersion.Core2, out _);
             """
         );
     }

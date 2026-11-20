@@ -51,7 +51,8 @@ internal partial class ModuleValidator_ValidateTests
                         ]
                     )
                 )
-            )
+            ),
+            WasmSpecVersion.Core2
         );
 
         // Act
@@ -76,7 +77,8 @@ internal partial class ModuleValidator_ValidateTests
                 HostLinkingModuleBinary.Functions(0),
                 HostLinkingModuleBinary.Exports(("run", 0, 0)),
                 HostLinkingModuleBinary.Code(([], Convert.FromHexString("412A02014107420941000E0100000B0B")))
-            )
+            ),
+            WasmSpecVersion.Core2
         );
 
         // Act

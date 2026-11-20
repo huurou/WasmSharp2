@@ -27,7 +27,9 @@ internal partial class WasmModule_DecodeTests
         var expressionOffset = binary.Length - Convert.FromHexString(body).Length;
 
         // Act & Assert
-        var exception = await Assert.That(() => WasmModule.Decode(binary)).ThrowsExactly<WasmDecodeException>();
+        var exception = await Assert
+            .That(() => WasmModule.Decode(binary, WasmSpecVersion.Core2))
+            .ThrowsExactly<WasmDecodeException>();
         using (Assert.Multiple())
         {
             await Assert.That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal)).IsTrue();

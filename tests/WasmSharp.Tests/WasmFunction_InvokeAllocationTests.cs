@@ -25,7 +25,8 @@ internal partial class WasmFunction_InvokeTests
                         ),
                         ([], [0x41, 0x2A, 0x0B])
                     )
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate()
             .Instantiate(executionContext, [], new(2))

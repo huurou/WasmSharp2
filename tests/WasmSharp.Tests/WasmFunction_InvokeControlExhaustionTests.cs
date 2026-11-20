@@ -40,7 +40,8 @@ internal partial class WasmFunction_InvokeTests
                         ([(1, 0x7F), (1, 0x6F)], Body(mutual ? (byte)1 : (byte)0)),
                         ([(1, 0x7F), (1, 0x6F)], Body(0))
                     )
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate()
             .Instantiate(executionContext, [provider], new(4));
@@ -114,7 +115,8 @@ internal partial class WasmFunction_InvokeTests
                         ),
                         ([], [0x20, 0, 0x20, 1, 0x0B])
                     )
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate()
             .Instantiate(executionContext, [provider], new(2));
@@ -203,7 +205,8 @@ internal partial class WasmFunction_InvokeTests
                             ]
                         )
                     )
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate();
         var outerInstance = module.Instantiate(executionContext, [provider], new(4));

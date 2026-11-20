@@ -16,7 +16,11 @@ internal partial class WasmModule_ValidateTests
         var executionContext = new WasmExecutionContext();
         var bytes = Convert.FromHexString("0061736D01000000" + sections);
         using var stream = new MemoryStream(bytes);
-        WasmModule[] modules = [WasmModule.Decode(bytes), WasmModule.Decode(stream)];
+        WasmModule[] modules =
+        [
+            WasmModule.Decode(bytes, WasmSpecVersion.Core2),
+            WasmModule.Decode(stream, WasmSpecVersion.Core2),
+        ];
 
         // Act & Assert
         foreach (var module in modules)
@@ -33,7 +37,8 @@ internal partial class WasmModule_ValidateTests
         // Arrange
         var executionContext = new WasmExecutionContext();
         var module = WasmModule.Decode(
-            ConstantModuleBinary.Create([(0x7F, [0x41, 0x01, 0x0B]), (0x7F, [0x42, 0x02, 0x0B])], [("run", 0), ("bad", 1)])
+            ConstantModuleBinary.Create([(0x7F, [0x41, 0x01, 0x0B]), (0x7F, [0x42, 0x02, 0x0B])], [("run", 0), ("bad", 1)]),
+            WasmSpecVersion.Core2
         );
 
         // Act & Assert
@@ -54,7 +59,8 @@ internal partial class WasmModule_ValidateTests
             ConstantModuleBinary.Create(
                 [(0x7F, [0x41, 0x01, 0x0B]), (0x7E, [0x42, 0x02, 0x0B])],
                 [("run", 0), ("RUN", 1), ("alias", 0)]
-            )
+            ),
+            WasmSpecVersion.Core2
         );
 
         // Act
@@ -70,7 +76,7 @@ internal partial class WasmModule_ValidateTests
     public async Task 定義関数がない_検証と再検証で同じモジュールを返す()
     {
         // Arrange
-        var module = WasmModule.Decode(Convert.FromHexString("0061736D01000000"));
+        var module = WasmModule.Decode(Convert.FromHexString("0061736D01000000"), WasmSpecVersion.Core2);
 
         // Act
         var first = module.Validate();
@@ -87,7 +93,10 @@ internal partial class WasmModule_ValidateTests
     public async Task Exportの関数indexが存在しない_検証段階のexport位置付き失敗になる(uint index)
     {
         // Arrange
-        var module = WasmModule.Decode(ConstantModuleBinary.Create([(0x7F, [0x41, 0x01, 0x0B])], [("run", index)]));
+        var module = WasmModule.Decode(
+            ConstantModuleBinary.Create([(0x7F, [0x41, 0x01, 0x0B])], [("run", index)]),
+            WasmSpecVersion.Core2
+        );
 
         // Act & Assert
         var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
@@ -98,7 +107,10 @@ internal partial class WasmModule_ValidateTests
     public async Task Export名が重複_二つ目の宣言位置付き失敗になる()
     {
         // Arrange
-        var module = WasmModule.Decode(ConstantModuleBinary.Create([(0x7F, [0x41, 0x01, 0x0B])], [("run", 0), ("run", 0)]));
+        var module = WasmModule.Decode(
+            ConstantModuleBinary.Create([(0x7F, [0x41, 0x01, 0x0B])], [("run", 0), ("run", 0)]),
+            WasmSpecVersion.Core2
+        );
 
         // Act & Assert
         var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
@@ -113,7 +125,8 @@ internal partial class WasmModule_ValidateTests
             ConstantModuleBinary.Create(
                 [(0x7F, [0x41, 0x01, 0x0B]), (0x7E, [0x42, 0x02, 0x0B])],
                 [("run", 0), ("RUN", 1), ("é", 0), ("e\u0301", 0), ("", 1)]
-            )
+            ),
+            WasmSpecVersion.Core2
         );
 
         // Act & Assert
@@ -130,7 +143,7 @@ internal partial class WasmModule_ValidateTests
         var bytes = Convert.FromHexString(
             "0061736D010000000105016000017F03" + payloadLength + "01" + typeIndex + "0A0601040041010B"
         );
-        var module = WasmModule.Decode(bytes);
+        var module = WasmModule.Decode(bytes, WasmSpecVersion.Core2);
 
         // Act & Assert
         var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();

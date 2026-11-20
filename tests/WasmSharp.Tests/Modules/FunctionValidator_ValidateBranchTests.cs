@@ -99,7 +99,8 @@ internal partial class FunctionValidator_ValidateTests
                 HostLinkingModuleBinary.Code(
                     ([], [0x41, 9, (byte)opcode, 1, 0x1A, (byte)constantOpcode, 1, 0x0C, 0, 0, 0x0B, 0x0B])
                 )
-            )
+            ),
+            WasmSpecVersion.Core2
         );
 
         // Act
@@ -134,7 +135,8 @@ internal partial class FunctionValidator_ValidateTests
                 HostLinkingModuleBinary.Code(
                     ([], [0x41, 9, (byte)opcode, 1, 0x1A, (byte)constantOpcode, 1, 0x0C, 0, 0, 0x0B, 0x0B])
                 )
-            )
+            ),
+            WasmSpecVersion.Core2
         );
 
         // Act & Assert

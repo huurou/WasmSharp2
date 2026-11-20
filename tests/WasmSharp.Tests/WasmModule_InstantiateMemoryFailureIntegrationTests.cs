@@ -74,7 +74,7 @@ internal partial class WasmModule_InstantiateTests
             code,
             data
         );
-        var module = WasmModule.Decode(bytes).Validate();
+        var module = WasmModule.Decode(bytes, WasmSpecVersion.Core2).Validate();
         var trapOffset = bytes.Length - data.Length - code.Length + Array.IndexOf(code, (byte)0x28);
 
         // Act & Assert

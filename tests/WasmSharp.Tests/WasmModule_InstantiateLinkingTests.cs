@@ -19,7 +19,8 @@ internal partial class WasmModule_InstantiateTests
                     HostLinkingModuleBinary.Imports(("env", "f", 0, [0]), ("env", "g", 3, [0x7F, 0])),
                     HostLinkingModuleBinary.Tables((0x70, uint.MaxValue, null)),
                     HostLinkingModuleBinary.Start(0)
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate();
         var host = new WasmHostModule("env");
@@ -76,7 +77,8 @@ internal partial class WasmModule_InstantiateTests
                     HostLinkingModuleBinary.Types(([], [])),
                     HostLinkingModuleBinary.Imports(("env", "start", 0, [0])),
                     HostLinkingModuleBinary.Start(0)
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate();
         var host = new WasmHostModule("env");
@@ -106,7 +108,10 @@ internal partial class WasmModule_InstantiateTests
         // Arrange
         var executionContext = new WasmExecutionContext();
         var module = WasmModule
-            .Decode(HostLinkingModuleBinary.Create(HostLinkingModuleBinary.Imports(("missing", "missing", 3, [0x7F, 0]))))
+            .Decode(
+                HostLinkingModuleBinary.Create(HostLinkingModuleBinary.Imports(("missing", "missing", 3, [0x7F, 0]))),
+                WasmSpecVersion.Core2
+            )
             .Validate();
         var first = new WasmHostModule("env");
         var second = new WasmHostModule("env");
@@ -125,7 +130,7 @@ internal partial class WasmModule_InstantiateTests
     public async Task Startのないmoduleへ実行コンテキストを渡さない_引数不正として拒否する()
     {
         // Arrange
-        var module = WasmModule.Decode(HostLinkingModuleBinary.Create()).Validate();
+        var module = WasmModule.Decode(HostLinkingModuleBinary.Create(), WasmSpecVersion.Core2).Validate();
         var imports = new WasmImports();
 
         // Act & Assert
@@ -137,7 +142,7 @@ internal partial class WasmModule_InstantiateTests
     public async Task 実行コンテキストがなくホストモジュールの要素もnull_提供登録より先にcontextを拒否する()
     {
         // Arrange
-        var module = WasmModule.Decode(HostLinkingModuleBinary.Create()).Validate();
+        var module = WasmModule.Decode(HostLinkingModuleBinary.Create(), WasmSpecVersion.Core2).Validate();
 
         // Act & Assert
         var exception = await Assert.That(() => module.Instantiate(null!, [null!])).ThrowsExactly<ArgumentNullException>();
@@ -150,7 +155,8 @@ internal partial class WasmModule_InstantiateTests
         // Arrange
         var executionContext = new WasmExecutionContext();
         var module = WasmModule.Decode(
-            HostLinkingModuleBinary.Create(HostLinkingModuleBinary.Imports(("missing", "g", 3, [0x7F, 0])))
+            HostLinkingModuleBinary.Create(HostLinkingModuleBinary.Imports(("missing", "g", 3, [0x7F, 0]))),
+            WasmSpecVersion.Core2
         );
 
         // Act & Assert
@@ -243,7 +249,8 @@ internal partial class WasmModule_InstantiateTests
                         ("t", 1, 0),
                         ("defined", 1, 1)
                     )
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate();
 
@@ -302,7 +309,9 @@ internal partial class WasmModule_InstantiateTests
             )
         );
         using var stream = new ChunkedReadStream(new MemoryStream(bytes));
-        var module = (useStream ? WasmModule.Decode(stream) : WasmModule.Decode(bytes)).Validate();
+        var module = (
+            useStream ? WasmModule.Decode(stream, WasmSpecVersion.Core2) : WasmModule.Decode(bytes, WasmSpecVersion.Core2)
+        ).Validate();
 
         // Act
         var first = module.Instantiate(executionContext, []);
@@ -353,7 +362,8 @@ internal partial class WasmModule_InstantiateTests
                     HostLinkingModuleBinary.Functions(1),
                     HostLinkingModuleBinary.Exports(("imported", 0, 0), ("defined", 0, 1)),
                     HostLinkingModuleBinary.Code(([], [0x41, 42, 0x0B]))
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate();
         var calls = 0;

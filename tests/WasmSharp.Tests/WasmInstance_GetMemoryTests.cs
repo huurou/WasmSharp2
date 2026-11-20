@@ -14,7 +14,8 @@ internal class WasmInstance_GetMemoryTests
                 HostLinkingModuleBinary.Create(
                     HostLinkingModuleBinary.Memories((1, 3)),
                     HostLinkingModuleBinary.Exports(("m", 2, 0), ("", 2, 0))
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate()
             .Instantiate(executionContext, []);
@@ -26,7 +27,8 @@ internal class WasmInstance_GetMemoryTests
                 HostLinkingModuleBinary.Create(
                     HostLinkingModuleBinary.Imports(("env", "m", 2, [1, 1, 3])),
                     HostLinkingModuleBinary.Exports(("m", 2, 0), ("alias", 2, 0))
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate();
         var first = module.Instantiate(executionContext, [host]);
@@ -65,7 +67,7 @@ internal class WasmInstance_GetMemoryTests
         // Arrange
         var executionContext = new WasmExecutionContext();
         var instance = WasmModule
-            .Decode(ConstantModuleBinary.Create(0x7F, 0x41, 0x01, 0x0B))
+            .Decode(ConstantModuleBinary.Create(0x7F, 0x41, 0x01, 0x0B), WasmSpecVersion.Core2)
             .Validate()
             .Instantiate(executionContext, []);
 

@@ -12,7 +12,7 @@ internal class ModuleDecoder_ReadDataCountTests
     {
         // Arrange
         var bytes = Convert.FromHexString(hex);
-        var reader = new ModuleBinaryReader(bytes, 40, 12);
+        var reader = new ModuleBinaryReader(bytes, WasmSpecVersion.Core2, 40, 12);
 
         // Act
         var declaration = ModuleDecoder.ReadDataCount(ref reader);

@@ -32,7 +32,8 @@ internal static class ExecutionInstanceFixture
             [],
             [],
             [],
-            null
+            null,
+            WasmSpecVersion.Core2
         )
         {
             FunctionCodes =

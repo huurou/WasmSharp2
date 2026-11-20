@@ -10,7 +10,10 @@ internal partial class ModuleValidator_ValidateTests
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
-        var module = WasmModule.Decode(ConstantModuleBinary.Create(0x7F, [0xFD, 0x0C, .. new byte[16], 0x0B]));
+        var module = WasmModule.Decode(
+            ConstantModuleBinary.Create(0x7F, [0xFD, 0x0C, .. new byte[16], 0x0B]),
+            WasmSpecVersion.Core2
+        );
 
         // Assert
         await Assert.That(module.Functions[0].Instructions[0].Immediate.AsV128()).IsEqualTo((0UL, 0UL));

@@ -99,7 +99,7 @@ internal partial class WasmModule_InstantiateTests
                 ([], [.. beforeTrap, .. Convert.FromHexString(numericInstructions), .. afterTrap])
             )
         );
-        var module = WasmModule.Decode(bytes).Validate();
+        var module = WasmModule.Decode(bytes, WasmSpecVersion.Core2).Validate();
         var expectedOffset = bytes.Length - afterTrap.Length - 1;
 
         // Act & Assert

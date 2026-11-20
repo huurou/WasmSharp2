@@ -57,7 +57,7 @@ internal partial class WasmFunction_InvokeTests
 
         // Act
         var result = WasmModule
-            .Decode(stream)
+            .Decode(stream, WasmSpecVersion.Core2)
             .Validate()
             .Instantiate(executionContext, [])
             .GetFunction("run")
@@ -89,7 +89,7 @@ internal partial class WasmFunction_InvokeTests
         );
 
         // Act
-        var instance = WasmModule.Decode(bytes).Validate().Instantiate(executionContext, []);
+        var instance = WasmModule.Decode(bytes, WasmSpecVersion.Core2).Validate().Instantiate(executionContext, []);
         var result = instance.GetFunction("run").Invoke(executionContext, [WasmValue.FromI32(42), WasmValue.FromI64(73)]);
 
         // Assert
@@ -113,7 +113,8 @@ internal partial class WasmFunction_InvokeTests
                 HostLinkingModuleBinary.Functions(0),
                 HostLinkingModuleBinary.Exports(("run", 0, 0)),
                 HostLinkingModuleBinary.Code(([(1, 0x7F)], [0x20, 0, 0x22, 2, 0x1A, 0x20, 2, 0x20, 1, 0x0B]))
-            )
+            ),
+            WasmSpecVersion.Core2
         );
 
         // Act

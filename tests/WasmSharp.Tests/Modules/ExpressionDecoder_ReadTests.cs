@@ -11,7 +11,7 @@ internal class ExpressionDecoder_ReadTests
     {
         // Arrange
         byte[] bytes = [0x0E, 1, 3, 4, 0x0B];
-        var reader = new ModuleBinaryReader(bytes, maxCollectionLength: 2);
+        var reader = new ModuleBinaryReader(bytes, WasmSpecVersion.Core2, maxCollectionLength: 2);
 
         // Act
         var instructions = ExpressionDecoder.Read(ref reader, bytes.Length);
@@ -41,7 +41,14 @@ internal class ExpressionDecoder_ReadTests
         {
             Action read = () =>
             {
-                var reader = new ModuleBinaryReader(bytes, 40, 10, mode: mode, maxCollectionLength: 2);
+                var reader = new ModuleBinaryReader(
+                    bytes,
+                    WasmSpecVersion.Core2,
+                    40,
+                    10,
+                    mode: mode,
+                    maxCollectionLength: 2
+                );
                 var body = reader.ReadRange((uint)bytes.Length, 3);
                 ExpressionDecoder.Read(ref body, 40 + bytes.Length);
             };
@@ -67,7 +74,7 @@ internal class ExpressionDecoder_ReadTests
         byte[] bytes = [0x0E, 4, 0x0B];
         Action read = () =>
         {
-            var reader = new ModuleBinaryReader(bytes, 40, 10, 3, maxCollectionLength: 2);
+            var reader = new ModuleBinaryReader(bytes, WasmSpecVersion.Core2, 40, 10, 3, maxCollectionLength: 2);
             ExpressionDecoder.Read(ref reader, 40 + bytes.Length);
         };
 
@@ -87,7 +94,7 @@ internal class ExpressionDecoder_ReadTests
     {
         // Arrange
         var bytes = Convert.FromHexString("FD0C0123456789ABCDEFFEDCBA98765432100BFF");
-        var reader = new ModuleBinaryReader(bytes, 40, 10, 3, mode);
+        var reader = new ModuleBinaryReader(bytes, WasmSpecVersion.Core2, 40, 10, 3, mode);
 
         // Act
         var instructions = ExpressionDecoder.Read(ref reader, 100);
@@ -115,7 +122,7 @@ internal class ExpressionDecoder_ReadTests
             byte[] bytes = [0xFD, 0x0C, .. new byte[length]];
             Action read = () =>
             {
-                var reader = new ModuleBinaryReader(bytes, 40, 10, 3, mode);
+                var reader = new ModuleBinaryReader(bytes, WasmSpecVersion.Core2, 40, 10, 3, mode);
                 ExpressionDecoder.Read(ref reader, 100);
             };
 
@@ -146,7 +153,14 @@ internal class ExpressionDecoder_ReadTests
     public async Task 参照命令が続く_型別nullと未検証の最大関数添字と入力位置を保持する(ModuleReadMode mode)
     {
         // Arrange
-        var reader = new ModuleBinaryReader(Convert.FromHexString("D070D06FD1D2FFFFFFFF0F0BFF"), 40, 10, 3, mode);
+        var reader = new ModuleBinaryReader(
+            Convert.FromHexString("D070D06FD1D2FFFFFFFF0F0BFF"),
+            WasmSpecVersion.Core2,
+            40,
+            10,
+            3,
+            mode
+        );
 
         // Act
         var instructions = ExpressionDecoder.Read(ref reader, 100);
@@ -190,7 +204,7 @@ internal class ExpressionDecoder_ReadTests
             foreach (var code in new byte[] { 0x02, 0x03, 0x04 })
             {
                 var bytes = Convert.FromHexString(code.ToString("X2") + type + "0B0BFF");
-                var reader = new ModuleBinaryReader(bytes, 40, 10, 3, mode);
+                var reader = new ModuleBinaryReader(bytes, WasmSpecVersion.Core2, 40, 10, 3, mode);
 
                 // Act
                 var instructions = ExpressionDecoder.Read(ref reader, 100);
@@ -225,7 +239,7 @@ internal class ExpressionDecoder_ReadTests
         var bytes = Convert.FromHexString(hex + "FF");
         foreach (var mode in new[] { ModuleReadMode.Bounded, ModuleReadMode.Diagnostic })
         {
-            var reader = new ModuleBinaryReader(bytes, 40, 10, 3, mode);
+            var reader = new ModuleBinaryReader(bytes, WasmSpecVersion.Core2, 40, 10, 3, mode);
 
             // Act
             var instructions = ExpressionDecoder.Read(ref reader, 100);
@@ -252,7 +266,7 @@ internal class ExpressionDecoder_ReadTests
         var bytes = Convert.FromHexString("0CFFFFFFFF0F0D80000E038000FFFFFFFF0F02FFFFFFFF0F0E00FFFFFFFF0F0B");
         foreach (var mode in new[] { ModuleReadMode.Bounded, ModuleReadMode.Diagnostic })
         {
-            var reader = new ModuleBinaryReader(bytes, 40, 10, 3, mode);
+            var reader = new ModuleBinaryReader(bytes, WasmSpecVersion.Core2, 40, 10, 3, mode);
 
             // Act
             var instructions = ExpressionDecoder.Read(ref reader, 100);
@@ -286,7 +300,7 @@ internal class ExpressionDecoder_ReadTests
         var bytes = Convert.FromHexString("1B1C" + vector + "0B");
         foreach (var mode in new[] { ModuleReadMode.Bounded, ModuleReadMode.Diagnostic })
         {
-            var reader = new ModuleBinaryReader(bytes, 40, 10, 3, mode);
+            var reader = new ModuleBinaryReader(bytes, WasmSpecVersion.Core2, 40, 10, 3, mode);
 
             // Act
             var instructions = ExpressionDecoder.Read(ref reader, 100);
@@ -330,7 +344,7 @@ internal class ExpressionDecoder_ReadTests
             var exception = await Assert
                 .That(() =>
                 {
-                    var reader = new ModuleBinaryReader(bytes, 40, 10, 3, mode);
+                    var reader = new ModuleBinaryReader(bytes, WasmSpecVersion.Core2, 40, 10, 3, mode);
                     ExpressionDecoder.Read(ref reader, 100);
                 })
                 .ThrowsExactly<WasmDecodeException>();
@@ -359,7 +373,7 @@ internal class ExpressionDecoder_ReadTests
             // Act & Assert
             Action read = () =>
             {
-                var reader = new ModuleBinaryReader(bytes, 40, 10, 3, mode);
+                var reader = new ModuleBinaryReader(bytes, WasmSpecVersion.Core2, 40, 10, 3, mode);
                 ExpressionDecoder.Read(ref reader, 100);
             };
             WasmDecodeException failure;
@@ -392,7 +406,7 @@ internal class ExpressionDecoder_ReadTests
             .SelectMany(x => x)
             .Concat(Enumerable.Repeat((byte)0x0B, DEPTH + 1))
             .ToArray();
-        var reader = new ModuleBinaryReader(bytes);
+        var reader = new ModuleBinaryReader(bytes, WasmSpecVersion.Core2);
 
         // Act
         var instructions = ExpressionDecoder.Read(ref reader, bytes.Length);
@@ -414,6 +428,7 @@ internal class ExpressionDecoder_ReadTests
         // Arrange
         var reader = new ModuleBinaryReader(
             Convert.FromHexString("417F427E434523C1FF44BC9A78563412F8FF2080011A0F0BFF"),
+            WasmSpecVersion.Core2,
             40,
             10,
             3,
@@ -457,7 +472,7 @@ internal class ExpressionDecoder_ReadTests
     public async Task 空の式_終端命令を保持して次の式を読まない()
     {
         // Arrange
-        var reader = new ModuleBinaryReader([0x0B, 0x41, 0x00, 0x0B], 40, 6);
+        var reader = new ModuleBinaryReader([0x0B, 0x41, 0x00, 0x0B], WasmSpecVersion.Core2, 40, 6);
 
         // Act
         var instructions = ExpressionDecoder.Read(ref reader, 100);
@@ -488,7 +503,7 @@ internal class ExpressionDecoder_ReadTests
         var exception = await Assert
             .That(() =>
             {
-                var reader = new ModuleBinaryReader(bytes, 40, 10, 3);
+                var reader = new ModuleBinaryReader(bytes, WasmSpecVersion.Core2, 40, 10, 3);
                 ExpressionDecoder.Read(ref reader, 100);
             })
             .ThrowsExactly<ModuleReadBoundaryException>();
@@ -513,7 +528,7 @@ internal class ExpressionDecoder_ReadTests
         var exception = await Assert
             .That(() =>
             {
-                var reader = new ModuleBinaryReader(bytes, 40, 10, 3, ModuleReadMode.Diagnostic);
+                var reader = new ModuleBinaryReader(bytes, WasmSpecVersion.Core2, 40, 10, 3, ModuleReadMode.Diagnostic);
                 ExpressionDecoder.Read(ref reader, 100);
             })
             .ThrowsExactly<WasmDecodeException>();
@@ -536,7 +551,7 @@ internal class ExpressionDecoder_ReadTests
         var exception = await Assert
             .That(() =>
             {
-                var reader = new ModuleBinaryReader(bytes, 40, 10, 3);
+                var reader = new ModuleBinaryReader(bytes, WasmSpecVersion.Core2, 40, 10, 3);
                 var expression = reader.ReadRange(2);
                 ExpressionDecoder.Read(ref expression, 100);
             })
@@ -548,7 +563,14 @@ internal class ExpressionDecoder_ReadTests
     public async Task 宣言範囲の後にendがある_診断走査は同じ構文処理で物理範囲を読む()
     {
         // Arrange
-        var reader = new ModuleBinaryReader(Convert.FromHexString("41000BFF"), 40, 10, 3, ModuleReadMode.Diagnostic);
+        var reader = new ModuleBinaryReader(
+            Convert.FromHexString("41000BFF"),
+            WasmSpecVersion.Core2,
+            40,
+            10,
+            3,
+            ModuleReadMode.Diagnostic
+        );
         var expression = reader.ReadRange(2);
 
         // Act
@@ -578,7 +600,7 @@ internal class ExpressionDecoder_ReadTests
         var exception = await Assert
             .That(() =>
             {
-                var reader = new ModuleBinaryReader(bytes, 40, 10, 3, mode);
+                var reader = new ModuleBinaryReader(bytes, WasmSpecVersion.Core2, 40, 10, 3, mode);
                 ExpressionDecoder.Read(ref reader, 100);
             })
             .ThrowsExactly<WasmDecodeException>();
@@ -607,7 +629,7 @@ internal class ExpressionDecoder_ReadTests
         var exception = await Assert
             .That(() =>
             {
-                var reader = new ModuleBinaryReader(bytes, 40, 10, 3, mode);
+                var reader = new ModuleBinaryReader(bytes, WasmSpecVersion.Core2, 40, 10, 3, mode);
                 ExpressionDecoder.Read(ref reader, 100);
             })
             .ThrowsExactly<WasmDecodeException>();

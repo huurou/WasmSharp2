@@ -14,7 +14,9 @@ internal partial class ModuleDecoder_DecodeTests
         var bytes = Convert.FromHexString("0061736D01000000" + section + "0D00");
 
         // Act & Assert
-        var exception = await Assert.That(() => ModuleDecoder.Decode(bytes)).ThrowsExactly<WasmDecodeException>();
+        var exception = await Assert
+            .That(() => ModuleDecoder.Decode(bytes, WasmSpecVersion.Core2))
+            .ThrowsExactly<WasmDecodeException>();
         using (Assert.Multiple())
         {
             await Assert.That(exception!.Location).IsEqualTo(new(WasmProcessingStage.Decode, 11, null, id));
@@ -30,7 +32,9 @@ internal partial class ModuleDecoder_DecodeTests
         var bytes = ConstantModuleBinary.Create(0x7F, Convert.FromHexString(instructions));
 
         // Act & Assert
-        var exception = await Assert.That(() => ModuleDecoder.Decode(bytes)).ThrowsExactly<WasmDecodeException>();
+        var exception = await Assert
+            .That(() => ModuleDecoder.Decode(bytes, WasmSpecVersion.Core2))
+            .ThrowsExactly<WasmDecodeException>();
         using (Assert.Multiple())
         {
             await Assert
@@ -61,7 +65,9 @@ internal partial class ModuleDecoder_DecodeTests
         var bytes = ConstantModuleBinary.Create(0x7F, Convert.FromHexString(instructions));
 
         // Act & Assert
-        var exception = await Assert.That(() => ModuleDecoder.Decode(bytes)).ThrowsExactly<WasmDecodeException>();
+        var exception = await Assert
+            .That(() => ModuleDecoder.Decode(bytes, WasmSpecVersion.Core2))
+            .ThrowsExactly<WasmDecodeException>();
         await Assert.That(exception!.Location).IsEqualTo(new(WasmProcessingStage.Decode, offset, 0, 10));
     }
 
@@ -75,7 +81,9 @@ internal partial class ModuleDecoder_DecodeTests
         var bytes = Convert.FromHexString("0061736D0100000007030100" + kind.ToString("X2"));
 
         // Act & Assert
-        var exception = await Assert.That(() => ModuleDecoder.Decode(bytes)).ThrowsExactly<WasmDecodeException>();
+        var exception = await Assert
+            .That(() => ModuleDecoder.Decode(bytes, WasmSpecVersion.Core2))
+            .ThrowsExactly<WasmDecodeException>();
         await Assert.That(exception!.Location).IsEqualTo(new(WasmProcessingStage.Decode, 13, null, 7));
     }
 
@@ -95,7 +103,9 @@ internal partial class ModuleDecoder_DecodeTests
         var bytes = Convert.FromHexString("0061736D01000000" + sections);
 
         // Act & Assert
-        var exception = await Assert.That(() => ModuleDecoder.Decode(bytes)).ThrowsExactly<WasmDecodeException>();
+        var exception = await Assert
+            .That(() => ModuleDecoder.Decode(bytes, WasmSpecVersion.Core2))
+            .ThrowsExactly<WasmDecodeException>();
         await Assert.That(exception!.Location).IsEqualTo(new(WasmProcessingStage.Decode, offset, null, id));
     }
 }

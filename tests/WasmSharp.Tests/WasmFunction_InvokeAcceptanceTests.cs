@@ -73,7 +73,8 @@ internal partial class WasmFunction_InvokeTests
                     HostLinkingModuleBinary.Functions(0),
                     HostLinkingModuleBinary.Exports(("run", 0, 1)),
                     HostLinkingModuleBinary.Code(([], [.. body]))
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate()
             .Instantiate(executionContext, [host])
@@ -144,7 +145,8 @@ internal partial class WasmFunction_InvokeTests
                     HostLinkingModuleBinary.Globals((0x7F, true, [0x41, 0, 0x0B])),
                     HostLinkingModuleBinary.Exports(("run", 0, 1), ("g", 3, 0)),
                     HostLinkingModuleBinary.Code(([], [0x10, 0, 0x24, 0, 0x0B]))
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate()
             .Instantiate(executionContext, [host], new(2));
@@ -211,7 +213,8 @@ internal partial class WasmFunction_InvokeTests
                             ]
                         )
                     )
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate()
             .Instantiate(executionContext, [host]);
@@ -226,7 +229,8 @@ internal partial class WasmFunction_InvokeTests
                     HostLinkingModuleBinary.Globals((0x7F, true, [0x41, 9, 0x0B])),
                     HostLinkingModuleBinary.Exports(("run", 0, 1), ("g", 3, 0)),
                     HostLinkingModuleBinary.Code(([], [0x20, 0, 0x10, 0, 0x0B]))
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate()
             .Instantiate(executionContext, [provider]);

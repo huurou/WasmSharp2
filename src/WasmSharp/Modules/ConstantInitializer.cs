@@ -24,7 +24,7 @@ internal static class ConstantInitializer
         ReadOnlySpan<WasmGlobalType> visibleGlobals,
         uint functionCount,
         byte sectionId,
-        WasmSpecVersion specVersion = WasmSpecVersion.Core2
+        WasmSpecVersion specVersion
     )
     {
         // 結果の型・個数より先に、左から最初の適格性違反を選ぶ。
@@ -91,7 +91,7 @@ internal static class ConstantInitializer
         ImmutableArray<DecodedInstruction> expression,
         ReadOnlySpan<WasmGlobal> globals,
         ReadOnlySpan<WasmFunction> functions,
-        WasmSpecVersion specVersion = WasmSpecVersion.Core2
+        WasmSpecVersion specVersion
     )
     {
         if (expression.Length == 2)
@@ -176,7 +176,7 @@ internal static class ConstantInitializer
             return;
         }
         if (
-            InstructionSet.TryGet(instruction.Opcode, out var descriptor, specVersion)
+            InstructionSet.TryGet(instruction.Opcode, specVersion, out var descriptor)
             && (
                 descriptor.Validation is ValidationRule.Constant or ValidationRule.RefFunc
                 || (specVersion == WasmSpecVersion.Core3 && descriptor.ConstantBinaryOperation is not null)

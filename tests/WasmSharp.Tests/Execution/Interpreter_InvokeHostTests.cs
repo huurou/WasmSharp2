@@ -52,7 +52,10 @@ internal class Interpreter_InvokeHostTests
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
-        var instance = WasmModule.Decode(HostLinkingModuleBinary.Create()).Validate().Instantiate(executionContext, []);
+        var instance = WasmModule
+            .Decode(HostLinkingModuleBinary.Create(), WasmSpecVersion.Core2)
+            .Validate()
+            .Instantiate(executionContext, []);
         var reference = new object();
         WasmValue[] arguments = [WasmValue.FromI32(42), WasmValue.FromExternRef(reference)];
         WasmInstance? observedInstance = null;

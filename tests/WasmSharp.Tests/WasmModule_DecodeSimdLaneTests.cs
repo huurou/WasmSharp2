@@ -19,7 +19,11 @@ internal partial class WasmModule_DecodeTests
             HostLinkingModuleBinary.Code(([], Convert.FromHexString(instruction)))
         );
         using var stream = new ChunkedReadStream(new MemoryStream(bytes));
-        Func<WasmModule>[] decoders = [() => WasmModule.Decode(bytes), () => WasmModule.Decode(stream)];
+        Func<WasmModule>[] decoders =
+        [
+            () => WasmModule.Decode(bytes, WasmSpecVersion.Core2),
+            () => WasmModule.Decode(stream, WasmSpecVersion.Core2),
+        ];
 
         foreach (var decode in decoders)
         {

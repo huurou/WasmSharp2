@@ -93,7 +93,8 @@ internal partial class FunctionValidator_ValidateTests
                 HostLinkingModuleBinary.Code(
                     ([(20, 0x7F)], Convert.FromHexString("2000200120020401410141021A1A054101410241031A1A1A0B0B"))
                 )
-            )
+            ),
+            WasmSpecVersion.Core2
         );
 
         // Act
@@ -308,7 +309,8 @@ internal partial class FunctionValidator_ValidateTests
                 HostLinkingModuleBinary.Types(([], []), (Convert.FromHexString(parameters), Convert.FromHexString(results))),
                 HostLinkingModuleBinary.Functions(0),
                 HostLinkingModuleBinary.Code(([], Convert.FromHexString(body)))
-            )
+            ),
+            WasmSpecVersion.Core2
         );
 
         // Act & Assert
@@ -326,7 +328,8 @@ internal partial class FunctionValidator_ValidateTests
                 HostLinkingModuleBinary.Types((parameters, results)),
                 HostLinkingModuleBinary.Functions(0),
                 HostLinkingModuleBinary.Code(([], body))
-            )
+            ),
+            WasmSpecVersion.Core2
         );
     }
 }

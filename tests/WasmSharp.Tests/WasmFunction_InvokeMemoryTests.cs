@@ -122,7 +122,8 @@ internal partial class WasmFunction_InvokeTests
                         ([], [0x20, 0, 0x2D, 0, 0, 0x0B]),
                         ([], [0x20, 0, 0x20, 1, 0x3A, 0, 0, 0x0B])
                     )
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate();
         var first = module.Instantiate(executionContext, [host]);
@@ -198,7 +199,7 @@ internal partial class WasmFunction_InvokeTests
             var expected = MemoryValue(valueType, expectedBits);
 
             // Act
-            var module = WasmModule.Decode(bytes);
+            var module = WasmModule.Decode(bytes, WasmSpecVersion.Core2);
             Array.Fill(bytes, (byte)0xFF);
             var instance = module.Validate().Instantiate(executionContext, imported ? [host] : []);
             var memory = instance.GetMemory("memory");
@@ -253,7 +254,10 @@ internal partial class WasmFunction_InvokeTests
             var memory = new WasmMemory(new(1, null));
             var host = new WasmHostModule("env");
             host.Define("m", memory);
-            var instance = WasmModule.Decode(bytes).Validate().Instantiate(executionContext, imported ? [host] : []);
+            var instance = WasmModule
+                .Decode(bytes, WasmSpecVersion.Core2)
+                .Validate()
+                .Instantiate(executionContext, imported ? [host] : []);
             var exported = instance.GetMemory("memory");
             exported.Write(2, Enumerable.Repeat((byte)0xCC, 10).ToArray());
 
@@ -300,7 +304,7 @@ internal partial class WasmFunction_InvokeTests
                 ([], [0x20, 0, .. store ? new byte[] { 0x41, 1 } : [], opcode, 0, .. encodedOffset, 0x0B])
             )
         );
-        var instance = WasmModule.Decode(bytes).Validate().Instantiate(executionContext, []);
+        var instance = WasmModule.Decode(bytes, WasmSpecVersion.Core2).Validate().Instantiate(executionContext, []);
         var memory = instance.GetMemory("memory");
         memory.Write(65532, [0x81, 0x82, 0x83, 0x84]);
 
@@ -338,7 +342,8 @@ internal partial class WasmFunction_InvokeTests
                     imported ? [] : HostLinkingModuleBinary.Memories((initialPages, maximumPages)),
                     HostLinkingModuleBinary.Exports(("size", 0, 0), ("grow", 0, 1), ("memory", 2, 0)),
                     HostLinkingModuleBinary.Code(([], [0x3F, 0, 0x0B]), ([], [0x20, 0, 0x40, 0, 0x0B]))
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate();
     }

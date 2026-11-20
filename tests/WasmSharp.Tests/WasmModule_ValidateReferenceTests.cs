@@ -32,7 +32,7 @@ internal partial class WasmModule_ValidateTests
             .. (start ? new[] { HostLinkingModuleBinary.Start(0) } : []),
             HostLinkingModuleBinary.Code(([], Convert.FromHexString(body))),
         ];
-        var module = WasmModule.Decode(HostLinkingModuleBinary.Create(sections));
+        var module = WasmModule.Decode(HostLinkingModuleBinary.Create(sections), WasmSpecVersion.Core2);
 
         // Act & Assert
         var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
@@ -79,7 +79,8 @@ internal partial class WasmModule_ValidateTests
                 HostLinkingModuleBinary.Types(([], [])),
                 HostLinkingModuleBinary.Functions(0),
                 HostLinkingModuleBinary.Code(([], Convert.FromHexString(body)))
-            )
+            ),
+            WasmSpecVersion.Core2
         );
 
         // Act & Assert
@@ -112,7 +113,8 @@ internal partial class WasmModule_ValidateTests
                 HostLinkingModuleBinary.Types(([], [result])),
                 HostLinkingModuleBinary.Functions(0),
                 HostLinkingModuleBinary.Code(([], Convert.FromHexString(body)))
-            )
+            ),
+            WasmSpecVersion.Core2
         );
 
         // Act
@@ -147,7 +149,8 @@ internal partial class WasmModule_ValidateTests
                 HostLinkingModuleBinary.Functions(0),
                 HostLinkingModuleBinary.Globals((0x70, false, Convert.FromHexString(initializer))),
                 HostLinkingModuleBinary.Code(([], [0x0B]))
-            )
+            ),
+            WasmSpecVersion.Core2
         );
 
         // Act & Assert
@@ -172,7 +175,8 @@ internal partial class WasmModule_ValidateTests
         var module = WasmModule.Decode(
             HostLinkingModuleBinary.Create(
                 HostLinkingModuleBinary.Globals((0x70, false, [0xD0, 0x70, 0x0B]), (0x70, false, [0x23, 0, 0x0B]))
-            )
+            ),
+            WasmSpecVersion.Core2
         );
 
         // Act & Assert

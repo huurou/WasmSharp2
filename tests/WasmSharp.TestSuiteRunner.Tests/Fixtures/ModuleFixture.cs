@@ -8,7 +8,7 @@ internal static class ModuleFixture
 
     internal static InstantiatedModule Instantiate(WasmExecutionContext context)
     {
-        var module = WasmModule.Decode(__emptyModule).Validate();
+        var module = WasmModule.Decode(__emptyModule, WasmSpecVersion.Core2).Validate();
         return new(module, module.Instantiate(context, new WasmImports()));
     }
 

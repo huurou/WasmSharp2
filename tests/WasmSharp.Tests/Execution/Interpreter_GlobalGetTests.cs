@@ -13,7 +13,7 @@ internal class Interpreter_GlobalGetTests
         // Arrange
         var executionContext = new WasmExecutionContext();
         var reference = new object();
-        var found = InstructionSet.TryGet(new(0, 0x23), out var descriptor);
+        var found = InstructionSet.TryGet(new(0, 0x23), WasmSpecVersion.Core2, out var descriptor);
         var externGlobal = new WasmGlobal(new(WasmValueKind.ExternRef, true), WasmValue.FromExternRef(null));
         var vectorGlobal = new WasmGlobal(
             new(WasmValueKind.V128, false),

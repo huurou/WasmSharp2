@@ -22,7 +22,7 @@ internal class ModuleDecoder_ReadElementTests
         // Arrange
         var bytes = Convert.FromHexString("01" + prefix + "028000FFFFFFFF0FFF");
         var firstIndexOffset = 42L + prefix.Length / 2;
-        var reader = new ModuleBinaryReader(bytes, 40, 9);
+        var reader = new ModuleBinaryReader(bytes, WasmSpecVersion.Core2, 40, 9);
 
         // Act
         var segments = ModuleDecoder.ReadElement(ref reader, 100);
@@ -84,7 +84,7 @@ internal class ModuleDecoder_ReadElementTests
         // Arrange
         var bytes = Convert.FromHexString("01" + prefix + "02D0700BD06F0BFF");
         var firstExpressionOffset = 42L + prefix.Length / 2;
-        var reader = new ModuleBinaryReader(bytes, 40, 9);
+        var reader = new ModuleBinaryReader(bytes, WasmSpecVersion.Core2, 40, 9);
 
         // Act
         var segments = ModuleDecoder.ReadElement(ref reader, 100);
@@ -142,7 +142,7 @@ internal class ModuleDecoder_ReadElementTests
         // Arrange
         var bytes = Convert.FromHexString("8100" + segment[..2] + "00" + segment[2..]);
         bytes[2] |= 0x80;
-        var reader = new ModuleBinaryReader(bytes, 40, 9);
+        var reader = new ModuleBinaryReader(bytes, WasmSpecVersion.Core2, 40, 9);
 
         // Act
         var segments = ModuleDecoder.ReadElement(ref reader, 100);
@@ -165,7 +165,7 @@ internal class ModuleDecoder_ReadElementTests
     public async Task 要素セグメント数が0である_空の定義を返す(ModuleReadMode mode)
     {
         // Arrange
-        var reader = new ModuleBinaryReader([0, 0xFF], 40, 9, mode: mode);
+        var reader = new ModuleBinaryReader([0, 0xFF], WasmSpecVersion.Core2, 40, 9, mode: mode);
 
         // Act
         var segments = ModuleDecoder.ReadElement(ref reader, 100);
@@ -184,7 +184,7 @@ internal class ModuleDecoder_ReadElementTests
     {
         // Arrange
         var bytes = Convert.FromHexString("0206FFFFFFFF0F42000B6F030141000B23FFFFFFFF0F0BD2FFFFFFFF0F0B010001FFFFFFFF0F");
-        var reader = new ModuleBinaryReader(bytes, 40, 9);
+        var reader = new ModuleBinaryReader(bytes, WasmSpecVersion.Core2, 40, 9);
 
         // Act
         var segments = ModuleDecoder.ReadElement(ref reader, 100);
@@ -239,7 +239,7 @@ internal class ModuleDecoder_ReadElementTests
             var exception = await Assert
                 .That(() =>
                 {
-                    var reader = new ModuleBinaryReader(bytes, 40, 9, mode: mode);
+                    var reader = new ModuleBinaryReader(bytes, WasmSpecVersion.Core2, 40, 9, mode: mode);
                     ModuleDecoder.ReadElement(ref reader, 100);
                 })
                 .ThrowsExactly<WasmDecodeException>();
@@ -276,7 +276,7 @@ internal class ModuleDecoder_ReadElementTests
             // Act & Assert
             Action read = () =>
             {
-                var reader = new ModuleBinaryReader(bytes, 40, 9, mode: mode);
+                var reader = new ModuleBinaryReader(bytes, WasmSpecVersion.Core2, 40, 9, mode: mode);
                 ModuleDecoder.ReadElement(ref reader, 100);
             };
             WasmDecodeException failure;
@@ -311,7 +311,7 @@ internal class ModuleDecoder_ReadElementTests
         var exception = await Assert
             .That(() =>
             {
-                var parent = new ModuleBinaryReader(bytes, 40, 9);
+                var parent = new ModuleBinaryReader(bytes, WasmSpecVersion.Core2, 40, 9);
                 var reader = parent.ReadRange(length);
                 ModuleDecoder.ReadElement(ref reader, 100);
             })
@@ -334,7 +334,7 @@ internal class ModuleDecoder_ReadElementTests
         {
             Action read = () =>
             {
-                var reader = new ModuleBinaryReader(bytes, 40, 9, mode: mode);
+                var reader = new ModuleBinaryReader(bytes, WasmSpecVersion.Core2, 40, 9, mode: mode);
                 ModuleDecoder.ReadElement(ref reader, 100);
             };
 
@@ -371,7 +371,7 @@ internal class ModuleDecoder_ReadElementTests
         byte[] payload = [.. prefix, 0xFD, 0x0C, .. new byte[16], 0x0B, .. suffix];
         foreach (var mode in new[] { ModuleReadMode.Bounded, ModuleReadMode.Diagnostic })
         {
-            var reader = new ModuleBinaryReader(payload, 40, 9, mode: mode);
+            var reader = new ModuleBinaryReader(payload, WasmSpecVersion.Core2, 40, 9, mode: mode);
 
             // Act
             var segments = ModuleDecoder.ReadElement(ref reader, 100);
@@ -389,7 +389,8 @@ internal class ModuleDecoder_ReadElementTests
             HostLinkingModuleBinary.Create(
                 HostLinkingModuleBinary.Tables((0x70, 0, null)),
                 HostLinkingModuleBinary.Section(9, payload)
-            )
+            ),
+            WasmSpecVersion.Core2
         );
         var expectedOffset = initializer
             ? module.ElementSegments[0].Initializers[0][^1].ByteOffset

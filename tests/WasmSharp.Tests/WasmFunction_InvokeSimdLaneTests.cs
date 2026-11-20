@@ -71,7 +71,11 @@ internal partial class WasmFunction_InvokeTests
         using var stream = new ChunkedReadStream(new MemoryStream(bytes));
 
         // Act
-        WasmModule[] modules = [WasmModule.Decode(bytes), WasmModule.Decode(stream)];
+        WasmModule[] modules =
+        [
+            WasmModule.Decode(bytes, WasmSpecVersion.Core2),
+            WasmModule.Decode(stream, WasmSpecVersion.Core2),
+        ];
         Array.Clear(bytes);
         foreach (var module in modules)
         {
@@ -97,7 +101,13 @@ internal partial class WasmFunction_InvokeTests
                 await Assert.That(actual.Length).IsEqualTo(1);
                 await Assert.That(bits).IsEqualTo((expectedLow, expectedHigh));
                 await Assert
-                    .That(WasmSharp.Instructions.InstructionSet.TryGet(new(0xFD, opcode), out var descriptor))
+                    .That(
+                        WasmSharp.Instructions.InstructionSet.TryGet(
+                            new(0xFD, opcode),
+                            module.SpecVersion,
+                            out var descriptor
+                        )
+                    )
                     .IsTrue();
                 await Assert.That(descriptor.Name).IsEqualTo(name);
             }

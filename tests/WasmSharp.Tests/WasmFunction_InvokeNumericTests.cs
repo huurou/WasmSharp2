@@ -42,7 +42,7 @@ internal partial class WasmFunction_InvokeTests
 
         // Act
         var result = WasmModule
-            .Decode(bytes)
+            .Decode(bytes, WasmSpecVersion.Core2)
             .Validate()
             .Instantiate(executionContext, [])
             .GetFunction("run")
@@ -92,7 +92,9 @@ internal partial class WasmFunction_InvokeTests
             using var stream = new MemoryStream(bytes);
 
             // Act
-            var module = useStream ? WasmModule.Decode(stream) : WasmModule.Decode(bytes);
+            var module = useStream
+                ? WasmModule.Decode(stream, WasmSpecVersion.Core2)
+                : WasmModule.Decode(bytes, WasmSpecVersion.Core2);
             var result = module.Validate().Instantiate(executionContext, []).GetFunction("run").Invoke(executionContext, []);
 
             // Assert

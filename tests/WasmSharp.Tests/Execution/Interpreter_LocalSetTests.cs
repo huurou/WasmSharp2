@@ -12,7 +12,7 @@ internal class Interpreter_LocalSetTests
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
-        var found = InstructionSet.TryGet(new(0, 0x21), out var descriptor);
+        var found = InstructionSet.TryGet(new(0, 0x21), WasmSpecVersion.Core2, out var descriptor);
         var function = ExecutionFunctionFixture.Create(
             [
                 InstructionFixture.Create(0x42, 81, immediate: WasmValue.FromI64(5)),

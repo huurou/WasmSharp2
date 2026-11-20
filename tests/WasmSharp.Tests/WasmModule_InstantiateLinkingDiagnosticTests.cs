@@ -24,7 +24,8 @@ internal partial class WasmModule_InstantiateTests
                         missingFirst ? missing : incompatible,
                         missingFirst ? incompatible : missing
                     )
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate();
         var host = new WasmHostModule("env");
@@ -66,7 +67,8 @@ internal partial class WasmModule_InstantiateTests
             .Decode(
                 HostLinkingModuleBinary.Create(
                     HostLinkingModuleBinary.Imports(("first", "g", 3, [0x7F, 0]), ("last", "t", 1, [0x70, 0, 0]))
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate();
 
@@ -102,7 +104,8 @@ internal partial class WasmModule_InstantiateTests
                 HostLinkingModuleBinary.Create(
                     HostLinkingModuleBinary.Types(([], [])),
                     HostLinkingModuleBinary.Imports(("first", "f", 0, [0]), ("last", "g", 3, [0x7F, 0]))
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate();
         var first = new WasmHostModule("first");

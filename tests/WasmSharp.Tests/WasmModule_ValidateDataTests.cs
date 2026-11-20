@@ -49,7 +49,7 @@ internal partial class WasmModule_ValidateTests
             Convert.FromHexString(globals),
             HostLinkingModuleBinary.Section(11, Convert.FromHexString(data))
         );
-        var module = WasmModule.Decode(bytes);
+        var module = WasmModule.Decode(bytes, WasmSpecVersion.Core2);
 
         // Act & Assert
         var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();

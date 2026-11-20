@@ -22,7 +22,8 @@ internal partial class WasmFunction_InvokeTests
                     HostLinkingModuleBinary.Code(
                         ([], [0x20, 1, 0x20, 0, 0x23, 0, 0x41, 0, 0x2D, 0, 0, 0x41, 0, 0x25, 0, 0x0B])
                     )
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate()
             .Instantiate(executionContext, []);
@@ -47,7 +48,8 @@ internal partial class WasmFunction_InvokeTests
                     HostLinkingModuleBinary.Globals((0x7F, false, [0x41, 0, 0x0B])),
                     HostLinkingModuleBinary.Exports(("run", 0, 0)),
                     HostLinkingModuleBinary.Code(([], [0x20, 0, 0x20, 1, 0x20, 2, 0x11, 1, 1, 0x0B]))
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate();
         host.Define("unused", new WasmTable(WasmValueKind.ExternRef, new(1)));
@@ -183,7 +185,8 @@ internal partial class WasmFunction_InvokeTests
                     HostLinkingModuleBinary.Functions(0, 0),
                     HostLinkingModuleBinary.Exports(("run", 0, 0), ("ok", 0, 1)),
                     HostLinkingModuleBinary.Code(([], [0x41, 0, 0x11, 0, 0, 0x0B]), ([], [0x0B]))
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate();
         var instance = module.Instantiate(executionContext, [host], new(3));
@@ -233,7 +236,8 @@ internal partial class WasmFunction_InvokeTests
                         ([], [0x00, 0x0B]),
                         ([], [0x41, 5, 0x11, 0, 0, 0x0B])
                     )
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate();
         var outer = module.Instantiate(executionContext, [host], new(4));
@@ -313,7 +317,8 @@ internal partial class WasmFunction_InvokeTests
                     HostLinkingModuleBinary.Functions(1, 0),
                     HostLinkingModuleBinary.Exports(("run", 0, 0), ("ok", 0, 1)),
                     HostLinkingModuleBinary.Code(([], [0x20, 0, 0x11, 0, 0, 0x0B]), ([], [0x0B]))
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate();
         return (module, module.Instantiate(executionContext, [host], new(maxCallDepth)));

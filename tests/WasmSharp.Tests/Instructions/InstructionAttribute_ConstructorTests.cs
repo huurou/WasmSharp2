@@ -5,17 +5,18 @@ namespace WasmSharp.Tests.Instructions;
 internal class InstructionAttribute_ConstructorTests
 {
     [Test]
-    public async Task 番号と名前だけで命令を宣言する_検証と実行が未対応であることを示す()
+    public async Task 仕様の版と番号と名前で命令を宣言する_導入された版を保持し検証と実行が未対応であることを示す()
     {
         // Act
-        var declaration = new InstructionAttribute(0xFD, 256, "test.instruction");
+        var declaration = new InstructionAttribute(WasmSpecVersion.Core3, 0xFD, 256, "i8x16.relaxed_swizzle");
 
         // Assert
         using (Assert.Multiple())
         {
             await Assert.That(declaration.Prefix).IsEqualTo((byte)0xFD);
             await Assert.That(declaration.Code).IsEqualTo(256u);
-            await Assert.That(declaration.Name).IsEqualTo("test.instruction");
+            await Assert.That(declaration.Name).IsEqualTo("i8x16.relaxed_swizzle");
+            await Assert.That(declaration.IntroducedIn).IsEqualTo(WasmSpecVersion.Core3);
             await Assert.That(declaration.Immediate).IsEqualTo(ImmediateKind.Unsupported);
             await Assert.That(declaration.StackEffect).IsEqualTo(StackEffectKind.Unsupported);
             await Assert.That(declaration.Validation).IsEqualTo(ValidationRule.Unsupported);
@@ -31,6 +32,7 @@ internal class InstructionAttribute_ConstructorTests
 
         // Act
         var declaration = new InstructionAttribute(
+            WasmSpecVersion.Core2,
             0xFD,
             0x6B,
             "i8x16.shl",
@@ -59,6 +61,7 @@ internal class InstructionAttribute_ConstructorTests
     {
         // Arrange & Act
         var declaration = new InstructionAttribute(
+            WasmSpecVersion.Core2,
             0,
             0x7C,
             "i64.add",
@@ -87,6 +90,7 @@ internal class InstructionAttribute_ConstructorTests
     {
         // Arrange & Act
         var declaration = new InstructionAttribute(
+            WasmSpecVersion.Core2,
             0,
             0x30,
             "i64.load8_s",

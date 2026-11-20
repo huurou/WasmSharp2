@@ -18,7 +18,7 @@ internal partial class WasmFunction_InvokeTests
             return new WasmResults([]);
         });
         var instance = WasmModule
-            .Decode(ConstantModuleBinary.Create(0x7F, 0x41, 0x2A, 0x0B))
+            .Decode(ConstantModuleBinary.Create(0x7F, 0x41, 0x2A, 0x0B), WasmSpecVersion.Core2)
             .Validate()
             .Instantiate(executionContext, []);
 
@@ -79,7 +79,11 @@ internal partial class WasmFunction_InvokeTests
         using var stream = new ChunkedReadStream(new MemoryStream(bytes));
 
         // Act
-        WasmModule[] modules = [WasmModule.Decode(bytes), WasmModule.Decode(stream)];
+        WasmModule[] modules =
+        [
+            WasmModule.Decode(bytes, WasmSpecVersion.Core2),
+            WasmModule.Decode(stream, WasmSpecVersion.Core2),
+        ];
         foreach (var module in modules)
         {
             module.Validate();
@@ -126,8 +130,8 @@ internal partial class WasmFunction_InvokeTests
         using var stream = new ChunkedReadStream(new MemoryStream(bytes));
 
         // Act
-        var fromBytes = WasmModule.Decode(bytes);
-        var fromStream = WasmModule.Decode(stream);
+        var fromBytes = WasmModule.Decode(bytes, WasmSpecVersion.Core2);
+        var fromStream = WasmModule.Decode(stream, WasmSpecVersion.Core2);
         Array.Clear(bytes);
 
         foreach (var module in new[] { fromBytes, fromStream })
@@ -168,7 +172,8 @@ internal partial class WasmFunction_InvokeTests
                 ConstantModuleBinary.Create(
                     [(0x7F, [0x41, 0x7F, 0x0B]), (0x7F, [0x41, 0x2A, 0x0B])],
                     [("first", 0), ("second", 1)]
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate()
             .Instantiate(executionContext, [], new(1));
@@ -201,7 +206,8 @@ internal partial class WasmFunction_InvokeTests
                     HostLinkingModuleBinary.Globals((0x7F, true, [0x41, 0, 0x0B])),
                     HostLinkingModuleBinary.Exports(("run", 0, 0), ("g", 3, 0)),
                     HostLinkingModuleBinary.Code(([], [0x20, 0, 0x24, 0, 0x23, 0, 0x0B]))
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate()
             .Instantiate(executionContext, []);
@@ -225,7 +231,7 @@ internal partial class WasmFunction_InvokeTests
         // Arrange
         var executionContext = new WasmExecutionContext();
         var function = WasmModule
-            .Decode(ConstantModuleBinary.Create(0x7F, 0x41, 0x2A, 0x0B))
+            .Decode(ConstantModuleBinary.Create(0x7F, 0x41, 0x2A, 0x0B), WasmSpecVersion.Core2)
             .Validate()
             .Instantiate(executionContext, [])
             .GetFunction("run");
@@ -247,7 +253,7 @@ internal partial class WasmFunction_InvokeTests
         // Arrange
         var executionContext = new WasmExecutionContext();
         var function = WasmModule
-            .Decode(ConstantModuleBinary.Create(0x7F, 0x41, 0x7F, 0x0B))
+            .Decode(ConstantModuleBinary.Create(0x7F, 0x41, 0x7F, 0x0B), WasmSpecVersion.Core2)
             .Validate()
             .Instantiate(executionContext, [], new(1))
             .GetFunction("run");

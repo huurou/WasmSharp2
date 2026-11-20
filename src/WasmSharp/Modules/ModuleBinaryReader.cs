@@ -84,37 +84,38 @@ internal ref struct ModuleBinaryReader
     /// </summary>
     /// <remarks>入力バイト列はコピーしないため、読み取り中は入力内容を変更しない</remarks>
     /// <param name="bytes">この読み取り範囲の入力バイト列</param>
+    /// <param name="specVersion">入力全体に適用する仕様の版</param>
     /// <param name="startOffset">Decode開始位置を0とした、この範囲の先頭位置</param>
     /// <param name="sectionId">診断に使用するsection ID section外ではnull</param>
     /// <param name="functionIndex">診断に使用するmodule全体の関数index 関数外ではnull</param>
     /// <param name="mode">通常解析または境界失敗後の診断用読取り</param>
     /// <param name="maxCollectionLength">保持できる最大要素数 省略時は配列の要素数上限</param>
-    /// <param name="specVersion">入力全体に適用する仕様の版</param>
     internal ModuleBinaryReader(
         ReadOnlySpan<byte> bytes,
+        WasmSpecVersion specVersion,
         long startOffset = 0,
         byte? sectionId = null,
         uint? functionIndex = null,
         ModuleReadMode mode = ModuleReadMode.Bounded,
-        int? maxCollectionLength = null,
-        WasmSpecVersion specVersion = WasmSpecVersion.Core2
+        int? maxCollectionLength = null
     )
         : this(
             bytes,
+            specVersion,
             startOffset,
             startOffset + bytes.Length,
             startOffset + bytes.Length,
             sectionId,
             functionIndex,
             mode,
-            maxCollectionLength ?? Array.MaxLength,
-            specVersion
+            maxCollectionLength ?? Array.MaxLength
         ) { }
 
     /// <summary>
     /// モードに応じた入力参照と、物理終端・宣言終端を保持する
     /// </summary>
     /// <param name="bytes">この読取り範囲の入力バイト列</param>
+    /// <param name="specVersion">入力全体に適用する仕様の版</param>
     /// <param name="startOffset">Decode開始位置を0とした、この範囲の先頭位置</param>
     /// <param name="inputEnd">原入力の物理終端</param>
     /// <param name="declaredEnd">この範囲の宣言終端</param>
@@ -122,17 +123,16 @@ internal ref struct ModuleBinaryReader
     /// <param name="functionIndex">診断に使用するmodule全体の関数index</param>
     /// <param name="mode">通常解析または境界失敗後の診断用読取り</param>
     /// <param name="maxCollectionLength">親の読み取り範囲から引き継ぐ最大要素数</param>
-    /// <param name="specVersion">入力全体に適用する仕様の版</param>
     private ModuleBinaryReader(
         ReadOnlySpan<byte> bytes,
+        WasmSpecVersion specVersion,
         long startOffset,
         long inputEnd,
         long declaredEnd,
         byte? sectionId,
         uint? functionIndex,
         ModuleReadMode mode,
-        int maxCollectionLength,
-        WasmSpecVersion specVersion
+        int maxCollectionLength
     )
     {
         _bytes = bytes;
@@ -206,27 +206,27 @@ internal ref struct ModuleBinaryReader
             _position += (int)Math.Min((long)length, Remaining);
             return new ModuleBinaryReader(
                 bytes,
+                SpecVersion,
                 start,
                 InputEnd,
                 start + length,
                 SectionId,
                 functionIndex ?? FunctionIndex,
                 _mode,
-                _maxCollectionLength,
-                SpecVersion
+                _maxCollectionLength
             );
         }
 
         return new ModuleBinaryReader(
             ReadBytes(length),
+            SpecVersion,
             start,
             InputEnd,
             start + length,
             SectionId,
             functionIndex ?? FunctionIndex,
             _mode,
-            _maxCollectionLength,
-            SpecVersion
+            _maxCollectionLength
         );
     }
 

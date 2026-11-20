@@ -26,7 +26,7 @@ internal class WasmModule_InspectImportsTests
         await Assert.That(fromStream.UnverifiedRanges.SequenceEqual(fromBytes.UnverifiedRanges)).IsTrue();
 
         // Act & Assert
-        await Assert.That(() => WasmModule.Decode(bytes)).ThrowsExactly<WasmDecodeException>();
+        await Assert.That(() => WasmModule.Decode(bytes, WasmSpecVersion.Core2)).ThrowsExactly<WasmDecodeException>();
     }
 
     [Test]
@@ -293,7 +293,7 @@ internal class WasmModule_InspectImportsTests
         }
 
         // Act
-        var module = WasmModule.Decode(bytes);
+        var module = WasmModule.Decode(bytes, WasmSpecVersion.Core2);
 
         // Assert
         await Assert.That(module.FunctionCodes).IsEmpty();
@@ -390,7 +390,11 @@ internal class WasmModule_InspectImportsTests
             // Act
             var inspection = useStream ? WasmModule.InspectImports(inspectionStream) : WasmModule.InspectImports(bytes);
 
-            var module = (useStream ? WasmModule.Decode(decodeStream) : WasmModule.Decode(bytes)).Validate();
+            var module = (
+                useStream
+                    ? WasmModule.Decode(decodeStream, WasmSpecVersion.Core2)
+                    : WasmModule.Decode(bytes, WasmSpecVersion.Core2)
+            ).Validate();
             var actual = new byte[1];
             memory.Read(0, actual);
 

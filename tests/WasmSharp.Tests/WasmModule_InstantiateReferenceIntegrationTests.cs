@@ -20,7 +20,8 @@ internal partial class WasmModule_InstantiateTests
                     HostLinkingModuleBinary.Globals((kind, false, [0x23, 0, 0x0B])),
                     HostLinkingModuleBinary.Exports(("g", 3, 1), ("run", 0, 0)),
                     HostLinkingModuleBinary.Code(([], [0x23, 1, 0x0B]))
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate();
         var value =
@@ -56,7 +57,8 @@ internal partial class WasmModule_InstantiateTests
                     HostLinkingModuleBinary.Globals((0x70, false, [0xD2, 0, 0x0B])),
                     HostLinkingModuleBinary.Exports(("run", 0, 1), ("g", 3, 0)),
                     HostLinkingModuleBinary.Code(([], [0xD2, 0, 0x0B]))
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate();
         var function = WasmFunction.CreateHost(new([], []), (callbackContext, _) => new([]));

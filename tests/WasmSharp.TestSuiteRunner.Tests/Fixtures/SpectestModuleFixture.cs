@@ -86,7 +86,7 @@ internal static class SpectestModuleFixture
             .. Section(7, exports),
             .. start ? Section(8, [0]) : [],
         ];
-        return WasmModule.Decode(binary).Validate();
+        return WasmModule.Decode(binary, WasmSpecVersion.Core2).Validate();
     }
 
     internal static WasmModule CreateInvalidImport(string issue)

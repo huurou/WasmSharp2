@@ -32,7 +32,11 @@ internal partial class WasmModule_DecodeTests
 
         // Act
         var inspections = new[] { WasmModule.InspectImports(bytes), WasmModule.InspectImports(inspectionStream) };
-        var modules = new[] { WasmModule.Decode(bytes).Validate(), WasmModule.Decode(stream).Validate() };
+        var modules = new[]
+        {
+            WasmModule.Decode(bytes, WasmSpecVersion.Core2).Validate(),
+            WasmModule.Decode(stream, WasmSpecVersion.Core2).Validate(),
+        };
 
         // Assert
         await Assert.That(calls).IsEqualTo(0);
@@ -75,7 +79,9 @@ internal partial class WasmModule_DecodeTests
         using var stream = new ChunkedReadStream(new MemoryStream(bytes));
 
         // Act
-        var module = useStream ? WasmModule.Decode(stream) : WasmModule.Decode(bytes);
+        var module = useStream
+            ? WasmModule.Decode(stream, WasmSpecVersion.Core2)
+            : WasmModule.Decode(bytes, WasmSpecVersion.Core2);
 
         // Assert
         using (Assert.Multiple())
@@ -107,7 +113,11 @@ internal partial class WasmModule_DecodeTests
         // Arrange
         var bytes = HostLinkingModuleBinary.Create(Convert.FromHexString(hex));
         using var stream = new ChunkedReadStream(new MemoryStream(bytes));
-        Func<WasmModule>[] decoders = [() => WasmModule.Decode(bytes), () => WasmModule.Decode(stream)];
+        Func<WasmModule>[] decoders =
+        [
+            () => WasmModule.Decode(bytes, WasmSpecVersion.Core2),
+            () => WasmModule.Decode(stream, WasmSpecVersion.Core2),
+        ];
 
         // Act & Assert
         foreach (var decode in decoders)
@@ -139,8 +149,8 @@ internal partial class WasmModule_DecodeTests
         using var inspectionStream = new ChunkedReadStream(new MemoryStream(bytes));
 
         // Act
-        var fromBytes = WasmModule.Decode(bytes).Validate();
-        var fromStream = WasmModule.Decode(stream).Validate();
+        var fromBytes = WasmModule.Decode(bytes, WasmSpecVersion.Core2).Validate();
+        var fromStream = WasmModule.Decode(stream, WasmSpecVersion.Core2).Validate();
         var inspection = WasmModule.InspectImports(bytes);
         var streamInspection = WasmModule.InspectImports(inspectionStream);
 

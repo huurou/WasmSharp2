@@ -332,7 +332,8 @@ internal partial class WasmFunction_InvokeTests
                         ([], [0x20, 0, 0x20, 1, 0x20, 2, 0xFC, 0x11, 1, 0x0B]),
                         ([], [0xFC, 0x0D, 1, 0x0B])
                     )
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate();
         return (module, host, first, second);

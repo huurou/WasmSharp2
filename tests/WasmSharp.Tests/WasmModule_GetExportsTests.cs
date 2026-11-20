@@ -18,7 +18,8 @@ internal class WasmModule_GetExportsTests
                 HostLinkingModuleBinary.Globals((0x7F, true, [0x41, 0x05, 0x0B])),
                 HostLinkingModuleBinary.Exports(("g", 3, 0), ("f", 0, 0), ("m", 2, 0), ("t", 1, 0), ("F", 0, 0), ("", 3, 0)),
                 HostLinkingModuleBinary.Code(([], [0x0B]))
-            )
+            ),
+            WasmSpecVersion.Core2
         );
         WasmExportInfo[] expected =
         [
@@ -60,7 +61,8 @@ internal class WasmModule_GetExportsTests
                     HostLinkingModuleBinary.Globals((0x7F, true, [0x41, 0x05, 0x0B])),
                     HostLinkingModuleBinary.Exports(("f", 0, 0), ("t", 1, 0), ("m", 2, 0), ("g", 3, 0)),
                     HostLinkingModuleBinary.Code(([], [0x0B]))
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate()
             .Instantiate(executionContext, []);
@@ -80,7 +82,8 @@ internal class WasmModule_GetExportsTests
                         ("env", "g", 3, [0x7F, 0x01])
                     ),
                     HostLinkingModuleBinary.Exports(("memory", 2, 0), ("global", 3, 0), ("table", 1, 0), ("function", 0, 0))
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate();
         var instance = module.Instantiate(executionContext, [host]);
@@ -110,7 +113,7 @@ internal class WasmModule_GetExportsTests
     public async Task Exportがない_空の一覧を返す()
     {
         // Arrange
-        var module = WasmModule.Decode(HostLinkingModuleBinary.Create());
+        var module = WasmModule.Decode(HostLinkingModuleBinary.Create(), WasmSpecVersion.Core2);
 
         // Act
         var exports = module.GetExports();

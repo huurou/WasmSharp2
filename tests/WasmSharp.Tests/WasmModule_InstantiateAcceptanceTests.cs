@@ -19,7 +19,8 @@ internal partial class WasmModule_InstantiateTests
                     HostLinkingModuleBinary.Functions(0, 0),
                     HostLinkingModuleBinary.Exports(("run", 0, 0)),
                     HostLinkingModuleBinary.Code(([], [0x10, 1, 0x0B]), ([], [0x0B]))
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate()
             .Instantiate(executionContext, [], new(2))
@@ -45,7 +46,8 @@ internal partial class WasmModule_InstantiateTests
                     HostLinkingModuleBinary.Types(([], [])),
                     HostLinkingModuleBinary.Imports(("env", "start", 0, [0])),
                     HostLinkingModuleBinary.Start(0)
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate();
         WasmInstance? returned = null;

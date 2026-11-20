@@ -115,7 +115,7 @@ internal static class ImportInspector
         ImmutableArray<WasmUnverifiedRange>.Builder ranges
     )
     {
-        var reader = new ModuleBinaryReader(bytes);
+        var reader = new ModuleBinaryReader(bytes, WasmSpecVersion.Core2);
         ModuleBinaryFormat.ReadHeader(ref reader);
         List<WasmFunctionType> types = [];
         var imports = ImmutableArray.CreateBuilder<WasmImportInfo>();

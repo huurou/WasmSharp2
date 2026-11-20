@@ -16,7 +16,8 @@ internal class WasmInstance_GetTableTests
                 HostLinkingModuleBinary.Create(
                     HostLinkingModuleBinary.Tables((kind, 1, 3)),
                     HostLinkingModuleBinary.Exports(("t", 1, 0), ("", 1, 0))
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate()
             .Instantiate(executionContext, []);
@@ -28,7 +29,8 @@ internal class WasmInstance_GetTableTests
                 HostLinkingModuleBinary.Create(
                     HostLinkingModuleBinary.Imports(("env", "t", 1, [kind, 1, 1, 3])),
                     HostLinkingModuleBinary.Exports(("t", 1, 0), ("alias", 1, 0))
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate();
         var first = module.Instantiate(executionContext, [host]);
@@ -70,7 +72,7 @@ internal class WasmInstance_GetTableTests
         // Arrange
         var executionContext = new WasmExecutionContext();
         var instance = WasmModule
-            .Decode(ConstantModuleBinary.Create(0x7F, 0x41, 0x01, 0x0B))
+            .Decode(ConstantModuleBinary.Create(0x7F, 0x41, 0x01, 0x0B), WasmSpecVersion.Core2)
             .Validate()
             .Instantiate(executionContext, []);
 

@@ -10,7 +10,9 @@ internal partial class WasmModule_InstantiateTests
     public async Task Contextがnullの生成_提供登録の両形式で引数名付きで拒否する(bool useImports)
     {
         // Arrange
-        var module = WasmModule.Decode(ConstantModuleBinary.Create(0x7F, 0x41, 0x01, 0x0B)).Validate();
+        var module = WasmModule
+            .Decode(ConstantModuleBinary.Create(0x7F, 0x41, 0x01, 0x0B), WasmSpecVersion.Core2)
+            .Validate();
 
         // Act & Assert
         var exception = await Assert
@@ -24,7 +26,9 @@ internal partial class WasmModule_InstantiateTests
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
-        var module = WasmModule.Decode(ConstantModuleBinary.Create(0x7F, 0x41, 0x01, 0x0B)).Validate();
+        var module = WasmModule
+            .Decode(ConstantModuleBinary.Create(0x7F, 0x41, 0x01, 0x0B), WasmSpecVersion.Core2)
+            .Validate();
         var options = new WasmExecutionOptions(7);
 
         // Act
@@ -48,7 +52,7 @@ internal partial class WasmModule_InstantiateTests
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
-        var module = WasmModule.Decode(ConstantModuleBinary.Create(0x7F, 0x41, 0x01, 0x0B));
+        var module = WasmModule.Decode(ConstantModuleBinary.Create(0x7F, 0x41, 0x01, 0x0B), WasmSpecVersion.Core2);
         var provider = new WasmHostModule("env");
         provider.Define(
             "f",

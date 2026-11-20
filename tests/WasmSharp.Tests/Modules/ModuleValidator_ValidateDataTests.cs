@@ -22,6 +22,7 @@ internal partial class ModuleValidator_ValidateTests
             [],
             [],
             null,
+            WasmSpecVersion.Core2,
             [
                 new(
                     [0x41],
@@ -62,6 +63,7 @@ internal partial class ModuleValidator_ValidateTests
             [new(new(0, null), 30)],
             [],
             null,
+            WasmSpecVersion.Core2,
             [
                 new(
                     [],
@@ -113,6 +115,7 @@ internal partial class ModuleValidator_ValidateTests
             importedMemory ? [] : [new(new(0, null), 32)],
             [],
             null,
+            WasmSpecVersion.Core2,
             [
                 new(
                     [0x41],
@@ -150,7 +153,7 @@ internal partial class ModuleValidator_ValidateTests
     public async Task パッシブデータだけを定義する_メモリなしで受理する()
     {
         // Arrange
-        var module = new WasmModule([], [], [], 100, [], [], [], [], null, [new([0x41], null, 50)]);
+        var module = new WasmModule([], [], [], 100, [], [], [], [], null, WasmSpecVersion.Core2, [new([0x41], null, 50)]);
 
         // Act & Assert
         await Assert.That(() => module.Validate()).ThrowsNothing();
@@ -181,6 +184,7 @@ internal partial class ModuleValidator_ValidateTests
                 ),
             ],
             null,
+            WasmSpecVersion.Core2,
             [
                 new(
                     [],
@@ -226,6 +230,7 @@ internal partial class ModuleValidator_ValidateTests
             [new(new(0, null), 30)],
             [],
             null,
+            WasmSpecVersion.Core2,
             [
                 new(
                     [],
@@ -280,6 +285,7 @@ internal partial class ModuleValidator_ValidateTests
             [new(new(invalidResource ? 1u : 0u, 0), 30)],
             [],
             null,
+            WasmSpecVersion.Core2,
             [
                 new([], null, 45),
                 new(
@@ -344,6 +350,7 @@ internal partial class ModuleValidator_ValidateTests
             [new(new(0, null), 30)],
             [],
             null,
+            WasmSpecVersion.Core2,
             [
                 new(
                     [],

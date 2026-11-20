@@ -29,7 +29,9 @@ internal partial class ModuleDecoder_DecodeTests
         var bytes = Convert.FromHexString("0061736D01000000" + sections);
 
         // Act & Assert
-        var exception = await Assert.That(() => ModuleDecoder.Decode(bytes)).ThrowsExactly<WasmDecodeException>();
+        var exception = await Assert
+            .That(() => ModuleDecoder.Decode(bytes, WasmSpecVersion.Core2))
+            .ThrowsExactly<WasmDecodeException>();
         using (Assert.Multiple())
         {
             await Assert.That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal)).IsTrue();
@@ -49,7 +51,7 @@ internal partial class ModuleDecoder_DecodeTests
         var bytes = Convert.FromHexString("0061736D0100000003" + payloadLength + "01" + typeIndex + "0A040102000B");
 
         // Act
-        var module = ModuleDecoder.Decode(bytes);
+        var module = ModuleDecoder.Decode(bytes, WasmSpecVersion.Core2);
 
         // Assert
         await Assert.That(module.Types.Length).IsEqualTo(0);
@@ -65,7 +67,7 @@ internal partial class ModuleDecoder_DecodeTests
         var bytes = Convert.FromHexString("0061736D0100000003020100" + codeSection);
 
         // Act
-        var function = ModuleDecoder.Decode(bytes).Functions[0];
+        var function = ModuleDecoder.Decode(bytes, WasmSpecVersion.Core2).Functions[0];
 
         // Assert
         using (Assert.Multiple())
@@ -85,7 +87,7 @@ internal partial class ModuleDecoder_DecodeTests
         var bytes = Convert.FromHexString("0061736D0100000001070160017F027F7E030201000A0A010801017F410142020B");
 
         // Act
-        var module = ModuleDecoder.Decode(bytes);
+        var module = ModuleDecoder.Decode(bytes, WasmSpecVersion.Core2);
 
         // Assert
         using (Assert.Multiple())
@@ -117,7 +119,9 @@ internal partial class ModuleDecoder_DecodeTests
         var bytes = Convert.FromHexString("0061736D01000000" + sections);
 
         // Act & Assert
-        var exception = await Assert.That(() => ModuleDecoder.Decode(bytes)).ThrowsExactly<WasmDecodeException>();
+        var exception = await Assert
+            .That(() => ModuleDecoder.Decode(bytes, WasmSpecVersion.Core2))
+            .ThrowsExactly<WasmDecodeException>();
         await Assert.That(exception!.Location).IsEqualTo(new(WasmProcessingStage.Decode, offset, functionIndex, 10));
     }
 
@@ -128,7 +132,7 @@ internal partial class ModuleDecoder_DecodeTests
         var bytes = Convert.FromHexString("0061736D0100000003020100");
 
         // Act & Assert
-        await Assert.That(() => ModuleDecoder.Decode(bytes)).ThrowsExactly<WasmDecodeException>();
+        await Assert.That(() => ModuleDecoder.Decode(bytes, WasmSpecVersion.Core2)).ThrowsExactly<WasmDecodeException>();
     }
 
     [Test]
@@ -146,7 +150,7 @@ internal partial class ModuleDecoder_DecodeTests
         var bytes = ConstantModuleBinary.Create(resultType, Convert.FromHexString(instructions));
 
         // Act
-        var module = ModuleDecoder.Decode(bytes);
+        var module = ModuleDecoder.Decode(bytes, WasmSpecVersion.Core2);
 
         // Assert
         await Assert.That(module.Functions.Length).IsEqualTo(1);
@@ -183,7 +187,7 @@ internal partial class ModuleDecoder_DecodeTests
         );
 
         // Act
-        var module = ModuleDecoder.Decode(bytes);
+        var module = ModuleDecoder.Decode(bytes, WasmSpecVersion.Core2);
 
         // Assert
         using (Assert.Multiple())
@@ -216,7 +220,9 @@ internal partial class ModuleDecoder_DecodeTests
         );
 
         // Act & Assert
-        var exception = await Assert.That(() => ModuleDecoder.Decode(bytes)).ThrowsExactly<WasmDecodeException>();
+        var exception = await Assert
+            .That(() => ModuleDecoder.Decode(bytes, WasmSpecVersion.Core2))
+            .ThrowsExactly<WasmDecodeException>();
         using (Assert.Multiple())
         {
             await Assert.That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal)).IsTrue();
@@ -236,7 +242,7 @@ internal partial class ModuleDecoder_DecodeTests
         var bytes = Convert.FromHexString("0061736D01000000" + sections);
 
         // Act
-        var module = ModuleDecoder.Decode(bytes);
+        var module = ModuleDecoder.Decode(bytes, WasmSpecVersion.Core2);
 
         // Assert
         await Assert.That(module.Functions.Length).IsEqualTo(0);

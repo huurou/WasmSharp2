@@ -12,7 +12,7 @@ internal class Interpreter_UnreachableTests
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
-        var found = InstructionSet.TryGet(new(0, 0x00), out var descriptor);
+        var found = InstructionSet.TryGet(new(0, 0x00), WasmSpecVersion.Core2, out var descriptor);
         var function = ExecutionFunctionFixture.Create([
             InstructionFixture.Create(0x41, 81, immediate: WasmValue.FromI32(1)),
             InstructionFixture.Create(0x00, 12345678903),

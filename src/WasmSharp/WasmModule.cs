@@ -13,6 +13,11 @@ namespace WasmSharp;
 public sealed class WasmModule
 {
     /// <summary>
+    /// 公開Decodeで仕様の版を省略したときに使用する版
+    /// </summary>
+    private const WasmSpecVersion DefaultSpecVersion = WasmSpecVersion.Core3;
+
+    /// <summary>
     /// 静的検証が成功し、実行コードとexport索引が確定しているかどうか
     /// </summary>
     private bool _isValidated;
@@ -105,10 +110,10 @@ public sealed class WasmModule
     /// <param name="memories">定義順のmemory型</param>
     /// <param name="globals">定義順のglobal型と初期化式</param>
     /// <param name="start">省略可能なstart宣言</param>
+    /// <param name="specVersion">デコードと検証で前提とする仕様の版</param>
     /// <param name="dataSegments">定義順のデータセグメント</param>
     /// <param name="dataCount">省略可能なデータ数セクションの宣言</param>
     /// <param name="elementSegments">宣言順の要素セグメント</param>
-    /// <param name="specVersion">デコードと検証で前提とする仕様の版</param>
     internal WasmModule(
         ReadOnlySpan<WasmFunctionType> types,
         ReadOnlySpan<DecodedFunction> functions,
@@ -119,10 +124,10 @@ public sealed class WasmModule
         ReadOnlySpan<MemoryDefinition> memories,
         ReadOnlySpan<GlobalDefinition> globals,
         StartDefinition? start,
+        WasmSpecVersion specVersion,
         ReadOnlySpan<DataDefinition> dataSegments = default,
         DataCountDefinition? dataCount = null,
-        ReadOnlySpan<ElementDefinition> elementSegments = default,
-        WasmSpecVersion specVersion = WasmSpecVersion.Core2
+        ReadOnlySpan<ElementDefinition> elementSegments = default
     )
     {
         Types = [.. types];
@@ -151,7 +156,7 @@ public sealed class WasmModule
     /// <exception cref="WasmImplementationLimitException">宣言件数または命令数がコレクションの保持上限を超える場合</exception>
     public static WasmModule Decode(ReadOnlySpan<byte> bytes)
     {
-        return ModuleDecoder.Decode(bytes);
+        return Decode(bytes, DefaultSpecVersion);
     }
 
     /// <summary>
@@ -170,10 +175,7 @@ public sealed class WasmModule
     /// <exception cref="WasmImplementationLimitException">宣言件数または命令数がコレクションの保持上限を超える場合</exception>
     public static WasmModule Decode(ReadOnlySpan<byte> bytes, WasmSpecVersion specVersion)
     {
-        if (!Enum.IsDefined(specVersion))
-        {
-            throw new ArgumentOutOfRangeException(nameof(specVersion), specVersion, "未定義の仕様の版です。");
-        }
+        ValidateSpecVersion(specVersion);
         return ModuleDecoder.Decode(bytes, specVersion);
     }
 
@@ -193,16 +195,48 @@ public sealed class WasmModule
     /// <exception cref="WasmImplementationLimitException">入力バイト数、宣言件数または命令数が保持上限を超える場合</exception>
     public static WasmModule Decode(Stream stream)
     {
+        return Decode(stream, DefaultSpecVersion);
+    }
+
+    /// <summary>
+    /// 指定した仕様の版で入力ストリームをmoduleにデコードする
+    /// </summary>
+    /// <remarks>
+    /// 現在位置から終端まで読み、ストリームは閉じず、seekを要求しない。
+    /// ストリームからの例外はそのまま伝播する。選択した版は<see cref="Validate"/>でも適用する
+    /// </remarks>
+    /// <param name="stream">現在位置からmoduleのバイナリを読み取れる入力ストリーム</param>
+    /// <param name="specVersion">デコードと検証で前提とする仕様の版</param>
+    /// <returns>入力上の診断位置と選択した版を保持する、未検証のmodule</returns>
+    /// <exception cref="ArgumentOutOfRangeException">未定義の版を指定した場合</exception>
+    /// <exception cref="ArgumentException">ストリームが読み取り可能ではない場合</exception>
+    /// <exception cref="WasmDecodeException">対応する構文の符号化またはsectionの構成が不正な場合</exception>
+    /// <exception cref="WasmUnsupportedFeatureException">未実装のsectionまたは命令に遭遇した場合</exception>
+    /// <exception cref="WasmImplementationLimitException">入力バイト数、宣言件数または命令数が保持上限を超える場合</exception>
+    public static WasmModule Decode(Stream stream, WasmSpecVersion specVersion)
+    {
+        ValidateSpecVersion(specVersion);
         if (!stream.CanRead)
         {
             throw new ArgumentException("入力ストリームが読み取り不可でした。", nameof(stream));
         }
 
-        return Decode(ModuleBinaryFormat.ReadInput(stream, Array.MaxLength));
+        return ModuleDecoder.Decode(ModuleBinaryFormat.ReadInput(stream, Array.MaxLength), specVersion);
     }
 
     /// <summary>
-    /// 入力バイト列から完全なimport情報と未確認範囲を取得する。moduleの有効性は保証しない
+    /// 入力の読み取りを開始する前に、指定した仕様の版を確認する
+    /// </summary>
+    private static void ValidateSpecVersion(WasmSpecVersion specVersion)
+    {
+        if (!Enum.IsDefined(specVersion))
+        {
+            throw new ArgumentOutOfRangeException(nameof(specVersion), specVersion, "未定義の仕様の版です。");
+        }
+    }
+
+    /// <summary>
+    /// Core 2.0の入力バイト列から完全なimport情報と未確認範囲を取得する。moduleの有効性は保証しない
     /// </summary>
     /// <remarks>
     /// 全sectionの外枠とtype・importの構文を調査し、取得失敗時は部分一覧を返さない。
@@ -217,7 +251,7 @@ public sealed class WasmModule
     }
 
     /// <summary>
-    /// ストリームの現在位置からimport情報を取得する。入力は閉じず、seekを要求しない
+    /// ストリームの現在位置からCore 2.0のimport情報を取得する。入力は閉じず、seekを要求しない
     /// </summary>
     /// <remarks>
     /// 入力終端まで読み、取得失敗時は部分一覧を返さない。取得成功はmoduleの有効性を保証しない。

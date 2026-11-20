@@ -28,7 +28,8 @@ internal partial class WasmModule_ValidateTests
                 HostLinkingModuleBinary.Exports(("run", 0, invalidExport ? 1u : 0u)),
                 HostLinkingModuleBinary.Start(invalidStart ? 1u : 0u),
                 HostLinkingModuleBinary.Code(([], invalidFunction ? [0x20, 0, 0x0B] : [0x0B]))
-            )
+            ),
+            WasmSpecVersion.Core2
         );
         var offset = sectionId switch
         {
@@ -74,7 +75,8 @@ internal partial class WasmModule_ValidateTests
                 HostLinkingModuleBinary.Functions(0),
                 HostLinkingModuleBinary.Exports(("same", 0, 0), ("same", 0, invalidIndex ? 1u : 0u)),
                 HostLinkingModuleBinary.Code(([], [0x0B]))
-            )
+            ),
+            WasmSpecVersion.Core2
         );
 
         // Act & Assert
@@ -126,7 +128,9 @@ internal partial class WasmModule_ValidateTests
             HostLinkingModuleBinary.Code(([], [0x41, 0, 0x0B]))
         );
         using var stream = new ChunkedReadStream(new MemoryStream(bytes));
-        var module = useStream ? WasmModule.Decode(stream) : WasmModule.Decode(bytes);
+        var module = useStream
+            ? WasmModule.Decode(stream, WasmSpecVersion.Core2)
+            : WasmModule.Decode(bytes, WasmSpecVersion.Core2);
 
         // Act
         var validated = module.Validate();
@@ -159,7 +163,8 @@ internal partial class WasmModule_ValidateTests
                 HostLinkingModuleBinary.Types((Convert.FromHexString(parameters), Convert.FromHexString(results))),
                 HostLinkingModuleBinary.Imports(("", "", 0, [0])),
                 HostLinkingModuleBinary.Start(0)
-            )
+            ),
+            WasmSpecVersion.Core2
         );
 
         // Act & Assert
@@ -196,7 +201,7 @@ internal partial class WasmModule_ValidateTests
                 HostLinkingModuleBinary.Code(([], [0x41, 0, 0x0B])),
             }
             : [HostLinkingModuleBinary.Start(index)];
-        var module = WasmModule.Decode(HostLinkingModuleBinary.Create(sections));
+        var module = WasmModule.Decode(HostLinkingModuleBinary.Create(sections), WasmSpecVersion.Core2);
 
         // Act & Assert
         for (var attempt = 0; attempt < 2; attempt++)
@@ -229,7 +234,8 @@ internal partial class WasmModule_ValidateTests
                 HostLinkingModuleBinary.Functions(1),
                 HostLinkingModuleBinary.Start(hasImport ? 1u : 0u),
                 HostLinkingModuleBinary.Code(([], [0x41, 0, 0x0B]))
-            )
+            ),
+            WasmSpecVersion.Core2
         );
 
         // Act & Assert
@@ -254,7 +260,8 @@ internal partial class WasmModule_ValidateTests
                 HostLinkingModuleBinary.Functions(0),
                 HostLinkingModuleBinary.Start(1),
                 HostLinkingModuleBinary.Code(([], [0x00, 0x0B]))
-            )
+            ),
+            WasmSpecVersion.Core2
         );
 
         // Act

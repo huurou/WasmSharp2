@@ -9,7 +9,7 @@ internal class ModuleBinaryReader_UnsupportedTests
     public async Task 未対応の診断を作る_機能と位置と未確認範囲を保持する()
     {
         // Arrange
-        var reader = new ModuleBinaryReader([0x00, 0x00], 40, 10, 3);
+        var reader = new ModuleBinaryReader([0x00, 0x00], WasmSpecVersion.Core2, 40, 10, 3);
 
         // Act
         var exception = reader.Unsupported("unsupported.instruction", 100, 41);

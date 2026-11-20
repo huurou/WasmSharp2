@@ -24,7 +24,7 @@ internal partial class ModuleDecoder_DecodeTests
         );
 
         // Act
-        var module = WasmModule.Decode(bytes);
+        var module = WasmModule.Decode(bytes, WasmSpecVersion.Core2);
         var instructions = module.Functions[0].Instructions;
 
         // Assert
@@ -63,7 +63,9 @@ internal partial class ModuleDecoder_DecodeTests
         );
 
         // Act & Assert
-        var exception = await Assert.That(() => WasmModule.Decode(bytes)).ThrowsExactly<WasmDecodeException>();
+        var exception = await Assert
+            .That(() => WasmModule.Decode(bytes, WasmSpecVersion.Core2))
+            .ThrowsExactly<WasmDecodeException>();
         await Assert
             .That(exception!.Location)
             .IsEqualTo(new(WasmProcessingStage.Decode, bytes.Length - offsetFromEnd, 1, 10));
@@ -80,7 +82,9 @@ internal partial class ModuleDecoder_DecodeTests
         );
 
         // Act & Assert
-        var exception = await Assert.That(() => WasmModule.Decode(bytes)).ThrowsExactly<WasmDecodeException>();
+        var exception = await Assert
+            .That(() => WasmModule.Decode(bytes, WasmSpecVersion.Core2))
+            .ThrowsExactly<WasmDecodeException>();
         using (Assert.Multiple())
         {
             await Assert

@@ -106,7 +106,8 @@ internal class WasmImports_AddTests
                     HostLinkingModuleBinary.Types(([], [])),
                     HostLinkingModuleBinary.Imports(("env", "same", 0, [0])),
                     HostLinkingModuleBinary.Exports(("same", 0, 0))
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate()
             .Instantiate(executionContext, imports);
@@ -118,7 +119,8 @@ internal class WasmImports_AddTests
                     HostLinkingModuleBinary.Create(
                         HostLinkingModuleBinary.Types(([], [])),
                         HostLinkingModuleBinary.Imports(("env", name, kind, type))
-                    )
+                    ),
+                    WasmSpecVersion.Core2
                 )
                 .Validate();
             var exception = await Assert

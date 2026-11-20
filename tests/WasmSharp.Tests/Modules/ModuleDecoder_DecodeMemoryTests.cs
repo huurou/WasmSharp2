@@ -35,7 +35,7 @@ internal partial class ModuleDecoder_DecodeTests
         var firstOffset = bytes.Length - instructions.Length;
 
         // Act
-        var module = ModuleDecoder.Decode(bytes);
+        var module = ModuleDecoder.Decode(bytes, WasmSpecVersion.Core2);
         Array.Fill(bytes, (byte)0xFF);
 
         // Assert

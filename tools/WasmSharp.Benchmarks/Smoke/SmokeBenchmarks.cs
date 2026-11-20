@@ -16,13 +16,13 @@ public class SmokeBenchmarks
     [GlobalSetup]
     public void Setup()
     {
-        WasmModule.Decode(_moduleBytes).Validate().Instantiate(_context, new WasmImports());
+        WasmModule.Decode(_moduleBytes, WasmSpecVersion.Core2).Validate().Instantiate(_context, new WasmImports());
     }
 
     [Benchmark(OperationsPerInvoke = 1)]
     public WasmModule Decode()
     {
-        return _lastModule = WasmModule.Decode(_moduleBytes);
+        return _lastModule = WasmModule.Decode(_moduleBytes, WasmSpecVersion.Core2);
     }
 
     [GlobalCleanup]

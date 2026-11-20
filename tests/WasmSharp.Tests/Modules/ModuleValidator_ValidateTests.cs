@@ -25,7 +25,7 @@ internal partial class ModuleValidator_ValidateTests
     public async Task 定義関数がない_空の実行コードになる()
     {
         // Arrange
-        var module = WasmModule.Decode(Convert.FromHexString("0061736D01000000"));
+        var module = WasmModule.Decode(Convert.FromHexString("0061736D01000000"), WasmSpecVersion.Core2);
 
         // Act
         var codes = ModuleValidator.Validate(module);
@@ -48,7 +48,8 @@ internal partial class ModuleValidator_ValidateTests
     {
         // Arrange
         var module = WasmModule.Decode(
-            Convert.FromHexString("0061736D0100000001060160017F017F" + functions + exports + "0A0B02040041010B040041020B")
+            Convert.FromHexString("0061736D0100000001060160017F017F" + functions + exports + "0A0B02040041010B040041020B"),
+            WasmSpecVersion.Core2
         );
 
         // Act & Assert
@@ -91,7 +92,7 @@ internal partial class ModuleValidator_ValidateTests
     {
         // Arrange
         var bytes = ConstantModuleBinary.Create(resultType, Convert.FromHexString(instructions));
-        var module = WasmModule.Decode(bytes);
+        var module = WasmModule.Decode(bytes, WasmSpecVersion.Core2);
 
         // Act
         var codes = ModuleValidator.Validate(module);
@@ -139,7 +140,8 @@ internal partial class ModuleValidator_ValidateTests
                 HostLinkingModuleBinary.Functions(0),
                 Convert.FromHexString(section),
                 HostLinkingModuleBinary.Code(([], [0x0B]))
-            )
+            ),
+            WasmSpecVersion.Core2
         );
 
         // Act & Assert
@@ -162,28 +164,31 @@ internal partial class ModuleValidator_ValidateTests
     {
         var type = Convert.FromHexString(signature);
         var code = Convert.FromHexString(body);
-        return WasmModule.Decode([
-            0x00,
-            0x61,
-            0x73,
-            0x6D,
-            0x01,
-            0x00,
-            0x00,
-            0x00,
-            0x01,
-            (byte)(type.Length + 1),
-            0x01,
-            .. type,
-            0x03,
-            0x02,
-            0x01,
-            0x00,
-            0x0A,
-            (byte)(code.Length + 2),
-            0x01,
-            (byte)code.Length,
-            .. code,
-        ]);
+        return WasmModule.Decode(
+            [
+                0x00,
+                0x61,
+                0x73,
+                0x6D,
+                0x01,
+                0x00,
+                0x00,
+                0x00,
+                0x01,
+                (byte)(type.Length + 1),
+                0x01,
+                .. type,
+                0x03,
+                0x02,
+                0x01,
+                0x00,
+                0x0A,
+                (byte)(code.Length + 2),
+                0x01,
+                (byte)code.Length,
+                .. code,
+            ],
+            WasmSpecVersion.Core2
+        );
     }
 }
