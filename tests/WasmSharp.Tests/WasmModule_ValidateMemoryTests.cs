@@ -78,6 +78,33 @@ internal partial class WasmModule_ValidateTests
     }
 
     [Test]
+    [Arguments("FC08008001", "unknown memory 128")]
+    [Arguments("FC0B01", "unknown memory 1")]
+    [Arguments("FC0A0100", "unknown memory 1")]
+    [Arguments("FC0A0002", "unknown memory 2")]
+    [Arguments("FC0A0201", "unknown memory 2")]
+    public async Task Core3の一括メモリ命令で存在しないメモリを参照する_検証で該当番号を報告する(
+        string operation,
+        string diagnostic
+    )
+    {
+        // Arrange
+        var bytes = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Types(([], [])),
+            HostLinkingModuleBinary.Functions(0),
+            HostLinkingModuleBinary.Memories((1, null)),
+            HostLinkingModuleBinary.Section(12, [1]),
+            HostLinkingModuleBinary.Code(([], [0, .. Convert.FromHexString(operation), 0x0B])),
+            HostLinkingModuleBinary.Section(11, [1, 1, 0])
+        );
+        var module = WasmModule.Decode(bytes, WasmSpecVersion.Core3);
+
+        // Act & Assert
+        var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
+        await Assert.That(exception!.Message).StartsWith(diagnostic);
+    }
+
+    [Test]
     [Arguments("002802001A0B")]
     [Arguments("003703000B")]
     [Arguments("003F001A0B")]

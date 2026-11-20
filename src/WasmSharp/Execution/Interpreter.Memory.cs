@@ -16,7 +16,8 @@ internal static partial class Interpreter
         var length = unchecked((uint)context.PopValue().AsI32());
         var value = unchecked((byte)context.PopValue().AsI32());
         var destination = unchecked((uint)context.PopValue().AsI32());
-        if (!context.CurrentFunction.Instance.Memories[0].TryFill(destination, value, length))
+        var memory = context.CurrentFunction.Instance.Memories[(int)instruction.Index];
+        if (!memory.TryFill(destination, value, length))
         {
             return ExecutionResult.Trap(
                 WasmTrapReason.MemoryOutOfBounds,
@@ -29,7 +30,7 @@ internal static partial class Interpreter
     }
 
     /// <summary>
-    /// 所属instanceのメモリ内で指定範囲をコピーする
+    /// 指定したコピー元メモリからコピー先メモリへ指定範囲をコピーする
     /// </summary>
     /// <param name="context">現在の関数とコピー先・コピー元・バイト数を持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのmemory.copy命令</param>
@@ -39,7 +40,10 @@ internal static partial class Interpreter
         var length = unchecked((uint)context.PopValue().AsI32());
         var source = unchecked((uint)context.PopValue().AsI32());
         var destination = unchecked((uint)context.PopValue().AsI32());
-        if (!context.CurrentFunction.Instance.Memories[0].TryCopy(destination, source, length))
+        var memories = context.CurrentFunction.Instance.Memories;
+        var destinationMemory = memories[(int)instruction.Index];
+        var sourceMemory = memories[(int)instruction.SecondaryIndex];
+        if (!destinationMemory.TryCopy(sourceMemory, destination, source, length))
         {
             return ExecutionResult.Trap(
                 WasmTrapReason.MemoryOutOfBounds,
@@ -67,7 +71,7 @@ internal static partial class Interpreter
     /// 所属instanceのデータセグメントからメモリへ指定範囲をコピーする
     /// </summary>
     /// <param name="context">現在の関数とコピー先・コピー元・バイト数を持つ実行コンテキスト</param>
-    /// <param name="instruction">データインデックスを保持する検証済みのmemory.init命令</param>
+    /// <param name="instruction">データとメモリのインデックスを保持する検証済みのmemory.init命令</param>
     /// <returns>実行の成功またはメモリを変更しない範囲外アクセスのtrap</returns>
     internal static ExecutionResult MemoryInit(InterpreterContext context, in Instruction instruction)
     {
@@ -75,7 +79,8 @@ internal static partial class Interpreter
         var source = unchecked((uint)context.PopValue().AsI32());
         var destination = unchecked((uint)context.PopValue().AsI32());
         var instance = context.CurrentFunction.Instance;
-        if (!instance.DataSegments[(int)instruction.Index].TryInitialize(instance.Memories[0], destination, source, length))
+        var memory = instance.Memories[(int)instruction.SecondaryIndex];
+        if (!instance.DataSegments[(int)instruction.Index].TryInitialize(memory, destination, source, length))
         {
             return ExecutionResult.Trap(
                 WasmTrapReason.MemoryOutOfBounds,

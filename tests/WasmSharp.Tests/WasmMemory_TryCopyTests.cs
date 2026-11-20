@@ -12,7 +12,7 @@ internal class WasmMemory_TryCopyTests
         var destination = new byte[10];
 
         // Act
-        var success = memory.TryCopy(131069, 65534, 8);
+        var success = memory.TryCopy(memory, 131069, 65534, 8);
         memory.Read(65534, source);
         memory.Read(131068, destination);
 
@@ -38,7 +38,7 @@ internal class WasmMemory_TryCopyTests
         var actual = new byte[10];
 
         // Act
-        var success = memory.TryCopy(offset + 2, offset, 8);
+        var success = memory.TryCopy(memory, offset + 2, offset, 8);
         memory.Read(offset, actual);
 
         // Assert
@@ -60,7 +60,7 @@ internal class WasmMemory_TryCopyTests
         var actual = new byte[10];
 
         // Act
-        var success = memory.TryCopy(offset, offset + 2, 8);
+        var success = memory.TryCopy(memory, offset, offset + 2, 8);
         memory.Read(offset, actual);
 
         // Assert
@@ -83,7 +83,7 @@ internal class WasmMemory_TryCopyTests
         var actual = new byte[2];
 
         // Act
-        var success = memory.TryCopy(destination, source, 2);
+        var success = memory.TryCopy(memory, destination, source, 2);
         memory.Read(destination, actual);
 
         // Assert
@@ -105,7 +105,7 @@ internal class WasmMemory_TryCopyTests
         var memory = new WasmMemory(new WasmLimits(pages));
 
         // Act
-        var success = memory.TryCopy(destination, source, 0);
+        var success = memory.TryCopy(memory, destination, source, 0);
 
         // Assert
         await Assert.That(success).IsTrue();
@@ -135,7 +135,7 @@ internal class WasmMemory_TryCopyTests
         var actual = new byte[expected.Length];
 
         // Act
-        var success = memory.TryCopy(destination, source, length);
+        var success = memory.TryCopy(memory, destination, source, length);
         memory.Read(0, actual);
 
         // Assert
