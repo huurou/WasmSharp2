@@ -6,6 +6,34 @@ namespace WasmSharp.Tests;
 internal partial class WasmModule_DecodeTests
 {
     [Test]
+    [Arguments("288001", "malformed memop flags", 2)]
+    [Arguments("FD54C002", "malformed memop flags", 2)]
+    [Arguments("28400180808080808080808002", "integer too large", 1)]
+    public async Task Core3複数メモリの命令でフラグやオフセットの符号化が不正_Decodeがバイト位置を示す(
+        string instruction,
+        string diagnostic,
+        int offsetFromEnd
+    )
+    {
+        // Arrange
+        var bytes = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Types(([], [])),
+            HostLinkingModuleBinary.Functions(0),
+            HostLinkingModuleBinary.Code(([], Convert.FromHexString(instruction)))
+        );
+
+        // Act & Assert
+        var exception = await Assert
+            .That(() => WasmModule.Decode(bytes, WasmSpecVersion.Core3))
+            .ThrowsExactly<WasmDecodeException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.Message).StartsWith(diagnostic);
+            await Assert.That(exception.Location!.ByteOffset).IsEqualTo(bytes.Length - offsetFromEnd);
+        }
+    }
+
+    [Test]
     [Arguments("3F", "unexpected end", 0)]
     [Arguments("40", "unexpected end", 0)]
     [Arguments("3F01", "zero byte expected", 1)]

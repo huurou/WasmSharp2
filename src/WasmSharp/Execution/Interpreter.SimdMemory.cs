@@ -1,5 +1,4 @@
 using System.Buffers.Binary;
-using WasmSharp.Exceptions;
 
 namespace WasmSharp.Execution;
 
@@ -14,7 +13,7 @@ internal static partial class Interpreter
     internal static ExecutionResult V128Load(InterpreterContext context, in Instruction instruction)
     {
         Span<byte> bytes = stackalloc byte[16];
-        var result = ReadSimdMemory(context, in instruction, bytes);
+        var result = ReadMemory(context, in instruction, bytes);
         if (result.Status != ExecutionStatus.Success)
         {
             return result;
@@ -35,7 +34,7 @@ internal static partial class Interpreter
         var value = SimdValue.FromValue(context.PopValue());
         Span<byte> bytes = stackalloc byte[16];
         value.WriteLittleEndian(bytes);
-        return WriteSimdMemory(context, in instruction, bytes);
+        return WriteMemory(context, in instruction, bytes);
     }
 
     /// <summary>
@@ -49,7 +48,7 @@ internal static partial class Interpreter
         var value = SimdValue.FromValue(context.PopValue());
         Span<byte> bytes = stackalloc byte[16];
         var byteWidth = instruction.MemoryAccessSignature.ByteWidth;
-        var result = ReadSimdMemory(context, in instruction, bytes[..byteWidth]);
+        var result = ReadMemory(context, in instruction, bytes[..byteWidth]);
         if (result.Status != ExecutionStatus.Success)
         {
             return result;
@@ -73,7 +72,7 @@ internal static partial class Interpreter
         Span<byte> bytes = stackalloc byte[16];
         value.WriteLittleEndian(bytes);
         var byteWidth = instruction.MemoryAccessSignature.ByteWidth;
-        return WriteSimdMemory(context, in instruction, bytes.Slice(instruction.LaneIndex * byteWidth, byteWidth));
+        return WriteMemory(context, in instruction, bytes.Slice(instruction.LaneIndex * byteWidth, byteWidth));
     }
 
     /// <summary>
@@ -152,7 +151,7 @@ internal static partial class Interpreter
     {
         Span<byte> bytes = stackalloc byte[16];
         var byteWidth = instruction.MemoryAccessSignature.ByteWidth;
-        var result = ReadSimdMemory(context, in instruction, bytes[..byteWidth]);
+        var result = ReadMemory(context, in instruction, bytes[..byteWidth]);
         if (result.Status != ExecutionStatus.Success)
         {
             return result;
@@ -173,7 +172,7 @@ internal static partial class Interpreter
     {
         Span<byte> buffer = stackalloc byte[sizeof(ulong)];
         var bytes = buffer[..instruction.MemoryAccessSignature.ByteWidth];
-        var result = ReadSimdMemory(context, in instruction, bytes);
+        var result = ReadMemory(context, in instruction, bytes);
         if (result.Status != ExecutionStatus.Success)
         {
             return result;
@@ -198,7 +197,7 @@ internal static partial class Interpreter
     )
     {
         Span<byte> bytes = stackalloc byte[16];
-        var result = ReadSimdMemory(context, in instruction, bytes[..instruction.MemoryAccessSignature.ByteWidth]);
+        var result = ReadMemory(context, in instruction, bytes[..instruction.MemoryAccessSignature.ByteWidth]);
         if (result.Status != ExecutionStatus.Success)
         {
             return result;
@@ -228,43 +227,5 @@ internal static partial class Interpreter
         }
 
         return value;
-    }
-
-    /// <summary>
-    /// operandの符号なしアドレスとoffsetから指定範囲を読み、範囲外の位置情報を保持する
-    /// </summary>
-    private static ExecutionResult ReadSimdMemory(
-        InterpreterContext context,
-        in Instruction instruction,
-        Span<byte> destination
-    )
-    {
-        var address = (ulong)unchecked((uint)context.PopValue().AsI32()) + instruction.MemoryArgument.Offset;
-        return context.CurrentFunction.Instance.Memories[0].TryRead(address, destination)
-            ? default
-            : ExecutionResult.Trap(
-                WasmTrapReason.MemoryOutOfBounds,
-                context.CurrentFunction.FunctionIndex,
-                instruction.ByteOffset
-            );
-    }
-
-    /// <summary>
-    /// operandの符号なしアドレスとoffsetへ指定範囲を書き、範囲外の位置情報を保持する
-    /// </summary>
-    private static ExecutionResult WriteSimdMemory(
-        InterpreterContext context,
-        in Instruction instruction,
-        ReadOnlySpan<byte> source
-    )
-    {
-        var address = (ulong)unchecked((uint)context.PopValue().AsI32()) + instruction.MemoryArgument.Offset;
-        return context.CurrentFunction.Instance.Memories[0].TryWrite(address, source)
-            ? default
-            : ExecutionResult.Trap(
-                WasmTrapReason.MemoryOutOfBounds,
-                context.CurrentFunction.FunctionIndex,
-                instruction.ByteOffset
-            );
     }
 }

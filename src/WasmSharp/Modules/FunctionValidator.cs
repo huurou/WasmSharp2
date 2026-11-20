@@ -548,7 +548,7 @@ internal static class FunctionValidator
 
         MemoryAccessSignature ValidateMemoryAccess(DecodedInstruction instruction, InstructionDescriptor descriptor)
         {
-            RequireMemory(0, instruction.ByteOffset);
+            RequireMemory(instruction.Index, instruction.ByteOffset);
             var memorySignature = descriptor.MemoryAccessSignature
                 ?? throw new InvalidOperationException("メモリ命令のアクセス情報がありません。");
             if (instruction.MemoryArgument.Alignment > (uint)BitOperations.Log2(memorySignature.ByteWidth))
@@ -556,6 +556,14 @@ internal static class FunctionValidator
                 throw ValidationDiagnostics.ValidationFailure(
                     "alignment must not be larger than natural",
                     "アラインメントが命令のアクセス幅を超えています。",
+                    new(WasmProcessingStage.Validate, instruction.ByteOffset, moduleFunctionIndex, 10)
+                );
+            }
+            if (instruction.MemoryArgument.Offset > uint.MaxValue)
+            {
+                throw ValidationDiagnostics.ValidationFailure(
+                    "offset out of range",
+                    "オフセットが32ビットメモリの上限を超えています。",
                     new(WasmProcessingStage.Validate, instruction.ByteOffset, moduleFunctionIndex, 10)
                 );
             }
