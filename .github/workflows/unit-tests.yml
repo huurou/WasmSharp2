@@ -15,7 +15,11 @@ concurrency:
 
 jobs:
   unit-tests:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 15
 
     steps:
@@ -39,13 +43,14 @@ jobs:
         run: dotnet build WasmSharp2.slnx -c Release --warnaserror
 
       - name: Run runtime tests
+        if: runner.os == 'Linux'
         run: >-
           dotnet run --project tests/WasmSharp.Tests/WasmSharp.Tests.csproj
           -c Release --no-build -- --report-trx
           --results-directory "${{ github.workspace }}/TestResults/WasmSharp.Tests"
 
       - name: Run generator tests
-        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && runner.os == 'Linux' }}
         run: >-
           dotnet run --project tests/WasmSharp.Generators.Tests/WasmSharp.Generators.Tests.csproj
           -c Release --no-build -- --report-trx
@@ -69,5 +74,5 @@ jobs:
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         uses: actions/upload-artifact@v7
         with:
-          name: unit-test-results
+          name: unit-test-results-${{ runner.os }}
           path: TestResults/**/*.trx
