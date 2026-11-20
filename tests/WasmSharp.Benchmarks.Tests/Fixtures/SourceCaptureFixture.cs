@@ -44,6 +44,7 @@ internal sealed class SourceCaptureFixture : IDisposable
         Write("tools/WasmSharp.Benchmarks/Harness.cs", "class Harness {}\n");
         Write(".gitignore", "**/bin/\n**/obj/\n");
         Git("init", "--quiet");
+        Git("config", "--local", "core.autocrlf", "false");
         Git("add", ".");
         Git("-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid", "commit", "--quiet", "-m", "初期素材");
     }
