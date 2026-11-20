@@ -13,7 +13,7 @@ internal class Interpreter_GlobalSetTests
         // Arrange
         var executionContext = new WasmExecutionContext();
         var reference = new object();
-        var found = InstructionSet.TryGet(new(0, 0x24), out var descriptor);
+        var found = InstructionSet.TryGet(new(0, 0x24), WasmSpecVersion.Core2, out var descriptor);
         var numberGlobal = new WasmGlobal(new(WasmValueKind.F64, true), WasmValue.FromF64Bits(0));
         var externGlobal = new WasmGlobal(new(WasmValueKind.ExternRef, true), WasmValue.FromExternRef(null));
         var instance = ExecutionInstanceFixture.Create(

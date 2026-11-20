@@ -32,6 +32,7 @@ internal class WasmInstance_ConstructorTests
             memories: [],
             globals: [new(new(WasmValueKind.FuncRef, false), definedReference, 0)],
             start: null,
+            WasmSpecVersion.Core2,
             elementSegments:
             [
                 ElementDefinition.Active(
@@ -111,6 +112,7 @@ internal class WasmInstance_ConstructorTests
             memories: [],
             globals: [],
             start: null,
+            WasmSpecVersion.Core2,
             elementSegments:
             [
                 ElementDefinition.Passive(
@@ -161,7 +163,8 @@ internal class WasmInstance_ConstructorTests
                     HostLinkingModuleBinary.Imports(("env", "g", 3, [0x7F, 0])),
                     HostLinkingModuleBinary.Globals((0x7F, true, [0x23, 0, 0x0B]), (0x7F, false, [0x41, 42, 0x0B])),
                     HostLinkingModuleBinary.Exports(("imported", 3, 0), ("copied", 3, 1), ("constant", 3, 2))
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate();
 

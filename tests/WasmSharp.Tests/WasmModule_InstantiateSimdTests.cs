@@ -31,7 +31,8 @@ internal partial class WasmModule_InstantiateTests
                         ("write", 0, 1)
                     ),
                     HostLinkingModuleBinary.Code(([], [0x23, 1, 0x0B]), ([], [0x20, 0, 0x24, 1, 0x0B]))
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate();
 
@@ -81,7 +82,9 @@ internal partial class WasmModule_InstantiateTests
             HostLinkingModuleBinary.Code(([], [0x23, 0, 0x0B]))
         );
         using var stream = new ChunkedReadStream(new MemoryStream(bytes));
-        var module = useStream ? WasmModule.Decode(stream) : WasmModule.Decode(bytes);
+        var module = useStream
+            ? WasmModule.Decode(stream, WasmSpecVersion.Core2)
+            : WasmModule.Decode(bytes, WasmSpecVersion.Core2);
         Array.Clear(bytes);
 
         // Act

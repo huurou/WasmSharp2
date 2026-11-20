@@ -10,7 +10,7 @@ internal class CaseObservation_ConstructorTests
     public async Task 各段階の観測を作る_moduleとinstanceとInvoke結果を区別して保持する()
     {
         // Arrange
-        var module = WasmModule.Decode([0, 0x61, 0x73, 0x6d, 1, 0, 0, 0]);
+        var module = WasmModule.Decode([0, 0x61, 0x73, 0x6d, 1, 0, 0, 0], WasmSpecVersion.Core2);
         var instance = module.Validate().Instantiate(_context, new WasmImports());
         var results = new WasmResults([
             WasmValue.FromI32(-1),

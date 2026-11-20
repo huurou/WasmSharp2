@@ -229,7 +229,8 @@ internal class Interpreter_CallIndirectTests
             [],
             [],
             [],
-            null
+            null,
+            WasmSpecVersion.Core2
         )
         {
             FunctionCodes = [new([], [], 0), new([], [], 8)],

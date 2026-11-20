@@ -22,11 +22,12 @@ internal class Interpreter_ReturnTests
             [],
             [],
             [],
-            null
+            null,
+            WasmSpecVersion.Core2
         );
         var function = (DefinedFunction)new WasmInstance(module, WasmExecutionOptions.Default).Functions[0];
         var reference = new object();
-        var found = InstructionSet.TryGet(new(0, 0x0B), out var descriptor);
+        var found = InstructionSet.TryGet(new(0, 0x0B), WasmSpecVersion.Core2, out var descriptor);
         var instruction = new Instruction(descriptor.ExecutionOpcode!.Value, default, 88, 0);
         var context = executionContext.Enter(new(10), out var isOutermost);
         ExecutionResult result;
@@ -100,7 +101,7 @@ internal class Interpreter_ReturnTests
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
-        var found = InstructionSet.TryGet(new(0, 0x0F), out var descriptor);
+        var found = InstructionSet.TryGet(new(0, 0x0F), WasmSpecVersion.Core2, out var descriptor);
         var instance = ExecutionInstanceFixture.Create(
             [new([], [WasmValueKind.I64]), new([], [WasmValueKind.I32, WasmValueKind.I64])],
             [

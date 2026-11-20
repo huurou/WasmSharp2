@@ -13,7 +13,7 @@ internal class Interpreter_DropTests
         // Arrange
         var executionContext = new WasmExecutionContext();
         var reference = new object();
-        var found = InstructionSet.TryGet(new(0, 0x1A), out var descriptor);
+        var found = InstructionSet.TryGet(new(0, 0x1A), WasmSpecVersion.Core2, out var descriptor);
         var function = ExecutionFunctionFixture.Create(
             [
                 InstructionFixture.Create(0x41, 81, immediate: WasmValue.FromI32(7)),

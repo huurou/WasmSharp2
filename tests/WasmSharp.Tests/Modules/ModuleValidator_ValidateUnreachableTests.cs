@@ -79,7 +79,8 @@ internal partial class ModuleValidator_ValidateTests
                 HostLinkingModuleBinary.Functions(0),
                 HostLinkingModuleBinary.Globals((0x7F, true, [0x41, 0, 0x0B])),
                 HostLinkingModuleBinary.Code(([], Convert.FromHexString(body)))
-            )
+            ),
+            WasmSpecVersion.Core2
         );
 
         // Act & Assert

@@ -21,7 +21,11 @@ internal partial class WasmModule_DecodeTests
             HostLinkingModuleBinary.Code(([], body))
         );
         using var stream = new ChunkedReadStream(new MemoryStream(bytes), 1);
-        Func<WasmModule>[] decoders = [() => WasmModule.Decode(bytes), () => WasmModule.Decode(stream)];
+        Func<WasmModule>[] decoders =
+        [
+            () => WasmModule.Decode(bytes, WasmSpecVersion.Core2),
+            () => WasmModule.Decode(stream, WasmSpecVersion.Core2),
+        ];
 
         // Act & Assert
         foreach (var decode in decoders)
@@ -71,7 +75,11 @@ internal partial class WasmModule_DecodeTests
             HostLinkingModuleBinary.Code(([], Convert.FromHexString(body)))
         );
         using var stream = new ChunkedReadStream(new MemoryStream(bytes));
-        Func<WasmModule>[] decoders = [() => WasmModule.Decode(bytes), () => WasmModule.Decode(stream)];
+        Func<WasmModule>[] decoders =
+        [
+            () => WasmModule.Decode(bytes, WasmSpecVersion.Core2),
+            () => WasmModule.Decode(stream, WasmSpecVersion.Core2),
+        ];
 
         // Act & Assert
         foreach (var decode in decoders)
@@ -102,7 +110,11 @@ internal partial class WasmModule_DecodeTests
             HostLinkingModuleBinary.Section(10, Convert.FromHexString("01040002400B" + following))
         );
         using var stream = new ChunkedReadStream(new MemoryStream(bytes));
-        Func<WasmModule>[] decoders = [() => WasmModule.Decode(bytes), () => WasmModule.Decode(stream)];
+        Func<WasmModule>[] decoders =
+        [
+            () => WasmModule.Decode(bytes, WasmSpecVersion.Core2),
+            () => WasmModule.Decode(stream, WasmSpecVersion.Core2),
+        ];
 
         // Act & Assert
         foreach (var decode in decoders)
@@ -140,7 +152,11 @@ internal partial class WasmModule_DecodeTests
         // Arrange
         var bytes = Convert.FromHexString("0061736D01000000" + sections);
         using var stream = new ChunkedReadStream(new MemoryStream(bytes));
-        Func<WasmModule>[] decoders = [() => WasmModule.Decode(bytes), () => WasmModule.Decode(stream)];
+        Func<WasmModule>[] decoders =
+        [
+            () => WasmModule.Decode(bytes, WasmSpecVersion.Core2),
+            () => WasmModule.Decode(stream, WasmSpecVersion.Core2),
+        ];
 
         // Act & Assert
         foreach (var decode in decoders)
@@ -169,7 +185,11 @@ internal partial class WasmModule_DecodeTests
         // Arrange
         var bytes = Convert.FromHexString("0061736D01000000030201000A03010100" + instruction);
         using var stream = new ChunkedReadStream(new MemoryStream(bytes));
-        Func<WasmModule>[] decoders = [() => WasmModule.Decode(bytes), () => WasmModule.Decode(stream)];
+        Func<WasmModule>[] decoders =
+        [
+            () => WasmModule.Decode(bytes, WasmSpecVersion.Core2),
+            () => WasmModule.Decode(stream, WasmSpecVersion.Core2),
+        ];
 
         // Act & Assert
         foreach (var decode in decoders)
@@ -217,7 +237,11 @@ internal partial class WasmModule_DecodeTests
         // Arrange
         var bytes = Convert.FromHexString(hex);
         using var stream = new ChunkedReadStream(new MemoryStream(bytes));
-        Func<WasmModule>[] decoders = [() => WasmModule.Decode(bytes), () => WasmModule.Decode(stream)];
+        Func<WasmModule>[] decoders =
+        [
+            () => WasmModule.Decode(bytes, WasmSpecVersion.Core2),
+            () => WasmModule.Decode(stream, WasmSpecVersion.Core2),
+        ];
 
         // Act & Assert
         foreach (var decode in decoders)
@@ -248,7 +272,11 @@ internal partial class WasmModule_DecodeTests
         // Arrange
         var bytes = ConstantModuleBinary.Create(0x7F, Convert.FromHexString(instructions));
         using var stream = new MemoryStream(bytes);
-        Func<WasmModule>[] decoders = [() => WasmModule.Decode(bytes), () => WasmModule.Decode(stream)];
+        Func<WasmModule>[] decoders =
+        [
+            () => WasmModule.Decode(bytes, WasmSpecVersion.Core2),
+            () => WasmModule.Decode(stream, WasmSpecVersion.Core2),
+        ];
 
         // Act & Assert
         foreach (var decode in decoders)
@@ -273,7 +301,11 @@ internal partial class WasmModule_DecodeTests
 
         // Act & Assert
         var exception = await Assert
-            .That(() => useStream ? WasmModule.Decode(stream) : WasmModule.Decode(bytes))
+            .That(() =>
+                useStream
+                    ? WasmModule.Decode(stream, WasmSpecVersion.Core2)
+                    : WasmModule.Decode(bytes, WasmSpecVersion.Core2)
+            )
             .ThrowsExactly<WasmDecodeException>();
         await Assert.That(exception!.Location).IsEqualTo(new(WasmProcessingStage.Decode, 11, null, 13));
     }
@@ -285,7 +317,7 @@ internal partial class WasmModule_DecodeTests
         var bytes = ConstantModuleBinary.Create(0x7F, 0x41, 0x2A, 0x0B);
 
         // Act
-        var module = WasmModule.Decode(bytes);
+        var module = WasmModule.Decode(bytes, WasmSpecVersion.Core2);
 
         // Assert
         using (Assert.Multiple())
@@ -309,7 +341,7 @@ internal partial class WasmModule_DecodeTests
         using var stream = new ChunkedReadStream(input, chunkSize);
 
         // Act
-        var module = WasmModule.Decode(stream);
+        var module = WasmModule.Decode(stream, WasmSpecVersion.Core2);
 
         // Assert
         using (Assert.Multiple())
@@ -335,7 +367,7 @@ internal partial class WasmModule_DecodeTests
         using var input = new ChunkedReadStream(new MemoryStream(bytes), 3000);
 
         // Act
-        var module = WasmModule.Decode(input);
+        var module = WasmModule.Decode(input, WasmSpecVersion.Core2);
 
         // Assert
         using (Assert.Multiple())
@@ -354,7 +386,9 @@ internal partial class WasmModule_DecodeTests
         stream.Dispose();
 
         // Act & Assert
-        var exception = await Assert.That(() => WasmModule.Decode(stream)).ThrowsExactly<ArgumentException>();
+        var exception = await Assert
+            .That(() => WasmModule.Decode(stream, WasmSpecVersion.Core2))
+            .ThrowsExactly<ArgumentException>();
         using (Assert.Multiple())
         {
             await Assert.That(exception!.ParamName).IsEqualTo("stream");
@@ -370,7 +404,7 @@ internal partial class WasmModule_DecodeTests
         using var stream = new ThrowingReadStream(expected);
 
         // Act & Assert
-        var actual = await Assert.That(() => WasmModule.Decode(stream)).ThrowsExactly<IOException>();
+        var actual = await Assert.That(() => WasmModule.Decode(stream, WasmSpecVersion.Core2)).ThrowsExactly<IOException>();
         await Assert.That(actual).IsSameReferenceAs(expected);
     }
 
@@ -383,7 +417,9 @@ internal partial class WasmModule_DecodeTests
         using var stream = new ChunkedReadStream(input);
 
         // Act & Assert
-        var exception = await Assert.That(() => WasmModule.Decode(stream)).ThrowsExactly<WasmDecodeException>();
+        var exception = await Assert
+            .That(() => WasmModule.Decode(stream, WasmSpecVersion.Core2))
+            .ThrowsExactly<WasmDecodeException>();
         using (Assert.Multiple())
         {
             await Assert.That(exception!.Location).IsEqualTo(new(WasmProcessingStage.Decode, 1));
@@ -407,7 +443,11 @@ internal partial class WasmModule_DecodeTests
         // Arrange
         var bytes = ConstantModuleBinary.Create(0x7B, Convert.FromHexString(instructions));
         using var stream = new ChunkedReadStream(new MemoryStream(bytes));
-        Func<WasmModule>[] decoders = [() => WasmModule.Decode(bytes), () => WasmModule.Decode(stream)];
+        Func<WasmModule>[] decoders =
+        [
+            () => WasmModule.Decode(bytes, WasmSpecVersion.Core2),
+            () => WasmModule.Decode(stream, WasmSpecVersion.Core2),
+        ];
 
         // Act & Assert
         foreach (var decode in decoders)
@@ -432,7 +472,11 @@ internal partial class WasmModule_DecodeTests
 
         // Act & Assert
         var exception = await Assert
-            .That(() => useStream ? WasmModule.Decode(stream) : WasmModule.Decode(bytes))
+            .That(() =>
+                useStream
+                    ? WasmModule.Decode(stream, WasmSpecVersion.Core2)
+                    : WasmModule.Decode(bytes, WasmSpecVersion.Core2)
+            )
             .ThrowsExactly<WasmDecodeException>();
         using (Assert.Multiple())
         {

@@ -152,7 +152,8 @@ internal class InterpreterContext_RestoreTests
             [],
             [],
             [],
-            null
+            null,
+            WasmSpecVersion.Core2
         );
         var instance = new WasmInstance(module, WasmExecutionOptions.Default);
         var function = (DefinedFunction)instance.Functions[0];

@@ -20,7 +20,11 @@ internal partial class ModuleValidator_ValidateTests
             HostLinkingModuleBinary.Code(([], [0x20, 0, 0x20, 1, 0xFD, .. HostLinkingModuleBinary.Unsigned(opcode), 0x0B]))
         );
         using var stream = new ChunkedReadStream(new MemoryStream(bytes));
-        WasmModule[] modules = [WasmModule.Decode(bytes), WasmModule.Decode(stream)];
+        WasmModule[] modules =
+        [
+            WasmModule.Decode(bytes, WasmSpecVersion.Core2),
+            WasmModule.Decode(stream, WasmSpecVersion.Core2),
+        ];
 
         foreach (var module in modules)
         {

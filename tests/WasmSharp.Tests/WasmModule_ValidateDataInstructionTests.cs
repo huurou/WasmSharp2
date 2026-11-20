@@ -39,7 +39,7 @@ internal partial class WasmModule_ValidateTests
             HostLinkingModuleBinary.Code(([], Convert.FromHexString(instructions))),
             data
         );
-        var module = WasmModule.Decode(bytes);
+        var module = WasmModule.Decode(bytes, WasmSpecVersion.Core2);
 
         // Act & Assert
         var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
@@ -77,7 +77,7 @@ internal partial class WasmModule_ValidateTests
             HostLinkingModuleBinary.Code(([], Convert.FromHexString(instructions))),
             HostLinkingModuleBinary.Section(11, [1, 1, 0])
         );
-        var module = WasmModule.Decode(bytes);
+        var module = WasmModule.Decode(bytes, WasmSpecVersion.Core2);
 
         // Act
         var validated = module.Validate();
@@ -101,7 +101,8 @@ internal partial class WasmModule_ValidateTests
                 HostLinkingModuleBinary.Functions(0),
                 HostLinkingModuleBinary.Section(12, [0]),
                 HostLinkingModuleBinary.Code(([], [0xFC, 9, 0, 0x0B]))
-            )
+            ),
+            WasmSpecVersion.Core2
         );
 
         // Act & Assert

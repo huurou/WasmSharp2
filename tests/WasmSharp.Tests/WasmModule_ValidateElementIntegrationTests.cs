@@ -63,7 +63,7 @@ internal partial class WasmModule_ValidateTests
             HostLinkingModuleBinary.Tables((0x70, 0, null)),
             section
         );
-        var module = WasmModule.Decode(bytes);
+        var module = WasmModule.Decode(bytes, WasmSpecVersion.Core2);
         var segmentOffset = bytes.Length - section.Length + 3;
 
         // Act & Assert
@@ -94,7 +94,7 @@ internal partial class WasmModule_ValidateTests
             definedGlobal ? HostLinkingModuleBinary.Globals((0x70, false, [0xD0, 0x70, 0x0B])) : [],
             HostLinkingModuleBinary.Section(9, [1, 5, 0x70, 1, 0x23, 0, 0x0B])
         );
-        var module = WasmModule.Decode(bytes);
+        var module = WasmModule.Decode(bytes, WasmSpecVersion.Core2);
 
         // Act & Assert
         var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();

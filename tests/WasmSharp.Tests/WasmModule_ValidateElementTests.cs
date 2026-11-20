@@ -341,6 +341,7 @@ internal partial class WasmModule_ValidateTests
             [],
             [],
             null,
+            WasmSpecVersion.Core2,
             dataSegments: data,
             elementSegments: elements
         );

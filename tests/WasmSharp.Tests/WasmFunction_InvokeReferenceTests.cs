@@ -18,7 +18,8 @@ internal partial class WasmFunction_InvokeTests
                 HostLinkingModuleBinary.Globals((kind, false, [0xD0, kind, 0x0B])),
                 HostLinkingModuleBinary.Exports(("run", 0, 0)),
                 HostLinkingModuleBinary.Code(([(1, kind)], [0xD0, kind, 0x20, 0, 0x23, 0, 0x20, 0, 0xD1, 0x0B]))
-            )
+            ),
+            WasmSpecVersion.Core2
         );
 
         // Act
@@ -48,7 +49,8 @@ internal partial class WasmFunction_InvokeTests
                     HostLinkingModuleBinary.Globals((0x70, false, [0xD2, 0, 0x0B])),
                     HostLinkingModuleBinary.Exports(("target", 0, 0), ("run", 0, 1), ("g", 3, 0)),
                     HostLinkingModuleBinary.Code(([], [0x0B]), ([], [0xD2, 0, 0x23, 0, 0xD2, 0, 0xD1, 0x0B]))
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate();
 
@@ -131,7 +133,8 @@ internal partial class WasmFunction_InvokeTests
                             ]
                         )
                     )
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate();
         var first =

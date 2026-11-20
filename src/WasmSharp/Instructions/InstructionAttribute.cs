@@ -3,6 +3,7 @@ namespace WasmSharp.Instructions;
 /// <summary>
 /// 命令情報と実行分岐の生成に用いる命令宣言
 /// </summary>
+/// <param name="introducedIn">この命令番号が初めて割り当てられた仕様の版</param>
 /// <param name="prefix">通常命令では0、拡張命令では先頭のprefix</param>
 /// <param name="code">prefix内の命令番号</param>
 /// <param name="name">Wasm仕様上の命令名</param>
@@ -12,6 +13,7 @@ namespace WasmSharp.Instructions;
 /// <param name="executionHandler">Interpreterのhandler名または定数式と共有するIntegerArithmeticの二項演算名 未対応の宣言ではnull</param>
 [AttributeUsage(AttributeTargets.Class, AllowMultiple = true, Inherited = false)]
 internal sealed class InstructionAttribute(
+    WasmSpecVersion introducedIn,
     byte prefix,
     uint code,
     string name,
@@ -21,6 +23,11 @@ internal sealed class InstructionAttribute(
     string? executionHandler
 ) : Attribute
 {
+    /// <summary>
+    /// この命令番号が初めて割り当てられた仕様の版を取得する
+    /// </summary>
+    public WasmSpecVersion IntroducedIn { get; } = introducedIn;
+
     /// <summary>
     /// 通常命令では0、拡張命令ではprefixを取得する
     /// </summary>
@@ -80,6 +87,7 @@ internal sealed class InstructionAttribute(
     /// <summary>
     /// スタック下側から上側の入力型列をコピーして数値命令を宣言する
     /// </summary>
+    /// <param name="introducedIn">この命令番号が初めて割り当てられた仕様の版</param>
     /// <param name="prefix">通常命令では0、拡張命令では先頭のprefix</param>
     /// <param name="code">prefix内の命令番号</param>
     /// <param name="name">Wasm仕様上の命令名</param>
@@ -90,6 +98,7 @@ internal sealed class InstructionAttribute(
     /// <param name="inputTypes">スタック下側から上側の入力数値型列</param>
     /// <param name="resultType">結果の数値型</param>
     public InstructionAttribute(
+        WasmSpecVersion introducedIn,
         byte prefix,
         uint code,
         string name,
@@ -100,7 +109,7 @@ internal sealed class InstructionAttribute(
         WasmValueKind[] inputTypes,
         WasmValueKind resultType
     )
-        : this(prefix, code, name, immediate, stackEffect, validation, executionHandler)
+        : this(introducedIn, prefix, code, name, immediate, stackEffect, validation, executionHandler)
     {
         NumericSignature = new([.. inputTypes], resultType);
     }
@@ -108,6 +117,7 @@ internal sealed class InstructionAttribute(
     /// <summary>
     /// 数値命令の型効果と実行handlerを宣言する
     /// </summary>
+    /// <param name="introducedIn">この命令番号が初めて割り当てられた仕様の版</param>
     /// <param name="prefix">通常命令では0、拡張命令では先頭のprefix</param>
     /// <param name="code">prefix内の命令番号</param>
     /// <param name="name">Wasm仕様上の命令名</param>
@@ -119,6 +129,7 @@ internal sealed class InstructionAttribute(
     /// <param name="inputType">入力の数値型</param>
     /// <param name="resultType">結果の数値型</param>
     public InstructionAttribute(
+        WasmSpecVersion introducedIn,
         byte prefix,
         uint code,
         string name,
@@ -130,7 +141,7 @@ internal sealed class InstructionAttribute(
         WasmValueKind inputType,
         WasmValueKind resultType
     )
-        : this(prefix, code, name, immediate, stackEffect, validation, executionHandler)
+        : this(introducedIn, prefix, code, name, immediate, stackEffect, validation, executionHandler)
     {
         NumericSignature = new([.. Enumerable.Repeat(inputType, inputCount)], resultType);
     }
@@ -138,6 +149,7 @@ internal sealed class InstructionAttribute(
     /// <summary>
     /// ロード命令・ストア命令のアクセス情報と実行handlerを宣言する
     /// </summary>
+    /// <param name="introducedIn">この命令番号が初めて割り当てられた仕様の版</param>
     /// <param name="prefix">通常命令では0、拡張命令では先頭のprefix</param>
     /// <param name="code">prefix内の命令番号</param>
     /// <param name="name">Wasm仕様上の命令名</param>
@@ -149,6 +161,7 @@ internal sealed class InstructionAttribute(
     /// <param name="byteWidth">読み書きするバイト数</param>
     /// <param name="signExtend">狭い整数のロードで符号拡張するか</param>
     public InstructionAttribute(
+        WasmSpecVersion introducedIn,
         byte prefix,
         uint code,
         string name,
@@ -160,18 +173,27 @@ internal sealed class InstructionAttribute(
         byte byteWidth,
         bool signExtend
     )
-        : this(prefix, code, name, immediate, stackEffect, validation, executionHandler)
+        : this(introducedIn, prefix, code, name, immediate, stackEffect, validation, executionHandler)
     {
         MemoryAccessSignature = new(valueType, byteWidth, signExtend);
     }
 
     /// <summary>
-    /// 番号と名前のみで未対応の命令を宣言する
+    /// 導入版、番号、名前を指定して未対応の命令を宣言する
     /// </summary>
+    /// <param name="introducedIn">この命令番号が初めて割り当てられた仕様の版</param>
     /// <param name="prefix">通常命令では0、拡張命令では先頭のprefix</param>
     /// <param name="code">prefix内の命令番号</param>
     /// <param name="name">Wasm仕様上の命令名</param>
-    public InstructionAttribute(byte prefix, uint code, string name)
-        : this(prefix, code, name, ImmediateKind.Unsupported, StackEffectKind.Unsupported, ValidationRule.Unsupported, null)
-    { }
+    public InstructionAttribute(WasmSpecVersion introducedIn, byte prefix, uint code, string name)
+        : this(
+            introducedIn,
+            prefix,
+            code,
+            name,
+            ImmediateKind.Unsupported,
+            StackEffectKind.Unsupported,
+            ValidationRule.Unsupported,
+            null
+        ) { }
 }

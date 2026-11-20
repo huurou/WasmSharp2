@@ -21,7 +21,7 @@ internal static class CaseVerifier
         var stage = "Decode";
         try
         {
-            var module = WasmModule.Decode(assets.GetBinary(definition.AssetId).AsSpan());
+            var module = WasmModule.Decode(assets.GetBinary(definition.AssetId).AsSpan(), WasmSpecVersion.Core2);
             if (definition.MeasurementStage == MeasurementStage.Decode)
             {
                 return Verify(context, definition, new ModuleObservation(module), json);

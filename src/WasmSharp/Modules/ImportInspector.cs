@@ -115,14 +115,14 @@ internal static class ImportInspector
         ImmutableArray<WasmUnverifiedRange>.Builder ranges
     )
     {
-        var reader = new ModuleBinaryReader(bytes);
+        var reader = new ModuleBinaryReader(bytes, WasmSpecVersion.Core2);
         ModuleBinaryFormat.ReadHeader(ref reader);
         List<WasmFunctionType> types = [];
         var imports = ImmutableArray.CreateBuilder<WasmImportInfo>();
         var previousRank = 0;
         while (reader.Remaining != 0)
         {
-            var section = ModuleBinaryFormat.ReadSection(ref reader, ref previousRank, WasmSpecVersion.Core2);
+            var section = ModuleBinaryFormat.ReadSection(ref reader, ref previousRank);
             switch (section.SectionId)
             {
                 case 0:

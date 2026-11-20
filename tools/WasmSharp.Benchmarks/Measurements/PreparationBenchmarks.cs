@@ -28,7 +28,7 @@ public class PreparationBenchmarks
     [Benchmark(OperationsPerInvoke = 1)]
     public WasmModule DecodeSmall()
     {
-        return _lastModule = WasmModule.Decode(_moduleBytes.AsSpan());
+        return _lastModule = WasmModule.Decode(_moduleBytes.AsSpan(), WasmSpecVersion.Core2);
     }
 
     [GlobalSetup(Target = nameof(DecodeLarge))]
@@ -40,7 +40,7 @@ public class PreparationBenchmarks
     [Benchmark(OperationsPerInvoke = 1)]
     public WasmModule DecodeLarge()
     {
-        return _lastModule = WasmModule.Decode(_moduleBytes.AsSpan());
+        return _lastModule = WasmModule.Decode(_moduleBytes.AsSpan(), WasmSpecVersion.Core2);
     }
 
     [GlobalSetup(Target = nameof(DecodeValidateSmall))]
@@ -52,7 +52,7 @@ public class PreparationBenchmarks
     [Benchmark(OperationsPerInvoke = 1)]
     public WasmModule DecodeValidateSmall()
     {
-        return _lastModule = WasmModule.Decode(_moduleBytes.AsSpan()).Validate();
+        return _lastModule = WasmModule.Decode(_moduleBytes.AsSpan(), WasmSpecVersion.Core2).Validate();
     }
 
     [GlobalSetup(Target = nameof(DecodeValidateLarge))]
@@ -64,7 +64,7 @@ public class PreparationBenchmarks
     [Benchmark(OperationsPerInvoke = 1)]
     public WasmModule DecodeValidateLarge()
     {
-        return _lastModule = WasmModule.Decode(_moduleBytes.AsSpan()).Validate();
+        return _lastModule = WasmModule.Decode(_moduleBytes.AsSpan(), WasmSpecVersion.Core2).Validate();
     }
 
     [GlobalSetup(Target = nameof(InstantiateLarge))]
@@ -104,7 +104,7 @@ public class PreparationBenchmarks
         _json = json;
         _definition = assets.Catalog.Get(caseId);
         _moduleBytes = assets.GetBinary(_definition.AssetId);
-        var before = WasmModule.Decode(_moduleBytes.AsSpan());
+        var before = WasmModule.Decode(_moduleBytes.AsSpan(), WasmSpecVersion.Core2);
         if (_definition.MeasurementStage != MeasurementStage.Decode)
         {
             before.Validate();
@@ -117,7 +117,7 @@ public class PreparationBenchmarks
 
         if (_definition.MeasurementStage == MeasurementStage.Instantiate)
         {
-            _validatedModule = WasmModule.Decode(_moduleBytes.AsSpan()).Validate();
+            _validatedModule = WasmModule.Decode(_moduleBytes.AsSpan(), WasmSpecVersion.Core2).Validate();
             _imports = CaseVerifier.CreateImports();
         }
         _lastModule = null!;

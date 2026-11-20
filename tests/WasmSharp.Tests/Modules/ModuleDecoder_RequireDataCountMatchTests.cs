@@ -20,7 +20,7 @@ internal class ModuleDecoder_RequireDataCountMatchTests
         await Assert
             .That(() =>
             {
-                var reader = new ModuleBinaryReader([], 80, 11);
+                var reader = new ModuleBinaryReader([], WasmSpecVersion.Core2, 80, 11);
                 ModuleDecoder.RequireDataCountMatch(ref reader, declaration, segmentCount);
             })
             .ThrowsNothing();
@@ -42,7 +42,7 @@ internal class ModuleDecoder_RequireDataCountMatchTests
         var exception = await Assert
             .That(() =>
             {
-                var reader = new ModuleBinaryReader([], 80, 11);
+                var reader = new ModuleBinaryReader([], WasmSpecVersion.Core2, 80, 11);
                 ModuleDecoder.RequireDataCountMatch(ref reader, declaration, segmentCount);
             })
             .ThrowsExactly<WasmDecodeException>();

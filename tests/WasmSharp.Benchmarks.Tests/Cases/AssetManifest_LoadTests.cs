@@ -71,7 +71,7 @@ internal class AssetManifest_LoadTests
         var definition = loaded.Catalog.Get("invoke.single");
         var input = loaded.GetInput(definition.CaseId);
         var instance = WasmModule
-            .Decode(loaded.GetBinary(definition.AssetId).AsSpan())
+            .Decode(loaded.GetBinary(definition.AssetId).AsSpan(), WasmSpecVersion.Core2)
             .Validate()
             .Instantiate(_context, new WasmImports());
         var results = instance.GetFunction(input.FunctionExport).Invoke(_context, input.Arguments.AsSpan());

@@ -27,7 +27,9 @@ internal partial class WasmModule_DecodeTests
         using var stream = new ChunkedReadStream(new MemoryStream(bytes));
 
         // Act
-        var module = useStream ? WasmModule.Decode(stream) : WasmModule.Decode(bytes);
+        var module = useStream
+            ? WasmModule.Decode(stream, WasmSpecVersion.Core2)
+            : WasmModule.Decode(bytes, WasmSpecVersion.Core2);
         Array.Clear(bytes);
 
         // Assert
@@ -69,7 +71,7 @@ internal partial class WasmModule_DecodeTests
         );
 
         // Act
-        var module = WasmModule.Decode(bytes);
+        var module = WasmModule.Decode(bytes, WasmSpecVersion.Core2);
 
         // Assert
         await Assert.That(module.Globals[0].Initializer.Length).IsEqualTo(count);
@@ -96,7 +98,11 @@ internal partial class WasmModule_DecodeTests
         // Arrange
         var bytes = HostLinkingModuleBinary.Create(HostLinkingModuleBinary.Section(6, Convert.FromHexString(hex)));
         using var stream = new ChunkedReadStream(new MemoryStream(bytes));
-        Func<WasmModule>[] decoders = [() => WasmModule.Decode(bytes), () => WasmModule.Decode(stream)];
+        Func<WasmModule>[] decoders =
+        [
+            () => WasmModule.Decode(bytes, WasmSpecVersion.Core2),
+            () => WasmModule.Decode(stream, WasmSpecVersion.Core2),
+        ];
 
         // Act & Assert
         foreach (var decode in decoders)
@@ -119,7 +125,9 @@ internal partial class WasmModule_DecodeTests
         using var stream = new ChunkedReadStream(new MemoryStream(bytes));
 
         // Act
-        var module = useStream ? WasmModule.Decode(stream) : WasmModule.Decode(bytes);
+        var module = useStream
+            ? WasmModule.Decode(stream, WasmSpecVersion.Core2)
+            : WasmModule.Decode(bytes, WasmSpecVersion.Core2);
 
         // Assert
         await Assert.That(module.Globals[0].Initializer[0].Immediate.AsV128()).IsEqualTo((0UL, 0UL));
@@ -149,7 +157,11 @@ internal partial class WasmModule_DecodeTests
 
         // Act & Assert
         var exception = await Assert
-            .That(() => useStream ? WasmModule.Decode(stream) : WasmModule.Decode(bytes))
+            .That(() =>
+                useStream
+                    ? WasmModule.Decode(stream, WasmSpecVersion.Core2)
+                    : WasmModule.Decode(bytes, WasmSpecVersion.Core2)
+            )
             .ThrowsExactly<WasmDecodeException>();
         using (Assert.Multiple())
         {

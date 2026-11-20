@@ -82,7 +82,8 @@ internal partial class WasmFunction_InvokeTests
                     HostLinkingModuleBinary.Functions(1, 0),
                     HostLinkingModuleBinary.Exports(("run", 0, 0)),
                     HostLinkingModuleBinary.Code(([], [.. caller]), (kinds.Select(x => (1u, x)).ToArray(), [.. callee]))
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate()
             .Instantiate(executionContext, [])
@@ -190,7 +191,8 @@ internal partial class WasmFunction_InvokeTests
                             ]
                         )
                     )
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate()
             .Instantiate(executionContext, [])

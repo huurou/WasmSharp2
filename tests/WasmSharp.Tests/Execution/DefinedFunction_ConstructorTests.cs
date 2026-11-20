@@ -15,7 +15,8 @@ internal class DefinedFunction_ConstructorTests
                 ConstantModuleBinary.Create(
                     [(0x7F, [0x41, 0x07, 0x0B]), (0x7E, [0x42, 0x2A, 0x0B])],
                     [("first", 0), ("second", 1)]
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate()
             .Instantiate(executionContext, []);

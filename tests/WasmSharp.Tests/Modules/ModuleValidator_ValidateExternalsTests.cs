@@ -24,7 +24,8 @@ internal partial class ModuleValidator_ValidateTests
                     lastIsFunction ? table : function,
                     lastIsFunction ? function : table
                 )
-            )
+            ),
+            WasmSpecVersion.Core2
         );
 
         // Act & Assert
@@ -60,7 +61,8 @@ internal partial class ModuleValidator_ValidateTests
                 HostLinkingModuleBinary.Tables((0x70, 2, 1)),
                 HostLinkingModuleBinary.Memories((65537, null)),
                 HostLinkingModuleBinary.Globals((0x7F, false, invalidGlobal ? [0x42, 0, 0x0B] : [0x41, 0, 0x0B]))
-            )
+            ),
+            WasmSpecVersion.Core2
         );
 
         // Act & Assert
@@ -88,7 +90,8 @@ internal partial class ModuleValidator_ValidateTests
     {
         // Arrange
         var module = WasmModule.Decode(
-            HostLinkingModuleBinary.Create(HostLinkingModuleBinary.Exports(("g", 3, uint.MaxValue)))
+            HostLinkingModuleBinary.Create(HostLinkingModuleBinary.Exports(("g", 3, uint.MaxValue))),
+            WasmSpecVersion.Core2
         );
         var originalCulture = CultureInfo.CurrentCulture;
         try
@@ -131,7 +134,8 @@ internal partial class ModuleValidator_ValidateTests
                     ("g1", 3, 1)
                 ),
                 HostLinkingModuleBinary.Code(([], [0x41, 0, 0x0B]))
-            )
+            ),
+            WasmSpecVersion.Core2
         );
 
         // Act
@@ -164,7 +168,8 @@ internal partial class ModuleValidator_ValidateTests
                     ("", "", 2, [0, 0])
                 ),
                 HostLinkingModuleBinary.Exports(("", kind, index))
-            )
+            ),
+            WasmSpecVersion.Core2
         );
 
         // Act & Assert
@@ -197,7 +202,8 @@ internal partial class ModuleValidator_ValidateTests
             HostLinkingModuleBinary.Create(
                 HostLinkingModuleBinary.Memories((0, null)),
                 HostLinkingModuleBinary.Exports(("memory", 2, index))
-            )
+            ),
+            WasmSpecVersion.Core2
         );
 
         // Act & Assert
@@ -225,7 +231,8 @@ internal partial class ModuleValidator_ValidateTests
                     ("env", "f", 0, [0]),
                     ("env", "f", 0, HostLinkingModuleBinary.Unsigned(typeIndex))
                 )
-            )
+            ),
+            WasmSpecVersion.Core2
         );
 
         // Act & Assert
@@ -252,7 +259,8 @@ internal partial class ModuleValidator_ValidateTests
                 HostLinkingModuleBinary.Imports(("", "", 0, [0]), ("", "", 3, [0x7F, 0]), ("", "", 0, [0])),
                 HostLinkingModuleBinary.Functions(invalidType ? 1u : 0u),
                 HostLinkingModuleBinary.Code(([], [0x42, 0, 0x0B]))
-            )
+            ),
+            WasmSpecVersion.Core2
         );
 
         // Act & Assert
@@ -286,7 +294,8 @@ internal partial class ModuleValidator_ValidateTests
                 HostLinkingModuleBinary.Memories((0, null)),
                 HostLinkingModuleBinary.Globals((0x7F, false, [0x41, 0, 0x0B])),
                 HostLinkingModuleBinary.Exports(("same", 2, 0), ("same", 3, 0))
-            )
+            ),
+            WasmSpecVersion.Core2
         );
 
         // Act & Assert
@@ -314,7 +323,8 @@ internal partial class ModuleValidator_ValidateTests
             HostLinkingModuleBinary.Create(
                 HostLinkingModuleBinary.Imports(imports),
                 HostLinkingModuleBinary.Memories(memories)
-            )
+            ),
+            WasmSpecVersion.Core2
         );
 
         // Act & Assert
@@ -364,7 +374,7 @@ internal partial class ModuleValidator_ValidateTests
             imported ? HostLinkingModuleBinary.Imports(("", "", kind, kind == 1 ? [0x70, .. limits] : limits))
             : kind == 1 ? HostLinkingModuleBinary.Tables((0x70, minimum, maximum))
             : HostLinkingModuleBinary.Memories((minimum, maximum));
-        var module = WasmModule.Decode(HostLinkingModuleBinary.Create(section));
+        var module = WasmModule.Decode(HostLinkingModuleBinary.Create(section), WasmSpecVersion.Core2);
 
         // Act & Assert
         var exception = await Assert.That(() => ModuleValidator.Validate(module)).ThrowsExactly<WasmValidateException>();
@@ -404,7 +414,7 @@ internal partial class ModuleValidator_ValidateTests
                 HostLinkingModuleBinary.Tables((0x70, uint.MaxValue, uint.MaxValue), (0x6F, uint.MaxValue, null)),
                 HostLinkingModuleBinary.Memories((65536, 65536)),
             ];
-        var module = WasmModule.Decode(HostLinkingModuleBinary.Create(sections));
+        var module = WasmModule.Decode(HostLinkingModuleBinary.Create(sections), WasmSpecVersion.Core2);
 
         // Act
         var codes = ModuleValidator.Validate(module);

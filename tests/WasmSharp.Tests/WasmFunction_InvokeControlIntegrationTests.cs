@@ -91,7 +91,8 @@ internal partial class WasmFunction_InvokeTests
                         ]
                     )
                 )
-            )
+            ),
+            WasmSpecVersion.Core2
         );
         var function = module.Validate().Instantiate(executionContext, [], new(1)).GetFunction("run");
         WasmValue[] arguments = [WasmValue.FromI32(10000), WasmValue.FromI32(condition), WasmValue.FromI32(selector)];

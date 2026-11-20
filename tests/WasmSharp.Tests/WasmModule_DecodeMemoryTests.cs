@@ -41,7 +41,11 @@ internal partial class WasmModule_DecodeTests
 
             // Act & Assert
             var exception = await Assert
-                .That(() => useStream ? WasmModule.Decode(stream) : WasmModule.Decode(bytes))
+                .That(() =>
+                    useStream
+                        ? WasmModule.Decode(stream, WasmSpecVersion.Core2)
+                        : WasmModule.Decode(bytes, WasmSpecVersion.Core2)
+                )
                 .ThrowsExactly<WasmDecodeException>();
             using (Assert.Multiple())
             {
@@ -81,7 +85,11 @@ internal partial class WasmModule_DecodeTests
 
             // Act & Assert
             var exception = await Assert
-                .That(() => useStream ? WasmModule.Decode(stream) : WasmModule.Decode(bytes))
+                .That(() =>
+                    useStream
+                        ? WasmModule.Decode(stream, WasmSpecVersion.Core2)
+                        : WasmModule.Decode(bytes, WasmSpecVersion.Core2)
+                )
                 .ThrowsExactly<WasmDecodeException>();
             using (Assert.Multiple())
             {

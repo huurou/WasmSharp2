@@ -77,7 +77,7 @@ internal class ModuleBinaryFormat_ReadImportsTests
 
     private static List<ModuleImport> ReadImports(byte[] payload)
     {
-        var reader = new ModuleBinaryReader(payload, 10, 2);
+        var reader = new ModuleBinaryReader(payload, WasmSpecVersion.Core2, 10, 2);
         var imports = ModuleBinaryFormat.ReadImports(ref reader);
         ModuleBinaryFormat.RequireEnd(ref reader);
         return imports;

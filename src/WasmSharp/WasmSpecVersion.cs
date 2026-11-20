@@ -6,7 +6,7 @@ namespace WasmSharp;
 public enum WasmSpecVersion
 {
     /// <summary>
-    /// WebAssembly Core 2.0 既定の版
+    /// WebAssembly Core 2.0
     /// </summary>
     Core2,
 

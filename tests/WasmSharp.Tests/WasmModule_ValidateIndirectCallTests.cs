@@ -30,7 +30,8 @@ internal partial class WasmModule_ValidateTests
                 HostLinkingModuleBinary.Functions(0),
                 HostLinkingModuleBinary.Tables((tableType, 0, null)),
                 HostLinkingModuleBinary.Code(([], Convert.FromHexString(body)))
-            )
+            ),
+            WasmSpecVersion.Core2
         );
 
         // Act & Assert
@@ -65,7 +66,8 @@ internal partial class WasmModule_ValidateTests
                 HostLinkingModuleBinary.Functions(1),
                 HostLinkingModuleBinary.Tables((0x70, 0, null)),
                 HostLinkingModuleBinary.Code(([], Convert.FromHexString(body)))
-            )
+            ),
+            WasmSpecVersion.Core2
         );
 
         if (body.StartsWith("00", StringComparison.Ordinal))

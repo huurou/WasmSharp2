@@ -22,7 +22,9 @@ internal partial class WasmModule_DecodeTests
         using var stream = new MemoryStream(bytes);
 
         // Act
-        var module = useStream ? WasmModule.Decode(stream) : WasmModule.Decode(bytes);
+        var module = useStream
+            ? WasmModule.Decode(stream, WasmSpecVersion.Core2)
+            : WasmModule.Decode(bytes, WasmSpecVersion.Core2);
         var instructions = module.Functions[0].Instructions;
 
         // Assert
@@ -71,7 +73,9 @@ internal partial class WasmModule_DecodeTests
         var instructionOffset = bytes.Length - body.Length / 2;
 
         // Act & Assert
-        var exception = await Assert.That(() => WasmModule.Decode(bytes)).ThrowsExactly<WasmDecodeException>();
+        var exception = await Assert
+            .That(() => WasmModule.Decode(bytes, WasmSpecVersion.Core2))
+            .ThrowsExactly<WasmDecodeException>();
         using (Assert.Multiple())
         {
             await Assert.That(exception!.Message.StartsWith(prefix, StringComparison.Ordinal)).IsTrue();

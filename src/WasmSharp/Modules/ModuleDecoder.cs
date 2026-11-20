@@ -22,12 +22,12 @@ internal static class ModuleDecoder
     /// </summary>
     /// <remarks>型や参照の妥当性の検証と、インスタンス化は行わない</remarks>
     /// <param name="bytes">ヘッダーから始まる入力バイナリ全体</param>
-    /// <param name="specVersion">存在するsectionを決める仕様の版 省略時はCore 2.0</param>
+    /// <param name="specVersion">入力全体に適用する仕様の版</param>
     /// <returns>入力上の診断位置を保持する、未検証のmodule定義</returns>
     /// <exception cref="WasmDecodeException">対応する構文の符号化、sectionの構成、functionとcodeの件数、またはデータ数セクションの件数や要否が不正な場合</exception>
     /// <exception cref="WasmUnsupportedFeatureException">仕様に存在する、未実装のsectionまたは命令に遭遇した場合 入力全体の有効性は保証しない</exception>
     /// <exception cref="WasmImplementationLimitException">宣言件数または命令数がコレクションの保持上限を超える場合</exception>
-    internal static WasmModule Decode(ReadOnlySpan<byte> bytes, WasmSpecVersion specVersion = WasmSpecVersion.Core2)
+    internal static WasmModule Decode(ReadOnlySpan<byte> bytes, WasmSpecVersion specVersion)
     {
         if (specVersion == WasmSpecVersion.Core3)
         {
@@ -56,7 +56,7 @@ internal static class ModuleDecoder
     /// <exception cref="WasmDecodeException">タグsectionより後の外枠が不正な場合</exception>
     private static void RejectTagSection(ReadOnlySpan<byte> bytes)
     {
-        var reader = new ModuleBinaryReader(bytes);
+        var reader = new ModuleBinaryReader(bytes, WasmSpecVersion.Core3);
         WasmFailureLocation? tagLocation = null;
         try
         {
@@ -66,7 +66,7 @@ internal static class ModuleDecoder
             while (reader.Remaining != 0)
             {
                 var offset = reader.Position;
-                var section = ModuleBinaryFormat.ReadSection(ref reader, ref previousRank, WasmSpecVersion.Core3);
+                var section = ModuleBinaryFormat.ReadSection(ref reader, ref previousRank);
                 if (section.SectionId == 13)
                 {
                     tagLocation = section.Location(offset);
@@ -145,7 +145,7 @@ internal static class ModuleDecoder
     /// </summary>
     /// <param name="bytes">ヘッダーから始まる入力バイナリ全体</param>
     /// <param name="mode">通常解析または境界失敗後の診断用読取り</param>
-    /// <param name="specVersion">存在するsectionを決める仕様の版</param>
+    /// <param name="specVersion">入力全体に適用する仕様の版</param>
     /// <returns>入力上の診断位置を保持する、未検証のmodule定義</returns>
     /// <exception cref="WasmDecodeException">対応する構文の符号化、sectionの構成、functionとcodeの件数、またはデータ数セクションの件数や要否が不正な場合</exception>
     /// <exception cref="ModuleReadBoundaryException">限定された範囲内で構文を読み終えられない場合</exception>
@@ -153,7 +153,7 @@ internal static class ModuleDecoder
     /// <exception cref="WasmImplementationLimitException">宣言件数または命令数がコレクションの保持上限を超える場合</exception>
     private static WasmModule DecodeCore(ReadOnlySpan<byte> bytes, ModuleReadMode mode, WasmSpecVersion specVersion)
     {
-        var reader = new ModuleBinaryReader(bytes, mode: mode);
+        var reader = new ModuleBinaryReader(bytes, specVersion, mode: mode);
         ModuleBinaryFormat.ReadHeader(ref reader);
 
         List<WasmFunctionType> types = [];
@@ -174,7 +174,7 @@ internal static class ModuleDecoder
         while (reader.Remaining != 0)
         {
             var offset = reader.Position;
-            var section = ModuleBinaryFormat.ReadSection(ref reader, ref previousRank, specVersion);
+            var section = ModuleBinaryFormat.ReadSection(ref reader, ref previousRank);
             var id = section.SectionId!.Value;
 
             switch (id)
@@ -299,10 +299,10 @@ internal static class ModuleDecoder
             CollectionsMarshal.AsSpan(memories),
             CollectionsMarshal.AsSpan(globals),
             start,
+            specVersion,
             CollectionsMarshal.AsSpan(dataSegments),
             dataCount,
-            CollectionsMarshal.AsSpan(elementSegments),
-            specVersion
+            CollectionsMarshal.AsSpan(elementSegments)
         );
     }
 
@@ -336,11 +336,12 @@ internal static class ModuleDecoder
         }
 
         RequireDataCountMatch(ref reader, dataCount, segmentCount.Value);
+        var instructionSet = InstructionSet.ForVersion(reader.SpecVersion);
         if (
             dataCount is null
             && functions.Any(x =>
                 x.Instructions.Any(x =>
-                    InstructionSet.TryGet(x.Opcode, out var descriptor)
+                    instructionSet.TryGetValue(x.Opcode, out var descriptor)
                     && descriptor.Immediate is ImmediateKind.DataIndexMemoryZero or ImmediateKind.DataIndex
                 )
             )

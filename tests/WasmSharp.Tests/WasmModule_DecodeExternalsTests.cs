@@ -36,7 +36,9 @@ internal partial class WasmModule_DecodeTests
         using var stream = new ChunkedReadStream(new MemoryStream(bytes));
 
         // Act
-        var module = useStream ? WasmModule.Decode(stream) : WasmModule.Decode(bytes);
+        var module = useStream
+            ? WasmModule.Decode(stream, WasmSpecVersion.Core2)
+            : WasmModule.Decode(bytes, WasmSpecVersion.Core2);
         Array.Clear(bytes);
 
         // Assert
@@ -96,7 +98,11 @@ internal partial class WasmModule_DecodeTests
         // Arrange
         var bytes = HostLinkingModuleBinary.Create(HostLinkingModuleBinary.Section(id, Convert.FromHexString(hex)));
         using var stream = new ChunkedReadStream(new MemoryStream(bytes));
-        Func<WasmModule>[] decoders = [() => WasmModule.Decode(bytes), () => WasmModule.Decode(stream)];
+        Func<WasmModule>[] decoders =
+        [
+            () => WasmModule.Decode(bytes, WasmSpecVersion.Core2),
+            () => WasmModule.Decode(stream, WasmSpecVersion.Core2),
+        ];
 
         // Act & Assert
         foreach (var decode in decoders)
@@ -116,7 +122,9 @@ internal partial class WasmModule_DecodeTests
         var bytes = HostLinkingModuleBinary.Create(types, imports, functions, HostLinkingModuleBinary.Code(([], [0xFF])));
 
         // Act & Assert
-        var exception = await Assert.That(() => WasmModule.Decode(bytes)).ThrowsExactly<WasmDecodeException>();
+        var exception = await Assert
+            .That(() => WasmModule.Decode(bytes, WasmSpecVersion.Core2))
+            .ThrowsExactly<WasmDecodeException>();
         await Assert.That(exception!.Location).IsEqualTo(new(WasmProcessingStage.Decode, bytes.Length - 1, 2, 10));
     }
 
@@ -128,7 +136,8 @@ internal partial class WasmModule_DecodeTests
         // Arrange
         var executionContext = new WasmExecutionContext();
         var module = WasmModule.Decode(
-            HostLinkingModuleBinary.Create(HostLinkingModuleBinary.Section(id, Convert.FromHexString(hex)))
+            HostLinkingModuleBinary.Create(HostLinkingModuleBinary.Section(id, Convert.FromHexString(hex))),
+            WasmSpecVersion.Core2
         );
 
         // Act & Assert

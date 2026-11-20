@@ -29,7 +29,7 @@ internal partial class WasmModule_InstantiateTests
                 ([], [0x41, .. HostLinkingModuleBinary.Signed(65535), 0x41, 0, 0x41, 2, .. operation, 0x0B])
             )
         );
-        var module = WasmModule.Decode(bytes).Validate();
+        var module = WasmModule.Decode(bytes, WasmSpecVersion.Core2).Validate();
 
         // Act & Assert
         var exception = await Assert
@@ -69,7 +69,7 @@ internal partial class WasmModule_InstantiateTests
             HostLinkingModuleBinary.Code(([], [0x41, 0, 0x41, 0, 0x41, (byte)length, 0xFC, 8, 0, 0, 0x0B])),
             HostLinkingModuleBinary.Section(11, [1, 0, 0x41, 0, 0x0B, 1, 0xAB])
         );
-        var module = WasmModule.Decode(bytes).Validate();
+        var module = WasmModule.Decode(bytes, WasmSpecVersion.Core2).Validate();
         if (length == 0)
         {
             // Act

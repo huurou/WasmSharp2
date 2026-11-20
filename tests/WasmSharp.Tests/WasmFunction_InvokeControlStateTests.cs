@@ -54,7 +54,8 @@ internal partial class WasmFunction_InvokeTests
                         ),
                         ([], [0x23, 0, 0x0B])
                     )
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate();
         var instance = module.Instantiate(executionContext, [host]);
@@ -124,7 +125,8 @@ internal partial class WasmFunction_InvokeTests
                         ),
                         ([], [0x23, 0, 0x23, 1, 0x0B])
                     )
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate();
         var instance = module.Instantiate(executionContext, [host]);
@@ -180,7 +182,8 @@ internal partial class WasmFunction_InvokeTests
                             Convert.FromHexString("200041004A047F230020006A24002300100005000B0B")
                         )
                     )
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate()
             .Instantiate(executionContext, [host]);
@@ -202,7 +205,8 @@ internal partial class WasmFunction_InvokeTests
                             Convert.FromHexString("410341046A410746047F4103100005000B410241036C10010B")
                         )
                     )
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate()
             .Instantiate(executionContext, [provider]);
@@ -274,7 +278,8 @@ internal partial class WasmFunction_InvokeTests
                         ),
                         ([], [0x23, 0, 0x0B])
                     )
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate()
             .Instantiate(executionContext, [host]);
@@ -341,7 +346,7 @@ internal partial class WasmFunction_InvokeTests
                 )
             )
         );
-        var instance = WasmModule.Decode(bytes).Validate().Instantiate(executionContext, [host]);
+        var instance = WasmModule.Decode(bytes, WasmSpecVersion.Core2).Validate().Instantiate(executionContext, [host]);
         var expectedOffset = bytes.Length - afterTrap.Length - 1;
 
         // Act & Assert
@@ -387,7 +392,8 @@ internal partial class WasmFunction_InvokeTests
                     HostLinkingModuleBinary.Code(
                         ([], [0x20, 0, 0x20, 1, 0x20, 4, .. f32Select, 0x20, 2, 0x20, 3, 0x20, 4, .. f64Select, 0x0B])
                     )
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate()
             .Instantiate(executionContext, [])

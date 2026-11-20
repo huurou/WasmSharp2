@@ -39,6 +39,7 @@ internal class ReferenceValidationContext_CreateTests
             [],
             [],
             null,
+            WasmSpecVersion.Core2,
             elementSegments: elements
         );
 
@@ -104,7 +105,8 @@ internal class ReferenceValidationContext_CreateTests
                     40
                 ),
             ],
-            null
+            null,
+            WasmSpecVersion.Core2
         );
 
         // Act
@@ -128,6 +130,7 @@ internal class ReferenceValidationContext_CreateTests
             [],
             [],
             null,
+            WasmSpecVersion.Core2,
             elementSegments:
             [
                 ElementDefinition.Active(
@@ -188,6 +191,7 @@ internal class ReferenceValidationContext_CreateTests
                 ),
             ],
             null,
+            WasmSpecVersion.Core2,
             dataSegments:
             [
                 new(
@@ -247,7 +251,8 @@ internal class ReferenceValidationContext_CreateTests
             [],
             [],
             [],
-            new(1, 40)
+            new(1, 40),
+            WasmSpecVersion.Core2
         );
 
         // Act
@@ -265,7 +270,7 @@ internal class ReferenceValidationContext_CreateTests
     public async Task Moduleが空である_既定値でない空の不変情報を返す()
     {
         // Arrange
-        var module = new WasmModule([], [], [], 8, [], [], [], [], null);
+        var module = new WasmModule([], [], [], 8, [], [], [], [], null, WasmSpecVersion.Core2);
 
         // Act
         var references = ReferenceValidationContext.Create(module, 0);

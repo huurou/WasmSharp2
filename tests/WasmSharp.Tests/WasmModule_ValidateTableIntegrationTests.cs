@@ -31,7 +31,8 @@ internal partial class WasmModule_ValidateTests
                 HostLinkingModuleBinary.Functions(0),
                 HostLinkingModuleBinary.Tables((0x6F, 1, 2)),
                 HostLinkingModuleBinary.Code(([], Convert.FromHexString(body)))
-            )
+            ),
+            WasmSpecVersion.Core2
         );
 
         // Act & Assert
@@ -59,7 +60,8 @@ internal partial class WasmModule_ValidateTests
                 HostLinkingModuleBinary.Functions(0),
                 HostLinkingModuleBinary.Tables((0x6F, 1, 2)),
                 HostLinkingModuleBinary.Code(([], [0x00, 0x25, 0, 0x26, 0, 0xFC, 0x0F, 0, 0x1A, 0xFC, 0x10, 0, 0x1A, 0x0B]))
-            )
+            ),
+            WasmSpecVersion.Core2
         );
 
         // Act

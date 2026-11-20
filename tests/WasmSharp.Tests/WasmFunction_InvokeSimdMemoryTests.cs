@@ -43,7 +43,8 @@ internal partial class WasmFunction_InvokeTests
                         ([], [0x20, 0, 0x40, 0, 0x0B])
                     ),
                     HostLinkingModuleBinary.Section(11, [1, 0, 0x41, 15, 0x0B, 16, .. initialBytes])
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate();
 
@@ -120,7 +121,11 @@ internal partial class WasmFunction_InvokeTests
         using var stream = new ChunkedReadStream(new MemoryStream(bytes));
 
         // Act
-        WasmModule[] modules = [WasmModule.Decode(bytes), WasmModule.Decode(stream)];
+        WasmModule[] modules =
+        [
+            WasmModule.Decode(bytes, WasmSpecVersion.Core2),
+            WasmModule.Decode(stream, WasmSpecVersion.Core2),
+        ];
         foreach (var module in modules)
         {
             var instance = module.Validate().Instantiate(executionContext, []);
@@ -170,7 +175,7 @@ internal partial class WasmFunction_InvokeTests
                 ([], [0x20, 0, 0x20, 1, 0xFD, store, 0, 0, lane, 0x0B])
             )
         );
-        var instance = WasmModule.Decode(bytes).Validate().Instantiate(executionContext, []);
+        var instance = WasmModule.Decode(bytes, WasmSpecVersion.Core2).Validate().Instantiate(executionContext, []);
         var memory = instance.GetMemory("memory");
         var inputBytes = Enumerable.Range(1, 16).Select(x => (byte)x).ToArray();
         var initial = Enumerable.Repeat((byte)0xA5, 16).ToArray();
@@ -272,7 +277,7 @@ internal partial class WasmFunction_InvokeTests
             start ? HostLinkingModuleBinary.Start(1) : [],
             code
         );
-        var module = WasmModule.Decode(bytes).Validate();
+        var module = WasmModule.Decode(bytes, WasmSpecVersion.Core2).Validate();
         var offset = bytes.Length - code.Length + Array.LastIndexOf(code, (byte)0xFD);
         WasmInstance? returned = null;
         Action run = start

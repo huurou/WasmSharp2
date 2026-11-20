@@ -75,7 +75,8 @@ internal partial class WasmModule_InstantiateTests
                         ([], [0x41, 3, 0x41, 0, 0x41, 1, 0xFC, 0x0C, 4, 0, 0x0B])
                     ),
                     HostLinkingModuleBinary.Section(11, [1, 0, 0x41, .. HostLinkingModuleBinary.Signed(65536), 0x0B, 1, 22])
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate();
         var caller = WasmModule
@@ -90,7 +91,8 @@ internal partial class WasmModule_InstantiateTests
                         ([], [0x41, 1, 0x11, 0, 0, 0x0B]),
                         ([], [0x41, 2, 0x11, 0, 0, 0x0B])
                     )
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate()
             .Instantiate(executionContext, [host]);

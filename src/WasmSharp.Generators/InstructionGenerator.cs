@@ -33,7 +33,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
     private readonly DiagnosticDescriptor _incompleteDeclaration = new DiagnosticDescriptor(
         "WSIG002",
         "命令宣言の不足",
-        "命令 '{0}' の名前・即値・スタック効果・検証規則・handlerを確認してください。",
+        "命令 '{0}' の名前・仕様の版・即値・スタック効果・検証規則・handlerを確認してください。",
         "InstructionGeneration",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true
@@ -139,7 +139,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
     /// <summary>
     /// 命令属性の必要情報とhandler契約を検証し、有効な宣言または診断を返す
     /// </summary>
-    /// <remarks>3引数は未対応、9引数は入力型列、10引数は引数の型で同型数値用とメモリ用を区別する</remarks>
+    /// <remarks>導入版・prefix・番号・名前だけの宣言は未対応を表す。数値命令とメモリ命令の追加情報は引数の個数と型で区別する。</remarks>
     /// <param name="attribute">ソース上のInstructionAttributeの属性情報</param>
     /// <param name="compilation">Interpreterとhandlerの宣言を照合するコンパイル情報</param>
     /// <returns>有効な場合はDeclaration、宣言に不備がある場合はDiagnosticのみが設定された結果</returns>
@@ -151,7 +151,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
         var arguments = attribute.ConstructorArguments;
         var location = attribute.ApplicationSyntaxReference!.GetSyntax().GetLocation();
         if (
-            arguments.Length is not (3 or 7 or 9 or 10)
+            arguments.Length is not (4 or 8 or 10 or 11)
             || arguments.Any(x => x.Kind == TypedConstantKind.Error)
             || attribute.NamedArguments.Any(x => x.Value.Kind == TypedConstantKind.Error)
             || attribute.NamedArguments.Count(x => x.Key == "LaneCount") > 1
@@ -159,30 +159,32 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
         {
             return (null, Diagnostic.Create(_incompleteDeclaration, location, ""));
         }
+        var isUnsupportedDeclaration = arguments.Length == 4;
         var declaration = new InstructionDeclaration(
-            (byte)arguments[0].Value!,
-            (uint)arguments[1].Value!,
-            (string?)arguments[2].Value ?? "",
-            arguments.Length == 3 ? "Unsupported" : GetEnumName(arguments[3]),
-            arguments.Length == 3 ? "Unsupported" : GetEnumName(arguments[4]),
-            arguments.Length == 3 ? "Unsupported" : GetEnumName(arguments[5]),
-            arguments.Length == 3 ? null : (string?)arguments[6].Value,
-            arguments.Length == 9
+            GetEnumName(arguments[0]),
+            (byte)arguments[1].Value!,
+            (uint)arguments[2].Value!,
+            (string?)arguments[3].Value ?? "",
+            isUnsupportedDeclaration ? "Unsupported" : GetEnumName(arguments[4]),
+            isUnsupportedDeclaration ? "Unsupported" : GetEnumName(arguments[5]),
+            isUnsupportedDeclaration ? "Unsupported" : GetEnumName(arguments[6]),
+            isUnsupportedDeclaration ? null : (string?)arguments[7].Value,
+            arguments.Length == 10
                     ? new NumericSignatureDeclaration(
-                        arguments[7].IsNull ? [] : [.. arguments[7].Values.Select(GetEnumName)],
-                        GetEnumName(arguments[8])
-                    )
-                : arguments.Length == 10 && arguments[7].Type!.SpecialType == SpecialType.System_Byte
-                    ? new NumericSignatureDeclaration(
-                        [.. Enumerable.Repeat(GetEnumName(arguments[8]), (byte)arguments[7].Value!)],
+                        arguments[8].IsNull ? [] : [.. arguments[8].Values.Select(GetEnumName)],
                         GetEnumName(arguments[9])
                     )
+                : arguments.Length == 11 && arguments[8].Type!.SpecialType == SpecialType.System_Byte
+                    ? new NumericSignatureDeclaration(
+                        [.. Enumerable.Repeat(GetEnumName(arguments[9]), (byte)arguments[8].Value!)],
+                        GetEnumName(arguments[10])
+                    )
                 : null,
-            arguments.Length == 10 && arguments[7].Type!.ToDisplayString() == "WasmSharp.WasmValueKind"
+            arguments.Length == 11 && arguments[8].Type!.ToDisplayString() == "WasmSharp.WasmValueKind"
                 ? new MemoryAccessSignatureDeclaration(
-                    GetEnumName(arguments[7]),
-                    (byte)arguments[8].Value!,
-                    (bool)arguments[9].Value!
+                    GetEnumName(arguments[8]),
+                    (byte)arguments[9].Value!,
+                    (bool)arguments[10].Value!
                 )
                 : null,
             attribute.NamedArguments.Where(x => x.Key == "LaneCount").Select(x => (byte)x.Value.Value!).SingleOrDefault(),
@@ -191,8 +193,9 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
         );
         if (
             string.IsNullOrWhiteSpace(declaration.Name)
+            || declaration.IntroducedIn is not ("Core2" or "Core3")
             || (
-                arguments.Length != 3
+                !isUnsupportedDeclaration
                 && (
                     declaration.Immediate == "Unsupported"
                     || declaration.StackEffect == "Unsupported"
@@ -331,7 +334,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
     /// <summary>
     /// 命令属性の列挙定数に対応する宣言名を取得する
     /// </summary>
-    /// <param name="value">即値、スタック効果、検証規則または値型を表す列挙定数</param>
+    /// <param name="value">命令属性に指定された列挙定数</param>
     /// <returns>定数値に一致する列挙子名 一致する宣言がない場合はUnsupported</returns>
     private static string GetEnumName(TypedConstant value)
     {
@@ -476,6 +479,8 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
             """
             // <auto-generated />
             #nullable enable
+            using System.Collections.Frozen;
+
             namespace WasmSharp.Instructions;
 
             /// <summary>
@@ -535,10 +540,60 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
                 /// <summary>
                 /// Core 2.0の命令識別子に対応する記述子の検索表
                 /// </summary>
-                private static readonly global::System.Collections.Generic.Dictionary<OpcodeKey, InstructionDescriptor> descriptors_ = new()
-                {
+                private static readonly FrozenDictionary<OpcodeKey, InstructionDescriptor> __core2 = CreateTable([
             """
         );
+        AppendDescriptors(source, instructions.Where(x => x.IntroducedIn == "Core2"));
+        source.AppendLine(
+            """
+                ]);
+
+                /// <summary>
+                /// Core 2.0と共通の命令にCore 3.0で追加された割当を加えた検索表
+                /// </summary>
+                private static readonly FrozenDictionary<OpcodeKey, InstructionDescriptor> __core3 = CreateTable([
+                    .. __core2.Values,
+            """
+        );
+        AppendDescriptors(source, instructions.Where(x => x.IntroducedIn == "Core3"));
+        source.AppendLine(
+            """
+                ]);
+
+                private static FrozenDictionary<OpcodeKey, InstructionDescriptor> CreateTable(InstructionDescriptor[] instructions) =>
+                    instructions.ToFrozenDictionary(x => x.Opcode);
+
+                /// <summary>
+                /// 指定した仕様の版で割り当てられた全命令を取得する
+                /// </summary>
+                internal static FrozenDictionary<OpcodeKey, InstructionDescriptor> ForVersion(WasmSpecVersion specVersion) =>
+                    specVersion switch
+                    {
+                        WasmSpecVersion.Core2 => __core2,
+                        WasmSpecVersion.Core3 => __core3,
+                        _ => throw new global::System.ArgumentOutOfRangeException(nameof(specVersion)),
+                    };
+
+                /// <summary>
+                /// 指定した仕様の版で命令識別子に対応する命令情報を取得する
+                /// </summary>
+                /// <param name="opcode">バイナリ上の命令識別子</param>
+                /// <param name="specVersion">検索する仕様の版</param>
+                /// <param name="descriptor">見つかった場合の命令情報 見つからない場合は既定値</param>
+                /// <returns>命令宣言が見つかった場合はtrue 実行handlerの有無とは独立する</returns>
+                internal static bool TryGet(OpcodeKey opcode, WasmSpecVersion specVersion, out InstructionDescriptor descriptor) =>
+                    ForVersion(specVersion).TryGetValue(opcode, out descriptor);
+            }
+            """
+        );
+        return source.ToString();
+    }
+
+    /// <summary>
+    /// 各命令の記述子を命令表の初期化式に書き出す
+    /// </summary>
+    private static void AppendDescriptors(StringBuilder source, IEnumerable<InstructionDeclaration> instructions)
+    {
         foreach (var instruction in instructions)
         {
             var key = $"new OpcodeKey({instruction.Prefix}, {instruction.Code}u)";
@@ -557,25 +612,9 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
                 ? GetIntegerArithmeticMethod(instruction.Handler!)
                 : "null";
             source.AppendLine(
-                $"        [{key}] = new({key}, {SymbolDisplay.FormatLiteral(instruction.Name, true)}, ImmediateKind.{instruction.Immediate}, StackEffectKind.{instruction.StackEffect}, ValidationRule.{instruction.Validation}, {executionOpcode}, {numericSignature}, {memoryAccessSignature}, {instruction.LaneCount}, {constantOperation}),"
+                $"        new InstructionDescriptor({key}, {SymbolDisplay.FormatLiteral(instruction.Name, true)}, ImmediateKind.{instruction.Immediate}, StackEffectKind.{instruction.StackEffect}, ValidationRule.{instruction.Validation}, {executionOpcode}, {numericSignature}, {memoryAccessSignature}, {instruction.LaneCount}, {constantOperation}),"
             );
         }
-        source.AppendLine(
-            """
-                };
-
-                /// <summary>
-                /// 命令識別子に対応する命令情報を取得する
-                /// </summary>
-                /// <param name="opcode">バイナリ上の命令識別子</param>
-                /// <param name="descriptor">見つかった場合の命令情報 見つからない場合は既定値</param>
-                /// <returns>命令宣言が見つかった場合はtrue 実行handlerの有無とは独立する</returns>
-                internal static bool TryGet(OpcodeKey opcode, out InstructionDescriptor descriptor) =>
-                    descriptors_.TryGetValue(opcode, out descriptor);
-            }
-            """
-        );
-        return source.ToString();
     }
 
     /// <summary>
@@ -668,6 +707,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
     /// <summary>
     /// 命令情報と実行分岐の生成に必要な属性値
     /// </summary>
+    /// <param name="IntroducedIn">この命令番号が追加された仕様の版</param>
     /// <param name="Prefix">通常命令では0、拡張命令ではprefix</param>
     /// <param name="Code">prefix内の命令番号</param>
     /// <param name="Name">仕様上の命令名</param>
@@ -681,6 +721,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
     /// <param name="IsConstantBinaryOperation">handlerをCore 3.0の定数式と共有する二項演算から生成する場合はtrue</param>
     /// <param name="Location">属性宣言のソース上の位置</param>
     private sealed record InstructionDeclaration(
+        string IntroducedIn,
         byte Prefix,
         uint Code,
         string Name,

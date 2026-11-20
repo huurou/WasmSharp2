@@ -95,7 +95,11 @@ internal class HostLinkingModuleBinary_CreateTests
         using var stream = new ChunkedReadStream(new MemoryStream(bytes));
 
         // Act
-        WasmModule[] modules = [WasmModule.Decode(bytes), WasmModule.Decode(stream)];
+        WasmModule[] modules =
+        [
+            WasmModule.Decode(bytes, WasmSpecVersion.Core2),
+            WasmModule.Decode(stream, WasmSpecVersion.Core2),
+        ];
         var results = modules
             .Select(x => x.Validate().Instantiate(executionContext, []).GetFunction("run").Invoke(executionContext, []))
             .ToArray();
@@ -126,7 +130,7 @@ internal class HostLinkingModuleBinary_CreateTests
 
         // Act
         var result = WasmModule
-            .Decode(bytes)
+            .Decode(bytes, WasmSpecVersion.Core2)
             .Validate()
             .Instantiate(executionContext, [])
             .GetFunction("run")
@@ -150,7 +154,11 @@ internal class HostLinkingModuleBinary_CreateTests
             HostLinkingModuleBinary.Code(([], [0x41, 0x80]))
         );
         using var stream = new ChunkedReadStream(new MemoryStream(bytes));
-        Func<WasmModule>[] decoders = [() => WasmModule.Decode(bytes), () => WasmModule.Decode(stream)];
+        Func<WasmModule>[] decoders =
+        [
+            () => WasmModule.Decode(bytes, WasmSpecVersion.Core2),
+            () => WasmModule.Decode(stream, WasmSpecVersion.Core2),
+        ];
 
         // Act & Assert
         foreach (var decode in decoders)
@@ -174,7 +182,11 @@ internal class HostLinkingModuleBinary_CreateTests
         using var stream = new ChunkedReadStream(new MemoryStream(bytes));
 
         // Act
-        WasmModule[] modules = [WasmModule.Decode(bytes), WasmModule.Decode(stream)];
+        WasmModule[] modules =
+        [
+            WasmModule.Decode(bytes, WasmSpecVersion.Core2),
+            WasmModule.Decode(stream, WasmSpecVersion.Core2),
+        ];
         var results = modules
             .Select(x => x.Validate().Instantiate(executionContext, []).GetFunction("run").Invoke(executionContext, []))
             .ToArray();
@@ -210,7 +222,7 @@ internal class HostLinkingModuleBinary_CreateTests
         await Assert.That(Convert.ToHexString(bytes)).IsEqualTo("0061736D01000000" + expectedSection);
 
         // Act & Assert
-        await Assert.That(() => WasmModule.Decode(bytes)).ThrowsExactly<WasmDecodeException>();
+        await Assert.That(() => WasmModule.Decode(bytes, WasmSpecVersion.Core2)).ThrowsExactly<WasmDecodeException>();
     }
 
     [Test]
@@ -230,8 +242,10 @@ internal class HostLinkingModuleBinary_CreateTests
         await Assert.That(Convert.ToHexString(bytes)).IsEqualTo(EXPECTED);
 
         // Act & Assert
-        await Assert.That(() => WasmModule.Decode(bytes)).ThrowsExactly<WasmDecodeException>();
-        await Assert.That(() => WasmModule.Decode(bytes.AsSpan()[..^1])).ThrowsExactly<WasmDecodeException>();
+        await Assert.That(() => WasmModule.Decode(bytes, WasmSpecVersion.Core2)).ThrowsExactly<WasmDecodeException>();
+        await Assert
+            .That(() => WasmModule.Decode(bytes.AsSpan()[..^1], WasmSpecVersion.Core2))
+            .ThrowsExactly<WasmDecodeException>();
     }
 
     [Test]

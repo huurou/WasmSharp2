@@ -59,7 +59,8 @@ internal class ExecutionBoundary_RunStartTests
                     HostLinkingModuleBinary.Globals((0x7F, true, [0x41, 0x00, 0x0B])),
                     HostLinkingModuleBinary.Exports(("run", 0, 0), ("value", 3, 0)),
                     HostLinkingModuleBinary.Code(([], [0x10, 0x01, 0x0B]), ([], [0x41, 0x07, 0x24, 0x00, 0x0B]))
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate()
             .Instantiate(executionContext, [], new(1));
@@ -263,7 +264,7 @@ internal class ExecutionBoundary_RunStartTests
     {
         var executionContext = new WasmExecutionContext();
         return WasmModule
-            .Decode(HostLinkingModuleBinary.Create())
+            .Decode(HostLinkingModuleBinary.Create(), WasmSpecVersion.Core2)
             .Validate()
             .Instantiate(executionContext, [], new(maxCallDepth));
     }

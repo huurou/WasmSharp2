@@ -35,7 +35,7 @@ internal partial class WasmFunction_InvokeTests
                 ([], [0x41, 7, 0x24, 0, .. Convert.FromHexString(numericInstructions), .. afterTrap])
             )
         );
-        var instance = WasmModule.Decode(bytes).Validate().Instantiate(executionContext, [host]);
+        var instance = WasmModule.Decode(bytes, WasmSpecVersion.Core2).Validate().Instantiate(executionContext, [host]);
         var function = instance.GetFunction("run");
         var expectedOffset = bytes.Length - afterTrap.Length - 1;
 

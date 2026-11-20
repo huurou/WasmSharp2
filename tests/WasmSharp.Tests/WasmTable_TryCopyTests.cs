@@ -14,7 +14,7 @@ internal class WasmTable_TryCopyTests
         var reference =
             kind == WasmValueKind.FuncRef
                 ? WasmModule
-                    .Decode(ConstantModuleBinary.Create(0x7F, 0x41, 0x01, 0x0B))
+                    .Decode(ConstantModuleBinary.Create(0x7F, 0x41, 0x01, 0x0B), WasmSpecVersion.Core2)
                     .Validate()
                     .Instantiate(executionContext, [])
                     .GetFunction("run")

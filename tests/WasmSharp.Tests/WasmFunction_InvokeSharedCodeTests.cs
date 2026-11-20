@@ -19,7 +19,8 @@ internal partial class WasmFunction_InvokeTests
                     HostLinkingModuleBinary.Code(
                         ([(1, 0x7F), (1, 0x6F)], [0x20, 0, 0x21, 2, 0x20, 1, 0x21, 3, 0x20, 2, 0x20, 3, 0x0B])
                     )
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate();
         var firstFunction = (DefinedFunction)module.Instantiate(executionContext, []).GetFunction("run");

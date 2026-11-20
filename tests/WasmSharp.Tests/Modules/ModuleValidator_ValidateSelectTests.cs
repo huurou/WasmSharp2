@@ -19,7 +19,7 @@ internal partial class ModuleValidator_ValidateTests
             HostLinkingModuleBinary.Functions(0, 1),
             HostLinkingModuleBinary.Code(([], [0x0B]), ([], [0x20, 0, 0x20, 1, 0x20, 2, .. select, 0x1A, 0x42, 0, 0x0B]))
         );
-        var module = WasmModule.Decode(binary);
+        var module = WasmModule.Decode(binary, WasmSpecVersion.Core2);
         var definition = module.Functions[1];
 
         // Act & Assert
@@ -50,7 +50,8 @@ internal partial class ModuleValidator_ValidateTests
                 HostLinkingModuleBinary.Types(([], [])),
                 HostLinkingModuleBinary.Functions(0),
                 HostLinkingModuleBinary.Code(([], [0, 0x1C, 1, 0x7B, 0x1A, 0x0B]))
-            )
+            ),
+            WasmSpecVersion.Core2
         );
 
         // Act
@@ -86,7 +87,8 @@ internal partial class ModuleValidator_ValidateTests
                 HostLinkingModuleBinary.Types(([(byte)firstType, (byte)secondType, (byte)conditionType], [0x7B])),
                 HostLinkingModuleBinary.Functions(0),
                 HostLinkingModuleBinary.Code(([], [0x20, 0, 0x20, 1, 0x20, 2, .. select, 0x0B]))
-            )
+            ),
+            WasmSpecVersion.Core2
         );
 
         // Act & Assert

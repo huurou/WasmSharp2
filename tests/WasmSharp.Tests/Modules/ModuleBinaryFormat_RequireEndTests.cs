@@ -9,7 +9,7 @@ internal class ModuleBinaryFormat_RequireEndTests
     public async Task 診断用モードで宣言終端に一致する_物理残量があっても成功する()
     {
         // Arrange
-        var parent = new ModuleBinaryReader([0, 0], mode: ModuleReadMode.Diagnostic);
+        var parent = new ModuleBinaryReader([0, 0], WasmSpecVersion.Core2, mode: ModuleReadMode.Diagnostic);
         var child = parent.ReadRange(1);
         child.ReadByte();
 
@@ -39,7 +39,7 @@ internal class ModuleBinaryFormat_RequireEndTests
         var exception = await Assert
             .That(() =>
             {
-                var parent = new ModuleBinaryReader(bytes, 100, 10, 3, ModuleReadMode.Diagnostic);
+                var parent = new ModuleBinaryReader(bytes, WasmSpecVersion.Core2, 100, 10, 3, ModuleReadMode.Diagnostic);
                 var child = parent.ReadRange(length);
                 for (var index = 0; index < readCount; index++)
                 {

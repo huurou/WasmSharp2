@@ -61,7 +61,11 @@ internal partial class WasmFunction_InvokeTests
         using var stream = new ChunkedReadStream(new MemoryStream(bytes));
 
         // Act
-        WasmModule[] modules = [WasmModule.Decode(bytes), WasmModule.Decode(stream)];
+        WasmModule[] modules =
+        [
+            WasmModule.Decode(bytes, WasmSpecVersion.Core2),
+            WasmModule.Decode(stream, WasmSpecVersion.Core2),
+        ];
         foreach (var module in modules)
         {
             var actual = module
@@ -104,7 +108,11 @@ internal partial class WasmFunction_InvokeTests
         using var stream = new ChunkedReadStream(new MemoryStream(bytes));
 
         // Act
-        WasmModule[] modules = [WasmModule.Decode(bytes), WasmModule.Decode(stream)];
+        WasmModule[] modules =
+        [
+            WasmModule.Decode(bytes, WasmSpecVersion.Core2),
+            WasmModule.Decode(stream, WasmSpecVersion.Core2),
+        ];
         foreach (var module in modules)
         {
             var actual = module

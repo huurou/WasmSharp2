@@ -135,7 +135,9 @@ internal class Program_MainTests
             await Assert.That(script.RootElement.GetProperty("source_filename").GetString()).IsEqualTo("success.wast");
             await Assert.That(Convert.ToHexString(binary)).IsEqualTo("0061736D01000000");
             await Assert
-                .That(() => WasmModule.Decode(binary).Validate().Instantiate(_context, new WasmImports()))
+                .That(() =>
+                    WasmModule.Decode(binary, WasmSpecVersion.Core2).Validate().Instantiate(_context, new WasmImports())
+                )
                 .ThrowsNothing();
             await Assert.That(await workspace.GitAsync("status", "--porcelain")).IsEqualTo(string.Empty);
         }

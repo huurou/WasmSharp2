@@ -1,27 +1,27 @@
 using System.Text.RegularExpressions;
+using WasmSharp.Instructions;
 
 namespace WasmSharp.Tests.Fixtures;
 
-internal static partial class Core2InstructionFixture
+internal static partial class InstructionAppendix
 {
-    public static Dictionary<uint, string> Read(byte prefix)
+    public static Dictionary<uint, string> ReadCore2(byte prefix) =>
+        Read(WasmSpecVersion.Core2).Where(x => x.Key.Prefix == prefix).ToDictionary(x => x.Key.Code, x => x.Value);
+
+    public static Dictionary<OpcodeKey, string> Read(WasmSpecVersion version)
     {
         var macros = MacroDefinitionRegex()
-            .Matches(ReadResource("Core2.Macros"))
+            .Matches(ReadResource($"{version}.Macros"))
             .ToDictionary(x => x.Groups[1].Value, x => x.Groups[2].Value);
-        var instructions = new Dictionary<uint, string>();
+        var instructions = new Dictionary<OpcodeKey, string>();
         // 固定した公式付録の割当行を読み、Noneで表される欠番は取り込まない。
-        foreach (Match row in InstructionRowRegex().Matches(ReadResource("Core2.Instructions")))
+        foreach (Match row in InstructionRowRegex().Matches(ReadResource($"{version}.Instructions")))
         {
             var bytes = HexByteRegex()
                 .Matches(row.Groups[2].Value)
                 .Select(x => Convert.ToByte(x.Groups[1].Value, 16))
                 .ToArray();
-            var rowPrefix = bytes.Length == 1 ? 0 : bytes[0];
-            if (rowPrefix != prefix)
-            {
-                continue;
-            }
+            var prefix = bytes.Length == 1 ? (byte)0 : bytes[0];
             uint code = bytes[0];
             if (prefix != 0)
             {
@@ -35,14 +35,14 @@ internal static partial class Core2InstructionFixture
             var name = row.Groups[1].Value.Split('~')[0];
             name = MacroReferenceRegex().Replace(name, x => x.Groups[1].Value == "K" ? x.Value : macros[x.Groups[1].Value]);
             name = KeywordRegex().Replace(name, "$1").Replace(@"\_", "_").Replace("{.}", ".");
-            instructions.Add(code, name);
+            instructions.Add(new OpcodeKey(prefix, code), name);
         }
         return instructions;
     }
 
     private static string ReadResource(string name)
     {
-        using var stream = typeof(Core2InstructionFixture).Assembly.GetManifestResourceStream(name)!;
+        using var stream = typeof(InstructionAppendix).Assembly.GetManifestResourceStream(name)!;
         using var reader = new StreamReader(stream);
         return reader.ReadToEnd();
     }

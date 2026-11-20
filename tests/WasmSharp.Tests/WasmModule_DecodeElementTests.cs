@@ -20,7 +20,9 @@ internal partial class WasmModule_DecodeTests
         using var stream = new MemoryStream(bytes);
 
         // Act
-        var module = useStream ? WasmModule.Decode(stream) : WasmModule.Decode(bytes);
+        var module = useStream
+            ? WasmModule.Decode(stream, WasmSpecVersion.Core2)
+            : WasmModule.Decode(bytes, WasmSpecVersion.Core2);
 
         // Assert
         using (Assert.Multiple())

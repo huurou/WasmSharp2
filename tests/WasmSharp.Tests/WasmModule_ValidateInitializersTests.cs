@@ -19,7 +19,8 @@ internal partial class WasmModule_ValidateTests
         var module = WasmModule.Decode(
             HostLinkingModuleBinary.Create(
                 HostLinkingModuleBinary.Globals((0x7F, false, Convert.FromHexString(initializer)))
-            )
+            ),
+            WasmSpecVersion.Core2
         );
 
         // Act & Assert
@@ -58,7 +59,8 @@ internal partial class WasmModule_ValidateTests
             HostLinkingModuleBinary.Create(
                 HostLinkingModuleBinary.Imports(("env", "g", 3, [0x7F, mutableImport ? (byte)1 : (byte)0])),
                 HostLinkingModuleBinary.Globals((0x7F, false, Convert.FromHexString(initializer)))
-            )
+            ),
+            WasmSpecVersion.Core2
         );
 
         // Act & Assert
@@ -90,7 +92,8 @@ internal partial class WasmModule_ValidateTests
                     (kind, true, Convert.FromHexString(initializer))
                 ),
                 HostLinkingModuleBinary.Exports(("g", 3, 1))
-            )
+            ),
+            WasmSpecVersion.Core2
         );
 
         // Act
@@ -115,7 +118,8 @@ internal partial class WasmModule_ValidateTests
         var module = WasmModule.Decode(
             HostLinkingModuleBinary.Create(
                 HostLinkingModuleBinary.Globals((0x7F, false, Convert.FromHexString(initializer)))
-            )
+            ),
+            WasmSpecVersion.Core2
         );
 
         // Act & Assert
@@ -152,7 +156,8 @@ internal partial class WasmModule_ValidateTests
                 ),
                 HostLinkingModuleBinary.Exports(("run", 0, 0)),
                 HostLinkingModuleBinary.Code(([], [0x41, 0, 0x0B]))
-            )
+            ),
+            WasmSpecVersion.Core2
         );
 
         // Act & Assert
@@ -198,7 +203,8 @@ internal partial class WasmModule_ValidateTests
                 ),
                 HostLinkingModuleBinary.Globals((kind, false, [0x23, 1, 0x0B]), (kind, true, [0x23, 1, 0x0B])),
                 HostLinkingModuleBinary.Exports(("g", 3, 3))
-            )
+            ),
+            WasmSpecVersion.Core2
         );
 
         // Act
@@ -261,7 +267,8 @@ internal partial class WasmModule_ValidateTests
                     (0x7F, false, [0x41, 0, 0x0B]),
                     (0x7F, false, [0x23, .. HostLinkingModuleBinary.Unsigned(index), 0x0B])
                 )
-            )
+            ),
+            WasmSpecVersion.Core2
         );
 
         // Act & Assert
@@ -298,7 +305,8 @@ internal partial class WasmModule_ValidateTests
             HostLinkingModuleBinary.Create(
                 HostLinkingModuleBinary.Imports(("", "", 3, [importedKind, 0])),
                 HostLinkingModuleBinary.Globals((declaredKind, false, [0x23, 0, 0x0B]))
-            )
+            ),
+            WasmSpecVersion.Core2
         );
 
         // Act & Assert

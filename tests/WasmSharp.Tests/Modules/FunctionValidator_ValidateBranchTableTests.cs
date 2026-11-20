@@ -66,7 +66,8 @@ internal partial class FunctionValidator_ValidateTests
                 HostLinkingModuleBinary.Code(
                     ([], Convert.FromHexString("41014202030141000D0002004103420441000E02010002000B1A1A0B0B"))
                 )
-            )
+            ),
+            WasmSpecVersion.Core2
         );
 
         // Act
@@ -107,7 +108,8 @@ internal partial class FunctionValidator_ValidateTests
                 HostLinkingModuleBinary.Types(([], []), ([], [0x7F, 0x7E])),
                 HostLinkingModuleBinary.Functions(0),
                 HostLinkingModuleBinary.Code(([], Convert.FromHexString("02014107410941000E00000B1A1A0B")))
-            )
+            ),
+            WasmSpecVersion.Core2
         );
 
         // Act & Assert
@@ -141,7 +143,8 @@ internal partial class FunctionValidator_ValidateTests
                 HostLinkingModuleBinary.Code(
                     ([], [0x02, 1, 0x02, 2, 0, 0x41, 1, 0x0E, 2, 0, 1, 1, 0x0B, .. drops, 0, 0x0B, .. drops, 0x0B])
                 )
-            )
+            ),
+            WasmSpecVersion.Core2
         );
 
         // Act

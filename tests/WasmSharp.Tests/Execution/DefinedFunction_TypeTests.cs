@@ -19,7 +19,8 @@ internal class DefinedFunction_TypeTests
             [],
             [],
             [],
-            null
+            null,
+            WasmSpecVersion.Core2
         );
         var options = new WasmExecutionOptions(10);
 

@@ -9,7 +9,7 @@ internal class ModuleBinaryReader_ReadF32BitsTests
     public async Task 浮動小数点のバイト列_リトルエンディアンのビットを保持する()
     {
         // Arrange
-        var reader = new ModuleBinaryReader(Convert.FromHexString("4523C1FF"));
+        var reader = new ModuleBinaryReader(Convert.FromHexString("4523C1FF"), WasmSpecVersion.Core2);
 
         // Act
         var bits = reader.ReadF32Bits();
@@ -33,7 +33,7 @@ internal class ModuleBinaryReader_ReadF32BitsTests
         var exception = await Assert
             .That(() =>
             {
-                var reader = new ModuleBinaryReader(bytes, 30);
+                var reader = new ModuleBinaryReader(bytes, WasmSpecVersion.Core2, 30);
                 reader.ReadF32Bits();
             })
             .ThrowsExactly<ModuleReadBoundaryException>();
@@ -47,7 +47,7 @@ internal class ModuleBinaryReader_ReadF64BitsTests
     public async Task 浮動小数点のバイト列_リトルエンディアンのビットを保持する()
     {
         // Arrange
-        var reader = new ModuleBinaryReader(Convert.FromHexString("BC9A78563412F8FF"));
+        var reader = new ModuleBinaryReader(Convert.FromHexString("BC9A78563412F8FF"), WasmSpecVersion.Core2);
 
         // Act
         var bits = reader.ReadF64Bits();
@@ -71,7 +71,7 @@ internal class ModuleBinaryReader_ReadF64BitsTests
         var exception = await Assert
             .That(() =>
             {
-                var reader = new ModuleBinaryReader(bytes, 30);
+                var reader = new ModuleBinaryReader(bytes, WasmSpecVersion.Core2, 30);
                 reader.ReadF64Bits();
             })
             .ThrowsExactly<ModuleReadBoundaryException>();
@@ -89,7 +89,7 @@ internal class ModuleBinaryReader_ReadNameTests
     public async Task 正しいUTF8名_空とヌルと多バイト文字を保持する(string hex, string expected)
     {
         // Arrange
-        var reader = new ModuleBinaryReader(Convert.FromHexString(hex));
+        var reader = new ModuleBinaryReader(Convert.FromHexString(hex), WasmSpecVersion.Core2);
 
         // Act
         var name = reader.ReadName();
@@ -118,7 +118,7 @@ internal class ModuleBinaryReader_ReadNameTests
         var exception = await Assert
             .That(() =>
             {
-                var reader = new ModuleBinaryReader(bytes, 40, 7);
+                var reader = new ModuleBinaryReader(bytes, WasmSpecVersion.Core2, 40, 7);
                 reader.ReadName();
             })
             .ThrowsExactly<WasmDecodeException>();
@@ -139,7 +139,7 @@ internal class ModuleBinaryReader_ReadNameTests
         var exception = await Assert
             .That(() =>
             {
-                var reader = new ModuleBinaryReader(bytes, 40, 7);
+                var reader = new ModuleBinaryReader(bytes, WasmSpecVersion.Core2, 40, 7);
                 reader.ReadName();
             })
             .ThrowsExactly<ModuleReadBoundaryException>();
@@ -161,7 +161,7 @@ internal class ModuleBinaryReader_ReadU32Tests
         var exception = await Assert
             .That(() =>
             {
-                var reader = new ModuleBinaryReader(bytes, 20, 10, 2, ModuleReadMode.Diagnostic);
+                var reader = new ModuleBinaryReader(bytes, WasmSpecVersion.Core2, 20, 10, 2, ModuleReadMode.Diagnostic);
                 reader.ReadU32();
             })
             .ThrowsExactly<WasmDecodeException>();
@@ -188,7 +188,7 @@ internal class ModuleBinaryReader_ReadU32Tests
         var exception = await Assert
             .That(() =>
             {
-                var reader = new ModuleBinaryReader(bytes, 20, 10, 2);
+                var reader = new ModuleBinaryReader(bytes, WasmSpecVersion.Core2, 20, 10, 2);
                 reader.ReadU32();
             })
             .ThrowsExactly<WasmDecodeException>();
@@ -209,7 +209,7 @@ internal class ModuleBinaryReader_ReadU32Tests
     public async Task 合法なLEB表現_境界値と非最短表現を読み取る(string hex, uint expected)
     {
         // Arrange
-        var reader = new ModuleBinaryReader(Convert.FromHexString(hex));
+        var reader = new ModuleBinaryReader(Convert.FromHexString(hex), WasmSpecVersion.Core2);
 
         // Act
         var actual = reader.ReadU32();
@@ -236,7 +236,7 @@ internal class ModuleBinaryReader_ReadU32Tests
         var exception = await Assert
             .That(() =>
             {
-                var reader = new ModuleBinaryReader(bytes, 20, 10, 2);
+                var reader = new ModuleBinaryReader(bytes, WasmSpecVersion.Core2, 20, 10, 2);
                 reader.ReadU32();
             })
             .ThrowsExactly<WasmDecodeException>();
@@ -261,7 +261,7 @@ internal class ModuleBinaryReader_ReadU32Tests
         var exception = await Assert
             .That(() =>
             {
-                var reader = new ModuleBinaryReader(bytes, 20, 10, 2);
+                var reader = new ModuleBinaryReader(bytes, WasmSpecVersion.Core2, 20, 10, 2);
                 reader.ReadU32();
             })
             .ThrowsExactly<ModuleReadBoundaryException>();
@@ -285,7 +285,7 @@ internal class ModuleBinaryReader_ReadS32Tests
         var exception = await Assert
             .That(() =>
             {
-                var reader = new ModuleBinaryReader(bytes, 20, 10, 2);
+                var reader = new ModuleBinaryReader(bytes, WasmSpecVersion.Core2, 20, 10, 2);
                 reader.ReadS32();
             })
             .ThrowsExactly<WasmDecodeException>();
@@ -308,7 +308,7 @@ internal class ModuleBinaryReader_ReadS32Tests
     public async Task 合法なLEB表現_境界値と非最短表現を読み取る(string hex, int expected)
     {
         // Arrange
-        var reader = new ModuleBinaryReader(Convert.FromHexString(hex));
+        var reader = new ModuleBinaryReader(Convert.FromHexString(hex), WasmSpecVersion.Core2);
 
         // Act
         var actual = reader.ReadS32();
@@ -335,7 +335,7 @@ internal class ModuleBinaryReader_ReadS32Tests
         var exception = await Assert
             .That(() =>
             {
-                var reader = new ModuleBinaryReader(bytes, 20, 10, 2);
+                var reader = new ModuleBinaryReader(bytes, WasmSpecVersion.Core2, 20, 10, 2);
                 reader.ReadS32();
             })
             .ThrowsExactly<WasmDecodeException>();
@@ -360,7 +360,7 @@ internal class ModuleBinaryReader_ReadS32Tests
         var exception = await Assert
             .That(() =>
             {
-                var reader = new ModuleBinaryReader(bytes, 20, 10, 2);
+                var reader = new ModuleBinaryReader(bytes, WasmSpecVersion.Core2, 20, 10, 2);
                 reader.ReadS32();
             })
             .ThrowsExactly<ModuleReadBoundaryException>();
@@ -384,7 +384,7 @@ internal class ModuleBinaryReader_ReadS33Tests
     public async Task 合法なs33表現_境界と非最短と負の多byte値を整数のまま読み取る(string hex, long expected)
     {
         // Arrange
-        var reader = new ModuleBinaryReader(Convert.FromHexString(hex), 20);
+        var reader = new ModuleBinaryReader(Convert.FromHexString(hex), WasmSpecVersion.Core2, 20);
 
         // Act
         var actual = reader.ReadS33();
@@ -415,7 +415,7 @@ internal class ModuleBinaryReader_ReadS33Tests
         var exception = await Assert
             .That(() =>
             {
-                var reader = new ModuleBinaryReader(bytes, 20, 10, 2);
+                var reader = new ModuleBinaryReader(bytes, WasmSpecVersion.Core2, 20, 10, 2);
                 reader.ReadS33();
             })
             .ThrowsExactly<WasmDecodeException>();
@@ -439,7 +439,7 @@ internal class ModuleBinaryReader_ReadS33Tests
         var exception = await Assert
             .That(() =>
             {
-                var reader = new ModuleBinaryReader(bytes, 20, 10, 2);
+                var reader = new ModuleBinaryReader(bytes, WasmSpecVersion.Core2, 20, 10, 2);
                 reader.ReadS33();
             })
             .ThrowsExactly<ModuleReadBoundaryException>();
@@ -464,7 +464,7 @@ internal class ModuleBinaryReader_ReadS33Tests
         var exception = await Assert
             .That(() =>
             {
-                var parent = new ModuleBinaryReader(bytes, 20, 10, 2);
+                var parent = new ModuleBinaryReader(bytes, WasmSpecVersion.Core2, 20, 10, 2);
                 var child = parent.ReadRange(1);
                 child.ReadS33();
             })
@@ -484,7 +484,7 @@ internal class ModuleBinaryReader_ReadS33Tests
         var exception = await Assert
             .That(() =>
             {
-                var reader = new ModuleBinaryReader(bytes, 20, 10, 2, ModuleReadMode.Diagnostic);
+                var reader = new ModuleBinaryReader(bytes, WasmSpecVersion.Core2, 20, 10, 2, ModuleReadMode.Diagnostic);
                 reader.ReadS33();
             })
             .ThrowsExactly<WasmDecodeException>();
@@ -514,7 +514,7 @@ internal class ModuleBinaryReader_ReadS64Tests
         var exception = await Assert
             .That(() =>
             {
-                var reader = new ModuleBinaryReader(bytes, 20, 10, 2);
+                var reader = new ModuleBinaryReader(bytes, WasmSpecVersion.Core2, 20, 10, 2);
                 reader.ReadS64();
             })
             .ThrowsExactly<WasmDecodeException>();
@@ -535,7 +535,7 @@ internal class ModuleBinaryReader_ReadS64Tests
     public async Task 合法なLEB表現_境界値と非最短表現を読み取る(string hex, long expected)
     {
         // Arrange
-        var reader = new ModuleBinaryReader(Convert.FromHexString(hex));
+        var reader = new ModuleBinaryReader(Convert.FromHexString(hex), WasmSpecVersion.Core2);
 
         // Act
         var actual = reader.ReadS64();
@@ -562,7 +562,7 @@ internal class ModuleBinaryReader_ReadS64Tests
         var exception = await Assert
             .That(() =>
             {
-                var reader = new ModuleBinaryReader(bytes, 20, 10, 2);
+                var reader = new ModuleBinaryReader(bytes, WasmSpecVersion.Core2, 20, 10, 2);
                 reader.ReadS64();
             })
             .ThrowsExactly<WasmDecodeException>();
@@ -587,7 +587,7 @@ internal class ModuleBinaryReader_ReadS64Tests
         var exception = await Assert
             .That(() =>
             {
-                var reader = new ModuleBinaryReader(bytes, 20, 10, 2);
+                var reader = new ModuleBinaryReader(bytes, WasmSpecVersion.Core2, 20, 10, 2);
                 reader.ReadS64();
             })
             .ThrowsExactly<ModuleReadBoundaryException>();
@@ -603,7 +603,7 @@ internal class ModuleBinaryReader_TryPeekByteTests
     public async Task 次byteを確認する_位置を進めず終端を区別する(string hex, bool expected, byte expectedValue)
     {
         // Arrange
-        var reader = new ModuleBinaryReader(Convert.FromHexString(hex), 20);
+        var reader = new ModuleBinaryReader(Convert.FromHexString(hex), WasmSpecVersion.Core2, 20);
 
         // Act
         var found = reader.TryPeekByte(out var value);
@@ -628,7 +628,7 @@ internal class ModuleBinaryReader_ReadLengthTests
     public async Task Prefix前の物理残量以内_取得前に長さだけを返す(string hex, uint expected, int expectedRemaining)
     {
         // Arrange
-        var reader = new ModuleBinaryReader(Convert.FromHexString(hex), 100);
+        var reader = new ModuleBinaryReader(Convert.FromHexString(hex), WasmSpecVersion.Core2, 100);
 
         // Act
         var length = reader.ReadLength();
@@ -646,7 +646,7 @@ internal class ModuleBinaryReader_ReadLengthTests
     public async Task 子の宣言残量を超える長さ_原入力の物理終端を上限にする()
     {
         // Arrange
-        var parent = new ModuleBinaryReader([2, 0x61, 0x62], 100);
+        var parent = new ModuleBinaryReader([2, 0x61, 0x62], WasmSpecVersion.Core2, 100);
         var child = parent.ReadRange(1);
 
         // Act
@@ -671,7 +671,7 @@ internal class ModuleBinaryReader_ReadLengthTests
         var exception = await Assert
             .That(() =>
             {
-                var reader = new ModuleBinaryReader(bytes, 100, 7);
+                var reader = new ModuleBinaryReader(bytes, WasmSpecVersion.Core2, 100, 7);
                 reader.ReadLength();
             })
             .ThrowsExactly<WasmDecodeException>();
@@ -691,7 +691,7 @@ internal class ModuleBinaryReader_ReadU1Tests
     public async Task 許容payload_1bit整数を取得する(string hex, uint expected)
     {
         // Arrange
-        var reader = new ModuleBinaryReader(Convert.FromHexString(hex));
+        var reader = new ModuleBinaryReader(Convert.FromHexString(hex), WasmSpecVersion.Core2);
 
         // Act
         var actual = reader.ReadU1();
@@ -714,7 +714,7 @@ internal class ModuleBinaryReader_ReadU1Tests
         var exception = await Assert
             .That(() =>
             {
-                var reader = new ModuleBinaryReader(bytes, 20);
+                var reader = new ModuleBinaryReader(bytes, WasmSpecVersion.Core2, 20);
                 reader.ReadU1();
             })
             .ThrowsExactly<WasmDecodeException>();
@@ -736,7 +736,7 @@ internal class ModuleBinaryReader_ReadS7Tests
     public async Task 許容payload_7bitの符号を拡張する(string hex, int expected)
     {
         // Arrange
-        var reader = new ModuleBinaryReader(Convert.FromHexString(hex));
+        var reader = new ModuleBinaryReader(Convert.FromHexString(hex), WasmSpecVersion.Core2);
 
         // Act
         var actual = reader.ReadS7();
@@ -757,7 +757,7 @@ internal class ModuleBinaryReader_ReadS7Tests
         var exception = await Assert
             .That(() =>
             {
-                var reader = new ModuleBinaryReader(bytes, 20);
+                var reader = new ModuleBinaryReader(bytes, WasmSpecVersion.Core2, 20);
                 reader.ReadS7();
             })
             .ThrowsExactly<WasmDecodeException>();
@@ -785,7 +785,7 @@ internal class ModuleBinaryReader_ReadRangeTests
     )
     {
         // Arrange
-        var parent = new ModuleBinaryReader([0x11], 100, 10, 7, mode);
+        var parent = new ModuleBinaryReader([0x11], WasmSpecVersion.Core2, 100, 10, 7, mode);
 
         // Act
         var child = parent.ReadRange(1, functionIndex);
@@ -799,7 +799,7 @@ internal class ModuleBinaryReader_ReadRangeTests
     public async Task 診断用モードの整数が宣言境界を越える_物理byteと独立した宣言終端を保持する()
     {
         // Arrange
-        var parent = new ModuleBinaryReader([0x80, 0x01], 100, 3, mode: ModuleReadMode.Diagnostic);
+        var parent = new ModuleBinaryReader([0x80, 0x01], WasmSpecVersion.Core2, 100, 3, mode: ModuleReadMode.Diagnostic);
 
         // Act
         var child = parent.ReadRange(1, 2);
@@ -826,7 +826,7 @@ internal class ModuleBinaryReader_ReadRangeTests
     public async Task 診断用モードの名前長が宣言境界を越える_同じ長さとUTF8処理を使う()
     {
         // Arrange
-        var parent = new ModuleBinaryReader([0x81, 0, 0x61], 100, 0, mode: ModuleReadMode.Diagnostic);
+        var parent = new ModuleBinaryReader([0x81, 0, 0x61], WasmSpecVersion.Core2, 100, 0, mode: ModuleReadMode.Diagnostic);
         var child = parent.ReadRange(1);
 
         // Act
@@ -845,7 +845,7 @@ internal class ModuleBinaryReader_ReadRangeTests
     public async Task 診断用モードの宣言長が物理残量を超える_親を物理EOFに留め子の宣言終端を保持する()
     {
         // Arrange
-        var parent = new ModuleBinaryReader([0x11, 0x22], 100, 10, mode: ModuleReadMode.Diagnostic);
+        var parent = new ModuleBinaryReader([0x11, 0x22], WasmSpecVersion.Core2, 100, 10, mode: ModuleReadMode.Diagnostic);
 
         // Act
         var child = parent.ReadRange(uint.MaxValue, 3);
@@ -872,7 +872,7 @@ internal class ModuleBinaryReader_ReadRangeTests
     public async Task 部分範囲を読む_親の次位置と子の元位置を保持する()
     {
         // Arrange
-        var reader = new ModuleBinaryReader([0x11, 0x22, 0x33], 100, 10);
+        var reader = new ModuleBinaryReader([0x11, 0x22, 0x33], WasmSpecVersion.Core2, 100, 10);
 
         // Act
         var child = reader.ReadRange(2, 3);
@@ -913,7 +913,7 @@ internal class ModuleBinaryReader_ReadRangeTests
         var exception = await Assert
             .That(() =>
             {
-                var reader = new ModuleBinaryReader(bytes, 100, 10, 3);
+                var reader = new ModuleBinaryReader(bytes, WasmSpecVersion.Core2, 100, 10, 3);
                 reader.ReadRange(length);
             })
             .ThrowsExactly<ModuleReadBoundaryException>();
@@ -930,7 +930,7 @@ internal class ModuleBinaryReader_ReadRangeTests
         var exception = await Assert
             .That(() =>
             {
-                var reader = new ModuleBinaryReader(bytes, 100);
+                var reader = new ModuleBinaryReader(bytes, WasmSpecVersion.Core2, 100);
                 var child = reader.ReadRange(1);
                 child.ReadByte();
                 child.ReadByte();

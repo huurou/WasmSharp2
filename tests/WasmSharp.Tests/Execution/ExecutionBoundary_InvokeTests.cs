@@ -13,7 +13,7 @@ internal class ExecutionBoundary_InvokeTests
         var executionContext = new WasmExecutionContext();
         var function = (DefinedFunction)
             WasmModule
-                .Decode(ConstantModuleBinary.Create(0x7F, 0x41, 0x2A, 0x0B))
+                .Decode(ConstantModuleBinary.Create(0x7F, 0x41, 0x2A, 0x0B), WasmSpecVersion.Core2)
                 .Validate()
                 .Instantiate(executionContext, [], new(100))
                 .GetFunction("run");
@@ -96,7 +96,7 @@ internal class ExecutionBoundary_InvokeTests
         // Arrange
         var executionContext = new WasmExecutionContext();
         var function = WasmModule
-            .Decode(ConstantModuleBinary.Create(0x7F, 0x41, 0x2A, 0x0B))
+            .Decode(ConstantModuleBinary.Create(0x7F, 0x41, 0x2A, 0x0B), WasmSpecVersion.Core2)
             .Validate()
             .Instantiate(executionContext, [], new(1))
             .GetFunction("run");

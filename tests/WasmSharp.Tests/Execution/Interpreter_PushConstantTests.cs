@@ -73,9 +73,20 @@ internal class Interpreter_PushConstantTests
             0x43 => WasmValue.FromF32Bits(0xFFC12345),
             _ => WasmValue.FromF64Bits(0xFFF8123456789ABC),
         };
-        var found = InstructionSet.TryGet(new(0, (uint)opcode), out var descriptor);
+        var found = InstructionSet.TryGet(new(0, (uint)opcode), WasmSpecVersion.Core2, out var descriptor);
         var code = new FunctionCode([new(descriptor.ExecutionOpcode!.Value, value, 12345678901, 0)], [], 1);
-        var module = new WasmModule([new([], [value.Kind])], [new(0, 30, [], [])], [], 40, [], [], [], [], null)
+        var module = new WasmModule(
+            [new([], [value.Kind])],
+            [new(0, 30, [], [])],
+            [],
+            40,
+            [],
+            [],
+            [],
+            [],
+            null,
+            WasmSpecVersion.Core2
+        )
         {
             FunctionCodes = [code],
         };

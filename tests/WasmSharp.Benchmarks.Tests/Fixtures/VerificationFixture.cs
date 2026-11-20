@@ -29,7 +29,8 @@ internal static class VerificationFixture
     internal static WasmModule Decode()
     {
         return WasmModule.Decode(
-            File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "Fixtures", "Data", "Verification", "state.wasm"))
+            File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "Fixtures", "Data", "Verification", "state.wasm")),
+            WasmSpecVersion.Core2
         );
     }
 

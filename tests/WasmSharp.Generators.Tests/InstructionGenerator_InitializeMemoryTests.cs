@@ -28,7 +28,7 @@ internal partial class InstructionGenerator_InitializeTests
             $$"""
             namespace WasmSharp.Instructions
             {
-                [Instruction(0xFD, 1, "simd.memory", ImmediateKind.{{immediate}}, StackEffectKind.{{rule}},
+                [Instruction(WasmSpecVersion.Core2, 0xFD, 1, "simd.memory", ImmediateKind.{{immediate}}, StackEffectKind.{{rule}},
                     ValidationRule.{{rule}}, nameof(Execution.Interpreter.Handler), WasmValueKind.V128,
                     {{byteWidth}}, false, LaneCount = {{laneCount}})]
                 internal static partial class InstructionSet;
@@ -53,7 +53,7 @@ internal partial class InstructionGenerator_InitializeTests
         await GeneratorTestSource.AssertCompilesAndRuns(
             output,
             $$"""
-            return WasmSharp.Instructions.InstructionSet.TryGet(new(0xFD, 1), out var descriptor)
+            return WasmSharp.Instructions.InstructionSet.TryGet(new(0xFD, 1), WasmSharp.WasmSpecVersion.Core2, out var descriptor)
                 && descriptor.Immediate == WasmSharp.Instructions.ImmediateKind.{{immediate}}
                 && descriptor.StackEffect == WasmSharp.Instructions.StackEffectKind.{{rule}}
                 && descriptor.Validation == WasmSharp.Instructions.ValidationRule.{{rule}}
@@ -95,7 +95,7 @@ internal partial class InstructionGenerator_InitializeTests
             $$"""
             namespace WasmSharp.Instructions
             {
-                [Instruction(0xFD, 1, "simd.memory", ImmediateKind.{{immediate}}, StackEffectKind.{{stackEffect}},
+                [Instruction(WasmSpecVersion.Core2, 0xFD, 1, "simd.memory", ImmediateKind.{{immediate}}, StackEffectKind.{{stackEffect}},
                     ValidationRule.{{validation}}, nameof(Execution.Interpreter.Handler), WasmValueKind.{{valueType}},
                     {{byteWidth}}, {{sign}}, LaneCount = {{laneCount}})]
                 internal static partial class InstructionSet;
@@ -138,7 +138,7 @@ internal partial class InstructionGenerator_InitializeTests
             $$"""
             namespace WasmSharp.Instructions
             {
-                [Instruction(0, {{code}}, "{{name}}", ImmediateKind.MemoryArgument, StackEffectKind.{{rule}},
+                [Instruction(WasmSpecVersion.Core2, 0, {{code}}, "{{name}}", ImmediateKind.MemoryArgument, StackEffectKind.{{rule}},
                     ValidationRule.{{rule}}, nameof(Execution.Interpreter.Access), WasmValueKind.{{valueType}},
                     {{byteWidth}}, {{sign}})]
                 internal static partial class InstructionSet;
@@ -174,10 +174,10 @@ internal partial class InstructionGenerator_InitializeTests
         await GeneratorTestSource.AssertCompilesAndRuns(
             output,
             $$"""
-            var found = WasmSharp.Instructions.InstructionSet.TryGet(new(0, {{code}}), out var descriptor);
+            var found = WasmSharp.Instructions.InstructionSet.TryGet(new(0, {{code}}), WasmSharp.WasmSpecVersion.Core2, out var descriptor);
             var expected = new WasmSharp.Instructions.MemoryAccessSignature(
                 WasmSharp.WasmValueKind.{{valueType}}, {{byteWidth}}, {{sign}});
-            var attribute = new WasmSharp.Instructions.InstructionAttribute(0, {{code}}, "{{name}}",
+            var attribute = new WasmSharp.Instructions.InstructionAttribute(WasmSharp.WasmSpecVersion.Core2, 0, {{code}}, "{{name}}",
                 WasmSharp.Instructions.ImmediateKind.MemoryArgument, WasmSharp.Instructions.StackEffectKind.{{rule}},
                 WasmSharp.Instructions.ValidationRule.{{rule}}, "Access", WasmSharp.WasmValueKind.{{valueType}},
                 {{byteWidth}}, {{sign}});
@@ -240,7 +240,7 @@ internal partial class InstructionGenerator_InitializeTests
             $$"""
             namespace WasmSharp.Instructions
             {
-                [Instruction(0, 0x28, "memory.access", ImmediateKind.{{immediate}}, StackEffectKind.{{stackEffect}},
+                [Instruction(WasmSpecVersion.Core2, 0, 0x28, "memory.access", ImmediateKind.{{immediate}}, StackEffectKind.{{stackEffect}},
                     ValidationRule.{{validation}}, nameof(Execution.Interpreter.Access){{signature}})]
                 internal static partial class InstructionSet;
             }

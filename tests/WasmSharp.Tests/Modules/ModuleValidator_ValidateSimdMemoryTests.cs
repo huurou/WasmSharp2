@@ -157,7 +157,8 @@ internal partial class ModuleValidator_ValidateTests
                         ]
                     )
                 )
-            )
+            ),
+            WasmSpecVersion.Core2
         );
     }
 

@@ -38,7 +38,7 @@ internal class ModuleBinaryReader_EnsureCollectionSizeTests
 
     private static long CheckSize(ulong count)
     {
-        var reader = new ModuleBinaryReader([], 19, 10, 3);
+        var reader = new ModuleBinaryReader([], WasmSpecVersion.Core2, 19, 10, 3);
         reader.EnsureCollectionSize(count, 17, "要素数の保持上限を超えました。");
         return reader.Position;
     }

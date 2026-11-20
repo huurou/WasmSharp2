@@ -27,7 +27,11 @@ internal partial class WasmFunction_InvokeTests
         using var stream = new ChunkedReadStream(new MemoryStream(bytes));
 
         // Act
-        WasmModule[] modules = [WasmModule.Decode(bytes), WasmModule.Decode(stream)];
+        WasmModule[] modules =
+        [
+            WasmModule.Decode(bytes, WasmSpecVersion.Core2),
+            WasmModule.Decode(stream, WasmSpecVersion.Core2),
+        ];
         Array.Clear(bytes);
         foreach (var module in modules)
         {
@@ -64,7 +68,7 @@ internal partial class WasmFunction_InvokeTests
         );
         var first = WasmValue.FromV128(0x800000007FC12345UL, 0xFF80012300000000UL);
         var second = WasmValue.FromV128(0xFFF8123456789ABCUL, 0x8000000000000000UL);
-        var module = WasmModule.Decode(bytes);
+        var module = WasmModule.Decode(bytes, WasmSpecVersion.Core2);
 
         // Act
         var result = module
@@ -132,7 +136,8 @@ internal partial class WasmFunction_InvokeTests
                             ]
                         )
                     )
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate()
             .Instantiate(executionContext, [])
@@ -158,7 +163,8 @@ internal partial class WasmFunction_InvokeTests
                     HostLinkingModuleBinary.Globals((0x7F, false, [0x41, 42, 0x0B])),
                     HostLinkingModuleBinary.Exports(("run", 0, 0)),
                     HostLinkingModuleBinary.Code(([], [0x20, 1, 0x20, 0, 0x23, 0, 0x0B]))
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate()
             .Instantiate(executionContext, []);
@@ -179,7 +185,8 @@ internal partial class WasmFunction_InvokeTests
                     HostLinkingModuleBinary.Globals((0x7F, false, [0x41, 9, 0x0B])),
                     HostLinkingModuleBinary.Exports(("run", 0, 0)),
                     HostLinkingModuleBinary.Code(([], [0x20, 0, 0x20, 1, 0x20, 2, 0x11, 1, 0, 0x0B]))
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate();
         var first = WasmValue.FromV128(0x800000007FC12345, 0x0123456789ABCDEF);
@@ -236,7 +243,8 @@ internal partial class WasmFunction_InvokeTests
                     HostLinkingModuleBinary.Functions(0),
                     HostLinkingModuleBinary.Exports(("run", 0, 0)),
                     HostLinkingModuleBinary.Code(([], [0x20, 0, 0x41, 0, 0x11, 0, 0, 0x0B]))
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate()
             .Instantiate(executionContext, [provider], new(2));
@@ -302,7 +310,8 @@ internal partial class WasmFunction_InvokeTests
                     HostLinkingModuleBinary.Functions(0),
                     HostLinkingModuleBinary.Exports(("run", 0, 1), ("host", 0, 0)),
                     HostLinkingModuleBinary.Code(([], [0x20, 0, 0x10, 0, 0x0B]))
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate();
         WasmInstance Instantiate(WasmFunction function)
@@ -403,7 +412,8 @@ internal partial class WasmFunction_InvokeTests
                         ([(2048, 0x7B)], [0x20, 0, 0x0B]),
                         ([], [0x20, 0, 0x10, 1, 0x0B])
                     )
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate()
             .Instantiate(executionContext, [provider], new(4));

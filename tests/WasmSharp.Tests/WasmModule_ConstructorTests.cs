@@ -34,6 +34,7 @@ internal class WasmModule_ConstructorTests
             memories,
             globals,
             new StartDefinition(uint.MaxValue, 25),
+            WasmSpecVersion.Core2,
             dataSegments,
             new DataCountDefinition(1, 28)
         );
@@ -78,7 +79,7 @@ internal class WasmModule_ConstructorTests
     public async Task 空の定義を構築する_各配列が非defaultの空になる()
     {
         // Act
-        var module = new WasmModule([], [], [], 8, [], [], [], [], null);
+        var module = new WasmModule([], [], [], 8, [], [], [], [], null, WasmSpecVersion.Core2);
         var function = new DecodedFunction(0, 0, [], []);
 
         // Assert
@@ -117,7 +118,7 @@ internal class WasmModule_ConstructorTests
         ElementDefinition[] elements = [active, passive, declarative];
 
         // Act
-        var module = new WasmModule([], [], [], 60, [], [], [], [], null, elementSegments: elements);
+        var module = new WasmModule([], [], [], 60, [], [], [], [], null, WasmSpecVersion.Core2, elementSegments: elements);
         Array.Clear(elements);
 
         // Assert
@@ -139,7 +140,7 @@ internal class WasmModule_ConstructorTests
         var declaration = new DataCountDefinition(count, 12);
 
         // Act
-        var module = new WasmModule([], [], [], 16, [], [], [], [], null, dataCount: declaration);
+        var module = new WasmModule([], [], [], 16, [], [], [], [], null, WasmSpecVersion.Core2, dataCount: declaration);
 
         // Assert
         await Assert.That(module.DataCount).IsEqualTo(declaration);

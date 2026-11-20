@@ -30,7 +30,7 @@ internal partial class InstructionGenerator_InitializeTests
             $$"""
             namespace WasmSharp.Instructions
             {
-                [Instruction({{prefix}}, {{code}}, "{{name}}", ImmediateKind.{{immediate}},
+                [Instruction(WasmSpecVersion.Core2, {{prefix}}, {{code}}, "{{name}}", ImmediateKind.{{immediate}},
                     StackEffectKind.{{rule}}, ValidationRule.{{rule}}, nameof(Execution.Interpreter.Receive))]
                 internal static partial class InstructionSet;
             }
@@ -62,7 +62,7 @@ internal partial class InstructionGenerator_InitializeTests
             output,
             $$"""
             var opcode = new WasmSharp.Instructions.OpcodeKey({{prefix}}, {{code}});
-            var found = WasmSharp.Instructions.InstructionSet.TryGet(opcode, out var descriptor);
+            var found = WasmSharp.Instructions.InstructionSet.TryGet(opcode, WasmSharp.WasmSpecVersion.Core2, out var descriptor);
             var decoded = "{{immediate}}" == "IndexPair"
                 ? WasmSharp.Modules.DecodedInstruction.WithIndexPair(opcode, uint.MaxValue, 0xFEDCBA98u, 12345678901L)
                 : "{{immediate}}" == "Index"
@@ -106,7 +106,7 @@ internal partial class InstructionGenerator_InitializeTests
             """
             namespace WasmSharp.Instructions
             {
-                [Instruction(0, 0xD0, "ref.null", ImmediateKind.ReferenceType,
+                [Instruction(WasmSpecVersion.Core2, 0, 0xD0, "ref.null", ImmediateKind.ReferenceType,
                     StackEffectKind.PushReference, ValidationRule.Constant, nameof(Execution.Interpreter.Receive))]
                 internal static partial class InstructionSet;
             }
@@ -136,7 +136,7 @@ internal partial class InstructionGenerator_InitializeTests
         await GeneratorTestSource.AssertCompilesAndRuns(
             output,
             $$"""
-            var found = WasmSharp.Instructions.InstructionSet.TryGet(new(0, 0xD0), out var descriptor);
+            var found = WasmSharp.Instructions.InstructionSet.TryGet(new(0, 0xD0), WasmSharp.WasmSpecVersion.Core2, out var descriptor);
             var value = WasmSharp.WasmValue.From{{referenceType}}(null);
             var decoded = WasmSharp.Modules.DecodedInstruction.WithImmediate(new(0, 0xD0), value, 12345678901L);
             var instruction = new WasmSharp.Execution.Instruction(descriptor.ExecutionOpcode!.Value,

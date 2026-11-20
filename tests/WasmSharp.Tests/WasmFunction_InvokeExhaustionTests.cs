@@ -74,7 +74,8 @@ internal partial class WasmFunction_InvokeTests
                     HostLinkingModuleBinary.Functions(0, 0),
                     HostLinkingModuleBinary.Exports(("recursive", 0, 0), ("empty", 0, 1)),
                     HostLinkingModuleBinary.Code(([], [0x10, 0, 0x0B]), ([], [0x0B]))
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate()
             .Instantiate(executionContext, [], new(10_000));

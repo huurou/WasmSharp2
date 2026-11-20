@@ -18,7 +18,8 @@ internal class WasmInstance_GetGlobalResourceTests
                     HostLinkingModuleBinary.Imports(("env", "g", 3, [0x7F, 1])),
                     HostLinkingModuleBinary.Globals((0x7F, true, [0x41, 42, 0x0B])),
                     HostLinkingModuleBinary.Exports(("shared", 3, 0), ("g", 3, 1), ("", 3, 1))
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate();
         var first = module.Instantiate(executionContext, [host]);
@@ -33,7 +34,8 @@ internal class WasmInstance_GetGlobalResourceTests
                 HostLinkingModuleBinary.Create(
                     HostLinkingModuleBinary.Imports(("relay", "g", 3, [0x7F, 1])),
                     HostLinkingModuleBinary.Exports(("g", 3, 0))
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate()
             .Instantiate(executionContext, [relayHost]);
@@ -63,7 +65,7 @@ internal class WasmInstance_GetGlobalResourceTests
         // Arrange
         var executionContext = new WasmExecutionContext();
         var instance = WasmModule
-            .Decode(ConstantModuleBinary.Create(0x7F, 0x41, 1, 0x0B))
+            .Decode(ConstantModuleBinary.Create(0x7F, 0x41, 1, 0x0B), WasmSpecVersion.Core2)
             .Validate()
             .Instantiate(executionContext, []);
 
@@ -77,7 +79,10 @@ internal class WasmInstance_GetGlobalResourceTests
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
-        var instance = WasmModule.Decode(HostLinkingModuleBinary.Create()).Validate().Instantiate(executionContext, []);
+        var instance = WasmModule
+            .Decode(HostLinkingModuleBinary.Create(), WasmSpecVersion.Core2)
+            .Validate()
+            .Instantiate(executionContext, []);
 
         // Act & Assert
         var exception = await Assert.That(() => instance.GetGlobalResource(null!)).ThrowsExactly<ArgumentNullException>();

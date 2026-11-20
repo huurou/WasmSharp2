@@ -194,7 +194,7 @@ public class InvokeBenchmarks
         _json = json;
         _definition = assets.Catalog.Get(caseId);
         var input = assets.GetInput(caseId);
-        var module = WasmModule.Decode(assets.GetBinary(_definition.AssetId).AsSpan()).Validate();
+        var module = WasmModule.Decode(assets.GetBinary(_definition.AssetId).AsSpan(), WasmSpecVersion.Core2).Validate();
         var before = CreateInstance(module, input);
         Verify(
             new InvokeObservation(

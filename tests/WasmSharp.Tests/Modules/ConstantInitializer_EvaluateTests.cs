@@ -26,7 +26,7 @@ internal class ConstantInitializer_EvaluateTests
         ];
 
         // Act
-        var result = ConstantInitializer.Evaluate(expression, globals, []);
+        var result = ConstantInitializer.Evaluate(expression, globals, [], WasmSpecVersion.Core2);
 
         // Assert
         await Assert.That(result.AsI32()).IsEqualTo(-1);
@@ -46,7 +46,7 @@ internal class ConstantInitializer_EvaluateTests
         ];
 
         // Act
-        var result = ConstantInitializer.Evaluate(expression, [], []);
+        var result = ConstantInitializer.Evaluate(expression, [], [], WasmSpecVersion.Core2);
 
         // Assert
         using (Assert.Multiple())
@@ -70,7 +70,8 @@ internal class ConstantInitializer_EvaluateTests
                     HostLinkingModuleBinary.Imports(("env", "f", 0, [0])),
                     HostLinkingModuleBinary.Functions(0),
                     HostLinkingModuleBinary.Code(([], [0x0B]))
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate();
         var instance = new WasmInstance(module, WasmExecutionOptions.Default, [hostFunction], [], [], []);
@@ -81,7 +82,7 @@ internal class ConstantInitializer_EvaluateTests
         ];
 
         // Act
-        var result = ConstantInitializer.Evaluate(expression, [], instance.Functions.AsSpan());
+        var result = ConstantInitializer.Evaluate(expression, [], instance.Functions.AsSpan(), module.SpecVersion);
 
         // Assert
         using (Assert.Multiple())
@@ -108,7 +109,7 @@ internal class ConstantInitializer_EvaluateTests
         ];
 
         // Act
-        var result = ConstantInitializer.Evaluate(expression, globals, []);
+        var result = ConstantInitializer.Evaluate(expression, globals, [], WasmSpecVersion.Core2);
 
         // Assert
         using (Assert.Multiple())

@@ -19,7 +19,8 @@ internal class WasmInstance_GetFunctionTests
                     HostLinkingModuleBinary.Functions(1),
                     HostLinkingModuleBinary.Exports(("run", 0, 1)),
                     HostLinkingModuleBinary.Code(([], [0x41, 42, 0x0B]))
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate()
             .Instantiate(executionContext, [host]);
@@ -34,7 +35,8 @@ internal class WasmInstance_GetFunctionTests
                     HostLinkingModuleBinary.Functions(0),
                     HostLinkingModuleBinary.Exports(("run", 0, 0), ("", 0, 0), ("own", 0, 1)),
                     HostLinkingModuleBinary.Code(([], [0x41, 7, 0x0B]))
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate();
 
@@ -78,7 +80,8 @@ internal class WasmInstance_GetFunctionTests
                     HostLinkingModuleBinary.Types(([], [])),
                     HostLinkingModuleBinary.Imports(("env", "f", 0, [0])),
                     HostLinkingModuleBinary.Exports(("f", 0, 0), ("alias", 0, 0))
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate();
         var source = module.Instantiate(executionContext, [host]);
@@ -99,7 +102,10 @@ internal class WasmInstance_GetFunctionTests
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
-        var instance = WasmModule.Decode(HostLinkingModuleBinary.Create()).Validate().Instantiate(executionContext, []);
+        var instance = WasmModule
+            .Decode(HostLinkingModuleBinary.Create(), WasmSpecVersion.Core2)
+            .Validate()
+            .Instantiate(executionContext, []);
 
         // Act & Assert
         var exception = await Assert.That(() => instance.GetFunction(null!)).ThrowsExactly<ArgumentNullException>();
@@ -116,7 +122,8 @@ internal class WasmInstance_GetFunctionTests
                 HostLinkingModuleBinary.Create(
                     HostLinkingModuleBinary.Globals((0x7F, false, [0x41, 0, 0x0B])),
                     HostLinkingModuleBinary.Exports(("g", 3, 0))
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate()
             .Instantiate(executionContext, []);
@@ -136,7 +143,8 @@ internal class WasmInstance_GetFunctionTests
                 ConstantModuleBinary.Create(
                     [(0x7F, [0x41, 0x01, 0x0B]), (0x7E, [0x42, 0x02, 0x0B])],
                     [("run", 1), ("alias", 1), ("Run", 0), ("", 0)]
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate();
         var first = module.Instantiate(executionContext, []);
@@ -179,7 +187,7 @@ internal class WasmInstance_GetFunctionTests
         // Arrange
         var executionContext = new WasmExecutionContext();
         var instance = WasmModule
-            .Decode(ConstantModuleBinary.Create(0x7F, 0x41, 0x01, 0x0B))
+            .Decode(ConstantModuleBinary.Create(0x7F, 0x41, 0x01, 0x0B), WasmSpecVersion.Core2)
             .Validate()
             .Instantiate(executionContext, []);
 

@@ -16,7 +16,8 @@ internal partial class FunctionValidator_ValidateTests
                 HostLinkingModuleBinary.Functions(0),
                 HostLinkingModuleBinary.Memories((1, null)),
                 HostLinkingModuleBinary.Code(([], Convert.FromHexString("410141012802023602030B")))
-            )
+            ),
+            WasmSpecVersion.Core2
         );
         var decoded = module.Functions[0].Instructions;
 

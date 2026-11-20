@@ -20,7 +20,8 @@ internal partial class FunctionValidator_ValidateTests
                 HostLinkingModuleBinary.Globals((0x7E, true, [0x42, 0, 0x0B])),
                 HostLinkingModuleBinary.Exports(("run", 0, 1)),
                 HostLinkingModuleBinary.Code(([(1, 0x7E)], Convert.FromHexString("200024002301210220001000220223000F1A0B")))
-            )
+            ),
+            WasmSpecVersion.Core2
         );
         WasmFunctionType[] functionTypes = [module.Types[0], module.Types[1]];
         WasmGlobalType[] globalTypes = [new(WasmValueKind.I32, true), module.Globals[0].Type];
@@ -49,7 +50,7 @@ internal partial class FunctionValidator_ValidateTests
             for (var index = 0; index < code.Instructions.Length; index++)
             {
                 var decoded = definition.Instructions[index];
-                InstructionSet.TryGet(decoded.Opcode, out var descriptor);
+                InstructionSet.TryGet(decoded.Opcode, module.SpecVersion, out var descriptor);
                 await Assert.That(code.Instructions[index].Opcode).IsEqualTo(descriptor.ExecutionOpcode);
                 await Assert.That(code.Instructions[index].Index).IsEqualTo(decoded.Index);
                 await Assert.That(code.Instructions[index].ByteOffset).IsEqualTo(decoded.ByteOffset);
@@ -80,7 +81,8 @@ internal partial class FunctionValidator_ValidateTests
                 HostLinkingModuleBinary.Imports(("env", "f", 0, [0])),
                 HostLinkingModuleBinary.Functions(0),
                 HostLinkingModuleBinary.Code(([], [0x00, 0x42, 1, 0x0B]))
-            )
+            ),
+            WasmSpecVersion.Core2
         );
         WasmFunctionType[] functionTypes = [module.Types[0], module.Types[0]];
         WasmGlobalType[] globalTypes = [];

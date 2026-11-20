@@ -17,7 +17,10 @@ internal partial class WasmFunction_InvokeTests
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
-        var instance = WasmModule.Decode(CreateBulkMemoryModule(10)).Validate().Instantiate(executionContext, []);
+        var instance = WasmModule
+            .Decode(CreateBulkMemoryModule(10), WasmSpecVersion.Core2)
+            .Validate()
+            .Instantiate(executionContext, []);
         var memory = instance.GetMemory("memory");
         memory.Write(65532, [1, 2, 3, 4, 5, 6, 7, 8]);
         var actual = new byte[8];
@@ -47,7 +50,10 @@ internal partial class WasmFunction_InvokeTests
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
-        var instance = WasmModule.Decode(CreateBulkMemoryModule(11)).Validate().Instantiate(executionContext, []);
+        var instance = WasmModule
+            .Decode(CreateBulkMemoryModule(11), WasmSpecVersion.Core2)
+            .Validate()
+            .Instantiate(executionContext, []);
         var memory = instance.GetMemory("memory");
         memory.Write(65532, [0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC]);
         var actual = new byte[8];
@@ -98,7 +104,7 @@ internal partial class WasmFunction_InvokeTests
         // Arrange
         var executionContext = new WasmExecutionContext();
         var bytes = CreateBulkMemoryModule(opcode);
-        var instance = WasmModule.Decode(bytes).Validate().Instantiate(executionContext, []);
+        var instance = WasmModule.Decode(bytes, WasmSpecVersion.Core2).Validate().Instantiate(executionContext, []);
         var memory = instance.GetMemory("memory");
         var original = Enumerable.Range(0, 131072).Select(x => (byte)(x % 251 + 1)).ToArray();
         memory.Write(0, original);
@@ -148,7 +154,10 @@ internal partial class WasmFunction_InvokeTests
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
-        var instance = WasmModule.Decode(CreateBulkMemoryModule(opcode, 0)).Validate().Instantiate(executionContext, []);
+        var instance = WasmModule
+            .Decode(CreateBulkMemoryModule(opcode, 0), WasmSpecVersion.Core2)
+            .Validate()
+            .Instantiate(executionContext, []);
 
         // Act
         var result = instance

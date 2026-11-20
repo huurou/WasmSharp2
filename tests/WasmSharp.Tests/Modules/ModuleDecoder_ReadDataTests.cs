@@ -10,7 +10,7 @@ internal class ModuleDecoder_ReadDataTests
     {
         // Arrange
         var bytes = Convert.FromHexString("03800041040B02AABB0101CC8200FFFFFFFF0F23030B00");
-        var reader = new ModuleBinaryReader(bytes, 40, 11);
+        var reader = new ModuleBinaryReader(bytes, WasmSpecVersion.Core2, 40, 11);
 
         // Act
         var segments = ModuleDecoder.ReadData(ref reader, 100, out _);
@@ -45,7 +45,7 @@ internal class ModuleDecoder_ReadDataTests
     public async Task データセグメント数が0である_空の定義を返す()
     {
         // Arrange
-        var reader = new ModuleBinaryReader([0], 40, 11);
+        var reader = new ModuleBinaryReader([0], WasmSpecVersion.Core2, 40, 11);
 
         // Act
         var segments = ModuleDecoder.ReadData(ref reader, 100, out _);
@@ -72,7 +72,7 @@ internal class ModuleDecoder_ReadDataTests
         var exception = await Assert
             .That(() =>
             {
-                var reader = new ModuleBinaryReader(bytes, 40, 11);
+                var reader = new ModuleBinaryReader(bytes, WasmSpecVersion.Core2, 40, 11);
                 ModuleDecoder.ReadData(ref reader, 100, out _);
             })
             .ThrowsExactly<WasmDecodeException>();

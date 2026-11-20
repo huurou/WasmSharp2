@@ -63,7 +63,7 @@ internal partial class WasmModule_ValidateTests
             hasMemory ? HostLinkingModuleBinary.Memories((1, null)) : [],
             HostLinkingModuleBinary.Code(([], Convert.FromHexString(instructions)))
         );
-        var module = WasmModule.Decode(bytes);
+        var module = WasmModule.Decode(bytes, WasmSpecVersion.Core2);
 
         // Act & Assert
         var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
@@ -98,7 +98,7 @@ internal partial class WasmModule_ValidateTests
             HostLinkingModuleBinary.Memories((1, null)),
             HostLinkingModuleBinary.Code(([], Convert.FromHexString(instructions)))
         );
-        var module = WasmModule.Decode(bytes);
+        var module = WasmModule.Decode(bytes, WasmSpecVersion.Core2);
 
         // Act
         var validated = module.Validate();
@@ -120,7 +120,8 @@ internal partial class WasmModule_ValidateTests
                 HostLinkingModuleBinary.Functions(0, 0),
                 HostLinkingModuleBinary.Memories((1, null)),
                 HostLinkingModuleBinary.Code(([], [0x41, 0, 0x28, 2, 0, 0x1A, 0x0B]), ([], [0x28, 3, 0, 0x0B]))
-            )
+            ),
+            WasmSpecVersion.Core2
         );
 
         // Act & Assert

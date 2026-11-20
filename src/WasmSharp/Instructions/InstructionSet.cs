@@ -1,11 +1,13 @@
 using WasmSharp.Execution;
+using static WasmSharp.WasmSpecVersion;
 
 namespace WasmSharp.Instructions;
 
 /// <summary>
-/// Core 2.0の命令割当と対応済み命令の定義元
+/// 各仕様の命令番号と、対応済み命令の検証規則・実行処理を宣言する
 /// </summary>
 [Instruction(
+    Core2,
     0,
     0x0B,
     "end",
@@ -15,6 +17,7 @@ namespace WasmSharp.Instructions;
     nameof(Interpreter.Return)
 )]
 [Instruction(
+    Core2,
     0,
     0x41,
     "i32.const",
@@ -24,6 +27,7 @@ namespace WasmSharp.Instructions;
     nameof(Interpreter.PushConstant)
 )]
 [Instruction(
+    Core2,
     0,
     0x42,
     "i64.const",
@@ -33,6 +37,7 @@ namespace WasmSharp.Instructions;
     nameof(Interpreter.PushConstant)
 )]
 [Instruction(
+    Core2,
     0,
     0x43,
     "f32.const",
@@ -42,6 +47,7 @@ namespace WasmSharp.Instructions;
     nameof(Interpreter.PushConstant)
 )]
 [Instruction(
+    Core2,
     0,
     0x44,
     "f64.const",
@@ -51,6 +57,7 @@ namespace WasmSharp.Instructions;
     nameof(Interpreter.PushConstant)
 )]
 [Instruction(
+    Core2,
     0,
     0x00,
     "unreachable",
@@ -60,6 +67,7 @@ namespace WasmSharp.Instructions;
     nameof(Interpreter.Unreachable)
 )]
 [Instruction(
+    Core2,
     0,
     0x0F,
     "return",
@@ -68,9 +76,28 @@ namespace WasmSharp.Instructions;
     ValidationRule.Return,
     nameof(Interpreter.Return)
 )]
-[Instruction(0, 0x10, "call", ImmediateKind.Index, StackEffectKind.Call, ValidationRule.Call, nameof(Interpreter.Call))]
-[Instruction(0, 0x1A, "drop", ImmediateKind.None, StackEffectKind.Drop, ValidationRule.Drop, nameof(Interpreter.Drop))]
 [Instruction(
+    Core2,
+    0,
+    0x10,
+    "call",
+    ImmediateKind.Index,
+    StackEffectKind.Call,
+    ValidationRule.Call,
+    nameof(Interpreter.Call)
+)]
+[Instruction(
+    Core2,
+    0,
+    0x1A,
+    "drop",
+    ImmediateKind.None,
+    StackEffectKind.Drop,
+    ValidationRule.Drop,
+    nameof(Interpreter.Drop)
+)]
+[Instruction(
+    Core2,
     0,
     0x20,
     "local.get",
@@ -80,6 +107,7 @@ namespace WasmSharp.Instructions;
     nameof(Interpreter.LocalGet)
 )]
 [Instruction(
+    Core2,
     0,
     0x21,
     "local.set",
@@ -89,6 +117,7 @@ namespace WasmSharp.Instructions;
     nameof(Interpreter.LocalSet)
 )]
 [Instruction(
+    Core2,
     0,
     0x22,
     "local.tee",
@@ -98,6 +127,7 @@ namespace WasmSharp.Instructions;
     nameof(Interpreter.LocalTee)
 )]
 [Instruction(
+    Core2,
     0,
     0x23,
     "global.get",
@@ -107,6 +137,7 @@ namespace WasmSharp.Instructions;
     nameof(Interpreter.GlobalGet)
 )]
 [Instruction(
+    Core2,
     0,
     0x24,
     "global.set",
@@ -115,8 +146,9 @@ namespace WasmSharp.Instructions;
     ValidationRule.GlobalSet,
     nameof(Interpreter.GlobalSet)
 )]
-[Instruction(0, 0x01, "nop", ImmediateKind.None, StackEffectKind.None, ValidationRule.None, nameof(Interpreter.NoOp))]
+[Instruction(Core2, 0, 0x01, "nop", ImmediateKind.None, StackEffectKind.None, ValidationRule.None, nameof(Interpreter.NoOp))]
 [Instruction(
+    Core2,
     0,
     0x02,
     "block",
@@ -125,8 +157,18 @@ namespace WasmSharp.Instructions;
     ValidationRule.Block,
     nameof(Interpreter.NoOp)
 )]
-[Instruction(0, 0x03, "loop", ImmediateKind.BlockType, StackEffectKind.Loop, ValidationRule.Loop, nameof(Interpreter.NoOp))]
 [Instruction(
+    Core2,
+    0,
+    0x03,
+    "loop",
+    ImmediateKind.BlockType,
+    StackEffectKind.Loop,
+    ValidationRule.Loop,
+    nameof(Interpreter.NoOp)
+)]
+[Instruction(
+    Core2,
     0,
     0x04,
     "if",
@@ -135,9 +177,28 @@ namespace WasmSharp.Instructions;
     ValidationRule.If,
     nameof(Interpreter.BranchIfZero)
 )]
-[Instruction(0, 0x05, "else", ImmediateKind.None, StackEffectKind.Else, ValidationRule.Else, nameof(Interpreter.Branch))]
-[Instruction(0, 0x0C, "br", ImmediateKind.Index, StackEffectKind.Branch, ValidationRule.Branch, nameof(Interpreter.Branch))]
 [Instruction(
+    Core2,
+    0,
+    0x05,
+    "else",
+    ImmediateKind.None,
+    StackEffectKind.Else,
+    ValidationRule.Else,
+    nameof(Interpreter.Branch)
+)]
+[Instruction(
+    Core2,
+    0,
+    0x0C,
+    "br",
+    ImmediateKind.Index,
+    StackEffectKind.Branch,
+    ValidationRule.Branch,
+    nameof(Interpreter.Branch)
+)]
+[Instruction(
+    Core2,
     0,
     0x0D,
     "br_if",
@@ -147,6 +208,7 @@ namespace WasmSharp.Instructions;
     nameof(Interpreter.BranchIf)
 )]
 [Instruction(
+    Core2,
     0,
     0x0E,
     "br_table",
@@ -156,6 +218,7 @@ namespace WasmSharp.Instructions;
     nameof(Interpreter.BranchTable)
 )]
 [Instruction(
+    Core2,
     0,
     0x11,
     "call_indirect",
@@ -165,6 +228,7 @@ namespace WasmSharp.Instructions;
     nameof(Interpreter.CallIndirect)
 )]
 [Instruction(
+    Core2,
     0,
     0x1B,
     "select",
@@ -174,6 +238,7 @@ namespace WasmSharp.Instructions;
     nameof(Interpreter.Select)
 )]
 [Instruction(
+    Core2,
     0,
     0x1C,
     "select",
@@ -183,6 +248,7 @@ namespace WasmSharp.Instructions;
     nameof(Interpreter.Select)
 )]
 [Instruction(
+    Core2,
     0,
     0x25,
     "table.get",
@@ -192,6 +258,7 @@ namespace WasmSharp.Instructions;
     nameof(Interpreter.TableGet)
 )]
 [Instruction(
+    Core2,
     0,
     0x26,
     "table.set",
@@ -201,6 +268,7 @@ namespace WasmSharp.Instructions;
     nameof(Interpreter.TableSet)
 )]
 [Instruction(
+    Core2,
     0,
     0x28,
     "i32.load",
@@ -213,6 +281,7 @@ namespace WasmSharp.Instructions;
     false
 )]
 [Instruction(
+    Core2,
     0,
     0x29,
     "i64.load",
@@ -225,6 +294,7 @@ namespace WasmSharp.Instructions;
     false
 )]
 [Instruction(
+    Core2,
     0,
     0x2A,
     "f32.load",
@@ -237,6 +307,7 @@ namespace WasmSharp.Instructions;
     false
 )]
 [Instruction(
+    Core2,
     0,
     0x2B,
     "f64.load",
@@ -249,6 +320,7 @@ namespace WasmSharp.Instructions;
     false
 )]
 [Instruction(
+    Core2,
     0,
     0x2C,
     "i32.load8_s",
@@ -261,6 +333,7 @@ namespace WasmSharp.Instructions;
     true
 )]
 [Instruction(
+    Core2,
     0,
     0x2D,
     "i32.load8_u",
@@ -273,6 +346,7 @@ namespace WasmSharp.Instructions;
     false
 )]
 [Instruction(
+    Core2,
     0,
     0x2E,
     "i32.load16_s",
@@ -285,6 +359,7 @@ namespace WasmSharp.Instructions;
     true
 )]
 [Instruction(
+    Core2,
     0,
     0x2F,
     "i32.load16_u",
@@ -297,6 +372,7 @@ namespace WasmSharp.Instructions;
     false
 )]
 [Instruction(
+    Core2,
     0,
     0x30,
     "i64.load8_s",
@@ -309,6 +385,7 @@ namespace WasmSharp.Instructions;
     true
 )]
 [Instruction(
+    Core2,
     0,
     0x31,
     "i64.load8_u",
@@ -321,6 +398,7 @@ namespace WasmSharp.Instructions;
     false
 )]
 [Instruction(
+    Core2,
     0,
     0x32,
     "i64.load16_s",
@@ -333,6 +411,7 @@ namespace WasmSharp.Instructions;
     true
 )]
 [Instruction(
+    Core2,
     0,
     0x33,
     "i64.load16_u",
@@ -345,6 +424,7 @@ namespace WasmSharp.Instructions;
     false
 )]
 [Instruction(
+    Core2,
     0,
     0x34,
     "i64.load32_s",
@@ -357,6 +437,7 @@ namespace WasmSharp.Instructions;
     true
 )]
 [Instruction(
+    Core2,
     0,
     0x35,
     "i64.load32_u",
@@ -369,6 +450,7 @@ namespace WasmSharp.Instructions;
     false
 )]
 [Instruction(
+    Core2,
     0,
     0x36,
     "i32.store",
@@ -381,6 +463,7 @@ namespace WasmSharp.Instructions;
     false
 )]
 [Instruction(
+    Core2,
     0,
     0x37,
     "i64.store",
@@ -393,6 +476,7 @@ namespace WasmSharp.Instructions;
     false
 )]
 [Instruction(
+    Core2,
     0,
     0x38,
     "f32.store",
@@ -405,6 +489,7 @@ namespace WasmSharp.Instructions;
     false
 )]
 [Instruction(
+    Core2,
     0,
     0x39,
     "f64.store",
@@ -417,6 +502,7 @@ namespace WasmSharp.Instructions;
     false
 )]
 [Instruction(
+    Core2,
     0,
     0x3A,
     "i32.store8",
@@ -429,6 +515,7 @@ namespace WasmSharp.Instructions;
     false
 )]
 [Instruction(
+    Core2,
     0,
     0x3B,
     "i32.store16",
@@ -441,6 +528,7 @@ namespace WasmSharp.Instructions;
     false
 )]
 [Instruction(
+    Core2,
     0,
     0x3C,
     "i64.store8",
@@ -453,6 +541,7 @@ namespace WasmSharp.Instructions;
     false
 )]
 [Instruction(
+    Core2,
     0,
     0x3D,
     "i64.store16",
@@ -465,6 +554,7 @@ namespace WasmSharp.Instructions;
     false
 )]
 [Instruction(
+    Core2,
     0,
     0x3E,
     "i64.store32",
@@ -477,6 +567,7 @@ namespace WasmSharp.Instructions;
     false
 )]
 [Instruction(
+    Core2,
     0,
     0x3F,
     "memory.size",
@@ -486,6 +577,7 @@ namespace WasmSharp.Instructions;
     nameof(Interpreter.Size)
 )]
 [Instruction(
+    Core2,
     0,
     0x40,
     "memory.grow",
@@ -495,6 +587,7 @@ namespace WasmSharp.Instructions;
     nameof(Interpreter.Grow)
 )]
 [Instruction(
+    Core2,
     0,
     0x45,
     "i32.eqz",
@@ -507,6 +600,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I32
 )]
 [Instruction(
+    Core2,
     0,
     0x46,
     "i32.eq",
@@ -519,6 +613,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I32
 )]
 [Instruction(
+    Core2,
     0,
     0x47,
     "i32.ne",
@@ -531,6 +626,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I32
 )]
 [Instruction(
+    Core2,
     0,
     0x48,
     "i32.lt_s",
@@ -543,6 +639,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I32
 )]
 [Instruction(
+    Core2,
     0,
     0x49,
     "i32.lt_u",
@@ -555,6 +652,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I32
 )]
 [Instruction(
+    Core2,
     0,
     0x4A,
     "i32.gt_s",
@@ -567,6 +665,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I32
 )]
 [Instruction(
+    Core2,
     0,
     0x4B,
     "i32.gt_u",
@@ -579,6 +678,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I32
 )]
 [Instruction(
+    Core2,
     0,
     0x4C,
     "i32.le_s",
@@ -591,6 +691,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I32
 )]
 [Instruction(
+    Core2,
     0,
     0x4D,
     "i32.le_u",
@@ -603,6 +704,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I32
 )]
 [Instruction(
+    Core2,
     0,
     0x4E,
     "i32.ge_s",
@@ -615,6 +717,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I32
 )]
 [Instruction(
+    Core2,
     0,
     0x4F,
     "i32.ge_u",
@@ -627,6 +730,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I32
 )]
 [Instruction(
+    Core2,
     0,
     0x50,
     "i64.eqz",
@@ -639,6 +743,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I32
 )]
 [Instruction(
+    Core2,
     0,
     0x51,
     "i64.eq",
@@ -651,6 +756,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I32
 )]
 [Instruction(
+    Core2,
     0,
     0x52,
     "i64.ne",
@@ -663,6 +769,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I32
 )]
 [Instruction(
+    Core2,
     0,
     0x53,
     "i64.lt_s",
@@ -675,6 +782,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I32
 )]
 [Instruction(
+    Core2,
     0,
     0x54,
     "i64.lt_u",
@@ -687,6 +795,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I32
 )]
 [Instruction(
+    Core2,
     0,
     0x55,
     "i64.gt_s",
@@ -699,6 +808,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I32
 )]
 [Instruction(
+    Core2,
     0,
     0x56,
     "i64.gt_u",
@@ -711,6 +821,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I32
 )]
 [Instruction(
+    Core2,
     0,
     0x57,
     "i64.le_s",
@@ -723,6 +834,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I32
 )]
 [Instruction(
+    Core2,
     0,
     0x58,
     "i64.le_u",
@@ -735,6 +847,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I32
 )]
 [Instruction(
+    Core2,
     0,
     0x59,
     "i64.ge_s",
@@ -747,6 +860,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I32
 )]
 [Instruction(
+    Core2,
     0,
     0x5A,
     "i64.ge_u",
@@ -759,6 +873,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I32
 )]
 [Instruction(
+    Core2,
     0,
     0x5B,
     "f32.eq",
@@ -771,6 +886,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I32
 )]
 [Instruction(
+    Core2,
     0,
     0x5C,
     "f32.ne",
@@ -783,6 +899,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I32
 )]
 [Instruction(
+    Core2,
     0,
     0x5D,
     "f32.lt",
@@ -795,6 +912,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I32
 )]
 [Instruction(
+    Core2,
     0,
     0x5E,
     "f32.gt",
@@ -807,6 +925,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I32
 )]
 [Instruction(
+    Core2,
     0,
     0x5F,
     "f32.le",
@@ -819,6 +938,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I32
 )]
 [Instruction(
+    Core2,
     0,
     0x60,
     "f32.ge",
@@ -831,6 +951,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I32
 )]
 [Instruction(
+    Core2,
     0,
     0x61,
     "f64.eq",
@@ -843,6 +964,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I32
 )]
 [Instruction(
+    Core2,
     0,
     0x62,
     "f64.ne",
@@ -855,6 +977,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I32
 )]
 [Instruction(
+    Core2,
     0,
     0x63,
     "f64.lt",
@@ -867,6 +990,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I32
 )]
 [Instruction(
+    Core2,
     0,
     0x64,
     "f64.gt",
@@ -879,6 +1003,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I32
 )]
 [Instruction(
+    Core2,
     0,
     0x65,
     "f64.le",
@@ -891,6 +1016,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I32
 )]
 [Instruction(
+    Core2,
     0,
     0x66,
     "f64.ge",
@@ -903,6 +1029,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I32
 )]
 [Instruction(
+    Core2,
     0,
     0x67,
     "i32.clz",
@@ -915,6 +1042,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I32
 )]
 [Instruction(
+    Core2,
     0,
     0x68,
     "i32.ctz",
@@ -927,6 +1055,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I32
 )]
 [Instruction(
+    Core2,
     0,
     0x69,
     "i32.popcnt",
@@ -939,6 +1068,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I32
 )]
 [Instruction(
+    Core2,
     0,
     0x6A,
     "i32.add",
@@ -952,6 +1082,7 @@ namespace WasmSharp.Instructions;
     IsConstantBinaryOperation = true
 )]
 [Instruction(
+    Core2,
     0,
     0x6B,
     "i32.sub",
@@ -965,6 +1096,7 @@ namespace WasmSharp.Instructions;
     IsConstantBinaryOperation = true
 )]
 [Instruction(
+    Core2,
     0,
     0x6C,
     "i32.mul",
@@ -978,6 +1110,7 @@ namespace WasmSharp.Instructions;
     IsConstantBinaryOperation = true
 )]
 [Instruction(
+    Core2,
     0,
     0x6D,
     "i32.div_s",
@@ -990,6 +1123,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I32
 )]
 [Instruction(
+    Core2,
     0,
     0x6E,
     "i32.div_u",
@@ -1002,6 +1136,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I32
 )]
 [Instruction(
+    Core2,
     0,
     0x6F,
     "i32.rem_s",
@@ -1014,6 +1149,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I32
 )]
 [Instruction(
+    Core2,
     0,
     0x70,
     "i32.rem_u",
@@ -1026,6 +1162,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I32
 )]
 [Instruction(
+    Core2,
     0,
     0x71,
     "i32.and",
@@ -1038,6 +1175,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I32
 )]
 [Instruction(
+    Core2,
     0,
     0x72,
     "i32.or",
@@ -1050,6 +1188,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I32
 )]
 [Instruction(
+    Core2,
     0,
     0x73,
     "i32.xor",
@@ -1062,6 +1201,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I32
 )]
 [Instruction(
+    Core2,
     0,
     0x74,
     "i32.shl",
@@ -1074,6 +1214,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I32
 )]
 [Instruction(
+    Core2,
     0,
     0x75,
     "i32.shr_s",
@@ -1086,6 +1227,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I32
 )]
 [Instruction(
+    Core2,
     0,
     0x76,
     "i32.shr_u",
@@ -1098,6 +1240,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I32
 )]
 [Instruction(
+    Core2,
     0,
     0x77,
     "i32.rotl",
@@ -1110,6 +1253,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I32
 )]
 [Instruction(
+    Core2,
     0,
     0x78,
     "i32.rotr",
@@ -1122,6 +1266,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I32
 )]
 [Instruction(
+    Core2,
     0,
     0x79,
     "i64.clz",
@@ -1134,6 +1279,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I64
 )]
 [Instruction(
+    Core2,
     0,
     0x7A,
     "i64.ctz",
@@ -1146,6 +1292,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I64
 )]
 [Instruction(
+    Core2,
     0,
     0x7B,
     "i64.popcnt",
@@ -1158,6 +1305,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I64
 )]
 [Instruction(
+    Core2,
     0,
     0x7C,
     "i64.add",
@@ -1171,6 +1319,7 @@ namespace WasmSharp.Instructions;
     IsConstantBinaryOperation = true
 )]
 [Instruction(
+    Core2,
     0,
     0x7D,
     "i64.sub",
@@ -1184,6 +1333,7 @@ namespace WasmSharp.Instructions;
     IsConstantBinaryOperation = true
 )]
 [Instruction(
+    Core2,
     0,
     0x7E,
     "i64.mul",
@@ -1197,6 +1347,7 @@ namespace WasmSharp.Instructions;
     IsConstantBinaryOperation = true
 )]
 [Instruction(
+    Core2,
     0,
     0x7F,
     "i64.div_s",
@@ -1209,6 +1360,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I64
 )]
 [Instruction(
+    Core2,
     0,
     0x80,
     "i64.div_u",
@@ -1221,6 +1373,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I64
 )]
 [Instruction(
+    Core2,
     0,
     0x81,
     "i64.rem_s",
@@ -1233,6 +1386,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I64
 )]
 [Instruction(
+    Core2,
     0,
     0x82,
     "i64.rem_u",
@@ -1245,6 +1399,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I64
 )]
 [Instruction(
+    Core2,
     0,
     0x83,
     "i64.and",
@@ -1257,6 +1412,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I64
 )]
 [Instruction(
+    Core2,
     0,
     0x84,
     "i64.or",
@@ -1269,6 +1425,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I64
 )]
 [Instruction(
+    Core2,
     0,
     0x85,
     "i64.xor",
@@ -1281,6 +1438,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I64
 )]
 [Instruction(
+    Core2,
     0,
     0x86,
     "i64.shl",
@@ -1293,6 +1451,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I64
 )]
 [Instruction(
+    Core2,
     0,
     0x87,
     "i64.shr_s",
@@ -1305,6 +1464,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I64
 )]
 [Instruction(
+    Core2,
     0,
     0x88,
     "i64.shr_u",
@@ -1317,6 +1477,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I64
 )]
 [Instruction(
+    Core2,
     0,
     0x89,
     "i64.rotl",
@@ -1329,6 +1490,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I64
 )]
 [Instruction(
+    Core2,
     0,
     0x8A,
     "i64.rotr",
@@ -1341,6 +1503,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I64
 )]
 [Instruction(
+    Core2,
     0,
     0x8B,
     "f32.abs",
@@ -1353,6 +1516,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.F32
 )]
 [Instruction(
+    Core2,
     0,
     0x8C,
     "f32.neg",
@@ -1365,6 +1529,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.F32
 )]
 [Instruction(
+    Core2,
     0,
     0x8D,
     "f32.ceil",
@@ -1377,6 +1542,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.F32
 )]
 [Instruction(
+    Core2,
     0,
     0x8E,
     "f32.floor",
@@ -1389,6 +1555,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.F32
 )]
 [Instruction(
+    Core2,
     0,
     0x8F,
     "f32.trunc",
@@ -1401,6 +1568,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.F32
 )]
 [Instruction(
+    Core2,
     0,
     0x90,
     "f32.nearest",
@@ -1413,6 +1581,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.F32
 )]
 [Instruction(
+    Core2,
     0,
     0x91,
     "f32.sqrt",
@@ -1425,6 +1594,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.F32
 )]
 [Instruction(
+    Core2,
     0,
     0x92,
     "f32.add",
@@ -1437,6 +1607,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.F32
 )]
 [Instruction(
+    Core2,
     0,
     0x93,
     "f32.sub",
@@ -1449,6 +1620,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.F32
 )]
 [Instruction(
+    Core2,
     0,
     0x94,
     "f32.mul",
@@ -1461,6 +1633,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.F32
 )]
 [Instruction(
+    Core2,
     0,
     0x95,
     "f32.div",
@@ -1473,6 +1646,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.F32
 )]
 [Instruction(
+    Core2,
     0,
     0x96,
     "f32.min",
@@ -1485,6 +1659,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.F32
 )]
 [Instruction(
+    Core2,
     0,
     0x97,
     "f32.max",
@@ -1497,6 +1672,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.F32
 )]
 [Instruction(
+    Core2,
     0,
     0x98,
     "f32.copysign",
@@ -1509,6 +1685,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.F32
 )]
 [Instruction(
+    Core2,
     0,
     0x99,
     "f64.abs",
@@ -1521,6 +1698,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.F64
 )]
 [Instruction(
+    Core2,
     0,
     0x9A,
     "f64.neg",
@@ -1533,6 +1711,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.F64
 )]
 [Instruction(
+    Core2,
     0,
     0x9B,
     "f64.ceil",
@@ -1545,6 +1724,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.F64
 )]
 [Instruction(
+    Core2,
     0,
     0x9C,
     "f64.floor",
@@ -1557,6 +1737,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.F64
 )]
 [Instruction(
+    Core2,
     0,
     0x9D,
     "f64.trunc",
@@ -1569,6 +1750,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.F64
 )]
 [Instruction(
+    Core2,
     0,
     0x9E,
     "f64.nearest",
@@ -1581,6 +1763,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.F64
 )]
 [Instruction(
+    Core2,
     0,
     0x9F,
     "f64.sqrt",
@@ -1593,6 +1776,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.F64
 )]
 [Instruction(
+    Core2,
     0,
     0xA0,
     "f64.add",
@@ -1605,6 +1789,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.F64
 )]
 [Instruction(
+    Core2,
     0,
     0xA1,
     "f64.sub",
@@ -1617,6 +1802,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.F64
 )]
 [Instruction(
+    Core2,
     0,
     0xA2,
     "f64.mul",
@@ -1629,6 +1815,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.F64
 )]
 [Instruction(
+    Core2,
     0,
     0xA3,
     "f64.div",
@@ -1641,6 +1828,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.F64
 )]
 [Instruction(
+    Core2,
     0,
     0xA4,
     "f64.min",
@@ -1653,6 +1841,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.F64
 )]
 [Instruction(
+    Core2,
     0,
     0xA5,
     "f64.max",
@@ -1665,6 +1854,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.F64
 )]
 [Instruction(
+    Core2,
     0,
     0xA6,
     "f64.copysign",
@@ -1677,6 +1867,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.F64
 )]
 [Instruction(
+    Core2,
     0,
     0xA7,
     "i32.wrap_i64",
@@ -1689,6 +1880,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I32
 )]
 [Instruction(
+    Core2,
     0,
     0xA8,
     "i32.trunc_f32_s",
@@ -1701,6 +1893,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I32
 )]
 [Instruction(
+    Core2,
     0,
     0xA9,
     "i32.trunc_f32_u",
@@ -1713,6 +1906,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I32
 )]
 [Instruction(
+    Core2,
     0,
     0xAA,
     "i32.trunc_f64_s",
@@ -1725,6 +1919,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I32
 )]
 [Instruction(
+    Core2,
     0,
     0xAB,
     "i32.trunc_f64_u",
@@ -1737,6 +1932,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I32
 )]
 [Instruction(
+    Core2,
     0,
     0xAC,
     "i64.extend_i32_s",
@@ -1749,6 +1945,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I64
 )]
 [Instruction(
+    Core2,
     0,
     0xAD,
     "i64.extend_i32_u",
@@ -1761,6 +1958,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I64
 )]
 [Instruction(
+    Core2,
     0,
     0xAE,
     "i64.trunc_f32_s",
@@ -1773,6 +1971,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I64
 )]
 [Instruction(
+    Core2,
     0,
     0xAF,
     "i64.trunc_f32_u",
@@ -1785,6 +1984,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I64
 )]
 [Instruction(
+    Core2,
     0,
     0xB0,
     "i64.trunc_f64_s",
@@ -1797,6 +1997,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I64
 )]
 [Instruction(
+    Core2,
     0,
     0xB1,
     "i64.trunc_f64_u",
@@ -1809,6 +2010,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I64
 )]
 [Instruction(
+    Core2,
     0,
     0xB2,
     "f32.convert_i32_s",
@@ -1821,6 +2023,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.F32
 )]
 [Instruction(
+    Core2,
     0,
     0xB3,
     "f32.convert_i32_u",
@@ -1833,6 +2036,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.F32
 )]
 [Instruction(
+    Core2,
     0,
     0xB4,
     "f32.convert_i64_s",
@@ -1845,6 +2049,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.F32
 )]
 [Instruction(
+    Core2,
     0,
     0xB5,
     "f32.convert_i64_u",
@@ -1857,6 +2062,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.F32
 )]
 [Instruction(
+    Core2,
     0,
     0xB6,
     "f32.demote_f64",
@@ -1869,6 +2075,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.F32
 )]
 [Instruction(
+    Core2,
     0,
     0xB7,
     "f64.convert_i32_s",
@@ -1881,6 +2088,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.F64
 )]
 [Instruction(
+    Core2,
     0,
     0xB8,
     "f64.convert_i32_u",
@@ -1893,6 +2101,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.F64
 )]
 [Instruction(
+    Core2,
     0,
     0xB9,
     "f64.convert_i64_s",
@@ -1905,6 +2114,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.F64
 )]
 [Instruction(
+    Core2,
     0,
     0xBA,
     "f64.convert_i64_u",
@@ -1917,6 +2127,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.F64
 )]
 [Instruction(
+    Core2,
     0,
     0xBB,
     "f64.promote_f32",
@@ -1929,6 +2140,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.F64
 )]
 [Instruction(
+    Core2,
     0,
     0xBC,
     "i32.reinterpret_f32",
@@ -1941,6 +2153,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I32
 )]
 [Instruction(
+    Core2,
     0,
     0xBD,
     "i64.reinterpret_f64",
@@ -1953,6 +2166,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I64
 )]
 [Instruction(
+    Core2,
     0,
     0xBE,
     "f32.reinterpret_i32",
@@ -1965,6 +2179,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.F32
 )]
 [Instruction(
+    Core2,
     0,
     0xBF,
     "f64.reinterpret_i64",
@@ -1977,6 +2192,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.F64
 )]
 [Instruction(
+    Core2,
     0,
     0xC0,
     "i32.extend8_s",
@@ -1989,6 +2205,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I32
 )]
 [Instruction(
+    Core2,
     0,
     0xC1,
     "i32.extend16_s",
@@ -2001,6 +2218,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I32
 )]
 [Instruction(
+    Core2,
     0,
     0xC2,
     "i64.extend8_s",
@@ -2013,6 +2231,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I64
 )]
 [Instruction(
+    Core2,
     0,
     0xC3,
     "i64.extend16_s",
@@ -2025,6 +2244,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I64
 )]
 [Instruction(
+    Core2,
     0,
     0xC4,
     "i64.extend32_s",
@@ -2037,6 +2257,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I64
 )]
 [Instruction(
+    Core2,
     0,
     0xD0,
     "ref.null",
@@ -2046,6 +2267,7 @@ namespace WasmSharp.Instructions;
     nameof(Interpreter.PushConstant)
 )]
 [Instruction(
+    Core2,
     0,
     0xD1,
     "ref.is_null",
@@ -2055,6 +2277,7 @@ namespace WasmSharp.Instructions;
     nameof(Interpreter.RefIsNull)
 )]
 [Instruction(
+    Core2,
     0,
     0xD2,
     "ref.func",
@@ -2064,6 +2287,7 @@ namespace WasmSharp.Instructions;
     nameof(Interpreter.RefFunc)
 )]
 [Instruction(
+    Core2,
     0xFC,
     0x00,
     "i32.trunc_sat_f32_s",
@@ -2076,6 +2300,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I32
 )]
 [Instruction(
+    Core2,
     0xFC,
     0x01,
     "i32.trunc_sat_f32_u",
@@ -2088,6 +2313,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I32
 )]
 [Instruction(
+    Core2,
     0xFC,
     0x02,
     "i32.trunc_sat_f64_s",
@@ -2100,6 +2326,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I32
 )]
 [Instruction(
+    Core2,
     0xFC,
     0x03,
     "i32.trunc_sat_f64_u",
@@ -2112,6 +2339,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I32
 )]
 [Instruction(
+    Core2,
     0xFC,
     0x04,
     "i64.trunc_sat_f32_s",
@@ -2124,6 +2352,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I64
 )]
 [Instruction(
+    Core2,
     0xFC,
     0x05,
     "i64.trunc_sat_f32_u",
@@ -2136,6 +2365,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I64
 )]
 [Instruction(
+    Core2,
     0xFC,
     0x06,
     "i64.trunc_sat_f64_s",
@@ -2148,6 +2378,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I64
 )]
 [Instruction(
+    Core2,
     0xFC,
     0x07,
     "i64.trunc_sat_f64_u",
@@ -2160,6 +2391,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I64
 )]
 [Instruction(
+    Core2,
     0xFC,
     0x08,
     "memory.init",
@@ -2169,6 +2401,7 @@ namespace WasmSharp.Instructions;
     nameof(Interpreter.MemoryInit)
 )]
 [Instruction(
+    Core2,
     0xFC,
     0x09,
     "data.drop",
@@ -2178,6 +2411,7 @@ namespace WasmSharp.Instructions;
     nameof(Interpreter.DataDrop)
 )]
 [Instruction(
+    Core2,
     0xFC,
     0x0A,
     "memory.copy",
@@ -2187,6 +2421,7 @@ namespace WasmSharp.Instructions;
     nameof(Interpreter.Copy)
 )]
 [Instruction(
+    Core2,
     0xFC,
     0x0B,
     "memory.fill",
@@ -2196,6 +2431,7 @@ namespace WasmSharp.Instructions;
     nameof(Interpreter.Fill)
 )]
 [Instruction(
+    Core2,
     0xFC,
     0x0C,
     "table.init",
@@ -2205,6 +2441,7 @@ namespace WasmSharp.Instructions;
     nameof(Interpreter.TableInit)
 )]
 [Instruction(
+    Core2,
     0xFC,
     0x0D,
     "elem.drop",
@@ -2214,6 +2451,7 @@ namespace WasmSharp.Instructions;
     nameof(Interpreter.ElementDrop)
 )]
 [Instruction(
+    Core2,
     0xFC,
     0x0E,
     "table.copy",
@@ -2223,6 +2461,7 @@ namespace WasmSharp.Instructions;
     nameof(Interpreter.TableCopy)
 )]
 [Instruction(
+    Core2,
     0xFC,
     0x0F,
     "table.grow",
@@ -2232,6 +2471,7 @@ namespace WasmSharp.Instructions;
     nameof(Interpreter.TableGrow)
 )]
 [Instruction(
+    Core2,
     0xFC,
     0x10,
     "table.size",
@@ -2241,6 +2481,7 @@ namespace WasmSharp.Instructions;
     nameof(Interpreter.TableSize)
 )]
 [Instruction(
+    Core2,
     0xFC,
     0x11,
     "table.fill",
@@ -2250,6 +2491,7 @@ namespace WasmSharp.Instructions;
     nameof(Interpreter.TableFill)
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x00,
     "v128.load",
@@ -2262,6 +2504,7 @@ namespace WasmSharp.Instructions;
     false
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x01,
     "v128.load8x8_s",
@@ -2274,6 +2517,7 @@ namespace WasmSharp.Instructions;
     false
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x02,
     "v128.load8x8_u",
@@ -2286,6 +2530,7 @@ namespace WasmSharp.Instructions;
     false
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x03,
     "v128.load16x4_s",
@@ -2298,6 +2543,7 @@ namespace WasmSharp.Instructions;
     false
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x04,
     "v128.load16x4_u",
@@ -2310,6 +2556,7 @@ namespace WasmSharp.Instructions;
     false
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x05,
     "v128.load32x2_s",
@@ -2322,6 +2569,7 @@ namespace WasmSharp.Instructions;
     false
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x06,
     "v128.load32x2_u",
@@ -2334,6 +2582,7 @@ namespace WasmSharp.Instructions;
     false
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x07,
     "v128.load8_splat",
@@ -2346,6 +2595,7 @@ namespace WasmSharp.Instructions;
     false
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x08,
     "v128.load16_splat",
@@ -2358,6 +2608,7 @@ namespace WasmSharp.Instructions;
     false
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x09,
     "v128.load32_splat",
@@ -2370,6 +2621,7 @@ namespace WasmSharp.Instructions;
     false
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x0A,
     "v128.load64_splat",
@@ -2382,6 +2634,7 @@ namespace WasmSharp.Instructions;
     false
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x0B,
     "v128.store",
@@ -2394,6 +2647,7 @@ namespace WasmSharp.Instructions;
     false
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x0C,
     "v128.const",
@@ -2403,6 +2657,7 @@ namespace WasmSharp.Instructions;
     nameof(Interpreter.PushConstant)
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x0D,
     "i8x16.shuffle",
@@ -2414,6 +2669,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x0E,
     "i8x16.swizzle",
@@ -2425,6 +2681,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x0F,
     "i8x16.splat",
@@ -2436,6 +2693,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x10,
     "i16x8.splat",
@@ -2447,6 +2705,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x11,
     "i32x4.splat",
@@ -2458,6 +2717,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x12,
     "i64x2.splat",
@@ -2469,6 +2729,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x13,
     "f32x4.splat",
@@ -2480,6 +2741,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x14,
     "f64x2.splat",
@@ -2491,6 +2753,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x15,
     "i8x16.extract_lane_s",
@@ -2503,6 +2766,7 @@ namespace WasmSharp.Instructions;
     LaneCount = 16
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x16,
     "i8x16.extract_lane_u",
@@ -2515,6 +2779,7 @@ namespace WasmSharp.Instructions;
     LaneCount = 16
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x17,
     "i8x16.replace_lane",
@@ -2527,6 +2792,7 @@ namespace WasmSharp.Instructions;
     LaneCount = 16
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x18,
     "i16x8.extract_lane_s",
@@ -2539,6 +2805,7 @@ namespace WasmSharp.Instructions;
     LaneCount = 8
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x19,
     "i16x8.extract_lane_u",
@@ -2551,6 +2818,7 @@ namespace WasmSharp.Instructions;
     LaneCount = 8
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x1A,
     "i16x8.replace_lane",
@@ -2563,6 +2831,7 @@ namespace WasmSharp.Instructions;
     LaneCount = 8
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x1B,
     "i32x4.extract_lane",
@@ -2575,6 +2844,7 @@ namespace WasmSharp.Instructions;
     LaneCount = 4
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x1C,
     "i32x4.replace_lane",
@@ -2587,6 +2857,7 @@ namespace WasmSharp.Instructions;
     LaneCount = 4
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x1D,
     "i64x2.extract_lane",
@@ -2599,6 +2870,7 @@ namespace WasmSharp.Instructions;
     LaneCount = 2
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x1E,
     "i64x2.replace_lane",
@@ -2611,6 +2883,7 @@ namespace WasmSharp.Instructions;
     LaneCount = 2
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x1F,
     "f32x4.extract_lane",
@@ -2623,6 +2896,7 @@ namespace WasmSharp.Instructions;
     LaneCount = 4
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x20,
     "f32x4.replace_lane",
@@ -2635,6 +2909,7 @@ namespace WasmSharp.Instructions;
     LaneCount = 4
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x21,
     "f64x2.extract_lane",
@@ -2647,6 +2922,7 @@ namespace WasmSharp.Instructions;
     LaneCount = 2
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x22,
     "f64x2.replace_lane",
@@ -2659,6 +2935,7 @@ namespace WasmSharp.Instructions;
     LaneCount = 2
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x23,
     "i8x16.eq",
@@ -2670,6 +2947,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x24,
     "i8x16.ne",
@@ -2681,6 +2959,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x25,
     "i8x16.lt_s",
@@ -2692,6 +2971,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x26,
     "i8x16.lt_u",
@@ -2703,6 +2983,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x27,
     "i8x16.gt_s",
@@ -2714,6 +2995,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x28,
     "i8x16.gt_u",
@@ -2725,6 +3007,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x29,
     "i8x16.le_s",
@@ -2736,6 +3019,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x2A,
     "i8x16.le_u",
@@ -2747,6 +3031,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x2B,
     "i8x16.ge_s",
@@ -2758,6 +3043,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x2C,
     "i8x16.ge_u",
@@ -2769,6 +3055,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x2D,
     "i16x8.eq",
@@ -2780,6 +3067,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x2E,
     "i16x8.ne",
@@ -2791,6 +3079,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x2F,
     "i16x8.lt_s",
@@ -2802,6 +3091,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x30,
     "i16x8.lt_u",
@@ -2813,6 +3103,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x31,
     "i16x8.gt_s",
@@ -2824,6 +3115,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x32,
     "i16x8.gt_u",
@@ -2835,6 +3127,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x33,
     "i16x8.le_s",
@@ -2846,6 +3139,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x34,
     "i16x8.le_u",
@@ -2857,6 +3151,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x35,
     "i16x8.ge_s",
@@ -2868,6 +3163,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x36,
     "i16x8.ge_u",
@@ -2879,6 +3175,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x37,
     "i32x4.eq",
@@ -2890,6 +3187,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x38,
     "i32x4.ne",
@@ -2901,6 +3199,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x39,
     "i32x4.lt_s",
@@ -2912,6 +3211,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x3A,
     "i32x4.lt_u",
@@ -2923,6 +3223,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x3B,
     "i32x4.gt_s",
@@ -2934,6 +3235,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x3C,
     "i32x4.gt_u",
@@ -2945,6 +3247,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x3D,
     "i32x4.le_s",
@@ -2956,6 +3259,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x3E,
     "i32x4.le_u",
@@ -2967,6 +3271,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x3F,
     "i32x4.ge_s",
@@ -2978,6 +3283,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x40,
     "i32x4.ge_u",
@@ -2989,6 +3295,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x41,
     "f32x4.eq",
@@ -3000,6 +3307,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x42,
     "f32x4.ne",
@@ -3011,6 +3319,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x43,
     "f32x4.lt",
@@ -3022,6 +3331,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x44,
     "f32x4.gt",
@@ -3033,6 +3343,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x45,
     "f32x4.le",
@@ -3044,6 +3355,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x46,
     "f32x4.ge",
@@ -3055,6 +3367,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x47,
     "f64x2.eq",
@@ -3066,6 +3379,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x48,
     "f64x2.ne",
@@ -3077,6 +3391,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x49,
     "f64x2.lt",
@@ -3088,6 +3403,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x4A,
     "f64x2.gt",
@@ -3099,6 +3415,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x4B,
     "f64x2.le",
@@ -3110,6 +3427,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x4C,
     "f64x2.ge",
@@ -3121,6 +3439,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x4D,
     "v128.not",
@@ -3132,6 +3451,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x4E,
     "v128.and",
@@ -3143,6 +3463,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x4F,
     "v128.andnot",
@@ -3154,6 +3475,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x50,
     "v128.or",
@@ -3165,6 +3487,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x51,
     "v128.xor",
@@ -3176,6 +3499,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x52,
     "v128.bitselect",
@@ -3187,6 +3511,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x53,
     "v128.any_true",
@@ -3198,6 +3523,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I32
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x54,
     "v128.load8_lane",
@@ -3211,6 +3537,7 @@ namespace WasmSharp.Instructions;
     LaneCount = 16
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x55,
     "v128.load16_lane",
@@ -3224,6 +3551,7 @@ namespace WasmSharp.Instructions;
     LaneCount = 8
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x56,
     "v128.load32_lane",
@@ -3237,6 +3565,7 @@ namespace WasmSharp.Instructions;
     LaneCount = 4
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x57,
     "v128.load64_lane",
@@ -3250,6 +3579,7 @@ namespace WasmSharp.Instructions;
     LaneCount = 2
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x58,
     "v128.store8_lane",
@@ -3263,6 +3593,7 @@ namespace WasmSharp.Instructions;
     LaneCount = 16
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x59,
     "v128.store16_lane",
@@ -3276,6 +3607,7 @@ namespace WasmSharp.Instructions;
     LaneCount = 8
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x5A,
     "v128.store32_lane",
@@ -3289,6 +3621,7 @@ namespace WasmSharp.Instructions;
     LaneCount = 4
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x5B,
     "v128.store64_lane",
@@ -3302,6 +3635,7 @@ namespace WasmSharp.Instructions;
     LaneCount = 2
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x5C,
     "v128.load32_zero",
@@ -3314,6 +3648,7 @@ namespace WasmSharp.Instructions;
     false
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x5D,
     "v128.load64_zero",
@@ -3326,6 +3661,7 @@ namespace WasmSharp.Instructions;
     false
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x5E,
     "f32x4.demote_f64x2_zero",
@@ -3338,6 +3674,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x5F,
     "f64x2.promote_low_f32x4",
@@ -3350,6 +3687,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x60,
     "i8x16.abs",
@@ -3362,6 +3700,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x61,
     "i8x16.neg",
@@ -3374,6 +3713,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x62,
     "i8x16.popcnt",
@@ -3386,6 +3726,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x63,
     "i8x16.all_true",
@@ -3397,6 +3738,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I32
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x64,
     "i8x16.bitmask",
@@ -3408,6 +3750,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I32
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x65,
     "i8x16.narrow_i16x8_s",
@@ -3420,6 +3763,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x66,
     "i8x16.narrow_i16x8_u",
@@ -3432,6 +3776,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x67,
     "f32x4.ceil",
@@ -3444,6 +3789,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x68,
     "f32x4.floor",
@@ -3456,6 +3802,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x69,
     "f32x4.trunc",
@@ -3468,6 +3815,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x6A,
     "f32x4.nearest",
@@ -3480,6 +3828,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x6B,
     "i8x16.shl",
@@ -3491,6 +3840,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x6C,
     "i8x16.shr_s",
@@ -3502,6 +3852,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x6D,
     "i8x16.shr_u",
@@ -3513,6 +3864,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x6E,
     "i8x16.add",
@@ -3525,6 +3877,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x6F,
     "i8x16.add_sat_s",
@@ -3537,6 +3890,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x70,
     "i8x16.add_sat_u",
@@ -3549,6 +3903,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x71,
     "i8x16.sub",
@@ -3561,6 +3916,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x72,
     "i8x16.sub_sat_s",
@@ -3573,6 +3929,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x73,
     "i8x16.sub_sat_u",
@@ -3585,6 +3942,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x74,
     "f64x2.ceil",
@@ -3597,6 +3955,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x75,
     "f64x2.floor",
@@ -3609,6 +3968,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x76,
     "i8x16.min_s",
@@ -3621,6 +3981,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x77,
     "i8x16.min_u",
@@ -3633,6 +3994,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x78,
     "i8x16.max_s",
@@ -3645,6 +4007,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x79,
     "i8x16.max_u",
@@ -3657,6 +4020,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x7A,
     "f64x2.trunc",
@@ -3669,6 +4033,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x7B,
     "i8x16.avgr_u",
@@ -3681,6 +4046,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x7C,
     "i16x8.extadd_pairwise_i8x16_s",
@@ -3693,6 +4059,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x7D,
     "i16x8.extadd_pairwise_i8x16_u",
@@ -3705,6 +4072,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x7E,
     "i32x4.extadd_pairwise_i16x8_s",
@@ -3717,6 +4085,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x7F,
     "i32x4.extadd_pairwise_i16x8_u",
@@ -3729,6 +4098,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x80,
     "i16x8.abs",
@@ -3741,6 +4111,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x81,
     "i16x8.neg",
@@ -3753,6 +4124,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x82,
     "i16x8.q15mulr_sat_s",
@@ -3765,6 +4137,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x83,
     "i16x8.all_true",
@@ -3776,6 +4149,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I32
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x84,
     "i16x8.bitmask",
@@ -3787,6 +4161,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I32
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x85,
     "i16x8.narrow_i32x4_s",
@@ -3799,6 +4174,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x86,
     "i16x8.narrow_i32x4_u",
@@ -3811,6 +4187,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x87,
     "i16x8.extend_low_i8x16_s",
@@ -3823,6 +4200,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x88,
     "i16x8.extend_high_i8x16_s",
@@ -3835,6 +4213,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x89,
     "i16x8.extend_low_i8x16_u",
@@ -3847,6 +4226,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x8A,
     "i16x8.extend_high_i8x16_u",
@@ -3859,6 +4239,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x8B,
     "i16x8.shl",
@@ -3870,6 +4251,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x8C,
     "i16x8.shr_s",
@@ -3881,6 +4263,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x8D,
     "i16x8.shr_u",
@@ -3892,6 +4275,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x8E,
     "i16x8.add",
@@ -3904,6 +4288,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x8F,
     "i16x8.add_sat_s",
@@ -3916,6 +4301,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x90,
     "i16x8.add_sat_u",
@@ -3928,6 +4314,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x91,
     "i16x8.sub",
@@ -3940,6 +4327,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x92,
     "i16x8.sub_sat_s",
@@ -3952,6 +4340,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x93,
     "i16x8.sub_sat_u",
@@ -3964,6 +4353,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x94,
     "f64x2.nearest",
@@ -3976,6 +4366,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x95,
     "i16x8.mul",
@@ -3988,6 +4379,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x96,
     "i16x8.min_s",
@@ -4000,6 +4392,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x97,
     "i16x8.min_u",
@@ -4012,6 +4405,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x98,
     "i16x8.max_s",
@@ -4024,6 +4418,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x99,
     "i16x8.max_u",
@@ -4036,6 +4431,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x9B,
     "i16x8.avgr_u",
@@ -4048,6 +4444,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x9C,
     "i16x8.extmul_low_i8x16_s",
@@ -4060,6 +4457,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x9D,
     "i16x8.extmul_high_i8x16_s",
@@ -4072,6 +4470,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x9E,
     "i16x8.extmul_low_i8x16_u",
@@ -4084,6 +4483,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0x9F,
     "i16x8.extmul_high_i8x16_u",
@@ -4096,6 +4496,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xA0,
     "i32x4.abs",
@@ -4108,6 +4509,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xA1,
     "i32x4.neg",
@@ -4120,6 +4522,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xA3,
     "i32x4.all_true",
@@ -4131,6 +4534,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I32
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xA4,
     "i32x4.bitmask",
@@ -4142,6 +4546,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I32
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xA7,
     "i32x4.extend_low_i16x8_s",
@@ -4154,6 +4559,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xA8,
     "i32x4.extend_high_i16x8_s",
@@ -4166,6 +4572,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xA9,
     "i32x4.extend_low_i16x8_u",
@@ -4178,6 +4585,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xAA,
     "i32x4.extend_high_i16x8_u",
@@ -4190,6 +4598,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xAB,
     "i32x4.shl",
@@ -4201,6 +4610,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xAC,
     "i32x4.shr_s",
@@ -4212,6 +4622,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xAD,
     "i32x4.shr_u",
@@ -4223,6 +4634,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xAE,
     "i32x4.add",
@@ -4235,6 +4647,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xB1,
     "i32x4.sub",
@@ -4247,6 +4660,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xB5,
     "i32x4.mul",
@@ -4259,6 +4673,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xB6,
     "i32x4.min_s",
@@ -4271,6 +4686,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xB7,
     "i32x4.min_u",
@@ -4283,6 +4699,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xB8,
     "i32x4.max_s",
@@ -4295,6 +4712,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xB9,
     "i32x4.max_u",
@@ -4307,6 +4725,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xBA,
     "i32x4.dot_i16x8_s",
@@ -4319,6 +4738,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xBC,
     "i32x4.extmul_low_i16x8_s",
@@ -4331,6 +4751,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xBD,
     "i32x4.extmul_high_i16x8_s",
@@ -4343,6 +4764,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xBE,
     "i32x4.extmul_low_i16x8_u",
@@ -4355,6 +4777,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xBF,
     "i32x4.extmul_high_i16x8_u",
@@ -4367,6 +4790,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xC0,
     "i64x2.abs",
@@ -4379,6 +4803,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xC1,
     "i64x2.neg",
@@ -4391,6 +4816,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xC3,
     "i64x2.all_true",
@@ -4402,6 +4828,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I32
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xC4,
     "i64x2.bitmask",
@@ -4413,6 +4840,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.I32
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xC7,
     "i64x2.extend_low_i32x4_s",
@@ -4425,6 +4853,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xC8,
     "i64x2.extend_high_i32x4_s",
@@ -4437,6 +4866,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xC9,
     "i64x2.extend_low_i32x4_u",
@@ -4449,6 +4879,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xCA,
     "i64x2.extend_high_i32x4_u",
@@ -4461,6 +4892,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xCB,
     "i64x2.shl",
@@ -4472,6 +4904,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xCC,
     "i64x2.shr_s",
@@ -4483,6 +4916,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xCD,
     "i64x2.shr_u",
@@ -4494,6 +4928,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xCE,
     "i64x2.add",
@@ -4506,6 +4941,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xD1,
     "i64x2.sub",
@@ -4518,6 +4954,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xD5,
     "i64x2.mul",
@@ -4530,6 +4967,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xD6,
     "i64x2.eq",
@@ -4541,6 +4979,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xD7,
     "i64x2.ne",
@@ -4552,6 +4991,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xD8,
     "i64x2.lt_s",
@@ -4563,6 +5003,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xD9,
     "i64x2.gt_s",
@@ -4574,6 +5015,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xDA,
     "i64x2.le_s",
@@ -4585,6 +5027,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xDB,
     "i64x2.ge_s",
@@ -4596,6 +5039,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xDC,
     "i64x2.extmul_low_i32x4_s",
@@ -4608,6 +5052,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xDD,
     "i64x2.extmul_high_i32x4_s",
@@ -4620,6 +5065,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xDE,
     "i64x2.extmul_low_i32x4_u",
@@ -4632,6 +5078,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xDF,
     "i64x2.extmul_high_i32x4_u",
@@ -4644,6 +5091,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xE0,
     "f32x4.abs",
@@ -4656,6 +5104,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xE1,
     "f32x4.neg",
@@ -4668,6 +5117,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xE3,
     "f32x4.sqrt",
@@ -4680,6 +5130,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xE4,
     "f32x4.add",
@@ -4692,6 +5143,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xE5,
     "f32x4.sub",
@@ -4704,6 +5156,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xE6,
     "f32x4.mul",
@@ -4716,6 +5169,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xE7,
     "f32x4.div",
@@ -4728,6 +5182,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xE8,
     "f32x4.min",
@@ -4740,6 +5195,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xE9,
     "f32x4.max",
@@ -4752,6 +5208,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xEA,
     "f32x4.pmin",
@@ -4764,6 +5221,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xEB,
     "f32x4.pmax",
@@ -4776,6 +5234,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xEC,
     "f64x2.abs",
@@ -4788,6 +5247,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xED,
     "f64x2.neg",
@@ -4800,6 +5260,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xEF,
     "f64x2.sqrt",
@@ -4812,6 +5273,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xF0,
     "f64x2.add",
@@ -4824,6 +5286,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xF1,
     "f64x2.sub",
@@ -4836,6 +5299,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xF2,
     "f64x2.mul",
@@ -4848,6 +5312,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xF3,
     "f64x2.div",
@@ -4860,6 +5325,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xF4,
     "f64x2.min",
@@ -4872,6 +5338,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xF5,
     "f64x2.max",
@@ -4884,6 +5351,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xF6,
     "f64x2.pmin",
@@ -4896,6 +5364,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xF7,
     "f64x2.pmax",
@@ -4908,6 +5377,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xF8,
     "i32x4.trunc_sat_f32x4_s",
@@ -4920,6 +5390,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xF9,
     "i32x4.trunc_sat_f32x4_u",
@@ -4932,6 +5403,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xFA,
     "f32x4.convert_i32x4_s",
@@ -4944,6 +5416,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xFB,
     "f32x4.convert_i32x4_u",
@@ -4956,6 +5429,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xFC,
     "i32x4.trunc_sat_f64x2_s_zero",
@@ -4968,6 +5442,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xFD,
     "i32x4.trunc_sat_f64x2_u_zero",
@@ -4980,6 +5455,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xFE,
     "f64x2.convert_low_i32x4_s",
@@ -4992,6 +5468,7 @@ namespace WasmSharp.Instructions;
     WasmValueKind.V128
 )]
 [Instruction(
+    Core2,
     0xFD,
     0xFF,
     "f64x2.convert_low_i32x4_u",

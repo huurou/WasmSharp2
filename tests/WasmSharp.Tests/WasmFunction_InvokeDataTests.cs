@@ -18,7 +18,7 @@ internal partial class WasmFunction_InvokeTests
             HostLinkingModuleBinary.Code(([], [0xFC, 9, 0, 0x0B])),
             HostLinkingModuleBinary.Section(11, [1, 1, 2, 0xAB, 0xCD])
         );
-        var instance = WasmModule.Decode(bytes).Validate().Instantiate(executionContext, []);
+        var instance = WasmModule.Decode(bytes, WasmSpecVersion.Core2).Validate().Instantiate(executionContext, []);
 
         // Act
         var first = instance.GetFunction("drop").Invoke(executionContext, []);
@@ -52,7 +52,10 @@ internal partial class WasmFunction_InvokeTests
         var hostMemory = new WasmMemory(new(1, null));
         var host = new WasmHostModule("env");
         host.Define("m", hostMemory);
-        var instance = WasmModule.Decode(bytes).Validate().Instantiate(executionContext, imported ? [host] : []);
+        var instance = WasmModule
+            .Decode(bytes, WasmSpecVersion.Core2)
+            .Validate()
+            .Instantiate(executionContext, imported ? [host] : []);
         var memory = instance.GetMemory("memory");
         var original = new byte[8];
         memory.Read(0, original);
@@ -87,7 +90,7 @@ internal partial class WasmFunction_InvokeTests
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
-        var module = WasmModule.Decode(CreateDataInitializationModule()).Validate();
+        var module = WasmModule.Decode(CreateDataInitializationModule(), WasmSpecVersion.Core2).Validate();
         var first = module.Instantiate(executionContext, []);
         var second = module.Instantiate(executionContext, []);
 
@@ -142,7 +145,7 @@ internal partial class WasmFunction_InvokeTests
         // Arrange
         var executionContext = new WasmExecutionContext();
         var bytes = CreateDataInitializationModule();
-        var instance = WasmModule.Decode(bytes).Validate().Instantiate(executionContext, []);
+        var instance = WasmModule.Decode(bytes, WasmSpecVersion.Core2).Validate().Instantiate(executionContext, []);
         var memory = instance.GetMemory("memory");
         var original = Enumerable.Range(0, 65536).Select(x => (byte)(x % 251 + 1)).ToArray();
         memory.Write(0, original);
@@ -189,7 +192,10 @@ internal partial class WasmFunction_InvokeTests
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
-        var instance = WasmModule.Decode(CreateDataInitializationModule(true)).Validate().Instantiate(executionContext, []);
+        var instance = WasmModule
+            .Decode(CreateDataInitializationModule(true), WasmSpecVersion.Core2)
+            .Validate()
+            .Instantiate(executionContext, []);
         var memory = instance.GetMemory("memory");
         var actual = new byte[4];
         memory.Read(2, actual);

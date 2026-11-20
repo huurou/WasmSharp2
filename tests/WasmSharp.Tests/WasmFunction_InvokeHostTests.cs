@@ -27,7 +27,8 @@ internal partial class WasmFunction_InvokeTests
                     HostLinkingModuleBinary.Functions(0),
                     HostLinkingModuleBinary.Exports(("run", 0, 1)),
                     HostLinkingModuleBinary.Code(([], [0x10, 0, 0x0B]))
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate()
             .Instantiate(executionContext, [provider], new(3))
@@ -118,7 +119,7 @@ internal partial class WasmFunction_InvokeTests
         var executionContext = new WasmExecutionContext();
         var access = CreateHostAccessInstance(executionContext);
         var a = WasmModule
-            .Decode(ConstantModuleBinary.Create(0x7F, 0x41, 7, 0x0B))
+            .Decode(ConstantModuleBinary.Create(0x7F, 0x41, 7, 0x0B), WasmSpecVersion.Core2)
             .Validate()
             .Instantiate(executionContext, [], new(1))
             .GetFunction("run");
@@ -158,7 +159,8 @@ internal partial class WasmFunction_InvokeTests
                     HostLinkingModuleBinary.Functions(0, 0),
                     HostLinkingModuleBinary.Exports(("run", 0, 0)),
                     HostLinkingModuleBinary.Code(([], [0x10, 1, 0x0B]), ([], [0x41, 42, 0x0B]))
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate()
             .Instantiate(executionContext, [], new(maxCallDepth));
@@ -221,7 +223,8 @@ internal partial class WasmFunction_InvokeTests
                 HostLinkingModuleBinary.Create(
                     HostLinkingModuleBinary.Memories((1, 1)),
                     HostLinkingModuleBinary.Exports(("memory", 2, 0))
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate()
             .Instantiate(executionContext, [], new(1));

@@ -33,7 +33,8 @@ internal static class ExecutionFunctionFixture
             [],
             [],
             [],
-            null
+            null,
+            WasmSpecVersion.Core2
         )
         {
             FunctionCodes = [new([], [], 0), new(instructions, locals.AsSpan(), maxOperandStack, branchTargets)],

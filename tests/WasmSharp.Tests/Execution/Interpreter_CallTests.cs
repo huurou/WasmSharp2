@@ -54,7 +54,7 @@ internal class Interpreter_CallTests
         // Arrange
         var executionContext = new WasmExecutionContext();
         var reference = new object();
-        var found = InstructionSet.TryGet(new(0, 0x10), out var descriptor);
+        var found = InstructionSet.TryGet(new(0, 0x10), WasmSpecVersion.Core2, out var descriptor);
         var instance = ExecutionInstanceFixture.Create(
             [
                 new([WasmValueKind.I64, WasmValueKind.ExternRef], [WasmValueKind.ExternRef, WasmValueKind.I64]),

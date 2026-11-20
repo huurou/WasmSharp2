@@ -14,7 +14,8 @@ internal class WasmInstance_GetGlobalTests
                 HostLinkingModuleBinary.Create(
                     HostLinkingModuleBinary.Globals((0x7F, true, [0x41, 1, 0x0B])),
                     HostLinkingModuleBinary.Exports(("g", 3, 0))
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate()
             .Instantiate(executionContext, []);
@@ -42,7 +43,7 @@ internal class WasmInstance_GetGlobalTests
         // Arrange
         var executionContext = new WasmExecutionContext();
         var instance = WasmModule
-            .Decode(ConstantModuleBinary.Create(0x7F, 0x41, 0x01, 0x0B))
+            .Decode(ConstantModuleBinary.Create(0x7F, 0x41, 0x01, 0x0B), WasmSpecVersion.Core2)
             .Validate()
             .Instantiate(executionContext, []);
 

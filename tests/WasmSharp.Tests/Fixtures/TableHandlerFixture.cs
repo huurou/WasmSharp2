@@ -44,6 +44,7 @@ internal static class TableHandlerFixture
             [],
             [],
             null,
+            WasmSpecVersion.Core2,
             elementSegments: [.. definitions]
         )
         {

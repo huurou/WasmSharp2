@@ -33,7 +33,9 @@ internal partial class WasmModule_ValidateTests
         using var stream = new ChunkedReadStream(new MemoryStream(bytes));
 
         // Act
-        var module = useStream ? WasmModule.Decode(stream) : WasmModule.Decode(bytes);
+        var module = useStream
+            ? WasmModule.Decode(stream, WasmSpecVersion.Core2)
+            : WasmModule.Decode(bytes, WasmSpecVersion.Core2);
         var afterDecode = (calls, global.Value.AsI32());
         var validated = module.Validate();
         var afterValidation = (calls, global.Value.AsI32());

@@ -147,7 +147,8 @@ internal partial class WasmFunction_InvokeTests
                 HostLinkingModuleBinary.Tables((0x6F, 1, 1)),
                 HostLinkingModuleBinary.Exports(("run", 0, 1), ("t", 1, 0)),
                 HostLinkingModuleBinary.Code(([], [.. operation, 0x0B]))
-            )
+            ),
+            WasmSpecVersion.Core2
         );
         var expectedOffset = module.Functions[0].Instructions[write ? 2 : 1].ByteOffset;
         var host = new WasmHostModule("env");
@@ -190,7 +191,8 @@ internal partial class WasmFunction_InvokeTests
                     HostLinkingModuleBinary.Tables((0x6F, 1, 2)),
                     HostLinkingModuleBinary.Exports(("run", 0, 1), ("t", 1, 0)),
                     HostLinkingModuleBinary.Code(([], [0x10, 0, 0xD0, 0x6F, 0x41, 1, 0xFC, 0x0F, 0, 0x0B]))
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate()
             .Instantiate(executionContext, [host]);
@@ -253,7 +255,8 @@ internal partial class WasmFunction_InvokeTests
                         ),
                         ([], [0x20, 0, 0x20, 1, 0xFC, 0x0F, tableIndex, 0xFC, 0x10, tableIndex, 0x0B])
                     )
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate();
     }

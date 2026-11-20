@@ -51,7 +51,8 @@ internal partial class WasmModule_InstantiateTests
                             ]
                         )
                     )
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate();
         var host = new WasmHostModule("env");
@@ -112,7 +113,8 @@ internal partial class WasmModule_InstantiateTests
                     HostLinkingModuleBinary.Globals((0x7F, true, [0x41, 0x00, 0x0B])),
                     HostLinkingModuleBinary.Exports(("start", 0, 1), ("value", 3, 0)),
                     HostLinkingModuleBinary.Code(([], [0x10, 0x00, 0x41, 0x07, 0x24, 0x00, 0x0B]))
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate()
             .Instantiate(executionContext, [host], new(1));
@@ -126,7 +128,8 @@ internal partial class WasmModule_InstantiateTests
                     HostLinkingModuleBinary.Globals((0x7F, true, [0x41, 0x2A, 0x0B])),
                     HostLinkingModuleBinary.Exports(("start", 0, 0), ("value", 3, 0)),
                     HostLinkingModuleBinary.Start(0)
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate();
 
@@ -201,7 +204,8 @@ internal partial class WasmModule_InstantiateTests
                         ),
                         ([], [0x23, 0x01, 0x0B])
                     )
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate();
 
@@ -266,7 +270,8 @@ internal partial class WasmModule_InstantiateTests
                     HostLinkingModuleBinary.Functions(0),
                     HostLinkingModuleBinary.Start(0),
                     HostLinkingModuleBinary.Code(([], [0x10, 0x00, 0x0B]))
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate();
 
@@ -308,7 +313,8 @@ internal partial class WasmModule_InstantiateTests
                     HostLinkingModuleBinary.Functions(0),
                     HostLinkingModuleBinary.Start(1),
                     HostLinkingModuleBinary.Code(([], [0x10, 0x00, 0x0B]))
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate();
         var outerHost = new WasmHostModule("outer");
@@ -326,7 +332,8 @@ internal partial class WasmModule_InstantiateTests
                     HostLinkingModuleBinary.Functions(1),
                     HostLinkingModuleBinary.Exports(("run", 0, 1)),
                     HostLinkingModuleBinary.Code(([], [0x41, 0x2A, 0x10, 0x00, 0x0B]))
-                )
+                ),
+                WasmSpecVersion.Core2
             )
             .Validate()
             .Instantiate(executionContext, [outerHost], new(4));
