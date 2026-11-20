@@ -9,7 +9,7 @@ namespace WasmSharp.Instructions;
 /// <param name="immediate">即値の符号化</param>
 /// <param name="stackEffect">検証時のスタック効果</param>
 /// <param name="validation">命令の検証規則</param>
-/// <param name="executionHandler">Interpreterに宣言された静的handler名 未対応の宣言ではnull</param>
+/// <param name="executionHandler">Interpreterのhandler名または定数式と共有するIntegerArithmeticの二項演算名 未対応の宣言ではnull</param>
 [AttributeUsage(AttributeTargets.Class, AllowMultiple = true, Inherited = false)]
 internal sealed class InstructionAttribute(
     byte prefix,
@@ -52,7 +52,7 @@ internal sealed class InstructionAttribute(
     public ValidationRule Validation { get; } = validation;
 
     /// <summary>
-    /// 対応済み命令の静的handler名を取得する
+    /// Interpreterのhandler名または定数式と共有するIntegerArithmeticの二項演算名を取得する
     /// </summary>
     public string? ExecutionHandler { get; } = executionHandler;
 
@@ -72,9 +72,10 @@ internal sealed class InstructionAttribute(
     public byte LaneCount { get; set; }
 
     /// <summary>
-    /// Core 3.0の定数式で使用できる整数の二項演算に対応するIntegerArithmeticのメソッド名
+    /// 関数とCore 3.0の定数式が共有する二項演算かどうかを取得または設定する
     /// </summary>
-    public string? ConstantBinaryOperation { get; set; }
+    /// <remarks>trueの場合はExecutionHandlerで指定したIntegerArithmeticのメソッドから実行handlerを生成する</remarks>
+    public bool IsConstantBinaryOperation { get; set; }
 
     /// <summary>
     /// スタック下側から上側の入力型列をコピーして数値命令を宣言する
@@ -85,7 +86,7 @@ internal sealed class InstructionAttribute(
     /// <param name="immediate">即値の符号化</param>
     /// <param name="stackEffect">検証時のスタック効果</param>
     /// <param name="validation">命令の検証規則</param>
-    /// <param name="executionHandler">Interpreterに宣言された静的handler名</param>
+    /// <param name="executionHandler">Interpreterのhandler名または定数式と共有するIntegerArithmeticの二項演算名</param>
     /// <param name="inputTypes">スタック下側から上側の入力数値型列</param>
     /// <param name="resultType">結果の数値型</param>
     public InstructionAttribute(
@@ -113,7 +114,7 @@ internal sealed class InstructionAttribute(
     /// <param name="immediate">即値の符号化</param>
     /// <param name="stackEffect">検証時のスタック効果</param>
     /// <param name="validation">命令の検証規則</param>
-    /// <param name="executionHandler">Interpreterに宣言された静的handler名</param>
+    /// <param name="executionHandler">Interpreterのhandler名または定数式と共有するIntegerArithmeticの二項演算名</param>
     /// <param name="inputCount">同じ型の入力値の個数</param>
     /// <param name="inputType">入力の数値型</param>
     /// <param name="resultType">結果の数値型</param>

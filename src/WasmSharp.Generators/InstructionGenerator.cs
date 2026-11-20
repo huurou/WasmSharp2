@@ -172,7 +172,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
                 )
                 : null,
             attribute.NamedArguments.Where(x => x.Key == "LaneCount").Select(x => (byte)x.Value.Value!).SingleOrDefault(),
-            (string?)attribute.NamedArguments.FirstOrDefault(x => x.Key == "ConstantBinaryOperation").Value.Value,
+            attribute.NamedArguments.Any(x => x.Key == "IsConstantBinaryOperation" && x.Value.Value is true),
             location
         );
         if (
@@ -200,6 +200,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
         if (
             numericStackEffect != numericValidation
             || numericStackEffect != (signature != null)
+            || (declaration.IsConstantBinaryOperation && signature is not { InputTypes.Length: 2 })
             || (
                 signature != null
                 && (
@@ -213,7 +214,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
         {
             return (null, Diagnostic.Create(_incompleteDeclaration, location, declaration.Name));
         }
-        if (declaration.Handler == null)
+        if (declaration.Handler == null || declaration.IsConstantBinaryOperation)
         {
             return (declaration, null);
         }
@@ -473,8 +474,8 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
                 memory == null
                     ? "null"
                     : $"new MemoryAccessSignature(global::WasmSharp.WasmValueKind.{memory.ValueType}, {memory.ByteWidth}, {(memory.SignExtend ? "true" : "false")})";
-            var constantOperation = instruction.ConstantBinaryOperation is { } operation
-                ? $"global::WasmSharp.Execution.IntegerArithmetic.@{operation}"
+            var constantOperation = instruction.IsConstantBinaryOperation
+                ? GetIntegerArithmeticMethod(instruction.Handler!)
                 : "null";
             source.AppendLine(
                 $"        [{key}] = new({key}, {SymbolDisplay.FormatLiteral(instruction.Name, true)}, ImmediateKind.{instruction.Immediate}, StackEffectKind.{instruction.StackEffect}, ValidationRule.{instruction.Validation}, {executionOpcode}, {numericSignature}, {memoryAccessSignature}, {instruction.LaneCount}, {constantOperation}),"
@@ -499,9 +500,9 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
     }
 
     /// <summary>
-    /// 実行opcodeと宣言済みhandlerを結び付けるInterpreterの実行ループを生成する
+    /// Interpreterの実行ループと、定数式と同じ二項演算を呼ぶhandlerを生成する
     /// </summary>
-    /// <param name="instructions">handler契約の検査を通過した命令宣言を含む一覧</param>
+    /// <param name="instructions">検証を通過した命令宣言の一覧</param>
     /// <returns>handlerを持つ宣言の実行分岐と、失敗結果を保持する実行ループのC#ソース</returns>
     private static string GenerateInterpreter(ImmutableArray<InstructionDeclaration> instructions)
     {
@@ -554,10 +555,35 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
                     }
                     return default;
                 }
-            }
             """
         );
+        foreach (var handler in instructions.Where(x => x.IsConstantBinaryOperation).Select(x => x.Handler!).Distinct())
+        {
+            source.AppendLine(
+                $$"""
+
+                    /// <summary>
+                    /// スタックの2個のオペランドに{{handler}}を適用し、結果を積む
+                    /// </summary>
+                    internal static ExecutionResult @{{handler}}(InterpreterContext context, in Instruction instruction)
+                    {
+                        var right = context.PopValue();
+                        context.PushValue({{GetIntegerArithmeticMethod(handler)}}(context.PopValue(), right));
+                        return default;
+                    }
+                """
+            );
+        }
+        source.AppendLine("}");
         return source.ToString();
+    }
+
+    /// <summary>
+    /// 関数と定数式で共有する二項演算のメソッド名を型名で修飾する
+    /// </summary>
+    private static string GetIntegerArithmeticMethod(string handler)
+    {
+        return $"global::WasmSharp.Execution.IntegerArithmetic.@{handler}";
     }
 
     /// <summary>
@@ -569,11 +595,11 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
     /// <param name="Immediate">即値の符号化を表す列挙子名</param>
     /// <param name="StackEffect">スタック効果を表す列挙子名</param>
     /// <param name="Validation">検証規則を表す列挙子名</param>
-    /// <param name="Handler">対応するInterpreterの静的handler名 未対応の宣言ではnull</param>
+    /// <param name="Handler">Interpreterのhandler名または定数式と共有するIntegerArithmeticの二項演算名 未対応の宣言ではnull</param>
     /// <param name="NumericSignature">数値命令の型効果を表す属性値 数値以外の宣言ではnull</param>
     /// <param name="MemoryAccessSignature">ロード命令・ストア命令のアクセス情報 それ以外の宣言ではnull</param>
     /// <param name="LaneCount">lane即値の上限 lane即値を持たない場合は0</param>
-    /// <param name="ConstantBinaryOperation">Core 3.0の定数式で許可する二項演算のメソッド名</param>
+    /// <param name="IsConstantBinaryOperation">handlerをCore 3.0の定数式と共有する二項演算から生成する場合はtrue</param>
     /// <param name="Location">属性宣言のソース上の位置</param>
     private sealed record InstructionDeclaration(
         byte Prefix,
@@ -586,7 +612,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
         NumericSignatureDeclaration? NumericSignature,
         MemoryAccessSignatureDeclaration? MemoryAccessSignature,
         byte LaneCount,
-        string? ConstantBinaryOperation,
+        bool IsConstantBinaryOperation,
         Location Location
     )
     {

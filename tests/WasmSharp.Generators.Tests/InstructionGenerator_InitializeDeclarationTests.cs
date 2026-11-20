@@ -133,6 +133,45 @@ internal partial class InstructionGenerator_InitializeTests
     }
 
     [Test]
+    [Arguments(1)]
+    [Arguments(3)]
+    public async Task 定数式の二項演算で入力数が2個と異なる_命令の属性位置に不完全宣言の診断を報告する(int inputCount)
+    {
+        // Arrange
+        var attribute = $"""
+            Instruction(0, 0x6B, "i32.sub", ImmediateKind.None, StackEffectKind.Numeric, ValidationRule.Numeric,
+                nameof(Execution.IntegerArithmetic.I32Sub), {inputCount}, WasmValueKind.I32, WasmValueKind.I32,
+                IsConstantBinaryOperation = true)
+            """;
+        var compilation = GeneratorTestSource.CreateCompilation(
+            $$"""
+            namespace WasmSharp.Instructions
+            {
+                [{{attribute}}]
+                internal static partial class InstructionSet;
+            }
+            namespace WasmSharp.Execution
+            {
+                internal static class IntegerArithmetic
+                {
+                    internal static WasmValue I32Sub(WasmValue left, WasmValue right) => default;
+                }
+            }
+            """
+        );
+        GeneratorDriver driver = CSharpGeneratorDriver.Create(new InstructionGenerator());
+
+        // Act
+        driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out _, out var diagnostics);
+
+        // Assert
+        await GeneratorTestSource.AssertDiagnostic(driver, diagnostics, "WSIG002");
+        await Assert
+            .That(diagnostics[0].Location.SourceTree!.GetText().ToString(diagnostics[0].Location.SourceSpan))
+            .IsEqualTo(attribute);
+    }
+
+    [Test]
     public async Task 属性の引数個数が一致しない_属性位置に不完全宣言の診断を報告して生成を中断する()
     {
         // Arrange

@@ -945,11 +945,11 @@ namespace WasmSharp.Instructions;
     ImmediateKind.None,
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
-    nameof(Interpreter.I32Add),
+    nameof(IntegerArithmetic.I32Add),
     2,
     WasmValueKind.I32,
     WasmValueKind.I32,
-    ConstantBinaryOperation = nameof(IntegerArithmetic.I32Add)
+    IsConstantBinaryOperation = true
 )]
 [Instruction(
     0,
@@ -958,11 +958,11 @@ namespace WasmSharp.Instructions;
     ImmediateKind.None,
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
-    nameof(Interpreter.I32Sub),
+    nameof(IntegerArithmetic.I32Sub),
     2,
     WasmValueKind.I32,
     WasmValueKind.I32,
-    ConstantBinaryOperation = nameof(IntegerArithmetic.I32Sub)
+    IsConstantBinaryOperation = true
 )]
 [Instruction(
     0,
@@ -971,11 +971,11 @@ namespace WasmSharp.Instructions;
     ImmediateKind.None,
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
-    nameof(Interpreter.I32Mul),
+    nameof(IntegerArithmetic.I32Mul),
     2,
     WasmValueKind.I32,
     WasmValueKind.I32,
-    ConstantBinaryOperation = nameof(IntegerArithmetic.I32Mul)
+    IsConstantBinaryOperation = true
 )]
 [Instruction(
     0,
@@ -1164,11 +1164,11 @@ namespace WasmSharp.Instructions;
     ImmediateKind.None,
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
-    nameof(Interpreter.I64Add),
+    nameof(IntegerArithmetic.I64Add),
     2,
     WasmValueKind.I64,
     WasmValueKind.I64,
-    ConstantBinaryOperation = nameof(IntegerArithmetic.I64Add)
+    IsConstantBinaryOperation = true
 )]
 [Instruction(
     0,
@@ -1177,11 +1177,11 @@ namespace WasmSharp.Instructions;
     ImmediateKind.None,
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
-    nameof(Interpreter.I64Sub),
+    nameof(IntegerArithmetic.I64Sub),
     2,
     WasmValueKind.I64,
     WasmValueKind.I64,
-    ConstantBinaryOperation = nameof(IntegerArithmetic.I64Sub)
+    IsConstantBinaryOperation = true
 )]
 [Instruction(
     0,
@@ -1190,11 +1190,11 @@ namespace WasmSharp.Instructions;
     ImmediateKind.None,
     StackEffectKind.Numeric,
     ValidationRule.Numeric,
-    nameof(Interpreter.I64Mul),
+    nameof(IntegerArithmetic.I64Mul),
     2,
     WasmValueKind.I64,
     WasmValueKind.I64,
-    ConstantBinaryOperation = nameof(IntegerArithmetic.I64Mul)
+    IsConstantBinaryOperation = true
 )]
 [Instruction(
     0,
