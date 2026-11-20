@@ -192,7 +192,7 @@ internal static class FunctionValidator
 
                 case ValidationRule.MemorySize:
                 case ValidationRule.MemoryGrow:
-                    RequireMemory(0, instruction.ByteOffset);
+                    RequireMemory(instruction.Index, instruction.ByteOffset);
                     if (descriptor.Validation == ValidationRule.MemoryGrow)
                     {
                         Pop(WasmValueKind.I32, instruction.ByteOffset);
