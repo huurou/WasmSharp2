@@ -30,6 +30,9 @@ internal readonly struct Instruction(
     byte laneIndex = 0
 )
 {
+    private readonly uint _memoryAlignment = memoryArgument.Alignment;
+    private readonly ulong _memoryOffset = memoryArgument.Offset;
+
     /// <summary>
     /// 命令宣言から生成された実行opcode
     /// </summary>
@@ -64,7 +67,7 @@ internal readonly struct Instruction(
     /// <summary>
     /// メモリ命令のアラインメント指数とオフセット
     /// </summary>
-    internal MemoryArgument MemoryArgument { get; } = memoryArgument;
+    internal MemoryArgument MemoryArgument => new MemoryArgument(_memoryAlignment, _memoryOffset);
 
     /// <summary>
     /// ロード命令・ストア命令の値型・アクセス幅・符号拡張の指定

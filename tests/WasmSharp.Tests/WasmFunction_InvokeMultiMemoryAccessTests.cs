@@ -82,6 +82,28 @@ internal partial class WasmFunction_InvokeTests
     }
 
     [Test]
+    [Arguments((byte)0x09, "81028304810283048102830481028304")] // v128.load32_splat
+    [Arguments((byte)0x5C, "81028304000000000000000000000000")] // v128.load32_zero
+    [Arguments((byte)0x02, "81000200830004008500060087000800")] // v128.load8x8_u
+    public async Task Core3でSIMDロードにメモリ1を指定する_複製とゼロ埋めと符号なし拡張の各命令が指定先の値を使う(
+        byte loadOpcode,
+        string expected
+    )
+    {
+        // Arrange
+        var context = new WasmExecutionContext();
+        var instance = CreateMemoryAccessInstance(context, 0x7B, [0xFD, loadOpcode, 0x40, 1, 4], [0xFD, 0x0B, 4, 0]);
+        instance.GetMemory("first").Write(11, [1, 2, 3, 4, 5, 6, 7, 8]);
+        instance.GetMemory("second").Write(11, [0x81, 2, 0x83, 4, 0x85, 6, 0x87, 8]);
+
+        // Act
+        var loaded = instance.GetFunction("load").Invoke(context, [WasmValue.FromI32(7)]).Values[0];
+
+        // Assert
+        await Assert.That(loaded).IsEqualTo(Vector(expected));
+    }
+
+    [Test]
     public async Task Core3複数メモリでv128のlaneを転送する_指定したメモリのオフセットとlane番号を区別する()
     {
         // Arrange

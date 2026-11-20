@@ -8,6 +8,9 @@ namespace WasmSharp.Modules;
 /// </summary>
 internal readonly struct DecodedInstruction
 {
+    private readonly uint _memoryAlignment;
+    private readonly ulong _memoryOffset;
+
     /// <summary>
     /// 通常命令またはprefix付き拡張命令の識別子
     /// </summary>
@@ -31,7 +34,7 @@ internal readonly struct DecodedInstruction
     /// <summary>
     /// メモリ命令のアラインメント指数とオフセット
     /// </summary>
-    internal MemoryArgument MemoryArgument { get; }
+    internal MemoryArgument MemoryArgument => new MemoryArgument(_memoryAlignment, _memoryOffset);
 
     /// <summary>
     /// 構造化制御の型指定
@@ -96,7 +99,8 @@ internal readonly struct DecodedInstruction
         Immediate = immediate;
         Index = index;
         SecondaryIndex = secondaryIndex;
-        MemoryArgument = memoryArgument;
+        _memoryAlignment = memoryArgument.Alignment;
+        _memoryOffset = memoryArgument.Offset;
         BlockType = blockType;
         Labels = labels.IsDefault ? [] : labels;
         SelectTypes = selectTypes.IsDefault ? [] : selectTypes;

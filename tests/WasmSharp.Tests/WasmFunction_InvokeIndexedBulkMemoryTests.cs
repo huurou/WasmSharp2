@@ -120,8 +120,8 @@ internal partial class WasmFunction_InvokeTests
         using (Assert.Multiple())
         {
             await Assert.That(exception!.Reason).IsEqualTo(WasmTrapReason.MemoryOutOfBounds);
-            await Assert.That(firstAfter.SequenceEqual(firstBefore)).IsTrue();
-            await Assert.That(secondAfter.SequenceEqual(secondBefore)).IsTrue();
+            await Assert.That(firstAfter.AsSpan().CommonPrefixLength(firstBefore)).IsEqualTo(firstBefore.Length);
+            await Assert.That(secondAfter.AsSpan().CommonPrefixLength(secondBefore)).IsEqualTo(secondBefore.Length);
         }
     }
 

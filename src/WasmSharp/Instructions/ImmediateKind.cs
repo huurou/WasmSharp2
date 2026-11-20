@@ -68,12 +68,12 @@ internal enum ImmediateKind
     MemoryIndex,
 
     /// <summary>
-    /// コピー先とコピー元のメモリインデックス
+    /// memory.copyのコピー先のメモリインデックスを<c>Index</c>に、続くコピー元のインデックスを<c>SecondaryIndex</c>に保持する。
     /// </summary>
     MemoryIndexPair,
 
     /// <summary>
-    /// データインデックスと、その後に続くメモリインデックス
+    /// memory.initのデータインデックスを<c>Index</c>に、続くメモリインデックスを<c>SecondaryIndex</c>に保持する。
     /// </summary>
     DataAndMemoryIndex,
 

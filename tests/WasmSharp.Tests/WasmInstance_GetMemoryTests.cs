@@ -28,9 +28,11 @@ internal class WasmInstance_GetMemoryTests
         var exportedSecond = instance.GetMemory("b");
         exportedFirst.Write(0, [17]);
         exportedSecond.Write(0, [42]);
-        var importedByte = new byte[1];
+        var firstByte = new byte[1];
+        var secondByte = new byte[1];
         var definedByte = new byte[1];
-        second.Read(0, importedByte);
+        first.Read(0, firstByte);
+        second.Read(0, secondByte);
         instance.GetMemory("local").Read(0, definedByte);
 
         // Assert
@@ -38,7 +40,8 @@ internal class WasmInstance_GetMemoryTests
         {
             await Assert.That(exportedFirst).IsSameReferenceAs(first);
             await Assert.That(exportedSecond).IsSameReferenceAs(second);
-            await Assert.That(importedByte[0]).IsEqualTo((byte)42);
+            await Assert.That(firstByte[0]).IsEqualTo((byte)17);
+            await Assert.That(secondByte[0]).IsEqualTo((byte)42);
             await Assert.That(definedByte[0]).IsEqualTo((byte)0);
         }
     }

@@ -215,13 +215,13 @@ public sealed class WasmMemory
             return false;
         }
 
-        // 同じメモリでコピー先が後ろにある場合は、未転送のバイトを上書きしないよう末尾からコピーする。
         if (!ReferenceEquals(this, sourceMemory) || destination < source)
         {
             CopyForward(sourceMemory, destination, source, length);
         }
         else if (destination > source)
         {
+            // 別々のインデックスが同じメモリを指す場合も、未転送のバイトを上書きしないよう末尾からコピーする。
             CopyBackward(destination + length, source + length, length);
         }
 

@@ -145,6 +145,11 @@ internal static class ExpressionDecoder
     /// <summary>
     /// 対象の仕様に従ってメモリ即値を読み、lane命令の場合は続くlane番号も取得する
     /// </summary>
+    /// <param name="opcode">メモリにアクセスする命令の識別子</param>
+    /// <param name="byteOffset">入力バイナリ上の命令の開始位置</param>
+    /// <param name="reader">メモリ即値の先頭にある読み取り状態</param>
+    /// <param name="hasLane">メモリ即値の後にlane番号が続く場合はtrue</param>
+    /// <returns>メモリインデックスとメモリ即値を持ち、lane命令ではlane番号も保持する入力命令</returns>
     private static DecodedInstruction ReadMemoryArgument(
         OpcodeKey opcode,
         long byteOffset,
