@@ -13,6 +13,8 @@ namespace WasmSharp.Generators;
 [Generator(LanguageNames.CSharp)]
 internal sealed class InstructionGenerator : IIncrementalGenerator
 {
+    private const string IntegerArithmeticName = "IntegerArithmetic";
+
     /// <summary>
     /// prefixと命令番号が重複する命令宣言の診断
     /// </summary>
@@ -38,12 +40,12 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
     );
 
     /// <summary>
-    /// 宣言で指定したhandlerがInterpreterに存在しない場合の診断
+    /// 宣言で指定したhandlerが定義先に存在しない場合の診断
     /// </summary>
     private readonly DiagnosticDescriptor _missingHandler = new DiagnosticDescriptor(
         "WSIG003",
         "命令handlerの不在",
-        "命令 '{0}' のhandlerがInterpreterに存在しません。",
+        "命令 '{0}' のhandlerが{1}に存在しません。",
         "InstructionGeneration",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true
@@ -55,7 +57,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
     private readonly DiagnosticDescriptor _invalidHandler = new DiagnosticDescriptor(
         "WSIG004",
         "命令handlerの契約不一致",
-        "命令 '{0}' のhandlerは static ExecutionResult Handler(InterpreterContext context, in Instruction instruction) にしてください。",
+        "命令 '{0}' のhandlerは {1} にしてください。",
         "InstructionGeneration",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true
@@ -68,6 +70,18 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
         "WSIG005",
         "メモリアクセス情報の不整合",
         "命令 '{0}' のメモリアクセス情報・即値・スタック効果・検証規則を確認してください。",
+        "InstructionGeneration",
+        DiagnosticSeverity.Error,
+        isEnabledByDefault: true
+    );
+
+    /// <summary>
+    /// 生成するhandlerと手書きのメンバーが同じInterpreterに共存できない場合の診断
+    /// </summary>
+    private readonly DiagnosticDescriptor _conflictingHandler = new DiagnosticDescriptor(
+        "WSIG006",
+        "生成する命令handlerの名前の衝突",
+        "命令 '{0}' から生成するInterpreter.{1}が既存のメンバーと競合します。",
         "InstructionGeneration",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true
@@ -214,39 +228,104 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
         {
             return (null, Diagnostic.Create(_incompleteDeclaration, location, declaration.Name));
         }
-        if (declaration.Handler == null || declaration.IsConstantBinaryOperation)
+        var diagnostic = ValidateHandler(declaration, compilation);
+        return diagnostic == null ? (declaration, null) : (null, diagnostic);
+    }
+
+    /// <summary>
+    /// 命令宣言が指定するhandlerの定義と呼び出し契約を照合する
+    /// </summary>
+    private Diagnostic? ValidateHandler(InstructionDeclaration declaration, Compilation compilation)
+    {
+        if (declaration.Handler is not { } handler)
         {
-            return (declaration, null);
+            return null;
         }
 
-        var interpreter = compilation.GetTypeByMetadataName("WasmSharp.Execution.Interpreter");
-        var methods = interpreter?.GetMembers(declaration.Handler).OfType<IMethodSymbol>().ToArray();
+        var ownerName = declaration.IsConstantBinaryOperation ? IntegerArithmeticName : "Interpreter";
+        var owner = compilation.GetTypeByMetadataName($"WasmSharp.Execution.{ownerName}");
+        var methods = owner?.GetMembers(handler).OfType<IMethodSymbol>().ToArray();
         if (methods == null || methods.Length == 0)
         {
-            return (null, Diagnostic.Create(_missingHandler, location, declaration.Name));
+            return Diagnostic.Create(_missingHandler, declaration.Location, declaration.Name, ownerName);
         }
-        return methods.Any(IsHandler)
-            ? (declaration, null)
-            : (null, Diagnostic.Create(_invalidHandler, location, declaration.Name));
+        if (!methods.Any(x => IsHandler(x, declaration.IsConstantBinaryOperation, compilation)))
+        {
+            var contract = declaration.IsConstantBinaryOperation
+                ? "生成コードから呼び出せる static WasmValue Handler(WasmValue left, WasmValue right)"
+                : "static ExecutionResult Handler(InterpreterContext context, in Instruction instruction)";
+            return Diagnostic.Create(_invalidHandler, declaration.Location, declaration.Name, contract);
+        }
+        if (declaration.IsConstantBinaryOperation)
+        {
+            var interpreter = compilation.GetTypeByMetadataName("WasmSharp.Execution.Interpreter");
+            if (interpreter?.GetMembers(handler).Any(x => ConflictsWithGeneratedHandler(x, compilation)) == true)
+            {
+                return Diagnostic.Create(_conflictingHandler, declaration.Location, declaration.Name, handler);
+            }
+        }
+        return null;
     }
 
     /// <summary>
     /// メソッドが生成する命令handlerの呼び出し契約を満たすか判定する
     /// </summary>
     /// <param name="method">指定されたhandler名に一致する候補メソッド</param>
-    /// <returns>非ジェネリックのstaticメソッドで、値で返すExecutionResultとInterpreterContext・in Instructionの引数を持つ場合はtrue</returns>
-    private static bool IsHandler(IMethodSymbol method)
+    /// <param name="isConstantBinaryOperation">定数式と共有する演算を検査する場合はtrue</param>
+    /// <param name="compilation">生成コードから演算を呼び出せるか照合するコンパイル情報</param>
+    /// <returns>宣言に対応する呼び出し契約を満たす場合はtrue</returns>
+    private static bool IsHandler(IMethodSymbol method, bool isConstantBinaryOperation, Compilation compilation)
     {
-        return method.IsStatic
-            && !method.IsGenericMethod
-            && !method.ReturnsByRef
-            && !method.ReturnsByRefReadonly
-            && method.ReturnType.ToDisplayString() == "WasmSharp.Execution.ExecutionResult"
-            && method.Parameters.Length == 2
+        if (!method.IsStatic || method.IsGenericMethod || method.ReturnsByRef || method.ReturnsByRefReadonly)
+        {
+            return false;
+        }
+        if (isConstantBinaryOperation)
+        {
+            return method.CanBeReferencedByName
+                && method.ReturnType.ToDisplayString() == "WasmSharp.WasmValue"
+                && method.Parameters.Length == 2
+                && method.Parameters.All(x =>
+                    x.RefKind == RefKind.None && SymbolEqualityComparer.Default.Equals(x.Type, method.ReturnType)
+                )
+                && compilation.IsSymbolAccessibleWithin(method, compilation.Assembly);
+        }
+        return method.ReturnType.ToDisplayString() == "WasmSharp.Execution.ExecutionResult"
+            && HasInterpreterParameters(method, compilation)
+            && method.Parameters[0].NullableAnnotation != NullableAnnotation.Annotated
+            && method.Parameters[1].RefKind == RefKind.In;
+    }
+
+    /// <summary>
+    /// 手書きのメンバーと生成するhandlerが衝突するか、C#のオーバーロード規則に従って判定する
+    /// </summary>
+    private static bool ConflictsWithGeneratedHandler(ISymbol member, Compilation compilation)
+    {
+        // in、ref、outの違いだけではオーバーロードできない。
+        return member is not IMethodSymbol method
+            || (
+                !method.IsGenericMethod
+                && HasInterpreterParameters(method, compilation)
+                && method.Parameters[1].RefKind != RefKind.None
+            );
+    }
+
+    /// <summary>
+    /// 第1引数が値渡しのInterpreterContextで、第2引数がInstructionかを確認する
+    /// </summary>
+    private static bool HasInterpreterParameters(IMethodSymbol method, Compilation compilation)
+    {
+        // C#のメソッドの同一性では参照型のnull許容注釈を区別しない。
+        return method.Parameters.Length == 2
             && method.Parameters[0].RefKind == RefKind.None
-            && method.Parameters[0].Type.ToDisplayString() == "WasmSharp.Execution.InterpreterContext"
-            && method.Parameters[1].RefKind == RefKind.In
-            && method.Parameters[1].Type.ToDisplayString() == "WasmSharp.Execution.Instruction";
+            && SymbolEqualityComparer.Default.Equals(
+                method.Parameters[0].Type,
+                compilation.GetTypeByMetadataName("WasmSharp.Execution.InterpreterContext")
+            )
+            && SymbolEqualityComparer.Default.Equals(
+                method.Parameters[1].Type,
+                compilation.GetTypeByMetadataName("WasmSharp.Execution.Instruction")
+            );
     }
 
     /// <summary>
@@ -583,7 +662,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
     /// </summary>
     private static string GetIntegerArithmeticMethod(string handler)
     {
-        return $"global::WasmSharp.Execution.IntegerArithmetic.@{handler}";
+        return $"global::WasmSharp.Execution.{IntegerArithmeticName}.@{handler}";
     }
 
     /// <summary>

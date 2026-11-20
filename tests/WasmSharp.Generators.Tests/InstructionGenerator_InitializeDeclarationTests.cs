@@ -7,6 +7,15 @@ namespace WasmSharp.Generators.Tests;
 
 internal partial class InstructionGenerator_InitializeTests
 {
+    private const string BinaryAttribute = """
+        Instruction(0, 0x6B, "i32.sub", ImmediateKind.None, StackEffectKind.Numeric, ValidationRule.Numeric,
+            "Subtract", 2, WasmValueKind.I32, WasmValueKind.I32, IsConstantBinaryOperation = true)
+        """;
+    private const string BinaryMethod = """
+        internal static WasmValue Subtract(WasmValue left, WasmValue right)
+            => WasmValue.FromI32(unchecked(left.AsI32() - right.AsI32()));
+        """;
+
     [Test]
     [Arguments("null")]
     [Arguments("\"\"")]
@@ -172,6 +181,79 @@ internal partial class InstructionGenerator_InitializeTests
     }
 
     [Test]
+    [Arguments("", "", "WSIG003", "IntegerArithmetic")]
+    [Arguments("internal static int Subtract(WasmValue left, WasmValue right) => 0;", "", "WSIG004", "WasmValue")]
+    [Arguments(
+        "internal static WasmValue Subtract(WasmValue left, in WasmValue right) => left;",
+        "",
+        "WSIG004",
+        "WasmValue"
+    )]
+    [Arguments("private static WasmValue Subtract(WasmValue left, WasmValue right) => left;", "", "WSIG004", "WasmValue")]
+    [Arguments(
+        BinaryMethod,
+        "internal static int Subtract(InterpreterContext c, ref Instruction i) => 0;",
+        "WSIG006",
+        "Interpreter.Subtract"
+    )]
+    [Arguments(BinaryMethod, "internal static int Subtract => 0;", "WSIG006", "Interpreter.Subtract")]
+    [Arguments(
+        BinaryMethod,
+        "internal static int Subtract(InterpreterContext? c, in Instruction i) => 0;",
+        "WSIG006",
+        "Interpreter.Subtract"
+    )]
+    public async Task 共有二項演算の宣言からhandlerを生成できない_原因を命令の属性位置に報告する(
+        string operation,
+        string interpreterMember,
+        string expectedId,
+        string messagePart
+    )
+    {
+        // Arrange
+        var compilation = CreateBinaryOperationCompilation(operation, interpreterMember);
+        GeneratorDriver driver = CSharpGeneratorDriver.Create(new InstructionGenerator());
+
+        // Act
+        driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out _, out var diagnostics);
+
+        // Assert
+        await GeneratorTestSource.AssertDiagnostic(driver, diagnostics, expectedId);
+        using (Assert.Multiple())
+        {
+            await Assert.That(diagnostics[0].GetMessage()).Contains(messagePart);
+            await Assert
+                .That(diagnostics[0].Location.SourceTree!.GetText().ToString(diagnostics[0].Location.SourceSpan))
+                .IsEqualTo(BinaryAttribute);
+        }
+    }
+
+    [Test]
+    public async Task 共有二項演算のhandlerと値渡しのオーバーロードが共存する_生成コードをコンパイルして演算できる()
+    {
+        // Arrange
+        var compilation = CreateBinaryOperationCompilation(
+            BinaryMethod,
+            "internal static int Subtract(InterpreterContext c, Instruction i) => 0;"
+        );
+        GeneratorDriver driver = CSharpGeneratorDriver.Create(new InstructionGenerator());
+
+        // Act
+        driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out var output, out var diagnostics);
+
+        // Assert
+        await Assert.That(diagnostics).IsEmpty();
+        await GeneratorTestSource.AssertCompilesAndRuns(
+            output,
+            """
+            return WasmSharp.Instructions.InstructionSet.TryGet(new(0, 0x6B), out var descriptor)
+                && descriptor.ConstantBinaryOperation is { } subtract
+                && subtract(WasmSharp.WasmValue.FromI32(7), WasmSharp.WasmValue.FromI32(2)).AsI32() == 5;
+            """
+        );
+    }
+
+    [Test]
     public async Task 属性の引数個数が一致しない_属性位置に不完全宣言の診断を報告して生成を中断する()
     {
         // Arrange
@@ -276,6 +358,31 @@ internal partial class InstructionGenerator_InitializeTests
             return WasmSharp.Instructions.InstructionSet.TryGet(new(0, 0x41), out var descriptor)
                 && descriptor.Name == "custom<&>" && descriptor.ExecutionOpcode.HasValue;
             """
+        );
+    }
+
+    private static CSharpCompilation CreateBinaryOperationCompilation(string operation, string interpreterMember)
+    {
+        return GeneratorTestSource.CreateCompilation(
+            $$"""
+            namespace WasmSharp.Instructions
+            {
+                [{{BinaryAttribute}}]
+                internal static partial class InstructionSet;
+            }
+            namespace WasmSharp.Execution
+            {
+                internal static class IntegerArithmetic
+                {
+                    {{operation}}
+                }
+                internal static partial class Interpreter
+                {
+                    {{interpreterMember}}
+                }
+            }
+            """,
+            GeneratorTestSource.EXECUTION_CONTRACTS
         );
     }
 }

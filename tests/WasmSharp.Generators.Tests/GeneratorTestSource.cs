@@ -22,6 +22,7 @@ internal static class GeneratorTestSource
         {
             internal sealed class InterpreterContext(int frameCount)
             {
+                private readonly System.Collections.Generic.Stack<WasmValue> _operands = new System.Collections.Generic.Stack<WasmValue>();
                 public Instruction[] Instructions { get; init; } = [];
                 internal int FrameCount { get; private set; } = frameCount;
                 public int Pc { get; private set; }
@@ -29,6 +30,8 @@ internal static class GeneratorTestSource
                 public System.Collections.Generic.List<string> Log { get; } = [];
                 public uint FunctionIndex => 7;
                 public Instruction ReadNextInstruction() => Instructions[Pc++];
+                public WasmValue PopValue() => _operands.Pop();
+                public void PushValue(WasmValue value) => _operands.Push(value);
                 internal void CompleteFrame() => FrameCount--;
             }
         }

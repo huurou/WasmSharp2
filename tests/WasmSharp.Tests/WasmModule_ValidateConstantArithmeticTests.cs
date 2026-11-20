@@ -6,6 +6,25 @@ namespace WasmSharp.Tests;
 internal partial class WasmModule_ValidateTests
 {
     [Test]
+    public async Task Core3の定数式にi32のビット積を使う_型が合っていても演算命令の位置で拒否する()
+    {
+        // Arrange
+        byte[] expression = [0x41, 3, 0x41, 1, 0x71, 0x0B];
+        var bytes = HostLinkingModuleBinary.Create(HostLinkingModuleBinary.Globals((0x7F, false, expression)));
+        var module = WasmModule.Decode(bytes, WasmSpecVersion.Core3);
+
+        // Act & Assert
+        var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.Message).StartsWith("constant expression required");
+            await Assert
+                .That(exception.Location)
+                .IsEqualTo(new WasmFailureLocation(WasmProcessingStage.Validate, bytes.Length - 2, null, 6));
+        }
+    }
+
+    [Test]
     [Arguments("41016A", 2)] // i32.addの左オペランドがない
     [Arguments("420141016B", 2)] // i32.subの左にi64
     [Arguments("410142016C", 2)] // i32.mulの右にi64

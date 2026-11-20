@@ -425,6 +425,11 @@ internal partial class InstructionGenerator_InitializeTests
 
         // Assert
         await GeneratorTestSource.AssertDiagnostic(driver, diagnostics, expectedId);
+        var expectedMessage =
+            expectedId == "WSIG003"
+                ? "命令 'i32.add' のhandlerがInterpreterに存在しません。"
+                : "命令 'i32.add' のhandlerは static ExecutionResult Handler(InterpreterContext context, in Instruction instruction) にしてください。";
+        await Assert.That(diagnostics[0].GetMessage()).IsEqualTo(expectedMessage);
     }
 
     [Test]
@@ -848,6 +853,7 @@ internal partial class InstructionGenerator_InitializeTests
     [Arguments("ExecutionResult Handler(InterpreterContext context, in Instruction instruction)", "WSIG004")]
     [Arguments("static ExecutionResult Handler(InterpreterContext context, Instruction instruction)", "WSIG004")]
     [Arguments("static ExecutionResult Handler(in InterpreterContext context, in Instruction instruction)", "WSIG004")]
+    [Arguments("static ExecutionResult Handler(InterpreterContext? context, in Instruction instruction)", "WSIG004")]
     [Arguments("static ExecutionResult Handler(in Instruction instruction, InterpreterContext context)", "WSIG004")]
     [Arguments("static ExecutionResult Handler(InterpreterContext context, ref Instruction instruction)", "WSIG004")]
     [Arguments("static ExecutionResult Handler<T>(InterpreterContext context, in Instruction instruction)", "WSIG004")]
