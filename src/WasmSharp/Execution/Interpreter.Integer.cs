@@ -179,9 +179,8 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult I32Add(InterpreterContext context, in Instruction instruction)
     {
-        var right = context.PopValue().AsI32();
-        var left = context.PopValue().AsI32();
-        context.PushValue(WasmValue.FromI32(unchecked(left + right)));
+        var right = context.PopValue();
+        context.PushValue(IntegerArithmetic.I32Add(context.PopValue(), right));
         return default;
     }
 
@@ -193,9 +192,8 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult I32Sub(InterpreterContext context, in Instruction instruction)
     {
-        var right = context.PopValue().AsI32();
-        var left = context.PopValue().AsI32();
-        context.PushValue(WasmValue.FromI32(unchecked(left - right)));
+        var right = context.PopValue();
+        context.PushValue(IntegerArithmetic.I32Sub(context.PopValue(), right));
         return default;
     }
 
@@ -207,9 +205,8 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult I32Mul(InterpreterContext context, in Instruction instruction)
     {
-        var right = context.PopValue().AsI32();
-        var left = context.PopValue().AsI32();
-        context.PushValue(WasmValue.FromI32(unchecked(left * right)));
+        var right = context.PopValue();
+        context.PushValue(IntegerArithmetic.I32Mul(context.PopValue(), right));
         return default;
     }
 
@@ -221,9 +218,8 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult I64Add(InterpreterContext context, in Instruction instruction)
     {
-        var right = context.PopValue().AsI64();
-        var left = context.PopValue().AsI64();
-        context.PushValue(WasmValue.FromI64(unchecked(left + right)));
+        var right = context.PopValue();
+        context.PushValue(IntegerArithmetic.I64Add(context.PopValue(), right));
         return default;
     }
 
@@ -235,9 +231,8 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult I64Sub(InterpreterContext context, in Instruction instruction)
     {
-        var right = context.PopValue().AsI64();
-        var left = context.PopValue().AsI64();
-        context.PushValue(WasmValue.FromI64(unchecked(left - right)));
+        var right = context.PopValue();
+        context.PushValue(IntegerArithmetic.I64Sub(context.PopValue(), right));
         return default;
     }
 
@@ -249,9 +244,8 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult I64Mul(InterpreterContext context, in Instruction instruction)
     {
-        var right = context.PopValue().AsI64();
-        var left = context.PopValue().AsI64();
-        context.PushValue(WasmValue.FromI64(unchecked(left * right)));
+        var right = context.PopValue();
+        context.PushValue(IntegerArithmetic.I64Mul(context.PopValue(), right));
         return default;
     }
 

@@ -172,6 +172,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
                 )
                 : null,
             attribute.NamedArguments.Where(x => x.Key == "LaneCount").Select(x => (byte)x.Value.Value!).SingleOrDefault(),
+            (string?)attribute.NamedArguments.FirstOrDefault(x => x.Key == "ConstantBinaryOperation").Value.Value,
             location
         );
         if (
@@ -433,6 +434,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
             /// <param name="NumericSignature">数値命令の入力型列・結果型 数値以外の場合はnull</param>
             /// <param name="MemoryAccessSignature">ロード命令・ストア命令のアクセス情報 それ以外の場合はnull</param>
             /// <param name="LaneCount">lane即値の上限 lane即値を持たない場合は0</param>
+            /// <param name="ConstantBinaryOperation">Core 3.0の定数式で許可する二項演算 それ以外の場合はnull</param>
             internal readonly record struct InstructionDescriptor(
                 OpcodeKey Opcode,
                 string Name,
@@ -442,7 +444,8 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
                 ExecutionOpcode? ExecutionOpcode,
                 NumericSignature? NumericSignature,
                 MemoryAccessSignature? MemoryAccessSignature,
-                byte LaneCount);
+                byte LaneCount,
+                global::System.Func<global::WasmSharp.WasmValue, global::WasmSharp.WasmValue, global::WasmSharp.WasmValue>? ConstantBinaryOperation);
 
             /// <summary>
             /// 命令宣言から生成された命令情報の参照先
@@ -470,8 +473,11 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
                 memory == null
                     ? "null"
                     : $"new MemoryAccessSignature(global::WasmSharp.WasmValueKind.{memory.ValueType}, {memory.ByteWidth}, {(memory.SignExtend ? "true" : "false")})";
+            var constantOperation = instruction.ConstantBinaryOperation is { } operation
+                ? $"global::WasmSharp.Execution.IntegerArithmetic.@{operation}"
+                : "null";
             source.AppendLine(
-                $"        [{key}] = new({key}, {SymbolDisplay.FormatLiteral(instruction.Name, true)}, ImmediateKind.{instruction.Immediate}, StackEffectKind.{instruction.StackEffect}, ValidationRule.{instruction.Validation}, {executionOpcode}, {numericSignature}, {memoryAccessSignature}, {instruction.LaneCount}),"
+                $"        [{key}] = new({key}, {SymbolDisplay.FormatLiteral(instruction.Name, true)}, ImmediateKind.{instruction.Immediate}, StackEffectKind.{instruction.StackEffect}, ValidationRule.{instruction.Validation}, {executionOpcode}, {numericSignature}, {memoryAccessSignature}, {instruction.LaneCount}, {constantOperation}),"
             );
         }
         source.AppendLine(
@@ -567,6 +573,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
     /// <param name="NumericSignature">数値命令の型効果を表す属性値 数値以外の宣言ではnull</param>
     /// <param name="MemoryAccessSignature">ロード命令・ストア命令のアクセス情報 それ以外の宣言ではnull</param>
     /// <param name="LaneCount">lane即値の上限 lane即値を持たない場合は0</param>
+    /// <param name="ConstantBinaryOperation">Core 3.0の定数式で許可する二項演算のメソッド名</param>
     /// <param name="Location">属性宣言のソース上の位置</param>
     private sealed record InstructionDeclaration(
         byte Prefix,
@@ -579,6 +586,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
         NumericSignatureDeclaration? NumericSignature,
         MemoryAccessSignatureDeclaration? MemoryAccessSignature,
         byte LaneCount,
+        string? ConstantBinaryOperation,
         Location Location
     )
     {

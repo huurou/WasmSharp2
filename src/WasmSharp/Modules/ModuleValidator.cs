@@ -180,7 +180,8 @@ internal static class ModuleValidator
                 global.Type.ValueKind,
                 globalTypes[..visibleGlobalCount],
                 functionCount,
-                6
+                6,
+                module.SpecVersion
             );
         }
     }

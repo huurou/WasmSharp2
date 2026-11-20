@@ -72,6 +72,11 @@ internal sealed class InstructionAttribute(
     public byte LaneCount { get; set; }
 
     /// <summary>
+    /// Core 3.0の定数式で使用できる整数の二項演算に対応するIntegerArithmeticのメソッド名
+    /// </summary>
+    public string? ConstantBinaryOperation { get; set; }
+
+    /// <summary>
     /// スタック下側から上側の入力型列をコピーして数値命令を宣言する
     /// </summary>
     /// <param name="prefix">通常命令では0、拡張命令では先頭のprefix</param>
