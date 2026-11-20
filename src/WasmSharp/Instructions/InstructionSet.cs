@@ -948,7 +948,8 @@ namespace WasmSharp.Instructions;
     nameof(Interpreter.I32Add),
     2,
     WasmValueKind.I32,
-    WasmValueKind.I32
+    WasmValueKind.I32,
+    ConstantBinaryOperation = nameof(IntegerArithmetic.I32Add)
 )]
 [Instruction(
     0,
@@ -960,7 +961,8 @@ namespace WasmSharp.Instructions;
     nameof(Interpreter.I32Sub),
     2,
     WasmValueKind.I32,
-    WasmValueKind.I32
+    WasmValueKind.I32,
+    ConstantBinaryOperation = nameof(IntegerArithmetic.I32Sub)
 )]
 [Instruction(
     0,
@@ -972,7 +974,8 @@ namespace WasmSharp.Instructions;
     nameof(Interpreter.I32Mul),
     2,
     WasmValueKind.I32,
-    WasmValueKind.I32
+    WasmValueKind.I32,
+    ConstantBinaryOperation = nameof(IntegerArithmetic.I32Mul)
 )]
 [Instruction(
     0,
@@ -1164,7 +1167,8 @@ namespace WasmSharp.Instructions;
     nameof(Interpreter.I64Add),
     2,
     WasmValueKind.I64,
-    WasmValueKind.I64
+    WasmValueKind.I64,
+    ConstantBinaryOperation = nameof(IntegerArithmetic.I64Add)
 )]
 [Instruction(
     0,
@@ -1176,7 +1180,8 @@ namespace WasmSharp.Instructions;
     nameof(Interpreter.I64Sub),
     2,
     WasmValueKind.I64,
-    WasmValueKind.I64
+    WasmValueKind.I64,
+    ConstantBinaryOperation = nameof(IntegerArithmetic.I64Sub)
 )]
 [Instruction(
     0,
@@ -1188,7 +1193,8 @@ namespace WasmSharp.Instructions;
     nameof(Interpreter.I64Mul),
     2,
     WasmValueKind.I64,
-    WasmValueKind.I64
+    WasmValueKind.I64,
+    ConstantBinaryOperation = nameof(IntegerArithmetic.I64Mul)
 )]
 [Instruction(
     0,

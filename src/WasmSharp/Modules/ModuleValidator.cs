@@ -161,7 +161,14 @@ internal static class ModuleValidator
         var importedGlobals = module.Imports.OfType<GlobalImport>().Select(x => x.Type).ToArray();
         foreach (var global in module.Globals)
         {
-            ConstantInitializer.Validate(global.Initializer, global.Type.ValueKind, importedGlobals, functionCount, 6);
+            ConstantInitializer.Validate(
+                global.Initializer,
+                global.Type.ValueKind,
+                importedGlobals,
+                functionCount,
+                6,
+                module.SpecVersion
+            );
         }
     }
 
