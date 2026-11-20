@@ -6,6 +6,33 @@ namespace WasmSharp.Tests;
 internal partial class WasmModule_ValidateTests
 {
     [Test]
+    [Arguments("3F81010B")]
+    [Arguments("41014081010B")]
+    public async Task Core3でページ数の取得または拡張に存在しないメモリを指定する_検証で指定番号を報告する(
+        string instructions
+    )
+    {
+        // Arrange
+        var bytes = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Types(([], [0x7F])),
+            HostLinkingModuleBinary.Functions(0),
+            HostLinkingModuleBinary.Memories((1, null)),
+            HostLinkingModuleBinary.Code(([], Convert.FromHexString(instructions)))
+        );
+        var module = WasmModule.Decode(bytes, WasmSpecVersion.Core3);
+
+        // Act & Assert
+        var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.Message).StartsWith("unknown memory 129");
+            await Assert
+                .That(exception.Location)
+                .IsEqualTo(new WasmFailureLocation(WasmProcessingStage.Validate, bytes.Length - 4, 0, 10));
+        }
+    }
+
+    [Test]
     [Arguments(false, "FC0A00000B", "unknown memory 0", 5)]
     [Arguments(false, "00FC0A00000B", "unknown memory 0", 5)]
     [Arguments(false, "FC0B000B", "unknown memory 0", 4)]
