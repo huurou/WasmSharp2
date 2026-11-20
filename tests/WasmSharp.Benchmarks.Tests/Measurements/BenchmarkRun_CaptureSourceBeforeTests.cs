@@ -22,7 +22,6 @@ internal class BenchmarkRun_CaptureSourceBeforeTests
     {
         // Arrange
         using var fixture = new SourceCaptureFixture();
-        fixture.Git("config", "--local", "core.autocrlf", "false");
         const string RELATIVE_PATH = "src/WasmSharp/Runtime.cs";
         byte[] indexLine = [.. "class Runtime {} // "u8, 0xFF, 0x0A];
         byte[] worktreeLine = [.. "class Runtime {} // "u8, 0xFE, 0x0A];
