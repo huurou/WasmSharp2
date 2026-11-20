@@ -76,6 +76,11 @@ internal partial class WasmModule_ValidateTests
 
     [Test]
     [Arguments("410141026A", (byte)0x7F, 1)]
+    [Arguments("410141026B", (byte)0x7F, 1)]
+    [Arguments("410141026C", (byte)0x7F, 1)]
+    [Arguments("420142027C", (byte)0x7E, 1)]
+    [Arguments("420142027D", (byte)0x7E, 1)]
+    [Arguments("420142027E", (byte)0x7E, 1)]
     [Arguments("420079", (byte)0x7E, 1)]
     [Arguments("430000803F8B", (byte)0x7D, 1)]
     [Arguments("44000000000000F03FA0", (byte)0x7C, 1)]

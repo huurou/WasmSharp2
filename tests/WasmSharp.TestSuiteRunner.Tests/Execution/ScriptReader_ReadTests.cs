@@ -102,6 +102,18 @@ internal class ScriptReader_ReadTests
         "固定形式にないexpected[0].extraがあります。"
     )]
     [Arguments(
+        """{"type":"assert_return","line":1,"action":{"type":"get","field":"g"},"expected":[{"type":"refnull","extra":0}]}""",
+        "固定形式にないexpected[0].extraがあります。"
+    )]
+    [Arguments(
+        """{"type":"action","line":1,"action":{"type":"invoke","field":"f","args":[{"type":"anyref"}]}}""",
+        "action.args[0].valueがありません。"
+    )]
+    [Arguments(
+        """{"type":"action","line":1,"action":{"type":"invoke","field":"f","args":[{"type":"refnull","value":"null"}]}}""",
+        "action.args[0].typeのrefnullは固定形式にない値です。"
+    )]
+    [Arguments(
         """{"type":"module","line":1,"filename":"a.wat","module_type":3,"binary_filename":"a.wasm"}""",
         "module_typeが文字列ではありません。"
     )]
@@ -109,10 +121,7 @@ internal class ScriptReader_ReadTests
         """{"type":"module","line":1,"filename":"a.wat","module_type":"text","binary_filename":3}""",
         "binary_filenameが文字列ではありません。"
     )]
-    public async Task Core3のcommandに未知の項目または文字列以外の参照がある_問題の項目名を診断する(
-        string json,
-        string message
-    )
+    public async Task Core3のcommandが固定形式に合わない_問題の項目と理由を診断する(string json, string message)
     {
         // Arrange
         var document = Parse(json, wasmTools: true);

@@ -1,3 +1,4 @@
+using TUnit.Assertions.Enums;
 using WasmSharp.Exceptions;
 using WasmSharp.Modules;
 using WasmSharp.Modules.Definitions;
@@ -8,6 +9,29 @@ namespace WasmSharp.Tests;
 
 internal partial class WasmModule_InstantiateTests
 {
+    [Test]
+    public async Task Core3の定義globalからデータの位置を計算する_その位置から配置したバイト列を読み出せる()
+    {
+        // Arrange
+        // global.get 0、i32.const 5、i32.addでオフセットを12にする。
+        byte[] offset = [0x23, 0, 0x41, 5, 0x6A, 0x0B];
+        var bytes = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Memories((1, null)),
+            HostLinkingModuleBinary.Globals((0x7F, false, [0x41, 7, 0x0B])),
+            HostLinkingModuleBinary.Exports(("memory", 2, 0)),
+            HostLinkingModuleBinary.Section(11, [1, 0, .. offset, 3, 0x11, 0x80, 0xFF])
+        );
+        var module = WasmModule.Decode(bytes, WasmSpecVersion.Core3);
+
+        // Act
+        var instance = module.Validate().Instantiate(new WasmExecutionContext(), []);
+        var actual = new byte[3];
+        instance.GetMemory("memory").Read(12, actual);
+
+        // Assert
+        await Assert.That(actual).IsEquivalentTo(new byte[] { 0x11, 0x80, 0xFF }, CollectionOrdering.Matching);
+    }
+
     [Test]
     [Arguments(false)]
     [Arguments(true)]

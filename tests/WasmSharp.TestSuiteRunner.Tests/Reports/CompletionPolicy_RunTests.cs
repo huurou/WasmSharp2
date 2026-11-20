@@ -62,6 +62,39 @@ internal class CompletionPolicy_RunTests
     }
 
     [Test]
+    [Arguments("原因なし")]
+    [Arguments("起点なし")]
+    [Arguments("起点の記録なし")]
+    public async Task Blockedの起点を確認できない_未対応だけを原因とする成功に含めない(string missing)
+    {
+        // Arrange
+        var id = new CaseId("a.wast", 0);
+        var cause = missing switch
+        {
+            "原因なし" => null,
+            "起点なし" => new CaseCause { Direct = [id] },
+            _ => new CaseCause { Direct = [id], Origins = [new CaseId("unknown.wast", 0)] },
+        };
+        var report = RunReportFixture.Create(
+            RunReportFixture.Case("a.wast", 0, CaseCategory.Setup, CaseOutcome.RuntimeUnsupported),
+            RunReportFixture.Case("a.wast", 1, CaseCategory.Action, CaseOutcome.Blocked) with
+            {
+                Cause = cause,
+            }
+        );
+
+        // Act
+        var decision = CompletionPolicy.Run(report, ReportStore.Validate(report), saved: true);
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(decision.ExitCode).IsEqualTo(1);
+            await Assert.That(decision.Reasons).Contains("runtime_unsupported以外を原因とするblockedが1件あります。");
+        }
+    }
+
+    [Test]
     public async Task 未対応と対象外とその未対応を原因とするblockedだけが残る_成功の0を返す()
     {
         // Arrange

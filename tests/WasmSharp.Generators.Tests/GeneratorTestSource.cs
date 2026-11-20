@@ -22,6 +22,7 @@ internal static class GeneratorTestSource
         {
             internal sealed class InterpreterContext(int frameCount)
             {
+                private readonly System.Collections.Generic.Stack<WasmValue> _operands = new System.Collections.Generic.Stack<WasmValue>();
                 public Instruction[] Instructions { get; init; } = [];
                 internal int FrameCount { get; private set; } = frameCount;
                 public int Pc { get; private set; }
@@ -29,6 +30,8 @@ internal static class GeneratorTestSource
                 public System.Collections.Generic.List<string> Log { get; } = [];
                 public uint FunctionIndex => 7;
                 public Instruction ReadNextInstruction() => Instructions[Pc++];
+                public WasmValue PopValue() => _operands.Pop();
+                public void PushValue(WasmValue value) => _operands.Push(value);
                 internal void CompleteFrame() => FrameCount--;
             }
         }
@@ -45,7 +48,7 @@ internal static class GeneratorTestSource
     {
         var assembly = typeof(GeneratorTestSource).Assembly;
         // WasmValueKindは命令宣言にも必要なため、常にInstructionContractsから取り込む。
-        // デコード済み命令とWasmValueは実行契約を使う場合にだけ取り込む。
+        // 実行契約を使わない場合は、命令記述子が参照するWasmValueの型だけを用意する。
         var contracts = assembly
             .GetManifestResourceNames()
             .Where(x =>
@@ -74,6 +77,10 @@ internal static class GeneratorTestSource
                     CSharpSyntaxTree.ParseText(
                         executionContracts
                             ?? """
+                            namespace WasmSharp
+                            {
+                                internal readonly struct WasmValue;
+                            }
                             namespace WasmSharp.Execution
                             {
                                 internal readonly struct ExecutionResult;

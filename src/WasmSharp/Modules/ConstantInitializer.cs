@@ -14,36 +14,60 @@ internal static class ConstantInitializer
     /// </summary>
     /// <param name="expression">終端のendを含むデコード済みの定数式</param>
     /// <param name="expectedKind">式が生成する値に要求する型</param>
-    /// <param name="importedGlobals">global添字順に並ぶimportしたglobalの型</param>
+    /// <param name="visibleGlobals">この式から参照できる、global添字順の型</param>
     /// <param name="functionCount">importと定義を合わせた関数の個数</param>
     /// <param name="sectionId">診断位置に保持するセクションID</param>
+    /// <param name="specVersion">定数式に適用する仕様の版</param>
     internal static void Validate(
         ImmutableArray<DecodedInstruction> expression,
         WasmValueKind expectedKind,
-        ReadOnlySpan<WasmGlobalType> importedGlobals,
+        ReadOnlySpan<WasmGlobalType> visibleGlobals,
         uint functionCount,
-        byte sectionId
+        byte sectionId,
+        WasmSpecVersion specVersion = WasmSpecVersion.Core2
     )
     {
         // 結果の型・個数より先に、左から最初の適格性違反を選ぶ。
         for (var index = 0; index < expression.Length - 1; index++)
         {
-            ValidateConstantInstruction(expression[index], importedGlobals, sectionId);
+            ValidateConstantInstruction(expression[index], visibleGlobals, sectionId, specVersion);
         }
 
-        WasmValueKind? resultKind = null;
+        var operands =
+            expression.Length <= 32 ? stackalloc WasmValueKind[expression.Length] : new WasmValueKind[expression.Length];
+        var count = 0;
         for (var index = 0; index < expression.Length - 1; index++)
         {
             var instruction = expression[index];
-            resultKind = ValidateResultInstruction(instruction, importedGlobals, functionCount, sectionId);
+            if (
+                InstructionSet.TryGet(instruction.Opcode, out var descriptor) && descriptor.NumericSignature is { } signature
+            )
+            {
+                for (var input = signature.InputTypes.Length - 1; input >= 0; input--)
+                {
+                    if (count == 0 || operands[--count] != signature.InputTypes[input])
+                    {
+                        throw ValidationDiagnostics.ValidationFailure(
+                            "type mismatch",
+                            "定数式の演算に必要な型の値がありません。",
+                            new WasmFailureLocation(WasmProcessingStage.Validate, instruction.ByteOffset, null, sectionId)
+                        );
+                    }
+                }
+                operands[count++] = signature.ResultType;
+            }
+            else
+            {
+                operands[count++] = ValidateResultInstruction(instruction, visibleGlobals, functionCount, sectionId);
+            }
         }
 
         var endLocation = new WasmFailureLocation(WasmProcessingStage.Validate, expression[^1].ByteOffset, null, sectionId);
-        if (expression.Length != 2)
+        if (count != 1)
         {
             throw ValidationDiagnostics.ValidationFailure("type mismatch", "定数式の結果が1個ではありません。", endLocation);
         }
-        if (resultKind != expectedKind)
+        if (operands[0] != expectedKind)
         {
             throw ValidationDiagnostics.ValidationFailure(
                 "type mismatch",
@@ -54,19 +78,52 @@ internal static class ConstantInitializer
     }
 
     /// <summary>
-    /// 検証済みの単一定数、関数参照またはglobal.getの式を評価する
+    /// 検証済みの定数式を評価する
     /// </summary>
-    /// <param name="expression">単一の初期化命令とendからなる検証済みの式</param>
+    /// <param name="expression">終端のendを含む検証済みの式</param>
     /// <param name="globals">global添字順に並ぶ構築済みの実体</param>
     /// <param name="functions">関数添字順に並ぶ構築済みの実体</param>
-    /// <returns>定数の即値、構築済みの同じ関数への参照、またはglobalの現在値</returns>
+    /// <returns>式の実行後にスタックに残る値</returns>
     internal static WasmValue Evaluate(
         ImmutableArray<DecodedInstruction> expression,
         ReadOnlySpan<WasmGlobal> globals,
         ReadOnlySpan<WasmFunction> functions
     )
     {
-        var initializer = expression[0];
+        if (expression.Length == 2)
+        {
+            return ReadValue(expression[0], globals, functions);
+        }
+
+        var operands = new Stack<WasmValue>();
+        for (var index = 0; index < expression.Length - 1; index++)
+        {
+            var instruction = expression[index];
+            if (
+                InstructionSet.TryGet(instruction.Opcode, out var descriptor)
+                && descriptor.ConstantBinaryOperation is { } operation
+            )
+            {
+                var right = operands.Pop();
+                operands.Push(operation(operands.Pop(), right));
+            }
+            else
+            {
+                operands.Push(ReadValue(instruction, globals, functions));
+            }
+        }
+        return operands.Pop();
+    }
+
+    /// <summary>
+    /// 定数命令が積む即値または構築済みの外部値を取得する
+    /// </summary>
+    private static WasmValue ReadValue(
+        DecodedInstruction initializer,
+        ReadOnlySpan<WasmGlobal> globals,
+        ReadOnlySpan<WasmFunction> functions
+    )
+    {
         if (initializer.Opcode == new OpcodeKey(0, 0xD2))
         {
             return WasmValue.FromFuncRef(functions[(int)initializer.Index]);
@@ -78,27 +135,31 @@ internal static class ConstantInitializer
     /// 定数式の命令の適格性を確認する
     /// </summary>
     /// <param name="instruction">end以外の初期化命令</param>
-    /// <param name="importedGlobals">定数式から参照できるimportしたglobalの型</param>
+    /// <param name="visibleGlobals">この式から参照できるglobalの型</param>
     /// <param name="sectionId">診断位置に保持するセクションID</param>
+    /// <param name="specVersion">定数式に適用する仕様の版</param>
     private static void ValidateConstantInstruction(
         DecodedInstruction instruction,
-        ReadOnlySpan<WasmGlobalType> importedGlobals,
-        byte sectionId
+        ReadOnlySpan<WasmGlobalType> visibleGlobals,
+        byte sectionId,
+        WasmSpecVersion specVersion
     )
     {
         var location = new WasmFailureLocation(WasmProcessingStage.Validate, instruction.ByteOffset, null, sectionId);
         if (instruction.Opcode == new OpcodeKey(0, 0x23))
         {
-            if (instruction.Index >= (uint)importedGlobals.Length)
+            if (instruction.Index >= (uint)visibleGlobals.Length)
             {
                 throw ValidationDiagnostics.UnknownIndex(
                     "global",
                     instruction.Index,
-                    "定数式が参照するimport globalが存在しません。",
+                    specVersion == WasmSpecVersion.Core2
+                        ? "定数式が参照するimport globalが存在しません。"
+                        : "定数式から参照できる範囲にglobalが存在しません。",
                     location
                 );
             }
-            var type = importedGlobals[(int)instruction.Index];
+            var type = visibleGlobals[(int)instruction.Index];
             if (type.IsMutable)
             {
                 throw ValidationDiagnostics.ValidationFailure(
@@ -111,7 +172,10 @@ internal static class ConstantInitializer
         }
         if (
             InstructionSet.TryGet(instruction.Opcode, out var descriptor)
-            && descriptor.Validation is ValidationRule.Constant or ValidationRule.RefFunc
+            && (
+                descriptor.Validation is ValidationRule.Constant or ValidationRule.RefFunc
+                || (specVersion == WasmSpecVersion.Core3 && descriptor.ConstantBinaryOperation is not null)
+            )
         )
         {
             return;
@@ -127,20 +191,20 @@ internal static class ConstantInitializer
     /// 定数性の検査後に参照の適格性を確認し、命令の結果型を返す
     /// </summary>
     /// <param name="instruction">定数性を確認した初期化命令</param>
-    /// <param name="importedGlobals">定数式から参照できるimportしたglobalの型</param>
+    /// <param name="visibleGlobals">この式から参照できるglobalの型</param>
     /// <param name="functionCount">importと定義を合わせた関数の個数</param>
     /// <param name="sectionId">診断位置に保持するセクションID</param>
     /// <returns>命令が生成する値の型</returns>
     private static WasmValueKind ValidateResultInstruction(
         DecodedInstruction instruction,
-        ReadOnlySpan<WasmGlobalType> importedGlobals,
+        ReadOnlySpan<WasmGlobalType> visibleGlobals,
         uint functionCount,
         byte sectionId
     )
     {
         if (instruction.Opcode == new OpcodeKey(0, 0x23))
         {
-            return importedGlobals[(int)instruction.Index].ValueKind;
+            return visibleGlobals[(int)instruction.Index].ValueKind;
         }
         if (instruction.Opcode == new OpcodeKey(0, 0xD2))
         {

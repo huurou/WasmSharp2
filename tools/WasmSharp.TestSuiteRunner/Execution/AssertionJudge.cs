@@ -89,12 +89,7 @@ internal static class AssertionJudge
             {
                 return CaseOutcome.RunnerError;
             }
-            return
-                ExpectedText(command) is { } expectedText
-                && MatchesFailure(command, observation.LastStage, exception)
-                && exception.Message.StartsWith(expectedText, StringComparison.Ordinal)
-                ? CaseOutcome.Passed
-                : CaseOutcome.Failed;
+            return MatchesFailure(command, observation.LastStage, exception) ? CaseOutcome.Passed : CaseOutcome.Failed;
         }
         if (!observation.BlockedBy.IsEmpty)
         {
@@ -124,34 +119,40 @@ internal static class AssertionJudge
     }
 
     /// <summary>
-    /// 否定assertionが要求する公開段階・例外型・リンク不成立のReasonを照合する。
+    /// 否定assertionの段階・例外型・リンク不成立のReasonと、診断の先頭を照合する。
     /// </summary>
     /// <param name="command">処理段階での失敗を期待する否定assertion</param>
     /// <param name="stage">例外が発生した公開段階 公開操作前はnull</param>
     /// <param name="exception">観測した例外の実体</param>
-    /// <returns>期待する段階と失敗の種類が一致する場合はtrue 診断メッセージの一致は含まない</returns>
+    /// <returns>該当する期待失敗があり、例外の診断が指定したテキストで始まる場合はtrue</returns>
     private static bool MatchesFailure(ScriptCommand command, CaseStage? stage, Exception exception)
     {
-        return command switch
+        var expectedText = (command, stage, exception) switch
         {
-            AssertMalformedCommand { ModuleType: ScriptModuleType.Binary } => stage == CaseStage.Decode
-                && exception is WasmDecodeException,
-            AssertInvalidCommand { ModuleType: ScriptModuleType.Binary } => stage == CaseStage.Validate
-                && exception is WasmValidateException,
-            AssertUnlinkableCommand { ModuleType: ScriptModuleType.Binary } => stage == CaseStage.Instantiate
-                && exception
-                    is WasmInstantiateException
-                    {
-                        Reason: WasmInstantiateReason.MissingImport
-                            or WasmInstantiateReason.KindMismatch
-                            or WasmInstantiateReason.TypeMismatch
-                    },
-            AssertUninstantiableCommand { ModuleType: ScriptModuleType.Binary } => stage == CaseStage.Instantiate
-                && exception is WasmTrapException,
-            AssertTrapCommand x => MatchesAction(x.Action, stage) && exception is WasmTrapException,
-            AssertExhaustionCommand x => MatchesAction(x.Action, stage) && exception is WasmExhaustionException,
-            _ => false,
+            (AssertMalformedCommand { ModuleType: ScriptModuleType.Binary } x, CaseStage.Decode, WasmDecodeException) =>
+                x.Text,
+            (AssertInvalidCommand { ModuleType: ScriptModuleType.Binary } x, CaseStage.Validate, WasmValidateException) =>
+                x.Text,
+            (
+                AssertUnlinkableCommand { ModuleType: ScriptModuleType.Binary } x,
+                CaseStage.Instantiate,
+                WasmInstantiateException
+                {
+                    Reason: WasmInstantiateReason.MissingImport
+                        or WasmInstantiateReason.KindMismatch
+                        or WasmInstantiateReason.TypeMismatch
+                }
+            ) => x.Text,
+            (
+                AssertUninstantiableCommand { ModuleType: ScriptModuleType.Binary } x,
+                CaseStage.Instantiate,
+                WasmTrapException
+            ) => x.Text,
+            (AssertTrapCommand x, _, WasmTrapException) when MatchesAction(x.Action, stage) => x.Text,
+            (AssertExhaustionCommand x, _, WasmExhaustionException) when MatchesAction(x.Action, stage) => x.Text,
+            _ => null,
         };
+        return expectedText is not null && exception.Message.StartsWith(expectedText, StringComparison.Ordinal);
     }
 
     /// <summary>

@@ -515,6 +515,9 @@ internal class BaselineComparer_CompareRunTests
         var baseline = CreateReport();
         var current = CreateReport();
         var source = current.Inputs[0].Cases[1];
+        var vector = source.ExpectedValues[0];
+        var either = new ExpectedValueRecord("either") { Values = [new ExpectedValueRecord("i32") { Value = "7" }, vector] };
+        source.ExpectedValues[0] = either;
         var blockedReport = RunReportFixture.CreateSample();
 
         // Act
@@ -526,6 +529,8 @@ internal class BaselineComparer_CompareRunTests
             _currentPath
         );
         baseline.Inputs[0].Cases[1].ExpectedValues[0].Lanes.Clear();
+        vector.Lanes.Clear();
+        either.Values!.Clear();
         source.ExpectedValues.Clear();
         source.ActualValues.Clear();
         source.Diagnostics[0].UnverifiedRanges.Add(new("Validate", 1, 2, "後から追加"));
@@ -542,6 +547,9 @@ internal class BaselineComparer_CompareRunTests
         {
             await Assert.That(saved.Baseline!.ExpectedValues[0].Lanes.Count).IsEqualTo(4);
             await Assert.That(saved.Current!.ExpectedValues.Count).IsEqualTo(1);
+            var candidates = saved.Current.ExpectedValues[0].Values!;
+            await Assert.That(candidates[0].Value).IsEqualTo("7");
+            await Assert.That(candidates[1].Lanes).IsEquivalentTo(["0", "0", "0", "0"]);
             await Assert.That(saved.Current.ActualValues.Count).IsEqualTo(1);
             await Assert.That(saved.Current.Diagnostics[0].UnverifiedRanges).IsEmpty();
             await Assert.That(saved.Current.Prints[0].Arguments.Count).IsEqualTo(1);

@@ -9,6 +9,20 @@ internal class CorpusGenerator_CheckPreconditionsTests
     private const string OTHER_COMMIT = "0000000000000000000000000000000000000000";
 
     [Test]
+    public async Task WABTの比較用プロファイルで生成しようとする_必要な変換器を示して拒否する()
+    {
+        // Arrange
+        using var directory = new TemporaryDirectory();
+        var profile = new ConversionProfileLoader().LoadLegacyCore2() with { Inputs = [] };
+        Directory.CreateDirectory(directory.Combine(profile.WorkingDirectory));
+        var request = new GenerateRequest(profile, directory.Root, SuiteWorkspace.ConverterPath, directory.Combine("out"));
+
+        // Act & Assert
+        var exception = await Assert.That(() => CorpusGenerator.CheckPreconditions(request)).Throws<ArgumentException>();
+        await Assert.That(exception!.Message).Contains("wasm-toolsの固定リリース");
+    }
+
+    [Test]
     [Arguments("1.263.1", "7a2fa422cdf9aeeaf488a2acac8bc94a078bfa32")]
     [Arguments("1.263.0", OTHER_COMMIT)]
     public async Task WasmToolsの版またはcommitが固定条件と異なる_観測した版を出典に残して変換を拒否する(
@@ -189,7 +203,7 @@ internal class CorpusGenerator_CheckPreconditionsTests
         {
             await Assert.That(preconditions.Diagnostics.Length).IsEqualTo(1);
             await Assert.That(preconditions.Diagnostics[0].Message).Contains("HEADを取得できません");
-            await Assert.That(preconditions.Diagnostics[0].Message).Matches(@"標準エラー: \S");
+            await Assert.That(preconditions.Diagnostics[0].Message).Matches(@"終了値: [1-9]\d*、標準エラー: \S");
             await Assert.That(preconditions.Provenance.SpecHead).IsNull();
         }
     }
@@ -305,11 +319,16 @@ internal class CorpusGenerator_CheckPreconditionsTests
     }
 
     [Test]
-    public async Task 変換器の実行ファイルがない_hashを記録せず変換前提の診断として記録する()
+    [Arguments(false, typeof(FileNotFoundException))]
+    [Arguments(true, typeof(UnauthorizedAccessException))]
+    public async Task 変換器の配置が存在しないかディレクトリである_版とhashを取得せず理由を記録する(
+        bool isDirectory,
+        Type expectedException
+    )
     {
         // Arrange
         using var workspace = await SuiteWorkspace.CreateAsync();
-        var converterPath = Path.Combine(workspace.OutputRoot, "missing-wasm-tools");
+        var converterPath = isDirectory ? workspace.OutputRoot : Path.Combine(workspace.OutputRoot, "missing-wasm-tools");
         var request = workspace.CreateRequest(workspace.CreateProfile()) with { ConverterPath = converterPath };
 
         // Act
@@ -321,7 +340,9 @@ internal class CorpusGenerator_CheckPreconditionsTests
             await Assert.That(preconditions.Diagnostics.Length).IsEqualTo(1);
             await Assert.That(preconditions.Diagnostics[0].Path).IsNull();
             await Assert.That(preconditions.Diagnostics[0].Message).Contains(converterPath);
+            await Assert.That(preconditions.Diagnostics[0].ExceptionType).IsEqualTo(expectedException.FullName);
             await Assert.That(preconditions.Provenance.ExecutableSha256).IsNull();
+            await Assert.That(preconditions.Provenance.ExecutableVersion).IsNull();
         }
     }
 }

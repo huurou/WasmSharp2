@@ -77,19 +77,13 @@ internal partial class RunnerCli_RunTests
     {
         // Arrange
         using var fixture = CorpusFixture.Create();
-        var identity = ScriptExecutionFixture.Binary(
-            (1, [1, 0x60, 1, 0x6f, 1, 0x6f]),
-            (3, [1, 0]),
-            (7, [1, .. ScriptExecutionFixture.Name("id"), 0, 0]),
-            (10, [1, 4, 0, 0x20, 0, 0x0b])
-        );
         var expected = value is null ? $$"""{"type":"{{type}}"}""" : $$"""{"type":"{{type}}","value":"{{value}}"}""";
         fixture.ReplaceScriptA(
             $$"""
             {"type":"module","line":1,"filename":"a.0.wasm"},
             {"type":"assert_return","line":2,"action":{"type":"invoke","field":"id","args":[{"type":"externref","value":"{{argument}}"}]},"expected":[{{expected}}]}
             """,
-            identity
+            ExternrefIdentity()
         );
 
         // Act
@@ -105,6 +99,38 @@ internal partial class RunnerCli_RunTests
             var actual = assertion.ActualValues.Single();
             await Assert.That(actual.Type).IsEqualTo("externref");
             await Assert.That(actual.ExternrefNumber).IsEqualTo(argument == "null" ? null : (uint?)7);
+        }
+    }
+
+    [Test]
+    public async Task 成立したmoduleのexternref引数にanyrefを指定する_呼び出し前に引数の診断を記録する()
+    {
+        // Arrange
+        using var fixture = CorpusFixture.Create();
+        fixture.ReplaceScriptA(
+            """
+            {"type":"module","line":1,"filename":"a.0.wasm"},
+            {"type":"action","line":2,"action":{"type":"invoke","field":"id","args":[{"type":"anyref","value":"7"}]}},
+            {"type":"assert_return","line":3,"action":{"type":"invoke","field":"id","args":[{"type":"externref","value":"7"}]},
+             "expected":[{"type":"externref","value":"7"}]}
+            """,
+            ExternrefIdentity()
+        );
+
+        // Act
+        var (_, cases) = RunAssertions(fixture, WasmSpecVersion.Core3);
+
+        // Assert
+        var rejected = cases[1];
+        var diagnostic = rejected.Diagnostics.Single();
+        using (Assert.Multiple())
+        {
+            await Assert.That(rejected.Outcome).IsEqualTo(CaseOutcome.RunnerError);
+            await Assert.That(rejected.LastStage).IsNull();
+            await Assert.That(rejected.ActualValues).IsEmpty();
+            await Assert.That(diagnostic.Operation).IsEqualTo("create_arguments");
+            await Assert.That(diagnostic.Message).Contains("anyref");
+            await Assert.That(cases[2].Outcome).IsEqualTo(CaseOutcome.Passed);
         }
     }
 
@@ -236,5 +262,15 @@ internal partial class RunnerCli_RunTests
                 .That(assertion.ExpectedValues.Single().Values!.Select(x => (x.Type, x.Value)))
                 .IsEquivalentTo([("anyref", "7"), (secondType, null)], CollectionOrdering.Matching);
         }
+    }
+
+    private static byte[] ExternrefIdentity()
+    {
+        return ScriptExecutionFixture.Binary(
+            (1, [1, 0x60, 1, 0x6f, 1, 0x6f]),
+            (3, [1, 0]),
+            (7, [1, .. ScriptExecutionFixture.Name("id"), 0, 0]),
+            (10, [1, 4, 0, 0x20, 0, 0x0b])
+        );
     }
 }

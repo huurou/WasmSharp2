@@ -17,21 +17,31 @@ internal static class ModuleValidator
     /// <returns>importを含まない定義順の線形実行コード</returns>
     internal static ImmutableArray<FunctionCode> Validate(WasmModule module)
     {
-        var (functionCount, memoryCount, globalCount) = ValidateImportReferences(module);
+        var (functionCount, memoryCount, importedGlobalCount) = ValidateImportReferences(module);
         ValidateFunctionReferences(module, functionCount);
         var references = ReferenceValidationContext.Create(module, functionCount);
-        ValidateInitializers(module, references.FunctionCount);
+        WasmGlobalType[] globalTypes =
+        [
+            .. module.Imports.OfType<GlobalImport>().Select(x => x.Type),
+            .. module.Globals.Select(x => x.Type),
+        ];
+        var segmentGlobalTypes = ValidateGlobalInitializers(
+            module,
+            references.FunctionCount,
+            globalTypes,
+            (int)importedGlobalCount
+        );
         ValidateResources(module);
-        ValidateElements(module, references);
-        ValidateData(module, memoryCount, references.FunctionCount);
-        var codes = ValidateFunctions(module, references);
+        ValidateElements(module, references, segmentGlobalTypes);
+        ValidateData(module, memoryCount, references.FunctionCount, segmentGlobalTypes);
+        var codes = ValidateFunctions(module, references, globalTypes);
         ValidateStart(module);
         ValidateExports(
             module,
             references.FunctionCount,
             (uint)references.TableElementTypes.Length,
             memoryCount + (uint)module.Memories.Length,
-            globalCount + (uint)module.Globals.Length
+            (uint)globalTypes.Length
         );
         ValidateMemoryCount(module, memoryCount);
         return codes;
@@ -42,14 +52,25 @@ internal static class ModuleValidator
     /// </summary>
     /// <param name="module">global初期化式とリソース宣言の検証を終えたmodule</param>
     /// <param name="references">当該module検証で共有する参照情報</param>
-    private static void ValidateElements(WasmModule module, ReferenceValidationContext references)
+    /// <param name="visibleGlobals">セグメントの定数式から参照できるglobalの型</param>
+    private static void ValidateElements(
+        WasmModule module,
+        ReferenceValidationContext references,
+        ReadOnlySpan<WasmGlobalType> visibleGlobals
+    )
     {
-        var importedGlobals = module.Imports.OfType<GlobalImport>().Select(x => x.Type).ToArray();
         foreach (var element in module.ElementSegments)
         {
             foreach (var initializer in element.Initializers)
             {
-                ConstantInitializer.Validate(initializer, element.ElementType, importedGlobals, references.FunctionCount, 9);
+                ConstantInitializer.Validate(
+                    initializer,
+                    element.ElementType,
+                    visibleGlobals,
+                    references.FunctionCount,
+                    9,
+                    module.SpecVersion
+                );
             }
             var target = element.ActiveTarget;
             if (target is null)
@@ -77,9 +98,10 @@ internal static class ModuleValidator
             ConstantInitializer.Validate(
                 target.OffsetExpression,
                 WasmValueKind.I32,
-                importedGlobals,
+                visibleGlobals,
                 references.FunctionCount,
-                9
+                9,
+                module.SpecVersion
             );
         }
     }
@@ -90,10 +112,15 @@ internal static class ModuleValidator
     /// <param name="module">リソース宣言の検証を終えたmodule</param>
     /// <param name="importedMemoryCount">importしたmemoryの個数</param>
     /// <param name="functionCount">importと定義を合わせた関数の個数</param>
-    private static void ValidateData(WasmModule module, uint importedMemoryCount, uint functionCount)
+    /// <param name="visibleGlobals">セグメントの定数式から参照できるglobalの型</param>
+    private static void ValidateData(
+        WasmModule module,
+        uint importedMemoryCount,
+        uint functionCount,
+        ReadOnlySpan<WasmGlobalType> visibleGlobals
+    )
     {
         var memoryCount = importedMemoryCount + (uint)module.Memories.Length;
-        var importedGlobals = module.Imports.OfType<GlobalImport>().Select(x => x.Type).ToArray();
         foreach (var data in module.DataSegments)
         {
             var target = data.ActiveTarget;
@@ -110,7 +137,14 @@ internal static class ModuleValidator
                     new(WasmProcessingStage.Validate, data.ByteOffset, null, 11)
                 );
             }
-            ConstantInitializer.Validate(target.OffsetExpression, WasmValueKind.I32, importedGlobals, functionCount, 11);
+            ConstantInitializer.Validate(
+                target.OffsetExpression,
+                WasmValueKind.I32,
+                visibleGlobals,
+                functionCount,
+                11,
+                module.SpecVersion
+            );
         }
     }
 
@@ -119,19 +153,19 @@ internal static class ModuleValidator
     /// </summary>
     /// <param name="module">importと定義関数の型参照、global初期化式、リソース宣言、要素・データセグメントの検証を終えたmodule</param>
     /// <param name="references">当該module検証で共有する参照情報</param>
+    /// <param name="globalTypes">importを先頭にしたglobal添字順の型</param>
     /// <returns>ローカルに保持した定義順の線形実行コード</returns>
-    private static ImmutableArray<FunctionCode> ValidateFunctions(WasmModule module, ReferenceValidationContext references)
+    private static ImmutableArray<FunctionCode> ValidateFunctions(
+        WasmModule module,
+        ReferenceValidationContext references,
+        WasmGlobalType[] globalTypes
+    )
     {
         var importedFunctionCount = (uint)module.Imports.Count(x => x is FunctionImport);
         WasmFunctionType[] functionTypes =
         [
             .. module.Imports.OfType<FunctionImport>().Select(x => module.Types[(int)x.TypeIndex]),
             .. module.Functions.Select(x => module.Types[(int)x.TypeIndex]),
-        ];
-        WasmGlobalType[] globalTypes =
-        [
-            .. module.Imports.OfType<GlobalImport>().Select(x => x.Type),
-            .. module.Globals.Select(x => x.Type),
         ];
         var codes = ImmutableArray.CreateBuilder<FunctionCode>(module.Functions.Length);
         for (var definitionIndex = 0; definitionIndex < module.Functions.Length; definitionIndex++)
@@ -156,13 +190,33 @@ internal static class ModuleValidator
     /// </summary>
     /// <param name="module">デコード済みの静的定義</param>
     /// <param name="functionCount">importと定義を合わせた関数の個数</param>
-    private static void ValidateInitializers(WasmModule module, uint functionCount)
+    /// <param name="globalTypes">importを先頭にしたglobal添字順の型</param>
+    /// <param name="importedGlobalCount">importしたglobalの個数</param>
+    /// <returns>すべてのglobalの検証後にセグメントの定数式から参照できる型</returns>
+    private static ReadOnlySpan<WasmGlobalType> ValidateGlobalInitializers(
+        WasmModule module,
+        uint functionCount,
+        ReadOnlySpan<WasmGlobalType> globalTypes,
+        int importedGlobalCount
+    )
     {
-        var importedGlobals = module.Imports.OfType<GlobalImport>().Select(x => x.Type).ToArray();
+        var visibleGlobalCount = importedGlobalCount;
         foreach (var global in module.Globals)
         {
-            ConstantInitializer.Validate(global.Initializer, global.Type.ValueKind, importedGlobals, functionCount, 6);
+            ConstantInitializer.Validate(
+                global.Initializer,
+                global.Type.ValueKind,
+                globalTypes[..visibleGlobalCount],
+                functionCount,
+                6,
+                module.SpecVersion
+            );
+            if (module.SpecVersion == WasmSpecVersion.Core3)
+            {
+                visibleGlobalCount++;
+            }
         }
+        return globalTypes[..visibleGlobalCount];
     }
 
     /// <summary>
