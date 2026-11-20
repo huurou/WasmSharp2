@@ -21,19 +21,15 @@ internal partial class WasmFunction_InvokeTests
         var function = InstantiateBulkMemoryFunction(context, first, second, Convert.FromHexString(operation));
         first.Write(0, [0xAA, 0xBB, 0xCC, 0xDD]);
         second.Write(0, [0x50, 0x60, 0x70, 0x80]);
-        var firstBytes = new byte[4];
-        var secondBytes = new byte[4];
 
         // Act
         function.Invoke(context, [WasmValue.FromI32(1), WasmValue.FromI32(sourceOrValue), WasmValue.FromI32(2)]);
-        first.Read(0, firstBytes);
-        second.Read(0, secondBytes);
 
         // Assert
         using (Assert.Multiple())
         {
-            await Assert.That(Convert.ToHexString(firstBytes)).IsEqualTo("AABBCCDD");
-            await Assert.That(Convert.ToHexString(secondBytes)).IsEqualTo(expected);
+            await Assert.That(ReadMemoryHex(first, 0, 4)).IsEqualTo("AABBCCDD");
+            await Assert.That(ReadMemoryHex(second, 0, 4)).IsEqualTo(expected);
         }
     }
 
@@ -52,19 +48,15 @@ internal partial class WasmFunction_InvokeTests
         var copy = InstantiateBulkMemoryFunction(context, first, second, [0xFC, 10, 1, 0]);
         first.Write((ulong)source - 1, [0xA0, 1, 2, 3, 4, 0xAF]);
         second.Write((ulong)destination - 1, [0xB0, 5, 6, 7, 8, 0xBF]);
-        var sourceBytes = new byte[6];
-        var destinationBytes = new byte[6];
 
         // Act
         copy.Invoke(context, [WasmValue.FromI32(destination), WasmValue.FromI32(source), WasmValue.FromI32(4)]);
-        first.Read((ulong)source - 1, sourceBytes);
-        second.Read((ulong)destination - 1, destinationBytes);
 
         // Assert
         using (Assert.Multiple())
         {
-            await Assert.That(Convert.ToHexString(sourceBytes)).IsEqualTo("A001020304AF");
-            await Assert.That(Convert.ToHexString(destinationBytes)).IsEqualTo("B001020304BF");
+            await Assert.That(ReadMemoryHex(first, (ulong)source - 1, 6)).IsEqualTo("A001020304AF");
+            await Assert.That(ReadMemoryHex(second, (ulong)destination - 1, 6)).IsEqualTo("B001020304BF");
         }
     }
 
@@ -82,14 +74,12 @@ internal partial class WasmFunction_InvokeTests
         var shared = new WasmMemory(new WasmLimits(2));
         var copy = InstantiateBulkMemoryFunction(context, shared, shared, [0xFC, 10, 1, 0]);
         shared.Write(65532, [1, 2, 3, 4, 5, 6, 7, 8]);
-        var actual = new byte[8];
 
         // Act
         copy.Invoke(context, [WasmValue.FromI32(destination), WasmValue.FromI32(source), WasmValue.FromI32(6)]);
-        shared.Read(65532, actual);
 
         // Assert
-        await Assert.That(Convert.ToHexString(actual)).IsEqualTo(expected);
+        await Assert.That(ReadMemoryHex(shared, 65532, 8)).IsEqualTo(expected);
     }
 
     [Test]
@@ -144,15 +134,13 @@ internal partial class WasmFunction_InvokeTests
         var destination = new WasmMemory(new WasmLimits(1));
         var copy = InstantiateBulkMemoryFunction(context, source, destination, [0xFC, 10, 1, 0]);
         source.Write(131070, [0x12, 0x34]);
-        var actual = new byte[3];
 
         // Act
         copy.Invoke(context, [WasmValue.FromI32(65534), WasmValue.FromI32(131070), WasmValue.FromI32(2)]);
         copy.Invoke(context, [WasmValue.FromI32(65536), WasmValue.FromI32(131072), WasmValue.FromI32(0)]);
-        destination.Read(65533, actual);
 
         // Assert
-        await Assert.That(Convert.ToHexString(actual)).IsEqualTo("001234");
+        await Assert.That(ReadMemoryHex(destination, 65533, 3)).IsEqualTo("001234");
     }
 
     private static WasmFunction InstantiateBulkMemoryFunction(

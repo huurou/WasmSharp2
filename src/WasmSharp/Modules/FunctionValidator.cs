@@ -564,7 +564,7 @@ internal static class FunctionValidator
                 throw ValidationDiagnostics.ValidationFailure(
                     "offset out of range",
                     "オフセットが32ビットメモリの上限を超えています。",
-                    new(WasmProcessingStage.Validate, instruction.ByteOffset, moduleFunctionIndex, 10)
+                    new WasmFailureLocation(WasmProcessingStage.Validate, instruction.ByteOffset, moduleFunctionIndex, 10)
                 );
             }
             return memorySignature;
