@@ -183,6 +183,7 @@ internal partial class InstructionGenerator_InitializeTests
     [Test]
     [Arguments("", "", "WSIG003", "IntegerArithmetic")]
     [Arguments("internal static int Subtract(WasmValue left, WasmValue right) => 0;", "", "WSIG004", "WasmValue")]
+    [Arguments("internal static int Subtract(int left, int right) => left - right;", "", "WSIG004", "WasmValue")]
     [Arguments(
         "internal static WasmValue Subtract(WasmValue left, in WasmValue right) => left;",
         "",
@@ -192,7 +193,10 @@ internal partial class InstructionGenerator_InitializeTests
     [Arguments("private static WasmValue Subtract(WasmValue left, WasmValue right) => left;", "", "WSIG004", "WasmValue")]
     [Arguments(
         BinaryMethod,
-        "internal static int Subtract(InterpreterContext c, ref Instruction i) => 0;",
+        """
+            internal static int Subtract(InterpreterContext c, Instruction i) => 0;
+            internal static int Subtract(InterpreterContext c, ref Instruction i) => 0;
+            """,
         "WSIG006",
         "Interpreter.Subtract"
     )]
@@ -229,13 +233,20 @@ internal partial class InstructionGenerator_InitializeTests
     }
 
     [Test]
-    public async Task 共有二項演算のhandlerと値渡しのオーバーロードが共存する_生成コードをコンパイルして演算できる()
+    [Arguments("")]
+    [Arguments(
+        """
+            internal static int Subtract(InterpreterContext c, Instruction i) => 0;
+            internal static int Subtract<T>(InterpreterContext c, in Instruction i) => 0;
+            internal static int Subtract(InterpreterContext c, in WasmValue value) => 0;
+            """
+    )]
+    public async Task 手書きのメンバーと衝突しない共有二項演算を宣言する_定数式と生成したhandlerで減算できる(
+        string interpreterMember
+    )
     {
         // Arrange
-        var compilation = CreateBinaryOperationCompilation(
-            BinaryMethod,
-            "internal static int Subtract(InterpreterContext c, Instruction i) => 0;"
-        );
+        var compilation = CreateBinaryOperationCompilation(BinaryMethod, interpreterMember);
         GeneratorDriver driver = CSharpGeneratorDriver.Create(new InstructionGenerator());
 
         // Act
@@ -246,9 +257,17 @@ internal partial class InstructionGenerator_InitializeTests
         await GeneratorTestSource.AssertCompilesAndRuns(
             output,
             """
+            var left = WasmSharp.WasmValue.FromI32(7);
+            var right = WasmSharp.WasmValue.FromI32(2);
+            var context = new WasmSharp.Execution.InterpreterContext(1);
+            context.PushValue(left);
+            context.PushValue(right);
+            var instruction = default(WasmSharp.Execution.Instruction);
+            var result = WasmSharp.Execution.Interpreter.Subtract(context, in instruction);
             return WasmSharp.Instructions.InstructionSet.TryGet(new(0, 0x6B), out var descriptor)
                 && descriptor.ConstantBinaryOperation is { } subtract
-                && subtract(WasmSharp.WasmValue.FromI32(7), WasmSharp.WasmValue.FromI32(2)).AsI32() == 5;
+                && subtract(left, right).AsI32() == 5
+                && result.Status == WasmSharp.Execution.ExecutionStatus.Success && context.PopValue().AsI32() == 5;
             """
         );
     }
@@ -363,6 +382,8 @@ internal partial class InstructionGenerator_InitializeTests
 
     private static CSharpCompilation CreateBinaryOperationCompilation(string operation, string interpreterMember)
     {
+        var interpreter =
+            interpreterMember.Length == 0 ? "" : $"internal static partial class Interpreter {{ {interpreterMember} }}";
         return GeneratorTestSource.CreateCompilation(
             $$"""
             namespace WasmSharp.Instructions
@@ -376,10 +397,7 @@ internal partial class InstructionGenerator_InitializeTests
                 {
                     {{operation}}
                 }
-                internal static partial class Interpreter
-                {
-                    {{interpreterMember}}
-                }
+                {{interpreter}}
             }
             """,
             GeneratorTestSource.EXECUTION_CONTRACTS

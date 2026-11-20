@@ -272,7 +272,7 @@ internal partial class InstructionGenerator_InitializeTests
             {
                 [Instruction({{prefix}}, {{code}}, "{{name}}", ImmediateKind.None, StackEffectKind.Numeric,
                     ValidationRule.Numeric, nameof(Execution.Interpreter.Numeric), {{inputCount}},
-                    WasmValueKind.{{inputType}}, WasmValueKind.{{resultType}})]
+                    WasmValueKind.{{inputType}}, WasmValueKind.{{resultType}}, IsConstantBinaryOperation = false)]
                 internal static partial class InstructionSet;
             }
             namespace WasmSharp.Execution
@@ -322,6 +322,7 @@ internal partial class InstructionGenerator_InitializeTests
                 && generatedSignature.ResultType == expected.ResultType
                 && System.Linq.Enumerable.SequenceEqual(attributeSignature.InputTypes, expected.InputTypes)
                 && attributeSignature.ResultType == expected.ResultType
+                && descriptor.ConstantBinaryOperation == null
                 && descriptor.MemoryAccessSignature == null && attribute.MemoryAccessSignature == null
                 && result.Status == WasmSharp.Execution.ExecutionStatus.Success
                 && context.Pc == 1 && context.FrameCount == 0

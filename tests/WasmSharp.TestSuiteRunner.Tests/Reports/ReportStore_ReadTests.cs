@@ -218,11 +218,16 @@ internal class ReportStore_ReadTests
     }
 
     [Test]
-    public async Task 存在しない結果を相対pathで読む_絶対pathと読取失敗の原因を保持する()
+    [Arguments(false, typeof(FileNotFoundException))]
+    [Arguments(true, typeof(UnauthorizedAccessException))]
+    public async Task 読み取れない結果を相対pathで開く_絶対pathと読取失敗の原因を保持する(
+        bool directoryInput,
+        Type exceptionType
+    )
     {
         // Arrange
         using var directory = new TemporaryDirectory();
-        var fullPath = directory.Combine("missing.json");
+        var fullPath = directoryInput ? directory.Root : directory.Combine("missing.json");
         var relativePath = Path.GetRelativePath(Environment.CurrentDirectory, fullPath);
 
         // Act & Assert
@@ -230,7 +235,7 @@ internal class ReportStore_ReadTests
         using (Assert.Multiple())
         {
             await Assert.That(exception!.Path).IsEqualTo(fullPath);
-            await Assert.That(exception.InnerException).IsTypeOf<FileNotFoundException>();
+            await Assert.That(exception.InnerException!.GetType()).IsEqualTo(exceptionType);
             await Assert
                 .That(exception.Message)
                 .IsEqualTo($"{fullPath}を読み取れません: {exception.InnerException!.Message}");

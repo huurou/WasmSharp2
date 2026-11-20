@@ -7,6 +7,19 @@ namespace WasmSharp.TestSuiteRunner.Tests.Corpus;
 internal class CorpusVerifier_VerifyTests
 {
     [Test]
+    public async Task 生成時の照合で公式入力の配置を省略する_不足した引数を示して拒否する()
+    {
+        // Arrange
+        using var fixture = CorpusFixture.Create();
+
+        // Act & Assert
+        var exception = await Assert
+            .That(() => CorpusVerifier.Verify(fixture.Manifest, fixture.ManifestPath, VerificationMode.Generation, null))
+            .Throws<ArgumentNullException>();
+        await Assert.That(exception!.ParamName).IsEqualTo("sourceRoot");
+    }
+
+    [Test]
     public async Task 正しい素材を実行モードで照合する_入力異常なしで照合済みのdocumentとbinaryを返す()
     {
         // Arrange

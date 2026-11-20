@@ -5,6 +5,26 @@ namespace WasmSharp.Tests;
 internal partial class WasmModule_InstantiateTests
 {
     [Test]
+    public async Task Core3の定数式で多数の値を積んでから加算する_全オペランドの合計でglobalを初期化する()
+    {
+        // Arrange
+        const int OperandCount = 40;
+        var constants = Enumerable.Range(1, OperandCount).SelectMany(x => new byte[] { 0x41, (byte)x });
+        byte[] expression = [.. constants, .. Enumerable.Repeat((byte)0x6A, OperandCount - 1), 0x0B];
+        var bytes = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Globals((0x7F, false, expression)),
+            HostLinkingModuleBinary.Exports(("sum", 3, 0))
+        );
+        var module = WasmModule.Decode(bytes, WasmSpecVersion.Core3);
+
+        // Act
+        var instance = module.Validate().Instantiate(new WasmExecutionContext(), []);
+
+        // Assert
+        await Assert.That(instance.GetGlobal("sum").AsI32()).IsEqualTo(820);
+    }
+
+    [Test]
     public async Task Core3の整数定数式で桁あふれする_各演算を宣言型のビット幅で折り返す()
     {
         // Arrange

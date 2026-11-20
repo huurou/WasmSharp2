@@ -290,6 +290,31 @@ internal partial class RunnerCli_RunTests
     }
 
     [Test]
+    public async Task 固定profile外の入力を含むmanifestを実行する_対象外の入力名を報告して終了2になる()
+    {
+        // Arrange
+        using var fixture = CorpusFixture.Create();
+        PrepareScript(fixture, "passed");
+        const string ExtraPath = "extra.wast";
+        fixture.Manifest.Inputs.Add(
+            new(new SourceInput(ExtraPath, new string('0', 64))) { Status = ConversionStatus.Succeeded }
+        );
+        var manifest = Complete(fixture.Manifest);
+        _reportStore.Save(manifest, fixture.ManifestPath);
+        var outputPath = Path.Combine(fixture.Root, "run.json");
+
+        // Act
+        var result = Run(manifest.Profile.ToProfile(), "run", "--manifest", fixture.ManifestPath, "--output", outputPath);
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(result.ExitCode).IsEqualTo(2);
+            await Assert.That(result.Error).Contains($"{ExtraPath}はprofileの対象入力ではありません");
+        }
+    }
+
+    [Test]
     [Arguments("run")]
     [Arguments("verify")]
     public async Task 埋込みprofileと異なる対象集合_対象を狭めず拒否する(string operation)

@@ -210,12 +210,13 @@ internal partial class WasmModule_ValidateTests
     }
 
     [Test]
-    [Arguments((byte)0, "constant expression required")]
-    [Arguments((byte)1, "unknown global 1")]
-    [Arguments((byte)2, "unknown global 2")]
+    [Arguments((byte)0, "constant expression required", "immutable global")]
+    [Arguments((byte)1, "unknown global 1", "参照できる範囲")]
+    [Arguments((byte)2, "unknown global 2", "参照できる範囲")]
     public async Task Core3で先行する可変globalや自身または後続のglobalを参照する_検証で拒否する(
         byte index,
-        string diagnostic
+        string diagnostic,
+        string expectedDetail
     )
     {
         // Arrange
@@ -232,7 +233,11 @@ internal partial class WasmModule_ValidateTests
 
         // Act & Assert
         var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
-        await Assert.That(exception!.Message.StartsWith(diagnostic, StringComparison.Ordinal)).IsTrue();
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.Message).StartsWith(diagnostic);
+            await Assert.That(exception.Message).Contains(expectedDetail);
+        }
     }
 
     [Test]

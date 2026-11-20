@@ -135,6 +135,33 @@ internal class ValueMatcher_MatchTests
     }
 
     [Test]
+    [Arguments(WasmValueKind.I32, ValueMismatchKind.Value, "値がどの候補とも一致しません")]
+    [Arguments(WasmValueKind.I64, ValueMismatchKind.Type, "型i64と一致する候補がありません")]
+    public async Task Eitherの型と値が同じ候補に一致しない_型が一致する候補の有無で相違を区別する(
+        WasmValueKind actualKind,
+        ValueMismatchKind expectedKind,
+        string diagnostic
+    )
+    {
+        // Arrange
+        var state = new ScriptState("a.wast");
+        var either = new ExpectedResult.Either([Scalar(WasmValueKind.F64, "7"), Scalar(WasmValueKind.I32, "8")]);
+        var expected = ValueMatcher.Parse([either], WasmSpecVersion.Core3);
+        var actual = actualKind == WasmValueKind.I32 ? WasmValue.FromI32(7) : WasmValue.FromI64(7);
+
+        // Act
+        var mismatch = ValueMatcher.Match(expected, new WasmResults([actual]), state).Single();
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(mismatch.Kind).IsEqualTo(expectedKind);
+            await Assert.That(mismatch.Index).IsEqualTo(0);
+            await Assert.That(mismatch.Message).Contains(diagnostic);
+        }
+    }
+
+    [Test]
     public async Task 整数の結果のビット列が異なる_相違した位置の値の相違を全て返す()
     {
         // Arrange
@@ -230,13 +257,16 @@ internal class ValueMatcher_MatchTests
         await Assert.That(Positions(mismatches).SequenceEqual(Expected(matched))).IsTrue();
         if (!matched)
         {
+            var expectedDescription = expected == "null" ? "null" : $"番号{expected}のexternref";
             var actualDescription = actual switch
             {
                 "null" => "null",
                 "unknown" => "割り当てていない非nullのexternref",
                 _ => $"番号{actual}のexternref",
             };
-            await Assert.That(mismatches[0].Message).Contains($"ではなく{actualDescription}です。");
+            await Assert
+                .That(mismatches[0].Message)
+                .Contains($"期待した{expectedDescription}ではなく{actualDescription}です。");
         }
     }
 

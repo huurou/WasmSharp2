@@ -156,9 +156,8 @@ internal sealed class RunnerCli(ConversionProfile profile, Func<ConversionProfil
                     var value => throw new ArgumentException($"未知のprofileです: {value}"),
                 };
                 hasProfile = true;
-                continue;
             }
-            if (!paths.TryAdd(option, Path.GetFullPath(args[i + 1], workingDirectory)))
+            else if (!paths.TryAdd(option, Path.GetFullPath(args[i + 1], workingDirectory)))
             {
                 throw new ArgumentException($"引数が重複しています: {option}");
             }

@@ -60,6 +60,33 @@ internal class ReportStore_WriteTests
     }
 
     [Test]
+    public async Task 中断後の一時ファイル削除に失敗する_元の中断例外をそのまま返す()
+    {
+        // Arrange
+        using var directory = new TemporaryDirectory();
+        var path = directory.Combine("run.json");
+        var interruption = new OperationCanceledException();
+
+        // Act & Assert
+        var exception = await Assert
+            .That(() => ReportStore.Write(path, replaceExisting: false, stream =>
+                {
+                    // 同じpathをディレクトリに置き換え、後始末のファイル削除を失敗させる。
+                    stream.Dispose();
+                    var temporaryPath = Directory.GetFiles(directory.Root, "*.tmp").Single();
+                    File.Delete(temporaryPath);
+                    Directory.CreateDirectory(temporaryPath);
+                    throw interruption;
+                }))
+            .ThrowsExactly<OperationCanceledException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception).IsSameReferenceAs(interruption);
+            await Assert.That(File.Exists(path)).IsFalse();
+        }
+    }
+
+    [Test]
     public async Task 確定前に保存先が作られる_競合したファイルを上書きせず保存失敗を報告する()
     {
         // Arrange

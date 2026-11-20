@@ -46,6 +46,7 @@ public sealed class WasmMemory
     public WasmMemory(WasmLimits limits)
     {
         ArgumentNullException.ThrowIfNull(limits);
+        // Stryker disable once Logical,Boolean,Statement,Block: 上限判定を反転するか例外を取り除くと、境界値テストが65,537ページ（約4GiB）を確保する。
         if (limits.Maximum > MAX_PAGE_COUNT || ExceedsPageLimit(limits.Minimum, limits.Maximum))
         {
             throw new ArgumentException("memoryのlimitsがCore 2.0の制約を満たしません。", nameof(limits));
@@ -99,7 +100,10 @@ public sealed class WasmMemory
     {
         previousPageCount = PageCount;
         var nextPageCount = (ulong)previousPageCount + deltaPages;
-        if (ExceedsPageLimit(nextPageCount, MaximumPages))
+        if (
+            // Stryker disable once Boolean: 上限判定を反転すると、拡張を拒否するテストで4GiB以上の領域を確保する。
+            ExceedsPageLimit(nextPageCount, MaximumPages)
+        )
         {
             return false;
         }
@@ -129,7 +133,9 @@ public sealed class WasmMemory
     /// <returns>いずれかの上限を超える場合はtrue</returns>
     internal static bool ExceedsPageLimit(ulong pageCount, uint? maximumPages)
     {
-        return pageCount > MAX_PAGE_COUNT || pageCount > maximumPages;
+        var exceedsDeclaredMaximum = pageCount > maximumPages;
+        // Stryker disable once Logical,Equality: 仕様上限を超えた要求を通すと、生成時や拡張時に4GiB以上の領域を確保する。
+        return pageCount > MAX_PAGE_COUNT || exceedsDeclaredMaximum;
     }
 
     /// <summary>

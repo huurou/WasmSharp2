@@ -89,6 +89,7 @@ public sealed class WasmInstance
         _exports = module.Exports.ToImmutableDictionary(x => x.Name, StringComparer.Ordinal);
         var functions = ImmutableArray.CreateBuilder<WasmFunction>(importedFunctions.Length + module.Functions.Length);
         functions.AddRange(importedFunctions);
+        // Stryker disable once Update: iを減らすとループが終了せず、タイムアウトまで関数を追加し続ける。
         for (var i = 0; i < module.Functions.Length; i++)
         {
             functions.Add(new DefinedFunction(this, (uint)(importedFunctions.Length + i), (uint)i));
