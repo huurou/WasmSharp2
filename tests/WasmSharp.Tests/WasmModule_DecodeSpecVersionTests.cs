@@ -114,6 +114,34 @@ internal partial class WasmModule_DecodeTests
     [Test]
     [Arguments(false)]
     [Arguments(true)]
+    public async Task ストリームがnullである_引数名を示して拒否する(bool specifyVersion)
+    {
+        // Arrange
+        Stream stream = null!;
+
+        // Act & Assert
+        var exception = await Assert
+            .That(() => specifyVersion ? WasmModule.Decode(stream, WasmSpecVersion.Core2) : WasmModule.Decode(stream))
+            .ThrowsExactly<ArgumentNullException>();
+        await Assert.That(exception!.ParamName).IsEqualTo("stream");
+    }
+
+    [Test]
+    public async Task ストリームがnullで仕様版も未定義である_仕様版の引数を先に拒否する()
+    {
+        // Arrange
+        Stream stream = null!;
+
+        // Act & Assert
+        var exception = await Assert
+            .That(() => WasmModule.Decode(stream, (WasmSpecVersion)2))
+            .ThrowsExactly<ArgumentOutOfRangeException>();
+        await Assert.That(exception!.ParamName).IsEqualTo("specVersion");
+    }
+
+    [Test]
+    [Arguments(false)]
+    [Arguments(true)]
     public async Task 公式のタグsectionをCore2でデコード_従来どおりsection_IDの不正として拒否する(bool useStream)
     {
         // Arrange

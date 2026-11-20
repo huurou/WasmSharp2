@@ -959,9 +959,10 @@ internal partial class InstructionGenerator_InitializeTests
     }
 
     [Test]
-    [Arguments(false)]
-    [Arguments(true)]
-    public async Task Opcodeが重複する_属性位置付きのビルドエラーを報告する(bool numeric)
+    [Arguments(false, "Core2")]
+    [Arguments(true, "Core2")]
+    [Arguments(false, "Core3")]
+    public async Task Opcodeが重複する_属性位置付きのビルドエラーを報告する(bool numeric, string secondVersion)
     {
         // Arrange
         var metadata = numeric
@@ -972,7 +973,7 @@ internal partial class InstructionGenerator_InitializeTests
             namespace WasmSharp.Instructions
             {
                 [Instruction(WasmSpecVersion.Core2, 0xFD, 1, "first"{{metadata}})]
-                [Instruction(WasmSpecVersion.Core2, 0xFD, 1, "second"{{metadata}})]
+                [Instruction(WasmSpecVersion.{{secondVersion}}, 0xFD, 1, "second"{{metadata}})]
                 internal static partial class InstructionSet;
             }
             namespace WasmSharp.Execution

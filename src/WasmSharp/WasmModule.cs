@@ -189,6 +189,7 @@ public sealed class WasmModule
     /// </remarks>
     /// <param name="stream">現在位置からmoduleのバイナリを読み取れる入力ストリーム</param>
     /// <returns>入力上の診断位置を保持する、未検証のmodule</returns>
+    /// <exception cref="ArgumentNullException">streamがnullの場合</exception>
     /// <exception cref="ArgumentException">ストリームが読み取り可能ではない場合</exception>
     /// <exception cref="WasmDecodeException">対応する構文の符号化またはsectionの構成が不正な場合</exception>
     /// <exception cref="WasmUnsupportedFeatureException">未実装のsectionまたは命令に遭遇した場合 入力全体の有効性は保証しない</exception>
@@ -209,6 +210,7 @@ public sealed class WasmModule
     /// <param name="specVersion">デコードと検証で前提とする仕様の版</param>
     /// <returns>入力上の診断位置と選択した版を保持する、未検証のmodule</returns>
     /// <exception cref="ArgumentOutOfRangeException">未定義の版を指定した場合</exception>
+    /// <exception cref="ArgumentNullException">streamがnullの場合</exception>
     /// <exception cref="ArgumentException">ストリームが読み取り可能ではない場合</exception>
     /// <exception cref="WasmDecodeException">対応する構文の符号化またはsectionの構成が不正な場合</exception>
     /// <exception cref="WasmUnsupportedFeatureException">未実装のsectionまたは命令に遭遇した場合</exception>
@@ -216,6 +218,7 @@ public sealed class WasmModule
     public static WasmModule Decode(Stream stream, WasmSpecVersion specVersion)
     {
         ValidateSpecVersion(specVersion);
+        ArgumentNullException.ThrowIfNull(stream);
         if (!stream.CanRead)
         {
             throw new ArgumentException("入力ストリームが読み取り不可でした。", nameof(stream));

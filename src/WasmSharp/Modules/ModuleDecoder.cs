@@ -336,20 +336,26 @@ internal static class ModuleDecoder
         }
 
         RequireDataCountMatch(ref reader, dataCount, segmentCount.Value);
+        if (dataCount is not null || functions.Count == 0)
+        {
+            return;
+        }
+
         var instructionSet = InstructionSet.ForVersion(reader.SpecVersion);
-        if (
-            dataCount is null
-            && functions.Any(x =>
-                x.Instructions.Any(x =>
-                    instructionSet.TryGetValue(x.Opcode, out var descriptor)
+        foreach (var function in functions)
+        {
+            foreach (var instruction in function.Instructions)
+            {
+                if (
+                    instructionSet.TryGetValue(instruction.Opcode, out var descriptor)
                     && descriptor.Immediate is ImmediateKind.DataIndexMemoryZero or ImmediateKind.DataIndex
                 )
-            )
-        )
-        {
-            throw reader.Error(
-                "data count section required: データインデックスを使用するコードにはデータ数セクションが必要です。"
-            );
+                {
+                    throw reader.Error(
+                        "data count section required: データインデックスを使用するコードにはデータ数セクションが必要です。"
+                    );
+                }
+            }
         }
     }
 

@@ -1,6 +1,6 @@
 # ミューテーションテスト
 
-.NET SDKと固定Core 2.0仕様を[セットアップ手順](../README.md#開発環境のセットアップ)に従って用意する。Stryker.NETは`.config/dotnet-tools.json`で固定している。
+.NET SDKと、Core 2.0・Core 3.0の両方の仕様サブモジュールを用意する。Stryker.NETは`.config/dotnet-tools.json`で固定している。[セットアップ手順](../README.md#開発環境のセットアップ)
 
 ## 通常テストとカバレッジ
 

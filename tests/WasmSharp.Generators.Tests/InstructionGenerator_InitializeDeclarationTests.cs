@@ -42,17 +42,18 @@ internal partial class InstructionGenerator_InitializeTests
     }
 
     [Test]
-    [Arguments("null")]
-    [Arguments("\"\"")]
-    [Arguments("\" \\t \"")]
-    public async Task 命令名が空白またはnull_不完全宣言の診断を報告する(string name)
+    [Arguments("WasmSpecVersion.Core2", "null")]
+    [Arguments("WasmSpecVersion.Core2", "\"\"")]
+    [Arguments("WasmSpecVersion.Core2", "\" \\t \"")]
+    [Arguments("(WasmSpecVersion)2", "\"nop\"")]
+    public async Task 命令の導入版または名前が不正である_不完全宣言の診断を報告する(string version, string name)
     {
         // Arrange
         var compilation = GeneratorTestSource.CreateCompilation(
             $$"""
             namespace WasmSharp.Instructions
             {
-                [Instruction(WasmSpecVersion.Core2, 0, 1, {{name}})]
+                [Instruction({{version}}, 0, 1, {{name}})]
                 internal static partial class InstructionSet;
             }
             """
