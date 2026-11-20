@@ -6,6 +6,34 @@ namespace WasmSharp.Tests;
 internal partial class WasmModule_InstantiateTests
 {
     [Test]
+    public async Task Core3の定義globalから要素の位置と関数参照を取得する_その添字から関数を呼び出せる()
+    {
+        // Arrange
+        // global.get 0、i32.const 3、i32.mulで添字を6にし、global.get 1の関数を配置する。
+        byte[] offset = [0x23, 0, 0x41, 3, 0x6C, 0x0B];
+        byte[] functionRef = [0x23, 1, 0x0B];
+        var bytes = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Types(([], [0x7F])),
+            HostLinkingModuleBinary.Functions(0),
+            HostLinkingModuleBinary.Tables((0x70, 7, null)),
+            HostLinkingModuleBinary.Globals((0x7F, false, [0x41, 2, 0x0B]), (0x70, false, [0xD2, 0, 0x0B])),
+            HostLinkingModuleBinary.Exports(("table", 1, 0)),
+            HostLinkingModuleBinary.Section(9, [1, 4, .. offset, 1, .. functionRef]),
+            HostLinkingModuleBinary.Code(([], [0x41, 42, 0x0B]))
+        );
+        var module = WasmModule.Decode(bytes, WasmSpecVersion.Core3);
+        var context = new WasmExecutionContext();
+
+        // Act
+        var instance = module.Validate().Instantiate(context, []);
+        var function = instance.GetTable("table").Get(6).AsFuncRef();
+        var result = function!.Invoke(context, []);
+
+        // Assert
+        await Assert.That(result.Values[0].AsI32()).IsEqualTo(42);
+    }
+
+    [Test]
     [Arguments("0041000B0100", 0, false)]
     [Arguments("01000100", -1, true)]
     [Arguments("020141000B000100", 1, false)]
