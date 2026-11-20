@@ -133,15 +133,11 @@ internal static partial class Interpreter
     internal static ExecutionResult Load(InterpreterContext context, in Instruction instruction)
     {
         var signature = instruction.MemoryAccessSignature;
-        var address = (ulong)unchecked((uint)context.PopValue().AsI32()) + instruction.MemoryArgument.Offset;
         Span<byte> bytes = stackalloc byte[8];
-        if (!context.CurrentFunction.Instance.Memories[0].TryRead(address, bytes[..signature.ByteWidth]))
+        var result = ReadMemory(context, in instruction, bytes[..signature.ByteWidth]);
+        if (result.Status != ExecutionStatus.Success)
         {
-            return ExecutionResult.Trap(
-                WasmTrapReason.MemoryOutOfBounds,
-                context.CurrentFunction.FunctionIndex,
-                instruction.ByteOffset
-            );
+            return result;
         }
 
         var bits = signature.ByteWidth switch
@@ -181,7 +177,6 @@ internal static partial class Interpreter
     {
         var signature = instruction.MemoryAccessSignature;
         var value = context.PopValue();
-        var address = (ulong)unchecked((uint)context.PopValue().AsI32()) + instruction.MemoryArgument.Offset;
         var bits = signature.ValueType switch
         {
             WasmValueKind.I32 => unchecked((uint)value.AsI32()),
@@ -192,15 +187,40 @@ internal static partial class Interpreter
         };
         Span<byte> bytes = stackalloc byte[8];
         BinaryPrimitives.WriteUInt64LittleEndian(bytes, bits);
-        if (!context.CurrentFunction.Instance.Memories[0].TryWrite(address, bytes[..signature.ByteWidth]))
-        {
-            return ExecutionResult.Trap(
+        return WriteMemory(context, in instruction, bytes[..signature.ByteWidth]);
+    }
+
+    /// <summary>
+    /// operandの符号なしアドレスとoffsetから指定範囲を読み、範囲外の位置情報を保持する
+    /// </summary>
+    private static ExecutionResult ReadMemory(InterpreterContext context, in Instruction instruction, Span<byte> destination)
+    {
+        var address = (ulong)unchecked((uint)context.PopValue().AsI32()) + instruction.MemoryArgument.Offset;
+        return context.CurrentFunction.Instance.Memories[(int)instruction.Index].TryRead(address, destination)
+            ? default
+            : ExecutionResult.Trap(
                 WasmTrapReason.MemoryOutOfBounds,
                 context.CurrentFunction.FunctionIndex,
                 instruction.ByteOffset
             );
-        }
+    }
 
-        return default;
+    /// <summary>
+    /// operandの符号なしアドレスとoffsetへ指定範囲を書き、範囲外の位置情報を保持する
+    /// </summary>
+    private static ExecutionResult WriteMemory(
+        InterpreterContext context,
+        in Instruction instruction,
+        ReadOnlySpan<byte> source
+    )
+    {
+        var address = (ulong)unchecked((uint)context.PopValue().AsI32()) + instruction.MemoryArgument.Offset;
+        return context.CurrentFunction.Instance.Memories[(int)instruction.Index].TryWrite(address, source)
+            ? default
+            : ExecutionResult.Trap(
+                WasmTrapReason.MemoryOutOfBounds,
+                context.CurrentFunction.FunctionIndex,
+                instruction.ByteOffset
+            );
     }
 }

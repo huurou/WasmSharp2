@@ -93,16 +93,11 @@ internal static class ExpressionDecoder
                         : WasmValue.FromExternRef(null),
                     offset
                 ),
-                ImmediateKind.MemoryArgument => DecodedInstruction.WithMemoryArgument(
+                ImmediateKind.MemoryArgument or ImmediateKind.MemoryArgumentLaneIndex => ReadMemoryArgument(
                     opcode,
-                    new(reader.ReadU32(), reader.ReadU32()),
-                    offset
-                ),
-                ImmediateKind.MemoryArgumentLaneIndex => DecodedInstruction.WithMemoryArgumentLaneIndex(
-                    opcode,
-                    new(reader.ReadU32(), reader.ReadU32()),
-                    reader.ReadByte(),
-                    offset
+                    offset,
+                    ref reader,
+                    immediateKind == ImmediateKind.MemoryArgumentLaneIndex
                 ),
                 ImmediateKind.MemoryZero => ReadMemoryZero(opcode, offset, ref reader),
                 ImmediateKind.MemoryPairZero => ReadMemoryPairZero(opcode, offset, ref reader),
@@ -135,6 +130,38 @@ internal static class ExpressionDecoder
                 controls.RemoveAt(controls.Count - 1);
             }
         }
+    }
+
+    /// <summary>
+    /// 対象の仕様に従ってメモリ即値を読み、lane命令の場合は続くlane番号も取得する
+    /// </summary>
+    private static DecodedInstruction ReadMemoryArgument(
+        OpcodeKey opcode,
+        long byteOffset,
+        ref ModuleBinaryReader reader,
+        bool hasLane
+    )
+    {
+        var flagsPosition = reader.Position;
+        var flags = reader.ReadU32();
+        uint memoryIndex = 0;
+        MemoryArgument argument;
+        if (reader.SpecVersion == WasmSpecVersion.Core3)
+        {
+            if (flags >= 0x80)
+            {
+                throw reader.Error("malformed memop flags: メモリ命令のフラグに予約ビットが含まれています。", flagsPosition);
+            }
+            // 下位6ビットはアラインメント指数、ビット6はメモリインデックスの有無を表す。
+            memoryIndex = (flags & 0x40) != 0 ? reader.ReadU32() : 0;
+            argument = new MemoryArgument(flags & 0x3F, reader.ReadU64());
+        }
+        else
+        {
+            argument = new MemoryArgument(flags, reader.ReadU32());
+        }
+        var laneIndex = hasLane ? reader.ReadByte() : (byte)0;
+        return DecodedInstruction.WithMemoryArgument(opcode, argument, byteOffset, memoryIndex, laneIndex);
     }
 
     /// <summary>

@@ -6,6 +6,28 @@ namespace WasmSharp.Tests;
 internal partial class WasmModule_ValidateTests
 {
     [Test]
+    [Arguments("284002001A", "unknown memory 2")]
+    [Arguments("FD5940FFFFFFFF0F0003", "unknown memory 4294967295")]
+    [Arguments("28400180808080101A", "offset out of range")]
+    [Arguments("FD594001FFFFFFFFFFFFFFFFFF0103", "offset out of range")]
+    [Arguments("284301FFFFFFFFFFFFFFFFFF011A", "alignment must not be larger than natural")]
+    public async Task Core3複数メモリのロードやストアの即値が不正_Validateで原因を示す(string instruction, string diagnostic)
+    {
+        // Arrange
+        var bytes = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Types(([], [])),
+            HostLinkingModuleBinary.Functions(0),
+            HostLinkingModuleBinary.Memories((1, null), (1, null)),
+            HostLinkingModuleBinary.Code(([], [0x00, .. Convert.FromHexString(instruction), 0x0B]))
+        );
+        var module = WasmModule.Decode(bytes, WasmSpecVersion.Core3);
+
+        // Act & Assert
+        var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
+        await Assert.That(exception!.Message).StartsWith(diagnostic);
+    }
+
+    [Test]
     [Arguments(false, "FC0A00000B", "unknown memory 0", 5)]
     [Arguments(false, "00FC0A00000B", "unknown memory 0", 5)]
     [Arguments(false, "FC0B000B", "unknown memory 0", 4)]
@@ -38,6 +60,7 @@ internal partial class WasmModule_ValidateTests
     [Arguments(false, "002803000B", "unknown memory 0", 4)]
     [Arguments(false, "003603000B", "unknown memory 0", 4)]
     [Arguments(true, "2803000B", "alignment must not be larger than natural", 4)]
+    [Arguments(true, "2840000B", "alignment must not be larger than natural", 4)]
     [Arguments(true, "002803000B", "alignment must not be larger than natural", 4)]
     [Arguments(true, "003603000B", "alignment must not be larger than natural", 4)]
     [Arguments(true, "2821000B", "alignment must not be larger than natural", 4)]
