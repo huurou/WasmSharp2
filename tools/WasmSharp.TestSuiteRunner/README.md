@@ -90,6 +90,7 @@ Expand-Archive -LiteralPath ./baselines/core3/initial-run.zip -DestinationPath .
 ```
 
 展開したbaselineと保存元を比較すると、条件差・出典差・入力と素材の差・ケースの変化・追加・欠落・未比較・回帰はすべて0件でした。`compare-run`は比較を完了し、比較対象に`failed`が1,000件あるため終了値1を返しました。
+期待値の照合を更新したリビジョン`5acb4d88f14d1125dd9544a8798ff37ad342f09d`でも同じmanifestを再実行し、全65,193ケースの結果が初回のbaselineと一致することを確認しました。
 
 ## Core 2.0の初回の生成・実行とbaseline保存
 

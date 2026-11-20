@@ -40,7 +40,7 @@ internal static class ValueMatcher
     /// </remarks>
     /// <param name="expected">JSONの記載順の値付き期待値</param>
     /// <param name="specVersion">値の表記を決める仕様版</param>
-    /// <returns>元の順序を保持する新しい比較用配列 数値のビット列、NaN条件、externref番号を保持する</returns>
+    /// <returns>結果位置ごとの候補配列 単独の期待値は1件、eitherは入れ子を展開した順に候補を保持する。</returns>
     /// <exception cref="ScriptFormatException">値の文字列が固定形式にない場合</exception>
     internal static ImmutableArray<ImmutableArray<ValuePattern>> Parse(
         ImmutableArray<ExpectedResult> expected,
@@ -239,9 +239,9 @@ internal static class ValueMatcher
     }
 
     /// <summary>
-    /// 型が一致した1個の結果を比較し、数値・lane・参照の相違箇所を返す。
+    /// 1個の結果を候補と比較し、数値・lane・参照の相違箇所を返す。
     /// </summary>
-    /// <param name="expected">実際の結果と同じ値型を持つ解析済み期待値</param>
+    /// <param name="expected"><see cref="MatchesType"/>で比較対象と判定された候補 Core 3.0の参照では実際の値と型名が異なる場合もある。</param>
     /// <param name="actual">比較する1個の結果</param>
     /// <param name="index">結果の0始まり位置</param>
     /// <param name="state">参照の同一性でexternref番号を解決する入力の状態</param>

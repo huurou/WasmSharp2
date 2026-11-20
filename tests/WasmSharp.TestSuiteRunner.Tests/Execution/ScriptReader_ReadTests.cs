@@ -90,6 +90,14 @@ internal class ScriptReader_ReadTests
     [Arguments("""{"type":"module_instance","line":1,"instance":3}""", "instanceが文字列ではありません。")]
     [Arguments("""{"type":"module_instance","line":1,"module":3}""", "moduleが文字列ではありません。")]
     [Arguments(
+        """{"type":"assert_exception","line":1,"action":{"type":"get","field":"g"},"text":"unexpected"}""",
+        "固定形式にないtextがあります。"
+    )]
+    [Arguments(
+        """{"type":"assert_return","line":1,"action":{"type":"get","field":"g"},"expected":[{"type":"either","values":[{"type":"i32","value":"1"}],"extra":0}]}""",
+        "固定形式にないexpected[0].extraがあります。"
+    )]
+    [Arguments(
         """{"type":"module","line":1,"filename":"a.wat","module_type":3,"binary_filename":"a.wasm"}""",
         "module_typeが文字列ではありません。"
     )]
@@ -414,6 +422,10 @@ internal class ScriptReader_ReadTests
     )]
     [Arguments(
         """{"type": "assert_return", "line": 7, "action": {"type": "invoke", "field": "f", "args": []}, "either": [{"type": "i32", "value": "1"}]}""",
+        "either"
+    )]
+    [Arguments(
+        """{"type":"assert_return","line":7,"action":{"type":"get","field":"g"},"expected":[{"type":"either","values":[{"type":"i32","value":"1"}]}]}""",
         "either"
     )]
     [Arguments(

@@ -160,6 +160,47 @@ internal partial class RunnerCli_RunTests
     }
 
     [Test]
+    [Arguments("""[{"type":"anyref","value":"-1"}]""", "[]", "create_arguments", "action.args[0].value")]
+    [Arguments(
+        "[]",
+        """[{"type":"either","values":[{"type":"i32","value":"1"},{"type":"refnull","value":"7"}]}]""",
+        "parse_expected",
+        "expected[0].values[1].value"
+    )]
+    public async Task Core3の対象moduleが成立せず参照表記も不正である_不正な項目の位置をランナー異常として保存する(
+        string arguments,
+        string expected,
+        string operation,
+        string path
+    )
+    {
+        // Arrange
+        using var fixture = CorpusFixture.Create();
+        fixture.ReplaceScriptA(
+            $$"""
+            {"type":"module","line":1,"filename":"a.0.wasm"},
+            {"type":"assert_return","line":2,"action":{"type":"invoke","field":"f","args":{{arguments}}},"expected":{{expected}}}
+            """,
+            Core3OfficialBinary.Tag
+        );
+
+        // Act
+        var (_, cases) = RunAssertions(fixture, WasmSpecVersion.Core3);
+
+        // Assert
+        var assertion = cases[1];
+        using (Assert.Multiple())
+        {
+            await Assert.That(cases[0].Outcome).IsEqualTo(CaseOutcome.RuntimeUnsupported);
+            await Assert.That(assertion.Outcome).IsEqualTo(CaseOutcome.RunnerError);
+            await Assert.That(assertion.Cause).IsNull();
+            var diagnostic = assertion.Diagnostics.Single();
+            await Assert.That(diagnostic.Operation).IsEqualTo(operation);
+            await Assert.That(diagnostic.Message).Contains(path);
+        }
+    }
+
+    [Test]
     [Arguments("refnull", true)]
     [Arguments("funcref", false)]
     public async Task 異なる参照条件を同じeitherに指定する_外部参照のnullに一致する候補と表記を保存する(
