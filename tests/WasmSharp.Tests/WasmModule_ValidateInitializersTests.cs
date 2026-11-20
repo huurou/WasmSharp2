@@ -210,6 +210,32 @@ internal partial class WasmModule_ValidateTests
     }
 
     [Test]
+    [Arguments((byte)0, "constant expression required")]
+    [Arguments((byte)1, "unknown global 1")]
+    [Arguments((byte)2, "unknown global 2")]
+    public async Task Core3で先行する可変globalや自身または後続のglobalを参照する_検証で拒否する(
+        byte index,
+        string diagnostic
+    )
+    {
+        // Arrange
+        var module = WasmModule.Decode(
+            HostLinkingModuleBinary.Create(
+                HostLinkingModuleBinary.Globals(
+                    (0x7F, true, [0x41, 7, 0x0B]),
+                    (0x7F, false, [0x23, index, 0x0B]),
+                    (0x7F, false, [0x41, 9, 0x0B])
+                )
+            ),
+            WasmSpecVersion.Core3
+        );
+
+        // Act & Assert
+        var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
+        await Assert.That(exception!.Message.StartsWith(diagnostic, StringComparison.Ordinal)).IsTrue();
+    }
+
+    [Test]
     [Arguments(true, 0u, "immutable global")]
     [Arguments(false, 1u, "import global")]
     [Arguments(false, 2u, null)]

@@ -160,6 +160,37 @@ internal partial class WasmModule_InstantiateTests
     }
 
     [Test]
+    public async Task Core3で先に宣言した不変globalを参照する_宣言順にimportと整数定数の値を引き継ぐ()
+    {
+        // Arrange
+        var host = new WasmHostModule("env");
+        host.Define("source", new WasmGlobal(new WasmGlobalType(WasmValueKind.I32, false), WasmValue.FromI32(-17)));
+        var module = WasmModule.Decode(
+            HostLinkingModuleBinary.Create(
+                HostLinkingModuleBinary.Imports(("env", "source", 3, [0x7F, 0])),
+                HostLinkingModuleBinary.Globals(
+                    (0x7F, false, [0x23, 0, 0x0B]),
+                    (0x7E, false, [0x42, 42, 0x0B]),
+                    (0x7F, false, [0x23, 1, 0x0B]),
+                    (0x7E, true, [0x23, 2, 0x0B])
+                ),
+                HostLinkingModuleBinary.Exports(("from-import", 3, 3), ("from-const", 3, 4))
+            ),
+            WasmSpecVersion.Core3
+        );
+
+        // Act
+        var instance = module.Validate().Instantiate(new WasmExecutionContext(), [host]);
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(instance.GetGlobal("from-import").AsI32()).IsEqualTo(-17);
+            await Assert.That(instance.GetGlobal("from-const").AsI64()).IsEqualTo(42L);
+        }
+    }
+
+    [Test]
     [Arguments((byte)0x7F)]
     [Arguments((byte)0x7E)]
     [Arguments((byte)0x7D)]
