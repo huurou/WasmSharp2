@@ -17,7 +17,7 @@ internal static class ModuleValidator
     /// <returns>importを含まない定義順の線形実行コード</returns>
     internal static ImmutableArray<FunctionCode> Validate(WasmModule module)
     {
-        var (functionCount, memoryCount, importedGlobalCount) = ValidateImportReferences(module);
+        var (functionCount, importedGlobalCount) = ValidateImportReferences(module);
         ValidateFunctionReferences(module, functionCount);
         var references = ReferenceValidationContext.Create(module, functionCount);
         WasmGlobalType[] globalTypes =
@@ -33,17 +33,11 @@ internal static class ModuleValidator
         );
         ValidateResources(module);
         ValidateElements(module, references, segmentGlobalTypes);
-        ValidateData(module, memoryCount, references.FunctionCount, segmentGlobalTypes);
+        ValidateData(module, references, segmentGlobalTypes);
         var codes = ValidateFunctions(module, references, globalTypes);
         ValidateStart(module);
-        ValidateExports(
-            module,
-            references.FunctionCount,
-            (uint)references.TableElementTypes.Length,
-            memoryCount + (uint)module.Memories.Length,
-            (uint)globalTypes.Length
-        );
-        ValidateMemoryCount(module, memoryCount);
+        ValidateExports(module, references, (uint)globalTypes.Length);
+        ValidateMemoryCount(module, references.MemoryCount);
         return codes;
     }
 
@@ -110,17 +104,14 @@ internal static class ModuleValidator
     /// アクティブデータセグメントのメモリ参照とi32のオフセット式を宣言順に検証する
     /// </summary>
     /// <param name="module">リソース宣言の検証を終えたmodule</param>
-    /// <param name="importedMemoryCount">importしたmemoryの個数</param>
-    /// <param name="functionCount">importと定義を合わせた関数の個数</param>
+    /// <param name="references">当該module検証で共有する参照情報</param>
     /// <param name="visibleGlobals">セグメントの定数式から参照できるglobalの型</param>
     private static void ValidateData(
         WasmModule module,
-        uint importedMemoryCount,
-        uint functionCount,
+        ReferenceValidationContext references,
         ReadOnlySpan<WasmGlobalType> visibleGlobals
     )
     {
-        var memoryCount = importedMemoryCount + (uint)module.Memories.Length;
         foreach (var data in module.DataSegments)
         {
             var target = data.ActiveTarget;
@@ -128,7 +119,7 @@ internal static class ModuleValidator
             {
                 continue;
             }
-            if (target.MemoryIndex >= memoryCount)
+            if (target.MemoryIndex >= references.MemoryCount)
             {
                 throw ValidationDiagnostics.UnknownIndex(
                     "memory",
@@ -141,7 +132,7 @@ internal static class ModuleValidator
                 target.OffsetExpression,
                 WasmValueKind.I32,
                 visibleGlobals,
-                functionCount,
+                references.FunctionCount,
                 11,
                 module.SpecVersion
             );
@@ -262,11 +253,10 @@ internal static class ModuleValidator
     /// 元の添字空間を保ってimportの型参照とリソース制約を逆順に検証する
     /// </summary>
     /// <param name="module">デコード済みの静的定義</param>
-    /// <returns>importした関数・memory・globalの個数</returns>
-    private static (uint FunctionCount, uint MemoryCount, uint GlobalCount) ValidateImportReferences(WasmModule module)
+    /// <returns>importした関数・globalの個数</returns>
+    private static (uint FunctionCount, uint GlobalCount) ValidateImportReferences(WasmModule module)
     {
         uint functionCount = 0;
-        uint memoryCount = 0;
         uint globalCount = 0;
         foreach (var import in module.Imports)
         {
@@ -274,9 +264,6 @@ internal static class ModuleValidator
             {
                 case FunctionImport:
                     functionCount++;
-                    break;
-                case MemoryImport:
-                    memoryCount++;
                     break;
                 case GlobalImport:
                     globalCount++;
@@ -305,7 +292,7 @@ internal static class ModuleValidator
             }
         }
 
-        return (functionCount, memoryCount, globalCount);
+        return (functionCount, globalCount);
     }
 
     /// <summary>
@@ -345,26 +332,18 @@ internal static class ModuleValidator
     /// exportの参照先と名前の一意性を宣言順に検証する
     /// </summary>
     /// <param name="module">デコード済みの静的定義</param>
-    /// <param name="functionCount">importと定義を合わせた関数の個数</param>
-    /// <param name="tableCount">importと定義を合わせたtableの個数</param>
-    /// <param name="memoryCount">importと定義を合わせたmemoryの個数</param>
+    /// <param name="references">当該module検証で共有する参照情報</param>
     /// <param name="globalCount">importと定義を合わせたglobalの個数</param>
-    private static void ValidateExports(
-        WasmModule module,
-        uint functionCount,
-        uint tableCount,
-        uint memoryCount,
-        uint globalCount
-    )
+    private static void ValidateExports(WasmModule module, ReferenceValidationContext references, uint globalCount)
     {
         var names = new HashSet<string>(StringComparer.Ordinal);
         foreach (var export in module.Exports)
         {
             var (count, category) = export.Kind switch
             {
-                WasmExternalKind.Function => (functionCount, "function"),
-                WasmExternalKind.Table => (tableCount, "table"),
-                WasmExternalKind.Memory => (memoryCount, "memory"),
+                WasmExternalKind.Function => (references.FunctionCount, "function"),
+                WasmExternalKind.Table => ((uint)references.TableElementTypes.Length, "table"),
+                WasmExternalKind.Memory => (references.MemoryCount, "memory"),
                 WasmExternalKind.Global => (globalCount, "global"),
                 _ => throw new InvalidOperationException("デコード済みexportの種類が不正です。"),
             };
@@ -438,46 +417,29 @@ internal static class ModuleValidator
     }
 
     /// <summary>
-    /// memoryの総数を確認し、2個以上の場合は元の2個目の宣言位置を保持する
+    /// Core 2.0では2個目のメモリの宣言位置で個数制限を報告する
     /// </summary>
-    /// <remarks>Core 2.0では規則違反、複数メモリを許すCore 3.0では未実装として通知する</remarks>
     /// <param name="module">デコード時の仕様の版を保持する静的定義</param>
-    /// <param name="importCount">importしたmemoryの個数</param>
-    private static void ValidateMemoryCount(WasmModule module, uint importCount)
+    /// <param name="memoryCount">importと定義を合わせたメモリの個数</param>
+    private static void ValidateMemoryCount(WasmModule module, uint memoryCount)
     {
-        if (importCount + (uint)module.Memories.Length > 1)
+        if (module.SpecVersion != WasmSpecVersion.Core2 || memoryCount <= 1)
         {
-            var secondImport = module.Imports.OfType<MemoryImport>().Skip(1).FirstOrDefault();
-            var offset = secondImport?.ByteOffset ?? module.Memories[importCount == 0 ? 1 : 0].ByteOffset;
-            var location = new WasmFailureLocation(
-                WasmProcessingStage.Validate,
-                offset,
-                null,
-                secondImport is null ? (byte)5 : (byte)2
-            );
-            if (module.SpecVersion == WasmSpecVersion.Core3)
-            {
-                throw new WasmUnsupportedFeatureException(
-                    "未実装の機能に遭遇しました。",
-                    "multiple memories",
-                    location,
-                    [
-                        new WasmUnverifiedRange(
-                            WasmProcessingStage.Validate,
-                            0,
-                            module.InputLength,
-                            "複数メモリを前提とする検証が未完了です。"
-                        ),
-                    ]
-                );
-            }
-
-            throw ValidationDiagnostics.ValidationFailure(
-                "multiple memories",
-                "memoryのimportと定義の合計が1個を超えています。",
-                location
-            );
+            return;
         }
+
+        var location = module
+            .Imports.OfType<MemoryImport>()
+            .Select(x => new WasmFailureLocation(WasmProcessingStage.Validate, x.ByteOffset, null, 2))
+            .Concat(
+                module.Memories.Select(x => new WasmFailureLocation(WasmProcessingStage.Validate, x.ByteOffset, null, 5))
+            )
+            .ElementAt(1);
+        throw ValidationDiagnostics.ValidationFailure(
+            "multiple memories",
+            "memoryのimportと定義の合計が1個を超えています。",
+            location
+        );
     }
 
     /// <summary>

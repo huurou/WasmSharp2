@@ -5,6 +5,45 @@ namespace WasmSharp.Tests;
 internal class WasmInstance_GetMemoryTests
 {
     [Test]
+    public async Task Core3で複数のメモリを再exportする_importの宣言順に同じ実体を取得でき定義メモリは独立する()
+    {
+        // Arrange
+        var first = new WasmMemory(new WasmLimits(1));
+        var second = new WasmMemory(new WasmLimits(1));
+        var host = new WasmHostModule("env");
+        host.Define("second", second);
+        host.Define("first", first);
+        var bytes = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Imports(("env", "first", 2, [0, 1]), ("env", "second", 2, [0, 1])),
+            HostLinkingModuleBinary.Memories((1, null)),
+            HostLinkingModuleBinary.Exports(("local", 2, 2), ("b", 2, 1), ("a", 2, 0))
+        );
+        var instance = WasmModule
+            .Decode(bytes, WasmSpecVersion.Core3)
+            .Validate()
+            .Instantiate(new WasmExecutionContext(), [host]);
+
+        // Act
+        var exportedFirst = instance.GetMemory("a");
+        var exportedSecond = instance.GetMemory("b");
+        exportedFirst.Write(0, [17]);
+        exportedSecond.Write(0, [42]);
+        var importedByte = new byte[1];
+        var definedByte = new byte[1];
+        second.Read(0, importedByte);
+        instance.GetMemory("local").Read(0, definedByte);
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(exportedFirst).IsSameReferenceAs(first);
+            await Assert.That(exportedSecond).IsSameReferenceAs(second);
+            await Assert.That(importedByte[0]).IsEqualTo((byte)42);
+            await Assert.That(definedByte[0]).IsEqualTo((byte)0);
+        }
+    }
+
+    [Test]
     public async Task 別名と再exportから取得する_更新と増大を同じmemoryで共有する()
     {
         // Arrange
