@@ -20,7 +20,7 @@ internal sealed record ProfileSnapshot(
 ) : IJsonOnDeserialized
 {
     /// <summary>
-    /// wasm-toolsを使う場合の固定リリース Core 2.0の保存形式には出力しない
+    /// wasm-toolsを使う場合の固定リリース WABTの保存形式には出力しない
     /// </summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public WasmToolsRelease? WasmTools { get; init; }
@@ -42,9 +42,12 @@ internal sealed record ProfileSnapshot(
 
     void IJsonOnDeserialized.OnDeserialized()
     {
-        // wasm_toolsの有無にかかわらず、Core 2.0では従来の必須項目を要求する。
-        if (Id != "core2" && WasmTools is not null)
+        if (WasmTools is not null)
         {
+            if (Wabt is not null || Conversion is not null)
+            {
+                throw new JsonException("wasm_toolsとWABTの変換条件は併用できません。");
+            }
             return;
         }
         if (Wabt is null)

@@ -1,4 +1,5 @@
 using WasmSharp.Tests.Fixtures;
+using WasmSharp.TestSuiteRunner.Corpus;
 using WasmSharp.TestSuiteRunner.Execution;
 using WasmSharp.TestSuiteRunner.Reports;
 using WasmSharp.TestSuiteRunner.Tests.Fixtures;
@@ -181,7 +182,7 @@ public partial class SuiteExecutor_ExecuteAndSaveTests
     public async Task 公式のタグと複数メモリをCore3で実行_ランタイムが明示した未実装を処理段階と診断付きで保存する()
     {
         // Arrange
-        using var fixture = CorpusFixture.Create();
+        using var fixture = CorpusFixture.Create(new ConversionProfileLoader().LoadCore3());
         fixture.WriteArtifact(CorpusFixture.A, "modules/a.0.wasm", Core3OfficialBinary.Tag);
         fixture.WriteArtifact(CorpusFixture.A, "modules/a.2.wasm", Core3OfficialBinary.MultipleMemories);
         var output = Path.Combine(fixture.OutputRoot, "core3.json");
@@ -214,7 +215,7 @@ public partial class SuiteExecutor_ExecuteAndSaveTests
     public async Task 公式のタグと複数メモリをCore2で実行_未実装へ読み替えず従来の段階の失敗として保存する()
     {
         // Arrange
-        using var fixture = CorpusFixture.Create();
+        using var fixture = CorpusFixture.Create(new ConversionProfileLoader().Load());
         fixture.WriteArtifact(CorpusFixture.A, "modules/a.0.wasm", Core3OfficialBinary.Tag);
         fixture.WriteArtifact(CorpusFixture.A, "modules/a.2.wasm", Core3OfficialBinary.MultipleMemories);
         var output = Path.Combine(fixture.OutputRoot, "core2.json");

@@ -1,7 +1,7 @@
 namespace WasmSharp.TestSuiteRunner;
 
 /// <summary>
-/// CLIが使うOS別のパス比較と、ビルドしたwast2jsonの配置を表す。
+/// CLIが使うOS別のパス比較と、配布版wasm-toolsの配置例を表す。
 /// </summary>
 internal sealed class RunnerPaths(bool isWindows)
 {
@@ -10,8 +10,8 @@ internal sealed class RunnerPaths(bool isWindows)
     internal StringComparison Comparison { get; } =
         isWindows ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
 
-    internal string Wast2Json { get; } =
+    internal string WasmTools { get; } =
         isWindows
-            ? "artifacts/wabt-core2-1.0.42-datacount/Release/wast2json.exe"
-            : "artifacts/wabt-core2-1.0.42-datacount/wast2json";
+            ? "artifacts/wasm-tools-1.263.0-x86_64-windows/wasm-tools.exe"
+            : "artifacts/wasm-tools-1.263.0-x86_64-linux/wasm-tools";
 }

@@ -41,22 +41,18 @@ internal sealed class CorpusFixture : IDisposable
 
     internal CorpusManifest Manifest { get; set; }
 
-    private CorpusFixture()
+    private CorpusFixture(ConversionProfile profile)
     {
         OutputRoot = _directory.Combine("output");
         WriteSource(A, "(module)\n");
         WriteSource(B, "(module)\n");
-        var profile = new ConversionProfileLoader().Load() with
-        {
-            Id = "fixture",
-            Inputs = [new(A, Sha256(ReadSource(A))), new(B, Sha256(ReadSource(B)))],
-        };
+        profile = profile with { Id = "fixture", Inputs = [new(A, Sha256(ReadSource(A))), new(B, Sha256(ReadSource(B)))] };
         Manifest = CorpusManifest.Create(profile, new ConversionProvenance());
     }
 
-    internal static CorpusFixture Create()
+    internal static CorpusFixture Create(ConversionProfile? profile = null)
     {
-        var fixture = new CorpusFixture();
+        var fixture = new CorpusFixture(profile ?? new ConversionProfileLoader().LoadLegacyCore2());
         fixture.WriteArtifact(A, "modules/a.json", Encoding.UTF8.GetBytes(A_JSON));
         fixture.WriteArtifact(A, "modules/a.0.wasm", FirstModule);
         fixture.WriteArtifact(A, "modules/a.1.wat", Text);
@@ -88,7 +84,10 @@ internal sealed class CorpusFixture : IDisposable
         {
             Script =
                 kind == ArtifactKind.Json
-                    ? CorpusVerifier.CreateScript(ScriptDocument.Parse(content, artifactPath), artifactPath)
+                    ? CorpusVerifier.CreateScript(
+                        ScriptDocument.Parse(content, artifactPath, Manifest.Profile.WasmTools is not null),
+                        artifactPath
+                    )
                     : null,
         };
         UpdateInput(inputPath, x =>

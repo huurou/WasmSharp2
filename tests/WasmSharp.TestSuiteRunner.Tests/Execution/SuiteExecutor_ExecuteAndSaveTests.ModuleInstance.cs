@@ -1,4 +1,5 @@
 using WasmSharp.Tests.Fixtures;
+using WasmSharp.TestSuiteRunner.Corpus;
 using WasmSharp.TestSuiteRunner.Execution;
 using WasmSharp.TestSuiteRunner.Reports;
 using WasmSharp.TestSuiteRunner.Tests.Fixtures;
@@ -11,7 +12,7 @@ public partial class SuiteExecutor_ExecuteAndSaveTests
     public async Task 公式の最大32bitテーブルの定義をCore3で実行_インスタンス化せず検証までで成立を保存する()
     {
         // Arrange
-        using var fixture = CorpusFixture.Create();
+        using var fixture = CorpusFixture.Create(new ConversionProfileLoader().LoadCore3());
         fixture.ReplaceScriptA(
             """{"type":"module_definition","line":9,"filename":"a.0.wasm","module_type":"binary"}""",
             Core3OfficialBinary.MaximumTable32
@@ -45,7 +46,7 @@ public partial class SuiteExecutor_ExecuteAndSaveTests
     public async Task 同じ定義から2つのinstanceを生成する_片方の状態変更が波及せずcommandごとの結果を保存する()
     {
         // Arrange
-        using var fixture = CorpusFixture.Create();
+        using var fixture = CorpusFixture.Create(new ConversionProfileLoader().LoadCore3());
         fixture.ReplaceScriptA(
             """
             {"type":"module_definition","line":1,"name":"D","filename":"a.0.wasm","module_type":"binary"},
@@ -91,7 +92,7 @@ public partial class SuiteExecutor_ExecuteAndSaveTests
     public async Task 未実装の定義を参照するinstanceと登録_blockedとして元の定義のruntime_unsupportedまでたどれる()
     {
         // Arrange
-        using var fixture = CorpusFixture.Create();
+        using var fixture = CorpusFixture.Create(new ConversionProfileLoader().LoadCore3());
         fixture.ReplaceScriptA(
             """
             {"type":"module_definition","line":3,"name":"M","filename":"a.0.wasm","module_type":"binary"},
@@ -135,7 +136,7 @@ public partial class SuiteExecutor_ExecuteAndSaveTests
     public async Task 通常moduleのstartでtrapした後に定義からinstanceを生成する_定義を保ちインスタンス化の失敗として保存する()
     {
         // Arrange
-        using var fixture = CorpusFixture.Create();
+        using var fixture = CorpusFixture.Create(new ConversionProfileLoader().LoadCore3());
         fixture.ReplaceScriptA(
             """
             {"type":"module","line":1,"name":"M","filename":"a.0.wasm"},
@@ -176,7 +177,7 @@ public partial class SuiteExecutor_ExecuteAndSaveTests
     public async Task 読み取れないmodule_instance_以前のinstanceへ戻さず後続actionを原因付きでblockedにする()
     {
         // Arrange
-        using var fixture = CorpusFixture.Create();
+        using var fixture = CorpusFixture.Create(new ConversionProfileLoader().LoadCore3());
         fixture.ReplaceScriptA(
             """
             {"type":"module_definition","line":1,"name":"D","filename":"a.0.wasm","module_type":"binary"},
@@ -222,7 +223,7 @@ public partial class SuiteExecutor_ExecuteAndSaveTests
     )
     {
         // Arrange
-        using var fixture = CorpusFixture.Create();
+        using var fixture = CorpusFixture.Create(new ConversionProfileLoader().LoadCore3());
         var nameField = useDefinitionName ? ",\"name\":\"D\"" : "";
         var moduleField = useDefinitionName ? ",\"module\":\"D\"" : "";
         fixture.ReplaceScriptA(

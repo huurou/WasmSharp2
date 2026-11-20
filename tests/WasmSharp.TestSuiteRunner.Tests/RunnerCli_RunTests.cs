@@ -25,8 +25,8 @@ internal partial class RunnerCli_RunTests
     [Arguments("generate --profile", "--profileの値が不足")]
     [Arguments("generate --profile core4", "未知のprofileです: core4")]
     [Arguments("generate --profile core3 --profile core2", "引数が重複しています: --profile")]
-    [Arguments("generate --wasm-tools converter --profile core2", "選択したprofileでは使用できない引数です: --wasm-tools")]
-    [Arguments("generate --profile core3 --wabt-root wabt", "選択したprofileでは使用できない引数です: --wabt-root")]
+    [Arguments("generate --profile core2 --wast2json converter", "未知の引数です: --wast2json")]
+    [Arguments("generate --profile core3 --wabt-root wabt", "未知の引数です: --wabt-root")]
     [Arguments("generate --profile core3 --spec-root spec --output result", "必須引数が不足しています: --wasm-tools")]
     public async Task 未知か重複か不足の引数_使用法を標準エラーへ出して終了2になる(string arguments, string reason)
     {
@@ -74,8 +74,8 @@ internal partial class RunnerCli_RunTests
                 .That(result.Output)
                 .Contains(
                     OperatingSystem.IsWindows()
-                        ? "--wast2json artifacts/wabt-core2-1.0.42-datacount/Release/wast2json.exe"
-                        : "--wast2json artifacts/wabt-core2-1.0.42-datacount/wast2json"
+                        ? "--wasm-tools artifacts/wasm-tools-1.263.0-x86_64-windows/wasm-tools.exe"
+                        : "--wasm-tools artifacts/wasm-tools-1.263.0-x86_64-linux/wasm-tools"
                 );
             await Assert.That(result.Error).IsEqualTo(string.Empty);
         }
@@ -116,7 +116,9 @@ internal partial class RunnerCli_RunTests
     }
 
     [Test]
-    public async Task 相対指定の生成先_CLI開始位置で解決して終了0になる()
+    [Arguments(false)]
+    [Arguments(true)]
+    public async Task 相対指定の生成先_CLI開始位置で解決して終了0になる(bool explicitCore2)
     {
         // Arrange
         using var workspace = await SuiteWorkspace.CreateAsync();
@@ -128,18 +130,25 @@ internal partial class RunnerCli_RunTests
         }
         var profile = workspace.CreateProfile();
         var relative = Path.GetRelativePath(Environment.CurrentDirectory, workspace.OutputRoot);
+        var args = GenerateArguments(workspace, relative);
+        if (explicitCore2)
+        {
+            args = [.. args, "--profile", "core2"];
+        }
 
         // Act
-        var result = Run(profile, GenerateArguments(workspace, relative));
-        var manifest = _reportStore.ReadManifest(Path.Combine(workspace.OutputRoot, "manifest.json")).Manifest;
+        var result = Run(profile, args);
 
         // Assert
+        await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Error);
+        var manifest = _reportStore.ReadManifest(Path.Combine(workspace.OutputRoot, "manifest.json")).Manifest;
         using (Assert.Multiple())
         {
-            await Assert.That(result.ExitCode).IsEqualTo(0);
+            await Assert.That(manifest.Profile.WasmTools).IsEqualTo(profile.WasmTools);
+            await Assert.That(manifest.Provenance.ExecutableVersion).IsEqualTo("wasm-tools 1.263.0 (7a2fa422c 2026-10-30)");
             await Assert.That(manifest.Provenance.OutputRoot).IsEqualTo(workspace.OutputRoot);
             await Assert
-                .That(manifest.Inputs[0].Arguments[2])
+                .That(manifest.Inputs[0].Arguments[^1])
                 .IsEqualTo(Path.Combine(workspace.OutputRoot, "modules", "success.json"));
             await Assert.That(result.Error).IsEqualTo(string.Empty);
             await Assert.That(result.Output).Contains("生成判定: 成立（終了値0）");
@@ -184,6 +193,43 @@ internal partial class RunnerCli_RunTests
             await Assert.That(File.ReadAllBytes(Path.Combine(workspace.InputRoot, "success.wast"))).IsEquivalentTo(original);
             await Assert.That(File.Exists(Path.Combine(output, "manifest.json"))).IsFalse();
         }
+    }
+
+    [Test]
+    [Arguments(false, 0)]
+    [Arguments(true, 1)]
+    public async Task WABTで保存したCore2の全入力を最終判定する_当時の固定commitだけを受け付ける(
+        bool changedCommit,
+        int expectedExit
+    )
+    {
+        // Arrange
+        using var directory = new TemporaryDirectory();
+        var legacy = _profileLoader.LoadLegacyCore2();
+        var report = RunReportFixture.Create([
+            .. legacy.Inputs.Select(x => RunReportFixture.Case(x.Path, 0, CaseCategory.Setup, CaseOutcome.Passed)),
+        ]);
+        var snapshot = ProfileSnapshot.FromProfile(legacy);
+        snapshot = snapshot with
+        {
+            Wabt = snapshot.Wabt! with
+            {
+                Commit = changedCommit ? new string('0', 40) : "c8dc7b6eae42b3aa3e95b9014dc02b71f8e0e1db",
+            },
+        };
+        var corpus = report.Corpus with
+        {
+            Profile = snapshot,
+            Inputs = [.. report.Corpus.Inputs.Zip(legacy.Inputs, (x, y) => x with { Input = y })],
+        };
+        var inputPath = directory.Combine("wabt-run.json");
+        _reportStore.Save(report with { Corpus = corpus }, inputPath);
+
+        // Act
+        var result = Run(_profileLoader.Load(), "verify", "--input", inputPath);
+
+        // Assert
+        await Assert.That(result.ExitCode).IsEqualTo(expectedExit).Because(result.Output);
     }
 
     [Test]
@@ -647,7 +693,7 @@ internal partial class RunnerCli_RunTests
     }
 
     [Test]
-    public async Task WABTだけのソース配下への生成_空の配置でも変換前に拒否する()
+    public async Task 変換器を含むディレクトリへの生成_空の配置でも変換前に拒否する()
     {
         // Arrange
         using var workspace = await SuiteWorkspace.CreateAsync();
@@ -655,7 +701,7 @@ internal partial class RunnerCli_RunTests
         var output = directory.Combine("generated");
         Directory.CreateDirectory(output);
         var args = GenerateArguments(workspace, output);
-        args[4] = directory.Root;
+        args[4] = Path.Combine(output, "wasm-tools");
 
         // Act
         var result = Run(workspace.CreateProfile(), args);
@@ -664,7 +710,7 @@ internal partial class RunnerCli_RunTests
         using (Assert.Multiple())
         {
             await Assert.That(result.ExitCode).IsEqualTo(2);
-            await Assert.That(result.Error).Contains("--wabt-root");
+            await Assert.That(result.Error).Contains("--wasm-tools");
             await Assert.That(Directory.EnumerateFileSystemEntries(output).Count()).IsEqualTo(0);
         }
     }
@@ -852,7 +898,6 @@ internal partial class RunnerCli_RunTests
         var source = OperatingSystem.IsWindows() ? workspace.SourceRoot.ToUpperInvariant() : workspace.SourceRoot;
         var args = GenerateArguments(workspace, output);
         args[2] = source;
-        args[4] = source;
 
         // Act
         var result = Run(workspace.CreateProfile(), args);
@@ -879,9 +924,7 @@ internal partial class RunnerCli_RunTests
             "generate",
             "--spec-root",
             Path.GetPathRoot(directory.Root)!,
-            "--wabt-root",
-            directory.Combine("wabt"),
-            "--wast2json",
+            "--wasm-tools",
             directory.Combine("converter"),
             "--output",
             output
@@ -911,9 +954,7 @@ internal partial class RunnerCli_RunTests
             "generate",
             "--spec-root",
             workspace.SourceRoot,
-            "--wabt-root",
-            workspace.SourceRoot,
-            "--wast2json",
+            "--wasm-tools",
             SuiteWorkspace.ConverterPath,
             "--output",
             output,

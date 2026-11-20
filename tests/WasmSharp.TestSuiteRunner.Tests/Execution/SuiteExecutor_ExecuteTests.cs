@@ -9,10 +9,37 @@ namespace WasmSharp.TestSuiteRunner.Tests.Execution;
 public class SuiteExecutor_ExecuteTests
 {
     [Test]
+    [Arguments(true)]
+    [Arguments(false)]
+    public async Task Core2で変換済み素材を実行する_変換器に従い負の整数と単独actionの結果型省略を扱う(bool wasmTools)
+    {
+        // Arrange
+        var profiles = new ConversionProfileLoader();
+        using var fixture = CorpusFixture.Create(wasmTools ? profiles.Load() : profiles.LoadLegacyCore2());
+        fixture.ReplaceScriptA(
+            """
+            {"type":"module","line":1,"filename":"a.0.wasm"},
+            {"type":"action","line":2,"action":{"type":"invoke","field":"id","args":[{"type":"i32","value":"0"}]}},
+            {"type":"assert_return","line":3,"action":{"type":"invoke","field":"id","args":[{"type":"i32","value":"-1"}]},"expected":[{"type":"i32","value":"4294967295"}]},
+            {"type":"assert_return","line":4,"action":{"type":"invoke","field":"id","args":[{"type":"i32","value":"4294967295"}]},"expected":[{"type":"i32","value":"-1"}]}
+            """,
+            IdentityModule(0x7f)
+        );
+
+        // Act
+        var report = SuiteExecutor.Execute(Complete(fixture.Manifest), fixture.ManifestPath, WasmSpecVersion.Core2);
+
+        // Assert
+        var outcomes = report.Inputs[0].Cases.Select(x => x.Outcome);
+        var expected = wasmTools ? CaseOutcome.Passed : CaseOutcome.RunnerError;
+        await Assert.That(outcomes.SequenceEqual([CaseOutcome.Passed, expected, expected, expected])).IsTrue();
+    }
+
+    [Test]
     public async Task 未登録の定義をmodule_instanceが参照する_対象を診断し後続の依存をblockedにする()
     {
         // Arrange
-        using var fixture = CorpusFixture.Create();
+        using var fixture = CorpusFixture.Create(new ConversionProfileLoader().LoadCore3());
         fixture.ReplaceScriptA(
             """
             {"type":"module_instance","line":1},
@@ -66,7 +93,7 @@ public class SuiteExecutor_ExecuteTests
     )
     {
         // Arrange
-        using var fixture = CorpusFixture.Create();
+        using var fixture = CorpusFixture.Create(new ConversionProfileLoader().LoadCore3());
         byte valueType = (type, laneCount) switch
         {
             (_, > 0) => 0x7b,
@@ -76,12 +103,6 @@ public class SuiteExecutor_ExecuteTests
             ("f64", 0) => 0x7c,
             _ => throw new ArgumentOutOfRangeException(nameof(type)),
         };
-        var identity = ScriptExecutionFixture.Binary(
-            (1, [1, 0x60, 1, valueType, 1, valueType]),
-            (3, [1, 0]),
-            (7, [1, 2, (byte)'i', (byte)'d', 0, 0]),
-            (10, [1, 4, 0, 0x20, 0, 0x0b])
-        );
         string Value(string text)
         {
             return laneCount == 0
@@ -96,7 +117,7 @@ public class SuiteExecutor_ExecuteTests
                 argument
             )}}]},"expected":[{{Value(expected)}}]}
             """,
-            identity
+            IdentityModule(valueType)
         );
 
         // Act
@@ -121,7 +142,7 @@ public class SuiteExecutor_ExecuteTests
     public async Task Core2で定義とinstanceのcommandを読む_未知の種類を記録し直近のmoduleを保持する()
     {
         // Arrange
-        using var fixture = CorpusFixture.Create();
+        using var fixture = CorpusFixture.Create(new ConversionProfileLoader().Load());
         fixture.ReplaceScriptA(
             """
             {"type":"module","line":1,"filename":"a.0.wasm"},
@@ -495,5 +516,15 @@ public class SuiteExecutor_ExecuteTests
     internal static CorpusManifest Complete(CorpusManifest manifest)
     {
         return manifest with { Summary = manifest.Summarize(), Completion = new(true, true) };
+    }
+
+    private static byte[] IdentityModule(byte valueType)
+    {
+        return ScriptExecutionFixture.Binary(
+            (1, [1, 0x60, 1, valueType, 1, valueType]),
+            (3, [1, 0]),
+            (7, [1, 2, (byte)'i', (byte)'d', 0, 0]),
+            (10, [1, 4, 0, 0x20, 0, 0x0b])
+        );
     }
 }

@@ -4,114 +4,128 @@
     "url": "https://github.com/WebAssembly/spec.git",
     "commit": "05ca4182176763112561ae20153975c12bd689e4"
   },
-  "wabt": {
-    "url": "https://github.com/WebAssembly/wabt.git",
-    "commit": "c8dc7b6eae42b3aa3e95b9014dc02b71f8e0e1db"
+  "wabt": null,
+  "wasm_tools": {
+    "url": "https://github.com/bytecodealliance/wasm-tools.git",
+    "commit": "7a2fa422cdf9aeeaf488a2acac8bc94a078bfa32",
+    "version": "1.263.0"
   },
+  "working_directory": "test/core",
+  "conversion": null,
+  "logical_arguments": [
+    "json-from-wast",
+    "<relative.wast>",
+    "--allow-confusing-unicode",
+    "true",
+    "--wasm-dir",
+    "<output-root>/modules/<relative-directory>",
+    "-o",
+    "<output-root>/modules/<relative.json>"
+  ],
   "features": [
     {
       "name": "exceptions",
-      "default_enabled": true,
+      "default_enabled": null,
       "enabled": false
     },
     {
       "name": "mutable-globals",
-      "default_enabled": true,
+      "default_enabled": null,
       "enabled": true
     },
     {
       "name": "saturating-float-to-int",
-      "default_enabled": true,
+      "default_enabled": null,
       "enabled": true
     },
     {
       "name": "sign-extension",
-      "default_enabled": true,
+      "default_enabled": null,
       "enabled": true
     },
     {
       "name": "simd",
-      "default_enabled": true,
+      "default_enabled": null,
       "enabled": true
     },
     {
       "name": "threads",
-      "default_enabled": false,
+      "default_enabled": null,
       "enabled": false
     },
     {
       "name": "function-references",
-      "default_enabled": false,
+      "default_enabled": null,
       "enabled": false
     },
     {
       "name": "multi-value",
-      "default_enabled": true,
+      "default_enabled": null,
       "enabled": true
     },
     {
       "name": "tail-call",
-      "default_enabled": true,
+      "default_enabled": null,
       "enabled": false
     },
     {
       "name": "bulk-memory",
-      "default_enabled": true,
+      "default_enabled": null,
       "enabled": true
     },
     {
       "name": "reference-types",
-      "default_enabled": true,
+      "default_enabled": null,
       "enabled": true
     },
     {
       "name": "annotations",
-      "default_enabled": true,
+      "default_enabled": null,
       "enabled": false
     },
     {
       "name": "code-metadata",
-      "default_enabled": false,
+      "default_enabled": null,
       "enabled": false
     },
     {
       "name": "gc",
-      "default_enabled": false,
+      "default_enabled": null,
       "enabled": false
     },
     {
       "name": "memory64",
-      "default_enabled": true,
+      "default_enabled": null,
       "enabled": false
     },
     {
       "name": "multi-memory",
-      "default_enabled": true,
+      "default_enabled": null,
       "enabled": false
     },
     {
       "name": "extended-const",
-      "default_enabled": true,
+      "default_enabled": null,
       "enabled": false
     },
     {
       "name": "relaxed-simd",
-      "default_enabled": true,
+      "default_enabled": null,
       "enabled": false
     },
     {
       "name": "custom-page-sizes",
-      "default_enabled": false,
+      "default_enabled": null,
       "enabled": false
     },
     {
       "name": "compact-imports",
-      "default_enabled": false,
+      "default_enabled": null,
       "enabled": false
     },
     {
       "name": "wide-arithmetic",
-      "default_enabled": false,
+      "default_enabled": null,
       "enabled": false
     }
   ],
@@ -704,24 +718,5 @@
       "path": "utf8-invalid-encoding.wast",
       "sha256": "ef0280c3f5ab3befef6755878a107b1f18dc9f302fb8edd339afd413e8c31e47"
     }
-  ],
-  "working_directory": "test/core",
-  "logical_arguments": [
-    "<relative.wast>",
-    "--disable-exceptions",
-    "--disable-tail-call",
-    "--disable-annotations",
-    "--disable-memory64",
-    "--disable-multi-memory",
-    "--disable-extended-const",
-    "--disable-relaxed-simd",
-    "-o",
-    "<output-root>/modules/<relative.json>"
-  ],
-  "conversion": {
-    "check": true,
-    "canonical_lebs": true,
-    "relocatable": false,
-    "debug_names": false
-  }
+  ]
 }

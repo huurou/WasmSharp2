@@ -32,7 +32,7 @@ internal class CorpusGenerator_ConvertTests
     }
 
     [Test]
-    public async Task 機能を無効化するprofileで変換する_指定した引数を変換器へ渡す()
+    public async Task Unicodeの許可を切り替えたprofileで変換する_指定した引数を変換器へ渡す()
     {
         // Arrange
         using var workspace = await SuiteWorkspace.CreateAsync();
@@ -40,9 +40,12 @@ internal class CorpusGenerator_ConvertTests
         {
             LogicalArguments =
             [
+                "json-from-wast",
                 "<relative.wast>",
-                "--disable-exceptions",
-                "--disable-memory64",
+                "--allow-confusing-unicode",
+                "false",
+                "--wasm-dir",
+                "<output-root>/modules/<relative-directory>",
                 "-o",
                 "<output-root>/modules/<relative.json>",
             ],
@@ -51,9 +54,12 @@ internal class CorpusGenerator_ConvertTests
         var input = new InputConversionResult(profile.Inputs.Single(x => x.Path == "success.wast"));
         string[] expected =
         [
+            "json-from-wast",
             "success.wast",
-            "--disable-exceptions",
-            "--disable-memory64",
+            "--allow-confusing-unicode",
+            "false",
+            "--wasm-dir",
+            Path.Combine(workspace.OutputRoot, "modules"),
             "-o",
             Path.Combine(workspace.OutputRoot, "modules", "success.json"),
         ];
@@ -96,7 +102,20 @@ internal class CorpusGenerator_ConvertTests
         using (Assert.Multiple())
         {
             await Assert.That(result.ExitCode).IsEqualTo(0);
-            await Assert.That(result.Arguments.SequenceEqual(["success.wast", "-o", outputPath])).IsTrue();
+            await Assert
+                .That(
+                    result.Arguments.SequenceEqual([
+                        "json-from-wast",
+                        "success.wast",
+                        "--allow-confusing-unicode",
+                        "true",
+                        "--wasm-dir",
+                        Path.GetDirectoryName(outputPath)!,
+                        "-o",
+                        outputPath,
+                    ])
+                )
+                .IsTrue();
             await Assert
                 .That(
                     output
@@ -172,7 +191,7 @@ internal class CorpusGenerator_ConvertTests
         using var workspace = await SuiteWorkspace.CreateAsync();
         var request = workspace.CreateRequest(workspace.CreateProfile()) with
         {
-            ConverterPath = Path.Combine(workspace.OutputRoot, "missing-wast2json"),
+            ConverterPath = Path.Combine(workspace.OutputRoot, "missing-wasm-tools"),
         };
         var input = new InputConversionResult(request.Profile.Inputs[0]);
 

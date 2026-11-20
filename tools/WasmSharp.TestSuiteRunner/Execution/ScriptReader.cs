@@ -6,13 +6,13 @@ using WasmSharp.TestSuiteRunner.Corpus;
 namespace WasmSharp.TestSuiteRunner.Execution;
 
 /// <summary>
-/// 列挙済みJSONのcommandを、仕様版ごとの固定形式の種類別モデルへ読み取る
+/// 変換器のJSON表記と仕様版に沿って、列挙済みのcommandを種類別モデルへ読み取る
 /// </summary>
 /// <remarks>
 /// 種類・値型・lane型・module形式の名前と、項目の過不足・重複を固定形式に照らして確認する。
 /// 値の文字列は加工せず保持し、ビット列・参照・NaN patternとしての解釈は引数構築と結果の比較で行う。
 /// </remarks>
-internal sealed class ScriptReader(WasmSpecVersion specVersion)
+internal sealed class ScriptReader(WasmSpecVersion specVersion, bool usesWasmTools)
 {
     /// <summary>
     /// commandの読み取り異常を診断へ記録する操作名
@@ -107,7 +107,7 @@ internal sealed class ScriptReader(WasmSpecVersion specVersion)
         WasmSpecVersion version = WasmSpecVersion.Core2
     )
     {
-        var reader = new ScriptReader(version);
+        var reader = new ScriptReader(version, document.UsesWasmTools);
         return new(
             inputPath,
             [.. document.Commands.Select(x => reader.ReadCommand(document.GetJson(x.Index), x))],
@@ -271,13 +271,13 @@ internal sealed class ScriptReader(WasmSpecVersion specVersion)
     }
 
     /// <summary>
-    /// Core 3.0のテキスト素材に併記されたバイナリ名は素材照合にだけ使用する。
+    /// wasm-toolsのテキスト素材に併記されたバイナリ名は素材照合にだけ使用する。
     /// </summary>
     private void ReadTextBinaryFilename(Dictionary<string, JsonElement> properties)
     {
         const string BinaryFilename = "binary_filename";
         if (
-            specVersion == WasmSpecVersion.Core3
+            usesWasmTools
             && properties.ContainsKey(BinaryFilename)
             && GetOptionalString(properties, "", MODULE_TYPE) == "text"
         )
@@ -517,10 +517,10 @@ internal sealed class ScriptReader(WasmSpecVersion specVersion)
     /// </summary>
     /// <param name="command">型だけのexpected配列を持つcommand</param>
     /// <returns>JSONの記載順の結果型 新しい配列として保持し、空の宣言なら空</returns>
-    /// <exception cref="ScriptFormatException">Core 2.0でexpectedがない、配列でない、または要素が既知のtypeだけを持つobjectではない場合</exception>
+    /// <exception cref="ScriptFormatException">WABT形式でexpectedがない、配列でない、または要素が既知のtypeだけを持つobjectではない場合</exception>
     private ImmutableArray<WasmValueKind> ReadResultTypes(Dictionary<string, JsonElement> command)
     {
-        if (specVersion == WasmSpecVersion.Core3 && !command.ContainsKey(EXPECTED))
+        if (usesWasmTools && !command.ContainsKey(EXPECTED))
         {
             return [];
         }

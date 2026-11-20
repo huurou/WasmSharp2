@@ -1,8 +1,7 @@
 #requires -Version 7.5
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory)][string]$Wat2WasmPath,
-    [Parameter(Mandatory)][string]$WasmValidatePath,
+    [Parameter(Mandatory)][string]$WasmToolsPath,
     [Parameter(Mandatory)][string]$ClangPath,
     [Parameter(Mandatory)][string]$WasmLdPath,
     [Parameter(Mandatory)][string]$OutputDirectory
@@ -17,44 +16,12 @@ if (Test-Path -LiteralPath $outputRoot) {
     throw "出力先は既に存在します。新しいディレクトリを指定してください: $outputRoot"
 }
 
-$wat2wasm = (Resolve-Path -LiteralPath $Wat2WasmPath).Path
-$wasmValidate = (Resolve-Path -LiteralPath $WasmValidatePath).Path
+$wasmTools = (Resolve-Path -LiteralPath $WasmToolsPath).Path
 $clang = (Resolve-Path -LiteralPath $ClangPath).Path
 $wasmLd = (Resolve-Path -LiteralPath $WasmLdPath).Path
 $profilePath = Join-Path $repositoryRoot 'tools/WasmSharp.TestSuiteRunner/Corpus/core2-profile.json'
 $profile = Get-Content -LiteralPath $profilePath -Raw | ConvertFrom-Json
-$wabtSource = Join-Path $repositoryRoot 'thirdParties/wabt'
-$wabtCommit = & git -C $wabtSource rev-parse HEAD
-if ($LASTEXITCODE -ne 0 -or $wabtCommit -ne $profile.wabt.commit) {
-    throw 'WABTのcheckoutが既存profileの固定commitと一致しません。'
-}
-& git -C $wabtSource diff --quiet HEAD --
-if ($LASTEXITCODE -ne 0) { throw 'WABTの固定sourceに変更があります。' }
-
-# 両実行ファイルとCMakeCacheを同じReleaseビルドへ対応付ける。
-$releaseDirectory = Split-Path $wat2wasm
-if ((Split-Path $releaseDirectory -Leaf) -ne 'Release' -or (Split-Path $wasmValidate) -ne $releaseDirectory) {
-    throw 'WABTの2実行ファイルは同じビルド先のReleaseディレクトリを指定してください。'
-}
-$cachePath = Join-Path (Split-Path $releaseDirectory) 'CMakeCache.txt'
-$cache = @{}
-foreach ($line in Get-Content -LiteralPath $cachePath) {
-    if ($line -match '^([^#/:][^:]*):[^=]+=(.*)$') { $cache[$Matches[1]] = $Matches[2] }
-}
-$requiredBuildOptions = @{ BUILD_TESTS = 'OFF'; BUILD_LIBWASM = 'OFF'; WITH_WASI = 'OFF'; USE_INTERNAL_SHA256 = 'ON'; WERROR = 'ON' }
-foreach ($key in $requiredBuildOptions.Keys) {
-    if ($cache[$key] -ne $requiredBuildOptions[$key]) { throw "WABTのビルド条件が異なります: $key" }
-}
-if ([IO.Path]::GetFullPath($cache.CMAKE_HOME_DIRECTORY) -ne $wabtSource -or $cache.CMAKE_GENERATOR_PLATFORM -ne 'x64') {
-    throw 'WABTのビルド元またはarchitectureが異なります。'
-}
-
-# profileの既定値から変更が必要なfeatureだけを引数にする。
-$featureArguments = @(foreach ($feature in $profile.features) {
-    if ($feature.enabled -ne $feature.default_enabled) {
-        if ($feature.enabled) { "--enable-$($feature.name)" } else { "--disable-$($feature.name)" }
-    }
-})
+$featureArguments = @('--features', 'wasm2')
 New-Item -ItemType Directory -Path $outputRoot | Out-Null
 $commands = [Collections.Generic.List[object]]::new()
 
@@ -68,21 +35,6 @@ function Invoke-RecordedTool([string]$Name, [string]$Executable, [string[]]$Tool
     if ($exitCode -ne 0) { throw "${Name}が終了値${exitCode}で失敗しました: $logPath" }
     return $lines -join "`n"
 }
-
-$toolRecords = @(
-    @{ name = 'wat2wasm'; path = $wat2wasm; pattern = ('^1\.0\.42 .*g' + $wabtCommit.Substring(0, 7) + '[0-9a-f]*\)$') },
-    @{ name = 'wasm-validate'; path = $wasmValidate; pattern = ('^1\.0\.42 .*g' + $wabtCommit.Substring(0, 7) + '[0-9a-f]*\)$') },
-    @{ name = 'Clang'; path = $clang; pattern = '(?m)^clang version 21\.1\.8(?:\s|$)' },
-    @{ name = 'LLD'; path = $wasmLd; pattern = '^LLD 21\.1\.8(?:\s|$)' }
-)
-foreach ($tool in $toolRecords) {
-    $version = Invoke-RecordedTool "$($tool.name)-version" $tool.path @('--version')
-    if ($version -notmatch $tool.pattern) { throw "$($tool.name)の版が固定版と一致しません: $version" }
-    $tool.version = $version
-    $tool.sha256 = (Get-FileHash -LiteralPath $tool.path -Algorithm SHA256).Hash
-    $tool.Remove('pattern')
-}
-Copy-Item -LiteralPath $cachePath -Destination (Join-Path $outputRoot 'WABT-CMakeCache.txt')
 
 function Write-LargeSource([string]$largeSource) {
 $largeWat = [Text.StringBuilder]::new()
@@ -124,6 +76,25 @@ function Get-ManifestFile([string]$Path) {
     }
 }
 
+function Get-ToolRecord([string]$Name, [string]$Path, [string]$Pattern, [string]$Revision) {
+    $version = Invoke-RecordedTool "$Name-version" $Path @('--version')
+    if ($version -cnotmatch $Pattern) { throw "${Name}の版が固定版と一致しません: $version" }
+    return [ordered]@{
+        name = $Name
+        version = $version
+        revision = $Revision
+        executable = Get-ManifestFile $Path
+        build_configuration = 'prebuilt executable'
+    }
+}
+
+$wasmToolsPin = $profile.wasm_tools
+$wasmToolsVersion = [regex]::Escape($wasmToolsPin.version)
+$wasmToolsCommit = $wasmToolsPin.commit.Substring(0, 9)
+$wasmToolsRecord = Get-ToolRecord 'wasm-tools' $wasmTools "^wasm-tools $wasmToolsVersion \($wasmToolsCommit " $wasmToolsPin.commit
+$clangRecord = Get-ToolRecord 'Clang' $clang '(?m)^clang version 21\.1\.8(?:\s|$)' 'llvmorg-21.1.8'
+$lldRecord = Get-ToolRecord 'LLD' $wasmLd '^LLD 21\.1\.8(?:\s|$)' 'llvmorg-21.1.8'
+
 function Get-AssetSource([string]$Path) {
     $file = Get-ManifestFile $Path
     return [ordered]@{
@@ -134,18 +105,12 @@ function Get-AssetSource([string]$Path) {
     }
 }
 
-function Invoke-AssetStep([string]$Name, [hashtable]$Tool, [string[]]$ToolArguments, $Steps) {
-    $result = Invoke-RecordedTool $Name $Tool.path $ToolArguments
+function Invoke-AssetStep([string]$Name, $Tool, [string[]]$ToolArguments, $Steps) {
+    $result = Invoke-RecordedTool $Name ([IO.Path]::GetFullPath($Tool.executable.relative_path, $outputRoot)) $ToolArguments
     $json = [Text.Json.JsonSerializer]::Serialize([object]$ToolArguments, [string[]], [Text.Json.JsonSerializerOptions]::new())
     $argumentHash = [Convert]::ToHexStringLower([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes($json)))
     $Steps.Add([ordered]@{
-        tool = [ordered]@{
-            name = $Tool.name
-            version = $Tool.version
-            revision = if ($Tool.name -in @('wat2wasm', 'wasm-validate')) { $wabtCommit } else { 'llvmorg-21.1.8' }
-            executable = Get-ManifestFile $Tool.path
-            build_configuration = if ($Tool.name -in @('wat2wasm', 'wasm-validate')) { 'Release; x64; WABT-CMakeCache.txt' } else { 'official Windows x64 archive; 21.1.8' }
-        }
+        tool = $Tool
         arguments = $ToolArguments
         arguments_sha256 = $argumentHash
     })
@@ -186,17 +151,19 @@ try {
         $binary = "wasm/$id.wasm"
         $steps = [Collections.Generic.List[object]]::new()
         if ($definition.kind -eq 'c') {
-            $null = Invoke-AssetStep "$id-clang" $toolRecords[2] (@($definitions.kernel.compile_arguments) + @($definition.source, '-o', 'kernel.o')) $steps
-            $null = Invoke-AssetStep "$id-link" $toolRecords[3] (@($definitions.kernel.link_arguments) + @('kernel.o', '-o', $binary)) $steps
+            $null = Invoke-AssetStep "$id-clang" $clangRecord (@($definitions.kernel.compile_arguments) + @($definition.source, '-o', 'kernel.o')) $steps
+            $null = Invoke-AssetStep "$id-link" $lldRecord (@($definitions.kernel.link_arguments) + @('kernel.o', '-o', $binary)) $steps
         }
         else {
-            $null = Invoke-AssetStep "$id-wat2wasm" $toolRecords[0] (@($definition.source) + $featureArguments + @('-o', $binary)) $steps
+            $null = Invoke-AssetStep "$id-parse" $wasmToolsRecord @('parse', $definition.source, '-o', $binary) $steps
+            # parseがWATの識別子から生成するnameセクションを除き、従来と同じ測定バイト列に揃える。
+            $null = Invoke-AssetStep "$id-strip-names" $wasmToolsRecord @('strip', '--delete', '^name$', $binary, '-o', $binary) $steps
         }
-        $validation = Invoke-AssetStep "$id-validate" $toolRecords[1] (@($binary, '--verbose') + $featureArguments) $steps
-        # 固定WABTのverbose出力からimport数を確認し、独自のバイナリ解析を追加しない。
-        $importCount = [regex]::Matches($validation, 'OnImport\(').Count
-        if ($validation -notmatch 'EndModule' -or $importCount -ne $definition.import_count) {
-            throw "検査完了または固定import数を確認できません: $id"
+        $null = Invoke-AssetStep "$id-validate" $wasmToolsRecord (@('validate') + $featureArguments + @($binary)) $steps
+        $sections = Invoke-AssetStep "$id-imports" $wasmToolsRecord @('objdump', $binary) $steps
+        $importCount = if ($sections -match '(?m)^\s*imports\s*\|[^\r\n]*\|\s*(\d+) count\s*$') { [int]$Matches[1] } else { 0 }
+        if ($importCount -ne $definition.import_count) {
+            throw "import数が固定値と一致しません: $id ($importCount)"
         }
         $binaryFile = Get-ManifestFile (Join-Path $outputRoot $binary)
         $assetCases = @($cases | Where-Object asset_id -eq $id)
@@ -244,19 +211,14 @@ $record = [ordered]@{
     script = Get-AssetSource (Join-Path $outputRoot 'Prepare-Assets.ps1')
     powershell = @{ version = $PSVersionTable.PSVersion.ToString(); executable = Get-ManifestFile (Join-Path $PSHOME 'pwsh.exe') }
     generation_arguments = [ordered]@{
-        wat2wasm_path = (Get-ManifestFile $wat2wasm).relative_path
-        wasm_validate_path = (Get-ManifestFile $wasmValidate).relative_path
-        clang_path = (Get-ManifestFile $clang).relative_path
-        wasm_ld_path = (Get-ManifestFile $wasmLd).relative_path
+        wasm_tools_path = $wasmToolsRecord.executable.relative_path
+        clang_path = $clangRecord.executable.relative_path
+        wasm_ld_path = $lldRecord.executable.relative_path
         output_directory = '.'
     }
     profile = @{ file = $manifest.profile; id = $profile.id; arguments = $featureArguments }
     cases = $manifest.cases
-    wabt = @{
-        commit = $wabtCommit; configuration = 'Release'; generator = $cache.CMAKE_GENERATOR
-        platform = $cache.CMAKE_GENERATOR_PLATFORM; options = $requiredBuildOptions
-        cmake_cache = Get-ManifestFile (Join-Path $outputRoot 'WABT-CMakeCache.txt')
-    }
+    wasm_tools = $wasmToolsPin
     generated = $generated.ToArray()
     preparation_large = @{
         defined_function_count = 256

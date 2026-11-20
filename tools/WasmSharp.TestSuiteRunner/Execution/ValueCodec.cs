@@ -9,7 +9,7 @@ namespace WasmSharp.TestSuiteRunner.Execution;
 /// 変換済みスクリプトの値の文字列からビット列と参照の同一性を保ったvalueを構築し、実値を保存用の表現へ写す
 /// </summary>
 /// <remarks>
-/// 整数と浮動小数点数の文字列は、同じ幅の符号なし10進数によるビット列として読み、範囲外の数を切り詰めない。Core 3.0の整数は負の10進表記も読み取る。
+/// 整数と浮動小数点数の文字列は、同じ幅の符号なし10進数によるビット列として読み、範囲外の数を切り詰めない。wasm-tools形式の整数は負の10進表記も読み取る。
 /// 参照は型付きnullか、入力内で番号ごとに割り当てたexternrefだけを構築し、非nullのfuncrefを番号から推測しない。
 /// </remarks>
 internal static class ValueCodec
@@ -27,13 +27,15 @@ internal static class ValueCodec
     /// </remarks>
     /// <param name="values">JSONの記載順の引数</param>
     /// <param name="state">externrefの番号にホスト値を割り当てる入力の状態</param>
-    /// <param name="specVersion">値の表記を決める仕様版</param>
+    /// <param name="specVersion">使用できる参照型を決める仕様版</param>
+    /// <param name="signedIntegers">整数と整数laneで負の10進表記を受け付けるかどうか</param>
     /// <returns>ランタイムへ渡せる引数の配列 現行のWasmValueで表現できないanyrefを含む場合はnull</returns>
     /// <exception cref="ScriptFormatException">値の文字列が固定形式にない場合</exception>
     internal static ImmutableArray<WasmValue>? CreateArguments(
         ImmutableArray<ArgumentValue> values,
         ScriptState state,
-        WasmSpecVersion specVersion = WasmSpecVersion.Core2
+        WasmSpecVersion specVersion = WasmSpecVersion.Core2,
+        bool signedIntegers = false
     )
     {
         var arguments = ImmutableArray.CreateBuilder<WasmValue>(values.Length);
@@ -51,7 +53,7 @@ internal static class ValueCodec
             }
             else
             {
-                arguments.Add(CreateArgument(value, path, state, specVersion == WasmSpecVersion.Core3));
+                arguments.Add(CreateArgument(value, path, state, signedIntegers));
             }
         }
         return arguments.Count == values.Length ? arguments.MoveToImmutable() : null;
@@ -101,7 +103,7 @@ internal static class ValueCodec
     }
 
     /// <summary>
-    /// WABTの値型名を返す。
+    /// JSONで使う値型名を返す。
     /// </summary>
     /// <param name="kind">Core 2.0の7値型のいずれか</param>
     /// <returns>JSONへ記録する小文字の型名</returns>
@@ -168,7 +170,7 @@ internal static class ValueCodec
     /// <summary>
     /// 10進表記の値が指定幅に収まることを確認し、そのビット列を返す。
     /// </summary>
-    /// <param name="text">WABTが記録した値の文字列</param>
+    /// <param name="text">変換器が記録した値の文字列</param>
     /// <param name="width">ビット幅 8・16・32・64のいずれか</param>
     /// <param name="path">異常の報告に使うJSON上の位置</param>
     /// <param name="allowNegative">負の10進表記を許容するかどうか</param>
@@ -208,7 +210,7 @@ internal static class ValueCodec
     /// <summary>
     /// 1個の引数の文字列を検査し、数値の全ビットまたは参照の同一性を保ったvalueを作る。
     /// </summary>
-    /// <param name="value">WABT形式の引数 NaN patternは受け付けない</param>
+    /// <param name="value">変換済みスクリプトの引数 NaN patternは受け付けない</param>
     /// <param name="path">不正な値を報告するJSON上の位置</param>
     /// <param name="state">非nullのexternrefを番号ごとに割り当てる入力の状態</param>
     /// <param name="signedIntegers">整数で負の10進表記を許容するかどうか</param>

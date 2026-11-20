@@ -15,7 +15,7 @@ dotnet build WasmSharp2.slnx -c Release --warnaserror
 dotnet run --project tests/WasmSharp.Benchmarks.Tests/WasmSharp.Benchmarks.Tests.csproj -c Release --no-build
 ```
 
-ビルドの警告・エラー0を確認してからテストを実行する。TUnitの通常テストは、出力先にコピーしたJSONの設定fixture・保存契約・15ケースの固定値を読み、固定Jobとexporter・diagnoserの構成や独立計算した期待値を確認する。BenchmarkDotNetの起動、WABT・Clangによる素材生成、性能の合否判定は行わない。
+ビルドの警告・エラー0を確認してからテストを実行する。TUnitの通常テストは、出力先にコピーしたJSONの設定fixture・保存契約・15ケースの固定値を読み、固定Jobとexporter・diagnoserの構成や独立計算した期待値を確認する。素材の生成は固定ツールの準備後、性能の判定はBenchmarkDotNetによる測定後に行う。
 
 ## 本測定用の設定
 
@@ -35,7 +35,7 @@ MeasurementとSmokeは`WasmAllocationEngineFactory`を使用する。時間測�
 
 ## 素材確認・ケース選択・結果保存
 
-下記の素材生成後、リポジトリルートで実行する。`$assetSet`は生成済み素材のディレクトリ。`check`はmanifest/profile/バイナリ/入力のhashを照合し、全ケースの公開操作と固定期待値を検査する。測定processからWABTやClangは起動しない。
+下記の素材生成後、リポジトリルートで実行する。`$assetSet`には生成済み素材のディレクトリを指定する。`check`はmanifest/profile/バイナリ/入力のhashを照合し、全ケースの公開操作と固定期待値を検査する。
 
 ```powershell
 $manifest = Join-Path $assetSet 'asset-manifest.json'
@@ -64,7 +64,7 @@ $measurementExit = $LASTEXITCODE
 
 PowerShell7.5以上とGitを使う。`Restore-RunSource.ps1`は保存runの`source_file`を読み、保存ファイルのhashを確認してから、HEADを独立cloneへcheckoutし、index差分、worktree差分、使用未追跡source/projectの順に復元する。元リポジトリのworktree・index・branchを変更せず、cloneのobjectも共有しない。使用runtime/harnessの全ファイルと、相対pathをOrdinal順に並べたSystem.Text.Json形式の集合hashを照合する。既存復元先と元リポジトリ配下の復元先は拒否する。元リポジトリ配下に同名projectを複製すると、BDNのproject探索にも影響する。
 
-元リポジトリに保存HEADと必要なsubmoduleのobjectがあることを前提とする。初期化済みsubmoduleは保存revisionの独立cloneへ復元し、未初期化のものはgitlinkを保持する。使用ファイルの欠落・hash不一致、測定中のsource変更、dirtyなsubmoduleがある場合は停止する。失敗時も復元先を残すため、再試行には新しいpathを使う。保存runと素材の配置は変更しない。
+元リポジトリに保存HEADと必要なsubmoduleのobjectがあることを前提とする。初期化済みsubmoduleは保存revisionの独立cloneへ復元し、未初期化のものはgitlinkを保持する。Core 2.0仕様の改名前に保存したrunでは、現在の`thirdParties/WebAssembly-spec-core2`から仕様本体と初期化済みの子サブモジュールを読み取り、それぞれの保存コミットを復元先の`thirdParties/WebAssembly-spec`以下に展開する。使用ファイルの欠落・hash不一致、測定中のsource変更、dirtyなsubmoduleがある場合は停止する。失敗時も復元先を残すため、再試行には新しいpathを使う。保存runと素材の配置は変更しない。
 
 ```powershell
 $repository = (Get-Location).Path
@@ -246,18 +246,11 @@ $reread = Join-Path $diagnosticRun ('reread-' + [guid]::NewGuid().ToString('N') 
 
 ## 素材生成ツールの準備
 
-PowerShell7.5以上、Windows x64、Visual StudioのC++ビルドツールとCMakeを使う。WABTは既存DataCount修正を含む固定commit`c8dc7b6eae42b3aa3e95b9014dc02b71f8e0e1db`、Clang/LLDは21.1.8を使用する。`PATH`上の素材コンパイラは使わず、4実行ファイルを絶対pathで指定する。
-
-最初に[既存の外部ツール手順](../../thirdParties/README.md)に従って固定submoduleを用意する。次をリポジトリルートで実行し、素材生成用の`wat2wasm`とバイナリ検査用の`wasm-validate`を同じRelease構成でビルドする。`$cmake`は利用環境の実行ファイルへ合わせる。
+Windows x64とPowerShell7.5以上を使用する。公式テストスイートと共通のwasm-tools 1.263.0を取得し、リポジトリルートで実行ファイルのpathを設定する。[固定ツールの取得手順](../../thirdParties/README.md#wasm-toolsを取得する)
 
 ```powershell
 $ErrorActionPreference = 'Stop'
-$cmake = 'C:/Program Files/Microsoft Visual Studio/18/Professional/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/bin/cmake.exe'
-$wabtBuild = Join-Path (Get-Location) ('artifacts/runtime-performance/wabt-' + [guid]::NewGuid().ToString('N'))
-& $cmake -S thirdParties/wabt -B $wabtBuild -G 'Visual Studio 18 2026' -A x64 -DBUILD_TESTS=OFF -DBUILD_LIBWASM=OFF -DWITH_WASI=OFF -DUSE_INTERNAL_SHA256=ON -DWERROR=ON
-if ($LASTEXITCODE -ne 0) { throw 'WABTの構成に失敗しました。' }
-& $cmake --build $wabtBuild --config Release --target wat2wasm wasm-validate --parallel 8
-if ($LASTEXITCODE -ne 0) { throw 'WABTのビルドに失敗しました。' }
+$wasmToolsPath = Join-Path (Get-Location) 'artifacts/wasm-tools-1.263.0-x86_64-windows/wasm-tools.exe'
 ```
 
 Clang/LLD21.1.8がなければ、[LLVM公式リリース](https://github.com/llvm/llvm-project/releases/tag/llvmorg-21.1.8)のWindows x64 archiveを取得できる。次はシステムへインストールせず、リポジトリ内の新しいディレクトリへ展開する例。取得物のSHA-256は公式GitHub release assetのdigestと照合する。
@@ -275,25 +268,24 @@ if ($LASTEXITCODE -ne 0) { throw 'LLVM配布物の展開に失敗しました。
 $llvmBin = Join-Path $llvmRoot 'clang+llvm-21.1.8-x86_64-pc-windows-msvc/bin'
 ```
 
-WABTはApache-2.0、LLVMはApache-2.0 WITH LLVM-exceptionで配布される。取得物のライセンスと表示は各配布元のものを保持する。ツールは素材準備時にのみ使用し、通常のTUnitや測定processから起動しない。
+取得物のライセンスと表示は各配布元のものを保持する。外部ツールを使用するのは素材の生成時だけである。
 
 ### 6素材・15ケースの生成とCore2検査
 
 ```powershell
 $assetSet = Join-Path (Get-Location) ('artifacts/runtime-performance/assets-' + [guid]::NewGuid().ToString('N'))
 ./tools/WasmSharp.Benchmarks/Assets/Prepare-Assets.ps1 `
-    -Wat2WasmPath (Join-Path $wabtBuild 'Release/wat2wasm.exe') `
-    -WasmValidatePath (Join-Path $wabtBuild 'Release/wasm-validate.exe') `
+    -WasmToolsPath $wasmToolsPath `
     -ClangPath (Join-Path $llvmBin 'clang.exe') `
     -WasmLdPath (Join-Path $llvmBin 'wasm-ld.exe') `
     -OutputDirectory $assetSet
 ```
 
-この1コマンドでWABTのcheckoutとReleaseビルド条件、4ツールの版を確認し、5つの保存sourceと生成するlarge WATから6バイナリを作る。既存の[Core2 profile](../WasmSharp.TestSuiteRunner/Corpus/core2-profile.json)のenabled/default_enabled差分からfeature引数を得て、全素材を`wasm-validate --verbose`で検査する。importはcallsとpreparation-largeが各1件、それ以外は0件と照合する。ツール準備用のsmokeバイナリはこの集合へ含めない。
+スクリプトはCore 2.0プロファイルに指定されたwasm-toolsの版とcommit、Clang/LLDの版を確認する。WAT素材5個は`wasm-tools parse`で変換し、`wasm-tools strip --delete '^name$'`で識別子から生成された名前セクションを除いて従来の測定バイト列を再現する。C由来の素材と合わせて6バイナリすべてを`wasm-tools validate --features wasm2`で検査する。`wasm-tools objdump`でimport数を読み、callsとpreparation-largeが各1件、残り4素材が0件であることを照合する。[Core 2.0プロファイル](../WasmSharp.TestSuiteRunner/Corpus/core2-profile.json)
 
 Cの生成条件は`--target=wasm32-unknown-unknown -O2 -ffreestanding -nostdlib -fno-vectorize -fno-slp-vectorize -Werror -c`。Clangでobjectを作り、指定された`wasm-ld`を直接起動してmatrixとmemoryをexportし、未解決symbolを拒否する。stackを先頭64KiB、memoryを2ページに固定する。引数の全体は[sources.json](Assets/sources.json)のkernelへ保持し、コンパイルとリンクの実行引数・終了値を別々に保存する。Clang21.1.8のwasm targetでは`--ld-path`がunused警告となるため、Clangへのリンク指定で代用しない。
 
-出力は`wasm/`の6バイナリ、`sources/`の6source、コピーした`cases.json`・`core2-profile.json`・`NOTICE.md`・`source-definitions.json`・生成script、`commands.json`・各ログ・`WABT-CMakeCache.txt`を含む。全検査と採用済みbinary hashの照合が成功した場合だけ、既存DTO形式の`asset-manifest.json`と生成記録`sources.json`を保存する。生成記録のscopeは`runtime-performance-fixed-assets`。6素材と15ケースの分類、出典・固定版・利用条件・表示、source/tool/profile/binaryと生成引数のSHA-256を追跡できる。
+出力は`wasm/`の6バイナリ、`sources/`の6source、コピーした`cases.json`・`core2-profile.json`・`NOTICE.md`・`source-definitions.json`・生成script、`commands.json`と各ログを含む。全検査と採用済みbinary hashの照合が成功すると、`asset-manifest.json`と生成記録`sources.json`を保存する。生成記録のscopeは`runtime-performance-fixed-assets`で、6素材と15ケースの分類、出典・固定版・利用条件・表示、source/tool/profile/binaryと生成引数のSHA-256を追跡できる。
 
 manifestの参照はmanifest基準の相対pathで、素材・source・profile・ケースは出力内に保存する。ツール実行ファイルはコピーせず、元のツール配置への相対pathとhashで参照する。ツール参照の再照合にはその配置が必要で、素材だけの移動後にツールを再配置しても測定素材の内容は変わらない。各生成stepの引数hashは順序を保持する文字列配列をSystem.Text.Json既定設定のコンパクトJSONへ直列化したUTF-8列のSHA-256である。`base:<HEAD>;sha256:<内容hash>`のrevisionは基点と使用内容を区別し、未コミットのsourceやscriptをHEADと同一視しない。
 
@@ -301,9 +293,9 @@ manifestの参照はmanifest基準の相対pathで、素材・source・profile�
 
 今回の素材採用では既存13ケースの入力・期待値・binary hashを保持し、小moduleの準備2ケースを追加した。公開APIの期待値確認はタスク2.1〜2.5の検証記録へ保存する。生成後は上記の`check`と別process Smokeを行い、その後に独立した本測定・比較・公式全体runへ進む。この生成成功だけでは性能改善の受入を意味しない。
 
-### 最終公式受入で使用した比較元と次回のbaseline
+### 2026-10-26の公式受入で使用した比較元
 
-本仕様の最終受入では、既存の[公式ランナー手順](../WasmSharp.TestSuiteRunner/README.md)で全体runを行い、その同じ結果へ`compare-run`と`verify`を適用する。準備時点では以下の存在・SHA-256を確認する。
+2026-10-26の公式受入では、全体runの結果へ`compare-run`と`verify`を適用した。当時の比較元とSHA-256を示す。
 
 | ファイル | SHA-256 |
 | --- | --- |
@@ -315,9 +307,9 @@ Get-FileHash artifacts/linear-memory/wabt-commit-20261016/corpus/manifest.json -
 Get-FileHash artifacts/simd/task-10.3-20261018T215944Z/run-baseline.json -Algorithm SHA256
 ```
 
-[先行SIMD受入の10.2・10.3](../../.kiro/specs/simd/acceptance.md#102-単一最終runによる公式比較と全体判定)には、固定スイートのpassed52,830件・out_of_scope1,077件、failed・runtime_unsupported・runner_error・blocked・回帰・欠落0件と、比較・verify済みの同じrunからのbaseline保存が記録されている。ツールの最小変換成功や比較元の存在確認は、本仕様の最終公式受入の完了を意味しない。
+先行するSIMDの受入では、固定スイートの52,830件が成立し、1,077件を対象外とした。不一致・ランタイム未対応・ランナー異常・前提不成立・回帰・欠落は0件で、比較と`verify`を通過した実行結果を保存した。[先行SIMDの受入記録](https://github.com/huurou/WasmSharp2/blob/2409d0df7453b281996b27e66a8734ca8e471aa1/.kiro/specs/simd/acceptance.md#102-単一最終runによる公式比較と全体判定)
 
-上表は今回の受入で使用した旧比較元である。次回の公式比較元には、[最新の受入記録](../../.kiro/specs/runtime-performance/acceptance.md#最終状態の機能確認と保存)にある`artifacts/runtime-performance/goal-user-accepted-7dbe1cdf41004f9c96cf9dd3c00a660d/run-baseline.json`（SHA-256`e0842ab5d95fb6ad5f936939cbbac7348458d4c45a9444a1e9c73d42acb650cc`）を使う。公式baselineは性能基準値や比較policyとは別に扱う。
+2026-10-26の受入結果は、`artifacts/runtime-performance/goal-user-accepted-7dbe1cdf41004f9c96cf9dd3c00a660d/run-baseline.json`に保存した。実行IDは`6b419ae0-55c2-4dd9-a4b0-3d63debbae1e`、SHA-256は`e0842ab5d95fb6ad5f936939cbbac7348458d4c45a9444a1e9c73d42acb650cc`である。移行直前に比較元として使った2026-11-18のWABT版と現在のwasm-tools版は、公式ランナーの手順から取得できる。[2026-10-26の保存記録](https://github.com/huurou/WasmSharp2/blob/2409d0df7453b281996b27e66a8734ca8e471aa1/.kiro/specs/runtime-performance/acceptance.md#最終状態の機能確認と保存)・[現在の比較基準](../WasmSharp.TestSuiteRunner/README.md#core-20の比較基準)
 
 ## 子processの実行位置の保存
 

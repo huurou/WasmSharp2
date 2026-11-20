@@ -1,0 +1,137 @@
+{
+  "id": "core2",
+  "spec": {
+    "url": "https://github.com/WebAssembly/spec.git",
+    "commit": "05ca4182176763112561ae20153975c12bd689e4"
+  },
+  "wabt": {
+    "url": "https://github.com/WebAssembly/wabt.git",
+    "commit": "c8dc7b6eae42b3aa3e95b9014dc02b71f8e0e1db"
+  },
+  "features": [
+    {
+      "name": "exceptions",
+      "default_enabled": true,
+      "enabled": false
+    },
+    {
+      "name": "mutable-globals",
+      "default_enabled": true,
+      "enabled": true
+    },
+    {
+      "name": "saturating-float-to-int",
+      "default_enabled": true,
+      "enabled": true
+    },
+    {
+      "name": "sign-extension",
+      "default_enabled": true,
+      "enabled": true
+    },
+    {
+      "name": "simd",
+      "default_enabled": true,
+      "enabled": true
+    },
+    {
+      "name": "threads",
+      "default_enabled": false,
+      "enabled": false
+    },
+    {
+      "name": "function-references",
+      "default_enabled": false,
+      "enabled": false
+    },
+    {
+      "name": "multi-value",
+      "default_enabled": true,
+      "enabled": true
+    },
+    {
+      "name": "tail-call",
+      "default_enabled": true,
+      "enabled": false
+    },
+    {
+      "name": "bulk-memory",
+      "default_enabled": true,
+      "enabled": true
+    },
+    {
+      "name": "reference-types",
+      "default_enabled": true,
+      "enabled": true
+    },
+    {
+      "name": "annotations",
+      "default_enabled": true,
+      "enabled": false
+    },
+    {
+      "name": "code-metadata",
+      "default_enabled": false,
+      "enabled": false
+    },
+    {
+      "name": "gc",
+      "default_enabled": false,
+      "enabled": false
+    },
+    {
+      "name": "memory64",
+      "default_enabled": true,
+      "enabled": false
+    },
+    {
+      "name": "multi-memory",
+      "default_enabled": true,
+      "enabled": false
+    },
+    {
+      "name": "extended-const",
+      "default_enabled": true,
+      "enabled": false
+    },
+    {
+      "name": "relaxed-simd",
+      "default_enabled": true,
+      "enabled": false
+    },
+    {
+      "name": "custom-page-sizes",
+      "default_enabled": false,
+      "enabled": false
+    },
+    {
+      "name": "compact-imports",
+      "default_enabled": false,
+      "enabled": false
+    },
+    {
+      "name": "wide-arithmetic",
+      "default_enabled": false,
+      "enabled": false
+    }
+  ],
+  "working_directory": "test/core",
+  "logical_arguments": [
+    "<relative.wast>",
+    "--disable-exceptions",
+    "--disable-tail-call",
+    "--disable-annotations",
+    "--disable-memory64",
+    "--disable-multi-memory",
+    "--disable-extended-const",
+    "--disable-relaxed-simd",
+    "-o",
+    "<output-root>/modules/<relative.json>"
+  ],
+  "conversion": {
+    "check": true,
+    "canonical_lebs": true,
+    "relocatable": false,
+    "debug_names": false
+  }
+}

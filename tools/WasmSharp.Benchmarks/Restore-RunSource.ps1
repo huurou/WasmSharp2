@@ -107,9 +107,16 @@ foreach ($file in $source.untracked_files) {
     New-Item -ItemType Directory -Path (Split-Path $target) -Force | Out-Null
     Copy-Item -LiteralPath (VerifiedFile $runRoot $file) -Destination $target
 }
+$legacySpecPath = 'thirdParties/WebAssembly-spec'
 foreach ($submodule in $source.submodules) {
     $original = ContainedPath $repositoryRoot $submodule.relative_path
     $target = ContainedPath $destinationRoot $submodule.relative_path
+    # 改名前のrunでは、仕様本体と配下のサブモジュールを現在のCore 2.0側から当時の位置に展開する。
+    if (($submodule.relative_path -ceq $legacySpecPath -or $submodule.relative_path -clike "$legacySpecPath/*") -and
+        -not (Test-Path -LiteralPath (Join-Path $original '.git'))) {
+        $currentPath = 'thirdParties/WebAssembly-spec-core2' + $submodule.relative_path.Substring($legacySpecPath.Length)
+        $original = ContainedPath $repositoryRoot $currentPath
+    }
     # 未初期化submoduleは保存されたgitlinkを使う。使用ファイルの欠落は最後のhash照合で拒否する。
     if (Test-Path -LiteralPath (Join-Path $original '.git')) {
         CloneRevision $original $target $submodule.revision

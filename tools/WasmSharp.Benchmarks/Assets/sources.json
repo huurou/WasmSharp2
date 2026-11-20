@@ -4,7 +4,7 @@
   "origin": "このリポジトリの性能測定用に作成した自作WATとfreestanding C",
   "contains_external_code": false,
   "usage_and_redistribution": "リポジトリの配布方針を適用する。このファイルによる追加の利用許諾はない。",
-  "required_notices": "外部コードに由来する素材の表示義務はない。WABTとLLVMのライセンス・表示は各ツール配布物に保持する。",
+  "required_notices": "外部コードに由来する素材の表示義務はない。wasm-toolsとLLVMのライセンス・表示は各ツール配布物に保持する。",
   "notice": "NOTICE.md",
   "assets": [
     { "asset_id": "invoke", "source": "sources/invoke.wat", "kind": "wat", "import_count": 0, "case_categories": {"invoke.empty": "結果0個", "invoke.single": "結果1個", "invoke.multi": "複数結果", "decode.small": "小moduleのDecode", "decode-validate.small": "小moduleのDecode+Validate"} },

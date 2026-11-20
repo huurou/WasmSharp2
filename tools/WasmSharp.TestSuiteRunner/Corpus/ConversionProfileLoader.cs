@@ -16,7 +16,7 @@ internal sealed class ConversionProfileLoader
     };
 
     /// <summary>
-    /// Core 2.0の公式入力とWABTの変換条件を埋込みプロファイルから読み取る。
+    /// Core 2.0の公式入力とwasm-toolsの変換条件を埋込みプロファイルから読み取る。
     /// </summary>
     /// <returns>埋込みJSONに記録された固定の入力集合と変換条件</returns>
     /// <exception cref="JsonException">埋込みJSONをprofileとして読み取れない、または読み取った値がnullの場合</exception>
@@ -24,6 +24,16 @@ internal sealed class ConversionProfileLoader
     {
         using var stream = typeof(ConversionProfile).Assembly.GetManifestResourceStream("Core2.Profile")!;
         return Load(stream);
+    }
+
+    /// <summary>
+    /// WABTで作成した保存結果を照合するため、同じCore 2.0の公式入力に当時の変換条件を適用する。
+    /// </summary>
+    /// <returns>WABTを使用していたCore 2.0の固定profile</returns>
+    internal ConversionProfile LoadLegacyCore2()
+    {
+        using var stream = typeof(ConversionProfile).Assembly.GetManifestResourceStream("Core2.WabtProfile")!;
+        return Load(stream) with { Inputs = Load().Inputs };
     }
 
     /// <summary>

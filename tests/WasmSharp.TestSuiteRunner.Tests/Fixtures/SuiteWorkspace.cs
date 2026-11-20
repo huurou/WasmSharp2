@@ -97,13 +97,10 @@ internal sealed class SuiteWorkspace : IDisposable
     internal ConversionProfile CreateProfile()
     {
         var profile = _profileLoader.Load();
-        var wabt = profile.Wabt!;
         return profile with
         {
             Id = "fixture",
             Spec = new SourceRevision("https://github.com/WebAssembly/spec.git", Commit),
-            Wabt = wabt with { Revision = wabt.Revision with { Commit = Commit } },
-            LogicalArguments = ["<relative.wast>", "-o", "<output-root>/modules/<relative.json>"],
             Inputs =
             [
                 .. Directory
@@ -118,15 +115,18 @@ internal sealed class SuiteWorkspace : IDisposable
         };
     }
 
-    internal GenerateRequest CreateRequest(ConversionProfile profile, string? wabtRoot = null)
+    internal GenerateRequest CreateRequest(ConversionProfile profile)
     {
-        return new GenerateRequest(profile, SourceRoot, wabtRoot ?? SourceRoot, ConverterPath, OutputRoot);
+        return new GenerateRequest(profile, SourceRoot, ConverterPath, OutputRoot);
     }
 
     internal Task<ProcessResult> ConvertAsync(string inputName, string outputPath)
     {
         var startInfo = new ProcessStartInfo(ConverterPath) { WorkingDirectory = InputRoot };
+        startInfo.ArgumentList.Add("json-from-wast");
         startInfo.ArgumentList.Add(inputName);
+        startInfo.ArgumentList.Add("--wasm-dir");
+        startInfo.ArgumentList.Add(Path.GetDirectoryName(outputPath)!);
         startInfo.ArgumentList.Add("-o");
         startInfo.ArgumentList.Add(outputPath);
         return TestProcess.RunAsync(startInfo);

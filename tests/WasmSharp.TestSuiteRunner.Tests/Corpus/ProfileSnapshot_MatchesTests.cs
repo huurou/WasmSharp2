@@ -47,7 +47,7 @@ internal class ProfileSnapshot_MatchesTests
     public async Task 入力集合が同じでも生成条件の1項目が異なる_一致しないと判定する(string condition)
     {
         // Arrange
-        var profile = condition == "wasm_tools" ? _profileLoader.LoadCore3() : _profileLoader.Load();
+        var profile = condition is "wabt" or "conversion" ? _profileLoader.LoadLegacyCore2() : _profileLoader.Load();
         var snapshot = ProfileSnapshot.FromProfile(profile);
         snapshot = condition switch
         {

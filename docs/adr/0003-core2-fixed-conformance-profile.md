@@ -12,6 +12,10 @@ WASTを自前で解析する案に対し、wast2jsonで分解し、自作ツー�
 
 仕様・ツールの調査時点の根拠は[discovery調査](../research/wasm-runtime-discovery.md)、現在の固定commitと取得・変換手順は[外部ソースの固定](../../thirdParties/README.md)に記録する。公式適合検証の範囲は[test-suite-runnerのブリーフ](../../.kiro/specs/test-suite-runner/brief.md)、実装順序と全体の完了条件は[ロードマップ](../../.kiro/steering/roadmap.md)に従う。
 
+## Core 3.0導入後の変換器
+
+Core 3.0の固定スイートで採用した`wasm-tools 1.263.0`は、Core 2.0の全147入力も変換できる。Core 2.0の規則で再実行すると、WABT版と全53,907ケースの分類が一致した。両版の仕様を別のサブモジュールに固定し、以後の公式テスト素材には`json-from-wast`を使う。ランナーは変換器のJSON表記を読み取った後、各検証プロファイルの仕様版でデコード・検証する。WABTで確定した比較基準は、移行後の変換baselineと実行結果baselineと分けて保持する。[Issue #38](https://github.com/huurou/WasmSharp2/issues/38)
+
 ## 公式検証より先に実行・リンク基盤を整備する
 
 公式スイートを機能追加の早期から使うため、最小基盤に続く`host-linking`で関数実行、global・memory・tableの生成と共有、4種のimport/export、ホストcallbackとstartを実装する。`test-suite-runner`はその公開能力でspectest・registerを構成し、最初の公式実行からリンクを扱う。

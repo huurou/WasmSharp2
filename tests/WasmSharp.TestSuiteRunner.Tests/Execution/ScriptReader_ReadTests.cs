@@ -56,20 +56,24 @@ internal class ScriptReader_ReadTests
     }
 
     [Test]
-    public async Task テキスト素材にbinary_filenameを併記する_Core3だけが元のテキスト素材を保持する()
+    [Arguments(WasmSpecVersion.Core2)]
+    [Arguments(WasmSpecVersion.Core3)]
+    public async Task テキスト素材にbinary_filenameを併記する_wasmTools形式なら元のテキスト素材を保持する(
+        WasmSpecVersion version
+    )
     {
         // Arrange
-        var document = Parse(
-            """
+        const string Commands = """
             {"type":"module","line":1,"filename":"a.wat","module_type":"text","binary_filename":"a.wasm"},
             {"type":"assert_invalid","line":2,"filename":"b.wat","module_type":"text","text":"invalid","binary_filename":"b.wasm"},
             {"type":"module","line":3,"filename":"c.wasm","module_type":"binary","binary_filename":"other.wasm"}
-            """
-        );
+            """;
+        var wasmTools = Parse(Commands, wasmTools: true);
+        var wabt = Parse(Commands);
 
         // Act
-        var result = ScriptReader.Read(document, INPUT_PATH, WasmSpecVersion.Core3);
-        var core2 = ScriptReader.Read(document, INPUT_PATH, WasmSpecVersion.Core2);
+        var result = ScriptReader.Read(wasmTools, INPUT_PATH, version);
+        var legacy = ScriptReader.Read(wabt, INPUT_PATH);
 
         // Assert
         using (Assert.Multiple())
@@ -80,7 +84,7 @@ internal class ScriptReader_ReadTests
                 .IsEqualTo(new AssertInvalidCommand(1, 2, "b.wat", "invalid", ScriptModuleType.Text));
             await Assert.That(result.Commands[2]).IsTypeOf<InvalidCommand>();
             await Assert
-                .That(core2.Commands.OfType<InvalidCommand>().Select(x => x.Diagnostic.Message))
+                .That(legacy.Commands.OfType<InvalidCommand>().Select(x => x.Diagnostic.Message))
                 .IsEquivalentTo(Enumerable.Repeat("固定形式にないbinary_filenameがあります。", 3));
         }
     }
@@ -111,7 +115,7 @@ internal class ScriptReader_ReadTests
     )
     {
         // Arrange
-        var document = Parse(json);
+        var document = Parse(json, wasmTools: true);
 
         // Act
         var result = ScriptReader.Read(document, INPUT_PATH, WasmSpecVersion.Core3);
@@ -310,23 +314,26 @@ internal class ScriptReader_ReadTests
     [Test]
     [Arguments("assert_trap")]
     [Arguments("assert_exhaustion")]
-    public async Task 否定actionでexpectedを省略する_Core3は結果型を空としCore2は必須項目の不足を報告する(string commandType)
+    public async Task 否定actionでexpectedを省略する_wasmTools形式は空の結果型を返しWABT形式は項目の不足を報告する(
+        string commandType
+    )
     {
         // Arrange
-        var document = Parse(
-            $$"""{"type":"{{commandType}}","line":1,"action":{"type":"invoke","field":"f","args":[]},"text":"failure"}"""
-        );
+        var commands =
+            $$"""{"type":"{{commandType}}","line":1,"action":{"type":"invoke","field":"f","args":[]},"text":"failure"}""";
+        var wasmTools = Parse(commands, wasmTools: true);
+        var wabt = Parse(commands);
 
         // Act
-        var core3 = ScriptReader.Read(document, INPUT_PATH, WasmSpecVersion.Core3).Commands.Single();
-        var core2 = ScriptReader.Read(document, INPUT_PATH, WasmSpecVersion.Core2).Commands.Single();
+        var command = ScriptReader.Read(wasmTools, INPUT_PATH).Commands.Single();
+        var legacy = ScriptReader.Read(wabt, INPUT_PATH).Commands.Single();
 
         // Assert
         var resultTypes =
             commandType == "assert_trap"
-                ? (await Assert.That(core3).IsTypeOf<AssertTrapCommand>())!.ResultTypes
-                : (await Assert.That(core3).IsTypeOf<AssertExhaustionCommand>())!.ResultTypes;
-        var invalid = await Assert.That(core2).IsTypeOf<InvalidCommand>();
+                ? (await Assert.That(command).IsTypeOf<AssertTrapCommand>())!.ResultTypes
+                : (await Assert.That(command).IsTypeOf<AssertExhaustionCommand>())!.ResultTypes;
+        var invalid = await Assert.That(legacy).IsTypeOf<InvalidCommand>();
         using (Assert.Multiple())
         {
             await Assert.That(resultTypes).IsEmpty();
@@ -691,7 +698,7 @@ internal class ScriptReader_ReadTests
         await Assert.That(command!.Diagnostic.Message).IsEqualTo(message);
     }
 
-    private static ScriptDocument Parse(string commands)
+    private static ScriptDocument Parse(string commands, bool wasmTools = false)
     {
         var json = $$"""
             {"source_filename": "a.wast",
@@ -699,7 +706,7 @@ internal class ScriptReader_ReadTests
             {{commands}}
             ]}
             """;
-        return ScriptDocument.Parse(Encoding.UTF8.GetBytes(json), "modules/a.json");
+        return ScriptDocument.Parse(Encoding.UTF8.GetBytes(json), "modules/a.json", wasmTools);
     }
 
     private static string FormatAction(ScriptAction action)
