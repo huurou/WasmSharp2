@@ -16,7 +16,8 @@ internal static partial class Interpreter
         var length = unchecked((uint)context.PopValue().AsI32());
         var value = unchecked((byte)context.PopValue().AsI32());
         var destination = unchecked((uint)context.PopValue().AsI32());
-        if (!context.CurrentFunction.Instance.Memories[0].TryFill(destination, value, length))
+        var memory = context.CurrentFunction.Instance.Memories[(int)instruction.Index];
+        if (!memory.TryFill(destination, value, length))
         {
             return ExecutionResult.Trap(
                 WasmTrapReason.MemoryOutOfBounds,
@@ -29,7 +30,7 @@ internal static partial class Interpreter
     }
 
     /// <summary>
-    /// 所属instanceのメモリ内で指定範囲をコピーする
+    /// 指定したコピー元メモリからコピー先メモリへ指定範囲をコピーする
     /// </summary>
     /// <param name="context">現在の関数とコピー先・コピー元・バイト数を持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのmemory.copy命令</param>
@@ -39,7 +40,10 @@ internal static partial class Interpreter
         var length = unchecked((uint)context.PopValue().AsI32());
         var source = unchecked((uint)context.PopValue().AsI32());
         var destination = unchecked((uint)context.PopValue().AsI32());
-        if (!context.CurrentFunction.Instance.Memories[0].TryCopy(destination, source, length))
+        var memories = context.CurrentFunction.Instance.Memories;
+        var destinationMemory = memories[(int)instruction.Index];
+        var sourceMemory = memories[(int)instruction.SecondaryIndex];
+        if (!destinationMemory.TryCopy(sourceMemory, destination, source, length))
         {
             return ExecutionResult.Trap(
                 WasmTrapReason.MemoryOutOfBounds,
@@ -67,7 +71,7 @@ internal static partial class Interpreter
     /// 所属instanceのデータセグメントからメモリへ指定範囲をコピーする
     /// </summary>
     /// <param name="context">現在の関数とコピー先・コピー元・バイト数を持つ実行コンテキスト</param>
-    /// <param name="instruction">データインデックスを保持する検証済みのmemory.init命令</param>
+    /// <param name="instruction">データとメモリのインデックスを保持する検証済みのmemory.init命令</param>
     /// <returns>実行の成功またはメモリを変更しない範囲外アクセスのtrap</returns>
     internal static ExecutionResult MemoryInit(InterpreterContext context, in Instruction instruction)
     {
@@ -75,7 +79,8 @@ internal static partial class Interpreter
         var source = unchecked((uint)context.PopValue().AsI32());
         var destination = unchecked((uint)context.PopValue().AsI32());
         var instance = context.CurrentFunction.Instance;
-        if (!instance.DataSegments[(int)instruction.Index].TryInitialize(instance.Memories[0], destination, source, length))
+        var memory = instance.Memories[(int)instruction.SecondaryIndex];
+        if (!instance.DataSegments[(int)instruction.Index].TryInitialize(memory, destination, source, length))
         {
             return ExecutionResult.Trap(
                 WasmTrapReason.MemoryOutOfBounds,
@@ -88,27 +93,27 @@ internal static partial class Interpreter
     }
 
     /// <summary>
-    /// 所属instanceのメモリの現在のページ数をoperandへ積む
+    /// 指定したメモリの現在のページ数をoperandへ積む
     /// </summary>
     /// <param name="context">現在の関数を持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのmemory.size命令</param>
     /// <returns>実行の成功</returns>
     internal static ExecutionResult Size(InterpreterContext context, in Instruction instruction)
     {
-        var memory = context.CurrentFunction.Instance.Memories[0];
+        var memory = context.CurrentFunction.Instance.Memories[(int)instruction.Index];
         context.PushValue(WasmValue.FromI32((int)memory.PageCount));
         return default;
     }
 
     /// <summary>
-    /// 所属instanceのメモリを拡張し、拡張前のページ数か失敗値をoperandへ積む
+    /// 指定したメモリを拡張し、拡張前のページ数か失敗値をoperandへ積む
     /// </summary>
     /// <param name="context">現在の関数と追加ページ数を持つ実行コンテキスト</param>
     /// <param name="instruction">検証済みのmemory.grow命令</param>
     /// <returns>拡張の成否にかかわらず実行の成功</returns>
     internal static ExecutionResult Grow(InterpreterContext context, in Instruction instruction)
     {
-        var memory = context.CurrentFunction.Instance.Memories[0];
+        var memory = context.CurrentFunction.Instance.Memories[(int)instruction.Index];
         var deltaPages = unchecked((uint)context.PopValue().AsI32());
         int result;
         try
@@ -133,15 +138,11 @@ internal static partial class Interpreter
     internal static ExecutionResult Load(InterpreterContext context, in Instruction instruction)
     {
         var signature = instruction.MemoryAccessSignature;
-        var address = (ulong)unchecked((uint)context.PopValue().AsI32()) + instruction.MemoryArgument.Offset;
         Span<byte> bytes = stackalloc byte[8];
-        if (!context.CurrentFunction.Instance.Memories[0].TryRead(address, bytes[..signature.ByteWidth]))
+        var result = ReadMemory(context, in instruction, bytes[..signature.ByteWidth]);
+        if (result.Status != ExecutionStatus.Success)
         {
-            return ExecutionResult.Trap(
-                WasmTrapReason.MemoryOutOfBounds,
-                context.CurrentFunction.FunctionIndex,
-                instruction.ByteOffset
-            );
+            return result;
         }
 
         var bits = signature.ByteWidth switch
@@ -181,7 +182,6 @@ internal static partial class Interpreter
     {
         var signature = instruction.MemoryAccessSignature;
         var value = context.PopValue();
-        var address = (ulong)unchecked((uint)context.PopValue().AsI32()) + instruction.MemoryArgument.Offset;
         var bits = signature.ValueType switch
         {
             WasmValueKind.I32 => unchecked((uint)value.AsI32()),
@@ -192,15 +192,40 @@ internal static partial class Interpreter
         };
         Span<byte> bytes = stackalloc byte[8];
         BinaryPrimitives.WriteUInt64LittleEndian(bytes, bits);
-        if (!context.CurrentFunction.Instance.Memories[0].TryWrite(address, bytes[..signature.ByteWidth]))
-        {
-            return ExecutionResult.Trap(
+        return WriteMemory(context, in instruction, bytes[..signature.ByteWidth]);
+    }
+
+    /// <summary>
+    /// operandの符号なしアドレスとoffsetから指定範囲を読み、範囲外の位置情報を保持する
+    /// </summary>
+    private static ExecutionResult ReadMemory(InterpreterContext context, in Instruction instruction, Span<byte> destination)
+    {
+        var address = (ulong)unchecked((uint)context.PopValue().AsI32()) + instruction.MemoryArgument.Offset;
+        return context.CurrentFunction.Instance.Memories[(int)instruction.Index].TryRead(address, destination)
+            ? default
+            : ExecutionResult.Trap(
                 WasmTrapReason.MemoryOutOfBounds,
                 context.CurrentFunction.FunctionIndex,
                 instruction.ByteOffset
             );
-        }
+    }
 
-        return default;
+    /// <summary>
+    /// operandの符号なしアドレスとoffsetへ指定範囲を書き、範囲外の位置情報を保持する
+    /// </summary>
+    private static ExecutionResult WriteMemory(
+        InterpreterContext context,
+        in Instruction instruction,
+        ReadOnlySpan<byte> source
+    )
+    {
+        var address = (ulong)unchecked((uint)context.PopValue().AsI32()) + instruction.MemoryArgument.Offset;
+        return context.CurrentFunction.Instance.Memories[(int)instruction.Index].TryWrite(address, source)
+            ? default
+            : ExecutionResult.Trap(
+                WasmTrapReason.MemoryOutOfBounds,
+                context.CurrentFunction.FunctionIndex,
+                instruction.ByteOffset
+            );
     }
 }

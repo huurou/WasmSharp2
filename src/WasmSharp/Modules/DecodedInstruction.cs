@@ -158,28 +158,24 @@ internal readonly struct DecodedInstruction
     /// <param name="opcode">命令の識別子</param>
     /// <param name="memoryArgument">アラインメント指数とオフセット</param>
     /// <param name="byteOffset">入力バイナリ上の命令のバイト位置</param>
-    /// <returns>メモリ命令以外の即値を既定値に統一した命令</returns>
-    internal static DecodedInstruction WithMemoryArgument(OpcodeKey opcode, MemoryArgument memoryArgument, long byteOffset)
-    {
-        return new(opcode, byteOffset, memoryArgument: memoryArgument);
-    }
-
-    /// <summary>
-    /// メモリ即値とlaneの添字を持つ入力命令を構築する
-    /// </summary>
-    /// <param name="opcode">命令の識別子</param>
-    /// <param name="memoryArgument">アラインメント指数とオフセット</param>
-    /// <param name="laneIndex">符号化されたlaneの添字 範囲の検証は後段で行う</param>
-    /// <param name="byteOffset">入力バイナリ上の命令のバイト位置</param>
-    /// <returns>メモリ即値とlaneの添字を保持する命令</returns>
-    internal static DecodedInstruction WithMemoryArgumentLaneIndex(
+    /// <param name="memoryIndex">読み書きするメモリのインデックス</param>
+    /// <param name="laneIndex">lane命令が指定する添字</param>
+    /// <returns>メモリインデックス、メモリ即値、laneの添字を保持する命令</returns>
+    internal static DecodedInstruction WithMemoryArgument(
         OpcodeKey opcode,
         MemoryArgument memoryArgument,
-        byte laneIndex,
-        long byteOffset
+        long byteOffset,
+        uint memoryIndex = 0,
+        byte laneIndex = 0
     )
     {
-        return new(opcode, byteOffset, memoryArgument: memoryArgument, laneIndex: laneIndex);
+        return new DecodedInstruction(
+            opcode,
+            byteOffset,
+            index: memoryIndex,
+            memoryArgument: memoryArgument,
+            laneIndex: laneIndex
+        );
     }
 
     /// <summary>

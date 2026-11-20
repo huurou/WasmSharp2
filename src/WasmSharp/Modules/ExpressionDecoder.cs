@@ -93,20 +93,25 @@ internal static class ExpressionDecoder
                         : WasmValue.FromExternRef(null),
                     offset
                 ),
-                ImmediateKind.MemoryArgument => DecodedInstruction.WithMemoryArgument(
+                ImmediateKind.MemoryArgument or ImmediateKind.MemoryArgumentLaneIndex => ReadMemoryArgument(
                     opcode,
-                    new(reader.ReadU32(), reader.ReadU32()),
+                    offset,
+                    ref reader,
+                    immediateKind == ImmediateKind.MemoryArgumentLaneIndex
+                ),
+                ImmediateKind.MemoryIndex => DecodedInstruction.WithIndex(opcode, ReadMemoryIndex(ref reader), offset),
+                ImmediateKind.MemoryIndexPair => DecodedInstruction.WithIndexPair(
+                    opcode,
+                    ReadMemoryIndex(ref reader),
+                    ReadMemoryIndex(ref reader),
                     offset
                 ),
-                ImmediateKind.MemoryArgumentLaneIndex => DecodedInstruction.WithMemoryArgumentLaneIndex(
+                ImmediateKind.DataAndMemoryIndex => DecodedInstruction.WithIndexPair(
                     opcode,
-                    new(reader.ReadU32(), reader.ReadU32()),
-                    reader.ReadByte(),
+                    reader.ReadU32(),
+                    ReadMemoryIndex(ref reader),
                     offset
                 ),
-                ImmediateKind.MemoryZero => ReadMemoryZero(opcode, offset, ref reader),
-                ImmediateKind.MemoryPairZero => ReadMemoryPairZero(opcode, offset, ref reader),
-                ImmediateKind.DataIndexMemoryZero => ReadDataIndexMemoryZero(opcode, offset, ref reader),
                 _ => throw new InvalidOperationException("対応済み命令の即値情報が不正です。"),
             };
 
@@ -138,55 +143,54 @@ internal static class ExpressionDecoder
     }
 
     /// <summary>
-    /// データインデックスとメモリインデックス0の予約バイトを読む
+    /// 対象の仕様に従ってメモリ即値を読み、lane命令の場合は続くlane番号も取得する
     /// </summary>
-    /// <param name="opcode">memory.init命令の識別子</param>
-    /// <param name="offset">命令の入力位置</param>
-    /// <param name="reader">データインデックスの先頭にある読み取り状態</param>
-    /// <returns>データインデックスを保持する命令</returns>
-    private static DecodedInstruction ReadDataIndexMemoryZero(OpcodeKey opcode, long offset, ref ModuleBinaryReader reader)
+    private static DecodedInstruction ReadMemoryArgument(
+        OpcodeKey opcode,
+        long byteOffset,
+        ref ModuleBinaryReader reader,
+        bool hasLane
+    )
     {
-        var index = reader.ReadU32();
-        RequireMemoryZero(ref reader);
-        return DecodedInstruction.WithIndex(opcode, index, offset);
+        var flagsPosition = reader.Position;
+        var flags = reader.ReadU32();
+        uint memoryIndex = 0;
+        MemoryArgument argument;
+        if (reader.SpecVersion == WasmSpecVersion.Core3)
+        {
+            if (flags >= 0x80)
+            {
+                throw reader.Error("malformed memop flags: メモリ命令のフラグに予約ビットが含まれています。", flagsPosition);
+            }
+            // 下位6ビットはアラインメント指数、ビット6はメモリインデックスの有無を表す。
+            memoryIndex = (flags & 0x40) != 0 ? reader.ReadU32() : 0;
+            argument = new MemoryArgument(flags & 0x3F, reader.ReadU64());
+        }
+        else
+        {
+            argument = new MemoryArgument(flags, reader.ReadU32());
+        }
+        var laneIndex = hasLane ? reader.ReadByte() : (byte)0;
+        return DecodedInstruction.WithMemoryArgument(opcode, argument, byteOffset, memoryIndex, laneIndex);
     }
 
     /// <summary>
-    /// メモリインデックス0を指定する単一の予約バイトを読む
+    /// 仕様の版に従ってメモリインデックスを読む
     /// </summary>
-    /// <param name="opcode">メモリ命令の識別子</param>
-    /// <param name="offset">命令の入力位置</param>
-    /// <param name="reader">予約バイトの先頭にある読み取り状態</param>
-    /// <returns>予約バイトの構文を検査した命令</returns>
-    private static DecodedInstruction ReadMemoryZero(OpcodeKey opcode, long offset, ref ModuleBinaryReader reader)
+    /// <param name="reader">メモリインデックスの先頭にある読み取り状態</param>
+    /// <returns>Core 3.0ではu32の値、Core 2.0では予約バイトが表す0</returns>
+    private static uint ReadMemoryIndex(ref ModuleBinaryReader reader)
     {
-        RequireMemoryZero(ref reader);
-        return DecodedInstruction.WithoutImmediate(opcode, offset);
-    }
+        if (reader.SpecVersion == WasmSpecVersion.Core3)
+        {
+            return reader.ReadU32();
+        }
 
-    /// <summary>
-    /// コピー先とコピー元のメモリインデックス0を指定する予約バイトを読む
-    /// </summary>
-    /// <param name="opcode">memory.copy命令の識別子</param>
-    /// <param name="offset">命令の入力位置</param>
-    /// <param name="reader">コピー先の予約バイトの先頭にある読み取り状態</param>
-    /// <returns>両方の予約バイトの構文を検査した命令</returns>
-    private static DecodedInstruction ReadMemoryPairZero(OpcodeKey opcode, long offset, ref ModuleBinaryReader reader)
-    {
-        RequireMemoryZero(ref reader);
-        return ReadMemoryZero(opcode, offset, ref reader);
-    }
-
-    /// <summary>
-    /// メモリインデックス0の予約バイトを検査する
-    /// </summary>
-    /// <param name="reader">予約バイトの先頭にある読み取り状態</param>
-    private static void RequireMemoryZero(ref ModuleBinaryReader reader)
-    {
         if (reader.ReadByte() != 0)
         {
             throw reader.Error("zero byte expected: 予約バイトには0x00が必要です。", reader.Position - 1);
         }
+        return 0;
     }
 
     /// <summary>

@@ -179,7 +179,7 @@ public partial class SuiteExecutor_ExecuteAndSaveTests
     }
 
     [Test]
-    public async Task 公式のタグと複数メモリをCore3で実行_ランタイムが明示した未実装を処理段階と診断付きで保存する()
+    public async Task 公式のタグと複数メモリをCore3で実行_タグの未実装と複数メモリの成立を保存する()
     {
         // Arrange
         using var fixture = CorpusFixture.Create(new ConversionProfileLoader().LoadCore3());
@@ -204,10 +204,8 @@ public partial class SuiteExecutor_ExecuteAndSaveTests
             await Assert.That(cases[0].LastStage).IsEqualTo(CaseStage.Decode);
             await Assert.That(cases[0].Diagnostics[0].Feature).IsEqualTo("tag section");
             await Assert.That(cases[0].Diagnostics[0].Location!.Stage).IsEqualTo("Decode");
-            await Assert.That(cases[2].Outcome).IsEqualTo(CaseOutcome.RuntimeUnsupported);
-            await Assert.That(cases[2].LastStage).IsEqualTo(CaseStage.Validate);
-            await Assert.That(cases[2].Diagnostics[0].Feature).IsEqualTo("multiple memories");
-            await Assert.That(cases[2].Diagnostics[0].Location!.Stage).IsEqualTo("Validate");
+            await Assert.That(cases[2].Outcome).IsEqualTo(CaseOutcome.Passed);
+            await Assert.That(cases[2].LastStage).IsEqualTo(CaseStage.Instantiate);
         }
     }
 

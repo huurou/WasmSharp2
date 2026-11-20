@@ -300,7 +300,6 @@ public sealed class WasmModule
     /// </remarks>
     /// <returns>検証に成功した、このmodule自身</returns>
     /// <exception cref="WasmValidateException">参照、リソース宣言、初期化式、startまたは関数の型・構造の規則に違反する場合</exception>
-    /// <exception cref="WasmUnsupportedFeatureException">選択した版で有効だが未実装の構成に遭遇した場合 Core 3.0の複数メモリが該当する</exception>
     public WasmModule Validate()
     {
         if (_isValidated)

@@ -40,7 +40,6 @@ internal static class FunctionValidator
         List<WasmValueKind?> stack = [];
         List<ControlFrame> frames = [new(ValidationRule.FunctionEnd, [], type.Results, 0, 0)];
         var maxOperandStack = 0;
-        var hasMemory = !module.Memories.IsEmpty || module.Imports.Any(x => x.Kind == WasmExternalKind.Memory);
         var instructionSet = InstructionSet.ForVersion(module.SpecVersion);
         foreach (var instruction in function.Instructions)
         {
@@ -193,7 +192,7 @@ internal static class FunctionValidator
 
                 case ValidationRule.MemorySize:
                 case ValidationRule.MemoryGrow:
-                    RequireMemory(instruction.ByteOffset);
+                    RequireMemory(instruction.Index, instruction.ByteOffset);
                     if (descriptor.Validation == ValidationRule.MemoryGrow)
                     {
                         Pop(WasmValueKind.I32, instruction.ByteOffset);
@@ -201,8 +200,13 @@ internal static class FunctionValidator
                     stack.Add(WasmValueKind.I32);
                     break;
 
-                case ValidationRule.MemoryBulk:
-                    RequireMemory(instruction.ByteOffset);
+                case ValidationRule.MemoryCopy:
+                case ValidationRule.MemoryFill:
+                    RequireMemory(instruction.Index, instruction.ByteOffset);
+                    if (descriptor.Validation == ValidationRule.MemoryCopy)
+                    {
+                        RequireMemory(instruction.SecondaryIndex, instruction.ByteOffset);
+                    }
                     PopThreeI32(instruction.ByteOffset);
                     break;
 
@@ -210,7 +214,7 @@ internal static class FunctionValidator
                 case ValidationRule.DataDrop:
                     if (descriptor.Validation == ValidationRule.MemoryInit)
                     {
-                        RequireMemory(instruction.ByteOffset);
+                        RequireMemory(instruction.SecondaryIndex, instruction.ByteOffset);
                     }
                     if (instruction.Index >= (uint)module.DataSegments.Length)
                     {
@@ -534,17 +538,17 @@ internal static class FunctionValidator
             }
         }
 
-        void RequireMemory(long byteOffset)
+        void RequireMemory(uint index, long byteOffset)
         {
-            if (!hasMemory)
+            if (index >= references.MemoryCount)
             {
-                throw CreateUnknownIndex("memory", 0, "参照するメモリが存在しません。", byteOffset);
+                throw CreateUnknownIndex("memory", index, "参照するメモリが存在しません。", byteOffset);
             }
         }
 
         MemoryAccessSignature ValidateMemoryAccess(DecodedInstruction instruction, InstructionDescriptor descriptor)
         {
-            RequireMemory(instruction.ByteOffset);
+            RequireMemory(instruction.Index, instruction.ByteOffset);
             var memorySignature = descriptor.MemoryAccessSignature
                 ?? throw new InvalidOperationException("メモリ命令のアクセス情報がありません。");
             if (instruction.MemoryArgument.Alignment > (uint)BitOperations.Log2(memorySignature.ByteWidth))
@@ -553,6 +557,14 @@ internal static class FunctionValidator
                     "alignment must not be larger than natural",
                     "アラインメントが命令のアクセス幅を超えています。",
                     new(WasmProcessingStage.Validate, instruction.ByteOffset, moduleFunctionIndex, 10)
+                );
+            }
+            if (instruction.MemoryArgument.Offset > uint.MaxValue)
+            {
+                throw ValidationDiagnostics.ValidationFailure(
+                    "offset out of range",
+                    "オフセットが32ビットメモリの上限を超えています。",
+                    new WasmFailureLocation(WasmProcessingStage.Validate, instruction.ByteOffset, moduleFunctionIndex, 10)
                 );
             }
             return memorySignature;

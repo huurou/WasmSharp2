@@ -56,24 +56,26 @@ internal enum ImmediateKind
     TypeVector,
 
     /// <summary>
-    /// アラインメント指数とオフセットを表す2つのu32
+    /// Core 2.0ではアラインメント指数とオフセットをu32で順に表す。
+    /// Core 3.0では先頭のu32フラグの下位6ビットがアラインメント指数を表す。
+    /// ビット6が立っている場合はu32のメモリインデックスが続き、最後にu64のオフセットを置く。
     /// </summary>
     MemoryArgument,
 
     /// <summary>
-    /// メモリインデックス0を指定する予約バイト
+    /// メモリインデックス Core 2.0では0を表す予約バイト
     /// </summary>
-    MemoryZero,
+    MemoryIndex,
 
     /// <summary>
-    /// コピー先とコピー元のメモリインデックス0を指定する2つの予約バイト
+    /// コピー先とコピー元のメモリインデックス
     /// </summary>
-    MemoryPairZero,
+    MemoryIndexPair,
 
     /// <summary>
-    /// データインデックスのu32とメモリインデックス0を指定する予約バイト
+    /// データインデックスと、その後に続くメモリインデックス
     /// </summary>
-    DataIndexMemoryZero,
+    DataAndMemoryIndex,
 
     /// <summary>
     /// データインデックスを表すu32
@@ -106,7 +108,7 @@ internal enum ImmediateKind
     LaneIndex,
 
     /// <summary>
-    /// メモリのアラインメント指数・オフセットとlaneの添字
+    /// <see cref="MemoryArgument"/>に続けて1バイトのlane番号を指定する。
     /// </summary>
     MemoryArgumentLaneIndex,
 }

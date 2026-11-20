@@ -571,7 +571,7 @@ namespace WasmSharp.Instructions;
     0,
     0x3F,
     "memory.size",
-    ImmediateKind.MemoryZero,
+    ImmediateKind.MemoryIndex,
     StackEffectKind.PushI32,
     ValidationRule.MemorySize,
     nameof(Interpreter.Size)
@@ -581,7 +581,7 @@ namespace WasmSharp.Instructions;
     0,
     0x40,
     "memory.grow",
-    ImmediateKind.MemoryZero,
+    ImmediateKind.MemoryIndex,
     StackEffectKind.MemoryGrow,
     ValidationRule.MemoryGrow,
     nameof(Interpreter.Grow)
@@ -2395,7 +2395,7 @@ namespace WasmSharp.Instructions;
     0xFC,
     0x08,
     "memory.init",
-    ImmediateKind.DataIndexMemoryZero,
+    ImmediateKind.DataAndMemoryIndex,
     StackEffectKind.MemoryBulk,
     ValidationRule.MemoryInit,
     nameof(Interpreter.MemoryInit)
@@ -2415,9 +2415,9 @@ namespace WasmSharp.Instructions;
     0xFC,
     0x0A,
     "memory.copy",
-    ImmediateKind.MemoryPairZero,
+    ImmediateKind.MemoryIndexPair,
     StackEffectKind.MemoryBulk,
-    ValidationRule.MemoryBulk,
+    ValidationRule.MemoryCopy,
     nameof(Interpreter.Copy)
 )]
 [Instruction(
@@ -2425,9 +2425,9 @@ namespace WasmSharp.Instructions;
     0xFC,
     0x0B,
     "memory.fill",
-    ImmediateKind.MemoryZero,
+    ImmediateKind.MemoryIndex,
     StackEffectKind.MemoryBulk,
-    ValidationRule.MemoryBulk,
+    ValidationRule.MemoryFill,
     nameof(Interpreter.Fill)
 )]
 [Instruction(

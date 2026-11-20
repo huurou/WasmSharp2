@@ -146,9 +146,14 @@ internal enum ValidationRule
     MemoryGrow,
 
     /// <summary>
-    /// メモリが存在し、3つの入力がi32型であることを検証する
+    /// コピー先とコピー元のメモリインデックス、3つのi32入力を検証する
     /// </summary>
-    MemoryBulk,
+    MemoryCopy,
+
+    /// <summary>
+    /// 書き込み先のメモリインデックス、3つのi32入力を検証する
+    /// </summary>
+    MemoryFill,
 
     /// <summary>
     /// メモリとデータインデックス、3つのi32入力を検証する

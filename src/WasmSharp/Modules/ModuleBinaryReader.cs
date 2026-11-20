@@ -242,6 +242,17 @@ internal ref struct ModuleBinaryReader
     }
 
     /// <summary>
+    /// u64のLEB128符号化を読み取る
+    /// </summary>
+    /// <returns>符号なし64ビット整数</returns>
+    /// <exception cref="WasmDecodeException">最大幅・未使用ビットの符号化が不正か、診断用読取りで整数の途中に物理EOFへ達した場合</exception>
+    /// <exception cref="ModuleReadBoundaryException">通常解析で読み取り範囲の終端に整数が未完了の場合</exception>
+    internal ulong ReadU64()
+    {
+        return ReadInteger(64, false);
+    }
+
+    /// <summary>
     /// 長さを読み、prefix前の位置から物理終端までの上限を確認する
     /// </summary>
     /// <returns>物理入力による上限以内の宣言長 取得時の宣言範囲検査は別に行う</returns>

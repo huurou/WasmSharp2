@@ -6,6 +6,55 @@ namespace WasmSharp.Tests;
 internal partial class WasmModule_ValidateTests
 {
     [Test]
+    [Arguments("284002001A", "unknown memory 2")]
+    [Arguments("FD5940FFFFFFFF0F0003", "unknown memory 4294967295")]
+    [Arguments("28400180808080101A", "offset out of range")]
+    [Arguments("FD594001FFFFFFFFFFFFFFFFFF0103", "offset out of range")]
+    [Arguments("284301FFFFFFFFFFFFFFFFFF011A", "alignment must not be larger than natural")]
+    public async Task Core3複数メモリのロードやストアの即値が不正_Validateで原因を示す(string instruction, string diagnostic)
+    {
+        // Arrange
+        var bytes = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Types(([], [])),
+            HostLinkingModuleBinary.Functions(0),
+            HostLinkingModuleBinary.Memories((1, null), (1, null)),
+            HostLinkingModuleBinary.Code(([], [0x00, .. Convert.FromHexString(instruction), 0x0B]))
+        );
+        var module = WasmModule.Decode(bytes, WasmSpecVersion.Core3);
+
+        // Act & Assert
+        var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
+        await Assert.That(exception!.Message).StartsWith(diagnostic);
+    }
+
+    [Test]
+    [Arguments("3F81010B")]
+    [Arguments("41014081010B")]
+    public async Task Core3でページ数の取得または拡張に存在しないメモリを指定する_検証で指定番号を報告する(
+        string instructions
+    )
+    {
+        // Arrange
+        var bytes = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Types(([], [0x7F])),
+            HostLinkingModuleBinary.Functions(0),
+            HostLinkingModuleBinary.Memories((1, null)),
+            HostLinkingModuleBinary.Code(([], Convert.FromHexString(instructions)))
+        );
+        var module = WasmModule.Decode(bytes, WasmSpecVersion.Core3);
+
+        // Act & Assert
+        var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.Message).StartsWith("unknown memory 129");
+            await Assert
+                .That(exception.Location)
+                .IsEqualTo(new WasmFailureLocation(WasmProcessingStage.Validate, bytes.Length - 4, 0, 10));
+        }
+    }
+
+    [Test]
     [Arguments(false, "FC0A00000B", "unknown memory 0", 5)]
     [Arguments(false, "00FC0A00000B", "unknown memory 0", 5)]
     [Arguments(false, "FC0B000B", "unknown memory 0", 4)]
@@ -38,6 +87,7 @@ internal partial class WasmModule_ValidateTests
     [Arguments(false, "002803000B", "unknown memory 0", 4)]
     [Arguments(false, "003603000B", "unknown memory 0", 4)]
     [Arguments(true, "2803000B", "alignment must not be larger than natural", 4)]
+    [Arguments(true, "2840000B", "alignment must not be larger than natural", 4)]
     [Arguments(true, "002803000B", "alignment must not be larger than natural", 4)]
     [Arguments(true, "003603000B", "alignment must not be larger than natural", 4)]
     [Arguments(true, "2821000B", "alignment must not be larger than natural", 4)]
@@ -75,6 +125,33 @@ internal partial class WasmModule_ValidateTests
                 .IsEqualTo(new(WasmProcessingStage.Validate, bytes.Length - offsetFromEnd, 0, 10));
             await Assert.That(() => module.Instantiate(executionContext, [])).ThrowsExactly<InvalidOperationException>();
         }
+    }
+
+    [Test]
+    [Arguments("FC08008001", "unknown memory 128")]
+    [Arguments("FC0B01", "unknown memory 1")]
+    [Arguments("FC0A0100", "unknown memory 1")]
+    [Arguments("FC0A0002", "unknown memory 2")]
+    [Arguments("FC0A0201", "unknown memory 2")]
+    public async Task Core3の一括メモリ命令で存在しないメモリを参照する_検証で該当番号を報告する(
+        string operation,
+        string diagnostic
+    )
+    {
+        // Arrange
+        var bytes = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Types(([], [])),
+            HostLinkingModuleBinary.Functions(0),
+            HostLinkingModuleBinary.Memories((1, null)),
+            HostLinkingModuleBinary.Section(12, [1]),
+            HostLinkingModuleBinary.Code(([], [0, .. Convert.FromHexString(operation), 0x0B])),
+            HostLinkingModuleBinary.Section(11, [1, 1, 0])
+        );
+        var module = WasmModule.Decode(bytes, WasmSpecVersion.Core3);
+
+        // Act & Assert
+        var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
+        await Assert.That(exception!.Message).StartsWith(diagnostic);
     }
 
     [Test]

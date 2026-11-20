@@ -10,6 +10,64 @@ namespace WasmSharp.Tests;
 internal partial class WasmModule_InstantiateTests
 {
     [Test]
+    [Arguments(false, (byte)42, (byte)0)]
+    [Arguments(true, (byte)0, (byte)42)]
+    public async Task Core3でアクティブデータのメモリを省略または明示する_指定先だけに書き込む(
+        bool explicitIndex,
+        byte expectedImported,
+        byte expectedDefined
+    )
+    {
+        // Arrange
+        var host = new WasmHostModule("env");
+        host.Define("m", new WasmMemory(new WasmLimits(1)));
+        byte[] target = explicitIndex ? [2, 1] : [0];
+        var bytes = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Imports(("env", "m", 2, [0, 1])),
+            HostLinkingModuleBinary.Memories((1, null)),
+            HostLinkingModuleBinary.Exports(("imported", 2, 0), ("defined", 2, 1)),
+            HostLinkingModuleBinary.Section(11, [1, .. target, 0x41, 7, 0x0B, 1, 42])
+        );
+        var module = WasmModule.Decode(bytes, WasmSpecVersion.Core3).Validate();
+
+        // Act
+        var instance = module.Instantiate(new WasmExecutionContext(), [host]);
+        var imported = new byte[1];
+        var defined = new byte[1];
+        instance.GetMemory("imported").Read(7, imported);
+        instance.GetMemory("defined").Read(7, defined);
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(imported[0]).IsEqualTo(expectedImported);
+            await Assert.That(defined[0]).IsEqualTo(expectedDefined);
+        }
+    }
+
+    [Test]
+    public async Task Core3で指定したメモリの範囲をデータが超える_インスタンス化時にtrapになる()
+    {
+        // Arrange
+        var bytes = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Memories((1, null), (0, null)),
+            HostLinkingModuleBinary.Section(11, [1, 2, 1, 0x41, 0, 0x0B, 1, 42])
+        );
+        var module = WasmModule.Decode(bytes, WasmSpecVersion.Core3).Validate();
+
+        // Act & Assert
+        var exception = await Assert
+            .That(() => module.Instantiate(new WasmExecutionContext(), []))
+            .ThrowsExactly<WasmTrapException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.Reason).IsEqualTo(WasmTrapReason.MemoryOutOfBounds);
+            await Assert.That(exception.Location!.Stage).IsEqualTo(WasmProcessingStage.Instantiate);
+            await Assert.That(exception.Message).StartsWith("out of bounds memory access");
+        }
+    }
+
+    [Test]
     public async Task Core3の定義globalからデータの位置を計算する_その位置から配置したバイト列を読み出せる()
     {
         // Arrange

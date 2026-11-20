@@ -348,7 +348,7 @@ internal static class ModuleDecoder
             {
                 if (
                     instructionSet.TryGetValue(instruction.Opcode, out var descriptor)
-                    && descriptor.Immediate is ImmediateKind.DataIndexMemoryZero or ImmediateKind.DataIndex
+                    && descriptor.Immediate is ImmediateKind.DataAndMemoryIndex or ImmediateKind.DataIndex
                 )
                 {
                     throw reader.Error(
