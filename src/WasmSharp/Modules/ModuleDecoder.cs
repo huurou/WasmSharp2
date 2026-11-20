@@ -342,7 +342,7 @@ internal static class ModuleDecoder
             && functions.Any(x =>
                 x.Instructions.Any(x =>
                     instructionSet.TryGetValue(x.Opcode, out var descriptor)
-                    && descriptor.Immediate is ImmediateKind.DataIndexMemoryZero or ImmediateKind.DataIndex
+                    && descriptor.Immediate is ImmediateKind.DataAndMemoryIndex or ImmediateKind.DataIndex
                 )
             )
         )

@@ -201,28 +201,28 @@ public sealed class WasmMemory
     }
 
     /// <summary>
-    /// memory内の範囲をコピーし、範囲内かを返す
+    /// 指定メモリから範囲をコピーし、範囲内かを返す
     /// </summary>
+    /// <param name="sourceMemory">コピー元のメモリ</param>
     /// <param name="destination">コピー先の先頭バイト位置</param>
     /// <param name="source">コピー元の先頭バイト位置</param>
     /// <param name="length">コピーするバイト数</param>
     /// <returns>全範囲を転送できた場合はtrue 範囲外の場合はmemoryを変更せずfalse</returns>
-    internal bool TryCopy(ulong destination, ulong source, ulong length)
+    internal bool TryCopy(WasmMemory sourceMemory, ulong destination, ulong source, ulong length)
     {
-        if (!ContainsRange(destination, length) || !ContainsRange(source, length))
+        if (!ContainsRange(destination, length) || !sourceMemory.ContainsRange(source, length))
         {
             return false;
         }
 
-        // 同じ位置なら範囲確認だけで終え、異なる位置なら符号に応じた向きで転送する。
-        switch (Math.Sign(destination.CompareTo(source)))
+        // 同じメモリでコピー先が後ろにある場合は、未転送のバイトを上書きしないよう末尾からコピーする。
+        if (!ReferenceEquals(this, sourceMemory) || destination < source)
         {
-            case 1:
-                CopyBackward(destination + length, source + length, length);
-                break;
-            case -1:
-                CopyForward(destination, source, length);
-                break;
+            CopyForward(sourceMemory, destination, source, length);
+        }
+        else if (destination > source)
+        {
+            CopyBackward(destination + length, source + length, length);
         }
 
         return true;
@@ -251,19 +251,21 @@ public sealed class WasmMemory
     }
 
     /// <summary>
-    /// コピー先が前にある場合は、両範囲の先頭から転送する
+    /// コピー元とコピー先の範囲の先頭から転送する
     /// </summary>
+    /// <param name="sourceMemory">コピー元のメモリ</param>
     /// <param name="destination">コピー先の先頭バイト位置</param>
     /// <param name="source">コピー元の先頭バイト位置</param>
     /// <param name="length">範囲確認済みの転送バイト数</param>
-    private void CopyForward(ulong destination, ulong source, ulong length)
+    private void CopyForward(WasmMemory sourceMemory, ulong destination, ulong source, ulong length)
     {
         while (length != 0)
         {
             var destinationOffset = (int)(destination % PAGE_SIZE);
             var sourceOffset = (int)(source % PAGE_SIZE);
             var count = (int)Math.Min(length, (ulong)Math.Min(PAGE_SIZE - destinationOffset, PAGE_SIZE - sourceOffset));
-            _pages[(int)(source / PAGE_SIZE)]
+            sourceMemory
+                ._pages[(int)(source / PAGE_SIZE)]
                 .AsSpan(sourceOffset, count)
                 .CopyTo(_pages[(int)(destination / PAGE_SIZE)].AsSpan(destinationOffset, count));
             destination += (uint)count;

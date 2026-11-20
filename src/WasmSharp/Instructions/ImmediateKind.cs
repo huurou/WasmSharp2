@@ -66,14 +66,14 @@ internal enum ImmediateKind
     MemoryIndex,
 
     /// <summary>
-    /// コピー先とコピー元のメモリインデックス0を指定する2つの予約バイト
+    /// コピー先とコピー元のメモリインデックス
     /// </summary>
-    MemoryPairZero,
+    MemoryIndexPair,
 
     /// <summary>
-    /// データインデックスのu32とメモリインデックス0を指定する予約バイト
+    /// データインデックスと、その後に続くメモリインデックス
     /// </summary>
-    DataIndexMemoryZero,
+    DataAndMemoryIndex,
 
     /// <summary>
     /// データインデックスを表すu32

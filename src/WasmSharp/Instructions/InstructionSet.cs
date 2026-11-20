@@ -2395,7 +2395,7 @@ namespace WasmSharp.Instructions;
     0xFC,
     0x08,
     "memory.init",
-    ImmediateKind.DataIndexMemoryZero,
+    ImmediateKind.DataAndMemoryIndex,
     StackEffectKind.MemoryBulk,
     ValidationRule.MemoryInit,
     nameof(Interpreter.MemoryInit)
@@ -2415,9 +2415,9 @@ namespace WasmSharp.Instructions;
     0xFC,
     0x0A,
     "memory.copy",
-    ImmediateKind.MemoryPairZero,
+    ImmediateKind.MemoryIndexPair,
     StackEffectKind.MemoryBulk,
-    ValidationRule.MemoryBulk,
+    ValidationRule.MemoryCopy,
     nameof(Interpreter.Copy)
 )]
 [Instruction(
@@ -2427,7 +2427,7 @@ namespace WasmSharp.Instructions;
     "memory.fill",
     ImmediateKind.MemoryIndex,
     StackEffectKind.MemoryBulk,
-    ValidationRule.MemoryBulk,
+    ValidationRule.MemoryFill,
     nameof(Interpreter.Fill)
 )]
 [Instruction(

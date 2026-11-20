@@ -200,8 +200,13 @@ internal static class FunctionValidator
                     stack.Add(WasmValueKind.I32);
                     break;
 
-                case ValidationRule.MemoryBulk:
-                    RequireMemory(0, instruction.ByteOffset);
+                case ValidationRule.MemoryCopy:
+                case ValidationRule.MemoryFill:
+                    RequireMemory(instruction.Index, instruction.ByteOffset);
+                    if (descriptor.Validation == ValidationRule.MemoryCopy)
+                    {
+                        RequireMemory(instruction.SecondaryIndex, instruction.ByteOffset);
+                    }
                     PopThreeI32(instruction.ByteOffset);
                     break;
 
@@ -209,7 +214,7 @@ internal static class FunctionValidator
                 case ValidationRule.DataDrop:
                     if (descriptor.Validation == ValidationRule.MemoryInit)
                     {
-                        RequireMemory(0, instruction.ByteOffset);
+                        RequireMemory(instruction.SecondaryIndex, instruction.ByteOffset);
                     }
                     if (instruction.Index >= (uint)module.DataSegments.Length)
                     {
