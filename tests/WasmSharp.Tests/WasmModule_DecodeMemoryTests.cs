@@ -34,6 +34,19 @@ internal partial class WasmModule_DecodeTests
     }
 
     [Test]
+    public async Task Core2でメモリ拡張のメモリ番号0を非最短LEB128で指定する_予約バイトの診断で拒否する()
+    {
+        // Arrange
+        var bytes = MemoryGrowModuleBinary.CreateWithNonMinimalZeroIndex();
+
+        // Act & Assert
+        var exception = await Assert
+            .That(() => WasmModule.Decode(bytes, WasmSpecVersion.Core2))
+            .ThrowsExactly<WasmDecodeException>();
+        await Assert.That(exception!.Message).StartsWith("zero byte expected");
+    }
+
+    [Test]
     [Arguments("3F", "unexpected end", 0)]
     [Arguments("40", "unexpected end", 0)]
     [Arguments("3F01", "zero byte expected", 1)]

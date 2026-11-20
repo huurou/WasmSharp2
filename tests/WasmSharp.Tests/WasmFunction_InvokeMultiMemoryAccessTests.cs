@@ -114,10 +114,14 @@ internal partial class WasmFunction_InvokeTests
     }
 
     [Test]
-    [Arguments(false, "400104", 65530)]
-    [Arguments(true, "400104", 65530)]
-    [Arguments(false, "4001FFFFFFFF0F", 1)]
-    public async Task Core3複数メモリで選択先の範囲を超えて読み書きする_両方のメモリの内容を保ってtrapする(
+    [Arguments("load", false, "400104", 65530)]
+    [Arguments("store", false, "400104", 65530)]
+    [Arguments("load", true, "400104", 65530)]
+    [Arguments("store", true, "400104", 65530)]
+    [Arguments("load", false, "4001FFFFFFFF0F", 1)]
+    [Arguments("store", false, "4001FFFFFFFF0F", 1)]
+    public async Task Core3複数メモリのロードまたはストアが選択先の範囲を超える_両方のメモリの内容を保ってtrapする(
+        string operation,
         bool simd,
         string memarg,
         int address
@@ -135,18 +139,14 @@ internal partial class WasmFunction_InvokeTests
         second.Write(65534, Convert.FromHexString("A1B2"));
         var operand = WasmValue.FromI32(address);
         var value = simd ? Vector("FFEEDDCCBBAA99887766554433221100") : WasmValue.FromI32(0x12345678);
+        var function = instance.GetFunction(operation);
+        WasmValue[] arguments = operation == "load" ? [operand] : [operand, value];
 
         // Act & Assert
-        var loadTrap = await Assert
-            .That(() => instance.GetFunction("load").Invoke(context, [operand]))
-            .ThrowsExactly<WasmTrapException>();
-        var storeTrap = await Assert
-            .That(() => instance.GetFunction("store").Invoke(context, [operand, value]))
-            .ThrowsExactly<WasmTrapException>();
+        var trap = await Assert.That(() => function.Invoke(context, arguments)).ThrowsExactly<WasmTrapException>();
         using (Assert.Multiple())
         {
-            await Assert.That(loadTrap!.Reason).IsEqualTo(WasmTrapReason.MemoryOutOfBounds);
-            await Assert.That(storeTrap!.Reason).IsEqualTo(WasmTrapReason.MemoryOutOfBounds);
+            await Assert.That(trap!.Reason).IsEqualTo(WasmTrapReason.MemoryOutOfBounds);
             await Assert.That(ReadMemoryHex(first, 65534, 16)).IsEqualTo("00112233445566778899AABBCCDDEEFF");
             await Assert.That(ReadMemoryHex(second, 65534, 2)).IsEqualTo("A1B2");
         }
