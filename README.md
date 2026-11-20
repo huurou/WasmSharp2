@@ -18,7 +18,7 @@ dotnet tool restore
 dotnet husky install
 ```
 
-ランタイムのテストは、`thirdParties/WebAssembly-spec-core2`の命令付録2ファイルをビルド時に埋め込みます。Core 3.0の仕様と公式テストは`thirdParties/WebAssembly-spec-core3`に配置されます。`wasm-tools`は公式テストやベンチマーク素材を再生成するときに使用します。
+ランタイムの単体テストは、Core 2.0とCore 3.0それぞれの仕様サブモジュールから命令付録とマクロ定義をビルド時に埋め込み、各版の命令表に登録された番号と名前を照合します。`wasm-tools`は公式テストやベンチマーク素材を再生成するときに使用します。
 
 Husky.Net、CSharpier、Stryker.NETは、`.config/dotnet-tools.json`でバージョンを固定した.NETローカルツールです。ツールが対象とするランタイムが未導入なら、新しいランタイムで起動できます。
 
@@ -62,6 +62,6 @@ Stryker.NETによるテストの検出力の測定は[ミューテーション�
 
 ## GitHub Actions
 
-[Unit tests](.github/workflows/unit-tests.yml)は、`main`向けのプルリクエストの作成・再オープン時と、マージ元ブランチの更新時に自動で起動します。Actions画面から手動でも実行できます。Ubuntu上で.NET 11と固定したCore 2.0仕様を取得し、警告をエラーとして扱うReleaseビルド後に、ランタイム・生成器・公式適合検証ランナー・測定ツールの4つのテストプロジェクトを実行します。測定ツールの契約テストは小さい保存データfixtureを使います。
+[Unit tests](.github/workflows/unit-tests.yml)は、`main`向けのプルリクエストの作成・再オープン時と、マージ元ブランチの更新時に自動で起動します。Actions画面から手動でも実行できます。Ubuntu上で.NET 11と固定したCore 2.0・Core 3.0の仕様を取得し、警告をエラーとして扱うReleaseビルド後に、ランタイム・生成器・公式適合検証ランナー・測定ツールの4つのテストプロジェクトを実行します。測定ツールの契約テストは小さい保存データfixtureを使います。
 
 テスト結果のTRXファイルは、各実行のArtifactsに`unit-test-results`として保存します。いずれかのテストが失敗した場合も、残りの実行と結果の保存を行います。

@@ -102,7 +102,8 @@ public sealed class WasmInstance
             var value = ConstantInitializer.Evaluate(
                 global.Initializer,
                 ImmutableCollectionsMarshal.AsMemory(globals).Span,
-                Functions.AsSpan()
+                Functions.AsSpan(),
+                module.SpecVersion
             );
             globals.Add(new WasmGlobal(global.Type, value));
         }
@@ -116,7 +117,8 @@ public sealed class WasmInstance
                 values[index] = ConstantInitializer.Evaluate(
                     segment.Initializers[index],
                     Globals.AsSpan(),
-                    Functions.AsSpan()
+                    Functions.AsSpan(),
+                    module.SpecVersion
                 );
             }
             elements.Add(new ElementInstance(values));

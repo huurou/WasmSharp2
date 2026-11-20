@@ -6,6 +6,58 @@ namespace WasmSharp.Tests;
 internal partial class WasmModule_DecodeTests
 {
     [Test]
+    [Arguments("D3", "ref.eq")]
+    [Arguments("FB0F", "array.len")]
+    [Arguments("FD8002", "i8x16.relaxed_swizzle")]
+    public async Task Core3の関数本体に未対応の割当がある_その命令名を報告する(string opcode, string name)
+    {
+        // Arrange
+        // unreachableの後はどの入力型でも検証できる。結果をdropし、関数の結果型i32を返す。
+        var bytes = ConstantModuleBinary.Create(0x7F, [0x00, .. Convert.FromHexString(opcode), 0x1A, 0x41, 0, 0x0B]);
+
+        // Act & Assert
+        var unsupported = await Assert
+            .That(() => WasmModule.Decode(bytes, WasmSpecVersion.Core3))
+            .ThrowsExactly<WasmUnsupportedFeatureException>();
+        await Assert.That(unsupported!.Feature).IsEqualTo(name);
+    }
+
+    [Test]
+    public async Task Core3のグローバル初期化式にrefI31がある_未対応の命令名を報告する()
+    {
+        // Arrange
+        var bytes = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Globals((0x6F, false, [0x41, 1, 0xFB, 0x1C, 0xFB, 0x1B, 0x0B]))
+        );
+
+        // Act & Assert
+        var exception = await Assert
+            .That(() => WasmModule.Decode(bytes, WasmSpecVersion.Core3))
+            .ThrowsExactly<WasmUnsupportedFeatureException>();
+        await Assert.That(exception!.Feature).IsEqualTo("ref.i31");
+    }
+
+    [Test]
+    [Arguments(WasmSpecVersion.Core3, "FD9A01", "illegal opcode 9a: Core 3.0")]
+    [Arguments(WasmSpecVersion.Core3, "FB1F", "illegal opcode fb 1f: Core 3.0")]
+    [Arguments(WasmSpecVersion.Core2, "D3", "illegal opcode d3: Core 2.0")]
+    [Arguments(WasmSpecVersion.Core2, "FB", "illegal opcode fb: Core 2.0")]
+    [Arguments(WasmSpecVersion.Core2, "FD8002", "illegal opcode 100: Core 2.0")]
+    public async Task 選択した仕様で未割当の命令番号がある_その版のデコードエラーを報告する(
+        WasmSpecVersion specVersion,
+        string opcode,
+        string diagnostic
+    )
+    {
+        // Arrange
+        var bytes = ConstantModuleBinary.Create(0x7F, Convert.FromHexString(opcode));
+
+        // Act & Assert
+        var exception = await Assert.That(() => WasmModule.Decode(bytes, specVersion)).ThrowsExactly<WasmDecodeException>();
+        await Assert.That(exception!.Message).StartsWith(diagnostic);
+    }
+
+    [Test]
     public async Task Core3を選択してデコード_検証後のmoduleが同じ仕様版を保持する()
     {
         // Arrange

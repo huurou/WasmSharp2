@@ -10,7 +10,7 @@ internal partial class InstructionSet_TryGetTests
     public async Task SIMD接続の固定付録にあるlane論理比較群_85命令の型効果と即値とhandlerが一致する()
     {
         // Arrange
-        var expected = Core2InstructionFixture.Read(0xFD).Where(x => SimdInstructionRegex().IsMatch(x.Value)).ToArray();
+        var expected = InstructionAppendix.ReadCore2(0xFD).Where(x => SimdInstructionRegex().IsMatch(x.Value)).ToArray();
         var declarations = typeof(InstructionSet)
             .GetCustomAttributes<InstructionAttribute>()
             .Where(x => x.Prefix == 0xFD)
@@ -69,7 +69,7 @@ internal partial class InstructionSet_TryGetTests
     public async Task SIMD整数接続の固定付録にある整数群_88命令の型効果とhandlerが一致する()
     {
         // Arrange
-        var expected = Core2InstructionFixture.Read(0xFD).Where(x => IsIntegerSimd(x.Value)).ToArray();
+        var expected = InstructionAppendix.ReadCore2(0xFD).Where(x => IsIntegerSimd(x.Value)).ToArray();
         var declarations = typeof(InstructionSet)
             .GetCustomAttributes<InstructionAttribute>()
             .Where(x => x.Prefix == 0xFD)
@@ -124,7 +124,7 @@ internal partial class InstructionSet_TryGetTests
     public async Task SIMD浮動接続の固定付録にある演算変換群_40命令の型効果とhandlerが一致する()
     {
         // Arrange
-        var expected = Core2InstructionFixture.Read(0xFD).Where(x => IsFloatSimd(x.Value)).ToArray();
+        var expected = InstructionAppendix.ReadCore2(0xFD).Where(x => IsFloatSimd(x.Value)).ToArray();
         var declarations = typeof(InstructionSet)
             .GetCustomAttributes<InstructionAttribute>()
             .Where(x => x.Prefix == 0xFD)
@@ -169,8 +169,8 @@ internal partial class InstructionSet_TryGetTests
     public async Task SIMDメモリ接続の固定付録にある全メモリ群_22命令の即値と幅とlane制約とhandlerが一致する()
     {
         // Arrange
-        var expected = Core2InstructionFixture
-            .Read(0xFD)
+        var expected = InstructionAppendix
+            .ReadCore2(0xFD)
             .Where(x =>
                 x.Value.StartsWith("v128.load", StringComparison.Ordinal)
                 || x.Value.StartsWith("v128.store", StringComparison.Ordinal)
@@ -261,7 +261,7 @@ internal partial class InstructionSet_TryGetTests
     )
     {
         // Arrange
-        var expected = Core2InstructionFixture.Read(prefix);
+        var expected = InstructionAppendix.ReadCore2(prefix);
         var actual = new Dictionary<uint, string>();
         var executable = new List<uint>();
         var inconsistent = new List<uint>();
@@ -370,7 +370,7 @@ internal partial class InstructionSet_TryGetTests
     )
     {
         // Arrange
-        var names = Core2InstructionFixture.Read(0);
+        var names = InstructionAppendix.ReadCore2(0);
         var declaration = typeof(InstructionSet)
             .GetCustomAttributes<InstructionAttribute>()
             .Single(x => x.Prefix == 0 && x.Code == code);
@@ -398,7 +398,7 @@ internal partial class InstructionSet_TryGetTests
     public async Task 全数値命令の宣言を固定仕様と照合する_入力型列と結果型とhandlerが一致する(byte prefix, int count)
     {
         // Arrange
-        var names = Core2InstructionFixture.Read(prefix);
+        var names = InstructionAppendix.ReadCore2(prefix);
         var declarations = typeof(InstructionSet)
             .GetCustomAttributes<InstructionAttribute>()
             .ToDictionary(x => new OpcodeKey(x.Prefix, x.Code));

@@ -171,23 +171,18 @@ internal static class ModuleBinaryFormat
     /// </summary>
     /// <param name="reader">sectionヘッダーの先頭にある読み取り状態 sectionの終端まで進める</param>
     /// <param name="previousRank">直前の標準sectionの順位 正常時に更新し、custom sectionでは変更しない</param>
-    /// <param name="specVersion">存在するsection IDを決める仕様の版 Core 3.0ではタグsectionを含む</param>
     /// <returns>元の入力位置とsection IDを保持する、payloadに限定した読み取り状態</returns>
     /// <exception cref="WasmDecodeException">ID、長さ、標準sectionの順序または重複が不正な場合</exception>
     /// <exception cref="ModuleReadBoundaryException">限定された範囲内で構文を読み終えられない場合</exception>
-    internal static ModuleBinaryReader ReadSection(
-        ref ModuleBinaryReader reader,
-        ref int previousRank,
-        WasmSpecVersion specVersion
-    )
+    internal static ModuleBinaryReader ReadSection(ref ModuleBinaryReader reader, ref int previousRank)
     {
         var offset = reader.Position;
         var id = reader.ReadByte();
         reader.SectionId = id;
-        if (specVersion == WasmSpecVersion.Core3 ? id > 13 : id > 12)
+        if (reader.SpecVersion == WasmSpecVersion.Core3 ? id > 13 : id > 12)
         {
             throw reader.Error(
-                specVersion == WasmSpecVersion.Core3
+                reader.SpecVersion == WasmSpecVersion.Core3
                     ? "malformed section id: Core 3.0に存在しないsection IDです。"
                     : "malformed section id: Core 2.0に存在しないsection IDです。",
                 offset

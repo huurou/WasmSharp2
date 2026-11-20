@@ -41,9 +41,10 @@ internal static class FunctionValidator
         List<ControlFrame> frames = [new(ValidationRule.FunctionEnd, [], type.Results, 0, 0)];
         var maxOperandStack = 0;
         var hasMemory = !module.Memories.IsEmpty || module.Imports.Any(x => x.Kind == WasmExternalKind.Memory);
+        var instructionSet = InstructionSet.ForVersion(module.SpecVersion);
         foreach (var instruction in function.Instructions)
         {
-            if (!InstructionSet.TryGet(instruction.Opcode, out var descriptor))
+            if (!instructionSet.TryGetValue(instruction.Opcode, out var descriptor))
             {
                 throw new InvalidOperationException("デコード済み命令の情報がありません。");
             }

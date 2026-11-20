@@ -75,6 +75,11 @@ internal ref struct ModuleBinaryReader
     internal uint? FunctionIndex { get; }
 
     /// <summary>
+    /// 入力の構文を解釈するときに使用する仕様の版
+    /// </summary>
+    internal WasmSpecVersion SpecVersion { get; }
+
+    /// <summary>
     /// 入力の参照と診断位置を保持し、指定範囲の先頭から読める状態を構築する
     /// </summary>
     /// <remarks>入力バイト列はコピーしないため、読み取り中は入力内容を変更しない</remarks>
@@ -84,13 +89,15 @@ internal ref struct ModuleBinaryReader
     /// <param name="functionIndex">診断に使用するmodule全体の関数index 関数外ではnull</param>
     /// <param name="mode">通常解析または境界失敗後の診断用読取り</param>
     /// <param name="maxCollectionLength">保持できる最大要素数 省略時は配列の要素数上限</param>
+    /// <param name="specVersion">入力全体に適用する仕様の版</param>
     internal ModuleBinaryReader(
         ReadOnlySpan<byte> bytes,
         long startOffset = 0,
         byte? sectionId = null,
         uint? functionIndex = null,
         ModuleReadMode mode = ModuleReadMode.Bounded,
-        int? maxCollectionLength = null
+        int? maxCollectionLength = null,
+        WasmSpecVersion specVersion = WasmSpecVersion.Core2
     )
         : this(
             bytes,
@@ -100,7 +107,8 @@ internal ref struct ModuleBinaryReader
             sectionId,
             functionIndex,
             mode,
-            maxCollectionLength ?? Array.MaxLength
+            maxCollectionLength ?? Array.MaxLength,
+            specVersion
         ) { }
 
     /// <summary>
@@ -114,6 +122,7 @@ internal ref struct ModuleBinaryReader
     /// <param name="functionIndex">診断に使用するmodule全体の関数index</param>
     /// <param name="mode">通常解析または境界失敗後の診断用読取り</param>
     /// <param name="maxCollectionLength">親の読み取り範囲から引き継ぐ最大要素数</param>
+    /// <param name="specVersion">入力全体に適用する仕様の版</param>
     private ModuleBinaryReader(
         ReadOnlySpan<byte> bytes,
         long startOffset,
@@ -122,7 +131,8 @@ internal ref struct ModuleBinaryReader
         byte? sectionId,
         uint? functionIndex,
         ModuleReadMode mode,
-        int maxCollectionLength
+        int maxCollectionLength,
+        WasmSpecVersion specVersion
     )
     {
         _bytes = bytes;
@@ -134,6 +144,7 @@ internal ref struct ModuleBinaryReader
         _position = 0;
         SectionId = sectionId;
         FunctionIndex = functionIndex;
+        SpecVersion = specVersion;
     }
 
     /// <summary>
@@ -201,7 +212,8 @@ internal ref struct ModuleBinaryReader
                 SectionId,
                 functionIndex ?? FunctionIndex,
                 _mode,
-                _maxCollectionLength
+                _maxCollectionLength,
+                SpecVersion
             );
         }
 
@@ -213,7 +225,8 @@ internal ref struct ModuleBinaryReader
             SectionId,
             functionIndex ?? FunctionIndex,
             _mode,
-            _maxCollectionLength
+            _maxCollectionLength,
+            SpecVersion
         );
     }
 

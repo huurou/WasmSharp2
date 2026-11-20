@@ -3,7 +3,7 @@ using WasmSharp.Execution;
 namespace WasmSharp.Instructions;
 
 /// <summary>
-/// Core 2.0の命令割当と対応済み命令の定義元
+/// 各仕様の命令番号と、対応済み命令の検証規則・実行処理を宣言する
 /// </summary>
 [Instruction(
     0,

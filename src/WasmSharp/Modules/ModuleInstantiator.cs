@@ -92,12 +92,7 @@ internal static class ModuleInstantiator
             var element = instance.ElementSegments[index];
             if (definition.ActiveTarget is { } target)
             {
-                var offset = unchecked(
-                    (uint)
-                        ConstantInitializer
-                            .Evaluate(target.OffsetExpression, instance.Globals.AsSpan(), instance.Functions.AsSpan())
-                            .AsI32()
-                );
+                var offset = EvaluateSegmentOffset(instance, target.OffsetExpression);
                 if (!element.TryInitialize(instance.Tables[(int)target.TableIndex], offset, 0, element.Length))
                 {
                     ExecutionBoundary.ThrowIfFailed(
@@ -130,12 +125,7 @@ internal static class ModuleInstantiator
                 continue;
             }
 
-            var offset = unchecked(
-                (uint)
-                    ConstantInitializer
-                        .Evaluate(target.OffsetExpression, instance.Globals.AsSpan(), instance.Functions.AsSpan())
-                        .AsI32()
-            );
+            var offset = EvaluateSegmentOffset(instance, target.OffsetExpression);
             var data = instance.DataSegments[index];
             if (!data.TryInitialize(instance.Memories[(int)target.MemoryIndex], offset, 0, data.Length))
             {
@@ -146,6 +136,20 @@ internal static class ModuleInstantiator
             }
             data.Drop();
         }
+    }
+
+    /// <summary>
+    /// アクティブセグメントのオフセット式を評価し、結果のi32を符号なしの位置として読み取る
+    /// </summary>
+    private static uint EvaluateSegmentOffset(WasmInstance instance, ImmutableArray<DecodedInstruction> expression)
+    {
+        var offset = ConstantInitializer.Evaluate(
+            expression,
+            instance.Globals.AsSpan(),
+            instance.Functions.AsSpan(),
+            instance.Module.SpecVersion
+        );
+        return unchecked((uint)offset.AsI32());
     }
 
     /// <summary>

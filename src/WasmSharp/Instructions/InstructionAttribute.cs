@@ -37,6 +37,11 @@ internal sealed class InstructionAttribute(
     public string Name { get; } = name;
 
     /// <summary>
+    /// この命令番号が初めて割り当てられた仕様の版を取得または設定する
+    /// </summary>
+    public WasmSpecVersion IntroducedIn { get; set; } = WasmSpecVersion.Core2;
+
+    /// <summary>
     /// 即値の符号化を取得する
     /// </summary>
     public ImmediateKind Immediate { get; } = immediate;

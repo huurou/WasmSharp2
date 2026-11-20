@@ -23,6 +23,7 @@ internal static class ExpressionDecoder
     /// <exception cref="WasmImplementationLimitException">命令数がコレクションの保持上限を超える場合</exception>
     internal static List<DecodedInstruction> Read(ref ModuleBinaryReader reader, int inputLength)
     {
+        var instructionSet = InstructionSet.ForVersion(reader.SpecVersion);
         List<DecodedInstruction> instructions = [];
         // ifのthenを読み終えたframeはelseのopcodeで保持し、重複elseを区別する。
         List<byte> controls = [];
@@ -31,12 +32,16 @@ internal static class ExpressionDecoder
             var offset = reader.Position;
             var code = reader.ReadByte();
 
-            var opcode = code is 0xFC or 0xFD ? new OpcodeKey(code, reader.ReadU32()) : new OpcodeKey(0, code);
-            if (!InstructionSet.TryGet(opcode, out var descriptor))
+            var prefixed = code is 0xFC or 0xFD || (code == 0xFB && reader.SpecVersion == WasmSpecVersion.Core3);
+            var opcode = prefixed ? new OpcodeKey(code, reader.ReadU32()) : new OpcodeKey(0, code);
+            if (!instructionSet.TryGetValue(opcode, out var descriptor))
             {
-                // 固定参照は0xFCだけprefixを表示し、0xFDは命令番号だけを表示する。
-                var opcodeText = opcode.Prefix == 0xFC ? $"{opcode.Prefix:x2} {opcode.Code:x2}" : $"{opcode.Code:x2}";
-                throw reader.Error($"illegal opcode {opcodeText}: Core 2.0に割り当てられていないopcodeです。", offset);
+                // 参照実装は0xFBと0xFCでprefixを表示し、0xFDでは命令番号だけを表示する。
+                var opcodeText = opcode.Prefix is 0xFB or 0xFC
+                    ? $"{opcode.Prefix:x2} {opcode.Code:x2}"
+                    : $"{opcode.Code:x2}";
+                var version = reader.SpecVersion == WasmSpecVersion.Core3 ? "Core 3.0" : "Core 2.0";
+                throw reader.Error($"illegal opcode {opcodeText}: {version}に割り当てられていないopcodeです。", offset);
             }
 
             var immediateKind = descriptor.Immediate;

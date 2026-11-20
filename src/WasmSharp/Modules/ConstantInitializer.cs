@@ -36,11 +36,13 @@ internal static class ConstantInitializer
         var operands =
             expression.Length <= 32 ? stackalloc WasmValueKind[expression.Length] : new WasmValueKind[expression.Length];
         var count = 0;
+        var instructionSet = InstructionSet.ForVersion(specVersion);
         for (var index = 0; index < expression.Length - 1; index++)
         {
             var instruction = expression[index];
             if (
-                InstructionSet.TryGet(instruction.Opcode, out var descriptor) && descriptor.NumericSignature is { } signature
+                instructionSet.TryGetValue(instruction.Opcode, out var descriptor)
+                && descriptor.NumericSignature is { } signature
             )
             {
                 for (var input = signature.InputTypes.Length - 1; input >= 0; input--)
@@ -83,11 +85,13 @@ internal static class ConstantInitializer
     /// <param name="expression">終端のendを含む検証済みの式</param>
     /// <param name="globals">global添字順に並ぶ構築済みの実体</param>
     /// <param name="functions">関数添字順に並ぶ構築済みの実体</param>
+    /// <param name="specVersion">定数式を検証した仕様の版</param>
     /// <returns>式の実行後にスタックに残る値</returns>
     internal static WasmValue Evaluate(
         ImmutableArray<DecodedInstruction> expression,
         ReadOnlySpan<WasmGlobal> globals,
-        ReadOnlySpan<WasmFunction> functions
+        ReadOnlySpan<WasmFunction> functions,
+        WasmSpecVersion specVersion = WasmSpecVersion.Core2
     )
     {
         if (expression.Length == 2)
@@ -96,11 +100,12 @@ internal static class ConstantInitializer
         }
 
         var operands = new Stack<WasmValue>();
+        var instructionSet = InstructionSet.ForVersion(specVersion);
         for (var index = 0; index < expression.Length - 1; index++)
         {
             var instruction = expression[index];
             if (
-                InstructionSet.TryGet(instruction.Opcode, out var descriptor)
+                instructionSet.TryGetValue(instruction.Opcode, out var descriptor)
                 && descriptor.ConstantBinaryOperation is { } operation
             )
             {
@@ -171,7 +176,7 @@ internal static class ConstantInitializer
             return;
         }
         if (
-            InstructionSet.TryGet(instruction.Opcode, out var descriptor)
+            InstructionSet.TryGet(instruction.Opcode, out var descriptor, specVersion)
             && (
                 descriptor.Validation is ValidationRule.Constant or ValidationRule.RefFunc
                 || (specVersion == WasmSpecVersion.Core3 && descriptor.ConstantBinaryOperation is not null)

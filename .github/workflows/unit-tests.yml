@@ -24,8 +24,10 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Fetch Core 2.0 specification
-        run: git -c core.autocrlf=false submodule update --init --depth 1 -- thirdParties/WebAssembly-spec-core2
+      - name: Fetch Core 2.0 and Core 3.0 specifications
+        run: >-
+          git -c core.autocrlf=false submodule update --init --depth 1 --
+          thirdParties/WebAssembly-spec-core2 thirdParties/WebAssembly-spec-core3
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v6

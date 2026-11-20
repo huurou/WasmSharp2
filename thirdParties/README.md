@@ -16,7 +16,7 @@ git -c core.autocrlf=false submodule update --init --checkout
 git submodule status
 ```
 
-親リポジトリが記録した版が両方とも同時に展開されます。ランタイムのテストはCore 2.0側の命令付録を使います。両版の入力一覧・SHA-256・対象機能は、それぞれの検証プロファイルに記録しています。[Core 2.0](../tools/WasmSharp.TestSuiteRunner/Corpus/core2-profile.json)・[Core 3.0](../tools/WasmSharp.TestSuiteRunner/Corpus/core3-profile.json)
+親リポジトリが記録した版が両方とも同時に展開されます。ランタイムの単体テストは両版の命令付録とマクロ定義を使います。両版の入力一覧・SHA-256・対象機能は、それぞれの検証プロファイルに記録しています。[Core 2.0](../tools/WasmSharp.TestSuiteRunner/Corpus/core2-profile.json)・[Core 3.0](../tools/WasmSharp.TestSuiteRunner/Corpus/core3-profile.json)
 
 ## wasm-toolsを取得する
 
