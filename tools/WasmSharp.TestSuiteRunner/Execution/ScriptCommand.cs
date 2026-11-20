@@ -50,6 +50,11 @@ internal abstract record ScriptCommand(int Index, int? Line)
     internal const string ASSERT_EXHAUSTION = "assert_exhaustion";
 
     /// <summary>
+    /// Core 3.0で未捕捉のWasm例外を期待するcommand種別
+    /// </summary>
+    internal const string ASSERT_EXCEPTION = "assert_exception";
+
+    /// <summary>
     /// Decodeでの構文不成立を期待するJSONのcommand種別
     /// </summary>
     internal const string ASSERT_MALFORMED = "assert_malformed";
@@ -89,6 +94,7 @@ internal abstract record ScriptCommand(int Index, int? Line)
             MODULE or REGISTER => CaseCategory.Setup,
             MODULE_DEFINITION or MODULE_INSTANCE when version == WasmSpecVersion.Core3 => CaseCategory.Setup,
             ACTION => CaseCategory.Action,
+            ASSERT_EXCEPTION when version == WasmSpecVersion.Core3 => CaseCategory.Assertion,
             ASSERT_RETURN
             or ASSERT_TRAP
             or ASSERT_EXHAUSTION

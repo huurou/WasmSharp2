@@ -8,7 +8,7 @@ namespace WasmSharp.TestSuiteRunner.Execution;
 /// <remarks>
 /// 個数と各位置の型を先に比較し、揃った場合だけ値を比較する。整数と具体的な浮動小数点数は全ビットで比較する。
 /// NaN patternはscalarとv128の浮動小数点laneに同じ条件を使い、v128は期待lane型で分割してlaneごとに比較する。
-/// 参照は型付きnullか、externrefでは同じ番号に割り当てたホスト値と同じ参照かで比較し、内容の等値性を使わない。
+/// 参照は公式ケースが指定したnull、参照の種類、番号付き参照の同一性を照合する。
 /// </remarks>
 internal static class ValueMatcher
 {
@@ -40,14 +40,27 @@ internal static class ValueMatcher
     /// </remarks>
     /// <param name="expected">JSONの記載順の値付き期待値</param>
     /// <param name="specVersion">値の表記を決める仕様版</param>
-    /// <returns>元の順序を保持する新しい比較用配列 数値のビット列、NaN条件、externref番号を保持する</returns>
+    /// <returns>結果位置ごとの候補配列 単独の期待値は1件、eitherは入れ子を展開した順に候補を保持する。</returns>
     /// <exception cref="ScriptFormatException">値の文字列が固定形式にない場合</exception>
-    internal static ImmutableArray<ValuePattern> Parse(
-        ImmutableArray<ExpectedValue> expected,
+    internal static ImmutableArray<ImmutableArray<ValuePattern>> Parse(
+        ImmutableArray<ExpectedResult> expected,
         WasmSpecVersion specVersion = WasmSpecVersion.Core2
     )
     {
-        return [.. expected.Select((x, i) => Parse(x, $"expected[{i}].value", specVersion == WasmSpecVersion.Core3))];
+        return [.. expected.Select((x, i) => ParseCandidates(x, $"expected[{i}]", specVersion == WasmSpecVersion.Core3))];
+    }
+
+    /// <summary>
+    /// 1つの結果位置で許容される値をすべて解析し、それぞれの値のJSON上の位置を診断に使用する。
+    /// </summary>
+    private static ImmutableArray<ValuePattern> ParseCandidates(ExpectedResult result, string path, bool core3)
+    {
+        if (result is ExpectedResult.Either either)
+        {
+            return [.. either.Candidates.SelectMany((x, i) => ParseCandidates(x, $"{path}.values[{i}]", core3))];
+        }
+
+        return [Parse((ExpectedValue)result, $"{path}.value", core3)];
     }
 
     /// <summary>
@@ -58,7 +71,7 @@ internal static class ValueMatcher
     /// <param name="state">externrefの番号と割り当てたホスト値を管理する入力の状態</param>
     /// <returns>相違箇所 全て一致した場合は空</returns>
     internal static ImmutableArray<ValueMismatch> Match(
-        ImmutableArray<ValuePattern> expected,
+        ImmutableArray<ImmutableArray<ValuePattern>> expected,
         WasmResults actual,
         ScriptState state
     )
@@ -82,17 +95,49 @@ internal static class ValueMatcher
         [
             .. Enumerable
                 .Range(0, values.Length)
-                .Where(x => expected[x].Kind != values[x].Kind)
+                .Where(x => !expected[x].Any(y => MatchesType(y, values[x].Kind)))
                 .Select(x => new ValueMismatch(
                     ValueMismatchKind.Type,
                     x,
                     null,
-                    $"結果{x}の型が期待した{ValueCodec.GetTypeName(expected[x].Kind)}ではなく{ValueCodec.GetTypeName(values[x].Kind)}です。"
+                    expected[x].Length == 1
+                        ? $"結果{x}の型が期待した{expected[x][0].Type}ではなく{ValueCodec.GetTypeName(values[x].Kind)}です。"
+                        : $"結果{x}の型{ValueCodec.GetTypeName(values[x].Kind)}と一致する候補がありません。"
                 )),
         ];
 
         // 順序や型が揃わない場合は、値を比較しない。
-        return types.IsEmpty ? [.. values.SelectMany((x, i) => MatchValue(expected[i], x, i, state))] : types;
+        return types.IsEmpty ? [.. values.SelectMany((x, i) => MatchCandidates(expected[i], x, i, state))] : types;
+    }
+
+    /// <summary>
+    /// 1つの候補が値全体と一致するとき、その結果位置は成立する。
+    /// </summary>
+    private static IEnumerable<ValueMismatch> MatchCandidates(
+        ImmutableArray<ValuePattern> candidates,
+        WasmValue actual,
+        int index,
+        ScriptState state
+    )
+    {
+        if (candidates.Length == 1)
+        {
+            return MatchValue(candidates[0], actual, index, state);
+        }
+
+        return candidates.Any(x => MatchesType(x, actual.Kind) && !MatchValue(x, actual, index, state).Any())
+            ? []
+            : [new ValueMismatch(ValueMismatchKind.Value, index, null, $"結果{index}の値がどの候補とも一致しません。")];
+    }
+
+    /// <summary>
+    /// 結果の種類が期待値の比較対象に含まれるか判定する。
+    /// </summary>
+    private static bool MatchesType(ValuePattern expected, WasmValueKind actual)
+    {
+        return expected.Reference is null
+            ? expected.Type == ValueCodec.GetTypeName(actual)
+            : actual is WasmValueKind.FuncRef or WasmValueKind.ExternRef;
     }
 
     /// <summary>
@@ -100,28 +145,34 @@ internal static class ValueMatcher
     /// </summary>
     /// <param name="value">値の文字列を加工せず保持した期待値</param>
     /// <param name="path">値の異常を報告するJSON上の位置</param>
-    /// <param name="signedIntegers">整数で負の10進表記を許容するかどうか</param>
-    /// <returns>具体的なビット列またはNaN条件、型付きnull、externref番号の比較条件</returns>
-    /// <exception cref="ScriptFormatException">値やlane数が不正、または非nullのfuncrefなど固定形式外の期待値の場合</exception>
-    private static ValuePattern Parse(ExpectedValue value, string path, bool signedIntegers)
+    /// <param name="core3">Core 3.0の整数と参照の表記を使う場合はtrue</param>
+    /// <returns>数値のビット列やNaN条件、または参照の比較条件</returns>
+    /// <exception cref="ScriptFormatException">値やlane数が固定形式に合わない場合</exception>
+    private static ValuePattern Parse(ExpectedValue value, string path, bool core3)
     {
+        if (core3 && ExpectedValue.GetCore3ReferenceMatches(value.Type) is { } matches)
+        {
+            var comparison = value.Value switch
+            {
+                null => matches.Omitted,
+                ValueCodec.NULL => matches.ExplicitNull,
+                _ => matches.Numbered,
+            } ?? throw new ScriptFormatException($"{path}の{value.Value}は固定形式にない{value.Type}の期待値です。");
+            uint? number =
+                comparison == Core3ReferenceMatch.Identity ? (uint)ValueCodec.ParseBits(value.Value, 32, path) : null;
+            return new ValuePattern(value.Type, 0, [], number) { Reference = comparison };
+        }
+
         return value switch
         {
-            { Kind: WasmValueKind.I32 } => ParseNumber(value, 32, false, path, signedIntegers),
-            { Kind: WasmValueKind.I64 } => ParseNumber(value, 64, false, path, signedIntegers),
-            { Kind: WasmValueKind.F32 } => ParseNumber(value, 32, true, path, signedIntegers),
-            { Kind: WasmValueKind.F64 } => ParseNumber(value, 64, true, path, signedIntegers),
-            { Kind: WasmValueKind.V128, LaneType: { } laneType } => ParseVector(laneType, value.Lanes, path, signedIntegers),
-            { Kind: WasmValueKind.FuncRef or WasmValueKind.ExternRef, Value: ValueCodec.NULL } => new(
-                value.Kind,
-                0,
-                [],
-                null
-            ),
-            { Kind: WasmValueKind.ExternRef } => new(value.Kind, 0, [], (uint)ValueCodec.ParseBits(value.Value, 32, path)),
-            _ => throw new ScriptFormatException(
-                $"{path}の{value.Value}は固定形式にない{ValueCodec.GetTypeName(value.Kind)}の期待値です。"
-            ),
+            { Type: "i32" } => ParseNumber(value, 32, false, path, core3),
+            { Type: "i64" } => ParseNumber(value, 64, false, path, core3),
+            { Type: "f32" } => ParseNumber(value, 32, true, path, core3),
+            { Type: "f64" } => ParseNumber(value, 64, true, path, core3),
+            { Type: "v128", LaneType: { } laneType } => ParseVector(laneType, value.Lanes, path, core3),
+            { Type: "funcref" or "externref", Value: ValueCodec.NULL } => new(value.Type, 0, [], null),
+            { Type: "externref" } => new(value.Type, 0, [], (uint)ValueCodec.ParseBits(value.Value, 32, path)),
+            _ => throw new ScriptFormatException($"{path}の{value.Value}は固定形式にない{value.Type}の期待値です。"),
         };
     }
 
@@ -137,7 +188,7 @@ internal static class ValueMatcher
     /// <exception cref="ScriptFormatException">文字列が許容するNaN patternでも仕様版と型が許容する10進表記でもない場合</exception>
     private static ValuePattern ParseNumber(ExpectedValue value, int width, bool floating, string path, bool signedIntegers)
     {
-        return new(value.Kind, width, [ParseBits(value.Value, width, floating, path, signedIntegers)], null);
+        return new(value.Type, width, [ParseBits(value.Value, width, floating, path, signedIntegers)], null);
     }
 
     /// <summary>
@@ -159,7 +210,7 @@ internal static class ValueMatcher
         var width = ValueCodec.GetLaneWidth(laneType, lanes.Length, path);
         var floating = laneType is LaneType.F32 or LaneType.F64;
         return new(
-            WasmValueKind.V128,
+            "v128",
             width,
             [.. lanes.Select((x, i) => ParseBits(x, width, floating, $"{path}[{i}]", signedIntegers))],
             null
@@ -188,9 +239,9 @@ internal static class ValueMatcher
     }
 
     /// <summary>
-    /// 型が一致した1個の結果を比較し、数値・lane・参照の相違箇所を返す。
+    /// 1個の結果を候補と比較し、数値・lane・参照の相違箇所を返す。
     /// </summary>
-    /// <param name="expected">実際の結果と同じ値型を持つ解析済み期待値</param>
+    /// <param name="expected"><see cref="MatchesType"/>で比較対象と判定された候補 Core 3.0の参照では実際の値と型名が異なる場合もある。</param>
     /// <param name="actual">比較する1個の結果</param>
     /// <param name="index">結果の0始まり位置</param>
     /// <param name="state">参照の同一性でexternref番号を解決する入力の状態</param>
@@ -204,8 +255,8 @@ internal static class ValueMatcher
     {
         return actual.Kind switch
         {
-            WasmValueKind.FuncRef => MatchReference(expected, actual.AsFuncRef(), index, state),
-            WasmValueKind.ExternRef => MatchReference(expected, actual.AsExternRef(), index, state),
+            WasmValueKind.FuncRef => MatchReference(expected, actual.Kind, actual.AsFuncRef(), index, state),
+            WasmValueKind.ExternRef => MatchReference(expected, actual.Kind, actual.AsExternRef(), index, state),
             WasmValueKind.V128 => expected.Bits.SelectMany(
                 (x, i) => MatchBits(x, ValueCodec.GetLane(actual, expected.Width, i), expected.Width, index, i)
             ),
@@ -263,15 +314,17 @@ internal static class ValueMatcher
     }
 
     /// <summary>
-    /// 型付きnull、または同じexternref番号に割り当てたホスト値と参照が同じかを比較する。
+    /// スクリプトの参照条件をランタイムが返した参照と比較する。
     /// </summary>
-    /// <param name="expected">nullまたはexternref番号を期待する解析済みの参照値</param>
-    /// <param name="actual">期待と同じ参照型の実際の参照先 nullも許容する</param>
+    /// <param name="expected">解析済みの参照の比較条件</param>
+    /// <param name="actualKind">実際の参照の値型</param>
+    /// <param name="actual">実際の参照先 nullも許容する</param>
     /// <param name="index">結果の0始まり位置</param>
     /// <param name="state">割り当てたホスト値から参照の同一性で元のexternref番号を引く入力の状態</param>
     /// <returns>一致した場合は空 不一致の場合はnull・番号・未知の非null参照を区別した1件の相違</returns>
     private static IEnumerable<ValueMismatch> MatchReference(
         ValuePattern expected,
+        WasmValueKind actualKind,
         object? actual,
         int index,
         ScriptState state
@@ -279,7 +332,25 @@ internal static class ValueMatcher
     {
         // 割り当てた番号は参照の同一性で引くため、番号の一致は同じ番号のホスト値と同じ参照であることを示す。
         var number = actual is null ? null : state.GetExternrefNumber(actual);
-        var matched = expected.Externref is { } x ? number == x : actual is null;
+        var isFunction = actualKind == WasmValueKind.FuncRef && actual is not null;
+        var matched = expected.Reference switch
+        {
+            // Core 3.0では型を付けたref.nullも参照先がnullなら一致する。
+            Core3ReferenceMatch.Null => actual is null,
+            // 固定版の参照実装では(ref.extern)は全ての参照に、(ref.any)は関数実体を除く参照に一致する。
+            Core3ReferenceMatch.HeapType => expected.Type switch
+            {
+                "externref" => true,
+                "anyref" => !isFunction,
+                "funcref" => isFunction,
+                _ => false,
+            },
+            // ref.hostと、それを外部参照に包んだref.externは同じ番号でも異なる。
+            Core3ReferenceMatch.Identity => expected.Type == "externref"
+                && actualKind == WasmValueKind.ExternRef
+                && number == expected.ReferenceNumber,
+            _ => expected.ReferenceNumber is { } x ? number == x : actual is null,
+        };
         return matched
             ? []
             :
@@ -287,12 +358,17 @@ internal static class ValueMatcher
                 CreateValueMismatch(
                     index,
                     null,
-                    expected.Externref is { } y ? $"番号{y}のexternref" : ValueCodec.NULL,
+                    expected switch
+                    {
+                        { ReferenceNumber: { } y } => $"番号{y}の{expected.Type}",
+                        { Reference: Core3ReferenceMatch.HeapType } => expected.Type,
+                        _ => ValueCodec.NULL,
+                    },
                     (actual, number) switch
                     {
                         (null, _) => ValueCodec.NULL,
                         (_, { } z) => $"番号{z}のexternref",
-                        _ => $"割り当てていない非nullの{ValueCodec.GetTypeName(expected.Kind)}",
+                        _ => $"割り当てていない非nullの{ValueCodec.GetTypeName(actualKind)}",
                     }
                 ),
             ];

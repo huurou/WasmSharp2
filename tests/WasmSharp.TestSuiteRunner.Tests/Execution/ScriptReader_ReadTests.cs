@@ -90,6 +90,14 @@ internal class ScriptReader_ReadTests
     [Arguments("""{"type":"module_instance","line":1,"instance":3}""", "instanceが文字列ではありません。")]
     [Arguments("""{"type":"module_instance","line":1,"module":3}""", "moduleが文字列ではありません。")]
     [Arguments(
+        """{"type":"assert_exception","line":1,"action":{"type":"get","field":"g"},"text":"unexpected"}""",
+        "固定形式にないtextがあります。"
+    )]
+    [Arguments(
+        """{"type":"assert_return","line":1,"action":{"type":"get","field":"g"},"expected":[{"type":"either","values":[{"type":"i32","value":"1"}],"extra":0}]}""",
+        "固定形式にないexpected[0].extraがあります。"
+    )]
+    [Arguments(
         """{"type":"module","line":1,"filename":"a.wat","module_type":3,"binary_filename":"a.wasm"}""",
         "module_typeが文字列ではありません。"
     )]
@@ -217,7 +225,8 @@ internal class ScriptReader_ReadTests
             await Assert
                 .That(
                     command
-                        .Expected.Select(Format)
+                        .Expected.Cast<ExpectedValue>()
+                        .Select(Format)
                         .SequenceEqual([
                             "i32:0",
                             "i64:9223372036854775808",
@@ -255,14 +264,14 @@ internal class ScriptReader_ReadTests
         // Assert
         var command = (AssertReturnCommand)result.Commands[0];
         var argument = ((InvokeAction)command.Action).Arguments[0];
-        var expectedValue = command.Expected[0];
+        var expectedValue = (ExpectedValue)command.Expected[0];
         using (Assert.Multiple())
         {
-            await Assert.That(argument.Kind).IsEqualTo(WasmValueKind.V128);
+            await Assert.That(argument.Type).IsEqualTo("v128");
             await Assert.That(argument.LaneType).IsEqualTo(expected);
             await Assert.That(argument.Value).IsNull();
             await Assert.That(argument.Lanes.SequenceEqual(["1", "2"])).IsTrue();
-            await Assert.That(expectedValue.Kind).IsEqualTo(WasmValueKind.V128);
+            await Assert.That(expectedValue.Type).IsEqualTo("v128");
             await Assert.That(expectedValue.LaneType).IsEqualTo(expected);
             await Assert.That(expectedValue.Lanes.SequenceEqual(["3", "4"])).IsTrue();
         }
@@ -413,6 +422,10 @@ internal class ScriptReader_ReadTests
     )]
     [Arguments(
         """{"type": "assert_return", "line": 7, "action": {"type": "invoke", "field": "f", "args": []}, "either": [{"type": "i32", "value": "1"}]}""",
+        "either"
+    )]
+    [Arguments(
+        """{"type":"assert_return","line":7,"action":{"type":"get","field":"g"},"expected":[{"type":"either","values":[{"type":"i32","value":"1"}]}]}""",
         "either"
     )]
     [Arguments(
@@ -694,7 +707,7 @@ internal class ScriptReader_ReadTests
         return action switch
         {
             InvokeAction x =>
-                $"invoke {x.Module ?? "-"} {x.Field} [{string.Join(", ", x.Arguments.Select(y => Format(y.Kind, y.Value, y.LaneType, y.Lanes)))}]",
+                $"invoke {x.Module ?? "-"} {x.Field} [{string.Join(", ", x.Arguments.Select(y => Format(y.Type, y.Value, y.LaneType, y.Lanes)))}]",
             GetAction x => $"get {x.Module ?? "-"} {x.Field}",
             _ => throw new ArgumentOutOfRangeException(nameof(action)),
         };
@@ -702,12 +715,11 @@ internal class ScriptReader_ReadTests
 
     private static string Format(ExpectedValue value)
     {
-        return Format(value.Kind, value.Value, value.LaneType, value.Lanes);
+        return Format(value.Type, value.Value, value.LaneType, value.Lanes);
     }
 
-    private static string Format(WasmValueKind kind, string? value, LaneType? laneType, ImmutableArray<string> lanes)
+    private static string Format(string type, string? value, LaneType? laneType, ImmutableArray<string> lanes)
     {
-        var type = kind.ToString().ToLowerInvariant();
         return laneType is { } lane
             ? $"{type}:{lane.ToString().ToLowerInvariant()}({string.Join(",", lanes)}){value}"
             : $"{type}:{value}{string.Join(",", lanes)}";

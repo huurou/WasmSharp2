@@ -90,8 +90,9 @@ internal static class AssertionJudge
                 return CaseOutcome.RunnerError;
             }
             return
-                MatchesFailure(command, observation.LastStage, exception)
-                && exception.Message.StartsWith(ExpectedText(command)!, StringComparison.Ordinal)
+                ExpectedText(command) is { } expectedText
+                && MatchesFailure(command, observation.LastStage, exception)
+                && exception.Message.StartsWith(expectedText, StringComparison.Ordinal)
                 ? CaseOutcome.Passed
                 : CaseOutcome.Failed;
         }
@@ -189,15 +190,7 @@ internal static class AssertionJudge
     {
         if (command is AssertReturnCommand assertion)
         {
-            return
-            [
-                .. assertion.Expected.Select(x => new ExpectedValueRecord(ValueCodec.GetTypeName(x.Kind))
-                {
-                    Value = x.Value,
-                    LaneType = x.LaneType?.ToString().ToLowerInvariant(),
-                    Lanes = [.. x.Lanes],
-                }),
-            ];
+            return [.. assertion.Expected.Select(RecordValue)];
         }
         var types = command switch
         {
@@ -207,6 +200,25 @@ internal static class AssertionJudge
             _ => [],
         };
         return [.. types.Select(x => new ExpectedValueRecord(ValueCodec.GetTypeName(x)))];
+    }
+
+    /// <summary>
+    /// eitherの入れ子と候補の順序を保ち、値の表記を保存する。
+    /// </summary>
+    private static ExpectedValueRecord RecordValue(ExpectedResult result)
+    {
+        if (result is ExpectedResult.Either either)
+        {
+            return new ExpectedValueRecord("either") { Values = [.. either.Candidates.Select(RecordValue)] };
+        }
+
+        var value = (ExpectedValue)result;
+        return new ExpectedValueRecord(value.Type)
+        {
+            Value = value.Value,
+            LaneType = value.LaneType?.ToString().ToLowerInvariant(),
+            Lanes = [.. value.Lanes],
+        };
     }
 
     /// <summary>
