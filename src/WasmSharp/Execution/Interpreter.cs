@@ -9,6 +9,14 @@ namespace WasmSharp.Execution;
 internal static partial class Interpreter
 {
     /// <summary>
+    /// サイズまたは拡張失敗を表す-1を、対象リソースのアドレス型で返す
+    /// </summary>
+    private static WasmValue CreateSizeValue(WasmValueKind addressType, long size)
+    {
+        return addressType == WasmValueKind.I64 ? WasmValue.FromI64(size) : WasmValue.FromI32((int)size);
+    }
+
+    /// <summary>
     /// 数値命令のtrapを現在関数と命令位置を保持して返す
     /// </summary>
     /// <param name="reason">数値命令のtrapの原因</param>

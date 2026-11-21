@@ -247,12 +247,12 @@ internal static class FunctionValidator
                             Pop(WasmValueKind.I32, instruction.ByteOffset);
                             break;
                         case ValidationRule.TableGrow:
-                            Pop(WasmValueKind.I32, instruction.ByteOffset);
+                            Pop(tableType.AddressType, instruction.ByteOffset);
                             Pop(tableType.ElementType, instruction.ByteOffset);
-                            stack.Add(WasmValueKind.I32);
+                            stack.Add(tableType.AddressType);
                             break;
                         case ValidationRule.TableSize:
-                            stack.Add(WasmValueKind.I32);
+                            stack.Add(tableType.AddressType);
                             break;
                         case ValidationRule.TableFill:
                             Pop(WasmValueKind.I32, instruction.ByteOffset);

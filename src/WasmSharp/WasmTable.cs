@@ -165,14 +165,24 @@ public sealed class WasmTable
     /// <exception cref="OutOfMemoryException">追加領域を割り当てられない場合 要素数と内容は変更しない</exception>
     public bool TryGrow(uint delta, WasmValue initialValue, out uint previousCount)
     {
+        return TryGrow((ulong)delta, initialValue, out previousCount);
+    }
+
+    /// <inheritdoc cref="TryGrow(uint, WasmValue, out uint)"/>
+    internal bool TryGrow(ulong delta, WasmValue initialValue, out uint previousCount)
+    {
         previousCount = Count;
         if (initialValue.Kind != ElementType)
         {
             throw new ArgumentException("tableの要素型と初期値の型が一致しません。", nameof(initialValue));
         }
 
-        var nextCount = (ulong)previousCount + delta;
-        if (nextCount > Type.MaximumElements || ExceedsStorageLimit(nextCount))
+        if (ExceedsStorageLimit(delta, previousCount))
+        {
+            return false;
+        }
+        var nextCount = previousCount + delta;
+        if (nextCount > Type.MaximumElements)
         {
             return false;
         }
@@ -191,13 +201,15 @@ public sealed class WasmTable
     }
 
     /// <summary>
-    /// 要素数が配列の保持上限を超えるかを返す
+    /// 要素の追加後に配列の保持上限を超えるかを返す
     /// </summary>
-    /// <param name="count">割当前に判定する要素数</param>
-    /// <returns>配列の保持上限を超える場合はtrue</returns>
-    internal static bool ExceedsStorageLimit(ulong count)
+    /// <param name="additionalCount">これから確保する要素数</param>
+    /// <param name="currentCount">現在の要素数 初期割り当てでは0</param>
+    /// <returns>追加の要素を保持できない場合はtrue</returns>
+    internal static bool ExceedsStorageLimit(ulong additionalCount, uint currentCount = 0)
     {
-        return count > (ulong)Array.MaxLength;
+        // 加算前に残り容量と比較し、64ビットの増分が折り返すのを防ぐ。
+        return additionalCount > (ulong)Array.MaxLength - currentCount;
     }
 
     /// <summary>
