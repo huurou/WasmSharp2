@@ -314,7 +314,7 @@ internal static class ModuleInstantiator
         {
             FunctionImport function => DescribeFunction(module.Types[(int)function.TypeIndex]),
             GlobalImport global => global.Type.ToString(),
-            MemoryImport memory => memory.Definition.Type.ToString(),
+            MemoryImport memory => DescribeMemory(memory.Definition.Type),
             TableImport table => $"{table.Type.ElementKind} {table.Type.Limits}",
             _ => throw new InvalidOperationException("importの種類が不明です。"),
         };
@@ -331,11 +331,21 @@ internal static class ModuleInstantiator
         {
             FunctionExternalValue function => DescribeFunction(function.Value.Type),
             GlobalExternalValue global => global.Value.Type.ToString(),
-            MemoryExternalValue memory => (memory.Value.Type with { MinimumPages = memory.Value.PageCount }).ToString(),
+            MemoryExternalValue memory => DescribeMemory(memory.Value.Type with { MinimumPages = memory.Value.PageCount }),
             TableExternalValue table =>
                 $"{table.Value.ElementType} {new WasmLimits(table.Value.Count, table.Value.MaximumElements)}",
             _ => throw new InvalidOperationException("外部要素の種類が不明です。"),
         };
+    }
+
+    /// <summary>
+    /// メモリ型を診断に表示し、32ビットメモリでは従来のlimits表記を使う
+    /// </summary>
+    /// <param name="type">要求または提供されたメモリ型</param>
+    /// <returns>アドレス型に対応するページ数の上下限を含む文字列</returns>
+    private static string DescribeMemory(WasmMemoryType type)
+    {
+        return type.Has32BitLimits ? type.Get32BitLimits().ToString() : type.ToString();
     }
 
     /// <summary>
