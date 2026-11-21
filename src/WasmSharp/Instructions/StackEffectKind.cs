@@ -151,7 +151,12 @@ internal enum StackEffectKind
     MemoryStore,
 
     /// <summary>
-    /// i32のページ数を取り除き、拡張前のページ数をi32で積む
+    /// 指定したメモリのアドレス型で現在のページ数を積む
+    /// </summary>
+    MemorySize,
+
+    /// <summary>
+    /// 指定したメモリのアドレス型で増分を取り除き、同じ型で拡張前のページ数を積む
     /// </summary>
     MemoryGrow,
 

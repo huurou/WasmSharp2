@@ -6,6 +6,37 @@ namespace WasmSharp.Tests;
 internal partial class WasmModule_ValidateTests
 {
     [Test]
+    [Arguments("3F00", (byte)0x7E, 1)]
+    [Arguments("3F01", (byte)0x7F, 1)]
+    [Arguments("42004000", (byte)0x7F, 3)]
+    [Arguments("41004001", (byte)0x7E, 3)]
+    [Arguments("41004000", (byte)0x7E, 1)]
+    [Arguments("42004001", (byte)0x7F, 1)]
+    public async Task メモリのページ数の型が指定先と異なる_検証で型不一致を報告する(
+        string instructions,
+        byte resultType,
+        int offsetFromEnd
+    )
+    {
+        // Arrange
+        var bytes = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Types(([], [resultType])),
+            HostLinkingModuleBinary.Functions(0),
+            HostLinkingModuleBinary.Section(5, [2, 0x00, 1, 0x04, 2]),
+            HostLinkingModuleBinary.Code(([], [.. Convert.FromHexString(instructions), 0x0B]))
+        );
+        var module = WasmModule.Decode(bytes, WasmSpecVersion.Core3);
+
+        // Act & Assert
+        var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.Message).StartsWith("type mismatch");
+            await Assert.That(exception.Location!.ByteOffset).IsEqualTo(bytes.Length - offsetFromEnd);
+        }
+    }
+
+    [Test]
     [Arguments("284002001A", "unknown memory 2", "メモリが存在しません")]
     [Arguments("FD5940FFFFFFFF0F0003", "unknown memory 4294967295", "メモリが存在しません")]
     [Arguments("28400180808080101A", "offset out of range", "32ビットメモリの上限")]

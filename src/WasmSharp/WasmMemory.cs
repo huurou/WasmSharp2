@@ -132,13 +132,22 @@ public sealed class WasmMemory
     /// <exception cref="OutOfMemoryException">追加領域を割り当てられない場合 サイズと内容は変更しない</exception>
     public bool TryGrow(uint deltaPages, out uint previousPageCount)
     {
+        return TryGrow((ulong)deltaPages, out previousPageCount);
+    }
+
+    /// <inheritdoc cref="TryGrow(uint, out uint)"/>
+    internal bool TryGrow(ulong deltaPages, out uint previousPageCount)
+    {
         previousPageCount = PageCount;
-        var nextPageCount = (ulong)previousPageCount + deltaPages;
-        if (
-            // Stryker disable once Boolean: 上限判定を反転すると、拡張を拒否するテストで4GiB以上の領域を確保する。
-            ExceedsPageLimit(nextPageCount, Type)
-            || nextPageCount > (ulong)Array.MaxLength
-        )
+        // 64ビット増分との加算がオーバーフローしないよう、ページ表に追加できる数と先に比較する。
+        if (deltaPages > (ulong)Array.MaxLength - previousPageCount)
+        {
+            return false;
+        }
+
+        var nextPageCount = previousPageCount + deltaPages;
+        // Stryker disable once Boolean: 上限判定を反転すると、拡張を拒否するテストで4GiB以上の領域を確保する。
+        if (ExceedsPageLimit(nextPageCount, Type))
         {
             return false;
         }

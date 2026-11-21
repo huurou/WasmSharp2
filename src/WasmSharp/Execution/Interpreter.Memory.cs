@@ -101,7 +101,7 @@ internal static partial class Interpreter
     internal static ExecutionResult Size(InterpreterContext context, in Instruction instruction)
     {
         var memory = context.CurrentFunction.Instance.Memories[(int)instruction.Index];
-        context.PushValue(WasmValue.FromI32((int)memory.PageCount));
+        context.PushValue(CreatePageCountValue(memory, memory.PageCount));
         return default;
     }
 
@@ -114,19 +114,29 @@ internal static partial class Interpreter
     internal static ExecutionResult Grow(InterpreterContext context, in Instruction instruction)
     {
         var memory = context.CurrentFunction.Instance.Memories[(int)instruction.Index];
-        var deltaPages = unchecked((uint)context.PopValue().AsI32());
-        int result;
+        var deltaPages = context.PopValue().AsUnsignedInteger();
+        long result;
         try
         {
-            result = memory.TryGrow(deltaPages, out var previousPageCount) ? (int)previousPageCount : -1;
+            result = memory.TryGrow(deltaPages, out var previousPageCount) ? previousPageCount : -1L;
         }
         catch (OutOfMemoryException)
         {
             result = -1;
         }
 
-        context.PushValue(WasmValue.FromI32(result));
+        context.PushValue(CreatePageCountValue(memory, result));
         return default;
+    }
+
+    /// <summary>
+    /// ページ数または拡張失敗を表す-1を、対象メモリのアドレス型で返す
+    /// </summary>
+    private static WasmValue CreatePageCountValue(WasmMemory memory, long pageCount)
+    {
+        return memory.Type.AddressType == WasmValueKind.I64
+            ? WasmValue.FromI64(pageCount)
+            : WasmValue.FromI32((int)pageCount);
     }
 
     /// <summary>

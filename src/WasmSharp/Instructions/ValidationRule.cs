@@ -136,12 +136,12 @@ internal enum ValidationRule
     MemoryStore,
 
     /// <summary>
-    /// メモリが存在することを検証し、ページ数をi32で積む
+    /// メモリが存在することを検証し、ページ数をそのアドレス型で積む
     /// </summary>
     MemorySize,
 
     /// <summary>
-    /// メモリとi32のページ数を検証し、拡張前のページ数をi32で積む
+    /// 指定したメモリのアドレス型と増分の型が一致することを検証し、同じ型で拡張前のページ数を積む
     /// </summary>
     MemoryGrow,
 

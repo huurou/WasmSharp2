@@ -572,7 +572,7 @@ namespace WasmSharp.Instructions;
     0x3F,
     "memory.size",
     ImmediateKind.MemoryIndex,
-    StackEffectKind.PushI32,
+    StackEffectKind.MemorySize,
     ValidationRule.MemorySize,
     nameof(Interpreter.Size)
 )]
