@@ -94,7 +94,7 @@ internal static partial class Interpreter
     internal static ExecutionResult TableGet(InterpreterContext context, in Instruction instruction)
     {
         var function = context.CurrentFunction;
-        var index = unchecked((uint)context.PopValue().AsI32());
+        var index = context.PopValue().AsUnsignedInteger();
         if (!function.Instance.Tables[(int)instruction.Index].TryGet(index, out var value))
         {
             return ExecutionResult.Trap(WasmTrapReason.TableOutOfBounds, function.FunctionIndex, instruction.ByteOffset);
@@ -114,7 +114,7 @@ internal static partial class Interpreter
     {
         var function = context.CurrentFunction;
         var value = context.PopValue();
-        var index = unchecked((uint)context.PopValue().AsI32());
+        var index = context.PopValue().AsUnsignedInteger();
         if (!function.Instance.Tables[(int)instruction.Index].TrySet(index, value))
         {
             return ExecutionResult.Trap(WasmTrapReason.TableOutOfBounds, function.FunctionIndex, instruction.ByteOffset);

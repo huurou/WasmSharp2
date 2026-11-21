@@ -51,13 +51,17 @@ internal partial class WasmModule_ValidateTests
     }
 
     [Test]
+    [Arguments((byte)4, "410025001A0B", 1)]
+    [Arguments((byte)0, "420025001A0B", 1)]
+    [Arguments((byte)4, "4100D06F26000B", 2)]
+    [Arguments((byte)0, "4200D06F26000B", 2)]
     [Arguments((byte)4, "FC1000451A0B", 1)]
     [Arguments((byte)0, "FC1000501A0B", 1)]
     [Arguments((byte)4, "D06F4100FC0F001A0B", 2)]
     [Arguments((byte)0, "D06F4200FC0F001A0B", 2)]
     [Arguments((byte)4, "D06F4200FC0F00451A0B", 3)]
     [Arguments((byte)0, "D06F4100FC0F00501A0B", 3)]
-    public async Task 要素数または増分の幅がテーブルのアドレス型と異なる_不一致の命令で検証に失敗する(
+    public async Task 要素添字や要素数または増分の幅がテーブルのアドレス型と異なる_不一致の命令で検証に失敗する(
         byte tableFlags,
         string body,
         int instructionIndex
