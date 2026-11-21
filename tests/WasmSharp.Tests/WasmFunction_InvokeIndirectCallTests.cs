@@ -6,6 +6,57 @@ namespace WasmSharp.Tests;
 internal partial class WasmFunction_InvokeTests
 {
     [Test]
+    [Arguments(1L, WasmTrapReason.UninitializedElement, "uninitialized element 1")]
+    [Arguments(2L, WasmTrapReason.IndirectCallTypeMismatch, "indirect call type mismatch")]
+    [Arguments(1L << 32, WasmTrapReason.TableOutOfBounds, "undefined element 4294967296")]
+    [Arguments(4294967295L, WasmTrapReason.TableOutOfBounds, "undefined element 4294967295")]
+    [Arguments(-1L, WasmTrapReason.TableOutOfBounds, "undefined element -1")]
+    public async Task テーブルのi64添字で間接呼び出し先を選べない_原因に応じたtrapを返し添字0では関数の結果を返す(
+        long selector,
+        WasmTrapReason reason,
+        string diagnostic
+    )
+    {
+        // Arrange
+        var context = new WasmExecutionContext();
+        var bytes = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Types(([], [0x7F]), ([0x7E], [0x7F])),
+            HostLinkingModuleBinary.Functions(1),
+            HostLinkingModuleBinary.Section(4, [1, 0x70, 4, 3]),
+            HostLinkingModuleBinary.Exports(("run", 0, 0), ("table", 1, 0)),
+            HostLinkingModuleBinary.Code(([], [0x20, 0, 0x11, 0, 0, 0x0B]))
+        );
+        var instance = WasmModule.Decode(bytes, WasmSpecVersion.Core3).Validate().Instantiate(context, []);
+        var run = instance.GetFunction("run");
+        var table = instance.GetTable("table");
+        var calls = 0;
+        var callee = WasmFunction.CreateHost(new WasmFunctionType([], [WasmValueKind.I32]), (_, _) =>
+        {
+            calls++;
+            return new WasmResults([WasmValue.FromI32(42)]);
+        });
+        table.Set(0, WasmValue.FromFuncRef(callee));
+        table.Set(2, WasmValue.FromFuncRef(run));
+
+        // Act & Assert
+        var exception = await Assert
+            .That(() => run.Invoke(context, [WasmValue.FromI64(selector)]))
+            .ThrowsExactly<WasmTrapException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.Reason).IsEqualTo(reason);
+            await Assert.That(exception.Message).IsEqualTo(diagnostic);
+            await Assert.That(calls).IsEqualTo(0);
+        }
+
+        // Act
+        var result = run.Invoke(context, [WasmValue.FromI64(0)]);
+
+        // Assert
+        await Assert.That(result.Values[0].AsI32()).IsEqualTo(42);
+    }
+
+    [Test]
     public async Task 別moduleの同じ構造の型を間接callする_複数引数結果の順序と元instanceのリソースを保つ()
     {
         // Arrange

@@ -355,7 +355,7 @@ internal static class FunctionValidator
                         throw CreateException("間接呼び出し先のテーブルにはfuncrefが必要です。", instruction.ByteOffset);
                     }
                     var indirectCalleeType = module.Types[(int)instruction.Index];
-                    Pop(WasmValueKind.I32, instruction.ByteOffset);
+                    Pop(indirectTableType.AddressType, instruction.ByteOffset);
                     PopTypes(indirectCalleeType.Parameters.AsSpan(), instruction.ByteOffset);
                     PushTypes(indirectCalleeType.Results);
                     break;

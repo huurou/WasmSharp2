@@ -54,9 +54,9 @@ internal readonly struct ExecutionResult
     internal TrapDiagnosticKind TrapDiagnosticKind { get; }
 
     /// <summary>
-    /// trapの診断に用いるテーブル要素添字 指定しない場合はnull
+    /// trapの診断に用いる符号付きのテーブル要素添字 指定しない場合はnull
     /// </summary>
-    internal uint? TableElementIndex { get; }
+    internal long? TableElementIndex { get; }
 
     /// <summary>
     /// 実行状態と、その状態に対応する戻り値または失敗情報を保持する
@@ -81,7 +81,7 @@ internal readonly struct ExecutionResult
         long? byteOffset,
         byte? sectionId = null,
         TrapDiagnosticKind trapDiagnosticKind = TrapDiagnosticKind.Default,
-        uint? tableElementIndex = null
+        long? tableElementIndex = null
     )
     {
         Status = status;
@@ -122,7 +122,7 @@ internal readonly struct ExecutionResult
         long byteOffset,
         byte? sectionId = null,
         TrapDiagnosticKind trapDiagnosticKind = TrapDiagnosticKind.Default,
-        uint? tableElementIndex = null
+        long? tableElementIndex = null
     )
     {
         return new ExecutionResult(

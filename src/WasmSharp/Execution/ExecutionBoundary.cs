@@ -129,7 +129,7 @@ internal static class ExecutionBoundary
     private static string GetTrapMessage(ExecutionResult result)
     {
         var elementIndexSuffix = result.TableElementIndex is { } index
-            ? " " + unchecked((int)index).ToString(CultureInfo.InvariantCulture)
+            ? " " + index.ToString(CultureInfo.InvariantCulture)
             : "";
         return (result.TrapReason!.Value, result.TrapDiagnosticKind) switch
         {
