@@ -205,12 +205,24 @@ internal static partial class Interpreter
     }
 
     /// <summary>
+    /// operandの符号なしアドレスに即値のオフセットを加え、和が64ビットに収まるかを返す
+    /// </summary>
+    private static bool TryPopMemoryAddress(InterpreterContext context, ulong offset, out ulong address)
+    {
+        var baseAddress = context.PopValue().AsUnsignedInteger();
+        address = unchecked(baseAddress + offset);
+        return address >= baseAddress;
+    }
+
+    /// <summary>
     /// operandの符号なしアドレスとoffsetから指定範囲を読み、範囲外の位置情報を保持する
     /// </summary>
     private static ExecutionResult ReadMemory(InterpreterContext context, in Instruction instruction, Span<byte> destination)
     {
-        var address = (ulong)unchecked((uint)context.PopValue().AsI32()) + instruction.MemoryArgument.Offset;
-        return context.CurrentFunction.Instance.Memories[(int)instruction.Index].TryRead(address, destination)
+        var memory = context.CurrentFunction.Instance.Memories[(int)instruction.Index];
+        return
+            TryPopMemoryAddress(context, instruction.MemoryArgument.Offset, out var address)
+            && memory.TryRead(address, destination)
             ? default
             : ExecutionResult.Trap(
                 WasmTrapReason.MemoryOutOfBounds,
@@ -228,8 +240,10 @@ internal static partial class Interpreter
         ReadOnlySpan<byte> source
     )
     {
-        var address = (ulong)unchecked((uint)context.PopValue().AsI32()) + instruction.MemoryArgument.Offset;
-        return context.CurrentFunction.Instance.Memories[(int)instruction.Index].TryWrite(address, source)
+        var memory = context.CurrentFunction.Instance.Memories[(int)instruction.Index];
+        return
+            TryPopMemoryAddress(context, instruction.MemoryArgument.Offset, out var address)
+            && memory.TryWrite(address, source)
             ? default
             : ExecutionResult.Trap(
                 WasmTrapReason.MemoryOutOfBounds,

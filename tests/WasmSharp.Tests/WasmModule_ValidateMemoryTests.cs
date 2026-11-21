@@ -67,6 +67,30 @@ internal partial class WasmModule_ValidateTests
     }
 
     [Test]
+    [Arguments((byte)0x7F, "284001001A")] // i32.load
+    [Arguments((byte)0x7E, "2001FD0B0000")] // v128.store
+    [Arguments((byte)0x7F, "2001FD55410100031A")] // v128.load16_lane
+    [Arguments((byte)0x7E, "2001FD59010003")] // v128.store16_lane
+    public async Task ロードやストアのアドレス型が指定したメモリに合わない_検証で型不一致を報告する(
+        byte addressType,
+        string instruction
+    )
+    {
+        // Arrange
+        var bytes = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Types(([addressType, 0x7B], [])),
+            HostLinkingModuleBinary.Functions(0),
+            HostLinkingModuleBinary.Section(5, [2, 0, 1, 4, 1]),
+            HostLinkingModuleBinary.Code(([], [0x20, 0, .. Convert.FromHexString(instruction), 0x0B]))
+        );
+        var module = WasmModule.Decode(bytes, WasmSpecVersion.Core3);
+
+        // Act & Assert
+        var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
+        await Assert.That(exception!.Message).StartsWith("type mismatch");
+    }
+
+    [Test]
     [Arguments("3F81010B")]
     [Arguments("41014081010B")]
     public async Task Core3でページ数の取得または拡張に存在しないメモリを指定する_検証で指定番号を報告する(

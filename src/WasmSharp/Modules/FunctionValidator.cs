@@ -169,7 +169,7 @@ internal static class FunctionValidator
                 case ValidationRule.MemoryStore:
                 case ValidationRule.MemoryLoadLane:
                 case ValidationRule.MemoryStoreLane:
-                    var memorySignature = ValidateMemoryAccess(instruction, descriptor);
+                    var (memorySignature, addressType) = ValidateMemoryAccess(instruction, descriptor);
                     if (descriptor.Validation is ValidationRule.MemoryLoadLane or ValidationRule.MemoryStoreLane)
                     {
                         ValidateLaneIndex(instruction.LaneIndex, descriptor.LaneCount, instruction.ByteOffset);
@@ -183,7 +183,7 @@ internal static class FunctionValidator
                     {
                         Pop(memorySignature.ValueType, instruction.ByteOffset);
                     }
-                    Pop(WasmValueKind.I32, instruction.ByteOffset);
+                    Pop(addressType, instruction.ByteOffset);
                     if (descriptor.Validation is ValidationRule.MemoryLoad or ValidationRule.MemoryLoadLane)
                     {
                         stack.Add(memorySignature.ValueType);
@@ -547,9 +547,12 @@ internal static class FunctionValidator
             return references.MemoryAddressTypes[(int)index];
         }
 
-        MemoryAccessSignature ValidateMemoryAccess(DecodedInstruction instruction, InstructionDescriptor descriptor)
+        (MemoryAccessSignature Signature, WasmValueKind AddressType) ValidateMemoryAccess(
+            DecodedInstruction instruction,
+            InstructionDescriptor descriptor
+        )
         {
-            RequireMemory(instruction.Index, instruction.ByteOffset);
+            var addressType = RequireMemory(instruction.Index, instruction.ByteOffset);
             var memorySignature = descriptor.MemoryAccessSignature
                 ?? throw new InvalidOperationException("メモリ命令のアクセス情報がありません。");
             if (instruction.MemoryArgument.Alignment > (uint)BitOperations.Log2(memorySignature.ByteWidth))
@@ -560,7 +563,7 @@ internal static class FunctionValidator
                     new(WasmProcessingStage.Validate, instruction.ByteOffset, moduleFunctionIndex, 10)
                 );
             }
-            if (instruction.MemoryArgument.Offset > uint.MaxValue)
+            if (addressType == WasmValueKind.I32 && instruction.MemoryArgument.Offset > uint.MaxValue)
             {
                 throw ValidationDiagnostics.ValidationFailure(
                     "offset out of range",
@@ -568,7 +571,7 @@ internal static class FunctionValidator
                     new WasmFailureLocation(WasmProcessingStage.Validate, instruction.ByteOffset, moduleFunctionIndex, 10)
                 );
             }
-            return memorySignature;
+            return (memorySignature, addressType);
         }
 
         (ImmutableArray<WasmValueKind> Parameters, ImmutableArray<WasmValueKind> Results) ResolveBlockType(
