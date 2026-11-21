@@ -51,6 +51,41 @@ internal partial class WasmModule_ValidateTests
     }
 
     [Test]
+    [Arguments((byte)4, "FC1000451A0B", 1)]
+    [Arguments((byte)0, "FC1000501A0B", 1)]
+    [Arguments((byte)4, "D06F4100FC0F001A0B", 2)]
+    [Arguments((byte)0, "D06F4200FC0F001A0B", 2)]
+    [Arguments((byte)4, "D06F4200FC0F00451A0B", 3)]
+    [Arguments((byte)0, "D06F4100FC0F00501A0B", 3)]
+    public async Task 要素数または増分の幅がテーブルのアドレス型と異なる_不一致の命令で検証に失敗する(
+        byte tableFlags,
+        string body,
+        int instructionIndex
+    )
+    {
+        // Arrange
+        var module = WasmModule.Decode(
+            HostLinkingModuleBinary.Create(
+                HostLinkingModuleBinary.Types(([], [])),
+                HostLinkingModuleBinary.Functions(0),
+                HostLinkingModuleBinary.Section(4, [1, 0x6F, tableFlags, 0]),
+                HostLinkingModuleBinary.Code(([], Convert.FromHexString(body)))
+            ),
+            WasmSpecVersion.Core3
+        );
+
+        // Act & Assert
+        var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.Message).StartsWith("type mismatch");
+            await Assert
+                .That(exception.Location?.ByteOffset)
+                .IsEqualTo(module.Functions[0].Instructions[instructionIndex].ByteOffset);
+        }
+    }
+
+    [Test]
     public async Task 到達不能でtable添字が有効_基本4命令のoperandにスタック多相性を適用する()
     {
         // Arrange

@@ -6,6 +6,65 @@ namespace WasmSharp.Tests;
 internal partial class WasmModule_InstantiateTests
 {
     [Test]
+    public async Task 定義とimportの64ビットテーブルにアクティブ要素を指定する_各開始位置から関数参照を取得できる()
+    {
+        // Arrange
+        var imported = WasmTable.Create(new WasmTableType(WasmValueKind.FuncRef, WasmValueKind.I64, 3));
+        var host = new WasmHostModule("env");
+        host.Define("imported", imported);
+        var bytes = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Types(([], [])),
+            HostLinkingModuleBinary.Imports(("env", "imported", 1, [0x70, 4, 3])),
+            HostLinkingModuleBinary.Functions(0),
+            HostLinkingModuleBinary.Section(4, [1, 0x70, 4, 3]),
+            HostLinkingModuleBinary.Exports(("f", 0, 0), ("defined", 1, 1)),
+            HostLinkingModuleBinary.Section(9, [2, 0, 0x42, 1, 0x0B, 1, 0, 2, 1, 0x42, 2, 0x0B, 0, 1, 0]),
+            HostLinkingModuleBinary.Code(([], [0x0B]))
+        );
+        var module = WasmModule.Decode(bytes, WasmSpecVersion.Core3).Validate();
+
+        // Act
+        var instance = module.Instantiate(new WasmExecutionContext(), [host]);
+
+        // Assert
+        var function = instance.GetFunction("f");
+        var defined = instance.GetTable("defined");
+        using (Assert.Multiple())
+        {
+            await Assert.That(imported.Get(1).AsFuncRef()).IsSameReferenceAs(function);
+            await Assert.That(imported.Get(2).AsFuncRef()).IsNull();
+            await Assert.That(defined.Get(1).AsFuncRef()).IsNull();
+            await Assert.That(defined.Get(2).AsFuncRef()).IsSameReferenceAs(function);
+        }
+    }
+
+    [Test]
+    [Arguments(1L << 32)]
+    [Arguments(-1L)]
+    public async Task アクティブ要素の64ビット開始位置が範囲を超える_インスタンス化時にtrapになる(long offset)
+    {
+        // Arrange
+        var bytes = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Section(4, [1, 0x70, 4, 3]),
+            HostLinkingModuleBinary.Section(
+                9,
+                [1, 4, 0x42, .. HostLinkingModuleBinary.Signed(offset), 0x0B, 1, 0xD0, 0x70, 0x0B]
+            )
+        );
+        var module = WasmModule.Decode(bytes, WasmSpecVersion.Core3).Validate();
+
+        // Act & Assert
+        var exception = await Assert
+            .That(() => module.Instantiate(new WasmExecutionContext(), []))
+            .ThrowsExactly<WasmTrapException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.Reason).IsEqualTo(WasmTrapReason.TableOutOfBounds);
+            await Assert.That(exception.Location!.Stage).IsEqualTo(WasmProcessingStage.Instantiate);
+        }
+    }
+
+    [Test]
     public async Task Core3の定義globalから要素の位置と関数参照を取得する_その添字から関数を呼び出せる()
     {
         // Arrange

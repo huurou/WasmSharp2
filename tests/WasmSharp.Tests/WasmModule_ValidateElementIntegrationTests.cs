@@ -6,6 +6,21 @@ namespace WasmSharp.Tests;
 internal partial class WasmModule_ValidateTests
 {
     [Test]
+    public async Task アクティブ要素で64ビットテーブルにi32の開始位置を指定する_検証時に型不一致を報告する()
+    {
+        // Arrange
+        var bytes = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Section(4, [1, 0x70, 4, 1]),
+            HostLinkingModuleBinary.Section(9, [1, 0, 0x41, 0, 0x0B, 0])
+        );
+        var module = WasmModule.Decode(bytes, WasmSpecVersion.Core3);
+
+        // Act & Assert
+        var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
+        await Assert.That(exception!.Message).StartsWith("type mismatch");
+    }
+
+    [Test]
     [Arguments(WasmSpecVersion.Core3, "23010B", "D0700B", "type mismatch")] // 添字にfuncrefを使う。
     [Arguments(WasmSpecVersion.Core3, "41000B", "23000B", "type mismatch")] // 要素にi32を使う。
     [Arguments(WasmSpecVersion.Core3, "41000B", "23020B", "constant expression required")] // 可変のfuncrefを読む。

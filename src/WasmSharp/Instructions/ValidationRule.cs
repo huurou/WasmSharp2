@@ -201,12 +201,12 @@ internal enum ValidationRule
     TableCopy,
 
     /// <summary>
-    /// テーブル添字と参照型の初期値、i32の増分を検証し、結果型i32を積む
+    /// テーブル添字と参照型の初期値、アドレス型の増分を検証し、同じアドレス型を積む
     /// </summary>
     TableGrow,
 
     /// <summary>
-    /// テーブル添字を検証し、要素数の型i32を積む
+    /// テーブル添字を検証し、テーブルのアドレス型を積む
     /// </summary>
     TableSize,
 

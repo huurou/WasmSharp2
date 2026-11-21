@@ -165,14 +165,24 @@ public sealed class WasmTable
     /// <exception cref="OutOfMemoryException">追加領域を割り当てられない場合 要素数と内容は変更しない</exception>
     public bool TryGrow(uint delta, WasmValue initialValue, out uint previousCount)
     {
+        return TryGrow((ulong)delta, initialValue, out previousCount);
+    }
+
+    /// <inheritdoc cref="TryGrow(uint, WasmValue, out uint)"/>
+    internal bool TryGrow(ulong delta, WasmValue initialValue, out uint previousCount)
+    {
         previousCount = Count;
         if (initialValue.Kind != ElementType)
         {
             throw new ArgumentException("tableの要素型と初期値の型が一致しません。", nameof(initialValue));
         }
 
-        var nextCount = (ulong)previousCount + delta;
-        if (nextCount > Type.MaximumElements || ExceedsStorageLimit(nextCount))
+        if (ExceedsStorageLimit(delta, previousCount))
+        {
+            return false;
+        }
+        var nextCount = previousCount + delta;
+        if (nextCount > Type.MaximumElements)
         {
             return false;
         }
@@ -191,13 +201,15 @@ public sealed class WasmTable
     }
 
     /// <summary>
-    /// 要素数が配列の保持上限を超えるかを返す
+    /// 要素の追加後に配列の保持上限を超えるかを返す
     /// </summary>
-    /// <param name="count">割当前に判定する要素数</param>
-    /// <returns>配列の保持上限を超える場合はtrue</returns>
-    internal static bool ExceedsStorageLimit(ulong count)
+    /// <param name="additionalCount">これから確保する要素数</param>
+    /// <param name="currentCount">現在の要素数 初期割り当てでは0</param>
+    /// <returns>追加の要素を保持できない場合はtrue</returns>
+    internal static bool ExceedsStorageLimit(ulong additionalCount, uint currentCount = 0)
     {
-        return count > (ulong)Array.MaxLength;
+        // 加算前に残り容量と比較し、64ビットの増分が折り返すのを防ぐ。
+        return additionalCount > (ulong)Array.MaxLength - currentCount;
     }
 
     /// <summary>
@@ -236,14 +248,22 @@ public sealed class WasmTable
     }
 
     /// <summary>
+    /// 加算のオーバーフローを避けて、指定範囲が現在のテーブルに収まるかを返す
+    /// </summary>
+    private bool ContainsRange(ulong offset, ulong length)
+    {
+        return offset <= Count && length <= Count - offset;
+    }
+
+    /// <summary>
     /// 指定位置へ参照列を転送し、全範囲が収まるかを返す
     /// </summary>
     /// <param name="destination">転送先の先頭要素位置</param>
     /// <param name="values">要素型と一致する検証済みの参照列</param>
     /// <returns>転送できた場合はtrue 範囲外の場合は内容を変更せずfalse</returns>
-    internal bool TryWrite(uint destination, ReadOnlySpan<WasmValue> values)
+    internal bool TryWrite(ulong destination, ReadOnlySpan<WasmValue> values)
     {
-        if ((ulong)destination + (ulong)values.Length > Count)
+        if (!ContainsRange(destination, (ulong)values.Length))
         {
             return false;
         }
@@ -260,9 +280,9 @@ public sealed class WasmTable
     /// <param name="sourceOffset">コピー元の先頭要素位置</param>
     /// <param name="length">コピーする要素数</param>
     /// <returns>コピーできた場合はtrue 範囲外の場合は内容を変更せずfalse</returns>
-    internal bool TryCopy(WasmTable source, uint destination, uint sourceOffset, uint length)
+    internal bool TryCopy(WasmTable source, ulong destination, ulong sourceOffset, ulong length)
     {
-        if ((ulong)destination + length > Count || (ulong)sourceOffset + length > source.Count)
+        if (!ContainsRange(destination, length) || !source.ContainsRange(sourceOffset, length))
         {
             return false;
         }
@@ -278,9 +298,9 @@ public sealed class WasmTable
     /// <param name="value">要素型と一致する検証済みの参照</param>
     /// <param name="length">書き込む要素数</param>
     /// <returns>書き込めた場合はtrue 範囲外の場合は内容を変更せずfalse</returns>
-    internal bool TryFill(uint destination, WasmValue value, uint length)
+    internal bool TryFill(ulong destination, WasmValue value, ulong length)
     {
-        if ((ulong)destination + length > Count)
+        if (!ContainsRange(destination, length))
         {
             return false;
         }
