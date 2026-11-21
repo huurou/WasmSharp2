@@ -14,10 +14,11 @@ internal static class ImportInspector
     /// </summary>
     /// <param name="stream">呼び出し元で読み取り可能性を確認した入力ストリーム</param>
     /// <param name="maxLength">保持できる入力の最大バイト数</param>
+    /// <param name="specVersion">importとsectionの構文を解釈する仕様の版</param>
     /// <returns>完全取得したimport一覧と構文・検証の未確認範囲</returns>
-    internal static WasmImportInspection Inspect(Stream stream, int maxLength)
+    internal static WasmImportInspection Inspect(Stream stream, int maxLength, WasmSpecVersion specVersion)
     {
-        return Inspect(ModuleBinaryFormat.ReadInput(stream, maxLength, InputLimitFailure));
+        return Inspect(ModuleBinaryFormat.ReadInput(stream, maxLength, InputLimitFailure), specVersion);
     }
 
     /// <summary>
@@ -55,13 +56,20 @@ internal static class ImportInspector
     /// import情報を調査し、構文・未対応・保持上限の診断を元位置付きの取得失敗へ変換する
     /// </summary>
     /// <param name="bytes">入力バイト列</param>
+    /// <param name="specVersion">importとsectionの構文を解釈する仕様の版</param>
+    /// <param name="maxCollectionLength">読み取り中に保持できるコレクションの最大要素数</param>
     /// <returns>全走査が成功した場合だけ返すimport一覧と未確認範囲</returns>
-    internal static WasmImportInspection Inspect(ReadOnlySpan<byte> bytes)
+    internal static WasmImportInspection Inspect(
+        ReadOnlySpan<byte> bytes,
+        WasmSpecVersion specVersion,
+        int? maxCollectionLength = null
+    )
     {
         var ranges = ImmutableArray.CreateBuilder<WasmUnverifiedRange>();
         try
         {
-            return InspectCore(bytes, ranges);
+            var reader = new ModuleBinaryReader(bytes, specVersion, maxCollectionLength: maxCollectionLength);
+            return InspectCore(reader, ranges);
         }
         catch (ModuleReadBoundaryException exception)
         {
@@ -107,15 +115,14 @@ internal static class ImportInspector
     /// <summary>
     /// 全sectionの外枠とtype/importの内容を確認し、要求型を解決した宣言順の一覧を構築する
     /// </summary>
-    /// <param name="bytes">入力バイト列</param>
+    /// <param name="reader">入力の先頭にある、仕様の版と保持上限を設定した読み取り状態</param>
     /// <param name="ranges">読み飛ばしたpayloadを蓄積し、成功時に全体の検証未実施範囲を追加する先</param>
     /// <returns>入力から独立して所有するimport一覧と未確認範囲</returns>
     private static WasmImportInspection InspectCore(
-        ReadOnlySpan<byte> bytes,
+        ModuleBinaryReader reader,
         ImmutableArray<WasmUnverifiedRange>.Builder ranges
     )
     {
-        var reader = new ModuleBinaryReader(bytes, WasmSpecVersion.Core2);
         ModuleBinaryFormat.ReadHeader(ref reader);
         List<WasmFunctionType> types = [];
         var imports = ImmutableArray.CreateBuilder<WasmImportInfo>();
@@ -154,7 +161,7 @@ internal static class ImportInspector
                                     WasmImportInspectionReason.UnresolvedType,
                                     null,
                                     section.Location(function.ByteOffset),
-                                    FailureRanges(ranges, function.ByteOffset, bytes.Length),
+                                    FailureRanges(ranges, function.ByteOffset, reader.InputEnd),
                                     null
                                 ),
                                 GlobalImport global => new WasmImportInfo.Global(
@@ -163,9 +170,9 @@ internal static class ImportInspector
                                     global.Type
                                 ),
                                 MemoryImport memory => new WasmImportInfo.Memory(
+                                    memory.Definition.Type,
                                     memory.ModuleName,
-                                    memory.Name,
-                                    memory.Type.Limits
+                                    memory.Name
                                 ),
                                 TableImport table => new WasmImportInfo.Table(
                                     table.ModuleName,
@@ -185,7 +192,9 @@ internal static class ImportInspector
             }
             ModuleBinaryFormat.RequireEnd(ref section);
         }
-        ranges.Add(new WasmUnverifiedRange(WasmProcessingStage.Validate, 0, bytes.Length, "入力全体の検証が未実施です。"));
+        ranges.Add(
+            new WasmUnverifiedRange(WasmProcessingStage.Validate, 0, reader.InputEnd, "入力全体の検証が未実施です。")
+        );
         return new WasmImportInspection(imports.ToImmutable(), ranges.ToImmutable());
     }
 

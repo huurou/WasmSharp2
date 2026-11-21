@@ -105,10 +105,13 @@ internal partial class RunnerCli_RunTests
     }
 
     [Test]
-    [Arguments(WasmSpecVersion.Core2)]
-    [Arguments(WasmSpecVersion.Core3)]
+    [Arguments(WasmSpecVersion.Core2, CaseOutcome.Failed, CaseStage.Decode, "integer too large")]
+    [Arguments(WasmSpecVersion.Core3, CaseOutcome.Passed, CaseStage.Instantiate, "incompatible import type")]
     public async Task 否定assertionを採用版の診断で照合する_段階と分類と診断の先頭が一致したケースだけ成立する(
-        WasmSpecVersion version
+        WasmSpecVersion version,
+        CaseOutcome importOutcome,
+        CaseStage importStage,
+        string importDiagnostic
     )
     {
         // Arrange
@@ -120,10 +123,15 @@ internal partial class RunnerCli_RunTests
             {"type":"assert_trap","line":2,"action":{"type":"invoke","field":"trap","args":[]},"text":"unreachable"{{{resultTypes}}}},
             {"type":"assert_trap","line":3,"action":{"type":"invoke","field":"trap","args":[]},"text":"integer overflow"{{{resultTypes}}}},
             {"type":"assert_exhaustion","line":4,"action":{"type":"invoke","field":"trap","args":[]},"text":"unreachable"{{{resultTypes}}}},
-            {"type":"assert_invalid","line":5,"filename":"a.1.wasm","module_type":"binary","text":"magic header not detected"}
+            {"type":"assert_invalid","line":5,"filename":"a.1.wasm","module_type":"binary","text":"magic header not detected"},
+            {"type":"assert_unlinkable","line":6,"filename":"a.2.wasm","module_type":"binary","text":"incompatible import type"}
             """,
             FailureActions,
-            [0xff, 0x61, 0x73, 0x6d, 1, 0, 0, 0]
+            [0xff, 0x61, 0x73, 0x6d, 1, 0, 0, 0],
+            // 32ビットのspectest.memoryを、最小0ページの64ビットメモリとして要求する。
+            ScriptExecutionFixture.Binary(
+                (2, [1, .. ScriptExecutionFixture.Name("spectest"), .. ScriptExecutionFixture.Name("memory"), 2, 4, 0])
+            )
         );
 
         // Act
@@ -142,6 +150,9 @@ internal partial class RunnerCli_RunTests
             await Assert.That(cases[4].Outcome).IsEqualTo(CaseOutcome.Failed);
             await Assert.That(cases[4].LastStage).IsEqualTo(CaseStage.Decode);
             await Assert.That(cases[4].Diagnostics.Single().Message).IsEqualTo("magic header not detected");
+            await Assert.That(cases[5].Outcome).IsEqualTo(importOutcome);
+            await Assert.That(cases[5].LastStage).IsEqualTo(importStage);
+            await Assert.That(cases[5].Diagnostics.Single().Message).StartsWith(importDiagnostic);
         }
     }
 

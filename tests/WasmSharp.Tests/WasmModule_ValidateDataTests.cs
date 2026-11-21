@@ -24,6 +24,32 @@ internal partial class WasmModule_ValidateTests
     }
 
     [Test]
+    [Arguments((byte)0, (byte)0x42)]
+    [Arguments((byte)1, (byte)0x41)]
+    public async Task 混在するメモリのアクティブデータが異なる型のオフセットを使う_検証で拒否する(
+        byte memoryIndex,
+        byte opcode
+    )
+    {
+        // Arrange
+        var bytes = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Section(5, [2, 0, 1, 4, 1]),
+            HostLinkingModuleBinary.Section(11, [1, 2, memoryIndex, opcode, 0, 0x0B, 0])
+        );
+        var module = WasmModule.Decode(bytes, WasmSpecVersion.Core3);
+
+        // Act & Assert
+        var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.Message).StartsWith("type mismatch");
+            await Assert
+                .That(exception.Location)
+                .IsEqualTo(new WasmFailureLocation(WasmProcessingStage.Validate, bytes.Length - 2, null, 11));
+        }
+    }
+
+    [Test]
     [Arguments(false, "", "", "010041000B00", "unknown memory 0", 5, "データセグメント")]
     [Arguments(true, "", "", "01020141000B00", "unknown memory 1", 6, "データセグメント")]
     [Arguments(true, "", "", "010042000B00", "type mismatch", 2, null)]

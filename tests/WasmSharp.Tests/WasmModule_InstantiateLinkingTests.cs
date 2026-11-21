@@ -6,6 +6,27 @@ namespace WasmSharp.Tests;
 internal partial class WasmModule_InstantiateTests
 {
     [Test]
+    public async Task 有効な64ビットメモリの初期領域がページ表の上限を超える_インスタンス化時に定義の位置を返す()
+    {
+        // Arrange
+        var bytes = HostLinkingModuleBinary.Create(HostLinkingModuleBinary.Section(5, [1, 4, 0x80, 0x80, 0x80, 0x80, 0x10]));
+        var module = WasmModule.Decode(bytes, WasmSpecVersion.Core3).Validate();
+
+        // Act & Assert
+        var exception = await Assert
+            .That(() => module.Instantiate(new WasmExecutionContext(), []))
+            .ThrowsExactly<WasmImplementationLimitException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.Reason).IsEqualTo(WasmImplementationLimitReason.CollectionSize);
+            await Assert.That(exception.Limit).IsEqualTo(Array.MaxLength);
+            await Assert
+                .That(exception.Location)
+                .IsEqualTo(new WasmFailureLocation(WasmProcessingStage.Instantiate, 11, null, 5));
+        }
+    }
+
+    [Test]
     [Arguments(false)]
     [Arguments(true)]
     public async Task 巨大table定義とstartを持つ_全リンク成功後だけ保持上限を返してstartを実行しない(bool provideGlobal)

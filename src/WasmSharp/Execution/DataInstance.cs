@@ -27,7 +27,7 @@ internal sealed class DataInstance(DataDefinition definition)
     /// <param name="source">データセグメント内のコピー元の先頭バイト位置</param>
     /// <param name="length">コピーするバイト数</param>
     /// <returns>転送に成功した場合はtrue いずれかの範囲が無効な場合はメモリを変更せずfalse</returns>
-    internal bool TryInitialize(WasmMemory memory, uint destination, uint source, uint length)
+    internal bool TryInitialize(WasmMemory memory, ulong destination, uint source, uint length)
     {
         // 全範囲が配列に収まることを確かめてから、Span用のintへ変換する。
         if ((ulong)source + length > (ulong)_bytes.Length)

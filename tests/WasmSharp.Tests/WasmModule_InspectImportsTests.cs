@@ -6,6 +6,91 @@ namespace WasmSharp.Tests;
 internal class WasmModule_InspectImportsTests
 {
     [Test]
+    [Arguments(false)]
+    [Arguments(true)]
+    public async Task 未定義の仕様版で調査する_引数の範囲外として拒否する(bool useStream)
+    {
+        // Arrange
+        var bytes = HostLinkingModuleBinary.Create();
+        using var stream = new MemoryStream(bytes);
+        var version = (WasmSpecVersion)99;
+
+        // Act & Assert
+        var exception = await Assert
+            .That(() => useStream ? WasmModule.InspectImports(stream, version) : WasmModule.InspectImports(bytes, version))
+            .ThrowsExactly<ArgumentOutOfRangeException>();
+        await Assert.That(exception!.ParamName).IsEqualTo("specVersion");
+    }
+
+    [Test]
+    [Arguments(false, "0401")]
+    [Arguments(true, "0401")]
+    [Arguments(false, "008080808010")]
+    [Arguments(true, "008080808010")]
+    public async Task Core2で64ビット宣言またはu32を超えるページ数を調査する_従来の診断を返す(bool useStream, string limits)
+    {
+        // Arrange
+        var bytes = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Imports(("env", "m", 2, Convert.FromHexString(limits)))
+        );
+        using var stream = new MemoryStream(bytes);
+
+        // Act & Assert
+        var exception = await Assert
+            .That(() =>
+                useStream
+                    ? WasmModule.InspectImports(stream, WasmSpecVersion.Core2)
+                    : WasmModule.InspectImports(bytes, WasmSpecVersion.Core2)
+            )
+            .ThrowsExactly<WasmImportInspectionException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.InnerException).IsTypeOf<WasmDecodeException>();
+            await Assert.That(exception.Message).StartsWith("integer too large");
+        }
+    }
+
+    [Test]
+    [Arguments(false, false)]
+    [Arguments(false, true)]
+    [Arguments(true, false)]
+    [Arguments(true, true)]
+    public async Task Core3で幅の異なるメモリを調査する_版を省略した場合も宣言順に要求型を取得できる(
+        bool useStream,
+        bool specifyVersion
+    )
+    {
+        // Arrange
+        var bytes = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Imports(
+                ("env", "small", 2, [0x01, 1, 3]),
+                ("env", "wide", 2, [0x05, 0x80, 0x80, 0x80, 0x80, 0x10, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x40]),
+                ("env", "open", 2, [0x04, 2])
+            )
+        );
+        using var stream = new MemoryStream(bytes);
+
+        // Act
+        var result = (useStream, specifyVersion) switch
+        {
+            (true, true) => WasmModule.InspectImports(stream, WasmSpecVersion.Core3),
+            (true, false) => WasmModule.InspectImports(stream),
+            (false, true) => WasmModule.InspectImports(bytes, WasmSpecVersion.Core3),
+            (false, false) => WasmModule.InspectImports(bytes),
+        };
+
+        // Assert
+        var declarations = result.Imports.Cast<WasmImportInfo.Memory>().ToArray();
+        using (Assert.Multiple())
+        {
+            await Assert.That(declarations.Select(x => x.Name).SequenceEqual(["small", "wide", "open"])).IsTrue();
+            await Assert.That(declarations[0].Type).IsEqualTo(new WasmMemoryType(WasmValueKind.I32, 1, 3));
+            await Assert.That(declarations[1].Type).IsEqualTo(new WasmMemoryType(WasmValueKind.I64, 1UL << 32, 1UL << 48));
+            await Assert.That(declarations[2].Type).IsEqualTo(new WasmMemoryType(WasmValueKind.I64, 2));
+        }
+    }
+
+    [Test]
     [Arguments((byte)9)]
     [Arguments((byte)12)]
     [Arguments((byte)11)]
@@ -34,22 +119,28 @@ internal class WasmModule_InspectImportsTests
     [Arguments("006173", 3L, null)]
     [Arguments("0062736D01000000", 1L, null)]
     [Arguments("0061736D02000000", 4L, null)]
-    [Arguments("0061736D010000000D00", 8L, (byte)13)]
+    [Arguments("0061736D010000000D00", 8L, (byte)13, WasmSpecVersion.Core2)]
+    [Arguments("0061736D010000000E00", 8L, (byte)14)]
     [Arguments("0061736D01000000000201FF", 11L, (byte)0)]
     [Arguments("0061736D0100000001020161", 11L, (byte)1)]
     [Arguments("0061736D0100000002050101FF0000", 12L, (byte)2)]
     [Arguments("0061736D010000000208020000037F0001FF", 17L, (byte)2)]
     [Arguments("0061736D01000000020100020100", 11L, (byte)2)]
     [Arguments("0061736D01000000010A00", 9L, (byte)1)]
-    public async Task 必要な構文が破損_両入力で元位置とDecode診断を保持する(string hex, long offset, byte? sectionId)
+    public async Task 必要な構文が破損_両入力で元位置とDecode診断を保持する(
+        string hex,
+        long offset,
+        byte? sectionId,
+        WasmSpecVersion version = WasmSpecVersion.Core3
+    )
     {
         // Arrange
         var bytes = Convert.FromHexString(hex);
         using var stream = new ChunkedReadStream(new MemoryStream(bytes));
         Func<WasmImportInspection>[] inspectors =
         [
-            () => WasmModule.InspectImports(bytes),
-            () => WasmModule.InspectImports(stream),
+            () => WasmModule.InspectImports(bytes, version),
+            () => WasmModule.InspectImports(stream, version),
         ];
 
         // Act & Assert

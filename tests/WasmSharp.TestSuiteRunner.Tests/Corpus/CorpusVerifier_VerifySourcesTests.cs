@@ -90,7 +90,7 @@ internal class CorpusVerifier_VerifySourcesTests
         // Arrange
         using var fixture = CorpusFixture.Create();
         var restricted = Directory.CreateDirectory(Path.Combine(fixture.InputRoot, "restricted"));
-        using var restriction = new DirectoryReadRestriction(restricted.FullName);
+        using var restriction = new ReadAccessRestriction(restricted);
 
         // Act
         var diagnostics = CorpusVerifier.VerifySources(fixture.Manifest.Profile.Inputs, fixture.InputRoot);

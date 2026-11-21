@@ -46,6 +46,32 @@ internal partial class WasmModule_InstantiateTests
     }
 
     [Test]
+    public async Task 混在するメモリのアクティブデータを各アドレス型で指定する_それぞれのメモリから配置した値を読み出せる()
+    {
+        // Arrange
+        var bytes = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Section(5, [2, 0, 1, 4, 1]),
+            HostLinkingModuleBinary.Exports(("narrow", 2, 0), ("wide", 2, 1)),
+            HostLinkingModuleBinary.Section(11, [2, 0, 0x41, 7, 0x0B, 1, 0xA1, 2, 1, 0x42, 7, 0x0B, 1, 0xB2])
+        );
+        var module = WasmModule.Decode(bytes, WasmSpecVersion.Core3).Validate();
+
+        // Act
+        var instance = module.Instantiate(new WasmExecutionContext(), []);
+        var narrow = new byte[1];
+        var wide = new byte[1];
+        instance.GetMemory("narrow").Read(7, narrow);
+        instance.GetMemory("wide").Read(7, wide);
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(narrow[0]).IsEqualTo((byte)0xA1);
+            await Assert.That(wide[0]).IsEqualTo((byte)0xB2);
+        }
+    }
+
+    [Test]
     public async Task Core3で指定したメモリの範囲をデータが超える_インスタンス化時にtrapになる()
     {
         // Arrange
@@ -64,6 +90,58 @@ internal partial class WasmModule_InstantiateTests
             await Assert.That(exception!.Reason).IsEqualTo(WasmTrapReason.MemoryOutOfBounds);
             await Assert.That(exception.Location!.Stage).IsEqualTo(WasmProcessingStage.Instantiate);
             await Assert.That(exception.Message).StartsWith("out of bounds memory access");
+        }
+    }
+
+    [Test]
+    [Arguments(65535L, false)]
+    [Arguments(65537L, true)]
+    [Arguments(1L << 32, false)]
+    public async Task Memory64の末尾への空の配置に続いて範囲外のアクティブデータを指定する_後続の配置でtrapになり内容を保つ(
+        long offset,
+        bool empty
+    )
+    {
+        // Arrange
+        var memory = WasmMemory.Create(new WasmMemoryType(WasmValueKind.I64, 1));
+        var expected = Enumerable.Repeat((byte)0xAB, (int)memory.ByteLength).ToArray();
+        memory.Write(0, expected);
+        var actual = new byte[expected.Length];
+        var host = new WasmHostModule("env");
+        host.Define("memory", memory);
+        byte[] contents = empty ? [] : [0x12, 0x34];
+        byte[] invalidSegment =
+        [
+            0,
+            0x42,
+            .. HostLinkingModuleBinary.Signed(offset),
+            0x0B,
+            (byte)contents.Length,
+            .. contents,
+        ];
+        var bytes = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Imports(("env", "memory", 2, [4, 1])),
+            HostLinkingModuleBinary.Section(
+                11,
+                [2, 0, 0x42, .. HostLinkingModuleBinary.Signed(65536), 0x0B, 0, .. invalidSegment]
+            )
+        );
+        var module = WasmModule.Decode(bytes, WasmSpecVersion.Core3).Validate();
+
+        // Act & Assert
+        var exception = await Assert
+            .That(() => module.Instantiate(new WasmExecutionContext(), [host]))
+            .ThrowsExactly<WasmTrapException>();
+        memory.Read(0, actual);
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.Reason).IsEqualTo(WasmTrapReason.MemoryOutOfBounds);
+            await Assert
+                .That(exception.Location)
+                .IsEqualTo(
+                    new WasmFailureLocation(WasmProcessingStage.Instantiate, bytes.Length - invalidSegment.Length, null, 11)
+                );
+            await Assert.That(actual.AsSpan().CommonPrefixLength(expected)).IsEqualTo(expected.Length);
         }
     }
 

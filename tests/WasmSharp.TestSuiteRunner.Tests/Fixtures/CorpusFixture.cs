@@ -108,7 +108,7 @@ internal sealed class CorpusFixture : IDisposable
             File.Delete(GetPath(artifact.Path));
         }
         UpdateInput(A, x => x with { Artifacts = [] });
-        var json = "{\"source_filename\":\"a.wast\",\"commands\":[" + commands + "]}";
+        var json = $$"""{"source_filename":"a.wast","commands":[{{commands}}]}""";
         WriteArtifact(A, "modules/a.json", Encoding.UTF8.GetBytes(json));
         for (var i = 0; i < modules.Length; i++)
         {

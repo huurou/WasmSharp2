@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization.Metadata;
 using WasmSharp.Benchmarks.Cases;
 using WasmSharp.Benchmarks.Results;
@@ -769,6 +770,35 @@ internal class RunComparison_CompareTests
                     )
                     .IsTrue();
             }
+        }
+    }
+
+    [Test]
+    public async Task 比較基準の許容増加幅が有限値を超える_時間の比較を判定不能にする()
+    {
+        // Arrange
+        using var fixture = new ComparisonFixture();
+        var request = fixture.Save();
+        var policy = JsonNode.Parse(File.ReadAllText(request.PolicyPath))!;
+        policy["cases"]![0]!["time"]!["allowed_increase"]!["difference"] = JsonNode.Parse("1e400");
+        File.WriteAllText(request.PolicyPath, policy.ToJsonString());
+        request = request with
+        {
+            PolicySha256 = Convert.ToHexStringLower(SHA256.HashData(File.ReadAllBytes(request.PolicyPath))),
+        };
+
+        // Act
+        var report = _comparison.Compare(request);
+        var result = report.Cases.Single();
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(result.Time.Decision).IsEqualTo(ComparisonDecision.Indeterminate);
+            await Assert
+                .That(result.Time.Reasons.Single(x => x.Kind == ComparisonReasonKind.MissingPolicy).Description)
+                .Contains("有限");
+            await Assert.That(report.IsAccepted).IsFalse();
         }
     }
 

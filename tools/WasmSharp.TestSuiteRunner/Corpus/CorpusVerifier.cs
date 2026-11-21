@@ -587,9 +587,12 @@ internal static class CorpusVerifier
     /// <returns>最上位から順に並べた親ディレクトリの相対path 素材自身は含めない</returns>
     private static IEnumerable<string> GetParentPaths(string path)
     {
-        for (var i = path.IndexOf('/'); i != -1; i = path.IndexOf('/', i + 1))
+        for (var i = 0; i < path.Length; i++)
         {
-            yield return path[..i];
+            if (path[i] == '/')
+            {
+                yield return path[..i];
+            }
         }
     }
 

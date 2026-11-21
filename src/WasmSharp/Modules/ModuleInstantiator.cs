@@ -48,19 +48,20 @@ internal static class ModuleInstantiator
             }
             catch (WasmImplementationLimitException exception)
             {
-                throw new WasmImplementationLimitException(
-                    exception.Message,
-                    exception.Reason,
-                    exception.Limit,
-                    new WasmFailureLocation(WasmProcessingStage.Instantiate, table.ByteOffset, null, 4),
-                    exception
-                );
+                throw ResourceLimit(exception, table.ByteOffset, 4);
             }
         }
         var memories = CreateIndex(linked.OfType<MemoryExternalValue>().Select(x => x.Value), module.Memories.Length);
         foreach (var memory in module.Memories)
         {
-            memories.Add(new WasmMemory(memory.Limits));
+            try
+            {
+                memories.Add(WasmMemory.Create(memory.Type));
+            }
+            catch (WasmImplementationLimitException exception)
+            {
+                throw ResourceLimit(exception, memory.ByteOffset, 5);
+            }
         }
         var instance = new WasmInstance(
             module,
@@ -80,6 +81,24 @@ internal static class ModuleInstantiator
     }
 
     /// <summary>
+    /// リソースの保持上限による失敗に定義の位置を付ける
+    /// </summary>
+    private static WasmImplementationLimitException ResourceLimit(
+        WasmImplementationLimitException exception,
+        long byteOffset,
+        byte sectionId
+    )
+    {
+        return new WasmImplementationLimitException(
+            exception.Message,
+            exception.Reason,
+            exception.Limit,
+            new WasmFailureLocation(WasmProcessingStage.Instantiate, byteOffset, null, sectionId),
+            exception
+        );
+    }
+
+    /// <summary>
     /// 要素を宣言順に処理し、アクティブは転送後、宣言的要素は転送せず破棄する
     /// </summary>
     /// <param name="instance">関数とリソースの構築を完了したinstance</param>
@@ -92,7 +111,7 @@ internal static class ModuleInstantiator
             var element = instance.ElementSegments[index];
             if (definition.ActiveTarget is { } target)
             {
-                var offset = EvaluateSegmentOffset(instance, target.OffsetExpression);
+                var offset = unchecked((uint)EvaluateSegmentOffset(instance, target.OffsetExpression).AsI32());
                 if (!element.TryInitialize(instance.Tables[(int)target.TableIndex], offset, 0, element.Length))
                 {
                     ExecutionBoundary.ThrowIfFailed(
@@ -125,7 +144,7 @@ internal static class ModuleInstantiator
                 continue;
             }
 
-            var offset = EvaluateSegmentOffset(instance, target.OffsetExpression);
+            var offset = EvaluateSegmentOffset(instance, target.OffsetExpression).AsUnsignedInteger();
             var data = instance.DataSegments[index];
             if (!data.TryInitialize(instance.Memories[(int)target.MemoryIndex], offset, 0, data.Length))
             {
@@ -139,17 +158,16 @@ internal static class ModuleInstantiator
     }
 
     /// <summary>
-    /// アクティブセグメントのオフセット式を評価し、結果のi32を符号なしの位置として読み取る
+    /// アクティブセグメントのオフセット式を評価し、検証済みの型の値を返す
     /// </summary>
-    private static uint EvaluateSegmentOffset(WasmInstance instance, ImmutableArray<DecodedInstruction> expression)
+    private static WasmValue EvaluateSegmentOffset(WasmInstance instance, ImmutableArray<DecodedInstruction> expression)
     {
-        var offset = ConstantInitializer.Evaluate(
+        return ConstantInitializer.Evaluate(
             expression,
             instance.Globals.AsSpan(),
             instance.Functions.AsSpan(),
             instance.Module.SpecVersion
         );
-        return unchecked((uint)offset.AsI32());
     }
 
     /// <summary>
@@ -174,7 +192,8 @@ internal static class ModuleInstantiator
     /// <param name="imports">照合対象の提供登録</param>
     /// <returns>moduleのimport宣言順に並んだ外部実体</returns>
     /// <remarks>
-    /// 提供登録の対応表を固定して照合する。memoryとtableは現在サイズと宣言上限で型を照合する。
+    /// 提供登録の対応表を固定して照合する。メモリはアドレス型、テーブルは要素型が一致することを確認し、
+    /// どちらも現在のサイズと宣言された上限をimportの要求と照合する。
     /// 全宣言の名前を宣言順に解決した後、末尾から種類・型を照合する。
     /// リソースの新規生成、内容の変更、ホスト処理の呼び出しは行わない
     /// </remarks>
@@ -234,13 +253,21 @@ internal static class ModuleInstantiator
                 .Parameters.SequenceEqual(provided.Value.Type.Parameters)
                 && module.Types[(int)required.TypeIndex].Results.SequenceEqual(provided.Value.Type.Results),
             (GlobalImport required, GlobalExternalValue provided) => required.Type == provided.Value.Type,
-            (MemoryImport required, MemoryExternalValue provided) => MatchesLimits(
-                required.Type.Limits,
-                provided.Value.PageCount,
-                provided.Value.MaximumPages
-            ),
+            (MemoryImport { Definition.Type: var type }, MemoryExternalValue provided) => type.AddressType
+                == provided.Value.Type.AddressType
+                && MatchesLimits(
+                    type.MinimumPages,
+                    type.MaximumPages,
+                    provided.Value.PageCount,
+                    provided.Value.Type.MaximumPages
+                ),
             (TableImport required, TableExternalValue provided) => required.Type.ElementKind == provided.Value.ElementType
-                && MatchesLimits(required.Type.Limits, provided.Value.Count, provided.Value.MaximumElements),
+                && MatchesLimits(
+                    required.Type.Limits.Minimum,
+                    required.Type.Limits.Maximum,
+                    provided.Value.Count,
+                    provided.Value.MaximumElements
+                ),
             _ => throw LinkFailure(
                 import,
                 ordinal,
@@ -281,14 +308,14 @@ internal static class ModuleInstantiator
     /// </summary>
     /// <param name="module">関数の型indexを解決するmodule</param>
     /// <param name="import">型を表示するimport宣言</param>
-    /// <returns>要求する関数型、global型、またはリソースのlimits</returns>
+    /// <returns>importが要求する型の診断表記 32ビットメモリには従来のlimitsを、64ビットメモリにはアドレス型とページ数を表示する</returns>
     private static string DescribeImport(WasmModule module, ModuleImport import)
     {
         return import switch
         {
             FunctionImport function => DescribeFunction(module.Types[(int)function.TypeIndex]),
             GlobalImport global => global.Type.ToString(),
-            MemoryImport memory => memory.Type.Limits.ToString(),
+            MemoryImport memory => DescribeMemory(memory.Definition.Type),
             TableImport table => $"{table.Type.ElementKind} {table.Type.Limits}",
             _ => throw new InvalidOperationException("importの種類が不明です。"),
         };
@@ -305,11 +332,21 @@ internal static class ModuleInstantiator
         {
             FunctionExternalValue function => DescribeFunction(function.Value.Type),
             GlobalExternalValue global => global.Value.Type.ToString(),
-            MemoryExternalValue memory => new WasmLimits(memory.Value.PageCount, memory.Value.MaximumPages).ToString(),
+            MemoryExternalValue memory => DescribeMemory(memory.Value.Type with { MinimumPages = memory.Value.PageCount }),
             TableExternalValue table =>
                 $"{table.Value.ElementType} {new WasmLimits(table.Value.Count, table.Value.MaximumElements)}",
             _ => throw new InvalidOperationException("外部要素の種類が不明です。"),
         };
+    }
+
+    /// <summary>
+    /// メモリ型を診断に表示し、32ビットメモリでは従来のlimits表記を使う
+    /// </summary>
+    /// <param name="type">要求または提供されたメモリ型</param>
+    /// <returns>アドレス型に対応するページ数の上下限を含む文字列</returns>
+    private static string DescribeMemory(WasmMemoryType type)
+    {
+        return type.Has32BitLimits ? type.Get32BitLimits().ToString() : type.ToString();
     }
 
     /// <summary>
@@ -325,14 +362,14 @@ internal static class ModuleInstantiator
     /// <summary>
     /// 提供リソースの現在サイズと宣言上限がimportのlimitsを満たすか判定する
     /// </summary>
-    /// <param name="required">importが要求するlimits</param>
+    /// <param name="requiredMinimum">importが要求する最小値</param>
+    /// <param name="requiredMaximum">importが要求する最大値 指定がなければnull</param>
     /// <param name="current">提供リソースの現在サイズ</param>
     /// <param name="maximum">提供リソースの宣言上限 指定がなければnull</param>
     /// <returns>現在サイズが要求最小値以上で、要求上限があれば宣言上限も存在してその値以下である場合はtrue</returns>
-    private static bool MatchesLimits(WasmLimits required, uint current, uint? maximum)
+    private static bool MatchesLimits(ulong requiredMinimum, ulong? requiredMaximum, ulong current, ulong? maximum)
     {
-        return current >= required.Minimum
-            && (required.Maximum is null || maximum is { } actual && actual <= required.Maximum);
+        return current >= requiredMinimum && (requiredMaximum is null || maximum <= requiredMaximum);
     }
 
     /// <summary>

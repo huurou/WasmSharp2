@@ -13,9 +13,9 @@ internal static partial class Interpreter
     /// <returns>実行の成功またはメモリを変更しない範囲外アクセスのtrap</returns>
     internal static ExecutionResult Fill(InterpreterContext context, in Instruction instruction)
     {
-        var length = unchecked((uint)context.PopValue().AsI32());
+        var length = context.PopValue().AsUnsignedInteger();
         var value = unchecked((byte)context.PopValue().AsI32());
-        var destination = unchecked((uint)context.PopValue().AsI32());
+        var destination = context.PopValue().AsUnsignedInteger();
         var memory = context.CurrentFunction.Instance.Memories[(int)instruction.Index];
         if (!memory.TryFill(destination, value, length))
         {
@@ -37,9 +37,9 @@ internal static partial class Interpreter
     /// <returns>実行の成功またはメモリを変更しない範囲外アクセスのtrap</returns>
     internal static ExecutionResult Copy(InterpreterContext context, in Instruction instruction)
     {
-        var length = unchecked((uint)context.PopValue().AsI32());
-        var source = unchecked((uint)context.PopValue().AsI32());
-        var destination = unchecked((uint)context.PopValue().AsI32());
+        var length = context.PopValue().AsUnsignedInteger();
+        var source = context.PopValue().AsUnsignedInteger();
+        var destination = context.PopValue().AsUnsignedInteger();
         var memories = context.CurrentFunction.Instance.Memories;
         var destinationMemory = memories[(int)instruction.Index];
         var sourceMemory = memories[(int)instruction.SecondaryIndex];
@@ -77,7 +77,7 @@ internal static partial class Interpreter
     {
         var length = unchecked((uint)context.PopValue().AsI32());
         var source = unchecked((uint)context.PopValue().AsI32());
-        var destination = unchecked((uint)context.PopValue().AsI32());
+        var destination = context.PopValue().AsUnsignedInteger();
         var instance = context.CurrentFunction.Instance;
         var memory = instance.Memories[(int)instruction.SecondaryIndex];
         if (!instance.DataSegments[(int)instruction.Index].TryInitialize(memory, destination, source, length))
@@ -101,7 +101,7 @@ internal static partial class Interpreter
     internal static ExecutionResult Size(InterpreterContext context, in Instruction instruction)
     {
         var memory = context.CurrentFunction.Instance.Memories[(int)instruction.Index];
-        context.PushValue(WasmValue.FromI32((int)memory.PageCount));
+        context.PushValue(CreatePageCountValue(memory, memory.PageCount));
         return default;
     }
 
@@ -114,19 +114,29 @@ internal static partial class Interpreter
     internal static ExecutionResult Grow(InterpreterContext context, in Instruction instruction)
     {
         var memory = context.CurrentFunction.Instance.Memories[(int)instruction.Index];
-        var deltaPages = unchecked((uint)context.PopValue().AsI32());
-        int result;
+        var deltaPages = context.PopValue().AsUnsignedInteger();
+        long result;
         try
         {
-            result = memory.TryGrow(deltaPages, out var previousPageCount) ? (int)previousPageCount : -1;
+            result = memory.TryGrow(deltaPages, out var previousPageCount) ? previousPageCount : -1L;
         }
         catch (OutOfMemoryException)
         {
             result = -1;
         }
 
-        context.PushValue(WasmValue.FromI32(result));
+        context.PushValue(CreatePageCountValue(memory, result));
         return default;
+    }
+
+    /// <summary>
+    /// ページ数または拡張失敗を表す-1を、対象メモリのアドレス型で返す
+    /// </summary>
+    private static WasmValue CreatePageCountValue(WasmMemory memory, long pageCount)
+    {
+        return memory.Type.AddressType == WasmValueKind.I64
+            ? WasmValue.FromI64(pageCount)
+            : WasmValue.FromI32((int)pageCount);
     }
 
     /// <summary>
@@ -184,8 +194,7 @@ internal static partial class Interpreter
         var value = context.PopValue();
         var bits = signature.ValueType switch
         {
-            WasmValueKind.I32 => unchecked((uint)value.AsI32()),
-            WasmValueKind.I64 => unchecked((ulong)value.AsI64()),
+            WasmValueKind.I32 or WasmValueKind.I64 => value.AsUnsignedInteger(),
             WasmValueKind.F32 => value.AsF32Bits(),
             WasmValueKind.F64 => value.AsF64Bits(),
             _ => throw new InvalidOperationException("メモリアクセスの値型が不正です。"),
@@ -196,12 +205,24 @@ internal static partial class Interpreter
     }
 
     /// <summary>
+    /// operandの符号なしアドレスに即値のオフセットを加え、和が64ビットに収まるかを返す
+    /// </summary>
+    private static bool TryPopMemoryAddress(InterpreterContext context, ulong offset, out ulong address)
+    {
+        var baseAddress = context.PopValue().AsUnsignedInteger();
+        address = unchecked(baseAddress + offset);
+        return address >= baseAddress;
+    }
+
+    /// <summary>
     /// operandの符号なしアドレスとoffsetから指定範囲を読み、範囲外の位置情報を保持する
     /// </summary>
     private static ExecutionResult ReadMemory(InterpreterContext context, in Instruction instruction, Span<byte> destination)
     {
-        var address = (ulong)unchecked((uint)context.PopValue().AsI32()) + instruction.MemoryArgument.Offset;
-        return context.CurrentFunction.Instance.Memories[(int)instruction.Index].TryRead(address, destination)
+        var memory = context.CurrentFunction.Instance.Memories[(int)instruction.Index];
+        return
+            TryPopMemoryAddress(context, instruction.MemoryArgument.Offset, out var address)
+            && memory.TryRead(address, destination)
             ? default
             : ExecutionResult.Trap(
                 WasmTrapReason.MemoryOutOfBounds,
@@ -219,8 +240,10 @@ internal static partial class Interpreter
         ReadOnlySpan<byte> source
     )
     {
-        var address = (ulong)unchecked((uint)context.PopValue().AsI32()) + instruction.MemoryArgument.Offset;
-        return context.CurrentFunction.Instance.Memories[(int)instruction.Index].TryWrite(address, source)
+        var memory = context.CurrentFunction.Instance.Memories[(int)instruction.Index];
+        return
+            TryPopMemoryAddress(context, instruction.MemoryArgument.Offset, out var address)
+            && memory.TryWrite(address, source)
             ? default
             : ExecutionResult.Trap(
                 WasmTrapReason.MemoryOutOfBounds,

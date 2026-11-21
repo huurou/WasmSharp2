@@ -6,6 +6,61 @@ namespace WasmSharp.Tests;
 internal partial class WasmModule_ValidateTests
 {
     [Test]
+    [Arguments(false, "008080808010", "memory size")]
+    [Arguments(true, "01008080808010", "memory size")]
+    [Arguments(false, "058180808080804000", "memory size must be at most 2^48 pages")]
+    [Arguments(true, "050081808080808040", "memory size must be at most 2^48 pages")]
+    [Arguments(false, "04FFFFFFFFFFFFFFFFFF01", "memory size must be at most 2^48 pages")]
+    [Arguments(true, "0581808080108080808010", "size minimum must not be greater than maximum")]
+    public async Task Core3のページ数が宣言の制約に違反する_デコード後の検証で宣言位置と原因を示す(
+        bool imported,
+        string limitsHex,
+        string expected
+    )
+    {
+        // Arrange
+        var limits = Convert.FromHexString(limitsHex);
+        var section = imported
+            ? HostLinkingModuleBinary.Imports(("env", "m", 2, limits))
+            : HostLinkingModuleBinary.Section(5, [1, .. limits]);
+        var module = WasmModule.Decode(HostLinkingModuleBinary.Create(section), WasmSpecVersion.Core3);
+
+        // Act & Assert
+        var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.Message).StartsWith(expected);
+            await Assert.That(exception.Location!.Stage).IsEqualTo(WasmProcessingStage.Validate);
+            await Assert.That(exception.Location.SectionId).IsEqualTo(imported ? (byte)2 : (byte)5);
+        }
+    }
+
+    [Test]
+    [Arguments(false, false)]
+    [Arguments(true, false)]
+    [Arguments(false, true)]
+    [Arguments(true, true)]
+    public async Task Core3の64ビットメモリの最小値または最大値が仕様上限に等しい_定義とimportを割り当てずに検証できる(
+        bool imported,
+        bool upperBound
+    )
+    {
+        // Arrange
+        byte[] pageLimit = [0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x40];
+        byte[] limits = upperBound ? [0x05, 0, .. pageLimit] : [0x04, .. pageLimit];
+        var section = imported
+            ? HostLinkingModuleBinary.Imports(("env", "m", 2, limits))
+            : HostLinkingModuleBinary.Section(5, [1, .. limits]);
+        var module = WasmModule.Decode(HostLinkingModuleBinary.Create(section), WasmSpecVersion.Core3);
+
+        // Act
+        var validated = module.Validate();
+
+        // Assert
+        await Assert.That(validated).IsSameReferenceAs(module);
+    }
+
+    [Test]
     public async Task 公式の複数メモリをCore2で検証_従来どおり検証段階で拒否する()
     {
         // Arrange

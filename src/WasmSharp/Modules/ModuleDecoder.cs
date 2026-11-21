@@ -23,11 +23,12 @@ internal static class ModuleDecoder
     /// <remarks>型や参照の妥当性の検証と、インスタンス化は行わない</remarks>
     /// <param name="bytes">ヘッダーから始まる入力バイナリ全体</param>
     /// <param name="specVersion">入力全体に適用する仕様の版</param>
+    /// <param name="maxCollectionLength">通常解析と診断用の再走査で保持できるコレクションの最大要素数</param>
     /// <returns>入力上の診断位置を保持する、未検証のmodule定義</returns>
     /// <exception cref="WasmDecodeException">対応する構文の符号化、sectionの構成、functionとcodeの件数、またはデータ数セクションの件数や要否が不正な場合</exception>
     /// <exception cref="WasmUnsupportedFeatureException">仕様に存在する、未実装のsectionまたは命令に遭遇した場合 入力全体の有効性は保証しない</exception>
     /// <exception cref="WasmImplementationLimitException">宣言件数または命令数がコレクションの保持上限を超える場合</exception>
-    internal static WasmModule Decode(ReadOnlySpan<byte> bytes, WasmSpecVersion specVersion)
+    internal static WasmModule Decode(ReadOnlySpan<byte> bytes, WasmSpecVersion specVersion, int? maxCollectionLength = null)
     {
         if (specVersion == WasmSpecVersion.Core3)
         {
@@ -36,11 +37,11 @@ internal static class ModuleDecoder
 
         try
         {
-            return DecodeCore(bytes, ModuleReadMode.Bounded, specVersion);
+            return DecodeCore(bytes, ModuleReadMode.Bounded, specVersion, maxCollectionLength);
         }
         catch (ModuleReadBoundaryException exception)
         {
-            throw ResolveBoundaryFailure(bytes, exception, specVersion);
+            throw ResolveBoundaryFailure(bytes, exception, specVersion, maxCollectionLength);
         }
     }
 
@@ -113,16 +114,18 @@ internal static class ModuleDecoder
     /// <param name="bytes">通常解析に使用した入力バイナリ全体</param>
     /// <param name="failure">通常解析で確定した境界失敗</param>
     /// <param name="specVersion">通常解析と同じ仕様の版</param>
+    /// <param name="maxCollectionLength">通常解析と同じコレクションの最大要素数</param>
     /// <returns>再走査の構文診断 未対応・実装上限・正常終了の場合は元の診断</returns>
     private static WasmDecodeException ResolveBoundaryFailure(
         ReadOnlySpan<byte> bytes,
         ModuleReadBoundaryException failure,
-        WasmSpecVersion specVersion
+        WasmSpecVersion specVersion,
+        int? maxCollectionLength
     )
     {
         try
         {
-            DecodeCore(bytes, ModuleReadMode.Diagnostic, specVersion);
+            DecodeCore(bytes, ModuleReadMode.Diagnostic, specVersion, maxCollectionLength);
         }
         catch (WasmDecodeException exception)
         {
@@ -146,14 +149,20 @@ internal static class ModuleDecoder
     /// <param name="bytes">ヘッダーから始まる入力バイナリ全体</param>
     /// <param name="mode">通常解析または境界失敗後の診断用読取り</param>
     /// <param name="specVersion">入力全体に適用する仕様の版</param>
+    /// <param name="maxCollectionLength">読み取り中に保持できるコレクションの最大要素数</param>
     /// <returns>入力上の診断位置を保持する、未検証のmodule定義</returns>
     /// <exception cref="WasmDecodeException">対応する構文の符号化、sectionの構成、functionとcodeの件数、またはデータ数セクションの件数や要否が不正な場合</exception>
     /// <exception cref="ModuleReadBoundaryException">限定された範囲内で構文を読み終えられない場合</exception>
     /// <exception cref="WasmUnsupportedFeatureException">仕様に存在する、未実装のsectionまたは命令に遭遇した場合 入力全体の有効性は保証しない</exception>
     /// <exception cref="WasmImplementationLimitException">宣言件数または命令数がコレクションの保持上限を超える場合</exception>
-    private static WasmModule DecodeCore(ReadOnlySpan<byte> bytes, ModuleReadMode mode, WasmSpecVersion specVersion)
+    private static WasmModule DecodeCore(
+        ReadOnlySpan<byte> bytes,
+        ModuleReadMode mode,
+        WasmSpecVersion specVersion,
+        int? maxCollectionLength
+    )
     {
-        var reader = new ModuleBinaryReader(bytes, specVersion, mode: mode);
+        var reader = new ModuleBinaryReader(bytes, specVersion, mode: mode, maxCollectionLength: maxCollectionLength);
         ModuleBinaryFormat.ReadHeader(ref reader);
 
         List<WasmFunctionType> types = [];

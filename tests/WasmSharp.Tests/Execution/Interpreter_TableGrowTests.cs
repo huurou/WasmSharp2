@@ -111,6 +111,36 @@ internal class Interpreter_TableGrowTests
     }
 
     [Test]
+    [NotInParallel]
+    public async Task 宣言範囲内でも要素配列を確保できない_マイナス1を返し要素数と参照を保つ()
+    {
+        // Arrange
+        var table = new WasmTable(WasmValueKind.ExternRef, new WasmLimits(1));
+        var original = WasmValue.FromExternRef(new object());
+        table.Set(0, original);
+        var function = TableHandlerFixture.CreateFunction([table]);
+
+        // Act
+        var actual = await GrowAllocationFixture.RunAsync(elements =>
+            TableHandlerFixture.Execute(
+                Interpreter.TableGrow,
+                function,
+                0,
+                [WasmValue.FromExternRef(null), WasmValue.FromI32(elements)]
+            )
+        );
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(actual.Result.Status).IsEqualTo(ExecutionStatus.Success);
+            await Assert.That(actual.Value).IsEqualTo(WasmValue.FromI32(-1));
+            await Assert.That(table.Count).IsEqualTo(1u);
+            await Assert.That(table.Get(0)).IsEqualTo(original);
+        }
+    }
+
+    [Test]
     public async Task 増大後サイズが配列保持上限を1超える_割当前にマイナス1を返して内容を保つ()
     {
         // Arrange

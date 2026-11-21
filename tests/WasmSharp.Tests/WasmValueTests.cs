@@ -127,6 +127,52 @@ internal class WasmValue_AsI64Tests
     }
 }
 
+internal class WasmValue_AsUnsignedIntegerTests
+{
+    [Test]
+    public async Task 負の整数を符号なしで取得する_元の型の幅に応じたビット列を返す()
+    {
+        // Arrange
+        var i32 = WasmValue.FromI32(-1);
+        var i64 = WasmValue.FromI64(-1);
+
+        // Act
+        var bits32 = i32.AsUnsignedInteger();
+        var bits64 = i64.AsUnsignedInteger();
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(bits32).IsEqualTo((ulong)uint.MaxValue);
+            await Assert.That(bits64).IsEqualTo(ulong.MaxValue);
+        }
+    }
+
+    [Test]
+    public async Task 整数以外を取得する_値の種類を示して拒否する()
+    {
+        // Arrange
+        WasmValue[] values =
+        [
+            WasmValue.FromF32(0),
+            WasmValue.FromF64(0),
+            WasmValue.FromV128(0, 0),
+            WasmValue.FromFuncRef(null),
+            WasmValue.FromExternRef(null),
+        ];
+
+        // Act & Assert
+        using (Assert.Multiple())
+        {
+            foreach (var value in values)
+            {
+                var exception = await Assert.That(value.AsUnsignedInteger).ThrowsExactly<InvalidOperationException>();
+                await Assert.That(exception!.Message).Contains(value.Kind.ToString());
+            }
+        }
+    }
+}
+
 internal class WasmValue_FromF32Tests
 {
     [Test]
