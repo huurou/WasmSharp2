@@ -6,6 +6,23 @@ namespace WasmSharp.Tests;
 internal class WasmModule_InspectImportsTests
 {
     [Test]
+    [Arguments(false)]
+    [Arguments(true)]
+    public async Task 未定義の仕様版で調査する_引数の範囲外として拒否する(bool useStream)
+    {
+        // Arrange
+        var bytes = HostLinkingModuleBinary.Create();
+        using var stream = new MemoryStream(bytes);
+        var version = (WasmSpecVersion)99;
+
+        // Act & Assert
+        var exception = await Assert
+            .That(() => useStream ? WasmModule.InspectImports(stream, version) : WasmModule.InspectImports(bytes, version))
+            .ThrowsExactly<ArgumentOutOfRangeException>();
+        await Assert.That(exception!.ParamName).IsEqualTo("specVersion");
+    }
+
+    [Test]
     [Arguments(false, "0401")]
     [Arguments(true, "0401")]
     [Arguments(false, "008080808010")]
@@ -102,6 +119,7 @@ internal class WasmModule_InspectImportsTests
     [Arguments("006173", 3L, null)]
     [Arguments("0062736D01000000", 1L, null)]
     [Arguments("0061736D02000000", 4L, null)]
+    [Arguments("0061736D010000000D00", 8L, (byte)13, WasmSpecVersion.Core2)]
     [Arguments("0061736D010000000E00", 8L, (byte)14)]
     [Arguments("0061736D01000000000201FF", 11L, (byte)0)]
     [Arguments("0061736D0100000001020161", 11L, (byte)1)]
@@ -109,15 +127,20 @@ internal class WasmModule_InspectImportsTests
     [Arguments("0061736D010000000208020000037F0001FF", 17L, (byte)2)]
     [Arguments("0061736D01000000020100020100", 11L, (byte)2)]
     [Arguments("0061736D01000000010A00", 9L, (byte)1)]
-    public async Task 必要な構文が破損_両入力で元位置とDecode診断を保持する(string hex, long offset, byte? sectionId)
+    public async Task 必要な構文が破損_両入力で元位置とDecode診断を保持する(
+        string hex,
+        long offset,
+        byte? sectionId,
+        WasmSpecVersion version = WasmSpecVersion.Core3
+    )
     {
         // Arrange
         var bytes = Convert.FromHexString(hex);
         using var stream = new ChunkedReadStream(new MemoryStream(bytes));
         Func<WasmImportInspection>[] inspectors =
         [
-            () => WasmModule.InspectImports(bytes),
-            () => WasmModule.InspectImports(stream),
+            () => WasmModule.InspectImports(bytes, version),
+            () => WasmModule.InspectImports(stream, version),
         ];
 
         // Act & Assert

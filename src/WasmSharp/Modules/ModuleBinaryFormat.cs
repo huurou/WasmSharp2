@@ -83,10 +83,10 @@ internal static class ModuleBinaryFormat
     }
 
     /// <summary>
-    /// memoryのlimitsの構文を読み取り、型記述の位置とともに保持する
+    /// 仕様版に従ってメモリのアドレス型とページ数の上下限を読み取る
     /// </summary>
     /// <param name="reader">memory型の先頭にある読み取り状態 型記述の終端まで進める</param>
-    /// <returns>未検証のlimitsと型記述のバイト位置を持つmemory定義</returns>
+    /// <returns>アドレス型、未検証のページ数の上下限、型記述のバイト位置を持つメモリ定義</returns>
     /// <exception cref="WasmDecodeException">limitsの符号化が不正な場合</exception>
     /// <exception cref="ModuleReadBoundaryException">限定された範囲内で構文を読み終えられない場合</exception>
     internal static MemoryDefinition ReadMemoryType(ref ModuleBinaryReader reader)

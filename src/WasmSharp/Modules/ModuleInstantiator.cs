@@ -192,7 +192,8 @@ internal static class ModuleInstantiator
     /// <param name="imports">照合対象の提供登録</param>
     /// <returns>moduleのimport宣言順に並んだ外部実体</returns>
     /// <remarks>
-    /// 提供登録の対応表を固定して照合する。memoryとtableは現在サイズと宣言上限で型を照合する。
+    /// 提供登録の対応表を固定して照合する。メモリはアドレス型、テーブルは要素型が一致することを確認し、
+    /// どちらも現在のサイズと宣言された上限をimportの要求と照合する。
     /// 全宣言の名前を宣言順に解決した後、末尾から種類・型を照合する。
     /// リソースの新規生成、内容の変更、ホスト処理の呼び出しは行わない
     /// </remarks>
@@ -307,7 +308,7 @@ internal static class ModuleInstantiator
     /// </summary>
     /// <param name="module">関数の型indexを解決するmodule</param>
     /// <param name="import">型を表示するimport宣言</param>
-    /// <returns>要求する関数型、global型、またはリソースのlimits</returns>
+    /// <returns>importが要求する型の診断表記 32ビットメモリには従来のlimitsを、64ビットメモリにはアドレス型とページ数を表示する</returns>
     private static string DescribeImport(WasmModule module, ModuleImport import)
     {
         return import switch

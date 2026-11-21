@@ -75,11 +75,20 @@ public abstract record WasmImportInfo
         /// <summary>
         /// 32ビットメモリが要求する最小・最大ページ数
         /// </summary>
-        /// <exception cref="InvalidOperationException">アドレス型またはページ数を32ビットメモリのlimitsで表せない場合</exception>
+        /// <exception cref="InvalidOperationException">64ビットメモリで取得または設定した場合、または取得するページ数が32ビットで表せない場合</exception>
+        /// <exception cref="ArgumentNullException">nullを設定した場合</exception>
         public WasmLimits Limits
         {
             get => Type.Get32BitLimits();
-            init => Type = new WasmMemoryType(Type.AddressType, value.Minimum, value.Maximum);
+            init
+            {
+                ArgumentNullException.ThrowIfNull(value);
+                if (Type.AddressType != WasmValueKind.I32)
+                {
+                    throw new InvalidOperationException("64ビットメモリのページ数はLimitsで設定できません。");
+                }
+                Type = new WasmMemoryType(value);
+            }
         }
 
         /// <inheritdoc />

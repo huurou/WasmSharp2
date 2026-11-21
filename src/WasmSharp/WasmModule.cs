@@ -366,6 +366,7 @@ public sealed class WasmModule
     /// <exception cref="InvalidOperationException">静的検証に成功していないか、ホスト関数の結果がnullまたは宣言型と一致しない場合</exception>
     /// <exception cref="WasmInstantiateException">importの名前・種類・型が提供登録と一致しない場合</exception>
     /// <exception cref="WasmImplementationLimitException">リソースの構築またはstartの実行に必要な保持数が実装上限を超える場合</exception>
+    /// <exception cref="OutOfMemoryException">初期ページなどの記憶領域を割り当てられない場合</exception>
     /// <exception cref="WasmTrapException">アクティブデータセグメントの初期化先が範囲外か、startの実行結果がtrapの場合</exception>
     /// <exception cref="WasmExhaustionException">startの実行結果が資源枯渇の場合</exception>
     public WasmInstance Instantiate(
@@ -410,6 +411,7 @@ public sealed class WasmModule
     /// <exception cref="InvalidOperationException">静的検証に成功していないか、ホスト関数の結果がnullまたは宣言型と一致しない場合</exception>
     /// <exception cref="WasmInstantiateException">importの名前・種類・型が提供登録と一致しない場合</exception>
     /// <exception cref="WasmImplementationLimitException">リソースの構築またはstartの実行に必要な保持数が実装上限を超える場合</exception>
+    /// <exception cref="OutOfMemoryException">初期ページなどの記憶領域を割り当てられない場合</exception>
     /// <exception cref="WasmTrapException">アクティブデータセグメントの初期化先が範囲外か、startの実行結果がtrapの場合</exception>
     /// <exception cref="WasmExhaustionException">startの実行結果が資源枯渇の場合</exception>
     public WasmInstance Instantiate(WasmExecutionContext context, WasmImports imports, WasmExecutionOptions? options = null)

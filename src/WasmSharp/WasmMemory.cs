@@ -29,9 +29,10 @@ public sealed class WasmMemory
     public uint PageCount => (uint)_pages.Length;
 
     /// <summary>
-    /// 宣言された最大ページ数 指定がなければnull
+    /// メモリのアドレス型にかかわらず、宣言された最大ページ数を32ビットの値で返す。上限を省略した場合はnullを返す
     /// </summary>
-    /// <exception cref="InvalidOperationException">最大ページ数が32ビットで表せない場合はTypeから取得する</exception>
+    /// <remarks>アドレス型と64ビット精度の最大ページ数は<see cref="Type"/>から取得できる</remarks>
+    /// <exception cref="InvalidOperationException">最大ページ数が32ビットで表せない場合</exception>
     public uint? MaximumPages =>
         Type.MaximumPages is > uint.MaxValue
             ? throw new InvalidOperationException(

@@ -204,10 +204,11 @@ internal partial class WasmFunction_InvokeTests
         // Arrange
         var context = new WasmExecutionContext();
         var parameters = Convert.FromHexString(parameterTypes);
-        var sourceType = parameters[1] == 0x7E ? WasmValueKind.I64 : WasmValueKind.I32;
-        var destinationType = parameters[0] == 0x7E ? WasmValueKind.I64 : WasmValueKind.I32;
-        var first = WasmMemory.Create(new WasmMemoryType(sourceType, 1));
-        var second = WasmMemory.Create(new WasmMemoryType(destinationType, 1));
+        // 先頭のメモリはコピー時の読み出し元で、充填時には操作対象外の内容が保たれることを確認するために使う。
+        var firstAddressType = parameters[1] == 0x7E ? WasmValueKind.I64 : WasmValueKind.I32;
+        var secondAddressType = parameters[0] == 0x7E ? WasmValueKind.I64 : WasmValueKind.I32;
+        var first = WasmMemory.Create(new WasmMemoryType(firstAddressType, 1));
+        var second = WasmMemory.Create(new WasmMemoryType(secondAddressType, 1));
         var function = InstantiateBulkMemoryFunction(context, first, second, Convert.FromHexString(operation), parameters);
 
         var firstBefore = InitializeMemory(first, 0xA0);

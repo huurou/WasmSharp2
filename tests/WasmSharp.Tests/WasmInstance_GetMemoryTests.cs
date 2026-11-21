@@ -37,9 +37,6 @@ internal class WasmInstance_GetMemoryTests
             await Assert.That(narrow.ByteLength).IsEqualTo(65536UL);
             await Assert.That(narrowBytes[0]).IsEqualTo((byte)0);
         }
-
-        // Act & Assert
-        await Assert.That(() => wide.MaximumPages).ThrowsExactly<InvalidOperationException>();
     }
 
     [Test]
