@@ -54,7 +54,7 @@ internal class CorpusVerifier_VerifyTests
         // Arrange
         using var fixture = CorpusFixture.Create();
         var restricted = Directory.CreateDirectory(fixture.GetPath("modules/restricted"));
-        using var restriction = new DirectoryReadRestriction(restricted.FullName);
+        using var restriction = new ReadAccessRestriction(restricted);
 
         // Act
         var result = Verify(fixture);
@@ -803,6 +803,30 @@ internal class CorpusVerifier_VerifyTests
             await Assert.That(input.ModuleIssues[0].Path).IsEqualTo("modules/a.0.wasm");
             await Assert.That(input.ModuleIssues[0].ExceptionType).IsEqualTo(typeof(IOException).FullName);
             await Assert.That(input.ModuleIssues[0].Message).StartsWith("素材を読み取れません: ");
+        }
+    }
+
+    [Test]
+    public async Task 素材の内容を読み取る権限がない_利用commandに拒否理由を残して他の素材を照合する()
+    {
+        // Arrange
+        using var fixture = CorpusFixture.Create();
+        const string MaterialPath = "modules/a.0.wasm";
+        using var restriction = new ReadAccessRestriction(new FileInfo(fixture.GetPath(MaterialPath)));
+
+        // Act
+        var result = Verify(fixture);
+
+        // Assert
+        var input = Get(result, CorpusFixture.A);
+        var diagnostic = input.ModuleIssues[0];
+        using (Assert.Multiple())
+        {
+            await Assert.That(diagnostic.Path).IsEqualTo(MaterialPath);
+            await Assert.That(diagnostic.ExceptionType).IsEqualTo(typeof(UnauthorizedAccessException).FullName);
+            await Assert.That(diagnostic.Message).StartsWith("素材を読み取れません: ");
+            await Assert.That(input.Modules.Keys.Single()).IsEqualTo(2);
+            await Assert.That(Get(result, CorpusFixture.B).Modules.ContainsKey(0)).IsTrue();
         }
     }
 

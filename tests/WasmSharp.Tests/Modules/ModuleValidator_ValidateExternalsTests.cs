@@ -395,6 +395,18 @@ internal partial class ModuleValidator_ValidateTests
     }
 
     [Test]
+    public async Task メモリの最小値が仕様上限に等しく最大値が1ページ超える_最大値の上限超過を報告する()
+    {
+        // Arrange
+        var section = HostLinkingModuleBinary.Memories((65536, 65537));
+        var module = WasmModule.Decode(HostLinkingModuleBinary.Create(section), WasmSpecVersion.Core2);
+
+        // Act & Assert
+        var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
+        await Assert.That(exception!.Message).Contains("最大値").And.Contains("仕様上限");
+    }
+
+    [Test]
     [Arguments(false)]
     [Arguments(true)]
     public async Task Memoryと複数tableのlimitsが仕様上限_実割当なしで受理する(bool imported)

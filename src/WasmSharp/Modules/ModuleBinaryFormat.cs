@@ -347,14 +347,9 @@ internal static class ModuleBinaryFormat
     {
         using var buffer = new MemoryStream();
         Span<byte> chunk = stackalloc byte[4096];
-        while (true)
+        int count;
+        while ((count = stream.Read(chunk)) != 0)
         {
-            var count = stream.Read(chunk);
-            if (count == 0)
-            {
-                return buffer.GetBuffer().AsSpan(0, (int)buffer.Length);
-            }
-
             // seekできない入力でも、読み取ったバイト数から追加前の位置と読取済みの終端を区別する。
             var readEnd = buffer.Length + count;
             if (readEnd > maxLength)
@@ -369,6 +364,7 @@ internal static class ModuleBinaryFormat
             }
             buffer.Write(chunk[..count]);
         }
+        return buffer.GetBuffer().AsSpan(0, (int)buffer.Length);
     }
 
     /// <summary>

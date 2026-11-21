@@ -398,13 +398,14 @@ internal static class ModuleValidator
     /// <param name="location">宣言の位置</param>
     private static void ValidateMemory(WasmMemoryType type, WasmFailureLocation location)
     {
-        if (type.MinimumPages > type.PageLimit || type.MaximumPages > type.PageLimit)
+        var minimumExceedsLimit = type.MinimumPages > type.PageLimit;
+        if (minimumExceedsLimit || type.MaximumPages > type.PageLimit)
         {
             var diagnostic =
                 type.AddressType == WasmValueKind.I32
                     ? "memory size must be at most 65536 pages (4GiB)"
                     : "memory size must be at most 2^48 pages for i64";
-            var detail = type.MinimumPages > type.PageLimit ? "limitsの最小値" : "limitsの最大値";
+            var detail = minimumExceedsLimit ? "limitsの最小値" : "limitsの最大値";
             throw ValidationDiagnostics.ValidationFailure(diagnostic, detail + "が仕様上限を超えています。", location);
         }
         ValidateLimits(type.MinimumPages, type.MaximumPages, location);

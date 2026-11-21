@@ -5,6 +5,21 @@ namespace WasmSharp.Tests;
 internal class WasmImportInfoMemory_LimitsTests
 {
     [Test]
+    public async Task 調査した32ビットメモリの上下限がuintの最大値に一致する_limitsに両方の値を保持する()
+    {
+        // Arrange
+        var declaration = HostLinkingModuleBinary.Limits(uint.MaxValue, uint.MaxValue);
+        var bytes = HostLinkingModuleBinary.Create(HostLinkingModuleBinary.Imports(("env", "m", 2, declaration)));
+        var memory = (WasmImportInfo.Memory)WasmModule.InspectImports(bytes).Imports.Single();
+
+        // Act
+        var limits = memory.Limits;
+
+        // Assert
+        await Assert.That(limits).IsEqualTo(new WasmLimits(uint.MaxValue, uint.MaxValue));
+    }
+
+    [Test]
     [Arguments("0001", 1UL)]
     [Arguments("008080808010", 1UL << 32)]
     public async Task 調査した32ビットメモリを別のlimitsでコピーする_コピーの要求型だけを変更する(
@@ -38,7 +53,14 @@ internal class WasmImportInfoMemory_LimitsTests
         var memory = (WasmImportInfo.Memory)WasmModule.InspectImports(bytes).Imports.Single();
 
         // Act & Assert
-        await Assert.That(() => memory with { Limits = new WasmLimits(2, 3) }).ThrowsExactly<InvalidOperationException>();
+        var exception = await Assert
+            .That(() => memory with { Limits = new WasmLimits(2, 3) })
+            .ThrowsExactly<InvalidOperationException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.Message).Contains("64ビット");
+            await Assert.That(exception.Message).Contains(nameof(WasmImportInfo.Memory.Limits));
+        }
     }
 
     [Test]
@@ -52,10 +74,16 @@ internal class WasmImportInfoMemory_LimitsTests
     }
 
     [Test]
-    [Arguments("0400")]
-    [Arguments("0480808080808040")]
-    [Arguments("008080808010")]
-    public async Task 調査した要求型を32ビットのlimitsで表せない_取得時に例外を返す(string limits)
+    [Arguments("0400", WasmValueKind.I64, 0UL, null)]
+    [Arguments("0480808080808040", WasmValueKind.I64, 1UL << 48, null)]
+    [Arguments("008080808010", WasmValueKind.I32, 1UL << 32, null)]
+    [Arguments("01008080808010", WasmValueKind.I32, 0UL, 1UL << 32)]
+    public async Task 調査した要求型を32ビットのlimitsで表せない_取得を拒否しTypeには宣言した値を保持する(
+        string limits,
+        WasmValueKind addressType,
+        ulong minimum,
+        ulong? maximum
+    )
     {
         // Arrange
         var bytes = HostLinkingModuleBinary.Create(
@@ -64,6 +92,11 @@ internal class WasmImportInfoMemory_LimitsTests
         var memory = (WasmImportInfo.Memory)WasmModule.InspectImports(bytes).Imports.Single();
 
         // Act & Assert
-        await Assert.That(() => memory.Limits).ThrowsExactly<InvalidOperationException>();
+        using (Assert.Multiple())
+        {
+            var exception = await Assert.That(() => memory.Limits).ThrowsExactly<InvalidOperationException>();
+            await Assert.That(exception!.Message).Contains(nameof(WasmImportInfo.Memory.Type));
+            await Assert.That(memory.Type).IsEqualTo(new WasmMemoryType(addressType, minimum, maximum));
+        }
     }
 }

@@ -700,10 +700,12 @@ internal static class FunctionValidator
             {
                 var middle = lower + (upper - lower) / 2;
                 if (localIndex < function.Locals[middle].EndIndex)
+                // Stryker disable once Block: 上限の更新を削除すると、同じ中央位置を調べ続けて探索が終了しない。
                 {
                     upper = middle;
                 }
                 else
+                // Stryker disable once Block,Arithmetic: 下限の更新を削除するか加算を減算に変えると、探索範囲が狭まらず終了しない。
                 {
                     lower = middle + 1;
                 }

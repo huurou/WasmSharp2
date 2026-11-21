@@ -64,7 +64,7 @@ public sealed class WasmMemory
             throw new ArgumentException("memoryのページ数がアドレス型の制約を満たしません。", parameterName);
         }
 
-        if (type.MinimumPages > (ulong)Array.MaxLength)
+        if (ExceedsPageTableLimit(0, type.MinimumPages))
         {
             throw new WasmImplementationLimitException(
                 "memoryの初期ページ数がページ表の保持上限を超えています。",
@@ -140,8 +140,7 @@ public sealed class WasmMemory
     internal bool TryGrow(ulong deltaPages, out uint previousPageCount)
     {
         previousPageCount = PageCount;
-        // 64ビット増分との加算がオーバーフローしないよう、ページ表に追加できる数と先に比較する。
-        if (deltaPages > (ulong)Array.MaxLength - previousPageCount)
+        if (ExceedsPageTableLimit(previousPageCount, deltaPages))
         {
             return false;
         }
@@ -168,6 +167,18 @@ public sealed class WasmMemory
 
         _pages = pages;
         return true;
+    }
+
+    /// <summary>
+    /// 追加するページ数がページ表の残り容量を超えるかを返す
+    /// </summary>
+    /// <param name="currentPages">ページ表が現在保持しているページ数</param>
+    /// <param name="additionalPages">これから確保するページ数</param>
+    /// <returns>追加後のページ数をページ表に保持できない場合はtrue</returns>
+    internal static bool ExceedsPageTableLimit(uint currentPages, ulong additionalPages)
+    {
+        // 64ビットの増分を先に加算すると、上限を超えた値が小さなページ数に戻ることがある。
+        return additionalPages > (ulong)Array.MaxLength - currentPages;
     }
 
     /// <summary>

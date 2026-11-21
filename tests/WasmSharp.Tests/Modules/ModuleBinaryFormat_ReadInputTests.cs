@@ -13,7 +13,7 @@ internal class ModuleBinaryFormat_ReadInputTests
     {
         // Arrange
         byte[] bytes = [1, 2, 3, 4, 5];
-        using var stream = new ChunkedReadStream(new MemoryStream(bytes), 3);
+        using var stream = new ChunkedReadStream(new SingleEofStream(bytes), 3);
 
         // Act
         var result = ModuleBinaryFormat.ReadInput(stream, maxLength);
@@ -37,6 +37,22 @@ internal class ModuleBinaryFormat_ReadInputTests
             await Assert.That(exception.Message).Contains("入力バイナリが保持上限を超え");
             await Assert.That(exception.Limit).IsEqualTo(5);
             await Assert.That(exception.Location).IsEqualTo(new WasmFailureLocation(WasmProcessingStage.Decode, 3));
+        }
+    }
+
+    private sealed class SingleEofStream(byte[] bytes) : MemoryStream(bytes)
+    {
+        private bool _returnedEof;
+
+        public override int Read(Span<byte> buffer)
+        {
+            if (_returnedEof)
+            {
+                throw new InvalidOperationException("終端を返した後に再度読み取りました。");
+            }
+            var count = base.Read(buffer);
+            _returnedEof = count == 0;
+            return count;
         }
     }
 }

@@ -7,6 +7,43 @@ namespace WasmSharp.Tests.Modules;
 internal partial class ModuleDecoder_DecodeTests
 {
     [Test]
+    public async Task 命令数が保持上限を超える_通常解析は上限を報告し診断用の再走査は元の境界違反を保つ()
+    {
+        // Arrange
+        byte[] instructions = [0x01, 0x01, 0x01, 0x0B];
+        var types = HostLinkingModuleBinary.Types(([], []));
+        var functions = HostLinkingModuleBinary.Functions(0);
+        var complete = HostLinkingModuleBinary.Create(types, functions, HostLinkingModuleBinary.Code(([], instructions)));
+        // 関数本体の長さをlocal宣言の1バイトにすると、先頭のnopが宣言範囲の直後に来る。
+        var shortBody = HostLinkingModuleBinary.Create(
+            types,
+            functions,
+            HostLinkingModuleBinary.Section(10, [1, 1, 0, .. instructions])
+        );
+        var firstInstruction = complete.LongLength - instructions.Length;
+
+        // Act & Assert
+        var limit = await Assert
+            .That(() => ModuleDecoder.Decode(complete, WasmSpecVersion.Core2, maxCollectionLength: 2))
+            .ThrowsExactly<WasmImplementationLimitException>();
+        var boundary = await Assert
+            .That(() => ModuleDecoder.Decode(shortBody, WasmSpecVersion.Core2, maxCollectionLength: 2))
+            .ThrowsExactly<WasmDecodeException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(limit!.Reason).IsEqualTo(WasmImplementationLimitReason.CollectionSize);
+            await Assert.That(limit.Limit).IsEqualTo(2);
+            await Assert
+                .That(limit.Location)
+                .IsEqualTo(new WasmFailureLocation(WasmProcessingStage.Decode, firstInstruction + 2, 0, 10));
+            await Assert.That(boundary!.Message).StartsWith("unexpected end of section or function");
+            await Assert
+                .That(boundary.Location)
+                .IsEqualTo(new WasmFailureLocation(WasmProcessingStage.Decode, firstInstruction, 0, 10));
+        }
+    }
+
+    [Test]
     [Arguments("090100", (byte)13)]
     public async Task 空要素sectionの後に未知sectionがある_未知sectionの位置で拒否する(string section, byte id)
     {

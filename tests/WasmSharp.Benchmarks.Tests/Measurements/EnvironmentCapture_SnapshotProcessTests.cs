@@ -64,6 +64,8 @@ internal class EnvironmentCapture_SnapshotProcessTests
             .Concat([
                 new("DOTNET_PRIVATE_API_TOKEN", "dotnet secret"),
                 new("COMPlus_PRIVATE_API_TOKEN", "complus secret"),
+                new("DOTNET_ROOT_KEY", "root secret"),
+                new("COMPlus_STARTUP_HOOKS_TOKEN", "startup secret"),
                 new("PRIVATE_API_TOKEN", "unprefixed secret"),
                 new("DOTNET_", "empty setting"),
                 new("COMPlus_", "empty setting"),

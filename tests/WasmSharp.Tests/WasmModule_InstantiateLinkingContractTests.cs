@@ -20,7 +20,9 @@ internal partial class WasmModule_InstantiateTests
     {
         // Arrange
         var host = new WasmHostModule("env");
-        host.Define("m", WasmMemory.Create(new WasmMemoryType(addressType, 1, maximum)));
+        var memory = WasmMemory.Create(new WasmMemoryType(addressType, 0, maximum));
+        memory.TryGrow(1, out _);
+        host.Define("m", memory);
         var module = WasmModule
             .Decode(
                 HostLinkingModuleBinary.Create(

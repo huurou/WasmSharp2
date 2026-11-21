@@ -24,6 +24,11 @@ internal class WasmMemory_MaximumPagesTests
         var memory = WasmMemory.Create(new WasmMemoryType(WasmValueKind.I64, 0, (ulong)uint.MaxValue + 1));
 
         // Act & Assert
-        await Assert.That(() => memory.MaximumPages).ThrowsExactly<InvalidOperationException>();
+        var exception = await Assert.That(() => memory.MaximumPages).ThrowsExactly<InvalidOperationException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.Message).Contains("Type.MaximumPages");
+            await Assert.That(memory.Type.MaximumPages).IsEqualTo((ulong)uint.MaxValue + 1);
+        }
     }
 }

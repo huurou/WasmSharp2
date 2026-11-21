@@ -41,6 +41,7 @@ internal class WasmMemory_CreateTests
             await Assert.That(exception!.Reason).IsEqualTo(WasmImplementationLimitReason.CollectionSize);
             await Assert.That(exception.Limit).IsEqualTo(Array.MaxLength);
             await Assert.That(exception.Location).IsNull();
+            await Assert.That(exception.Message).Contains("ページ表");
         }
     }
 }
