@@ -102,8 +102,8 @@ internal sealed class ReferenceValidationContext
                 .. module.Memories.Select(x => x.Type.AddressType),
             ],
             [
-                .. module.Imports.OfType<TableImport>().Select(x => x.Type.ElementKind),
-                .. module.Tables.Select(x => x.ElementKind),
+                .. module.Imports.OfType<TableImport>().Select(x => x.Definition.Type.ElementType),
+                .. module.Tables.Select(x => x.Type.ElementType),
             ],
             [.. module.ElementSegments.Select(x => x.ElementType)],
             declaredFunctions.ToImmutable()

@@ -6,6 +6,33 @@ namespace WasmSharp.Tests;
 internal partial class WasmModule_DecodeTests
 {
     [Test]
+    [Arguments(WasmSpecVersion.Core2, "700400", "integer too large", 12L)]
+    [Arguments(WasmSpecVersion.Core2, "70008080808010", "integer too large", 17L)]
+    [Arguments(WasmSpecVersion.Core2, "7000808080808000", "integer representation too long", 18L)]
+    [Arguments(WasmSpecVersion.Core3, "700200", "malformed limits flags", 12L)]
+    [Arguments(WasmSpecVersion.Core3, "7004FFFFFFFFFFFFFFFFFF02", "integer too large", 22L)]
+    public async Task テーブル宣言の符号化が不正である_選択した仕様版のデコード診断と位置を返す(
+        WasmSpecVersion version,
+        string type,
+        string diagnostic,
+        long offset
+    )
+    {
+        // Arrange
+        var bytes = HostLinkingModuleBinary.Create(HostLinkingModuleBinary.Section(4, [1, .. Convert.FromHexString(type)]));
+
+        // Act & Assert
+        var exception = await Assert.That(() => WasmModule.Decode(bytes, version)).ThrowsExactly<WasmDecodeException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.Message).StartsWith(diagnostic);
+            await Assert
+                .That(exception.Location)
+                .IsEqualTo(new WasmFailureLocation(WasmProcessingStage.Decode, offset, null, 4));
+        }
+    }
+
+    [Test]
     [Arguments(WasmSpecVersion.Core2, "0503010400", "integer too large")]
     [Arguments(WasmSpecVersion.Core2, "050701008080808010", "integer too large")]
     [Arguments(WasmSpecVersion.Core3, "0503010200", "malformed limits flags")]

@@ -51,17 +51,20 @@ internal partial class WasmModule_DecodeTests
             await Assert
                 .That(((MemoryImport)module.Imports[2]).Definition.Type)
                 .IsEqualTo(new WasmMemoryType(WasmValueKind.I32, 1, 2));
-            await Assert.That(((TableImport)module.Imports[3]).Type.ElementKind).IsEqualTo(WasmValueKind.FuncRef);
+            await Assert.That(((TableImport)module.Imports[3]).Definition.Type.ElementType).IsEqualTo(WasmValueKind.FuncRef);
             await Assert.That(module.Functions.Length).IsEqualTo(1);
             await Assert.That(module.Functions[0].TypeIndex).IsEqualTo(0u);
             await Assert.That(module.Functions[0].Instructions[0].Immediate.AsI32()).IsEqualTo(42);
             await Assert.That(module.Tables.Length).IsEqualTo(2);
-            await Assert.That(module.Tables[0].ElementKind).IsEqualTo(WasmValueKind.ExternRef);
-            await Assert.That(module.Tables[0].Limits).IsEqualTo(new WasmLimits(uint.MaxValue, 0));
+            await Assert
+                .That(module.Tables[0].Type)
+                .IsEqualTo(new WasmTableType(WasmValueKind.ExternRef, WasmValueKind.I32, uint.MaxValue, 0));
             await Assert
                 .That(module.Tables[0].ByteOffset)
                 .IsEqualTo(8L + types.Length + imports.Length + functions.Length + 3);
-            await Assert.That(module.Tables[1].Limits).IsEqualTo(new WasmLimits(0));
+            await Assert
+                .That(module.Tables[1].Type)
+                .IsEqualTo(new WasmTableType(WasmValueKind.FuncRef, WasmValueKind.I32, 0));
             await Assert.That(module.Memories.Length).IsEqualTo(2);
             await Assert.That(module.Memories[0].Type).IsEqualTo(new WasmMemoryType(WasmValueKind.I32, uint.MaxValue, 0));
             await Assert

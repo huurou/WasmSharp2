@@ -134,16 +134,83 @@ public abstract record WasmImportInfo
     }
 
     /// <summary>
-    /// table importの要求型
+    /// テーブルのimportが要求する参照型、アドレス型と要素数の上下限
     /// </summary>
-    /// <param name="ModuleName">要求する提供元のmodule名</param>
-    /// <param name="Name">要求する外部要素の名前</param>
-    /// <param name="ElementType">要素の参照型</param>
-    /// <param name="Limits">宣言された最小値と任意の最大値</param>
-    public sealed record Table(string ModuleName, string Name, WasmValueKind ElementType, WasmLimits Limits)
-        : WasmImportInfo(ModuleName, Name)
+    public sealed record Table : WasmImportInfo
     {
+        /// <summary>
+        /// 宣言の要素型、アドレス型と64ビット精度の要素数の上下限
+        /// </summary>
+        public WasmTableType Type { get; private init; }
+
+        /// <summary>
+        /// テーブルの要素の参照型
+        /// </summary>
+        public WasmValueKind ElementType
+        {
+            get => Type.ElementType;
+            init => Type = new WasmTableType(value, Type.AddressType, Type.MinimumElements, Type.MaximumElements);
+        }
+
+        /// <summary>
+        /// 32ビットテーブルが要求する要素数の上下限
+        /// </summary>
+        /// <exception cref="InvalidOperationException">64ビットテーブルで取得または設定した場合、または読み取る要素数が32ビットで表せない場合</exception>
+        public WasmLimits Limits
+        {
+            get => Type.Get32BitLimits();
+            init
+            {
+                ArgumentNullException.ThrowIfNull(value);
+                if (Type.AddressType != WasmValueKind.I32)
+                {
+                    throw new InvalidOperationException("64ビットテーブルの要素数はLimitsで設定できません。");
+                }
+                Type = new WasmTableType(ElementType, value);
+            }
+        }
+
         /// <inheritdoc />
         private protected override WasmExternalKind ExternalKind => WasmExternalKind.Table;
+
+        /// <summary>
+        /// 32ビットテーブルのimport情報を生成する
+        /// </summary>
+        /// <param name="ModuleName">要求する提供元のmodule名</param>
+        /// <param name="Name">要求する外部要素の名前</param>
+        /// <param name="ElementType">要素の参照型</param>
+        /// <param name="Limits">宣言された最小値と任意の最大値</param>
+        public Table(string ModuleName, string Name, WasmValueKind ElementType, WasmLimits Limits)
+            : base(ModuleName, Name)
+        {
+            ArgumentNullException.ThrowIfNull(Limits);
+            Type = new WasmTableType(ElementType, Limits);
+        }
+
+        internal Table(WasmTableType type, string moduleName, string name)
+            : base(moduleName, name)
+        {
+            Type = type;
+        }
+
+        /// <summary>
+        /// 32ビットテーブルのimport情報を名前・要素型・上下限に分解する
+        /// </summary>
+        /// <exception cref="InvalidOperationException">アドレス型または要素数を32ビットテーブルのlimitsで表せない場合</exception>
+        public void Deconstruct(out string ModuleName, out string Name, out WasmValueKind ElementType, out WasmLimits Limits)
+        {
+            ModuleName = this.ModuleName;
+            Name = this.Name;
+            ElementType = this.ElementType;
+            Limits = this.Limits;
+        }
+
+        /// <inheritdoc />
+        protected override bool PrintMembers(StringBuilder builder)
+        {
+            base.PrintMembers(builder);
+            builder.Append(Type.Has32BitLimits ? $", ElementType = {ElementType}, Limits = {Limits}" : $", Type = {Type}");
+            return true;
+        }
     }
 }
