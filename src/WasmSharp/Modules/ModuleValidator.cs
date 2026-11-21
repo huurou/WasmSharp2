@@ -81,7 +81,8 @@ internal static class ModuleValidator
                     location
                 );
             }
-            if (element.ElementType != references.TableTypes[(int)target.TableIndex].ElementType)
+            var tableType = references.TableTypes[(int)target.TableIndex];
+            if (element.ElementType != tableType.ElementType)
             {
                 throw ValidationDiagnostics.ValidationFailure(
                     "type mismatch",
@@ -91,7 +92,7 @@ internal static class ModuleValidator
             }
             ConstantInitializer.Validate(
                 target.OffsetExpression,
-                WasmValueKind.I32,
+                tableType.AddressType,
                 visibleGlobals,
                 references.FunctionCount,
                 9,

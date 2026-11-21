@@ -13,9 +13,9 @@ internal static partial class Interpreter
     internal static ExecutionResult TableCopy(InterpreterContext context, in Instruction instruction)
     {
         var function = context.CurrentFunction;
-        var length = unchecked((uint)context.PopValue().AsI32());
-        var sourceOffset = unchecked((uint)context.PopValue().AsI32());
-        var destination = unchecked((uint)context.PopValue().AsI32());
+        var length = context.PopValue().AsUnsignedInteger();
+        var sourceOffset = context.PopValue().AsUnsignedInteger();
+        var destination = context.PopValue().AsUnsignedInteger();
         var tables = function.Instance.Tables;
         if (
             !tables[(int)instruction.Index]
@@ -37,9 +37,9 @@ internal static partial class Interpreter
     internal static ExecutionResult TableFill(InterpreterContext context, in Instruction instruction)
     {
         var function = context.CurrentFunction;
-        var length = unchecked((uint)context.PopValue().AsI32());
+        var length = context.PopValue().AsUnsignedInteger();
         var value = context.PopValue();
-        var destination = unchecked((uint)context.PopValue().AsI32());
+        var destination = context.PopValue().AsUnsignedInteger();
         if (!function.Instance.Tables[(int)instruction.Index].TryFill(destination, value, length))
         {
             return ExecutionResult.Trap(WasmTrapReason.TableOutOfBounds, function.FunctionIndex, instruction.ByteOffset);
@@ -59,7 +59,7 @@ internal static partial class Interpreter
         var function = context.CurrentFunction;
         var length = unchecked((uint)context.PopValue().AsI32());
         var source = unchecked((uint)context.PopValue().AsI32());
-        var destination = unchecked((uint)context.PopValue().AsI32());
+        var destination = context.PopValue().AsUnsignedInteger();
         var instance = function.Instance;
         if (
             !instance

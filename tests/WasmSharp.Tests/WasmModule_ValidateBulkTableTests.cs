@@ -6,6 +6,27 @@ namespace WasmSharp.Tests;
 internal partial class WasmModule_ValidateTests
 {
     [Test]
+    [Arguments("410041004100")] // 転送先がi32
+    [Arguments("420042004100")] // 転送元がi64
+    [Arguments("420041004200")] // 個数がi64
+    public async Task TableInitの引数型が64ビットテーブルの規則と異なる_検証時に型不一致を報告する(string operands)
+    {
+        // Arrange
+        var bytes = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Types(([], [])),
+            HostLinkingModuleBinary.Functions(0),
+            HostLinkingModuleBinary.Section(4, [1, 0x70, 4, 1]),
+            HostLinkingModuleBinary.Section(9, [1, 1, 0, 0]),
+            HostLinkingModuleBinary.Code(([], [.. Convert.FromHexString(operands), 0xFC, 0x0C, 0, 0, 0x0B]))
+        );
+        var module = WasmModule.Decode(bytes, WasmSpecVersion.Core3);
+
+        // Act & Assert
+        var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
+        await Assert.That(exception!.Message).StartsWith("type mismatch");
+    }
+
+    [Test]
     [Arguments("FC0C00000B", "type mismatch", 0, null)]
     [Arguments("410041004200FC0C00000B", "type mismatch", 3, null)]
     [Arguments("FC0E00000B", "type mismatch", 0, null)]

@@ -24,7 +24,7 @@ internal sealed class ElementInstance(ReadOnlySpan<WasmValue> values)
     /// <param name="source">要素列内のコピー元の先頭要素位置</param>
     /// <param name="length">コピーする要素数</param>
     /// <returns>転送に成功した場合はtrue いずれかの範囲が無効な場合はtableを変更せずfalse</returns>
-    internal bool TryInitialize(WasmTable table, uint destination, uint source, uint length)
+    internal bool TryInitialize(WasmTable table, ulong destination, uint source, uint length)
     {
         // 全範囲が配列に収まることを確かめてから、Span用のintへ変換する。
         if ((ulong)source + length > (ulong)_values.Length)
