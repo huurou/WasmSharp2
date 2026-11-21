@@ -14,9 +14,14 @@ public sealed class WasmTable
     private WasmValue[] _elements;
 
     /// <summary>
+    /// 宣言された要素型、アドレス型、要素数の上下限
+    /// </summary>
+    public WasmTableType Type { get; }
+
+    /// <summary>
     /// 要素の参照型
     /// </summary>
-    public WasmValueKind ElementType { get; }
+    public WasmValueKind ElementType => Type.ElementType;
 
     /// <summary>
     /// 現在の要素数
@@ -24,9 +29,15 @@ public sealed class WasmTable
     public uint Count => (uint)_elements.Length;
 
     /// <summary>
-    /// 宣言された最大要素数 指定がなければnull
+    /// 宣言された最大要素数を32ビットの値で返す 指定がなければnull
     /// </summary>
-    public uint? MaximumElements { get; }
+    /// <exception cref="InvalidOperationException">最大要素数が32ビットで表せない場合</exception>
+    public uint? MaximumElements =>
+        Type.MaximumElements is > uint.MaxValue
+            ? throw new InvalidOperationException(
+                "最大要素数が32ビットで表せません。Type.MaximumElementsから取得してください。"
+            )
+            : (uint?)Type.MaximumElements;
 
     /// <summary>
     /// limitsに従って型別nullで初期化されたtableを生成する
@@ -39,17 +50,20 @@ public sealed class WasmTable
     /// <exception cref="WasmImplementationLimitException">初期要素数が配列の保持上限を超える場合</exception>
     /// <exception cref="OutOfMemoryException">初期領域を割り当てられない場合</exception>
     public WasmTable(WasmValueKind elementType, WasmLimits limits)
+        : this(Create32BitType(elementType, limits), nameof(limits)) { }
+
+    private WasmTable(WasmTableType type, string parameterName)
     {
-        ArgumentNullException.ThrowIfNull(limits);
-        if (elementType is not (WasmValueKind.FuncRef or WasmValueKind.ExternRef))
+        ArgumentNullException.ThrowIfNull(type, parameterName);
+        if (type.MinimumElements > type.MaximumElements)
         {
-            throw new ArgumentOutOfRangeException(nameof(elementType), "tableには参照型を指定してください。");
+            throw new ArgumentException("tableの最小要素数が最大要素数を超えています。", parameterName);
         }
-        if (limits.Minimum > limits.Maximum)
+        if (type.ExceedsElementLimit)
         {
-            throw new ArgumentException("tableの最小要素数が最大要素数を超えています。", nameof(limits));
+            throw new ArgumentException("32ビットテーブルの要素数が仕様上限を超えています。", parameterName);
         }
-        if (ExceedsStorageLimit(limits.Minimum))
+        if (ExceedsStorageLimit(type.MinimumElements))
         {
             throw new WasmImplementationLimitException(
                 "tableの要素数が配列の保持上限を超えています。",
@@ -58,13 +72,36 @@ public sealed class WasmTable
             );
         }
 
-        ElementType = elementType;
-        MaximumElements = limits.Maximum;
-        _elements = new WasmValue[limits.Minimum];
+        Type = type;
+        _elements = new WasmValue[(int)type.MinimumElements];
         Array.Fill(
             _elements,
-            elementType == WasmValueKind.FuncRef ? WasmValue.FromFuncRef(null) : WasmValue.FromExternRef(null)
+            type.ElementType == WasmValueKind.FuncRef ? WasmValue.FromFuncRef(null) : WasmValue.FromExternRef(null)
         );
+    }
+
+    /// <summary>
+    /// 宣言された型の最小要素数に従い、すべての要素を型別のnullで初期化する
+    /// </summary>
+    /// <param name="type">要素型、アドレス型、要素数の上下限</param>
+    /// <returns>指定した型のテーブル</returns>
+    /// <exception cref="ArgumentNullException">typeがnullの場合</exception>
+    /// <exception cref="ArgumentException">要素数の上下限がアドレス型の制約を満たさない場合</exception>
+    /// <exception cref="WasmImplementationLimitException">初期要素数が配列の保持上限を超える場合</exception>
+    /// <exception cref="OutOfMemoryException">初期領域を割り当てられない場合</exception>
+    public static WasmTable Create(WasmTableType type)
+    {
+        return new WasmTable(type, nameof(type));
+    }
+
+    private static WasmTableType Create32BitType(WasmValueKind elementType, WasmLimits limits)
+    {
+        ArgumentNullException.ThrowIfNull(limits);
+        if (elementType is not (WasmValueKind.FuncRef or WasmValueKind.ExternRef))
+        {
+            throw new ArgumentOutOfRangeException(nameof(elementType), "tableには参照型を指定してください。");
+        }
+        return new WasmTableType(elementType, limits);
     }
 
     /// <summary>
@@ -74,6 +111,12 @@ public sealed class WasmTable
     /// <returns>要素型と参照先の同一性を保持した現在値 型別のnullを含む</returns>
     /// <exception cref="ArgumentOutOfRangeException">indexが現在のtableの範囲外の場合</exception>
     public WasmValue Get(uint index)
+    {
+        return Get((ulong)index);
+    }
+
+    /// <inheritdoc cref="Get(uint)"/>
+    public WasmValue Get(ulong index)
     {
         if (!TryGet(index, out var value))
         {
@@ -91,6 +134,12 @@ public sealed class WasmTable
     /// <exception cref="ArgumentOutOfRangeException">indexが範囲外の場合 要素は変更しない</exception>
     /// <exception cref="ArgumentException">valueの型が要素型と一致しない場合 要素は変更しない</exception>
     public void Set(uint index, WasmValue value)
+    {
+        Set((ulong)index, value);
+    }
+
+    /// <inheritdoc cref="Set(uint, WasmValue)"/>
+    public void Set(ulong index, WasmValue value)
     {
         if (value.Kind != ElementType)
         {
@@ -123,7 +172,7 @@ public sealed class WasmTable
         }
 
         var nextCount = (ulong)previousCount + delta;
-        if (nextCount > MaximumElements || ExceedsStorageLimit(nextCount))
+        if (nextCount > Type.MaximumElements || ExceedsStorageLimit(nextCount))
         {
             return false;
         }
@@ -157,9 +206,9 @@ public sealed class WasmTable
     /// <param name="index">取得する要素位置</param>
     /// <param name="value">取得した参照 範囲外の場合はdefault</param>
     /// <returns>取得できた場合はtrue 範囲外の場合はfalse</returns>
-    internal bool TryGet(uint index, out WasmValue value)
+    internal bool TryGet(ulong index, out WasmValue value)
     {
-        if ((ulong)index >= Count)
+        if (index >= Count)
         {
             value = default;
             return false;
@@ -175,9 +224,9 @@ public sealed class WasmTable
     /// <param name="index">設定する要素位置</param>
     /// <param name="value">要素型と一致する検証済みの参照</param>
     /// <returns>設定できた場合はtrue 範囲外の場合は内容を変更せずfalse</returns>
-    internal bool TrySet(uint index, WasmValue value)
+    internal bool TrySet(ulong index, WasmValue value)
     {
-        if ((ulong)index >= Count)
+        if (index >= Count)
         {
             return false;
         }

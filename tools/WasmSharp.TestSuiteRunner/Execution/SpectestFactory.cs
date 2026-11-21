@@ -13,12 +13,13 @@ internal static class SpectestFactory
     /// <remarks>
     /// 1入力につき一度作り、全moduleへ同じ提供元を登録する。別入力では新しく作り、変更されたリソースを持ち込まない。
     /// 不変のglobalはi32・i64の666とf32・f64の666.6、funcref tableは最小10・最大20要素、memoryは最小1・最大2ページとする。
-    /// tableの初期値はすべてnull、memoryの初期値はすべて0とする。
+    /// Core 3.0では同じ上下限で64ビットのtable64も提供する。テーブルの初期値はすべてnull、memoryの初期値はすべて0とする。
     /// printは現在のcommandへ記録し、callback内の例外は実体を状態へ残してそのまま再throwする。
     /// </remarks>
     /// <param name="state">printとcallback失敗を記録する入力の状態</param>
+    /// <param name="specVersion">提供するリソースを定める仕様の版</param>
     /// <returns>新しい関数・global・table・memoryの実体を持つspectestの提供元</returns>
-    internal static WasmHostModule Create(ScriptState state)
+    internal static WasmHostModule Create(ScriptState state, WasmSpecVersion specVersion)
     {
         var host = new WasmHostModule("spectest");
         DefinePrint(host, state, "print", []);
@@ -33,6 +34,10 @@ internal static class SpectestFactory
         host.Define("global_f32", new WasmGlobal(new(WasmValueKind.F32, false), WasmValue.FromF32(666.6f)));
         host.Define("global_f64", new WasmGlobal(new(WasmValueKind.F64, false), WasmValue.FromF64(666.6d)));
         host.Define("table", new WasmTable(WasmValueKind.FuncRef, new(10, 20)));
+        if (specVersion == WasmSpecVersion.Core3)
+        {
+            host.Define("table64", WasmTable.Create(new WasmTableType(WasmValueKind.FuncRef, WasmValueKind.I64, 10, 20)));
+        }
         host.Define("memory", new WasmMemory(new(1, 2)));
         return host;
     }

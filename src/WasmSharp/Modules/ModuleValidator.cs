@@ -72,7 +72,7 @@ internal static class ModuleValidator
                 continue;
             }
             var location = new WasmFailureLocation(WasmProcessingStage.Validate, element.ByteOffset, null, 9);
-            if (target.TableIndex >= (uint)references.TableElementTypes.Length)
+            if (target.TableIndex >= (uint)references.TableTypes.Length)
             {
                 throw ValidationDiagnostics.UnknownIndex(
                     "table",
@@ -81,7 +81,7 @@ internal static class ModuleValidator
                     location
                 );
             }
-            if (element.ElementType != references.TableElementTypes[(int)target.TableIndex])
+            if (element.ElementType != references.TableTypes[(int)target.TableIndex].ElementType)
             {
                 throw ValidationDiagnostics.ValidationFailure(
                     "type mismatch",
@@ -342,7 +342,7 @@ internal static class ModuleValidator
             var (count, category) = export.Kind switch
             {
                 WasmExternalKind.Function => (references.FunctionCount, "function"),
-                WasmExternalKind.Table => ((uint)references.TableElementTypes.Length, "table"),
+                WasmExternalKind.Table => ((uint)references.TableTypes.Length, "table"),
                 WasmExternalKind.Memory => (references.MemoryCount, "memory"),
                 WasmExternalKind.Global => (globalCount, "global"),
                 _ => throw new InvalidOperationException("デコード済みexportの種類が不正です。"),

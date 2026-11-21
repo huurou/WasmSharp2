@@ -128,4 +128,19 @@ internal class WasmTable_SetTests
             }
         }
     }
+
+    [Test]
+    public async Task 上位32ビットを持つ位置に設定する_先頭要素を書き換えず範囲外として拒否する()
+    {
+        // Arrange
+        var table = WasmTable.Create(new WasmTableType(WasmValueKind.ExternRef, WasmValueKind.I64, 1));
+        var reference = new object();
+        table.Set(0UL, WasmValue.FromExternRef(reference));
+
+        // Act & Assert
+        await Assert
+            .That(() => table.Set(1UL << 32, WasmValue.FromExternRef(null)))
+            .ThrowsExactly<ArgumentOutOfRangeException>();
+        await Assert.That(table.Get(0).AsExternRef()).IsSameReferenceAs(reference);
+    }
 }
