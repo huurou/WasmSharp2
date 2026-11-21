@@ -15,7 +15,7 @@ internal class SpectestFactory_CreateTests
         // Arrange
         var state = new ScriptState("a.wast");
         var imports = new WasmImports();
-        imports.Add(SpectestFactory.Create(state));
+        imports.Add(SpectestFactory.Create(state, WasmSpecVersion.Core2));
         var module = SpectestModuleFixture.CreateWithStart();
         state.BeginCommand(4);
 
@@ -45,7 +45,7 @@ internal class SpectestFactory_CreateTests
     {
         // Arrange
         var state = new ScriptState("a.wast");
-        var host = SpectestFactory.Create(state);
+        var host = SpectestFactory.Create(state, WasmSpecVersion.Core2);
         var instance = SpectestModuleFixture.Instantiate(_context, host);
         state.BeginCommand(3);
         var function = instance.GetFunction(SpectestModuleFixture.FunctionNames[index]);
@@ -95,7 +95,7 @@ internal class SpectestFactory_CreateTests
         var state = new ScriptState("a.wast");
 
         // Act
-        var instance = SpectestModuleFixture.Instantiate(_context, SpectestFactory.Create(state));
+        var instance = SpectestModuleFixture.Instantiate(_context, SpectestFactory.Create(state, WasmSpecVersion.Core2));
 
         // Assert
         using (Assert.Multiple())
@@ -138,7 +138,7 @@ internal class SpectestFactory_CreateTests
     public async Task 同じ提供元を複数moduleへimportする_全実体とリソースの変更を共有する()
     {
         // Arrange
-        var host = SpectestFactory.Create(new ScriptState("a.wast"));
+        var host = SpectestFactory.Create(new ScriptState("a.wast"), WasmSpecVersion.Core2);
         var first = SpectestModuleFixture.Instantiate(_context, host);
         var reference = first.GetFunction("print");
 
@@ -181,7 +181,7 @@ internal class SpectestFactory_CreateTests
     {
         // Arrange
         var firstState = new ScriptState("a.wast");
-        var first = SpectestModuleFixture.Instantiate(_context, SpectestFactory.Create(firstState));
+        var first = SpectestModuleFixture.Instantiate(_context, SpectestFactory.Create(firstState, WasmSpecVersion.Core2));
         firstState.BeginCommand(0);
         first.GetFunction("print").Invoke(_context, []);
         first.GetMemory("memory").Write(0, [0xAB]);
@@ -191,7 +191,7 @@ internal class SpectestFactory_CreateTests
         var secondState = new ScriptState("b.wast");
 
         // Act
-        var second = SpectestModuleFixture.Instantiate(_context, SpectestFactory.Create(secondState));
+        var second = SpectestModuleFixture.Instantiate(_context, SpectestFactory.Create(secondState, WasmSpecVersion.Core2));
 
         // Assert
         using (Assert.Multiple())
@@ -224,7 +224,7 @@ internal class SpectestFactory_CreateTests
     {
         // Arrange
         var state = new ScriptState("a.wast");
-        var instance = SpectestModuleFixture.Instantiate(_context, SpectestFactory.Create(state));
+        var instance = SpectestModuleFixture.Instantiate(_context, SpectestFactory.Create(state, WasmSpecVersion.Core2));
         state.BeginCommand(0);
 
         // Act
@@ -250,7 +250,7 @@ internal class SpectestFactory_CreateTests
     {
         // Arrange
         var state = new ScriptState("a.wast");
-        var instance = SpectestModuleFixture.Instantiate(_context, SpectestFactory.Create(state));
+        var instance = SpectestModuleFixture.Instantiate(_context, SpectestFactory.Create(state, WasmSpecVersion.Core2));
 
         // Act & Assert
         var exception = await Assert
@@ -280,7 +280,7 @@ internal class SpectestFactory_CreateTests
     {
         // Arrange
         var state = new ScriptState("a.wast");
-        var instance = SpectestModuleFixture.Instantiate(_context, SpectestFactory.Create(state));
+        var instance = SpectestModuleFixture.Instantiate(_context, SpectestFactory.Create(state, WasmSpecVersion.Core2));
         state.BeginCommand(0);
         var output = TestContext.Current!.Output;
         var before = output.GetStandardOutput();
@@ -318,6 +318,7 @@ internal class SpectestFactory_CreateTests
     [Arguments("function", WasmInstantiateReason.TypeMismatch)]
     [Arguments("global_type", WasmInstantiateReason.TypeMismatch)]
     [Arguments("global_mutability", WasmInstantiateReason.TypeMismatch)]
+    [Arguments("table64", WasmInstantiateReason.MissingImport)]
     [Arguments("table_type", WasmInstantiateReason.TypeMismatch)]
     [Arguments("table_minimum", WasmInstantiateReason.TypeMismatch)]
     [Arguments("table_maximum", WasmInstantiateReason.TypeMismatch)]
@@ -329,7 +330,7 @@ internal class SpectestFactory_CreateTests
     )
     {
         // Arrange
-        var host = SpectestFactory.Create(new ScriptState("a.wast"));
+        var host = SpectestFactory.Create(new ScriptState("a.wast"), WasmSpecVersion.Core2);
         var imports = new WasmImports();
         imports.Add(host);
         var module = SpectestModuleFixture.CreateInvalidImport(issue);
@@ -346,6 +347,30 @@ internal class SpectestFactory_CreateTests
         {
             await Assert.That(valid.GetMemory("memory").PageCount).IsEqualTo(1U);
             await Assert.That(valid.GetTable("table").Count).IsEqualTo(10U);
+        }
+    }
+
+    [Test]
+    public async Task Core3のspectestからtable64をimportする_最大20のfuncrefテーブルに10個のnullがある()
+    {
+        // Arrange
+        var state = new ScriptState("table.wast");
+        var host = SpectestFactory.Create(state, WasmSpecVersion.Core3);
+        var bytes = ScriptExecutionFixture.Binary(
+            (2, [1, .. ScriptExecutionFixture.Name("spectest"), .. ScriptExecutionFixture.Name("table64"), 1, 0x70, 4, 0]),
+            (7, [1, .. ScriptExecutionFixture.Name("table64"), 1, 0])
+        );
+        var module = WasmModule.Decode(bytes, WasmSpecVersion.Core3).Validate();
+
+        // Act
+        var table = module.Instantiate(_context, [host]).GetTable("table64");
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(table.Type).IsEqualTo(new WasmTableType(WasmValueKind.FuncRef, WasmValueKind.I64, 10, 20));
+            await Assert.That(table.Count).IsEqualTo(10u);
+            await Assert.That(Enumerable.Range(0, 10).All(x => table.Get((ulong)x).AsFuncRef() is null)).IsTrue();
         }
     }
 }

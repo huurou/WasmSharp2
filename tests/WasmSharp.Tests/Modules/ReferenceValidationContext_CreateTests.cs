@@ -55,12 +55,14 @@ internal class ReferenceValidationContext_CreateTests
             await Assert.That(references.FunctionCount).IsEqualTo(4u);
             await Assert
                 .That(
-                    references.TableElementTypes.SequenceEqual([
-                        WasmValueKind.ExternRef,
-                        WasmValueKind.FuncRef,
-                        WasmValueKind.FuncRef,
-                        WasmValueKind.ExternRef,
-                    ])
+                    references
+                        .TableTypes.Select(x => x.ElementType)
+                        .SequenceEqual([
+                            WasmValueKind.ExternRef,
+                            WasmValueKind.FuncRef,
+                            WasmValueKind.FuncRef,
+                            WasmValueKind.ExternRef,
+                        ])
                 )
                 .IsTrue();
             await Assert
@@ -279,8 +281,8 @@ internal class ReferenceValidationContext_CreateTests
         using (Assert.Multiple())
         {
             await Assert.That(references.FunctionCount).IsEqualTo(0u);
-            await Assert.That(references.TableElementTypes.IsDefault).IsFalse();
-            await Assert.That(references.TableElementTypes.IsEmpty).IsTrue();
+            await Assert.That(references.TableTypes.IsDefault).IsFalse();
+            await Assert.That(references.TableTypes.IsEmpty).IsTrue();
             await Assert.That(references.ElementTypes.IsDefault).IsFalse();
             await Assert.That(references.ElementTypes.IsEmpty).IsTrue();
             await Assert.That(references.DeclaredFunctions.IsEmpty).IsTrue();
