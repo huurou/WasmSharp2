@@ -181,12 +181,12 @@ internal enum StackEffectKind
     RefFunc,
 
     /// <summary>
-    /// i32の要素添字を取り除き、テーブルの参照型の値を積む
+    /// テーブルのアドレス型の要素添字を取り除き、要素の参照型の値を積む
     /// </summary>
     TableGet,
 
     /// <summary>
-    /// テーブルの参照型の値とi32の要素添字を取り除く
+    /// テーブルの参照型の値とアドレス型の要素添字を取り除く
     /// </summary>
     TableSet,
 

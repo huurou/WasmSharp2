@@ -234,12 +234,12 @@ internal static class FunctionValidator
                     switch (descriptor.Validation)
                     {
                         case ValidationRule.TableGet:
-                            Pop(WasmValueKind.I32, instruction.ByteOffset);
+                            Pop(tableType.AddressType, instruction.ByteOffset);
                             stack.Add(tableType.ElementType);
                             break;
                         case ValidationRule.TableSet:
                             Pop(tableType.ElementType, instruction.ByteOffset);
-                            Pop(WasmValueKind.I32, instruction.ByteOffset);
+                            Pop(tableType.AddressType, instruction.ByteOffset);
                             break;
                         case ValidationRule.TableGrow:
                             Pop(tableType.AddressType, instruction.ByteOffset);

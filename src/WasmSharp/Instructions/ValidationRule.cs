@@ -176,12 +176,12 @@ internal enum ValidationRule
     RefFunc,
 
     /// <summary>
-    /// テーブル添字とi32の要素添字を検証し、要素の参照型を積む
+    /// 指定テーブルのアドレス型で要素添字を検証し、要素の参照型を積む
     /// </summary>
     TableGet,
 
     /// <summary>
-    /// テーブル添字とi32の要素添字、要素の参照型を検証する
+    /// 指定テーブルのアドレス型で要素添字を検証し、書き込む要素の参照型を検証する
     /// </summary>
     TableSet,
 
