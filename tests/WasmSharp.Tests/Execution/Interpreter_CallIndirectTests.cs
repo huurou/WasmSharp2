@@ -36,7 +36,7 @@ internal class Interpreter_CallIndirectTests
             await Assert.That(actual.Result.Status).IsEqualTo(ExecutionStatus.Trap);
             await Assert.That(actual.Result.TrapReason).IsEqualTo(WasmTrapReason.TableOutOfBounds);
             await Assert.That(actual.Result.TrapDiagnosticKind).IsEqualTo(TrapDiagnosticKind.UndefinedElement);
-            await Assert.That(actual.Result.TableElementIndex).IsEqualTo(unchecked((uint)selector));
+            await Assert.That(actual.Result.TableElementIndex).IsEqualTo(selector);
             await Assert.That(actual.Result.FunctionIndex).IsEqualTo(caller.FunctionIndex);
             await Assert.That(actual.Result.ByteOffset).IsEqualTo(BYTE_OFFSET);
             await Assert.That(called).IsFalse();
@@ -70,7 +70,7 @@ internal class Interpreter_CallIndirectTests
             await Assert.That(actual.Result.Status).IsEqualTo(ExecutionStatus.Trap);
             await Assert.That(actual.Result.TrapReason).IsEqualTo(WasmTrapReason.UninitializedElement);
             await Assert.That(actual.Result.TrapDiagnosticKind).IsEqualTo(TrapDiagnosticKind.Default);
-            await Assert.That(actual.Result.TableElementIndex).IsEqualTo(1U);
+            await Assert.That(actual.Result.TableElementIndex).IsEqualTo(1L);
             await Assert.That(actual.Result.FunctionIndex).IsEqualTo(caller.FunctionIndex);
             await Assert.That(actual.Result.ByteOffset).IsEqualTo(BYTE_OFFSET);
             await Assert.That(called).IsFalse();

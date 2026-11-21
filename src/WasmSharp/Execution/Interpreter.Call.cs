@@ -15,15 +15,15 @@ internal static partial class Interpreter
     internal static ExecutionResult CallIndirect(InterpreterContext context, in Instruction instruction)
     {
         var function = context.CurrentFunction;
-        var selector = unchecked((uint)context.PopValue().AsI32());
-        if (!function.Instance.Tables[(int)instruction.SecondaryIndex].TryGet(selector, out var value))
+        var selector = context.PopValue();
+        if (!function.Instance.Tables[(int)instruction.SecondaryIndex].TryGet(selector.AsUnsignedInteger(), out var value))
         {
             return ExecutionResult.Trap(
                 WasmTrapReason.TableOutOfBounds,
                 function.FunctionIndex,
                 instruction.ByteOffset,
                 trapDiagnosticKind: TrapDiagnosticKind.UndefinedElement,
-                tableElementIndex: selector
+                tableElementIndex: GetDiagnosticIndex()
             );
         }
         var callee = value.AsFuncRef();
@@ -33,7 +33,7 @@ internal static partial class Interpreter
                 WasmTrapReason.UninitializedElement,
                 function.FunctionIndex,
                 instruction.ByteOffset,
-                tableElementIndex: selector
+                tableElementIndex: GetDiagnosticIndex()
             );
         }
         var expectedType = function.Instance.Module.Types[(int)instruction.Index];
@@ -49,6 +49,12 @@ internal static partial class Interpreter
             );
         }
         return CallFunction(context, callee);
+
+        // 参照診断では添字を元のビット幅の符号付き整数として表示する。
+        long GetDiagnosticIndex()
+        {
+            return selector.Kind == WasmValueKind.I32 ? selector.AsI32() : selector.AsI64();
+        }
     }
 
     /// <summary>

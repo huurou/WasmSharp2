@@ -127,12 +127,12 @@ internal class ExecutionBoundary_ThrowIfFailedTests
     public async Task Table系trapの結果を受け取る_診断と段階と原因と命令位置を保ったtrap例外にする(WasmProcessingStage stage)
     {
         // Arrange
-        (WasmTrapReason Reason, TrapDiagnosticKind DiagnosticKind, uint? ElementIndex, string Message)[] cases =
+        (WasmTrapReason Reason, TrapDiagnosticKind DiagnosticKind, long? ElementIndex, string Message)[] cases =
         [
             (WasmTrapReason.TableOutOfBounds, TrapDiagnosticKind.Default, null, "out of bounds table access"),
             (WasmTrapReason.TableOutOfBounds, TrapDiagnosticKind.UndefinedElement, null, "undefined element"),
             (WasmTrapReason.TableOutOfBounds, TrapDiagnosticKind.UndefinedElement, 0, "undefined element 0"),
-            (WasmTrapReason.TableOutOfBounds, TrapDiagnosticKind.UndefinedElement, uint.MaxValue, "undefined element -1"),
+            (WasmTrapReason.TableOutOfBounds, TrapDiagnosticKind.UndefinedElement, -1, "undefined element -1"),
             (WasmTrapReason.UninitializedElement, TrapDiagnosticKind.Default, null, "uninitialized element"),
             (WasmTrapReason.UninitializedElement, TrapDiagnosticKind.Default, 2, "uninitialized element 2"),
             (WasmTrapReason.IndirectCallTypeMismatch, TrapDiagnosticKind.Default, null, "indirect call type mismatch"),
@@ -190,7 +190,7 @@ internal class ExecutionBoundary_ThrowIfFailedTests
     [Test]
     [Arguments(WasmTrapReason.TableOutOfBounds, TrapDiagnosticKind.UndefinedElement, "undefined element -1")]
     [Arguments(WasmTrapReason.UninitializedElement, TrapDiagnosticKind.Default, "uninitialized element -1")]
-    public async Task 負号が異なるカルチャで最大selectorを受け取る_カルチャに依存しない符号付き診断にする(
+    public async Task 負号が異なるカルチャで負の要素添字を受け取る_カルチャに依存しない符号付き診断にする(
         WasmTrapReason reason,
         TrapDiagnosticKind diagnosticKind,
         string expectedMessage
@@ -200,13 +200,7 @@ internal class ExecutionBoundary_ThrowIfFailedTests
         var originalCulture = CultureInfo.CurrentCulture;
         var culture = (CultureInfo)CultureInfo.InvariantCulture.Clone();
         culture.NumberFormat.NegativeSign = "~";
-        var result = ExecutionResult.Trap(
-            reason,
-            3,
-            42,
-            trapDiagnosticKind: diagnosticKind,
-            tableElementIndex: uint.MaxValue
-        );
+        var result = ExecutionResult.Trap(reason, 3, 42, trapDiagnosticKind: diagnosticKind, tableElementIndex: -1);
 
         try
         {
