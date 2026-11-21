@@ -201,13 +201,21 @@ internal static class FunctionValidator
                     break;
 
                 case ValidationRule.MemoryCopy:
+                    var destinationAddressType = RequireMemory(instruction.Index, instruction.ByteOffset);
+                    var sourceAddressType = RequireMemory(instruction.SecondaryIndex, instruction.ByteOffset);
+                    // 転送長には、コピー先とコピー元のうち幅が小さい方のアドレス型を使う。
+                    var copyLengthType =
+                        destinationAddressType == sourceAddressType ? destinationAddressType : WasmValueKind.I32;
+                    Pop(copyLengthType, instruction.ByteOffset);
+                    Pop(sourceAddressType, instruction.ByteOffset);
+                    Pop(destinationAddressType, instruction.ByteOffset);
+                    break;
+
                 case ValidationRule.MemoryFill:
-                    RequireMemory(instruction.Index, instruction.ByteOffset);
-                    if (descriptor.Validation == ValidationRule.MemoryCopy)
-                    {
-                        RequireMemory(instruction.SecondaryIndex, instruction.ByteOffset);
-                    }
-                    PopThreeI32(instruction.ByteOffset);
+                    var fillAddressType = RequireMemory(instruction.Index, instruction.ByteOffset);
+                    Pop(fillAddressType, instruction.ByteOffset);
+                    Pop(WasmValueKind.I32, instruction.ByteOffset);
+                    Pop(fillAddressType, instruction.ByteOffset);
                     break;
 
                 case ValidationRule.MemoryInit:

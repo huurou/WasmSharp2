@@ -161,7 +161,7 @@ internal enum StackEffectKind
     MemoryGrow,
 
     /// <summary>
-    /// 3つのi32値を取り除く
+    /// 宛先、コピー元または充填値、長さを表す3つの整数を取り除く
     /// </summary>
     MemoryBulk,
 

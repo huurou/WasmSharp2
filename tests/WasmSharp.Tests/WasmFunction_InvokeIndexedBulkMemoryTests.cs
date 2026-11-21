@@ -57,6 +57,24 @@ internal partial class WasmFunction_InvokeTests
     }
 
     [Test]
+    public async Task Memory64の一括充填で最終バイトまでと末尾の長さ0を指定する_指定範囲を値の下位8ビットで埋める()
+    {
+        // Arrange
+        var context = new WasmExecutionContext();
+        var first = new WasmMemory(new WasmLimits(0));
+        var second = WasmMemory.Create(new WasmMemoryType(WasmValueKind.I64, 1));
+        var fill = InstantiateBulkMemoryFunction(context, first, second, [0xFC, 11, 1], [0x7E, 0x7F, 0x7E]);
+        second.Write(65532, [0x11, 0x22, 0x33, 0x44]);
+
+        // Act
+        fill.Invoke(context, [WasmValue.FromI64(65533), WasmValue.FromI32(0x123), WasmValue.FromI64(3)]);
+        fill.Invoke(context, [WasmValue.FromI64(65536), WasmValue.FromI32(0), WasmValue.FromI64(0)]);
+
+        // Assert
+        await Assert.That(ReadMemoryHex(second, 65532, 4)).IsEqualTo("11232323");
+    }
+
+    [Test]
     [Arguments(65534, 65534)]
     [Arguments(65533, 65535)]
     [Arguments(65535, 65533)]
@@ -87,20 +105,29 @@ internal partial class WasmFunction_InvokeTests
     [Test]
     [Arguments(65534, 65532, "0102010203040506")]
     [Arguments(65532, 65534, "0304050607080708")]
+    [Arguments(65534, 65532, "0102010203040506", WasmValueKind.I64)]
+    [Arguments(65532, 65534, "0304050607080708", WasmValueKind.I64)]
     public async Task Core3の一括コピーで同じメモリを別名でimportする_重なる範囲のコピー前のバイト列を転送する(
         int destination,
         int source,
-        string expected
+        string expected,
+        WasmValueKind addressType = WasmValueKind.I32
     )
     {
         // Arrange
         var context = new WasmExecutionContext();
-        var shared = new WasmMemory(new WasmLimits(2));
-        var copy = InstantiateBulkMemoryFunction(context, shared, shared, [0xFC, 10, 1, 0]);
+        var shared = WasmMemory.Create(new WasmMemoryType(addressType, 2));
+        var copy = InstantiateBulkMemoryFunction(
+            context,
+            shared,
+            shared,
+            [0xFC, 10, 1, 0],
+            addressType == WasmValueKind.I64 ? [0x7E, 0x7E, 0x7E] : null
+        );
         shared.Write(65532, [1, 2, 3, 4, 5, 6, 7, 8]);
 
         // Act
-        copy.Invoke(context, [WasmValue.FromI32(destination), WasmValue.FromI32(source), WasmValue.FromI32(6)]);
+        InvokeBulkMemoryFunction(context, copy, destination, source, 6);
 
         // Assert
         await Assert.That(ReadMemoryHex(shared, 65532, 8)).IsEqualTo(expected);
@@ -135,7 +162,89 @@ internal partial class WasmFunction_InvokeTests
             Convert.FromHexString(operation),
             memory64Destination ? [0x7E, 0x7F, 0x7F] : null
         );
-        var destinationValue = memory64Destination ? WasmValue.FromI64(destination) : WasmValue.FromI32((int)destination);
+
+        // Act & Assert
+        await AssertBulkMemoryOutOfBounds(first, second, () =>
+            InvokeBulkMemoryFunction(context, function, destination, sourceOrValue, length)
+        );
+    }
+
+    [Test]
+    [Arguments("FC0B01", "7E7F7E", 1L << 32, 0x123, 1)]
+    [Arguments("FC0B01", "7E7F7E", 12, 0x123, (1L << 32) + 1)]
+    [Arguments("FC0B01", "7E7F7E", 65535, 0x123, 2)]
+    [Arguments("FC0B01", "7E7F7E", 65537, 0x123, 0)]
+    [Arguments("FC0A0100", "7E7F7F", 1L << 32, 12, 1)]
+    [Arguments("FC0A0100", "7F7E7F", 12, 1L << 32, 1)]
+    [Arguments("FC0A0100", "7E7E7E", 1L << 32, 12, 1)]
+    [Arguments("FC0A0100", "7E7E7E", 12, 1L << 32, 1)]
+    [Arguments("FC0A0100", "7E7E7E", 12, 12, (1L << 32) + 1)]
+    [Arguments("FC0A0100", "7E7E7E", 65535, 12, 2)]
+    [Arguments("FC0A0100", "7E7E7E", 12, 65535, 2)]
+    [Arguments("FC0A0100", "7E7E7E", 65537, 65536, 0)]
+    [Arguments("FC0A0100", "7E7E7E", 65536, 65537, 0)]
+    public async Task Memory64を使う充填またはコピーの位置や長さが範囲を超える_trap後も両メモリの全バイトを保つ(
+        string operation,
+        string parameterTypes,
+        long destination,
+        long sourceOrValue,
+        long length
+    )
+    {
+        // Arrange
+        var context = new WasmExecutionContext();
+        var parameters = Convert.FromHexString(parameterTypes);
+        var sourceType = parameters[1] == 0x7E ? WasmValueKind.I64 : WasmValueKind.I32;
+        var destinationType = parameters[0] == 0x7E ? WasmValueKind.I64 : WasmValueKind.I32;
+        var first = WasmMemory.Create(new WasmMemoryType(sourceType, 1));
+        var second = WasmMemory.Create(new WasmMemoryType(destinationType, 1));
+        var function = InstantiateBulkMemoryFunction(context, first, second, Convert.FromHexString(operation), parameters);
+
+        // Act & Assert
+        await AssertBulkMemoryOutOfBounds(first, second, () =>
+            InvokeBulkMemoryFunction(context, function, destination, sourceOrValue, length)
+        );
+    }
+
+    [Test]
+    [Arguments(WasmValueKind.I32, WasmValueKind.I32, "7F7F7F")]
+    [Arguments(WasmValueKind.I64, WasmValueKind.I32, "7E7F7F")]
+    [Arguments(WasmValueKind.I32, WasmValueKind.I64, "7F7E7F")]
+    [Arguments(WasmValueKind.I64, WasmValueKind.I64, "7E7E7E")]
+    public async Task Core3の一括コピーで容量の異なるメモリの末尾を使う_指定範囲だけを転送し末尾の長さ0も受理する(
+        WasmValueKind destinationType,
+        WasmValueKind sourceType,
+        string parameterTypes
+    )
+    {
+        // Arrange
+        var context = new WasmExecutionContext();
+        var source = WasmMemory.Create(new WasmMemoryType(sourceType, 2));
+        var destination = WasmMemory.Create(new WasmMemoryType(destinationType, 1));
+        var copy = InstantiateBulkMemoryFunction(
+            context,
+            source,
+            destination,
+            [0xFC, 10, 1, 0],
+            Convert.FromHexString(parameterTypes)
+        );
+        source.Write(131069, [0xA0, 0x12, 0x34]);
+        destination.Write(65533, [0xB0, 0x56, 0x78]);
+
+        // Act
+        InvokeBulkMemoryFunction(context, copy, 65534, 131070, 2);
+        InvokeBulkMemoryFunction(context, copy, 65536, 131072, 0);
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(ReadMemoryHex(source, 131069, 3)).IsEqualTo("A01234");
+            await Assert.That(ReadMemoryHex(destination, 65533, 3)).IsEqualTo("B01234");
+        }
+    }
+
+    private static async Task AssertBulkMemoryOutOfBounds(WasmMemory first, WasmMemory second, Action invoke)
+    {
         var firstBefore = Enumerable.Repeat((byte)0xA0, (int)first.ByteLength).ToArray();
         var secondBefore = Enumerable.Repeat((byte)0xB0, (int)second.ByteLength).ToArray();
         first.Write(0, firstBefore);
@@ -144,11 +253,7 @@ internal partial class WasmFunction_InvokeTests
         var secondAfter = new byte[secondBefore.Length];
 
         // Act & Assert
-        var exception = await Assert
-            .That(() =>
-                function.Invoke(context, [destinationValue, WasmValue.FromI32(sourceOrValue), WasmValue.FromI32(length)])
-            )
-            .ThrowsExactly<WasmTrapException>();
+        var exception = await Assert.That(invoke).ThrowsExactly<WasmTrapException>();
         first.Read(0, firstAfter);
         second.Read(0, secondAfter);
         using (Assert.Multiple())
@@ -160,22 +265,22 @@ internal partial class WasmFunction_InvokeTests
         }
     }
 
-    [Test]
-    public async Task Core3の一括コピーで容量の異なるメモリの末尾を使う_最終バイトまでの転送と末尾からの長さ0が成功する()
+    private static void InvokeBulkMemoryFunction(
+        WasmExecutionContext context,
+        WasmFunction function,
+        long destination,
+        long sourceOrValue,
+        long length
+    )
     {
-        // Arrange
-        var context = new WasmExecutionContext();
-        var source = new WasmMemory(new WasmLimits(2));
-        var destination = new WasmMemory(new WasmLimits(1));
-        var copy = InstantiateBulkMemoryFunction(context, source, destination, [0xFC, 10, 1, 0]);
-        source.Write(131070, [0x12, 0x34]);
+        function.Invoke(context, [Argument(0, destination), Argument(1, sourceOrValue), Argument(2, length)]);
 
-        // Act
-        copy.Invoke(context, [WasmValue.FromI32(65534), WasmValue.FromI32(131070), WasmValue.FromI32(2)]);
-        copy.Invoke(context, [WasmValue.FromI32(65536), WasmValue.FromI32(131072), WasmValue.FromI32(0)]);
-
-        // Assert
-        await Assert.That(ReadMemoryHex(destination, 65533, 3)).IsEqualTo("001234");
+        WasmValue Argument(int index, long value)
+        {
+            return function.Type.Parameters[index] == WasmValueKind.I64
+                ? WasmValue.FromI64(value)
+                : WasmValue.FromI32(checked((int)value));
+        }
     }
 
     private static WasmFunction InstantiateBulkMemoryFunction(

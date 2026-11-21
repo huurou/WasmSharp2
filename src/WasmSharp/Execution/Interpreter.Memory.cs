@@ -13,9 +13,9 @@ internal static partial class Interpreter
     /// <returns>実行の成功またはメモリを変更しない範囲外アクセスのtrap</returns>
     internal static ExecutionResult Fill(InterpreterContext context, in Instruction instruction)
     {
-        var length = unchecked((uint)context.PopValue().AsI32());
+        var length = context.PopValue().AsUnsignedInteger();
         var value = unchecked((byte)context.PopValue().AsI32());
-        var destination = unchecked((uint)context.PopValue().AsI32());
+        var destination = context.PopValue().AsUnsignedInteger();
         var memory = context.CurrentFunction.Instance.Memories[(int)instruction.Index];
         if (!memory.TryFill(destination, value, length))
         {
@@ -37,9 +37,9 @@ internal static partial class Interpreter
     /// <returns>実行の成功またはメモリを変更しない範囲外アクセスのtrap</returns>
     internal static ExecutionResult Copy(InterpreterContext context, in Instruction instruction)
     {
-        var length = unchecked((uint)context.PopValue().AsI32());
-        var source = unchecked((uint)context.PopValue().AsI32());
-        var destination = unchecked((uint)context.PopValue().AsI32());
+        var length = context.PopValue().AsUnsignedInteger();
+        var source = context.PopValue().AsUnsignedInteger();
+        var destination = context.PopValue().AsUnsignedInteger();
         var memories = context.CurrentFunction.Instance.Memories;
         var destinationMemory = memories[(int)instruction.Index];
         var sourceMemory = memories[(int)instruction.SecondaryIndex];

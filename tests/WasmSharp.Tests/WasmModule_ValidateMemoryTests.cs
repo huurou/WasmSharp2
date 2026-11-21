@@ -218,6 +218,45 @@ internal partial class WasmModule_ValidateTests
     }
 
     [Test]
+    [Arguments("FC0B01", "7F7F7E")] // memory.fill 64ビットメモリの宛先がi32
+    [Arguments("FC0B01", "7E7E7E")] // 充填値がi64
+    [Arguments("FC0B01", "7E7F7F")] // 長さがi32
+    [Arguments("FC0A0100", "7F7F7F")] // memory.copy 32→64
+    [Arguments("FC0A0100", "7E7E7F")]
+    [Arguments("FC0A0100", "7E7F7E")]
+    [Arguments("FC0A0001", "7E7E7F")] // 64→32
+    [Arguments("FC0A0001", "7F7F7F")]
+    [Arguments("FC0A0001", "7F7E7E")]
+    [Arguments("FC0A0101", "7E7E7F")] // 64→64の長さがi32
+    public async Task 充填またはコピーの入力型が対象メモリに合わない_検証で命令の位置と型不一致を報告する(
+        string operation,
+        string parameterTypes
+    )
+    {
+        // Arrange
+        var instruction = Convert.FromHexString(operation);
+        var bytes = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Types((Convert.FromHexString(parameterTypes), [])),
+            HostLinkingModuleBinary.Functions(0),
+            HostLinkingModuleBinary.Section(5, [2, 0, 1, 4, 1]),
+            HostLinkingModuleBinary.Code(([], [0x20, 0, 0x20, 1, 0x20, 2, .. instruction, 0x0B]))
+        );
+        var module = WasmModule.Decode(bytes, WasmSpecVersion.Core3);
+
+        // Act & Assert
+        var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.Message).StartsWith("type mismatch");
+            await Assert
+                .That(exception.Location)
+                .IsEqualTo(
+                    new WasmFailureLocation(WasmProcessingStage.Validate, bytes.Length - instruction.Length - 1, 0, 10)
+                );
+        }
+    }
+
+    [Test]
     [Arguments("002802001A0B")]
     [Arguments("003703000B")]
     [Arguments("003F001A0B")]
