@@ -79,7 +79,8 @@ internal static class ModuleBinaryFormat
     {
         var offset = reader.Position;
         var elementKind = ReadReferenceType(ref reader);
-        return new TableDefinition(elementKind, ReadLimits(ref reader), offset);
+        var (addressType, minimum, maximum) = ReadLimits(ref reader);
+        return new TableDefinition(offset, new WasmTableType(elementKind, addressType, minimum, maximum));
     }
 
     /// <summary>
@@ -92,20 +93,7 @@ internal static class ModuleBinaryFormat
     internal static MemoryDefinition ReadMemoryType(ref ModuleBinaryReader reader)
     {
         var offset = reader.Position;
-        if (reader.SpecVersion == WasmSpecVersion.Core2)
-        {
-            return new MemoryDefinition(ReadLimits(ref reader), offset);
-        }
-
-        // Core 3.0ではアドレス型にかかわらず、ページ数をu64として読む。
-        var flags = reader.ReadByte();
-        if ((flags & ~0x05) != 0)
-        {
-            throw reader.Error("malformed limits flags: メモリのlimitsフラグが不正です。", offset);
-        }
-        var addressType = (flags & 0x04) == 0 ? WasmValueKind.I32 : WasmValueKind.I64;
-        var minimum = reader.ReadU64();
-        ulong? maximum = (flags & 0x01) == 0 ? null : reader.ReadU64();
+        var (addressType, minimum, maximum) = ReadLimits(ref reader);
         return new MemoryDefinition(offset, new WasmMemoryType(addressType, minimum, maximum));
     }
 
@@ -134,14 +122,28 @@ internal static class ModuleBinaryFormat
     /// </summary>
     /// <remarks>最小値と最大値の大小関係や、リソースごとの仕様上の上限は検証しない</remarks>
     /// <param name="reader">limitsの先頭にある読み取り状態 宣言の終端まで進める</param>
-    /// <returns>未検証の最小値と任意の最大値</returns>
+    /// <returns>アドレス型、未検証の最小値と任意の最大値</returns>
     /// <exception cref="WasmDecodeException">フラグまたは整数の符号化が不正な場合</exception>
     /// <exception cref="ModuleReadBoundaryException">限定された範囲内で構文を読み終えられない場合</exception>
-    private static WasmLimits ReadLimits(ref ModuleBinaryReader reader)
+    private static (WasmValueKind AddressType, ulong Minimum, ulong? Maximum) ReadLimits(ref ModuleBinaryReader reader)
     {
-        var flags = reader.ReadU1();
-        var minimum = reader.ReadU32();
-        return new WasmLimits(minimum, flags == 1 ? reader.ReadU32() : null);
+        if (reader.SpecVersion == WasmSpecVersion.Core2)
+        {
+            var hasMaximum = reader.ReadU1();
+            var minimum = reader.ReadU32();
+            return (WasmValueKind.I32, minimum, hasMaximum == 1 ? reader.ReadU32() : null);
+        }
+
+        // Core 3.0ではi32の宣言もu64で符号化し、アドレス型の上限をValidateで検査する。
+        var offset = reader.Position;
+        var flags = reader.ReadByte();
+        if ((flags & ~0x05) != 0)
+        {
+            throw reader.Error("malformed limits flags: limitsのフラグが不正です。", offset);
+        }
+        var addressType = (flags & 0x04) == 0 ? WasmValueKind.I32 : WasmValueKind.I64;
+        var lower = reader.ReadU64();
+        return (addressType, lower, (flags & 0x01) == 0 ? null : reader.ReadU64());
     }
 
     /// <summary>

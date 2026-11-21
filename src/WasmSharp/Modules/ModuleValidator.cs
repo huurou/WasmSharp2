@@ -283,7 +283,7 @@ internal static class ModuleValidator
                     break;
 
                 case TableImport table:
-                    ValidateLimits(table.Type.Limits.Minimum, table.Type.Limits.Maximum, location);
+                    ValidateTable(table.Definition.Type, location);
                     break;
 
                 case MemoryImport memory:
@@ -320,11 +320,7 @@ internal static class ModuleValidator
     {
         foreach (var table in module.Tables)
         {
-            ValidateLimits(
-                table.Limits.Minimum,
-                table.Limits.Maximum,
-                new(WasmProcessingStage.Validate, table.ByteOffset, null, 4)
-            );
+            ValidateTable(table.Type, new WasmFailureLocation(WasmProcessingStage.Validate, table.ByteOffset, null, 4));
         }
         foreach (var memory in module.Memories)
         {
@@ -389,6 +385,22 @@ internal static class ModuleValidator
         {
             throw ValidationDiagnostics.UnknownIndex("type", typeIndex, "参照する関数型が存在しません。", location);
         }
+    }
+
+    /// <summary>
+    /// アドレス型が許す最大要素数と、テーブルの上下限の大小関係を検証する
+    /// </summary>
+    private static void ValidateTable(WasmTableType type, WasmFailureLocation location)
+    {
+        if (type.ExceedsElementLimit)
+        {
+            throw ValidationDiagnostics.ValidationFailure(
+                "table size must be at most 2^32-1 for i32",
+                "32ビットテーブルの要素数が仕様上限を超えています。",
+                location
+            );
+        }
+        ValidateLimits(type.MinimumElements, type.MaximumElements, location);
     }
 
     /// <summary>

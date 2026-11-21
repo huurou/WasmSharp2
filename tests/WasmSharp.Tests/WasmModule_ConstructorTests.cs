@@ -62,7 +62,7 @@ internal class WasmModule_ConstructorTests
             await Assert.That(module.Exports[0].ByteOffset).IsEqualTo(20L);
             await Assert.That(module.InputLength).IsEqualTo(48L);
             await Assert.That(((FunctionImport)module.Imports[0]).TypeIndex).IsEqualTo(uint.MaxValue);
-            await Assert.That(module.Tables[0].Limits.Minimum).IsEqualTo(1u);
+            await Assert.That(module.Tables[0].Type.MinimumElements).IsEqualTo(1UL);
             await Assert.That(module.Memories[0].Type.MinimumPages).IsEqualTo((ulong)uint.MaxValue);
             await Assert.That(module.Globals[0].Initializer[0].Immediate.AsI32()).IsEqualTo(42);
             await Assert.That(module.Start).IsEqualTo(new StartDefinition(uint.MaxValue, 25));

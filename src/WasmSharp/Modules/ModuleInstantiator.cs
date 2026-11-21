@@ -42,9 +42,18 @@ internal static class ModuleInstantiator
         var tables = CreateIndex(linked.OfType<TableExternalValue>().Select(x => x.Value), module.Tables.Length);
         foreach (var table in module.Tables)
         {
+            if (table.Type.AddressType == WasmValueKind.I64)
+            {
+                throw new WasmUnsupportedFeatureException(
+                    "64ビットテーブルの生成には対応していません。",
+                    "table64",
+                    new WasmFailureLocation(WasmProcessingStage.Instantiate, table.ByteOffset, null, 4),
+                    []
+                );
+            }
             try
             {
-                tables.Add(new WasmTable(table.ElementKind, table.Limits));
+                tables.Add(new WasmTable(table.Type.ElementType, table.Type.Get32BitLimits()));
             }
             catch (WasmImplementationLimitException exception)
             {
@@ -261,10 +270,11 @@ internal static class ModuleInstantiator
                     provided.Value.PageCount,
                     provided.Value.Type.MaximumPages
                 ),
-            (TableImport required, TableExternalValue provided) => required.Type.ElementKind == provided.Value.ElementType
+            (TableImport { Definition.Type: var type }, TableExternalValue provided) => type.AddressType == WasmValueKind.I32
+                && type.ElementType == provided.Value.ElementType
                 && MatchesLimits(
-                    required.Type.Limits.Minimum,
-                    required.Type.Limits.Maximum,
+                    type.MinimumElements,
+                    type.MaximumElements,
                     provided.Value.Count,
                     provided.Value.MaximumElements
                 ),
@@ -316,7 +326,9 @@ internal static class ModuleInstantiator
             FunctionImport function => DescribeFunction(module.Types[(int)function.TypeIndex]),
             GlobalImport global => global.Type.ToString(),
             MemoryImport memory => DescribeMemory(memory.Definition.Type),
-            TableImport table => $"{table.Type.ElementKind} {table.Type.Limits}",
+            TableImport { Definition.Type: var type } => type.Has32BitLimits
+                ? $"{type.ElementType} {type.Get32BitLimits()}"
+                : type.ToString(),
             _ => throw new InvalidOperationException("importの種類が不明です。"),
         };
     }
