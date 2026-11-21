@@ -124,7 +124,7 @@ internal static partial class Interpreter
     }
 
     /// <summary>
-    /// 所属instanceの指定tableの現在の要素数をi32のビット列で積む
+    /// 所属instanceの指定tableの現在の要素数をアドレス型で積む
     /// </summary>
     /// <param name="context">現在の関数を持つ実行コンテキスト</param>
     /// <param name="instruction">table添字を持つ検証済みのtable.size命令</param>
@@ -132,7 +132,7 @@ internal static partial class Interpreter
     internal static ExecutionResult TableSize(InterpreterContext context, in Instruction instruction)
     {
         var table = context.CurrentFunction.Instance.Tables[(int)instruction.Index];
-        context.PushValue(WasmValue.FromI32(unchecked((int)table.Count)));
+        context.PushValue(CreateSizeValue(table.Type.AddressType, table.Count));
         return default;
     }
 
@@ -145,19 +145,19 @@ internal static partial class Interpreter
     internal static ExecutionResult TableGrow(InterpreterContext context, in Instruction instruction)
     {
         var table = context.CurrentFunction.Instance.Tables[(int)instruction.Index];
-        var delta = unchecked((uint)context.PopValue().AsI32());
+        var delta = context.PopValue().AsUnsignedInteger();
         var value = context.PopValue();
-        int result;
+        long result;
         try
         {
-            result = table.TryGrow(delta, value, out var previousCount) ? unchecked((int)previousCount) : -1;
+            result = table.TryGrow(delta, value, out var previousCount) ? previousCount : -1L;
         }
         catch (OutOfMemoryException)
         {
             result = -1;
         }
 
-        context.PushValue(WasmValue.FromI32(result));
+        context.PushValue(CreateSizeValue(table.Type.AddressType, result));
         return default;
     }
 }

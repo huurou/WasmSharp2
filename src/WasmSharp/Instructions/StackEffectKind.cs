@@ -206,12 +206,12 @@ internal enum StackEffectKind
     TableCopy,
 
     /// <summary>
-    /// i32の増分と参照型の初期値を取り除き、増大前の要素数をi32で積む
+    /// アドレス型の増分と参照型の初期値を取り除き、増大前の要素数をアドレス型で積む
     /// </summary>
     TableGrow,
 
     /// <summary>
-    /// テーブルの要素数をi32で積む
+    /// テーブルの要素数をアドレス型で積む
     /// </summary>
     TableSize,
 
