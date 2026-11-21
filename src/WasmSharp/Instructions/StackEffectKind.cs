@@ -191,7 +191,7 @@ internal enum StackEffectKind
     TableSet,
 
     /// <summary>
-    /// 要素初期化の長さ、コピー元とコピー先を表す3つのi32値を取り除く
+    /// 長さとセグメント内の開始位置をi32で取り除き、コピー先の開始位置をテーブルのアドレス型で取り除く
     /// </summary>
     TableInit,
 
@@ -201,7 +201,8 @@ internal enum StackEffectKind
     ElementDrop,
 
     /// <summary>
-    /// テーブルのコピーの長さ、コピー元とコピー先を表す3つのi32値を取り除く
+    /// 両テーブルのうち幅が小さい方のアドレス型でコピーの長さを取り除く。
+    /// 次にコピー元、コピー先の開始位置をそれぞれのアドレス型で取り除く
     /// </summary>
     TableCopy,
 
@@ -216,12 +217,12 @@ internal enum StackEffectKind
     TableSize,
 
     /// <summary>
-    /// i32の長さ、参照型の値、i32の開始位置を取り除く
+    /// テーブルのアドレス型の長さ、要素の参照型の値、同じアドレス型の開始位置を順に取り除く
     /// </summary>
     TableFill,
 
     /// <summary>
-    /// i32の選択値と指定型の引数を取り除き、その結果を積む
+    /// テーブルのアドレス型の要素添字と指定した関数型の引数を取り除き、結果を積む
     /// </summary>
     CallIndirect,
 

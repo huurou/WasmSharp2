@@ -370,7 +370,7 @@ internal class SpectestFactory_CreateTests
         {
             await Assert.That(table.Type).IsEqualTo(new WasmTableType(WasmValueKind.FuncRef, WasmValueKind.I64, 10, 20));
             await Assert.That(table.Count).IsEqualTo(10u);
-            await Assert.That(Enumerable.Range(0, 10).All(x => table.Get((ulong)x).AsFuncRef() is null)).IsTrue();
+            await Assert.That(Enumerable.Range(0, 10).All(x => table[(ulong)x].AsFuncRef() is null)).IsTrue();
         }
     }
 }

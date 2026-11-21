@@ -40,6 +40,40 @@ public sealed class WasmTable
             : (uint?)Type.MaximumElements;
 
     /// <summary>
+    /// 指定位置の参照を取得または設定する
+    /// </summary>
+    /// <param name="index">0からCount未満の要素位置</param>
+    /// <value>要素型が一致するnullまたは非null参照</value>
+    /// <exception cref="ArgumentOutOfRangeException">indexが現在のテーブルの範囲外の場合</exception>
+    /// <exception cref="ArgumentException">設定する値の型が要素型と一致しない場合</exception>
+    public WasmValue this[ulong index]
+    {
+        get
+        {
+            if (!TryGet(index, out var value))
+            {
+                throw new ArgumentOutOfRangeException(nameof(index), "tableの範囲外です。");
+            }
+
+            return value;
+        }
+        set
+        {
+            if (value.Kind != ElementType)
+            {
+                // 要素型と添字が両方不正な場合は、範囲違反を優先する。
+                _ = this[index];
+                throw new ArgumentException("tableの要素型と値の型が一致しません。", nameof(value));
+            }
+
+            if (!TrySet(index, value))
+            {
+                throw new ArgumentOutOfRangeException(nameof(index), "tableの範囲外です。");
+            }
+        }
+    }
+
+    /// <summary>
     /// limitsに従って型別nullで初期化されたtableを生成する
     /// </summary>
     /// <param name="elementType">要素の参照型 FuncRefまたはExternRef</param>
@@ -97,7 +131,7 @@ public sealed class WasmTable
     private static WasmTableType Create32BitType(WasmValueKind elementType, WasmLimits limits)
     {
         ArgumentNullException.ThrowIfNull(limits);
-        if (elementType is not (WasmValueKind.FuncRef or WasmValueKind.ExternRef))
+        if (!WasmTableType.IsSupportedElementType(elementType))
         {
             throw new ArgumentOutOfRangeException(nameof(elementType), "tableには参照型を指定してください。");
         }
@@ -112,18 +146,7 @@ public sealed class WasmTable
     /// <exception cref="ArgumentOutOfRangeException">indexが現在のtableの範囲外の場合</exception>
     public WasmValue Get(uint index)
     {
-        return Get((ulong)index);
-    }
-
-    /// <inheritdoc cref="Get(uint)"/>
-    public WasmValue Get(ulong index)
-    {
-        if (!TryGet(index, out var value))
-        {
-            throw new ArgumentOutOfRangeException(nameof(index), "tableの範囲外です。");
-        }
-
-        return value;
+        return this[index];
     }
 
     /// <summary>
@@ -135,23 +158,7 @@ public sealed class WasmTable
     /// <exception cref="ArgumentException">valueの型が要素型と一致しない場合 要素は変更しない</exception>
     public void Set(uint index, WasmValue value)
     {
-        Set((ulong)index, value);
-    }
-
-    /// <inheritdoc cref="Set(uint, WasmValue)"/>
-    public void Set(ulong index, WasmValue value)
-    {
-        if (value.Kind != ElementType)
-        {
-            // 値の型が異なる場合も、従来どおり範囲違反を先に公開する。
-            Get(index);
-            throw new ArgumentException("tableの要素型と値の型が一致しません。", nameof(value));
-        }
-
-        if (!TrySet(index, value))
-        {
-            throw new ArgumentOutOfRangeException(nameof(index), "tableの範囲外です。");
-        }
+        this[index] = value;
     }
 
     /// <summary>

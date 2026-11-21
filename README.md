@@ -24,8 +24,8 @@ Core 3.0の64ビットテーブルでは、`i64`の添字で要素を読み書�
 ```csharp
 var type = new WasmTableType(WasmValueKind.ExternRef, WasmValueKind.I64, 1, 1UL << 32);
 var table = WasmTable.Create(type);
-table.Set(0UL, WasmValue.FromExternRef("hello"));
-object? value = table.Get(0UL).AsExternRef();
+table[0UL] = WasmValue.FromExternRef("hello");
+object? value = table[0UL].AsExternRef();
 ```
 
 Issue #11の受け入れ時に固定Core 3.0スイート65,193件のうち62,317件が成立しました。64ビットテーブルを直接扱う315件と、同じモジュールの32ビットテーブルを使う56件はすべて成立しました。Core 3.0・Core 2.0ともに、それまで成立していた公式ケースの回帰・欠落は0件でした。[公式ケースと回帰比較の内訳（#72）](https://github.com/huurou/WasmSharp2/issues/72)

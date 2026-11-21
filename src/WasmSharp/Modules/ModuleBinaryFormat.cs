@@ -79,7 +79,7 @@ internal static class ModuleBinaryFormat
     {
         var offset = reader.Position;
         var elementKind = ReadReferenceType(ref reader);
-        var (addressType, minimum, maximum) = ReadLimits(ref reader);
+        var (addressType, minimum, maximum) = ReadLimits(ref reader, "テーブル");
         return new TableDefinition(offset, new WasmTableType(elementKind, addressType, minimum, maximum));
     }
 
@@ -93,7 +93,7 @@ internal static class ModuleBinaryFormat
     internal static MemoryDefinition ReadMemoryType(ref ModuleBinaryReader reader)
     {
         var offset = reader.Position;
-        var (addressType, minimum, maximum) = ReadLimits(ref reader);
+        var (addressType, minimum, maximum) = ReadLimits(ref reader, "メモリ");
         return new MemoryDefinition(offset, new WasmMemoryType(addressType, minimum, maximum));
     }
 
@@ -122,10 +122,14 @@ internal static class ModuleBinaryFormat
     /// </summary>
     /// <remarks>最小値と最大値の大小関係や、リソースごとの仕様上の上限は検証しない</remarks>
     /// <param name="reader">limitsの先頭にある読み取り状態 宣言の終端まで進める</param>
+    /// <param name="resourceName">診断に表示するリソースの名前</param>
     /// <returns>アドレス型、未検証の最小値と任意の最大値</returns>
     /// <exception cref="WasmDecodeException">フラグまたは整数の符号化が不正な場合</exception>
     /// <exception cref="ModuleReadBoundaryException">限定された範囲内で構文を読み終えられない場合</exception>
-    private static (WasmValueKind AddressType, ulong Minimum, ulong? Maximum) ReadLimits(ref ModuleBinaryReader reader)
+    private static (WasmValueKind AddressType, ulong Minimum, ulong? Maximum) ReadLimits(
+        ref ModuleBinaryReader reader,
+        string resourceName
+    )
     {
         if (reader.SpecVersion == WasmSpecVersion.Core2)
         {
@@ -139,7 +143,7 @@ internal static class ModuleBinaryFormat
         var flags = reader.ReadByte();
         if ((flags & ~0x05) != 0)
         {
-            throw reader.Error("malformed limits flags: limitsのフラグが不正です。", offset);
+            throw reader.Error($"malformed limits flags: {resourceName}のlimitsフラグが不正です。", offset);
         }
         var addressType = (flags & 0x04) == 0 ? WasmValueKind.I32 : WasmValueKind.I64;
         var lower = reader.ReadU64();

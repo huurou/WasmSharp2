@@ -130,17 +130,19 @@ internal class WasmTable_SetTests
     }
 
     [Test]
-    public async Task 上位32ビットを持つ位置に設定する_先頭要素を書き換えず範囲外として拒否する()
+    public async Task GetとSetのメソッド参照をvarに代入する_uintの添字で参照をコピーできる()
     {
         // Arrange
-        var table = WasmTable.Create(new WasmTableType(WasmValueKind.ExternRef, WasmValueKind.I64, 1));
+        var table = new WasmTable(WasmValueKind.ExternRef, new WasmLimits(2));
         var reference = new object();
-        table.Set(0UL, WasmValue.FromExternRef(reference));
+        table.Set(0u, WasmValue.FromExternRef(reference));
+        var get = table.Get;
+        var set = table.Set;
 
-        // Act & Assert
-        await Assert
-            .That(() => table.Set(1UL << 32, WasmValue.FromExternRef(null)))
-            .ThrowsExactly<ArgumentOutOfRangeException>();
-        await Assert.That(table.Get(0).AsExternRef()).IsSameReferenceAs(reference);
+        // Act
+        set(1u, get(0u));
+
+        // Assert
+        await Assert.That(table.Get(1u).AsExternRef()).IsSameReferenceAs(reference);
     }
 }

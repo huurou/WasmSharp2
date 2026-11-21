@@ -30,7 +30,7 @@ internal partial class WasmModule_InstantiateTests
             await Assert.That(table.Count).IsEqualTo(1u);
             await Assert.That(table.Type.MaximumElements).IsEqualTo(ulong.MaxValue);
             await Assert.That(initial.AsExternRef()).IsNull();
-            await Assert.That(table.Get(0UL).AsExternRef()).IsSameReferenceAs(reference);
+            await Assert.That(table[0UL].AsExternRef()).IsSameReferenceAs(reference);
         }
     }
 
