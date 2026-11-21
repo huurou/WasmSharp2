@@ -126,12 +126,12 @@ internal enum ValidationRule
     TypedSelect,
 
     /// <summary>
-    /// メモリとアラインメント、i32アドレスを検証し、アクセス情報の値型を積む
+    /// 対象メモリのアドレス型と即値のオフセット、アラインメントを検証し、読み出す値の型を積む
     /// </summary>
     MemoryLoad,
 
     /// <summary>
-    /// メモリとアラインメント、書き込む値の型とi32アドレスを検証する
+    /// 対象メモリのアドレス型と即値のオフセット、アラインメント、書き込む値の型を検証する
     /// </summary>
     MemoryStore,
 
@@ -221,12 +221,12 @@ internal enum ValidationRule
     CallIndirect,
 
     /// <summary>
-    /// メモリ・alignment・lane上限とi32・v128の入力を検証し、v128を積む
+    /// メモリのロードと同様にアドレスと即値を検証し、lane番号とv128の入力を確認してv128を積む
     /// </summary>
     MemoryLoadLane,
 
     /// <summary>
-    /// メモリ・alignment・lane上限とi32・v128の入力を検証する
+    /// メモリのストアと同様にアドレスと即値、v128の入力を検証し、lane番号を確認する
     /// </summary>
     MemoryStoreLane,
 }
