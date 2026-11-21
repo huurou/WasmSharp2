@@ -280,9 +280,9 @@ public sealed class WasmTable
     /// <param name="sourceOffset">コピー元の先頭要素位置</param>
     /// <param name="length">コピーする要素数</param>
     /// <returns>コピーできた場合はtrue 範囲外の場合は内容を変更せずfalse</returns>
-    internal bool TryCopy(WasmTable source, uint destination, uint sourceOffset, uint length)
+    internal bool TryCopy(WasmTable source, ulong destination, ulong sourceOffset, ulong length)
     {
-        if ((ulong)destination + length > Count || (ulong)sourceOffset + length > source.Count)
+        if (!ContainsRange(destination, length) || !source.ContainsRange(sourceOffset, length))
         {
             return false;
         }
@@ -298,9 +298,9 @@ public sealed class WasmTable
     /// <param name="value">要素型と一致する検証済みの参照</param>
     /// <param name="length">書き込む要素数</param>
     /// <returns>書き込めた場合はtrue 範囲外の場合は内容を変更せずfalse</returns>
-    internal bool TryFill(uint destination, WasmValue value, uint length)
+    internal bool TryFill(ulong destination, WasmValue value, ulong length)
     {
-        if ((ulong)destination + length > Count)
+        if (!ContainsRange(destination, length))
         {
             return false;
         }

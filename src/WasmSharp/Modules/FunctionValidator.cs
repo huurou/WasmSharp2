@@ -203,12 +203,7 @@ internal static class FunctionValidator
                 case ValidationRule.MemoryCopy:
                     var destinationAddressType = GetMemoryAddressType(instruction.Index, instruction.ByteOffset);
                     var sourceAddressType = GetMemoryAddressType(instruction.SecondaryIndex, instruction.ByteOffset);
-                    // 転送長には、コピー先とコピー元のうち幅が小さい方のアドレス型を使う。
-                    var copyLengthType =
-                        destinationAddressType == sourceAddressType ? destinationAddressType : WasmValueKind.I32;
-                    Pop(copyLengthType, instruction.ByteOffset);
-                    Pop(sourceAddressType, instruction.ByteOffset);
-                    Pop(destinationAddressType, instruction.ByteOffset);
+                    PopCopyOperands(destinationAddressType, sourceAddressType, instruction.ByteOffset);
                     break;
 
                 case ValidationRule.MemoryFill:
@@ -255,9 +250,9 @@ internal static class FunctionValidator
                             stack.Add(tableType.AddressType);
                             break;
                         case ValidationRule.TableFill:
-                            Pop(WasmValueKind.I32, instruction.ByteOffset);
+                            Pop(tableType.AddressType, instruction.ByteOffset);
                             Pop(tableType.ElementType, instruction.ByteOffset);
-                            Pop(WasmValueKind.I32, instruction.ByteOffset);
+                            Pop(tableType.AddressType, instruction.ByteOffset);
                             break;
                     }
                     break;
@@ -272,7 +267,7 @@ internal static class FunctionValidator
                             instruction.ByteOffset
                         );
                     }
-                    PopThreeI32(instruction.ByteOffset);
+                    PopCopyOperands(destinationType.AddressType, sourceType.AddressType, instruction.ByteOffset);
                     break;
 
                 case ValidationRule.TableInit:
@@ -502,11 +497,13 @@ internal static class FunctionValidator
             branchTargets.ToImmutable()
         );
 
-        void PopThreeI32(long byteOffset)
+        void PopCopyOperands(WasmValueKind destinationType, WasmValueKind sourceType, long byteOffset)
         {
-            Pop(WasmValueKind.I32, byteOffset);
-            Pop(WasmValueKind.I32, byteOffset);
-            Pop(WasmValueKind.I32, byteOffset);
+            // 転送長には、コピー先とコピー元のうち幅が小さい方のアドレス型を使う。
+            var lengthType = destinationType == sourceType ? destinationType : WasmValueKind.I32;
+            Pop(lengthType, byteOffset);
+            Pop(sourceType, byteOffset);
+            Pop(destinationType, byteOffset);
         }
 
         void RequireDataSegment(uint index, long byteOffset)
