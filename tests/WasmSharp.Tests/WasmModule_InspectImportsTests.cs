@@ -6,6 +6,116 @@ namespace WasmSharp.Tests;
 internal class WasmModule_InspectImportsTests
 {
     [Test]
+    [Arguments(false, "0401")]
+    [Arguments(true, "0401")]
+    [Arguments(false, "008080808010")]
+    [Arguments(true, "008080808010")]
+    public async Task Core2で64ビット宣言またはu32を超えるページ数を調査する_従来の診断を返す(bool useStream, string limits)
+    {
+        // Arrange
+        var bytes = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Imports(("env", "m", 2, Convert.FromHexString(limits)))
+        );
+        using var stream = new MemoryStream(bytes);
+
+        // Act & Assert
+        var exception = await Assert
+            .That(() =>
+                useStream
+                    ? WasmModule.InspectImports(stream, WasmSpecVersion.Core2)
+                    : WasmModule.InspectImports(bytes, WasmSpecVersion.Core2)
+            )
+            .ThrowsExactly<WasmImportInspectionException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.InnerException).IsTypeOf<WasmDecodeException>();
+            await Assert.That(exception.Message).StartsWith("integer too large");
+        }
+    }
+
+    [Test]
+    public async Task 調査した32ビットメモリのlimitsを変更する_既存の生成と分解を使えて元の要求型を保つ()
+    {
+        // Arrange
+        var bytes = HostLinkingModuleBinary.Create(HostLinkingModuleBinary.Imports(("env", "m", 2, [0, 1])));
+        var original = (WasmImportInfo.Memory)WasmModule.InspectImports(bytes).Imports.Single();
+
+        // Act
+        var changed = original with { Limits = new WasmLimits(2, 3) };
+        var (moduleName, name, limits) = changed;
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(original).IsEqualTo(new WasmImportInfo.Memory("env", "m", new(1)));
+            await Assert.That((moduleName, name, limits)).IsEqualTo(("env", "m", new WasmLimits(2, 3)));
+            await Assert.That(changed.Type).IsEqualTo(new WasmMemoryType(WasmValueKind.I32, 2, 3));
+        }
+    }
+
+    [Test]
+    [Arguments("0400")]
+    [Arguments("0480808080808040")]
+    [Arguments("008080808010")]
+    public async Task 調査結果を32ビットのlimitsで表せない_型情報を表示でき旧プロパティで値を失わない(string limits)
+    {
+        // Arrange
+        var bytes = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Imports(("env", "m", 2, Convert.FromHexString(limits)))
+        );
+        var memory = (WasmImportInfo.Memory)WasmModule.InspectImports(bytes).Imports.Single();
+
+        // Act
+        var description = memory.ToString();
+
+        // Assert
+        await Assert.That(description).Contains(memory.Type.ToString());
+
+        // Act & Assert
+        await Assert.That(() => memory.Limits).ThrowsExactly<InvalidOperationException>();
+    }
+
+    [Test]
+    [Arguments(false, false)]
+    [Arguments(false, true)]
+    [Arguments(true, false)]
+    [Arguments(true, true)]
+    public async Task Core3で幅の異なるメモリを調査する_版を省略した場合も宣言順に要求型を取得できる(
+        bool useStream,
+        bool specifyVersion
+    )
+    {
+        // Arrange
+        var bytes = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Imports(
+                ("env", "small", 2, [0x01, 1, 3]),
+                ("env", "wide", 2, [0x05, 0x80, 0x80, 0x80, 0x80, 0x10, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x40]),
+                ("env", "open", 2, [0x04, 2])
+            )
+        );
+        using var stream = new MemoryStream(bytes);
+
+        // Act
+        var result = (useStream, specifyVersion) switch
+        {
+            (true, true) => WasmModule.InspectImports(stream, WasmSpecVersion.Core3),
+            (true, false) => WasmModule.InspectImports(stream),
+            (false, true) => WasmModule.InspectImports(bytes, WasmSpecVersion.Core3),
+            (false, false) => WasmModule.InspectImports(bytes),
+        };
+
+        // Assert
+        var declarations = result.Imports.Cast<WasmImportInfo.Memory>().ToArray();
+        using (Assert.Multiple())
+        {
+            await Assert.That(declarations.Select(x => x.Name).SequenceEqual(["small", "wide", "open"])).IsTrue();
+            await Assert.That(declarations[0].Type).IsEqualTo(new WasmMemoryType(WasmValueKind.I32, 1, 3));
+            await Assert.That(declarations[1].Type).IsEqualTo(new WasmMemoryType(WasmValueKind.I64, 1UL << 32, 1UL << 48));
+            await Assert.That(declarations[2].Type).IsEqualTo(new WasmMemoryType(WasmValueKind.I64, 2));
+        }
+    }
+
+    [Test]
     [Arguments((byte)9)]
     [Arguments((byte)12)]
     [Arguments((byte)11)]
@@ -34,7 +144,7 @@ internal class WasmModule_InspectImportsTests
     [Arguments("006173", 3L, null)]
     [Arguments("0062736D01000000", 1L, null)]
     [Arguments("0061736D02000000", 4L, null)]
-    [Arguments("0061736D010000000D00", 8L, (byte)13)]
+    [Arguments("0061736D010000000E00", 8L, (byte)14)]
     [Arguments("0061736D01000000000201FF", 11L, (byte)0)]
     [Arguments("0061736D0100000001020161", 11L, (byte)1)]
     [Arguments("0061736D0100000002050101FF0000", 12L, (byte)2)]

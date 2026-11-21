@@ -1,3 +1,5 @@
+using System.Text;
+
 namespace WasmSharp;
 
 /// <summary>
@@ -61,15 +63,65 @@ public abstract record WasmImportInfo
     }
 
     /// <summary>
-    /// memory importの要求limits
+    /// memory importのアドレス型と要求するページ数の上下限
     /// </summary>
-    /// <param name="ModuleName">要求する提供元のmodule名</param>
-    /// <param name="Name">要求する外部要素の名前</param>
-    /// <param name="Limits">宣言された最小値と任意の最大値</param>
-    public sealed record Memory(string ModuleName, string Name, WasmLimits Limits) : WasmImportInfo(ModuleName, Name)
+    public sealed record Memory : WasmImportInfo
     {
+        /// <summary>
+        /// 宣言のアドレス型と64ビット精度の最小・最大ページ数
+        /// </summary>
+        public WasmMemoryType Type { get; private init; }
+
+        /// <summary>
+        /// 32ビットメモリが要求する最小・最大ページ数
+        /// </summary>
+        /// <exception cref="InvalidOperationException">アドレス型またはページ数を32ビットメモリのlimitsで表せない場合</exception>
+        public WasmLimits Limits
+        {
+            get => Type.Get32BitLimits();
+            init => Type = new WasmMemoryType(Type.AddressType, value.Minimum, value.Maximum);
+        }
+
         /// <inheritdoc />
         private protected override WasmExternalKind ExternalKind => WasmExternalKind.Memory;
+
+        /// <summary>
+        /// 32ビットメモリのimport情報を生成する
+        /// </summary>
+        /// <param name="ModuleName">要求する提供元のmodule名</param>
+        /// <param name="Name">要求する外部要素の名前</param>
+        /// <param name="Limits">宣言された最小値と任意の最大値</param>
+        public Memory(string ModuleName, string Name, WasmLimits Limits)
+            : base(ModuleName, Name)
+        {
+            ArgumentNullException.ThrowIfNull(Limits);
+            Type = new WasmMemoryType(Limits);
+        }
+
+        internal Memory(WasmMemoryType type, string moduleName, string name)
+            : base(moduleName, name)
+        {
+            Type = type;
+        }
+
+        /// <summary>
+        /// 32ビットメモリのimport情報を名前とlimitsに分解する
+        /// </summary>
+        /// <exception cref="InvalidOperationException">アドレス型またはページ数を32ビットメモリのlimitsで表せない場合</exception>
+        public void Deconstruct(out string ModuleName, out string Name, out WasmLimits Limits)
+        {
+            ModuleName = this.ModuleName;
+            Name = this.Name;
+            Limits = this.Limits;
+        }
+
+        /// <inheritdoc />
+        protected override bool PrintMembers(StringBuilder builder)
+        {
+            base.PrintMembers(builder);
+            builder.Append(Type.Has32BitLimits ? $", Limits = {Limits}" : $", Type = {Type}");
+            return true;
+        }
     }
 
     /// <summary>

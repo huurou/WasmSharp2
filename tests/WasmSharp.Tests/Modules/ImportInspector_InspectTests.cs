@@ -14,7 +14,7 @@ internal class ImportInspector_InspectTests
 
         // Act & Assert
         var exception = await Assert
-            .That(() => ImportInspector.Inspect(stream, 5))
+            .That(() => ImportInspector.Inspect(stream, 5, WasmSpecVersion.Core2))
             .ThrowsExactly<WasmImportInspectionException>();
         using (Assert.Multiple())
         {
@@ -39,7 +39,7 @@ internal class ImportInspector_InspectTests
         var bytes = HostLinkingModuleBinary.Create([10, 0]);
 
         // Act
-        var result = ImportInspector.Inspect(bytes);
+        var result = ImportInspector.Inspect(bytes, WasmSpecVersion.Core2);
 
         // Assert
         await Assert.That(result.Imports.IsEmpty).IsTrue();
@@ -60,7 +60,7 @@ internal class ImportInspector_InspectTests
         var bytes = HostLinkingModuleBinary.Create(Convert.FromHexString(sections));
 
         // Act
-        var result = ImportInspector.Inspect(bytes);
+        var result = ImportInspector.Inspect(bytes, WasmSpecVersion.Core2);
 
         // Assert
         await Assert.That(result.Imports.IsEmpty).IsTrue();
@@ -85,7 +85,7 @@ internal class ImportInspector_InspectTests
         WasmImportInspection? result = null;
 
         // Act & Assert
-        await Assert.That(() => result = ImportInspector.Inspect(bytes)).Throws<WasmException>();
+        await Assert.That(() => result = ImportInspector.Inspect(bytes, WasmSpecVersion.Core2)).Throws<WasmException>();
         await Assert.That(result).IsNull();
     }
 
@@ -101,7 +101,7 @@ internal class ImportInspector_InspectTests
 
         // Act & Assert
         var exception = await Assert
-            .That(() => ImportInspector.Inspect(bytes))
+            .That(() => ImportInspector.Inspect(bytes, WasmSpecVersion.Core2))
             .ThrowsExactly<WasmImportInspectionException>();
         using (Assert.Multiple())
         {
@@ -135,7 +135,7 @@ internal class ImportInspector_InspectTests
         var bytes = HostLinkingModuleBinary.Create(Convert.FromHexString(sections));
 
         // Act & Assert
-        await Assert.That(() => ImportInspector.Inspect(bytes)).Throws<WasmException>();
+        await Assert.That(() => ImportInspector.Inspect(bytes, WasmSpecVersion.Core2)).Throws<WasmException>();
     }
 
     [Test]
@@ -149,7 +149,7 @@ internal class ImportInspector_InspectTests
         ]);
 
         // Act
-        var result = ImportInspector.Inspect(bytes);
+        var result = ImportInspector.Inspect(bytes, WasmSpecVersion.Core2);
 
         // Assert
         using (Assert.Multiple())
@@ -187,7 +187,7 @@ internal class ImportInspector_InspectTests
         );
 
         // Act
-        var result = ImportInspector.Inspect(bytes);
+        var result = ImportInspector.Inspect(bytes, WasmSpecVersion.Core2);
         Array.Fill(bytes, (byte)0);
 
         // Assert

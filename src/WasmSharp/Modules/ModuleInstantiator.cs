@@ -60,7 +60,7 @@ internal static class ModuleInstantiator
         var memories = CreateIndex(linked.OfType<MemoryExternalValue>().Select(x => x.Value), module.Memories.Length);
         foreach (var memory in module.Memories)
         {
-            memories.Add(new WasmMemory(memory.Limits));
+            memories.Add(new WasmMemory(memory.Type.Get32BitLimits()));
         }
         var instance = new WasmInstance(
             module,
@@ -235,7 +235,7 @@ internal static class ModuleInstantiator
                 && module.Types[(int)required.TypeIndex].Results.SequenceEqual(provided.Value.Type.Results),
             (GlobalImport required, GlobalExternalValue provided) => required.Type == provided.Value.Type,
             (MemoryImport required, MemoryExternalValue provided) => MatchesLimits(
-                required.Type.Limits,
+                required.Definition.Type.Get32BitLimits(),
                 provided.Value.PageCount,
                 provided.Value.MaximumPages
             ),
@@ -288,7 +288,7 @@ internal static class ModuleInstantiator
         {
             FunctionImport function => DescribeFunction(module.Types[(int)function.TypeIndex]),
             GlobalImport global => global.Type.ToString(),
-            MemoryImport memory => memory.Type.Limits.ToString(),
+            MemoryImport memory => memory.Definition.Type.Get32BitLimits().ToString(),
             TableImport table => $"{table.Type.ElementKind} {table.Type.Limits}",
             _ => throw new InvalidOperationException("importの種類が不明です。"),
         };

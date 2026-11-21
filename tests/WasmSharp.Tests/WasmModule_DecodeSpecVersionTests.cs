@@ -6,6 +6,30 @@ namespace WasmSharp.Tests;
 internal partial class WasmModule_DecodeTests
 {
     [Test]
+    [Arguments(WasmSpecVersion.Core2, "0503010400", "integer too large")]
+    [Arguments(WasmSpecVersion.Core2, "050701008080808010", "integer too large")]
+    [Arguments(WasmSpecVersion.Core3, "0503010200", "malformed limits flags")]
+    [Arguments(WasmSpecVersion.Core3, "0507010082808080808080808070", "integer too large")]
+    public async Task メモリ宣言の符号化が不正である_選択した仕様版のデコード診断を返す(
+        WasmSpecVersion specVersion,
+        string section,
+        string expected
+    )
+    {
+        // Arrange
+        var bytes = HostLinkingModuleBinary.Create(Convert.FromHexString(section));
+
+        // Act & Assert
+        var exception = await Assert.That(() => WasmModule.Decode(bytes, specVersion)).ThrowsExactly<WasmDecodeException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.Message).StartsWith(expected);
+            await Assert.That(exception.Location!.Stage).IsEqualTo(WasmProcessingStage.Decode);
+            await Assert.That(exception.Location.SectionId).IsEqualTo((byte)5);
+        }
+    }
+
+    [Test]
     [Arguments("D3", "ref.eq")]
     [Arguments("FB0F", "array.len")]
     [Arguments("FD8002", "i8x16.relaxed_swizzle")]

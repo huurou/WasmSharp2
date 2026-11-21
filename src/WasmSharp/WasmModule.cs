@@ -239,7 +239,7 @@ public sealed class WasmModule
     }
 
     /// <summary>
-    /// Core 2.0の入力バイト列から完全なimport情報と未確認範囲を取得する。moduleの有効性は保証しない
+    /// Core 3.0の入力バイト列から完全なimport情報と未確認範囲を取得する。moduleの有効性は保証しない
     /// </summary>
     /// <remarks>
     /// 全sectionの外枠とtype・importの構文を調査し、取得失敗時は部分一覧を返さない。
@@ -250,11 +250,25 @@ public sealed class WasmModule
     /// <exception cref="WasmImportInspectionException">必要な構文の読み取り、要求する関数型の解決または保持上限の制約により完全な情報を取得できない場合</exception>
     public static WasmImportInspection InspectImports(ReadOnlySpan<byte> bytes)
     {
-        return ImportInspector.Inspect(bytes);
+        return InspectImports(bytes, WasmSpecVersion.Core3);
     }
 
     /// <summary>
-    /// ストリームの現在位置からCore 2.0のimport情報を取得する。入力は閉じず、seekを要求しない
+    /// 選択した仕様の版で入力バイト列から完全なimport情報と未確認範囲を取得する
+    /// </summary>
+    /// <param name="bytes">ヘッダーから始まる入力バイナリ全体</param>
+    /// <param name="specVersion">入力を解釈する仕様の版</param>
+    /// <returns>宣言順のimport情報と構文・検証の未確認範囲</returns>
+    /// <exception cref="ArgumentOutOfRangeException">未定義の仕様の版を指定した場合</exception>
+    /// <exception cref="WasmImportInspectionException">完全なimport情報を取得できない場合</exception>
+    public static WasmImportInspection InspectImports(ReadOnlySpan<byte> bytes, WasmSpecVersion specVersion)
+    {
+        ValidateSpecVersion(specVersion);
+        return ImportInspector.Inspect(bytes, specVersion);
+    }
+
+    /// <summary>
+    /// ストリームの現在位置からCore 3.0のimport情報を取得する。入力は閉じず、seekを要求しない
     /// </summary>
     /// <remarks>
     /// 入力終端まで読み、取得失敗時は部分一覧を返さない。取得成功はmoduleの有効性を保証しない。
@@ -267,12 +281,28 @@ public sealed class WasmModule
     /// <exception cref="WasmImportInspectionException">必要な構文の読み取り、要求する関数型の解決または保持上限の制約により完全な情報を取得できない場合</exception>
     public static WasmImportInspection InspectImports(Stream stream)
     {
+        return InspectImports(stream, WasmSpecVersion.Core3);
+    }
+
+    /// <summary>
+    /// 選択した仕様の版でストリームの現在位置からimport情報を取得し、入力を開いたまま返す
+    /// </summary>
+    /// <param name="stream">読み取り可能な入力ストリーム</param>
+    /// <param name="specVersion">入力を解釈する仕様の版</param>
+    /// <returns>宣言順のimport情報と構文・検証の未確認範囲</returns>
+    /// <exception cref="ArgumentOutOfRangeException">未定義の仕様の版を指定した場合</exception>
+    /// <exception cref="ArgumentNullException">streamがnullの場合</exception>
+    /// <exception cref="ArgumentException">ストリームが読み取り可能ではない場合</exception>
+    /// <exception cref="WasmImportInspectionException">完全なimport情報を取得できない場合</exception>
+    public static WasmImportInspection InspectImports(Stream stream, WasmSpecVersion specVersion)
+    {
+        ValidateSpecVersion(specVersion);
         ArgumentNullException.ThrowIfNull(stream);
         if (!stream.CanRead)
         {
             throw new ArgumentException("入力ストリームが読み取り不可でした。", nameof(stream));
         }
-        return ImportInspector.Inspect(stream, Array.MaxLength);
+        return ImportInspector.Inspect(stream, Array.MaxLength, specVersion);
     }
 
     /// <summary>

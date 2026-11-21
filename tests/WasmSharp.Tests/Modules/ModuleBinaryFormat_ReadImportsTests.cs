@@ -34,8 +34,10 @@ internal class ModuleBinaryFormat_ReadImportsTests
             await Assert.That(imports[1].ModuleName).IsEqualTo("");
             await Assert.That(imports[1].Name).IsEqualTo("");
             await Assert.That(((FunctionImport)imports[1]).TypeIndex).IsEqualTo(uint.MaxValue);
-            await Assert.That(((MemoryImport)imports[2]).Type.Limits).IsEqualTo(new WasmLimits(uint.MaxValue, 0));
-            await Assert.That(((MemoryImport)imports[2]).Type.ByteOffset).IsEqualTo(35L);
+            await Assert
+                .That(((MemoryImport)imports[2]).Definition.Type)
+                .IsEqualTo(new WasmMemoryType(WasmValueKind.I32, uint.MaxValue, 0));
+            await Assert.That(((MemoryImport)imports[2]).Definition.ByteOffset).IsEqualTo(35L);
             await Assert.That(((TableImport)imports[3]).Type.ElementKind).IsEqualTo(WasmValueKind.ExternRef);
             await Assert.That(((TableImport)imports[3]).Type.Limits).IsEqualTo(new WasmLimits(3));
             await Assert.That(((TableImport)imports[3]).Type.ByteOffset).IsEqualTo(49L);

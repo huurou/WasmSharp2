@@ -92,7 +92,21 @@ internal static class ModuleBinaryFormat
     internal static MemoryDefinition ReadMemoryType(ref ModuleBinaryReader reader)
     {
         var offset = reader.Position;
-        return new MemoryDefinition(ReadLimits(ref reader), offset);
+        if (reader.SpecVersion == WasmSpecVersion.Core2)
+        {
+            return new MemoryDefinition(ReadLimits(ref reader), offset);
+        }
+
+        // Core 3.0ではアドレス型にかかわらず、ページ数をu64として読む。
+        var flags = reader.ReadByte();
+        if ((flags & ~0x05) != 0)
+        {
+            throw reader.Error("malformed limits flags: メモリのlimitsフラグが不正です。", offset);
+        }
+        var addressType = (flags & 0x04) == 0 ? WasmValueKind.I32 : WasmValueKind.I64;
+        var minimum = reader.ReadU64();
+        ulong? maximum = (flags & 0x01) == 0 ? null : reader.ReadU64();
+        return new MemoryDefinition(offset, new WasmMemoryType(addressType, minimum, maximum));
     }
 
     /// <summary>
