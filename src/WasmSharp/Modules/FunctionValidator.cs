@@ -192,12 +192,12 @@ internal static class FunctionValidator
 
                 case ValidationRule.MemorySize:
                 case ValidationRule.MemoryGrow:
-                    RequireMemory(instruction.Index, instruction.ByteOffset);
+                    var pageCountType = RequireMemory(instruction.Index, instruction.ByteOffset);
                     if (descriptor.Validation == ValidationRule.MemoryGrow)
                     {
-                        Pop(WasmValueKind.I32, instruction.ByteOffset);
+                        Pop(pageCountType, instruction.ByteOffset);
                     }
-                    stack.Add(WasmValueKind.I32);
+                    stack.Add(pageCountType);
                     break;
 
                 case ValidationRule.MemoryCopy:
