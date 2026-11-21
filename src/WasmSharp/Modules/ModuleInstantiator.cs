@@ -111,7 +111,7 @@ internal static class ModuleInstantiator
             var element = instance.ElementSegments[index];
             if (definition.ActiveTarget is { } target)
             {
-                var offset = unchecked((uint)EvaluateSegmentOffset(instance, target.OffsetExpression).AsI32());
+                var offset = EvaluateSegmentOffset(instance, target.OffsetExpression).AsUnsignedInteger();
                 if (!element.TryInitialize(instance.Tables[(int)target.TableIndex], offset, 0, element.Length))
                 {
                     ExecutionBoundary.ThrowIfFailed(

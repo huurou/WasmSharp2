@@ -248,14 +248,22 @@ public sealed class WasmTable
     }
 
     /// <summary>
+    /// 加算のオーバーフローを避けて、指定範囲が現在のテーブルに収まるかを返す
+    /// </summary>
+    private bool ContainsRange(ulong offset, ulong length)
+    {
+        return offset <= Count && length <= Count - offset;
+    }
+
+    /// <summary>
     /// 指定位置へ参照列を転送し、全範囲が収まるかを返す
     /// </summary>
     /// <param name="destination">転送先の先頭要素位置</param>
     /// <param name="values">要素型と一致する検証済みの参照列</param>
     /// <returns>転送できた場合はtrue 範囲外の場合は内容を変更せずfalse</returns>
-    internal bool TryWrite(uint destination, ReadOnlySpan<WasmValue> values)
+    internal bool TryWrite(ulong destination, ReadOnlySpan<WasmValue> values)
     {
-        if ((ulong)destination + (ulong)values.Length > Count)
+        if (!ContainsRange(destination, (ulong)values.Length))
         {
             return false;
         }

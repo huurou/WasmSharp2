@@ -286,7 +286,9 @@ internal static class FunctionValidator
                             instruction.ByteOffset
                         );
                     }
-                    PopThreeI32(instruction.ByteOffset);
+                    Pop(WasmValueKind.I32, instruction.ByteOffset);
+                    Pop(WasmValueKind.I32, instruction.ByteOffset);
+                    Pop(initializationTableType.AddressType, instruction.ByteOffset);
                     break;
 
                 case ValidationRule.ElementDrop:

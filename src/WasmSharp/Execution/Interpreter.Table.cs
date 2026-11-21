@@ -59,7 +59,7 @@ internal static partial class Interpreter
         var function = context.CurrentFunction;
         var length = unchecked((uint)context.PopValue().AsI32());
         var source = unchecked((uint)context.PopValue().AsI32());
-        var destination = unchecked((uint)context.PopValue().AsI32());
+        var destination = context.PopValue().AsUnsignedInteger();
         var instance = function.Instance;
         if (
             !instance
