@@ -16,7 +16,12 @@ internal sealed class ReferenceValidationContext
     /// <summary>
     /// importと定義を合わせたメモリの個数
     /// </summary>
-    internal uint MemoryCount { get; }
+    internal uint MemoryCount => (uint)MemoryAddressTypes.Length;
+
+    /// <summary>
+    /// importを先頭にしたメモリ添字順のアドレス型
+    /// </summary>
+    internal ImmutableArray<WasmValueKind> MemoryAddressTypes { get; }
 
     /// <summary>
     /// importを先頭にしたtable添字順の要素型
@@ -38,14 +43,14 @@ internal sealed class ReferenceValidationContext
     /// </summary>
     private ReferenceValidationContext(
         uint functionCount,
-        uint memoryCount,
+        ImmutableArray<WasmValueKind> memoryAddressTypes,
         ImmutableArray<WasmValueKind> tableElementTypes,
         ImmutableArray<WasmValueKind> elementTypes,
         ImmutableHashSet<uint> declaredFunctions
     )
     {
         FunctionCount = functionCount;
-        MemoryCount = memoryCount;
+        MemoryAddressTypes = memoryAddressTypes;
         TableElementTypes = tableElementTypes;
         ElementTypes = elementTypes;
         DeclaredFunctions = declaredFunctions;
@@ -92,7 +97,10 @@ internal sealed class ReferenceValidationContext
 
         return new ReferenceValidationContext(
             importedFunctionCount + (uint)module.Functions.Length,
-            (uint)module.Imports.Count(x => x is MemoryImport) + (uint)module.Memories.Length,
+            [
+                .. module.Imports.OfType<MemoryImport>().Select(x => x.Definition.Type.AddressType),
+                .. module.Memories.Select(x => x.Type.AddressType),
+            ],
             [
                 .. module.Imports.OfType<TableImport>().Select(x => x.Type.ElementKind),
                 .. module.Tables.Select(x => x.ElementKind),

@@ -7,9 +7,9 @@ namespace WasmSharp.Modules.Imports;
 /// </summary>
 /// <param name="ModuleName">要求する提供元のmodule名</param>
 /// <param name="Name">要求するmemoryの名前</param>
-/// <param name="Type">要求するmemoryのlimitsと型記述のバイト位置</param>
+/// <param name="Definition">要求するmemoryの型と型記述のバイト位置</param>
 /// <param name="ByteOffset">入力バイナリ上のimport宣言のバイト位置</param>
-internal sealed record MemoryImport(string ModuleName, string Name, MemoryDefinition Type, long ByteOffset)
+internal sealed record MemoryImport(string ModuleName, string Name, MemoryDefinition Definition, long ByteOffset)
     : ModuleImport(ModuleName, Name, ByteOffset)
 {
     /// <inheritdoc />

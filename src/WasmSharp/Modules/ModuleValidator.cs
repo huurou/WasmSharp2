@@ -101,7 +101,7 @@ internal static class ModuleValidator
     }
 
     /// <summary>
-    /// アクティブデータセグメントのメモリ参照とi32のオフセット式を宣言順に検証する
+    /// アクティブデータセグメントのメモリ参照と、そのアドレス型に従うオフセット式を宣言順に検証する
     /// </summary>
     /// <param name="module">リソース宣言の検証を終えたmodule</param>
     /// <param name="references">当該module検証で共有する参照情報</param>
@@ -130,7 +130,7 @@ internal static class ModuleValidator
             }
             ConstantInitializer.Validate(
                 target.OffsetExpression,
-                WasmValueKind.I32,
+                references.MemoryAddressTypes[(int)target.MemoryIndex],
                 visibleGlobals,
                 references.FunctionCount,
                 11,
@@ -283,11 +283,11 @@ internal static class ModuleValidator
                     break;
 
                 case TableImport table:
-                    ValidateLimits(table.Type.Limits, location);
+                    ValidateLimits(table.Type.Limits.Minimum, table.Type.Limits.Maximum, location);
                     break;
 
                 case MemoryImport memory:
-                    ValidateMemory(memory.Type.Limits, location);
+                    ValidateMemory(memory.Definition.Type, location);
                     break;
             }
         }
@@ -320,11 +320,15 @@ internal static class ModuleValidator
     {
         foreach (var table in module.Tables)
         {
-            ValidateLimits(table.Limits, new(WasmProcessingStage.Validate, table.ByteOffset, null, 4));
+            ValidateLimits(
+                table.Limits.Minimum,
+                table.Limits.Maximum,
+                new(WasmProcessingStage.Validate, table.ByteOffset, null, 4)
+            );
         }
         foreach (var memory in module.Memories)
         {
-            ValidateMemory(memory.Limits, new(WasmProcessingStage.Validate, memory.ByteOffset, null, 5));
+            ValidateMemory(memory.Type, new(WasmProcessingStage.Validate, memory.ByteOffset, null, 5));
         }
     }
 
@@ -390,30 +394,20 @@ internal static class ModuleValidator
     /// <summary>
     /// memoryのページ数の仕様上限とlimitsの大小関係を検証する
     /// </summary>
-    /// <param name="limits">未検証のページ数の範囲</param>
+    /// <param name="type">アドレス型と未検証のページ数の上下限</param>
     /// <param name="location">宣言の位置</param>
-    private static void ValidateMemory(WasmLimits limits, WasmFailureLocation location)
+    private static void ValidateMemory(WasmMemoryType type, WasmFailureLocation location)
     {
-        const uint MAXIMUM_PAGES = 65536;
-        const string MAXIMUM_PREFIX = "memory size must be at most 65536 pages (4GiB)";
-
-        if (limits.Minimum > MAXIMUM_PAGES)
+        if (type.MinimumPages > type.PageLimit || type.MaximumPages > type.PageLimit)
         {
-            throw ValidationDiagnostics.ValidationFailure(
-                MAXIMUM_PREFIX,
-                "limitsの最小値が仕様上限を超えています。",
-                location
-            );
+            var diagnostic =
+                type.AddressType == WasmValueKind.I32
+                    ? "memory size must be at most 65536 pages (4GiB)"
+                    : "memory size must be at most 2^48 pages for i64";
+            var detail = type.MinimumPages > type.PageLimit ? "limitsの最小値" : "limitsの最大値";
+            throw ValidationDiagnostics.ValidationFailure(diagnostic, detail + "が仕様上限を超えています。", location);
         }
-        if (limits.Maximum is > MAXIMUM_PAGES)
-        {
-            throw ValidationDiagnostics.ValidationFailure(
-                MAXIMUM_PREFIX,
-                "limitsの最大値が仕様上限を超えています。",
-                location
-            );
-        }
-        ValidateLimits(limits, location);
+        ValidateLimits(type.MinimumPages, type.MaximumPages, location);
     }
 
     /// <summary>
@@ -445,11 +439,12 @@ internal static class ModuleValidator
     /// <summary>
     /// limitsの最小値と最大値の大小関係を検証する
     /// </summary>
-    /// <param name="limits">未検証の範囲</param>
+    /// <param name="minimum">最小値</param>
+    /// <param name="maximum">最大値 指定がなければnull</param>
     /// <param name="location">宣言の位置</param>
-    private static void ValidateLimits(WasmLimits limits, WasmFailureLocation location)
+    private static void ValidateLimits(ulong minimum, ulong? maximum, WasmFailureLocation location)
     {
-        if (limits.Maximum is { } maximum && limits.Minimum > maximum)
+        if (minimum > maximum)
         {
             throw ValidationDiagnostics.ValidationFailure(
                 "size minimum must not be greater than maximum",

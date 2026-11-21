@@ -83,16 +83,30 @@ internal static class ModuleBinaryFormat
     }
 
     /// <summary>
-    /// memoryのlimitsの構文を読み取り、型記述の位置とともに保持する
+    /// 仕様版に従ってメモリのアドレス型とページ数の上下限を読み取る
     /// </summary>
     /// <param name="reader">memory型の先頭にある読み取り状態 型記述の終端まで進める</param>
-    /// <returns>未検証のlimitsと型記述のバイト位置を持つmemory定義</returns>
+    /// <returns>アドレス型、未検証のページ数の上下限、型記述のバイト位置を持つメモリ定義</returns>
     /// <exception cref="WasmDecodeException">limitsの符号化が不正な場合</exception>
     /// <exception cref="ModuleReadBoundaryException">限定された範囲内で構文を読み終えられない場合</exception>
     internal static MemoryDefinition ReadMemoryType(ref ModuleBinaryReader reader)
     {
         var offset = reader.Position;
-        return new MemoryDefinition(ReadLimits(ref reader), offset);
+        if (reader.SpecVersion == WasmSpecVersion.Core2)
+        {
+            return new MemoryDefinition(ReadLimits(ref reader), offset);
+        }
+
+        // Core 3.0ではアドレス型にかかわらず、ページ数をu64として読む。
+        var flags = reader.ReadByte();
+        if ((flags & ~0x05) != 0)
+        {
+            throw reader.Error("malformed limits flags: メモリのlimitsフラグが不正です。", offset);
+        }
+        var addressType = (flags & 0x04) == 0 ? WasmValueKind.I32 : WasmValueKind.I64;
+        var minimum = reader.ReadU64();
+        ulong? maximum = (flags & 0x01) == 0 ? null : reader.ReadU64();
+        return new MemoryDefinition(offset, new WasmMemoryType(addressType, minimum, maximum));
     }
 
     /// <summary>

@@ -169,7 +169,7 @@ internal static class FunctionValidator
                 case ValidationRule.MemoryStore:
                 case ValidationRule.MemoryLoadLane:
                 case ValidationRule.MemoryStoreLane:
-                    var memorySignature = ValidateMemoryAccess(instruction, descriptor);
+                    var (memorySignature, addressType) = ValidateMemoryAccess(instruction, descriptor);
                     if (descriptor.Validation is ValidationRule.MemoryLoadLane or ValidationRule.MemoryStoreLane)
                     {
                         ValidateLaneIndex(instruction.LaneIndex, descriptor.LaneCount, instruction.ByteOffset);
@@ -183,7 +183,7 @@ internal static class FunctionValidator
                     {
                         Pop(memorySignature.ValueType, instruction.ByteOffset);
                     }
-                    Pop(WasmValueKind.I32, instruction.ByteOffset);
+                    Pop(addressType, instruction.ByteOffset);
                     if (descriptor.Validation is ValidationRule.MemoryLoad or ValidationRule.MemoryLoadLane)
                     {
                         stack.Add(memorySignature.ValueType);
@@ -192,43 +192,42 @@ internal static class FunctionValidator
 
                 case ValidationRule.MemorySize:
                 case ValidationRule.MemoryGrow:
-                    RequireMemory(instruction.Index, instruction.ByteOffset);
+                    var pageCountType = GetMemoryAddressType(instruction.Index, instruction.ByteOffset);
                     if (descriptor.Validation == ValidationRule.MemoryGrow)
                     {
-                        Pop(WasmValueKind.I32, instruction.ByteOffset);
+                        Pop(pageCountType, instruction.ByteOffset);
                     }
-                    stack.Add(WasmValueKind.I32);
+                    stack.Add(pageCountType);
                     break;
 
                 case ValidationRule.MemoryCopy:
+                    var destinationAddressType = GetMemoryAddressType(instruction.Index, instruction.ByteOffset);
+                    var sourceAddressType = GetMemoryAddressType(instruction.SecondaryIndex, instruction.ByteOffset);
+                    // 転送長には、コピー先とコピー元のうち幅が小さい方のアドレス型を使う。
+                    var copyLengthType =
+                        destinationAddressType == sourceAddressType ? destinationAddressType : WasmValueKind.I32;
+                    Pop(copyLengthType, instruction.ByteOffset);
+                    Pop(sourceAddressType, instruction.ByteOffset);
+                    Pop(destinationAddressType, instruction.ByteOffset);
+                    break;
+
                 case ValidationRule.MemoryFill:
-                    RequireMemory(instruction.Index, instruction.ByteOffset);
-                    if (descriptor.Validation == ValidationRule.MemoryCopy)
-                    {
-                        RequireMemory(instruction.SecondaryIndex, instruction.ByteOffset);
-                    }
-                    PopThreeI32(instruction.ByteOffset);
+                    var fillAddressType = GetMemoryAddressType(instruction.Index, instruction.ByteOffset);
+                    Pop(fillAddressType, instruction.ByteOffset);
+                    Pop(WasmValueKind.I32, instruction.ByteOffset);
+                    Pop(fillAddressType, instruction.ByteOffset);
                     break;
 
                 case ValidationRule.MemoryInit:
+                    var initializationAddressType = GetMemoryAddressType(instruction.SecondaryIndex, instruction.ByteOffset);
+                    RequireDataSegment(instruction.Index, instruction.ByteOffset);
+                    Pop(WasmValueKind.I32, instruction.ByteOffset);
+                    Pop(WasmValueKind.I32, instruction.ByteOffset);
+                    Pop(initializationAddressType, instruction.ByteOffset);
+                    break;
+
                 case ValidationRule.DataDrop:
-                    if (descriptor.Validation == ValidationRule.MemoryInit)
-                    {
-                        RequireMemory(instruction.SecondaryIndex, instruction.ByteOffset);
-                    }
-                    if (instruction.Index >= (uint)module.DataSegments.Length)
-                    {
-                        throw CreateUnknownIndex(
-                            "data segment",
-                            instruction.Index,
-                            "参照するデータセグメントが存在しません。",
-                            instruction.ByteOffset
-                        );
-                    }
-                    if (descriptor.Validation == ValidationRule.MemoryInit)
-                    {
-                        PopThreeI32(instruction.ByteOffset);
-                    }
+                    RequireDataSegment(instruction.Index, instruction.ByteOffset);
                     break;
 
                 case ValidationRule.TableGet:
@@ -508,6 +507,14 @@ internal static class FunctionValidator
             Pop(WasmValueKind.I32, byteOffset);
         }
 
+        void RequireDataSegment(uint index, long byteOffset)
+        {
+            if (index >= (uint)module.DataSegments.Length)
+            {
+                throw CreateUnknownIndex("data segment", index, "参照するデータセグメントが存在しません。", byteOffset);
+            }
+        }
+
         WasmValueKind GetTableElementType(uint index, long byteOffset)
         {
             if (index >= (uint)references.TableElementTypes.Length)
@@ -538,17 +545,21 @@ internal static class FunctionValidator
             }
         }
 
-        void RequireMemory(uint index, long byteOffset)
+        WasmValueKind GetMemoryAddressType(uint index, long byteOffset)
         {
             if (index >= references.MemoryCount)
             {
                 throw CreateUnknownIndex("memory", index, "参照するメモリが存在しません。", byteOffset);
             }
+            return references.MemoryAddressTypes[(int)index];
         }
 
-        MemoryAccessSignature ValidateMemoryAccess(DecodedInstruction instruction, InstructionDescriptor descriptor)
+        (MemoryAccessSignature Signature, WasmValueKind AddressType) ValidateMemoryAccess(
+            DecodedInstruction instruction,
+            InstructionDescriptor descriptor
+        )
         {
-            RequireMemory(instruction.Index, instruction.ByteOffset);
+            var addressType = GetMemoryAddressType(instruction.Index, instruction.ByteOffset);
             var memorySignature = descriptor.MemoryAccessSignature
                 ?? throw new InvalidOperationException("メモリ命令のアクセス情報がありません。");
             if (instruction.MemoryArgument.Alignment > (uint)BitOperations.Log2(memorySignature.ByteWidth))
@@ -559,7 +570,7 @@ internal static class FunctionValidator
                     new(WasmProcessingStage.Validate, instruction.ByteOffset, moduleFunctionIndex, 10)
                 );
             }
-            if (instruction.MemoryArgument.Offset > uint.MaxValue)
+            if (addressType == WasmValueKind.I32 && instruction.MemoryArgument.Offset > uint.MaxValue)
             {
                 throw ValidationDiagnostics.ValidationFailure(
                     "offset out of range",
@@ -567,7 +578,7 @@ internal static class FunctionValidator
                     new WasmFailureLocation(WasmProcessingStage.Validate, instruction.ByteOffset, moduleFunctionIndex, 10)
                 );
             }
-            return memorySignature;
+            return (memorySignature, addressType);
         }
 
         (ImmutableArray<WasmValueKind> Parameters, ImmutableArray<WasmValueKind> Results) ResolveBlockType(

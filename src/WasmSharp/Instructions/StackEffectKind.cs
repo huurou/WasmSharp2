@@ -141,22 +141,27 @@ internal enum StackEffectKind
     TypedSelect,
 
     /// <summary>
-    /// i32アドレスを取り除き、メモリアクセス情報の値型を積む
+    /// 対象メモリのアドレス型の値を取り除き、読み出した値を積む
     /// </summary>
     MemoryLoad,
 
     /// <summary>
-    /// メモリアクセス情報の値型とi32アドレスを取り除く
+    /// 書き込む値と対象メモリのアドレス型の値を取り除く
     /// </summary>
     MemoryStore,
 
     /// <summary>
-    /// i32のページ数を取り除き、拡張前のページ数をi32で積む
+    /// 指定したメモリのアドレス型で現在のページ数を積む
+    /// </summary>
+    MemorySize,
+
+    /// <summary>
+    /// 指定したメモリのアドレス型で増分を取り除き、同じ型で拡張前のページ数を積む
     /// </summary>
     MemoryGrow,
 
     /// <summary>
-    /// 3つのi32値を取り除く
+    /// 宛先、コピー元または充填値、長さを表す3つの整数を取り除く
     /// </summary>
     MemoryBulk,
 
@@ -226,12 +231,12 @@ internal enum StackEffectKind
     PushV128,
 
     /// <summary>
-    /// v128とi32アドレスを取り除き、laneを置き換えたv128を積む
+    /// v128と対象メモリのアドレス型の値を取り除き、指定したlaneを置き換えたv128を積む
     /// </summary>
     MemoryLoadLane,
 
     /// <summary>
-    /// v128とi32アドレスを取り除き、指定laneを書き込む
+    /// v128と対象メモリのアドレス型の値を取り除き、指定したlaneを書き込む
     /// </summary>
     MemoryStoreLane,
 }

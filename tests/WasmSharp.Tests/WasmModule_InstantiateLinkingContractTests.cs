@@ -6,6 +6,44 @@ namespace WasmSharp.Tests;
 internal partial class WasmModule_InstantiateTests
 {
     [Test]
+    [Arguments("0001", WasmValueKind.I64, 2UL, "要求型 WasmLimits { Minimum = 1, Maximum =  }")]
+    [Arguments("0401", WasmValueKind.I32, 2UL, "提供型は WasmLimits { Minimum = 1, Maximum = 2 }")]
+    [Arguments("048080808010", WasmValueKind.I64, 1UL << 32, "MinimumPages = 4294967296")]
+    [Arguments("05018080808010", WasmValueKind.I64, null, "MaximumPages = 4294967296")]
+    [Arguments("050101", WasmValueKind.I64, (1UL << 32) + 1, "MaximumPages = 4294967297")]
+    public async Task メモリの幅かページ数がimport宣言と合わない_型が合わずリンクが不成立になる(
+        string declaration,
+        WasmValueKind addressType,
+        ulong? maximum,
+        string expectedType
+    )
+    {
+        // Arrange
+        var host = new WasmHostModule("env");
+        host.Define("m", WasmMemory.Create(new WasmMemoryType(addressType, 1, maximum)));
+        var module = WasmModule
+            .Decode(
+                HostLinkingModuleBinary.Create(
+                    HostLinkingModuleBinary.Imports(("env", "m", 2, Convert.FromHexString(declaration)))
+                ),
+                WasmSpecVersion.Core3
+            )
+            .Validate();
+
+        // Act & Assert
+        var exception = await Assert
+            .That(() => module.Instantiate(new WasmExecutionContext(), [host]))
+            .ThrowsExactly<WasmInstantiateException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.Reason).IsEqualTo(WasmInstantiateReason.TypeMismatch);
+            await Assert.That(exception.Message).StartsWith("incompatible import type");
+            await Assert.That(exception.Message).Contains(expectedType);
+            await Assert.That(exception.Message).Contains("AddressType = I64");
+        }
+    }
+
+    [Test]
     [Arguments(false, 0, false)]
     [Arguments(false, 1, false)]
     [Arguments(false, 2, false)]

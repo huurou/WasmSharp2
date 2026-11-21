@@ -83,6 +83,20 @@ public readonly struct WasmValue
     }
 
     /// <summary>
+    /// i32またはi64のビット列を符号なし整数として取得する
+    /// </summary>
+    /// <returns>i32はゼロ拡張した値、i64は保持する64ビット列</returns>
+    /// <exception cref="InvalidOperationException">valueの型がi32またはi64以外の場合</exception>
+    internal ulong AsUnsignedInteger()
+    {
+        if (Kind is not (WasmValueKind.I32 or WasmValueKind.I64))
+        {
+            throw new InvalidOperationException($"{Kind}のvalueを整数として取得できません。");
+        }
+        return _low64;
+    }
+
+    /// <summary>
     /// 32ビット浮動小数点数からビット列を保持してvalueを構築する
     /// </summary>
     /// <param name="value">保持する32ビット浮動小数点数</param>

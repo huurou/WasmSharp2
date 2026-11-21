@@ -201,7 +201,7 @@ internal sealed class ScriptExecutor(InputVerification input, WasmSpecVersion sp
     private WasmInstance? Instantiate(ModuleDefinition definition, ScriptState state, ref CommandObservation observation)
     {
         observation = observation with { Operation = "inspect_imports", LastStage = CaseStage.InspectImports };
-        var inspection = WasmModule.InspectImports(definition.Bytes.AsSpan());
+        var inspection = WasmModule.InspectImports(definition.Bytes.AsSpan(), definition.Module.SpecVersion);
         var causes = inspection
             .Imports.Select(x => state.GetRegistration(x.ModuleName)?.Cause)
             .OfType<UnavailableCause>()
