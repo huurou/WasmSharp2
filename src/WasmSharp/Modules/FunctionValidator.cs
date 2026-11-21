@@ -192,7 +192,7 @@ internal static class FunctionValidator
 
                 case ValidationRule.MemorySize:
                 case ValidationRule.MemoryGrow:
-                    var pageCountType = RequireMemory(instruction.Index, instruction.ByteOffset);
+                    var pageCountType = GetMemoryAddressType(instruction.Index, instruction.ByteOffset);
                     if (descriptor.Validation == ValidationRule.MemoryGrow)
                     {
                         Pop(pageCountType, instruction.ByteOffset);
@@ -201,8 +201,8 @@ internal static class FunctionValidator
                     break;
 
                 case ValidationRule.MemoryCopy:
-                    var destinationAddressType = RequireMemory(instruction.Index, instruction.ByteOffset);
-                    var sourceAddressType = RequireMemory(instruction.SecondaryIndex, instruction.ByteOffset);
+                    var destinationAddressType = GetMemoryAddressType(instruction.Index, instruction.ByteOffset);
+                    var sourceAddressType = GetMemoryAddressType(instruction.SecondaryIndex, instruction.ByteOffset);
                     // 転送長には、コピー先とコピー元のうち幅が小さい方のアドレス型を使う。
                     var copyLengthType =
                         destinationAddressType == sourceAddressType ? destinationAddressType : WasmValueKind.I32;
@@ -212,14 +212,14 @@ internal static class FunctionValidator
                     break;
 
                 case ValidationRule.MemoryFill:
-                    var fillAddressType = RequireMemory(instruction.Index, instruction.ByteOffset);
+                    var fillAddressType = GetMemoryAddressType(instruction.Index, instruction.ByteOffset);
                     Pop(fillAddressType, instruction.ByteOffset);
                     Pop(WasmValueKind.I32, instruction.ByteOffset);
                     Pop(fillAddressType, instruction.ByteOffset);
                     break;
 
                 case ValidationRule.MemoryInit:
-                    var initializationAddressType = RequireMemory(instruction.SecondaryIndex, instruction.ByteOffset);
+                    var initializationAddressType = GetMemoryAddressType(instruction.SecondaryIndex, instruction.ByteOffset);
                     RequireDataSegment(instruction.Index, instruction.ByteOffset);
                     Pop(WasmValueKind.I32, instruction.ByteOffset);
                     Pop(WasmValueKind.I32, instruction.ByteOffset);
@@ -545,7 +545,7 @@ internal static class FunctionValidator
             }
         }
 
-        WasmValueKind RequireMemory(uint index, long byteOffset)
+        WasmValueKind GetMemoryAddressType(uint index, long byteOffset)
         {
             if (index >= references.MemoryCount)
             {
@@ -559,7 +559,7 @@ internal static class FunctionValidator
             InstructionDescriptor descriptor
         )
         {
-            var addressType = RequireMemory(instruction.Index, instruction.ByteOffset);
+            var addressType = GetMemoryAddressType(instruction.Index, instruction.ByteOffset);
             var memorySignature = descriptor.MemoryAccessSignature
                 ?? throw new InvalidOperationException("メモリ命令のアクセス情報がありません。");
             if (instruction.MemoryArgument.Alignment > (uint)BitOperations.Log2(memorySignature.ByteWidth))

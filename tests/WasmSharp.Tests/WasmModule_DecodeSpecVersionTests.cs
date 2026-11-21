@@ -9,7 +9,7 @@ internal partial class WasmModule_DecodeTests
     [Arguments(WasmSpecVersion.Core2, "0503010400", "integer too large")]
     [Arguments(WasmSpecVersion.Core2, "050701008080808010", "integer too large")]
     [Arguments(WasmSpecVersion.Core3, "0503010200", "malformed limits flags")]
-    [Arguments(WasmSpecVersion.Core3, "0507010082808080808080808070", "integer too large")]
+    [Arguments(WasmSpecVersion.Core3, "050C010082808080808080808070", "integer too large")]
     public async Task メモリ宣言の符号化が不正である_選択した仕様版のデコード診断を返す(
         WasmSpecVersion specVersion,
         string section,

@@ -4,7 +4,7 @@
 
 WebAssembly Core 2.0のバイナリのデコード・検証・インスタンス化・実行を実装済みです。固定公式スイート147ファイルでは、対象の52,830コマンドがすべて成立し、テキスト形式の1,077コマンドは対象外です。詳細は[Core 2.0の受入記録](https://github.com/huurou/WasmSharp2/blob/f4c91f7a47e727aac1fd05e5f040e34cb5076fdd/.kiro/specs/simd/acceptance.md#102-単一最終runによる公式比較と全体判定)を参照してください。
 
-`WasmModule.Decode`は、バイト列とストリームのどちらでも、版を省略するとCore 3.0を使います。32ビットメモリを1つまで扱うCore 2.0の規則を選ぶには、第2引数に`WasmSpecVersion.Core2`を指定します。`Validate`はデコード時に選んだ版を使います。
+`WasmModule.Decode`と`WasmModule.InspectImports`は、バイト列とストリームのどちらでも、版を省略するとCore 3.0を使います。32ビットメモリを1つまで扱うCore 2.0の規則を選ぶには、第2引数に`WasmSpecVersion.Core2`を指定します。`Validate`はデコード時に選んだ版を使います。
 
 Core 3.0では、1つのモジュールに32ビットと64ビットのメモリを混在させてimport・定義し、個別に初期化・exportできます。通常命令とSIMD命令は対象メモリのアドレス型（`i32`または`i64`）で読み書きします。ページ数の取得・拡張、データセグメントからの初期化、指定範囲の充填、アドレス幅の異なるメモリ間のコピーにも対応します。
 
@@ -15,7 +15,7 @@ var memory = WasmMemory.Create(new WasmMemoryType(WasmValueKind.I64, 1, 1UL << 3
 ulong? maximumPages = memory.Type.MaximumPages;
 ```
 
-リビジョン`98b5b62`で固定Core 3.0スイートを実行し、全65,193件のうち61,943件が成立しました。64ビットメモリの対象1,920件はすべて成立しました。例外タグを定義するタグセクションなど、未対応の機能が残っています。[公式ケースと回帰比較の内訳](https://github.com/huurou/WasmSharp2/issues/63)
+Issue #10の受け入れ時に固定Core 3.0スイートを実行し、全65,193件のうち61,943件が成立しました。64ビットメモリの対象1,920件はすべて成立しました。例外タグを定義するタグセクションなど、未対応の機能が残っています。[公式ケースと回帰比較の内訳](https://github.com/huurou/WasmSharp2/issues/63)
 
 両版の公式テストは、版ごとの仕様サブモジュールから取得し、同じ`wasm-tools 1.263.0`で変換します。[固定入力と変換器の取得手順](thirdParties/README.md)・[ランナーの操作ガイド](tools/WasmSharp.TestSuiteRunner/README.md)
 

@@ -13,7 +13,7 @@ namespace WasmSharp;
 public sealed class WasmModule
 {
     /// <summary>
-    /// 公開Decodeで仕様の版を省略したときに使用する版
+    /// DecodeまたはInspectImportsで仕様の版を省略したときに使用する版
     /// </summary>
     private const WasmSpecVersion DefaultSpecVersion = WasmSpecVersion.Core3;
 
@@ -250,7 +250,7 @@ public sealed class WasmModule
     /// <exception cref="WasmImportInspectionException">必要な構文の読み取り、要求する関数型の解決または保持上限の制約により完全な情報を取得できない場合</exception>
     public static WasmImportInspection InspectImports(ReadOnlySpan<byte> bytes)
     {
-        return InspectImports(bytes, WasmSpecVersion.Core3);
+        return InspectImports(bytes, DefaultSpecVersion);
     }
 
     /// <summary>
@@ -281,7 +281,7 @@ public sealed class WasmModule
     /// <exception cref="WasmImportInspectionException">必要な構文の読み取り、要求する関数型の解決または保持上限の制約により完全な情報を取得できない場合</exception>
     public static WasmImportInspection InspectImports(Stream stream)
     {
-        return InspectImports(stream, WasmSpecVersion.Core3);
+        return InspectImports(stream, DefaultSpecVersion);
     }
 
     /// <summary>

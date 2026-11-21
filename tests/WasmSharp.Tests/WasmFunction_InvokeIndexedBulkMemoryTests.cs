@@ -163,10 +163,20 @@ internal partial class WasmFunction_InvokeTests
             memory64Destination ? [0x7E, 0x7F, 0x7F] : null
         );
 
+        var firstBefore = InitializeMemory(first, 0xA0);
+        var secondBefore = InitializeMemory(second, 0xB0);
+
         // Act & Assert
-        await AssertBulkMemoryOutOfBounds(first, second, () =>
-            InvokeBulkMemoryFunction(context, function, destination, sourceOrValue, length)
-        );
+        var exception = await Assert
+            .That(() => InvokeBulkMemoryFunction(context, function, destination, sourceOrValue, length))
+            .ThrowsExactly<WasmTrapException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.Reason).IsEqualTo(WasmTrapReason.MemoryOutOfBounds);
+            await Assert.That(exception.Location!.Stage).IsEqualTo(WasmProcessingStage.Invoke);
+            await AssertMemoryUnchanged(first, firstBefore);
+            await AssertMemoryUnchanged(second, secondBefore);
+        }
     }
 
     [Test]
@@ -200,10 +210,20 @@ internal partial class WasmFunction_InvokeTests
         var second = WasmMemory.Create(new WasmMemoryType(destinationType, 1));
         var function = InstantiateBulkMemoryFunction(context, first, second, Convert.FromHexString(operation), parameters);
 
+        var firstBefore = InitializeMemory(first, 0xA0);
+        var secondBefore = InitializeMemory(second, 0xB0);
+
         // Act & Assert
-        await AssertBulkMemoryOutOfBounds(first, second, () =>
-            InvokeBulkMemoryFunction(context, function, destination, sourceOrValue, length)
-        );
+        var exception = await Assert
+            .That(() => InvokeBulkMemoryFunction(context, function, destination, sourceOrValue, length))
+            .ThrowsExactly<WasmTrapException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.Reason).IsEqualTo(WasmTrapReason.MemoryOutOfBounds);
+            await Assert.That(exception.Location!.Stage).IsEqualTo(WasmProcessingStage.Invoke);
+            await AssertMemoryUnchanged(first, firstBefore);
+            await AssertMemoryUnchanged(second, secondBefore);
+        }
     }
 
     [Test]
@@ -243,26 +263,18 @@ internal partial class WasmFunction_InvokeTests
         }
     }
 
-    private static async Task AssertBulkMemoryOutOfBounds(WasmMemory first, WasmMemory second, Action invoke)
+    private static byte[] InitializeMemory(WasmMemory memory, byte value)
     {
-        var firstBefore = Enumerable.Repeat((byte)0xA0, (int)first.ByteLength).ToArray();
-        var secondBefore = Enumerable.Repeat((byte)0xB0, (int)second.ByteLength).ToArray();
-        first.Write(0, firstBefore);
-        second.Write(0, secondBefore);
-        var firstAfter = new byte[firstBefore.Length];
-        var secondAfter = new byte[secondBefore.Length];
+        var contents = Enumerable.Repeat(value, (int)memory.ByteLength).ToArray();
+        memory.Write(0, contents);
+        return contents;
+    }
 
-        // Act & Assert
-        var exception = await Assert.That(invoke).ThrowsExactly<WasmTrapException>();
-        first.Read(0, firstAfter);
-        second.Read(0, secondAfter);
-        using (Assert.Multiple())
-        {
-            await Assert.That(exception!.Reason).IsEqualTo(WasmTrapReason.MemoryOutOfBounds);
-            await Assert.That(exception.Location!.Stage).IsEqualTo(WasmProcessingStage.Invoke);
-            await Assert.That(firstAfter.AsSpan().CommonPrefixLength(firstBefore)).IsEqualTo(firstBefore.Length);
-            await Assert.That(secondAfter.AsSpan().CommonPrefixLength(secondBefore)).IsEqualTo(secondBefore.Length);
-        }
+    private static async Task AssertMemoryUnchanged(WasmMemory memory, byte[] before)
+    {
+        var after = new byte[before.Length];
+        memory.Read(0, after);
+        await Assert.That(after.AsSpan().CommonPrefixLength(before)).IsEqualTo(before.Length);
     }
 
     private static void InvokeBulkMemoryFunction(
