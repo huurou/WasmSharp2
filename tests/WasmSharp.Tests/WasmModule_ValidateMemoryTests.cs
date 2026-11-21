@@ -6,12 +6,16 @@ namespace WasmSharp.Tests;
 internal partial class WasmModule_ValidateTests
 {
     [Test]
-    [Arguments("284002001A", "unknown memory 2")]
-    [Arguments("FD5940FFFFFFFF0F0003", "unknown memory 4294967295")]
-    [Arguments("28400180808080101A", "offset out of range")]
-    [Arguments("FD594001FFFFFFFFFFFFFFFFFF0103", "offset out of range")]
-    [Arguments("284301FFFFFFFFFFFFFFFFFF011A", "alignment must not be larger than natural")]
-    public async Task Core3複数メモリのロードやストアの即値が不正_Validateで原因を示す(string instruction, string diagnostic)
+    [Arguments("284002001A", "unknown memory 2", "メモリが存在しません")]
+    [Arguments("FD5940FFFFFFFF0F0003", "unknown memory 4294967295", "メモリが存在しません")]
+    [Arguments("28400180808080101A", "offset out of range", "32ビットメモリの上限")]
+    [Arguments("FD594001FFFFFFFFFFFFFFFFFF0103", "offset out of range", "32ビットメモリの上限")]
+    [Arguments("284301FFFFFFFFFFFFFFFFFF011A", "alignment must not be larger than natural", "命令のアクセス幅")]
+    public async Task Core3複数メモリのロードやストアの即値が不正_Validateで原因を示す(
+        string instruction,
+        string diagnostic,
+        string expectedDetail
+    )
     {
         // Arrange
         var bytes = HostLinkingModuleBinary.Create(
@@ -24,7 +28,11 @@ internal partial class WasmModule_ValidateTests
 
         // Act & Assert
         var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
-        await Assert.That(exception!.Message).StartsWith(diagnostic);
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.Message).StartsWith(diagnostic);
+            await Assert.That(exception.Message).Contains(expectedDetail);
+        }
     }
 
     [Test]

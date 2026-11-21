@@ -23,6 +23,117 @@ internal partial class WasmModule_DecodeTests
     }
 
     [Test]
+    public async Task Core3で未対応命令を含む関数本体の数が宣言と異なる_関数件数の不一致を報告する()
+    {
+        // Arrange
+        var codeSection = HostLinkingModuleBinary.Code(([], [0xD3, 0x0B]));
+        var bytes = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Types(([], [])),
+            HostLinkingModuleBinary.Functions(0, 0),
+            codeSection
+        );
+
+        // Act & Assert
+        var exception = await Assert
+            .That(() => WasmModule.Decode(bytes, WasmSpecVersion.Core3))
+            .ThrowsExactly<WasmDecodeException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.Message).StartsWith("function and code section have inconsistent lengths");
+            var location = exception.Location!;
+            // 未対応命令で読み取りを中断した時点で、codeセクションの件数不一致が確定する。
+            await Assert.That(location.Stage).IsEqualTo(WasmProcessingStage.Decode);
+            await Assert.That(location.SectionId).IsEqualTo((byte)10);
+            await Assert.That(location.FunctionIndex).IsNull();
+            await Assert.That(location.ByteOffset!.Value).IsBetween(bytes.LongLength - codeSection.Length, bytes.LongLength);
+        }
+    }
+
+    [Test]
+    public async Task Core3のデータセグメントのオフセット式に未対応命令があり件数が一致する_命令名と位置を報告する()
+    {
+        // Arrange
+        var bytes = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Memories((1, null)),
+            HostLinkingModuleBinary.Section(12, [1]),
+            HostLinkingModuleBinary.Section(11, [1, 0, 0xD3, 0x0B, 0])
+        );
+
+        // Act & Assert
+        var exception = await Assert
+            .That(() => WasmModule.Decode(bytes, WasmSpecVersion.Core3))
+            .ThrowsExactly<WasmUnsupportedFeatureException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.Feature).IsEqualTo("ref.eq");
+            await Assert
+                .That(exception.Location)
+                .IsEqualTo(new WasmFailureLocation(WasmProcessingStage.Decode, bytes.Length - 3, null, 11));
+        }
+    }
+
+    [Test]
+    public async Task Core3のデータセグメントのオフセット式に未対応命令があり件数が異なる_件数の不一致を報告する()
+    {
+        // Arrange
+        var dataSection = HostLinkingModuleBinary.Section(11, [1, 0, 0xD3, 0x0B, 0]);
+        var bytes = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Memories((1, null)),
+            HostLinkingModuleBinary.Section(12, [2]),
+            dataSection
+        );
+
+        // Act & Assert
+        var exception = await Assert
+            .That(() => WasmModule.Decode(bytes, WasmSpecVersion.Core3))
+            .ThrowsExactly<WasmDecodeException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.Message).StartsWith("data count and data section have inconsistent lengths");
+            var location = exception.Location!;
+            await Assert.That(location.Stage).IsEqualTo(WasmProcessingStage.Decode);
+            await Assert.That(location.SectionId).IsEqualTo((byte)11);
+            await Assert.That(location.FunctionIndex).IsNull();
+            await Assert.That(location.ByteOffset!.Value).IsBetween(bytes.LongLength - dataSection.Length, bytes.LongLength);
+        }
+    }
+
+    [Test]
+    [Arguments("03030200000A0601010001D30B", 0u, (byte)10, 3)]
+    [Arguments("0C01020B02010001D30B00", null, (byte)11, 4)]
+    public async Task Core3の宣言範囲を越えた後に未対応命令がある_先に検出した境界の診断と位置を報告する(
+        string sections,
+        uint? functionIndex,
+        byte sectionId,
+        int distanceFromEnd
+    )
+    {
+        // Arrange
+        // 関数本体はlocalsの件数の直後、データセクションはフラグの直後で宣言範囲が終わる。
+        // それぞれ範囲外にnopと未対応のref.eqを置き、境界の位置と未対応命令の位置を区別する。
+        var bytes = HostLinkingModuleBinary.Create(Convert.FromHexString(sections));
+
+        // Act & Assert
+        var exception = await Assert
+            .That(() => WasmModule.Decode(bytes, WasmSpecVersion.Core3))
+            .ThrowsExactly<WasmDecodeException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.Message).StartsWith("unexpected end of section or function");
+            await Assert
+                .That(exception.Location)
+                .IsEqualTo(
+                    new WasmFailureLocation(
+                        WasmProcessingStage.Decode,
+                        bytes.Length - distanceFromEnd,
+                        functionIndex,
+                        sectionId
+                    )
+                );
+        }
+    }
+
+    [Test]
     public async Task Core3のグローバル初期化式にrefI31がある_未対応の命令名を報告する()
     {
         // Arrange

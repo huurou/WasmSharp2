@@ -215,17 +215,35 @@ public sealed class WasmMemory
             return false;
         }
 
-        if (!ReferenceEquals(this, sourceMemory) || destination < source)
+        switch (GetCopyDirection(sourceMemory, destination, source))
         {
-            CopyForward(sourceMemory, destination, source, length);
-        }
-        else if (destination > source)
-        {
-            // 別々のインデックスが同じメモリを指す場合も、未転送のバイトを上書きしないよう末尾からコピーする。
-            CopyBackward(destination + length, source + length, length);
+            case MemoryCopyDirection.Forward:
+                CopyForward(sourceMemory, destination, source, length);
+                break;
+            case MemoryCopyDirection.Backward:
+                // 別々のインデックスが同じメモリを指す場合も、未転送のバイトを上書きしないよう末尾からコピーする。
+                CopyBackward(destination + length, source + length, length);
+                break;
         }
 
         return true;
+    }
+
+    /// <summary>
+    /// メモリの同一性と開始位置から、コピー方向またはコピーの省略を決める
+    /// </summary>
+    /// <param name="sourceMemory">コピー元のメモリ</param>
+    /// <param name="destination">コピー先の先頭バイト位置</param>
+    /// <param name="source">コピー元の先頭バイト位置</param>
+    /// <returns>コピー方向 同じメモリの同じ位置ならNone</returns>
+    internal MemoryCopyDirection GetCopyDirection(WasmMemory sourceMemory, ulong destination, ulong source)
+    {
+        if (!ReferenceEquals(this, sourceMemory) || destination < source)
+        {
+            return MemoryCopyDirection.Forward;
+        }
+
+        return destination > source ? MemoryCopyDirection.Backward : MemoryCopyDirection.None;
     }
 
     /// <summary>
@@ -299,4 +317,25 @@ public sealed class WasmMemory
 
         return true;
     }
+}
+
+/// <summary>
+/// メモリのコピーでページをたどる方向
+/// </summary>
+internal enum MemoryCopyDirection
+{
+    /// <summary>
+    /// コピーを省略する
+    /// </summary>
+    None,
+
+    /// <summary>
+    /// 範囲の先頭からコピーする
+    /// </summary>
+    Forward,
+
+    /// <summary>
+    /// 範囲の末尾からコピーする
+    /// </summary>
+    Backward,
 }

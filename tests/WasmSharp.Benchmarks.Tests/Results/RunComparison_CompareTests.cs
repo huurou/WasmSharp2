@@ -666,6 +666,7 @@ internal class RunComparison_CompareTests
     [Arguments("json")]
     [Arguments("null")]
     [Arguments("absent")]
+    [Arguments("directory")]
     public async Task Policyが不足または不整合である_基準を後付けせず理由を保持する(string scenario)
     {
         // Arrange
@@ -719,9 +720,13 @@ internal class RunComparison_CompareTests
         {
             request = request with { PolicySha256 = "different-hash" };
         }
-        if (scenario == "absent")
+        if (scenario is "absent" or "directory")
         {
-            request = request with { PolicyPath = Path.Combine(fixture.Baseline[0].DirectoryPath, "absent.json") };
+            var directory = fixture.Baseline[0].DirectoryPath;
+            request = request with
+            {
+                PolicyPath = scenario == "absent" ? Path.Combine(directory, "absent.json") : directory,
+            };
         }
         string[] descriptionParts = scenario switch
         {
@@ -743,9 +748,15 @@ internal class RunComparison_CompareTests
             await Assert.That(actual.BlocksCompletion).IsTrue();
             await Assert.That(actual.Reasons.Any(x => x.Kind == ComparisonReasonKind.MissingPolicy)).IsTrue();
             await Assert.That(report.IsAccepted).IsFalse();
-            if (scenario is "hash" or "schema" or "json" or "null" or "absent")
+            if (scenario is "hash" or "schema" or "json" or "null" or "absent" or "directory")
             {
-                await Assert.That(actual.Reasons.Any(x => x.Description.Contains(request.PolicyPath))).IsTrue();
+                await Assert
+                    .That(
+                        actual.Reasons.Any(x =>
+                            x.Kind == ComparisonReasonKind.MissingPolicy && x.Description.Contains(request.PolicyPath)
+                        )
+                    )
+                    .IsTrue();
             }
             foreach (var part in descriptionParts)
             {

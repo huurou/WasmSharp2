@@ -27,10 +27,15 @@ internal class InterpreterContext_CalculateCapacityTests
     }
 
     [Test]
-    public async Task 倍増だけが保持上限を超える_必要数が収まれば上限までに抑える()
+    [Arguments(0)]
+    [Arguments(1)]
+    public async Task 倍増だけが保持上限を超える_必要数が収まれば上限までに抑える(int remaining)
     {
+        // Arrange
+        var requiredCount = (ulong)(Array.MaxLength - remaining);
+
         // Act
-        var capacity = CalculateCapacity(Array.MaxLength - 1, (ulong)Array.MaxLength);
+        var capacity = CalculateCapacity(Array.MaxLength - 2, requiredCount);
 
         // Assert
         await Assert.That(capacity).IsEqualTo(Array.MaxLength);

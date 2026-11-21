@@ -40,4 +40,5 @@ PowerShellでは、ランタイムの測定前に`$env:WasmSharpGeneratorRoslynV
 
 同じホストで比較前後の並列数と設定を揃え、出力先を分ける。生成される`reports/mutation-report.json`で`Survived`と`NoCoverage`を確認し、`Timeout`や`CompileError`と区別する。終了値が0であっても、JSONが生成されなければ測定は完了していない。
 
+- ランタイムのフレーム配列は容量が不足したときに倍増し、`Math.Clamp`で必要数と`Array.MaxLength`の間に収める。以前の上限計算の`Math.Min`を`Math.Max`に変える変異は、初回からx64で約48GiBを要求した。`InterpreterContext`では、深さ上限での拒否や深さの加算を無効にする変異と、倍増を除算に変えて10万段の再帰で毎回配列を確保する変異を局所的に除外している。容量の境界は配列を確保せずに計算結果を検査し、再帰の深さは通常テストで検証する。
 - MTPの`perTest`で子プロセスを起動するテストが`marking as Dubious`になった場合、Stryker.NET 5.1.0はそのテストを各変異の候補に加える。その場合の`NoCoverage`0件は、全変異にテストが到達したことを示さない。該当箇所は通常カバレッジと併せて確認する。

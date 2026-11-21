@@ -82,9 +82,12 @@ internal partial class WasmFunction_InvokeTests
     public async Task Loop内で定義関数とhostを繰り返し呼ぶ_終了済みcallと反復が深さへ蓄積せず参照を保つ()
     {
         // Arrange
+        const int ExpectedCalls = 8;
         var executionContext = new WasmExecutionContext();
         var reference = new object();
-        List<(WasmInstance Instance, object? Reference)> observed = [];
+        // 予定した回数を超えた時点で失敗し、終了しないループの呼び出しを蓄積しない。
+        var observed = new (WasmInstance Instance, object? Reference)[ExpectedCalls];
+        var callCount = 0;
         var provider = new WasmHostModule("env");
         provider.Define(
             "host",
@@ -92,7 +95,7 @@ internal partial class WasmFunction_InvokeTests
                 new([WasmValueKind.ExternRef], [WasmValueKind.ExternRef]),
                 (callbackContext, instance, values) =>
                 {
-                    observed.Add((instance, values[0].AsExternRef()));
+                    observed[callCount++] = (instance, values[0].AsExternRef());
                     return new(values);
                 }
             )
@@ -124,14 +127,14 @@ internal partial class WasmFunction_InvokeTests
         // Act
         var result = instance
             .GetFunction("run")
-            .Invoke(executionContext, [WasmValue.FromI32(8), WasmValue.FromExternRef(reference)]);
+            .Invoke(executionContext, [WasmValue.FromI32(ExpectedCalls), WasmValue.FromExternRef(reference)]);
 
         // Assert
         using (Assert.Multiple())
         {
             await Assert.That(result.Values[0].AsI32()).IsEqualTo(0);
             await Assert.That(result.Values[1].AsExternRef()).IsSameReferenceAs(reference);
-            await Assert.That(observed.Count).IsEqualTo(8);
+            await Assert.That(callCount).IsEqualTo(ExpectedCalls);
             foreach (var call in observed)
             {
                 await Assert.That(call.Instance).IsSameReferenceAs(instance);

@@ -36,6 +36,7 @@ internal partial class WasmFunction_InvokeTests
     [Test]
     [Arguments(65534, 65534)]
     [Arguments(65533, 65535)]
+    [Arguments(65535, 65533)]
     public async Task Core3の一括コピーで異なるメモリを指定する_コピー元を保ちコピー先の指定範囲に転送する(
         int destination,
         int source

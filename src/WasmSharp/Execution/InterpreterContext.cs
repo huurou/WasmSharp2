@@ -70,10 +70,12 @@ internal sealed class InterpreterContext
     /// <returns>呼び出しに入れた場合はtrue 上限に達している場合は深さを変えずfalse</returns>
     internal bool TryEnterCall()
     {
+        // Stryker disable once Block,Boolean: 上限での拒否を削除または反転すると、再帰呼び出しが止まらずフレーム配列が増え続ける。
         if (CallDepth == MaxCallDepth)
         {
             return false;
         }
+        // Stryker disable once Statement,Update: 加算を削除または減算に変えると、再帰呼び出しが深さの上限に達しなくなる。
         CallDepth++;
         return true;
     }
@@ -127,12 +129,12 @@ internal sealed class InterpreterContext
                 new WasmFailureLocation(Stage, function.Definition.BodyOffset, function.FunctionIndex)
             );
         }
-        if (requiredCount <= (ulong)capacity)
+        if (requiredCount > (ulong)capacity)
         {
-            return capacity;
+            // Stryker disable once Arithmetic: 倍増を除算に変えると、深さ10万の再帰テストで1段ごとにフレーム配列を確保し直す。
+            return (int)Math.Clamp((ulong)capacity * 2, requiredCount, (ulong)Array.MaxLength);
         }
-        var doubled = Math.Min((ulong)capacity * 2, (ulong)Array.MaxLength);
-        return (int)Math.Max(requiredCount, doubled);
+        return capacity;
     }
 
     /// <summary>

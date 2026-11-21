@@ -192,6 +192,7 @@ internal class SourceCapture_BeforeTests
     [Arguments("clean", false)]
     [Arguments("untracked", true)]
     [Arguments("uninitialized", false)]
+    [Arguments("different-revision", true)]
     public async Task Submoduleの状態が異なる_revisionと未コミット変更を記録する(string state, bool dirty)
     {
         // Arrange
@@ -207,6 +208,7 @@ internal class SourceCapture_BeforeTests
             dependency.RepositoryDirectory,
             RELATIVE_PATH
         );
+        var revision = dependency.Git("rev-parse", "HEAD");
         if (state == "untracked")
         {
             fixture.Write(RELATIVE_PATH + "/Untracked.cs", "class Untracked {}");
@@ -215,7 +217,22 @@ internal class SourceCapture_BeforeTests
         {
             fixture.Git("submodule", "deinit", "--force", "--", RELATIVE_PATH);
         }
-        var revision = dependency.Git("rev-parse", "HEAD");
+        else if (state == "different-revision")
+        {
+            fixture.Git(
+                "-C",
+                RELATIVE_PATH,
+                "-c",
+                "user.name=Fixture",
+                "-c",
+                "user.email=fixture@example.invalid",
+                "commit",
+                "--allow-empty",
+                "-qm",
+                "親と異なるリビジョン"
+            );
+            revision = fixture.Git("-C", RELATIVE_PATH, "rev-parse", "HEAD");
+        }
         var store = RunStore.Create(fixture.Run.DirectoryPath, fixture.Run.Manifest, _json);
         var capture = new SourceCapture(fixture.RepositoryDirectory, _json);
 

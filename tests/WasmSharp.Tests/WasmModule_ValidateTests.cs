@@ -100,7 +100,13 @@ internal partial class WasmModule_ValidateTests
 
         // Act & Assert
         var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
-        await Assert.That(exception!.Location).IsEqualTo(new(WasmProcessingStage.Validate, 22, index, 7));
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.Message).Contains("exportが参照する外部要素");
+            await Assert
+                .That(exception.Location)
+                .IsEqualTo(new WasmFailureLocation(WasmProcessingStage.Validate, 22, index, 7));
+        }
     }
 
     [Test]

@@ -349,15 +349,18 @@ public partial class ScriptExecutor_ExecuteTests
     }
 
     [Test]
-    public async Task Textのmoduleと未知command_対象外と構造異常を分け独立moduleを継続する()
+    [Arguments("unknown")]
+    [Arguments("Register")]
+    public async Task Textのmoduleと未知command_対象外と構造異常を分け独立moduleを継続する(string unknownType)
     {
         // Arrange
         var state = new ScriptState("a.wast");
-        var commands =
-            """
-                {"type":"module","line":1,"filename":"missing.wat","module_type":"text"},
-                {"type":"unknown","line":1},
-                """ + ScriptExecutionFixture.Module(2);
+        var unknownCommand = $$"""{"type":"{{unknownType}}","line":1,"as":"M"}""";
+        var commands = $$"""
+            {"type":"module","line":1,"filename":"missing.wat","module_type":"text"},
+            {{unknownCommand}},
+            {{ScriptExecutionFixture.Module(2)}}
+            """;
 
         // Act
         var results = ScriptExecutionFixture.Execute(commands, state, (2, ScriptExecutionFixture.Empty));
@@ -368,6 +371,9 @@ public partial class ScriptExecutor_ExecuteTests
             await Assert.That(results[0].Outcome).IsEqualTo(CaseOutcome.OutOfScope);
             await Assert.That(results[1].Outcome).IsEqualTo(CaseOutcome.RunnerError);
             await Assert.That(results[1].Category).IsNull();
+            await Assert.That(results[1].CommandType).IsEqualTo(unknownType);
+            await Assert.That(results[1].Diagnostics.Single().SourceJson).IsEqualTo(unknownCommand);
+            await Assert.That(state.GetRegistration("M")).IsNull();
             await Assert.That(results[2].Outcome).IsEqualTo(CaseOutcome.Passed);
         }
     }

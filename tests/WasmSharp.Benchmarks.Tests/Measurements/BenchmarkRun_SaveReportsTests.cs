@@ -152,18 +152,26 @@ internal class BenchmarkRun_SaveReportsTests
     }
 
     [Test]
-    [Arguments(83)]
-    [Arguments(null)]
-    public async Task Reportと測定行があっても子processが正常終了しない_最後の確認段階を残して未完了になる(int? exitCode)
+    [Arguments(83, RunStage.ExecutionStarted)]
+    [Arguments(null, RunStage.ExecutionStarted)]
+    [Arguments(0, RunStage.ExecutionStarted)]
+    [Arguments(0, null)]
+    public async Task Reportと測定行があっても前後検査が揃わない_終了値と最後の確認段階を残して未完了になる(
+        int? exitCode,
+        RunStage? lastConfirmedStage
+    )
     {
         // Arrange
         using var fixture = new BenchmarkReportFixture(exitCode: exitCode);
         fixture.SaveConditions();
+        var check = fixture.SuccessfulCheck();
         fixture.Prepared.Store.SaveCheck(
-            fixture.SuccessfulCheck() with
+            check with
             {
+                Precheck = lastConfirmedStage.HasValue ? check.Precheck : null,
+                ExecutionStarted = lastConfirmedStage == RunStage.ExecutionStarted,
                 Postcheck = null,
-                LastConfirmedStage = RunStage.ExecutionStarted,
+                LastConfirmedStage = lastConfirmedStage,
             }
         );
 
@@ -178,7 +186,7 @@ internal class BenchmarkRun_SaveReportsTests
             await Assert.That(result.Status).IsEqualTo(ResultStatus.Incomplete);
             await Assert.That(manifest.CompletedAtUtc).IsNull();
             await Assert.That(result.BenchmarkReport!.Processes.Single().ExitCode).IsEqualTo(exitCode);
-            await Assert.That(result.Failures.All(x => x.LastConfirmedStage == RunStage.ExecutionStarted)).IsTrue();
+            await Assert.That(result.Failures.All(x => x.LastConfirmedStage == lastConfirmedStage)).IsTrue();
             await Assert
                 .That(
                     result.Failures.Any(x =>
