@@ -34,6 +34,29 @@ internal partial class WasmFunction_InvokeTests
     }
 
     [Test]
+    public async Task Memory64の一括初期化で部分範囲と末尾の長さ0を指定する_対象メモリの最終バイトまで転送する()
+    {
+        // Arrange
+        var context = new WasmExecutionContext();
+        var first = new WasmMemory(new WasmLimits(1));
+        var second = WasmMemory.Create(new WasmMemoryType(WasmValueKind.I64, 1));
+        var init = InstantiateBulkMemoryFunction(context, first, second, [0xFC, 8, 2, 1], [0x7E, 0x7F, 0x7F]);
+        first.Write(65533, [0xA1, 0xA2, 0xA3]);
+        second.Write(65533, [0xB1, 0xB2, 0xB3]);
+
+        // Act
+        init.Invoke(context, [WasmValue.FromI64(65534), WasmValue.FromI32(1), WasmValue.FromI32(2)]);
+        init.Invoke(context, [WasmValue.FromI64(65536), WasmValue.FromI32(4), WasmValue.FromI32(0)]);
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(ReadMemoryHex(first, 65533, 3)).IsEqualTo("A1A2A3");
+            await Assert.That(ReadMemoryHex(second, 65533, 3)).IsEqualTo("B12030");
+        }
+    }
+
+    [Test]
     [Arguments(65534, 65534)]
     [Arguments(65533, 65535)]
     [Arguments(65535, 65533)]
@@ -89,17 +112,30 @@ internal partial class WasmFunction_InvokeTests
     [Arguments("FC0B01", 65535, 0xEF)]
     [Arguments("FC0A0100", 65535, 12)]
     [Arguments("FC0A0001", 12, 65535)]
+    [Arguments("FC080201", 65535L, 0, true)]
+    [Arguments("FC080201", 12L, 3, true)]
+    [Arguments("FC080201", 65537L, 4, true, 0)]
+    [Arguments("FC080201", 1L << 32, 0, true)]
     public async Task Core3の一括操作の範囲がメモリまたはデータの末尾を超える_trap後も両方のメモリの内容を保つ(
         string operation,
-        int destination,
-        int sourceOrValue
+        long destination,
+        int sourceOrValue,
+        bool memory64Destination = false,
+        int length = 2
     )
     {
         // Arrange
         var context = new WasmExecutionContext();
         var first = new WasmMemory(new WasmLimits(2));
-        var second = new WasmMemory(new WasmLimits(1));
-        var function = InstantiateBulkMemoryFunction(context, first, second, Convert.FromHexString(operation));
+        var second = WasmMemory.Create(new WasmMemoryType(memory64Destination ? WasmValueKind.I64 : WasmValueKind.I32, 1));
+        var function = InstantiateBulkMemoryFunction(
+            context,
+            first,
+            second,
+            Convert.FromHexString(operation),
+            memory64Destination ? [0x7E, 0x7F, 0x7F] : null
+        );
+        var destinationValue = memory64Destination ? WasmValue.FromI64(destination) : WasmValue.FromI32((int)destination);
         var firstBefore = Enumerable.Repeat((byte)0xA0, (int)first.ByteLength).ToArray();
         var secondBefore = Enumerable.Repeat((byte)0xB0, (int)second.ByteLength).ToArray();
         first.Write(0, firstBefore);
@@ -110,10 +146,7 @@ internal partial class WasmFunction_InvokeTests
         // Act & Assert
         var exception = await Assert
             .That(() =>
-                function.Invoke(
-                    context,
-                    [WasmValue.FromI32(destination), WasmValue.FromI32(sourceOrValue), WasmValue.FromI32(2)]
-                )
+                function.Invoke(context, [destinationValue, WasmValue.FromI32(sourceOrValue), WasmValue.FromI32(length)])
             )
             .ThrowsExactly<WasmTrapException>();
         first.Read(0, firstAfter);
@@ -121,6 +154,7 @@ internal partial class WasmFunction_InvokeTests
         using (Assert.Multiple())
         {
             await Assert.That(exception!.Reason).IsEqualTo(WasmTrapReason.MemoryOutOfBounds);
+            await Assert.That(exception.Location!.Stage).IsEqualTo(WasmProcessingStage.Invoke);
             await Assert.That(firstAfter.AsSpan().CommonPrefixLength(firstBefore)).IsEqualTo(firstBefore.Length);
             await Assert.That(secondAfter.AsSpan().CommonPrefixLength(secondBefore)).IsEqualTo(secondBefore.Length);
         }
@@ -148,15 +182,19 @@ internal partial class WasmFunction_InvokeTests
         WasmExecutionContext context,
         WasmMemory first,
         WasmMemory second,
-        byte[] operation
+        byte[] operation,
+        byte[]? parameterTypes = null
     )
     {
         var host = new WasmHostModule("env");
         host.Define("first", first);
         host.Define("second", second);
         var bytes = HostLinkingModuleBinary.Create(
-            HostLinkingModuleBinary.Types(([0x7F, 0x7F, 0x7F], [])),
-            HostLinkingModuleBinary.Imports(("env", "first", 2, [0, 0]), ("env", "second", 2, [0, 0])),
+            HostLinkingModuleBinary.Types((parameterTypes ?? [0x7F, 0x7F, 0x7F], [])),
+            HostLinkingModuleBinary.Imports(
+                ("env", "first", 2, ImportLimits(first)),
+                ("env", "second", 2, ImportLimits(second))
+            ),
             HostLinkingModuleBinary.Functions(0),
             HostLinkingModuleBinary.Exports(("bulk", 0, 0)),
             HostLinkingModuleBinary.Section(12, [3]),
@@ -164,5 +202,10 @@ internal partial class WasmFunction_InvokeTests
             HostLinkingModuleBinary.Section(11, [3, 1, 1, 0xA0, 1, 1, 0xB0, 1, 4, 0x10, 0x20, 0x30, 0x40])
         );
         return WasmModule.Decode(bytes, WasmSpecVersion.Core3).Validate().Instantiate(context, [host]).GetFunction("bulk");
+
+        static byte[] ImportLimits(WasmMemory memory)
+        {
+            return memory.Type.AddressType == WasmValueKind.I64 ? [4, 0] : [0, 0];
+        }
     }
 }

@@ -211,24 +211,15 @@ internal static class FunctionValidator
                     break;
 
                 case ValidationRule.MemoryInit:
+                    var initializationAddressType = RequireMemory(instruction.SecondaryIndex, instruction.ByteOffset);
+                    RequireDataSegment(instruction.Index, instruction.ByteOffset);
+                    Pop(WasmValueKind.I32, instruction.ByteOffset);
+                    Pop(WasmValueKind.I32, instruction.ByteOffset);
+                    Pop(initializationAddressType, instruction.ByteOffset);
+                    break;
+
                 case ValidationRule.DataDrop:
-                    if (descriptor.Validation == ValidationRule.MemoryInit)
-                    {
-                        RequireMemory(instruction.SecondaryIndex, instruction.ByteOffset);
-                    }
-                    if (instruction.Index >= (uint)module.DataSegments.Length)
-                    {
-                        throw CreateUnknownIndex(
-                            "data segment",
-                            instruction.Index,
-                            "参照するデータセグメントが存在しません。",
-                            instruction.ByteOffset
-                        );
-                    }
-                    if (descriptor.Validation == ValidationRule.MemoryInit)
-                    {
-                        PopThreeI32(instruction.ByteOffset);
-                    }
+                    RequireDataSegment(instruction.Index, instruction.ByteOffset);
                     break;
 
                 case ValidationRule.TableGet:
@@ -506,6 +497,14 @@ internal static class FunctionValidator
             Pop(WasmValueKind.I32, byteOffset);
             Pop(WasmValueKind.I32, byteOffset);
             Pop(WasmValueKind.I32, byteOffset);
+        }
+
+        void RequireDataSegment(uint index, long byteOffset)
+        {
+            if (index >= (uint)module.DataSegments.Length)
+            {
+                throw CreateUnknownIndex("data segment", index, "参照するデータセグメントが存在しません。", byteOffset);
+            }
         }
 
         WasmValueKind GetTableElementType(uint index, long byteOffset)
