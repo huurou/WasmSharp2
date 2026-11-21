@@ -58,6 +58,41 @@ internal partial class WasmModule_ValidateTests
     }
 
     [Test]
+    [Arguments((byte)0x41, (byte)0x41, (byte)0x41)]
+    [Arguments((byte)0x42, (byte)0x42, (byte)0x41)]
+    [Arguments((byte)0x42, (byte)0x41, (byte)0x42)]
+    public async Task Memory64の一括初期化で宛先またはデータ範囲の型が異なる_検証で拒否する(
+        byte destinationOpcode,
+        byte sourceOpcode,
+        byte lengthOpcode
+    )
+    {
+        // Arrange
+        var data = HostLinkingModuleBinary.Section(11, [1, 1, 0]);
+        var bytes = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Types(([], [])),
+            HostLinkingModuleBinary.Functions(0),
+            HostLinkingModuleBinary.Section(5, [2, 0, 1, 4, 1]),
+            HostLinkingModuleBinary.Section(12, [1]),
+            HostLinkingModuleBinary.Code(
+                ([], [destinationOpcode, 0, sourceOpcode, 0, lengthOpcode, 0, 0xFC, 8, 0, 1, 0x0B])
+            ),
+            data
+        );
+        var module = WasmModule.Decode(bytes, WasmSpecVersion.Core3);
+
+        // Act & Assert
+        var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.Message).StartsWith("type mismatch");
+            await Assert
+                .That(exception.Location)
+                .IsEqualTo(new WasmFailureLocation(WasmProcessingStage.Validate, bytes.Length - data.Length - 5, 0, 10));
+        }
+    }
+
+    [Test]
     [Arguments(true, "00FC0800000B")]
     [Arguments(false, "00FC09000B")]
     [Arguments(true, "00FC88008000000B")]

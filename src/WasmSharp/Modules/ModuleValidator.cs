@@ -101,7 +101,7 @@ internal static class ModuleValidator
     }
 
     /// <summary>
-    /// アクティブデータセグメントのメモリ参照とi32のオフセット式を宣言順に検証する
+    /// アクティブデータセグメントのメモリ参照と、そのアドレス型に従うオフセット式を宣言順に検証する
     /// </summary>
     /// <param name="module">リソース宣言の検証を終えたmodule</param>
     /// <param name="references">当該module検証で共有する参照情報</param>
@@ -130,7 +130,7 @@ internal static class ModuleValidator
             }
             ConstantInitializer.Validate(
                 target.OffsetExpression,
-                WasmValueKind.I32,
+                references.MemoryAddressTypes[(int)target.MemoryIndex],
                 visibleGlobals,
                 references.FunctionCount,
                 11,

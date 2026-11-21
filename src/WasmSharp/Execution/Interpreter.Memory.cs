@@ -77,7 +77,7 @@ internal static partial class Interpreter
     {
         var length = unchecked((uint)context.PopValue().AsI32());
         var source = unchecked((uint)context.PopValue().AsI32());
-        var destination = unchecked((uint)context.PopValue().AsI32());
+        var destination = context.PopValue().AsUnsignedInteger();
         var instance = context.CurrentFunction.Instance;
         var memory = instance.Memories[(int)instruction.SecondaryIndex];
         if (!instance.DataSegments[(int)instruction.Index].TryInitialize(memory, destination, source, length))
