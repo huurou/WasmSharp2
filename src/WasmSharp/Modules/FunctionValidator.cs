@@ -538,12 +538,13 @@ internal static class FunctionValidator
             }
         }
 
-        void RequireMemory(uint index, long byteOffset)
+        WasmValueKind RequireMemory(uint index, long byteOffset)
         {
             if (index >= references.MemoryCount)
             {
                 throw CreateUnknownIndex("memory", index, "参照するメモリが存在しません。", byteOffset);
             }
+            return references.MemoryAddressTypes[(int)index];
         }
 
         MemoryAccessSignature ValidateMemoryAccess(DecodedInstruction instruction, InstructionDescriptor descriptor)

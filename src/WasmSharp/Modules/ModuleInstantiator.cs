@@ -48,19 +48,20 @@ internal static class ModuleInstantiator
             }
             catch (WasmImplementationLimitException exception)
             {
-                throw new WasmImplementationLimitException(
-                    exception.Message,
-                    exception.Reason,
-                    exception.Limit,
-                    new WasmFailureLocation(WasmProcessingStage.Instantiate, table.ByteOffset, null, 4),
-                    exception
-                );
+                throw ResourceLimit(exception, table.ByteOffset, 4);
             }
         }
         var memories = CreateIndex(linked.OfType<MemoryExternalValue>().Select(x => x.Value), module.Memories.Length);
         foreach (var memory in module.Memories)
         {
-            memories.Add(new WasmMemory(memory.Type.Get32BitLimits()));
+            try
+            {
+                memories.Add(WasmMemory.Create(memory.Type));
+            }
+            catch (WasmImplementationLimitException exception)
+            {
+                throw ResourceLimit(exception, memory.ByteOffset, 5);
+            }
         }
         var instance = new WasmInstance(
             module,
@@ -77,6 +78,24 @@ internal static class ModuleInstantiator
             ExecutionBoundary.RunStart(executionContext, instance, instance.Functions[(int)start.FunctionIndex]);
         }
         return instance;
+    }
+
+    /// <summary>
+    /// リソースの保持上限による失敗に定義の位置を付ける
+    /// </summary>
+    private static WasmImplementationLimitException ResourceLimit(
+        WasmImplementationLimitException exception,
+        long byteOffset,
+        byte sectionId
+    )
+    {
+        return new WasmImplementationLimitException(
+            exception.Message,
+            exception.Reason,
+            exception.Limit,
+            new WasmFailureLocation(WasmProcessingStage.Instantiate, byteOffset, null, sectionId),
+            exception
+        );
     }
 
     /// <summary>
@@ -234,13 +253,21 @@ internal static class ModuleInstantiator
                 .Parameters.SequenceEqual(provided.Value.Type.Parameters)
                 && module.Types[(int)required.TypeIndex].Results.SequenceEqual(provided.Value.Type.Results),
             (GlobalImport required, GlobalExternalValue provided) => required.Type == provided.Value.Type,
-            (MemoryImport required, MemoryExternalValue provided) => MatchesLimits(
-                required.Definition.Type.Get32BitLimits(),
-                provided.Value.PageCount,
-                provided.Value.MaximumPages
-            ),
+            (MemoryImport { Definition.Type: var type }, MemoryExternalValue provided) => type.AddressType
+                == provided.Value.Type.AddressType
+                && MatchesLimits(
+                    type.MinimumPages,
+                    type.MaximumPages,
+                    provided.Value.PageCount,
+                    provided.Value.Type.MaximumPages
+                ),
             (TableImport required, TableExternalValue provided) => required.Type.ElementKind == provided.Value.ElementType
-                && MatchesLimits(required.Type.Limits, provided.Value.Count, provided.Value.MaximumElements),
+                && MatchesLimits(
+                    required.Type.Limits.Minimum,
+                    required.Type.Limits.Maximum,
+                    provided.Value.Count,
+                    provided.Value.MaximumElements
+                ),
             _ => throw LinkFailure(
                 import,
                 ordinal,
@@ -288,7 +315,7 @@ internal static class ModuleInstantiator
         {
             FunctionImport function => DescribeFunction(module.Types[(int)function.TypeIndex]),
             GlobalImport global => global.Type.ToString(),
-            MemoryImport memory => memory.Definition.Type.Get32BitLimits().ToString(),
+            MemoryImport memory => memory.Definition.Type.ToString(),
             TableImport table => $"{table.Type.ElementKind} {table.Type.Limits}",
             _ => throw new InvalidOperationException("importの種類が不明です。"),
         };
@@ -305,7 +332,7 @@ internal static class ModuleInstantiator
         {
             FunctionExternalValue function => DescribeFunction(function.Value.Type),
             GlobalExternalValue global => global.Value.Type.ToString(),
-            MemoryExternalValue memory => new WasmLimits(memory.Value.PageCount, memory.Value.MaximumPages).ToString(),
+            MemoryExternalValue memory => (memory.Value.Type with { MinimumPages = memory.Value.PageCount }).ToString(),
             TableExternalValue table =>
                 $"{table.Value.ElementType} {new WasmLimits(table.Value.Count, table.Value.MaximumElements)}",
             _ => throw new InvalidOperationException("外部要素の種類が不明です。"),
@@ -325,14 +352,14 @@ internal static class ModuleInstantiator
     /// <summary>
     /// 提供リソースの現在サイズと宣言上限がimportのlimitsを満たすか判定する
     /// </summary>
-    /// <param name="required">importが要求するlimits</param>
+    /// <param name="requiredMinimum">importが要求する最小値</param>
+    /// <param name="requiredMaximum">importが要求する最大値 指定がなければnull</param>
     /// <param name="current">提供リソースの現在サイズ</param>
     /// <param name="maximum">提供リソースの宣言上限 指定がなければnull</param>
     /// <returns>現在サイズが要求最小値以上で、要求上限があれば宣言上限も存在してその値以下である場合はtrue</returns>
-    private static bool MatchesLimits(WasmLimits required, uint current, uint? maximum)
+    private static bool MatchesLimits(ulong requiredMinimum, ulong? requiredMaximum, ulong current, ulong? maximum)
     {
-        return current >= required.Minimum
-            && (required.Maximum is null || maximum is { } actual && actual <= required.Maximum);
+        return current >= requiredMinimum && (requiredMaximum is null || maximum <= requiredMaximum);
     }
 
     /// <summary>

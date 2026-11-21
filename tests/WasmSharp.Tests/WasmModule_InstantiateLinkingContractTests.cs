@@ -6,6 +6,41 @@ namespace WasmSharp.Tests;
 internal partial class WasmModule_InstantiateTests
 {
     [Test]
+    [Arguments("0001", WasmValueKind.I64, 2UL)]
+    [Arguments("0401", WasmValueKind.I32, 2UL)]
+    [Arguments("048080808010", WasmValueKind.I64, 1UL << 32)]
+    [Arguments("05018080808010", WasmValueKind.I64, null)]
+    [Arguments("050101", WasmValueKind.I64, (1UL << 32) + 1)]
+    public async Task メモリの幅かページ数がimport宣言と合わない_型が合わずリンクが不成立になる(
+        string declaration,
+        WasmValueKind addressType,
+        ulong? maximum
+    )
+    {
+        // Arrange
+        var host = new WasmHostModule("env");
+        host.Define("m", WasmMemory.Create(new WasmMemoryType(addressType, 1, maximum)));
+        var module = WasmModule
+            .Decode(
+                HostLinkingModuleBinary.Create(
+                    HostLinkingModuleBinary.Imports(("env", "m", 2, Convert.FromHexString(declaration)))
+                ),
+                WasmSpecVersion.Core3
+            )
+            .Validate();
+
+        // Act & Assert
+        var exception = await Assert
+            .That(() => module.Instantiate(new WasmExecutionContext(), [host]))
+            .ThrowsExactly<WasmInstantiateException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.Reason).IsEqualTo(WasmInstantiateReason.TypeMismatch);
+            await Assert.That(exception.Message).StartsWith("incompatible import type");
+        }
+    }
+
+    [Test]
     [Arguments(false, 0, false)]
     [Arguments(false, 1, false)]
     [Arguments(false, 2, false)]

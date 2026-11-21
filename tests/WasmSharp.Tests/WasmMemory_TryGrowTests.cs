@@ -3,6 +3,28 @@ namespace WasmSharp.Tests;
 internal class WasmMemory_TryGrowTests
 {
     [Test]
+    public async Task メモリの増大後のページ数がページ表の保持上限を超える_元の領域を保ってfalseを返す()
+    {
+        // Arrange
+        var memory = WasmMemory.Create(new WasmMemoryType(WasmValueKind.I64, 1));
+        memory.Write(0, [42]);
+
+        // Act
+        var grown = memory.TryGrow(uint.MaxValue, out var previous);
+        var actual = new byte[1];
+        memory.Read(0, actual);
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(grown).IsFalse();
+            await Assert.That(previous).IsEqualTo(1u);
+            await Assert.That(memory.PageCount).IsEqualTo(1u);
+            await Assert.That(actual[0]).IsEqualTo((byte)42);
+        }
+    }
+
+    [Test]
     public async Task 増大する_既存バイトを保持し追加ページをゼロ初期化する()
     {
         // Arrange

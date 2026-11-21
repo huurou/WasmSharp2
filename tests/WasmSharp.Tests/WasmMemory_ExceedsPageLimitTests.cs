@@ -15,8 +15,11 @@ internal class WasmMemory_ExceedsPageLimitTests
         bool expected
     )
     {
+        // Arrange
+        var type = new WasmMemoryType(WasmValueKind.I32, 0, maximumPages);
+
         // Act
-        var actual = WasmMemory.ExceedsPageLimit(pageCount, maximumPages);
+        var actual = WasmMemory.ExceedsPageLimit(pageCount, type);
 
         // Assert
         await Assert.That(actual).IsEqualTo(expected);

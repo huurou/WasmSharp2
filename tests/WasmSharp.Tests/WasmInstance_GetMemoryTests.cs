@@ -5,16 +5,59 @@ namespace WasmSharp.Tests;
 internal class WasmInstance_GetMemoryTests
 {
     [Test]
+    public async Task 両方の幅のメモリを定義する_指定したメモリの初期領域を別名でも読み書きできる()
+    {
+        // Arrange
+        var bytes = HostLinkingModuleBinary.Create(
+            // i32は1ページ、i64は最小2ページ、最大2の32乗ページとする。
+            HostLinkingModuleBinary.Section(5, [2, 0, 1, 5, 2, 0x80, 0x80, 0x80, 0x80, 0x10]),
+            HostLinkingModuleBinary.Exports(("narrow", 2, 0), ("wide", 2, 1), ("alias", 2, 1))
+        );
+        var module = WasmModule.Decode(bytes, WasmSpecVersion.Core3).Validate();
+
+        // Act
+        var instance = module.Instantiate(new WasmExecutionContext(), []);
+        var wide = instance.GetMemory("wide");
+        var alias = instance.GetMemory("alias");
+        var narrow = instance.GetMemory("narrow");
+        wide.Write(65535, [17, 42]);
+        var wideBytes = new byte[2];
+        alias.Read(65535, wideBytes);
+        var narrowBytes = new byte[1];
+        narrow.Read(65535, narrowBytes);
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(alias).IsSameReferenceAs(wide);
+            await Assert.That(wide.Type).IsEqualTo(new WasmMemoryType(WasmValueKind.I64, 2, 1UL << 32));
+            await Assert.That(narrow.Type).IsEqualTo(new WasmMemoryType(WasmValueKind.I32, 1));
+            await Assert.That(wide.ByteLength).IsEqualTo(131072UL);
+            await Assert.That(wideBytes.SequenceEqual(new byte[] { 17, 42 })).IsTrue();
+            await Assert.That(narrow.ByteLength).IsEqualTo(65536UL);
+            await Assert.That(narrowBytes[0]).IsEqualTo((byte)0);
+        }
+
+        // Act & Assert
+        await Assert.That(() => wide.MaximumPages).ThrowsExactly<InvalidOperationException>();
+    }
+
+    [Test]
     public async Task Core3で複数のメモリを再exportする_importの宣言順に同じ実体を取得でき定義メモリは独立する()
     {
         // Arrange
         var first = new WasmMemory(new WasmLimits(1));
-        var second = new WasmMemory(new WasmLimits(1));
+        var second = WasmMemory.Create(new WasmMemoryType(WasmValueKind.I64, 0, 1UL << 32));
+        second.TryGrow(1, out _);
         var host = new WasmHostModule("env");
         host.Define("second", second);
         host.Define("first", first);
         var bytes = HostLinkingModuleBinary.Create(
-            HostLinkingModuleBinary.Imports(("env", "first", 2, [0, 1]), ("env", "second", 2, [0, 1])),
+            HostLinkingModuleBinary.Imports(
+                ("env", "first", 2, [0, 1]),
+                // 要求上限は2の32乗+1ページで、提供側の最大ページ数より1ページ大きい。
+                ("env", "second", 2, [5, 1, 0x81, 0x80, 0x80, 0x80, 0x10])
+            ),
             HostLinkingModuleBinary.Memories((1, null)),
             HostLinkingModuleBinary.Exports(("local", 2, 2), ("b", 2, 1), ("a", 2, 0))
         );
@@ -47,17 +90,20 @@ internal class WasmInstance_GetMemoryTests
     }
 
     [Test]
-    public async Task 別名と再exportから取得する_更新と増大を同じmemoryで共有する()
+    [Arguments(WasmSpecVersion.Core2)]
+    [Arguments(WasmSpecVersion.Core3)]
+    public async Task 別名と再exportから取得する_更新と増大を同じmemoryで共有する(WasmSpecVersion version)
     {
         // Arrange
         var executionContext = new WasmExecutionContext();
+        byte[] type = [version == WasmSpecVersion.Core3 ? (byte)5 : (byte)1, 1, 3];
         var source = WasmModule
             .Decode(
                 HostLinkingModuleBinary.Create(
-                    HostLinkingModuleBinary.Memories((1, 3)),
+                    HostLinkingModuleBinary.Section(5, [1, .. type]),
                     HostLinkingModuleBinary.Exports(("m", 2, 0), ("", 2, 0))
                 ),
-                WasmSpecVersion.Core2
+                version
             )
             .Validate()
             .Instantiate(executionContext, []);
@@ -67,10 +113,10 @@ internal class WasmInstance_GetMemoryTests
         var module = WasmModule
             .Decode(
                 HostLinkingModuleBinary.Create(
-                    HostLinkingModuleBinary.Imports(("env", "m", 2, [1, 1, 3])),
+                    HostLinkingModuleBinary.Imports(("env", "m", 2, type)),
                     HostLinkingModuleBinary.Exports(("m", 2, 0), ("alias", 2, 0))
                 ),
-                WasmSpecVersion.Core2
+                version
             )
             .Validate();
         var first = module.Instantiate(executionContext, [host]);

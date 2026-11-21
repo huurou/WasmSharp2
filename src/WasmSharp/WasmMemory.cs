@@ -1,3 +1,5 @@
+using WasmSharp.Exceptions;
+
 namespace WasmSharp;
 
 /// <summary>
@@ -12,14 +14,14 @@ public sealed class WasmMemory
     private const int PAGE_SIZE = 65536;
 
     /// <summary>
-    /// Core 2.0の最大ページ数
-    /// </summary>
-    private const uint MAX_PAGE_COUNT = 65536;
-
-    /// <summary>
     /// ページ単位の記憶領域
     /// </summary>
     private byte[][] _pages;
+
+    /// <summary>
+    /// 宣言されたアドレス型と初期・最大ページ数
+    /// </summary>
+    public WasmMemoryType Type { get; }
 
     /// <summary>
     /// 現在のページ数
@@ -29,7 +31,13 @@ public sealed class WasmMemory
     /// <summary>
     /// 宣言された最大ページ数 指定がなければnull
     /// </summary>
-    public uint? MaximumPages { get; }
+    /// <exception cref="InvalidOperationException">最大ページ数が32ビットで表せない場合はTypeから取得する</exception>
+    public uint? MaximumPages =>
+        Type.MaximumPages is > uint.MaxValue
+            ? throw new InvalidOperationException(
+                "最大ページ数が32ビットで表せません。Type.MaximumPagesから取得してください。"
+            )
+            : (uint?)Type.MaximumPages;
 
     /// <summary>
     /// 現在のバイト長
@@ -44,20 +52,46 @@ public sealed class WasmMemory
     /// <exception cref="ArgumentException">最小値が最大値を超えるか、いずれかが65,536ページを超える場合</exception>
     /// <exception cref="OutOfMemoryException">初期領域を割り当てられない場合</exception>
     public WasmMemory(WasmLimits limits)
+        : this(new WasmMemoryType(limits ?? throw new ArgumentNullException(nameof(limits))), nameof(limits)) { }
+
+    private WasmMemory(WasmMemoryType type, string parameterName)
     {
-        ArgumentNullException.ThrowIfNull(limits);
+        ArgumentNullException.ThrowIfNull(type, parameterName);
         // Stryker disable once Logical,Boolean,Statement,Block: 上限判定を反転するか例外を取り除くと、境界値テストが65,537ページ（約4GiB）を確保する。
-        if (limits.Maximum > MAX_PAGE_COUNT || ExceedsPageLimit(limits.Minimum, limits.Maximum))
+        if (type.MaximumPages > type.PageLimit || ExceedsPageLimit(type.MinimumPages, type))
         {
-            throw new ArgumentException("memoryのlimitsがCore 2.0の制約を満たしません。", nameof(limits));
+            throw new ArgumentException("memoryのページ数がアドレス型の制約を満たしません。", parameterName);
         }
 
-        _pages = new byte[limits.Minimum][];
+        if (type.MinimumPages > (ulong)Array.MaxLength)
+        {
+            throw new WasmImplementationLimitException(
+                "memoryの初期ページ数がページ表の保持上限を超えています。",
+                WasmImplementationLimitReason.CollectionSize,
+                Array.MaxLength
+            );
+        }
+
+        Type = type;
+        _pages = new byte[(int)type.MinimumPages][];
         for (var index = 0; index < _pages.Length; index++)
         {
             _pages[index] = new byte[PAGE_SIZE];
         }
-        MaximumPages = limits.Maximum;
+    }
+
+    /// <summary>
+    /// 指定したアドレス型とページ数でゼロ初期化されたメモリを生成する
+    /// </summary>
+    /// <param name="type">宣言されたアドレス型とページ数の上下限</param>
+    /// <returns>最小ページ数に従って初期化したメモリ</returns>
+    /// <exception cref="ArgumentNullException">typeがnullの場合</exception>
+    /// <exception cref="ArgumentException">ページ数の上下限がアドレス型の制約を満たさない場合</exception>
+    /// <exception cref="WasmImplementationLimitException">初期ページ数がページ表の保持上限を超える場合</exception>
+    /// <exception cref="OutOfMemoryException">初期領域を割り当てられない場合</exception>
+    public static WasmMemory Create(WasmMemoryType type)
+    {
+        return new WasmMemory(type, nameof(type));
     }
 
     /// <summary>
@@ -94,7 +128,7 @@ public sealed class WasmMemory
     /// </summary>
     /// <param name="deltaPages">追加するページ数 0の場合も成功する</param>
     /// <param name="previousPageCount">成功・失敗にかかわらず、増大前のページ数</param>
-    /// <returns>増大に成功した場合はtrue 宣言された最大値または65,536ページを超える場合は、サイズと内容を変更せずfalse</returns>
+    /// <returns>増大に成功した場合はtrue 宣言・アドレス型・ページ表の上限を超える場合は、サイズと内容を変更せずfalse</returns>
     /// <exception cref="OutOfMemoryException">追加領域を割り当てられない場合 サイズと内容は変更しない</exception>
     public bool TryGrow(uint deltaPages, out uint previousPageCount)
     {
@@ -102,7 +136,8 @@ public sealed class WasmMemory
         var nextPageCount = (ulong)previousPageCount + deltaPages;
         if (
             // Stryker disable once Boolean: 上限判定を反転すると、拡張を拒否するテストで4GiB以上の領域を確保する。
-            ExceedsPageLimit(nextPageCount, MaximumPages)
+            ExceedsPageLimit(nextPageCount, Type)
+            || nextPageCount > (ulong)Array.MaxLength
         )
         {
             return false;
@@ -129,13 +164,13 @@ public sealed class WasmMemory
     /// ページ数が仕様上限または宣言された最大値を超えるかを返す
     /// </summary>
     /// <param name="pageCount">割当前に判定するページ数</param>
-    /// <param name="maximumPages">宣言された最大ページ数 指定がなければnull</param>
+    /// <param name="type">アドレス型と宣言された上下限</param>
     /// <returns>いずれかの上限を超える場合はtrue</returns>
-    internal static bool ExceedsPageLimit(ulong pageCount, uint? maximumPages)
+    internal static bool ExceedsPageLimit(ulong pageCount, WasmMemoryType type)
     {
-        var exceedsDeclaredMaximum = pageCount > maximumPages;
+        var exceedsDeclaredMaximum = pageCount > type.MaximumPages;
         // Stryker disable once Logical,Equality: 仕様上限を超えた要求を通すと、生成時や拡張時に4GiB以上の領域を確保する。
-        return pageCount > MAX_PAGE_COUNT || exceedsDeclaredMaximum;
+        return pageCount > type.PageLimit || exceedsDeclaredMaximum;
     }
 
     /// <summary>

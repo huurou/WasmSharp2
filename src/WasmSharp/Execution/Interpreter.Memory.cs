@@ -184,8 +184,7 @@ internal static partial class Interpreter
         var value = context.PopValue();
         var bits = signature.ValueType switch
         {
-            WasmValueKind.I32 => unchecked((uint)value.AsI32()),
-            WasmValueKind.I64 => unchecked((ulong)value.AsI64()),
+            WasmValueKind.I32 or WasmValueKind.I64 => value.AsUnsignedInteger(),
             WasmValueKind.F32 => value.AsF32Bits(),
             WasmValueKind.F64 => value.AsF64Bits(),
             _ => throw new InvalidOperationException("メモリアクセスの値型が不正です。"),
