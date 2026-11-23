@@ -1,0 +1,3 @@
+interface:
+  display_name: "Issueから統合PRを作成"
+  short_description: "Issueを分割・実装し、Claudeレビューと変異テスト後の修正まで同じPRに反映する"
