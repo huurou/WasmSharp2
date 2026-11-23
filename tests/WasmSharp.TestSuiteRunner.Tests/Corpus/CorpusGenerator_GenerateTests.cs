@@ -304,12 +304,17 @@ internal class CorpusGenerator_GenerateTests
     }
 
     [Test]
-    public async Task 生成物の一つを読み取れない_先に記録した素材を保持して失敗理由と処理完了を保存する()
+    [Arguments(false, typeof(IOException))]
+    [Arguments(true, typeof(UnauthorizedAccessException))]
+    public async Task 生成物の一つを読み取れない_先に記録した素材を保持して失敗理由と処理完了を保存する(
+        bool denyRead,
+        Type exceptionType
+    )
     {
         // Arrange
         using var workspace = await SuiteWorkspace.CreateAsync();
         var request = workspace.CreateRequest(workspace.CreateProfile());
-        FileStream? locked = null;
+        IDisposable? restriction = null;
         try
         {
             // Act
@@ -317,12 +322,11 @@ internal class CorpusGenerator_GenerateTests
             {
                 if (path == "partial.wast")
                 {
-                    locked = File.Open(
-                        Path.Combine(workspace.OutputRoot, "modules", "zz-locked.wasm"),
-                        FileMode.CreateNew,
-                        FileAccess.ReadWrite,
-                        FileShare.None
-                    );
+                    var file = new FileInfo(Path.Combine(workspace.OutputRoot, "modules", "zz-locked.wasm"));
+                    file.Create().Dispose();
+                    restriction = denyRead
+                        ? FileSystemAccessRestriction.DenyRead(file)
+                        : file.Open(FileMode.Open, FileAccess.Read, FileShare.None);
                 }
             });
 
@@ -341,7 +345,7 @@ internal class CorpusGenerator_GenerateTests
                     )
                     .IsTrue();
                 await Assert.That(diagnostic.Path).IsEqualTo("success.wast");
-                await Assert.That(diagnostic.ExceptionType).IsEqualTo(typeof(IOException).FullName);
+                await Assert.That(diagnostic.ExceptionType).IsEqualTo(exceptionType.FullName);
                 await Assert.That(diagnostic.Message).StartsWith("生成物を記録できません: ");
                 await Assert.That(stored.Manifest.Completion).IsEqualTo(new ConversionCompletion(true, true));
                 await Assert.That(Get(stored.Manifest, "success.wast").Diagnostics).Contains(diagnostic);
@@ -349,17 +353,28 @@ internal class CorpusGenerator_GenerateTests
         }
         finally
         {
-            locked?.Dispose();
+            restriction?.Dispose();
         }
     }
 
     [Test]
-    public async Task 出力rootがファイルである_保存先の作成失敗と原因を返す()
+    [Arguments(false, typeof(IOException))]
+    [Arguments(true, typeof(UnauthorizedAccessException))]
+    public async Task 出力ディレクトリを作成できない_変換を起動せず保存失敗と原因を返す(
+        bool denyCreation,
+        Type exceptionType
+    )
     {
         // Arrange
         using var workspace = await SuiteWorkspace.CreateAsync();
-        var outputRoot = Path.Combine(workspace.OutputRoot, "file");
-        await File.WriteAllTextAsync(outputRoot, "既存のファイル");
+        var outputRoot = Path.Combine(workspace.OutputRoot, "destination");
+        using var restriction = denyCreation
+            ? FileSystemAccessRestriction.DenyCreatingSubdirectories(new DirectoryInfo(workspace.OutputRoot))
+            : null;
+        if (!denyCreation)
+        {
+            await File.WriteAllTextAsync(outputRoot, "既存のファイル");
+        }
         var request = workspace.CreateRequest(workspace.CreateProfile()) with { OutputRoot = outputRoot };
 
         // Act
@@ -370,14 +385,24 @@ internal class CorpusGenerator_GenerateTests
         {
             await Assert.That(result.SaveFailure).IsNotNull();
             await Assert.That(result.SaveFailure!.Path).IsEqualTo(Path.Combine(outputRoot, "manifest.json"));
-            await Assert.That(result.SaveFailure.InnerException).IsTypeOf<IOException>();
+            await Assert.That(result.SaveFailure.InnerException?.GetType()).IsEqualTo(exceptionType);
             await Assert.That(result.SaveFailure.Message).Contains("保存先を用意できません");
-            await Assert.That(result.Manifest.Completion.OutputComplete).IsFalse();
+            await Assert.That(result.Manifest.Completion).IsEqualTo(new ConversionCompletion(true, false));
+            await Assert.That(File.Exists(result.ManifestPath)).IsFalse();
+            await Assert
+                .That(result.Manifest.Inputs.All(x => x.Status == ConversionStatus.RunnerError && x.ExitCode is null))
+                .IsTrue();
+            await Assert
+                .That(Get(result.Manifest, "success.wast").Diagnostics.Single(x => x.Operation == "convert").Message)
+                .StartsWith("出力先");
             await Assert.That(result.Manifest.Inputs.SelectMany(x => x.Artifacts)).IsEmpty();
             await Assert
                 .That(result.Manifest.Inputs.SelectMany(x => x.Diagnostics).Any(x => x.Operation == "record"))
                 .IsFalse();
-            await Assert.That(await File.ReadAllTextAsync(outputRoot)).IsEqualTo("既存のファイル");
+            if (!denyCreation)
+            {
+                await Assert.That(await File.ReadAllTextAsync(outputRoot)).IsEqualTo("既存のファイル");
+            }
         }
     }
 

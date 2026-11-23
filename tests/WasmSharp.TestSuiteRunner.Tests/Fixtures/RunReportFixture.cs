@@ -45,7 +45,7 @@ internal static class RunReportFixture
             .OrderBy(x => x.Key, StringComparer.Ordinal)
             .ToArray();
         var manifest = CreateManifest([.. inputs.Select(x => (x.Key, x.Count()))]);
-        var report = RunReport.Create(manifest, new RunProvenance("fixture-run"), new(1024));
+        var report = RunReport.Create(manifest, CreateProvenance("fixture-run"), new(1024));
         for (var i = 0; i < inputs.Length; i++)
         {
             report.Inputs[i] = report.Inputs[i] with
@@ -62,6 +62,11 @@ internal static class RunReportFixture
             Summary = report.Summarize(),
             Completion = new RunCompletion(true, true),
         };
+    }
+
+    internal static RunProvenance CreateProvenance(string runId)
+    {
+        return new RunProvenance(runId) { RunnerVersion = "1.0.0.0", RuntimeVersion = "2.0.0.0" };
     }
 
     internal static CorpusManifest CreateManifest(params (string Path, int CommandCount)[] inputs)

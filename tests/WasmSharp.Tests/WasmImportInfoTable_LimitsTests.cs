@@ -44,7 +44,24 @@ internal class WasmImportInfoTable_LimitsTests
         var table = (WasmImportInfo.Table)WasmModule.InspectImports(bytes).Imports.Single();
 
         // Act & Assert
-        await Assert.That(() => table with { Limits = new WasmLimits(1) }).ThrowsExactly<InvalidOperationException>();
+        var exception = await Assert
+            .That(() => table with { Limits = new WasmLimits(1) })
+            .ThrowsExactly<InvalidOperationException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.Message).Contains("64ビット");
+            await Assert.That(exception.Message).Contains(nameof(WasmImportInfo.Table.Limits));
+        }
+    }
+
+    [Test]
+    public async Task コピーで要素数の上下限にnullを指定する_引数例外を返す()
+    {
+        // Arrange
+        var table = new WasmImportInfo.Table("env", "t", WasmValueKind.FuncRef, new WasmLimits(1));
+
+        // Act & Assert
+        await Assert.That(() => table with { Limits = null! }).ThrowsExactly<ArgumentNullException>();
     }
 
     [Test]
@@ -60,9 +77,10 @@ internal class WasmImportInfoTable_LimitsTests
         var table = (WasmImportInfo.Table)WasmModule.InspectImports(bytes).Imports.Single();
 
         // Act & Assert
+        var exception = await Assert.That(() => table.Limits).ThrowsExactly<InvalidOperationException>();
         using (Assert.Multiple())
         {
-            await Assert.That(() => table.Limits).ThrowsExactly<InvalidOperationException>();
+            await Assert.That(exception!.Message).Contains(nameof(WasmImportInfo.Table.Type));
             await Assert.That(table.ToString()).Contains(table.Type.ToString());
         }
     }

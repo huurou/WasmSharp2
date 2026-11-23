@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using WasmSharp.TestSuiteRunner.Reports;
 using WasmSharp.TestSuiteRunner.Tests.Fixtures;
 
@@ -148,24 +149,37 @@ internal class ReportStore_ReadTests
     }
 
     [Test]
-    [Arguments("\"max_call_depth\":1024", "", "max_call_depth")]
-    [Arguments("\"execution_policy\":{\"max_call_depth\":1024}", "\"execution_policy\":null", "execution_policy")]
-    public async Task 実行ポリシーがnullまたは必須項目を欠く_構造不正として読取を拒否する(
-        string original,
-        string replacement,
-        string expectedProperty
+    [Arguments("execution_policy", "max_call_depth", false)]
+    [Arguments(null, "execution_policy", true)]
+    [Arguments("provenance", "runner_version", false)]
+    [Arguments("provenance", "runner_version", true)]
+    [Arguments("provenance", "runtime_version", false)]
+    [Arguments("provenance", "runtime_version", true)]
+    public async Task 実行結果の必須項目が欠落またはnullである_該当項目を示して読取を拒否する(
+        string? parentName,
+        string propertyName,
+        bool writeNull
     )
     {
         // Arrange
         using var directory = new TemporaryDirectory();
-        var path = await WriteModifiedSampleAsync(directory, original, replacement);
+        var path = await directory.WriteJsonAsync("run.json", RunReportFixture.CreateSample());
+        var report = JsonNode.Parse(await File.ReadAllBytesAsync(path))!.AsObject();
+        var parent = parentName is null ? report : report[parentName]!.AsObject();
+        var removed = parent.Remove(propertyName);
+        await Assert.That(removed).IsTrue().Because($"変更前の実行結果に{propertyName}が必要です");
+        if (writeNull)
+        {
+            parent[propertyName] = null;
+        }
+        await File.WriteAllTextAsync(path, report.ToJsonString());
 
         // Act & Assert
         var exception = await Assert.That(() => _reportStore.Read(path)).ThrowsExactly<ReportStoreException>();
         using (Assert.Multiple())
         {
             await Assert.That(exception!.InnerException).IsTypeOf<JsonException>();
-            await Assert.That(exception.InnerException!.Message).Contains(expectedProperty);
+            await Assert.That(exception.InnerException!.Message).Contains(propertyName);
         }
     }
 

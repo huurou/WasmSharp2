@@ -247,6 +247,8 @@ public class SuiteExecutor_ExecuteTests
         fixture.WriteArtifact(CorpusFixture.B, "modules/simd/b.0.wasm", spectest);
         fixture.WriteArtifact(CorpusFixture.B, "modules/simd/b.1.wasm", ScriptExecutionFixture.ImportFunctions("shared"));
         var manifest = Complete(fixture.Manifest);
+        var runnerVersion = typeof(RunReport).Assembly.GetName().Version!.ToString();
+        var runtimeVersion = typeof(WasmInstance).Assembly.GetName().Version!.ToString();
 
         // Act
         var report = SuiteExecutor.Execute(manifest, fixture.ManifestPath, WasmSpecVersion.Core2);
@@ -264,7 +266,8 @@ public class SuiteExecutor_ExecuteTests
             await Assert.That(report.Inputs[1].Cases[3].Outcome).IsEqualTo(CaseOutcome.Failed);
             await Assert.That(report.Inputs[1].Cases[3].Diagnostics[0].Reason).IsEqualTo("MissingImport");
             await Assert.That(report.ExecutionPolicy.MaxCallDepth).IsEqualTo(1024);
-            await Assert.That(report.Provenance.RuntimeVersion).IsNotNull();
+            await Assert.That(report.Provenance.RunnerVersion).IsEqualTo(runnerVersion);
+            await Assert.That(report.Provenance.RuntimeVersion).IsEqualTo(runtimeVersion);
         }
     }
 

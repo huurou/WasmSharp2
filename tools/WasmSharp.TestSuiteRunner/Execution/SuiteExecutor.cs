@@ -68,8 +68,8 @@ internal static class SuiteExecutor
             new RunProvenance(Guid.NewGuid().ToString())
             {
                 StartedAt = DateTimeOffset.UtcNow,
-                RunnerVersion = typeof(SuiteExecutor).Assembly.GetName().Version?.ToString(),
-                RuntimeVersion = typeof(WasmModule).Assembly.GetName().Version?.ToString(),
+                RunnerVersion = typeof(SuiteExecutor).Assembly.GetName().Version!.ToString(),
+                RuntimeVersion = typeof(WasmModule).Assembly.GetName().Version!.ToString(),
                 OperatingSystem = RuntimeInformation.OSDescription,
                 Architecture = RuntimeInformation.OSArchitecture.ToString(),
                 ManifestPath = absolutePath,

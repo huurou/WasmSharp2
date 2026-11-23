@@ -90,7 +90,7 @@ internal class CorpusVerifier_VerifySourcesTests
         // Arrange
         using var fixture = CorpusFixture.Create();
         var restricted = Directory.CreateDirectory(Path.Combine(fixture.InputRoot, "restricted"));
-        using var restriction = new ReadAccessRestriction(restricted);
+        using var restriction = FileSystemAccessRestriction.DenyListing(restricted);
 
         // Act
         var diagnostics = CorpusVerifier.VerifySources(fixture.Manifest.Profile.Inputs, fixture.InputRoot);
@@ -107,27 +107,33 @@ internal class CorpusVerifier_VerifySourcesTests
     }
 
     [Test]
-    public async Task 元入力が排他的に開かれている_読取例外を入力path付き診断として返す()
+    [Arguments(false, typeof(IOException))]
+    [Arguments(true, typeof(UnauthorizedAccessException))]
+    public async Task 元入力を読み取れない_入力ごとの失敗理由を返して後続入力の照合を続ける(
+        bool denyRead,
+        Type exceptionType
+    )
     {
         // Arrange
         using var fixture = CorpusFixture.Create();
-        using var stream = File.Open(
-            Path.Combine(fixture.InputRoot, CorpusFixture.A),
-            FileMode.Open,
-            FileAccess.Read,
-            FileShare.None
-        );
+        fixture.WriteSource(CorpusFixture.B, "(module)\r\n");
+        var file = new FileInfo(Path.Combine(fixture.InputRoot, CorpusFixture.A));
+        using IDisposable restriction = denyRead
+            ? FileSystemAccessRestriction.DenyRead(file)
+            : file.Open(FileMode.Open, FileAccess.Read, FileShare.None);
 
         // Act
         var diagnostics = CorpusVerifier.VerifySources(fixture.Manifest.Profile.Inputs, fixture.InputRoot);
 
         // Assert
-        var diagnostic = diagnostics.Single();
+        var readFailure = diagnostics.Single(x => x.Path == CorpusFixture.A);
+        var hashMismatch = diagnostics.Single(x => x.Path == CorpusFixture.B);
         using (Assert.Multiple())
         {
-            await Assert.That(diagnostic.Path).IsEqualTo(CorpusFixture.A);
-            await Assert.That(diagnostic.ExceptionType).IsEqualTo(typeof(IOException).FullName);
-            await Assert.That(diagnostic.Message).StartsWith("元入力を読み取れません: ");
+            await Assert.That(diagnostics.Length).IsEqualTo(2);
+            await Assert.That(readFailure.ExceptionType).IsEqualTo(exceptionType.FullName);
+            await Assert.That(readFailure.Message).StartsWith("元入力を読み取れません: ");
+            await Assert.That(hashMismatch.Message).Contains("SHA-256");
         }
     }
 }
