@@ -164,6 +164,17 @@ internal ref struct ModuleBinaryReader
     }
 
     /// <summary>
+    /// 値が0の予約バイトを1バイト読み取る
+    /// </summary>
+    internal void ReadZeroByte()
+    {
+        if (ReadByte() != 0)
+        {
+            throw Error("zero byte expected: 予約バイトには0x00が必要です。", Position - 1);
+        }
+    }
+
+    /// <summary>
     /// 読取り位置を進めず、現在範囲の次byteを確認する
     /// </summary>
     /// <param name="value">次byte 範囲の終端では0</param>

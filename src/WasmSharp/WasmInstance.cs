@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using System.Runtime.InteropServices;
+using WasmSharp.Exceptions;
 using WasmSharp.Execution;
 using WasmSharp.Modules;
 
@@ -57,7 +58,7 @@ public sealed class WasmInstance
     public WasmExecutionOptions ExecutionOptions { get; }
 
     /// <summary>
-    /// importとmemory/table定義を持たないmoduleのinstanceを構築する
+    /// importを持たないmoduleのinstanceを構築する
     /// </summary>
     /// <param name="module">元となる静的なmodule定義</param>
     /// <param name="options">新しい実行コンテキストを開くときの実行ポリシー</param>
@@ -65,27 +66,25 @@ public sealed class WasmInstance
         : this(module, options, [], [], [], []) { }
 
     /// <summary>
-    /// importした実体を接続し、定義関数、global、要素セグメント、データセグメントを順に構築する
+    /// importした実体を接続し、定義関数、リソースとセグメントを順に構築する
     /// </summary>
     /// <param name="module">元となる検証済みのmodule定義</param>
     /// <param name="options">新しい実行コンテキストを開くときの実行ポリシー</param>
     /// <param name="importedFunctions">関数のimport宣言順に並ぶ共有実体</param>
     /// <param name="importedGlobals">globalのimport宣言順に並ぶ共有実体</param>
-    /// <param name="memories">importを先頭に置き、定義を続けた割当済みmemoryの実体表</param>
-    /// <param name="tables">importを先頭に置き、定義を続けた割当済みtableの実体表</param>
+    /// <param name="importedMemories">memoryのimport宣言順に並ぶ共有実体</param>
+    /// <param name="importedTables">tableのimport宣言順に並ぶ共有実体</param>
     internal WasmInstance(
         WasmModule module,
         WasmExecutionOptions options,
         ImmutableArray<WasmFunction> importedFunctions,
         ImmutableArray<WasmGlobal> importedGlobals,
-        ImmutableArray<WasmMemory> memories,
-        ImmutableArray<WasmTable> tables
+        ImmutableArray<WasmMemory> importedMemories,
+        ImmutableArray<WasmTable> importedTables
     )
     {
         Module = module;
         ExecutionOptions = options;
-        Memories = memories;
-        Tables = tables;
         _exports = module.Exports.ToImmutableDictionary(x => x.Name, StringComparer.Ordinal);
         var functions = ImmutableArray.CreateBuilder<WasmFunction>(importedFunctions.Length + module.Functions.Length);
         functions.AddRange(importedFunctions);
@@ -95,6 +94,8 @@ public sealed class WasmInstance
             functions.Add(new DefinedFunction(this, (uint)(importedFunctions.Length + i), (uint)i));
         }
         Functions = functions.MoveToImmutable();
+        Tables = CreateTables(importedTables, importedGlobals);
+        Memories = CreateMemories(importedMemories);
         var globals = ImmutableArray.CreateBuilder<WasmGlobal>(importedGlobals.Length + module.Globals.Length);
         globals.AddRange(importedGlobals);
         foreach (var global in module.Globals)
@@ -125,6 +126,80 @@ public sealed class WasmInstance
         }
         ElementSegments = elements.MoveToImmutable();
         DataSegments = [.. module.DataSegments.Select(x => new DataInstance(x))];
+    }
+
+    /// <summary>
+    /// 構築済みの関数とimportしたglobalで初期化式を評価し、定義tableの全要素を初期化する
+    /// </summary>
+    private ImmutableArray<WasmTable> CreateTables(
+        ImmutableArray<WasmTable> importedTables,
+        ImmutableArray<WasmGlobal> importedGlobals
+    )
+    {
+        var tables = ImmutableArray.CreateBuilder<WasmTable>(importedTables.Length + Module.Tables.Length);
+        tables.AddRange(importedTables);
+        foreach (var table in Module.Tables)
+        {
+            try
+            {
+                if (table.Initializer.IsEmpty)
+                {
+                    tables.Add(WasmTable.Create(table.Type));
+                    continue;
+                }
+                var initialValue = ConstantInitializer.Evaluate(
+                    table.Initializer,
+                    importedGlobals.AsSpan(),
+                    Functions.AsSpan(),
+                    Module.SpecVersion
+                );
+                tables.Add(WasmTable.Create(table.Type, initialValue));
+            }
+            catch (WasmImplementationLimitException exception)
+            {
+                throw ResourceLimit(exception, table.ByteOffset, 4);
+            }
+        }
+        return tables.MoveToImmutable();
+    }
+
+    /// <summary>
+    /// importしたmemoryを先頭に置き、定義memoryを割り当てる
+    /// </summary>
+    private ImmutableArray<WasmMemory> CreateMemories(ImmutableArray<WasmMemory> importedMemories)
+    {
+        var memories = ImmutableArray.CreateBuilder<WasmMemory>(importedMemories.Length + Module.Memories.Length);
+        memories.AddRange(importedMemories);
+        foreach (var memory in Module.Memories)
+        {
+            try
+            {
+                memories.Add(WasmMemory.Create(memory.Type));
+            }
+            catch (WasmImplementationLimitException exception)
+            {
+                throw ResourceLimit(exception, memory.ByteOffset, 5);
+            }
+        }
+        return memories.MoveToImmutable();
+    }
+
+    /// <summary>
+    /// リソースの保持上限による失敗に定義の位置を付ける
+    /// </summary>
+    private static WasmImplementationLimitException ResourceLimit(
+        WasmImplementationLimitException exception,
+        long byteOffset,
+        byte sectionId
+    )
+    {
+        return new WasmImplementationLimitException(
+            exception.Message,
+            exception.Reason,
+            exception.Limit,
+            new WasmFailureLocation(WasmProcessingStage.Instantiate, byteOffset, null, sectionId),
+            exception
+        );
     }
 
     /// <summary>

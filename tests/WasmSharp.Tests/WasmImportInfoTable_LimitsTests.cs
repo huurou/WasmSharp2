@@ -5,6 +5,37 @@ namespace WasmSharp.Tests;
 internal class WasmImportInfoTable_LimitsTests
 {
     [Test]
+    [Arguments(false)]
+    [Arguments(true)]
+    public async Task 調査した型付きテーブルのlimitsを変更する_関数シグネチャとnull可否を保つ(bool isNullable)
+    {
+        // Arrange
+        var refType = (byte)(isNullable ? 0x63 : 0x64);
+        var bytes = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Types(([0x7E], [0x7F])),
+            HostLinkingModuleBinary.Imports(("env", "callbacks", 1, [refType, 0, 1, 2, 8]))
+        );
+        var original = (WasmImportInfo.Table)WasmModule.InspectImports(bytes).Imports.Single();
+        var expected = WasmValueType.FunctionReference(
+            new WasmFunctionType([WasmValueKind.I64], [WasmValueKind.I32]),
+            isNullable
+        );
+
+        // Act
+        var changed = original with { Limits = new WasmLimits(3, 5) };
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(original.Type.ElementValueType).IsEqualTo(expected);
+            await Assert.That(original.Limits).IsEqualTo(new WasmLimits(2, 8));
+            await Assert.That(changed.Type.ElementValueType).IsEqualTo(expected);
+            await Assert.That(changed.Limits).IsEqualTo(new WasmLimits(3, 5));
+            await Assert.That(changed.ToString()).Contains($"ElementType = {expected}");
+        }
+    }
+
+    [Test]
     public async Task 従来の32ビットテーブルのimportをコピーして分解する_要素型と上下限を変更できる()
     {
         // Arrange

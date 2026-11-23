@@ -38,7 +38,7 @@ internal static class ModuleValidator
             globalTypes,
             (int)importedGlobalCount
         );
-        ValidateResources(module);
+        ValidateResources(module, references.FunctionTypes, globalTypes.AsSpan(0, (int)importedGlobalCount));
         ValidateElements(module, references, segmentGlobalTypes);
         ValidateData(module, references, segmentGlobalTypes);
         var codes = ValidateFunctions(module, references, globalTypes);
@@ -322,16 +322,33 @@ internal static class ModuleValidator
     }
 
     /// <summary>
-    /// 定義tableと定義memoryのlimitsを宣言順に検証する
+    /// 定義tableの型と初期化式、定義memoryのlimitsを宣言順に検証する
     /// </summary>
     /// <param name="module">デコード済みの静的定義</param>
-    private static void ValidateResources(WasmModule module)
+    /// <param name="functionTypes">テーブル初期化式から参照できる関数の型</param>
+    /// <param name="importedGlobals">テーブル初期化式から参照できるimportしたglobalの型</param>
+    private static void ValidateResources(
+        WasmModule module,
+        ReadOnlySpan<WasmFunctionType> functionTypes,
+        ReadOnlySpan<WasmGlobalType> importedGlobals
+    )
     {
         foreach (var table in module.Tables)
         {
             var location = new WasmFailureLocation(WasmProcessingStage.Validate, table.ByteOffset, null, 4);
             ValidateTable(table.Type, location);
-            if (!table.Type.ElementValueType.IsNullable)
+            if (!table.Initializer.IsEmpty)
+            {
+                ConstantInitializer.Validate(
+                    table.Initializer,
+                    table.Type.ElementValueType,
+                    importedGlobals,
+                    functionTypes,
+                    4,
+                    module.SpecVersion
+                );
+            }
+            else if (!table.Type.ElementValueType.IsNullable)
             {
                 throw ValidationDiagnostics.ValidationFailure(
                     "type mismatch",

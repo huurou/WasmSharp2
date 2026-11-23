@@ -71,6 +71,39 @@ internal partial class WasmModule_ValidateTests
     }
 
     [Test]
+    [Arguments("6400", "D000", "type mismatch")]
+    [Arguments("6300", "D200", "type mismatch")]
+    [Arguments("6300", "2300", "constant expression required")]
+    [Arguments("6300", "2301", "unknown global 1")]
+    [Arguments("6300", "D207", "unknown function 7")]
+    public async Task テーブル初期化式の型または参照先が不正である_検証でテーブルの診断を報告する(
+        string elementType,
+        string instruction,
+        string diagnostic
+    )
+    {
+        // Arrange
+        var binary = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Types(([], []), ([], [0x7F])),
+            HostLinkingModuleBinary.Imports(("env", "f", 0, [1]), ("env", "g", 3, [0x63, 0, 1])),
+            HostLinkingModuleBinary.Section(
+                4,
+                [1, 0x40, 0, .. Convert.FromHexString(elementType), 0, 0, .. Convert.FromHexString(instruction), 0x0B]
+            ),
+            HostLinkingModuleBinary.Section(6, [1, 0x63, 0, 0, 0xD0, 0, 0x0B])
+        );
+        var module = WasmModule.Decode(binary);
+
+        // Act & Assert
+        var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.Message).StartsWith(diagnostic);
+            await Assert.That(exception.Location?.SectionId).IsEqualTo((byte)4);
+        }
+    }
+
+    [Test]
     public async Task Nullを許さないテーブルに暗黙の初期値を使う_要素数が0でも型不一致を報告する()
     {
         // Arrange
@@ -136,6 +169,42 @@ internal partial class WasmModule_ValidateTests
         {
             await Assert.That(function).IsNull();
         }
+    }
+
+    [Test]
+    [Arguments("0041000B0100", true)]
+    [Arguments("01000100", true)]
+    [Arguments("020041000B000100", true)]
+    [Arguments("03000100", true)]
+    [Arguments("0441000B01D2000B", false)]
+    public async Task Null不可のテーブルに要素セグメントを転送する_関数番号形式だけが暗黙に非nullになる(
+        string segment,
+        bool isNonNullable
+    )
+    {
+        // Arrange
+        var binary = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Types(([], [])),
+            HostLinkingModuleBinary.Functions(0),
+            HostLinkingModuleBinary.Section(4, [1, 0x40, 0, 0x64, 0x70, 0, 1, 0xD2, 0, 0x0B]),
+            HostLinkingModuleBinary.Section(9, [1, .. Convert.FromHexString(segment)]),
+            HostLinkingModuleBinary.Code(([], [0x41, 0, 0x41, 0, 0x41, 0, 0xFC, 0x0C, 0, 0, 0x0B]))
+        );
+        var module = WasmModule.Decode(binary);
+
+        if (!isNonNullable)
+        {
+            // Act & Assert
+            var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
+            await Assert.That(exception!.Message).StartsWith("type mismatch");
+            return;
+        }
+
+        // Act
+        var validated = module.Validate();
+
+        // Assert
+        await Assert.That(validated).IsSameReferenceAs(module);
     }
 
     [Test]
