@@ -70,6 +70,23 @@ internal static partial class Interpreter
     }
 
     /// <summary>
+    /// オペランドから関数参照を取り出し、参照先を同じ実行コンテキストで呼び出す
+    /// </summary>
+    internal static ExecutionResult CallRef(InterpreterContext context, in Instruction instruction)
+    {
+        var callee = context.PopValue().AsFuncRef();
+        if (callee is null)
+        {
+            return ExecutionResult.Trap(
+                WasmTrapReason.NullFunctionReference,
+                context.CurrentFunction.FunctionIndex,
+                instruction.ByteOffset
+            );
+        }
+        return CallFunction(context, callee);
+    }
+
+    /// <summary>
     /// 解決済みの関数を呼び出し、定義関数は同じ実行ループへフレームを追加する
     /// </summary>
     /// <param name="context">呼び出し元の関数と引数を保持する実行コンテキスト</param>

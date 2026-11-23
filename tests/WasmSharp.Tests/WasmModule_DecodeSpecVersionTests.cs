@@ -226,6 +226,7 @@ internal partial class WasmModule_DecodeTests
     }
 
     [Test]
+    [Arguments(WasmSpecVersion.Core2, "1400", "illegal opcode 14: Core 2.0")]
     [Arguments(WasmSpecVersion.Core3, "FD9A01", "illegal opcode 9a: Core 3.0")]
     [Arguments(WasmSpecVersion.Core3, "FB1F", "illegal opcode fb 1f: Core 3.0")]
     [Arguments(WasmSpecVersion.Core2, "D3", "illegal opcode d3: Core 2.0")]

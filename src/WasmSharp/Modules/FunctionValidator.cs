@@ -344,31 +344,25 @@ internal static class FunctionValidator
                             instruction.ByteOffset
                         );
                     }
-                    var calleeType = functionTypes[(int)instruction.Index];
-                    PopTypes(calleeType.ParameterTypes.AsSpan(), instruction.ByteOffset);
-                    PushTypes(calleeType.ResultTypes.AsSpan());
+                    ApplyCallType(functionTypes[(int)instruction.Index], instruction.ByteOffset);
                     break;
 
                 case ValidationRule.CallIndirect:
                     // バイナリの即値順と分け、テーブル、型、funcref制約、operandの順に検査する。
                     var indirectTableType = GetTableType(instruction.SecondaryIndex, instruction.ByteOffset);
-                    if (instruction.Index >= (uint)module.Types.Length)
-                    {
-                        throw CreateUnknownIndex(
-                            "type",
-                            instruction.Index,
-                            "参照する型が存在しません。",
-                            instruction.ByteOffset
-                        );
-                    }
+                    var indirectCalleeType = GetTypeSignature(instruction.Index, instruction.ByteOffset);
                     if (indirectTableType.ElementType != WasmValueKind.FuncRef)
                     {
                         throw CreateException("間接呼び出し先のテーブルにはfuncrefが必要です。", instruction.ByteOffset);
                     }
-                    var indirectCalleeType = module.Types[(int)instruction.Index];
                     Pop(indirectTableType.AddressType, instruction.ByteOffset);
-                    PopTypes(indirectCalleeType.ParameterTypes.AsSpan(), instruction.ByteOffset);
-                    PushTypes(indirectCalleeType.ResultTypes.AsSpan());
+                    ApplyCallType(indirectCalleeType, instruction.ByteOffset);
+                    break;
+
+                case ValidationRule.CallRef:
+                    var referencedType = GetTypeSignature(instruction.Index, instruction.ByteOffset);
+                    Pop(WasmValueType.FunctionReference(referencedType, isNullable: true), instruction.ByteOffset);
+                    ApplyCallType(referencedType, instruction.ByteOffset);
                     break;
 
                 case ValidationRule.Return:
@@ -575,6 +569,21 @@ internal static class FunctionValidator
             }
         }
 
+        WasmFunctionType GetTypeSignature(uint index, long byteOffset)
+        {
+            if (index >= (uint)module.Types.Length)
+            {
+                throw CreateUnknownIndex("type", index, "参照する型が存在しません。", byteOffset);
+            }
+            return module.Types[(int)index];
+        }
+
+        void ApplyCallType(WasmFunctionType calleeType, long byteOffset)
+        {
+            PopTypes(calleeType.ParameterTypes.AsSpan(), byteOffset);
+            PushTypes(calleeType.ResultTypes.AsSpan());
+        }
+
         WasmTableType GetTableType(uint index, long byteOffset)
         {
             if (index >= (uint)references.TableTypes.Length)
@@ -653,11 +662,7 @@ internal static class FunctionValidator
                 case BlockTypeKind.Value:
                     return ([], [blockType.ValueType.Validate()]);
                 case BlockTypeKind.TypeIndex:
-                    if (blockType.TypeIndex >= (uint)module.Types.Length)
-                    {
-                        throw CreateUnknownIndex("type", blockType.TypeIndex, "参照する型が存在しません。", byteOffset);
-                    }
-                    var blockSignature = module.Types[(int)blockType.TypeIndex];
+                    var blockSignature = GetTypeSignature(blockType.TypeIndex, byteOffset);
                     return (blockSignature.ParameterTypes, blockSignature.ResultTypes);
                 default:
                     throw new InvalidOperationException("制御の型指定が不正です。");
