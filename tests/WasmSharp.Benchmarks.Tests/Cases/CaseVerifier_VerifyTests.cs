@@ -291,6 +291,7 @@ internal class CaseVerifier_VerifyTests
 
     [Test]
     [Arguments(MeasurementStage.Decode, nameof(ModuleObservation))]
+    [Arguments(MeasurementStage.DecodeValidate, nameof(ModuleObservation))]
     [Arguments(MeasurementStage.Instantiate, nameof(InstanceObservation))]
     [Arguments(MeasurementStage.Invoke, nameof(InvokeObservation))]
     public async Task 測定段階と観測型が対応しない_必要な観測型を示して失敗にする(
@@ -301,7 +302,7 @@ internal class CaseVerifier_VerifyTests
         // Arrange
         var definition = VerificationFixture.Definition(stage, _json);
         CaseObservation observation =
-            stage == MeasurementStage.Decode
+            expectedType == nameof(ModuleObservation)
                 ? new InstanceObservation(VerificationFixture.Instantiate(_context))
                 : new ModuleObservation(VerificationFixture.Decode());
 

@@ -6,6 +6,25 @@ namespace WasmSharp.Tests;
 internal partial class WasmModule_ValidateTests
 {
     [Test]
+    public async Task 添字がi32で指定したテーブルのアドレス型がi64である_間接呼び出しを型不一致で拒否する()
+    {
+        // Arrange
+        var module = WasmModule.Decode(
+            HostLinkingModuleBinary.Create(
+                HostLinkingModuleBinary.Types(([], [])),
+                HostLinkingModuleBinary.Functions(0),
+                HostLinkingModuleBinary.Section(4, [2, 0x70, 0, 1, 0x70, 4, 1]),
+                HostLinkingModuleBinary.Code(([], [0x41, 0, 0x11, 0, 1, 0x0B]))
+            ),
+            WasmSpecVersion.Core3
+        );
+
+        // Act & Assert
+        var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
+        await Assert.That(exception!.Message).StartsWith("type mismatch");
+    }
+
+    [Test]
     [Arguments("1101010B", (byte)0x70, "unknown table 1", 0, "テーブルが存在しません")]
     [Arguments("1101000B", (byte)0x6F, "unknown type 1", 0, "型が存在しません")]
     [Arguments("1100000B", (byte)0x6F, "type mismatch", 0, "funcref")]

@@ -6,6 +6,52 @@ namespace WasmSharp.Tests;
 internal class WasmModule_InspectImportsTests
 {
     [Test]
+    [Arguments(false, false)]
+    [Arguments(true, false)]
+    [Arguments(false, true)]
+    [Arguments(true, true)]
+    public async Task 参照型とアドレス型が異なるテーブルを調査する_要素数の上下限を宣言順に取得できる(
+        bool useStream,
+        bool specifyVersion
+    )
+    {
+        // Arrange
+        var bytes = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Imports(
+                ("env", "small", 1, [0x70, 0x01, 1, 3]),
+                ("env", "wide", 1, Convert.FromHexString("6F058080808010FFFFFFFFFFFFFFFFFF01")),
+                ("env", "open", 1, [0x70, 0x04, 2]),
+                ("env", "unchecked", 1, Convert.FromHexString("6F01008080808010"))
+            )
+        );
+        using var stream = new MemoryStream(bytes);
+
+        // Act
+        var inspection = (useStream, specifyVersion) switch
+        {
+            (true, true) => WasmModule.InspectImports(stream, WasmSpecVersion.Core3),
+            (true, false) => WasmModule.InspectImports(stream),
+            (false, true) => WasmModule.InspectImports(bytes, WasmSpecVersion.Core3),
+            (false, false) => WasmModule.InspectImports(bytes),
+        };
+
+        // Assert
+        var tables = inspection.Imports.Cast<WasmImportInfo.Table>().ToArray();
+        using (Assert.Multiple())
+        {
+            await Assert.That(tables.Select(x => x.Name).SequenceEqual(["small", "wide", "open", "unchecked"])).IsTrue();
+            await Assert.That(tables[0].Type).IsEqualTo(new WasmTableType(WasmValueKind.FuncRef, WasmValueKind.I32, 1, 3));
+            await Assert
+                .That(tables[1].Type)
+                .IsEqualTo(new WasmTableType(WasmValueKind.ExternRef, WasmValueKind.I64, 1UL << 32, ulong.MaxValue));
+            await Assert.That(tables[2].Type).IsEqualTo(new WasmTableType(WasmValueKind.FuncRef, WasmValueKind.I64, 2));
+            await Assert
+                .That(tables[3].Type)
+                .IsEqualTo(new WasmTableType(WasmValueKind.ExternRef, WasmValueKind.I32, 0, 1UL << 32));
+        }
+    }
+
+    [Test]
     [Arguments(false)]
     [Arguments(true)]
     public async Task 未定義の仕様版で調査する_引数の範囲外として拒否する(bool useStream)
@@ -20,6 +66,35 @@ internal class WasmModule_InspectImportsTests
             .That(() => useStream ? WasmModule.InspectImports(stream, version) : WasmModule.InspectImports(bytes, version))
             .ThrowsExactly<ArgumentOutOfRangeException>();
         await Assert.That(exception!.ParamName).IsEqualTo("specVersion");
+    }
+
+    [Test]
+    [Arguments(false, "700400")]
+    [Arguments(true, "70008080808010")]
+    public async Task Core2で64ビットテーブルまたはu32を超える要素数を調査する_従来のデコード診断を返す(
+        bool useStream,
+        string type
+    )
+    {
+        // Arrange
+        var bytes = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Imports(("env", "t", 1, Convert.FromHexString(type)))
+        );
+        using var stream = new MemoryStream(bytes);
+
+        // Act & Assert
+        var exception = await Assert
+            .That(() =>
+                useStream
+                    ? WasmModule.InspectImports(stream, WasmSpecVersion.Core2)
+                    : WasmModule.InspectImports(bytes, WasmSpecVersion.Core2)
+            )
+            .ThrowsExactly<WasmImportInspectionException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.InnerException).IsTypeOf<WasmDecodeException>();
+            await Assert.That(exception.Message).StartsWith("integer too large");
+        }
     }
 
     [Test]

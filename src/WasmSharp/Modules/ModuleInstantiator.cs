@@ -44,7 +44,7 @@ internal static class ModuleInstantiator
         {
             try
             {
-                tables.Add(new WasmTable(table.ElementKind, table.Limits));
+                tables.Add(WasmTable.Create(table.Type));
             }
             catch (WasmImplementationLimitException exception)
             {
@@ -111,7 +111,7 @@ internal static class ModuleInstantiator
             var element = instance.ElementSegments[index];
             if (definition.ActiveTarget is { } target)
             {
-                var offset = unchecked((uint)EvaluateSegmentOffset(instance, target.OffsetExpression).AsI32());
+                var offset = EvaluateSegmentOffset(instance, target.OffsetExpression).AsUnsignedInteger();
                 if (!element.TryInitialize(instance.Tables[(int)target.TableIndex], offset, 0, element.Length))
                 {
                     ExecutionBoundary.ThrowIfFailed(
@@ -261,12 +261,14 @@ internal static class ModuleInstantiator
                     provided.Value.PageCount,
                     provided.Value.Type.MaximumPages
                 ),
-            (TableImport required, TableExternalValue provided) => required.Type.ElementKind == provided.Value.ElementType
+            (TableImport { Definition.Type: var type }, TableExternalValue provided) => type.AddressType
+                == provided.Value.Type.AddressType
+                && type.ElementType == provided.Value.ElementType
                 && MatchesLimits(
-                    required.Type.Limits.Minimum,
-                    required.Type.Limits.Maximum,
+                    type.MinimumElements,
+                    type.MaximumElements,
                     provided.Value.Count,
-                    provided.Value.MaximumElements
+                    provided.Value.Type.MaximumElements
                 ),
             _ => throw LinkFailure(
                 import,
@@ -316,7 +318,7 @@ internal static class ModuleInstantiator
             FunctionImport function => DescribeFunction(module.Types[(int)function.TypeIndex]),
             GlobalImport global => global.Type.ToString(),
             MemoryImport memory => DescribeMemory(memory.Definition.Type),
-            TableImport table => $"{table.Type.ElementKind} {table.Type.Limits}",
+            TableImport table => DescribeTable(table.Definition.Type),
             _ => throw new InvalidOperationException("importの種類が不明です。"),
         };
     }
@@ -333,8 +335,7 @@ internal static class ModuleInstantiator
             FunctionExternalValue function => DescribeFunction(function.Value.Type),
             GlobalExternalValue global => global.Value.Type.ToString(),
             MemoryExternalValue memory => DescribeMemory(memory.Value.Type with { MinimumPages = memory.Value.PageCount }),
-            TableExternalValue table =>
-                $"{table.Value.ElementType} {new WasmLimits(table.Value.Count, table.Value.MaximumElements)}",
+            TableExternalValue table => DescribeTable(table.Value.Type with { MinimumElements = table.Value.Count }),
             _ => throw new InvalidOperationException("外部要素の種類が不明です。"),
         };
     }
@@ -347,6 +348,14 @@ internal static class ModuleInstantiator
     private static string DescribeMemory(WasmMemoryType type)
     {
         return type.Has32BitLimits ? type.Get32BitLimits().ToString() : type.ToString();
+    }
+
+    /// <summary>
+    /// テーブル型を診断に表示し、32ビットテーブルでは従来のlimits表記を使う
+    /// </summary>
+    private static string DescribeTable(WasmTableType type)
+    {
+        return type.Has32BitLimits ? $"{type.ElementType} {type.Get32BitLimits()}" : type.ToString();
     }
 
     /// <summary>

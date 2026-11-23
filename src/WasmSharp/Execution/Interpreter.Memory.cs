@@ -101,7 +101,7 @@ internal static partial class Interpreter
     internal static ExecutionResult Size(InterpreterContext context, in Instruction instruction)
     {
         var memory = context.CurrentFunction.Instance.Memories[(int)instruction.Index];
-        context.PushValue(CreatePageCountValue(memory, memory.PageCount));
+        context.PushValue(CreateSizeValue(memory.Type.AddressType, memory.PageCount));
         return default;
     }
 
@@ -125,18 +125,8 @@ internal static partial class Interpreter
             result = -1;
         }
 
-        context.PushValue(CreatePageCountValue(memory, result));
+        context.PushValue(CreateSizeValue(memory.Type.AddressType, result));
         return default;
-    }
-
-    /// <summary>
-    /// ページ数または拡張失敗を表す-1を、対象メモリのアドレス型で返す
-    /// </summary>
-    private static WasmValue CreatePageCountValue(WasmMemory memory, long pageCount)
-    {
-        return memory.Type.AddressType == WasmValueKind.I64
-            ? WasmValue.FromI64(pageCount)
-            : WasmValue.FromI32((int)pageCount);
     }
 
     /// <summary>

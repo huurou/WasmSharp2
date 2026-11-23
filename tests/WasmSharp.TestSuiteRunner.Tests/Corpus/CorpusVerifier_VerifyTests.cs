@@ -54,7 +54,7 @@ internal class CorpusVerifier_VerifyTests
         // Arrange
         using var fixture = CorpusFixture.Create();
         var restricted = Directory.CreateDirectory(fixture.GetPath("modules/restricted"));
-        using var restriction = new ReadAccessRestriction(restricted);
+        using var restriction = FileSystemAccessRestriction.DenyListing(restricted);
 
         // Act
         var result = Verify(fixture);
@@ -812,7 +812,7 @@ internal class CorpusVerifier_VerifyTests
         // Arrange
         using var fixture = CorpusFixture.Create();
         const string MaterialPath = "modules/a.0.wasm";
-        using var restriction = new ReadAccessRestriction(new FileInfo(fixture.GetPath(MaterialPath)));
+        using var restriction = FileSystemAccessRestriction.DenyRead(new FileInfo(fixture.GetPath(MaterialPath)));
 
         // Act
         var result = Verify(fixture);

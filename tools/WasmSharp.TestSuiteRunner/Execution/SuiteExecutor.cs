@@ -68,8 +68,8 @@ internal static class SuiteExecutor
             new RunProvenance(Guid.NewGuid().ToString())
             {
                 StartedAt = DateTimeOffset.UtcNow,
-                RunnerVersion = typeof(SuiteExecutor).Assembly.GetName().Version?.ToString(),
-                RuntimeVersion = typeof(WasmModule).Assembly.GetName().Version?.ToString(),
+                RunnerVersion = typeof(SuiteExecutor).Assembly.GetName().Version!.ToString(),
+                RuntimeVersion = typeof(WasmModule).Assembly.GetName().Version!.ToString(),
                 OperatingSystem = RuntimeInformation.OSDescription,
                 Architecture = RuntimeInformation.OSArchitecture.ToString(),
                 ManifestPath = absolutePath,
@@ -106,7 +106,7 @@ internal static class SuiteExecutor
                 }
                 input = input with { Issues = [.. conversions[path].Diagnostics.Concat(input.Issues).Distinct()] };
                 var state = new ScriptState(path);
-                state.Register(SpectestFactory.Create(state));
+                state.Register(SpectestFactory.Create(state, specVersion));
                 var (result, interruption) = executeInput(input, state, cancellationToken);
                 report.Inputs[i] = result;
                 progress?.Invoke(path);

@@ -11,7 +11,7 @@ internal class RunReport_CreateTests
     {
         // Arrange
         var manifest = CorpusManifestFixture.Create();
-        var provenance = new RunProvenance("run-1")
+        var provenance = RunReportFixture.CreateProvenance("run-1") with
         {
             StartedAt = DateTimeOffset.Parse("2026-09-28T00:00:00Z"),
             ManifestPath = "/output/manifest.json",
@@ -57,7 +57,7 @@ internal class RunReport_CreateTests
     {
         // Arrange
         var manifest = CorpusManifestFixture.Create();
-        var report = RunReport.Create(manifest, new RunProvenance("run-1"), new(1024));
+        var report = RunReport.Create(manifest, RunReportFixture.CreateProvenance("run-1"), new(1024));
         var before = JsonSerializer.Serialize(report.Corpus);
 
         // Act

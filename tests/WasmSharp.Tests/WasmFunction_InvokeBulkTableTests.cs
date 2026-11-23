@@ -6,6 +6,81 @@ namespace WasmSharp.Tests;
 internal partial class WasmFunction_InvokeTests
 {
     [Test]
+    public async Task TableInitで64ビットテーブルの一部を初期化する_選んだ参照とその前後の要素を読み戻せる()
+    {
+        // Arrange
+        var context = new WasmExecutionContext();
+        var instance = CreateTable64InitInstance(context);
+        var init = instance.GetFunction("init");
+        var drop = instance.GetFunction("drop");
+
+        // Act
+        init.Invoke(context, [WasmValue.FromI64(1), WasmValue.FromI32(2), WasmValue.FromI32(2)]);
+
+        // Assert
+        var table = instance.GetTable("table");
+        using (Assert.Multiple())
+        {
+            await Assert.That(table.Get(0).AsFuncRef()).IsNull();
+            await Assert.That(table.Get(1).AsFuncRef()).IsSameReferenceAs(drop);
+            await Assert.That(table.Get(2).AsFuncRef()).IsSameReferenceAs(init);
+            await Assert.That(table.Get(3).AsFuncRef()).IsNull();
+        }
+    }
+
+    [Test]
+    [Arguments(1L << 32, 0, 1)]
+    [Arguments(-1L, 0, 1)]
+    [Arguments(3L, 0, 2)]
+    [Arguments(1L, 3, 2)]
+    public async Task TableInitの転送元か64ビット転送先が範囲を超える_呼び出しがtrapになり全要素を保つ(
+        long destination,
+        int source,
+        int length
+    )
+    {
+        // Arrange
+        var context = new WasmExecutionContext();
+        var instance = CreateTable64InitInstance(context);
+        var init = instance.GetFunction("init");
+        var table = instance.GetTable("table");
+        table.Set(2, WasmValue.FromFuncRef(init));
+        var before = Enumerable.Range(0, 4).Select(x => table.Get((uint)x)).ToArray();
+
+        // Act & Assert
+        var exception = await Assert
+            .That(() =>
+                init.Invoke(context, [WasmValue.FromI64(destination), WasmValue.FromI32(source), WasmValue.FromI32(length)])
+            )
+            .ThrowsExactly<WasmTrapException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.Reason).IsEqualTo(WasmTrapReason.TableOutOfBounds);
+            await Assert.That(exception.Location!.Stage).IsEqualTo(WasmProcessingStage.Invoke);
+            await Assert.That(Enumerable.Range(0, 4).Select(x => table.Get((uint)x)).SequenceEqual(before)).IsTrue();
+        }
+    }
+
+    [Test]
+    public async Task ElemDrop後に64ビットテーブルを初期化する_末尾への0要素の転送は成功し1要素の転送はtrapになる()
+    {
+        // Arrange
+        var context = new WasmExecutionContext();
+        var instance = CreateTable64InitInstance(context);
+        var init = instance.GetFunction("init");
+        instance.GetFunction("drop").Invoke(context, []);
+
+        // Act
+        init.Invoke(context, [WasmValue.FromI64(4), WasmValue.FromI32(0), WasmValue.FromI32(0)]);
+
+        // Act & Assert
+        var exception = await Assert
+            .That(() => init.Invoke(context, [WasmValue.FromI64(0), WasmValue.FromI32(0), WasmValue.FromI32(1)]))
+            .ThrowsExactly<WasmTrapException>();
+        await Assert.That(exception!.Reason).IsEqualTo(WasmTrapReason.TableOutOfBounds);
+    }
+
+    [Test]
     [Arguments((byte)0)]
     [Arguments((byte)1)]
     [Arguments((byte)2)]
@@ -276,6 +351,23 @@ internal partial class WasmFunction_InvokeTests
             }
         }
         await Assert.That(Enumerable.Range(0, 4).Select(x => table.Get((uint)x)).All(x => x.Equals(firstValue))).IsTrue();
+    }
+
+    private static WasmInstance CreateTable64InitInstance(WasmExecutionContext context)
+    {
+        // テーブル添字1が64ビットで、パッシブ要素にはinit、init、drop、initの順に関数参照が並ぶ。
+        var bytes = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Types(([0x7E, 0x7F, 0x7F], []), ([], [])),
+            HostLinkingModuleBinary.Functions(0, 1),
+            HostLinkingModuleBinary.Section(4, [2, 0x70, 0, 0, 0x70, 4, 4]),
+            HostLinkingModuleBinary.Exports(("init", 0, 0), ("drop", 0, 1), ("table", 1, 1)),
+            HostLinkingModuleBinary.Section(9, [1, 1, 0, 4, 0, 0, 1, 0]),
+            HostLinkingModuleBinary.Code(
+                ([], [0x20, 0, 0x20, 1, 0x20, 2, 0xFC, 0x0C, 0, 1, 0x0B]),
+                ([], [0xFC, 0x0D, 0, 0x0B])
+            )
+        );
+        return WasmModule.Decode(bytes, WasmSpecVersion.Core3).Validate().Instantiate(context, []);
     }
 
     private static (WasmModule Module, WasmHostModule Host, WasmValue First, WasmValue Second) CreateBulkTableModule(

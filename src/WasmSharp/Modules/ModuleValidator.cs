@@ -72,7 +72,7 @@ internal static class ModuleValidator
                 continue;
             }
             var location = new WasmFailureLocation(WasmProcessingStage.Validate, element.ByteOffset, null, 9);
-            if (target.TableIndex >= (uint)references.TableElementTypes.Length)
+            if (target.TableIndex >= (uint)references.TableTypes.Length)
             {
                 throw ValidationDiagnostics.UnknownIndex(
                     "table",
@@ -81,7 +81,8 @@ internal static class ModuleValidator
                     location
                 );
             }
-            if (element.ElementType != references.TableElementTypes[(int)target.TableIndex])
+            var tableType = references.TableTypes[(int)target.TableIndex];
+            if (element.ElementType != tableType.ElementType)
             {
                 throw ValidationDiagnostics.ValidationFailure(
                     "type mismatch",
@@ -91,7 +92,7 @@ internal static class ModuleValidator
             }
             ConstantInitializer.Validate(
                 target.OffsetExpression,
-                WasmValueKind.I32,
+                tableType.AddressType,
                 visibleGlobals,
                 references.FunctionCount,
                 9,
@@ -283,7 +284,7 @@ internal static class ModuleValidator
                     break;
 
                 case TableImport table:
-                    ValidateLimits(table.Type.Limits.Minimum, table.Type.Limits.Maximum, location);
+                    ValidateTable(table.Definition.Type, location);
                     break;
 
                 case MemoryImport memory:
@@ -320,11 +321,7 @@ internal static class ModuleValidator
     {
         foreach (var table in module.Tables)
         {
-            ValidateLimits(
-                table.Limits.Minimum,
-                table.Limits.Maximum,
-                new(WasmProcessingStage.Validate, table.ByteOffset, null, 4)
-            );
+            ValidateTable(table.Type, new WasmFailureLocation(WasmProcessingStage.Validate, table.ByteOffset, null, 4));
         }
         foreach (var memory in module.Memories)
         {
@@ -346,7 +343,7 @@ internal static class ModuleValidator
             var (count, category) = export.Kind switch
             {
                 WasmExternalKind.Function => (references.FunctionCount, "function"),
-                WasmExternalKind.Table => ((uint)references.TableElementTypes.Length, "table"),
+                WasmExternalKind.Table => ((uint)references.TableTypes.Length, "table"),
                 WasmExternalKind.Memory => (references.MemoryCount, "memory"),
                 WasmExternalKind.Global => (globalCount, "global"),
                 _ => throw new InvalidOperationException("デコード済みexportの種類が不正です。"),
@@ -389,6 +386,22 @@ internal static class ModuleValidator
         {
             throw ValidationDiagnostics.UnknownIndex("type", typeIndex, "参照する関数型が存在しません。", location);
         }
+    }
+
+    /// <summary>
+    /// アドレス型が許す最大要素数と、テーブルの上下限の大小関係を検証する
+    /// </summary>
+    private static void ValidateTable(WasmTableType type, WasmFailureLocation location)
+    {
+        if (type.ExceedsElementLimit)
+        {
+            throw ValidationDiagnostics.ValidationFailure(
+                "table size must be at most 2^32-1 for i32",
+                "32ビットテーブルの要素数が仕様上限を超えています。",
+                location
+            );
+        }
+        ValidateLimits(type.MinimumElements, type.MaximumElements, location);
     }
 
     /// <summary>

@@ -128,4 +128,21 @@ internal class WasmTable_SetTests
             }
         }
     }
+
+    [Test]
+    public async Task GetとSetのメソッド参照をvarに代入する_uintの添字で参照をコピーできる()
+    {
+        // Arrange
+        var table = new WasmTable(WasmValueKind.ExternRef, new WasmLimits(2));
+        var reference = new object();
+        table.Set(0u, WasmValue.FromExternRef(reference));
+        var get = table.Get;
+        var set = table.Set;
+
+        // Act
+        set(1u, get(0u));
+
+        // Assert
+        await Assert.That(table.Get(1u).AsExternRef()).IsSameReferenceAs(reference);
+    }
 }

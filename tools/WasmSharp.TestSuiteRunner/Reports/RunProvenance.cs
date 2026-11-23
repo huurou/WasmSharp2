@@ -14,12 +14,12 @@ internal sealed record RunProvenance(string RunId)
     /// <summary>
     /// ランナーの版
     /// </summary>
-    public string? RunnerVersion { get; init; }
+    public required string RunnerVersion { get; init; }
 
     /// <summary>
     /// 実行に使用したランタイムの版
     /// </summary>
-    public string? RuntimeVersion { get; init; }
+    public required string RuntimeVersion { get; init; }
 
     /// <summary>
     /// 実行環境のOS

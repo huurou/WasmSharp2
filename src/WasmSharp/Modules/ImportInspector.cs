@@ -175,10 +175,9 @@ internal static class ImportInspector
                                     memory.Name
                                 ),
                                 TableImport table => new WasmImportInfo.Table(
+                                    table.Definition.Type,
                                     table.ModuleName,
-                                    table.Name,
-                                    table.Type.ElementKind,
-                                    table.Type.Limits
+                                    table.Name
                                 ),
                                 _ => throw new InvalidOperationException(),
                             }

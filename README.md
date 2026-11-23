@@ -19,6 +19,17 @@ ulong? maximumPages = memory.Type.MaximumPages;
 
 Issue #10の受け入れ時に固定Core 3.0スイートを実行し、全65,193件のうち61,943件が成立しました。64ビットメモリの対象1,920件はすべて成立しました。例外タグを定義するタグセクションなど、未対応の機能が残っています。[公式ケースと回帰比較の内訳](https://github.com/huurou/WasmSharp2/issues/63)
 
+Core 3.0の64ビットテーブルでは、`i64`の添字で要素を読み書きし、`call_indirect`で関数を呼び出せます。32ビットテーブルと64ビットテーブルの間では、`table.copy`で双方向に参照をコピーできます。次の例では、ホストで初期要素数1の64ビットテーブルを作り、先頭の要素に参照を保存して読み戻します。
+
+```csharp
+var type = new WasmTableType(WasmValueKind.ExternRef, WasmValueKind.I64, 1, 1UL << 32);
+var table = WasmTable.Create(type);
+table[0UL] = WasmValue.FromExternRef("hello");
+object? value = table[0UL].AsExternRef();
+```
+
+Issue #11の受け入れ時に固定Core 3.0スイート65,193件のうち62,317件が成立しました。64ビットテーブルを直接扱う315件と、同じモジュールの32ビットテーブルを使う56件はすべて成立しました。Core 3.0・Core 2.0ともに、それまで成立していた公式ケースの回帰・欠落は0件でした。[公式ケースと回帰比較の内訳（#72）](https://github.com/huurou/WasmSharp2/issues/72)
+
 両版の公式テストは、版ごとの仕様サブモジュールから取得し、同じ`wasm-tools 1.263.0`で変換します。[固定入力と変換器の取得手順](thirdParties/README.md)・[ランナーの操作ガイド](tools/WasmSharp.TestSuiteRunner/README.md)
 
 ## 開発環境のセットアップ

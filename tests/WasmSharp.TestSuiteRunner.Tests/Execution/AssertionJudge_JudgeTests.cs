@@ -221,6 +221,7 @@ internal class AssertionJudge_JudgeTests
         using (Assert.Multiple())
         {
             await Assert.That(result.Outcome).IsEqualTo(outcome);
+            await Assert.That(result.LastStage).IsEqualTo(CaseStage.Invoke);
             await Assert.That(result.ExpectedValues[0].Value).IsEqualTo("1");
             await Assert.That(result.ActualValues[0].Bits).IsEqualTo(differs ? "00000002" : "00000001");
             await Assert.That(result.Diagnostics.Count).IsEqualTo(differs ? 1 : 0);
@@ -228,6 +229,28 @@ internal class AssertionJudge_JudgeTests
             {
                 await Assert.That(result.Diagnostics[0].Stage).IsEqualTo(CaseStage.Invoke);
             }
+        }
+    }
+
+    [Test]
+    public async Task Invokeのassert_returnでGetを観測する_値が一致しても不一致と判定してGetを記録する()
+    {
+        // Arrange
+        var expected = new ExpectedValue("i32", "1", null, []);
+        var command = new AssertReturnCommand(2, 3, Action(CaseStage.Invoke), [expected]);
+        var observation = Observe(CaseStage.Get) with { Values = [new ValueRecord("i32") { Bits = "00000001" }] };
+
+        // Act
+        var result = AssertionJudge.Judge(command, observation);
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(result.Outcome).IsEqualTo(CaseOutcome.Failed);
+            await Assert.That(result.LastStage).IsEqualTo(CaseStage.Get);
+            await Assert.That(result.ExpectedValues[0].Value).IsEqualTo("1");
+            await Assert.That(result.ActualValues[0].Bits).IsEqualTo("00000001");
+            await Assert.That(result.Diagnostics.Any(x => x.Operation == "match_values")).IsFalse();
         }
     }
 

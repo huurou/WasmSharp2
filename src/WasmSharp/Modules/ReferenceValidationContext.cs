@@ -24,9 +24,9 @@ internal sealed class ReferenceValidationContext
     internal ImmutableArray<WasmValueKind> MemoryAddressTypes { get; }
 
     /// <summary>
-    /// importを先頭にしたtable添字順の要素型
+    /// importを先頭にしたテーブル添字順の型
     /// </summary>
-    internal ImmutableArray<WasmValueKind> TableElementTypes { get; }
+    internal ImmutableArray<WasmTableType> TableTypes { get; }
 
     /// <summary>
     /// element添字順の要素型
@@ -44,14 +44,14 @@ internal sealed class ReferenceValidationContext
     private ReferenceValidationContext(
         uint functionCount,
         ImmutableArray<WasmValueKind> memoryAddressTypes,
-        ImmutableArray<WasmValueKind> tableElementTypes,
+        ImmutableArray<WasmTableType> tableTypes,
         ImmutableArray<WasmValueKind> elementTypes,
         ImmutableHashSet<uint> declaredFunctions
     )
     {
         FunctionCount = functionCount;
         MemoryAddressTypes = memoryAddressTypes;
-        TableElementTypes = tableElementTypes;
+        TableTypes = tableTypes;
         ElementTypes = elementTypes;
         DeclaredFunctions = declaredFunctions;
     }
@@ -101,10 +101,7 @@ internal sealed class ReferenceValidationContext
                 .. module.Imports.OfType<MemoryImport>().Select(x => x.Definition.Type.AddressType),
                 .. module.Memories.Select(x => x.Type.AddressType),
             ],
-            [
-                .. module.Imports.OfType<TableImport>().Select(x => x.Type.ElementKind),
-                .. module.Tables.Select(x => x.ElementKind),
-            ],
+            [.. module.Imports.OfType<TableImport>().Select(x => x.Definition.Type), .. module.Tables.Select(x => x.Type)],
             [.. module.ElementSegments.Select(x => x.ElementType)],
             declaredFunctions.ToImmutable()
         );

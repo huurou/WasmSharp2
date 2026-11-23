@@ -318,7 +318,7 @@ public partial class ScriptExecutor_ExecuteTests
     {
         // Arrange
         var state = new ScriptState("a.wast");
-        state.Register(SpectestFactory.Create(state));
+        state.Register(SpectestFactory.Create(state, WasmSpecVersion.Core2));
         var binary = ScriptExecutionFixture.Binary(
             (1, [2, 0x60, 1, 0x7F, 0, 0x60, 0, 0]),
             (2, [1, .. ScriptExecutionFixture.Name("spectest"), .. ScriptExecutionFixture.Name("print_i32"), 0, 0]),

@@ -99,6 +99,7 @@ internal static class SpectestModuleFixture
             "function" => Create(("print_i32", 0, [0])),
             "global_type" => Create(("global_i32", 3, [0x7E, 0])),
             "global_mutability" => Create(("global_i32", 3, [0x7F, 1])),
+            "table64" => Create(("table64", 1, [0x70, 0, 0])),
             "table_type" => Create(("table", 1, [0x6F, 1, 10, 20])),
             "table_minimum" => Create(("table", 1, [0x70, 1, 11, 20])),
             "table_maximum" => Create(("table", 1, [0x70, 1, 10, 19])),

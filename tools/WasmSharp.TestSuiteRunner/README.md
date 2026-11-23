@@ -154,6 +154,8 @@ Expand-Archive -LiteralPath ./baselines/core2/wasm-tools-1.263.0.zip -Destinatio
 
 manifestと生成物の相対配置を保てば、素材ディレクトリを移動しても`run`できます。実行結果JSONは素材の識別情報を含むため、baselineの保存・比較・`verify`には元のmanifestや素材を必要としません。
 
+実行結果JSONの`provenance.runner_version`と`provenance.runtime_version`には、ランナーとランタイムのアセンブリの版を文字列で記録します。どちらかが欠落しているか`null`の実行結果は、読み込み時に拒否します。
+
 ## 結果と終了値
 
 各commandは`passed`（成立）、`failed`（期待との不一致）、`runtime_unsupported`（ランタイム未対応）、`runner_error`（素材・ランナー・公開契約外例外などの異常）、`out_of_scope`（text形式の実行対象外）、`blocked`（必要な先行commandの不成立）のいずれかになります。入力単位の異常はcommand件数と分けて記録します。詳細JSONには元入力・command順序・行・期待値・実際の値・診断・原因参照を保存し、spectestのprintも対応するcommandに記録します。

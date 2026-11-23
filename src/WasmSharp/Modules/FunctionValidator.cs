@@ -203,12 +203,7 @@ internal static class FunctionValidator
                 case ValidationRule.MemoryCopy:
                     var destinationAddressType = GetMemoryAddressType(instruction.Index, instruction.ByteOffset);
                     var sourceAddressType = GetMemoryAddressType(instruction.SecondaryIndex, instruction.ByteOffset);
-                    // 転送長には、コピー先とコピー元のうち幅が小さい方のアドレス型を使う。
-                    var copyLengthType =
-                        destinationAddressType == sourceAddressType ? destinationAddressType : WasmValueKind.I32;
-                    Pop(copyLengthType, instruction.ByteOffset);
-                    Pop(sourceAddressType, instruction.ByteOffset);
-                    Pop(destinationAddressType, instruction.ByteOffset);
+                    PopCopyOperands(destinationAddressType, sourceAddressType, instruction.ByteOffset);
                     break;
 
                 case ValidationRule.MemoryFill:
@@ -235,58 +230,60 @@ internal static class FunctionValidator
                 case ValidationRule.TableGrow:
                 case ValidationRule.TableSize:
                 case ValidationRule.TableFill:
-                    var tableElementType = GetTableElementType(instruction.Index, instruction.ByteOffset);
+                    var tableType = GetTableType(instruction.Index, instruction.ByteOffset);
                     switch (descriptor.Validation)
                     {
                         case ValidationRule.TableGet:
-                            Pop(WasmValueKind.I32, instruction.ByteOffset);
-                            stack.Add(tableElementType);
+                            Pop(tableType.AddressType, instruction.ByteOffset);
+                            stack.Add(tableType.ElementType);
                             break;
                         case ValidationRule.TableSet:
-                            Pop(tableElementType, instruction.ByteOffset);
-                            Pop(WasmValueKind.I32, instruction.ByteOffset);
+                            Pop(tableType.ElementType, instruction.ByteOffset);
+                            Pop(tableType.AddressType, instruction.ByteOffset);
                             break;
                         case ValidationRule.TableGrow:
-                            Pop(WasmValueKind.I32, instruction.ByteOffset);
-                            Pop(tableElementType, instruction.ByteOffset);
-                            stack.Add(WasmValueKind.I32);
+                            Pop(tableType.AddressType, instruction.ByteOffset);
+                            Pop(tableType.ElementType, instruction.ByteOffset);
+                            stack.Add(tableType.AddressType);
                             break;
                         case ValidationRule.TableSize:
-                            stack.Add(WasmValueKind.I32);
+                            stack.Add(tableType.AddressType);
                             break;
                         case ValidationRule.TableFill:
-                            Pop(WasmValueKind.I32, instruction.ByteOffset);
-                            Pop(tableElementType, instruction.ByteOffset);
-                            Pop(WasmValueKind.I32, instruction.ByteOffset);
+                            Pop(tableType.AddressType, instruction.ByteOffset);
+                            Pop(tableType.ElementType, instruction.ByteOffset);
+                            Pop(tableType.AddressType, instruction.ByteOffset);
                             break;
                     }
                     break;
 
                 case ValidationRule.TableCopy:
-                    var destinationType = GetTableElementType(instruction.Index, instruction.ByteOffset);
-                    var sourceType = GetTableElementType(instruction.SecondaryIndex, instruction.ByteOffset);
-                    if (destinationType != sourceType)
+                    var destinationType = GetTableType(instruction.Index, instruction.ByteOffset);
+                    var sourceType = GetTableType(instruction.SecondaryIndex, instruction.ByteOffset);
+                    if (destinationType.ElementType != sourceType.ElementType)
                     {
                         throw CreateException(
                             "コピー元とコピー先のテーブルの参照型が一致しません。",
                             instruction.ByteOffset
                         );
                     }
-                    PopThreeI32(instruction.ByteOffset);
+                    PopCopyOperands(destinationType.AddressType, sourceType.AddressType, instruction.ByteOffset);
                     break;
 
                 case ValidationRule.TableInit:
                     // バイナリの即値順と分け、テーブル、要素、型、operandの順に検査する。
-                    var initializationTableType = GetTableElementType(instruction.SecondaryIndex, instruction.ByteOffset);
+                    var initializationTableType = GetTableType(instruction.SecondaryIndex, instruction.ByteOffset);
                     var elementType = GetElementType(instruction.Index, instruction.ByteOffset);
-                    if (initializationTableType != elementType)
+                    if (initializationTableType.ElementType != elementType)
                     {
                         throw CreateException(
                             "要素セグメントと対象テーブルの参照型が一致しません。",
                             instruction.ByteOffset
                         );
                     }
-                    PopThreeI32(instruction.ByteOffset);
+                    Pop(WasmValueKind.I32, instruction.ByteOffset);
+                    Pop(WasmValueKind.I32, instruction.ByteOffset);
+                    Pop(initializationTableType.AddressType, instruction.ByteOffset);
                     break;
 
                 case ValidationRule.ElementDrop:
@@ -340,7 +337,7 @@ internal static class FunctionValidator
 
                 case ValidationRule.CallIndirect:
                     // バイナリの即値順と分け、テーブル、型、funcref制約、operandの順に検査する。
-                    var indirectTableType = GetTableElementType(instruction.SecondaryIndex, instruction.ByteOffset);
+                    var indirectTableType = GetTableType(instruction.SecondaryIndex, instruction.ByteOffset);
                     if (instruction.Index >= (uint)module.Types.Length)
                     {
                         throw CreateUnknownIndex(
@@ -350,12 +347,12 @@ internal static class FunctionValidator
                             instruction.ByteOffset
                         );
                     }
-                    if (indirectTableType != WasmValueKind.FuncRef)
+                    if (indirectTableType.ElementType != WasmValueKind.FuncRef)
                     {
                         throw CreateException("間接呼び出し先のテーブルにはfuncrefが必要です。", instruction.ByteOffset);
                     }
                     var indirectCalleeType = module.Types[(int)instruction.Index];
-                    Pop(WasmValueKind.I32, instruction.ByteOffset);
+                    Pop(indirectTableType.AddressType, instruction.ByteOffset);
                     PopTypes(indirectCalleeType.Parameters.AsSpan(), instruction.ByteOffset);
                     PushTypes(indirectCalleeType.Results);
                     break;
@@ -500,11 +497,13 @@ internal static class FunctionValidator
             branchTargets.ToImmutable()
         );
 
-        void PopThreeI32(long byteOffset)
+        void PopCopyOperands(WasmValueKind destinationType, WasmValueKind sourceType, long byteOffset)
         {
-            Pop(WasmValueKind.I32, byteOffset);
-            Pop(WasmValueKind.I32, byteOffset);
-            Pop(WasmValueKind.I32, byteOffset);
+            // 転送長には、コピー先とコピー元のうち幅が小さい方のアドレス型を使う。
+            var lengthType = destinationType == sourceType ? destinationType : WasmValueKind.I32;
+            Pop(lengthType, byteOffset);
+            Pop(sourceType, byteOffset);
+            Pop(destinationType, byteOffset);
         }
 
         void RequireDataSegment(uint index, long byteOffset)
@@ -515,13 +514,13 @@ internal static class FunctionValidator
             }
         }
 
-        WasmValueKind GetTableElementType(uint index, long byteOffset)
+        WasmTableType GetTableType(uint index, long byteOffset)
         {
-            if (index >= (uint)references.TableElementTypes.Length)
+            if (index >= (uint)references.TableTypes.Length)
             {
                 throw CreateUnknownIndex("table", index, "参照するテーブルが存在しません。", byteOffset);
             }
-            return references.TableElementTypes[(int)index];
+            return references.TableTypes[(int)index];
         }
 
         WasmValueKind GetElementType(uint index, long byteOffset)
