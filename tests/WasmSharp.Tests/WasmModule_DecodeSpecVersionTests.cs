@@ -229,6 +229,9 @@ internal partial class WasmModule_DecodeTests
     [Arguments(WasmSpecVersion.Core3, "FD9A01", "illegal opcode 9a: Core 3.0")]
     [Arguments(WasmSpecVersion.Core3, "FB1F", "illegal opcode fb 1f: Core 3.0")]
     [Arguments(WasmSpecVersion.Core2, "D3", "illegal opcode d3: Core 2.0")]
+    [Arguments(WasmSpecVersion.Core2, "D4", "illegal opcode d4: Core 2.0")]
+    [Arguments(WasmSpecVersion.Core2, "D500", "illegal opcode d5: Core 2.0")]
+    [Arguments(WasmSpecVersion.Core2, "D600", "illegal opcode d6: Core 2.0")]
     [Arguments(WasmSpecVersion.Core2, "FB", "illegal opcode fb: Core 2.0")]
     [Arguments(WasmSpecVersion.Core2, "FD8002", "illegal opcode 100: Core 2.0")]
     public async Task 選択した仕様で未割当の命令番号がある_その版のデコードエラーを報告する(

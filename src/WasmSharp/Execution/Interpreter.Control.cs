@@ -57,6 +57,35 @@ internal static partial class Interpreter
     }
 
     /// <summary>
+    /// nullは取り除いてラベルへ分岐し、非nullはそのままoperandに残す
+    /// </summary>
+    internal static ExecutionResult BranchOnNull(InterpreterContext context, in Instruction instruction)
+    {
+        if (IsNullReference(context.PeekValue()))
+        {
+            context.PopValue();
+            context.Branch(context.GetBranchTarget(instruction.Index));
+        }
+        return default;
+    }
+
+    /// <summary>
+    /// 非nullなら参照を最後の分岐値として渡し、nullなら取り除いて次の命令へ進む
+    /// </summary>
+    internal static ExecutionResult BranchOnNonNull(InterpreterContext context, in Instruction instruction)
+    {
+        if (IsNullReference(context.PeekValue()))
+        {
+            context.PopValue();
+        }
+        else
+        {
+            context.Branch(context.GetBranchTarget(instruction.Index));
+        }
+        return default;
+    }
+
+    /// <summary>
     /// 符号なしの選択値で候補または既定の分岐先へ分岐する
     /// </summary>
     /// <param name="context">選択値と分岐値を持つ実行コンテキスト</param>

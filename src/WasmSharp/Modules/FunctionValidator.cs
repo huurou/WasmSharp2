@@ -37,8 +37,10 @@ internal static class FunctionValidator
         var type = functionTypes[(int)moduleFunctionIndex];
         var instructions = ImmutableArray.CreateBuilder<Instruction>(function.Instructions.Length);
         var branchTargets = ImmutableArray.CreateBuilder<BranchTarget>();
-        List<WasmValueType?> stack = [];
-        List<ControlFrame> frames = [new(ValidationRule.FunctionEnd, [], type.ResultTypes, 0, 0)];
+        List<OperandType> stack = [];
+        HashSet<uint> initializedLocals = [];
+        var initializationOrder = new Stack<uint>();
+        List<ControlFrame> frames = [new(ValidationRule.FunctionEnd, [], type.ResultTypes, 0, 0, 0)];
         uint previousLocalEnd = 0;
         foreach (var local in function.Locals)
         {
@@ -80,10 +82,11 @@ internal static class FunctionValidator
                         parameters,
                         results,
                         stack.Count,
-                        instructions.Count
+                        instructions.Count,
+                        initializationOrder.Count
                     );
                     frames.Add(enteredFrame);
-                    PushTypes(parameters);
+                    PushTypes(parameters.AsSpan());
                     if (descriptor.Validation == ValidationRule.If)
                     {
                         enteredFrame.IfFalseTarget = AddTarget(enteredFrame, parameters.Length);
@@ -100,7 +103,7 @@ internal static class FunctionValidator
                     CheckEnd(ifFrame, instruction.ByteOffset);
                     ifFrame.HasElse = true;
                     ifFrame.Unreachable = false;
-                    PushTypes(ifFrame.Parameters);
+                    PushTypes(ifFrame.Parameters.AsSpan());
                     outputIndex = (uint)AddTarget(ifFrame, ifFrame.Results.Length);
                     ifFrame.ForwardTargets.Add((int)outputIndex);
                     // elseの跳躍命令の次が、条件0で進むelse本体の入口
@@ -148,12 +151,12 @@ internal static class FunctionValidator
                     break;
 
                 case ValidationRule.RefIsNull:
-                    var referenceType = Pop(null, instruction.ByteOffset);
-                    if (referenceType is { IsReference: false })
-                    {
-                        throw CreateException("null判定の入力には参照型が必要です。", instruction.ByteOffset);
-                    }
+                    PopReference(instruction.ByteOffset);
                     stack.Add(WasmValueKind.I32);
+                    break;
+
+                case ValidationRule.RefAsNonNull:
+                    stack.Add(PopReference(instruction.ByteOffset).AsNonNullable());
                     break;
 
                 case ValidationRule.Numeric:
@@ -326,7 +329,7 @@ internal static class FunctionValidator
                     frames.RemoveAt(frames.Count - 1);
                     if (endedFrame.Kind != ValidationRule.FunctionEnd)
                     {
-                        PushTypes(endedFrame.Results);
+                        PushTypes(endedFrame.Results.AsSpan());
                         emitInstruction = false;
                     }
                     break;
@@ -343,7 +346,7 @@ internal static class FunctionValidator
                     }
                     var calleeType = functionTypes[(int)instruction.Index];
                     PopTypes(calleeType.ParameterTypes.AsSpan(), instruction.ByteOffset);
-                    PushTypes(calleeType.ResultTypes);
+                    PushTypes(calleeType.ResultTypes.AsSpan());
                     break;
 
                 case ValidationRule.CallIndirect:
@@ -365,7 +368,7 @@ internal static class FunctionValidator
                     var indirectCalleeType = module.Types[(int)instruction.Index];
                     Pop(indirectTableType.AddressType, instruction.ByteOffset);
                     PopTypes(indirectCalleeType.ParameterTypes.AsSpan(), instruction.ByteOffset);
-                    PushTypes(indirectCalleeType.ResultTypes);
+                    PushTypes(indirectCalleeType.ResultTypes.AsSpan());
                     break;
 
                 case ValidationRule.Return:
@@ -385,7 +388,7 @@ internal static class FunctionValidator
                     outputIndex = (uint)AddLabelTarget(labelFrame);
                     if (descriptor.Validation == ValidationRule.BranchIf)
                     {
-                        PushTypes(labelFrame.LabelTypes);
+                        PushTypes(labelFrame.LabelTypes.AsSpan());
                     }
                     else
                     {
@@ -393,9 +396,32 @@ internal static class FunctionValidator
                     }
                     break;
 
+                case ValidationRule.BranchOnNull:
+                    var nullLabel = GetLabel(instruction.Index, instruction.ByteOffset);
+                    var testedReference = PopReference(instruction.ByteOffset);
+                    PopTypes(nullLabel.LabelTypes.AsSpan(), instruction.ByteOffset);
+                    PushTypes(nullLabel.LabelTypes.AsSpan());
+                    stack.Add(testedReference.AsNonNullable());
+                    outputIndex = (uint)AddLabelTarget(nullLabel);
+                    break;
+
+                case ValidationRule.BranchOnNonNull:
+                    var nonNullLabel = GetLabel(instruction.Index, instruction.ByteOffset);
+                    var labelTypes = nonNullLabel.LabelTypes.AsSpan();
+                    if (labelTypes.IsEmpty || !labelTypes[^1].IsReference)
+                    {
+                        throw CreateException("分岐先の最後の値には参照型が必要です。", instruction.ByteOffset);
+                    }
+                    CheckType(PopReference(instruction.ByteOffset).AsNonNullable(), labelTypes[^1], instruction.ByteOffset);
+                    var precedingTypes = labelTypes[..^1];
+                    PopTypes(precedingTypes, instruction.ByteOffset);
+                    PushTypes(precedingTypes);
+                    outputIndex = (uint)AddLabelTarget(nonNullLabel);
+                    break;
+
                 case ValidationRule.BranchTable:
                     var defaultLabel = GetLabel(instruction.Labels[^1], instruction.ByteOffset);
-                    var branchTypes = new WasmValueType?[defaultLabel.LabelTypes.Length];
+                    var branchTypes = new OperandType[defaultLabel.LabelTypes.Length];
                     for (var index = 0; index < branchTypes.Length; index++)
                     {
                         // selectorを除く同じ列を参照する。不足は最後のPopで検査する。
@@ -415,7 +441,7 @@ internal static class FunctionValidator
                     Pop(WasmValueKind.I32, instruction.ByteOffset);
                     for (var index = branchTypes.Length - 1; index >= 0; index--)
                     {
-                        Pop(branchTypes[index], instruction.ByteOffset);
+                        Pop(branchTypes[index].DeclaredType, instruction.ByteOffset);
                     }
                     MarkUnreachable();
                     break;
@@ -467,34 +493,33 @@ internal static class FunctionValidator
                 case ValidationRule.LocalSet:
                 case ValidationRule.LocalTee:
                     var localType = GetLocalType(instruction.Index, instruction.ByteOffset);
+                    var needsInitialization =
+                        instruction.Index >= (uint)type.ParameterTypes.Length
+                        && localType is { IsReference: true, IsNullable: false };
                     if (
                         descriptor.Validation == ValidationRule.LocalGet
-                        && instruction.Index >= (uint)type.ParameterTypes.Length
-                        && localType is { IsReference: true, IsNullable: false }
+                        && needsInitialization
+                        && !initializedLocals.Contains(instruction.Index)
                     )
                     {
-                        throw new WasmUnsupportedFeatureException(
-                            "既定値のないlocalの初期化状態はまだ検証できません。",
-                            "non-defaultable locals",
+                        throw ValidationDiagnostics.ValidationFailure(
+                            "uninitialized local",
+                            "初期化していないlocalを読み取ることはできません。",
                             new WasmFailureLocation(
                                 WasmProcessingStage.Validate,
                                 instruction.ByteOffset,
                                 moduleFunctionIndex,
                                 10
-                            ),
-                            [
-                                new WasmUnverifiedRange(
-                                    WasmProcessingStage.Validate,
-                                    0,
-                                    module.InputLength,
-                                    "モジュールの検証が完了していません。"
-                                ),
-                            ]
+                            )
                         );
                     }
                     if (descriptor.Validation != ValidationRule.LocalGet)
                     {
                         Pop(localType, instruction.ByteOffset);
+                        if (needsInitialization && initializedLocals.Add(instruction.Index))
+                        {
+                            initializationOrder.Push(instruction.Index);
+                        }
                     }
                     if (descriptor.Validation != ValidationRule.LocalSet)
                     {
@@ -659,12 +684,12 @@ internal static class FunctionValidator
             {
                 var secondType = Peek(1);
                 var firstType = Peek(2);
-                if (secondType is { IsReference: true } || firstType is { IsReference: true })
+                if (secondType.IsReference || firstType.IsReference)
                 {
                     throw CreateException("型注釈のないselectの候補には参照型を使えません。", instruction.ByteOffset);
                 }
                 // Unknownはframeの底側に限られるため、第2候補がUnknownなら第1候補もUnknownになる。
-                candidateType = secondType;
+                candidateType = secondType.DeclaredType;
             }
 
             Pop(WasmValueKind.I32, instruction.ByteOffset);
@@ -680,6 +705,11 @@ internal static class FunctionValidator
             if (stack.Count != frame.Height)
             {
                 throw CreateException("制御の結果の型・個数・順序が宣言と一致しません。", byteOffset);
+            }
+            // elseとendでは、この制御に入ってから初めて代入したlocalだけを未初期化に戻す。
+            while (initializationOrder.Count > frame.InitializedLocalCount)
+            {
+                initializedLocals.Remove(initializationOrder.Pop());
             }
         }
 
@@ -751,13 +781,13 @@ internal static class FunctionValidator
             throw CreateUnknownIndex("local", index, "参照するlocalが存在しません。", byteOffset);
         }
 
-        WasmValueType? Peek(int depth)
+        OperandType Peek(int depth)
         {
             var index = stack.Count - 1 - depth;
-            return index >= frames[^1].Height ? stack[index] : null;
+            return index >= frames[^1].Height ? stack[index] : default;
         }
 
-        WasmValueType? Pop(WasmValueType? expected, long byteOffset)
+        OperandType Pop(WasmValueType? expected, long byteOffset)
         {
             var frame = frames[^1];
             if (stack.Count == frame.Height)
@@ -765,7 +795,7 @@ internal static class FunctionValidator
                 // 現在frameの底だけがUnknownを供給する。具体型は到達不能中も検査する。
                 if (frame.Unreachable)
                 {
-                    return null;
+                    return default;
                 }
 
                 throw CreateException("命令の入力値が不足しています。", byteOffset);
@@ -776,15 +806,25 @@ internal static class FunctionValidator
             return actual;
         }
 
-        void CheckType(WasmValueType? actual, WasmValueType? expected, long byteOffset)
+        OperandType PopReference(long byteOffset)
         {
-            if (expected is { } expectedType && actual is { } actualType && !expectedType.Accepts(actualType))
+            var operand = Pop(null, byteOffset);
+            if (operand.DeclaredType is { IsReference: false })
+            {
+                throw CreateException("命令の入力には参照型が必要です。", byteOffset);
+            }
+            return operand;
+        }
+
+        void CheckType(OperandType actual, WasmValueType? expected, long byteOffset)
+        {
+            if (expected is { } expectedType && !actual.Matches(expectedType))
             {
                 throw CreateException("命令の入力型が一致しません。", byteOffset);
             }
         }
 
-        void CheckLabelTypes(WasmValueType?[] actual, ImmutableArray<WasmValueType> expected, long byteOffset)
+        void CheckLabelTypes(OperandType[] actual, ImmutableArray<WasmValueType> expected, long byteOffset)
         {
             if (actual.Length != expected.Length)
             {
@@ -796,7 +836,7 @@ internal static class FunctionValidator
             }
         }
 
-        void PushTypes(ImmutableArray<WasmValueType> kinds)
+        void PushTypes(ReadOnlySpan<WasmValueType> kinds)
         {
             foreach (var kind in kinds)
             {
@@ -848,12 +888,14 @@ internal static class FunctionValidator
     /// <param name="results">宣言順の結果型</param>
     /// <param name="height">制御が消費できるoperand範囲の底</param>
     /// <param name="loopPc">loop入口の出力Pc</param>
+    /// <param name="initializedLocalCount">制御開始時に初期化済みだった非defaultableな追加localの数</param>
     private sealed class ControlFrame(
         ValidationRule kind,
         ImmutableArray<WasmValueType> parameters,
         ImmutableArray<WasmValueType> results,
         int height,
-        int loopPc
+        int loopPc,
+        int initializedLocalCount
     )
     {
         /// <summary>
@@ -885,6 +927,11 @@ internal static class FunctionValidator
         /// loop入口の出力Pc
         /// </summary>
         internal int LoopPc { get; } = loopPc;
+
+        /// <summary>
+        /// この制御に入る前のlocal初期化履歴の長さ
+        /// </summary>
+        internal int InitializedLocalCount { get; } = initializedLocalCount;
 
         /// <summary>
         /// 現在の制御内での到達不能状態

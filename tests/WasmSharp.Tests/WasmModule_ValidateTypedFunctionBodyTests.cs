@@ -177,7 +177,7 @@ internal partial class WasmModule_ValidateTests
     }
 
     [Test]
-    public async Task 既定値のない追加localを代入前に読む_初期化を検証できるまで未対応として拒否する()
+    public async Task 既定値のない追加localを代入前に読む_検証時に未初期化を報告する()
     {
         // Arrange
         var module = WasmModule.Decode(
@@ -190,8 +190,12 @@ internal partial class WasmModule_ValidateTests
         );
 
         // Act & Assert
-        var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmUnsupportedFeatureException>();
-        await Assert.That(exception!.Location?.Stage).IsEqualTo(WasmProcessingStage.Validate);
+        var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.Message).StartsWith("uninitialized local");
+            await Assert.That(exception.Location?.Stage).IsEqualTo(WasmProcessingStage.Validate);
+        }
     }
 
     [Test]

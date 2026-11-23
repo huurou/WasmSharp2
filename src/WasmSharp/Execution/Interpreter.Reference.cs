@@ -1,3 +1,5 @@
+using WasmSharp.Exceptions;
+
 namespace WasmSharp.Execution;
 
 internal static partial class Interpreter
@@ -22,9 +24,28 @@ internal static partial class Interpreter
     /// <returns>実行の成功</returns>
     internal static ExecutionResult RefIsNull(InterpreterContext context, in Instruction instruction)
     {
-        var value = context.PopValue();
-        var isNull = value.Kind == WasmValueKind.FuncRef ? value.AsFuncRef() is null : value.AsExternRef() is null;
-        context.PushValue(WasmValue.FromI32(isNull ? 1 : 0));
+        context.PushValue(WasmValue.FromI32(IsNullReference(context.PopValue()) ? 1 : 0));
         return default;
+    }
+
+    /// <summary>
+    /// 非nullの参照をそのまま残し、nullの場合はtrapを返す
+    /// </summary>
+    internal static ExecutionResult RefAsNonNull(InterpreterContext context, in Instruction instruction)
+    {
+        if (IsNullReference(context.PeekValue()))
+        {
+            return ExecutionResult.Trap(
+                WasmTrapReason.NullReference,
+                context.CurrentFunction.FunctionIndex,
+                instruction.ByteOffset
+            );
+        }
+        return default;
+    }
+
+    private static bool IsNullReference(WasmValue value)
+    {
+        return value.Kind == WasmValueKind.FuncRef ? value.AsFuncRef() is null : value.AsExternRef() is null;
     }
 }
