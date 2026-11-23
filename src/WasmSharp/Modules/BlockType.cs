@@ -34,7 +34,7 @@ internal readonly struct BlockType
     /// <summary>
     /// 単一の結果値型 Value形式の場合だけ参照する
     /// </summary>
-    internal WasmValueKind ValueType { get; }
+    internal WasmValueType ValueType { get; }
 
     /// <summary>
     /// 関数型の添字 TypeIndex形式の場合だけ参照する
@@ -52,7 +52,7 @@ internal readonly struct BlockType
     /// <param name="kind">型指定の形式</param>
     /// <param name="valueType">単一の結果値型 他の形式ではdefault</param>
     /// <param name="typeIndex">関数型の添字 他の形式では0</param>
-    private BlockType(BlockTypeKind kind, WasmValueKind valueType, uint typeIndex)
+    private BlockType(BlockTypeKind kind, WasmValueType valueType, uint typeIndex)
     {
         Kind = kind;
         ValueType = valueType;
@@ -64,7 +64,7 @@ internal readonly struct BlockType
     /// </summary>
     /// <param name="valueType">結果の値型</param>
     /// <returns>Value形式の型指定</returns>
-    internal static BlockType FromValue(WasmValueKind valueType)
+    internal static BlockType FromValue(WasmValueType valueType)
     {
         return new(BlockTypeKind.Value, valueType, 0);
     }

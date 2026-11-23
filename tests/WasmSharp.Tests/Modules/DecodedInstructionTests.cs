@@ -157,7 +157,7 @@ internal class DecodedInstruction_WithSelectTypesTests
     public async Task 型列の元配列を変更する_全値型と宣言順を不変に所有する()
     {
         // Arrange
-        WasmValueKind[] types =
+        WasmValueType[] types =
         [
             WasmValueKind.I32,
             WasmValueKind.I64,
@@ -167,7 +167,7 @@ internal class DecodedInstruction_WithSelectTypesTests
             WasmValueKind.FuncRef,
             WasmValueKind.ExternRef,
         ];
-        var expected = (WasmValueKind[])types.Clone();
+        var expected = (WasmValueType[])types.Clone();
 
         // Act
         var instruction = DecodedInstruction.WithSelectTypes(new(0, 0x1C), types, 50);

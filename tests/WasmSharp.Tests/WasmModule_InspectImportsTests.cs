@@ -6,6 +6,58 @@ namespace WasmSharp.Tests;
 internal class WasmModule_InspectImportsTests
 {
     [Test]
+    [Arguments((byte)0)]
+    [Arguments((byte)1)]
+    [Arguments((byte)3)]
+    public async Task 要求する参照型に存在しない関数型番号がある_未解決の要求型として報告する(byte kind)
+    {
+        // Arrange
+        var descriptor = kind switch
+        {
+            0 => new byte[] { 0 },
+            1 => [0x63, 2, 0, 1],
+            _ => [0x64, 2, 0],
+        };
+        var bytes = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Section(1, Convert.FromHexString("016000016302")),
+            HostLinkingModuleBinary.Imports(("env", "item", kind, descriptor))
+        );
+
+        // Act & Assert
+        var exception = await Assert
+            .That(() => WasmModule.InspectImports(bytes, WasmSpecVersion.Core3))
+            .ThrowsExactly<WasmImportInspectionException>();
+        await Assert.That(exception!.Reason).IsEqualTo(WasmImportInspectionReason.UnresolvedType);
+    }
+
+    [Test]
+    public async Task 型番号を使う関数のimportを調査する_要求する引数と結果の参照型を取得できる()
+    {
+        // Arrange
+        var bytes = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Section(1, Convert.FromHexString("026000017F60016400016300")),
+            HostLinkingModuleBinary.Imports(("env", "apply", 0, [1]))
+        );
+
+        // Act
+        var inspection = WasmModule.InspectImports(bytes, WasmSpecVersion.Core3);
+
+        // Assert
+        var function = (WasmImportInfo.Function)inspection.Imports.Single();
+        var signature = new WasmFunctionType([], [WasmValueKind.I32]);
+        using (Assert.Multiple())
+        {
+            await Assert
+                .That(function.Type.ParameterTypes.Single())
+                .IsEqualTo(WasmValueType.FunctionReference(signature, false));
+            await Assert
+                .That(function.Type.ResultTypes.Single())
+                .IsEqualTo(WasmValueType.FunctionReference(signature, true));
+            await Assert.That(function.Type.Parameters.Single()).IsEqualTo(WasmValueKind.FuncRef);
+        }
+    }
+
+    [Test]
     [Arguments(false, false)]
     [Arguments(true, false)]
     [Arguments(false, true)]

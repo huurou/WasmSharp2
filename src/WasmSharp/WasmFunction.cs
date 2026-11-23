@@ -89,7 +89,7 @@ public abstract class WasmFunction
     public WasmResults Invoke(WasmExecutionContext context, WasmInstance instance, ReadOnlySpan<WasmValue> arguments)
     {
         ArgumentNullException.ThrowIfNull(context);
-        var parameters = Type.Parameters;
+        var parameters = Type.ParameterTypes;
         if (arguments.Length != parameters.Length)
         {
             throw new ArgumentException("引数の個数が関数型と一致しません。", nameof(arguments));
@@ -97,7 +97,7 @@ public abstract class WasmFunction
 
         for (var i = 0; i < arguments.Length; i++)
         {
-            if (arguments[i].Kind != parameters[i])
+            if (!parameters[i].Accepts(arguments[i]))
             {
                 throw new ArgumentException("引数の型が関数型と一致しません。", nameof(arguments));
             }

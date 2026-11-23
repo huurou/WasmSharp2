@@ -201,6 +201,7 @@ internal static class ModuleDecoder
 
                 case 1:
                     types = ModuleBinaryFormat.ReadTypes(ref section);
+                    reader.Types = types;
                     break;
 
                 case 2:
@@ -411,7 +412,7 @@ internal static class ModuleDecoder
                     );
             }
 
-            var elementType = WasmValueKind.FuncRef;
+            WasmValueType elementType = WasmValueKind.FuncRef;
             if (flags is 1 or 2 or 3)
             {
                 var kindOffset = reader.Position;

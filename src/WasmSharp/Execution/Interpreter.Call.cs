@@ -37,10 +37,7 @@ internal static partial class Interpreter
             );
         }
         var expectedType = function.Instance.Module.Types[(int)instruction.Index];
-        if (
-            !expectedType.Parameters.SequenceEqual(callee.Type.Parameters)
-            || !expectedType.Results.SequenceEqual(callee.Type.Results)
-        )
+        if (!expectedType.IsEquivalentTo(callee.Type))
         {
             return ExecutionResult.Trap(
                 WasmTrapReason.IndirectCallTypeMismatch,

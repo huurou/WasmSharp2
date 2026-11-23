@@ -42,7 +42,7 @@ internal partial class WasmModule_DecodeTests
                 await Assert.That(instructions[2].BlockType.TypeIndex).IsEqualTo(0u);
                 await Assert.That(instructions[6].SelectTypes.IsEmpty).IsTrue();
                 await Assert
-                    .That(instructions[7].SelectTypes.SequenceEqual(new[] { WasmValueKind.I32, WasmValueKind.I64 }))
+                    .That(instructions[7].SelectTypes.SequenceEqual([WasmValueKind.I32, WasmValueKind.I64]))
                     .IsTrue();
                 await Assert.That(instructions[8].Index).IsEqualTo(uint.MaxValue);
                 await Assert.That(instructions[9].Index).IsEqualTo(0u);

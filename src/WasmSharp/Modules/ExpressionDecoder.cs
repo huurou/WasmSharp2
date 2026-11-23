@@ -86,11 +86,9 @@ internal static class ExpressionDecoder
                 ImmediateKind.BlockType => DecodedInstruction.WithBlockType(opcode, ReadBlockType(ref reader), offset),
                 ImmediateKind.BranchTable => ReadBranchTable(opcode, offset, ref reader),
                 ImmediateKind.TypeVector => ReadSelectTypes(opcode, offset, ref reader),
-                ImmediateKind.ReferenceType => DecodedInstruction.WithImmediate(
+                ImmediateKind.ReferenceType => DecodedInstruction.WithNullReference(
                     opcode,
-                    ModuleBinaryFormat.ReadReferenceType(ref reader) == WasmValueKind.FuncRef
-                        ? WasmValue.FromFuncRef(null)
-                        : WasmValue.FromExternRef(null),
+                    ModuleBinaryFormat.ReadHeapType(ref reader, true),
                     offset
                 ),
                 ImmediateKind.MemoryArgument or ImmediateKind.MemoryArgumentLaneIndex => ReadMemoryArgument(
@@ -259,7 +257,7 @@ internal static class ExpressionDecoder
     private static DecodedInstruction ReadSelectTypes(OpcodeKey opcode, long offset, ref ModuleBinaryReader reader)
     {
         var count = ModuleBinaryFormat.ReadCount(ref reader);
-        List<WasmValueKind> types = [];
+        List<WasmValueType> types = [];
         for (uint index = 0; index < count; index++)
         {
             types.Add(ModuleBinaryFormat.ReadValueType(ref reader));

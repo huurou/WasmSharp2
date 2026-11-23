@@ -5,7 +5,7 @@ namespace WasmSharp.Modules;
 /// </summary>
 /// <param name="endIndex">引数を含めずに数えた、この宣言までのlocalの累積個数</param>
 /// <param name="type">localの値型</param>
-internal readonly struct LocalDeclaration(uint endIndex, WasmValueKind type)
+internal readonly struct LocalDeclaration(uint endIndex, WasmValueType type)
 {
     /// <summary>
     /// この宣言の末尾の次を指す、引数を除いたlocalの添字
@@ -15,5 +15,5 @@ internal readonly struct LocalDeclaration(uint endIndex, WasmValueKind type)
     /// <summary>
     /// 宣言されたlocalの値型
     /// </summary>
-    internal WasmValueKind Type { get; } = type;
+    internal WasmValueType Type { get; } = type;
 }

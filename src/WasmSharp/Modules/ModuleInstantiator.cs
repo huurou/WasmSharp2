@@ -250,9 +250,8 @@ internal static class ModuleInstantiator
         {
             (FunctionImport required, FunctionExternalValue provided) => module
                 .Types[(int)required.TypeIndex]
-                .Parameters.SequenceEqual(provided.Value.Type.Parameters)
-                && module.Types[(int)required.TypeIndex].Results.SequenceEqual(provided.Value.Type.Results),
-            (GlobalImport required, GlobalExternalValue provided) => required.Type == provided.Value.Type,
+                .IsEquivalentTo(provided.Value.Type),
+            (GlobalImport required, GlobalExternalValue provided) => required.Type.Accepts(provided.Value.Type),
             (MemoryImport { Definition.Type: var type }, MemoryExternalValue provided) => type.AddressType
                 == provided.Value.Type.AddressType
                 && MatchesLimits(
@@ -365,7 +364,7 @@ internal static class ModuleInstantiator
     /// <returns>引数と結果をそれぞれ宣言順に列挙した文字列</returns>
     private static string DescribeFunction(WasmFunctionType type)
     {
-        return $"[{string.Join(", ", type.Parameters)}] -> [{string.Join(", ", type.Results)}]";
+        return $"[{string.Join(", ", type.ParameterTypes)}] -> [{string.Join(", ", type.ResultTypes)}]";
     }
 
     /// <summary>

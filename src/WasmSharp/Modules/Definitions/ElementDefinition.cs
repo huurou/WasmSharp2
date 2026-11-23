@@ -31,7 +31,9 @@ internal sealed class ElementDefinition
     /// <summary>
     /// 各初期化式が返す参照型
     /// </summary>
-    internal WasmValueKind ElementType { get; }
+    internal WasmValueKind ElementType => ElementValueType.Kind;
+
+    internal WasmValueType ElementValueType { get; }
 
     /// <summary>
     /// 終端を含む未評価の初期化式を宣言順に保持する不変配列
@@ -62,14 +64,14 @@ internal sealed class ElementDefinition
     /// <param name="activeTarget">アクティブの場合だけ持つ初期化先</param>
     /// <param name="byteOffset">入力バイナリ上の要素セグメントのバイト位置</param>
     private ElementDefinition(
-        WasmValueKind elementType,
+        WasmValueType elementType,
         ReadOnlySpan<IEnumerable<DecodedInstruction>> initializers,
         ElementMode mode,
         ActiveElementTarget? activeTarget,
         long byteOffset
     )
     {
-        ElementType = elementType;
+        ElementValueType = elementType;
         var expressions = ImmutableArray.CreateBuilder<ImmutableArray<DecodedInstruction>>(initializers.Length);
         foreach (var initializer in initializers)
         {
@@ -91,7 +93,7 @@ internal sealed class ElementDefinition
     /// <returns>初期化先を持つActive方式の定義</returns>
     /// <exception cref="ArgumentNullException">初期化先がnullの場合</exception>
     internal static ElementDefinition Active(
-        WasmValueKind elementType,
+        WasmValueType elementType,
         ReadOnlySpan<IEnumerable<DecodedInstruction>> initializers,
         ActiveElementTarget activeTarget,
         long byteOffset
@@ -109,7 +111,7 @@ internal sealed class ElementDefinition
     /// <param name="byteOffset">入力バイナリ上の要素セグメントのバイト位置</param>
     /// <returns>初期化先を持たないPassive方式の定義</returns>
     internal static ElementDefinition Passive(
-        WasmValueKind elementType,
+        WasmValueType elementType,
         ReadOnlySpan<IEnumerable<DecodedInstruction>> initializers,
         long byteOffset
     )
@@ -125,7 +127,7 @@ internal sealed class ElementDefinition
     /// <param name="byteOffset">入力バイナリ上の要素セグメントのバイト位置</param>
     /// <returns>初期化先を持たないDeclarative方式の定義</returns>
     internal static ElementDefinition Declarative(
-        WasmValueKind elementType,
+        WasmValueType elementType,
         ReadOnlySpan<IEnumerable<DecodedInstruction>> initializers,
         long byteOffset
     )

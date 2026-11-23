@@ -42,6 +42,11 @@ internal readonly struct DecodedInstruction
     internal BlockType BlockType { get; }
 
     /// <summary>
+    /// ref.nullが生成する参照の宣言型
+    /// </summary>
+    internal WasmValueType ReferenceType { get; }
+
+    /// <summary>
     /// 分岐候補に続けて既定ラベルを並べた不変のラベル列
     /// </summary>
     internal ImmutableArray<uint> Labels { get; }
@@ -49,7 +54,7 @@ internal readonly struct DecodedInstruction
     /// <summary>
     /// 型注釈付きselectの不変の型列
     /// </summary>
-    internal ImmutableArray<WasmValueKind> SelectTypes { get; }
+    internal ImmutableArray<WasmValueType> SelectTypes { get; }
 
     /// <summary>
     /// shuffleの選択値を保持する不変のbyte列
@@ -80,6 +85,7 @@ internal readonly struct DecodedInstruction
     /// <param name="secondaryIndex">2番目の添字 他の命令では0</param>
     /// <param name="shuffleLanes">shuffleの選択値 他の命令では非defaultの空配列</param>
     /// <param name="laneIndex">laneの添字 他の命令では0</param>
+    /// <param name="referenceType">ref.nullの静的な参照型</param>
     private DecodedInstruction(
         OpcodeKey opcode,
         long byteOffset,
@@ -87,13 +93,15 @@ internal readonly struct DecodedInstruction
         uint index = 0,
         BlockType blockType = default,
         ImmutableArray<uint> labels = default,
-        ImmutableArray<WasmValueKind> selectTypes = default,
+        ImmutableArray<WasmValueType> selectTypes = default,
         MemoryArgument memoryArgument = default,
         uint secondaryIndex = 0,
         ImmutableArray<byte> shuffleLanes = default,
-        byte laneIndex = 0
+        byte laneIndex = 0,
+        WasmValueType referenceType = default
     )
     {
+        ReferenceType = referenceType;
         Opcode = opcode;
         ByteOffset = byteOffset;
         Immediate = immediate;
@@ -128,7 +136,16 @@ internal readonly struct DecodedInstruction
     /// <returns>定数以外の即値を既定値に統一した命令</returns>
     internal static DecodedInstruction WithImmediate(OpcodeKey opcode, WasmValue immediate, long byteOffset)
     {
-        return new(opcode, byteOffset, immediate: immediate);
+        return new DecodedInstruction(opcode, byteOffset, immediate: immediate, referenceType: immediate.Kind);
+    }
+
+    /// <summary>
+    /// ref.nullの静的な参照型と実行時に積むnullを保持する
+    /// </summary>
+    internal static DecodedInstruction WithNullReference(OpcodeKey opcode, WasmValueType type, long byteOffset)
+    {
+        var value = type.Kind == WasmValueKind.FuncRef ? WasmValue.FromFuncRef(null) : WasmValue.FromExternRef(null);
+        return new DecodedInstruction(opcode, byteOffset, immediate: value, referenceType: type);
     }
 
     /// <summary>
@@ -245,7 +262,7 @@ internal readonly struct DecodedInstruction
     /// <returns>不変の型列を所有する命令</returns>
     internal static DecodedInstruction WithSelectTypes(
         OpcodeKey opcode,
-        ReadOnlySpan<WasmValueKind> selectTypes,
+        ReadOnlySpan<WasmValueType> selectTypes,
         long byteOffset
     )
     {

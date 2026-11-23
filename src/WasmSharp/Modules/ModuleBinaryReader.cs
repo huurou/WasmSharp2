@@ -80,6 +80,11 @@ internal ref struct ModuleBinaryReader
     internal WasmSpecVersion SpecVersion { get; }
 
     /// <summary>
+    /// 現在の宣言が参照できる関数型 型セクション内では先行する宣言だけを含む
+    /// </summary>
+    internal List<WasmFunctionType>? Types { get; set; }
+
+    /// <summary>
     /// 入力の参照と診断位置を保持し、指定範囲の先頭から読める状態を構築する
     /// </summary>
     /// <remarks>入力バイト列はコピーしないため、読み取り中は入力内容を変更しない</remarks>
@@ -214,7 +219,10 @@ internal ref struct ModuleBinaryReader
                 functionIndex ?? FunctionIndex,
                 _mode,
                 _maxCollectionLength
-            );
+            )
+            {
+                Types = Types,
+            };
         }
 
         return new ModuleBinaryReader(
@@ -227,7 +235,10 @@ internal ref struct ModuleBinaryReader
             functionIndex ?? FunctionIndex,
             _mode,
             _maxCollectionLength
-        );
+        )
+        {
+            Types = Types,
+        };
     }
 
     /// <summary>

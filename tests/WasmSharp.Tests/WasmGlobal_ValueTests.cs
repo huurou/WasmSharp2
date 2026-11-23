@@ -122,4 +122,23 @@ internal class WasmGlobal_ValueTests
             await Assert.That(global.Value.AsI32()).IsEqualTo(42);
         }
     }
+
+    [Test]
+    public async Task 非nullの関数参照globalに値を書く_型が異なる値を拒否して以前の関数を保持する()
+    {
+        // Arrange
+        var signature = new WasmFunctionType([], []);
+        var accepted = WasmFunction.CreateHost(signature, (_, _) => new WasmResults([]));
+        var globalType = new WasmGlobalType(WasmValueType.FunctionReference(signature, isNullable: false), true);
+        var incompatible = WasmFunction.CreateHost(new WasmFunctionType([WasmValueKind.I32], []), (_, _) =>
+            new WasmResults([])
+        );
+        var global = new WasmGlobal(globalType, WasmValue.FromFuncRef(accepted));
+
+        // Act & Assert
+        await Assert.That(() => new WasmGlobal(globalType, WasmValue.FromFuncRef(null))).ThrowsExactly<ArgumentException>();
+        await Assert.That(() => global.Value = WasmValue.FromFuncRef(null)).ThrowsExactly<ArgumentException>();
+        await Assert.That(() => global.Value = WasmValue.FromFuncRef(incompatible)).ThrowsExactly<ArgumentException>();
+        await Assert.That(global.Value.AsFuncRef()).IsSameReferenceAs(accepted);
+    }
 }
