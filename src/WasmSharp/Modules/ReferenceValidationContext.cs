@@ -81,6 +81,10 @@ internal sealed class ReferenceValidationContext
         }
 
         var declaredFunctions = ImmutableHashSet.CreateBuilder<uint>();
+        foreach (var table in module.Tables)
+        {
+            CollectFunctions(table.Initializer);
+        }
         foreach (var global in module.Globals)
         {
             CollectFunctions(global.Initializer);

@@ -5,6 +5,27 @@ namespace WasmSharp.Tests;
 internal class WasmTable_SetTests
 {
     [Test]
+    [Arguments(false)]
+    [Arguments(true)]
+    public async Task 型付きテーブルにnullまたは異なる関数型を書き込む_元の参照を保って拒否する(bool writeNull)
+    {
+        // Arrange
+        var signature = new WasmFunctionType([], []);
+        var original = WasmFunction.CreateHost(signature, (_, _) => new WasmResults([]));
+        var elementType = WasmValueType.FunctionReference(signature, isNullable: false);
+        var table = WasmTable.Create(new WasmTableType(elementType, WasmValueKind.I32, 1), WasmValue.FromFuncRef(original));
+        var value = WasmValue.FromFuncRef(
+            writeNull
+                ? null
+                : WasmFunction.CreateHost(new WasmFunctionType([WasmValueKind.I32], []), (_, _) => new WasmResults([]))
+        );
+
+        // Act & Assert
+        await Assert.That(() => table.Set(0, value)).ThrowsExactly<ArgumentException>();
+        await Assert.That(table[0].AsFuncRef()).IsSameReferenceAs(original);
+    }
+
+    [Test]
     [Arguments(WasmValueKind.FuncRef, false)]
     [Arguments(WasmValueKind.ExternRef, false)]
     [Arguments(WasmValueKind.FuncRef, true)]

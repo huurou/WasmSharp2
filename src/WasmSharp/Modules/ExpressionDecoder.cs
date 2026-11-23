@@ -189,10 +189,7 @@ internal static class ExpressionDecoder
             return reader.ReadU32();
         }
 
-        if (reader.ReadByte() != 0)
-        {
-            throw reader.Error("zero byte expected: 予約バイトには0x00が必要です。", reader.Position - 1);
-        }
+        reader.ReadZeroByte();
         return 0;
     }
 

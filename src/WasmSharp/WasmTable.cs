@@ -59,7 +59,7 @@ public sealed class WasmTable
         }
         set
         {
-            if (value.Kind != ElementType)
+            if (!Type.ElementValueType.Accepts(value))
             {
                 // 要素型と添字が両方不正な場合は、範囲違反を優先する。
                 _ = this[index];
@@ -86,7 +86,7 @@ public sealed class WasmTable
     public WasmTable(WasmValueKind elementType, WasmLimits limits)
         : this(Create32BitType(elementType, limits), nameof(limits)) { }
 
-    private WasmTable(WasmTableType type, string parameterName)
+    private WasmTable(WasmTableType type, string parameterName, WasmValue? initialValue = null)
     {
         ArgumentNullException.ThrowIfNull(type, parameterName);
         if (type.MinimumElements > type.MaximumElements)
@@ -106,12 +106,18 @@ public sealed class WasmTable
             );
         }
 
+        var value = initialValue
+            ?? (type.ElementType == WasmValueKind.FuncRef ? WasmValue.FromFuncRef(null) : WasmValue.FromExternRef(null));
+        if (!type.ElementValueType.Accepts(value))
+        {
+            throw new ArgumentException(
+                "tableの要素型に適合する初期値を指定してください。",
+                initialValue.HasValue ? nameof(initialValue) : parameterName
+            );
+        }
         Type = type;
         _elements = new WasmValue[(int)type.MinimumElements];
-        Array.Fill(
-            _elements,
-            type.ElementType == WasmValueKind.FuncRef ? WasmValue.FromFuncRef(null) : WasmValue.FromExternRef(null)
-        );
+        Array.Fill(_elements, value);
     }
 
     /// <summary>
@@ -120,12 +126,27 @@ public sealed class WasmTable
     /// <param name="type">要素型、アドレス型、要素数の上下限</param>
     /// <returns>指定した型のテーブル</returns>
     /// <exception cref="ArgumentNullException">typeがnullの場合</exception>
-    /// <exception cref="ArgumentException">要素数の上下限がアドレス型の制約を満たさない場合</exception>
+    /// <exception cref="ArgumentException">要素数の上下限がアドレス型の制約を満たさないか、要素型がnullを許さない場合</exception>
     /// <exception cref="WasmImplementationLimitException">初期要素数が配列の保持上限を超える場合</exception>
     /// <exception cref="OutOfMemoryException">初期領域を割り当てられない場合</exception>
     public static WasmTable Create(WasmTableType type)
     {
         return new WasmTable(type, nameof(type));
+    }
+
+    /// <summary>
+    /// 宣言された型の最小要素数に従い、すべての要素を指定した参照で初期化する
+    /// </summary>
+    /// <param name="type">要素型、アドレス型、要素数の上下限</param>
+    /// <param name="initialValue">要素型に適合する初期値</param>
+    /// <returns>指定した参照で初期化されたテーブル</returns>
+    /// <exception cref="ArgumentNullException">typeがnullの場合</exception>
+    /// <exception cref="ArgumentException">要素数の上下限が不正か、初期値が要素型に適合しない場合</exception>
+    /// <exception cref="WasmImplementationLimitException">初期要素数が配列の保持上限を超える場合</exception>
+    /// <exception cref="OutOfMemoryException">初期領域を割り当てられない場合</exception>
+    public static WasmTable Create(WasmTableType type, WasmValue initialValue)
+    {
+        return new WasmTable(type, nameof(type), initialValue);
     }
 
     private static WasmTableType Create32BitType(WasmValueKind elementType, WasmLimits limits)
@@ -179,7 +200,7 @@ public sealed class WasmTable
     internal bool TryGrow(ulong delta, WasmValue initialValue, out uint previousCount)
     {
         previousCount = Count;
-        if (initialValue.Kind != ElementType)
+        if (!Type.ElementValueType.Accepts(initialValue))
         {
             throw new ArgumentException("tableの要素型と初期値の型が一致しません。", nameof(initialValue));
         }

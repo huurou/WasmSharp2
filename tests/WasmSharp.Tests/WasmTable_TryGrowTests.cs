@@ -5,6 +5,31 @@ namespace WasmSharp.Tests;
 internal class WasmTable_TryGrowTests
 {
     [Test]
+    [Arguments(0u)]
+    [Arguments(1u)]
+    public async Task Null不可の外部参照テーブルにnullを指定して増大する_増分が0でも拒否する(uint delta)
+    {
+        // Arrange
+        var reference = new object();
+        var type = new WasmTableType(
+            WasmValueType.Reference(WasmValueKind.ExternRef, isNullable: false),
+            WasmValueKind.I64,
+            1
+        );
+        var table = WasmTable.Create(type, WasmValue.FromExternRef(reference));
+
+        // Act & Assert
+        await Assert
+            .That(() => table.TryGrow(delta, WasmValue.FromExternRef(null), out _))
+            .ThrowsExactly<ArgumentException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(table.Count).IsEqualTo(1u);
+            await Assert.That(table[0].AsExternRef()).IsSameReferenceAs(reference);
+        }
+    }
+
+    [Test]
     [Arguments(WasmValueKind.FuncRef)]
     [Arguments(WasmValueKind.ExternRef)]
     public async Task 非null参照を指定して増大する_既存と追加の参照同一性を保持する(WasmValueKind kind)

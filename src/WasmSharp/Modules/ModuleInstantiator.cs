@@ -39,37 +39,13 @@ internal static class ModuleInstantiator
     )
     {
         var linked = Link(module, imports);
-        var tables = CreateIndex(linked.OfType<TableExternalValue>().Select(x => x.Value), module.Tables.Length);
-        foreach (var table in module.Tables)
-        {
-            try
-            {
-                tables.Add(WasmTable.Create(table.Type));
-            }
-            catch (WasmImplementationLimitException exception)
-            {
-                throw ResourceLimit(exception, table.ByteOffset, 4);
-            }
-        }
-        var memories = CreateIndex(linked.OfType<MemoryExternalValue>().Select(x => x.Value), module.Memories.Length);
-        foreach (var memory in module.Memories)
-        {
-            try
-            {
-                memories.Add(WasmMemory.Create(memory.Type));
-            }
-            catch (WasmImplementationLimitException exception)
-            {
-                throw ResourceLimit(exception, memory.ByteOffset, 5);
-            }
-        }
         var instance = new WasmInstance(
             module,
             options,
             [.. linked.OfType<FunctionExternalValue>().Select(x => x.Value)],
             [.. linked.OfType<GlobalExternalValue>().Select(x => x.Value)],
-            memories.MoveToImmutable(),
-            tables.MoveToImmutable()
+            [.. linked.OfType<MemoryExternalValue>().Select(x => x.Value)],
+            [.. linked.OfType<TableExternalValue>().Select(x => x.Value)]
         );
         InitializeElementSegments(instance);
         InitializeDataSegments(instance);
@@ -78,24 +54,6 @@ internal static class ModuleInstantiator
             ExecutionBoundary.RunStart(executionContext, instance, instance.Functions[(int)start.FunctionIndex]);
         }
         return instance;
-    }
-
-    /// <summary>
-    /// リソースの保持上限による失敗に定義の位置を付ける
-    /// </summary>
-    private static WasmImplementationLimitException ResourceLimit(
-        WasmImplementationLimitException exception,
-        long byteOffset,
-        byte sectionId
-    )
-    {
-        return new WasmImplementationLimitException(
-            exception.Message,
-            exception.Reason,
-            exception.Limit,
-            new WasmFailureLocation(WasmProcessingStage.Instantiate, byteOffset, null, sectionId),
-            exception
-        );
     }
 
     /// <summary>
@@ -168,21 +126,6 @@ internal static class ModuleInstantiator
             instance.Functions.AsSpan(),
             instance.Module.SpecVersion
         );
-    }
-
-    /// <summary>
-    /// importした実体を先頭に持ち、定義した実体を追加できる実体表を作る
-    /// </summary>
-    /// <typeparam name="T">共有するリソースの型</typeparam>
-    /// <param name="imports">宣言順に並んだimportの実体</param>
-    /// <param name="definitionCount">後から追加する定義の数</param>
-    /// <returns>全実体を保持できる容量を確保し、importだけを追加した実体表</returns>
-    private static ImmutableArray<T>.Builder CreateIndex<T>(IEnumerable<T> imports, int definitionCount)
-    {
-        var values = imports.ToImmutableArray();
-        var index = ImmutableArray.CreateBuilder<T>(values.Length + definitionCount);
-        index.AddRange(values);
-        return index;
     }
 
     /// <summary>
@@ -262,7 +205,7 @@ internal static class ModuleInstantiator
                 ),
             (TableImport { Definition.Type: var type }, TableExternalValue provided) => type.AddressType
                 == provided.Value.Type.AddressType
-                && type.ElementType == provided.Value.ElementType
+                && type.ElementValueType == provided.Value.Type.ElementValueType
                 && MatchesLimits(
                     type.MinimumElements,
                     type.MaximumElements,
@@ -354,7 +297,7 @@ internal static class ModuleInstantiator
     /// </summary>
     private static string DescribeTable(WasmTableType type)
     {
-        return type.Has32BitLimits ? $"{type.ElementType} {type.Get32BitLimits()}" : type.ToString();
+        return type.Has32BitLimits ? $"{type.ElementValueType} {type.Get32BitLimits()}" : type.ToString();
     }
 
     /// <summary>
