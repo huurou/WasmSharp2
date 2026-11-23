@@ -227,6 +227,11 @@ internal enum StackEffectKind
     CallIndirect,
 
     /// <summary>
+    /// 関数参照と指定した関数型の引数を取り除き、結果を積む
+    /// </summary>
+    CallRef,
+
+    /// <summary>
     /// 128ビットvectorをスタックに積む
     /// </summary>
     PushV128,

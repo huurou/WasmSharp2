@@ -224,6 +224,11 @@ internal enum ValidationRule
     CallIndirect,
 
     /// <summary>
+    /// 型添字が指す関数型に参照と引数が適合することを検証し、結果型を積む
+    /// </summary>
+    CallRef,
+
+    /// <summary>
     /// メモリのロードと同様にアドレスと即値を検証し、lane番号とv128の入力を確認してv128を積む
     /// </summary>
     MemoryLoadLane,
