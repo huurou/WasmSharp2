@@ -151,7 +151,7 @@ internal static class FunctionValidator
                     break;
 
                 case ValidationRule.RefIsNull:
-                    PopReference(instruction.ByteOffset);
+                    PopReference(instruction.ByteOffset, "null判定");
                     stack.Add(WasmValueKind.I32);
                     break;
 
@@ -811,12 +811,12 @@ internal static class FunctionValidator
             return actual;
         }
 
-        OperandType PopReference(long byteOffset)
+        OperandType PopReference(long byteOffset, string operationName = "命令")
         {
             var operand = Pop(null, byteOffset);
             if (operand.DeclaredType is { IsReference: false })
             {
-                throw CreateException("命令の入力には参照型が必要です。", byteOffset);
+                throw CreateException($"{operationName}の入力には参照型が必要です。", byteOffset);
             }
             return operand;
         }

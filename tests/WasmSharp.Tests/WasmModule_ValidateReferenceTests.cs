@@ -56,7 +56,7 @@ internal partial class WasmModule_ValidateTests
     }
 
     [Test]
-    [Arguments("4100D10B", "type mismatch", 1, "参照型が必要")]
+    [Arguments("4100D10B", "type mismatch", 1, "null判定の入力には参照型が必要です。")]
     [Arguments("4200D10B", "type mismatch", 1, null)]
     [Arguments("D070D07041001B1A0B", "type mismatch", 3, "参照型を使えません")]
     [Arguments("D06F410041001B1A0B", "type mismatch", 3, "参照型を使えません")]
