@@ -50,7 +50,7 @@ internal static partial class Interpreter
         }
         return CallFunction(context, callee);
 
-        // 参照診断では添字を元のビット幅の符号付き整数として表示する。
+        // 診断ではi32の添字を従来どおり符号付きで表示し、i64の添字は符号付き64ビット値のまま表示する。
         long GetDiagnosticIndex()
         {
             return selector.Kind == WasmValueKind.I32 ? selector.AsI32() : selector.AsI64();

@@ -144,8 +144,9 @@ public abstract record WasmImportInfo
         public WasmTableType Type { get; private init; }
 
         /// <summary>
-        /// テーブルの要素の参照型
+        /// テーブルの要素の参照型（<see cref="WasmValueKind.FuncRef"/>または<see cref="WasmValueKind.ExternRef"/>）
         /// </summary>
+        /// <exception cref="ArgumentOutOfRangeException">要素型として使用できない値を設定した場合</exception>
         public WasmValueKind ElementType
         {
             get => Type.ElementType;
@@ -156,6 +157,7 @@ public abstract record WasmImportInfo
         /// 32ビットテーブルが要求する要素数の上下限
         /// </summary>
         /// <exception cref="InvalidOperationException">64ビットテーブルで取得または設定した場合、または読み取る要素数が32ビットで表せない場合</exception>
+        /// <exception cref="ArgumentNullException">nullを設定した場合</exception>
         public WasmLimits Limits
         {
             get => Type.Get32BitLimits();
@@ -178,8 +180,10 @@ public abstract record WasmImportInfo
         /// </summary>
         /// <param name="ModuleName">要求する提供元のmodule名</param>
         /// <param name="Name">要求する外部要素の名前</param>
-        /// <param name="ElementType">要素の参照型</param>
+        /// <param name="ElementType">要素の参照型（<see cref="WasmValueKind.FuncRef"/>または<see cref="WasmValueKind.ExternRef"/>）</param>
         /// <param name="Limits">宣言された最小値と任意の最大値</param>
+        /// <exception cref="ArgumentNullException"><paramref name="Limits"/>がnullの場合</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="ElementType"/>が対応する参照型以外の場合</exception>
         public Table(string ModuleName, string Name, WasmValueKind ElementType, WasmLimits Limits)
             : base(ModuleName, Name)
         {
