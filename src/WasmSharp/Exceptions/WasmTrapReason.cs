@@ -44,4 +44,14 @@ public enum WasmTrapReason
     /// 間接呼び出し先の要素が未初期化
     /// </summary>
     UninitializedElement,
+
+    /// <summary>
+    /// call_refが呼び出す関数参照がnull
+    /// </summary>
+    NullFunctionReference,
+
+    /// <summary>
+    /// ref.as_non_nullにnullを渡したときのtrap
+    /// </summary>
+    NullReference,
 }

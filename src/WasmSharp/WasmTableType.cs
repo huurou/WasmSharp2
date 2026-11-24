@@ -18,7 +18,12 @@ public sealed record WasmTableType(
     /// <summary>
     /// 要素の参照型
     /// </summary>
-    public WasmValueKind ElementType { get; } =
+    public WasmValueKind ElementType => ElementValueType.Kind;
+
+    /// <summary>
+    /// 参照先の関数型とnull可否を含む要素型
+    /// </summary>
+    public WasmValueType ElementValueType { get; } =
         IsSupportedElementType(ElementType)
             ? ElementType
             : throw new ArgumentOutOfRangeException(
@@ -50,6 +55,20 @@ public sealed record WasmTableType(
     /// </summary>
     internal bool Has32BitLimits => AddressType == WasmValueKind.I32 && !ExceedsElementLimit;
 
+    /// <summary>
+    /// 型付き参照を保持するテーブルの要素型と上下限を指定する
+    /// </summary>
+    public WasmTableType(
+        WasmValueType elementValueType,
+        WasmValueKind addressType,
+        ulong minimumElements,
+        ulong? maximumElements = null
+    )
+        : this(elementValueType.Kind, addressType, minimumElements, maximumElements)
+    {
+        ElementValueType = elementValueType;
+    }
+
     internal WasmTableType(WasmValueKind elementType, WasmLimits limits)
         : this(elementType, WasmValueKind.I32, limits.Minimum, limits.Maximum) { }
 
@@ -59,6 +78,12 @@ public sealed record WasmTableType(
     internal static bool IsSupportedElementType(WasmValueKind elementType)
     {
         return elementType is WasmValueKind.FuncRef or WasmValueKind.ExternRef;
+    }
+
+    /// <inheritdoc/>
+    public override string ToString()
+    {
+        return $"WasmTableType {{ MinimumElements = {MinimumElements}, MaximumElements = {MaximumElements}, ElementType = {ElementValueType}, AddressType = {AddressType} }}";
     }
 
     internal WasmLimits Get32BitLimits()

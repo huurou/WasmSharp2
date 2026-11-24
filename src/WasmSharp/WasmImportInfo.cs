@@ -168,7 +168,7 @@ public abstract record WasmImportInfo
                 {
                     throw new InvalidOperationException("64ビットテーブルの要素数はLimitsで設定できません。");
                 }
-                Type = new WasmTableType(ElementType, value);
+                Type = Type with { MinimumElements = value.Minimum, MaximumElements = value.Maximum };
             }
         }
 
@@ -213,7 +213,9 @@ public abstract record WasmImportInfo
         protected override bool PrintMembers(StringBuilder builder)
         {
             base.PrintMembers(builder);
-            builder.Append(Type.Has32BitLimits ? $", ElementType = {ElementType}, Limits = {Limits}" : $", Type = {Type}");
+            builder.Append(
+                Type.Has32BitLimits ? $", ElementType = {Type.ElementValueType}, Limits = {Limits}" : $", Type = {Type}"
+            );
             return true;
         }
     }

@@ -39,37 +39,13 @@ internal static class ModuleInstantiator
     )
     {
         var linked = Link(module, imports);
-        var tables = CreateIndex(linked.OfType<TableExternalValue>().Select(x => x.Value), module.Tables.Length);
-        foreach (var table in module.Tables)
-        {
-            try
-            {
-                tables.Add(WasmTable.Create(table.Type));
-            }
-            catch (WasmImplementationLimitException exception)
-            {
-                throw ResourceLimit(exception, table.ByteOffset, 4);
-            }
-        }
-        var memories = CreateIndex(linked.OfType<MemoryExternalValue>().Select(x => x.Value), module.Memories.Length);
-        foreach (var memory in module.Memories)
-        {
-            try
-            {
-                memories.Add(WasmMemory.Create(memory.Type));
-            }
-            catch (WasmImplementationLimitException exception)
-            {
-                throw ResourceLimit(exception, memory.ByteOffset, 5);
-            }
-        }
         var instance = new WasmInstance(
             module,
             options,
             [.. linked.OfType<FunctionExternalValue>().Select(x => x.Value)],
             [.. linked.OfType<GlobalExternalValue>().Select(x => x.Value)],
-            memories.MoveToImmutable(),
-            tables.MoveToImmutable()
+            [.. linked.OfType<MemoryExternalValue>().Select(x => x.Value)],
+            [.. linked.OfType<TableExternalValue>().Select(x => x.Value)]
         );
         InitializeElementSegments(instance);
         InitializeDataSegments(instance);
@@ -78,24 +54,6 @@ internal static class ModuleInstantiator
             ExecutionBoundary.RunStart(executionContext, instance, instance.Functions[(int)start.FunctionIndex]);
         }
         return instance;
-    }
-
-    /// <summary>
-    /// リソースの保持上限による失敗に定義の位置を付ける
-    /// </summary>
-    private static WasmImplementationLimitException ResourceLimit(
-        WasmImplementationLimitException exception,
-        long byteOffset,
-        byte sectionId
-    )
-    {
-        return new WasmImplementationLimitException(
-            exception.Message,
-            exception.Reason,
-            exception.Limit,
-            new WasmFailureLocation(WasmProcessingStage.Instantiate, byteOffset, null, sectionId),
-            exception
-        );
     }
 
     /// <summary>
@@ -171,21 +129,6 @@ internal static class ModuleInstantiator
     }
 
     /// <summary>
-    /// importした実体を先頭に持ち、定義した実体を追加できる実体表を作る
-    /// </summary>
-    /// <typeparam name="T">共有するリソースの型</typeparam>
-    /// <param name="imports">宣言順に並んだimportの実体</param>
-    /// <param name="definitionCount">後から追加する定義の数</param>
-    /// <returns>全実体を保持できる容量を確保し、importだけを追加した実体表</returns>
-    private static ImmutableArray<T>.Builder CreateIndex<T>(IEnumerable<T> imports, int definitionCount)
-    {
-        var values = imports.ToImmutableArray();
-        var index = ImmutableArray.CreateBuilder<T>(values.Length + definitionCount);
-        index.AddRange(values);
-        return index;
-    }
-
-    /// <summary>
     /// importの名前・種類・型を提供登録と照合し、対応する実体を解決する
     /// </summary>
     /// <param name="module">静的検証が成功したmodule</param>
@@ -250,9 +193,8 @@ internal static class ModuleInstantiator
         {
             (FunctionImport required, FunctionExternalValue provided) => module
                 .Types[(int)required.TypeIndex]
-                .Parameters.SequenceEqual(provided.Value.Type.Parameters)
-                && module.Types[(int)required.TypeIndex].Results.SequenceEqual(provided.Value.Type.Results),
-            (GlobalImport required, GlobalExternalValue provided) => required.Type == provided.Value.Type,
+                .IsEquivalentTo(provided.Value.Type),
+            (GlobalImport required, GlobalExternalValue provided) => required.Type.Accepts(provided.Value.Type),
             (MemoryImport { Definition.Type: var type }, MemoryExternalValue provided) => type.AddressType
                 == provided.Value.Type.AddressType
                 && MatchesLimits(
@@ -263,7 +205,7 @@ internal static class ModuleInstantiator
                 ),
             (TableImport { Definition.Type: var type }, TableExternalValue provided) => type.AddressType
                 == provided.Value.Type.AddressType
-                && type.ElementType == provided.Value.ElementType
+                && type.ElementValueType == provided.Value.Type.ElementValueType
                 && MatchesLimits(
                     type.MinimumElements,
                     type.MaximumElements,
@@ -315,7 +257,7 @@ internal static class ModuleInstantiator
     {
         return import switch
         {
-            FunctionImport function => DescribeFunction(module.Types[(int)function.TypeIndex]),
+            FunctionImport function => module.Types[(int)function.TypeIndex].DescribeLinkSignature(),
             GlobalImport global => global.Type.ToString(),
             MemoryImport memory => DescribeMemory(memory.Definition.Type),
             TableImport table => DescribeTable(table.Definition.Type),
@@ -332,7 +274,7 @@ internal static class ModuleInstantiator
     {
         return value switch
         {
-            FunctionExternalValue function => DescribeFunction(function.Value.Type),
+            FunctionExternalValue function => function.Value.Type.DescribeLinkSignature(),
             GlobalExternalValue global => global.Value.Type.ToString(),
             MemoryExternalValue memory => DescribeMemory(memory.Value.Type with { MinimumPages = memory.Value.PageCount }),
             TableExternalValue table => DescribeTable(table.Value.Type with { MinimumElements = table.Value.Count }),
@@ -355,17 +297,7 @@ internal static class ModuleInstantiator
     /// </summary>
     private static string DescribeTable(WasmTableType type)
     {
-        return type.Has32BitLimits ? $"{type.ElementType} {type.Get32BitLimits()}" : type.ToString();
-    }
-
-    /// <summary>
-    /// 関数の引数型と結果型を診断用の文字列へ変換する
-    /// </summary>
-    /// <param name="type">表示する関数型</param>
-    /// <returns>引数と結果をそれぞれ宣言順に列挙した文字列</returns>
-    private static string DescribeFunction(WasmFunctionType type)
-    {
-        return $"[{string.Join(", ", type.Parameters)}] -> [{string.Join(", ", type.Results)}]";
+        return type.Has32BitLimits ? $"{type.ElementValueType} {type.Get32BitLimits()}" : type.ToString();
     }
 
     /// <summary>

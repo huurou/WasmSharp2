@@ -17,6 +17,13 @@ internal static class ModuleValidator
     /// <returns>importを含まない定義順の線形実行コード</returns>
     internal static ImmutableArray<FunctionCode> Validate(WasmModule module)
     {
+        foreach (var type in module.Types)
+        {
+            if (type.Unresolved is { } missing)
+            {
+                throw missing.ValidationFailure();
+            }
+        }
         var (functionCount, importedGlobalCount) = ValidateImportReferences(module);
         ValidateFunctionReferences(module, functionCount);
         var references = ReferenceValidationContext.Create(module, functionCount);
@@ -27,11 +34,11 @@ internal static class ModuleValidator
         ];
         var segmentGlobalTypes = ValidateGlobalInitializers(
             module,
-            references.FunctionCount,
+            references.FunctionTypes,
             globalTypes,
             (int)importedGlobalCount
         );
-        ValidateResources(module);
+        ValidateResources(module, references.FunctionTypes, globalTypes.AsSpan(0, (int)importedGlobalCount));
         ValidateElements(module, references, segmentGlobalTypes);
         ValidateData(module, references, segmentGlobalTypes);
         var codes = ValidateFunctions(module, references, globalTypes);
@@ -55,13 +62,15 @@ internal static class ModuleValidator
     {
         foreach (var element in module.ElementSegments)
         {
+            var location = new WasmFailureLocation(WasmProcessingStage.Validate, element.ByteOffset, null, 9);
+            element.ElementValueType.Validate();
             foreach (var initializer in element.Initializers)
             {
                 ConstantInitializer.Validate(
                     initializer,
-                    element.ElementType,
+                    element.ElementValueType,
                     visibleGlobals,
-                    references.FunctionCount,
+                    references.FunctionTypes,
                     9,
                     module.SpecVersion
                 );
@@ -71,7 +80,6 @@ internal static class ModuleValidator
             {
                 continue;
             }
-            var location = new WasmFailureLocation(WasmProcessingStage.Validate, element.ByteOffset, null, 9);
             if (target.TableIndex >= (uint)references.TableTypes.Length)
             {
                 throw ValidationDiagnostics.UnknownIndex(
@@ -82,7 +90,7 @@ internal static class ModuleValidator
                 );
             }
             var tableType = references.TableTypes[(int)target.TableIndex];
-            if (element.ElementType != tableType.ElementType)
+            if (!tableType.ElementValueType.Accepts(element.ElementValueType))
             {
                 throw ValidationDiagnostics.ValidationFailure(
                     "type mismatch",
@@ -94,7 +102,7 @@ internal static class ModuleValidator
                 target.OffsetExpression,
                 tableType.AddressType,
                 visibleGlobals,
-                references.FunctionCount,
+                references.FunctionTypes,
                 9,
                 module.SpecVersion
             );
@@ -133,7 +141,7 @@ internal static class ModuleValidator
                 target.OffsetExpression,
                 references.MemoryAddressTypes[(int)target.MemoryIndex],
                 visibleGlobals,
-                references.FunctionCount,
+                references.FunctionTypes,
                 11,
                 module.SpecVersion
             );
@@ -153,12 +161,7 @@ internal static class ModuleValidator
         WasmGlobalType[] globalTypes
     )
     {
-        var importedFunctionCount = (uint)module.Imports.Count(x => x is FunctionImport);
-        WasmFunctionType[] functionTypes =
-        [
-            .. module.Imports.OfType<FunctionImport>().Select(x => module.Types[(int)x.TypeIndex]),
-            .. module.Functions.Select(x => module.Types[(int)x.TypeIndex]),
-        ];
+        var importedFunctionCount = references.FunctionCount - (uint)module.Functions.Length;
         var codes = ImmutableArray.CreateBuilder<FunctionCode>(module.Functions.Length);
         for (var definitionIndex = 0; definitionIndex < module.Functions.Length; definitionIndex++)
         {
@@ -167,7 +170,6 @@ internal static class ModuleValidator
                     module,
                     definitionIndex,
                     importedFunctionCount + (uint)definitionIndex,
-                    functionTypes,
                     globalTypes,
                     references
                 )
@@ -181,13 +183,13 @@ internal static class ModuleValidator
     /// globalの初期化式を評価せず、1個の宣言型の値を生成することを検証する
     /// </summary>
     /// <param name="module">デコード済みの静的定義</param>
-    /// <param name="functionCount">importと定義を合わせた関数の個数</param>
+    /// <param name="functionTypes">importを先頭にした関数添字順の型</param>
     /// <param name="globalTypes">importを先頭にしたglobal添字順の型</param>
     /// <param name="importedGlobalCount">importしたglobalの個数</param>
     /// <returns>すべてのglobalの検証後にセグメントの定数式から参照できる型</returns>
     private static ReadOnlySpan<WasmGlobalType> ValidateGlobalInitializers(
         WasmModule module,
-        uint functionCount,
+        ReadOnlySpan<WasmFunctionType> functionTypes,
         ReadOnlySpan<WasmGlobalType> globalTypes,
         int importedGlobalCount
     )
@@ -195,11 +197,12 @@ internal static class ModuleValidator
         var visibleGlobalCount = importedGlobalCount;
         foreach (var global in module.Globals)
         {
+            global.Type.ValueType.Validate();
             ConstantInitializer.Validate(
                 global.Initializer,
-                global.Type.ValueKind,
+                global.Type.ValueType,
                 globalTypes[..visibleGlobalCount],
-                functionCount,
+                functionTypes,
                 6,
                 module.SpecVersion
             );
@@ -283,6 +286,10 @@ internal static class ModuleValidator
                     ValidateTypeIndex(module, function.TypeIndex, location with { FunctionIndex = --functionIndex });
                     break;
 
+                case GlobalImport global:
+                    global.Type.ValueType.Validate();
+                    break;
+
                 case TableImport table:
                     ValidateTable(table.Definition.Type, location);
                     break;
@@ -314,14 +321,40 @@ internal static class ModuleValidator
     }
 
     /// <summary>
-    /// 定義tableと定義memoryのlimitsを宣言順に検証する
+    /// 定義tableの型と初期化式、定義memoryのlimitsを宣言順に検証する
     /// </summary>
     /// <param name="module">デコード済みの静的定義</param>
-    private static void ValidateResources(WasmModule module)
+    /// <param name="functionTypes">テーブル初期化式から参照できる関数の型</param>
+    /// <param name="importedGlobals">テーブル初期化式から参照できるimportしたglobalの型</param>
+    private static void ValidateResources(
+        WasmModule module,
+        ReadOnlySpan<WasmFunctionType> functionTypes,
+        ReadOnlySpan<WasmGlobalType> importedGlobals
+    )
     {
         foreach (var table in module.Tables)
         {
-            ValidateTable(table.Type, new WasmFailureLocation(WasmProcessingStage.Validate, table.ByteOffset, null, 4));
+            var location = new WasmFailureLocation(WasmProcessingStage.Validate, table.ByteOffset, null, 4);
+            ValidateTable(table.Type, location);
+            if (!table.Initializer.IsEmpty)
+            {
+                ConstantInitializer.Validate(
+                    table.Initializer,
+                    table.Type.ElementValueType,
+                    importedGlobals,
+                    functionTypes,
+                    4,
+                    module.SpecVersion
+                );
+            }
+            else if (!table.Type.ElementValueType.IsNullable)
+            {
+                throw ValidationDiagnostics.ValidationFailure(
+                    "type mismatch",
+                    "テーブルの暗黙の初期値nullを要素型に格納できません。",
+                    location
+                );
+            }
         }
         foreach (var memory in module.Memories)
         {
@@ -393,6 +426,7 @@ internal static class ModuleValidator
     /// </summary>
     private static void ValidateTable(WasmTableType type, WasmFailureLocation location)
     {
+        type.ElementValueType.Validate();
         if (type.ExceedsElementLimit)
         {
             throw ValidationDiagnostics.ValidationFailure(

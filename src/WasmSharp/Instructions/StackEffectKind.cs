@@ -126,6 +126,16 @@ internal enum StackEffectKind
     BranchIf,
 
     /// <summary>
+    /// nullを取り除いて分岐し、非nullなら参照を残す
+    /// </summary>
+    BranchOnNull,
+
+    /// <summary>
+    /// 非nullなら参照を含めて分岐し、nullなら取り除く
+    /// </summary>
+    BranchOnNonNull,
+
+    /// <summary>
     /// i32選択値とラベルの値を取り出して到達不能にする
     /// </summary>
     BranchTable,
@@ -174,6 +184,11 @@ internal enum StackEffectKind
     /// 参照型の値を取り除き、null判定の結果をi32で積む
     /// </summary>
     RefIsNull,
+
+    /// <summary>
+    /// 最上位の参照を非nullに絞り込む
+    /// </summary>
+    RefAsNonNull,
 
     /// <summary>
     /// 指定関数のfuncrefを積む
@@ -225,6 +240,11 @@ internal enum StackEffectKind
     /// テーブルのアドレス型の要素添字と指定した関数型の引数を取り除き、結果を積む
     /// </summary>
     CallIndirect,
+
+    /// <summary>
+    /// 関数参照と指定した関数型の引数を取り除き、結果を積む
+    /// </summary>
+    CallRef,
 
     /// <summary>
     /// 128ビットvectorをスタックに積む

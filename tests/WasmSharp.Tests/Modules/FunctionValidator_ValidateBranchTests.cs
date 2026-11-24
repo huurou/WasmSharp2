@@ -27,14 +27,7 @@ internal partial class FunctionValidator_ValidateTests
         var module = DecodeControl([], Convert.FromHexString(results), Convert.FromHexString(body));
 
         // Act
-        var code = FunctionValidator.Validate(
-            module,
-            0,
-            0,
-            [module.Types[0]],
-            [],
-            ReferenceValidationContext.Create(module, 0)
-        );
+        var code = FunctionValidator.Validate(module, 0, 0, [], ReferenceValidationContext.Create(module, 0));
 
         // Assert
         using (Assert.Multiple())
@@ -59,14 +52,7 @@ internal partial class FunctionValidator_ValidateTests
         var module = DecodeControl([], [0x7F], Convert.FromHexString("4101047F41010C00000541020C00000B0B"));
 
         // Act
-        var code = FunctionValidator.Validate(
-            module,
-            0,
-            0,
-            [module.Types[0]],
-            [],
-            ReferenceValidationContext.Create(module, 0)
-        );
+        var code = FunctionValidator.Validate(module, 0, 0, [], ReferenceValidationContext.Create(module, 0));
 
         // Assert
         using (Assert.Multiple())
@@ -104,14 +90,7 @@ internal partial class FunctionValidator_ValidateTests
         );
 
         // Act
-        var code = FunctionValidator.Validate(
-            module,
-            0,
-            0,
-            [module.Types[0]],
-            [],
-            ReferenceValidationContext.Create(module, 0)
-        );
+        var code = FunctionValidator.Validate(module, 0, 0, [], ReferenceValidationContext.Create(module, 0));
 
         // Assert
         using (Assert.Multiple())
@@ -159,14 +138,7 @@ internal partial class FunctionValidator_ValidateTests
         var module = DecodeControl([], Convert.FromHexString(results), Convert.FromHexString(body));
 
         // Act
-        var code = FunctionValidator.Validate(
-            module,
-            0,
-            0,
-            [module.Types[0]],
-            [],
-            ReferenceValidationContext.Create(module, 0)
-        );
+        var code = FunctionValidator.Validate(module, 0, 0, [], ReferenceValidationContext.Create(module, 0));
 
         // Assert
         await Assert.That(code.BranchTargets.Length).IsEqualTo(1);

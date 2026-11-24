@@ -37,10 +37,7 @@ internal static partial class Interpreter
             );
         }
         var expectedType = function.Instance.Module.Types[(int)instruction.Index];
-        if (
-            !expectedType.Parameters.SequenceEqual(callee.Type.Parameters)
-            || !expectedType.Results.SequenceEqual(callee.Type.Results)
-        )
+        if (!expectedType.IsEquivalentTo(callee.Type))
         {
             return ExecutionResult.Trap(
                 WasmTrapReason.IndirectCallTypeMismatch,
@@ -69,6 +66,23 @@ internal static partial class Interpreter
     {
         // importした定義関数も元instanceに所属したまま関数表へ置かれている。
         var callee = context.CurrentFunction.Instance.Functions[(int)instruction.Index];
+        return CallFunction(context, callee);
+    }
+
+    /// <summary>
+    /// オペランドから関数参照を取り出し、参照先を同じ実行コンテキストで呼び出す
+    /// </summary>
+    internal static ExecutionResult CallRef(InterpreterContext context, in Instruction instruction)
+    {
+        var callee = context.PopValue().AsFuncRef();
+        if (callee is null)
+        {
+            return ExecutionResult.Trap(
+                WasmTrapReason.NullFunctionReference,
+                context.CurrentFunction.FunctionIndex,
+                instruction.ByteOffset
+            );
+        }
         return CallFunction(context, callee);
     }
 

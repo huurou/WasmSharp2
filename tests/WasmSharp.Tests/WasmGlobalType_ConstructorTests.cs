@@ -26,3 +26,19 @@ internal class WasmGlobalType_ConstructorTests
         }
     }
 }
+
+internal class WasmGlobalType_ToStringTests
+{
+    [Test]
+    public async Task 非nullの参照を保持する変更可能なglobalを表示する_宣言した型と可変性が分かる()
+    {
+        // Arrange
+        var type = new WasmGlobalType(WasmValueType.Reference(WasmValueKind.ExternRef, false), true);
+
+        // Act
+        var text = type.ToString();
+
+        // Assert
+        await Assert.That(text).IsEqualTo("WasmGlobalType { ValueKind = (ref extern), IsMutable = True }");
+    }
+}

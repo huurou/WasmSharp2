@@ -201,6 +201,7 @@ internal static class ModuleDecoder
 
                 case 1:
                     types = ModuleBinaryFormat.ReadTypes(ref section);
+                    reader.Types = types;
                     break;
 
                 case 2:
@@ -212,7 +213,7 @@ internal static class ModuleDecoder
                     break;
 
                 case 4:
-                    tables = ReadTables(ref section);
+                    tables = ReadTables(ref section, bytes.Length);
                     break;
 
                 case 5:
@@ -411,7 +412,6 @@ internal static class ModuleDecoder
                     );
             }
 
-            var elementType = WasmValueKind.FuncRef;
             if (flags is 1 or 2 or 3)
             {
                 var kindOffset = reader.Position;
@@ -420,16 +420,21 @@ internal static class ModuleDecoder
                     throw reader.Error("malformed element kind: 要素種別が不正です。", kindOffset);
                 }
             }
-            else if (flags >= 5)
-            {
-                elementType = ModuleBinaryFormat.ReadReferenceType(ref reader);
-            }
+            // 関数番号の列はCore 3.0では(ref func)であり、式の列の暗黙型funcrefとは異なる。
+            var usesFunctionIndices = flags < 4;
+            var elementType =
+                flags >= 5
+                    ? ModuleBinaryFormat.ReadReferenceType(ref reader)
+                    : WasmValueType.Reference(
+                        WasmValueKind.FuncRef,
+                        isNullable: !usesFunctionIndices || reader.SpecVersion == WasmSpecVersion.Core2
+                    );
 
             var initializerCount = ModuleBinaryFormat.ReadCount(ref reader);
             List<IEnumerable<DecodedInstruction>> initializers = [];
             for (uint initializerIndex = 0; initializerIndex < initializerCount; initializerIndex++)
             {
-                if (flags < 4)
+                if (usesFunctionIndices)
                 {
                     var indexOffset = reader.Position;
                     var functionIndex = reader.ReadU32();
@@ -561,20 +566,31 @@ internal static class ModuleDecoder
     }
 
     /// <summary>
-    /// table sectionの型宣言を取得する
+    /// table sectionの型宣言と明示された初期化式を取得する
     /// </summary>
     /// <param name="reader">table sectionの読み取り状態 宣言の終端まで進める</param>
-    /// <returns>定義順のtable型 limitsの仕様上の制約は検証しない</returns>
-    /// <exception cref="WasmDecodeException">件数またはtable型の符号化が不正な場合</exception>
+    /// <param name="inputLength">初期化式の未確認範囲の終端に使用する入力全体のバイト数</param>
+    /// <returns>定義順のtable型と明示された初期化式</returns>
+    /// <exception cref="WasmDecodeException">件数、table型または初期化式の符号化が不正な場合</exception>
     /// <exception cref="ModuleReadBoundaryException">限定された範囲内で構文を読み終えられない場合</exception>
     /// <exception cref="WasmImplementationLimitException">宣言件数がコレクションの保持上限を超える場合</exception>
-    private static List<TableDefinition> ReadTables(ref ModuleBinaryReader reader)
+    private static List<TableDefinition> ReadTables(ref ModuleBinaryReader reader, int inputLength)
     {
         var count = ModuleBinaryFormat.ReadCount(ref reader);
         List<TableDefinition> tables = [];
         for (uint index = 0; index < count; index++)
         {
-            tables.Add(ModuleBinaryFormat.ReadTableType(ref reader));
+            if (reader.SpecVersion == WasmSpecVersion.Core3 && reader.TryPeekByte(out var prefix) && prefix == 0x40)
+            {
+                reader.ReadByte();
+                reader.ReadZeroByte();
+                var table = ModuleBinaryFormat.ReadTableType(ref reader);
+                tables.Add(table with { Initializer = [.. ExpressionDecoder.Read(ref reader, inputLength)] });
+            }
+            else
+            {
+                tables.Add(ModuleBinaryFormat.ReadTableType(ref reader));
+            }
         }
         return tables;
     }

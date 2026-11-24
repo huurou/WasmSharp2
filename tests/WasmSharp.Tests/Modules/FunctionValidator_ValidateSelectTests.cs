@@ -28,14 +28,7 @@ internal partial class FunctionValidator_ValidateTests
         var definition = module.Functions[0];
 
         // Act
-        var code = FunctionValidator.Validate(
-            module,
-            0,
-            0,
-            [module.Types[0]],
-            [],
-            ReferenceValidationContext.Create(module, 0)
-        );
+        var code = FunctionValidator.Validate(module, 0, 0, [], ReferenceValidationContext.Create(module, 0));
 
         // Assert
         using (Assert.Multiple())
@@ -70,14 +63,7 @@ internal partial class FunctionValidator_ValidateTests
         );
 
         // Act
-        var code = FunctionValidator.Validate(
-            module,
-            0,
-            0,
-            [module.Types[0]],
-            [],
-            ReferenceValidationContext.Create(module, 0)
-        );
+        var code = FunctionValidator.Validate(module, 0, 0, [], ReferenceValidationContext.Create(module, 0));
 
         // Assert
         using (Assert.Multiple())

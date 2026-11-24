@@ -111,6 +111,16 @@ internal enum ValidationRule
     BranchIf,
 
     /// <summary>
+    /// ラベル型と参照入力を検証し、分岐しない経路には非null参照を残す
+    /// </summary>
+    BranchOnNull,
+
+    /// <summary>
+    /// 絞り込んだ参照をラベルの末尾の型と照合し、分岐しない経路からは取り除く
+    /// </summary>
+    BranchOnNonNull,
+
+    /// <summary>
     /// i32選択値と全候補の共通ラベル型を検証し、到達不能にする
     /// </summary>
     BranchTable,
@@ -171,6 +181,11 @@ internal enum ValidationRule
     RefIsNull,
 
     /// <summary>
+    /// 参照型の入力を検証し、同じヒープ型の非null参照を積む
+    /// </summary>
+    RefAsNonNull,
+
+    /// <summary>
     /// 関数添字と参照の宣言を検証し、funcref型を積む
     /// </summary>
     RefFunc,
@@ -222,6 +237,11 @@ internal enum ValidationRule
     /// 指定した関数型の引数を検証し、結果型を積む
     /// </summary>
     CallIndirect,
+
+    /// <summary>
+    /// 型添字が指す関数型に参照と引数が適合することを検証し、結果型を積む
+    /// </summary>
+    CallRef,
 
     /// <summary>
     /// メモリのロードと同様にアドレスと即値を検証し、lane番号とv128の入力を確認してv128を積む

@@ -115,13 +115,13 @@ internal static partial class Interpreter
             InstanceHostFunction host => host.Callback(executionContext, instance!, copiedArguments),
             _ => throw new InvalidOperationException("ホスト関数ではありません。"),
         };
-        if (result is null || result.Values.Length != function.Type.Results.Length)
+        if (result is null || result.Values.Length != function.Type.ResultTypes.Length)
         {
             throw new InvalidOperationException("ホスト関数の結果の個数が関数型と一致しません。");
         }
         for (var i = 0; i < result.Values.Length; i++)
         {
-            if (result.Values[i].Kind != function.Type.Results[i])
+            if (!function.Type.ResultTypes[i].Accepts(result.Values[i]))
             {
                 throw new InvalidOperationException("ホスト関数の結果の型が関数型と一致しません。");
             }

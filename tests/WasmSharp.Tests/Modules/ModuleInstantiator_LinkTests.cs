@@ -43,6 +43,98 @@ internal class ModuleInstantiator_LinkTests
     }
 
     [Test]
+    public async Task Core2の関数の引数が16個を超える_引数と結果をすべてリンク診断に表示する()
+    {
+        // Arrange
+        byte[] parameters = [.. Enumerable.Repeat((byte)0x7F, 17)];
+        var module = WasmModule
+            .Decode(
+                HostLinkingModuleBinary.Create(
+                    HostLinkingModuleBinary.Types((parameters, [0x7E])),
+                    HostLinkingModuleBinary.Imports(("env", "function", 0, [0]))
+                ),
+                WasmSpecVersion.Core2
+            )
+            .Validate();
+        var host = new WasmHostModule("env");
+        host.Define("function", WasmFunction.CreateHost(new WasmFunctionType([], []), (_, _) => new WasmResults([])));
+        var imports = new WasmImports();
+        imports.Add(host);
+        var expectedParameters = string.Join(", ", Enumerable.Repeat("I32", 17));
+
+        // Act & Assert
+        var exception = await Assert
+            .That(() => ModuleInstantiator.Link(module, imports))
+            .ThrowsExactly<WasmInstantiateException>();
+        await Assert.That(exception!.Message).Contains($"要求型 [{expectedParameters}] -> [I64]");
+    }
+
+    [Test]
+    [Arguments(4, "I32 I32 I32 I32", "I32 I32 I32 I32", "F64")]
+    [Arguments(5, "I32 I32 …", "I32 I32 I32 …", "…")]
+    public async Task 型付き関数参照を繰り返す_リンク診断は引数と結果の入れ子を通じて16個までの値型を表示する(
+        int nestedParameterCount,
+        string lastRequiredParameters,
+        string lastProvidedParameters,
+        string providedResults
+    )
+    {
+        // Arrange
+        var module = WasmModule
+            .Decode(
+                HostLinkingModuleBinary.Create(
+                    HostLinkingModuleBinary.Section(
+                        1,
+                        [
+                            2,
+                            0x60,
+                            (byte)nestedParameterCount,
+                            .. Enumerable.Repeat((byte)0x7F, nestedParameterCount),
+                            0,
+                            0x60,
+                            1,
+                            0x7C,
+                            3,
+                            0x64,
+                            0,
+                            0x64,
+                            0,
+                            0x64,
+                            0, // f64 -> (ref 0) (ref 0) (ref 0)
+                        ]
+                    ),
+                    HostLinkingModuleBinary.Imports(("env", "function", 0, [1]))
+                ),
+                WasmSpecVersion.Core3
+            )
+            .Validate();
+        var reference = WasmValueType.FunctionReference(module.Types[0], false);
+        var provided = WasmFunctionType.Create([reference, reference, reference], [WasmValueKind.F64]);
+        var host = new WasmHostModule("env");
+        host.Define("function", WasmFunction.CreateHost(provided, (_, _) => new WasmResults([])));
+        var imports = new WasmImports();
+        imports.Add(host);
+        var parameters = string.Join(" ", Enumerable.Repeat("I32", nestedParameterCount));
+        var fullReference = $"(ref (func (param {parameters}) (result )))";
+        var lastRequired = $"(ref (func (param {lastRequiredParameters}) (result )))";
+        var lastProvided = $"(ref (func (param {lastProvidedParameters}) (result )))";
+
+        // Act & Assert
+        var exception = await Assert
+            .That(() => ModuleInstantiator.Link(module, imports))
+            .ThrowsExactly<WasmInstantiateException>();
+        using (Assert.Multiple())
+        {
+            await Assert
+                .That(exception!.Message)
+                .Contains($"要求型 [F64] -> [{fullReference}, {fullReference}, {lastRequired}]");
+            await Assert
+                .That(exception.Message)
+                .Contains($"提供型は [{fullReference}, {fullReference}, {lastProvided}] -> [{providedResults}]");
+        }
+    }
+
+    [Test]
     public async Task Tableの要求型と提供型が異なる_参照型と現在サイズと上限を診断へ含める()
     {
         // Arrange

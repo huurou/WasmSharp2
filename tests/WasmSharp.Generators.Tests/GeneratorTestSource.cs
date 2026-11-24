@@ -12,6 +12,10 @@ internal static class GeneratorTestSource
         namespace WasmSharp
         {
             public sealed class WasmFunction;
+            public readonly record struct WasmValueType(WasmValueKind Kind)
+            {
+                public static implicit operator WasmValueType(WasmValueKind kind) => new WasmValueType(kind);
+            }
         }
         namespace WasmSharp.Exceptions
         {

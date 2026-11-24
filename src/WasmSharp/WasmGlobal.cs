@@ -32,7 +32,7 @@ public sealed class WasmGlobal
                 throw new InvalidOperationException("不変globalは更新できません。");
             }
 
-            if (value.Kind != Type.ValueKind)
+            if (!Type.ValueType.Accepts(value))
             {
                 throw new ArgumentException("globalの型と値の型が一致しません。", nameof(value));
             }
@@ -44,10 +44,10 @@ public sealed class WasmGlobal
     /// <summary>
     /// 型と初期値を指定してglobalを生成する
     /// </summary>
-    /// <param name="type">Core 2.0の値型と可変性</param>
+    /// <param name="type">globalの値型と可変性</param>
     /// <param name="initialValue">宣言型と一致する初期値 数値のビット列と参照先の同一性を保持する</param>
     /// <exception cref="ArgumentNullException">typeがnullの場合</exception>
-    /// <exception cref="ArgumentException">値型がCore 2.0に存在しないか、初期値の型が宣言型と一致しない場合</exception>
+    /// <exception cref="ArgumentException">未対応の値型を指定したか、初期値の型が宣言型と一致しない場合</exception>
     public WasmGlobal(WasmGlobalType type, WasmValue initialValue)
     {
         ArgumentNullException.ThrowIfNull(type);
@@ -67,7 +67,7 @@ public sealed class WasmGlobal
             throw new ArgumentException("Core 2.0で定義されていないvalueの種類です。", nameof(type));
         }
 
-        if (initialValue.Kind != type.ValueKind)
+        if (!type.ValueType.Accepts(initialValue))
         {
             throw new ArgumentException("globalの型と初期値の型が一致しません。", nameof(initialValue));
         }

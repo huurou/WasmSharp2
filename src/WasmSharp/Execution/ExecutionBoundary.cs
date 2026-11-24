@@ -143,6 +143,8 @@ internal static class ExecutionBoundary
             (WasmTrapReason.TableOutOfBounds, _) => "out of bounds table access",
             (WasmTrapReason.UninitializedElement, _) => "uninitialized element" + elementIndexSuffix,
             (WasmTrapReason.IndirectCallTypeMismatch, _) => "indirect call type mismatch",
+            (WasmTrapReason.NullFunctionReference, _) => "null function reference",
+            (WasmTrapReason.NullReference, _) => "null reference",
             _ => "Wasmの実行中にtrapが発生しました。",
         };
     }

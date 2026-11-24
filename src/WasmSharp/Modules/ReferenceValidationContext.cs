@@ -11,7 +11,12 @@ internal sealed class ReferenceValidationContext
     /// <summary>
     /// importと定義を合わせた関数の個数
     /// </summary>
-    internal uint FunctionCount { get; }
+    internal uint FunctionCount => (uint)FunctionTypes.Length;
+
+    /// <summary>
+    /// importを先頭にした関数添字順の型
+    /// </summary>
+    internal WasmFunctionType[] FunctionTypes { get; }
 
     /// <summary>
     /// importと定義を合わせたメモリの個数
@@ -31,7 +36,7 @@ internal sealed class ReferenceValidationContext
     /// <summary>
     /// element添字順の要素型
     /// </summary>
-    internal ImmutableArray<WasmValueKind> ElementTypes { get; }
+    internal ImmutableArray<WasmValueType> ElementTypes { get; }
 
     /// <summary>
     /// 関数本体とstartを除いた定義が参照する未検証の関数添字集合
@@ -42,14 +47,14 @@ internal sealed class ReferenceValidationContext
     /// 呼び出し内で構築した不変情報を保持する
     /// </summary>
     private ReferenceValidationContext(
-        uint functionCount,
+        WasmFunctionType[] functionTypes,
         ImmutableArray<WasmValueKind> memoryAddressTypes,
         ImmutableArray<WasmTableType> tableTypes,
-        ImmutableArray<WasmValueKind> elementTypes,
+        ImmutableArray<WasmValueType> elementTypes,
         ImmutableHashSet<uint> declaredFunctions
     )
     {
-        FunctionCount = functionCount;
+        FunctionTypes = functionTypes;
         MemoryAddressTypes = memoryAddressTypes;
         TableTypes = tableTypes;
         ElementTypes = elementTypes;
@@ -64,7 +69,22 @@ internal sealed class ReferenceValidationContext
     /// <returns>moduleや実行コードへ保存しない、当該検証だけで共有する情報</returns>
     internal static ReferenceValidationContext Create(WasmModule module, uint importedFunctionCount)
     {
+        var functionTypes = new WasmFunctionType[importedFunctionCount + module.Functions.Length];
+        var functionIndex = 0;
+        foreach (var import in module.Imports.OfType<FunctionImport>())
+        {
+            functionTypes[functionIndex++] = module.Types[(int)import.TypeIndex];
+        }
+        foreach (var function in module.Functions)
+        {
+            functionTypes[functionIndex++] = module.Types[(int)function.TypeIndex];
+        }
+
         var declaredFunctions = ImmutableHashSet.CreateBuilder<uint>();
+        foreach (var table in module.Tables)
+        {
+            CollectFunctions(table.Initializer);
+        }
         foreach (var global in module.Globals)
         {
             CollectFunctions(global.Initializer);
@@ -96,13 +116,13 @@ internal sealed class ReferenceValidationContext
         }
 
         return new ReferenceValidationContext(
-            importedFunctionCount + (uint)module.Functions.Length,
+            functionTypes,
             [
                 .. module.Imports.OfType<MemoryImport>().Select(x => x.Definition.Type.AddressType),
                 .. module.Memories.Select(x => x.Type.AddressType),
             ],
             [.. module.Imports.OfType<TableImport>().Select(x => x.Definition.Type), .. module.Tables.Select(x => x.Type)],
-            [.. module.ElementSegments.Select(x => x.ElementType)],
+            [.. module.ElementSegments.Select(x => x.ElementValueType)],
             declaredFunctions.ToImmutable()
         );
 

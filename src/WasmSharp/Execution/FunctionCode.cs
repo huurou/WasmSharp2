@@ -54,7 +54,7 @@ internal sealed class FunctionCode(
         uint previousEnd = 0;
         foreach (var local in locals)
         {
-            initializers.Add(new LocalInitializer(local.EndIndex - previousEnd, CreateInitialValue(local.Type)));
+            initializers.Add(new LocalInitializer(local.EndIndex - previousEnd, CreateInitialValue(local.Type.Kind)));
             previousEnd = local.EndIndex;
         }
 

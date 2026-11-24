@@ -23,14 +23,7 @@ internal partial class FunctionValidator_ValidateTests
         var module = DecodeControl([], Convert.FromHexString(results), Convert.FromHexString(body));
 
         // Act
-        var code = FunctionValidator.Validate(
-            module,
-            0,
-            0,
-            [module.Types[0]],
-            [],
-            ReferenceValidationContext.Create(module, 0)
-        );
+        var code = FunctionValidator.Validate(module, 0, 0, [], ReferenceValidationContext.Create(module, 0));
 
         // Assert
         using (Assert.Multiple())
@@ -64,14 +57,7 @@ internal partial class FunctionValidator_ValidateTests
         var module = DecodeControl(kinds, kinds, [.. body]);
 
         // Act
-        var code = FunctionValidator.Validate(
-            module,
-            0,
-            0,
-            [module.Types[0]],
-            [],
-            ReferenceValidationContext.Create(module, 0)
-        );
+        var code = FunctionValidator.Validate(module, 0, 0, [], ReferenceValidationContext.Create(module, 0));
 
         // Assert
         using (Assert.Multiple())
@@ -98,14 +84,7 @@ internal partial class FunctionValidator_ValidateTests
         );
 
         // Act
-        var code = FunctionValidator.Validate(
-            module,
-            0,
-            0,
-            [module.Types[0]],
-            [],
-            ReferenceValidationContext.Create(module, 0)
-        );
+        var code = FunctionValidator.Validate(module, 0, 0, [], ReferenceValidationContext.Create(module, 0));
 
         // Assert
         using (Assert.Multiple())
@@ -129,14 +108,7 @@ internal partial class FunctionValidator_ValidateTests
         var module = DecodeControl([], [0x7F, 0x7E], Convert.FromHexString("41094101047E4100047E42010542020B0542030B0B"));
 
         // Act
-        var code = FunctionValidator.Validate(
-            module,
-            0,
-            0,
-            [module.Types[0]],
-            [],
-            ReferenceValidationContext.Create(module, 0)
-        );
+        var code = FunctionValidator.Validate(module, 0, 0, [], ReferenceValidationContext.Create(module, 0));
 
         // Assert
         using (Assert.Multiple())
@@ -166,14 +138,7 @@ internal partial class FunctionValidator_ValidateTests
         var module = DecodeControl([], [], [.. body]);
 
         // Act
-        var code = FunctionValidator.Validate(
-            module,
-            0,
-            0,
-            [module.Types[0]],
-            [],
-            ReferenceValidationContext.Create(module, 0)
-        );
+        var code = FunctionValidator.Validate(module, 0, 0, [], ReferenceValidationContext.Create(module, 0));
 
         // Assert
         using (Assert.Multiple())
@@ -198,14 +163,7 @@ internal partial class FunctionValidator_ValidateTests
         var module = DecodeControl([0x7F], [0x7F], Convert.FromHexString(body));
 
         // Act
-        var code = FunctionValidator.Validate(
-            module,
-            0,
-            0,
-            [module.Types[0]],
-            [],
-            ReferenceValidationContext.Create(module, 0)
-        );
+        var code = FunctionValidator.Validate(module, 0, 0, [], ReferenceValidationContext.Create(module, 0));
 
         // Assert
         using (Assert.Multiple())
@@ -231,14 +189,7 @@ internal partial class FunctionValidator_ValidateTests
         var module = DecodeControl([], Convert.FromHexString(results), Convert.FromHexString(body));
 
         // Act
-        var code = FunctionValidator.Validate(
-            module,
-            0,
-            0,
-            [module.Types[0]],
-            [],
-            ReferenceValidationContext.Create(module, 0)
-        );
+        var code = FunctionValidator.Validate(module, 0, 0, [], ReferenceValidationContext.Create(module, 0));
 
         // Assert
         await Assert.That(code.MaxOperandStack).IsEqualTo(maximum);

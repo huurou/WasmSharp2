@@ -24,7 +24,7 @@ internal class ConstantInitializer_ValidateTests
         // Act & Assert
         await Assert
             .That(() =>
-                ConstantInitializer.Validate(expression, WasmValueKind.I32, importedGlobals, 0, 11, WasmSpecVersion.Core2)
+                ConstantInitializer.Validate(expression, WasmValueKind.I32, importedGlobals, [], 11, WasmSpecVersion.Core2)
             )
             .ThrowsNothing();
     }
@@ -64,7 +64,7 @@ internal class ConstantInitializer_ValidateTests
 
         // Act & Assert
         var exception = await Assert
-            .That(() => ConstantInitializer.Validate(expression, WasmValueKind.I32, [], 0, 11, WasmSpecVersion.Core2))
+            .That(() => ConstantInitializer.Validate(expression, WasmValueKind.I32, [], [], 11, WasmSpecVersion.Core2))
             .ThrowsExactly<WasmValidateException>();
         using (Assert.Multiple())
         {
@@ -87,7 +87,7 @@ internal class ConstantInitializer_ValidateTests
 
         // Act & Assert
         var exception = await Assert
-            .That(() => ConstantInitializer.Validate(expression, WasmValueKind.I32, [], 0, 11, WasmSpecVersion.Core2))
+            .That(() => ConstantInitializer.Validate(expression, WasmValueKind.I32, [], [], 11, WasmSpecVersion.Core2))
             .ThrowsExactly<WasmValidateException>();
         using (Assert.Multiple())
         {
@@ -112,7 +112,7 @@ internal class ConstantInitializer_ValidateTests
     private static long MeasureAllocatedBytes(ImmutableArray<DecodedInstruction> expression)
     {
         var before = GC.GetAllocatedBytesForCurrentThread();
-        ConstantInitializer.Validate(expression, WasmValueKind.I32, [], 0, 6, WasmSpecVersion.Core3);
+        ConstantInitializer.Validate(expression, WasmValueKind.I32, [], [], 6, WasmSpecVersion.Core3);
         return GC.GetAllocatedBytesForCurrentThread() - before;
     }
 }

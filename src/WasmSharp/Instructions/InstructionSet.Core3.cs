@@ -1,3 +1,4 @@
+using WasmSharp.Execution;
 using static WasmSharp.WasmSpecVersion;
 
 namespace WasmSharp.Instructions;
@@ -6,13 +7,49 @@ namespace WasmSharp.Instructions;
 [Instruction(Core3, 0, 0x0A, "throw_ref")]
 [Instruction(Core3, 0, 0x12, "return_call")]
 [Instruction(Core3, 0, 0x13, "return_call_indirect")]
-[Instruction(Core3, 0, 0x14, "call_ref")]
+[Instruction(
+    Core3,
+    0,
+    0x14,
+    "call_ref",
+    ImmediateKind.Index,
+    StackEffectKind.CallRef,
+    ValidationRule.CallRef,
+    nameof(Interpreter.CallRef)
+)]
 [Instruction(Core3, 0, 0x15, "return_call_ref")]
 [Instruction(Core3, 0, 0x1F, "try_table")]
 [Instruction(Core3, 0, 0xD3, "ref.eq")]
-[Instruction(Core3, 0, 0xD4, "ref.as_non_null")]
-[Instruction(Core3, 0, 0xD5, "br_on_null")]
-[Instruction(Core3, 0, 0xD6, "br_on_non_null")]
+[Instruction(
+    Core3,
+    0,
+    0xD4,
+    "ref.as_non_null",
+    ImmediateKind.None,
+    StackEffectKind.RefAsNonNull,
+    ValidationRule.RefAsNonNull,
+    nameof(Interpreter.RefAsNonNull)
+)]
+[Instruction(
+    Core3,
+    0,
+    0xD5,
+    "br_on_null",
+    ImmediateKind.Index,
+    StackEffectKind.BranchOnNull,
+    ValidationRule.BranchOnNull,
+    nameof(Interpreter.BranchOnNull)
+)]
+[Instruction(
+    Core3,
+    0,
+    0xD6,
+    "br_on_non_null",
+    ImmediateKind.Index,
+    StackEffectKind.BranchOnNonNull,
+    ValidationRule.BranchOnNonNull,
+    nameof(Interpreter.BranchOnNonNull)
+)]
 [Instruction(Core3, 0xFB, 0x00, "struct.new")]
 [Instruction(Core3, 0xFB, 0x01, "struct.new_default")]
 [Instruction(Core3, 0xFB, 0x02, "struct.get")]

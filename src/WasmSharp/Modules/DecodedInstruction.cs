@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Runtime.InteropServices;
 using WasmSharp.Instructions;
 
 namespace WasmSharp.Modules;
@@ -10,6 +11,12 @@ internal readonly struct DecodedInstruction
 {
     private readonly uint _memoryAlignment;
     private readonly ulong _memoryOffset;
+    private readonly BlockTypeKind _blockTypeKind;
+    private readonly uint _blockTypeIndex;
+    private readonly WasmValueKind _blockValueKind;
+
+    // 単一の詳細な値型とselectの型配列は同じ命令に現れない。単純な値型は種類だけで復元する。
+    private readonly object? _typeImmediate;
 
     /// <summary>
     /// 通常命令またはprefix付き拡張命令の識別子
@@ -39,7 +46,18 @@ internal readonly struct DecodedInstruction
     /// <summary>
     /// 構造化制御の型指定
     /// </summary>
-    internal BlockType BlockType { get; }
+    internal BlockType BlockType =>
+        _blockTypeKind switch
+        {
+            BlockTypeKind.Value => BlockType.FromValue(GetValueType(_blockValueKind)),
+            BlockTypeKind.TypeIndex => BlockType.FromTypeIndex(_blockTypeIndex),
+            _ => BlockType.Empty,
+        };
+
+    /// <summary>
+    /// ref.nullが生成する参照の宣言型
+    /// </summary>
+    internal WasmValueType ReferenceType => GetValueType(Immediate.Kind);
 
     /// <summary>
     /// 分岐候補に続けて既定ラベルを並べた不変のラベル列
@@ -49,7 +67,8 @@ internal readonly struct DecodedInstruction
     /// <summary>
     /// 型注釈付きselectの不変の型列
     /// </summary>
-    internal ImmutableArray<WasmValueKind> SelectTypes { get; }
+    internal ImmutableArray<WasmValueType> SelectTypes =>
+        _typeImmediate is WasmValueType[] types ? ImmutableCollectionsMarshal.AsImmutableArray(types) : [];
 
     /// <summary>
     /// shuffleの選択値を保持する不変のbyte列
@@ -75,7 +94,7 @@ internal readonly struct DecodedInstruction
     /// <param name="index">添字の即値 他の命令では0</param>
     /// <param name="blockType">制御の型指定 他の命令ではdefault</param>
     /// <param name="labels">候補と既定ラベル 他の命令では非defaultの空配列</param>
-    /// <param name="selectTypes">selectの型列 他の命令では非defaultの空配列</param>
+    /// <param name="typeImmediate">種類だけで復元できない値型、またはselectが所有する型配列</param>
     /// <param name="memoryArgument">メモリ命令の即値 他の命令ではdefault</param>
     /// <param name="secondaryIndex">2番目の添字 他の命令では0</param>
     /// <param name="shuffleLanes">shuffleの選択値 他の命令では非defaultの空配列</param>
@@ -87,13 +106,14 @@ internal readonly struct DecodedInstruction
         uint index = 0,
         BlockType blockType = default,
         ImmutableArray<uint> labels = default,
-        ImmutableArray<WasmValueKind> selectTypes = default,
+        object? typeImmediate = null,
         MemoryArgument memoryArgument = default,
         uint secondaryIndex = 0,
         ImmutableArray<byte> shuffleLanes = default,
         byte laneIndex = 0
     )
     {
+        _typeImmediate = typeImmediate;
         Opcode = opcode;
         ByteOffset = byteOffset;
         Immediate = immediate;
@@ -101,11 +121,22 @@ internal readonly struct DecodedInstruction
         SecondaryIndex = secondaryIndex;
         _memoryAlignment = memoryArgument.Alignment;
         _memoryOffset = memoryArgument.Offset;
-        BlockType = blockType;
+        _blockTypeKind = blockType.Kind;
+        _blockTypeIndex = blockType.TypeIndex;
+        _blockValueKind = blockType.ValueType.Kind;
         Labels = labels.IsDefault ? [] : labels;
-        SelectTypes = selectTypes.IsDefault ? [] : selectTypes;
         ShuffleLanes = shuffleLanes.IsDefault ? [] : shuffleLanes;
         LaneIndex = laneIndex;
+    }
+
+    private WasmValueType GetValueType(WasmValueKind kind)
+    {
+        return _typeImmediate is WasmValueType type ? type : kind;
+    }
+
+    private static WasmValueType? GetExtendedType(WasmValueType type)
+    {
+        return type == type.Kind ? null : type;
     }
 
     /// <summary>
@@ -128,7 +159,16 @@ internal readonly struct DecodedInstruction
     /// <returns>定数以外の即値を既定値に統一した命令</returns>
     internal static DecodedInstruction WithImmediate(OpcodeKey opcode, WasmValue immediate, long byteOffset)
     {
-        return new(opcode, byteOffset, immediate: immediate);
+        return new DecodedInstruction(opcode, byteOffset, immediate: immediate);
+    }
+
+    /// <summary>
+    /// ref.nullの静的な参照型と実行時に積むnullを保持する
+    /// </summary>
+    internal static DecodedInstruction WithNullReference(OpcodeKey opcode, WasmValueType type, long byteOffset)
+    {
+        var value = type.Kind == WasmValueKind.FuncRef ? WasmValue.FromFuncRef(null) : WasmValue.FromExternRef(null);
+        return new DecodedInstruction(opcode, byteOffset, immediate: value, typeImmediate: GetExtendedType(type));
     }
 
     /// <summary>
@@ -215,7 +255,12 @@ internal readonly struct DecodedInstruction
     /// <returns>型指定以外の即値を既定値に統一した命令</returns>
     internal static DecodedInstruction WithBlockType(OpcodeKey opcode, BlockType blockType, long byteOffset)
     {
-        return new(opcode, byteOffset, blockType: blockType);
+        return new DecodedInstruction(
+            opcode,
+            byteOffset,
+            blockType: blockType,
+            typeImmediate: GetExtendedType(blockType.ValueType)
+        );
     }
 
     /// <summary>
@@ -245,10 +290,10 @@ internal readonly struct DecodedInstruction
     /// <returns>不変の型列を所有する命令</returns>
     internal static DecodedInstruction WithSelectTypes(
         OpcodeKey opcode,
-        ReadOnlySpan<WasmValueKind> selectTypes,
+        ReadOnlySpan<WasmValueType> selectTypes,
         long byteOffset
     )
     {
-        return new(opcode, byteOffset, selectTypes: ImmutableArray.Create(selectTypes));
+        return new DecodedInstruction(opcode, byteOffset, typeImmediate: selectTypes.ToArray());
     }
 }

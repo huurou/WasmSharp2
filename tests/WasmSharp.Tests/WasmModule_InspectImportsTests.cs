@@ -3,8 +3,113 @@ using WasmSharp.Tests.Fixtures;
 
 namespace WasmSharp.Tests;
 
-internal class WasmModule_InspectImportsTests
+internal partial class WasmModule_InspectImportsTests
 {
+    [Test]
+    public async Task Core2で同形の別々の型宣言を関数importが使う_宣言ごとに異なる型オブジェクトを返す()
+    {
+        // Arrange
+        var bytes = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Types(([0x7F], [0x7E]), ([0x7F], [0x7E])),
+            HostLinkingModuleBinary.Imports(("env", "first", 0, [0]), ("env", "second", 0, [1]))
+        );
+
+        // Act
+        var imports = WasmModule.InspectImports(bytes, WasmSpecVersion.Core2).Imports;
+        var first = ((WasmImportInfo.Function)imports[0]).Type;
+        var second = ((WasmImportInfo.Function)imports[1]).Type;
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(first.IsEquivalentTo(second)).IsTrue();
+            await Assert.That(ReferenceEquals(first, second)).IsFalse();
+        }
+    }
+
+    [Test]
+    public async Task 同じ未解決番号を持つ二つの関数型のうち後者を参照する_importが使う型宣言の位置を報告する()
+    {
+        // Arrange
+        var bytes = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Section(
+                1,
+                [
+                    4,
+                    .. Convert.FromHexString("6000016307"), // 0と1が同じ未解決番号を別の位置で参照する。
+                    .. Convert.FromHexString("6000016307"),
+                    .. Convert.FromHexString("6000016400"), // 2と3がそれぞれ0と1を参照する。
+                    .. Convert.FromHexString("6000016401"),
+                ]
+            ),
+            HostLinkingModuleBinary.Imports(("env", "callback", 0, [3]))
+        );
+
+        // Act & Assert
+        var exception = await Assert
+            .That(() => WasmModule.InspectImports(bytes, WasmSpecVersion.Core3))
+            .ThrowsExactly<WasmImportInspectionException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.Reason).IsEqualTo(WasmImportInspectionReason.UnresolvedType);
+            await Assert
+                .That(exception.Location)
+                .IsEqualTo(new WasmFailureLocation(WasmProcessingStage.Decode, 20, null, 1));
+        }
+    }
+
+    [Test]
+    [Arguments((byte)0)]
+    [Arguments((byte)1)]
+    [Arguments((byte)3)]
+    public async Task 要求する参照型に存在しない関数型番号がある_未解決の要求型として報告する(byte kind)
+    {
+        // Arrange
+        var descriptor = kind switch
+        {
+            0 => new byte[] { 0 },
+            1 => [0x63, 2, 0, 1],
+            _ => [0x64, 2, 0],
+        };
+        var bytes = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Section(1, Convert.FromHexString("016000016302")),
+            HostLinkingModuleBinary.Imports(("env", "item", kind, descriptor))
+        );
+
+        // Act & Assert
+        var exception = await Assert
+            .That(() => WasmModule.InspectImports(bytes, WasmSpecVersion.Core3))
+            .ThrowsExactly<WasmImportInspectionException>();
+        await Assert.That(exception!.Reason).IsEqualTo(WasmImportInspectionReason.UnresolvedType);
+    }
+
+    [Test]
+    public async Task 型番号を使う関数のimportを調査する_要求する引数と結果の参照型を取得できる()
+    {
+        // Arrange
+        var bytes = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Section(1, Convert.FromHexString("026000017F60016400016300")),
+            HostLinkingModuleBinary.Imports(("env", "apply", 0, [1]))
+        );
+
+        // Act
+        var inspection = WasmModule.InspectImports(bytes, WasmSpecVersion.Core3);
+
+        // Assert
+        var function = (WasmImportInfo.Function)inspection.Imports.Single();
+        var signature = new WasmFunctionType([], [WasmValueKind.I32]);
+        using (Assert.Multiple())
+        {
+            await Assert
+                .That(function.Type.ParameterTypes.Single())
+                .IsEqualTo(WasmValueType.FunctionReference(signature, false));
+            await Assert
+                .That(function.Type.ResultTypes.Single())
+                .IsEqualTo(WasmValueType.FunctionReference(signature, true));
+            await Assert.That(function.Type.Parameters.Single()).IsEqualTo(WasmValueKind.FuncRef);
+        }
+    }
+
     [Test]
     [Arguments(false, false)]
     [Arguments(true, false)]

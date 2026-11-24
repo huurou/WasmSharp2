@@ -142,46 +142,50 @@ internal static class ImportInspector
 
                 case 1:
                     types = ModuleBinaryFormat.ReadTypes(ref section);
+                    reader.Types = types;
                     break;
 
                 case 2:
                     foreach (var import in ModuleBinaryFormat.ReadImports(ref section))
                     {
-                        imports.Add(
-                            import switch
-                            {
-                                FunctionImport function when function.TypeIndex < (uint)types.Count =>
-                                    new WasmImportInfo.Function(
-                                        function.ModuleName,
-                                        function.Name,
-                                        types[(int)function.TypeIndex]
-                                    ),
-                                FunctionImport function => throw new WasmImportInspectionException(
-                                    "importの関数型添字を解決できません。",
-                                    WasmImportInspectionReason.UnresolvedType,
-                                    null,
-                                    section.Location(function.ByteOffset),
-                                    FailureRanges(ranges, function.ByteOffset, reader.InputEnd),
-                                    null
+                        WasmImportInfo info = import switch
+                        {
+                            FunctionImport function when function.TypeIndex < (uint)types.Count =>
+                                new WasmImportInfo.Function(
+                                    function.ModuleName,
+                                    function.Name,
+                                    types[(int)function.TypeIndex]
                                 ),
-                                GlobalImport global => new WasmImportInfo.Global(
-                                    global.ModuleName,
-                                    global.Name,
-                                    global.Type
-                                ),
-                                MemoryImport memory => new WasmImportInfo.Memory(
-                                    memory.Definition.Type,
-                                    memory.ModuleName,
-                                    memory.Name
-                                ),
-                                TableImport table => new WasmImportInfo.Table(
-                                    table.Definition.Type,
-                                    table.ModuleName,
-                                    table.Name
-                                ),
-                                _ => throw new InvalidOperationException(),
-                            }
-                        );
+                            FunctionImport function => throw UnresolvedType(
+                                section.Location(function.ByteOffset),
+                                ranges,
+                                reader.InputEnd
+                            ),
+                            GlobalImport global => new WasmImportInfo.Global(global.ModuleName, global.Name, global.Type),
+                            MemoryImport memory => new WasmImportInfo.Memory(
+                                memory.Definition.Type,
+                                memory.ModuleName,
+                                memory.Name
+                            ),
+                            TableImport table => new WasmImportInfo.Table(
+                                table.Definition.Type,
+                                table.ModuleName,
+                                table.Name
+                            ),
+                            _ => throw new InvalidOperationException(),
+                        };
+                        var missing = info switch
+                        {
+                            WasmImportInfo.Function function => function.Type.Unresolved,
+                            WasmImportInfo.Global global => global.Type.ValueType.Unresolved,
+                            WasmImportInfo.Table table => table.Type.ElementValueType.Unresolved,
+                            _ => null,
+                        };
+                        if (missing is not null)
+                        {
+                            throw UnresolvedType(missing.Location, ranges, reader.InputEnd);
+                        }
+                        imports.Add(info);
                     }
                     break;
 
@@ -195,6 +199,22 @@ internal static class ImportInspector
             new WasmUnverifiedRange(WasmProcessingStage.Validate, 0, reader.InputEnd, "入力全体の検証が未実施です。")
         );
         return new WasmImportInspection(imports.ToImmutable(), ranges.ToImmutable());
+    }
+
+    private static WasmImportInspectionException UnresolvedType(
+        WasmFailureLocation location,
+        ImmutableArray<WasmUnverifiedRange>.Builder ranges,
+        long inputLength
+    )
+    {
+        return new WasmImportInspectionException(
+            "importの関数型添字を解決できません。",
+            WasmImportInspectionReason.UnresolvedType,
+            null,
+            location,
+            FailureRanges(ranges, location.ByteOffset!.Value, inputLength),
+            null
+        );
     }
 
     /// <summary>

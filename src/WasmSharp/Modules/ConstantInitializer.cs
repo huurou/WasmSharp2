@@ -13,16 +13,16 @@ internal static class ConstantInitializer
     /// 定数式が許可された命令で期待する型の値を1個生成することを検証する
     /// </summary>
     /// <param name="expression">終端のendを含むデコード済みの定数式</param>
-    /// <param name="expectedKind">式が生成する値に要求する型</param>
+    /// <param name="expectedType">式が生成する値に要求する型</param>
     /// <param name="visibleGlobals">この式から参照できる、global添字順の型</param>
-    /// <param name="functionCount">importと定義を合わせた関数の個数</param>
+    /// <param name="functionTypes">importを先頭にした関数添字順の型</param>
     /// <param name="sectionId">診断位置に保持するセクションID</param>
     /// <param name="specVersion">定数式に適用する仕様の版</param>
     internal static void Validate(
         ImmutableArray<DecodedInstruction> expression,
-        WasmValueKind expectedKind,
+        WasmValueType expectedType,
         ReadOnlySpan<WasmGlobalType> visibleGlobals,
-        uint functionCount,
+        ReadOnlySpan<WasmFunctionType> functionTypes,
         byte sectionId,
         WasmSpecVersion specVersion
     )
@@ -36,14 +36,14 @@ internal static class ConstantInitializer
         var operands =
             expression.Length <= 32 ? stackalloc WasmValueKind[expression.Length] : new WasmValueKind[expression.Length];
         var count = 0;
+        // 数値演算の入力は種類だけで判定できる。各命令が1個積むため、結果が1個なら最後の命令がその型を決める。
+        var resultType = default(WasmValueType);
         var instructionSet = InstructionSet.ForVersion(specVersion);
         for (var index = 0; index < expression.Length - 1; index++)
         {
             var instruction = expression[index];
-            if (
-                instructionSet.TryGetValue(instruction.Opcode, out var descriptor)
-                && descriptor.NumericSignature is { } signature
-            )
+            var descriptor = instructionSet[instruction.Opcode];
+            if (descriptor.NumericSignature is { } signature)
             {
                 for (var input = signature.InputTypes.Length - 1; input >= 0; input--)
                 {
@@ -56,12 +56,20 @@ internal static class ConstantInitializer
                         );
                     }
                 }
-                operands[count++] = signature.ResultType;
+                resultType = signature.ResultType;
             }
             else
             {
-                operands[count++] = ValidateResultInstruction(instruction, visibleGlobals, functionCount, sectionId);
+                resultType = ValidateResultInstruction(
+                    instruction,
+                    descriptor,
+                    visibleGlobals,
+                    functionTypes,
+                    sectionId,
+                    specVersion
+                );
             }
+            operands[count++] = resultType.Kind;
         }
 
         var endLocation = new WasmFailureLocation(WasmProcessingStage.Validate, expression[^1].ByteOffset, null, sectionId);
@@ -69,7 +77,7 @@ internal static class ConstantInitializer
         {
             throw ValidationDiagnostics.ValidationFailure("type mismatch", "定数式の結果が1個ではありません。", endLocation);
         }
-        if (operands[0] != expectedKind)
+        if (!expectedType.Accepts(resultType))
         {
             throw ValidationDiagnostics.ValidationFailure(
                 "type mismatch",
@@ -196,24 +204,28 @@ internal static class ConstantInitializer
     /// 定数性の検査後に参照の適格性を確認し、命令の結果型を返す
     /// </summary>
     /// <param name="instruction">定数性を確認した初期化命令</param>
+    /// <param name="descriptor">対象の仕様版における命令の記述子</param>
     /// <param name="visibleGlobals">この式から参照できるglobalの型</param>
-    /// <param name="functionCount">importと定義を合わせた関数の個数</param>
+    /// <param name="functionTypes">importを先頭にした関数添字順の型</param>
     /// <param name="sectionId">診断位置に保持するセクションID</param>
+    /// <param name="specVersion">定数式に適用する仕様の版</param>
     /// <returns>命令が生成する値の型</returns>
-    private static WasmValueKind ValidateResultInstruction(
+    private static WasmValueType ValidateResultInstruction(
         DecodedInstruction instruction,
+        InstructionDescriptor descriptor,
         ReadOnlySpan<WasmGlobalType> visibleGlobals,
-        uint functionCount,
-        byte sectionId
+        ReadOnlySpan<WasmFunctionType> functionTypes,
+        byte sectionId,
+        WasmSpecVersion specVersion
     )
     {
-        if (instruction.Opcode == new OpcodeKey(0, 0x23))
+        if (descriptor.Validation == ValidationRule.GlobalGet)
         {
-            return visibleGlobals[(int)instruction.Index].ValueKind;
+            return visibleGlobals[(int)instruction.Index].ValueType;
         }
-        if (instruction.Opcode == new OpcodeKey(0, 0xD2))
+        if (descriptor.Validation == ValidationRule.RefFunc)
         {
-            if (instruction.Index >= functionCount)
+            if (instruction.Index >= (uint)functionTypes.Length)
             {
                 var location = new WasmFailureLocation(
                     WasmProcessingStage.Validate,
@@ -228,10 +240,13 @@ internal static class ConstantInitializer
                     location
                 );
             }
-            // module内の定数式のref.func自体が宣言集合に含まれるため、ここでは添字の存在だけを確認する。
-            return WasmValueKind.FuncRef;
+            // 定数式のref.func自体が関数の宣言に数えられる。
+            return functionTypes[(int)instruction.Index].GetRefFuncResultType(specVersion);
         }
-        // ref.nullの型はDecodeで検査済みなので、他の定数と同じく即値の型が結果になる。
+        if (descriptor.StackEffect == StackEffectKind.PushReference)
+        {
+            return instruction.ReferenceType.Validate();
+        }
         return instruction.Immediate.Kind;
     }
 }
