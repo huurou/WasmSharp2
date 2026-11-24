@@ -1,6 +1,42 @@
+using System.Reflection;
+using WasmSharp.Exceptions;
 using WasmSharp.Tests.Fixtures;
 
 namespace WasmSharp.Tests;
+
+internal class WasmValueType_UnresolvedTests
+{
+    [Test]
+    public async Task 自身と参照先に異なる未解決の型番号がある_自身の型番号と位置を返す()
+    {
+        // Arrange
+        var direct = new WasmValueType.UnresolvedReference(
+            7,
+            new WasmFailureLocation(WasmProcessingStage.Decode, 14, null, 1)
+        );
+        var nested = WasmValueType.UnresolvedFunctionReference(
+            9,
+            true,
+            new WasmFailureLocation(WasmProcessingStage.Decode, 21, null, 1)
+        );
+        var functionType = WasmFunctionType.Create([nested], []);
+        // 通常の生成メソッドは両方を同時に設定しないため、優先順位を調べるこのケースだけ非公開コンストラクターを使う。
+        var value = (WasmValueType)
+            Activator.CreateInstance(
+                typeof(WasmValueType),
+                BindingFlags.Instance | BindingFlags.NonPublic,
+                binder: null,
+                args: [WasmValueKind.FuncRef, true, functionType, false, direct],
+                culture: null
+            )!;
+
+        // Act
+        var unresolved = value.Unresolved;
+
+        // Assert
+        await Assert.That(unresolved).IsEqualTo(direct);
+    }
+}
 
 internal class WasmValueType_ReferenceTests
 {

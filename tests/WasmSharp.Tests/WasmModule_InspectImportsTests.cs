@@ -6,6 +6,28 @@ namespace WasmSharp.Tests;
 internal partial class WasmModule_InspectImportsTests
 {
     [Test]
+    public async Task Core2で同形の別々の型宣言を関数importが使う_宣言ごとに異なる型オブジェクトを返す()
+    {
+        // Arrange
+        var bytes = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Types(([0x7F], [0x7E]), ([0x7F], [0x7E])),
+            HostLinkingModuleBinary.Imports(("env", "first", 0, [0]), ("env", "second", 0, [1]))
+        );
+
+        // Act
+        var imports = WasmModule.InspectImports(bytes, WasmSpecVersion.Core2).Imports;
+        var first = ((WasmImportInfo.Function)imports[0]).Type;
+        var second = ((WasmImportInfo.Function)imports[1]).Type;
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(first.IsEquivalentTo(second)).IsTrue();
+            await Assert.That(ReferenceEquals(first, second)).IsFalse();
+        }
+    }
+
+    [Test]
     public async Task 同じ未解決番号を持つ二つの関数型のうち後者を参照する_importが使う型宣言の位置を報告する()
     {
         // Arrange
