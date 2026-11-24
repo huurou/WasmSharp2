@@ -64,6 +64,7 @@ internal partial class WasmModule_ValidateTests
         using (Assert.Multiple())
         {
             await Assert.That(exception!.Message).StartsWith("unknown type 7");
+            await Assert.That(exception.Message).Contains("参照先の関数型が存在しません");
             await Assert
                 .That(exception.Location)
                 .IsEqualTo(new WasmFailureLocation(WasmProcessingStage.Validate, typeOffset, null, sectionId));
@@ -118,6 +119,7 @@ internal partial class WasmModule_ValidateTests
         using (Assert.Multiple())
         {
             await Assert.That(exception!.Message).StartsWith("type mismatch");
+            await Assert.That(exception.Message).Contains("暗黙の初期値null");
             await Assert.That(exception.Location?.SectionId).IsEqualTo((byte)4);
         }
     }

@@ -47,8 +47,8 @@ public sealed class WasmFunctionType
     {
         ParameterTypes = parameters;
         ResultTypes = results;
-        Parameters = [.. parameters.Select(x => x.Kind)];
-        Results = [.. results.Select(x => x.Kind)];
+        Parameters = ImmutableArray.CreateRange(parameters, static x => x.Kind);
+        Results = ImmutableArray.CreateRange(results, static x => x.Kind);
 
         var hash = new HashCode();
         hash.Add(parameters.Length);
@@ -82,6 +82,17 @@ public sealed class WasmFunctionType
     }
 
     /// <summary>
+    /// デコーダーが読み終えた不変の型列を引数と結果に持つ関数型を構築する
+    /// </summary>
+    internal static WasmFunctionType FromDecodedTypes(
+        ImmutableArray<WasmValueType> parameters,
+        ImmutableArray<WasmValueType> results
+    )
+    {
+        return new WasmFunctionType(parameters, results);
+    }
+
+    /// <summary>
     /// この関数型を持つ関数を指すref.func命令の結果型を、指定した仕様版の規則で返す
     /// </summary>
     internal WasmValueType GetRefFuncResultType(WasmSpecVersion specVersion)
@@ -99,31 +110,38 @@ public sealed class WasmFunctionType
         {
             return true;
         }
-        (WasmFunctionType Left, WasmFunctionType Right)? firstPending = null;
+        if (StructuralHashCode != other.StructuralHashCode)
+        {
+            return false;
+        }
+        return HasSameStructure(other);
+    }
+
+    /// <summary>
+    /// 引数と結果の値型を参照先までたどって照合する
+    /// </summary>
+    internal bool HasSameStructure(WasmFunctionType other)
+    {
+        (WasmFunctionType Left, WasmFunctionType Right)? firstPending = (this, other);
         Stack<(WasmFunctionType Left, WasmFunctionType Right)>? additionalPending = null;
         HashSet<(WasmFunctionType Left, WasmFunctionType Right)>? visited = null;
-        var left = this;
-        var right = other;
-        while (true)
+        while (firstPending is { } current)
         {
+            firstPending = null;
+            var (left, right) = current;
             if (
-                left.StructuralHashCode != right.StructuralHashCode
-                || !CompareValues(left.ParameterTypes, right.ParameterTypes)
+                !CompareValues(left.ParameterTypes, right.ParameterTypes)
                 || !CompareValues(left.ResultTypes, right.ResultTypes)
             )
             {
                 return false;
             }
-            if (firstPending is { } next)
+            if (firstPending is null && additionalPending is { Count: > 0 })
             {
-                firstPending = null;
+                firstPending = additionalPending.Pop();
             }
-            else if (additionalPending is null || !additionalPending.TryPop(out next))
-            {
-                return true;
-            }
-            (left, right) = next;
         }
+        return true;
 
         bool CompareValues(ImmutableArray<WasmValueType> first, ImmutableArray<WasmValueType> second)
         {
@@ -153,8 +171,11 @@ public sealed class WasmFunctionType
                     else
                     {
                         // 異なる参照先に分岐したときだけ、保留中の組と照合済みの組をコレクションで管理する。
-                        visited ??= [firstPair, pair];
-                        additionalPending ??= new Stack<(WasmFunctionType, WasmFunctionType)>();
+                        if (additionalPending is null)
+                        {
+                            additionalPending = new Stack<(WasmFunctionType, WasmFunctionType)>();
+                            visited = [firstPair, pair];
+                        }
                         additionalPending.Push(pair);
                     }
                 }

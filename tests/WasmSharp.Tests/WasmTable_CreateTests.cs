@@ -21,6 +21,7 @@ internal class WasmTable_CreateTests
         using (Assert.Multiple())
         {
             await Assert.That(omitted!.ParamName).IsEqualTo("type");
+            await Assert.That(omitted.Message).Contains("要素型に適合する初期値");
             await Assert.That(explicitNull!.ParamName).IsEqualTo("initialValue");
             await Assert.That(wrongSignature!.ParamName).IsEqualTo("initialValue");
         }

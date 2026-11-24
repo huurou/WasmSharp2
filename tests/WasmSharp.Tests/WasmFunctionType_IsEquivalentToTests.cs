@@ -3,6 +3,17 @@ namespace WasmSharp.Tests;
 internal class WasmFunctionType_IsEquivalentToTests
 {
     [Test]
+    public async Task 比較対象がnullである_比較対象の引数名を含む例外を返す()
+    {
+        // Arrange
+        var type = new WasmFunctionType([], []);
+
+        // Act & Assert
+        var exception = await Assert.That(() => type.IsEquivalentTo(null!)).ThrowsExactly<ArgumentNullException>();
+        await Assert.That(exception!.ParamName).IsEqualTo("other");
+    }
+
+    [Test]
     [Arguments(1)]
     [Arguments(2)]
     [Arguments(3)]

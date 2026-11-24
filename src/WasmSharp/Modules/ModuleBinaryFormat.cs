@@ -1,4 +1,4 @@
-using System.Runtime.InteropServices;
+using System.Collections.Immutable;
 using WasmSharp.Exceptions;
 using WasmSharp.Modules.Definitions;
 using WasmSharp.Modules.Imports;
@@ -10,21 +10,10 @@ namespace WasmSharp.Modules;
 /// </summary>
 internal static class ModuleBinaryFormat
 {
-    // 型セクションでは先行する参照先をすでに共有しているため、子の関数型は参照だけで照合できる。
-    private static readonly IEqualityComparer<WasmValueType> __resolvedValueTypeComparer =
-        EqualityComparer<WasmValueType>.Create(
-            static (x, y) => ReferenceEquals(x.FunctionType, y.FunctionType) && x.HasSameForm(y)
-        );
+    // 解決済みの関数型だけを登録する。同型の先行宣言は共有済みなので、子の照合は参照一致で終了する。
     private static readonly IEqualityComparer<WasmFunctionType> __resolvedFunctionTypeComparer =
         EqualityComparer<WasmFunctionType>.Create(
-            static (x, y) =>
-                ReferenceEquals(x, y)
-                || (
-                    x is not null
-                    && y is not null
-                    && x.ParameterTypes.AsSpan().SequenceEqual(y.ParameterTypes.AsSpan(), __resolvedValueTypeComparer)
-                    && x.ResultTypes.AsSpan().SequenceEqual(y.ResultTypes.AsSpan(), __resolvedValueTypeComparer)
-                ),
+            static (x, y) => x!.HasSameStructure(y!),
             static x => x.StructuralHashCode
         );
 
@@ -288,7 +277,7 @@ internal static class ModuleBinaryFormat
 
             var parameters = ReadValueTypes(ref reader);
             var results = ReadValueTypes(ref reader);
-            var type = WasmFunctionType.Create(CollectionsMarshal.AsSpan(parameters), CollectionsMarshal.AsSpan(results));
+            var type = WasmFunctionType.FromDecodedTypes(parameters, results);
             // 未解決の参照には宣言ごとの入力位置があり、その参照を含む型も共有しない。
             if (resolvedTypes is not null && type.Unresolved is null)
             {
@@ -315,16 +304,23 @@ internal static class ModuleBinaryFormat
     /// <exception cref="WasmDecodeException">件数、値型が不正な場合</exception>
     /// <exception cref="ModuleReadBoundaryException">限定された範囲内で構文を読み終えられない場合</exception>
     /// <exception cref="WasmImplementationLimitException">値型の件数がコレクションの保持上限を超える場合</exception>
-    private static List<WasmValueType> ReadValueTypes(ref ModuleBinaryReader reader)
+    private static ImmutableArray<WasmValueType> ReadValueTypes(ref ModuleBinaryReader reader)
     {
         var count = ReadCount(ref reader);
-        List<WasmValueType> types = [];
-        for (uint index = 0; index < count; index++)
+        if (count == 0)
         {
-            types.Add(ReadValueType(ref reader));
+            return [];
         }
 
-        return types;
+        // 短い型列はそのまま関数型に渡し、大きな宣言では読み取った要素に合わせて容量を増やす。
+        const int InitialCapacityLimit = 4;
+        var types = ImmutableArray.CreateBuilder<WasmValueType>((int)Math.Min(count, InitialCapacityLimit));
+        do
+        {
+            types.Add(ReadValueType(ref reader));
+        } while (types.Count < count);
+
+        return types.DrainToImmutable();
     }
 
     /// <summary>

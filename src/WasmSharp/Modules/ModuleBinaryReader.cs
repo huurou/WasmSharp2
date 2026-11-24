@@ -215,29 +215,20 @@ internal ref struct ModuleBinaryReader
     internal ModuleBinaryReader ReadRange(uint length, uint? functionIndex = null)
     {
         var start = Position;
+        ReadOnlySpan<byte> bytes;
         if (_mode == ModuleReadMode.Diagnostic)
         {
             // 子は物理終端まで参照し、親は宣言長と物理残量の小さい方だけ進める。
-            var bytes = _bytes[_position..];
+            bytes = _bytes[_position..];
             _position += (int)Math.Min((long)length, Remaining);
-            return new ModuleBinaryReader(
-                bytes,
-                SpecVersion,
-                start,
-                InputEnd,
-                start + length,
-                SectionId,
-                functionIndex ?? FunctionIndex,
-                _mode,
-                _maxCollectionLength
-            )
-            {
-                Types = Types,
-            };
+        }
+        else
+        {
+            bytes = ReadBytes(length);
         }
 
         return new ModuleBinaryReader(
-            ReadBytes(length),
+            bytes,
             SpecVersion,
             start,
             InputEnd,

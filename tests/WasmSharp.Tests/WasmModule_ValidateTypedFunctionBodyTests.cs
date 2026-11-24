@@ -194,8 +194,26 @@ internal partial class WasmModule_ValidateTests
         using (Assert.Multiple())
         {
             await Assert.That(exception!.Message).StartsWith("uninitialized local");
+            await Assert.That(exception.Message).Contains("初期化していないlocal");
             await Assert.That(exception.Location?.Stage).IsEqualTo(WasmProcessingStage.Validate);
         }
+    }
+
+    [Test]
+    public async Task 個数0の追加localが存在しない型番号を使う_追加されるlocalだけを検証する()
+    {
+        // Arrange
+        var module = ReferenceControlModule.Create(
+            [1, 0x60, 0, 1, 0x7F],
+            [0x20, 0], // local.get 0
+            locals: [2, 1, 0x7F, 0, 0x63, 1] // i32を1個、(ref null 1)を0個宣言する
+        );
+
+        // Act
+        var validated = module.Validate();
+
+        // Assert
+        await Assert.That(validated).IsSameReferenceAs(module);
     }
 
     [Test]

@@ -3,7 +3,7 @@ using WasmSharp.Tests.Fixtures;
 
 namespace WasmSharp.Tests;
 
-internal class WasmModule_InspectImportsTests
+internal partial class WasmModule_InspectImportsTests
 {
     [Test]
     public async Task 同じ未解決番号を持つ二つの関数型のうち後者を参照する_importが使う型宣言の位置を報告する()

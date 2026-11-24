@@ -55,28 +55,37 @@ internal partial class WasmModule_ValidateTests
     }
 
     [Test]
-    [Arguments("4100D41A", "type mismatch")] // i32をref.as_non_nullに渡す
-    [Arguments("4100D5001A", "type mismatch")] // i32をbr_on_nullに渡す
-    [Arguments("027FD06FD5001A41000B1A", "type mismatch")] // br_on_nullに分岐値のi32が足りない
-    [Arguments("D06FD600", "type mismatch")] // 空のラベル
-    [Arguments("027FD06FD60041000B1A", "type mismatch")] // ラベルの末尾がi32
-    [Arguments("026470D06FD600000B1A", "type mismatch")] // externrefを関数参照のラベルに渡す
-    [Arguments("D06FD5011A", "unknown label 1")]
-    [Arguments("D06FD601", "unknown label 1")]
+    [Arguments("4100D41A", 2, "type mismatch")] // i32をref.as_non_nullに渡す
+    [Arguments("4100D5001A", 2, "type mismatch")] // i32をbr_on_nullに渡す
+    [Arguments("027FD06FD5001A0B1A", 4, "type mismatch")] // br_on_nullに分岐値のi32が足りない
+    [Arguments("0201D06FD600D06F0B1A1A", 4, "type mismatch")] // br_on_non_nullに参照の前のi32が足りない
+    [Arguments("D06FD600", 2, "type mismatch: 分岐先の最後の値には参照型")] // 空のラベル
+    [Arguments("027FD06FD60041000B1A", 4, "type mismatch: 分岐先の最後の値には参照型")] // ラベルの末尾がi32
+    [Arguments("026470D06FD600000B1A", 5, "type mismatch")] // externrefを関数参照のラベルに渡す
+    [Arguments("D06FD5011A", 2, "unknown label 1")]
+    [Arguments("D06FD601", 2, "unknown label 1")]
     public async Task 参照を検査する命令の入力かラベルが不正である_検証時に原因を報告する(
         string instructions,
+        int offsetInInstructions,
         string diagnostic
     )
     {
         // Arrange
-        var module = ReferenceControlModule.Create([1, 0x60, 0, 0], Convert.FromHexString(instructions));
+        // 関数は値を返さない。型1のblockはi32、externrefの順に分岐値を受け取る。
+        var bytes = Convert.FromHexString(instructions);
+        var module = ReferenceControlModule.Create([2, 0x60, 0, 0, 0x60, 0, 2, 0x7F, 0x6F], bytes);
+        var instructionsStart = module.InputLength - 1 - bytes.Length;
 
         // Act & Assert
         var exception = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
         using (Assert.Multiple())
         {
             await Assert.That(exception!.Message).StartsWith(diagnostic);
-            await Assert.That(exception.Location?.FunctionIndex).IsEqualTo(0u);
+            await Assert
+                .That(exception.Location)
+                .IsEqualTo(
+                    new WasmFailureLocation(WasmProcessingStage.Validate, instructionsStart + offsetInInstructions, 0, 10)
+                );
         }
     }
 

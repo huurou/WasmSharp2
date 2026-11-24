@@ -33,3 +33,23 @@ internal class WasmTableType_ConstructorTests
         }
     }
 }
+
+internal class WasmTableType_ToStringTests
+{
+    [Test]
+    public async Task 参照型を指定した64ビットテーブルを表示する_宣言した型と要素数の上下限が分かる()
+    {
+        // Arrange
+        var type = new WasmTableType(WasmValueType.Reference(WasmValueKind.FuncRef, false), WasmValueKind.I64, 2, 9);
+
+        // Act
+        var text = type.ToString();
+
+        // Assert
+        await Assert
+            .That(text)
+            .IsEqualTo(
+                "WasmTableType { MinimumElements = 2, MaximumElements = 9, ElementType = (ref func), AddressType = I64 }"
+            );
+    }
+}
