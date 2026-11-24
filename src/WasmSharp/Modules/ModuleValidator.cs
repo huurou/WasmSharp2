@@ -170,7 +170,6 @@ internal static class ModuleValidator
                     module,
                     definitionIndex,
                     importedFunctionCount + (uint)definitionIndex,
-                    references.FunctionTypes,
                     globalTypes,
                     references
                 )

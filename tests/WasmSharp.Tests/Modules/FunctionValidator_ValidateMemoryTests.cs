@@ -22,14 +22,7 @@ internal partial class FunctionValidator_ValidateTests
         var decoded = module.Functions[0].Instructions;
 
         // Act
-        var code = FunctionValidator.Validate(
-            module,
-            0,
-            0,
-            [module.Types[0]],
-            [],
-            ReferenceValidationContext.Create(module, 0)
-        );
+        var code = FunctionValidator.Validate(module, 0, 0, [], ReferenceValidationContext.Create(module, 0));
 
         // Assert
         using (Assert.Multiple())

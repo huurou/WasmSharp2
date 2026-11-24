@@ -257,7 +257,7 @@ internal static class ModuleInstantiator
     {
         return import switch
         {
-            FunctionImport function => DescribeFunction(module.Types[(int)function.TypeIndex]),
+            FunctionImport function => module.Types[(int)function.TypeIndex].DescribeLinkSignature(),
             GlobalImport global => global.Type.ToString(),
             MemoryImport memory => DescribeMemory(memory.Definition.Type),
             TableImport table => DescribeTable(table.Definition.Type),
@@ -274,7 +274,7 @@ internal static class ModuleInstantiator
     {
         return value switch
         {
-            FunctionExternalValue function => DescribeFunction(function.Value.Type),
+            FunctionExternalValue function => function.Value.Type.DescribeLinkSignature(),
             GlobalExternalValue global => global.Value.Type.ToString(),
             MemoryExternalValue memory => DescribeMemory(memory.Value.Type with { MinimumPages = memory.Value.PageCount }),
             TableExternalValue table => DescribeTable(table.Value.Type with { MinimumElements = table.Value.Count }),
@@ -298,16 +298,6 @@ internal static class ModuleInstantiator
     private static string DescribeTable(WasmTableType type)
     {
         return type.Has32BitLimits ? $"{type.ElementValueType} {type.Get32BitLimits()}" : type.ToString();
-    }
-
-    /// <summary>
-    /// 関数の引数型と結果型を診断用の文字列へ変換する
-    /// </summary>
-    /// <param name="type">表示する関数型</param>
-    /// <returns>引数と結果をそれぞれ宣言順に列挙した文字列</returns>
-    private static string DescribeFunction(WasmFunctionType type)
-    {
-        return $"[{string.Join(", ", type.ParameterTypes)}] -> [{string.Join(", ", type.ResultTypes)}]";
     }
 
     /// <summary>

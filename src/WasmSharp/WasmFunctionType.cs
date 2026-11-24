@@ -82,6 +82,14 @@ public sealed class WasmFunctionType
     }
 
     /// <summary>
+    /// この関数型を持つ関数を指すref.func命令の結果型を、指定した仕様版の規則で返す
+    /// </summary>
+    internal WasmValueType GetRefFuncResultType(WasmSpecVersion specVersion)
+    {
+        return specVersion == WasmSpecVersion.Core3 ? WasmValueType.FunctionReference(this, false) : WasmValueKind.FuncRef;
+    }
+
+    /// <summary>
     /// モジュールの型番号に依存せず、参照先を含めた関数型の同値性を判定する
     /// </summary>
     public bool IsEquivalentTo(WasmFunctionType other)
@@ -184,19 +192,32 @@ public sealed class WasmFunctionType
         return Describe(ref remaining);
     }
 
-    private string Describe(ref int remaining)
+    /// <summary>
+    /// リンク診断に表示する引数型と結果型を返す
+    /// </summary>
+    internal string DescribeLinkSignature()
     {
-        return $"(func (param {DescribeValues(ParameterTypes, ref remaining)}) (result {DescribeValues(ResultTypes, ref remaining)}))";
+        // Core 2.0の平坦な型列はすべて表示し、型付き関数参照を展開する場合は引数と結果で上限を共有する。
+        var remaining =
+            ParameterTypes.Any(x => x.FunctionType is not null) || ResultTypes.Any(x => x.FunctionType is not null)
+                ? MaximumDisplayedValueTypes
+                : int.MaxValue;
+        return $"[{DescribeValues(ParameterTypes, ", ", ref remaining)}] -> [{DescribeValues(ResultTypes, ", ", ref remaining)}]";
     }
 
-    private static string DescribeValues(ImmutableArray<WasmValueType> types, ref int remaining)
+    private string Describe(ref int remaining)
+    {
+        return $"(func (param {DescribeValues(ParameterTypes, " ", ref remaining)}) (result {DescribeValues(ResultTypes, " ", ref remaining)}))";
+    }
+
+    private static string DescribeValues(ImmutableArray<WasmValueType> types, string separator, ref int remaining)
     {
         var text = new StringBuilder();
         foreach (var type in types)
         {
             if (text.Length != 0)
             {
-                text.Append(' ');
+                text.Append(separator);
             }
             // 入れ子と同じ型の再参照を通じて共有する上限で、診断の長さと再帰の深さを抑える。
             if (remaining == 0)

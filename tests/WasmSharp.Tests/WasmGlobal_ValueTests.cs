@@ -136,9 +136,14 @@ internal class WasmGlobal_ValueTests
         var global = new WasmGlobal(globalType, WasmValue.FromFuncRef(accepted));
 
         // Act & Assert
-        await Assert.That(() => new WasmGlobal(globalType, WasmValue.FromFuncRef(null))).ThrowsExactly<ArgumentException>();
-        await Assert.That(() => global.Value = WasmValue.FromFuncRef(null)).ThrowsExactly<ArgumentException>();
-        await Assert.That(() => global.Value = WasmValue.FromFuncRef(incompatible)).ThrowsExactly<ArgumentException>();
-        await Assert.That(global.Value.AsFuncRef()).IsSameReferenceAs(accepted);
+        using (Assert.Multiple())
+        {
+            await Assert
+                .That(() => new WasmGlobal(globalType, WasmValue.FromFuncRef(null)))
+                .ThrowsExactly<ArgumentException>();
+            await Assert.That(() => global.Value = WasmValue.FromFuncRef(null)).ThrowsExactly<ArgumentException>();
+            await Assert.That(() => global.Value = WasmValue.FromFuncRef(incompatible)).ThrowsExactly<ArgumentException>();
+            await Assert.That(global.Value.AsFuncRef()).IsSameReferenceAs(accepted);
+        }
     }
 }

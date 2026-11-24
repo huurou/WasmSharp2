@@ -23,21 +23,14 @@ internal partial class FunctionValidator_ValidateTests
             ),
             WasmSpecVersion.Core2
         );
-        WasmFunctionType[] functionTypes = [module.Types[0], module.Types[1]];
+        var references = ReferenceValidationContext.Create(module, 1);
         WasmGlobalType[] globalTypes = [new(WasmValueKind.I32, true), module.Globals[0].Type];
-        var originalFunctionTypes = functionTypes.ToArray();
+        var originalFunctionTypes = references.FunctionTypes.ToArray();
         var originalGlobalTypes = globalTypes.ToArray();
         var definition = module.Functions[0];
 
         // Act
-        var code = FunctionValidator.Validate(
-            module,
-            0,
-            1,
-            functionTypes,
-            globalTypes,
-            ReferenceValidationContext.Create(module, 1)
-        );
+        var code = FunctionValidator.Validate(module, 0, 1, globalTypes, references);
 
         // Assert
         using (Assert.Multiple())
@@ -55,9 +48,9 @@ internal partial class FunctionValidator_ValidateTests
                 await Assert.That(code.Instructions[index].Index).IsEqualTo(decoded.Index);
                 await Assert.That(code.Instructions[index].ByteOffset).IsEqualTo(decoded.ByteOffset);
             }
-            for (var index = 0; index < functionTypes.Length; index++)
+            for (var index = 0; index < references.FunctionTypes.Length; index++)
             {
-                await Assert.That(functionTypes[index]).IsSameReferenceAs(originalFunctionTypes[index]);
+                await Assert.That(references.FunctionTypes[index]).IsSameReferenceAs(originalFunctionTypes[index]);
             }
             for (var index = 0; index < globalTypes.Length; index++)
             {
@@ -84,22 +77,13 @@ internal partial class FunctionValidator_ValidateTests
             ),
             WasmSpecVersion.Core2
         );
-        WasmFunctionType[] functionTypes = [module.Types[0], module.Types[0]];
+        var references = ReferenceValidationContext.Create(module, 1);
         WasmGlobalType[] globalTypes = [];
         var definition = module.Functions[0];
 
         // Act & Assert
         var exception = await Assert
-            .That(() =>
-                FunctionValidator.Validate(
-                    module,
-                    0,
-                    1,
-                    functionTypes,
-                    globalTypes,
-                    ReferenceValidationContext.Create(module, 1)
-                )
-            )
+            .That(() => FunctionValidator.Validate(module, 0, 1, globalTypes, references))
             .ThrowsExactly<WasmValidateException>();
         using (Assert.Multiple())
         {
@@ -107,8 +91,8 @@ internal partial class FunctionValidator_ValidateTests
             await Assert
                 .That(exception.Location)
                 .IsEqualTo(new(WasmProcessingStage.Validate, definition.Instructions[^1].ByteOffset, 1, 10));
-            await Assert.That(functionTypes[0]).IsSameReferenceAs(module.Types[0]);
-            await Assert.That(functionTypes[1]).IsSameReferenceAs(module.Types[0]);
+            await Assert.That(references.FunctionTypes[0]).IsSameReferenceAs(module.Types[0]);
+            await Assert.That(references.FunctionTypes[1]).IsSameReferenceAs(module.Types[0]);
             await Assert.That(globalTypes.Length).IsEqualTo(0);
             await Assert.That(module.Functions[0]).IsSameReferenceAs(definition);
             await Assert.That(module.FunctionCodes.IsEmpty).IsTrue();

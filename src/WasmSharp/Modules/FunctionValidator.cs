@@ -18,7 +18,6 @@ internal static class FunctionValidator
     /// <param name="module">importと定義関数の型参照、global初期化式、リソース宣言、要素・データセグメントの検証を終えたmodule</param>
     /// <param name="definitionIndex">importを含まない定義順の関数index</param>
     /// <param name="moduleFunctionIndex">型の参照と診断に使用する、importを含むmodule全体の関数index</param>
-    /// <param name="functionTypes">importを先頭とする関数index順の解決済みの型</param>
     /// <param name="globalTypes">importを先頭とするglobal index順の解決済みの型</param>
     /// <param name="references">当該module検証で共有する参照情報</param>
     /// <returns>実行命令と確定済み分岐情報、追加localsとoperandの最大要素数を持つ、この定義関数の実行コード</returns>
@@ -28,13 +27,12 @@ internal static class FunctionValidator
         WasmModule module,
         int definitionIndex,
         uint moduleFunctionIndex,
-        WasmFunctionType[] functionTypes,
         WasmGlobalType[] globalTypes,
         ReferenceValidationContext references
     )
     {
         var function = module.Functions[definitionIndex];
-        var type = functionTypes[(int)moduleFunctionIndex];
+        var type = references.FunctionTypes[(int)moduleFunctionIndex];
         var instructions = ImmutableArray.CreateBuilder<Instruction>(function.Instructions.Length);
         var branchTargets = ImmutableArray.CreateBuilder<BranchTarget>();
         List<OperandType> stack = [];
@@ -143,11 +141,7 @@ internal static class FunctionValidator
                             new(WasmProcessingStage.Validate, instruction.ByteOffset, moduleFunctionIndex, 10)
                         );
                     }
-                    stack.Add(
-                        module.SpecVersion == WasmSpecVersion.Core3
-                            ? WasmValueType.FunctionReference(functionTypes[(int)instruction.Index], false)
-                            : WasmValueKind.FuncRef
-                    );
+                    stack.Add(references.FunctionTypes[(int)instruction.Index].GetRefFuncResultType(module.SpecVersion));
                     break;
 
                 case ValidationRule.RefIsNull:
@@ -335,7 +329,7 @@ internal static class FunctionValidator
                     break;
 
                 case ValidationRule.Call:
-                    if (instruction.Index >= (uint)functionTypes.Length)
+                    if (instruction.Index >= references.FunctionCount)
                     {
                         throw CreateUnknownIndex(
                             "function",
@@ -344,7 +338,7 @@ internal static class FunctionValidator
                             instruction.ByteOffset
                         );
                     }
-                    ApplyCallType(functionTypes[(int)instruction.Index], instruction.ByteOffset);
+                    ApplyCallType(references.FunctionTypes[(int)instruction.Index], instruction.ByteOffset);
                     break;
 
                 case ValidationRule.CallIndirect:

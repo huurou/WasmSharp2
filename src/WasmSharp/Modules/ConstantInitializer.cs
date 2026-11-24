@@ -42,10 +42,8 @@ internal static class ConstantInitializer
         for (var index = 0; index < expression.Length - 1; index++)
         {
             var instruction = expression[index];
-            if (
-                instructionSet.TryGetValue(instruction.Opcode, out var descriptor)
-                && descriptor.NumericSignature is { } signature
-            )
+            var descriptor = instructionSet[instruction.Opcode];
+            if (descriptor.NumericSignature is { } signature)
             {
                 for (var input = signature.InputTypes.Length - 1; input >= 0; input--)
                 {
@@ -62,7 +60,14 @@ internal static class ConstantInitializer
             }
             else
             {
-                resultType = ValidateResultInstruction(instruction, visibleGlobals, functionTypes, sectionId, specVersion);
+                resultType = ValidateResultInstruction(
+                    instruction,
+                    descriptor,
+                    visibleGlobals,
+                    functionTypes,
+                    sectionId,
+                    specVersion
+                );
             }
             operands[count++] = resultType.Kind;
         }
@@ -199,6 +204,7 @@ internal static class ConstantInitializer
     /// 定数性の検査後に参照の適格性を確認し、命令の結果型を返す
     /// </summary>
     /// <param name="instruction">定数性を確認した初期化命令</param>
+    /// <param name="descriptor">対象の仕様版における命令の記述子</param>
     /// <param name="visibleGlobals">この式から参照できるglobalの型</param>
     /// <param name="functionTypes">importを先頭にした関数添字順の型</param>
     /// <param name="sectionId">診断位置に保持するセクションID</param>
@@ -206,17 +212,18 @@ internal static class ConstantInitializer
     /// <returns>命令が生成する値の型</returns>
     private static WasmValueType ValidateResultInstruction(
         DecodedInstruction instruction,
+        InstructionDescriptor descriptor,
         ReadOnlySpan<WasmGlobalType> visibleGlobals,
         ReadOnlySpan<WasmFunctionType> functionTypes,
         byte sectionId,
         WasmSpecVersion specVersion
     )
     {
-        if (instruction.Opcode == new OpcodeKey(0, 0x23))
+        if (descriptor.Validation == ValidationRule.GlobalGet)
         {
             return visibleGlobals[(int)instruction.Index].ValueType;
         }
-        if (instruction.Opcode == new OpcodeKey(0, 0xD2))
+        if (descriptor.Validation == ValidationRule.RefFunc)
         {
             if (instruction.Index >= (uint)functionTypes.Length)
             {
@@ -234,11 +241,9 @@ internal static class ConstantInitializer
                 );
             }
             // 定数式のref.func自体が関数の宣言に数えられる。
-            return specVersion == WasmSpecVersion.Core3
-                ? WasmValueType.FunctionReference(functionTypes[(int)instruction.Index], false)
-                : WasmValueKind.FuncRef;
+            return functionTypes[(int)instruction.Index].GetRefFuncResultType(specVersion);
         }
-        if (instruction.Opcode == new OpcodeKey(0, 0xD0))
+        if (descriptor.StackEffect == StackEffectKind.PushReference)
         {
             return instruction.ReferenceType.Validate();
         }

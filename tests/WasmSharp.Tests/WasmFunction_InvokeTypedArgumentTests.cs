@@ -18,14 +18,17 @@ internal partial class WasmFunction_InvokeTests
         // Act
         var result = factory.Invoke(context, []);
 
-        // Assert
-        await Assert.That(result.Values[0].AsFuncRef()).IsSameReferenceAs(target);
+        using (Assert.Multiple())
+        {
+            // Assert
+            await Assert.That(result.Values[0].AsFuncRef()).IsSameReferenceAs(target);
 
-        // Act & Assert
-        supplied = WasmValue.FromFuncRef(factory);
-        await Assert.That(() => factory.Invoke(context, [])).ThrowsExactly<InvalidOperationException>();
-        supplied = WasmValue.FromFuncRef(null);
-        await Assert.That(() => factory.Invoke(context, [])).ThrowsExactly<InvalidOperationException>();
+            // Act & Assert
+            supplied = WasmValue.FromFuncRef(factory);
+            await Assert.That(() => factory.Invoke(context, [])).ThrowsExactly<InvalidOperationException>();
+            supplied = WasmValue.FromFuncRef(null);
+            await Assert.That(() => factory.Invoke(context, [])).ThrowsExactly<InvalidOperationException>();
+        }
     }
 
     [Test]
@@ -47,13 +50,18 @@ internal partial class WasmFunction_InvokeTests
         // Act
         var result = identity.Invoke(context, [WasmValue.FromFuncRef(answer)]);
 
-        // Assert
-        await Assert.That(result.Values[0].AsFuncRef()).IsSameReferenceAs(answer);
+        using (Assert.Multiple())
+        {
+            // Assert
+            await Assert.That(result.Values[0].AsFuncRef()).IsSameReferenceAs(answer);
 
-        // Act & Assert
-        await Assert.That(() => identity.Invoke(context, [WasmValue.FromFuncRef(null)])).ThrowsExactly<ArgumentException>();
-        await Assert
-            .That(() => identity.Invoke(context, [WasmValue.FromFuncRef(identity)]))
-            .ThrowsExactly<ArgumentException>();
+            // Act & Assert
+            await Assert
+                .That(() => identity.Invoke(context, [WasmValue.FromFuncRef(null)]))
+                .ThrowsExactly<ArgumentException>();
+            await Assert
+                .That(() => identity.Invoke(context, [WasmValue.FromFuncRef(identity)]))
+                .ThrowsExactly<ArgumentException>();
+        }
     }
 }
