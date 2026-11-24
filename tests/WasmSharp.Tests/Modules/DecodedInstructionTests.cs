@@ -57,6 +57,29 @@ internal class DecodedInstruction_WithImmediateTests
     }
 }
 
+internal class DecodedInstruction_WithNullReferenceTests
+{
+    [Test]
+    public async Task 具体的な関数型のnull_参照先の型と実行時のnullを保持する()
+    {
+        // Arrange
+        var signature = new WasmFunctionType([], [WasmValueKind.I64]);
+        var type = WasmValueType.FunctionReference(signature, isNullable: true);
+
+        // Act
+        var instruction = DecodedInstruction.WithNullReference(new OpcodeKey(0, 0xD0), type, 40);
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(instruction.ReferenceType).IsEqualTo(type);
+            await Assert.That(instruction.Immediate.AsFuncRef()).IsNull();
+            await Assert.That(instruction.BlockType.Kind).IsEqualTo(BlockTypeKind.Empty);
+            await Assert.That(instruction.SelectTypes).IsEmpty();
+        }
+    }
+}
+
 internal class DecodedInstruction_WithIndexTests
 {
     [Test]
@@ -84,6 +107,25 @@ internal class DecodedInstruction_WithIndexTests
 
 internal class DecodedInstruction_WithBlockTypeTests
 {
+    [Test]
+    public async Task 具体的な非nullの結果型_ブロックの結果として保持する()
+    {
+        // Arrange
+        var signature = new WasmFunctionType([], []);
+        var type = WasmValueType.FunctionReference(signature, isNullable: false);
+
+        // Act
+        var instruction = DecodedInstruction.WithBlockType(new OpcodeKey(0, 0x02), BlockType.FromValue(type), 50);
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(instruction.BlockType.Kind).IsEqualTo(BlockTypeKind.Value);
+            await Assert.That(instruction.BlockType.ValueType).IsEqualTo(type);
+            await Assert.That(instruction.SelectTypes).IsEmpty();
+        }
+    }
+
     [Test]
     public async Task 型添字の指定_タグ付き型を保持し他の即値を残さない()
     {

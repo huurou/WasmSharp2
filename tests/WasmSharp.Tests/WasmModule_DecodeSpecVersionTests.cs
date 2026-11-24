@@ -6,6 +6,43 @@ namespace WasmSharp.Tests;
 internal partial class WasmModule_DecodeTests
 {
     [Test]
+    public async Task 同じ関数型を複数の型番号で宣言する_番号順を保ち参照先とnull可否まで一致した型を共有する()
+    {
+        // Arrange
+        var bytes = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Section(
+                1,
+                [
+                    6,
+                    .. Convert.FromHexString("6000017F"), // 0: () -> i32
+                    .. Convert.FromHexString("6000017E"), // 1: () -> i64
+                    .. Convert.FromHexString("6000017F"), // 2: () -> i32
+                    .. Convert.FromHexString("60016400016301"), // 3: (ref 0) -> (ref null 1)
+                    .. Convert.FromHexString("60016402016301"), // 4: (ref 2) -> (ref null 1)
+                    .. Convert.FromHexString("60016302016301"), // 5: (ref null 2) -> (ref null 1)
+                ]
+            )
+        );
+
+        // Act
+        var types = WasmModule.Decode(bytes, WasmSpecVersion.Core3).Types;
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(types.Length).IsEqualTo(6);
+            await Assert.That(types[0].Results.Single()).IsEqualTo(WasmValueKind.I32);
+            await Assert.That(types[1].Results.Single()).IsEqualTo(WasmValueKind.I64);
+            await Assert.That(types[2]).IsSameReferenceAs(types[0]);
+            await Assert.That(types[3].ParameterTypes.Single().FunctionType).IsSameReferenceAs(types[0]);
+            await Assert.That(types[3].ResultTypes.Single().FunctionType).IsSameReferenceAs(types[1]);
+            await Assert.That(types[4]).IsSameReferenceAs(types[3]);
+            await Assert.That(types[5].ParameterTypes.Single().IsNullable).IsTrue();
+            await Assert.That(types[5]).IsNotSameReferenceAs(types[3]);
+        }
+    }
+
+    [Test]
     [Arguments(WasmSpecVersion.Core2, "700400", "integer too large", 12L)]
     [Arguments(WasmSpecVersion.Core2, "70008080808010", "integer too large", 17L)]
     [Arguments(WasmSpecVersion.Core2, "7000808080808000", "integer representation too long", 18L)]

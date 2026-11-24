@@ -95,24 +95,30 @@ public sealed class WasmFunctionType
     public bool IsEquivalentTo(WasmFunctionType other)
     {
         ArgumentNullException.ThrowIfNull(other);
-        Stack<(WasmFunctionType Left, WasmFunctionType Right)>? pending = null;
+        if (ReferenceEquals(this, other))
+        {
+            return true;
+        }
+        (WasmFunctionType Left, WasmFunctionType Right)? firstPending = null;
+        Stack<(WasmFunctionType Left, WasmFunctionType Right)>? additionalPending = null;
         HashSet<(WasmFunctionType Left, WasmFunctionType Right)>? visited = null;
         var left = this;
         var right = other;
         while (true)
         {
             if (
-                !ReferenceEquals(left, right)
-                && (
-                    left.StructuralHashCode != right.StructuralHashCode
-                    || !CompareValues(left.ParameterTypes, right.ParameterTypes)
-                    || !CompareValues(left.ResultTypes, right.ResultTypes)
-                )
+                left.StructuralHashCode != right.StructuralHashCode
+                || !CompareValues(left.ParameterTypes, right.ParameterTypes)
+                || !CompareValues(left.ResultTypes, right.ResultTypes)
             )
             {
                 return false;
             }
-            if (pending is null || !pending.TryPop(out var next))
+            if (firstPending is { } next)
+            {
+                firstPending = null;
+            }
+            else if (additionalPending is null || !additionalPending.TryPop(out next))
             {
                 return true;
             }
@@ -133,15 +139,23 @@ public sealed class WasmFunctionType
                 {
                     return false;
                 }
-                // 同じ型を繰り返し参照する宣言でも、一組の関数型を一度だけ比較する。
                 if (a.FunctionType is { } nested && !ReferenceEquals(nested, b.FunctionType))
                 {
                     var pair = (nested, b.FunctionType!);
-                    visited ??= [];
-                    if (visited.Add(pair))
+                    if (firstPending == pair || (visited is not null && !visited.Add(pair)))
                     {
-                        pending ??= new Stack<(WasmFunctionType, WasmFunctionType)>();
-                        pending.Push(pair);
+                        continue;
+                    }
+                    if (firstPending is not { } firstPair)
+                    {
+                        firstPending = pair;
+                    }
+                    else
+                    {
+                        // 異なる参照先に分岐したときだけ、保留中の組と照合済みの組をコレクションで管理する。
+                        visited ??= [firstPair, pair];
+                        additionalPending ??= new Stack<(WasmFunctionType, WasmFunctionType)>();
+                        additionalPending.Push(pair);
                     }
                 }
             }

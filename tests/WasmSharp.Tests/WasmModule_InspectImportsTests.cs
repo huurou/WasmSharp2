@@ -6,6 +6,37 @@ namespace WasmSharp.Tests;
 internal class WasmModule_InspectImportsTests
 {
     [Test]
+    public async Task 同じ未解決番号を持つ二つの関数型のうち後者を参照する_importが使う型宣言の位置を報告する()
+    {
+        // Arrange
+        var bytes = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Section(
+                1,
+                [
+                    4,
+                    .. Convert.FromHexString("6000016307"), // 0と1が同じ未解決番号を別の位置で参照する。
+                    .. Convert.FromHexString("6000016307"),
+                    .. Convert.FromHexString("6000016400"), // 2と3がそれぞれ0と1を参照する。
+                    .. Convert.FromHexString("6000016401"),
+                ]
+            ),
+            HostLinkingModuleBinary.Imports(("env", "callback", 0, [3]))
+        );
+
+        // Act & Assert
+        var exception = await Assert
+            .That(() => WasmModule.InspectImports(bytes, WasmSpecVersion.Core3))
+            .ThrowsExactly<WasmImportInspectionException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.Reason).IsEqualTo(WasmImportInspectionReason.UnresolvedType);
+            await Assert
+                .That(exception.Location)
+                .IsEqualTo(new WasmFailureLocation(WasmProcessingStage.Decode, 20, null, 1));
+        }
+    }
+
+    [Test]
     [Arguments((byte)0)]
     [Arguments((byte)1)]
     [Arguments((byte)3)]

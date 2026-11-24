@@ -10,6 +10,24 @@ namespace WasmSharp.Modules;
 /// </summary>
 internal static class ModuleBinaryFormat
 {
+    // 型セクションでは先行する参照先をすでに共有しているため、子の関数型は参照だけで照合できる。
+    private static readonly IEqualityComparer<WasmValueType> __resolvedValueTypeComparer =
+        EqualityComparer<WasmValueType>.Create(
+            static (x, y) => ReferenceEquals(x.FunctionType, y.FunctionType) && x.HasSameForm(y)
+        );
+    private static readonly IEqualityComparer<WasmFunctionType> __resolvedFunctionTypeComparer =
+        EqualityComparer<WasmFunctionType>.Create(
+            static (x, y) =>
+                ReferenceEquals(x, y)
+                || (
+                    x is not null
+                    && y is not null
+                    && x.ParameterTypes.AsSpan().SequenceEqual(y.ParameterTypes.AsSpan(), __resolvedValueTypeComparer)
+                    && x.ResultTypes.AsSpan().SequenceEqual(y.ResultTypes.AsSpan(), __resolvedValueTypeComparer)
+                ),
+            static x => x.StructuralHashCode
+        );
+
     /// <summary>
     /// import宣言の名前、種類、未検証の要求型と入力位置を取得する
     /// </summary>
@@ -244,6 +262,10 @@ internal static class ModuleBinaryFormat
     {
         var count = ReadCount(ref reader);
         List<WasmFunctionType> types = [];
+        var resolvedTypes =
+            reader.SpecVersion == WasmSpecVersion.Core3
+                ? new HashSet<WasmFunctionType>(__resolvedFunctionTypeComparer)
+                : null;
         reader.Types = types;
         for (uint index = 0; index < count; index++)
         {
@@ -266,7 +288,20 @@ internal static class ModuleBinaryFormat
 
             var parameters = ReadValueTypes(ref reader);
             var results = ReadValueTypes(ref reader);
-            types.Add(WasmFunctionType.Create(CollectionsMarshal.AsSpan(parameters), CollectionsMarshal.AsSpan(results)));
+            var type = WasmFunctionType.Create(CollectionsMarshal.AsSpan(parameters), CollectionsMarshal.AsSpan(results));
+            // 未解決の参照には宣言ごとの入力位置があり、その参照を含む型も共有しない。
+            if (resolvedTypes is not null && type.Unresolved is null)
+            {
+                if (resolvedTypes.TryGetValue(type, out var existing))
+                {
+                    type = existing;
+                }
+                else
+                {
+                    resolvedTypes.Add(type);
+                }
+            }
+            types.Add(type);
         }
 
         return types;
