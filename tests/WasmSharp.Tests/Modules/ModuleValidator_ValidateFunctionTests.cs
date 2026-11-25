@@ -146,7 +146,7 @@ internal partial class ModuleValidator_ValidateTests
         using (Assert.Multiple())
         {
             await Assert.That(codes[0].MaxOperandStack).IsEqualTo(2);
-            await Assert.That(codes[0].Instructions[0].Opcode).IsEqualTo(ExecutionOpcode.Op10);
+            await Assert.That(codes[0].Instructions[0].Opcode).IsEqualTo(WasmSharp.Instructions.ExecutionOpcode.Op10);
             await Assert.That(codes[0].Instructions[0].Index).IsEqualTo(2u);
             await Assert.That(codes[0].Instructions[3].Index).IsEqualTo(0u);
             await Assert.That(codes[0].Instructions[3].ByteOffset).IsEqualTo(module.Functions[0].Instructions[3].ByteOffset);
