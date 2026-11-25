@@ -37,7 +37,7 @@ internal static partial class Interpreter
             );
         }
         var expectedType = function.Instance.Module.Types[(int)instruction.Index];
-        if (!expectedType.IsEquivalentTo(callee.Type))
+        if (!callee.Type.IsSubtypeOf(expectedType))
         {
             return ExecutionResult.Trap(
                 WasmTrapReason.IndirectCallTypeMismatch,
