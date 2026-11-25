@@ -244,11 +244,15 @@ internal static class ModuleBinaryFormat
     /// type sectionの関数型宣言を構文から取得する
     /// </summary>
     /// <param name="reader">type sectionの読み取り状態 宣言の終端まで進める</param>
+    /// <param name="supertypeDeclarations">検証で使用する上位型宣言の格納先</param>
     /// <returns>型index順に並ぶ、引数型と結果型を保持する関数型</returns>
     /// <exception cref="WasmDecodeException">件数、関数型の形式、値型が不正な場合</exception>
     /// <exception cref="ModuleReadBoundaryException">限定された範囲内で構文を読み終えられない場合</exception>
     /// <exception cref="WasmImplementationLimitException">宣言件数がコレクションの保持上限を超える場合</exception>
-    internal static List<WasmFunctionType> ReadTypes(ref ModuleBinaryReader reader)
+    internal static List<WasmFunctionType> ReadTypes(
+        ref ModuleBinaryReader reader,
+        List<FunctionSupertypeDeclaration>? supertypeDeclarations = null
+    )
     {
         var count = ReadCount(ref reader);
         List<WasmFunctionType> types = [];
@@ -281,7 +285,8 @@ internal static class ModuleBinaryFormat
             WasmFunctionType type;
             if (memberCount == 1)
             {
-                type = WasmFunctionType.FromDecodedGroup([ReadFunctionType(ref reader, explicitGroup)], types.Count);
+                var declaration = ReadFunctionType(ref reader, explicitGroup, types.Count, supertypeDeclarations);
+                type = WasmFunctionType.FromDecodedGroup([declaration], types.Count);
             }
             else
             {
@@ -289,7 +294,9 @@ internal static class ModuleBinaryFormat
                 var declarations = new List<FunctionTypeDeclaration>();
                 for (uint member = 0; member < memberCount; member++)
                 {
-                    declarations.Add(ReadFunctionType(ref reader, explicitGroup));
+                    declarations.Add(
+                        ReadFunctionType(ref reader, explicitGroup, types.Count + (int)member, supertypeDeclarations)
+                    );
                 }
                 type = WasmFunctionType.FromDecodedGroup(CollectionsMarshal.AsSpan(declarations), types.Count);
             }
@@ -310,31 +317,70 @@ internal static class ModuleBinaryFormat
         return types;
     }
 
-    private static FunctionTypeDeclaration ReadFunctionType(ref ModuleBinaryReader reader, bool explicitGroup)
+    private static FunctionTypeDeclaration ReadFunctionType(
+        ref ModuleBinaryReader reader,
+        bool explicitGroup,
+        int typeIndex,
+        List<FunctionSupertypeDeclaration>? supertypeDeclarations
+    )
     {
         var offset = reader.Position;
         var form = reader.ReadS7();
-        if (reader.SpecVersion == WasmSpecVersion.Core3)
+        var explicitSubtype = reader.SpecVersion == WasmSpecVersion.Core3 && form is -0x31 or -0x30;
+        var isFinal = !explicitSubtype || form == -0x31;
+        ImmutableArray<WasmValueType> supertypes = [];
+        if (explicitSubtype)
         {
-            if (form is -0x31 or -0x30)
-            {
-                throw reader.Unsupported("explicit subtype", (int)reader.InputEnd, offset);
-            }
-            if (form is -0x21 or -0x22)
-            {
-                throw reader.Unsupported("aggregate type", (int)reader.InputEnd, offset);
-            }
+            supertypes = ReadSupertypes(ref reader, typeIndex, supertypeDeclarations);
+            offset = reader.Position;
+            form = reader.ReadS7();
+        }
+        if (reader.SpecVersion == WasmSpecVersion.Core3 && form is -0x21 or -0x22)
+        {
+            throw reader.Unsupported("aggregate type", (int)reader.InputEnd, offset);
         }
         if (form != -0x20)
         {
             throw reader.Error(
-                explicitGroup
-                    ? "malformed definition type: 再帰グループの型の形式が不正です。"
+                explicitGroup || explicitSubtype
+                    ? "malformed definition type: 関数型の定義が不正です。"
                     : "malformed function type: 関数型の形式が不正です。",
                 offset
             );
         }
-        return new FunctionTypeDeclaration(ReadValueTypes(ref reader), ReadValueTypes(ref reader));
+        return new FunctionTypeDeclaration(ReadValueTypes(ref reader), ReadValueTypes(ref reader), isFinal, supertypes);
+    }
+
+    private static ImmutableArray<WasmValueType> ReadSupertypes(
+        ref ModuleBinaryReader reader,
+        int typeIndex,
+        List<FunctionSupertypeDeclaration>? declarations
+    )
+    {
+        var countOffset = reader.Position;
+        var count = ReadCount(ref reader);
+        if (count == 0)
+        {
+            return [];
+        }
+
+        var offset = reader.Position;
+        var first = reader.ReadU32();
+        declarations?.Add(new FunctionSupertypeDeclaration(typeIndex, first, count == 1 ? offset : countOffset));
+        var firstReference = ResolveFunctionReference(ref reader, first, false, offset);
+        if (count == 1)
+        {
+            return [firstReference];
+        }
+
+        var references = ImmutableArray.CreateBuilder<WasmValueType>();
+        references.Add(firstReference);
+        for (uint index = 1; index < count; index++)
+        {
+            offset = reader.Position;
+            references.Add(ResolveFunctionReference(ref reader, reader.ReadU32(), false, offset));
+        }
+        return references.DrainToImmutable();
     }
 
     /// <summary>
@@ -445,12 +491,22 @@ internal static class ModuleBinaryFormat
         {
             throw reader.Error("integer representation too long: 抽象ヒープ型は1バイトで符号化します。", offset + 1);
         }
+        return ResolveFunctionReference(ref reader, (uint)index, isNullable, offset);
+    }
+
+    private static WasmValueType ResolveFunctionReference(
+        ref ModuleBinaryReader reader,
+        uint index,
+        bool isNullable,
+        long offset
+    )
+    {
         var typeCount = reader.Types?.Count ?? 0;
         if (index < typeCount)
         {
             return WasmValueType.FunctionReference(reader.Types![(int)index], isNullable);
         }
-        return WasmValueType.UnresolvedFunctionReference((uint)index, isNullable, reader.Location(offset));
+        return WasmValueType.UnresolvedFunctionReference(index, isNullable, reader.Location(offset));
     }
 
     private static WasmValueType AbstractHeapType(ref ModuleBinaryReader reader, int code, bool isNullable, long offset)

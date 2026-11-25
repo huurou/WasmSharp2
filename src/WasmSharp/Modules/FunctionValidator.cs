@@ -962,18 +962,7 @@ internal static class FunctionValidator
         /// </summary>
         internal bool CanOmitElse()
         {
-            if (Parameters.Length != Results.Length)
-            {
-                return false;
-            }
-            for (var index = 0; index < Results.Length; index++)
-            {
-                if (!Results[index].Accepts(Parameters[index]))
-                {
-                    return false;
-                }
-            }
-            return true;
+            return WasmValueType.AcceptsAll(Results, Parameters);
         }
     }
 }

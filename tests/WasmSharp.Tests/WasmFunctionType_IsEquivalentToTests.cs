@@ -125,6 +125,32 @@ internal class WasmFunctionType_IsEquivalentToTests
         await Assert.That(equivalent).IsFalse();
     }
 
+    [Test]
+    [Arguments("01600000", 0, "014F00600000", 0, true)] // finalの省略形
+    [Arguments("014E026000005000600000", 0, "014E02600000600000", 0, false)] // 別のメンバーのfinal
+    [Arguments("014E0250006000004F0100600000", 0, "014E0250006000004F00600000", 0, false)] // 別のメンバーの上位型
+    [Arguments("014E03500060000050006000004F0100600000", 0, "014E03500060000050006000004F0101600000", 0, false)] // 上位型のグループ内位置
+    [Arguments("024E02500060000050006000004F0100600000", 2, "0250006000004F0100600000", 1, false)] // グループ外の上位型
+    [Arguments("0250006000004F0100600000", 1, "036000017F50006000004F0101600000", 2, true)] // 型番号だけが違う
+    public async Task 明示的なサブタイプを含む定義を比較する_グループ全体のfinalと上位型で同値性が決まる(
+        string leftSection,
+        byte leftIndex,
+        string rightSection,
+        byte rightIndex,
+        bool expected
+    )
+    {
+        // Arrange
+        var left = InspectFunctionType(leftSection, leftIndex);
+        var right = InspectFunctionType(rightSection, rightIndex);
+
+        // Act
+        var equivalent = left.IsEquivalentTo(right);
+
+        // Assert
+        await Assert.That(equivalent).IsEqualTo(expected);
+    }
+
     private static WasmFunctionType InspectFunctionType(string typeSection, byte index)
     {
         var binary = HostLinkingModuleBinary.Create(

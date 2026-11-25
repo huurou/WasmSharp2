@@ -7,8 +7,11 @@ internal partial class WasmModule_DecodeTests
 {
     [Test]
     [Arguments(WasmSpecVersion.Core2, "014E01600000", "malformed function type", 11L)]
+    [Arguments(WasmSpecVersion.Core2, "014F00600000", "malformed function type", 11L)]
+    [Arguments(WasmSpecVersion.Core2, "015000600000", "malformed function type", 11L)]
+    [Arguments(WasmSpecVersion.Core3, "014F005000600000", "malformed definition type", 13L)]
     [Arguments(WasmSpecVersion.Core3, "014E014E00", "malformed definition type", 13L)]
-    public async Task 仕様上許可されない位置に再帰グループがある_Decodeが該当する型の位置を報告する(
+    public async Task 仕様上許可されない位置に型宣言がある_Decodeが該当する型の位置を報告する(
         WasmSpecVersion version,
         string section,
         string diagnostic,

@@ -7,8 +7,8 @@ internal partial class WasmModule_InspectImportsTests
 {
     [Test]
     [Arguments("4E025F00600000", "aggregate type", 13L)]
-    [Arguments("4F00600000", "explicit subtype", 11L)]
-    [Arguments("5000600000", "explicit subtype", 11L)]
+    [Arguments("4F005F00", "aggregate type", 13L)]
+    [Arguments("50005E7F00", "aggregate type", 13L)]
     [Arguments("5F00", "aggregate type", 11L)]
     [Arguments("5E7F00", "aggregate type", 11L)]
     [Arguments("60016900", "heap type", 13L)] // exn
@@ -102,6 +102,28 @@ internal partial class WasmModule_InspectImportsTests
             await Assert
                 .That(exception.Location)
                 .IsEqualTo(new WasmFailureLocation(WasmProcessingStage.Decode, 20, null, 1));
+        }
+    }
+
+    [Test]
+    public async Task 要求型が上位型を解決できない関数を参照する_上位型の入力位置を報告する()
+    {
+        // Arrange
+        var binary = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Section(1, Convert.FromHexString("025001026000006000016400")),
+            HostLinkingModuleBinary.Imports(("env", "f", 0, [1]))
+        );
+
+        // Act & Assert
+        var exception = await Assert
+            .That(() => WasmModule.InspectImports(binary, WasmSpecVersion.Core3))
+            .ThrowsExactly<WasmImportInspectionException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.Reason).IsEqualTo(WasmImportInspectionReason.UnresolvedType);
+            await Assert
+                .That(exception.Location)
+                .IsEqualTo(new WasmFailureLocation(WasmProcessingStage.Decode, 13, null, 1));
         }
     }
 

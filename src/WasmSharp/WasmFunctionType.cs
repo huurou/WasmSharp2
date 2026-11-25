@@ -12,6 +12,12 @@ public sealed class WasmFunctionType
     private const int MaximumDisplayedValueTypes = 16;
     private readonly WasmFunctionType[]? _group;
     private readonly int _position;
+    private ImmutableArray<WasmValueType> _supertypes = [];
+    private bool _isGroupValid = true;
+
+    private bool IsFinal { get; } = true;
+
+    internal FunctionSupertypeError SupertypeError { get; private set; }
 
     /// <summary>
     /// null可否と参照先の関数型を含む引数型
@@ -52,10 +58,11 @@ public sealed class WasmFunctionType
         CompleteGroup([this]);
     }
 
-    private WasmFunctionType(WasmFunctionType[]? group, int position)
+    private WasmFunctionType(WasmFunctionType[]? group, int position, bool isFinal)
     {
         _group = group;
         _position = position;
+        IsFinal = isFinal;
     }
 
     private void SetSignature(ImmutableArray<WasmValueType> parameters, ImmutableArray<WasmValueType> results)
@@ -71,10 +78,13 @@ public sealed class WasmFunctionType
         var hash = new HashCode();
         hash.Add(members.Length);
         WasmValueType.UnresolvedReference? missing = null;
+        var valid = true;
         foreach (var member in members)
         {
-            member.AddValuesToHash(member.ParameterTypes, ref hash, ref missing);
-            member.AddValuesToHash(member.ResultTypes, ref hash, ref missing);
+            hash.Add(member.IsFinal);
+            member.AddValuesToHash(member._supertypes, ref hash, ref missing, ref valid);
+            member.AddValuesToHash(member.ParameterTypes, ref hash, ref missing, ref valid);
+            member.AddValuesToHash(member.ResultTypes, ref hash, ref missing, ref valid);
         }
         var groupHash = hash.ToHashCode();
         foreach (var member in members)
@@ -82,12 +92,52 @@ public sealed class WasmFunctionType
             member.StructuralHashCode = HashCode.Combine(groupHash, member._position);
             member.Unresolved = missing;
         }
+
+        // すべての投影と上位型を参照できる状態で照合し、グループ全体の結果を最後に反映する。
+        foreach (var member in members)
+        {
+            member.SupertypeError = member.CheckSupertype();
+            valid &= member.SupertypeError == FunctionSupertypeError.None;
+        }
+        if (!valid || missing is not null)
+        {
+            foreach (var member in members)
+            {
+                member._isGroupValid = false;
+            }
+        }
+    }
+
+    private FunctionSupertypeError CheckSupertype()
+    {
+        if (_supertypes.Length > 1)
+        {
+            return FunctionSupertypeError.Multiple;
+        }
+        if (_supertypes is not [{ FunctionType: { } parent }])
+        {
+            return FunctionSupertypeError.None;
+        }
+        if (IsInSameGroup(parent) && parent._position >= _position)
+        {
+            return FunctionSupertypeError.Forward;
+        }
+        if (parent.IsFinal)
+        {
+            return FunctionSupertypeError.Final;
+        }
+        return
+            WasmValueType.AcceptsAll(ParameterTypes, parent.ParameterTypes)
+            && WasmValueType.AcceptsAll(parent.ResultTypes, ResultTypes)
+            ? FunctionSupertypeError.None
+            : FunctionSupertypeError.Signature;
     }
 
     private void AddValuesToHash(
         ImmutableArray<WasmValueType> values,
         ref HashCode hash,
-        ref WasmValueType.UnresolvedReference? missing
+        ref WasmValueType.UnresolvedReference? missing,
+        ref bool valid
     )
     {
         hash.Add(values.Length);
@@ -103,6 +153,7 @@ public sealed class WasmFunctionType
             {
                 hash.Add(value);
                 missing ??= value.Unresolved;
+                valid &= value.FunctionType?._isGroupValid != false;
             }
         }
     }
@@ -135,8 +186,8 @@ public sealed class WasmFunctionType
     {
         if (declarations.Length == 1)
         {
-            var type = new WasmFunctionType(null, 0);
-            type.SetDecodedSignature(declarations[0], firstIndex, [type]);
+            var type = new WasmFunctionType(null, 0, declarations[0].IsFinal);
+            type.SetDecodedDeclaration(declarations[0], firstIndex, [type]);
             CompleteGroup([type]);
             return type;
         }
@@ -145,11 +196,11 @@ public sealed class WasmFunctionType
         var members = new WasmFunctionType[declarations.Length];
         for (var index = 0; index < members.Length; index++)
         {
-            members[index] = new WasmFunctionType(members, index);
+            members[index] = new WasmFunctionType(members, index, declarations[index].IsFinal);
         }
         for (var index = 0; index < members.Length; index++)
         {
-            members[index].SetDecodedSignature(declarations[index], firstIndex, members);
+            members[index].SetDecodedDeclaration(declarations[index], firstIndex, members);
         }
         CompleteGroup(members);
         return members[0];
@@ -167,12 +218,13 @@ public sealed class WasmFunctionType
         }
     }
 
-    private void SetDecodedSignature(
+    private void SetDecodedDeclaration(
         FunctionTypeDeclaration declaration,
         int firstIndex,
         ReadOnlySpan<WasmFunctionType> members
     )
     {
+        _supertypes = ResolveReferences(declaration.Supertypes, firstIndex, members);
         SetSignature(
             ResolveReferences(declaration.Parameters, firstIndex, members),
             ResolveReferences(declaration.Results, firstIndex, members)
@@ -228,6 +280,30 @@ public sealed class WasmFunctionType
     }
 
     /// <summary>
+    /// 指定した関数型と同値か、宣言した上位型を通じてその型に代入できるかを返す
+    /// </summary>
+    internal bool IsSubtypeOf(WasmFunctionType expected)
+    {
+        var current = this;
+        var stepsInGroup = 0;
+        while (!current.IsEquivalentTo(expected))
+        {
+            if (!current._isGroupValid || current._supertypes is not [{ FunctionType: { } supertype }])
+            {
+                return false;
+            }
+            // グループ自身の宣言を検証する間だけ、まだ順序を確認していない上位型も照合に参加する。
+            stepsInGroup = current.IsInSameGroup(supertype) ? stepsInGroup + 1 : 0;
+            if (stepsInGroup >= (current._group?.Length ?? 1))
+            {
+                return false;
+            }
+            current = supertype;
+        }
+        return true;
+    }
+
+    /// <summary>
     /// 投影位置とグループの全宣言を照合し、先行グループへの参照を順にたどる
     /// </summary>
     internal bool HasSameStructure(WasmFunctionType other)
@@ -253,7 +329,9 @@ public sealed class WasmFunctionType
                 var a = left._group?[index] ?? left;
                 var b = right._group?[index] ?? right;
                 if (
-                    !CompareValues(a, b, a.ParameterTypes, b.ParameterTypes)
+                    a.IsFinal != b.IsFinal
+                    || !CompareValues(a, b, a._supertypes, b._supertypes)
+                    || !CompareValues(a, b, a.ParameterTypes, b.ParameterTypes)
                     || !CompareValues(a, b, a.ResultTypes, b.ResultTypes)
                 )
                 {

@@ -166,6 +166,7 @@ internal static class ModuleDecoder
         ModuleBinaryFormat.ReadHeader(ref reader);
 
         List<WasmFunctionType> types = [];
+        List<FunctionSupertypeDeclaration> supertypeDeclarations = [];
         List<ModuleExport> exports = [];
         List<ModuleImport> imports = [];
         List<TableDefinition> tables = [];
@@ -200,7 +201,7 @@ internal static class ModuleDecoder
                     break;
 
                 case 1:
-                    types = ModuleBinaryFormat.ReadTypes(ref section);
+                    types = ModuleBinaryFormat.ReadTypes(ref section, supertypeDeclarations);
                     reader.Types = types;
                     break;
 
@@ -312,7 +313,8 @@ internal static class ModuleDecoder
             specVersion,
             CollectionsMarshal.AsSpan(dataSegments),
             dataCount,
-            CollectionsMarshal.AsSpan(elementSegments)
+            CollectionsMarshal.AsSpan(elementSegments),
+            CollectionsMarshal.AsSpan(supertypeDeclarations)
         );
     }
 
