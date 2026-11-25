@@ -88,7 +88,7 @@ internal static class GeneratorTestSource
                             }
                             namespace WasmSharp.Instructions
                             {
-                                internal sealed class ConstantReferenceOperation;
+                                internal sealed partial class ConstantReferenceOperation;
                             }
                             namespace WasmSharp.Execution
                             {

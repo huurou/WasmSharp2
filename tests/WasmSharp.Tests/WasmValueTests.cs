@@ -609,6 +609,62 @@ internal class WasmValue_FromExternRefTests
     }
 }
 
+internal class WasmValue_FromNullReferenceTests
+{
+    [Test]
+    [Arguments(WasmValueKind.I32)]
+    [Arguments(WasmValueKind.ExnRef)]
+    public async Task 対応する参照型以外を指定する_種類を示す引数例外を返す(WasmValueKind kind)
+    {
+        // Act & Assert
+        var error = await Assert.That(() => WasmValue.FromNullReference(kind)).ThrowsExactly<ArgumentOutOfRangeException>();
+
+        // Assert
+        await Assert.That(error!.ParamName).IsEqualTo("kind");
+    }
+}
+
+internal class WasmValue_AsI31Tests
+{
+    [Test]
+    public async Task GC参照のnullをi31として取得する_符号付きと符号なしの両方で拒否する()
+    {
+        // Arrange
+        var value = WasmValue.FromNullReference(WasmValueKind.I31Ref);
+
+        // Act & Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(value.AsI31Signed).ThrowsExactly<InvalidOperationException>();
+            await Assert.That(value.AsI31Unsigned).ThrowsExactly<InvalidOperationException>();
+        }
+    }
+}
+
+internal class WasmValue_EqualsTests
+{
+    [Test]
+    public async Task 数値とベクトルと外部参照を比較する_ビット列とホスト値の等しさを保つ()
+    {
+        // Arrange
+        var nan = WasmValue.FromF32Bits(0x7FC0_0001);
+        var positiveZero = WasmValue.FromF32Bits(0);
+        var vector = WasmValue.FromV128(0, 1);
+        var host = new string('a', 3);
+        var external = WasmValue.FromExternRef(host);
+
+        // Act & Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(nan.Equals(WasmValue.FromF32Bits(0x7FC0_0002))).IsFalse();
+            await Assert.That(positiveZero.Equals(WasmValue.FromF32Bits(0x8000_0000))).IsFalse();
+            await Assert.That(vector.Equals(WasmValue.FromV128(0, 2))).IsFalse();
+            await Assert.That(external.Equals(WasmValue.FromExternRef(host))).IsTrue();
+            await Assert.That(external.Equals(WasmValue.FromExternRef(new string('a', 3)))).IsTrue();
+        }
+    }
+}
+
 internal class WasmValue_AsHostRefTests
 {
     [Test]

@@ -35,6 +35,37 @@ internal partial class InstructionGenerator_InitializeTests
     }
 
     [Test]
+    public async Task 演算プロパティのnull許容注釈が異なる_明示的にnullを許容する宣言だけを拒否する()
+    {
+        // Arrange
+        var compilation = GeneratorTestSource.CreateCompilation(
+            """
+            namespace WasmSharp.Instructions;
+            internal sealed partial class ConstantReferenceOperation
+            {
+                internal static ConstantReferenceOperation? Nullable => null;
+            #nullable disable annotations
+                internal static ConstantReferenceOperation Oblivious => new ConstantReferenceOperation();
+            #nullable restore annotations
+            }
+            [Instruction(WasmSpecVersion.Core3, 0xFB, 1, "nullable.ref", ImmediateKind.None,
+                StackEffectKind.ConstantReference, ValidationRule.ConstantReference, nameof(ConstantReferenceOperation.Nullable))]
+            [Instruction(WasmSpecVersion.Core3, 0xFB, 2, "oblivious.ref", ImmediateKind.None,
+                StackEffectKind.ConstantReference, ValidationRule.ConstantReference, nameof(ConstantReferenceOperation.Oblivious))]
+            internal static partial class InstructionSet;
+            """
+        );
+        GeneratorDriver driver = CSharpGeneratorDriver.Create(new InstructionGenerator());
+
+        // Act
+        driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out _, out var diagnostics);
+
+        // Assert
+        await GeneratorTestSource.AssertDiagnostic(driver, diagnostics, "WSIG004");
+        await Assert.That(diagnostics[0].GetMessage()).Contains("nullable.ref");
+    }
+
+    [Test]
     public async Task 単項参照演算を命令に割り当てる_定数式の記述子と関数の実行分岐が同じ演算を使う()
     {
         // Arrange

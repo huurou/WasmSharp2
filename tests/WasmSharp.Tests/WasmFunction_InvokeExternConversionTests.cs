@@ -20,11 +20,15 @@ internal partial class WasmFunction_InvokeTests
             new WasmResults([WasmValue.FromExternRef(args[0].AsExternRef())])
         );
 
+        var original = WasmValue.FromI31(signed);
+        var different = WasmValue.FromI31(signed ^ 1);
+
         // Act
-        var external = externalize.Invoke(context, [WasmValue.FromI31(signed)]).Values[0];
+        var external = externalize.Invoke(context, [original]).Values[0];
         var returned = host.Invoke(context, [external]).Values[0];
         var result = internalize.Invoke(context, [returned]).Values[0];
         var externalAgain = externalize.Invoke(context, [result]).Values[0];
+        var values = new HashSet<WasmValue> { original, result, different };
 
         // Assert
         using (Assert.Multiple())
@@ -33,6 +37,13 @@ internal partial class WasmFunction_InvokeTests
             await Assert.That(externalAgain.AsExternRef()).IsSameReferenceAs(returned.AsExternRef());
             await Assert.That(result.AsI31Signed()).IsEqualTo(signed);
             await Assert.That(result.AsI31Unsigned()).IsEqualTo(unsigned);
+            await Assert.That(original.Equals(result)).IsTrue();
+            await Assert.That(result.Equals(original)).IsTrue();
+            await Assert.That(original == result).IsTrue();
+            await Assert.That(result != different).IsTrue();
+            await Assert.That(result.GetHashCode()).IsEqualTo(original.GetHashCode());
+            await Assert.That(result.Equals(WasmValue.FromI32(unsigned))).IsFalse();
+            await Assert.That(values.Count).IsEqualTo(2);
         }
     }
 

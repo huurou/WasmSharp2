@@ -30,8 +30,12 @@ public readonly struct WasmValue
     private readonly object? _reference;
 
     /// <summary>
-    /// 格納されたvalueの種類
+    /// 格納された値の実行時の種類
     /// </summary>
+    /// <remarks>
+    /// 例えばeqrefの宣言に渡したi31の種類は<see cref="WasmValueKind.I31Ref"/>、
+    /// 同じ宣言に渡したGC参照のnullの種類は<see cref="WasmValueKind.AnyRef"/>となる。
+    /// </remarks>
     public WasmValueKind Kind { get; }
 
     /// <summary>
@@ -218,6 +222,9 @@ public readonly struct WasmValue
     /// <summary>
     /// 指定した参照型と同じ階層のnullを構築する
     /// </summary>
+    /// <param name="kind">nullを構築する参照型の種類</param>
+    /// <returns>指定した階層の最上位型が値の種類となる。例えばi31refのnullの種類はanyrefとなる</returns>
+    /// <exception cref="ArgumentOutOfRangeException">kindが対応する参照型でない場合</exception>
     public static WasmValue FromNullReference(WasmValueKind kind)
     {
         if (!kind.IsReference())
@@ -230,6 +237,8 @@ public readonly struct WasmValue
     /// <summary>
     /// 32ビット整数の下位31ビットを保持するi31参照を構築する
     /// </summary>
+    /// <param name="value">下位31ビットを取り出す整数</param>
+    /// <returns>指定したビット列を保持する非nullのi31参照</returns>
     public static WasmValue FromI31(int value)
     {
         return new WasmValue(WasmValueKind.I31Ref, (uint)(value & 0x7FFF_FFFF), 0, null);
@@ -238,6 +247,8 @@ public readonly struct WasmValue
     /// <summary>
     /// i31参照が保持する31ビットを符号拡張して取得する
     /// </summary>
+    /// <returns>保持する31ビットを符号拡張した32ビット整数</returns>
+    /// <exception cref="InvalidOperationException">値が非nullのi31参照でない場合</exception>
     public int AsI31Signed()
     {
         return (AsI31Unsigned() << 1) >> 1;
@@ -246,6 +257,8 @@ public readonly struct WasmValue
     /// <summary>
     /// i31参照が保持する31ビットをゼロ拡張して取得する
     /// </summary>
+    /// <returns>保持する31ビットをゼロ拡張した32ビット整数</returns>
+    /// <exception cref="InvalidOperationException">値が非nullのi31参照でない場合</exception>
     public int AsI31Unsigned()
     {
         EnsureKind(WasmValueKind.I31Ref);
@@ -331,6 +344,36 @@ public readonly struct WasmValue
         EnsureKind(WasmValueKind.ExternRef);
         return _reference;
     }
+
+    /// <inheritdoc/>
+    /// <remarks>
+    /// i31参照は外部参照との変換を経た後も、保持する31ビットで等しさを判定する。
+    /// 外部参照の等しさは、ホストオブジェクトのEqualsに従う。
+    /// </remarks>
+    public override bool Equals(object? obj)
+    {
+        if (Kind == WasmValueKind.I31Ref)
+        {
+            return obj is WasmValue { Kind: WasmValueKind.I31Ref } other && _low64 == other._low64;
+        }
+        return base.Equals(obj);
+    }
+
+    /// <inheritdoc/>
+    public override int GetHashCode()
+    {
+        return Kind == WasmValueKind.I31Ref ? _low64.GetHashCode() : base.GetHashCode();
+    }
+
+    /// <summary>
+    /// <see cref="Equals(object)"/>と同じ基準で2つの値が等しいかを返す
+    /// </summary>
+    public static bool operator ==(WasmValue left, WasmValue right) => left.Equals(right);
+
+    /// <summary>
+    /// <see cref="Equals(object)"/>と同じ基準で2つの値が異なるかを返す
+    /// </summary>
+    public static bool operator !=(WasmValue left, WasmValue right) => !(left == right);
 
     /// <summary>
     /// valueを取得する操作が、保持中の型に対応することを確認する

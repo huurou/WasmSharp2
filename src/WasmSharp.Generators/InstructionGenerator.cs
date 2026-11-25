@@ -263,6 +263,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
             if (
                 property.IsStatic
                 && property.GetMethod is { } getter
+                && property.NullableAnnotation != NullableAnnotation.Annotated
                 && SymbolEqualityComparer.Default.Equals(property.Type, type)
                 && compilation.IsSymbolAccessibleWithin(getter, compilation.Assembly)
             )
@@ -273,7 +274,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
                 _invalidHandler,
                 declaration.Location,
                 declaration.Name,
-                "参照できる static ConstantReferenceOperation プロパティ"
+                "生成コードから参照できる非nullのstatic ConstantReferenceOperationプロパティ"
             );
         }
         var ownerName = declaration.IsConstantBinaryOperation ? IntegerArithmeticName : "Interpreter";

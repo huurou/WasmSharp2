@@ -129,6 +129,48 @@ internal partial class WasmFunction_InvokeTests
     }
 
     [Test]
+    public async Task 任意のGC参照を非nullのi31にキャストする_i31の値を保ちホスト参照とnullでは同じ位置でtrapになる()
+    {
+        // Arrange
+        var context = new WasmExecutionContext();
+        var binary = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Section(1, [1, 0x60, 1, 0x6E, 1, 0x64, 0x6C]), // (param anyref) (result (ref i31))
+            HostLinkingModuleBinary.Functions(0),
+            HostLinkingModuleBinary.Exports(("cast", 0, 0)),
+            HostLinkingModuleBinary.Code(([], [0x20, 0, 0xFB, 0x16, 0x6C, 0x0B]))
+        );
+        var function = WasmModule
+            .Decode(binary, WasmSpecVersion.Core3)
+            .Validate()
+            .Instantiate(context, [])
+            .GetFunction("cast");
+        // モジュールの末尾に3バイトのref.castと1バイトのendが並ぶ。
+        var castLocation = new WasmFailureLocation(WasmProcessingStage.Invoke, binary.Length - 4, 0);
+        var host = WasmValue.FromHostRef(new object());
+        var nil = WasmValue.FromNullReference(WasmValueKind.AnyRef);
+
+        // Act
+        var value = function.Invoke(context, [WasmValue.FromI31(0x4000_0001)]).Values[0];
+
+        // Act & Assert
+        var hostError = await Assert.That(() => function.Invoke(context, [host])).ThrowsExactly<WasmTrapException>();
+        // Act & Assert
+        var nullError = await Assert.That(() => function.Invoke(context, [nil])).ThrowsExactly<WasmTrapException>();
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(value.AsI31Unsigned()).IsEqualTo(0x4000_0001);
+            foreach (var error in new[] { hostError!, nullError! })
+            {
+                await Assert.That(error.Reason).IsEqualTo(WasmTrapReason.CastFailure);
+                await Assert.That(error.Message).StartsWith("cast failure");
+                await Assert.That(error.Location).IsEqualTo(castLocation);
+            }
+        }
+    }
+
+    [Test]
     [Arguments((byte)0x16, false)]
     [Arguments((byte)0x17, true)]
     public async Task 参照のキャスト先に関数型を指定する_署名の一致する関数をそのまま返し不一致ならtrapになる(
