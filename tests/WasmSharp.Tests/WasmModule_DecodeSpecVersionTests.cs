@@ -147,7 +147,7 @@ internal partial class WasmModule_DecodeTests
     }
 
     [Test]
-    [Arguments("D3", "ref.eq")]
+    [Arguments("0A", "throw_ref")]
     [Arguments("FB0F", "array.len")]
     [Arguments("FD8002", "i8x16.relaxed_swizzle")]
     public async Task Core3の関数本体に未対応の割当がある_その命令名を報告する(string opcode, string name)
@@ -167,7 +167,7 @@ internal partial class WasmModule_DecodeTests
     public async Task Core3で未対応命令を含む関数本体の数が宣言と異なる_関数件数の不一致を報告する()
     {
         // Arrange
-        var codeSection = HostLinkingModuleBinary.Code(([], [0xD3, 0x0B]));
+        var codeSection = HostLinkingModuleBinary.Code(([], [0x0A, 0x0B]));
         var bytes = HostLinkingModuleBinary.Create(
             HostLinkingModuleBinary.Types(([], [])),
             HostLinkingModuleBinary.Functions(0, 0),
@@ -197,7 +197,7 @@ internal partial class WasmModule_DecodeTests
         var bytes = HostLinkingModuleBinary.Create(
             HostLinkingModuleBinary.Memories((1, null)),
             HostLinkingModuleBinary.Section(12, [1]),
-            HostLinkingModuleBinary.Section(11, [1, 0, 0xD3, 0x0B, 0])
+            HostLinkingModuleBinary.Section(11, [1, 0, 0x0A, 0x0B, 0])
         );
 
         // Act & Assert
@@ -206,7 +206,7 @@ internal partial class WasmModule_DecodeTests
             .ThrowsExactly<WasmUnsupportedFeatureException>();
         using (Assert.Multiple())
         {
-            await Assert.That(exception!.Feature).IsEqualTo("ref.eq");
+            await Assert.That(exception!.Feature).IsEqualTo("throw_ref");
             await Assert
                 .That(exception.Location)
                 .IsEqualTo(new WasmFailureLocation(WasmProcessingStage.Decode, bytes.Length - 3, null, 11));
@@ -217,7 +217,7 @@ internal partial class WasmModule_DecodeTests
     public async Task Core3のデータセグメントのオフセット式に未対応命令があり件数が異なる_件数の不一致を報告する()
     {
         // Arrange
-        var dataSection = HostLinkingModuleBinary.Section(11, [1, 0, 0xD3, 0x0B, 0]);
+        var dataSection = HostLinkingModuleBinary.Section(11, [1, 0, 0x0A, 0x0B, 0]);
         var bytes = HostLinkingModuleBinary.Create(
             HostLinkingModuleBinary.Memories((1, null)),
             HostLinkingModuleBinary.Section(12, [2]),
@@ -240,8 +240,8 @@ internal partial class WasmModule_DecodeTests
     }
 
     [Test]
-    [Arguments("03030200000A0601010001D30B", 0u, (byte)10, 3)]
-    [Arguments("0C01020B02010001D30B00", null, (byte)11, 4)]
+    [Arguments("03030200000A06010100010A0B", 0u, (byte)10, 3)]
+    [Arguments("0C01020B020100010A0B00", null, (byte)11, 4)]
     public async Task Core3の宣言範囲を越えた後に未対応命令がある_先に検出した境界の診断と位置を報告する(
         string sections,
         uint? functionIndex,
@@ -251,7 +251,7 @@ internal partial class WasmModule_DecodeTests
     {
         // Arrange
         // 関数本体はlocalsの件数の直後、データセクションはフラグの直後で宣言範囲が終わる。
-        // それぞれ範囲外にnopと未対応のref.eqを置き、境界の位置と未対応命令の位置を区別する。
+        // それぞれ範囲外にnopと未対応のthrow_refを置き、境界の位置と未対応命令の位置を区別する。
         var bytes = HostLinkingModuleBinary.Create(Convert.FromHexString(sections));
 
         // Act & Assert

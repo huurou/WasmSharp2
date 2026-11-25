@@ -121,6 +121,16 @@ internal enum ValidationRule
     BranchOnNonNull,
 
     /// <summary>
+    /// キャストが成功したら対象型をラベルに渡し、失敗したら元の型の参照を残す
+    /// </summary>
+    BranchOnCast,
+
+    /// <summary>
+    /// キャストが失敗したら元の型の参照をラベルに渡し、成功したら対象型の参照を残す
+    /// </summary>
+    BranchOnCastFail,
+
+    /// <summary>
     /// i32選択値と全候補の共通ラベル型を検証し、到達不能にする
     /// </summary>
     BranchTable,
@@ -179,6 +189,21 @@ internal enum ValidationRule
     /// 参照型の入力を検証し、null判定の結果型i32を積む
     /// </summary>
     RefIsNull,
+
+    /// <summary>
+    /// 2個のeq参照を取り除き、同一性の判定結果をi32で積む
+    /// </summary>
+    RefEq,
+
+    /// <summary>
+    /// 対象型と同じ参照階層の値を取り除き、型判定の結果をi32で積む
+    /// </summary>
+    RefTest,
+
+    /// <summary>
+    /// 対象型と同じ参照階層の値を取り除き、対象型の参照として積む
+    /// </summary>
+    RefCast,
 
     /// <summary>
     /// i32を取り除き、非nullのi31参照を積む
