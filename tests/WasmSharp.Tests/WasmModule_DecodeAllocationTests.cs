@@ -48,6 +48,33 @@ internal partial class WasmModule_DecodeTests
     }
 
     [Test]
+    public async Task 上位型を1件持つ関数型をデコードする_同じ型を引数に1件持つ場合の割り当てに収まる()
+    {
+        // Arrange
+        // どちらも型0を継承する型1を先に宣言し、上位型を記録するための初回の割り当てをそろえる。
+        byte[] baseTypes = [0x50, 0, 0x60, 0, 0, 0x50, 1, 0, 0x60, 0, 0];
+        var withSupertype = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Section(1, [3, .. baseTypes, 0x4F, 1, 1, 0x60, 0, 0])
+        );
+        var withParameter = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Section(1, [3, .. baseTypes, 0x4F, 0, 0x60, 1, 0x64, 1, 0])
+        );
+        for (var index = 0; index < 4; index++)
+        {
+            MeasureDecodeAllocation(withSupertype);
+            MeasureDecodeAllocation(withParameter);
+        }
+
+        // Act
+        var supertypeAllocation = MeasureDecodeAllocation(withSupertype);
+        var parameterAllocation = MeasureDecodeAllocation(withParameter);
+
+        // Assert
+        // 最後の関数型はどちらも型1への参照を1件保持する。引数側はその値型の種別も配列に保持する。
+        await Assert.That(supertypeAllocation).IsLessThanOrEqualTo(parameterAllocation);
+    }
+
+    [Test]
     public async Task 通常のfuncrefの定数を繰り返しデコードする_同じ長さの数値定数列に比べて命令ごとの割当が増えない()
     {
         // Arrange
