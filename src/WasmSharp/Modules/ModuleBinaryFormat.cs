@@ -371,10 +371,9 @@ internal static class ModuleBinaryFormat
             return [];
         }
 
-        var offset = reader.Position;
-        var first = reader.ReadU32();
-        declarations?.Add(new FunctionSupertypeDeclaration(typeIndex, first, count == 1 ? offset : countOffset));
-        var firstReference = ResolveFunctionReference(ref reader, first, false, offset);
+        var firstOffset = reader.Position;
+        var firstReference = ReadSupertypeReference(ref reader, out var firstIndex);
+        declarations?.Add(new FunctionSupertypeDeclaration(typeIndex, firstIndex, count == 1 ? firstOffset : countOffset));
         if (count == 1)
         {
             return [firstReference];
@@ -384,10 +383,17 @@ internal static class ModuleBinaryFormat
         references.Add(firstReference);
         for (uint index = 1; index < count; index++)
         {
-            offset = reader.Position;
-            references.Add(ResolveFunctionReference(ref reader, reader.ReadU32(), false, offset));
+            references.Add(ReadSupertypeReference(ref reader, out _));
         }
         return references.DrainToImmutable();
+    }
+
+    private static WasmValueType ReadSupertypeReference(ref ModuleBinaryReader reader, out uint typeIndex)
+    {
+        // 上位型には型番号だけが符号化される。内部では、その関数型への非null参照で表す。
+        var offset = reader.Position;
+        typeIndex = reader.ReadU32();
+        return ResolveFunctionReference(ref reader, typeIndex, false, offset);
     }
 
     /// <summary>

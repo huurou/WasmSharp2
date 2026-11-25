@@ -134,15 +134,20 @@ internal class WasmValueType_AcceptsTests
     }
 
     [Test]
-    [Arguments("026000004F0100600000")] // finalな上位型
-    [Arguments("0250006000004F01006000017F")] // 結果の個数が異なる
-    [Arguments("014E04500060000164024F0100600001640350006000004F01026000017F")] // 結果が後続メンバーの不正な継承に依存する
-    public async Task 検証前のimportに両立しない上位型宣言がある_要求型への代入を拒否する(string section)
+    [Arguments("026000004F0100600000", 0, 1)] // finalな上位型
+    [Arguments("0250006000004F01006000017F", 0, 1)] // 結果の個数が異なる
+    [Arguments("014E04500060000164024F0100600001640350006000004F01026000017F", 0, 1)] // 結果が後続メンバーの不正な継承に依存する
+    [Arguments("036000005001006000004F0101600000", 1, 2)] // 先行グループで型1がfinalな型0を上位型にしている。
+    public async Task 検証前のimportに両立しない上位型宣言がある_要求型への代入を拒否する(
+        string section,
+        byte parentIndex,
+        byte childIndex
+    )
     {
         // Arrange
         var binary = HostLinkingModuleBinary.Create(
             HostLinkingModuleBinary.Section(1, Convert.FromHexString(section)),
-            HostLinkingModuleBinary.Imports(("env", "parent", 0, [0]), ("env", "child", 0, [1]))
+            HostLinkingModuleBinary.Imports(("env", "parent", 0, [parentIndex]), ("env", "child", 0, [childIndex]))
         );
         var imports = WasmModule.InspectImports(binary, WasmSpecVersion.Core3).Imports;
         var expected = WasmValueType.FunctionReference(((WasmImportInfo.Function)imports[0]).Type, false);
@@ -203,6 +208,24 @@ internal class WasmValueType_AcceptsTests
 
 internal class WasmValueType_EqualsTests
 {
+    [Test]
+    [Arguments(7, true)]
+    [Arguments(8, false)]
+    public async Task 異なる位置の未解決参照を比較する_型番号が同じ場合に等しくなる(byte otherIndex, bool expected)
+    {
+        // Arrange
+        var binary = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Section(1, [1, 0x60, 2, 0x63, 7, 0x63, otherIndex, 0])
+        );
+        var parameters = WasmModule.Decode(binary, WasmSpecVersion.Core3).Types[0].ParameterTypes;
+
+        // Act
+        var equal = parameters[0].Equals(parameters[1]);
+
+        // Assert
+        await Assert.That(equal).IsEqualTo(expected);
+    }
+
     [Test]
     public async Task 別々に宣言した同型の関数参照を比較する_演算子とオブジェクト比較と辞書の結果が一致する()
     {

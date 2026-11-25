@@ -69,6 +69,54 @@ internal partial class WasmModule_InstantiateTests
     }
 
     [Test]
+    [Arguments(
+        0,
+        "[I32] -> [(ref (func (param (ref (rec 0))) (result )))]",
+        "[I64] -> [(ref (func (param (ref (rec 0))) (result )))]"
+    )]
+    [Arguments(
+        2,
+        "[(ref (func (param (ref (func (param I32) (result (ref (rec 1)))))) (result )))] -> []",
+        "[(ref (func (param (ref (func (param I64) (result (ref (rec 1)))))) (result )))] -> []"
+    )]
+    public async Task 再帰型の引数型が異なる_リンク診断に要求型と提供型の違いと循環先の位置を表示する(
+        byte importIndex,
+        string expectedSignature,
+        string providedSignature
+    )
+    {
+        // Arrange
+        var consumer = WasmModule.Decode(CreateImport(0x7F, importIndex), WasmSpecVersion.Core3).Validate();
+        var imports = WasmModule.InspectImports(CreateImport(0x7E, importIndex), WasmSpecVersion.Core3).Imports;
+        var providedType = ((WasmImportInfo.Function)imports.Single()).Type;
+        var provider = new WasmHostModule("source");
+        provider.Define("callback", WasmFunction.CreateHost(providedType, (_, _) => new WasmResults([])));
+
+        // Act & Assert
+        var failure = await Assert
+            .That(() => consumer.Instantiate(new WasmExecutionContext(), [provider]))
+            .ThrowsExactly<WasmInstantiateException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(failure!.Reason).IsEqualTo(WasmInstantiateReason.TypeMismatch);
+            await Assert.That(failure.Message).Contains($"要求型 {expectedSignature}");
+            await Assert.That(failure.Message).Contains($"提供型は {providedSignature}");
+        }
+
+        static byte[] CreateImport(byte scalarParameter, byte importIndex)
+        {
+            // 型0と型1は相互に参照し、後続の型2は型1を引数で参照する。
+            byte[] first = [0x60, 1, scalarParameter, 1, 0x64, 1];
+            byte[] second = [0x60, 1, 0x64, 0, 0];
+            byte[] outer = [0x60, 1, 0x64, 1, 0];
+            return HostLinkingModuleBinary.Create(
+                HostLinkingModuleBinary.Section(1, [2, 0x4E, 2, .. first, .. second, .. outer]),
+                HostLinkingModuleBinary.Imports(("source", "callback", 0, [importIndex]))
+            );
+        }
+    }
+
+    [Test]
     [Arguments("table", (byte)1, "0000")] // 最小要素数0のテーブル
     [Arguments("global", (byte)3, "01")] // 可変global
     public async Task 関数参照型のテーブルまたは可変globalをimportする_同値型を受け入れ上位型への変更を拒否する(

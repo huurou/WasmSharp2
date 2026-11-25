@@ -23,18 +23,24 @@ internal partial class WasmModule_ValidateTests
     }
 
     [Test]
-    [Arguments("01500100600000", "forward use of type 0 in sub type definition", 13L)]
-    [Arguments("014E025001016000005000600000", "forward use of type 1 in sub type definition", 15L)]
-    [Arguments("025001016000005000600000", "unknown type 1", 13L)]
-    [Arguments("014F01FFFFFFFF0F600000", "unknown type 4294967295", 13L)]
-    [Arguments("0250006000004F020000600000", "multiple super types", 17L)]
-    [Arguments("026000004F0100600000", "sub type 1 has final super type 0", 16L)]
-    [Arguments("024F006000004F0100600000", "sub type 1 has final super type 0", 18L)]
-    [Arguments("03500060000050006000004F01016000017F", "sub type 2 does not match super type 1", 23L)] // 同値の型番号0と1
-    [Arguments("014E0250010060000050006000016403", "unknown type 3", 25L)] // 継承関係より先にグループ内の参照を検証
-    public async Task 上位型の宣言が不正である_検証時に該当する個数または型番号の位置を報告する(
+    [Arguments("01500100600000", "forward use of type 0 in sub type definition", "先行する型番号", 13L)]
+    [Arguments("014E025001016000005000600000", "forward use of type 1 in sub type definition", "先行する型番号", 15L)]
+    [Arguments("025001016000005000600000", "unknown type 1", "参照先の関数型", 13L)]
+    [Arguments("014F01FFFFFFFF0F600000", "unknown type 4294967295", "参照先の関数型", 13L)]
+    [Arguments("0250006000004F020000600000", "multiple super types", "1個まで", 17L)]
+    [Arguments("026000004F0100600000", "sub type 1 has final super type 0", "finalな関数型を継承", 16L)]
+    [Arguments("024F006000004F0100600000", "sub type 1 has final super type 0", "finalな関数型を継承", 18L)]
+    [Arguments(
+        "03500060000050006000004F01016000017F",
+        "sub type 2 does not match super type 1",
+        "引数の反変または結果の共変",
+        23L
+    )] // 同値の型番号0と1
+    [Arguments("014E0250010060000050006000016403", "unknown type 3", "参照先の関数型", 25L)] // 継承関係より先にグループ内の参照を検証
+    public async Task 上位型の宣言が不正である_検証時に理由と該当する個数または型番号の位置を報告する(
         string section,
         string diagnostic,
+        string detail,
         long offset
     )
     {
@@ -47,6 +53,7 @@ internal partial class WasmModule_ValidateTests
         using (Assert.Multiple())
         {
             await Assert.That(exception!.Message).StartsWith(diagnostic);
+            await Assert.That(exception.Message).Contains(detail);
             await Assert
                 .That(exception.Location)
                 .IsEqualTo(new WasmFailureLocation(WasmProcessingStage.Validate, offset, null, 1));

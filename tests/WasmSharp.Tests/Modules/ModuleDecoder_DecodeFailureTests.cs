@@ -7,6 +7,29 @@ namespace WasmSharp.Tests.Modules;
 internal partial class ModuleDecoder_DecodeTests
 {
     [Test]
+    public async Task グループ数が上限内でも関数型の総数が上限を超える_超過したグループの先頭位置を報告する()
+    {
+        // Arrange
+        var binary = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Section(1, [2, 0x60, 0, 0, 0x4E, 2, 0x60, 0, 0, 0x60, 0, 0])
+        );
+
+        // Act & Assert
+        var exception = await Assert
+            .That(() => ModuleDecoder.Decode(binary, WasmSpecVersion.Core3, maxCollectionLength: 2))
+            .ThrowsExactly<WasmImplementationLimitException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.Reason).IsEqualTo(WasmImplementationLimitReason.CollectionSize);
+            await Assert.That(exception.Limit).IsEqualTo(2);
+            await Assert
+                .That(exception.Location)
+                .IsEqualTo(new WasmFailureLocation(WasmProcessingStage.Decode, 14, null, 1));
+            await Assert.That(exception.Message).Contains("関数型の総数");
+        }
+    }
+
+    [Test]
     public async Task 命令数が保持上限を超える_通常解析は上限を報告し診断用の再走査は元の境界違反を保つ()
     {
         // Arrange

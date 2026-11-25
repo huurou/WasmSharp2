@@ -86,7 +86,18 @@ internal partial class WasmModule_InspectImportsTests
     {
         // Arrange
         var binary = HostLinkingModuleBinary.Create(
-            HostLinkingModuleBinary.Section(1, [2, 0x4E, 0, 0x4E, 2, 0x60, 1, 0x64, 1, 0, 0x60, 0, 1, 0x63, 0]),
+            HostLinkingModuleBinary.Section(
+                1,
+                [
+                    2,
+                    0x4E,
+                    0,
+                    0x4E,
+                    2,
+                    .. Convert.FromHexString("60026401630000"), // consumeはproduceと自分自身を引数に取る。
+                    .. Convert.FromHexString("6000016300"), // produceはconsumeを返す。
+                ]
+            ),
             HostLinkingModuleBinary.Imports(("env", "consume", 0, [0]), ("env", "produce", 0, [1]))
         );
 
@@ -96,9 +107,14 @@ internal partial class WasmModule_InspectImportsTests
         // Assert
         var consume = ((WasmImportInfo.Function)imports[0]).Type;
         var produce = ((WasmImportInfo.Function)imports[1]).Type;
+        WasmValueType[] parameters =
+        [
+            WasmValueType.FunctionReference(produce, false),
+            WasmValueType.FunctionReference(consume, true),
+        ];
         using (Assert.Multiple())
         {
-            await Assert.That(consume.ParameterTypes.Single()).IsEqualTo(WasmValueType.FunctionReference(produce, false));
+            await Assert.That(consume.ParameterTypes.SequenceEqual(parameters)).IsTrue();
             await Assert.That(produce.ResultTypes.Single()).IsEqualTo(WasmValueType.FunctionReference(consume, true));
         }
     }

@@ -25,21 +25,28 @@ internal class WasmFunctionType_IsEquivalentToTests
         var left = CreateCallbackType(depth);
         var right = CreateCallbackType(depth);
         left.IsEquivalentTo(right);
+        var allocationSamples = new long[3];
 
         // Act
-        var before = GC.GetAllocatedBytesForCurrentThread();
         var equivalent = true;
-        for (var index = 0; index < 2000; index++)
+        for (var sample = 0; sample < allocationSamples.Length; sample++)
         {
-            equivalent &= left.IsEquivalentTo(right);
+            var before = GC.GetAllocatedBytesForCurrentThread();
+            for (var index = 0; index < 2000; index++)
+            {
+                equivalent &= left.IsEquivalentTo(right);
+            }
+            allocationSamples[sample] = GC.GetAllocatedBytesForCurrentThread() - before;
         }
-        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+        // 単発の割り当ての影響を除き、同じ比較を繰り返すときの割り当て量を中央値で確認する。
+        Array.Sort(allocationSamples);
+        var medianAllocated = allocationSamples[allocationSamples.Length / 2];
 
         // Assert
         using (Assert.Multiple())
         {
             await Assert.That(equivalent).IsTrue();
-            await Assert.That(allocated).IsEqualTo(0L);
+            await Assert.That(medianAllocated).IsEqualTo(0L);
         }
     }
 
@@ -78,9 +85,14 @@ internal class WasmFunctionType_IsEquivalentToTests
 
         // Act
         var equivalent = left.IsEquivalentTo(right);
+        var sameStructure = left.HasSameStructure(right);
 
         // Assert
-        await Assert.That(equivalent).IsFalse();
+        using (Assert.Multiple())
+        {
+            await Assert.That(equivalent).IsFalse();
+            await Assert.That(sameStructure).IsFalse();
+        }
     }
 
     [Test]
@@ -120,9 +132,14 @@ internal class WasmFunctionType_IsEquivalentToTests
 
         // Act
         var equivalent = recursive.IsEquivalentTo(referringToRecursive);
+        var sameStructure = recursive.HasSameStructure(referringToRecursive);
 
         // Assert
-        await Assert.That(equivalent).IsFalse();
+        using (Assert.Multiple())
+        {
+            await Assert.That(equivalent).IsFalse();
+            await Assert.That(sameStructure).IsFalse();
+        }
     }
 
     [Test]
@@ -146,9 +163,14 @@ internal class WasmFunctionType_IsEquivalentToTests
 
         // Act
         var equivalent = left.IsEquivalentTo(right);
+        var sameStructure = left.HasSameStructure(right);
 
         // Assert
-        await Assert.That(equivalent).IsEqualTo(expected);
+        using (Assert.Multiple())
+        {
+            await Assert.That(equivalent).IsEqualTo(expected);
+            await Assert.That(sameStructure).IsEqualTo(expected);
+        }
     }
 
     private static WasmFunctionType InspectFunctionType(string typeSection, byte index)

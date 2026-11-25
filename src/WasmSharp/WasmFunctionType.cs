@@ -78,7 +78,6 @@ public sealed class WasmFunctionType
     private static void CompleteGroup(ReadOnlySpan<WasmFunctionType> members)
     {
         var hash = new HashCode();
-        hash.Add(members.Length);
         WasmValueType.UnresolvedReference? missing = null;
         var valid = true;
         foreach (var member in members)
@@ -391,7 +390,7 @@ public sealed class WasmFunctionType
                     }
                     // 投影位置を確認した後は、外側のグループの定義全体を一度だけ比較する。
                     var pair = (nested.GetGroupMember(0), otherTarget.GetGroupMember(0));
-                    if (firstPending == pair || (visited is not null && !visited.Add(pair)))
+                    if ((firstPending is { } pending && pending == pair) || (visited is not null && !visited.Add(pair)))
                     {
                         continue;
                     }
@@ -455,7 +454,7 @@ public sealed class WasmFunctionType
     public override string ToString()
     {
         var remaining = MaximumDisplayedValueTypes;
-        return Describe(ref remaining);
+        return Describe(ref remaining, []);
     }
 
     /// <summary>
@@ -468,15 +467,34 @@ public sealed class WasmFunctionType
             ParameterTypes.Any(x => x.FunctionType is not null) || ResultTypes.Any(x => x.FunctionType is not null)
                 ? MaximumDisplayedValueTypes
                 : int.MaxValue;
-        return $"[{DescribeValues(ParameterTypes, ", ", ref remaining)}] -> [{DescribeValues(ResultTypes, ", ", ref remaining)}]";
+        var path = ImmutableStack<WasmFunctionType>.Empty.Push(this);
+        var parameters = DescribeValues(ParameterTypes, ", ", ref remaining, path);
+        var results = DescribeValues(ResultTypes, ", ", ref remaining, path);
+        return $"[{parameters}] -> [{results}]";
     }
 
-    private string Describe(ref int remaining)
+    private string Describe(ref int remaining, ImmutableStack<WasmFunctionType> ancestors)
     {
-        return $"(func (param {DescribeValues(ParameterTypes, " ", ref remaining)}) (result {DescribeValues(ResultTypes, " ", ref remaining)}))";
+        // 表示中の型に戻る参照は、その型の再帰グループ内の位置で示す。
+        foreach (var ancestor in ancestors)
+        {
+            if (ReferenceEquals(ancestor, this))
+            {
+                return $"(rec {_position})";
+            }
+        }
+        var path = ancestors.Push(this);
+        var parameters = DescribeValues(ParameterTypes, " ", ref remaining, path);
+        var results = DescribeValues(ResultTypes, " ", ref remaining, path);
+        return $"(func (param {parameters}) (result {results}))";
     }
 
-    private static string DescribeValues(ImmutableArray<WasmValueType> types, string separator, ref int remaining)
+    private static string DescribeValues(
+        ImmutableArray<WasmValueType> types,
+        string separator,
+        ref int remaining,
+        ImmutableStack<WasmFunctionType> path
+    )
     {
         var text = new StringBuilder();
         foreach (var type in types)
@@ -492,7 +510,7 @@ public sealed class WasmFunctionType
                 break;
             }
             remaining--;
-            text.Append(type.Describe(type.FunctionType?.Describe(ref remaining)));
+            text.Append(type.Describe(type.FunctionType?.Describe(ref remaining, path)));
         }
         return text.ToString();
     }

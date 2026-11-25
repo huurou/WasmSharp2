@@ -1,3 +1,5 @@
+using WasmSharp.Tests.Fixtures;
+
 namespace WasmSharp.Tests;
 
 internal class WasmFunctionType_ConstructorTests
@@ -190,6 +192,72 @@ internal class WasmFunctionType_GetRefFuncResultTypeTests
 
 internal class WasmFunctionType_ToStringTests
 {
+    [Test]
+    public async Task 相互参照する関数型を表示する_参照先を展開し元の型に戻る位置を示す()
+    {
+        // Arrange
+        var binary = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Section(
+                1,
+                [
+                    2,
+                    0x60,
+                    0,
+                    0, // 再帰グループより前の関数型
+                    0x4E,
+                    2,
+                    0x60,
+                    1,
+                    0x63,
+                    2,
+                    0, // グループの2番目を引数で参照する
+                    0x60,
+                    0,
+                    1,
+                    0x64,
+                    1, // グループの1番目を結果で参照する
+                ]
+            ),
+            HostLinkingModuleBinary.Imports(("env", "callback", 0, [1]))
+        );
+        var imports = WasmModule.InspectImports(binary, WasmSpecVersion.Core3).Imports;
+        var first = ((WasmImportInfo.Function)imports.Single()).Type;
+        var second = first.ParameterTypes[0].FunctionType!;
+
+        // Act
+        var firstDescription = first.ToString();
+        var secondDescription = second.ToString();
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert
+                .That(firstDescription)
+                .IsEqualTo("(func (param (ref null (func (param ) (result (ref (rec 0)))))) (result ))");
+            await Assert
+                .That(secondDescription)
+                .IsEqualTo("(func (param ) (result (ref (func (param (ref null (rec 1))) (result )))))");
+        }
+    }
+
+    [Test]
+    public async Task 暗黙の単一グループの関数型が自分を結果で参照する_参照先を位置0で表示する()
+    {
+        // Arrange
+        var binary = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Section(1, [1, 0x60, 0, 1, 0x63, 0]),
+            HostLinkingModuleBinary.Imports(("env", "callback", 0, [0]))
+        );
+        var imports = WasmModule.InspectImports(binary, WasmSpecVersion.Core3).Imports;
+        var type = ((WasmImportInfo.Function)imports.Single()).Type;
+
+        // Act
+        var description = type.ToString();
+
+        // Assert
+        await Assert.That(description).IsEqualTo("(func (param ) (result (ref null (rec 0))))");
+    }
+
     [Test]
     public async Task 複数結果を返す関数を引数で参照する_参照先と外側の結果を宣言順に表示する()
     {
