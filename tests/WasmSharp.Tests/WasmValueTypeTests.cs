@@ -96,6 +96,90 @@ internal class WasmValueType_FunctionReferenceTests
 internal class WasmValueType_AcceptsTests
 {
     [Test]
+    [Arguments("0350006000005001006000004F0101600000")] // 先行グループの上位型
+    [Arguments("014E0350006000005001006000004F0101600000")] // 同じグループ内の上位型
+    public async Task 関数参照を別モジュールの型に代入する_宣言した上位型だけが直接と推移的に受け入れる(string section)
+    {
+        // Arrange
+        var binary = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Section(1, Convert.FromHexString(section)),
+            HostLinkingModuleBinary.Imports(("env", "root", 0, [0]), ("env", "middle", 0, [1]), ("env", "leaf", 0, [2]))
+        );
+        var expected = WasmModule
+            .InspectImports(binary, WasmSpecVersion.Core3)
+            .Imports.Cast<WasmImportInfo.Function>()
+            .ToArray();
+        var actual = WasmModule
+            .InspectImports(binary, WasmSpecVersion.Core3)
+            .Imports.Cast<WasmImportInfo.Function>()
+            .ToArray();
+        var root = WasmValueType.FunctionReference(expected[0].Type, false);
+        var middle = WasmValueType.FunctionReference(expected[1].Type, false);
+        var leaf = WasmValueType.FunctionReference(actual[2].Type, false);
+        var unrelated = WasmValueType.FunctionReference(new WasmFunctionType([], []), false);
+        var value = WasmValue.FromFuncRef(WasmFunction.CreateHost(actual[2].Type, (_, _) => new WasmResults([])));
+
+        // Act & Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(middle.Accepts(leaf)).IsTrue();
+            await Assert.That(root.Accepts(leaf)).IsTrue();
+            await Assert.That(root.Accepts(value)).IsTrue();
+            await Assert.That(leaf.Accepts(root)).IsFalse();
+            await Assert.That(root.Accepts(unrelated)).IsFalse();
+            await Assert.That(unrelated.Accepts(value)).IsFalse();
+            await Assert.That(root.Accepts(WasmValueType.FunctionReference(actual[2].Type, true))).IsFalse();
+            await Assert.That(root).IsNotEqualTo(leaf);
+        }
+    }
+
+    [Test]
+    [Arguments("026000004F0100600000", 0, 1)] // finalな上位型
+    [Arguments("0250006000004F01006000017F", 0, 1)] // 結果の個数が異なる
+    [Arguments("014E04500060000164024F0100600001640350006000004F01026000017F", 0, 1)] // 結果が後続メンバーの不正な継承に依存する
+    [Arguments("036000005001006000004F0101600000", 1, 2)] // 先行グループで型1がfinalな型0を上位型にしている。
+    public async Task 検証前のimportに両立しない上位型宣言がある_要求型への代入を拒否する(
+        string section,
+        byte parentIndex,
+        byte childIndex
+    )
+    {
+        // Arrange
+        var binary = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Section(1, Convert.FromHexString(section)),
+            HostLinkingModuleBinary.Imports(("env", "parent", 0, [parentIndex]), ("env", "child", 0, [childIndex]))
+        );
+        var imports = WasmModule.InspectImports(binary, WasmSpecVersion.Core3).Imports;
+        var expected = WasmValueType.FunctionReference(((WasmImportInfo.Function)imports[0]).Type, false);
+        var actual = WasmValueType.FunctionReference(((WasmImportInfo.Function)imports[1]).Type, false);
+
+        // Act
+        var accepts = expected.Accepts(actual);
+
+        // Assert
+        await Assert.That(accepts).IsFalse();
+    }
+
+    [Test]
+    public async Task 上位型が循環する検証前のimportを調べる_無関係な関数型への代入を拒否する()
+    {
+        // Arrange
+        var binary = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Section(1, Convert.FromHexString("014E02500101600000500100600000")),
+            HostLinkingModuleBinary.Imports(("env", "f", 0, [1]))
+        );
+        var import = (WasmImportInfo.Function)WasmModule.InspectImports(binary, WasmSpecVersion.Core3).Imports.Single();
+        var actual = WasmValueType.FunctionReference(import.Type, false);
+        var expected = WasmValueType.FunctionReference(new WasmFunctionType([], []), false);
+
+        // Act
+        var accepts = expected.Accepts(actual);
+
+        // Assert
+        await Assert.That(accepts).IsFalse();
+    }
+
+    [Test]
     [Arguments(false)]
     [Arguments(true)]
     public async Task 空のヒープ型に値を渡す_null可否に従い実体のある参照を拒否する(bool isNullable)
@@ -124,6 +208,24 @@ internal class WasmValueType_AcceptsTests
 
 internal class WasmValueType_EqualsTests
 {
+    [Test]
+    [Arguments(7, true)]
+    [Arguments(8, false)]
+    public async Task 異なる位置の未解決参照を比較する_型番号が同じ場合に等しくなる(byte otherIndex, bool expected)
+    {
+        // Arrange
+        var binary = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Section(1, [1, 0x60, 2, 0x63, 7, 0x63, otherIndex, 0])
+        );
+        var parameters = WasmModule.Decode(binary, WasmSpecVersion.Core3).Types[0].ParameterTypes;
+
+        // Act
+        var equal = parameters[0].Equals(parameters[1]);
+
+        // Assert
+        await Assert.That(equal).IsEqualTo(expected);
+    }
+
     [Test]
     public async Task 別々に宣言した同型の関数参照を比較する_演算子とオブジェクト比較と辞書の結果が一致する()
     {

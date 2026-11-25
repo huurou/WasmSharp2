@@ -80,7 +80,7 @@ internal ref struct ModuleBinaryReader
     internal WasmSpecVersion SpecVersion { get; }
 
     /// <summary>
-    /// 現在の宣言が参照できる関数型 型セクション内では先行する宣言だけを含む
+    /// 現在の宣言が参照できる関数型 型セクション内では先行するグループだけを含む
     /// </summary>
     internal List<WasmFunctionType>? Types { get; set; }
 

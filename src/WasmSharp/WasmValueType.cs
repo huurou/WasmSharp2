@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using WasmSharp.Exceptions;
 using WasmSharp.Modules;
 
@@ -144,7 +145,26 @@ public readonly struct WasmValueType : IEquatable<WasmValueType>
         {
             return actual.IsBottomHeapType;
         }
-        return FunctionType is null || (actual.FunctionType is { } type && FunctionType.IsEquivalentTo(type));
+        return FunctionType is null || (actual.FunctionType is { } type && type.IsSubtypeOf(FunctionType));
+    }
+
+    /// <summary>
+    /// 同じ個数の値を順に対応する型へ代入できるかを判定する
+    /// </summary>
+    internal static bool AcceptsAll(ImmutableArray<WasmValueType> expected, ImmutableArray<WasmValueType> actual)
+    {
+        if (expected.Length != actual.Length)
+        {
+            return false;
+        }
+        for (var index = 0; index < expected.Length; index++)
+        {
+            if (!expected[index].Accepts(actual[index]))
+            {
+                return false;
+            }
+        }
+        return true;
     }
 
     /// <summary>
@@ -159,7 +179,7 @@ public readonly struct WasmValueType : IEquatable<WasmValueType>
         return Kind switch
         {
             WasmValueKind.FuncRef => value.AsFuncRef() is { } function
-                ? !IsBottomHeapType && (FunctionType is null || FunctionType.IsEquivalentTo(function.Type))
+                ? !IsBottomHeapType && (FunctionType is null || function.Type.IsSubtypeOf(FunctionType))
                 : IsNullable,
             WasmValueKind.ExternRef => value.AsExternRef() is null ? IsNullable : !IsBottomHeapType,
             _ => true,

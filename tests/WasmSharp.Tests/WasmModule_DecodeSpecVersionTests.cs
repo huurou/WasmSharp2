@@ -6,6 +6,33 @@ namespace WasmSharp.Tests;
 internal partial class WasmModule_DecodeTests
 {
     [Test]
+    [Arguments(WasmSpecVersion.Core2, "014E01600000", "malformed function type", 11L)]
+    [Arguments(WasmSpecVersion.Core2, "014F00600000", "malformed function type", 11L)]
+    [Arguments(WasmSpecVersion.Core2, "015000600000", "malformed function type", 11L)]
+    [Arguments(WasmSpecVersion.Core3, "014F005000600000", "malformed definition type", 13L)]
+    [Arguments(WasmSpecVersion.Core3, "014E014E00", "malformed definition type", 13L)]
+    public async Task 仕様上許可されない位置に型宣言がある_Decodeが該当する型の位置を報告する(
+        WasmSpecVersion version,
+        string section,
+        string diagnostic,
+        long offset
+    )
+    {
+        // Arrange
+        var binary = HostLinkingModuleBinary.Create(HostLinkingModuleBinary.Section(1, Convert.FromHexString(section)));
+
+        // Act & Assert
+        var exception = await Assert.That(() => WasmModule.Decode(binary, version)).ThrowsExactly<WasmDecodeException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.Message).StartsWith(diagnostic);
+            await Assert
+                .That(exception.Location)
+                .IsEqualTo(new WasmFailureLocation(WasmProcessingStage.Decode, offset, null, 1));
+        }
+    }
+
+    [Test]
     public async Task 同じ関数型を複数の型番号で宣言する_番号順を保ち参照先とnull可否まで一致した型を共有する()
     {
         // Arrange
@@ -393,6 +420,65 @@ internal partial class WasmModule_DecodeTests
             await Assert.That(exception.Message).Contains("Core 2.0");
             await Assert.That(exception.Location!.ByteOffset).IsEqualTo(23);
         }
+    }
+
+    [Test]
+    public async Task 再帰関数型を持つタグをCore3でimportする_デコード段階でタグの未実装を報告する()
+    {
+        // Arrange
+        var bytes = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Section(1, [1, 0x4E, 1, 0x60, 1, 0x63, 0, 0]), // (rec (type $t (func (param (ref null $t)))))
+            HostLinkingModuleBinary.Imports(("env", "event", 4, [0, 0]))
+        );
+
+        // Act & Assert
+        var exception = await Assert
+            .That(() => WasmModule.Decode(bytes, WasmSpecVersion.Core3))
+            .ThrowsExactly<WasmUnsupportedFeatureException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception?.Feature).IsEqualTo("tag import");
+            await Assert
+                .That(exception?.Location)
+                .IsEqualTo(new WasmFailureLocation(WasmProcessingStage.Decode, bytes.Length - 3, null, 2));
+        }
+    }
+
+    [Test]
+    public async Task Core3でタグのexport宣言を読む_タグが未対応であることと種類の位置を返す()
+    {
+        // Arrange
+        var bytes = HostLinkingModuleBinary.Create(HostLinkingModuleBinary.Exports(("event", 4, 0)));
+
+        // Act & Assert
+        var exception = await Assert
+            .That(() => WasmModule.Decode(bytes, WasmSpecVersion.Core3))
+            .ThrowsExactly<WasmUnsupportedFeatureException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception?.Feature).IsEqualTo("tag export");
+            await Assert
+                .That(exception?.Location)
+                .IsEqualTo(new WasmFailureLocation(WasmProcessingStage.Decode, bytes.Length - 2, null, 7));
+        }
+    }
+
+    [Test]
+    [Arguments("020401000005", "malformed import kind")]
+    [Arguments("070401000500", "malformed export kind")]
+    public async Task Core3のimportまたはexportで予約された種類を指定する_種類の構文エラーを報告する(
+        string section,
+        string diagnostic
+    )
+    {
+        // Arrange
+        var bytes = HostLinkingModuleBinary.Create(Convert.FromHexString(section));
+
+        // Act & Assert
+        var exception = await Assert
+            .That(() => WasmModule.Decode(bytes, WasmSpecVersion.Core3))
+            .ThrowsExactly<WasmDecodeException>();
+        await Assert.That(exception!.Message).StartsWith(diagnostic);
     }
 
     [Test]

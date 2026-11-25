@@ -1,10 +1,33 @@
 using WasmSharp.Exceptions;
+using WasmSharp.Modules.Definitions;
 using WasmSharp.Tests.Fixtures;
 
 namespace WasmSharp.Tests;
 
 internal partial class WasmModule_DecodeTests
 {
+    [Test]
+    public async Task 上位の関数型を指定する_その型への非null参照を持つ宣言としてデコードする()
+    {
+        // Arrange
+        // 型0は継承可能で、型1は型0を継承するfinalな関数型として宣言する。
+        var binary = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Section(1, [2, 0x50, 0, 0x60, 0, 0, 0x4F, 1, 0, 0x60, 0, 0])
+        );
+        var parent = WasmFunctionType.FromDecodedGroup([new FunctionTypeDeclaration([], [], false, [])], firstIndex: 0);
+        var parentReference = WasmValueType.FunctionReference(parent, isNullable: false);
+        var expected = WasmFunctionType.FromDecodedGroup(
+            [new FunctionTypeDeclaration([], [], true, [parentReference])],
+            firstIndex: 1
+        );
+
+        // Act
+        var decoded = WasmModule.Decode(binary, WasmSpecVersion.Core3).Types[1];
+
+        // Assert
+        await Assert.That(decoded.IsEquivalentTo(expected)).IsTrue();
+    }
+
     [Test]
     [Arguments(
         WasmSpecVersion.Core2,

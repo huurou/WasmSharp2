@@ -191,9 +191,9 @@ internal static class ModuleInstantiator
     {
         var matches = (import, value) switch
         {
-            (FunctionImport required, FunctionExternalValue provided) => module
-                .Types[(int)required.TypeIndex]
-                .IsEquivalentTo(provided.Value.Type),
+            (FunctionImport required, FunctionExternalValue provided) => provided.Value.Type.IsSubtypeOf(
+                module.Types[(int)required.TypeIndex]
+            ),
             (GlobalImport required, GlobalExternalValue provided) => required.Type.Accepts(provided.Value.Type),
             (MemoryImport { Definition.Type: var type }, MemoryExternalValue provided) => type.AddressType
                 == provided.Value.Type.AddressType

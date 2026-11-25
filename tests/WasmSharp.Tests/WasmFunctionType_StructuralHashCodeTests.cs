@@ -1,3 +1,5 @@
+using WasmSharp.Tests.Fixtures;
+
 namespace WasmSharp.Tests;
 
 internal class WasmFunctionType_StructuralHashCodeTests
@@ -50,5 +52,34 @@ internal class WasmFunctionType_StructuralHashCodeTests
 
         // Assert
         await Assert.That(distinctHashCount).IsGreaterThan(1);
+    }
+
+    [Test]
+    [Arguments("4F00600000", "5000600000")] // finalかどうか
+    [Arguments("6001630000", "6001640000")] // グループ内の参照のnull可否
+    [Arguments("6001640000", "6001640100")] // グループ内の参照先の位置
+    public async Task 再帰グループ内で宣言を変える_引数と結果の個数が同じでも構造ハッシュが複数に分かれる(
+        string definition,
+        string alternateDefinition
+    )
+    {
+        // Arrange
+        byte[][] definitions = [Convert.FromHexString(definition), Convert.FromHexString(alternateDefinition)];
+        var hashes = new HashSet<int>();
+
+        // Act
+        foreach (var first in definitions)
+        {
+            foreach (var second in definitions)
+            {
+                var binary = HostLinkingModuleBinary.Create(
+                    HostLinkingModuleBinary.Section(1, [1, 0x4E, 2, .. first, .. second])
+                );
+                hashes.Add(WasmModule.Decode(binary, WasmSpecVersion.Core3).Types[0].StructuralHashCode);
+            }
+        }
+
+        // Assert
+        await Assert.That(hashes.Count).IsGreaterThan(1);
     }
 }

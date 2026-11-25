@@ -17,11 +17,17 @@ internal static class ModuleValidator
     /// <returns>importを含まない定義順の線形実行コード</returns>
     internal static ImmutableArray<FunctionCode> Validate(WasmModule module)
     {
-        foreach (var type in module.Types)
+        var supertypes = module.SupertypeDeclarations.AsSpan();
+        for (var index = 0; index < module.Types.Length; index++)
         {
-            if (type.Unresolved is { } missing)
+            if (module.Types[index].Unresolved is { } missing)
             {
                 throw missing.ValidationFailure();
+            }
+            if (!supertypes.IsEmpty && supertypes[0].TypeIndex == index)
+            {
+                supertypes[0].ThrowIfInvalid(module.Types[index].SupertypeError);
+                supertypes = supertypes[1..];
             }
         }
         var (functionCount, importedGlobalCount) = ValidateImportReferences(module);
