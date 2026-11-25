@@ -1,5 +1,4 @@
 using WasmSharp.Exceptions;
-using WasmSharp.Instructions;
 using WasmSharp.Modules;
 using WasmSharp.Tests.Fixtures;
 
@@ -88,14 +87,16 @@ internal partial class ModuleValidator_ValidateTests
     [Arguments("23FFFFFFFF0F0B", 0, "unknown global 4294967295", "globalが存在しません")]
     [Arguments("410024020B", 1, "unknown global 2", "globalが存在しません")]
     [Arguments("410024FFFFFFFF0F0B", 1, "unknown global 4294967295", "globalが存在しません")]
-    [Arguments("410024000B", 1, "global is immutable", "globalは更新できません")]
+    [Arguments("410024000B", 1, "global is immutable", "globalは更新できません", WasmSpecVersion.Core2)]
+    [Arguments("410024000B", 1, "immutable global", "globalは更新できません", WasmSpecVersion.Core3)]
     [Arguments("4200240141000B", 1, "type mismatch", "入力型が一致しません")]
     [Arguments("240141000B", 0, "type mismatch", "入力値が不足")]
     public async Task Globalの添字や可変性や入力型が不正_元関数と命令位置付き検証失敗になる(
         string body,
         int instructionIndex,
         string prefix,
-        string expectedDetail
+        string expectedDetail,
+        WasmSpecVersion version = WasmSpecVersion.Core2
     )
     {
         // Arrange
@@ -107,7 +108,7 @@ internal partial class ModuleValidator_ValidateTests
                 HostLinkingModuleBinary.Globals((0x7F, true, [0x41, 0, 0x0B])),
                 HostLinkingModuleBinary.Code(([], Convert.FromHexString(body)))
             ),
-            WasmSpecVersion.Core2
+            version
         );
 
         // Act & Assert
@@ -145,7 +146,7 @@ internal partial class ModuleValidator_ValidateTests
         using (Assert.Multiple())
         {
             await Assert.That(codes[0].MaxOperandStack).IsEqualTo(2);
-            await Assert.That(codes[0].Instructions[0].Opcode).IsEqualTo(ExecutionOpcode.Op10);
+            await Assert.That(codes[0].Instructions[0].Opcode).IsEqualTo(WasmSharp.Instructions.ExecutionOpcode.Op10);
             await Assert.That(codes[0].Instructions[0].Index).IsEqualTo(2u);
             await Assert.That(codes[0].Instructions[3].Index).IsEqualTo(0u);
             await Assert.That(codes[0].Instructions[3].ByteOffset).IsEqualTo(module.Functions[0].Instructions[3].ByteOffset);
