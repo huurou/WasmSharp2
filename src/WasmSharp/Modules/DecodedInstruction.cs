@@ -15,7 +15,7 @@ internal readonly struct DecodedInstruction
     private readonly uint _blockTypeIndex;
     private readonly WasmValueKind _blockValueKind;
 
-    // 単一の詳細な値型とselectの型配列は同じ命令に現れない。単純な値型は種類だけで復元する。
+    // 型を持つ命令だけが詳細な値型、キャスト分岐の型対、またはselectの型配列を格納する。
     private readonly object? _typeImmediate;
 
     /// <summary>
@@ -55,9 +55,14 @@ internal readonly struct DecodedInstruction
         };
 
     /// <summary>
-    /// ref.nullが生成する参照の宣言型
+    /// ref.nullが生成する参照の宣言型、または型判定の対象となる参照型
     /// </summary>
     internal WasmValueType ReferenceType => GetValueType(Immediate.Kind);
+
+    /// <summary>
+    /// キャスト分岐が指定するキャスト元とキャスト先の参照型
+    /// </summary>
+    internal (WasmValueType Source, WasmValueType Target) CastBranchTypes => ((WasmValueType, WasmValueType))_typeImmediate!;
 
     /// <summary>
     /// 分岐候補に続けて既定ラベルを並べた不変のラベル列
@@ -94,7 +99,7 @@ internal readonly struct DecodedInstruction
     /// <param name="index">添字の即値 他の命令では0</param>
     /// <param name="blockType">制御の型指定 他の命令ではdefault</param>
     /// <param name="labels">候補と既定ラベル 他の命令では非defaultの空配列</param>
-    /// <param name="typeImmediate">種類だけで復元できない値型、またはselectが所有する型配列</param>
+    /// <param name="typeImmediate">値型、キャスト分岐の型対、またはselectが所有する型配列</param>
     /// <param name="memoryArgument">メモリ命令の即値 他の命令ではdefault</param>
     /// <param name="secondaryIndex">2番目の添字 他の命令では0</param>
     /// <param name="shuffleLanes">shuffleの選択値 他の命令では非defaultの空配列</param>
@@ -174,6 +179,28 @@ internal readonly struct DecodedInstruction
             immediate: value,
             typeImmediate: GetExtendedType(type, value.Kind)
         );
+    }
+
+    /// <summary>
+    /// 型判定の対象となる参照型を持つ命令を構築する
+    /// </summary>
+    internal static DecodedInstruction WithReferenceType(OpcodeKey opcode, WasmValueType type, long byteOffset)
+    {
+        return new DecodedInstruction(opcode, byteOffset, typeImmediate: type);
+    }
+
+    /// <summary>
+    /// 分岐先のラベルとキャスト元・先の型を持つ命令を構築する
+    /// </summary>
+    internal static DecodedInstruction WithCastBranch(
+        OpcodeKey opcode,
+        uint label,
+        WasmValueType source,
+        WasmValueType target,
+        long byteOffset
+    )
+    {
+        return new DecodedInstruction(opcode, byteOffset, index: label, typeImmediate: (source, target));
     }
 
     /// <summary>

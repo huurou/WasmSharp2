@@ -86,6 +86,30 @@ internal static partial class Interpreter
     }
 
     /// <summary>
+    /// 参照が対象型に一致したとき、参照を最後の分岐値として渡す
+    /// </summary>
+    internal static ExecutionResult BranchOnCast(InterpreterContext context, in Instruction instruction)
+    {
+        if (context.MatchesCastTarget(instruction.SecondaryIndex, context.PeekValue()))
+        {
+            context.Branch(context.GetBranchTarget(instruction.Index));
+        }
+        return default;
+    }
+
+    /// <summary>
+    /// 参照が対象型に一致しないとき、参照を最後の分岐値として渡す
+    /// </summary>
+    internal static ExecutionResult BranchOnCastFail(InterpreterContext context, in Instruction instruction)
+    {
+        if (!context.MatchesCastTarget(instruction.SecondaryIndex, context.PeekValue()))
+        {
+            context.Branch(context.GetBranchTarget(instruction.Index));
+        }
+        return default;
+    }
+
+    /// <summary>
     /// 符号なしの選択値で候補または既定の分岐先へ分岐する
     /// </summary>
     /// <param name="context">選択値と分岐値を持つ実行コンテキスト</param>

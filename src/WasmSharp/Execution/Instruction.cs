@@ -14,7 +14,7 @@ namespace WasmSharp.Execution;
 /// <param name="targetCount">分岐表の既定を除く候補数 分岐表以外では参照しない</param>
 /// <param name="memoryArgument">メモリ命令のアラインメント指数とオフセット</param>
 /// <param name="memoryAccessSignature">ロード命令・ストア命令のアクセス情報</param>
-/// <param name="secondaryIndex">2個の添字を持つ命令の2番目の番号</param>
+/// <param name="secondaryIndex">2個目の添字、または参照の型判定に使う関数内の型の添字</param>
 /// <param name="shuffleLanes">shuffleの選択値を保持する不変のbyte列</param>
 /// <param name="laneIndex">laneを指定する命令の添字</param>
 internal readonly struct Instruction(
@@ -50,7 +50,7 @@ internal readonly struct Instruction(
     internal uint Index { get; } = index;
 
     /// <summary>
-    /// 2個の添字を持つ命令の2番目の番号
+    /// 2個目の添字、または参照の型判定に使う関数内の型の添字
     /// </summary>
     internal uint SecondaryIndex { get; } = secondaryIndex;
 

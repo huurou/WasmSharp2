@@ -30,6 +30,44 @@ internal static partial class Interpreter
     }
 
     /// <summary>
+    /// null同士、および同じ31ビットを持つi31同士が等しいかを判定する
+    /// </summary>
+    internal static ExecutionResult RefEq(InterpreterContext context, in Instruction instruction)
+    {
+        var right = context.PopValue();
+        var left = context.PopValue();
+        var equal = left.Kind == right.Kind && (left.IsNullReference || left.AsI31Unsigned() == right.AsI31Unsigned());
+        context.PushValue(WasmValue.FromI32(equal ? 1 : 0));
+        return default;
+    }
+
+    /// <summary>
+    /// 参照値が対象型に一致するときは1、それ以外は0を返す
+    /// </summary>
+    internal static ExecutionResult RefTest(InterpreterContext context, in Instruction instruction)
+    {
+        var matches = context.MatchesCastTarget(instruction.SecondaryIndex, context.PopValue());
+        context.PushValue(WasmValue.FromI32(matches ? 1 : 0));
+        return default;
+    }
+
+    /// <summary>
+    /// 対象型に一致する値をそのまま残し、一致しない場合はtrapを返す
+    /// </summary>
+    internal static ExecutionResult RefCast(InterpreterContext context, in Instruction instruction)
+    {
+        if (!context.MatchesCastTarget(instruction.SecondaryIndex, context.PeekValue()))
+        {
+            return ExecutionResult.Trap(
+                WasmTrapReason.CastFailure,
+                context.CurrentFunction.FunctionIndex,
+                instruction.ByteOffset
+            );
+        }
+        return default;
+    }
+
+    /// <summary>
     /// 非nullの参照をそのまま残し、nullの場合はtrapを返す
     /// </summary>
     internal static ExecutionResult RefAsNonNull(InterpreterContext context, in Instruction instruction)

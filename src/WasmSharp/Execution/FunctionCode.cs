@@ -11,11 +11,13 @@ namespace WasmSharp.Execution;
 /// <param name="locals">引数の後に続く追加localsの圧縮宣言</param>
 /// <param name="maxOperandStack">関数の実行に必要なoperand領域の最大要素数</param>
 /// <param name="branchTargets">検証で完成した分岐情報 分岐を持たない関数では省略する</param>
+/// <param name="castTargets">参照の型判定やキャストが照合する参照型を命令順に並べた配列</param>
 internal sealed class FunctionCode(
     ImmutableArray<Instruction> instructions,
     ReadOnlySpan<LocalDeclaration> locals,
     int maxOperandStack,
-    ImmutableArray<BranchTarget> branchTargets = default
+    ImmutableArray<BranchTarget> branchTargets = default,
+    ImmutableArray<WasmValueType> castTargets = default
 )
 {
     /// <summary>
@@ -27,6 +29,11 @@ internal sealed class FunctionCode(
     /// 命令から参照する関数内の確定済み分岐情報 分岐表は候補の後に既定1件を置く
     /// </summary>
     internal ImmutableArray<BranchTarget> BranchTargets { get; } = branchTargets.IsDefault ? [] : branchTargets;
+
+    /// <summary>
+    /// 参照の型判定やキャストの命令が照合する参照型
+    /// </summary>
+    internal ImmutableArray<WasmValueType> CastTargets { get; } = castTargets.IsDefault ? [] : castTargets;
 
     /// <summary>
     /// 引数の後に続く追加localsを、展開せずに個数と型別の初期値でまとめた配列
