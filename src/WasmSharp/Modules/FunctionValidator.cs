@@ -165,11 +165,6 @@ internal static class FunctionValidator
                     outputSecondaryIndex = AddCastTarget(targetType);
                     break;
 
-                case ValidationRule.RefI31:
-                    Pop(WasmValueKind.I32, instruction.ByteOffset);
-                    stack.Add(WasmValueType.Reference(WasmValueKind.I31Ref, false));
-                    break;
-
                 case ValidationRule.I31Get:
                     Pop(WasmValueKind.I31Ref, instruction.ByteOffset);
                     stack.Add(WasmValueKind.I32);
@@ -547,6 +542,11 @@ internal static class FunctionValidator
                     {
                         stack.Add(localType);
                     }
+                    break;
+
+                case var rule when ConstantReferenceOperation.For(rule) is { } referenceOperation:
+                    var input = Pop(referenceOperation.InputType, instruction.ByteOffset);
+                    stack.Add(referenceOperation.GetResultType(input.DeclaredType));
                     break;
 
                 default:

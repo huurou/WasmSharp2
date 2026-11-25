@@ -1,4 +1,5 @@
 using WasmSharp.Exceptions;
+using WasmSharp.Instructions;
 
 namespace WasmSharp.Execution;
 
@@ -87,7 +88,7 @@ internal static partial class Interpreter
     /// </summary>
     internal static ExecutionResult RefI31(InterpreterContext context, in Instruction instruction)
     {
-        context.PushValue(WasmValue.FromI31(context.PopValue().AsI32()));
+        context.PushValue(ConstantReferenceOperation.RefI31.Evaluate(context.PopValue()));
         return default;
     }
 
