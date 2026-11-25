@@ -51,7 +51,7 @@ public sealed class WasmGlobal
     public WasmGlobal(WasmGlobalType type, WasmValue initialValue)
     {
         ArgumentNullException.ThrowIfNull(type);
-        if (!WasmValueType.IsSupportedKind(type.ValueKind))
+        if (!type.ValueKind.IsSupported())
         {
             throw new ArgumentException("未対応のvalueの種類です。", nameof(type));
         }

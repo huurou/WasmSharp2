@@ -151,7 +151,7 @@ public sealed class WasmTable
     private static WasmTableType Create32BitType(WasmValueKind elementType, WasmLimits limits)
     {
         ArgumentNullException.ThrowIfNull(limits);
-        if (!WasmValueType.IsReferenceKind(elementType))
+        if (!elementType.IsReference())
         {
             throw new ArgumentOutOfRangeException(nameof(elementType), "tableには参照型を指定してください。");
         }

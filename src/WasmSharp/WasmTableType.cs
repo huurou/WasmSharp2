@@ -24,7 +24,7 @@ public sealed record WasmTableType(
     /// 参照先の関数型とnull可否を含む要素型
     /// </summary>
     public WasmValueType ElementValueType { get; } =
-        WasmValueType.IsReferenceKind(ElementType)
+        ElementType.IsReference()
             ? ElementType
             : throw new ArgumentOutOfRangeException(
                 nameof(ElementType),

@@ -53,7 +53,7 @@ public readonly struct WasmValueType : IEquatable<WasmValueType>
     /// <summary>
     /// 参照型かどうか
     /// </summary>
-    public bool IsReference => IsReferenceKind(Kind);
+    public bool IsReference => Kind.IsReference();
 
     internal UnresolvedReference? Unresolved => _unresolved ?? FunctionType?.Unresolved;
 
@@ -72,33 +72,12 @@ public readonly struct WasmValueType : IEquatable<WasmValueType>
         _unresolved = unresolved;
     }
 
-    internal static bool IsSupportedKind(WasmValueKind kind)
-    {
-        return kind is WasmValueKind.I32 or WasmValueKind.I64 or WasmValueKind.F32 or WasmValueKind.F64 or WasmValueKind.V128
-            || IsReferenceKind(kind);
-    }
-
-    internal static bool IsReferenceKind(WasmValueKind kind)
-    {
-        return GetTopKind(kind) is WasmValueKind.FuncRef or WasmValueKind.ExternRef or WasmValueKind.AnyRef;
-    }
-
-    /// <summary>
-    /// 参照型を所属する階層の最上位型にまとめる 数値とベクトルの種類はそのまま返す
-    /// </summary>
-    internal static WasmValueKind GetTopKind(WasmValueKind kind)
-    {
-        return kind is WasmValueKind.EqRef or WasmValueKind.I31Ref or WasmValueKind.StructRef or WasmValueKind.ArrayRef
-            ? WasmValueKind.AnyRef
-            : kind;
-    }
-
     /// <summary>
     /// 値の種類に対応する宣言型を取得する 参照型はnullを許可する
     /// </summary>
     public static implicit operator WasmValueType(WasmValueKind kind)
     {
-        return new WasmValueType(kind, IsReferenceKind(kind));
+        return new WasmValueType(kind, kind.IsReference());
     }
 
     /// <summary>
@@ -106,7 +85,7 @@ public readonly struct WasmValueType : IEquatable<WasmValueType>
     /// </summary>
     public static WasmValueType Reference(WasmValueKind kind, bool isNullable)
     {
-        if (!IsReferenceKind(kind))
+        if (!kind.IsReference())
         {
             throw new ArgumentOutOfRangeException(nameof(kind), kind, "参照型を指定してください。");
         }
@@ -127,11 +106,11 @@ public readonly struct WasmValueType : IEquatable<WasmValueType>
     /// </summary>
     public static WasmValueType BottomReference(WasmValueKind kind, bool isNullable)
     {
-        if (!IsReferenceKind(kind))
+        if (!kind.IsReference())
         {
             throw new ArgumentOutOfRangeException(nameof(kind), kind, "参照型を指定してください。");
         }
-        return new WasmValueType(GetTopKind(kind), isNullable, isBottomHeapType: true);
+        return new WasmValueType(kind.GetTopKind(), isNullable, isBottomHeapType: true);
     }
 
     internal static WasmValueType UnresolvedFunctionReference(uint index, bool isNullable, WasmFailureLocation location)
@@ -164,7 +143,7 @@ public readonly struct WasmValueType : IEquatable<WasmValueType>
         }
         if (actual.IsBottomHeapType)
         {
-            return GetTopKind(Kind) == actual.Kind;
+            return Kind.GetTopKind() == actual.Kind;
         }
         if (IsBottomHeapType)
         {
@@ -174,7 +153,7 @@ public readonly struct WasmValueType : IEquatable<WasmValueType>
         {
             return Kind switch
             {
-                WasmValueKind.AnyRef => GetTopKind(actual.Kind) == WasmValueKind.AnyRef,
+                WasmValueKind.AnyRef => actual.Kind.GetTopKind() == WasmValueKind.AnyRef,
                 WasmValueKind.EqRef => actual.Kind
                     is WasmValueKind.I31Ref
                         or WasmValueKind.StructRef

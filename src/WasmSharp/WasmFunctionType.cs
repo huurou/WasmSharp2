@@ -433,7 +433,7 @@ public sealed class WasmFunctionType
 
     private static void ValidateKind(WasmValueKind kind, string paramName)
     {
-        if (!WasmValueType.IsSupportedKind(kind))
+        if (!kind.IsSupported())
         {
             throw new ArgumentOutOfRangeException(paramName, kind, "未対応のvalueの種類です。");
         }

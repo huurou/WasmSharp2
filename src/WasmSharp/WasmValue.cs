@@ -211,11 +211,11 @@ public readonly struct WasmValue
     /// </summary>
     public static WasmValue FromNullReference(WasmValueKind kind)
     {
-        if (!WasmValueType.IsReferenceKind(kind))
+        if (!kind.IsReference())
         {
             throw new ArgumentOutOfRangeException(nameof(kind), kind, "参照型を指定してください。");
         }
-        return new WasmValue(WasmValueType.GetTopKind(kind), 0, 0, null);
+        return new WasmValue(kind.GetTopKind(), 0, 0, null);
     }
 
     /// <summary>
