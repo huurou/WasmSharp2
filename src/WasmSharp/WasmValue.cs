@@ -6,6 +6,15 @@ namespace WasmSharp;
 public readonly struct WasmValue
 {
     /// <summary>
+    /// Wasmの内部参照をホストへ渡し、戻されたときに同じ内部参照を取り出すための参照先
+    /// </summary>
+    private sealed record ExternalizedReference(WasmValue Source)
+    {
+        // 再び外部化したとき、ホストが渡した同じオブジェクトを返せるようにする。
+        internal WasmValue InternalValue => new WasmValue(Source.Kind, Source._low64, Source._high64, this);
+    }
+
+    /// <summary>
     /// 数値スカラーやi31のビット列、またはv128の下位64ビット
     /// </summary>
     private readonly ulong _low64;
@@ -16,7 +25,7 @@ public readonly struct WasmValue
     private readonly ulong _high64;
 
     /// <summary>
-    /// 参照値の参照先
+    /// 参照先、または内部参照へ戻す前の外部参照を保持する
     /// </summary>
     private readonly object? _reference;
 
@@ -265,6 +274,44 @@ public readonly struct WasmValue
     }
 
     /// <summary>
+    /// CLRオブジェクトへの参照またはnullから、anyの階層に属するホスト参照を構築する
+    /// </summary>
+    /// <param name="value">ホストが保持するオブジェクトへの参照またはnull</param>
+    /// <returns>元の参照先を保持するanyref</returns>
+    public static WasmValue FromHostRef(object? value)
+    {
+        var host = new WasmValue(WasmValueKind.AnyRef, 0, 0, value);
+        // 外部化済みのオブジェクト自体をホスト参照として渡された場合も、参照先を区別する。
+        return value is ExternalizedReference ? new ExternalizedReference(host).InternalValue : host;
+    }
+
+    /// <summary>
+    /// 内部のホスト参照が保持するCLRオブジェクトまたはnullを取得する
+    /// </summary>
+    /// <returns>ホストが保持するオブジェクトへの参照またはnull</returns>
+    /// <exception cref="InvalidOperationException">valueがanyのホスト参照またはnull以外の場合</exception>
+    public object? AsHostRef()
+    {
+        EnsureKind(WasmValueKind.AnyRef);
+        return _reference is ExternalizedReference wrapped ? wrapped.Source._reference : _reference;
+    }
+
+    internal WasmValue InternalizeExtern()
+    {
+        var external = AsExternRef();
+        return external is ExternalizedReference wrapped ? wrapped.InternalValue : FromHostRef(external);
+    }
+
+    internal WasmValue ExternalizeAny()
+    {
+        if (Kind == WasmValueKind.AnyRef || _reference is ExternalizedReference)
+        {
+            return FromExternRef(_reference);
+        }
+        return FromExternRef(new ExternalizedReference(this));
+    }
+
+    /// <summary>
     /// CLRオブジェクトへの参照またはnullからexternrefのvalueを構築する
     /// </summary>
     /// <param name="value">保持するCLRオブジェクトへの参照またはnull</param>
@@ -277,7 +324,7 @@ public readonly struct WasmValue
     /// <summary>
     /// externrefの元のCLRオブジェクトへの参照またはnullを取得する
     /// </summary>
-    /// <returns>構築時に保持したCLRオブジェクトへの参照またはnull</returns>
+    /// <returns>CLRオブジェクトへの参照またはnull 外部化したWasm参照のオブジェクトはFromExternRefへ渡して戻せる</returns>
     /// <exception cref="InvalidOperationException">valueの型がexternrefではない場合</exception>
     public object? AsExternRef()
     {

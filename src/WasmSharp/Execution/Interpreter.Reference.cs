@@ -84,6 +84,24 @@ internal static partial class Interpreter
     }
 
     /// <summary>
+    /// 外部参照を対応する内部参照へ変換する
+    /// </summary>
+    internal static ExecutionResult AnyConvertExtern(InterpreterContext context, in Instruction instruction)
+    {
+        context.PushValue(ConstantReferenceOperation.AnyConvertExtern.Evaluate(context.PopValue()));
+        return default;
+    }
+
+    /// <summary>
+    /// 内部参照を対応する外部参照へ変換する
+    /// </summary>
+    internal static ExecutionResult ExternConvertAny(InterpreterContext context, in Instruction instruction)
+    {
+        context.PushValue(ConstantReferenceOperation.ExternConvertAny.Evaluate(context.PopValue()));
+        return default;
+    }
+
+    /// <summary>
     /// i32の下位31ビットから非nullのi31参照を作る
     /// </summary>
     internal static ExecutionResult RefI31(InterpreterContext context, in Instruction instruction)

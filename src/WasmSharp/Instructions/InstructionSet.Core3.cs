@@ -139,8 +139,26 @@ namespace WasmSharp.Instructions;
     ValidationRule.BranchOnCastFail,
     nameof(Interpreter.BranchOnCastFail)
 )]
-[Instruction(Core3, 0xFB, 0x1A, "any.convert_extern")]
-[Instruction(Core3, 0xFB, 0x1B, "extern.convert_any")]
+[Instruction(
+    Core3,
+    0xFB,
+    0x1A,
+    "any.convert_extern",
+    ImmediateKind.None,
+    StackEffectKind.AnyConvertExtern,
+    ValidationRule.AnyConvertExtern,
+    nameof(Interpreter.AnyConvertExtern)
+)]
+[Instruction(
+    Core3,
+    0xFB,
+    0x1B,
+    "extern.convert_any",
+    ImmediateKind.None,
+    StackEffectKind.ExternConvertAny,
+    ValidationRule.ExternConvertAny,
+    nameof(Interpreter.ExternConvertAny)
+)]
 [Instruction(
     Core3,
     0xFB,

@@ -609,6 +609,24 @@ internal class WasmValue_FromExternRefTests
     }
 }
 
+internal class WasmValue_AsHostRefTests
+{
+    [Test]
+    public async Task 外部参照またはi31をホスト参照として取得する_異なる参照型を拒否する()
+    {
+        // Arrange
+        var external = WasmValue.FromExternRef(null);
+        var i31 = WasmValue.FromI31(0);
+
+        // Act & Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(external.AsHostRef).ThrowsExactly<InvalidOperationException>();
+            await Assert.That(i31.AsHostRef).ThrowsExactly<InvalidOperationException>();
+        }
+    }
+}
+
 internal class WasmValue_AsExternRefTests
 {
     [Test]
