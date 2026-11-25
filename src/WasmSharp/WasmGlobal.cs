@@ -51,20 +51,9 @@ public sealed class WasmGlobal
     public WasmGlobal(WasmGlobalType type, WasmValue initialValue)
     {
         ArgumentNullException.ThrowIfNull(type);
-        if (
-            type.ValueKind
-            is not (
-                WasmValueKind.I32
-                or WasmValueKind.I64
-                or WasmValueKind.F32
-                or WasmValueKind.F64
-                or WasmValueKind.V128
-                or WasmValueKind.FuncRef
-                or WasmValueKind.ExternRef
-            )
-        )
+        if (!type.ValueKind.IsSupported())
         {
-            throw new ArgumentException("Core 2.0で定義されていないvalueの種類です。", nameof(type));
+            throw new ArgumentException("未対応のvalueの種類です。", nameof(type));
         }
 
         if (!type.ValueType.Accepts(initialValue))

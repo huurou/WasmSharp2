@@ -528,9 +528,15 @@ internal static class ModuleBinaryFormat
         {
             -0x0d => WasmValueType.BottomReference(WasmValueKind.FuncRef, isNullable),
             -0x0e => WasmValueType.BottomReference(WasmValueKind.ExternRef, isNullable),
+            -0x0f => WasmValueType.BottomReference(WasmValueKind.AnyRef, isNullable),
             -0x10 => WasmValueType.Reference(WasmValueKind.FuncRef, isNullable),
             -0x11 => WasmValueType.Reference(WasmValueKind.ExternRef, isNullable),
-            >= -0x17 and <= -0x0c => throw reader.Unsupported("heap type", (int)reader.InputEnd, offset),
+            -0x12 => WasmValueType.Reference(WasmValueKind.AnyRef, isNullable),
+            -0x13 => WasmValueType.Reference(WasmValueKind.EqRef, isNullable),
+            -0x14 => WasmValueType.Reference(WasmValueKind.I31Ref, isNullable),
+            -0x15 => WasmValueType.Reference(WasmValueKind.StructRef, isNullable),
+            -0x16 => WasmValueType.Reference(WasmValueKind.ArrayRef, isNullable),
+            -0x17 or -0x0c => throw reader.Unsupported("heap type", (int)reader.InputEnd, offset),
             _ => throw reader.Error("malformed heap type: ヒープ型が不正です。", offset),
         };
     }

@@ -6,7 +6,7 @@ namespace WasmSharp;
 public readonly struct WasmValue
 {
     /// <summary>
-    /// 数値スカラーのビット列またはv128の下位64ビット
+    /// 数値スカラーやi31のビット列、またはv128の下位64ビット
     /// </summary>
     private readonly ulong _low64;
 
@@ -26,10 +26,16 @@ public readonly struct WasmValue
     public WasmValueKind Kind { get; }
 
     /// <summary>
+    /// 値がnull参照かどうか GC参照のnullはどの宣言型から生成してもanyの階層に属する
+    /// </summary>
+    public bool IsNullReference =>
+        _reference is null && Kind is WasmValueKind.FuncRef or WasmValueKind.ExternRef or WasmValueKind.AnyRef;
+
+    /// <summary>
     /// valueの型と対応するビット列または参照先を保持する
     /// </summary>
     /// <param name="kind">保持するvalueの型</param>
-    /// <param name="low64">数値スカラーのビット列またはv128の下位64ビット 参照型では0</param>
+    /// <param name="low64">数値スカラーやi31のビット列、またはv128の下位64ビット</param>
     /// <param name="high64">v128の上位64ビット 他の型では0</param>
     /// <param name="reference">参照型の参照先またはnull 数値型ではnull</param>
     private WasmValue(WasmValueKind kind, ulong low64, ulong high64, object? reference)
@@ -198,6 +204,43 @@ public readonly struct WasmValue
     {
         EnsureKind(WasmValueKind.V128);
         return (_low64, _high64);
+    }
+
+    /// <summary>
+    /// 指定した参照型と同じ階層のnullを構築する
+    /// </summary>
+    public static WasmValue FromNullReference(WasmValueKind kind)
+    {
+        if (!kind.IsReference())
+        {
+            throw new ArgumentOutOfRangeException(nameof(kind), kind, "参照型を指定してください。");
+        }
+        return new WasmValue(kind.GetTopKind(), 0, 0, null);
+    }
+
+    /// <summary>
+    /// 32ビット整数の下位31ビットを保持するi31参照を構築する
+    /// </summary>
+    public static WasmValue FromI31(int value)
+    {
+        return new WasmValue(WasmValueKind.I31Ref, (uint)(value & 0x7FFF_FFFF), 0, null);
+    }
+
+    /// <summary>
+    /// i31参照が保持する31ビットを符号拡張して取得する
+    /// </summary>
+    public int AsI31Signed()
+    {
+        return (AsI31Unsigned() << 1) >> 1;
+    }
+
+    /// <summary>
+    /// i31参照が保持する31ビットをゼロ拡張して取得する
+    /// </summary>
+    public int AsI31Unsigned()
+    {
+        EnsureKind(WasmValueKind.I31Ref);
+        return (int)_low64;
     }
 
     /// <summary>

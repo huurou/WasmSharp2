@@ -76,7 +76,7 @@ public sealed class WasmTable
     /// <summary>
     /// limitsに従って型別nullで初期化されたtableを生成する
     /// </summary>
-    /// <param name="elementType">要素の参照型 FuncRefまたはExternRef</param>
+    /// <param name="elementType">要素の参照型</param>
     /// <param name="limits">初期要素数と任意の最大要素数</param>
     /// <exception cref="ArgumentNullException">limitsがnullの場合</exception>
     /// <exception cref="ArgumentOutOfRangeException">elementTypeが参照型ではない場合</exception>
@@ -106,8 +106,7 @@ public sealed class WasmTable
             );
         }
 
-        var value = initialValue
-            ?? (type.ElementType == WasmValueKind.FuncRef ? WasmValue.FromFuncRef(null) : WasmValue.FromExternRef(null));
+        var value = initialValue ?? WasmValue.FromNullReference(type.ElementType);
         if (!type.ElementValueType.Accepts(value))
         {
             throw new ArgumentException(
@@ -152,7 +151,7 @@ public sealed class WasmTable
     private static WasmTableType Create32BitType(WasmValueKind elementType, WasmLimits limits)
     {
         ArgumentNullException.ThrowIfNull(limits);
-        if (!WasmTableType.IsSupportedElementType(elementType))
+        if (!elementType.IsReference())
         {
             throw new ArgumentOutOfRangeException(nameof(elementType), "tableには参照型を指定してください。");
         }

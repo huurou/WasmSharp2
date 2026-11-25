@@ -145,6 +145,7 @@ internal static class ExecutionBoundary
             (WasmTrapReason.IndirectCallTypeMismatch, _) => "indirect call type mismatch",
             (WasmTrapReason.NullFunctionReference, _) => "null function reference",
             (WasmTrapReason.NullReference, _) => "null reference",
+            (WasmTrapReason.NullI31Reference, _) => "null i31 reference",
             _ => "Wasmの実行中にtrapが発生しました。",
         };
     }
