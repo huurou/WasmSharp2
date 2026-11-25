@@ -181,6 +181,16 @@ internal enum ValidationRule
     RefIsNull,
 
     /// <summary>
+    /// i32を取り除き、非nullのi31参照を積む
+    /// </summary>
+    RefI31,
+
+    /// <summary>
+    /// nullを許可するi31参照を取り除き、i32を積む
+    /// </summary>
+    I31Get,
+
+    /// <summary>
     /// 参照型の入力を検証し、同じヒープ型の非null参照を積む
     /// </summary>
     RefAsNonNull,

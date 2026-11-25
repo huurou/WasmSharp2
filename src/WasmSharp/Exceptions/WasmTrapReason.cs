@@ -54,4 +54,9 @@ public enum WasmTrapReason
     /// ref.as_non_nullにnullを渡したときのtrap
     /// </summary>
     NullReference,
+
+    /// <summary>
+    /// i31.get_sまたはi31.get_uに渡した参照がnull
+    /// </summary>
+    NullI31Reference,
 }

@@ -275,18 +275,34 @@ internal partial class WasmModule_DecodeTests
     }
 
     [Test]
-    public async Task Core3のグローバル初期化式にrefI31がある_未対応の命令名を報告する()
+    public async Task Core3のグローバル初期化式にstructNewがある_未対応の命令名を報告する()
     {
         // Arrange
-        var bytes = HostLinkingModuleBinary.Create(
-            HostLinkingModuleBinary.Globals((0x6F, false, [0x41, 1, 0xFB, 0x1C, 0xFB, 0x1B, 0x0B]))
-        );
+        var bytes = HostLinkingModuleBinary.Create(HostLinkingModuleBinary.Globals((0x6F, false, [0xFB, 0x00, 0, 0x0B])));
 
         // Act & Assert
         var exception = await Assert
             .That(() => WasmModule.Decode(bytes, WasmSpecVersion.Core3))
             .ThrowsExactly<WasmUnsupportedFeatureException>();
-        await Assert.That(exception!.Feature).IsEqualTo("ref.i31");
+        await Assert.That(exception!.Feature).IsEqualTo("struct.new");
+    }
+
+    [Test]
+    [Arguments("6E")] // anyref
+    [Arguments("646C")] // (ref i31)
+    [Arguments("71")] // nullref
+    public async Task Core2の関数型にGC参照型がある_参照型のデコードエラーを報告する(string encodedType)
+    {
+        // Arrange
+        var binary = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Section(1, [1, 0x60, 1, .. Convert.FromHexString(encodedType), 0])
+        );
+
+        // Act & Assert
+        var error = await Assert
+            .That(() => WasmModule.Decode(binary, WasmSpecVersion.Core2))
+            .ThrowsExactly<WasmDecodeException>();
+        await Assert.That(error!.Message).StartsWith("malformed reference type");
     }
 
     [Test]
@@ -298,6 +314,7 @@ internal partial class WasmModule_DecodeTests
     [Arguments(WasmSpecVersion.Core2, "D500", "illegal opcode d5: Core 2.0")]
     [Arguments(WasmSpecVersion.Core2, "D600", "illegal opcode d6: Core 2.0")]
     [Arguments(WasmSpecVersion.Core2, "FB", "illegal opcode fb: Core 2.0")]
+    [Arguments(WasmSpecVersion.Core2, "FB1C", "illegal opcode fb: Core 2.0")]
     [Arguments(WasmSpecVersion.Core2, "FD8002", "illegal opcode 100: Core 2.0")]
     public async Task 選択した仕様で未割当の命令番号がある_その版のデコードエラーを報告する(
         WasmSpecVersion specVersion,

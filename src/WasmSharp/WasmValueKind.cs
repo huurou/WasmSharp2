@@ -44,4 +44,29 @@ public enum WasmValueKind
     /// Wasm例外への参照
     /// </summary>
     ExnRef,
+
+    /// <summary>
+    /// 内部参照の最上位型
+    /// </summary>
+    AnyRef,
+
+    /// <summary>
+    /// 同一性を比較できる内部参照
+    /// </summary>
+    EqRef,
+
+    /// <summary>
+    /// 31ビット整数への参照
+    /// </summary>
+    I31Ref,
+
+    /// <summary>
+    /// 構造体への参照
+    /// </summary>
+    StructRef,
+
+    /// <summary>
+    /// 配列への参照
+    /// </summary>
+    ArrayRef,
 }

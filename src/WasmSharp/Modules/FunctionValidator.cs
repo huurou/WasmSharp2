@@ -149,6 +149,16 @@ internal static class FunctionValidator
                     stack.Add(WasmValueKind.I32);
                     break;
 
+                case ValidationRule.RefI31:
+                    Pop(WasmValueKind.I32, instruction.ByteOffset);
+                    stack.Add(WasmValueType.Reference(WasmValueKind.I31Ref, false));
+                    break;
+
+                case ValidationRule.I31Get:
+                    Pop(WasmValueKind.I31Ref, instruction.ByteOffset);
+                    stack.Add(WasmValueKind.I32);
+                    break;
+
                 case ValidationRule.RefAsNonNull:
                     stack.Add(PopReference(instruction.ByteOffset).AsNonNullable());
                     break;

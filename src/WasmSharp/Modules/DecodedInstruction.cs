@@ -134,9 +134,9 @@ internal readonly struct DecodedInstruction
         return _typeImmediate is WasmValueType type ? type : kind;
     }
 
-    private static WasmValueType? GetExtendedType(WasmValueType type)
+    private static WasmValueType? GetExtendedType(WasmValueType type, WasmValueKind storedKind)
     {
-        return type == type.Kind ? null : type;
+        return type == storedKind ? null : type;
     }
 
     /// <summary>
@@ -167,8 +167,13 @@ internal readonly struct DecodedInstruction
     /// </summary>
     internal static DecodedInstruction WithNullReference(OpcodeKey opcode, WasmValueType type, long byteOffset)
     {
-        var value = type.Kind == WasmValueKind.FuncRef ? WasmValue.FromFuncRef(null) : WasmValue.FromExternRef(null);
-        return new DecodedInstruction(opcode, byteOffset, immediate: value, typeImmediate: GetExtendedType(type));
+        var value = WasmValue.FromNullReference(type.Kind);
+        return new DecodedInstruction(
+            opcode,
+            byteOffset,
+            immediate: value,
+            typeImmediate: GetExtendedType(type, value.Kind)
+        );
     }
 
     /// <summary>
@@ -259,7 +264,7 @@ internal readonly struct DecodedInstruction
             opcode,
             byteOffset,
             blockType: blockType,
-            typeImmediate: GetExtendedType(blockType.ValueType)
+            typeImmediate: GetExtendedType(blockType.ValueType, blockType.ValueType.Kind)
         );
     }
 

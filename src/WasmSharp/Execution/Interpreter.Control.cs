@@ -61,7 +61,7 @@ internal static partial class Interpreter
     /// </summary>
     internal static ExecutionResult BranchOnNull(InterpreterContext context, in Instruction instruction)
     {
-        if (IsNullReference(context.PeekValue()))
+        if (context.PeekValue().IsNullReference)
         {
             context.PopValue();
             context.Branch(context.GetBranchTarget(instruction.Index));
@@ -74,7 +74,7 @@ internal static partial class Interpreter
     /// </summary>
     internal static ExecutionResult BranchOnNonNull(InterpreterContext context, in Instruction instruction)
     {
-        if (IsNullReference(context.PeekValue()))
+        if (context.PeekValue().IsNullReference)
         {
             context.PopValue();
         }

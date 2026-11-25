@@ -78,9 +78,36 @@ namespace WasmSharp.Instructions;
 [Instruction(Core3, 0xFB, 0x19, "br_on_cast_fail")]
 [Instruction(Core3, 0xFB, 0x1A, "any.convert_extern")]
 [Instruction(Core3, 0xFB, 0x1B, "extern.convert_any")]
-[Instruction(Core3, 0xFB, 0x1C, "ref.i31")]
-[Instruction(Core3, 0xFB, 0x1D, "i31.get_s")]
-[Instruction(Core3, 0xFB, 0x1E, "i31.get_u")]
+[Instruction(
+    Core3,
+    0xFB,
+    0x1C,
+    "ref.i31",
+    ImmediateKind.None,
+    StackEffectKind.RefI31,
+    ValidationRule.RefI31,
+    nameof(Interpreter.RefI31)
+)]
+[Instruction(
+    Core3,
+    0xFB,
+    0x1D,
+    "i31.get_s",
+    ImmediateKind.None,
+    StackEffectKind.I31Get,
+    ValidationRule.I31Get,
+    nameof(Interpreter.I31GetS)
+)]
+[Instruction(
+    Core3,
+    0xFB,
+    0x1E,
+    "i31.get_u",
+    ImmediateKind.None,
+    StackEffectKind.I31Get,
+    ValidationRule.I31Get,
+    nameof(Interpreter.I31GetU)
+)]
 [Instruction(Core3, 0xFD, 0x100, "i8x16.relaxed_swizzle")]
 [Instruction(Core3, 0xFD, 0x101, "i32x4.relaxed_trunc_f32x4_s")]
 [Instruction(Core3, 0xFD, 0x102, "i32x4.relaxed_trunc_f32x4_u")]

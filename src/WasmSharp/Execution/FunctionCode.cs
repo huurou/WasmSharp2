@@ -75,8 +75,7 @@ internal sealed class FunctionCode(
             WasmValueKind.F32 => WasmValue.FromF32Bits(0),
             WasmValueKind.F64 => WasmValue.FromF64Bits(0),
             WasmValueKind.V128 => WasmValue.FromV128(0, 0),
-            WasmValueKind.FuncRef => WasmValue.FromFuncRef(null),
-            WasmValueKind.ExternRef => WasmValue.FromExternRef(null),
+            _ when WasmValueType.IsReferenceKind(kind) => WasmValue.FromNullReference(kind),
             _ => throw new InvalidOperationException("localの値型が不正です。"),
         };
     }
