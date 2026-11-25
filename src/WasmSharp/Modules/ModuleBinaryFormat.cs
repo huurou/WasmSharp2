@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Runtime.InteropServices;
 using WasmSharp.Exceptions;
 using WasmSharp.Modules.Definitions;
 using WasmSharp.Modules.Imports;
@@ -10,7 +11,7 @@ namespace WasmSharp.Modules;
 /// </summary>
 internal static class ModuleBinaryFormat
 {
-    // 解決済みの関数型だけを登録する。同型の先行宣言は共有済みなので、子の照合は参照一致で終了する。
+    // 解決済みのグループを先頭の関数型で共有し、同じ先行グループへの参照を一度で照合する。
     private static readonly IEqualityComparer<WasmFunctionType> __resolvedFunctionTypeComparer =
         EqualityComparer<WasmFunctionType>.Create(
             static (x, y) => x!.HasSameStructure(y!),
@@ -259,25 +260,39 @@ internal static class ModuleBinaryFormat
         for (uint index = 0; index < count; index++)
         {
             var offset = reader.Position;
-            var form = reader.ReadS7();
-            if (reader.SpecVersion == WasmSpecVersion.Core3 && form is -0x32 or -0x31 or -0x30 or -0x21 or -0x22)
+            var explicitGroup =
+                reader.SpecVersion == WasmSpecVersion.Core3 && reader.TryPeekByte(out var marker) && marker == 0x4E;
+            uint memberCount = 1;
+            if (explicitGroup)
             {
-                var feature = form switch
-                {
-                    -0x32 => "recursive type group",
-                    -0x31 or -0x30 => "explicit subtype",
-                    _ => "aggregate type",
-                };
-                throw reader.Unsupported(feature, (int)reader.InputEnd, offset);
+                reader.ReadByte();
+                memberCount = ReadCount(ref reader);
             }
-            if (form != -0x20)
+            reader.EnsureCollectionSize(
+                (ulong)types.Count + memberCount,
+                offset,
+                "関数型の総数が配列の保持上限を超えています。"
+            );
+            if (memberCount == 0)
             {
-                throw reader.Error("malformed function type: 関数型の形式が不正です。", offset);
+                continue;
             }
 
-            var parameters = ReadValueTypes(ref reader);
-            var results = ReadValueTypes(ref reader);
-            var type = WasmFunctionType.FromDecodedTypes(parameters, results);
+            WasmFunctionType type;
+            if (memberCount == 1)
+            {
+                type = WasmFunctionType.FromDecodedGroup([ReadFunctionType(ref reader, explicitGroup)], types.Count);
+            }
+            else
+            {
+                // 宣言件数に合わせた領域は、全要素の構文を読み終えてから確保する。
+                var declarations = new List<FunctionTypeDeclaration>();
+                for (uint member = 0; member < memberCount; member++)
+                {
+                    declarations.Add(ReadFunctionType(ref reader, explicitGroup));
+                }
+                type = WasmFunctionType.FromDecodedGroup(CollectionsMarshal.AsSpan(declarations), types.Count);
+            }
             // 未解決の参照には宣言ごとの入力位置があり、その参照を含む型も共有しない。
             if (resolvedTypes is not null && type.Unresolved is null)
             {
@@ -290,10 +305,36 @@ internal static class ModuleBinaryFormat
                     resolvedTypes.Add(type);
                 }
             }
-            types.Add(type);
+            type.AppendGroupTo(types);
         }
-
         return types;
+    }
+
+    private static FunctionTypeDeclaration ReadFunctionType(ref ModuleBinaryReader reader, bool explicitGroup)
+    {
+        var offset = reader.Position;
+        var form = reader.ReadS7();
+        if (reader.SpecVersion == WasmSpecVersion.Core3)
+        {
+            if (form is -0x31 or -0x30)
+            {
+                throw reader.Unsupported("explicit subtype", (int)reader.InputEnd, offset);
+            }
+            if (form is -0x21 or -0x22)
+            {
+                throw reader.Unsupported("aggregate type", (int)reader.InputEnd, offset);
+            }
+        }
+        if (form != -0x20)
+        {
+            throw reader.Error(
+                explicitGroup
+                    ? "malformed definition type: 再帰グループの型の形式が不正です。"
+                    : "malformed function type: 関数型の形式が不正です。",
+                offset
+            );
+        }
+        return new FunctionTypeDeclaration(ReadValueTypes(ref reader), ReadValueTypes(ref reader));
     }
 
     /// <summary>
@@ -408,10 +449,6 @@ internal static class ModuleBinaryFormat
         if (index < typeCount)
         {
             return WasmValueType.FunctionReference(reader.Types![(int)index], isNullable);
-        }
-        if (reader.SectionId == 1 && index == typeCount)
-        {
-            throw reader.Unsupported("recursive function type", (int)reader.InputEnd, offset);
         }
         return WasmValueType.UnresolvedFunctionReference((uint)index, isNullable, reader.Location(offset));
     }

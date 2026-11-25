@@ -1,3 +1,5 @@
+using WasmSharp.Tests.Fixtures;
+
 namespace WasmSharp.Tests;
 
 internal class WasmFunctionType_IsEquivalentToTests
@@ -62,6 +64,74 @@ internal class WasmFunctionType_IsEquivalentToTests
             await Assert.That(matchesDifferentResult).IsFalse();
             await Assert.That(matchesNullableReference).IsFalse();
         }
+    }
+
+    [Test]
+    [Arguments("014E02600000600000", 1)] // 同じグループの二番目
+    [Arguments("014E026000006000017F", 0)] // 二番目の関数だけがi32を返す
+    [Arguments("01600000", 0)] // 引数も結果もない暗黙の単一グループ
+    public async Task 引数と結果が同じでもグループ全体または投影位置が異なる_別の定義型と判定する(string section, byte index)
+    {
+        // Arrange
+        var left = InspectFunctionType("014E02600000600000", 0);
+        var right = InspectFunctionType(section, index);
+
+        // Act
+        var equivalent = left.IsEquivalentTo(right);
+
+        // Assert
+        await Assert.That(equivalent).IsFalse();
+    }
+
+    [Test]
+    [Arguments("026000017F4E02600264026300006000016401", 1, "0360017E006000017F4E02600264036301006000016402", 2)]
+    [Arguments("016001630000", 0, "024E016000004E016001630100", 1)]
+    public async Task 番号の異なるモジュールが同じ再帰グループを宣言する_関数型と参照型が同値になる(
+        string leftSection,
+        byte leftIndex,
+        string rightSection,
+        byte rightIndex
+    )
+    {
+        // Arrange
+        var left = InspectFunctionType(leftSection, leftIndex);
+        var right = InspectFunctionType(rightSection, rightIndex);
+        var leftReference = WasmValueType.FunctionReference(left, true);
+        var rightReference = WasmValueType.FunctionReference(right, true);
+
+        // Act
+        var equivalent = left.IsEquivalentTo(right);
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(equivalent).IsTrue();
+            await Assert.That(leftReference).IsEqualTo(rightReference);
+            await Assert.That(leftReference.GetHashCode()).IsEqualTo(rightReference.GetHashCode());
+        }
+    }
+
+    [Test]
+    public async Task 自分を参照する型と先行する同形の型を参照する型を比べる_別の定義型と判定する()
+    {
+        // Arrange
+        var recursive = InspectFunctionType("016000016400", 0);
+        var referringToRecursive = InspectFunctionType("0260000164006000016400", 1);
+
+        // Act
+        var equivalent = recursive.IsEquivalentTo(referringToRecursive);
+
+        // Assert
+        await Assert.That(equivalent).IsFalse();
+    }
+
+    private static WasmFunctionType InspectFunctionType(string typeSection, byte index)
+    {
+        var binary = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Section(1, Convert.FromHexString(typeSection)),
+            HostLinkingModuleBinary.Imports(("env", "f", 0, [index]))
+        );
+        return ((WasmImportInfo.Function)WasmModule.InspectImports(binary, WasmSpecVersion.Core3).Imports.Single()).Type;
     }
 
     private static WasmFunctionType CreateCallbackType(int depth)

@@ -6,6 +6,30 @@ namespace WasmSharp.Tests;
 internal partial class WasmModule_DecodeTests
 {
     [Test]
+    [Arguments(WasmSpecVersion.Core2, "014E01600000", "malformed function type", 11L)]
+    [Arguments(WasmSpecVersion.Core3, "014E014E00", "malformed definition type", 13L)]
+    public async Task 仕様上許可されない位置に再帰グループがある_Decodeが該当する型の位置を報告する(
+        WasmSpecVersion version,
+        string section,
+        string diagnostic,
+        long offset
+    )
+    {
+        // Arrange
+        var binary = HostLinkingModuleBinary.Create(HostLinkingModuleBinary.Section(1, Convert.FromHexString(section)));
+
+        // Act & Assert
+        var exception = await Assert.That(() => WasmModule.Decode(binary, version)).ThrowsExactly<WasmDecodeException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception!.Message).StartsWith(diagnostic);
+            await Assert
+                .That(exception.Location)
+                .IsEqualTo(new WasmFailureLocation(WasmProcessingStage.Decode, offset, null, 1));
+        }
+    }
+
+    [Test]
     public async Task 同じ関数型を複数の型番号で宣言する_番号順を保ち参照先とnull可否まで一致した型を共有する()
     {
         // Arrange
