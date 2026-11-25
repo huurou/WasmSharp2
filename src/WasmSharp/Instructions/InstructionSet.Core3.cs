@@ -76,8 +76,26 @@ namespace WasmSharp.Instructions;
 [Instruction(Core3, 0xFB, 0x17, "ref.cast")]
 [Instruction(Core3, 0xFB, 0x18, "br_on_cast")]
 [Instruction(Core3, 0xFB, 0x19, "br_on_cast_fail")]
-[Instruction(Core3, 0xFB, 0x1A, "any.convert_extern")]
-[Instruction(Core3, 0xFB, 0x1B, "extern.convert_any")]
+[Instruction(
+    Core3,
+    0xFB,
+    0x1A,
+    "any.convert_extern",
+    ImmediateKind.None,
+    StackEffectKind.AnyConvertExtern,
+    ValidationRule.AnyConvertExtern,
+    nameof(Interpreter.AnyConvertExtern)
+)]
+[Instruction(
+    Core3,
+    0xFB,
+    0x1B,
+    "extern.convert_any",
+    ImmediateKind.None,
+    StackEffectKind.ExternConvertAny,
+    ValidationRule.ExternConvertAny,
+    nameof(Interpreter.ExternConvertAny)
+)]
 [Instruction(
     Core3,
     0xFB,

@@ -186,6 +186,16 @@ internal enum StackEffectKind
     RefIsNull,
 
     /// <summary>
+    /// extern参照を同じnull可否のany参照へ変換する
+    /// </summary>
+    AnyConvertExtern,
+
+    /// <summary>
+    /// any参照を同じnull可否のextern参照へ変換する
+    /// </summary>
+    ExternConvertAny,
+
+    /// <summary>
     /// i32を取り除き、非nullのi31参照を積む
     /// </summary>
     RefI31,

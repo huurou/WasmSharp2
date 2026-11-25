@@ -9,6 +9,12 @@ internal sealed class ConstantReferenceOperation(
     Func<WasmValue, WasmValue> evaluate
 )
 {
+    internal static ConstantReferenceOperation AnyConvertExtern { get; } =
+        new ConstantReferenceOperation(WasmValueKind.ExternRef, WasmValueKind.AnyRef, x => x.InternalizeExtern());
+
+    internal static ConstantReferenceOperation ExternConvertAny { get; } =
+        new ConstantReferenceOperation(WasmValueKind.AnyRef, WasmValueKind.ExternRef, x => x.ExternalizeAny());
+
     internal static ConstantReferenceOperation RefI31 { get; } =
         new ConstantReferenceOperation(WasmValueKind.I32, WasmValueKind.I31Ref, x => WasmValue.FromI31(x.AsI32()));
 
@@ -16,7 +22,13 @@ internal sealed class ConstantReferenceOperation(
 
     internal static ConstantReferenceOperation? For(ValidationRule rule)
     {
-        return rule == ValidationRule.RefI31 ? RefI31 : null;
+        return rule switch
+        {
+            ValidationRule.AnyConvertExtern => AnyConvertExtern,
+            ValidationRule.ExternConvertAny => ExternConvertAny,
+            ValidationRule.RefI31 => RefI31,
+            _ => null,
+        };
     }
 
     // i32と到達不能な位置のbottomには非nullの結果型を付ける。参照入力はnull可否を引き継ぐ。
