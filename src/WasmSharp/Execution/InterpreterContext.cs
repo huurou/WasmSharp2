@@ -247,6 +247,14 @@ internal sealed class InterpreterContext
     }
 
     /// <summary>
+    /// 現在の関数の命令が指定した参照型に値が一致するかを判定する
+    /// </summary>
+    internal bool MatchesCastTarget(uint index, WasmValue value)
+    {
+        return CurrentFunction.Code.CastTargets[(int)index].Accepts(value);
+    }
+
+    /// <summary>
     /// 末尾の保持値をoperand基準の高さへ移し、現在の関数内で分岐する
     /// </summary>
     /// <param name="target">検証で確定した分岐先とoperandの配置</param>

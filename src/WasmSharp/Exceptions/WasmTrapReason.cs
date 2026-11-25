@@ -59,4 +59,9 @@ public enum WasmTrapReason
     /// i31.get_sまたはi31.get_uに渡した参照がnull
     /// </summary>
     NullI31Reference,
+
+    /// <summary>
+    /// ref.castの参照値が指定した型と一致しない
+    /// </summary>
+    CastFailure,
 }

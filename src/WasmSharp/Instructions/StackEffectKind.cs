@@ -136,6 +136,16 @@ internal enum StackEffectKind
     BranchOnNonNull,
 
     /// <summary>
+    /// キャストが成功したら対象型をラベルに渡し、失敗したら元の型の参照を残す
+    /// </summary>
+    BranchOnCast,
+
+    /// <summary>
+    /// キャストが失敗したら元の型の参照をラベルに渡し、成功したら対象型の参照を残す
+    /// </summary>
+    BranchOnCastFail,
+
+    /// <summary>
     /// i32選択値とラベルの値を取り出して到達不能にする
     /// </summary>
     BranchTable,
@@ -184,6 +194,21 @@ internal enum StackEffectKind
     /// 参照型の値を取り除き、null判定の結果をi32で積む
     /// </summary>
     RefIsNull,
+
+    /// <summary>
+    /// 2個のeq参照を取り除き、同一性の判定結果をi32で積む
+    /// </summary>
+    RefEq,
+
+    /// <summary>
+    /// 対象型と同じ参照階層の値を取り除き、型判定の結果をi32で積む
+    /// </summary>
+    RefTest,
+
+    /// <summary>
+    /// 対象型と同じ参照階層の値を取り除き、対象型の参照として積む
+    /// </summary>
+    RefCast,
 
     /// <summary>
     /// extern参照を同じnull可否のany参照へ変換する

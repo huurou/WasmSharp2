@@ -35,6 +35,7 @@ internal static class FunctionValidator
         var type = references.FunctionTypes[(int)moduleFunctionIndex];
         var instructions = ImmutableArray.CreateBuilder<Instruction>(function.Instructions.Length);
         var branchTargets = ImmutableArray.CreateBuilder<BranchTarget>();
+        ImmutableArray<WasmValueType>.Builder? castTargets = null;
         List<OperandType> stack = [];
         HashSet<uint> initializedLocals = [];
         var initializationOrder = new Stack<uint>();
@@ -59,6 +60,7 @@ internal static class FunctionValidator
 
             var emitInstruction = true;
             var outputIndex = instruction.Index;
+            var outputSecondaryIndex = instruction.SecondaryIndex;
             var outputTargetCount = 0;
 
             switch (descriptor.Validation)
@@ -147,6 +149,20 @@ internal static class FunctionValidator
                 case ValidationRule.RefIsNull:
                     PopReference(instruction.ByteOffset, "null判定");
                     stack.Add(WasmValueKind.I32);
+                    break;
+
+                case ValidationRule.RefEq:
+                    Pop(WasmValueKind.EqRef, instruction.ByteOffset);
+                    Pop(WasmValueKind.EqRef, instruction.ByteOffset);
+                    stack.Add(WasmValueKind.I32);
+                    break;
+
+                case ValidationRule.RefTest:
+                case ValidationRule.RefCast:
+                    var targetType = instruction.ReferenceType.Validate();
+                    Pop(targetType.Kind.GetTopKind(), instruction.ByteOffset);
+                    stack.Add(descriptor.Validation == ValidationRule.RefTest ? WasmValueKind.I32 : targetType);
+                    outputSecondaryIndex = AddCastTarget(targetType);
                     break;
 
                 case ValidationRule.I31Get:
@@ -412,6 +428,14 @@ internal static class FunctionValidator
                     outputIndex = (uint)AddLabelTarget(nonNullLabel);
                     break;
 
+                case ValidationRule.BranchOnCast:
+                case ValidationRule.BranchOnCastFail:
+                    (outputIndex, outputSecondaryIndex) = ValidateCastBranch(
+                        instruction,
+                        descriptor.Validation == ValidationRule.BranchOnCast
+                    );
+                    break;
+
                 case ValidationRule.BranchTable:
                     var defaultLabel = GetLabel(instruction.Labels[^1], instruction.ByteOffset);
                     var branchTypes = new OperandType[defaultLabel.LabelTypes.Length];
@@ -541,7 +565,7 @@ internal static class FunctionValidator
                         outputTargetCount,
                         instruction.MemoryArgument,
                         descriptor.MemoryAccessSignature.GetValueOrDefault(),
-                        instruction.SecondaryIndex,
+                        outputSecondaryIndex,
                         instruction.ShuffleLanes,
                         instruction.LaneIndex
                     )
@@ -553,8 +577,49 @@ internal static class FunctionValidator
             instructions.ToImmutable(),
             function.Locals.AsSpan(),
             maxOperandStack,
-            branchTargets.ToImmutable()
+            branchTargets.ToImmutable(),
+            castTargets?.ToImmutable() ?? []
         );
+
+        (uint BranchIndex, uint CastIndex) ValidateCastBranch(DecodedInstruction instruction, bool branchOnSuccess)
+        {
+            var (source, target) = instruction.CastBranchTypes;
+            source.Validate();
+            target.Validate();
+            if (!source.Accepts(target))
+            {
+                throw ValidationDiagnostics.ValidationFailure(
+                    "type mismatch on cast",
+                    "キャスト先はキャスト元の部分型である必要があります。",
+                    new WasmFailureLocation(WasmProcessingStage.Validate, instruction.ByteOffset, moduleFunctionIndex, 10)
+                );
+            }
+
+            // nullもキャストに成功する場合、失敗側では元の参照型からnullを除ける。
+            var failureType = target.IsNullable ? source.AsNonNullable() : source;
+            var branchType = branchOnSuccess ? target : failureType;
+            var label = GetLabel(instruction.Index, instruction.ByteOffset);
+            var labelTypes = label.LabelTypes.AsSpan();
+            if (labelTypes.IsEmpty || !labelTypes[^1].Accepts(branchType))
+            {
+                throw CreateException("分岐先の最後の型がキャスト分岐で渡す参照に一致しません。", instruction.ByteOffset);
+            }
+
+            Pop(source, instruction.ByteOffset);
+            var precedingTypes = labelTypes[..^1];
+            PopTypes(precedingTypes, instruction.ByteOffset);
+            PushTypes(precedingTypes);
+            stack.Add(branchOnSuccess ? failureType : target);
+            return ((uint)AddLabelTarget(label), AddCastTarget(target));
+        }
+
+        uint AddCastTarget(WasmValueType target)
+        {
+            castTargets ??= ImmutableArray.CreateBuilder<WasmValueType>();
+            var index = (uint)castTargets.Count;
+            castTargets.Add(target);
+            return index;
+        }
 
         void PopCopyOperands(WasmValueKind destinationType, WasmValueKind sourceType, long byteOffset)
         {

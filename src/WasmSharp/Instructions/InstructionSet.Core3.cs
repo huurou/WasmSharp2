@@ -19,7 +19,16 @@ namespace WasmSharp.Instructions;
 )]
 [Instruction(Core3, 0, 0x15, "return_call_ref")]
 [Instruction(Core3, 0, 0x1F, "try_table")]
-[Instruction(Core3, 0, 0xD3, "ref.eq")]
+[Instruction(
+    Core3,
+    0,
+    0xD3,
+    "ref.eq",
+    ImmediateKind.None,
+    StackEffectKind.RefEq,
+    ValidationRule.RefEq,
+    nameof(Interpreter.RefEq)
+)]
 [Instruction(
     Core3,
     0,
@@ -70,12 +79,66 @@ namespace WasmSharp.Instructions;
 [Instruction(Core3, 0xFB, 0x11, "array.copy")]
 [Instruction(Core3, 0xFB, 0x12, "array.init_data")]
 [Instruction(Core3, 0xFB, 0x13, "array.init_elem")]
-[Instruction(Core3, 0xFB, 0x14, "ref.test")]
-[Instruction(Core3, 0xFB, 0x15, "ref.test")]
-[Instruction(Core3, 0xFB, 0x16, "ref.cast")]
-[Instruction(Core3, 0xFB, 0x17, "ref.cast")]
-[Instruction(Core3, 0xFB, 0x18, "br_on_cast")]
-[Instruction(Core3, 0xFB, 0x19, "br_on_cast_fail")]
+[Instruction(
+    Core3,
+    0xFB,
+    0x14,
+    "ref.test",
+    ImmediateKind.CastType,
+    StackEffectKind.RefTest,
+    ValidationRule.RefTest,
+    nameof(Interpreter.RefTest)
+)]
+[Instruction(
+    Core3,
+    0xFB,
+    0x15,
+    "ref.test",
+    ImmediateKind.NullableCastType,
+    StackEffectKind.RefTest,
+    ValidationRule.RefTest,
+    nameof(Interpreter.RefTest)
+)]
+[Instruction(
+    Core3,
+    0xFB,
+    0x16,
+    "ref.cast",
+    ImmediateKind.CastType,
+    StackEffectKind.RefCast,
+    ValidationRule.RefCast,
+    nameof(Interpreter.RefCast)
+)]
+[Instruction(
+    Core3,
+    0xFB,
+    0x17,
+    "ref.cast",
+    ImmediateKind.NullableCastType,
+    StackEffectKind.RefCast,
+    ValidationRule.RefCast,
+    nameof(Interpreter.RefCast)
+)]
+[Instruction(
+    Core3,
+    0xFB,
+    0x18,
+    "br_on_cast",
+    ImmediateKind.CastBranch,
+    StackEffectKind.BranchOnCast,
+    ValidationRule.BranchOnCast,
+    nameof(Interpreter.BranchOnCast)
+)]
+[Instruction(
+    Core3,
+    0xFB,
+    0x19,
+    "br_on_cast_fail",
+    ImmediateKind.CastBranch,
+    StackEffectKind.BranchOnCastFail,
+    ValidationRule.BranchOnCastFail,
+    nameof(Interpreter.BranchOnCastFail)
+)]
 [Instruction(
     Core3,
     0xFB,
