@@ -87,6 +87,24 @@ Expand-Archive -LiteralPath ./baselines/core3/initial-run.zip -DestinationPath .
 展開したbaselineと保存元を比較すると、条件差・出典差・入力と素材の差・ケースの変化・追加・欠落・未比較・回帰はすべて0件でした。`compare-run`は比較を完了し、比較対象に`failed`が1,000件あるため終了値1を返しました。
 期待値の照合を更新したリビジョン`5acb4d88f14d1125dd9544a8798ff37ad342f09d`でも同じmanifestを再実行し、全65,193ケースの結果が初回のbaselineと一致することを確認しました。
 
+### GC参照とi31の受入結果
+
+GC参照とi31の実装着手前の`102855a`と、同じ固定素材・検証プロファイルで比較しました。Core 3.0では全65,193件のうち62,879件が成立し、着手前から104件増えました。回帰・欠落・未比較・不一致・ランナー異常はすべて0件でした。[Issue #14](https://github.com/huurou/WasmSharp2/issues/14)・[公式ケースの受入条件](https://github.com/huurou/WasmSharp2/issues/90)
+
+| 公式入力 | 入力内のcommand順序（0始まり、両端を含む） | 着手前の成立件数 | 変更後の成立件数 |
+| --- | --- | ---: | ---: |
+| `gc/i31.wast` | 0–72 | 2 | 73 |
+| `gc/ref_eq.wast` | 83–88 | 0 | 6 |
+| `gc/br_on_cast.wast` | 34–36 | 0 | 3 |
+| `gc/br_on_cast_fail.wast` | 34–36 | 0 | 3 |
+| `gc/type-subtyping.wast` | 17–29、44–51 | 0 | 21 |
+
+この106件のうち、ランタイム未対応だった24件と前提不成立だった80件が成立しました。表の範囲外で分類が変わったケースはありません。`ref_null.wast`のcommand 0と6は、GC参照型をデコードした先で、例外参照型が未対応であることを報告するようになり、診断のバイト位置が変わりました。
+
+`gc/extern.wast`は最初のmoduleで構造体・配列型を定義するため、後続17件はすべて前提不成立でした。`gc/ref_test.wast`と`gc/ref_cast.wast`に残った前提不成立も、すべて構造体・配列の型定義（`aggregate type`）の未対応に起因します。公開CLIの直接テストで、i31の0とnullの区別、番号付きのホスト参照と外部参照の相互変換、内部のホスト参照に対する`ref.test (ref eq)`と`ref.test (ref any)`の結果を確認しました。[参照値の公開CLIテスト](../../tests/WasmSharp.TestSuiteRunner.Tests/RunnerCli_RunTests.References.cs)
+
+Core 3.0全体で残ったランタイム未対応は226件、対象外は1,241件、前提不成立は847件でした。前提不成立のうち844件は未対応機能に依存し、残る3件は従来からテキスト形式で対象外の`comments.wast`のcommand 4に依存するcommand 5–7です。このため`run`は終了1、`compare-run`は終了0でした。Core 2.0では従来どおり全53,907件のうち52,830件が成立し、1,077件が対象外でした。全ケースの分類・期待診断・実際の公開診断が一致し、`run`・`compare-run`・`verify`はいずれも終了0でした。
+
 ## Core 2.0の初回の生成・実行とbaseline保存
 
 次の各行を個別に実行し、終了値と結果を確認します。`$runner`は上記の起動例で設定した実行ファイルです。
