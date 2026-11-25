@@ -485,6 +485,11 @@ internal sealed class ScriptReader(WasmSpecVersion specVersion, bool usesWasmToo
     )
     {
         var type = GetString(properties, path, TYPE);
+        if (specVersion == WasmSpecVersion.Core3 && !expected && ArgumentValue.GetCore3NullReferenceKind(type) is not null)
+        {
+            RejectUnknownNames(properties, path, TYPE);
+            return create(type, null, null, []);
+        }
         if (
             specVersion == WasmSpecVersion.Core3
             && (expected ? ExpectedValue.GetCore3ReferenceMatches(type) is not null : type == "anyref")

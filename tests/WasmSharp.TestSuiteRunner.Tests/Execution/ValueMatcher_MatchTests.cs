@@ -44,7 +44,7 @@ internal class ValueMatcher_MatchTests
             WasmValue.FromF64Bits(0),
             WasmValue.FromFuncRef(null),
             WasmValue.FromExternRef(null),
-            WasmValue.FromExternRef(state.GetExternref(1))
+            WasmValue.FromExternRef(state.GetHostValue(1))
         );
 
         // Assert
@@ -90,7 +90,7 @@ internal class ValueMatcher_MatchTests
             expected,
             WasmValue.FromI64(0),
             WasmValue.FromExternRef(null),
-            WasmValue.FromExternRef(state.GetExternref(1)),
+            WasmValue.FromExternRef(state.GetHostValue(1)),
             WasmValue.FromF64Bits(0)
         );
 
@@ -247,7 +247,7 @@ internal class ValueMatcher_MatchTests
         {
             "null" => null,
             "unknown" => new object(),
-            _ => state.GetExternref(uint.Parse(actual)),
+            _ => state.GetHostValue(uint.Parse(actual)),
         };
 
         // Act

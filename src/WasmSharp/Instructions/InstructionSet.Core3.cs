@@ -145,9 +145,9 @@ namespace WasmSharp.Instructions;
     0x1A,
     "any.convert_extern",
     ImmediateKind.None,
-    StackEffectKind.AnyConvertExtern,
-    ValidationRule.AnyConvertExtern,
-    nameof(Interpreter.AnyConvertExtern)
+    StackEffectKind.ConstantReference,
+    ValidationRule.ConstantReference,
+    nameof(ConstantReferenceOperation.AnyConvertExtern)
 )]
 [Instruction(
     Core3,
@@ -155,9 +155,9 @@ namespace WasmSharp.Instructions;
     0x1B,
     "extern.convert_any",
     ImmediateKind.None,
-    StackEffectKind.ExternConvertAny,
-    ValidationRule.ExternConvertAny,
-    nameof(Interpreter.ExternConvertAny)
+    StackEffectKind.ConstantReference,
+    ValidationRule.ConstantReference,
+    nameof(ConstantReferenceOperation.ExternConvertAny)
 )]
 [Instruction(
     Core3,
@@ -165,9 +165,9 @@ namespace WasmSharp.Instructions;
     0x1C,
     "ref.i31",
     ImmediateKind.None,
-    StackEffectKind.RefI31,
-    ValidationRule.RefI31,
-    nameof(Interpreter.RefI31)
+    StackEffectKind.ConstantReference,
+    ValidationRule.ConstantReference,
+    nameof(ConstantReferenceOperation.RefI31)
 )]
 [Instruction(
     Core3,

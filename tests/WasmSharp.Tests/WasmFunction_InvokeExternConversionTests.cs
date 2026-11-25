@@ -37,6 +37,33 @@ internal partial class WasmFunction_InvokeTests
     }
 
     [Test]
+    [Arguments(7, 7, 1)]
+    [Arguments(-1, int.MaxValue, 1)]
+    [Arguments(7, 8, 0)]
+    public async Task 個別に作ったi31を外部参照へ変換して戻す_元の31ビットに従って参照の同一性を判定する(
+        int first,
+        int second,
+        int expected
+    )
+    {
+        // Arrange
+        var context = new WasmExecutionContext();
+        // ref.i31、extern.convert_any、any.convert_extern、ref.cast eqの順に両方の引数を変換する。
+        byte[] roundTrip = [0xFB, 0x1C, 0xFB, 0x1B, 0xFB, 0x1A, 0xFB, 0x16, 0x6D];
+        var equal = ReferenceControlModule
+            .Create([1, 0x60, 2, 0x7F, 0x7F, 1, 0x7F], [0x20, 0, .. roundTrip, 0x20, 1, .. roundTrip, 0xD3])
+            .Validate()
+            .Instantiate(context, [])
+            .GetFunction("f");
+
+        // Act
+        var result = equal.Invoke(context, [WasmValue.FromI32(first), WasmValue.FromI32(second)]);
+
+        // Assert
+        await Assert.That(result.Values[0].AsI32()).IsEqualTo(expected);
+    }
+
+    [Test]
     public async Task 外部化したi31の参照先をホスト参照として渡す_外部参照を経由して同じオブジェクトが戻る()
     {
         // Arrange

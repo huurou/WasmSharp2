@@ -20,17 +20,6 @@ internal sealed class ConstantReferenceOperation(
 
     internal WasmValueType InputType { get; } = inputKind;
 
-    internal static ConstantReferenceOperation? For(ValidationRule rule)
-    {
-        return rule switch
-        {
-            ValidationRule.AnyConvertExtern => AnyConvertExtern,
-            ValidationRule.ExternConvertAny => ExternConvertAny,
-            ValidationRule.RefI31 => RefI31,
-            _ => null,
-        };
-    }
-
     // i32と到達不能な位置のbottomには非nullの結果型を付ける。参照入力はnull可否を引き継ぐ。
     internal WasmValueType GetResultType(WasmValueType? input)
     {

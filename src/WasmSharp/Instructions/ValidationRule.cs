@@ -206,19 +206,9 @@ internal enum ValidationRule
     RefCast,
 
     /// <summary>
-    /// extern参照を同じnull可否のany参照へ変換する
+    /// 定数式と共有する単項演算の入力型を検証し、入力のnull可否を引き継いだ参照型を積む
     /// </summary>
-    AnyConvertExtern,
-
-    /// <summary>
-    /// any参照を同じnull可否のextern参照へ変換する
-    /// </summary>
-    ExternConvertAny,
-
-    /// <summary>
-    /// i32を取り除き、非nullのi31参照を積む
-    /// </summary>
-    RefI31,
+    ConstantReference,
 
     /// <summary>
     /// nullを許可するi31参照を取り除き、i32を積む

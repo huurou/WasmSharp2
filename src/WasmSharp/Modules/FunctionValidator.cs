@@ -544,7 +544,8 @@ internal static class FunctionValidator
                     }
                     break;
 
-                case var rule when ConstantReferenceOperation.For(rule) is { } referenceOperation:
+                case ValidationRule.ConstantReference:
+                    var referenceOperation = descriptor.ConstantReferenceOperation!;
                     var input = Pop(referenceOperation.InputType, instruction.ByteOffset);
                     stack.Add(referenceOperation.GetResultType(input.DeclaredType));
                     break;

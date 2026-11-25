@@ -347,7 +347,7 @@ internal static class ValueMatcher
     )
     {
         // 割り当てた番号は参照の同一性で引くため、番号の一致は同じ番号のホスト値と同じ参照であることを示す。
-        var number = ValueCodec.GetReferenceObject(actual) is { } reference ? state.GetExternrefNumber(reference) : null;
+        var number = ValueCodec.GetReferenceObject(actual) is { } reference ? state.GetHostValueNumber(reference) : null;
         var isFunction = actual.Kind == WasmValueKind.FuncRef && !actual.IsNullReference;
         var matched = expected.Reference switch
         {

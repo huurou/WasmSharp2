@@ -83,8 +83,8 @@ internal class ValueCodec_RecordTests
     {
         // Arrange
         var state = new ScriptState("a.wast");
-        var five = state.GetExternref(5);
-        var three = state.GetExternref(3);
+        var five = state.GetHostValue(5);
+        var three = state.GetHostValue(3);
 
         // Act
         ValueRecord[] records =

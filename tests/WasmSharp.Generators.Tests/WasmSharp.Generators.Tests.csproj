@@ -23,7 +23,7 @@
       LogicalName="InstructionContracts.%(Filename)%(Extension)"
     />
     <EmbeddedResource
-      Include="..\..\src\WasmSharp\Execution\ExecutionResult.cs;..\..\src\WasmSharp\Execution\Instruction.cs;..\..\src\WasmSharp\WasmValue.cs"
+      Include="..\..\src\WasmSharp\Execution\ExecutionResult.cs;..\..\src\WasmSharp\Execution\Instruction.cs;..\..\src\WasmSharp\WasmValue.cs;..\..\src\WasmSharp\Instructions\ConstantReferenceOperation.cs"
       LogicalName="ExecutionContracts.%(Filename)%(Extension)"
     />
     <EmbeddedResource

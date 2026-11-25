@@ -70,6 +70,53 @@ internal partial class RunnerCli_RunTests
     }
 
     [Test]
+    [Arguments("nullref", (byte)0x6E, "anyref", true)]
+    [Arguments("eqref", (byte)0x6D, "anyref", false)]
+    [Arguments("i31ref", (byte)0x6C, "anyref", false)]
+    [Arguments("structref", (byte)0x6B, "anyref", false)]
+    [Arguments("arrayref", (byte)0x6A, "anyref", false)]
+    [Arguments("nullfuncref", (byte)0x70, "funcref", true)]
+    [Arguments("nullexternref", (byte)0x6F, "externref", true)]
+    public async Task 値を省略した参照を引数と期待値に指定する_引数は階層ごとのnullになり期待値は型ごとの条件で照合する(
+        string type,
+        byte parameter,
+        string resultType,
+        bool matchesNull
+    )
+    {
+        // Arrange
+        using var fixture = CorpusFixture.Create();
+        var module = ScriptExecutionFixture.Binary(
+            (1, [1, 0x60, 1, parameter, 1, parameter]),
+            (3, [1, 0]),
+            (7, [1, .. ScriptExecutionFixture.Name("id"), 0, 0]),
+            (10, [1, 4, 0, 0x20, 0, 0x0b])
+        );
+        var action = $$"""{"type":"invoke","field":"id","args":[{"type":"{{type}}"}]}""";
+        fixture.ReplaceScriptA(
+            $$"""
+            {"type":"module","line":1,"filename":"a.0.wasm"},
+            {"type":"assert_return","line":2,"action":{{action}},"expected":[{"type":"refnull"}]},
+            {"type":"assert_return","line":3,"action":{{action}},"expected":[{"type":"{{type}}"}]}
+            """,
+            module
+        );
+
+        // Act
+        var (_, cases) = RunAssertions(fixture, WasmSpecVersion.Core3);
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(cases[1].Outcome).IsEqualTo(CaseOutcome.Passed);
+            var actual = cases[1].ActualValues.Single();
+            await Assert.That(actual.Type).IsEqualTo(resultType);
+            await Assert.That(actual.IsNull).IsTrue();
+            await Assert.That(cases[2].Outcome).IsEqualTo(matchesNull ? CaseOutcome.Passed : CaseOutcome.Failed);
+        }
+    }
+
+    [Test]
     [Arguments("funcref", "function", true)]
     [Arguments("funcref", "null", false)]
     [Arguments("anyref", "function", false)]

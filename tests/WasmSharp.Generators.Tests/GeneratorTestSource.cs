@@ -12,9 +12,10 @@ internal static class GeneratorTestSource
         namespace WasmSharp
         {
             public sealed class WasmFunction;
-            public readonly record struct WasmValueType(WasmValueKind Kind)
+            public readonly record struct WasmValueType(WasmValueKind Kind, bool IsNullable = false)
             {
-                public static implicit operator WasmValueType(WasmValueKind kind) => new WasmValueType(kind);
+                public static implicit operator WasmValueType(WasmValueKind kind) => new WasmValueType(kind, kind.IsReference());
+                public static WasmValueType Reference(WasmValueKind kind, bool isNullable) => new WasmValueType(kind, isNullable);
             }
         }
         namespace WasmSharp.Exceptions
@@ -84,6 +85,10 @@ internal static class GeneratorTestSource
                             namespace WasmSharp
                             {
                                 internal readonly struct WasmValue;
+                            }
+                            namespace WasmSharp.Instructions
+                            {
+                                internal sealed class ConstantReferenceOperation;
                             }
                             namespace WasmSharp.Execution
                             {

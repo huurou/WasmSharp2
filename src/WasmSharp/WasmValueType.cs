@@ -31,7 +31,7 @@ public readonly struct WasmValueType : IEquatable<WasmValueType>
     private readonly UnresolvedReference? _unresolved;
 
     /// <summary>
-    /// 実行時の値の種類
+    /// 宣言で指定した値の種類 例えばeqrefの宣言では<see cref="WasmValueKind.EqRef"/>を返す
     /// </summary>
     public WasmValueKind Kind { get; }
 

@@ -218,7 +218,7 @@ internal static class ValueCodec
     {
         object? ReadHostObject()
         {
-            return value.Value == NULL ? null : state.GetExternref((uint)ParseBits(value.Value, 32, path));
+            return value.Value == NULL ? null : state.GetHostValue((uint)ParseBits(value.Value, 32, path));
         }
 
         return value switch
@@ -228,6 +228,9 @@ internal static class ValueCodec
             { Type: "f32" } => WasmValue.FromF32Bits((uint)ParseBits(value.Value, 32, path)),
             { Type: "f64" } => WasmValue.FromF64Bits(ParseBits(value.Value, 64, path)),
             { Type: "v128", LaneType: { } laneType } => CreateV128(laneType, value.Lanes, path, signedIntegers),
+            { Value: null }
+                when specVersion == WasmSpecVersion.Core3
+                    && ArgumentValue.GetCore3NullReferenceKind(value.Type) is { } kind => WasmValue.FromNullReference(kind),
             { Type: "funcref", Value: NULL } => WasmValue.FromFuncRef(null),
             { Type: "externref" } => WasmValue.FromExternRef(ReadHostObject()),
             { Type: "anyref" } when specVersion == WasmSpecVersion.Core3 => WasmValue.FromHostRef(ReadHostObject()),
@@ -302,7 +305,7 @@ internal static class ValueCodec
             {
                 IsNull = false,
                 Token = state.GetReferenceToken(reference),
-                ExternrefNumber = state.GetExternrefNumber(reference),
+                ExternrefNumber = state.GetHostValueNumber(reference),
             };
     }
 

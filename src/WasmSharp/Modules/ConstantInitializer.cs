@@ -54,7 +54,7 @@ internal static class ConstantInitializer
                 }
                 resultType = signature.ResultType;
             }
-            else if (ConstantReferenceOperation.For(descriptor.Validation) is { } referenceOperation)
+            else if (descriptor.ConstantReferenceOperation is { } referenceOperation)
             {
                 if (count == 0 || !referenceOperation.InputType.Accepts(resultType))
                 {
@@ -123,7 +123,7 @@ internal static class ConstantInitializer
                 var right = operands.Pop();
                 operands.Push(operation(operands.Pop(), right));
             }
-            else if (ConstantReferenceOperation.For(descriptor.Validation) is { } referenceOperation)
+            else if (descriptor.ConstantReferenceOperation is { } referenceOperation)
             {
                 operands.Push(referenceOperation.Evaluate(operands.Pop()));
             }
@@ -196,10 +196,7 @@ internal static class ConstantInitializer
                 descriptor.Validation is ValidationRule.Constant or ValidationRule.RefFunc
                 || (
                     specVersion == WasmSpecVersion.Core3
-                    && (
-                        descriptor.ConstantBinaryOperation is not null
-                        || ConstantReferenceOperation.For(descriptor.Validation) is not null
-                    )
+                    && (descriptor.ConstantBinaryOperation is not null || descriptor.ConstantReferenceOperation is not null)
                 )
             )
         )

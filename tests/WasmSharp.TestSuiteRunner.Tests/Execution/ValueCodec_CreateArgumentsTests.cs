@@ -98,7 +98,7 @@ internal class ValueCodec_CreateArgumentsTests
     {
         // Arrange
         var state = new ScriptState("a.wast");
-        var assigned = state.GetExternref(1);
+        var assigned = state.GetHostValue(1);
 
         // Act
         var values = ValueCodec.CreateArguments(
@@ -115,10 +115,10 @@ internal class ValueCodec_CreateArgumentsTests
         using (Assert.Multiple())
         {
             await Assert.That(values[0].AsExternRef()).IsSameReferenceAs(assigned);
-            await Assert.That(values[1].AsExternRef()).IsSameReferenceAs(state.GetExternref(2));
+            await Assert.That(values[1].AsExternRef()).IsSameReferenceAs(state.GetHostValue(2));
             await Assert.That(values[1].AsExternRef()).IsNotSameReferenceAs(assigned);
             await Assert.That(values[2].AsExternRef()).IsSameReferenceAs(assigned);
-            await Assert.That(values[3].AsExternRef()).IsSameReferenceAs(state.GetExternref(uint.MaxValue));
+            await Assert.That(values[3].AsExternRef()).IsSameReferenceAs(state.GetHostValue(uint.MaxValue));
         }
     }
 
