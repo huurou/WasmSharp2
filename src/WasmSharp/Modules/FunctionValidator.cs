@@ -459,7 +459,7 @@ internal static class FunctionValidator
                         if (!globalType.IsMutable)
                         {
                             throw ValidationDiagnostics.ValidationFailure(
-                                "global is immutable",
+                                module.SpecVersion == WasmSpecVersion.Core3 ? "immutable global" : "global is immutable",
                                 "immutable globalは更新できません。",
                                 new(WasmProcessingStage.Validate, instruction.ByteOffset, moduleFunctionIndex, 10)
                             );
