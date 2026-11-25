@@ -445,6 +445,25 @@ internal partial class WasmModule_DecodeTests
     }
 
     [Test]
+    public async Task Core3でタグのexport宣言を読む_タグが未対応であることと種類の位置を返す()
+    {
+        // Arrange
+        var bytes = HostLinkingModuleBinary.Create(HostLinkingModuleBinary.Exports(("event", 4, 0)));
+
+        // Act & Assert
+        var exception = await Assert
+            .That(() => WasmModule.Decode(bytes, WasmSpecVersion.Core3))
+            .ThrowsExactly<WasmUnsupportedFeatureException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(exception?.Feature).IsEqualTo("tag export");
+            await Assert
+                .That(exception?.Location)
+                .IsEqualTo(new WasmFailureLocation(WasmProcessingStage.Decode, bytes.Length - 2, null, 7));
+        }
+    }
+
+    [Test]
     [Arguments("020401000005", "malformed import kind")]
     [Arguments("070401000500", "malformed export kind")]
     public async Task Core3のimportまたはexportで予約された種類を指定する_種類の構文エラーを報告する(

@@ -120,7 +120,7 @@ public sealed class WasmFunctionType
         {
             return FunctionSupertypeError.None;
         }
-        if (IsInSameGroup(parent) && parent._position >= _position)
+        if (!IsSupertypeOrderValid(parent))
         {
             return FunctionSupertypeError.Forward;
         }
@@ -166,6 +166,12 @@ public sealed class WasmFunctionType
     private bool IsInSameGroup(WasmFunctionType other)
     {
         return ReferenceEquals(this, other) || (_group is not null && ReferenceEquals(_group, other._group));
+    }
+
+    private bool IsSupertypeOrderValid(WasmFunctionType parent)
+    {
+        // グループ外の参照先は先行グループに属する。同じグループでは先行する宣言だけを上位型にできる。
+        return !IsInSameGroup(parent) || parent._position < _position;
     }
 
     private WasmFunctionType GetGroupMember(int position)
@@ -295,16 +301,13 @@ public sealed class WasmFunctionType
     internal bool IsSubtypeOf(WasmFunctionType expected)
     {
         var current = this;
-        var stepsInGroup = 0;
         while (!current.IsEquivalentTo(expected))
         {
-            if (!current._isGroupValid || current._supertypes is not [{ FunctionType: { } supertype }])
-            {
-                return false;
-            }
-            // グループ自身の宣言を検証する間だけ、まだ順序を確認していない上位型も照合に参加する。
-            stepsInGroup = current.IsInSameGroup(supertype) ? stepsInGroup + 1 : 0;
-            if (stepsInGroup >= current.GroupSize)
+            if (
+                !current._isGroupValid
+                || current._supertypes is not [{ FunctionType: { } supertype }]
+                || !current.IsSupertypeOrderValid(supertype)
+            )
             {
                 return false;
             }

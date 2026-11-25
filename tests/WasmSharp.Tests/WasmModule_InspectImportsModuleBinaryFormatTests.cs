@@ -6,6 +6,26 @@ namespace WasmSharp.Tests;
 internal partial class WasmModule_InspectImportsTests
 {
     [Test]
+    public async Task Core3のタグimportを調査する_未対応の機能名と種類の位置を返す()
+    {
+        // Arrange
+        var bytes = HostLinkingModuleBinary.Create(HostLinkingModuleBinary.Imports(("env", "event", 4, [0, 0])));
+
+        // Act & Assert
+        var failure = await Assert
+            .That(() => WasmModule.InspectImports(bytes, WasmSpecVersion.Core3))
+            .ThrowsExactly<WasmImportInspectionException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(failure?.Reason).IsEqualTo(WasmImportInspectionReason.UnsupportedFeature);
+            await Assert.That(failure?.Feature).IsEqualTo("tag import");
+            await Assert
+                .That(failure?.Location)
+                .IsEqualTo(new WasmFailureLocation(WasmProcessingStage.Decode, bytes.Length - 3, null, 2));
+        }
+    }
+
+    [Test]
     [Arguments("4E025F00600000", "aggregate type", 13L)]
     [Arguments("4F005F00", "aggregate type", 13L)]
     [Arguments("50005E7F00", "aggregate type", 13L)]
