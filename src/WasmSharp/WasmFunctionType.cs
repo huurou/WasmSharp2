@@ -17,6 +17,8 @@ public sealed class WasmFunctionType
 
     private bool IsFinal { get; } = true;
 
+    private int GroupSize => _group?.Length ?? 1;
+
     internal FunctionSupertypeError SupertypeError { get; private set; }
 
     /// <summary>
@@ -82,9 +84,9 @@ public sealed class WasmFunctionType
         foreach (var member in members)
         {
             hash.Add(member.IsFinal);
-            member.AddValuesToHash(member._supertypes, ref hash, ref missing, ref valid);
-            member.AddValuesToHash(member.ParameterTypes, ref hash, ref missing, ref valid);
-            member.AddValuesToHash(member.ResultTypes, ref hash, ref missing, ref valid);
+            member.AccumulateHashAndReferenceState(member._supertypes, ref hash, ref missing, ref valid);
+            member.AccumulateHashAndReferenceState(member.ParameterTypes, ref hash, ref missing, ref valid);
+            member.AccumulateHashAndReferenceState(member.ResultTypes, ref hash, ref missing, ref valid);
         }
         var groupHash = hash.ToHashCode();
         foreach (var member in members)
@@ -133,7 +135,10 @@ public sealed class WasmFunctionType
             : FunctionSupertypeError.Signature;
     }
 
-    private void AddValuesToHash(
+    /// <summary>
+    /// 値型列を一度たどり、構造ハッシュ、最初の未解決参照、参照先グループの妥当性を集計する
+    /// </summary>
+    private void AccumulateHashAndReferenceState(
         ImmutableArray<WasmValueType> values,
         ref HashCode hash,
         ref WasmValueType.UnresolvedReference? missing,
@@ -161,6 +166,11 @@ public sealed class WasmFunctionType
     private bool IsInSameGroup(WasmFunctionType other)
     {
         return ReferenceEquals(this, other) || (_group is not null && ReferenceEquals(_group, other._group));
+    }
+
+    private WasmFunctionType GetGroupMember(int position)
+    {
+        return _group?[position] ?? this;
     }
 
     /// <summary>
@@ -294,7 +304,7 @@ public sealed class WasmFunctionType
             }
             // グループ自身の宣言を検証する間だけ、まだ順序を確認していない上位型も照合に参加する。
             stepsInGroup = current.IsInSameGroup(supertype) ? stepsInGroup + 1 : 0;
-            if (stepsInGroup >= (current._group?.Length ?? 1))
+            if (stepsInGroup >= current.GroupSize)
             {
                 return false;
             }
@@ -319,15 +329,15 @@ public sealed class WasmFunctionType
         {
             firstPending = null;
             var (left, right) = current;
-            var size = left._group?.Length ?? 1;
-            if (size != (right._group?.Length ?? 1))
+            var size = left.GroupSize;
+            if (size != right.GroupSize)
             {
                 return false;
             }
             for (var index = 0; index < size; index++)
             {
-                var a = left._group?[index] ?? left;
-                var b = right._group?[index] ?? right;
+                var a = left.GetGroupMember(index);
+                var b = right.GetGroupMember(index);
                 if (
                     a.IsFinal != b.IsFinal
                     || !CompareValues(a, b, a._supertypes, b._supertypes)
@@ -377,7 +387,7 @@ public sealed class WasmFunctionType
                         continue;
                     }
                     // 投影位置を確認した後は、外側のグループの定義全体を一度だけ比較する。
-                    var pair = (nested._group?[0] ?? nested, otherTarget._group?[0] ?? otherTarget);
+                    var pair = (nested.GetGroupMember(0), otherTarget.GetGroupMember(0));
                     if (firstPending == pair || (visited is not null && !visited.Add(pair)))
                     {
                         continue;

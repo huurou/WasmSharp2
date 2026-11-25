@@ -88,11 +88,17 @@ internal partial class WasmModule_InstantiateTests
         var supertypeConsumer = CreateConsumer(1); // $base
 
         // Act & Assert
-        await Assert.That(() => sameTypeConsumer.Instantiate(context, [provider])).ThrowsNothing();
-        var failure = await Assert
-            .That(() => supertypeConsumer.Instantiate(context, [provider]))
-            .ThrowsExactly<WasmInstantiateException>();
-        await Assert.That(failure!.Reason).IsEqualTo(WasmInstantiateReason.TypeMismatch);
+        using (Assert.Multiple())
+        {
+            await Assert.That(() => sameTypeConsumer.Instantiate(context, [provider])).ThrowsNothing();
+            var failure = await Assert
+                .That(() => supertypeConsumer.Instantiate(context, [provider]))
+                .ThrowsExactly<WasmInstantiateException>();
+            if (failure is not null)
+            {
+                await Assert.That(failure.Reason).IsEqualTo(WasmInstantiateReason.TypeMismatch);
+            }
+        }
 
         WasmModule CreateConsumer(byte typeIndex)
         {

@@ -24,6 +24,7 @@ internal static class ModuleBinaryFormat
     /// <param name="reader">import sectionの読み取り状態 宣言の終端まで進める</param>
     /// <returns>入力の宣言順に並ぶimport定義 関数型のindexは解決しない</returns>
     /// <exception cref="WasmDecodeException">件数、名前、外部要素の種類または型の符号化が不正な場合</exception>
+    /// <exception cref="WasmUnsupportedFeatureException">Core 3.0のタグをimportする場合</exception>
     /// <exception cref="ModuleReadBoundaryException">限定された範囲内で構文を読み終えられない場合</exception>
     /// <exception cref="WasmImplementationLimitException">宣言件数がコレクションの保持上限を超える場合</exception>
     internal static List<ModuleImport> ReadImports(ref ModuleBinaryReader reader)
@@ -51,12 +52,13 @@ internal static class ModuleBinaryFormat
     }
 
     /// <summary>
-    /// Core 2.0のexternal kindを1バイトの符号化から取得する
+    /// 選択した仕様版に従ってimportまたはexportの種類を1バイトの符号化から取得する
     /// </summary>
     /// <param name="reader">external kindの先頭にある読み取り状態 1バイト進める</param>
     /// <param name="isImport">import宣言の診断を選ぶ場合はtrue、export宣言の場合はfalse</param>
     /// <returns>関数、table、memoryまたはglobalの種類</returns>
-    /// <exception cref="WasmDecodeException">Core 2.0に存在しない種類の場合</exception>
+    /// <exception cref="WasmDecodeException">選択した仕様版に存在しない種類の場合</exception>
+    /// <exception cref="WasmUnsupportedFeatureException">Core 3.0のタグを指定した場合</exception>
     /// <exception cref="ModuleReadBoundaryException">限定された範囲内で構文を読み終えられない場合</exception>
     internal static WasmExternalKind ReadExternalKind(ref ModuleBinaryReader reader, bool isImport)
     {
@@ -67,6 +69,11 @@ internal static class ModuleBinaryFormat
             1 => WasmExternalKind.Table,
             2 => WasmExternalKind.Memory,
             3 => WasmExternalKind.Global,
+            4 when reader.SpecVersion == WasmSpecVersion.Core3 => throw reader.Unsupported(
+                isImport ? "tag import" : "tag export",
+                (int)reader.InputEnd,
+                offset
+            ),
             _ => throw reader.Error(
                 isImport
                     ? "malformed import kind: importの種類が不正です。"

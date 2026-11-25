@@ -30,37 +30,49 @@ internal partial class WasmFunction_InvokeTests
     }
 
     [Test]
-    public async Task 再帰関数型を指定して別モジュールの関数を間接呼び出しする_下位型を受け入れ逆方向ではtrapになる()
+    public async Task 上位型を指定して別モジュールの下位型の関数を間接呼び出しする_引数に渡した関数参照を返す()
+    {
+        // Arrange
+        var context = new WasmExecutionContext();
+        var subFunction = RecursiveFunctionCalls.CreateProvider(context).GetFunction("sub");
+        var caller = CreateRecursiveIndirectCaller(context, subFunction, expectedTypeIndex: 1);
+
+        // Act
+        var result = caller.Invoke(context, [WasmValue.FromFuncRef(subFunction)]);
+
+        // Assert
+        await Assert.That(result.Values[0].AsFuncRef()).IsSameReferenceAs(subFunction);
+    }
+
+    [Test]
+    public async Task 下位型を指定して別モジュールの上位型の関数を間接呼び出しする_型不一致のtrapになる()
     {
         // Arrange
         var context = new WasmExecutionContext();
         var source = RecursiveFunctionCalls.CreateProvider(context);
-        var subFunction = source.GetFunction("sub");
-        var binary = HostLinkingModuleBinary.Create(
-            RecursiveFunctionCalls.CallerTypes(),
-            HostLinkingModuleBinary.Functions(3, 3),
-            HostLinkingModuleBinary.Tables((0x70, 2, null)),
-            HostLinkingModuleBinary.Exports(("asBase", 0, 0), ("asSub", 0, 1), ("table", 1, 0)),
-            HostLinkingModuleBinary.Code(
-                ([], [0x20, 0, 0x41, 0, 0x11, 1, 0, 0x0B]), // 型$baseで要素0を呼ぶ
-                ([], [0x20, 0, 0x41, 1, 0x11, 2, 0, 0x0B]) // 型$subで要素1を呼ぶ
-            )
-        );
-        var instance = WasmModule.Decode(binary, WasmSpecVersion.Core3).Validate().Instantiate(context, []);
-        var table = instance.GetTable("table");
-        table.Set(0, WasmValue.FromFuncRef(subFunction));
-        table.Set(1, WasmValue.FromFuncRef(source.GetFunction("base")));
-
-        // Act
-        var result = instance.GetFunction("asBase").Invoke(context, [WasmValue.FromFuncRef(subFunction)]);
-
-        // Assert
-        await Assert.That(result.Values[0].AsFuncRef()).IsSameReferenceAs(subFunction);
+        var caller = CreateRecursiveIndirectCaller(context, source.GetFunction("base"), expectedTypeIndex: 2);
+        var argument = WasmValue.FromFuncRef(source.GetFunction("sub"));
 
         // Act & Assert
-        var failure = await Assert
-            .That(() => instance.GetFunction("asSub").Invoke(context, [WasmValue.FromFuncRef(subFunction)]))
-            .ThrowsExactly<WasmTrapException>();
-        await Assert.That(failure!.Reason).IsEqualTo(WasmTrapReason.IndirectCallTypeMismatch);
+        var failure = await Assert.That(() => caller.Invoke(context, [argument])).ThrowsExactly<WasmTrapException>();
+        await Assert.That(failure?.Reason).IsEqualTo(WasmTrapReason.IndirectCallTypeMismatch);
+    }
+
+    private static WasmFunction CreateRecursiveIndirectCaller(
+        WasmExecutionContext context,
+        WasmFunction target,
+        byte expectedTypeIndex
+    )
+    {
+        var binary = HostLinkingModuleBinary.Create(
+            RecursiveFunctionCalls.CallerTypes(),
+            HostLinkingModuleBinary.Functions(3),
+            HostLinkingModuleBinary.Tables((0x70, 1, null)),
+            HostLinkingModuleBinary.Exports(("run", 0, 0), ("table", 1, 0)),
+            HostLinkingModuleBinary.Code(([], [0x20, 0, 0x41, 0, 0x11, expectedTypeIndex, 0, 0x0B]))
+        );
+        var instance = WasmModule.Decode(binary, WasmSpecVersion.Core3).Validate().Instantiate(context, []);
+        instance.GetTable("table").Set(0, WasmValue.FromFuncRef(target));
+        return instance.GetFunction("run");
     }
 }
