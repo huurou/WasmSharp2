@@ -8,6 +8,68 @@ namespace WasmSharp.TestSuiteRunner.Tests;
 internal partial class RunnerCli_RunTests
 {
     [Test]
+    [Arguments("zero", "i31ref", true, "00000000")]
+    [Arguments("zero", "eqref", true, "00000000")]
+    [Arguments("zero", "anyref", true, "00000000")]
+    [Arguments("zero", "externref", true, "00000000")]
+    [Arguments("zero", "refnull", false, "00000000")]
+    [Arguments("negative", "i31ref", true, "7fffffff")]
+    [Arguments("null", "refnull", true, null)]
+    [Arguments("null", "i31ref", false, null)]
+    [Arguments("null", "eqref", false, null)]
+    public async Task 定数式で作ったi31参照またはnullを返す_ビット列と参照の種類に従って照合する(
+        string export,
+        string expected,
+        bool matched,
+        string? bits
+    )
+    {
+        // Arrange
+        using var fixture = CorpusFixture.Create();
+        var module = ScriptExecutionFixture.Binary(
+            // i31ref型のglobalをref.i31(0)、ref.i31(-1)、ref.null i31で初期化する。
+            (6, [3, 0x6c, 0, 0x41, 0, 0xfb, 0x1c, 0x0b, 0x6c, 0, 0x41, 0x7f, 0xfb, 0x1c, 0x0b, 0x6c, 0, 0xd0, 0x6c, 0x0b]),
+            (
+                7,
+                [
+                    3,
+                    .. ScriptExecutionFixture.Name("zero"),
+                    3,
+                    0,
+                    .. ScriptExecutionFixture.Name("negative"),
+                    3,
+                    1,
+                    .. ScriptExecutionFixture.Name("null"),
+                    3,
+                    2,
+                ]
+            )
+        );
+        fixture.ReplaceScriptA(
+            $$"""
+            {"type":"module","line":1,"filename":"a.0.wasm"},
+            {"type":"assert_return","line":2,"action":{"type":"get","field":"{{export}}"},"expected":[{"type":"{{expected}}"}]}
+            """,
+            module
+        );
+
+        // Act
+        var (_, cases) = RunAssertions(fixture, WasmSpecVersion.Core3);
+
+        // Assert
+        var assertion = cases[1];
+        using (Assert.Multiple())
+        {
+            await Assert.That(cases[0].Outcome).IsEqualTo(CaseOutcome.Passed);
+            await Assert.That(assertion.Outcome).IsEqualTo(matched ? CaseOutcome.Passed : CaseOutcome.Failed);
+            var actual = assertion.ActualValues.Single();
+            await Assert.That(actual.Type).IsEqualTo(bits is null ? "anyref" : "i31ref");
+            await Assert.That(actual.IsNull).IsEqualTo(bits is null);
+            await Assert.That(actual.Bits).IsEqualTo(bits);
+        }
+    }
+
+    [Test]
     [Arguments("funcref", "function", true)]
     [Arguments("funcref", "null", false)]
     [Arguments("anyref", "function", false)]
@@ -103,7 +165,113 @@ internal partial class RunnerCli_RunTests
     }
 
     [Test]
-    public async Task 成立したmoduleのexternref引数にanyrefを指定する_呼び出し前に引数の診断を記録する()
+    public async Task 番号付きのホスト参照と外部参照を相互に変換する_同じ番号でも参照の種類を区別する()
+    {
+        // Arrange
+        using var fixture = CorpusFixture.Create();
+        var module = ScriptExecutionFixture.Binary(
+            (1, [2, 0x60, 1, 0x6f, 1, 0x6e, 0x60, 1, 0x6e, 1, 0x6f]),
+            (3, [2, 0, 1]),
+            (
+                7,
+                [2, .. ScriptExecutionFixture.Name("internalize"), 0, 0, .. ScriptExecutionFixture.Name("externalize"), 0, 1]
+            ),
+            // 各関数は引数をany.convert_externまたはextern.convert_anyで変換する。
+            (10, [2, 6, 0, 0x20, 0, 0xfb, 0x1a, 0x0b, 6, 0, 0x20, 0, 0xfb, 0x1b, 0x0b])
+        );
+        fixture.ReplaceScriptA(
+            """
+            {"type":"module","line":1,"filename":"a.0.wasm"},
+            {"type":"assert_return","line":2,"action":{"type":"invoke","field":"internalize","args":[{"type":"externref","value":"7"}]},"expected":[{"type":"anyref","value":"7"}]},
+            {"type":"assert_return","line":3,"action":{"type":"invoke","field":"externalize","args":[{"type":"anyref","value":"7"}]},"expected":[{"type":"externref","value":"7"}]},
+            {"type":"assert_return","line":4,"action":{"type":"invoke","field":"internalize","args":[{"type":"externref","value":"7"}]},"expected":[{"type":"externref","value":"7"}]},
+            {"type":"assert_return","line":5,"action":{"type":"invoke","field":"externalize","args":[{"type":"anyref","value":"7"}]},"expected":[{"type":"anyref","value":"7"}]},
+            {"type":"assert_return","line":6,"action":{"type":"invoke","field":"internalize","args":[{"type":"externref","value":"8"}]},"expected":[{"type":"anyref","value":"7"}]},
+            {"type":"assert_return","line":7,"action":{"type":"invoke","field":"externalize","args":[{"type":"anyref","value":"null"}]},"expected":[{"type":"refnull"}]}
+            """,
+            module
+        );
+
+        // Act
+        var (_, cases) = RunAssertions(fixture, WasmSpecVersion.Core3);
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert
+                .That(cases.Select(x => x.Outcome))
+                .IsEquivalentTo(
+                    [
+                        CaseOutcome.Passed,
+                        CaseOutcome.Passed,
+                        CaseOutcome.Passed,
+                        CaseOutcome.Failed,
+                        CaseOutcome.Failed,
+                        CaseOutcome.Failed,
+                        CaseOutcome.Passed,
+                    ],
+                    CollectionOrdering.Matching
+                );
+            var values = cases.Skip(1).Select(x => x.ActualValues.Single()).ToArray();
+            await Assert
+                .That(values.Select(x => (x.Type, x.ExternrefNumber)))
+                .IsEquivalentTo(
+                    new (string, uint?)[]
+                    {
+                        ("anyref", 7),
+                        ("externref", 7),
+                        ("anyref", 7),
+                        ("externref", 7),
+                        ("anyref", 8),
+                        ("externref", null),
+                    },
+                    CollectionOrdering.Matching
+                );
+            await Assert.That(values[0].Token).IsEqualTo(values[2].Token);
+            await Assert.That(values[0].Token).IsNotEqualTo(values[4].Token);
+            await Assert.That(values[5].IsNull).IsTrue();
+        }
+    }
+
+    [Test]
+    [Arguments("anyref", CaseOutcome.Passed)]
+    [Arguments("eqref", CaseOutcome.Failed)]
+    public async Task ホスト参照を型判定して返す_anyとeqの期待値を区別する(string expected, CaseOutcome outcome)
+    {
+        // Arrange
+        using var fixture = CorpusFixture.Create();
+        var module = ScriptExecutionFixture.Binary(
+            (1, [1, 0x60, 1, 0x6e, 3, 0x6e, 0x7f, 0x7f]),
+            (3, [1, 0]),
+            (7, [1, .. ScriptExecutionFixture.Name("test"), 0, 0]),
+            // 引数そのものと、ref.test (ref eq)、ref.test (ref any)の判定を返す。
+            (10, [1, 14, 0, 0x20, 0, 0x20, 0, 0xfb, 0x14, 0x6d, 0x20, 0, 0xfb, 0x14, 0x6e, 0x0b])
+        );
+        fixture.ReplaceScriptA(
+            $$"""
+            {"type":"module","line":1,"filename":"a.0.wasm"},
+            {"type":"assert_return","line":2,"action":{"type":"invoke","field":"test","args":[{"type":"anyref","value":"0"}]},
+             "expected":[{"type":"{{expected}}"},{"type":"i32","value":"0"},{"type":"i32","value":"1"}]}
+            """,
+            module
+        );
+
+        // Act
+        var (_, cases) = RunAssertions(fixture, WasmSpecVersion.Core3);
+
+        // Assert
+        var assertion = cases[1];
+        using (Assert.Multiple())
+        {
+            await Assert.That(assertion.Outcome).IsEqualTo(outcome);
+            await Assert.That(assertion.ActualValues[0].IsNull).IsFalse();
+            await Assert.That(assertion.ActualValues[1].Bits).IsEqualTo("00000000");
+            await Assert.That(assertion.ActualValues[2].Bits).IsEqualTo("00000001");
+        }
+    }
+
+    [Test]
+    public async Task 外部参照を要求する関数へホスト参照を渡す_呼び出し時の引数型不一致を記録する()
     {
         // Arrange
         using var fixture = CorpusFixture.Create();
@@ -126,10 +294,10 @@ internal partial class RunnerCli_RunTests
         using (Assert.Multiple())
         {
             await Assert.That(rejected.Outcome).IsEqualTo(CaseOutcome.RunnerError);
-            await Assert.That(rejected.LastStage).IsNull();
+            await Assert.That(rejected.LastStage).IsEqualTo(CaseStage.Invoke);
             await Assert.That(rejected.ActualValues).IsEmpty();
-            await Assert.That(diagnostic.Operation).IsEqualTo("create_arguments");
-            await Assert.That(diagnostic.Message).Contains("anyref");
+            await Assert.That(diagnostic.Operation).IsEqualTo("invoke");
+            await Assert.That(diagnostic.ExceptionType).IsEqualTo(typeof(ArgumentException).FullName);
             await Assert.That(cases[2].Outcome).IsEqualTo(CaseOutcome.Passed);
         }
     }

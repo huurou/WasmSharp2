@@ -3,11 +3,11 @@ namespace WasmSharp.TestSuiteRunner.Reports;
 /// <summary>
 /// CPUのendianやCLRのアドレスに依存しない実値の記録
 /// </summary>
-/// <param name="Type">WABTの値型名</param>
+/// <param name="Type">変換済みスクリプトの値型名</param>
 internal sealed record ValueRecord(string Type)
 {
     /// <summary>
-    /// i32/f32は8桁、i64/f64は16桁の小文字hexによるビット列 scalar以外ではnull
+    /// i32/f32/i31refは8桁、i64/f64は16桁の小文字hexによるビット列 i31refの最上位ビットは0で、ほかの型ではnull
     /// </summary>
     public string? Bits { get; init; }
 
@@ -27,12 +27,12 @@ internal sealed record ValueRecord(string Type)
     public bool? IsNull { get; init; }
 
     /// <summary>
-    /// 非null参照の入力内で初出順に割り当てたtoken 参照以外とnull参照ではnull
+    /// 参照先オブジェクトの入力内で初出順に割り当てたtoken 参照先を持たない値ではnull
     /// </summary>
     public int? Token { get; init; }
 
     /// <summary>
-    /// ランナーが割り当てたexternrefの元番号 既知のexternref以外ではnull
+    /// ref.hostまたはref.externで指定したホスト値の元番号 ほかの参照はnull
     /// </summary>
     public uint? ExternrefNumber { get; init; }
 }

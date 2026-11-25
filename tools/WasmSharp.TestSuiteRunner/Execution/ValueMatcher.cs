@@ -80,7 +80,7 @@ internal static class ValueMatcher
     /// </summary>
     /// <param name="expected">解析済みの期待値</param>
     /// <param name="actual">invokeの結果、またはgetの現在値を1個持つ結果</param>
-    /// <param name="state">externrefの番号と割り当てたホスト値を管理する入力の状態</param>
+    /// <param name="state">スクリプトの番号と割り当てたホスト値を管理する入力の状態</param>
     /// <returns>相違箇所 全て一致した場合は空</returns>
     internal static ImmutableArray<ValueMismatch> Match(
         ImmutableArray<ImmutableArray<ValuePattern>> expected,
@@ -149,7 +149,7 @@ internal static class ValueMatcher
     {
         return expected.Reference is null
             ? expected.Type == ValueCodec.GetTypeName(actual)
-            : actual is WasmValueKind.FuncRef or WasmValueKind.ExternRef;
+            : actual is WasmValueKind.FuncRef or WasmValueKind.ExternRef or WasmValueKind.AnyRef or WasmValueKind.I31Ref;
     }
 
     /// <summary>
@@ -257,7 +257,7 @@ internal static class ValueMatcher
     /// <param name="expected"><see cref="MatchesType"/>で比較対象と判定された候補 Core 3.0の参照では実際の値と型名が異なる場合もある。</param>
     /// <param name="actual">比較する1個の結果</param>
     /// <param name="index">結果の0始まり位置</param>
-    /// <param name="state">参照の同一性でexternref番号を解決する入力の状態</param>
+    /// <param name="state">参照の同一性で元の番号を解決する入力の状態</param>
     /// <returns>値の相違 v128ではlane順に返し、すべて一致した場合は空</returns>
     private static IEnumerable<ValueMismatch> MatchValue(
         ValuePattern expected,
@@ -268,12 +268,17 @@ internal static class ValueMatcher
     {
         return actual.Kind switch
         {
-            WasmValueKind.FuncRef => MatchReference(expected, actual.Kind, actual.AsFuncRef(), index, state),
-            WasmValueKind.ExternRef => MatchReference(expected, actual.Kind, actual.AsExternRef(), index, state),
+            WasmValueKind.I32 or WasmValueKind.I64 or WasmValueKind.F32 or WasmValueKind.F64 => MatchBits(
+                expected.Bits[0],
+                ValueCodec.GetBits(actual),
+                expected.Width,
+                index,
+                null
+            ),
             WasmValueKind.V128 => expected.Bits.SelectMany(
                 (x, i) => MatchBits(x, ValueCodec.GetLane(actual, expected.Width, i), expected.Width, index, i)
             ),
-            _ => MatchBits(expected.Bits[0], ValueCodec.GetBits(actual), expected.Width, index, null),
+            _ => MatchReference(expected, actual, index, state),
         };
     }
 
@@ -330,39 +335,37 @@ internal static class ValueMatcher
     /// スクリプトの参照条件をランタイムが返した参照と比較する。
     /// </summary>
     /// <param name="expected">解析済みの参照の比較条件</param>
-    /// <param name="actualKind">実際の参照の値型</param>
-    /// <param name="actual">実際の参照先 nullも許容する</param>
+    /// <param name="actual">実行で得た参照値</param>
     /// <param name="index">結果の0始まり位置</param>
-    /// <param name="state">割り当てたホスト値から参照の同一性で元のexternref番号を引く入力の状態</param>
+    /// <param name="state">割り当てたホスト値から参照の同一性で元の番号を引く入力の状態</param>
     /// <returns>一致した場合は空 不一致の場合はnull・番号・未知の非null参照を区別した1件の相違</returns>
     private static IEnumerable<ValueMismatch> MatchReference(
         ValuePattern expected,
-        WasmValueKind actualKind,
-        object? actual,
+        WasmValue actual,
         int index,
         ScriptState state
     )
     {
         // 割り当てた番号は参照の同一性で引くため、番号の一致は同じ番号のホスト値と同じ参照であることを示す。
-        var number = actual is null ? null : state.GetExternrefNumber(actual);
-        var isFunction = actualKind == WasmValueKind.FuncRef && actual is not null;
+        var number = ValueCodec.GetReferenceObject(actual) is { } reference ? state.GetExternrefNumber(reference) : null;
+        var isFunction = actual.Kind == WasmValueKind.FuncRef && !actual.IsNullReference;
         var matched = expected.Reference switch
         {
             // Core 3.0では型を付けたref.nullも参照先がnullなら一致する。
-            Core3ReferenceMatch.Null => actual is null,
+            Core3ReferenceMatch.Null => actual.IsNullReference,
             // 固定版の参照実装では(ref.extern)は全ての参照に、(ref.any)は関数実体を除く参照に一致する。
             Core3ReferenceMatch.HeapType => expected.Type switch
             {
                 "externref" => true,
                 "anyref" => !isFunction,
                 "funcref" => isFunction,
+                "eqref" or "i31ref" => actual.Kind == WasmValueKind.I31Ref,
                 _ => false,
             },
             // ref.hostと、それを外部参照に包んだref.externは同じ番号でも異なる。
-            Core3ReferenceMatch.Identity => expected.Type == "externref"
-                && actualKind == WasmValueKind.ExternRef
+            Core3ReferenceMatch.Identity => expected.Type == ValueCodec.GetTypeName(actual.Kind)
                 && number == expected.ReferenceNumber,
-            _ => expected.ReferenceNumber is { } x ? number == x : actual is null,
+            _ => expected.ReferenceNumber is { } x ? number == x : actual.IsNullReference,
         };
         return matched
             ? []
@@ -377,11 +380,12 @@ internal static class ValueMatcher
                         { Reference: Core3ReferenceMatch.HeapType } => expected.Type,
                         _ => ValueCodec.NULL,
                     },
-                    (actual, number) switch
+                    actual switch
                     {
-                        (null, _) => ValueCodec.NULL,
-                        (_, { } z) => $"番号{z}のexternref",
-                        _ => $"割り当てていない非nullの{ValueCodec.GetTypeName(actualKind)}",
+                        { IsNullReference: true } => ValueCodec.NULL,
+                        { Kind: WasmValueKind.I31Ref } => $"i31の値{actual.AsI31Unsigned()}",
+                        _ when number is { } z => $"番号{z}の{ValueCodec.GetTypeName(actual.Kind)}",
+                        _ => $"割り当てていない非nullの{ValueCodec.GetTypeName(actual.Kind)}",
                     }
                 ),
             ];
