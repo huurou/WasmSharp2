@@ -36,7 +36,7 @@ internal static class ConstantInitializer
         var operands =
             expression.Length <= 32 ? stackalloc WasmValueKind[expression.Length] : new WasmValueKind[expression.Length];
         var count = 0;
-        // 数値演算の入力は種類だけで判定できる。各命令が1個積むため、結果が1個なら最後の命令がその型を決める。
+        // 各命令は1個の値を積む。単項演算は直前の結果型を使い、数値の二項演算は種類だけを照合する。
         var resultType = default(WasmValueType);
         var instructionSet = InstructionSet.ForVersion(specVersion);
         for (var index = 0; index < expression.Length - 1; index++)
@@ -49,14 +49,19 @@ internal static class ConstantInitializer
                 {
                     if (count == 0 || operands[--count] != signature.InputTypes[input])
                     {
-                        throw ValidationDiagnostics.ValidationFailure(
-                            "type mismatch",
-                            "定数式の演算に必要な型の値がありません。",
-                            new WasmFailureLocation(WasmProcessingStage.Validate, instruction.ByteOffset, null, sectionId)
-                        );
+                        throw InvalidOperand(instruction, sectionId);
                     }
                 }
                 resultType = signature.ResultType;
+            }
+            else if (ConstantReferenceOperation.For(descriptor.Validation) is { } referenceOperation)
+            {
+                if (count == 0 || !referenceOperation.InputType.Accepts(resultType))
+                {
+                    throw InvalidOperand(instruction, sectionId);
+                }
+                count--;
+                resultType = referenceOperation.GetResultType(resultType);
             }
             else
             {
@@ -112,13 +117,15 @@ internal static class ConstantInitializer
         for (var index = 0; index < expression.Length - 1; index++)
         {
             var instruction = expression[index];
-            if (
-                instructionSet.TryGetValue(instruction.Opcode, out var descriptor)
-                && descriptor.ConstantBinaryOperation is { } operation
-            )
+            var descriptor = instructionSet[instruction.Opcode];
+            if (descriptor.ConstantBinaryOperation is { } operation)
             {
                 var right = operands.Pop();
                 operands.Push(operation(operands.Pop(), right));
+            }
+            else if (ConstantReferenceOperation.For(descriptor.Validation) is { } referenceOperation)
+            {
+                operands.Push(referenceOperation.Evaluate(operands.Pop()));
             }
             else
             {
@@ -187,7 +194,13 @@ internal static class ConstantInitializer
             InstructionSet.TryGet(instruction.Opcode, specVersion, out var descriptor)
             && (
                 descriptor.Validation is ValidationRule.Constant or ValidationRule.RefFunc
-                || (specVersion == WasmSpecVersion.Core3 && descriptor.ConstantBinaryOperation is not null)
+                || (
+                    specVersion == WasmSpecVersion.Core3
+                    && (
+                        descriptor.ConstantBinaryOperation is not null
+                        || ConstantReferenceOperation.For(descriptor.Validation) is not null
+                    )
+                )
             )
         )
         {
@@ -197,6 +210,15 @@ internal static class ConstantInitializer
             "constant expression required",
             "定数式に使用できない命令です。",
             location
+        );
+    }
+
+    private static WasmValidateException InvalidOperand(DecodedInstruction instruction, byte sectionId)
+    {
+        return ValidationDiagnostics.ValidationFailure(
+            "type mismatch",
+            "定数式の演算に必要な型の値がありません。",
+            new WasmFailureLocation(WasmProcessingStage.Validate, instruction.ByteOffset, null, sectionId)
         );
     }
 
