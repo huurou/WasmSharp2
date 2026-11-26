@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using WasmSharp.Exceptions;
+using WasmSharp.Instructions;
 using WasmSharp.Modules;
 
 namespace WasmSharp.Tests.Modules;
@@ -38,26 +39,37 @@ internal class ConstantInitializer_ValidateTests
     }
 
     [Test]
-    public async Task 定数式の長さが32命令を超える_型検証のヒープ割り当てが増える()
+    public async Task 同じ命令を異なる順序で検証する_型スタックの最大深さが32を超えるとヒープ割り当てが増える()
     {
         // Arrange
-        var belowLimit = CreateAdditionExpression(30);
+        var shallow = CreateAdditionExpression(2);
         var atLimit = CreateAdditionExpression(32);
-        var aboveLimit = CreateAdditionExpression(34);
+        var aboveLimit = CreateAdditionExpression(33);
+        var deepest = CreateAdditionExpression(129);
         for (var i = 0; i < 16; i++)
         {
-            MeasureAllocatedBytes(belowLimit);
+            MeasureAllocatedBytes(shallow);
             MeasureAllocatedBytes(atLimit);
             MeasureAllocatedBytes(aboveLimit);
+            MeasureAllocatedBytes(deepest);
         }
+        var beforeBuffer = GC.GetAllocatedBytesForCurrentThread();
+        GC.KeepAlive(new WasmValueType[deepest.Length]);
+        var oneBufferBytes = GC.GetAllocatedBytesForCurrentThread() - beforeBuffer;
 
         // Act
-        // どちらも定数32命令、加算30命令、終端2命令を検証する。34命令の式だけが型スタックをヒープに確保する。
-        var withinLimit = MeasureAllocatedBytes(atLimit) + MeasureAllocatedBytes(atLimit);
-        var crossingLimit = MeasureAllocatedBytes(belowLimit) + MeasureAllocatedBytes(aboveLimit);
+        var shallowBytes = MeasureAllocatedBytes(shallow);
+        var atLimitBytes = MeasureAllocatedBytes(atLimit);
+        var aboveLimitBytes = MeasureAllocatedBytes(aboveLimit);
+        var deepestBytes = MeasureAllocatedBytes(deepest);
 
         // Assert
-        await Assert.That(crossingLimit).IsGreaterThan(withinLimit);
+        using (Assert.Multiple())
+        {
+            await Assert.That(atLimitBytes).IsEqualTo(shallowBytes);
+            await Assert.That(aboveLimitBytes).IsGreaterThan(atLimitBytes);
+            await Assert.That(deepestBytes - shallowBytes).IsLessThanOrEqualTo(oneBufferBytes);
+        }
     }
 
     [Test]
@@ -104,17 +116,21 @@ internal class ConstantInitializer_ValidateTests
         }
     }
 
-    private static ImmutableArray<DecodedInstruction> CreateAdditionExpression(int instructionCount)
+    private static ImmutableArray<DecodedInstruction> CreateAdditionExpression(int maximumDepth)
     {
-        var operandCount = instructionCount / 2;
-        var constant = DecodedInstruction.WithImmediate(new(0, 0x41), WasmValue.FromI32(1), 0);
-        var add = DecodedInstruction.WithoutImmediate(new(0, 0x6A), 0);
-        return
-        [
-            .. Enumerable.Repeat(constant, operandCount),
-            .. Enumerable.Repeat(add, operandCount - 1),
-            DecodedInstruction.WithoutImmediate(new(0, 0x0B), 0),
-        ];
+        const int OperandCount = 129;
+        var constant = DecodedInstruction.WithImmediate(new OpcodeKey(0, 0x41), WasmValue.FromI32(1), 0);
+        var add = DecodedInstruction.WithoutImmediate(new OpcodeKey(0, 0x6A), 0);
+        var expression = ImmutableArray.CreateBuilder<DecodedInstruction>(OperandCount * 2);
+        expression.AddRange(Enumerable.Repeat(constant, maximumDepth));
+        for (var i = maximumDepth; i < OperandCount; i++)
+        {
+            expression.Add(add);
+            expression.Add(constant);
+        }
+        expression.AddRange(Enumerable.Repeat(add, maximumDepth - 1));
+        expression.Add(DecodedInstruction.WithoutImmediate(new OpcodeKey(0, 0x0B), 0));
+        return expression.MoveToImmutable();
     }
 
     private static long MeasureAllocatedBytes(ImmutableArray<DecodedInstruction> expression)

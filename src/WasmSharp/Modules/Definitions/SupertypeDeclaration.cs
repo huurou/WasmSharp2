@@ -43,7 +43,9 @@ internal readonly record struct SupertypeDeclaration(int TypeIndex, uint FirstIn
                     $"sub type {TypeIndex} does not match super type {FirstIndex}",
                     types[TypeIndex] is WasmFunctionType
                         ? "上位型は関数型で、引数の反変または結果の共変を満たす必要があります。"
-                        : "上位型は構造体型で、先頭フィールドの可変性と格納型を引き継ぐ必要があります。"
+                        : "上位型には構造体型を指定し、そのすべてのフィールドを子の構造体の先頭に同じ順序で宣言します。"
+                            + "対応するフィールドの可変性と詰め込み型は一致させます。"
+                            + "不変フィールドには親と同じ値型かその部分型を、可変フィールドには親と同値の値型を使います。"
                 );
         }
     }

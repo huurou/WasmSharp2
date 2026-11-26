@@ -650,13 +650,18 @@ internal static class FunctionValidator
         void ValidateStructInstruction(DecodedInstruction instruction, ValidationRule rule)
         {
             var offset = instruction.ByteOffset;
-            var location = new WasmFailureLocation(WasmProcessingStage.Validate, offset, moduleFunctionIndex, 10);
-            var type = StructInstructionValidation.RequireType(module.Types.AsSpan(), instruction.Index, location);
+            var type = StructInstructionValidation.RequireType(
+                module.Types.AsSpan(),
+                instruction.Index,
+                offset,
+                10,
+                moduleFunctionIndex
+            );
             if (rule is ValidationRule.StructNew or ValidationRule.StructNewDefault)
             {
                 if (rule == ValidationRule.StructNewDefault)
                 {
-                    StructInstructionValidation.RequireDefaultable(type, location);
+                    StructInstructionValidation.RequireDefaultable(type, offset, 10, moduleFunctionIndex);
                 }
                 else
                 {
@@ -669,7 +674,14 @@ internal static class FunctionValidator
                 return;
             }
 
-            var field = StructInstructionValidation.RequireField(type, instruction.SecondaryIndex, rule, location);
+            var field = StructInstructionValidation.RequireField(
+                type,
+                instruction.SecondaryIndex,
+                rule,
+                offset,
+                10,
+                moduleFunctionIndex
+            );
             var receiver = WasmValueType.StructReference(type, isNullable: true);
             if (rule == ValidationRule.StructSet)
             {
@@ -688,7 +700,9 @@ internal static class FunctionValidator
             return ModuleValidator.RequireFunctionType(
                 module,
                 index,
-                new WasmFailureLocation(WasmProcessingStage.Validate, byteOffset, moduleFunctionIndex, 10),
+                byteOffset,
+                10,
+                moduleFunctionIndex,
                 "参照する型が存在しません。"
             );
         }

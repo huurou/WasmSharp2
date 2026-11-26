@@ -45,8 +45,7 @@ internal static class ConstantInitializer
         }
 
         var inlineTypes = default(InlineTypes);
-        Span<WasmValueType> operands =
-            expression.Length <= InlineTypeCount ? inlineTypes : new WasmValueType[expression.Length];
+        Span<WasmValueType> operands = inlineTypes;
         var count = 0;
         var instructionSet = InstructionSet.ForVersion(specVersion);
         for (var index = 0; index < expression.Length - 1; index++)
@@ -75,16 +74,15 @@ internal static class ConstantInitializer
             }
             else if (descriptor.Validation is ValidationRule.StructNew or ValidationRule.StructNewDefault)
             {
-                var location = new WasmFailureLocation(
-                    WasmProcessingStage.Validate,
+                var type = StructInstructionValidation.RequireType(
+                    types,
+                    instruction.Index,
                     instruction.ByteOffset,
-                    null,
                     sectionId
                 );
-                var type = StructInstructionValidation.RequireType(types, instruction.Index, location);
                 if (descriptor.Validation == ValidationRule.StructNewDefault)
                 {
-                    StructInstructionValidation.RequireDefaultable(type, location);
+                    StructInstructionValidation.RequireDefaultable(type, instruction.ByteOffset, sectionId);
                 }
                 else
                 {
@@ -108,6 +106,13 @@ internal static class ConstantInitializer
                     sectionId,
                     specVersion
                 );
+            }
+            if (count == operands.Length)
+            {
+                // end以外の各命令が積む値は最大1個なので、深い式でも一度の拡張で足りる。
+                var expanded = new WasmValueType[expression.Length - 1];
+                operands.CopyTo(expanded);
+                operands = expanded;
             }
             operands[count++] = resultType;
         }

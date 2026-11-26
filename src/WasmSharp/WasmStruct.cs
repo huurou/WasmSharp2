@@ -12,7 +12,7 @@ internal sealed class WasmStruct
     private WasmStruct(WasmStructType type)
     {
         Type = type;
-        _fields = new WasmValue[type.Fields.Length];
+        _fields = type.Fields.IsEmpty ? [] : new WasmValue[type.Fields.Length];
     }
 
     /// <summary>

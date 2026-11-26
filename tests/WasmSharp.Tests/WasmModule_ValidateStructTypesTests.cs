@@ -92,7 +92,6 @@ internal partial class WasmModule_ValidateTests
     [Arguments("5F017F00", "5F017E00")] // i32からi64
     [Arguments("5F017800", "5F017F00")] // i8からi32
     [Arguments("5F017801", "5F017701")] // 可変i8から可変i16
-    [Arguments("5F016D01", "5F016B01")] // 可変eqrefから可変structref
     [Arguments("5F016B00", "5F016D00")] // 不変structrefから不変eqref
     [Arguments("5F017F00", "5F017F01")] // 可変性の追加
     [Arguments("5F017F01", "5F017F00")] // 可変性の除去
@@ -115,6 +114,25 @@ internal partial class WasmModule_ValidateTests
         // Act & Assert
         var error = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
         await Assert.That(error!.Message).StartsWith("sub type 1 does not match super type 0");
+    }
+
+    [Test]
+    public async Task 可変フィールドの値型をeqrefからstructrefへ狭める_不変と可変のフィールドに使える値型を報告する()
+    {
+        // Arrange
+        var binary = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Section(1, [2, 0x50, 0, 0x5F, 1, 0x6D, 1, 0x4F, 1, 0, 0x5F, 1, 0x6B, 1])
+        );
+        var module = WasmModule.Decode(binary, WasmSpecVersion.Core3);
+
+        // Act & Assert
+        var error = await Assert.That(() => module.Validate()).ThrowsExactly<WasmValidateException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(error!.Message).StartsWith("sub type 1 does not match super type 0");
+            await Assert.That(error.Message).Contains("不変フィールドには親と同じ値型かその部分型");
+            await Assert.That(error.Message).Contains("可変フィールドには親と同値の値型");
+        }
     }
 
     [Test]

@@ -344,7 +344,7 @@ internal static class ModuleBinaryFormat
         {
             if (form == -0x21)
             {
-                return new TypeDeclaration([], [], isFinal, supertypes, ReadFields(ref reader));
+                return new TypeDeclaration(ReadFields(ref reader), isFinal, supertypes);
             }
             if (form == -0x22)
             {

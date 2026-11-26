@@ -155,9 +155,9 @@ public abstract class WasmDefinedType
 
     private static WasmDefinedType CreateMember(TypeDeclaration declaration, WasmDefinedType[]? group, int position)
     {
-        return declaration.Fields.IsDefault
-            ? new WasmFunctionType(group, position, declaration.IsFinal)
-            : new WasmStructType(group, position, declaration.IsFinal);
+        return declaration.IsStruct
+            ? new WasmStructType(group, position, declaration.IsFinal)
+            : new WasmFunctionType(group, position, declaration.IsFinal);
     }
 
     internal void AppendGroupTo(List<WasmDefinedType> types)

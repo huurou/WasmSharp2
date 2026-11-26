@@ -4,6 +4,9 @@ namespace WasmSharp.Execution;
 
 internal static partial class Interpreter
 {
+    /// <summary>
+    /// 宣言順に積まれたフィールド値を消費し、新しく生成した構造体の参照を積む
+    /// </summary>
     internal static ExecutionResult StructNew(InterpreterContext context, in Instruction instruction)
     {
         var type = (WasmStructType)context.CurrentFunction.Instance.Module.Types[(int)instruction.Index];
@@ -14,6 +17,9 @@ internal static partial class Interpreter
         return default;
     }
 
+    /// <summary>
+    /// 各フィールドを既定値で初期化した構造体の参照を積む
+    /// </summary>
     internal static ExecutionResult StructNewDefault(InterpreterContext context, in Instruction instruction)
     {
         var type = (WasmStructType)context.CurrentFunction.Instance.Module.Types[(int)instruction.Index];
@@ -21,6 +27,9 @@ internal static partial class Interpreter
         return default;
     }
 
+    /// <summary>
+    /// 検証済みの可変フィールドに値を書き込み、参照がnullならtrapを返す
+    /// </summary>
     internal static ExecutionResult StructSet(InterpreterContext context, in Instruction instruction)
     {
         var value = context.PopValue();
@@ -34,11 +43,17 @@ internal static partial class Interpreter
         return default;
     }
 
+    /// <summary>
+    /// struct.getとstruct.get_uの値を読み出す。詰め込みフィールドは書き込み時にゼロ拡張している
+    /// </summary>
     internal static ExecutionResult StructGet(InterpreterContext context, in Instruction instruction)
     {
         return GetStructField(context, instruction, signed: false);
     }
 
+    /// <summary>
+    /// 詰め込みフィールドを格納幅に応じて符号拡張し、i32の値を積む
+    /// </summary>
     internal static ExecutionResult StructGetSigned(InterpreterContext context, in Instruction instruction)
     {
         return GetStructField(context, instruction, signed: true);
