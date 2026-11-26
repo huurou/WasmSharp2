@@ -299,6 +299,16 @@ public readonly struct WasmValue
     }
 
     /// <summary>
+    /// 構造体の参照先を不透明なCLRオブジェクトとして取得する
+    /// </summary>
+    /// <returns>同じ構造体を外部化したときにも得られる参照先</returns>
+    /// <exception cref="InvalidOperationException">値が非nullの構造体参照でない場合</exception>
+    public object AsStructRef()
+    {
+        return AsStruct();
+    }
+
+    /// <summary>
     /// 関数への参照またはnullからfuncrefのvalueを構築する
     /// </summary>
     /// <param name="value">保持する関数への参照またはnull</param>

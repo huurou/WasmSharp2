@@ -104,6 +104,7 @@ internal static class ValueCodec
             WasmValueKind.ExternRef => "externref",
             WasmValueKind.AnyRef => "anyref",
             WasmValueKind.I31Ref => "i31ref",
+            WasmValueKind.StructRef => "structref",
             _ => throw new ArgumentOutOfRangeException(nameof(kind)),
         };
     }
@@ -278,6 +279,7 @@ internal static class ValueCodec
             WasmValueKind.ExternRef => value.AsExternRef(),
             WasmValueKind.AnyRef => value.AsHostRef(),
             WasmValueKind.I31Ref => null,
+            WasmValueKind.StructRef => value.AsStructRef(),
             _ => throw new ArgumentOutOfRangeException(nameof(value)),
         };
     }
@@ -286,7 +288,7 @@ internal static class ValueCodec
     /// 型の記録へ参照のnullと入力内の同一性を加えた新しい記録を作る。
     /// </summary>
     /// <param name="record">参照型の名前を持つ元の記録</param>
-    /// <param name="reference">関数、外部参照または内部のホスト参照の参照先 nullも許容する</param>
+    /// <param name="reference">実行結果が指すオブジェクト、またはnull</param>
     /// <param name="state">参照tokenと、割り当てたホスト値の元番号を管理する入力の状態</param>
     /// <returns>nullならIsNullだけを設定し、非nullならtokenと取得できたホスト値の番号を追加した記録</returns>
     private static ValueRecord RecordReference(ValueRecord record, object? reference, ScriptState state)
