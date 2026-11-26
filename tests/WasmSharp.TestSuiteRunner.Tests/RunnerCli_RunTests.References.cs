@@ -8,11 +8,100 @@ namespace WasmSharp.TestSuiteRunner.Tests;
 internal partial class RunnerCli_RunTests
 {
     [Test]
+    public async Task 同じ構造体と外部化した参照と別の構造体を返す_参照先の初出順に同じtokenを再利用する()
+    {
+        // Arrange
+        using var fixture = CorpusFixture.Create();
+        var module = ScriptExecutionFixture.Binary(
+            (1, [2, 0x5f, 0, 0x60, 0, 1, 0x6f]),
+            (3, [1, 1]),
+            // 二つのglobalを、それぞれ新しく生成した空の構造体で初期化する。
+            (6, [2, 0x6b, 0, 0xfb, 1, 0, 0x0b, 0x6b, 0, 0xfb, 1, 0, 0x0b]),
+            (
+                7,
+                [
+                    3,
+                    .. ScriptExecutionFixture.Name("a"),
+                    3,
+                    0,
+                    .. ScriptExecutionFixture.Name("b"),
+                    3,
+                    1,
+                    .. ScriptExecutionFixture.Name("externalA"),
+                    0,
+                    0,
+                ]
+            ),
+            // externalAはglobal.get 0とextern.convert_anyで最初の構造体を外部化する。
+            (10, [1, 6, 0, 0x23, 0, 0xfb, 0x1b, 0x0b])
+        );
+        fixture.ReplaceScriptA(
+            """
+            {"type":"module","line":1,"filename":"a.0.wasm"},
+            {"type":"action","line":2,"action":{"type":"get","field":"a"}},
+            {"type":"action","line":3,"action":{"type":"get","field":"b"}},
+            {"type":"action","line":4,"action":{"type":"invoke","field":"externalA","args":[]}},
+            {"type":"action","line":5,"action":{"type":"get","field":"a"}}
+            """,
+            module
+        );
+
+        // Act
+        var (_, cases) = RunAssertions(fixture, WasmSpecVersion.Core3);
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(cases.All(x => x.Outcome == CaseOutcome.Passed)).IsTrue();
+            await Assert
+                .That(cases.SelectMany(x => x.ActualValues))
+                .IsEquivalentTo(
+                    [
+                        new ValueRecord("structref") { IsNull = false, Token = 0 },
+                        new ValueRecord("structref") { IsNull = false, Token = 1 },
+                        new ValueRecord("externref") { IsNull = false, Token = 0 },
+                        new ValueRecord("structref") { IsNull = false, Token = 0 },
+                    ],
+                    CollectionOrdering.Matching
+                );
+        }
+    }
+
+    [Test]
+    [Arguments("structref", true)]
+    [Arguments("eqref", true)]
+    [Arguments("i31ref", false)]
+    public async Task 構造体参照を異なる型パターンで照合する_構造体とeqの期待値だけが成立する(string expected, bool matches)
+    {
+        // Arrange
+        using var fixture = CorpusFixture.Create();
+        var module = ScriptExecutionFixture.Binary(
+            (1, [1, 0x5f, 0]),
+            (6, [1, 0x6b, 0, 0xfb, 1, 0, 0x0b]),
+            (7, [1, .. ScriptExecutionFixture.Name("g"), 3, 0])
+        );
+        fixture.ReplaceScriptA(
+            $$"""
+            {"type":"module","line":1,"filename":"a.0.wasm"},
+            {"type":"assert_return","line":2,"action":{"type":"get","field":"g"},"expected":[{"type":"{{expected}}"}]}
+            """,
+            module
+        );
+
+        // Act
+        var (_, cases) = RunAssertions(fixture, WasmSpecVersion.Core3);
+
+        // Assert
+        await Assert.That(cases[1].Outcome).IsEqualTo(matches ? CaseOutcome.Passed : CaseOutcome.Failed);
+    }
+
+    [Test]
     [Arguments("zero", "i31ref", true, "00000000")]
     [Arguments("zero", "eqref", true, "00000000")]
     [Arguments("zero", "anyref", true, "00000000")]
     [Arguments("zero", "externref", true, "00000000")]
     [Arguments("zero", "refnull", false, "00000000")]
+    [Arguments("zero", "structref", false, "00000000")]
     [Arguments("negative", "i31ref", true, "7fffffff")]
     [Arguments("null", "refnull", true, null)]
     [Arguments("null", "i31ref", false, null)]

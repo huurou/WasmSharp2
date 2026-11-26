@@ -105,6 +105,42 @@ GC参照とi31の実装着手前の`102855a`と、同じ固定素材・検証プ
 
 Core 3.0全体で残ったランタイム未対応は226件、対象外は1,241件、前提不成立は847件でした。前提不成立のうち844件は未対応機能に依存し、残る3件は従来からテキスト形式で対象外の`comments.wast`のcommand 4に依存するcommand 5–7です。このため`run`は終了1、`compare-run`は終了0でした。Core 2.0では従来どおり全53,907件のうち52,830件が成立し、1,077件が対象外でした。全ケースの分類・期待診断・実際の公開診断が一致し、`run`・`compare-run`・`verify`はいずれも終了0でした。
 
+### GC構造体の受入結果
+
+GC構造体の実装着手前の`522fd1b`と同じ公式テスト素材・検証プロファイルで、Core 3.0の255入力・65,193件を実行しました。構造体の生成・フィールド操作、参照の型判定・キャスト・分岐、再帰グループとサブタイプについて、必要な機能が揃った112件がすべて成立しました。[Issue #15](https://github.com/huurou/WasmSharp2/issues/15)・[公式ケースの受入条件](https://github.com/huurou/WasmSharp2/issues/95)
+
+| 公式入力 | 入力内のcommand順序（0始まり、両端を含む） | 着手前のランタイム未対応 | 着手前の前提不成立 | 変更後の成立 |
+| --- | --- | ---: | ---: | ---: |
+| `gc/struct.wast` | 0、2–29 | 10 | 19 | 29 |
+| `gc/type-subtyping.wast` | 1–5、8–12、34–43、62–76、90、94、97、100、105–108 | 33 | 10 | 43 |
+| `type-rec.wast` | 3–22 | 15 | 5 | 20 |
+| `gc/br_on_cast.wast` | 27–33 | 5 | 2 | 7 |
+| `gc/br_on_cast_fail.wast` | 27–33 | 5 | 2 | 7 |
+| `gc/ref_test.wast` | 68–70 | 1 | 2 | 3 |
+| `gc/ref_cast.wast` | 42–44 | 1 | 2 | 3 |
+| 合計 | | 70 | 42 | 112 |
+
+`gc/struct.wast`のcommand 8では、`struct.new_default`で生成した構造体を`anyref`として返す関数に対し、`structref`の期待値が成立しました。参照先は非nullで、入力内の最初のtokenは0でした。公開CLIの直接テストでは、構造体が`structref`・`eqref`に一致すること、i31とnullを構造体から区別すること、同じ構造体を外部化しても同じtokenを保ち、別々に生成した空の構造体には異なるtokenを割り当てることを確認しました。command 1はテキスト形式の不正な型宣言（`duplicate field`）で、従来どおり対象外です。[参照値の公開CLIテスト](../../tests/WasmSharp.TestSuiteRunner.Tests/RunnerCli_RunTests.References.cs)
+
+Core 3.0全体の成立は62,879件から62,991件に増え、表の範囲外で分類が変わったケースはありません。`compare-run`で記録が変わった135件のうち、残りの23件は診断の差です。
+
+- `gc/br_on_cast.wast`、`gc/br_on_cast_fail.wast`、`gc/extern.wast`、`gc/ref_cast.wast`、`gc/ref_eq.wast`、`gc/ref_test.wast`の各command 0と`gc/type-subtyping.wast`のcommand 95では、構造体型の先の配列型で未対応を報告するため、診断位置と未検査範囲が変わりました。
+- `ref.wast`のcommand 1–12、`type-equivalence.wast`のcommand 5、`type-rec.wast`のcommand 1–2では、`unknown type`に続く補足が関数型と構造体型の両方に対応しました。`gc/type-subtyping.wast`のcommand 109では、`sub type`に続く補足に上位型が関数型である条件が加わりました。16件とも期待診断に一致しました。
+
+残ったランタイム未対応156件を公開診断で分類し、前提不成立805件の`cause.direct`を起点までたどって全件で`cause.origins`と照合しました。配列型の56件では、診断位置にある固定バイナリのバイトがすべて`0x5e`（配列型）でした。
+
+| 前提不成立の原因・担当 | ランタイム未対応 | その原因に依存する前提不成立 |
+| --- | ---: | ---: |
+| GC配列・構造体との混在（[#16](https://github.com/huurou/WasmSharp2/issues/16)・[#21](https://github.com/huurou/WasmSharp2/issues/21)） | 56 | 445 |
+| 末尾呼び出し（[#17](https://github.com/huurou/WasmSharp2/issues/17)） | 48 | 117 |
+| タグ付きWasm例外（[#18](https://github.com/huurou/WasmSharp2/issues/18)・[#19](https://github.com/huurou/WasmSharp2/issues/19)） | 44 | 171 |
+| Relaxed SIMD（[#20](https://github.com/huurou/WasmSharp2/issues/20)） | 8 | 69 |
+| テキスト形式の`comments.wast`のcommand 4 | 0 | 3（command 5–7） |
+
+Core 3.0の対象外1,241件はすべてテキスト形式でした。`comments.wast`の3件が対象外に依存するため`run`は終了1で、`compare-run`は終了0でした。入力異常・未処理・不一致・ランナー異常・回帰・欠落・未比較はすべて0件でした。
+
+Core 2.0では147入力・53,907件を実行し、52,830件が成立、1,077件が対象外でした。着手前および保存済みのwasm-tools版baselineと、全ケースの分類・期待診断・実際の公開診断が一致しました。`run`・`compare-run`・`verify`はいずれも終了0でした。
+
 ## Core 2.0の初回の生成・実行とbaseline保存
 
 次の各行を個別に実行し、終了値と結果を確認します。`$runner`は上記の起動例で設定した実行ファイルです。
