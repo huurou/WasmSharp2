@@ -12,8 +12,8 @@ internal class FunctionCode_ConstructorTests
         // Arrange
         ImmutableArray<Instruction> instructions =
         [
-            new(ExecutionOpcode.Op44, WasmValue.FromF64Bits(0xFFF8123456789ABC), 12345678901, 0),
-            new(ExecutionOpcode.Op0B, default, 12345678910, 0),
+            new(WasmSharp.Instructions.ExecutionOpcode.Op44, WasmValue.FromF64Bits(0xFFF8123456789ABC), 12345678901, 0),
+            new(WasmSharp.Instructions.ExecutionOpcode.Op0B, default, 12345678910, 0),
         ];
         LocalDeclaration[] locals = [new(3, WasmValueKind.I32), new(5, WasmValueKind.ExternRef)];
 
@@ -61,8 +61,8 @@ internal class FunctionCode_ConstructorTests
             targetCount == 0 ? [singleTarget, defaultTarget] : [singleTarget, new(0, 1, 2), new(1, 3, 2), defaultTarget];
         ImmutableArray<Instruction> instructions =
         [
-            new(ExecutionOpcode.Op0B, default, 31, 0),
-            new(ExecutionOpcode.Op0B, default, 32, 1, targetCount),
+            new(WasmSharp.Instructions.ExecutionOpcode.Op0B, default, 31, 0),
+            new(WasmSharp.Instructions.ExecutionOpcode.Op0B, default, 32, 1, targetCount),
         ];
 
         // Act
