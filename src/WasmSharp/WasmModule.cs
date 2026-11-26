@@ -39,14 +39,14 @@ public sealed class WasmModule
     internal ImmutableArray<FunctionCode> FunctionCodes { get; set; } = [];
 
     /// <summary>
-    /// 型index順の関数型を保持する不変配列
+    /// 型index順の定義型を保持する不変配列
     /// </summary>
-    internal ImmutableArray<WasmFunctionType> Types { get; }
+    internal ImmutableArray<WasmDefinedType> Types { get; }
 
     /// <summary>
-    /// 上位型を指定した関数の宣言と入力位置を型番号順に保持する
+    /// 上位型を指定した宣言と入力位置を型番号順に保持する
     /// </summary>
-    internal ImmutableArray<FunctionSupertypeDeclaration> SupertypeDeclarations { get; }
+    internal ImmutableArray<SupertypeDeclaration> SupertypeDeclarations { get; }
 
     /// <summary>
     /// importを含まない定義順のデコード済み関数を保持する不変配列
@@ -106,7 +106,7 @@ public sealed class WasmModule
     /// <summary>
     /// デコードした各定義をコピーしてmodule定義を構築する
     /// </summary>
-    /// <param name="types">型index順の関数型</param>
+    /// <param name="types">型index順の定義型</param>
     /// <param name="functions">importを含まない定義順の関数</param>
     /// <param name="exports">4種のexportの宣言</param>
     /// <param name="inputLength">入力バイナリのバイト数</param>
@@ -119,9 +119,9 @@ public sealed class WasmModule
     /// <param name="dataSegments">定義順のデータセグメント</param>
     /// <param name="dataCount">省略可能なデータ数セクションの宣言</param>
     /// <param name="elementSegments">宣言順の要素セグメント</param>
-    /// <param name="supertypeDeclarations">上位型を指定した関数の宣言</param>
+    /// <param name="supertypeDeclarations">上位型を指定した宣言</param>
     internal WasmModule(
-        ReadOnlySpan<WasmFunctionType> types,
+        ReadOnlySpan<WasmDefinedType> types,
         ReadOnlySpan<DecodedFunction> functions,
         ReadOnlySpan<ModuleExport> exports,
         long inputLength,
@@ -134,7 +134,7 @@ public sealed class WasmModule
         ReadOnlySpan<DataDefinition> dataSegments = default,
         DataCountDefinition? dataCount = null,
         ReadOnlySpan<ElementDefinition> elementSegments = default,
-        ReadOnlySpan<FunctionSupertypeDeclaration> supertypeDeclarations = default
+        ReadOnlySpan<SupertypeDeclaration> supertypeDeclarations = default
     )
     {
         Types = [.. types];
@@ -151,6 +151,14 @@ public sealed class WasmModule
         ElementSegments = [.. elementSegments];
         InputLength = inputLength;
         SpecVersion = specVersion;
+    }
+
+    /// <summary>
+    /// 関数型を指すことを検証した型番号に対応する宣言を返す
+    /// </summary>
+    internal WasmFunctionType FunctionTypeAt(uint typeIndex)
+    {
+        return (WasmFunctionType)Types[(int)typeIndex];
     }
 
     /// <summary>

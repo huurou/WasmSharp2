@@ -18,7 +18,7 @@ internal class WasmInstance_ConstructorTests
         var end = DecodedInstruction.WithoutImmediate(new(0, 0x0B), 1);
         DecodedInstruction[] definedReference = [DecodedInstruction.WithIndex(new(0, 0xD2), 1, 0), end];
         var module = new WasmModule(
-            types: [new([], [])],
+            types: [new WasmFunctionType([], [])],
             functions: [new(0, 0, [], [end])],
             exports: [],
             inputLength: 0,
@@ -103,7 +103,7 @@ internal class WasmInstance_ConstructorTests
         // Arrange
         var end = DecodedInstruction.WithoutImmediate(new(0, 0x0B), 1);
         var module = new WasmModule(
-            types: [new([], [])],
+            types: [new WasmFunctionType([], [])],
             functions: [new(0, 0, [], [end])],
             exports: [],
             inputLength: 0,

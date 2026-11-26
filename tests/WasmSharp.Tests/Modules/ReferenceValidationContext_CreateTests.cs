@@ -30,7 +30,7 @@ internal class ReferenceValidationContext_CreateTests
             ElementDefinition.Active(WasmValueKind.ExternRef, [], new(3, []), 60),
         ];
         var module = new WasmModule(
-            [new([], [])],
+            [new WasmFunctionType([], [])],
             [new(0, 70, [], []), new(0, 75, [], [])],
             [],
             100,
@@ -234,7 +234,7 @@ internal class ReferenceValidationContext_CreateTests
     {
         // Arrange
         var module = new WasmModule(
-            [new([], [])],
+            [new WasmFunctionType([], [])],
             [
                 new(
                     0,

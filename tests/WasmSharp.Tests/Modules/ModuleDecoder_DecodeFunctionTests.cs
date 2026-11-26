@@ -92,8 +92,8 @@ internal partial class ModuleDecoder_DecodeTests
         // Assert
         using (Assert.Multiple())
         {
-            await Assert.That(module.Types[0].Parameters.Length).IsEqualTo(1);
-            await Assert.That(module.Types[0].Results.Length).IsEqualTo(2);
+            await Assert.That(module.FunctionTypeAt(0).Parameters.Length).IsEqualTo(1);
+            await Assert.That(module.FunctionTypeAt(0).Results.Length).IsEqualTo(2);
             await Assert.That(module.Functions[0].Locals[0].EndIndex).IsEqualTo(1u);
             await Assert.That(module.Functions[0].Instructions.Length).IsEqualTo(3);
         }

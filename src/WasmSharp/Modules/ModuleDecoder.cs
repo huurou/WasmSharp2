@@ -165,8 +165,8 @@ internal static class ModuleDecoder
         var reader = new ModuleBinaryReader(bytes, specVersion, mode: mode, maxCollectionLength: maxCollectionLength);
         ModuleBinaryFormat.ReadHeader(ref reader);
 
-        List<WasmFunctionType> types = [];
-        List<FunctionSupertypeDeclaration> supertypeDeclarations = [];
+        List<WasmDefinedType> types = [];
+        List<SupertypeDeclaration> supertypeDeclarations = [];
         List<ModuleExport> exports = [];
         List<ModuleImport> imports = [];
         List<TableDefinition> tables = [];

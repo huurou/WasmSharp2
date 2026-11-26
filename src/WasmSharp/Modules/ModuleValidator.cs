@@ -26,7 +26,7 @@ internal static class ModuleValidator
             }
             if (!supertypes.IsEmpty && supertypes[0].TypeIndex == index)
             {
-                supertypes[0].ThrowIfInvalid(module.Types[index].SupertypeError);
+                supertypes[0].ThrowIfInvalid(module.Types);
                 supertypes = supertypes[1..];
             }
         }
@@ -248,7 +248,7 @@ internal static class ModuleValidator
             start.FunctionIndex < (uint)imports.Length
                 ? imports[(int)start.FunctionIndex].TypeIndex
                 : module.Functions[(int)(start.FunctionIndex - (uint)imports.Length)].TypeIndex;
-        var type = module.Types[(int)typeIndex];
+        var type = module.FunctionTypeAt(typeIndex);
         if (!type.Parameters.IsEmpty || !type.Results.IsEmpty)
         {
             throw ValidationDiagnostics.ValidationFailure(
@@ -289,7 +289,7 @@ internal static class ModuleValidator
             switch (import)
             {
                 case FunctionImport function:
-                    ValidateTypeIndex(module, function.TypeIndex, location with { FunctionIndex = --functionIndex });
+                    RequireFunctionType(module, function.TypeIndex, location with { FunctionIndex = --functionIndex });
                     break;
 
                 case GlobalImport global:
@@ -318,7 +318,7 @@ internal static class ModuleValidator
     {
         foreach (var function in module.Functions)
         {
-            ValidateTypeIndex(
+            RequireFunctionType(
                 module,
                 function.TypeIndex,
                 new(WasmProcessingStage.Validate, function.BodyOffset, functionCount++, 10)
@@ -419,12 +419,24 @@ internal static class ModuleValidator
     /// <param name="module">関数型を保持するmodule</param>
     /// <param name="typeIndex">未検証の型index</param>
     /// <param name="location">参照元の位置</param>
-    private static void ValidateTypeIndex(WasmModule module, uint typeIndex, WasmFailureLocation location)
+    /// <param name="unknownTypeMessage">参照元に対応する範囲外の補助診断</param>
+    internal static WasmFunctionType RequireFunctionType(
+        WasmModule module,
+        uint typeIndex,
+        WasmFailureLocation location,
+        string unknownTypeMessage = "参照する関数型が存在しません。"
+    )
     {
         if (typeIndex >= (uint)module.Types.Length)
         {
-            throw ValidationDiagnostics.UnknownIndex("type", typeIndex, "参照する関数型が存在しません。", location);
+            throw ValidationDiagnostics.UnknownIndex("type", typeIndex, unknownTypeMessage, location);
         }
+        return module.Types[(int)typeIndex] as WasmFunctionType
+            ?? throw ValidationDiagnostics.ValidationFailure(
+                $"non-function type {typeIndex}",
+                "指定した型は関数型ではありません。",
+                location
+            );
     }
 
     /// <summary>

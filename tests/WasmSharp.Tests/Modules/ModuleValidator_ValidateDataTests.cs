@@ -106,7 +106,7 @@ internal partial class ModuleValidator_ValidateTests
             new GlobalImport("env", "offset", new(WasmValueKind.I32, false), 30),
         ];
         var module = new WasmModule(
-            [new([], [])],
+            [new WasmFunctionType([], [])],
             [new(0, 40, [], [DecodedInstruction.WithoutImmediate(new(0, 0x0B), 41)])],
             [new("run", 0, 35, WasmExternalKind.Function)],
             100,
@@ -266,7 +266,7 @@ internal partial class ModuleValidator_ValidateTests
     {
         // Arrange
         var module = new WasmModule(
-            [new([], [])],
+            [new WasmFunctionType([], [])],
             [
                 new(
                     0,
@@ -341,7 +341,7 @@ internal partial class ModuleValidator_ValidateTests
         // Arrange
         var executionContext = new WasmExecutionContext();
         var module = new WasmModule(
-            [new([], [])],
+            [new WasmFunctionType([], [])],
             [new(0, 40, [], [DecodedInstruction.WithoutImmediate(new(0, 0x0B), 41)])],
             [new("run", invalidData ? 0u : 1u, 35, WasmExternalKind.Function)],
             100,

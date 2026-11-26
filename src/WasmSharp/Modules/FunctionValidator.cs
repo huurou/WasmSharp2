@@ -641,11 +641,12 @@ internal static class FunctionValidator
 
         WasmFunctionType GetTypeSignature(uint index, long byteOffset)
         {
-            if (index >= (uint)module.Types.Length)
-            {
-                throw CreateUnknownIndex("type", index, "参照する型が存在しません。", byteOffset);
-            }
-            return module.Types[(int)index];
+            return ModuleValidator.RequireFunctionType(
+                module,
+                index,
+                new WasmFailureLocation(WasmProcessingStage.Validate, byteOffset, moduleFunctionIndex, 10),
+                "参照する型が存在しません。"
+            );
         }
 
         void ApplyCallType(WasmFunctionType calleeType, long byteOffset)

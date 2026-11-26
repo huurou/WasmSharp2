@@ -124,7 +124,7 @@ internal static class ImportInspector
     )
     {
         ModuleBinaryFormat.ReadHeader(ref reader);
-        List<WasmFunctionType> types = [];
+        List<WasmDefinedType> types = [];
         var imports = ImmutableArray.CreateBuilder<WasmImportInfo>();
         var previousRank = 0;
         while (reader.Remaining != 0)
@@ -150,12 +150,10 @@ internal static class ImportInspector
                     {
                         WasmImportInfo info = import switch
                         {
-                            FunctionImport function when function.TypeIndex < (uint)types.Count =>
-                                new WasmImportInfo.Function(
-                                    function.ModuleName,
-                                    function.Name,
-                                    types[(int)function.TypeIndex]
-                                ),
+                            FunctionImport function
+                                when function.TypeIndex < (uint)types.Count
+                                    && types[(int)function.TypeIndex] is WasmFunctionType signature =>
+                                new WasmImportInfo.Function(function.ModuleName, function.Name, signature),
                             FunctionImport function => throw UnresolvedType(
                                 section.Location(function.ByteOffset),
                                 ranges,

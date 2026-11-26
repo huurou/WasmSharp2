@@ -14,10 +14,10 @@ internal partial class WasmModule_DecodeTests
         var binary = HostLinkingModuleBinary.Create(
             HostLinkingModuleBinary.Section(1, [2, 0x50, 0, 0x60, 0, 0, 0x4F, 1, 0, 0x60, 0, 0])
         );
-        var parent = WasmFunctionType.FromDecodedGroup([new FunctionTypeDeclaration([], [], false, [])], firstIndex: 0);
-        var parentReference = WasmValueType.FunctionReference(parent, isNullable: false);
-        var expected = WasmFunctionType.FromDecodedGroup(
-            [new FunctionTypeDeclaration([], [], true, [parentReference])],
+        var parent = WasmDefinedType.FromDecodedGroup([new TypeDeclaration([], [], false, [])], firstIndex: 0);
+        var parentReference = WasmValueType.DefinedReference(parent, isNullable: false);
+        var expected = WasmDefinedType.FromDecodedGroup(
+            [new TypeDeclaration([], [], true, [parentReference])],
             firstIndex: 1
         );
 

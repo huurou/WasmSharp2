@@ -332,7 +332,7 @@ internal partial class WasmModule_ValidateTests
     )
     {
         return new(
-            [new([], [])],
+            [new WasmFunctionType([], [])],
             [new(0, 40, [], [DecodedInstruction.WithoutImmediate(new(0, 0x0B), 41)])],
             [new("run", 0, 35, WasmExternalKind.Function)],
             100,

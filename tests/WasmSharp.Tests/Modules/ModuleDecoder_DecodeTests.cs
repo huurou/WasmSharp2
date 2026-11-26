@@ -125,12 +125,12 @@ internal partial class ModuleDecoder_DecodeTests
         await Assert.That(module.Types.Length).IsEqualTo(1);
         using (Assert.Multiple())
         {
-            await Assert.That(module.Types[0].Parameters.Length).IsEqualTo(7);
-            await Assert.That(module.Types[0].Results.Length).IsEqualTo(7);
+            await Assert.That(module.FunctionTypeAt(0).Parameters.Length).IsEqualTo(7);
+            await Assert.That(module.FunctionTypeAt(0).Results.Length).IsEqualTo(7);
             for (var index = 0; index < expected.Length; index++)
             {
-                await Assert.That(module.Types[0].Parameters[index]).IsEqualTo(expected[index]);
-                await Assert.That(module.Types[0].Results[index]).IsEqualTo(expected[index]);
+                await Assert.That(module.FunctionTypeAt(0).Parameters[index]).IsEqualTo(expected[index]);
+                await Assert.That(module.FunctionTypeAt(0).Results[index]).IsEqualTo(expected[index]);
             }
         }
     }
@@ -153,8 +153,8 @@ internal partial class ModuleDecoder_DecodeTests
         using (Assert.Multiple())
         {
             await Assert.That(module.Types.Length).IsEqualTo(1);
-            await Assert.That(module.Types[0].Parameters.Length).IsEqualTo(0);
-            await Assert.That(module.Types[0].Results.Length).IsEqualTo(0);
+            await Assert.That(module.FunctionTypeAt(0).Parameters.Length).IsEqualTo(0);
+            await Assert.That(module.FunctionTypeAt(0).Results.Length).IsEqualTo(0);
             await Assert.That(module.Exports.Length).IsEqualTo(2);
             await Assert.That(module.Exports[0].Name).IsEqualTo("");
             await Assert.That(module.Exports[1].Name).IsEqualTo("");
