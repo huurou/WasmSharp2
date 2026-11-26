@@ -26,10 +26,7 @@ internal partial class WasmModule_InspectImportsTests
     }
 
     [Test]
-    [Arguments("4E025F00600000", "aggregate type", 13L)]
-    [Arguments("4F005F00", "aggregate type", 13L)]
     [Arguments("50005E7F00", "aggregate type", 13L)]
-    [Arguments("5F00", "aggregate type", 11L)]
     [Arguments("5E7F00", "aggregate type", 11L)]
     [Arguments("60016900", "heap type", 13L)] // exn
     [Arguments("60017400", "heap type", 13L)] // noexn
@@ -186,6 +183,95 @@ internal partial class WasmModule_InspectImportsTests
             await Assert
                 .That(apply.Type.ResultTypes.Single())
                 .IsEqualTo(WasmValueType.BottomReference(WasmValueKind.ExternRef, true));
+        }
+    }
+
+    [Test]
+    public async Task 関数の引数が相互参照する構造体である_フィールドの格納型と参照先と可変性を取得できる()
+    {
+        // Arrange
+        var binary = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Section(
+                1,
+                [1, 0x4E, 2, 0x60, 1, 0x63, 1, 0, 0x5F, 4, 0x64, 0, 0, 0x78, 1, 0x77, 0, 0x63, 1, 1]
+            ),
+            HostLinkingModuleBinary.Imports(("env", "callback", 0, [0]))
+        );
+
+        // Act
+        var import = (WasmImportInfo.Function)WasmModule.InspectImports(binary, WasmSpecVersion.Core3).Imports.Single();
+
+        // Assert
+        var parameter = import.Type.ParameterTypes.Single();
+        var structure = parameter.StructType!;
+        var fields = structure.Fields;
+        using (Assert.Multiple())
+        {
+            await Assert.That(parameter.Kind).IsEqualTo(WasmValueKind.StructRef);
+            await Assert.That(parameter.FunctionType).IsNull();
+            await Assert.That(parameter.IsNullable).IsTrue();
+            await Assert.That(fields.Length).IsEqualTo(4);
+            await Assert.That(fields[0].ValueType).IsEqualTo(WasmValueType.FunctionReference(import.Type, false));
+            await Assert.That(fields[0].IsMutable).IsFalse();
+            await Assert.That(fields[0].PackedType).IsEqualTo(WasmPackedType.None);
+            await Assert.That(fields[1].ValueType).IsEqualTo((WasmValueType)WasmValueKind.I32);
+            await Assert.That(fields[1].PackedType).IsEqualTo(WasmPackedType.I8);
+            await Assert.That(fields[1].IsMutable).IsTrue();
+            await Assert.That(fields[2].PackedType).IsEqualTo(WasmPackedType.I16);
+            await Assert.That(fields[2].IsMutable).IsFalse();
+            await Assert.That(fields[3].ValueType).IsEqualTo(parameter);
+            await Assert.That(fields[3].IsMutable).IsTrue();
+            await Assert.That(WasmValueType.StructReference(structure, true)).IsEqualTo(parameter);
+            await Assert.That(((WasmValueType)WasmValueKind.EqRef).Accepts(parameter)).IsTrue();
+            await Assert.That(parameter.Accepts(WasmValueKind.StructRef)).IsFalse();
+            await Assert.That(parameter.Accepts(WasmValue.FromFuncRef(null))).IsFalse();
+        }
+    }
+
+    [Test]
+    [Arguments((byte)1, "63000000")] // table (ref null 0)
+    [Arguments((byte)3, "630000")] // global (ref null 0)
+    public async Task 要求する構造体のフィールド型が未解決である_参照先の型番号と宣言位置を報告する(
+        byte kind,
+        string descriptor
+    )
+    {
+        // Arrange
+        var binary = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Section(1, [1, 0x5F, 1, 0x63, 9, 0]),
+            HostLinkingModuleBinary.Imports(("env", "item", kind, Convert.FromHexString(descriptor)))
+        );
+
+        // Act & Assert
+        var error = await Assert
+            .That(() => WasmModule.InspectImports(binary, WasmSpecVersion.Core3))
+            .ThrowsExactly<WasmImportInspectionException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(error!.Reason).IsEqualTo(WasmImportInspectionReason.UnresolvedType);
+            await Assert.That(error.Message).IsEqualTo("importの要求型が参照する型番号9を解決できません。");
+            await Assert.That(error.Location).IsEqualTo(new WasmFailureLocation(WasmProcessingStage.Decode, 14, null, 1));
+        }
+    }
+
+    [Test]
+    public async Task 関数importの型番号が構造体を指す_要求型を取得できないことを報告する()
+    {
+        // Arrange
+        var binary = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Section(1, [1, 0x5F, 0]),
+            HostLinkingModuleBinary.Imports(("env", "callback", 0, [0]))
+        );
+
+        // Act & Assert
+        var error = await Assert
+            .That(() => WasmModule.InspectImports(binary, WasmSpecVersion.Core3))
+            .ThrowsExactly<WasmImportInspectionException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(error!.Reason).IsEqualTo(WasmImportInspectionReason.UnresolvedType);
+            await Assert.That(error.Message).IsEqualTo("importに指定した型番号0は関数型を指していません。");
+            await Assert.That(error.Location).IsEqualTo(new WasmFailureLocation(WasmProcessingStage.Decode, 16, null, 2));
         }
     }
 }

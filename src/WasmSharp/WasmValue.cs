@@ -64,6 +64,18 @@ public readonly struct WasmValue
     }
 
     /// <summary>
+    /// 数値とv128ではゼロを、参照ではその型の階層に属するnullを返す
+    /// </summary>
+    internal static WasmValue CreateInitialValue(WasmValueKind kind)
+    {
+        if (!kind.IsSupported())
+        {
+            throw new InvalidOperationException("値型が不正です。");
+        }
+        return new WasmValue(kind.GetTopKind(), 0, 0, null);
+    }
+
+    /// <summary>
     /// 32ビット整数からvalueを構築する
     /// </summary>
     /// <param name="value">保持する32ビット整数</param>
@@ -270,6 +282,33 @@ public readonly struct WasmValue
     }
 
     /// <summary>
+    /// 生成した構造体への参照を保持する
+    /// </summary>
+    internal static WasmValue FromStruct(WasmStruct value)
+    {
+        return new WasmValue(WasmValueKind.StructRef, 0, 0, value);
+    }
+
+    /// <summary>
+    /// 参照先の構造体を取得する
+    /// </summary>
+    internal WasmStruct AsStruct()
+    {
+        EnsureKind(WasmValueKind.StructRef);
+        return (WasmStruct)_reference!;
+    }
+
+    /// <summary>
+    /// 構造体の参照先を不透明なCLRオブジェクトとして取得する
+    /// </summary>
+    /// <returns>同じ構造体を外部化したときにも得られる参照先</returns>
+    /// <exception cref="InvalidOperationException">値が非nullの構造体参照でない場合</exception>
+    public object AsStructRef()
+    {
+        return AsStruct();
+    }
+
+    /// <summary>
     /// 関数への参照またはnullからfuncrefのvalueを構築する
     /// </summary>
     /// <param name="value">保持する関数への参照またはnull</param>
@@ -298,8 +337,8 @@ public readonly struct WasmValue
     public static WasmValue FromHostRef(object? value)
     {
         var host = new WasmValue(WasmValueKind.AnyRef, 0, 0, value);
-        // 外部化済みのオブジェクト自体をホスト参照として渡された場合も、参照先を区別する。
-        return value is ExternalizedReference ? new ExternalizedReference(host).InternalValue : host;
+        // 外部化したWasm参照のオブジェクトも、ホスト参照として受け取ったときは区別して保持する。
+        return value is ExternalizedReference or WasmStruct ? new ExternalizedReference(host).InternalValue : host;
     }
 
     /// <summary>
@@ -315,13 +354,18 @@ public readonly struct WasmValue
 
     internal WasmValue InternalizeExtern()
     {
-        var external = AsExternRef();
-        return external is ExternalizedReference wrapped ? wrapped.InternalValue : FromHostRef(external);
+        return AsExternRef() switch
+        {
+            WasmStruct structure => FromStruct(structure),
+            ExternalizedReference wrapped => wrapped.InternalValue,
+            var host => FromHostRef(host),
+        };
     }
 
     internal WasmValue ExternalizeAny()
     {
-        if (Kind == WasmValueKind.AnyRef || _reference is ExternalizedReference)
+        // 構造体は、繰り返し外部化しても同じ実体をホストに渡す。
+        if (Kind is WasmValueKind.AnyRef or WasmValueKind.StructRef || _reference is ExternalizedReference)
         {
             return FromExternRef(_reference);
         }
@@ -352,11 +396,12 @@ public readonly struct WasmValue
     /// <inheritdoc/>
     /// <remarks>
     /// i31参照は外部参照との変換を経た後も、保持する31ビットで等しさを判定する。
+    /// 構造体参照は同じ実体を指すときに等しく、フィールドの更新は等しさに影響しない。
     /// 外部参照の等しさは、ホストオブジェクトのEqualsに従う。
     /// </remarks>
     public override bool Equals(object? obj)
     {
-        return obj is WasmValue other && EqualityFields.Equals(other.EqualityFields);
+        return obj is WasmValue other && HasSameValue(other);
     }
 
     /// <inheritdoc/>
@@ -368,12 +413,17 @@ public readonly struct WasmValue
     /// <summary>
     /// <see cref="Equals(object)"/>と同じ基準で2つの値が等しいかを返す
     /// </summary>
-    public static bool operator ==(WasmValue left, WasmValue right) => left.Equals(right);
+    public static bool operator ==(WasmValue left, WasmValue right) => left.HasSameValue(right);
 
     /// <summary>
     /// <see cref="Equals(object)"/>と同じ基準で2つの値が異なるかを返す
     /// </summary>
-    public static bool operator !=(WasmValue left, WasmValue right) => !left.Equals(right);
+    public static bool operator !=(WasmValue left, WasmValue right) => !left.HasSameValue(right);
+
+    private bool HasSameValue(WasmValue other)
+    {
+        return EqualityFields.Equals(other.EqualityFields);
+    }
 
     /// <summary>
     /// valueを取得する操作が、保持中の型に対応することを確認する

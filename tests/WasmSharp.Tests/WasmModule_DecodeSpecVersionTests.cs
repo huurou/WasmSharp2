@@ -52,7 +52,7 @@ internal partial class WasmModule_DecodeTests
         );
 
         // Act
-        var types = WasmModule.Decode(bytes, WasmSpecVersion.Core3).Types;
+        var types = WasmModule.Decode(bytes, WasmSpecVersion.Core3).Types.Cast<WasmFunctionType>().ToArray();
 
         // Assert
         using (Assert.Multiple())
@@ -275,16 +275,16 @@ internal partial class WasmModule_DecodeTests
     }
 
     [Test]
-    public async Task Core3のグローバル初期化式にstructNewがある_未対応の命令名を報告する()
+    public async Task Core3のグローバル初期化式にarrayNewがある_未対応の命令名を報告する()
     {
         // Arrange
-        var bytes = HostLinkingModuleBinary.Create(HostLinkingModuleBinary.Globals((0x6F, false, [0xFB, 0x00, 0, 0x0B])));
+        var bytes = HostLinkingModuleBinary.Create(HostLinkingModuleBinary.Globals((0x6F, false, [0xFB, 0x06, 0, 0x0B])));
 
         // Act & Assert
         var exception = await Assert
             .That(() => WasmModule.Decode(bytes, WasmSpecVersion.Core3))
             .ThrowsExactly<WasmUnsupportedFeatureException>();
-        await Assert.That(exception!.Feature).IsEqualTo("struct.new");
+        await Assert.That(exception!.Feature).IsEqualTo("array.new");
     }
 
     [Test]

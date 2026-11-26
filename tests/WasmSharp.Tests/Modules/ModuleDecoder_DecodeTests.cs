@@ -47,7 +47,7 @@ internal partial class ModuleDecoder_DecodeTests
     [Arguments("0404017F0000", "malformed reference type", 11L, (byte)4)]
     [Arguments("040401F00000", "integer representation too long", 12L, (byte)4)]
     [Arguments("020401000004", "malformed import kind", 13L, (byte)2)]
-    [Arguments("0606017F0241000B", "malformed mutability", 12L, (byte)6)]
+    [Arguments("0606017F0241000B", "malformed mutability: globalの可変性", 12L, (byte)6)]
     [Arguments("070401000400", "malformed export kind", 12L, (byte)7)]
     [Arguments("0D", "malformed section id", 8L, (byte)13)]
     [Arguments("01010001", "unexpected content after last section", 11L, (byte)1)]
@@ -125,12 +125,12 @@ internal partial class ModuleDecoder_DecodeTests
         await Assert.That(module.Types.Length).IsEqualTo(1);
         using (Assert.Multiple())
         {
-            await Assert.That(module.Types[0].Parameters.Length).IsEqualTo(7);
-            await Assert.That(module.Types[0].Results.Length).IsEqualTo(7);
+            await Assert.That(module.FunctionTypeAt(0).Parameters.Length).IsEqualTo(7);
+            await Assert.That(module.FunctionTypeAt(0).Results.Length).IsEqualTo(7);
             for (var index = 0; index < expected.Length; index++)
             {
-                await Assert.That(module.Types[0].Parameters[index]).IsEqualTo(expected[index]);
-                await Assert.That(module.Types[0].Results[index]).IsEqualTo(expected[index]);
+                await Assert.That(module.FunctionTypeAt(0).Parameters[index]).IsEqualTo(expected[index]);
+                await Assert.That(module.FunctionTypeAt(0).Results[index]).IsEqualTo(expected[index]);
             }
         }
     }
@@ -153,8 +153,8 @@ internal partial class ModuleDecoder_DecodeTests
         using (Assert.Multiple())
         {
             await Assert.That(module.Types.Length).IsEqualTo(1);
-            await Assert.That(module.Types[0].Parameters.Length).IsEqualTo(0);
-            await Assert.That(module.Types[0].Results.Length).IsEqualTo(0);
+            await Assert.That(module.FunctionTypeAt(0).Parameters.Length).IsEqualTo(0);
+            await Assert.That(module.FunctionTypeAt(0).Results.Length).IsEqualTo(0);
             await Assert.That(module.Exports.Length).IsEqualTo(2);
             await Assert.That(module.Exports[0].Name).IsEqualTo("");
             await Assert.That(module.Exports[1].Name).IsEqualTo("");

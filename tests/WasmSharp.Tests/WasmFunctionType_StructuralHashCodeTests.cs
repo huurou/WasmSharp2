@@ -58,7 +58,9 @@ internal class WasmFunctionType_StructuralHashCodeTests
     [Arguments("4F00600000", "5000600000")] // finalかどうか
     [Arguments("6001630000", "6001640000")] // グループ内の参照のnull可否
     [Arguments("6001640000", "6001640100")] // グループ内の参照先の位置
-    public async Task 再帰グループ内で宣言を変える_引数と結果の個数が同じでも構造ハッシュが複数に分かれる(
+    [Arguments("5F017800", "5F017700")] // 詰め込みフィールドの幅（i8とi16）
+    [Arguments("5F017800", "5F017801")] // i8フィールドの可変性
+    public async Task 再帰グループ内で宣言を変える_先頭の同じ関数型の構造ハッシュが複数に分かれる(
         string definition,
         string alternateDefinition
     )
@@ -73,7 +75,7 @@ internal class WasmFunctionType_StructuralHashCodeTests
             foreach (var second in definitions)
             {
                 var binary = HostLinkingModuleBinary.Create(
-                    HostLinkingModuleBinary.Section(1, [1, 0x4E, 2, .. first, .. second])
+                    HostLinkingModuleBinary.Section(1, [1, 0x4E, 3, 0x60, 0, 0, .. first, .. second])
                 );
                 hashes.Add(WasmModule.Decode(binary, WasmSpecVersion.Core3).Types[0].StructuralHashCode);
             }

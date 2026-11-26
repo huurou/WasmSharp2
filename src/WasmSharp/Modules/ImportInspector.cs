@@ -124,7 +124,7 @@ internal static class ImportInspector
     )
     {
         ModuleBinaryFormat.ReadHeader(ref reader);
-        List<WasmFunctionType> types = [];
+        List<WasmDefinedType> types = [];
         var imports = ImmutableArray.CreateBuilder<WasmImportInfo>();
         var previousRank = 0;
         while (reader.Remaining != 0)
@@ -150,17 +150,20 @@ internal static class ImportInspector
                     {
                         WasmImportInfo info = import switch
                         {
-                            FunctionImport function when function.TypeIndex < (uint)types.Count =>
-                                new WasmImportInfo.Function(
-                                    function.ModuleName,
-                                    function.Name,
-                                    types[(int)function.TypeIndex]
-                                ),
-                            FunctionImport function => throw UnresolvedType(
+                            FunctionImport function when function.TypeIndex >= (uint)types.Count => throw UnresolvedType(
+                                "importの関数型添字を解決できません。",
                                 section.Location(function.ByteOffset),
                                 ranges,
                                 reader.InputEnd
                             ),
+                            FunctionImport function => types[(int)function.TypeIndex] is WasmFunctionType signature
+                                ? new WasmImportInfo.Function(function.ModuleName, function.Name, signature)
+                                : throw UnresolvedType(
+                                    $"importに指定した型番号{function.TypeIndex}は関数型を指していません。",
+                                    section.Location(function.ByteOffset),
+                                    ranges,
+                                    reader.InputEnd
+                                ),
                             GlobalImport global => new WasmImportInfo.Global(global.ModuleName, global.Name, global.Type),
                             MemoryImport memory => new WasmImportInfo.Memory(
                                 memory.Definition.Type,
@@ -183,7 +186,12 @@ internal static class ImportInspector
                         };
                         if (missing is not null)
                         {
-                            throw UnresolvedType(missing.Location, ranges, reader.InputEnd);
+                            throw UnresolvedType(
+                                $"importの要求型が参照する型番号{missing.Index}を解決できません。",
+                                missing.Location,
+                                ranges,
+                                reader.InputEnd
+                            );
                         }
                         imports.Add(info);
                     }
@@ -202,13 +210,14 @@ internal static class ImportInspector
     }
 
     private static WasmImportInspectionException UnresolvedType(
+        string message,
         WasmFailureLocation location,
         ImmutableArray<WasmUnverifiedRange>.Builder ranges,
         long inputLength
     )
     {
         return new WasmImportInspectionException(
-            "importの関数型添字を解決できません。",
+            message,
             WasmImportInspectionReason.UnresolvedType,
             null,
             location,

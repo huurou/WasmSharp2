@@ -1,6 +1,5 @@
 using System.Collections.Immutable;
 using WasmSharp.Execution;
-using WasmSharp.Instructions;
 using WasmSharp.Modules;
 
 namespace WasmSharp.Tests.Execution;
@@ -13,8 +12,8 @@ internal class FunctionCode_ConstructorTests
         // Arrange
         ImmutableArray<Instruction> instructions =
         [
-            new(ExecutionOpcode.Op44, WasmValue.FromF64Bits(0xFFF8123456789ABC), 12345678901, 0),
-            new(ExecutionOpcode.Op0B, default, 12345678910, 0),
+            new(WasmSharp.Instructions.ExecutionOpcode.Op44, WasmValue.FromF64Bits(0xFFF8123456789ABC), 12345678901, 0),
+            new(WasmSharp.Instructions.ExecutionOpcode.Op0B, default, 12345678910, 0),
         ];
         LocalDeclaration[] locals = [new(3, WasmValueKind.I32), new(5, WasmValueKind.ExternRef)];
 
@@ -40,6 +39,17 @@ internal class FunctionCode_ConstructorTests
     }
 
     [Test]
+    public async Task 未対応の値型を持つローカルを宣言する_初期値を作成するときに拒否する()
+    {
+        // Arrange
+        LocalDeclaration[] locals = [new LocalDeclaration(1, WasmValueKind.ExnRef)];
+
+        // Act & Assert
+        var error = await Assert.That(() => new FunctionCode([], locals, 0)).ThrowsExactly<InvalidOperationException>();
+        await Assert.That(error!.Message).Contains("値型");
+    }
+
+    [Test]
     [Arguments(0)]
     [Arguments(2)]
     public async Task 単一分岐と分岐表を同じ関数へ保持する_開始番号から候補と最後の既定を参照できる(int targetCount)
@@ -51,8 +61,8 @@ internal class FunctionCode_ConstructorTests
             targetCount == 0 ? [singleTarget, defaultTarget] : [singleTarget, new(0, 1, 2), new(1, 3, 2), defaultTarget];
         ImmutableArray<Instruction> instructions =
         [
-            new(ExecutionOpcode.Op0B, default, 31, 0),
-            new(ExecutionOpcode.Op0B, default, 32, 1, targetCount),
+            new(WasmSharp.Instructions.ExecutionOpcode.Op0B, default, 31, 0),
+            new(WasmSharp.Instructions.ExecutionOpcode.Op0B, default, 32, 1, targetCount),
         ];
 
         // Act

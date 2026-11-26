@@ -14,7 +14,7 @@ internal class Interpreter_ReturnTests
         var executionContext = new WasmExecutionContext();
         var outerFunction = FunctionFixture.Create();
         var module = new WasmModule(
-            [new([WasmValueKind.I32], [WasmValueKind.ExternRef, WasmValueKind.I64])],
+            [new WasmFunctionType([WasmValueKind.I32], [WasmValueKind.ExternRef, WasmValueKind.I64])],
             [new(0, 80, [new(1, WasmValueKind.I32)], [])],
             [],
             90,

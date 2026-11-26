@@ -69,29 +69,12 @@ internal sealed class FunctionCode(
         uint previousEnd = 0;
         foreach (var local in locals)
         {
-            initializers.Add(new LocalInitializer(local.EndIndex - previousEnd, CreateInitialValue(local.Type.Kind)));
+            initializers.Add(
+                new LocalInitializer(local.EndIndex - previousEnd, WasmValue.CreateInitialValue(local.Type.Kind))
+            );
             previousEnd = local.EndIndex;
         }
 
         return initializers.MoveToImmutable();
-    }
-
-    /// <summary>
-    /// 数値・v128では型に応じたゼロ、参照では型に応じたnullを返す
-    /// </summary>
-    /// <param name="kind">localの値型</param>
-    /// <returns>localの初期値</returns>
-    private static WasmValue CreateInitialValue(WasmValueKind kind)
-    {
-        return kind switch
-        {
-            WasmValueKind.I32 => WasmValue.FromI32(0),
-            WasmValueKind.I64 => WasmValue.FromI64(0),
-            WasmValueKind.F32 => WasmValue.FromF32Bits(0),
-            WasmValueKind.F64 => WasmValue.FromF64Bits(0),
-            WasmValueKind.V128 => WasmValue.FromV128(0, 0),
-            _ when kind.IsReference() => WasmValue.FromNullReference(kind),
-            _ => throw new InvalidOperationException("localの値型が不正です。"),
-        };
     }
 }

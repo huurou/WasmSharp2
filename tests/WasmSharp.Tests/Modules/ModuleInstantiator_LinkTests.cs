@@ -108,7 +108,7 @@ internal class ModuleInstantiator_LinkTests
                 WasmSpecVersion.Core3
             )
             .Validate();
-        var reference = WasmValueType.FunctionReference(module.Types[0], false);
+        var reference = WasmValueType.FunctionReference(module.FunctionTypeAt(0), false);
         var provided = WasmFunctionType.Create([reference, reference, reference], [WasmValueKind.F64]);
         var host = new WasmHostModule("env");
         host.Define("function", WasmFunction.CreateHost(provided, (_, _) => new WasmResults([])));

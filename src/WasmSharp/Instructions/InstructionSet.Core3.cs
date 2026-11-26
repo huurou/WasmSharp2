@@ -59,12 +59,66 @@ namespace WasmSharp.Instructions;
     ValidationRule.BranchOnNonNull,
     nameof(Interpreter.BranchOnNonNull)
 )]
-[Instruction(Core3, 0xFB, 0x00, "struct.new")]
-[Instruction(Core3, 0xFB, 0x01, "struct.new_default")]
-[Instruction(Core3, 0xFB, 0x02, "struct.get")]
-[Instruction(Core3, 0xFB, 0x03, "struct.get_s")]
-[Instruction(Core3, 0xFB, 0x04, "struct.get_u")]
-[Instruction(Core3, 0xFB, 0x05, "struct.set")]
+[Instruction(
+    Core3,
+    0xFB,
+    0x00,
+    "struct.new",
+    ImmediateKind.Index,
+    StackEffectKind.StructNew,
+    ValidationRule.StructNew,
+    nameof(Interpreter.StructNew)
+)]
+[Instruction(
+    Core3,
+    0xFB,
+    0x01,
+    "struct.new_default",
+    ImmediateKind.Index,
+    StackEffectKind.StructNewDefault,
+    ValidationRule.StructNewDefault,
+    nameof(Interpreter.StructNewDefault)
+)]
+[Instruction(
+    Core3,
+    0xFB,
+    0x02,
+    "struct.get",
+    ImmediateKind.IndexPair,
+    StackEffectKind.StructGet,
+    ValidationRule.StructGet,
+    nameof(Interpreter.StructGet)
+)]
+[Instruction(
+    Core3,
+    0xFB,
+    0x03,
+    "struct.get_s",
+    ImmediateKind.IndexPair,
+    StackEffectKind.StructGet,
+    ValidationRule.StructGetPacked,
+    nameof(Interpreter.StructGetSigned)
+)]
+[Instruction(
+    Core3,
+    0xFB,
+    0x04,
+    "struct.get_u",
+    ImmediateKind.IndexPair,
+    StackEffectKind.StructGet,
+    ValidationRule.StructGetPacked,
+    nameof(Interpreter.StructGet)
+)]
+[Instruction(
+    Core3,
+    0xFB,
+    0x05,
+    "struct.set",
+    ImmediateKind.IndexPair,
+    StackEffectKind.StructSet,
+    ValidationRule.StructSet,
+    nameof(Interpreter.StructSet)
+)]
 [Instruction(Core3, 0xFB, 0x06, "array.new")]
 [Instruction(Core3, 0xFB, 0x07, "array.new_default")]
 [Instruction(Core3, 0xFB, 0x08, "array.new_fixed")]

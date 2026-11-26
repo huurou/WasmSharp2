@@ -19,7 +19,7 @@ public readonly struct WasmValueType : IEquatable<WasmValueType>
             return ValidationDiagnostics.UnknownIndex(
                 "type",
                 Index,
-                "参照先の関数型が存在しません。",
+                "参照先の型が存在しません。",
                 Location with
                 {
                     Stage = WasmProcessingStage.Validate,
@@ -43,7 +43,14 @@ public readonly struct WasmValueType : IEquatable<WasmValueType>
     /// <summary>
     /// 具体的な関数参照型が要求する関数型
     /// </summary>
-    public WasmFunctionType? FunctionType { get; }
+    public WasmFunctionType? FunctionType => DefinedType as WasmFunctionType;
+
+    /// <summary>
+    /// 具体的な構造体参照型が要求する構造体型
+    /// </summary>
+    public WasmStructType? StructType => DefinedType as WasmStructType;
+
+    internal WasmDefinedType? DefinedType { get; }
 
     /// <summary>
     /// 参照先を持つ値が存在しないヒープ型かどうか
@@ -55,19 +62,19 @@ public readonly struct WasmValueType : IEquatable<WasmValueType>
     /// </summary>
     public bool IsReference => Kind.IsReference();
 
-    internal UnresolvedReference? Unresolved => _unresolved ?? FunctionType?.Unresolved;
+    internal UnresolvedReference? Unresolved => _unresolved ?? DefinedType?.Unresolved;
 
     private WasmValueType(
         WasmValueKind kind,
         bool isNullable,
-        WasmFunctionType? functionType = null,
+        WasmDefinedType? definedType = null,
         bool isBottomHeapType = false,
         UnresolvedReference? unresolved = null
     )
     {
         Kind = kind;
         IsNullable = isNullable;
-        FunctionType = functionType;
+        DefinedType = definedType;
         IsBottomHeapType = isBottomHeapType;
         _unresolved = unresolved;
     }
@@ -98,7 +105,21 @@ public readonly struct WasmValueType : IEquatable<WasmValueType>
     public static WasmValueType FunctionReference(WasmFunctionType functionType, bool isNullable)
     {
         ArgumentNullException.ThrowIfNull(functionType);
-        return new WasmValueType(WasmValueKind.FuncRef, isNullable, functionType);
+        return DefinedReference(functionType, isNullable);
+    }
+
+    /// <summary>
+    /// 指定した構造体型への参照を表す宣言型を取得する
+    /// </summary>
+    public static WasmValueType StructReference(WasmStructType structType, bool isNullable)
+    {
+        ArgumentNullException.ThrowIfNull(structType);
+        return DefinedReference(structType, isNullable);
+    }
+
+    internal static WasmValueType DefinedReference(WasmDefinedType type, bool isNullable)
+    {
+        return new WasmValueType(type.ReferenceKind, isNullable, type);
     }
 
     /// <summary>
@@ -113,7 +134,7 @@ public readonly struct WasmValueType : IEquatable<WasmValueType>
         return new WasmValueType(kind.GetTopKind(), isNullable, isBottomHeapType: true);
     }
 
-    internal static WasmValueType UnresolvedFunctionReference(uint index, bool isNullable, WasmFailureLocation location)
+    internal static WasmValueType UnresolvedTypeReference(uint index, bool isNullable, WasmFailureLocation location)
     {
         return new WasmValueType(WasmValueKind.FuncRef, isNullable, unresolved: new UnresolvedReference(index, location));
     }
@@ -129,7 +150,7 @@ public readonly struct WasmValueType : IEquatable<WasmValueType>
 
     internal WasmValueType AsNonNullable()
     {
-        return new WasmValueType(Kind, false, FunctionType, IsBottomHeapType, _unresolved);
+        return new WasmValueType(Kind, false, DefinedType, IsBottomHeapType, _unresolved);
     }
 
     /// <summary>
@@ -161,7 +182,7 @@ public readonly struct WasmValueType : IEquatable<WasmValueType>
                 _ => false,
             };
         }
-        return FunctionType is null || (actual.FunctionType is { } type && type.IsSubtypeOf(FunctionType));
+        return DefinedType is null || (actual.DefinedType is { } type && type.IsSubtypeOf(DefinedType));
     }
 
     /// <summary>
@@ -184,7 +205,7 @@ public readonly struct WasmValueType : IEquatable<WasmValueType>
     }
 
     /// <summary>
-    /// 値の種類、参照先の有無と関数型をこの宣言型に照らして判定する
+    /// 値の種類、参照先の有無と定義型をこの宣言型に照らして判定する
     /// </summary>
     public bool Accepts(WasmValue value)
     {
@@ -196,6 +217,7 @@ public readonly struct WasmValueType : IEquatable<WasmValueType>
         {
             _ when value.IsNullReference => BottomReference(value.Kind, true),
             WasmValueKind.FuncRef => FunctionReference(value.AsFuncRef()!.Type, false),
+            WasmValueKind.StructRef => StructReference(value.AsStruct().Type, false),
             _ => ((WasmValueType)value.Kind).AsNonNullable(),
         };
         return Accepts(actual);
@@ -206,14 +228,14 @@ public readonly struct WasmValueType : IEquatable<WasmValueType>
         return Kind == other.Kind
             && IsNullable == other.IsNullable
             && IsBottomHeapType == other.IsBottomHeapType
-            && (FunctionType is null) == (other.FunctionType is null)
+            && (DefinedType is null) == (other.DefinedType is null)
             && _unresolved?.Index == other._unresolved?.Index;
     }
 
     /// <inheritdoc/>
     public bool Equals(WasmValueType other)
     {
-        return HasSameForm(other) && (FunctionType is null || FunctionType.IsEquivalentTo(other.FunctionType!));
+        return HasSameForm(other) && (DefinedType is null || DefinedType.IsEquivalentTo(other.DefinedType!));
     }
 
     /// <inheritdoc/>
@@ -225,7 +247,7 @@ public readonly struct WasmValueType : IEquatable<WasmValueType>
     /// <inheritdoc/>
     public override int GetHashCode()
     {
-        return HashCode.Combine(Kind, IsNullable, IsBottomHeapType, FunctionType?.StructuralHashCode, _unresolved?.Index);
+        return HashCode.Combine(Kind, IsNullable, IsBottomHeapType, DefinedType?.StructuralHashCode, _unresolved?.Index);
     }
 
     /// <summary>
@@ -241,12 +263,12 @@ public readonly struct WasmValueType : IEquatable<WasmValueType>
     /// <inheritdoc/>
     public override string ToString()
     {
-        return Describe(FunctionType?.ToString());
+        return Describe(DefinedType?.ToString());
     }
 
-    internal string Describe(string? functionTypeName)
+    internal string Describe(string? definedTypeName)
     {
-        var heapType = _unresolved is { } missing ? missing.Index.ToString() : functionTypeName;
+        var heapType = _unresolved is { } missing ? missing.Index.ToString() : definedTypeName;
         if (heapType is null && (!IsNullable || IsBottomHeapType))
         {
             heapType = (Kind, IsBottomHeapType) switch

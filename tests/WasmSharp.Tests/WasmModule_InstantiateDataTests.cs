@@ -452,7 +452,7 @@ internal partial class WasmModule_InstantiateTests
                 return new([]);
             }));
         var module = new WasmModule(
-            [new([], []), new([], [WasmValueKind.I32])],
+            [new WasmFunctionType([], []), new WasmFunctionType([], [WasmValueKind.I32])],
             [
                 new(
                     1,
@@ -535,7 +535,7 @@ internal partial class WasmModule_InstantiateTests
                 return new([]);
             }));
         var module = new WasmModule(
-            [new([], [])],
+            [new WasmFunctionType([], [])],
             [],
             [],
             100,
@@ -631,7 +631,7 @@ internal partial class WasmModule_InstantiateTests
                 return new([]);
             }));
         var module = new WasmModule(
-            [new([], []), new([], [WasmValueKind.I32])],
+            [new WasmFunctionType([], []), new WasmFunctionType([], [WasmValueKind.I32])],
             [
                 new(
                     1,
@@ -708,7 +708,7 @@ internal partial class WasmModule_InstantiateTests
         var host = new WasmHostModule("env");
         host.Define("memory", memory);
         var module = new WasmModule(
-            [new([], [])],
+            [new WasmFunctionType([], [])],
             [],
             [],
             100,

@@ -26,7 +26,7 @@ internal static class ModuleValidator
             }
             if (!supertypes.IsEmpty && supertypes[0].TypeIndex == index)
             {
-                supertypes[0].ThrowIfInvalid(module.Types[index].SupertypeError);
+                supertypes[0].ThrowIfInvalid(module.Types);
                 supertypes = supertypes[1..];
             }
         }
@@ -77,6 +77,7 @@ internal static class ModuleValidator
                     element.ElementValueType,
                     visibleGlobals,
                     references.FunctionTypes,
+                    module.Types.AsSpan(),
                     9,
                     module.SpecVersion
                 );
@@ -109,6 +110,7 @@ internal static class ModuleValidator
                 tableType.AddressType,
                 visibleGlobals,
                 references.FunctionTypes,
+                module.Types.AsSpan(),
                 9,
                 module.SpecVersion
             );
@@ -148,6 +150,7 @@ internal static class ModuleValidator
                 references.MemoryAddressTypes[(int)target.MemoryIndex],
                 visibleGlobals,
                 references.FunctionTypes,
+                module.Types.AsSpan(),
                 11,
                 module.SpecVersion
             );
@@ -209,6 +212,7 @@ internal static class ModuleValidator
                 global.Type.ValueType,
                 globalTypes[..visibleGlobalCount],
                 functionTypes,
+                module.Types.AsSpan(),
                 6,
                 module.SpecVersion
             );
@@ -248,7 +252,7 @@ internal static class ModuleValidator
             start.FunctionIndex < (uint)imports.Length
                 ? imports[(int)start.FunctionIndex].TypeIndex
                 : module.Functions[(int)(start.FunctionIndex - (uint)imports.Length)].TypeIndex;
-        var type = module.Types[(int)typeIndex];
+        var type = module.FunctionTypeAt(typeIndex);
         if (!type.Parameters.IsEmpty || !type.Results.IsEmpty)
         {
             throw ValidationDiagnostics.ValidationFailure(
@@ -284,12 +288,10 @@ internal static class ModuleValidator
         var functionIndex = functionCount;
         for (var index = module.Imports.Length - 1; index >= 0; index--)
         {
-            var import = module.Imports[index];
-            var location = new WasmFailureLocation(WasmProcessingStage.Validate, import.ByteOffset, null, 2);
-            switch (import)
+            switch (module.Imports[index])
             {
                 case FunctionImport function:
-                    ValidateTypeIndex(module, function.TypeIndex, location with { FunctionIndex = --functionIndex });
+                    RequireFunctionType(module, function.TypeIndex, function.ByteOffset, 2, --functionIndex);
                     break;
 
                 case GlobalImport global:
@@ -297,11 +299,17 @@ internal static class ModuleValidator
                     break;
 
                 case TableImport table:
-                    ValidateTable(table.Definition.Type, location);
+                    ValidateTable(
+                        table.Definition.Type,
+                        new WasmFailureLocation(WasmProcessingStage.Validate, table.ByteOffset, null, 2)
+                    );
                     break;
 
                 case MemoryImport memory:
-                    ValidateMemory(memory.Definition.Type, location);
+                    ValidateMemory(
+                        memory.Definition.Type,
+                        new WasmFailureLocation(WasmProcessingStage.Validate, memory.ByteOffset, null, 2)
+                    );
                     break;
             }
         }
@@ -318,11 +326,7 @@ internal static class ModuleValidator
     {
         foreach (var function in module.Functions)
         {
-            ValidateTypeIndex(
-                module,
-                function.TypeIndex,
-                new(WasmProcessingStage.Validate, function.BodyOffset, functionCount++, 10)
-            );
+            RequireFunctionType(module, function.TypeIndex, function.BodyOffset, 10, functionCount++);
         }
     }
 
@@ -349,6 +353,7 @@ internal static class ModuleValidator
                     table.Type.ElementValueType,
                     importedGlobals,
                     functionTypes,
+                    module.Types.AsSpan(),
                     4,
                     module.SpecVersion
                 );
@@ -414,17 +419,39 @@ internal static class ModuleValidator
     }
 
     /// <summary>
-    /// 縮小変換する前に関数型の存在を検証する
+    /// 型番号の存在を先に検証し、参照先が関数型であることを確認する
     /// </summary>
-    /// <param name="module">関数型を保持するmodule</param>
+    /// <param name="module">型定義を保持するmodule</param>
     /// <param name="typeIndex">未検証の型index</param>
-    /// <param name="location">参照元の位置</param>
-    private static void ValidateTypeIndex(WasmModule module, uint typeIndex, WasmFailureLocation location)
+    /// <param name="byteOffset">参照元のバイト位置</param>
+    /// <param name="sectionId">参照元のセクション番号</param>
+    /// <param name="functionIndex">参照元の関数番号</param>
+    /// <param name="unknownTypeMessage">参照元に対応する範囲外の補助診断</param>
+    /// <returns>型番号が指す関数型</returns>
+    internal static WasmFunctionType RequireFunctionType(
+        WasmModule module,
+        uint typeIndex,
+        long byteOffset,
+        byte sectionId,
+        uint functionIndex,
+        string unknownTypeMessage = "参照する関数型が存在しません。"
+    )
     {
         if (typeIndex >= (uint)module.Types.Length)
         {
-            throw ValidationDiagnostics.UnknownIndex("type", typeIndex, "参照する関数型が存在しません。", location);
+            throw ValidationDiagnostics.UnknownIndex(
+                "type",
+                typeIndex,
+                unknownTypeMessage,
+                new WasmFailureLocation(WasmProcessingStage.Validate, byteOffset, functionIndex, sectionId)
+            );
         }
+        return module.Types[(int)typeIndex] as WasmFunctionType
+            ?? throw ValidationDiagnostics.ValidationFailure(
+                $"non-function type {typeIndex}",
+                "指定した型は関数型ではありません。",
+                new WasmFailureLocation(WasmProcessingStage.Validate, byteOffset, functionIndex, sectionId)
+            );
     }
 
     /// <summary>

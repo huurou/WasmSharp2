@@ -165,6 +165,14 @@ internal static class FunctionValidator
                     outputSecondaryIndex = AddCastTarget(targetType);
                     break;
 
+                case ValidationRule.StructNew:
+                case ValidationRule.StructNewDefault:
+                case ValidationRule.StructGet:
+                case ValidationRule.StructGetPacked:
+                case ValidationRule.StructSet:
+                    ValidateStructInstruction(instruction, descriptor.Validation);
+                    break;
+
                 case ValidationRule.I31Get:
                     Pop(WasmValueKind.I31Ref, instruction.ByteOffset);
                     stack.Add(WasmValueKind.I32);
@@ -639,13 +647,64 @@ internal static class FunctionValidator
             }
         }
 
+        void ValidateStructInstruction(DecodedInstruction instruction, ValidationRule rule)
+        {
+            var offset = instruction.ByteOffset;
+            var type = StructInstructionValidation.RequireType(
+                module.Types.AsSpan(),
+                instruction.Index,
+                offset,
+                10,
+                moduleFunctionIndex
+            );
+            if (rule is ValidationRule.StructNew or ValidationRule.StructNewDefault)
+            {
+                if (rule == ValidationRule.StructNewDefault)
+                {
+                    StructInstructionValidation.RequireDefaultable(type, offset, 10, moduleFunctionIndex);
+                }
+                else
+                {
+                    for (var index = type.Fields.Length - 1; index >= 0; index--)
+                    {
+                        Pop(type.Fields[index].ValueType, offset);
+                    }
+                }
+                stack.Add(WasmValueType.StructReference(type, isNullable: false));
+                return;
+            }
+
+            var field = StructInstructionValidation.RequireField(
+                type,
+                instruction.SecondaryIndex,
+                rule,
+                offset,
+                10,
+                moduleFunctionIndex
+            );
+            var receiver = WasmValueType.StructReference(type, isNullable: true);
+            if (rule == ValidationRule.StructSet)
+            {
+                Pop(field.ValueType, offset);
+                Pop(receiver, offset);
+            }
+            else
+            {
+                Pop(receiver, offset);
+                stack.Add(field.ValueType);
+            }
+        }
+
         WasmFunctionType GetTypeSignature(uint index, long byteOffset)
         {
-            if (index >= (uint)module.Types.Length)
-            {
-                throw CreateUnknownIndex("type", index, "参照する型が存在しません。", byteOffset);
-            }
-            return module.Types[(int)index];
+            return ModuleValidator.RequireFunctionType(
+                module,
+                index,
+                byteOffset,
+                10,
+                moduleFunctionIndex,
+                "参照する型が存在しません。"
+            );
         }
 
         void ApplyCallType(WasmFunctionType calleeType, long byteOffset)

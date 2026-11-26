@@ -124,6 +124,7 @@ internal static class ModuleInstantiator
             expression,
             instance.Globals.AsSpan(),
             instance.Functions.AsSpan(),
+            instance.Module.Types.AsSpan(),
             instance.Module.SpecVersion
         );
     }
@@ -192,7 +193,7 @@ internal static class ModuleInstantiator
         var matches = (import, value) switch
         {
             (FunctionImport required, FunctionExternalValue provided) => provided.Value.Type.IsSubtypeOf(
-                module.Types[(int)required.TypeIndex]
+                module.FunctionTypeAt(required.TypeIndex)
             ),
             (GlobalImport required, GlobalExternalValue provided) => required.Type.Accepts(provided.Value.Type),
             (MemoryImport { Definition.Type: var type }, MemoryExternalValue provided) => type.AddressType
@@ -257,7 +258,7 @@ internal static class ModuleInstantiator
     {
         return import switch
         {
-            FunctionImport function => module.Types[(int)function.TypeIndex].DescribeLinkSignature(),
+            FunctionImport function => module.FunctionTypeAt(function.TypeIndex).DescribeLinkSignature(),
             GlobalImport global => global.Type.ToString(),
             MemoryImport memory => DescribeMemory(memory.Definition.Type),
             TableImport table => DescribeTable(table.Definition.Type),

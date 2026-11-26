@@ -76,7 +76,7 @@ internal class Interpreter_PushConstantTests
         var found = InstructionSet.TryGet(new(0, (uint)opcode), WasmSpecVersion.Core2, out var descriptor);
         var code = new FunctionCode([new(descriptor.ExecutionOpcode!.Value, value, 12345678901, 0)], [], 1);
         var module = new WasmModule(
-            [new([], [value.Kind])],
+            [new WasmFunctionType([], [value.Kind])],
             [new(0, 30, [], [])],
             [],
             40,

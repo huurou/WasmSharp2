@@ -359,7 +359,9 @@ internal static class ValueMatcher
                 "externref" => true,
                 "anyref" => !isFunction,
                 "funcref" => isFunction,
-                "eqref" or "i31ref" => actual.Kind == WasmValueKind.I31Ref,
+                "eqref" => actual.Kind is WasmValueKind.I31Ref or WasmValueKind.StructRef,
+                "i31ref" => actual.Kind == WasmValueKind.I31Ref,
+                "structref" => actual.Kind == WasmValueKind.StructRef,
                 _ => false,
             },
             // ref.hostと、それを外部参照に包んだref.externは同じ番号でも異なる。

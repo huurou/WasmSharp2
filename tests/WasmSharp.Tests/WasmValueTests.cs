@@ -690,6 +690,19 @@ internal class WasmValue_GetHashCodeTests
     }
 }
 
+internal class WasmValue_AsStructRefTests
+{
+    [Test]
+    public async Task 構造体参照のnullから参照先を取得する_実体がないため拒否する()
+    {
+        // Arrange
+        var value = WasmValue.FromNullReference(WasmValueKind.StructRef);
+
+        // Act & Assert
+        await Assert.That(value.AsStructRef).ThrowsExactly<InvalidOperationException>();
+    }
+}
+
 internal class WasmValue_AsHostRefTests
 {
     [Test]

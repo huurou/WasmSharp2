@@ -64,4 +64,9 @@ public enum WasmTrapReason
     /// ref.castの参照値が指定した型と一致しない
     /// </summary>
     CastFailure,
+
+    /// <summary>
+    /// 構造体のフィールドにアクセスする参照がnull
+    /// </summary>
+    NullStructReference,
 }

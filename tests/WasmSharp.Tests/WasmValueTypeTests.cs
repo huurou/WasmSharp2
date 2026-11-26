@@ -14,7 +14,7 @@ internal class WasmValueType_UnresolvedTests
             7,
             new WasmFailureLocation(WasmProcessingStage.Decode, 14, null, 1)
         );
-        var nested = WasmValueType.UnresolvedFunctionReference(
+        var nested = WasmValueType.UnresolvedTypeReference(
             9,
             true,
             new WasmFailureLocation(WasmProcessingStage.Decode, 21, null, 1)
@@ -90,6 +90,19 @@ internal class WasmValueType_FunctionReferenceTests
             .That(() => WasmValueType.FunctionReference(null!, true))
             .ThrowsExactly<ArgumentNullException>();
         await Assert.That(failure!.ParamName).IsEqualTo("functionType");
+    }
+}
+
+internal class WasmValueType_StructReferenceTests
+{
+    [Test]
+    public async Task 構造体型がnullである_参照先が必要な引数を示して拒否する()
+    {
+        // Act & Assert
+        var failure = await Assert
+            .That(() => WasmValueType.StructReference(null!, true))
+            .ThrowsExactly<ArgumentNullException>();
+        await Assert.That(failure!.ParamName).IsEqualTo("structType");
     }
 }
 
@@ -276,7 +289,7 @@ internal class WasmValueType_EqualsTests
         var binary = HostLinkingModuleBinary.Create(
             HostLinkingModuleBinary.Section(1, [1, 0x60, 2, 0x63, 7, 0x63, otherIndex, 0])
         );
-        var parameters = WasmModule.Decode(binary, WasmSpecVersion.Core3).Types[0].ParameterTypes;
+        var parameters = WasmModule.Decode(binary, WasmSpecVersion.Core3).FunctionTypeAt(0).ParameterTypes;
 
         // Act
         var equal = parameters[0].Equals(parameters[1]);
@@ -323,7 +336,7 @@ internal class WasmValueType_ToStringTests
     {
         // Arrange
         var binary = HostLinkingModuleBinary.Create(HostLinkingModuleBinary.Section(1, [1, 0x60, 2, 0x63, 7, 0x64, 8, 0]));
-        var parameters = WasmModule.Decode(binary, WasmSpecVersion.Core3).Types[0].ParameterTypes;
+        var parameters = WasmModule.Decode(binary, WasmSpecVersion.Core3).FunctionTypeAt(0).ParameterTypes;
 
         // Act
         var nullable = parameters[0].ToString();

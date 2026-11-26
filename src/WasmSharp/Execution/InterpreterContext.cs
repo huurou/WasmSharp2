@@ -185,6 +185,15 @@ internal sealed class InterpreterContext
     }
 
     /// <summary>
+    /// 指定した個数まで値スタックを縮め、除いた値が保持する参照を解除する
+    /// </summary>
+    internal void TruncateValues(int valueCount)
+    {
+        Array.Clear(_values, valueCount, ValueCount - valueCount);
+        ValueCount = valueCount;
+    }
+
+    /// <summary>
     /// 値スタックの最上位の値を取り除かずに取得する
     /// </summary>
     /// <returns>最上位の値</returns>
@@ -264,8 +273,7 @@ internal sealed class InterpreterContext
         var destination = _frames[frameIndex].OperandBase + target.StackHeight;
         var newEnd = destination + target.KeepCount;
         Array.Copy(_values, ValueCount - target.KeepCount, _values, destination, target.KeepCount);
-        Array.Clear(_values, newEnd, ValueCount - newEnd);
-        ValueCount = newEnd;
+        TruncateValues(newEnd);
         _frames[frameIndex].Pc = target.TargetPc;
     }
 
@@ -302,7 +310,7 @@ internal sealed class InterpreterContext
     }
 
     /// <summary>
-    /// ホスト呼び出し専用コピーの入力として、共有値スタックの指定範囲を参照する
+    /// 共有値スタックの指定範囲を積まれた順序で参照する
     /// </summary>
     /// <param name="start">共有値スタック上の参照開始位置</param>
     /// <param name="count">参照する値の数</param>
@@ -321,9 +329,8 @@ internal sealed class InterpreterContext
     internal void Restore(int frameCount, int valueCount, int callDepth)
     {
         Array.Clear(_frames, frameCount, FrameCount - frameCount);
-        Array.Clear(_values, valueCount, ValueCount - valueCount);
+        TruncateValues(valueCount);
         FrameCount = frameCount;
-        ValueCount = valueCount;
         CallDepth = callDepth;
     }
 }

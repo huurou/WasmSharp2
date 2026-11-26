@@ -80,9 +80,9 @@ internal ref struct ModuleBinaryReader
     internal WasmSpecVersion SpecVersion { get; }
 
     /// <summary>
-    /// 現在の宣言が参照できる関数型 型セクション内では先行するグループだけを含む
+    /// 現在の宣言が参照できる定義型 型セクション内では先行するグループだけを含む
     /// </summary>
-    internal List<WasmFunctionType>? Types { get; set; }
+    internal List<WasmDefinedType>? Types { get; set; }
 
     /// <summary>
     /// 入力の参照と診断位置を保持し、指定範囲の先頭から読める状態を構築する
