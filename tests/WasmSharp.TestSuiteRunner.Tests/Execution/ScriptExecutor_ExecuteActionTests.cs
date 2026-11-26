@@ -136,7 +136,7 @@ public partial class ScriptExecutor_ExecuteTests
             ScriptExecutionFixture.Module(0)
             + ","
             + """
-                {"type":"action","line":1,"action":{"type":"invoke","field":"f","args":[]},"expected":[{"type":"i64"}]},
+                {"type":"action","line":1,"action":{"type":"invoke","field":"f","args":[]},"expected":[{"type":"funcref"},{"type":"externref"}]},
                 {"type":"assert_return","line":1,"action":{"type":"invoke","field":"f","args":[]},"expected":[{"type":"i32","value":"8"}]},
                 {"type":"assert_return","line":1,"action":{"type":"get","field":"g"},"expected":[{"type":"i32","value":"0"}]}
                 """;
@@ -149,6 +149,9 @@ public partial class ScriptExecutor_ExecuteTests
         {
             await Assert.That(results[1].Outcome).IsEqualTo(CaseOutcome.Passed);
             await Assert.That(results[1].ActualValues[0].Bits).IsEqualTo("00000007");
+            await Assert
+                .That(results[1].ExpectedValues.Select(x => x.Type).SequenceEqual(["funcref", "externref"]))
+                .IsTrue();
             await Assert.That(results[1].Diagnostics).IsEmpty();
             await Assert.That(results[2].Outcome).IsEqualTo(CaseOutcome.Failed);
             await Assert.That(results[2].Diagnostics[0].Operation).IsEqualTo("match_values");

@@ -251,7 +251,7 @@ internal sealed class InterpreterContext
     /// </summary>
     internal bool MatchesCastTarget(uint index, WasmValue value)
     {
-        return CurrentFunction.Code.CastTargets[(int)index].Accepts(value);
+        return CurrentFunction.Code.MatchesCastTarget(index, value);
     }
 
     /// <summary>

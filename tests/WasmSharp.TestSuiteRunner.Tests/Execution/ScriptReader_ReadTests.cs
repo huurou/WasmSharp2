@@ -90,6 +90,14 @@ internal class ScriptReader_ReadTests
     }
 
     [Test]
+    [Arguments(
+        """{"type":"action","line":1,"action":{"type":"invoke","field":"f","args":[{"type":"i31ref","value":"7"}]}}""",
+        "固定形式にないaction.args[0].valueがあります。"
+    )]
+    [Arguments(
+        """{"type":"action","line":1,"action":{"type":"invoke","field":"f","args":[{"type":"funcref"}]}}""",
+        "action.args[0].valueがありません。"
+    )]
     [Arguments("""{"type":"module_instance","line":1,"extra":0}""", "固定形式にないextraがあります。")]
     [Arguments("""{"type":"module_instance","line":1,"instance":3}""", "instanceが文字列ではありません。")]
     [Arguments("""{"type":"module_instance","line":1,"module":3}""", "moduleが文字列ではありません。")]
@@ -512,6 +520,10 @@ internal class ScriptReader_ReadTests
     )]
     [Arguments("""{"type": "module", "line": 7, "filename": "a.0.wasm", "name": "$A", "extra": true}""", "extra")]
     [Arguments("""{"type": "module", "line": 7, "filename": "a.0.wasm", "filename": "a.1.wasm"}""", "filename")]
+    [Arguments(
+        """{"type":"action","line":7,"action":{"type":"invoke","field":"f","args":[{"type":"i31ref"}]},"expected":[]}""",
+        "action.args[0].typeのi31refは固定形式にない値です。"
+    )]
     [Arguments("""{"type": "register", "line": 7}""", "as")]
     [Arguments("""{"type": "module", "line": 0, "filename": "a.0.wasm"}""", "line")]
     [Arguments("""{"type": "module", "filename": "a.0.wasm"}""", "line")]

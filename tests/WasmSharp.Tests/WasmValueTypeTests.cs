@@ -340,7 +340,12 @@ internal class WasmValueType_ToStringTests
     [Test]
     [Arguments(WasmValueKind.FuncRef, "func", "nofunc")]
     [Arguments(WasmValueKind.ExternRef, "extern", "noextern")]
-    public async Task 関数型と外部参照型のヒープ型を表示する_非nullと空の型に対応した名前になる(
+    [Arguments(WasmValueKind.AnyRef, "any", "none")]
+    [Arguments(WasmValueKind.EqRef, "eq", "none")]
+    [Arguments(WasmValueKind.I31Ref, "i31", "none")]
+    [Arguments(WasmValueKind.StructRef, "struct", "none")]
+    [Arguments(WasmValueKind.ArrayRef, "array", "none")]
+    public async Task 組み込み参照型を表示する_非nullの型名と階層ごとの底型名になる(
         WasmValueKind kind,
         string heapType,
         string bottomType

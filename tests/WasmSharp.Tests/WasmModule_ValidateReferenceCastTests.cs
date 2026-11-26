@@ -10,12 +10,12 @@ internal partial class WasmModule_ValidateTests
     [Arguments("D06CD06ED31A", 4, "type mismatch")] // ref.eqの右がanyref
     [Arguments("D06FFB146C1A", 2, "type mismatch")] // externrefをi31に照合する。
     [Arguments("4100FB17001A", 2, "type mismatch")] // i32を関数型にキャストする。
-    [Arguments("00FB1801006C6B", 1, "type mismatch on cast")] // キャスト先のstructはi31の部分型にならない。
+    [Arguments("00FB1801006C6B", 1, "type mismatch on cast: キャスト先はキャスト元の部分型")] // キャスト先のstructはi31の部分型にならない。
     [Arguments("00FB1901006E70", 1, "type mismatch on cast")] // anyとfuncは異なる階層に属する。
     [Arguments("00FB1802006E6C", 1, "type mismatch on cast")] // キャスト先だけがnullを許可する。
     [Arguments("00FB1801006E6C", 1, "type mismatch")] // ラベルが空
     [Arguments("02646C00FB1803006C6C000B1A", 4, "type mismatch")] // nullableな成功値を非nullのラベルへ渡す。
-    [Arguments("02646C00FB1901006C6C000B1A", 4, "type mismatch")] // nullableな失敗値を非nullのラベルへ渡す。
+    [Arguments("02646C00FB1901006C6C000B1A", 4, "type mismatch: 分岐先の最後の型")] // nullableな失敗値を非nullのラベルへ渡す。
     [Arguments("02014207D06EFB1801006E6C000B1A1A", 6, "type mismatch")] // ラベルの先行するi32の位置にi64がある。
     [Arguments("02014107D06FFB1901006E6C000B1A1A", 6, "type mismatch")] // スタックのexternrefがキャスト元anyrefに合わない。
     [Arguments("00FB1901016E6C", 1, "unknown label 1")]

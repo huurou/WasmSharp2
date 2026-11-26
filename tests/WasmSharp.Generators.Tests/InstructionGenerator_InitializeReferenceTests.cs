@@ -62,7 +62,11 @@ internal partial class InstructionGenerator_InitializeTests
 
         // Assert
         await GeneratorTestSource.AssertDiagnostic(driver, diagnostics, "WSIG004");
-        await Assert.That(diagnostics[0].GetMessage()).Contains("nullable.ref");
+        using (Assert.Multiple())
+        {
+            await Assert.That(diagnostics[0].GetMessage()).Contains("nullable.ref");
+            await Assert.That(diagnostics[0].GetMessage()).Contains("非nullのstatic ConstantReferenceOperationプロパティ");
+        }
     }
 
     [Test]

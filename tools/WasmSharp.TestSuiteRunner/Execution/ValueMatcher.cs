@@ -145,11 +145,11 @@ internal static class ValueMatcher
     /// <summary>
     /// 結果の種類が期待値の比較対象に含まれるか判定する。
     /// </summary>
-    private static bool MatchesType(ValuePattern expected, WasmValueKind actual)
+    private static bool MatchesType(ValuePattern expected, WasmValueKind actualKind)
     {
         return expected.Reference is null
-            ? expected.Type == ValueCodec.GetTypeName(actual)
-            : actual is WasmValueKind.FuncRef or WasmValueKind.ExternRef or WasmValueKind.AnyRef or WasmValueKind.I31Ref;
+            ? expected.Type == ValueCodec.GetTypeName(actualKind)
+            : ((WasmValueType)actualKind).IsReference;
     }
 
     /// <summary>

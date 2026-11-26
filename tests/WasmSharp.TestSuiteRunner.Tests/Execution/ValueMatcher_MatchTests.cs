@@ -113,6 +113,45 @@ internal class ValueMatcher_MatchTests
     }
 
     [Test]
+    public async Task Core3の参照を期待してi32の0が返る_null参照との型の相違を返す()
+    {
+        // Arrange
+        var expected = ValueMatcher.Parse([new ExpectedValue("refnull", null, null, [])], WasmSpecVersion.Core3);
+        var actual = new WasmResults([WasmValue.FromI32(0)]);
+        var state = new ScriptState("a.wast");
+
+        // Act
+        var mismatch = ValueMatcher.Match(expected, actual, state).Single();
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(mismatch.Kind).IsEqualTo(ValueMismatchKind.Type);
+            await Assert.That(mismatch.Message).Contains("refnull");
+            await Assert.That(mismatch.Message).Contains("i32");
+        }
+    }
+
+    [Test]
+    public async Task 参照のnullを期待して負のi31が返る_不一致の診断に符号なしの値を表示する()
+    {
+        // Arrange
+        var expected = ValueMatcher.Parse([new ExpectedValue("refnull", null, null, [])], WasmSpecVersion.Core3);
+        var actual = new WasmResults([WasmValue.FromI31(-1)]);
+        var state = new ScriptState("a.wast");
+
+        // Act
+        var mismatch = ValueMatcher.Match(expected, actual, state).Single();
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(mismatch.Kind).IsEqualTo(ValueMismatchKind.Value);
+            await Assert.That(mismatch.Message).Contains("i31の値2147483647");
+        }
+    }
+
+    [Test]
     public async Task 結果の順序が期待と異なる_入れ替わった位置の型の相違を返す()
     {
         // Arrange

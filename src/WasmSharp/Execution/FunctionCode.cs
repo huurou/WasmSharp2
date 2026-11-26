@@ -11,7 +11,7 @@ namespace WasmSharp.Execution;
 /// <param name="locals">引数の後に続く追加localsの圧縮宣言</param>
 /// <param name="maxOperandStack">関数の実行に必要なoperand領域の最大要素数</param>
 /// <param name="branchTargets">検証で完成した分岐情報 分岐を持たない関数では省略する</param>
-/// <param name="castTargets">参照の型判定やキャストが照合する参照型を命令順に並べた配列</param>
+/// <param name="castTargets">型判定やキャストの対象となる参照型を命令順に並べた配列 対象がなければ省略する</param>
 internal sealed class FunctionCode(
     ImmutableArray<Instruction> instructions,
     ReadOnlySpan<LocalDeclaration> locals,
@@ -21,6 +21,11 @@ internal sealed class FunctionCode(
 )
 {
     /// <summary>
+    /// 型判定とキャストの命令が即値の添字で参照する型
+    /// </summary>
+    private readonly ImmutableArray<WasmValueType> _castTargets = castTargets;
+
+    /// <summary>
     /// 関数内の実行順に並べた線形命令
     /// </summary>
     internal ImmutableArray<Instruction> Instructions { get; } = instructions;
@@ -29,11 +34,6 @@ internal sealed class FunctionCode(
     /// 命令から参照する関数内の確定済み分岐情報 分岐表は候補の後に既定1件を置く
     /// </summary>
     internal ImmutableArray<BranchTarget> BranchTargets { get; } = branchTargets.IsDefault ? [] : branchTargets;
-
-    /// <summary>
-    /// 参照の型判定やキャストの命令が照合する参照型
-    /// </summary>
-    internal ImmutableArray<WasmValueType> CastTargets { get; } = castTargets.IsDefault ? [] : castTargets;
 
     /// <summary>
     /// 引数の後に続く追加localsを、展開せずに個数と型別の初期値でまとめた配列
@@ -49,6 +49,14 @@ internal sealed class FunctionCode(
     /// 関数の実行に必要なoperand領域の最大要素数
     /// </summary>
     internal int MaxOperandStack { get; } = maxOperandStack;
+
+    /// <summary>
+    /// 検証済み命令が指定するキャスト先の参照型に値が一致するかを判定する
+    /// </summary>
+    internal bool MatchesCastTarget(uint index, WasmValue value)
+    {
+        return _castTargets[(int)index].Accepts(value);
+    }
 
     /// <summary>
     /// 圧縮宣言の個数を保ったまま、型ごとの初期値へ変換する

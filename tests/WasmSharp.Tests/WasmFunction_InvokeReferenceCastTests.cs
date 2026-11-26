@@ -56,11 +56,11 @@ internal partial class WasmFunction_InvokeTests
     }
 
     [Test]
-    [Arguments((byte)0x18, (byte)1, (byte)0x6C, 7, 15)] // br_on_cast (ref i31)
-    [Arguments((byte)0x19, (byte)1, (byte)0x6C, 15, 7)] // br_on_cast_fail (ref i31)
-    [Arguments((byte)0x18, (byte)3, (byte)0x71, 15, 7)] // br_on_cast (ref null none)
-    [Arguments((byte)0x19, (byte)3, (byte)0x71, 7, 15)] // br_on_cast_fail (ref null none)
-    public async Task キャスト結果で外側のラベルに分岐する_両方の経路で先行する整数と元の参照を返す(
+    [Arguments((byte)0x18, (byte)1, (byte)0x6C, 0, 9)] // br_on_cast (ref i31)
+    [Arguments((byte)0x19, (byte)1, (byte)0x6C, 8, 1)] // br_on_cast_fail (ref i31)
+    [Arguments((byte)0x18, (byte)3, (byte)0x71, 8, 1)] // br_on_cast (ref null none)
+    [Arguments((byte)0x19, (byte)3, (byte)0x71, 0, 9)] // br_on_cast_fail (ref null none)
+    public async Task キャスト結果で外側のラベルに分岐する_両方の経路で先行する型判定の結果と元の参照を返す(
         byte opcode,
         byte flags,
         byte target,
@@ -74,22 +74,19 @@ internal partial class WasmFunction_InvokeTests
             .Create(
                 [2, 0x60, 1, 0x6E, 2, 0x7F, 0x6E, 0x60, 0, 2, 0x7F, 0x6E],
                 [
-                    0x20,
-                    0,
-                    0xFB,
-                    0x15,
-                    0x71,
-                    0x1A, // 一つ目の対象型を使うref.testの結果を捨てる。
                     0x02,
                     1,
                     0x02,
                     0x40, // 外側のラベルはi32、anyrefを受け取る。
                     0x42,
-                    17,
-                    0x41,
-                    7,
+                    17, // ラベルに渡す2値の下に余分なi64を積む。
                     0x20,
-                    0, // ラベルに渡す2値の下に余分なi64を積む。
+                    0,
+                    0xFB,
+                    0x15,
+                    0x71, // ref.test (ref null none)の結果はnullなら1、i31なら0になる。
+                    0x20,
+                    0,
                     0xFB,
                     opcode,
                     flags,

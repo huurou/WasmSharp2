@@ -29,6 +29,10 @@ public readonly struct WasmValue
     /// </summary>
     private readonly object? _reference;
 
+    // i31を再び外部化するための参照先は、値の等しさやハッシュには含めない。
+    private (WasmValueKind Kind, ulong Low64, ulong High64, object? Reference) EqualityFields =>
+        (Kind, _low64, _high64, Kind == WasmValueKind.I31Ref ? null : _reference);
+
     /// <summary>
     /// 格納された値の実行時の種類
     /// </summary>
@@ -352,17 +356,13 @@ public readonly struct WasmValue
     /// </remarks>
     public override bool Equals(object? obj)
     {
-        if (Kind == WasmValueKind.I31Ref)
-        {
-            return obj is WasmValue { Kind: WasmValueKind.I31Ref } other && _low64 == other._low64;
-        }
-        return base.Equals(obj);
+        return obj is WasmValue other && EqualityFields.Equals(other.EqualityFields);
     }
 
     /// <inheritdoc/>
     public override int GetHashCode()
     {
-        return Kind == WasmValueKind.I31Ref ? _low64.GetHashCode() : base.GetHashCode();
+        return EqualityFields.GetHashCode();
     }
 
     /// <summary>
@@ -373,7 +373,7 @@ public readonly struct WasmValue
     /// <summary>
     /// <see cref="Equals(object)"/>と同じ基準で2つの値が異なるかを返す
     /// </summary>
-    public static bool operator !=(WasmValue left, WasmValue right) => !(left == right);
+    public static bool operator !=(WasmValue left, WasmValue right) => !left.Equals(right);
 
     /// <summary>
     /// valueを取得する操作が、保持中の型に対応することを確認する

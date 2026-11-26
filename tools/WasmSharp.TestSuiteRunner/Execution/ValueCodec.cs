@@ -89,7 +89,7 @@ internal static class ValueCodec
     /// <summary>
     /// JSONで使う値型名を返す。
     /// </summary>
-    /// <param name="kind">ランタイムの値型</param>
+    /// <param name="kind">結果の宣言型または実行時の値の種類</param>
     /// <returns>JSONへ記録する小文字の型名</returns>
     internal static string GetTypeName(WasmValueKind kind)
     {
@@ -103,11 +103,7 @@ internal static class ValueCodec
             WasmValueKind.FuncRef => "funcref",
             WasmValueKind.ExternRef => "externref",
             WasmValueKind.AnyRef => "anyref",
-            WasmValueKind.EqRef => "eqref",
             WasmValueKind.I31Ref => "i31ref",
-            WasmValueKind.StructRef => "structref",
-            WasmValueKind.ArrayRef => "arrayref",
-            WasmValueKind.ExnRef => "exnref",
             _ => throw new ArgumentOutOfRangeException(nameof(kind)),
         };
     }

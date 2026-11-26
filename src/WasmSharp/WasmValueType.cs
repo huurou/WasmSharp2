@@ -246,13 +246,10 @@ public readonly struct WasmValueType : IEquatable<WasmValueType>
 
     internal string Describe(string? functionTypeName)
     {
-        if (!IsReference || (IsNullable && !IsBottomHeapType && FunctionType is null && _unresolved is null))
+        var heapType = _unresolved is { } missing ? missing.Index.ToString() : functionTypeName;
+        if (heapType is null && (!IsNullable || IsBottomHeapType))
         {
-            return Kind.ToString();
-        }
-        var heapType = functionTypeName
-            ?? _unresolved?.Index.ToString()
-            ?? (Kind, IsBottomHeapType) switch
+            heapType = (Kind, IsBottomHeapType) switch
             {
                 (WasmValueKind.FuncRef, false) => "func",
                 (WasmValueKind.FuncRef, true) => "nofunc",
@@ -264,8 +261,14 @@ public readonly struct WasmValueType : IEquatable<WasmValueType>
                 (WasmValueKind.I31Ref, _) => "i31",
                 (WasmValueKind.StructRef, _) => "struct",
                 (WasmValueKind.ArrayRef, _) => "array",
-                _ => throw new InvalidOperationException("参照型が不正です。"),
+                _ => null,
             };
+        }
+        if (heapType is null)
+        {
+            // この実装で参照型として扱わない型と、nullを許可する抽象参照型は種類名で表示する。
+            return Kind.ToString();
+        }
         return IsNullable ? $"(ref null {heapType})" : $"(ref {heapType})";
     }
 }

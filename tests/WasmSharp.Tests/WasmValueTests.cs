@@ -620,7 +620,12 @@ internal class WasmValue_FromNullReferenceTests
         var error = await Assert.That(() => WasmValue.FromNullReference(kind)).ThrowsExactly<ArgumentOutOfRangeException>();
 
         // Assert
-        await Assert.That(error!.ParamName).IsEqualTo("kind");
+        using (Assert.Multiple())
+        {
+            await Assert.That(error!.ParamName).IsEqualTo("kind");
+            await Assert.That(error.ActualValue).IsEqualTo(kind);
+            await Assert.That(error.Message).Contains("参照型");
+        }
     }
 }
 
@@ -652,6 +657,7 @@ internal class WasmValue_EqualsTests
         var vector = WasmValue.FromV128(0, 1);
         var host = new string('a', 3);
         var external = WasmValue.FromExternRef(host);
+        var equalExternal = WasmValue.FromExternRef(new string('a', 3));
 
         // Act & Assert
         using (Assert.Multiple())
@@ -659,9 +665,28 @@ internal class WasmValue_EqualsTests
             await Assert.That(nan.Equals(WasmValue.FromF32Bits(0x7FC0_0002))).IsFalse();
             await Assert.That(positiveZero.Equals(WasmValue.FromF32Bits(0x8000_0000))).IsFalse();
             await Assert.That(vector.Equals(WasmValue.FromV128(0, 2))).IsFalse();
+            await Assert.That(external.Equals(null)).IsFalse();
             await Assert.That(external.Equals(WasmValue.FromExternRef(host))).IsTrue();
-            await Assert.That(external.Equals(WasmValue.FromExternRef(new string('a', 3)))).IsTrue();
+            await Assert.That(external.Equals(equalExternal)).IsTrue();
+            await Assert.That(external.Equals(WasmValue.FromExternRef("abc"))).IsFalse();
+            await Assert.That(external.GetHashCode()).IsEqualTo(equalExternal.GetHashCode());
         }
+    }
+}
+
+internal class WasmValue_GetHashCodeTests
+{
+    [Test]
+    public async Task 複数のi31をハッシュキーに使う_全ての値が同じハッシュに集中しない()
+    {
+        // Arrange
+        var values = Enumerable.Range(0, 32).Select(WasmValue.FromI31);
+
+        // Act
+        var hashes = values.Select(x => x.GetHashCode()).ToHashSet();
+
+        // Assert
+        await Assert.That(hashes.Count).IsGreaterThan(1);
     }
 }
 
