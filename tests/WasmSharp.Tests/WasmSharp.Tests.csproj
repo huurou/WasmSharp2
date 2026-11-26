@@ -8,26 +8,14 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="TUnit" Version="1.86.6" />
+    <PackageReference Include="TUnit" Version="1.87.12" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\WasmSharp\WasmSharp.csproj" />
-    <EmbeddedResource
-      Include="..\..\thirdParties\WebAssembly-spec-core2\document\core\appendix\index-instructions.py"
-      LogicalName="Core2.Instructions"
-    />
-    <EmbeddedResource
-      Include="..\..\thirdParties\WebAssembly-spec-core2\document\core\util\macros.def"
-      LogicalName="Core2.Macros"
-    />
-    <EmbeddedResource
-      Include="..\..\thirdParties\WebAssembly-spec-core3\document\core\appendix\index-instructions.py"
-      LogicalName="Core3.Instructions"
-    />
-    <EmbeddedResource
-      Include="..\..\thirdParties\WebAssembly-spec-core3\document\core\util\macros.def"
-      LogicalName="Core3.Macros"
-    />
+    <EmbeddedResource Include="..\..\thirdParties\WebAssembly-spec-core2\document\core\appendix\index-instructions.py" LogicalName="Core2.Instructions" />
+    <EmbeddedResource Include="..\..\thirdParties\WebAssembly-spec-core2\document\core\util\macros.def" LogicalName="Core2.Macros" />
+    <EmbeddedResource Include="..\..\thirdParties\WebAssembly-spec-core3\document\core\appendix\index-instructions.py" LogicalName="Core3.Instructions" />
+    <EmbeddedResource Include="..\..\thirdParties\WebAssembly-spec-core3\document\core\util\macros.def" LogicalName="Core3.Macros" />
   </ItemGroup>
 </Project>
