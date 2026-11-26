@@ -14,6 +14,7 @@ public sealed class WasmStructType : WasmDefinedType
     /// </summary>
     public ImmutableArray<WasmFieldType> Fields { get; private set; }
 
+    internal bool IsDefaultable { get; private set; }
     internal override WasmValueKind ReferenceKind => WasmValueKind.StructRef;
 
     internal WasmStructType(WasmDefinedType[]? group, int position, bool isFinal)
@@ -26,10 +27,12 @@ public sealed class WasmStructType : WasmDefinedType
     )
     {
         var fields = declaration.Fields;
+        var isDefaultable = true;
         ImmutableArray<WasmFieldType>.Builder? resolved = null;
         for (var index = 0; index < fields.Length; index++)
         {
             var field = fields[index];
+            isDefaultable &= field.ValueType is not { IsReference: true, IsNullable: false };
             if (ResolveReference(field.ValueType, firstIndex, members) is { } valueType)
             {
                 resolved ??= fields.ToBuilder();
@@ -37,6 +40,7 @@ public sealed class WasmStructType : WasmDefinedType
             }
         }
         Fields = resolved?.MoveToImmutable() ?? fields;
+        IsDefaultable = isDefaultable;
     }
 
     private protected override bool MatchesSupertype(WasmDefinedType parent)

@@ -46,7 +46,7 @@ internal partial class WasmFunction_InvokeTests
     [Arguments((byte)0, (byte)0x6E, true)] // any
     [Arguments((byte)2, (byte)0x6C, false)] // i31
     [Arguments((byte)0, (byte)0x6A, false)] // array
-    public async Task 別モジュールの構造体をキャストする_生成時の型に従って判定と分岐が一致する(
+    public async Task 別モジュールの構造体の参照型を調べる_生成時の型に従って判定と分岐が一致する(
         byte sourceType,
         byte targetType,
         bool matches
@@ -56,7 +56,6 @@ internal partial class WasmFunction_InvokeTests
         var context = new WasmExecutionContext();
         var value = AllocateStructReference(context, sourceType);
         var target = CreateStructCastFunctions(context, targetType);
-        var cast = target.GetFunction("cast");
 
         // Act
         var test = target.GetFunction("test").Invoke(context, [value]).Values[0].AsI32();
@@ -70,17 +69,45 @@ internal partial class WasmFunction_InvokeTests
             await Assert.That(onCast).IsEqualTo(matches ? 1 : 0);
             await Assert.That(onCastFail).IsEqualTo(matches ? 0 : 1);
         }
-        if (matches)
-        {
-            var result = cast.Invoke(context, [value]).Values[0];
-            await Assert.That(result).IsEqualTo(value);
-        }
-        else
-        {
-            // Act & Assert
-            var error = await Assert.That(() => cast.Invoke(context, [value])).ThrowsExactly<WasmTrapException>();
-            await Assert.That(error!.Reason).IsEqualTo(WasmTrapReason.CastFailure);
-        }
+    }
+
+    [Test]
+    [Arguments((byte)0, (byte)1)]
+    [Arguments((byte)1, (byte)1)]
+    [Arguments((byte)2, (byte)0x6B)]
+    [Arguments((byte)1, (byte)0x6D)]
+    [Arguments((byte)0, (byte)0x6E)]
+    public async Task 別モジュールの構造体を代入可能な型にキャストする_同じ実体を返す(byte sourceType, byte targetType)
+    {
+        // Arrange
+        var context = new WasmExecutionContext();
+        var value = AllocateStructReference(context, sourceType);
+        var cast = CreateStructCastFunctions(context, targetType).GetFunction("cast");
+
+        // Act
+        var result = cast.Invoke(context, [value]).Values[0];
+
+        // Assert
+        await Assert.That(result).IsEqualTo(value);
+    }
+
+    [Test]
+    [Arguments((byte)2, (byte)1)]
+    [Arguments((byte)2, (byte)0x6C)]
+    [Arguments((byte)0, (byte)0x6A)]
+    public async Task 別モジュールの構造体を代入できない型にキャストする_キャスト失敗のtrapを返す(
+        byte sourceType,
+        byte targetType
+    )
+    {
+        // Arrange
+        var context = new WasmExecutionContext();
+        var value = AllocateStructReference(context, sourceType);
+        var cast = CreateStructCastFunctions(context, targetType).GetFunction("cast");
+
+        // Act & Assert
+        var error = await Assert.That(() => cast.Invoke(context, [value])).ThrowsExactly<WasmTrapException>();
+        await Assert.That(error!.Reason).IsEqualTo(WasmTrapReason.CastFailure);
     }
 
     [Test]

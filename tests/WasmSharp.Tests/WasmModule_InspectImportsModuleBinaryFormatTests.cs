@@ -224,6 +224,32 @@ internal partial class WasmModule_InspectImportsTests
     }
 
     [Test]
+    [Arguments((byte)1, "63000000")] // table (ref null 0)
+    [Arguments((byte)3, "630000")] // global (ref null 0)
+    public async Task 要求する構造体のフィールド型が未解決である_参照先の型番号と宣言位置を報告する(
+        byte kind,
+        string descriptor
+    )
+    {
+        // Arrange
+        var binary = HostLinkingModuleBinary.Create(
+            HostLinkingModuleBinary.Section(1, [1, 0x5F, 1, 0x63, 9, 0]),
+            HostLinkingModuleBinary.Imports(("env", "item", kind, Convert.FromHexString(descriptor)))
+        );
+
+        // Act & Assert
+        var error = await Assert
+            .That(() => WasmModule.InspectImports(binary, WasmSpecVersion.Core3))
+            .ThrowsExactly<WasmImportInspectionException>();
+        using (Assert.Multiple())
+        {
+            await Assert.That(error!.Reason).IsEqualTo(WasmImportInspectionReason.UnresolvedType);
+            await Assert.That(error.Message).IsEqualTo("importの要求型が参照する型番号9を解決できません。");
+            await Assert.That(error.Location).IsEqualTo(new WasmFailureLocation(WasmProcessingStage.Decode, 14, null, 1));
+        }
+    }
+
+    [Test]
     public async Task 関数importの型番号が構造体を指す_要求型を取得できないことを報告する()
     {
         // Arrange
@@ -236,6 +262,11 @@ internal partial class WasmModule_InspectImportsTests
         var error = await Assert
             .That(() => WasmModule.InspectImports(binary, WasmSpecVersion.Core3))
             .ThrowsExactly<WasmImportInspectionException>();
-        await Assert.That(error!.Reason).IsEqualTo(WasmImportInspectionReason.UnresolvedType);
+        using (Assert.Multiple())
+        {
+            await Assert.That(error!.Reason).IsEqualTo(WasmImportInspectionReason.UnresolvedType);
+            await Assert.That(error.Message).IsEqualTo("importに指定した型番号0は関数型を指していません。");
+            await Assert.That(error.Location).IsEqualTo(new WasmFailureLocation(WasmProcessingStage.Decode, 16, null, 2));
+        }
     }
 }

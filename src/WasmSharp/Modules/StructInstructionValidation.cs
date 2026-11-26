@@ -28,16 +28,13 @@ internal static class StructInstructionValidation
 
     internal static void RequireDefaultable(WasmStructType type, WasmFailureLocation location)
     {
-        foreach (var field in type.Fields)
+        if (!type.IsDefaultable)
         {
-            if (field.ValueType is { IsReference: true, IsNullable: false })
-            {
-                throw ValidationDiagnostics.ValidationFailure(
-                    "field type is not defaultable",
-                    "非nullの参照フィールドには初期値が必要です。",
-                    location
-                );
-            }
+            throw ValidationDiagnostics.ValidationFailure(
+                "field type is not defaultable",
+                "非nullの参照フィールドには初期値が必要です。",
+                location
+            );
         }
     }
 

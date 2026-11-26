@@ -35,23 +35,15 @@ public abstract class WasmDefinedType
         var valid = true;
         foreach (var member in members)
         {
-            hash.Add(member.IsFinal);
-            hash.Add(member.ReferenceKind);
-            member.AccumulateHashAndReferenceState(member._supertypes, ref hash, ref missing, ref valid);
-            if (member is WasmFunctionType function)
+            var structure = new StructureReader(member);
+            hash.Add(structure.Header);
+            while (structure.TryRead(out var value, out var storage))
             {
-                member.AccumulateHashAndReferenceState(function.ParameterTypes, ref hash, ref missing, ref valid);
-                member.AccumulateHashAndReferenceState(function.ResultTypes, ref hash, ref missing, ref valid);
-            }
-            else if (member is WasmStructType structure)
-            {
-                hash.Add(structure.Fields.Length);
-                foreach (var field in structure.Fields)
+                if (storage != default)
                 {
-                    hash.Add(field.IsMutable);
-                    hash.Add(field.PackedType);
-                    member.AccumulateValue(field.ValueType, ref hash, ref missing, ref valid);
+                    hash.Add(storage);
                 }
+                member.AccumulateValue(value, ref hash, ref missing, ref valid);
             }
         }
         var groupHash = hash.ToHashCode();
@@ -95,23 +87,6 @@ public abstract class WasmDefinedType
             return SupertypeError.Final;
         }
         return MatchesSupertype(parent) ? SupertypeError.None : SupertypeError.Structure;
-    }
-
-    /// <summary>
-    /// 値型列を一度たどり、構造ハッシュ、最初の未解決参照、参照先グループの妥当性を集計する
-    /// </summary>
-    private void AccumulateHashAndReferenceState(
-        ImmutableArray<WasmValueType> values,
-        ref HashCode hash,
-        ref WasmValueType.UnresolvedReference? missing,
-        ref bool valid
-    )
-    {
-        hash.Add(values.Length);
-        foreach (var value in values)
-        {
-            AccumulateValue(value, ref hash, ref missing, ref valid);
-        }
     }
 
     private void AccumulateValue(
@@ -310,9 +285,20 @@ public abstract class WasmDefinedType
             {
                 var a = left.GetGroupMember(index);
                 var b = right.GetGroupMember(index);
-                if (a.IsFinal != b.IsFinal || !CompareValues(a, b, a._supertypes, b._supertypes) || !CompareComposite(a, b))
+                var first = new StructureReader(a);
+                var second = new StructureReader(b);
+                if (first.Header != second.Header)
                 {
                     return false;
+                }
+                while (first.TryRead(out var leftValue, out var leftStorage))
+                {
+                    // 各宣言の要素数が一致するため、両方から同じ順序で同じ個数を読み取れる。
+                    second.TryRead(out var rightValue, out var rightStorage);
+                    if (leftStorage != rightStorage || !CompareValue(a, b, leftValue, rightValue))
+                    {
+                        return false;
+                    }
                 }
             }
             if (firstPending is null && additionalPending is { Count: > 0 })
@@ -321,54 +307,6 @@ public abstract class WasmDefinedType
             }
         }
         return true;
-
-        bool CompareComposite(WasmDefinedType a, WasmDefinedType b)
-        {
-            if (a is WasmFunctionType f && b is WasmFunctionType g)
-            {
-                return CompareValues(a, b, f.ParameterTypes, g.ParameterTypes)
-                    && CompareValues(a, b, f.ResultTypes, g.ResultTypes);
-            }
-            if (a is not WasmStructType s || b is not WasmStructType t || s.Fields.Length != t.Fields.Length)
-            {
-                return false;
-            }
-            for (var index = 0; index < s.Fields.Length; index++)
-            {
-                var left = s.Fields[index];
-                var right = t.Fields[index];
-                if (
-                    left.IsMutable != right.IsMutable
-                    || left.PackedType != right.PackedType
-                    || !CompareValue(a, b, left.ValueType, right.ValueType)
-                )
-                {
-                    return false;
-                }
-            }
-            return true;
-        }
-
-        bool CompareValues(
-            WasmDefinedType leftOwner,
-            WasmDefinedType rightOwner,
-            ImmutableArray<WasmValueType> first,
-            ImmutableArray<WasmValueType> second
-        )
-        {
-            if (first.Length != second.Length)
-            {
-                return false;
-            }
-            for (var index = 0; index < first.Length; index++)
-            {
-                if (!CompareValue(leftOwner, rightOwner, first[index], second[index]))
-                {
-                    return false;
-                }
-            }
-            return true;
-        }
 
         bool CompareValue(WasmDefinedType leftOwner, WasmDefinedType rightOwner, WasmValueType a, WasmValueType b)
         {
@@ -409,6 +347,70 @@ public abstract class WasmDefinedType
                     additionalPending.Push(pair);
                 }
             }
+            return true;
+        }
+    }
+
+    /// <summary>
+    /// 定義の各型列を区別し、上位型、引数、結果、フィールドを宣言順に読み取る
+    /// </summary>
+    private ref struct StructureReader
+    {
+        private ReadOnlySpan<WasmValueType> _supertypes;
+        private ReadOnlySpan<WasmValueType> _parameters;
+        private ReadOnlySpan<WasmValueType> _results;
+        private ReadOnlySpan<WasmFieldType> _fields;
+
+        internal (bool IsFinal, WasmValueKind Kind, int Supertypes, int Parameters, int Results, int Fields) Header { get; }
+
+        internal StructureReader(WasmDefinedType type)
+        {
+            _supertypes = type._supertypes.AsSpan();
+            if (type is WasmFunctionType function)
+            {
+                _parameters = function.ParameterTypes.AsSpan();
+                _results = function.ResultTypes.AsSpan();
+            }
+            else
+            {
+                _fields = ((WasmStructType)type).Fields.AsSpan();
+            }
+            Header = (
+                type.IsFinal,
+                type.ReferenceKind,
+                _supertypes.Length,
+                _parameters.Length,
+                _results.Length,
+                _fields.Length
+            );
+        }
+
+        internal bool TryRead(out WasmValueType value, out (bool IsMutable, WasmPackedType PackedType) storage)
+        {
+            storage = default;
+            if (Take(ref _supertypes, out value) || Take(ref _parameters, out value) || Take(ref _results, out value))
+            {
+                return true;
+            }
+            if (Take(ref _fields, out var field))
+            {
+                value = field.ValueType;
+                storage = (field.IsMutable, field.PackedType);
+                return true;
+            }
+            return false;
+        }
+
+        private static bool Take<T>(ref ReadOnlySpan<T> remaining, out T value)
+            where T : struct
+        {
+            if (remaining.IsEmpty)
+            {
+                value = default;
+                return false;
+            }
+            value = remaining[0];
+            remaining = remaining[1..];
             return true;
         }
     }

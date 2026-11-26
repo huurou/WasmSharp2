@@ -9,7 +9,7 @@ internal static partial class Interpreter
         var type = (WasmStructType)context.CurrentFunction.Instance.Module.Types[(int)instruction.Index];
         var firstField = context.ValueCount - type.Fields.Length;
         var value = WasmStruct.Create(type, context.GetValues(firstField, type.Fields.Length));
-        context.Restore(context.FrameCount, firstField, context.CallDepth);
+        context.TruncateValues(firstField);
         context.PushValue(value);
         return default;
     }

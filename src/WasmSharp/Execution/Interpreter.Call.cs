@@ -110,7 +110,7 @@ internal static partial class Interpreter
                 return results;
             }
 
-            context.Restore(context.FrameCount, argumentBase, context.CallDepth);
+            context.TruncateValues(argumentBase);
             foreach (var value in results.Values)
             {
                 context.PushValue(value);
