@@ -77,6 +77,7 @@ internal static class ModuleValidator
                     element.ElementValueType,
                     visibleGlobals,
                     references.FunctionTypes,
+                    module.Types.AsSpan(),
                     9,
                     module.SpecVersion
                 );
@@ -109,6 +110,7 @@ internal static class ModuleValidator
                 tableType.AddressType,
                 visibleGlobals,
                 references.FunctionTypes,
+                module.Types.AsSpan(),
                 9,
                 module.SpecVersion
             );
@@ -148,6 +150,7 @@ internal static class ModuleValidator
                 references.MemoryAddressTypes[(int)target.MemoryIndex],
                 visibleGlobals,
                 references.FunctionTypes,
+                module.Types.AsSpan(),
                 11,
                 module.SpecVersion
             );
@@ -209,6 +212,7 @@ internal static class ModuleValidator
                 global.Type.ValueType,
                 globalTypes[..visibleGlobalCount],
                 functionTypes,
+                module.Types.AsSpan(),
                 6,
                 module.SpecVersion
             );
@@ -349,6 +353,7 @@ internal static class ModuleValidator
                     table.Type.ElementValueType,
                     importedGlobals,
                     functionTypes,
+                    module.Types.AsSpan(),
                     4,
                     module.SpecVersion
                 );

@@ -104,6 +104,7 @@ public sealed class WasmInstance
                 global.Initializer,
                 ImmutableCollectionsMarshal.AsMemory(globals).Span,
                 Functions.AsSpan(),
+                module.Types.AsSpan(),
                 module.SpecVersion
             );
             globals.Add(new WasmGlobal(global.Type, value));
@@ -119,6 +120,7 @@ public sealed class WasmInstance
                     segment.Initializers[index],
                     Globals.AsSpan(),
                     Functions.AsSpan(),
+                    module.Types.AsSpan(),
                     module.SpecVersion
                 );
             }
@@ -151,6 +153,7 @@ public sealed class WasmInstance
                     table.Initializer,
                     importedGlobals.AsSpan(),
                     Functions.AsSpan(),
+                    Module.Types.AsSpan(),
                     Module.SpecVersion
                 );
                 tables.Add(WasmTable.Create(table.Type, initialValue));

@@ -124,6 +124,7 @@ internal static class ModuleInstantiator
             expression,
             instance.Globals.AsSpan(),
             instance.Functions.AsSpan(),
+            instance.Module.Types.AsSpan(),
             instance.Module.SpecVersion
         );
     }
