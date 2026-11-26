@@ -221,6 +221,26 @@ internal enum StackEffectKind
     I31Get,
 
     /// <summary>
+    /// 宣言順のフィールド値を取り除き、非nullの構造体参照を積む
+    /// </summary>
+    StructNew,
+
+    /// <summary>
+    /// フィールドを既定値で初期化した非nullの構造体参照を積む
+    /// </summary>
+    StructNewDefault,
+
+    /// <summary>
+    /// 構造体参照を取り除き、指定したフィールドの値を積む
+    /// </summary>
+    StructGet,
+
+    /// <summary>
+    /// フィールドの値と書き込み先の構造体参照を取り除く
+    /// </summary>
+    StructSet,
+
+    /// <summary>
     /// 最上位の参照を非nullに絞り込む
     /// </summary>
     RefAsNonNull,

@@ -216,6 +216,31 @@ internal enum ValidationRule
     I31Get,
 
     /// <summary>
+    /// 宣言順のフィールド値を取り除き、非nullの構造体参照を積む
+    /// </summary>
+    StructNew,
+
+    /// <summary>
+    /// フィールドを既定値で初期化した非nullの構造体参照を積む
+    /// </summary>
+    StructNewDefault,
+
+    /// <summary>
+    /// 構造体参照を取り除き、指定したフィールドの値を積む
+    /// </summary>
+    StructGet,
+
+    /// <summary>
+    /// 詰め込みフィールドの構造体参照を取り除き、i32を積む
+    /// </summary>
+    StructGetPacked,
+
+    /// <summary>
+    /// フィールドの値と書き込み先の構造体参照を取り除く
+    /// </summary>
+    StructSet,
+
+    /// <summary>
     /// 参照型の入力を検証し、同じヒープ型の非null参照を積む
     /// </summary>
     RefAsNonNull,

@@ -29,14 +29,13 @@ internal static partial class Interpreter
     }
 
     /// <summary>
-    /// null同士、および同じ31ビットを持つi31同士が等しいかを判定する
+    /// null同士、同じ31ビットのi31同士、または同じ実体への構造体参照同士なら1を積む
     /// </summary>
     internal static ExecutionResult RefEq(InterpreterContext context, in Instruction instruction)
     {
         var right = context.PopValue();
         var left = context.PopValue();
-        var equal = left.Kind == right.Kind && (left.IsNullReference || left.AsI31Unsigned() == right.AsI31Unsigned());
-        context.PushValue(WasmValue.FromI32(equal ? 1 : 0));
+        context.PushValue(WasmValue.FromI32(left == right ? 1 : 0));
         return default;
     }
 
