@@ -165,6 +165,14 @@ internal static class FunctionValidator
                     outputSecondaryIndex = AddCastTarget(targetType);
                     break;
 
+                case ValidationRule.StructNew:
+                case ValidationRule.StructNewDefault:
+                case ValidationRule.StructGet:
+                case ValidationRule.StructGetPacked:
+                case ValidationRule.StructSet:
+                    ValidateStructInstruction(instruction, descriptor.Validation);
+                    break;
+
                 case ValidationRule.I31Get:
                     Pop(WasmValueKind.I31Ref, instruction.ByteOffset);
                     stack.Add(WasmValueKind.I32);
@@ -636,6 +644,42 @@ internal static class FunctionValidator
             if (index >= (uint)module.DataSegments.Length)
             {
                 throw CreateUnknownIndex("data segment", index, "参照するデータセグメントが存在しません。", byteOffset);
+            }
+        }
+
+        void ValidateStructInstruction(DecodedInstruction instruction, ValidationRule rule)
+        {
+            var offset = instruction.ByteOffset;
+            var location = new WasmFailureLocation(WasmProcessingStage.Validate, offset, moduleFunctionIndex, 10);
+            var type = StructInstructionValidation.RequireType(module.Types.AsSpan(), instruction.Index, location);
+            if (rule is ValidationRule.StructNew or ValidationRule.StructNewDefault)
+            {
+                if (rule == ValidationRule.StructNewDefault)
+                {
+                    StructInstructionValidation.RequireDefaultable(type, location);
+                }
+                else
+                {
+                    for (var index = type.Fields.Length - 1; index >= 0; index--)
+                    {
+                        Pop(type.Fields[index].ValueType, offset);
+                    }
+                }
+                stack.Add(WasmValueType.StructReference(type, isNullable: false));
+                return;
+            }
+
+            var field = StructInstructionValidation.RequireField(type, instruction.SecondaryIndex, rule, location);
+            var receiver = WasmValueType.StructReference(type, isNullable: true);
+            if (rule == ValidationRule.StructSet)
+            {
+                Pop(field.ValueType, offset);
+                Pop(receiver, offset);
+            }
+            else
+            {
+                Pop(receiver, offset);
+                stack.Add(field.ValueType);
             }
         }
 

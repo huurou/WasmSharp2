@@ -217,6 +217,7 @@ public readonly struct WasmValueType : IEquatable<WasmValueType>
         {
             _ when value.IsNullReference => BottomReference(value.Kind, true),
             WasmValueKind.FuncRef => FunctionReference(value.AsFuncRef()!.Type, false),
+            WasmValueKind.StructRef => StructReference(value.AsStruct().Type, false),
             _ => ((WasmValueType)value.Kind).AsNonNullable(),
         };
         return Accepts(actual);

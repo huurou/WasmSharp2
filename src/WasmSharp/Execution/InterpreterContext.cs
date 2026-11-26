@@ -302,7 +302,7 @@ internal sealed class InterpreterContext
     }
 
     /// <summary>
-    /// ホスト呼び出し専用コピーの入力として、共有値スタックの指定範囲を参照する
+    /// 共有値スタックの指定範囲を積まれた順序で参照する
     /// </summary>
     /// <param name="start">共有値スタック上の参照開始位置</param>
     /// <param name="count">参照する値の数</param>
