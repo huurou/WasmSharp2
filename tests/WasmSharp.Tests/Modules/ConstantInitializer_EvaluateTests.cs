@@ -26,7 +26,7 @@ internal class ConstantInitializer_EvaluateTests
         ];
 
         // Act
-        var result = ConstantInitializer.Evaluate(expression, globals, [], WasmSpecVersion.Core2);
+        var result = ConstantInitializer.Evaluate(expression, globals, [], [], WasmSpecVersion.Core2);
 
         // Assert
         await Assert.That(result.AsI32()).IsEqualTo(-1);
@@ -46,7 +46,7 @@ internal class ConstantInitializer_EvaluateTests
         ];
 
         // Act
-        var result = ConstantInitializer.Evaluate(expression, [], [], WasmSpecVersion.Core2);
+        var result = ConstantInitializer.Evaluate(expression, [], [], [], WasmSpecVersion.Core2);
 
         // Assert
         using (Assert.Multiple())
@@ -82,7 +82,13 @@ internal class ConstantInitializer_EvaluateTests
         ];
 
         // Act
-        var result = ConstantInitializer.Evaluate(expression, [], instance.Functions.AsSpan(), module.SpecVersion);
+        var result = ConstantInitializer.Evaluate(
+            expression,
+            [],
+            instance.Functions.AsSpan(),
+            module.Types.AsSpan(),
+            module.SpecVersion
+        );
 
         // Assert
         using (Assert.Multiple())
@@ -109,7 +115,7 @@ internal class ConstantInitializer_EvaluateTests
         ];
 
         // Act
-        var result = ConstantInitializer.Evaluate(expression, globals, [], WasmSpecVersion.Core2);
+        var result = ConstantInitializer.Evaluate(expression, globals, [], [], WasmSpecVersion.Core2);
 
         // Assert
         using (Assert.Multiple())

@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Runtime.CompilerServices;
 using WasmSharp.Exceptions;
 using WasmSharp.Instructions;
 
@@ -9,6 +10,14 @@ namespace WasmSharp.Modules;
 /// </summary>
 internal static class ConstantInitializer
 {
+    private const int InlineTypeCount = 32;
+
+    [InlineArray(InlineTypeCount)]
+    private struct InlineTypes
+    {
+        private WasmValueType _element0;
+    }
+
     /// <summary>
     /// 定数式が許可された命令で期待する型の値を1個生成することを検証する
     /// </summary>
@@ -16,6 +25,7 @@ internal static class ConstantInitializer
     /// <param name="expectedType">式が生成する値に要求する型</param>
     /// <param name="visibleGlobals">この式から参照できる、global添字順の型</param>
     /// <param name="functionTypes">importを先頭にした関数添字順の型</param>
+    /// <param name="types">型セクションの添字順の定義型</param>
     /// <param name="sectionId">診断位置に保持するセクションID</param>
     /// <param name="specVersion">定数式に適用する仕様の版</param>
     internal static void Validate(
@@ -23,6 +33,7 @@ internal static class ConstantInitializer
         WasmValueType expectedType,
         ReadOnlySpan<WasmGlobalType> visibleGlobals,
         ReadOnlySpan<WasmFunctionType> functionTypes,
+        ReadOnlySpan<WasmDefinedType> types,
         byte sectionId,
         WasmSpecVersion specVersion
     )
@@ -33,21 +44,21 @@ internal static class ConstantInitializer
             ValidateConstantInstruction(expression[index], visibleGlobals, sectionId, specVersion);
         }
 
-        var operands =
-            expression.Length <= 32 ? stackalloc WasmValueKind[expression.Length] : new WasmValueKind[expression.Length];
+        var inlineTypes = default(InlineTypes);
+        Span<WasmValueType> operands =
+            expression.Length <= InlineTypeCount ? inlineTypes : new WasmValueType[expression.Length];
         var count = 0;
-        // 各命令は1個の値を積む。単項演算は直前の結果型を使い、数値の二項演算は種類だけを照合する。
-        var resultType = default(WasmValueType);
         var instructionSet = InstructionSet.ForVersion(specVersion);
         for (var index = 0; index < expression.Length - 1; index++)
         {
             var instruction = expression[index];
             var descriptor = instructionSet[instruction.Opcode];
+            WasmValueType resultType;
             if (descriptor.NumericSignature is { } signature)
             {
                 for (var input = signature.InputTypes.Length - 1; input >= 0; input--)
                 {
-                    if (count == 0 || operands[--count] != signature.InputTypes[input])
+                    if (count == 0 || operands[--count].Kind != signature.InputTypes[input])
                     {
                         throw InvalidOperand(instruction, sectionId);
                     }
@@ -56,12 +67,36 @@ internal static class ConstantInitializer
             }
             else if (descriptor.ConstantReferenceOperation is { } referenceOperation)
             {
-                if (count == 0 || !referenceOperation.InputType.Accepts(resultType))
+                if (count == 0 || !referenceOperation.InputType.Accepts(operands[--count]))
                 {
                     throw InvalidOperand(instruction, sectionId);
                 }
-                count--;
-                resultType = referenceOperation.GetResultType(resultType);
+                resultType = referenceOperation.GetResultType(operands[count]);
+            }
+            else if (descriptor.Validation is ValidationRule.StructNew or ValidationRule.StructNewDefault)
+            {
+                var location = new WasmFailureLocation(
+                    WasmProcessingStage.Validate,
+                    instruction.ByteOffset,
+                    null,
+                    sectionId
+                );
+                var type = StructInstructionValidation.RequireType(types, instruction.Index, location);
+                if (descriptor.Validation == ValidationRule.StructNewDefault)
+                {
+                    StructInstructionValidation.RequireDefaultable(type, location);
+                }
+                else
+                {
+                    for (var field = type.Fields.Length - 1; field >= 0; field--)
+                    {
+                        if (count == 0 || !type.Fields[field].ValueType.Accepts(operands[--count]))
+                        {
+                            throw InvalidOperand(instruction, sectionId);
+                        }
+                    }
+                }
+                resultType = WasmValueType.StructReference(type, isNullable: false);
             }
             else
             {
@@ -74,7 +109,7 @@ internal static class ConstantInitializer
                     specVersion
                 );
             }
-            operands[count++] = resultType.Kind;
+            operands[count++] = resultType;
         }
 
         var endLocation = new WasmFailureLocation(WasmProcessingStage.Validate, expression[^1].ByteOffset, null, sectionId);
@@ -82,7 +117,7 @@ internal static class ConstantInitializer
         {
             throw ValidationDiagnostics.ValidationFailure("type mismatch", "定数式の結果が1個ではありません。", endLocation);
         }
-        if (!expectedType.Accepts(resultType))
+        if (!expectedType.Accepts(operands[0]))
         {
             throw ValidationDiagnostics.ValidationFailure(
                 "type mismatch",
@@ -98,41 +133,69 @@ internal static class ConstantInitializer
     /// <param name="expression">終端のendを含む検証済みの式</param>
     /// <param name="globals">global添字順に並ぶ構築済みの実体</param>
     /// <param name="functions">関数添字順に並ぶ構築済みの実体</param>
+    /// <param name="types">型セクションの添字順の定義型</param>
     /// <param name="specVersion">定数式を検証した仕様の版</param>
     /// <returns>式の実行後にスタックに残る値</returns>
     internal static WasmValue Evaluate(
         ImmutableArray<DecodedInstruction> expression,
         ReadOnlySpan<WasmGlobal> globals,
         ReadOnlySpan<WasmFunction> functions,
+        ReadOnlySpan<WasmDefinedType> types,
         WasmSpecVersion specVersion
     )
     {
-        if (expression.Length == 2)
+        var instructionSet = InstructionSet.ForVersion(specVersion);
+        if (
+            expression.Length == 2
+            && instructionSet[expression[0].Opcode].Validation
+                is ValidationRule.Constant
+                    or ValidationRule.RefFunc
+                    or ValidationRule.GlobalGet
+        )
         {
             return ReadValue(expression[0], globals, functions);
         }
 
-        var operands = new Stack<WasmValue>();
-        var instructionSet = InstructionSet.ForVersion(specVersion);
+        // 二項演算までの深さはローカルに収める。値を積み切ったときだけスタックを拡張する。
+        Span<WasmValue> operands = [default, default];
+        var count = 0;
         for (var index = 0; index < expression.Length - 1; index++)
         {
             var instruction = expression[index];
             var descriptor = instructionSet[instruction.Opcode];
+            WasmValue result;
             if (descriptor.ConstantBinaryOperation is { } operation)
             {
-                var right = operands.Pop();
-                operands.Push(operation(operands.Pop(), right));
+                var right = operands[--count];
+                result = operation(operands[--count], right);
             }
             else if (descriptor.ConstantReferenceOperation is { } referenceOperation)
             {
-                operands.Push(referenceOperation.Evaluate(operands.Pop()));
+                result = referenceOperation.Evaluate(operands[--count]);
+            }
+            else if (descriptor.Validation == ValidationRule.StructNew)
+            {
+                var type = (WasmStructType)types[(int)instruction.Index];
+                count -= type.Fields.Length;
+                result = WasmStruct.Create(type, operands.Slice(count, type.Fields.Length));
+            }
+            else if (descriptor.Validation == ValidationRule.StructNewDefault)
+            {
+                result = WasmStruct.CreateDefault((WasmStructType)types[(int)instruction.Index]);
             }
             else
             {
-                operands.Push(ReadValue(instruction, globals, functions));
+                result = ReadValue(instruction, globals, functions);
             }
+            if (count == operands.Length)
+            {
+                var expanded = new WasmValue[count + Math.Min(count, expression.Length - count)];
+                operands.CopyTo(expanded);
+                operands = expanded;
+            }
+            operands[count++] = result;
         }
-        return operands.Pop();
+        return operands[0];
     }
 
     /// <summary>
@@ -196,7 +259,11 @@ internal static class ConstantInitializer
                 descriptor.Validation is ValidationRule.Constant or ValidationRule.RefFunc
                 || (
                     specVersion == WasmSpecVersion.Core3
-                    && (descriptor.ConstantBinaryOperation is not null || descriptor.ConstantReferenceOperation is not null)
+                    && (
+                        descriptor.ConstantBinaryOperation is not null
+                        || descriptor.ConstantReferenceOperation is not null
+                        || descriptor.Validation is ValidationRule.StructNew or ValidationRule.StructNewDefault
+                    )
                 )
             )
         )
