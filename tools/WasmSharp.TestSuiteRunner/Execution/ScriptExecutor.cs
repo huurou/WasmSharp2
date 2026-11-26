@@ -345,12 +345,6 @@ internal sealed class ScriptExecutor(InputVerification input, WasmSpecVersion sp
         {
             return;
         }
-        if (arguments is not { } runtimeArguments)
-        {
-            // 現行ランタイムで成立したmoduleにはanyrefを受け取る関数がない。
-            observation = observation with { Operation = "create_arguments" };
-            throw new ScriptFormatException("このランタイムで生成したmoduleの関数にはanyrefの引数を渡せません。");
-        }
         observation = observation with
         {
             Operation = action is InvokeAction ? "invoke" : "get",
@@ -358,7 +352,7 @@ internal sealed class ScriptExecutor(InputVerification input, WasmSpecVersion sp
         };
         var actual =
             action is InvokeAction
-                ? module.Instance.GetFunction(action.Field).Invoke(_context, runtimeArguments.AsSpan())
+                ? module.Instance.GetFunction(action.Field).Invoke(_context, arguments.AsSpan())
                 : new WasmResults([module.Instance.GetGlobal(action.Field)]);
         observation = observation with { Operation = "record_values" };
         observation = observation with { Values = [.. actual.Values.Select(x => ValueCodec.Record(x, state))] };

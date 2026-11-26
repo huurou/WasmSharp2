@@ -31,7 +31,7 @@ public readonly struct WasmValueType : IEquatable<WasmValueType>
     private readonly UnresolvedReference? _unresolved;
 
     /// <summary>
-    /// 実行時の値の種類
+    /// 宣言で指定した値の種類 例えばeqrefの宣言では<see cref="WasmValueKind.EqRef"/>を返す
     /// </summary>
     public WasmValueKind Kind { get; }
 
@@ -51,9 +51,9 @@ public readonly struct WasmValueType : IEquatable<WasmValueType>
     public bool IsBottomHeapType { get; }
 
     /// <summary>
-    /// 関数または外部オブジェクトの参照型かどうか
+    /// 参照型かどうか
     /// </summary>
-    public bool IsReference => Kind is WasmValueKind.FuncRef or WasmValueKind.ExternRef;
+    public bool IsReference => Kind.IsReference();
 
     internal UnresolvedReference? Unresolved => _unresolved ?? FunctionType?.Unresolved;
 
@@ -73,19 +73,19 @@ public readonly struct WasmValueType : IEquatable<WasmValueType>
     }
 
     /// <summary>
-    /// 従来の値の種類に対応する宣言型を取得する funcrefとexternrefはnullを許可する
+    /// 値の種類に対応する宣言型を取得する 参照型はnullを許可する
     /// </summary>
     public static implicit operator WasmValueType(WasmValueKind kind)
     {
-        return new WasmValueType(kind, kind is WasmValueKind.FuncRef or WasmValueKind.ExternRef);
+        return new WasmValueType(kind, kind.IsReference());
     }
 
     /// <summary>
-    /// 関数または外部オブジェクトの抽象参照型にnull可否を指定する
+    /// 抽象参照型にnull可否を指定する
     /// </summary>
     public static WasmValueType Reference(WasmValueKind kind, bool isNullable)
     {
-        if (kind is not (WasmValueKind.FuncRef or WasmValueKind.ExternRef))
+        if (!kind.IsReference())
         {
             throw new ArgumentOutOfRangeException(nameof(kind), kind, "参照型を指定してください。");
         }
@@ -102,15 +102,15 @@ public readonly struct WasmValueType : IEquatable<WasmValueType>
     }
 
     /// <summary>
-    /// 空のヒープ型nofuncまたはnoexternへの参照を表す宣言型を取得する
+    /// 指定した参照階層の底型であるnone、nofuncまたはnoexternへの参照型を取得する
     /// </summary>
     public static WasmValueType BottomReference(WasmValueKind kind, bool isNullable)
     {
-        if (kind is not (WasmValueKind.FuncRef or WasmValueKind.ExternRef))
+        if (!kind.IsReference())
         {
             throw new ArgumentOutOfRangeException(nameof(kind), kind, "参照型を指定してください。");
         }
-        return new WasmValueType(kind, isNullable, isBottomHeapType: true);
+        return new WasmValueType(kind.GetTopKind(), isNullable, isBottomHeapType: true);
     }
 
     internal static WasmValueType UnresolvedFunctionReference(uint index, bool isNullable, WasmFailureLocation location)
@@ -137,13 +137,29 @@ public readonly struct WasmValueType : IEquatable<WasmValueType>
     /// </summary>
     public bool Accepts(WasmValueType actual)
     {
-        if (Kind != actual.Kind || (!IsNullable && actual.IsNullable))
+        if (!IsNullable && actual.IsNullable)
         {
             return false;
         }
-        if (actual.IsBottomHeapType || IsBottomHeapType)
+        if (actual.IsBottomHeapType)
         {
-            return actual.IsBottomHeapType;
+            return Kind.GetTopKind() == actual.Kind;
+        }
+        if (IsBottomHeapType)
+        {
+            return false;
+        }
+        if (Kind != actual.Kind)
+        {
+            return Kind switch
+            {
+                WasmValueKind.AnyRef => actual.Kind.GetTopKind() == WasmValueKind.AnyRef,
+                WasmValueKind.EqRef => actual.Kind
+                    is WasmValueKind.I31Ref
+                        or WasmValueKind.StructRef
+                        or WasmValueKind.ArrayRef,
+                _ => false,
+            };
         }
         return FunctionType is null || (actual.FunctionType is { } type && type.IsSubtypeOf(FunctionType));
     }
@@ -172,18 +188,17 @@ public readonly struct WasmValueType : IEquatable<WasmValueType>
     /// </summary>
     public bool Accepts(WasmValue value)
     {
-        if (value.Kind != Kind)
+        if (!IsReference)
         {
-            return false;
+            return value.Kind == Kind;
         }
-        return Kind switch
+        var actual = value.Kind switch
         {
-            WasmValueKind.FuncRef => value.AsFuncRef() is { } function
-                ? !IsBottomHeapType && (FunctionType is null || function.Type.IsSubtypeOf(FunctionType))
-                : IsNullable,
-            WasmValueKind.ExternRef => value.AsExternRef() is null ? IsNullable : !IsBottomHeapType,
-            _ => true,
+            _ when value.IsNullReference => BottomReference(value.Kind, true),
+            WasmValueKind.FuncRef => FunctionReference(value.AsFuncRef()!.Type, false),
+            _ => ((WasmValueType)value.Kind).AsNonNullable(),
         };
+        return Accepts(actual);
     }
 
     internal bool HasSameForm(WasmValueType other)
@@ -231,19 +246,29 @@ public readonly struct WasmValueType : IEquatable<WasmValueType>
 
     internal string Describe(string? functionTypeName)
     {
-        if (!IsReference || (IsNullable && !IsBottomHeapType && FunctionType is null && _unresolved is null))
+        var heapType = _unresolved is { } missing ? missing.Index.ToString() : functionTypeName;
+        if (heapType is null && (!IsNullable || IsBottomHeapType))
         {
-            return Kind.ToString();
-        }
-        var heapType = functionTypeName
-            ?? _unresolved?.Index.ToString()
-            ?? (Kind, IsBottomHeapType) switch
+            heapType = (Kind, IsBottomHeapType) switch
             {
                 (WasmValueKind.FuncRef, false) => "func",
                 (WasmValueKind.FuncRef, true) => "nofunc",
-                (_, false) => "extern",
-                (_, true) => "noextern",
+                (WasmValueKind.ExternRef, false) => "extern",
+                (WasmValueKind.ExternRef, true) => "noextern",
+                (WasmValueKind.AnyRef, true) => "none",
+                (WasmValueKind.AnyRef, false) => "any",
+                (WasmValueKind.EqRef, _) => "eq",
+                (WasmValueKind.I31Ref, _) => "i31",
+                (WasmValueKind.StructRef, _) => "struct",
+                (WasmValueKind.ArrayRef, _) => "array",
+                _ => null,
             };
+        }
+        if (heapType is null)
+        {
+            // この実装で参照型として扱わない型と、nullを許可する抽象参照型は種類名で表示する。
+            return Kind.ToString();
+        }
         return IsNullable ? $"(ref null {heapType})" : $"(ref {heapType})";
     }
 }

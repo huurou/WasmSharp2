@@ -609,6 +609,105 @@ internal class WasmValue_FromExternRefTests
     }
 }
 
+internal class WasmValue_FromNullReferenceTests
+{
+    [Test]
+    [Arguments(WasmValueKind.I32)]
+    [Arguments(WasmValueKind.ExnRef)]
+    public async Task 対応する参照型以外を指定する_種類を示す引数例外を返す(WasmValueKind kind)
+    {
+        // Act & Assert
+        var error = await Assert.That(() => WasmValue.FromNullReference(kind)).ThrowsExactly<ArgumentOutOfRangeException>();
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(error!.ParamName).IsEqualTo("kind");
+            await Assert.That(error.ActualValue).IsEqualTo(kind);
+            await Assert.That(error.Message).Contains("参照型");
+        }
+    }
+}
+
+internal class WasmValue_AsI31Tests
+{
+    [Test]
+    public async Task GC参照のnullをi31として取得する_符号付きと符号なしの両方で拒否する()
+    {
+        // Arrange
+        var value = WasmValue.FromNullReference(WasmValueKind.I31Ref);
+
+        // Act & Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(value.AsI31Signed).ThrowsExactly<InvalidOperationException>();
+            await Assert.That(value.AsI31Unsigned).ThrowsExactly<InvalidOperationException>();
+        }
+    }
+}
+
+internal class WasmValue_EqualsTests
+{
+    [Test]
+    public async Task 数値とベクトルと外部参照を比較する_ビット列とホスト値の等しさを保つ()
+    {
+        // Arrange
+        var nan = WasmValue.FromF32Bits(0x7FC0_0001);
+        var positiveZero = WasmValue.FromF32Bits(0);
+        var vector = WasmValue.FromV128(0, 1);
+        var host = new string('a', 3);
+        var external = WasmValue.FromExternRef(host);
+        var equalExternal = WasmValue.FromExternRef(new string('a', 3));
+
+        // Act & Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(nan.Equals(WasmValue.FromF32Bits(0x7FC0_0002))).IsFalse();
+            await Assert.That(positiveZero.Equals(WasmValue.FromF32Bits(0x8000_0000))).IsFalse();
+            await Assert.That(vector.Equals(WasmValue.FromV128(0, 2))).IsFalse();
+            await Assert.That(external.Equals(null)).IsFalse();
+            await Assert.That(external.Equals(WasmValue.FromExternRef(host))).IsTrue();
+            await Assert.That(external.Equals(equalExternal)).IsTrue();
+            await Assert.That(external.Equals(WasmValue.FromExternRef("abc"))).IsFalse();
+            await Assert.That(external.GetHashCode()).IsEqualTo(equalExternal.GetHashCode());
+        }
+    }
+}
+
+internal class WasmValue_GetHashCodeTests
+{
+    [Test]
+    public async Task 複数のi31をハッシュキーに使う_全ての値が同じハッシュに集中しない()
+    {
+        // Arrange
+        var values = Enumerable.Range(0, 32).Select(WasmValue.FromI31);
+
+        // Act
+        var hashes = values.Select(x => x.GetHashCode()).ToHashSet();
+
+        // Assert
+        await Assert.That(hashes.Count).IsGreaterThan(1);
+    }
+}
+
+internal class WasmValue_AsHostRefTests
+{
+    [Test]
+    public async Task 外部参照またはi31をホスト参照として取得する_異なる参照型を拒否する()
+    {
+        // Arrange
+        var external = WasmValue.FromExternRef(null);
+        var i31 = WasmValue.FromI31(0);
+
+        // Act & Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(external.AsHostRef).ThrowsExactly<InvalidOperationException>();
+            await Assert.That(i31.AsHostRef).ThrowsExactly<InvalidOperationException>();
+        }
+    }
+}
+
 internal class WasmValue_AsExternRefTests
 {
     [Test]

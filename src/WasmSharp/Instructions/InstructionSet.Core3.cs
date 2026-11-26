@@ -19,7 +19,16 @@ namespace WasmSharp.Instructions;
 )]
 [Instruction(Core3, 0, 0x15, "return_call_ref")]
 [Instruction(Core3, 0, 0x1F, "try_table")]
-[Instruction(Core3, 0, 0xD3, "ref.eq")]
+[Instruction(
+    Core3,
+    0,
+    0xD3,
+    "ref.eq",
+    ImmediateKind.None,
+    StackEffectKind.RefEq,
+    ValidationRule.RefEq,
+    nameof(Interpreter.RefEq)
+)]
 [Instruction(
     Core3,
     0,
@@ -70,17 +79,116 @@ namespace WasmSharp.Instructions;
 [Instruction(Core3, 0xFB, 0x11, "array.copy")]
 [Instruction(Core3, 0xFB, 0x12, "array.init_data")]
 [Instruction(Core3, 0xFB, 0x13, "array.init_elem")]
-[Instruction(Core3, 0xFB, 0x14, "ref.test")]
-[Instruction(Core3, 0xFB, 0x15, "ref.test")]
-[Instruction(Core3, 0xFB, 0x16, "ref.cast")]
-[Instruction(Core3, 0xFB, 0x17, "ref.cast")]
-[Instruction(Core3, 0xFB, 0x18, "br_on_cast")]
-[Instruction(Core3, 0xFB, 0x19, "br_on_cast_fail")]
-[Instruction(Core3, 0xFB, 0x1A, "any.convert_extern")]
-[Instruction(Core3, 0xFB, 0x1B, "extern.convert_any")]
-[Instruction(Core3, 0xFB, 0x1C, "ref.i31")]
-[Instruction(Core3, 0xFB, 0x1D, "i31.get_s")]
-[Instruction(Core3, 0xFB, 0x1E, "i31.get_u")]
+[Instruction(
+    Core3,
+    0xFB,
+    0x14,
+    "ref.test",
+    ImmediateKind.CastType,
+    StackEffectKind.RefTest,
+    ValidationRule.RefTest,
+    nameof(Interpreter.RefTest)
+)]
+[Instruction(
+    Core3,
+    0xFB,
+    0x15,
+    "ref.test",
+    ImmediateKind.NullableCastType,
+    StackEffectKind.RefTest,
+    ValidationRule.RefTest,
+    nameof(Interpreter.RefTest)
+)]
+[Instruction(
+    Core3,
+    0xFB,
+    0x16,
+    "ref.cast",
+    ImmediateKind.CastType,
+    StackEffectKind.RefCast,
+    ValidationRule.RefCast,
+    nameof(Interpreter.RefCast)
+)]
+[Instruction(
+    Core3,
+    0xFB,
+    0x17,
+    "ref.cast",
+    ImmediateKind.NullableCastType,
+    StackEffectKind.RefCast,
+    ValidationRule.RefCast,
+    nameof(Interpreter.RefCast)
+)]
+[Instruction(
+    Core3,
+    0xFB,
+    0x18,
+    "br_on_cast",
+    ImmediateKind.CastBranch,
+    StackEffectKind.BranchOnCast,
+    ValidationRule.BranchOnCast,
+    nameof(Interpreter.BranchOnCast)
+)]
+[Instruction(
+    Core3,
+    0xFB,
+    0x19,
+    "br_on_cast_fail",
+    ImmediateKind.CastBranch,
+    StackEffectKind.BranchOnCastFail,
+    ValidationRule.BranchOnCastFail,
+    nameof(Interpreter.BranchOnCastFail)
+)]
+[Instruction(
+    Core3,
+    0xFB,
+    0x1A,
+    "any.convert_extern",
+    ImmediateKind.None,
+    StackEffectKind.ConstantReference,
+    ValidationRule.ConstantReference,
+    nameof(ConstantReferenceOperation.AnyConvertExtern)
+)]
+[Instruction(
+    Core3,
+    0xFB,
+    0x1B,
+    "extern.convert_any",
+    ImmediateKind.None,
+    StackEffectKind.ConstantReference,
+    ValidationRule.ConstantReference,
+    nameof(ConstantReferenceOperation.ExternConvertAny)
+)]
+[Instruction(
+    Core3,
+    0xFB,
+    0x1C,
+    "ref.i31",
+    ImmediateKind.None,
+    StackEffectKind.ConstantReference,
+    ValidationRule.ConstantReference,
+    nameof(ConstantReferenceOperation.RefI31)
+)]
+[Instruction(
+    Core3,
+    0xFB,
+    0x1D,
+    "i31.get_s",
+    ImmediateKind.None,
+    StackEffectKind.I31Get,
+    ValidationRule.I31Get,
+    nameof(Interpreter.I31GetS)
+)]
+[Instruction(
+    Core3,
+    0xFB,
+    0x1E,
+    "i31.get_u",
+    ImmediateKind.None,
+    StackEffectKind.I31Get,
+    ValidationRule.I31Get,
+    nameof(Interpreter.I31GetU)
+)]
 [Instruction(Core3, 0xFD, 0x100, "i8x16.relaxed_swizzle")]
 [Instruction(Core3, 0xFD, 0x101, "i32x4.relaxed_trunc_f32x4_s")]
 [Instruction(Core3, 0xFD, 0x102, "i32x4.relaxed_trunc_f32x4_u")]

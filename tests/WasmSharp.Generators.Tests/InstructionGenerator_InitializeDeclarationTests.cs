@@ -329,21 +329,34 @@ internal partial class InstructionGenerator_InitializeTests
     }
 
     [Test]
-    public async Task Interpreter型が存在しない_属性位置にhandler不在の診断を報告して生成を中断する()
+    [Arguments(
+        """Instruction(WasmSpecVersion.Core2, 0, 0x41, "i32.const", ImmediateKind.I32, StackEffectKind.PushI32, ValidationRule.Constant, "Handler")""",
+        "Interpreter"
+    )]
+    [Arguments(
+        """Instruction(WasmSpecVersion.Core3, 0xFB, 0x1C, "ref.i31", ImmediateKind.None, StackEffectKind.ConstantReference, ValidationRule.ConstantReference, "RefI31")""",
+        "WasmSharp.Instructions.ConstantReferenceOperation"
+    )]
+    public async Task ハンドラーの所有型が存在しない_属性位置に所有型を含む診断を報告して生成を中断する(
+        string attribute,
+        string owner
+    )
     {
         // Arrange
-        const string ATTRIBUTE = """
-            Instruction(WasmSpecVersion.Core2, 0, 0x41, "i32.const", ImmediateKind.I32, StackEffectKind.PushI32, ValidationRule.Constant, "Handler")
-            """;
         var compilation = GeneratorTestSource.CreateCompilation(
             $$"""
             namespace WasmSharp.Instructions
             {
-                [{{ATTRIBUTE}}]
+                [{{attribute}}]
                 internal static partial class InstructionSet;
             }
             """
         );
+        var referenceOperation = compilation.GetTypeByMetadataName("WasmSharp.Instructions.ConstantReferenceOperation")!;
+        var stub = referenceOperation.DeclaringSyntaxReferences.Single().GetSyntax();
+        var tree = stub.SyntaxTree;
+        var root = tree.GetRoot().RemoveNode(stub, SyntaxRemoveOptions.KeepNoTrivia)!;
+        compilation = compilation.ReplaceSyntaxTree(tree, tree.WithRootAndOptions(root, tree.Options));
         GeneratorDriver driver = CSharpGeneratorDriver.Create(new InstructionGenerator());
 
         // Act
@@ -354,9 +367,10 @@ internal partial class InstructionGenerator_InitializeTests
         using (Assert.Multiple())
         {
             await Assert.That(driver.GetRunResult().Results.Single().Exception).IsNull();
+            await Assert.That(diagnostics[0].GetMessage()).Contains(owner);
             await Assert
                 .That(diagnostics[0].Location.SourceTree!.GetText().ToString(diagnostics[0].Location.SourceSpan))
-                .IsEqualTo(ATTRIBUTE);
+                .IsEqualTo(attribute);
         }
     }
 

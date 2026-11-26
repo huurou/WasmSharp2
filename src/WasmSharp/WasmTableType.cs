@@ -24,7 +24,7 @@ public sealed record WasmTableType(
     /// 参照先の関数型とnull可否を含む要素型
     /// </summary>
     public WasmValueType ElementValueType { get; } =
-        IsSupportedElementType(ElementType)
+        ElementType.IsReference()
             ? ElementType
             : throw new ArgumentOutOfRangeException(
                 nameof(ElementType),
@@ -71,14 +71,6 @@ public sealed record WasmTableType(
 
     internal WasmTableType(WasmValueKind elementType, WasmLimits limits)
         : this(elementType, WasmValueKind.I32, limits.Minimum, limits.Maximum) { }
-
-    /// <summary>
-    /// テーブルの要素として扱える参照型かを返す
-    /// </summary>
-    internal static bool IsSupportedElementType(WasmValueKind elementType)
-    {
-        return elementType is WasmValueKind.FuncRef or WasmValueKind.ExternRef;
-    }
 
     /// <inheritdoc/>
     public override string ToString()

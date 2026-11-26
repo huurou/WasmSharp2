@@ -14,6 +14,7 @@ namespace WasmSharp.Generators;
 internal sealed class InstructionGenerator : IIncrementalGenerator
 {
     private const string IntegerArithmeticName = "IntegerArithmetic";
+    private const string ConstantReferenceOperationName = "WasmSharp.Instructions.ConstantReferenceOperation";
 
     /// <summary>
     /// prefixと命令番号が重複する命令宣言の診断
@@ -217,6 +218,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
         if (
             numericStackEffect != numericValidation
             || numericStackEffect != (signature != null)
+            || (declaration.StackEffect == "ConstantReference") != (declaration.ReferenceOperation != null)
             || (declaration.IsConstantBinaryOperation && signature is not { InputTypes.Length: 2 })
             || (
                 signature != null
@@ -245,6 +247,36 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
             return null;
         }
 
+        if (declaration.ReferenceOperation != null)
+        {
+            var type = compilation.GetTypeByMetadataName(ConstantReferenceOperationName);
+            var property = type?.GetMembers(handler).OfType<IPropertySymbol>().FirstOrDefault();
+            if (property == null)
+            {
+                return Diagnostic.Create(
+                    _missingHandler,
+                    declaration.Location,
+                    declaration.Name,
+                    ConstantReferenceOperationName
+                );
+            }
+            if (
+                property.IsStatic
+                && property.GetMethod is { } getter
+                && property.NullableAnnotation != NullableAnnotation.Annotated
+                && SymbolEqualityComparer.Default.Equals(property.Type, type)
+                && compilation.IsSymbolAccessibleWithin(getter, compilation.Assembly)
+            )
+            {
+                return null;
+            }
+            return Diagnostic.Create(
+                _invalidHandler,
+                declaration.Location,
+                declaration.Name,
+                "生成コードから参照できる非nullのstatic ConstantReferenceOperationプロパティ"
+            );
+        }
         var ownerName = declaration.IsConstantBinaryOperation ? IntegerArithmeticName : "Interpreter";
         var owner = compilation.GetTypeByMetadataName($"WasmSharp.Execution.{ownerName}");
         var methods = owner?.GetMembers(handler).OfType<IMethodSymbol>().ToArray();
@@ -520,6 +552,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
             /// <param name="MemoryAccessSignature">ロード命令・ストア命令のアクセス情報 それ以外の場合はnull</param>
             /// <param name="LaneCount">lane即値の上限 lane即値を持たない場合は0</param>
             /// <param name="ConstantBinaryOperation">Core 3.0の定数式で許可する二項演算 それ以外の場合はnull</param>
+            /// <param name="ConstantReferenceOperation">Core 3.0の定数式と関数本体で共有する単項参照演算 それ以外の場合はnull</param>
             internal readonly record struct InstructionDescriptor(
                 OpcodeKey Opcode,
                 string Name,
@@ -530,7 +563,8 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
                 NumericSignature? NumericSignature,
                 MemoryAccessSignature? MemoryAccessSignature,
                 byte LaneCount,
-                global::System.Func<global::WasmSharp.WasmValue, global::WasmSharp.WasmValue, global::WasmSharp.WasmValue>? ConstantBinaryOperation);
+                global::System.Func<global::WasmSharp.WasmValue, global::WasmSharp.WasmValue, global::WasmSharp.WasmValue>? ConstantBinaryOperation,
+                ConstantReferenceOperation? ConstantReferenceOperation);
 
             /// <summary>
             /// 命令宣言から生成された命令情報の参照先
@@ -612,7 +646,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
                 ? GetIntegerArithmeticMethod(instruction.Handler!)
                 : "null";
             source.AppendLine(
-                $"        new InstructionDescriptor({key}, {SymbolDisplay.FormatLiteral(instruction.Name, true)}, ImmediateKind.{instruction.Immediate}, StackEffectKind.{instruction.StackEffect}, ValidationRule.{instruction.Validation}, {executionOpcode}, {numericSignature}, {memoryAccessSignature}, {instruction.LaneCount}, {constantOperation}),"
+                $"        new InstructionDescriptor({key}, {SymbolDisplay.FormatLiteral(instruction.Name, true)}, ImmediateKind.{instruction.Immediate}, StackEffectKind.{instruction.StackEffect}, ValidationRule.{instruction.Validation}, {executionOpcode}, {numericSignature}, {memoryAccessSignature}, {instruction.LaneCount}, {constantOperation}, {instruction.ReferenceOperation ?? "null"}),"
             );
         }
     }
@@ -658,7 +692,15 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
             source.AppendLine(
                 $"                case global::WasmSharp.Instructions.ExecutionOpcode.{instruction.ExecutionOpcode}:"
             );
-            source.AppendLine($"                    result = @{instruction.Handler}(context, in instruction);");
+            if (instruction.ReferenceOperation is { } operation)
+            {
+                source.AppendLine($"                    context.PushValue({operation}.Evaluate(context.PopValue()));");
+                source.AppendLine("                    result = default;");
+            }
+            else
+            {
+                source.AppendLine($"                    result = @{instruction.Handler}(context, in instruction);");
+            }
             source.AppendLine("                    break;");
         }
         source.AppendLine(
@@ -714,7 +756,7 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
     /// <param name="Immediate">即値の符号化を表す列挙子名</param>
     /// <param name="StackEffect">スタック効果を表す列挙子名</param>
     /// <param name="Validation">検証規則を表す列挙子名</param>
-    /// <param name="Handler">Interpreterのhandler名または定数式と共有するIntegerArithmeticの二項演算名 未対応の宣言ではnull</param>
+    /// <param name="Handler">Interpreterのhandler名または定数式と共有する演算の名前 未対応の宣言ではnull</param>
     /// <param name="NumericSignature">数値命令の型効果を表す属性値 数値以外の宣言ではnull</param>
     /// <param name="MemoryAccessSignature">ロード命令・ストア命令のアクセス情報 それ以外の宣言ではnull</param>
     /// <param name="LaneCount">lane即値の上限 lane即値を持たない場合は0</param>
@@ -740,6 +782,12 @@ internal sealed class InstructionGenerator : IIncrementalGenerator
         /// prefixと命令番号から得られる、生成する実行opcodeの列挙子名
         /// </summary>
         public string ExecutionOpcode => Prefix == 0 ? $"Op{Code:X2}" : $"Op{Prefix:X2}_{Code:X2}";
+
+        /// <summary>
+        /// 定数式の記述子と関数本体の実行分岐に渡す参照演算の名前
+        /// </summary>
+        public string? ReferenceOperation =>
+            Validation == "ConstantReference" ? $"global::{ConstantReferenceOperationName}.@{Handler}" : null;
     }
 
     /// <summary>

@@ -5,9 +5,10 @@ namespace WasmSharp.Tests;
 internal class WasmImportInfoTable_LimitsTests
 {
     [Test]
-    [Arguments(false)]
-    [Arguments(true)]
-    public async Task 調査した型付きテーブルのlimitsを変更する_関数シグネチャとnull可否を保つ(bool isNullable)
+    [Arguments(false, 5U)]
+    [Arguments(true, 5U)]
+    [Arguments(true, null)]
+    public async Task 調査した型付きテーブルのlimitsを変更する_関数シグネチャとnull可否を保つ(bool isNullable, uint? maximum)
     {
         // Arrange
         var refType = (byte)(isNullable ? 0x63 : 0x64);
@@ -22,7 +23,7 @@ internal class WasmImportInfoTable_LimitsTests
         );
 
         // Act
-        var changed = original with { Limits = new WasmLimits(3, 5) };
+        var changed = original with { Limits = new WasmLimits(3, maximum) };
 
         // Assert
         using (Assert.Multiple())
@@ -30,7 +31,7 @@ internal class WasmImportInfoTable_LimitsTests
             await Assert.That(original.Type.ElementValueType).IsEqualTo(expected);
             await Assert.That(original.Limits).IsEqualTo(new WasmLimits(2, 8));
             await Assert.That(changed.Type.ElementValueType).IsEqualTo(expected);
-            await Assert.That(changed.Limits).IsEqualTo(new WasmLimits(3, 5));
+            await Assert.That(changed.Limits).IsEqualTo(new WasmLimits(3, maximum));
             await Assert.That(changed.ToString()).Contains($"ElementType = {expected}");
         }
     }

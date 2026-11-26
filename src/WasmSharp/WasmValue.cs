@@ -6,7 +6,16 @@ namespace WasmSharp;
 public readonly struct WasmValue
 {
     /// <summary>
-    /// 数値スカラーのビット列またはv128の下位64ビット
+    /// Wasmの内部参照をホストへ渡し、戻されたときに同じ内部参照を取り出すための参照先
+    /// </summary>
+    private sealed record ExternalizedReference(WasmValue Source)
+    {
+        // 再び外部化したとき、ホストが渡した同じオブジェクトを返せるようにする。
+        internal WasmValue InternalValue => new WasmValue(Source.Kind, Source._low64, Source._high64, this);
+    }
+
+    /// <summary>
+    /// 数値スカラーやi31のビット列、またはv128の下位64ビット
     /// </summary>
     private readonly ulong _low64;
 
@@ -16,20 +25,34 @@ public readonly struct WasmValue
     private readonly ulong _high64;
 
     /// <summary>
-    /// 参照値の参照先
+    /// 参照先、または内部参照へ戻す前の外部参照を保持する
     /// </summary>
     private readonly object? _reference;
 
+    // i31を再び外部化するための参照先は、値の等しさやハッシュには含めない。
+    private (WasmValueKind Kind, ulong Low64, ulong High64, object? Reference) EqualityFields =>
+        (Kind, _low64, _high64, Kind == WasmValueKind.I31Ref ? null : _reference);
+
     /// <summary>
-    /// 格納されたvalueの種類
+    /// 格納された値の実行時の種類
     /// </summary>
+    /// <remarks>
+    /// 例えばeqrefの宣言に渡したi31の種類は<see cref="WasmValueKind.I31Ref"/>、
+    /// 同じ宣言に渡したGC参照のnullの種類は<see cref="WasmValueKind.AnyRef"/>となる。
+    /// </remarks>
     public WasmValueKind Kind { get; }
+
+    /// <summary>
+    /// 値がnull参照かどうか GC参照のnullはどの宣言型から生成してもanyの階層に属する
+    /// </summary>
+    public bool IsNullReference =>
+        _reference is null && Kind is WasmValueKind.FuncRef or WasmValueKind.ExternRef or WasmValueKind.AnyRef;
 
     /// <summary>
     /// valueの型と対応するビット列または参照先を保持する
     /// </summary>
     /// <param name="kind">保持するvalueの型</param>
-    /// <param name="low64">数値スカラーのビット列またはv128の下位64ビット 参照型では0</param>
+    /// <param name="low64">数値スカラーやi31のビット列、またはv128の下位64ビット</param>
     /// <param name="high64">v128の上位64ビット 他の型では0</param>
     /// <param name="reference">参照型の参照先またはnull 数値型ではnull</param>
     private WasmValue(WasmValueKind kind, ulong low64, ulong high64, object? reference)
@@ -201,6 +224,52 @@ public readonly struct WasmValue
     }
 
     /// <summary>
+    /// 指定した参照型と同じ階層のnullを構築する
+    /// </summary>
+    /// <param name="kind">nullを構築する参照型の種類</param>
+    /// <returns>指定した階層の最上位型が値の種類となる。例えばi31refのnullの種類はanyrefとなる</returns>
+    /// <exception cref="ArgumentOutOfRangeException">kindが対応する参照型でない場合</exception>
+    public static WasmValue FromNullReference(WasmValueKind kind)
+    {
+        if (!kind.IsReference())
+        {
+            throw new ArgumentOutOfRangeException(nameof(kind), kind, "参照型を指定してください。");
+        }
+        return new WasmValue(kind.GetTopKind(), 0, 0, null);
+    }
+
+    /// <summary>
+    /// 32ビット整数の下位31ビットを保持するi31参照を構築する
+    /// </summary>
+    /// <param name="value">下位31ビットを取り出す整数</param>
+    /// <returns>指定したビット列を保持する非nullのi31参照</returns>
+    public static WasmValue FromI31(int value)
+    {
+        return new WasmValue(WasmValueKind.I31Ref, (uint)(value & 0x7FFF_FFFF), 0, null);
+    }
+
+    /// <summary>
+    /// i31参照が保持する31ビットを符号拡張して取得する
+    /// </summary>
+    /// <returns>保持する31ビットを符号拡張した32ビット整数</returns>
+    /// <exception cref="InvalidOperationException">値が非nullのi31参照でない場合</exception>
+    public int AsI31Signed()
+    {
+        return (AsI31Unsigned() << 1) >> 1;
+    }
+
+    /// <summary>
+    /// i31参照が保持する31ビットをゼロ拡張して取得する
+    /// </summary>
+    /// <returns>保持する31ビットをゼロ拡張した32ビット整数</returns>
+    /// <exception cref="InvalidOperationException">値が非nullのi31参照でない場合</exception>
+    public int AsI31Unsigned()
+    {
+        EnsureKind(WasmValueKind.I31Ref);
+        return (int)_low64;
+    }
+
+    /// <summary>
     /// 関数への参照またはnullからfuncrefのvalueを構築する
     /// </summary>
     /// <param name="value">保持する関数への参照またはnull</param>
@@ -222,6 +291,44 @@ public readonly struct WasmValue
     }
 
     /// <summary>
+    /// CLRオブジェクトへの参照またはnullから、anyの階層に属するホスト参照を構築する
+    /// </summary>
+    /// <param name="value">ホストが保持するオブジェクトへの参照またはnull</param>
+    /// <returns>元の参照先を保持するanyref</returns>
+    public static WasmValue FromHostRef(object? value)
+    {
+        var host = new WasmValue(WasmValueKind.AnyRef, 0, 0, value);
+        // 外部化済みのオブジェクト自体をホスト参照として渡された場合も、参照先を区別する。
+        return value is ExternalizedReference ? new ExternalizedReference(host).InternalValue : host;
+    }
+
+    /// <summary>
+    /// 内部のホスト参照が保持するCLRオブジェクトまたはnullを取得する
+    /// </summary>
+    /// <returns>ホストが保持するオブジェクトへの参照またはnull</returns>
+    /// <exception cref="InvalidOperationException">valueがanyのホスト参照またはnull以外の場合</exception>
+    public object? AsHostRef()
+    {
+        EnsureKind(WasmValueKind.AnyRef);
+        return _reference is ExternalizedReference wrapped ? wrapped.Source._reference : _reference;
+    }
+
+    internal WasmValue InternalizeExtern()
+    {
+        var external = AsExternRef();
+        return external is ExternalizedReference wrapped ? wrapped.InternalValue : FromHostRef(external);
+    }
+
+    internal WasmValue ExternalizeAny()
+    {
+        if (Kind == WasmValueKind.AnyRef || _reference is ExternalizedReference)
+        {
+            return FromExternRef(_reference);
+        }
+        return FromExternRef(new ExternalizedReference(this));
+    }
+
+    /// <summary>
     /// CLRオブジェクトへの参照またはnullからexternrefのvalueを構築する
     /// </summary>
     /// <param name="value">保持するCLRオブジェクトへの参照またはnull</param>
@@ -234,13 +341,39 @@ public readonly struct WasmValue
     /// <summary>
     /// externrefの元のCLRオブジェクトへの参照またはnullを取得する
     /// </summary>
-    /// <returns>構築時に保持したCLRオブジェクトへの参照またはnull</returns>
+    /// <returns>CLRオブジェクトへの参照またはnull 外部化したWasm参照のオブジェクトはFromExternRefへ渡して戻せる</returns>
     /// <exception cref="InvalidOperationException">valueの型がexternrefではない場合</exception>
     public object? AsExternRef()
     {
         EnsureKind(WasmValueKind.ExternRef);
         return _reference;
     }
+
+    /// <inheritdoc/>
+    /// <remarks>
+    /// i31参照は外部参照との変換を経た後も、保持する31ビットで等しさを判定する。
+    /// 外部参照の等しさは、ホストオブジェクトのEqualsに従う。
+    /// </remarks>
+    public override bool Equals(object? obj)
+    {
+        return obj is WasmValue other && EqualityFields.Equals(other.EqualityFields);
+    }
+
+    /// <inheritdoc/>
+    public override int GetHashCode()
+    {
+        return EqualityFields.GetHashCode();
+    }
+
+    /// <summary>
+    /// <see cref="Equals(object)"/>と同じ基準で2つの値が等しいかを返す
+    /// </summary>
+    public static bool operator ==(WasmValue left, WasmValue right) => left.Equals(right);
+
+    /// <summary>
+    /// <see cref="Equals(object)"/>と同じ基準で2つの値が異なるかを返す
+    /// </summary>
+    public static bool operator !=(WasmValue left, WasmValue right) => !left.Equals(right);
 
     /// <summary>
     /// valueを取得する操作が、保持中の型に対応することを確認する

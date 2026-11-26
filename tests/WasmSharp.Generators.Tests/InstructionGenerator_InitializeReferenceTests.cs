@@ -6,6 +6,125 @@ namespace WasmSharp.Generators.Tests;
 internal partial class InstructionGenerator_InitializeTests
 {
     [Test]
+    [Arguments("Missing", "ConstantReference", "WSIG003")]
+    [Arguments("InputType", "ConstantReference", "WSIG004")]
+    [Arguments("RefI31", "None", "WSIG002")]
+    public async Task 単項参照演算の名前またはスタック効果が不正である_命令の宣言を診断する(
+        string operation,
+        string stackEffect,
+        string expectedDiagnostic
+    )
+    {
+        // Arrange
+        var compilation = GeneratorTestSource.CreateCompilation(
+            $$"""
+            namespace WasmSharp.Instructions;
+            [Instruction(WasmSpecVersion.Core3, 0xFB, 1, "make.ref", ImmediateKind.None,
+                StackEffectKind.{{stackEffect}}, ValidationRule.ConstantReference, "{{operation}}")]
+            internal static partial class InstructionSet;
+            """,
+            GeneratorTestSource.EXECUTION_CONTRACTS
+        );
+        GeneratorDriver driver = CSharpGeneratorDriver.Create(new InstructionGenerator());
+
+        // Act
+        driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out _, out var diagnostics);
+
+        // Assert
+        await GeneratorTestSource.AssertDiagnostic(driver, diagnostics, expectedDiagnostic);
+    }
+
+    [Test]
+    public async Task 演算プロパティのnull許容注釈が異なる_明示的にnullを許容する宣言だけを拒否する()
+    {
+        // Arrange
+        var compilation = GeneratorTestSource.CreateCompilation(
+            """
+            namespace WasmSharp.Instructions;
+            internal sealed partial class ConstantReferenceOperation
+            {
+                internal static ConstantReferenceOperation? Nullable => null;
+            #nullable disable annotations
+                internal static ConstantReferenceOperation Oblivious => new ConstantReferenceOperation();
+            #nullable restore annotations
+            }
+            [Instruction(WasmSpecVersion.Core3, 0xFB, 1, "nullable.ref", ImmediateKind.None,
+                StackEffectKind.ConstantReference, ValidationRule.ConstantReference, nameof(ConstantReferenceOperation.Nullable))]
+            [Instruction(WasmSpecVersion.Core3, 0xFB, 2, "oblivious.ref", ImmediateKind.None,
+                StackEffectKind.ConstantReference, ValidationRule.ConstantReference, nameof(ConstantReferenceOperation.Oblivious))]
+            internal static partial class InstructionSet;
+            """
+        );
+        GeneratorDriver driver = CSharpGeneratorDriver.Create(new InstructionGenerator());
+
+        // Act
+        driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out _, out var diagnostics);
+
+        // Assert
+        await GeneratorTestSource.AssertDiagnostic(driver, diagnostics, "WSIG004");
+        using (Assert.Multiple())
+        {
+            await Assert.That(diagnostics[0].GetMessage()).Contains("nullable.ref");
+            await Assert.That(diagnostics[0].GetMessage()).Contains("非nullのstatic ConstantReferenceOperationプロパティ");
+        }
+    }
+
+    [Test]
+    public async Task 単項参照演算を命令に割り当てる_定数式の記述子と関数の実行分岐が同じ演算を使う()
+    {
+        // Arrange
+        var compilation = GeneratorTestSource.CreateCompilation(
+            """
+            namespace WasmSharp.Instructions
+            {
+                [Instruction(WasmSpecVersion.Core3, 0xFB, 1, "make.ref", ImmediateKind.None,
+                    StackEffectKind.ConstantReference, ValidationRule.ConstantReference, nameof(ConstantReferenceOperation.RefI31))]
+                [Instruction(WasmSpecVersion.Core3, 0, 0x0B, "end", ImmediateKind.None,
+                    StackEffectKind.FunctionEnd, ValidationRule.FunctionEnd, nameof(Execution.Interpreter.End))]
+                internal static partial class InstructionSet;
+            }
+            namespace WasmSharp.Execution
+            {
+                internal static partial class Interpreter
+                {
+                    internal static ExecutionResult TestRun(InterpreterContext context) => RunLoop(context, 0);
+                    internal static ExecutionResult End(InterpreterContext context, in Instruction instruction)
+                    {
+                        context.CompleteFrame();
+                        return default;
+                    }
+                }
+            }
+            """,
+            GeneratorTestSource.EXECUTION_CONTRACTS
+        );
+        GeneratorDriver driver = CSharpGeneratorDriver.Create(new InstructionGenerator());
+
+        // Act
+        driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out var output, out var diagnostics);
+
+        // Assert
+        await Assert.That(diagnostics).IsEmpty();
+        await GeneratorTestSource.AssertCompilesAndRuns(
+            output,
+            """
+            var table = WasmSharp.Instructions.InstructionSet.ForVersion(WasmSharp.WasmSpecVersion.Core3);
+            var makeReference = table[new(0xFB, 1)];
+            var end = table[new(0, 0x0B)];
+            var context = new WasmSharp.Execution.InterpreterContext(1)
+            {
+                Instructions = [new(makeReference.ExecutionOpcode!.Value, default, 0, 0), new(end.ExecutionOpcode!.Value, default, 0, 0)]
+            };
+            var input = WasmSharp.WasmValue.FromI32(-1);
+            context.PushValue(input);
+            var result = WasmSharp.Execution.Interpreter.TestRun(context);
+            return makeReference.ConstantReferenceOperation!.Evaluate(input).AsI31Unsigned() == int.MaxValue
+                && result.Status == WasmSharp.Execution.ExecutionStatus.Success && context.PopValue().AsI31Unsigned() == int.MaxValue;
+            """
+        );
+    }
+
+    [Test]
     [Arguments(0, 0xD1, "ref.is_null", "None", "RefIsNull")]
     [Arguments(0, 0xD2, "ref.func", "Index", "RefFunc")]
     [Arguments(0, 0x25, "table.get", "Index", "TableGet")]

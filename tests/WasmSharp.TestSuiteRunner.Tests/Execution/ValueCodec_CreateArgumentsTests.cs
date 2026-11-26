@@ -27,7 +27,7 @@ internal class ValueCodec_CreateArgumentsTests
         var state = new ScriptState("a.wast");
 
         // Act
-        var values = ValueCodec.CreateArguments([Scalar(kind, text)], state)!.Value;
+        var values = ValueCodec.CreateArguments([Scalar(kind, text)], state);
 
         // Assert
         using (Assert.Multiple())
@@ -45,17 +45,15 @@ internal class ValueCodec_CreateArgumentsTests
         var state = new ScriptState("a.wast");
 
         // Act
-        var values = ValueCodec
-            .CreateArguments(
-                [
-                    Scalar(WasmValueKind.F64, "1"),
-                    Scalar(WasmValueKind.ExternRef, "null"),
-                    Scalar(WasmValueKind.I32, "2"),
-                    Scalar(WasmValueKind.I64, "3"),
-                ],
-                state
-            )!
-            .Value;
+        var values = ValueCodec.CreateArguments(
+            [
+                Scalar(WasmValueKind.F64, "1"),
+                Scalar(WasmValueKind.ExternRef, "null"),
+                Scalar(WasmValueKind.I32, "2"),
+                Scalar(WasmValueKind.I64, "3"),
+            ],
+            state
+        );
 
         // Assert
         using (Assert.Multiple())
@@ -80,9 +78,10 @@ internal class ValueCodec_CreateArgumentsTests
         var state = new ScriptState("a.wast");
 
         // Act
-        var values = ValueCodec
-            .CreateArguments([Scalar(WasmValueKind.FuncRef, "null"), Scalar(WasmValueKind.ExternRef, "null")], state)!
-            .Value;
+        var values = ValueCodec.CreateArguments(
+            [Scalar(WasmValueKind.FuncRef, "null"), Scalar(WasmValueKind.ExternRef, "null")],
+            state
+        );
 
         // Assert
         using (Assert.Multiple())
@@ -99,29 +98,27 @@ internal class ValueCodec_CreateArgumentsTests
     {
         // Arrange
         var state = new ScriptState("a.wast");
-        var assigned = state.GetExternref(1);
+        var assigned = state.GetHostValue(1);
 
         // Act
-        var values = ValueCodec
-            .CreateArguments(
-                [
-                    Scalar(WasmValueKind.ExternRef, "1"),
-                    Scalar(WasmValueKind.ExternRef, "2"),
-                    Scalar(WasmValueKind.ExternRef, "1"),
-                    Scalar(WasmValueKind.ExternRef, "4294967295"),
-                ],
-                state
-            )!
-            .Value;
+        var values = ValueCodec.CreateArguments(
+            [
+                Scalar(WasmValueKind.ExternRef, "1"),
+                Scalar(WasmValueKind.ExternRef, "2"),
+                Scalar(WasmValueKind.ExternRef, "1"),
+                Scalar(WasmValueKind.ExternRef, "4294967295"),
+            ],
+            state
+        );
 
         // Assert
         using (Assert.Multiple())
         {
             await Assert.That(values[0].AsExternRef()).IsSameReferenceAs(assigned);
-            await Assert.That(values[1].AsExternRef()).IsSameReferenceAs(state.GetExternref(2));
+            await Assert.That(values[1].AsExternRef()).IsSameReferenceAs(state.GetHostValue(2));
             await Assert.That(values[1].AsExternRef()).IsNotSameReferenceAs(assigned);
             await Assert.That(values[2].AsExternRef()).IsSameReferenceAs(assigned);
-            await Assert.That(values[3].AsExternRef()).IsSameReferenceAs(state.GetExternref(uint.MaxValue));
+            await Assert.That(values[3].AsExternRef()).IsSameReferenceAs(state.GetHostValue(uint.MaxValue));
         }
     }
 
@@ -196,7 +193,7 @@ internal class ValueCodec_CreateArgumentsTests
         var state = new ScriptState("a.wast");
 
         // Act
-        var values = ValueCodec.CreateArguments([Vector(laneType, lanes)], state)!.Value;
+        var values = ValueCodec.CreateArguments([Vector(laneType, lanes)], state);
 
         // Assert
         using (Assert.Multiple())

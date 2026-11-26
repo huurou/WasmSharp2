@@ -10,7 +10,7 @@ namespace WasmSharp.Instructions;
 /// <param name="immediate">即値の符号化</param>
 /// <param name="stackEffect">検証時のスタック効果</param>
 /// <param name="validation">命令の検証規則</param>
-/// <param name="executionHandler">Interpreterのhandler名または定数式と共有するIntegerArithmeticの二項演算名 未対応の宣言ではnull</param>
+/// <param name="executionHandler">Interpreterのhandler名または定数式と共有する演算の名前 未対応の宣言ではnull</param>
 [AttributeUsage(AttributeTargets.Class, AllowMultiple = true, Inherited = false)]
 internal sealed class InstructionAttribute(
     WasmSpecVersion introducedIn,
@@ -59,7 +59,7 @@ internal sealed class InstructionAttribute(
     public ValidationRule Validation { get; } = validation;
 
     /// <summary>
-    /// Interpreterのhandler名または定数式と共有するIntegerArithmeticの二項演算名を取得する
+    /// Interpreterのhandler名または定数式と共有する演算の名前を取得する
     /// </summary>
     public string? ExecutionHandler { get; } = executionHandler;
 

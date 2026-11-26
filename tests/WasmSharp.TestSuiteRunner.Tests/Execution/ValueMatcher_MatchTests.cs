@@ -44,7 +44,7 @@ internal class ValueMatcher_MatchTests
             WasmValue.FromF64Bits(0),
             WasmValue.FromFuncRef(null),
             WasmValue.FromExternRef(null),
-            WasmValue.FromExternRef(state.GetExternref(1))
+            WasmValue.FromExternRef(state.GetHostValue(1))
         );
 
         // Assert
@@ -90,7 +90,7 @@ internal class ValueMatcher_MatchTests
             expected,
             WasmValue.FromI64(0),
             WasmValue.FromExternRef(null),
-            WasmValue.FromExternRef(state.GetExternref(1)),
+            WasmValue.FromExternRef(state.GetHostValue(1)),
             WasmValue.FromF64Bits(0)
         );
 
@@ -109,6 +109,45 @@ internal class ValueMatcher_MatchTests
                 .IsTrue();
             await Assert.That(mismatches[1].Message).Contains("funcref");
             await Assert.That(mismatches[1].Message).Contains("externref");
+        }
+    }
+
+    [Test]
+    public async Task Core3の参照を期待してi32の0が返る_null参照との型の相違を返す()
+    {
+        // Arrange
+        var expected = ValueMatcher.Parse([new ExpectedValue("refnull", null, null, [])], WasmSpecVersion.Core3);
+        var actual = new WasmResults([WasmValue.FromI32(0)]);
+        var state = new ScriptState("a.wast");
+
+        // Act
+        var mismatch = ValueMatcher.Match(expected, actual, state).Single();
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(mismatch.Kind).IsEqualTo(ValueMismatchKind.Type);
+            await Assert.That(mismatch.Message).Contains("refnull");
+            await Assert.That(mismatch.Message).Contains("i32");
+        }
+    }
+
+    [Test]
+    public async Task 参照のnullを期待して負のi31が返る_不一致の診断に符号なしの値を表示する()
+    {
+        // Arrange
+        var expected = ValueMatcher.Parse([new ExpectedValue("refnull", null, null, [])], WasmSpecVersion.Core3);
+        var actual = new WasmResults([WasmValue.FromI31(-1)]);
+        var state = new ScriptState("a.wast");
+
+        // Act
+        var mismatch = ValueMatcher.Match(expected, actual, state).Single();
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(mismatch.Kind).IsEqualTo(ValueMismatchKind.Value);
+            await Assert.That(mismatch.Message).Contains("i31の値2147483647");
         }
     }
 
@@ -247,7 +286,7 @@ internal class ValueMatcher_MatchTests
         {
             "null" => null,
             "unknown" => new object(),
-            _ => state.GetExternref(uint.Parse(actual)),
+            _ => state.GetHostValue(uint.Parse(actual)),
         };
 
         // Act

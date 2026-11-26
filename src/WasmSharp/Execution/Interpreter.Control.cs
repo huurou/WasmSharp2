@@ -61,7 +61,7 @@ internal static partial class Interpreter
     /// </summary>
     internal static ExecutionResult BranchOnNull(InterpreterContext context, in Instruction instruction)
     {
-        if (IsNullReference(context.PeekValue()))
+        if (context.PeekValue().IsNullReference)
         {
             context.PopValue();
             context.Branch(context.GetBranchTarget(instruction.Index));
@@ -74,11 +74,35 @@ internal static partial class Interpreter
     /// </summary>
     internal static ExecutionResult BranchOnNonNull(InterpreterContext context, in Instruction instruction)
     {
-        if (IsNullReference(context.PeekValue()))
+        if (context.PeekValue().IsNullReference)
         {
             context.PopValue();
         }
         else
+        {
+            context.Branch(context.GetBranchTarget(instruction.Index));
+        }
+        return default;
+    }
+
+    /// <summary>
+    /// 参照が対象型に一致したとき、参照を最後の分岐値として渡す
+    /// </summary>
+    internal static ExecutionResult BranchOnCast(InterpreterContext context, in Instruction instruction)
+    {
+        if (context.MatchesCastTarget(instruction.SecondaryIndex, context.PeekValue()))
+        {
+            context.Branch(context.GetBranchTarget(instruction.Index));
+        }
+        return default;
+    }
+
+    /// <summary>
+    /// 参照が対象型に一致しないとき、参照を最後の分岐値として渡す
+    /// </summary>
+    internal static ExecutionResult BranchOnCastFail(InterpreterContext context, in Instruction instruction)
+    {
+        if (!context.MatchesCastTarget(instruction.SecondaryIndex, context.PeekValue()))
         {
             context.Branch(context.GetBranchTarget(instruction.Index));
         }

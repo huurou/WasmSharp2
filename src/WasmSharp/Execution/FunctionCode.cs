@@ -11,13 +11,20 @@ namespace WasmSharp.Execution;
 /// <param name="locals">引数の後に続く追加localsの圧縮宣言</param>
 /// <param name="maxOperandStack">関数の実行に必要なoperand領域の最大要素数</param>
 /// <param name="branchTargets">検証で完成した分岐情報 分岐を持たない関数では省略する</param>
+/// <param name="castTargets">型判定やキャストの対象となる参照型を命令順に並べた配列 対象がなければ省略する</param>
 internal sealed class FunctionCode(
     ImmutableArray<Instruction> instructions,
     ReadOnlySpan<LocalDeclaration> locals,
     int maxOperandStack,
-    ImmutableArray<BranchTarget> branchTargets = default
+    ImmutableArray<BranchTarget> branchTargets = default,
+    ImmutableArray<WasmValueType> castTargets = default
 )
 {
+    /// <summary>
+    /// 型判定とキャストの命令が即値の添字で参照する型
+    /// </summary>
+    private readonly ImmutableArray<WasmValueType> _castTargets = castTargets;
+
     /// <summary>
     /// 関数内の実行順に並べた線形命令
     /// </summary>
@@ -42,6 +49,14 @@ internal sealed class FunctionCode(
     /// 関数の実行に必要なoperand領域の最大要素数
     /// </summary>
     internal int MaxOperandStack { get; } = maxOperandStack;
+
+    /// <summary>
+    /// 検証済み命令が指定するキャスト先の参照型に値が一致するかを判定する
+    /// </summary>
+    internal bool MatchesCastTarget(uint index, WasmValue value)
+    {
+        return _castTargets[(int)index].Accepts(value);
+    }
 
     /// <summary>
     /// 圧縮宣言の個数を保ったまま、型ごとの初期値へ変換する
@@ -75,8 +90,7 @@ internal sealed class FunctionCode(
             WasmValueKind.F32 => WasmValue.FromF32Bits(0),
             WasmValueKind.F64 => WasmValue.FromF64Bits(0),
             WasmValueKind.V128 => WasmValue.FromV128(0, 0),
-            WasmValueKind.FuncRef => WasmValue.FromFuncRef(null),
-            WasmValueKind.ExternRef => WasmValue.FromExternRef(null),
+            _ when kind.IsReference() => WasmValue.FromNullReference(kind),
             _ => throw new InvalidOperationException("localの値型が不正です。"),
         };
     }

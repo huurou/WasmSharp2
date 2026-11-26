@@ -91,6 +91,12 @@ internal static class ExpressionDecoder
                     ModuleBinaryFormat.ReadHeapType(ref reader, true),
                     offset
                 ),
+                ImmediateKind.CastType or ImmediateKind.NullableCastType => DecodedInstruction.WithReferenceType(
+                    opcode,
+                    ModuleBinaryFormat.ReadHeapType(ref reader, immediateKind == ImmediateKind.NullableCastType),
+                    offset
+                ),
+                ImmediateKind.CastBranch => ReadCastBranch(opcode, offset, ref reader),
                 ImmediateKind.MemoryArgument or ImmediateKind.MemoryArgumentLaneIndex => ReadMemoryArgument(
                     opcode,
                     offset,
@@ -138,6 +144,27 @@ internal static class ExpressionDecoder
                 controls.RemoveAt(controls.Count - 1);
             }
         }
+    }
+
+    /// <summary>
+    /// キャスト分岐のラベルと、フラグでnull可否を指定した2つの型を読む
+    /// </summary>
+    private static DecodedInstruction ReadCastBranch(OpcodeKey opcode, long offset, ref ModuleBinaryReader reader)
+    {
+        var flagsPosition = reader.Position;
+        var flags = reader.ReadByte();
+        if (flags > 3)
+        {
+            throw reader.Error(
+                "malformed br_on_cast flags: キャスト分岐のフラグに予約ビットが含まれています。",
+                flagsPosition
+            );
+        }
+
+        var label = reader.ReadU32();
+        var source = ModuleBinaryFormat.ReadHeapType(ref reader, (flags & 1) != 0);
+        var target = ModuleBinaryFormat.ReadHeapType(ref reader, (flags & 2) != 0);
+        return DecodedInstruction.WithCastBranch(opcode, label, source, target, offset);
     }
 
     /// <summary>

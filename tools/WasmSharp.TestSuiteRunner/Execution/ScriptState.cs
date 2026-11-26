@@ -29,14 +29,14 @@ internal sealed class ScriptState(string inputPath)
     private readonly Dictionary<string, ScriptBinding<WasmHostModule>> _registrations = [with(StringComparer.Ordinal)];
 
     /// <summary>
-    /// 入力内のexternref番号ごとに割り当てたホスト値
+    /// 入力内の番号ごとに割り当て、ref.externとref.hostで共有するホスト値
     /// </summary>
-    private readonly Dictionary<uint, object> _externrefs = [];
+    private readonly Dictionary<uint, object> _hostValues = [];
 
     /// <summary>
-    /// 割り当てたホスト値から参照の同一性で引く元のexternref番号
+    /// 割り当てたホスト値から参照の同一性で引く元の番号
     /// </summary>
-    private readonly Dictionary<object, uint> _externrefNumbers = [with(ReferenceEqualityComparer.Instance)];
+    private readonly Dictionary<object, uint> _hostValueNumbers = [with(ReferenceEqualityComparer.Instance)];
 
     /// <summary>
     /// 保存用の非null参照token 内容の等値性を使わず初出順に割り当てる対応
@@ -229,31 +229,31 @@ internal sealed class ScriptState(string inputPath)
     }
 
     /// <summary>
-    /// externrefの番号に対応するホスト値を返す。同じ番号には入力内で同じobjectを割り当てる。
+    /// ref.externとref.hostで使う番号に対応するホスト値を返す。同じ番号には入力内で同じobjectを割り当てる。
     /// </summary>
-    /// <param name="number">JSONに記録された非nullのexternref番号</param>
+    /// <param name="number">JSONに記録された非nullの参照の番号</param>
     /// <returns>指定番号に割り当てたホスト値 同じ入力の同じ番号では同じobjectを返す</returns>
-    internal object GetExternref(uint number)
+    internal object GetHostValue(uint number)
     {
-        if (!_externrefs.TryGetValue(number, out var externref))
+        if (!_hostValues.TryGetValue(number, out var hostValue))
         {
             // 内容を持たない専用objectを割り当て、参照の同一性だけで比較する。
-            externref = new object();
-            _externrefs.Add(number, externref);
-            _externrefNumbers.Add(externref, number);
+            hostValue = new object();
+            _hostValues.Add(number, hostValue);
+            _hostValueNumbers.Add(hostValue, number);
         }
 
-        return externref;
+        return hostValue;
     }
 
     /// <summary>
-    /// この入力で割り当てたexternrefの元番号を返す。
+    /// この入力で割り当てたホスト値の元番号を返す。
     /// </summary>
     /// <param name="reference">非nullの参照</param>
     /// <returns>割り当てた番号 この入力で割り当てていない参照ではnull</returns>
-    internal uint? GetExternrefNumber(object reference)
+    internal uint? GetHostValueNumber(object reference)
     {
-        return _externrefNumbers.TryGetValue(reference, out var number) ? number : null;
+        return _hostValueNumbers.TryGetValue(reference, out var number) ? number : null;
     }
 
     /// <summary>

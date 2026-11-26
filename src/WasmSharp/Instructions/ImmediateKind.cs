@@ -88,6 +88,21 @@ internal enum ImmediateKind
     ReferenceType,
 
     /// <summary>
+    /// キャスト先の非null参照型を指定するヒープ型
+    /// </summary>
+    CastType,
+
+    /// <summary>
+    /// キャスト先のnullを許可する参照型を指定するヒープ型
+    /// </summary>
+    NullableCastType,
+
+    /// <summary>
+    /// キャスト元・先のnull可否を表すフラグ、ラベルの深さ、キャスト元・先のヒープ型
+    /// </summary>
+    CastBranch,
+
+    /// <summary>
     /// 符号なしLEB128で符号化された2個の32ビット添字
     /// </summary>
     IndexPair,

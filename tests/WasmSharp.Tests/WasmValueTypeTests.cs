@@ -96,6 +96,65 @@ internal class WasmValueType_FunctionReferenceTests
 internal class WasmValueType_AcceptsTests
 {
     [Test]
+    [Arguments(WasmValueKind.I31Ref, WasmValueKind.EqRef, true)]
+    [Arguments(WasmValueKind.StructRef, WasmValueKind.EqRef, true)]
+    [Arguments(WasmValueKind.ArrayRef, WasmValueKind.EqRef, true)]
+    [Arguments(WasmValueKind.EqRef, WasmValueKind.AnyRef, true)]
+    [Arguments(WasmValueKind.AnyRef, WasmValueKind.EqRef, false)]
+    [Arguments(WasmValueKind.ArrayRef, WasmValueKind.StructRef, false)]
+    [Arguments(WasmValueKind.AnyRef, WasmValueKind.FuncRef, false)]
+    [Arguments(WasmValueKind.ExternRef, WasmValueKind.AnyRef, false)]
+    public async Task 抽象参照の宣言型を照合する_同じ階層の上位型に代入できる(
+        WasmValueKind source,
+        WasmValueKind destination,
+        bool expected
+    )
+    {
+        // Arrange
+        var target = WasmValueType.Reference(destination, false);
+        var actual = WasmValueType.Reference(source, false);
+
+        // Act
+        var matches = target.Accepts(actual);
+
+        // Assert
+        await Assert.That(matches).IsEqualTo(expected);
+    }
+
+    [Test]
+    [Arguments(WasmValueKind.I31Ref, true, true)]
+    [Arguments(WasmValueKind.EqRef, true, true)]
+    [Arguments(WasmValueKind.AnyRef, true, true)]
+    [Arguments(WasmValueKind.StructRef, false, true)]
+    [Arguments(WasmValueKind.ArrayRef, false, true)]
+    [Arguments(WasmValueKind.FuncRef, false, false)]
+    [Arguments(WasmValueKind.ExternRef, false, false)]
+    public async Task 非nullのi31と同じ階層のnullを宣言型に渡す_値の種類とnull可否を照合する(
+        WasmValueKind targetKind,
+        bool acceptsI31,
+        bool acceptsNull
+    )
+    {
+        // Arrange
+        var target = WasmValueType.Reference(targetKind, true);
+        var required = WasmValueType.Reference(targetKind, false);
+        var gcNull = WasmValue.FromNullReference(WasmValueKind.I31Ref);
+
+        // Act
+        var present = target.Accepts(WasmValue.FromI31(0));
+        var nullable = target.Accepts(gcNull);
+        var nonNullable = required.Accepts(gcNull);
+
+        // Assert
+        using (Assert.Multiple())
+        {
+            await Assert.That(present).IsEqualTo(acceptsI31);
+            await Assert.That(nullable).IsEqualTo(acceptsNull);
+            await Assert.That(nonNullable).IsFalse();
+        }
+    }
+
+    [Test]
     [Arguments("0350006000005001006000004F0101600000")] // 先行グループの上位型
     [Arguments("014E0350006000005001006000004F0101600000")] // 同じグループ内の上位型
     public async Task 関数参照を別モジュールの型に代入する_宣言した上位型だけが直接と推移的に受け入れる(string section)
@@ -281,7 +340,12 @@ internal class WasmValueType_ToStringTests
     [Test]
     [Arguments(WasmValueKind.FuncRef, "func", "nofunc")]
     [Arguments(WasmValueKind.ExternRef, "extern", "noextern")]
-    public async Task 関数型と外部参照型のヒープ型を表示する_非nullと空の型に対応した名前になる(
+    [Arguments(WasmValueKind.AnyRef, "any", "none")]
+    [Arguments(WasmValueKind.EqRef, "eq", "none")]
+    [Arguments(WasmValueKind.I31Ref, "i31", "none")]
+    [Arguments(WasmValueKind.StructRef, "struct", "none")]
+    [Arguments(WasmValueKind.ArrayRef, "array", "none")]
+    public async Task 組み込み参照型を表示する_非nullの型名と階層ごとの底型名になる(
         WasmValueKind kind,
         string heapType,
         string bottomType

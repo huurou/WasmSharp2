@@ -43,9 +43,9 @@ public sealed class WasmTable
     /// 指定位置の参照を取得または設定する
     /// </summary>
     /// <param name="index">0からCount未満の要素位置</param>
-    /// <value>要素型が一致するnullまたは非null参照</value>
+    /// <value>宣言した要素型に適合するnullまたは非null参照</value>
     /// <exception cref="ArgumentOutOfRangeException">indexが現在のテーブルの範囲外の場合</exception>
-    /// <exception cref="ArgumentException">設定する値の型が要素型と一致しない場合</exception>
+    /// <exception cref="ArgumentException">設定する値が要素型に適合しない場合</exception>
     public WasmValue this[ulong index]
     {
         get
@@ -76,7 +76,7 @@ public sealed class WasmTable
     /// <summary>
     /// limitsに従って型別nullで初期化されたtableを生成する
     /// </summary>
-    /// <param name="elementType">要素の参照型 FuncRefまたはExternRef</param>
+    /// <param name="elementType">要素の参照型</param>
     /// <param name="limits">初期要素数と任意の最大要素数</param>
     /// <exception cref="ArgumentNullException">limitsがnullの場合</exception>
     /// <exception cref="ArgumentOutOfRangeException">elementTypeが参照型ではない場合</exception>
@@ -106,8 +106,7 @@ public sealed class WasmTable
             );
         }
 
-        var value = initialValue
-            ?? (type.ElementType == WasmValueKind.FuncRef ? WasmValue.FromFuncRef(null) : WasmValue.FromExternRef(null));
+        var value = initialValue ?? WasmValue.FromNullReference(type.ElementType);
         if (!type.ElementValueType.Accepts(value))
         {
             throw new ArgumentException(
@@ -152,7 +151,7 @@ public sealed class WasmTable
     private static WasmTableType Create32BitType(WasmValueKind elementType, WasmLimits limits)
     {
         ArgumentNullException.ThrowIfNull(limits);
-        if (!WasmTableType.IsSupportedElementType(elementType))
+        if (!elementType.IsReference())
         {
             throw new ArgumentOutOfRangeException(nameof(elementType), "tableには参照型を指定してください。");
         }
@@ -163,7 +162,7 @@ public sealed class WasmTable
     /// 指定位置の参照を取得する
     /// </summary>
     /// <param name="index">0からCount未満の要素位置</param>
-    /// <returns>要素型と参照先の同一性を保持した現在値 型別のnullを含む</returns>
+    /// <returns>格納された参照値 eqrefのテーブルでは、nullの種類は<see cref="WasmValueKind.AnyRef"/>、i31の種類は<see cref="WasmValueKind.I31Ref"/>になる</returns>
     /// <exception cref="ArgumentOutOfRangeException">indexが現在のtableの範囲外の場合</exception>
     public WasmValue Get(uint index)
     {
@@ -171,12 +170,12 @@ public sealed class WasmTable
     }
 
     /// <summary>
-    /// 指定位置に型の一致する参照を設定する
+    /// 指定位置に要素型に適合する参照を設定する
     /// </summary>
     /// <param name="index">0からCount未満の要素位置</param>
-    /// <param name="value">要素型が一致するnullまたは非null参照</param>
+    /// <param name="value">宣言した要素型に適合するnullまたは非null参照</param>
     /// <exception cref="ArgumentOutOfRangeException">indexが範囲外の場合 要素は変更しない</exception>
-    /// <exception cref="ArgumentException">valueの型が要素型と一致しない場合 要素は変更しない</exception>
+    /// <exception cref="ArgumentException">valueが要素型に適合しない場合 要素は変更しない</exception>
     public void Set(uint index, WasmValue value)
     {
         this[index] = value;
@@ -186,10 +185,10 @@ public sealed class WasmTable
     /// 既存要素を保持して増大し、追加要素を指定参照で初期化する
     /// </summary>
     /// <param name="delta">追加する要素数 0の場合も初期値の型を検査する</param>
-    /// <param name="initialValue">追加要素へ設定する、要素型が一致するnullまたは非null参照</param>
+    /// <param name="initialValue">追加要素へ設定する、宣言した要素型に適合するnullまたは非null参照</param>
     /// <param name="previousCount">成功・失敗にかかわらず、増大前の要素数</param>
     /// <returns>増大に成功した場合はtrue 宣言された最大値または保持上限を超える場合は、要素数と内容を変更せずfalse</returns>
-    /// <exception cref="ArgumentException">initialValueの型が要素型と一致しない場合 要素数と内容は変更しない</exception>
+    /// <exception cref="ArgumentException">initialValueが要素型に適合しない場合 要素数と内容は変更しない</exception>
     /// <exception cref="OutOfMemoryException">追加領域を割り当てられない場合 要素数と内容は変更しない</exception>
     public bool TryGrow(uint delta, WasmValue initialValue, out uint previousCount)
     {

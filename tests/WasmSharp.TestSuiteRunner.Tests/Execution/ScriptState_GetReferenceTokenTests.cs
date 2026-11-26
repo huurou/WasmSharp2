@@ -10,16 +10,16 @@ internal class ScriptState_GetReferenceTokenTests
     {
         // Arrange
         var state = new ScriptState("a.wast");
-        var externref = state.GetExternref(7);
+        var hostValue = state.GetHostValue(7);
         var first = new CaseId("x", 0);
         var equal = new CaseId("x", 0);
 
         // Act
         int[] tokens =
         [
-            state.GetReferenceToken(externref),
+            state.GetReferenceToken(hostValue),
             state.GetReferenceToken(first),
-            state.GetReferenceToken(externref),
+            state.GetReferenceToken(hostValue),
             state.GetReferenceToken(equal),
         ];
 

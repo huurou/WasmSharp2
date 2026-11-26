@@ -2,20 +2,20 @@ using WasmSharp.TestSuiteRunner.Execution;
 
 namespace WasmSharp.TestSuiteRunner.Tests.Execution;
 
-internal class ScriptState_GetExternrefNumberTests
+internal class ScriptState_GetHostValueNumberTests
 {
     [Test]
     [Arguments(0u)]
     [Arguments(1u)]
     [Arguments(uint.MaxValue)]
-    public async Task 割り当てたexternrefを指定する_元の番号を返す(uint number)
+    public async Task 割り当てたホスト値を指定する_元の番号を返す(uint number)
     {
         // Arrange
         var state = new ScriptState("a.wast");
-        var externref = state.GetExternref(number);
+        var hostValue = state.GetHostValue(number);
 
         // Act
-        var actual = state.GetExternrefNumber(externref);
+        var actual = state.GetHostValueNumber(hostValue);
 
         // Assert
         await Assert.That(actual).IsEqualTo(number);
@@ -26,12 +26,12 @@ internal class ScriptState_GetExternrefNumberTests
     {
         // Arrange
         var state = new ScriptState("a.wast");
-        var other = new ScriptState("b.wast").GetExternref(1);
-        state.GetExternref(1);
+        var other = new ScriptState("b.wast").GetHostValue(1);
+        state.GetHostValue(1);
 
         // Act
-        var unknown = state.GetExternrefNumber(new object());
-        var fromOtherInput = state.GetExternrefNumber(other);
+        var unknown = state.GetHostValueNumber(new object());
+        var fromOtherInput = state.GetHostValueNumber(other);
 
         // Assert
         using (Assert.Multiple())

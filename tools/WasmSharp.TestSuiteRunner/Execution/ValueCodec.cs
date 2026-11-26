@@ -10,7 +10,7 @@ namespace WasmSharp.TestSuiteRunner.Execution;
 /// </summary>
 /// <remarks>
 /// 整数と浮動小数点数の文字列は、同じ幅の符号なし10進数によるビット列として読み、範囲外の数を切り詰めない。wasm-tools形式の整数は負の10進表記も読み取る。
-/// 参照は型付きnullか、入力内で番号ごとに割り当てたexternrefだけを構築し、非nullのfuncrefを番号から推測しない。
+/// 番号付きのref.hostとref.externは入力内で同じ番号に同じホスト値を割り当て、参照の種類を保持する。
 /// </remarks>
 internal static class ValueCodec
 {
@@ -23,15 +23,15 @@ internal static class ValueCodec
     /// invokeの引数を、JSONの順序・型・ビット列を保ったvalueの列へ変換する。
     /// </summary>
     /// <remarks>
-    /// 途中の引数が不正な場合は部分配列を返さない。それまでに状態へ割り当てたexternrefの対応は保持する。
+    /// 途中の引数が不正な場合は部分配列を返さない。それまでに状態へ割り当てたホスト値の対応は保持する。
     /// </remarks>
     /// <param name="values">JSONの記載順の引数</param>
-    /// <param name="state">externrefの番号にホスト値を割り当てる入力の状態</param>
+    /// <param name="state">参照の番号にホスト値を割り当てる入力の状態</param>
     /// <param name="specVersion">使用できる参照型を決める仕様版</param>
     /// <param name="signedIntegers">整数と整数laneで負の10進表記を受け付けるかどうか</param>
-    /// <returns>ランタイムへ渡せる引数の配列 現行のWasmValueで表現できないanyrefを含む場合はnull</returns>
+    /// <returns>ランタイムへ渡す引数の配列</returns>
     /// <exception cref="ScriptFormatException">値の文字列が固定形式にない場合</exception>
-    internal static ImmutableArray<WasmValue>? CreateArguments(
+    internal static ImmutableArray<WasmValue> CreateArguments(
         ImmutableArray<ArgumentValue> values,
         ScriptState state,
         WasmSpecVersion specVersion = WasmSpecVersion.Core2,
@@ -41,32 +41,16 @@ internal static class ValueCodec
         var arguments = ImmutableArray.CreateBuilder<WasmValue>(values.Length);
         for (var i = 0; i < values.Length; i++)
         {
-            var value = values[i];
-            var path = $"action.args[{i}].value";
-            if (specVersion == WasmSpecVersion.Core3 && value.Type == "anyref")
-            {
-                // ref.hostをexternrefへ変換せず、moduleの成否を確認する前に番号の表記を検査する。
-                if (value.Value != NULL)
-                {
-                    ParseBits(value.Value, 32, path);
-                }
-            }
-            else
-            {
-                arguments.Add(CreateArgument(value, path, state, signedIntegers));
-            }
+            arguments.Add(CreateArgument(values[i], $"action.args[{i}].value", state, specVersion, signedIntegers));
         }
-        return arguments.Count == values.Length ? arguments.MoveToImmutable() : null;
+        return arguments.MoveToImmutable();
     }
 
     /// <summary>
     /// 実値を、型と幅を固定したhexと入力内の参照tokenで記録する。
     /// </summary>
-    /// <remarks>
-    /// Core 2.0の7値型について、数値・v128・参照の記録を作る。
-    /// </remarks>
-    /// <param name="value">Core 2.0の7値型のいずれかであるvalue</param>
-    /// <param name="state">参照tokenとexternrefの番号を管理する入力の状態</param>
+    /// <param name="value">実行で得た数値・ベクトル・参照</param>
+    /// <param name="state">参照tokenとホスト値の番号を管理する入力の状態</param>
     /// <returns>数値の全ビット、v128の上下64ビット、参照のnull・token・元番号を型とともに保持する記録</returns>
     internal static ValueRecord Record(WasmValue value, ScriptState state)
     {
@@ -80,8 +64,8 @@ internal static class ValueCodec
                 Low64 = ToHex(value.AsV128().Low64, 64),
                 High64 = ToHex(value.AsV128().High64, 64),
             },
-            WasmValueKind.FuncRef => RecordReference(record, value.AsFuncRef(), state),
-            _ => RecordReference(record, value.AsExternRef(), state),
+            WasmValueKind.I31Ref => record with { Bits = ToHex((uint)value.AsI31Unsigned(), 32), IsNull = false },
+            _ => RecordReference(record, GetReferenceObject(value), state),
         };
     }
 
@@ -105,7 +89,7 @@ internal static class ValueCodec
     /// <summary>
     /// JSONで使う値型名を返す。
     /// </summary>
-    /// <param name="kind">Core 2.0の7値型のいずれか</param>
+    /// <param name="kind">結果の宣言型または実行時の値の種類</param>
     /// <returns>JSONへ記録する小文字の型名</returns>
     internal static string GetTypeName(WasmValueKind kind)
     {
@@ -117,7 +101,10 @@ internal static class ValueCodec
             WasmValueKind.F64 => "f64",
             WasmValueKind.V128 => "v128",
             WasmValueKind.FuncRef => "funcref",
-            _ => "externref",
+            WasmValueKind.ExternRef => "externref",
+            WasmValueKind.AnyRef => "anyref",
+            WasmValueKind.I31Ref => "i31ref",
+            _ => throw new ArgumentOutOfRangeException(nameof(kind)),
         };
     }
 
@@ -212,12 +199,24 @@ internal static class ValueCodec
     /// </summary>
     /// <param name="value">変換済みスクリプトの引数 NaN patternは受け付けない</param>
     /// <param name="path">不正な値を報告するJSON上の位置</param>
-    /// <param name="state">非nullのexternrefを番号ごとに割り当てる入力の状態</param>
+    /// <param name="state">番号付き参照のホスト値を割り当てる入力の状態</param>
+    /// <param name="specVersion">使用できる参照型を決める仕様版</param>
     /// <param name="signedIntegers">整数で負の10進表記を許容するかどうか</param>
-    /// <returns>型とビット列を保持する引数のvalue externrefは同じ番号のホスト値を参照する</returns>
+    /// <returns>型・ビット列・参照の同一性を保持する引数のvalue</returns>
     /// <exception cref="ScriptFormatException">値の文字列やlane数が不正、または非nullのfuncrefなど固定形式外の引数の場合</exception>
-    private static WasmValue CreateArgument(ArgumentValue value, string path, ScriptState state, bool signedIntegers)
+    private static WasmValue CreateArgument(
+        ArgumentValue value,
+        string path,
+        ScriptState state,
+        WasmSpecVersion specVersion,
+        bool signedIntegers
+    )
     {
+        object? ReadHostObject()
+        {
+            return value.Value == NULL ? null : state.GetHostValue((uint)ParseBits(value.Value, 32, path));
+        }
+
         return value switch
         {
             { Type: "i32" } => WasmValue.FromI32(unchecked((int)ParseBits(value.Value, 32, path, signedIntegers))),
@@ -225,9 +224,12 @@ internal static class ValueCodec
             { Type: "f32" } => WasmValue.FromF32Bits((uint)ParseBits(value.Value, 32, path)),
             { Type: "f64" } => WasmValue.FromF64Bits(ParseBits(value.Value, 64, path)),
             { Type: "v128", LaneType: { } laneType } => CreateV128(laneType, value.Lanes, path, signedIntegers),
+            { Value: null }
+                when specVersion == WasmSpecVersion.Core3
+                    && ArgumentValue.GetCore3NullReferenceKind(value.Type) is { } kind => WasmValue.FromNullReference(kind),
             { Type: "funcref", Value: NULL } => WasmValue.FromFuncRef(null),
-            { Type: "externref", Value: NULL } => WasmValue.FromExternRef(null),
-            { Type: "externref" } => WasmValue.FromExternRef(state.GetExternref((uint)ParseBits(value.Value, 32, path))),
+            { Type: "externref" } => WasmValue.FromExternRef(ReadHostObject()),
+            { Type: "anyref" } when specVersion == WasmSpecVersion.Core3 => WasmValue.FromHostRef(ReadHostObject()),
             _ => throw new ScriptFormatException($"{path}の{value.Value}は固定形式にない{value.Type}の引数です。"),
         };
     }
@@ -266,15 +268,30 @@ internal static class ValueCodec
     }
 
     /// <summary>
+    /// 番号とtokenの照合に使う参照先を取得する。i31は値で識別するため参照先を持たない。
+    /// </summary>
+    internal static object? GetReferenceObject(WasmValue value)
+    {
+        return value.Kind switch
+        {
+            WasmValueKind.FuncRef => value.AsFuncRef(),
+            WasmValueKind.ExternRef => value.AsExternRef(),
+            WasmValueKind.AnyRef => value.AsHostRef(),
+            WasmValueKind.I31Ref => null,
+            _ => throw new ArgumentOutOfRangeException(nameof(value)),
+        };
+    }
+
+    /// <summary>
     /// 型の記録へ参照のnullと入力内の同一性を加えた新しい記録を作る。
     /// </summary>
     /// <param name="record">参照型の名前を持つ元の記録</param>
-    /// <param name="reference">funcrefまたはexternrefの参照先 nullも許容する</param>
-    /// <param name="state">参照tokenと、割り当てたexternrefの元番号を管理する入力の状態</param>
-    /// <returns>nullならIsNullだけを設定し、非nullならtokenと取得できたexternref番号を追加した記録</returns>
+    /// <param name="reference">関数、外部参照または内部のホスト参照の参照先 nullも許容する</param>
+    /// <param name="state">参照tokenと、割り当てたホスト値の元番号を管理する入力の状態</param>
+    /// <returns>nullならIsNullだけを設定し、非nullならtokenと取得できたホスト値の番号を追加した記録</returns>
     private static ValueRecord RecordReference(ValueRecord record, object? reference, ScriptState state)
     {
-        // 番号はランナーが割り当てたexternrefだけが持ち、funcrefや未知の参照ではnullになる。
+        // 番号はランナーが割り当てたホスト値だけが持ち、関数や未知の参照ではnullになる。
         return reference is null
             ? record with
             {
@@ -284,7 +301,7 @@ internal static class ValueCodec
             {
                 IsNull = false,
                 Token = state.GetReferenceToken(reference),
-                ExternrefNumber = state.GetExternrefNumber(reference),
+                ExternrefNumber = state.GetHostValueNumber(reference),
             };
     }
 
