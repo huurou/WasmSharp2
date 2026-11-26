@@ -36,5 +36,5 @@ internal sealed class DefinedFunction(WasmInstance instance, uint functionIndex,
     internal FunctionCode Code => Instance.Module.FunctionCodes[(int)_definitionIndex];
 
     /// <inheritdoc />
-    public override WasmFunctionType Type => Instance.Module.Types[(int)Definition.TypeIndex];
+    public override WasmFunctionType Type => Instance.Module.FunctionTypeAt(Definition.TypeIndex);
 }

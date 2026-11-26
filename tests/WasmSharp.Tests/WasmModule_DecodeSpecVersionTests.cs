@@ -52,7 +52,7 @@ internal partial class WasmModule_DecodeTests
         );
 
         // Act
-        var types = WasmModule.Decode(bytes, WasmSpecVersion.Core3).Types;
+        var types = WasmModule.Decode(bytes, WasmSpecVersion.Core3).Types.Cast<WasmFunctionType>().ToArray();
 
         // Assert
         using (Assert.Multiple())

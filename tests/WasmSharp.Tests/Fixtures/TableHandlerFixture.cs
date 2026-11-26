@@ -35,7 +35,7 @@ internal static class TableHandlerFixture
             definitions.Add(ElementDefinition.Passive(element[0].Kind, [.. initializers], 0));
         }
         var module = new WasmModule(
-            [new([], [])],
+            [new WasmFunctionType([], [])],
             [new(0, 30, [], []), new(0, 12345678900, [], [])],
             [],
             12345678910,

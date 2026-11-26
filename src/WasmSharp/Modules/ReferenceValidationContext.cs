@@ -73,11 +73,11 @@ internal sealed class ReferenceValidationContext
         var functionIndex = 0;
         foreach (var import in module.Imports.OfType<FunctionImport>())
         {
-            functionTypes[functionIndex++] = module.Types[(int)import.TypeIndex];
+            functionTypes[functionIndex++] = module.FunctionTypeAt(import.TypeIndex);
         }
         foreach (var function in module.Functions)
         {
-            functionTypes[functionIndex++] = module.Types[(int)function.TypeIndex];
+            functionTypes[functionIndex++] = module.FunctionTypeAt(function.TypeIndex);
         }
 
         var declaredFunctions = ImmutableHashSet.CreateBuilder<uint>();
