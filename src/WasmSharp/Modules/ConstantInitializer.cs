@@ -150,23 +150,21 @@ internal static class ConstantInitializer
     )
     {
         var instructionSet = InstructionSet.ForVersion(specVersion);
-        if (
-            expression.Length == 2
-            && instructionSet[expression[0].Opcode].Validation
-                is ValidationRule.Constant
-                    or ValidationRule.RefFunc
-                    or ValidationRule.GlobalGet
-        )
+        var instructions = expression.AsSpan()[..^1];
+        if (instructions is [var single])
         {
-            return ReadValue(expression[0], globals, functions);
+            var rule = instructionSet[single.Opcode].Validation;
+            if (rule != ValidationRule.StructNew)
+            {
+                return ReadValue(single, rule, globals, functions, types);
+            }
         }
 
         // 二項演算までの深さはローカルに収める。値を積み切ったときだけスタックを拡張する。
         Span<WasmValue> operands = [default, default];
         var count = 0;
-        for (var index = 0; index < expression.Length - 1; index++)
+        foreach (var instruction in instructions)
         {
-            var instruction = expression[index];
             var descriptor = instructionSet[instruction.Opcode];
             WasmValue result;
             if (descriptor.ConstantBinaryOperation is { } operation)
@@ -184,17 +182,14 @@ internal static class ConstantInitializer
                 count -= type.Fields.Length;
                 result = WasmStruct.Create(type, operands.Slice(count, type.Fields.Length));
             }
-            else if (descriptor.Validation == ValidationRule.StructNewDefault)
-            {
-                result = WasmStruct.CreateDefault((WasmStructType)types[(int)instruction.Index]);
-            }
             else
             {
-                result = ReadValue(instruction, globals, functions);
+                result = ReadValue(instruction, descriptor.Validation, globals, functions, types);
             }
             if (count == operands.Length)
             {
-                var expanded = new WasmValue[count + Math.Min(count, expression.Length - count)];
+                var capacity = (int)Math.Min(2L * count, instructions.Length);
+                var expanded = new WasmValue[capacity];
                 operands.CopyTo(expanded);
                 operands = expanded;
             }
@@ -204,19 +199,23 @@ internal static class ConstantInitializer
     }
 
     /// <summary>
-    /// 定数命令が積む即値または構築済みの外部値を取得する
+    /// 先行するオペランドを消費しない検証済み定数命令の結果を返す
     /// </summary>
     private static WasmValue ReadValue(
         DecodedInstruction initializer,
+        ValidationRule rule,
         ReadOnlySpan<WasmGlobal> globals,
-        ReadOnlySpan<WasmFunction> functions
+        ReadOnlySpan<WasmFunction> functions,
+        ReadOnlySpan<WasmDefinedType> types
     )
     {
-        if (initializer.Opcode == new OpcodeKey(0, 0xD2))
+        return rule switch
         {
-            return WasmValue.FromFuncRef(functions[(int)initializer.Index]);
-        }
-        return initializer.Opcode == new OpcodeKey(0, 0x23) ? globals[(int)initializer.Index].Value : initializer.Immediate;
+            ValidationRule.RefFunc => WasmValue.FromFuncRef(functions[(int)initializer.Index]),
+            ValidationRule.GlobalGet => globals[(int)initializer.Index].Value,
+            ValidationRule.StructNewDefault => WasmStruct.CreateDefault((WasmStructType)types[(int)initializer.Index]),
+            _ => initializer.Immediate,
+        };
     }
 
     /// <summary>

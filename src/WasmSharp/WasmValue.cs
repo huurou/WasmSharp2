@@ -401,7 +401,7 @@ public readonly struct WasmValue
     /// </remarks>
     public override bool Equals(object? obj)
     {
-        return obj is WasmValue other && this == other;
+        return obj is WasmValue other && HasSameValue(other);
     }
 
     /// <inheritdoc/>
@@ -413,12 +413,17 @@ public readonly struct WasmValue
     /// <summary>
     /// <see cref="Equals(object)"/>と同じ基準で2つの値が等しいかを返す
     /// </summary>
-    public static bool operator ==(WasmValue left, WasmValue right) => left.EqualityFields.Equals(right.EqualityFields);
+    public static bool operator ==(WasmValue left, WasmValue right) => left.HasSameValue(right);
 
     /// <summary>
     /// <see cref="Equals(object)"/>と同じ基準で2つの値が異なるかを返す
     /// </summary>
-    public static bool operator !=(WasmValue left, WasmValue right) => !(left == right);
+    public static bool operator !=(WasmValue left, WasmValue right) => !left.HasSameValue(right);
+
+    private bool HasSameValue(WasmValue other)
+    {
+        return EqualityFields.Equals(other.EqualityFields);
+    }
 
     /// <summary>
     /// valueを取得する操作が、保持中の型に対応することを確認する

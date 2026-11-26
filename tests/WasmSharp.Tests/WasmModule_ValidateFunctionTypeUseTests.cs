@@ -26,6 +26,7 @@ internal partial class WasmModule_ValidateTests
         using (Assert.Multiple())
         {
             await Assert.That(error!.Message).StartsWith("non-function type 1");
+            await Assert.That(error.Message).Contains("関数型ではありません");
             await Assert.That(error.Location?.FunctionIndex).IsEqualTo(0u);
             await Assert.That(error.Location?.SectionId).IsEqualTo(expectedSection);
         }

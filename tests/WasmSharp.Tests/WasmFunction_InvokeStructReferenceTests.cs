@@ -206,7 +206,8 @@ internal partial class WasmFunction_InvokeTests
 
         // Act
         var token = externalize.Invoke(context, [original]).Values[0].AsExternRef();
-        var restored = internalize.Invoke(context, [WasmValue.FromExternRef(token)]).Values[0];
+        var external = WasmValue.FromExternRef(token);
+        var restored = internalize.Invoke(context, [external]).Values[0];
         var updated = writeAndRead.Invoke(context, [restored, original]).Values[0].AsI32();
         var externalAgain = externalize.Invoke(context, [restored]).Values[0].AsExternRef();
         var externalOriginal = externalize.Invoke(context, [original]).Values[0].AsExternRef();
@@ -217,8 +218,11 @@ internal partial class WasmFunction_InvokeTests
             await Assert.That(updated).IsEqualTo(37);
             await Assert.That(restored).IsEqualTo(original);
             await Assert.That(known.Contains(restored)).IsTrue();
+            await Assert.That(restored.AsStructRef()).IsSameReferenceAs(token);
             await Assert.That(externalAgain).IsSameReferenceAs(token);
             await Assert.That(externalOriginal).IsSameReferenceAs(token);
+            // Act & Assert
+            await Assert.That(external.AsStructRef).ThrowsExactly<InvalidOperationException>();
         }
     }
 

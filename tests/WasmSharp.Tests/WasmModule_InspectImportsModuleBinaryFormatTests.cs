@@ -191,7 +191,10 @@ internal partial class WasmModule_InspectImportsTests
     {
         // Arrange
         var binary = HostLinkingModuleBinary.Create(
-            HostLinkingModuleBinary.Section(1, [1, 0x4E, 2, 0x60, 1, 0x63, 1, 0, 0x5F, 3, 0x64, 0, 0, 0x78, 1, 0x77, 0]),
+            HostLinkingModuleBinary.Section(
+                1,
+                [1, 0x4E, 2, 0x60, 1, 0x63, 1, 0, 0x5F, 4, 0x64, 0, 0, 0x78, 1, 0x77, 0, 0x63, 1, 1]
+            ),
             HostLinkingModuleBinary.Imports(("env", "callback", 0, [0]))
         );
 
@@ -207,7 +210,7 @@ internal partial class WasmModule_InspectImportsTests
             await Assert.That(parameter.Kind).IsEqualTo(WasmValueKind.StructRef);
             await Assert.That(parameter.FunctionType).IsNull();
             await Assert.That(parameter.IsNullable).IsTrue();
-            await Assert.That(fields.Length).IsEqualTo(3);
+            await Assert.That(fields.Length).IsEqualTo(4);
             await Assert.That(fields[0].ValueType).IsEqualTo(WasmValueType.FunctionReference(import.Type, false));
             await Assert.That(fields[0].IsMutable).IsFalse();
             await Assert.That(fields[0].PackedType).IsEqualTo(WasmPackedType.None);
@@ -216,6 +219,8 @@ internal partial class WasmModule_InspectImportsTests
             await Assert.That(fields[1].IsMutable).IsTrue();
             await Assert.That(fields[2].PackedType).IsEqualTo(WasmPackedType.I16);
             await Assert.That(fields[2].IsMutable).IsFalse();
+            await Assert.That(fields[3].ValueType).IsEqualTo(parameter);
+            await Assert.That(fields[3].IsMutable).IsTrue();
             await Assert.That(WasmValueType.StructReference(structure, true)).IsEqualTo(parameter);
             await Assert.That(((WasmValueType)WasmValueKind.EqRef).Accepts(parameter)).IsTrue();
             await Assert.That(parameter.Accepts(WasmValueKind.StructRef)).IsFalse();

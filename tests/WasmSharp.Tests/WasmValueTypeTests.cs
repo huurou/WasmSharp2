@@ -93,6 +93,19 @@ internal class WasmValueType_FunctionReferenceTests
     }
 }
 
+internal class WasmValueType_StructReferenceTests
+{
+    [Test]
+    public async Task 構造体型がnullである_参照先が必要な引数を示して拒否する()
+    {
+        // Act & Assert
+        var failure = await Assert
+            .That(() => WasmValueType.StructReference(null!, true))
+            .ThrowsExactly<ArgumentNullException>();
+        await Assert.That(failure!.ParamName).IsEqualTo("structType");
+    }
+}
+
 internal class WasmValueType_AcceptsTests
 {
     [Test]

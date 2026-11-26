@@ -6,14 +6,16 @@ namespace WasmSharp.Tests;
 internal partial class WasmModule_ValidateTests
 {
     [Test]
+    [Arguments("FB0003", 0, "unknown type 3: 参照する構造体型が存在しません")]
     [Arguments("FB00FFFFFFFF0F", 0, "unknown type 4294967295")]
-    [Arguments("FB020200", 0, "non-structure type 2")]
+    [Arguments("FB020200", 0, "non-structure type 2: 指定した型は構造体型ではありません")]
+    [Arguments("FB020003", 0, "unknown field 3: 指定したフィールドが存在しません")]
     [Arguments("FB0200FFFFFFFF0F", 0, "unknown field 4294967295")]
-    [Arguments("00FB018000", 1, "field type is not defaultable")]
-    [Arguments("00FB020001", 1, "field is packed")]
-    [Arguments("00FB030000", 1, "field is unpacked")]
+    [Arguments("00FB018000", 1, "field type is not defaultable: 非nullの参照フィールドには初期値が必要")]
+    [Arguments("00FB020001", 1, "field is packed: 詰め込みフィールドの読み取りには拡張方法が必要")]
+    [Arguments("00FB030000", 1, "field is unpacked: 詰め込みフィールドだけを拡張")]
     [Arguments("00FB040002", 1, "field is unpacked")]
-    [Arguments("FB050000", 0, "field is immutable")]
+    [Arguments("FB050000", 0, "field is immutable: このフィールドは変更できません")]
     [Arguments("4100FB0000", 2, "type mismatch")] // 非nullの参照フィールドにi32を渡す。
     [Arguments("D001FB020000", 2, "type mismatch")] // 別の構造体型の参照から読み取る。
     [Arguments("D0004200FB050001", 4, "type mismatch")] // i8フィールドにi64を書き込む。

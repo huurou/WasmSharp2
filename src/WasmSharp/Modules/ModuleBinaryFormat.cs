@@ -371,7 +371,7 @@ internal static class ModuleBinaryFormat
             return [];
         }
         var fields = ImmutableArray.CreateBuilder<WasmFieldType>();
-        for (uint index = 0; index < count; index++)
+        do
         {
             var offset = reader.Position;
             var code = reader.ReadS7();
@@ -395,7 +395,7 @@ internal static class ModuleBinaryFormat
                 }
             }
             fields.Add(new WasmFieldType(valueType, ReadMutability(ref reader, "フィールド"), packed));
-        }
+        } while (fields.Count < count);
         return fields.DrainToImmutable();
     }
 

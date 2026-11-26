@@ -133,7 +133,7 @@ internal partial class WasmFunction_InvokeTests
                     .. Enumerable.Range(0, fieldKinds.Length).SelectMany(x => new byte[] { 0x20, 0, 0xFB, 2, 0, (byte)x }),
                 ],
                 typeIndex: 1,
-                locals: [1, 1, 0x63, 0]
+                locals: [1, 1, 0x64, 0] // struct.new_defaultの結果を非nullのlocalに保存する。
             )
             .Validate()
             .Instantiate(context, [])
@@ -186,7 +186,7 @@ internal partial class WasmFunction_InvokeTests
                     1,
                 ],
                 typeIndex: 1,
-                locals: [1, 1, 0x63, 0]
+                locals: [1, 1, 0x64, 0] // struct.newの結果を非nullのlocalに保存する。
             )
             .Validate()
             .Instantiate(context, [])

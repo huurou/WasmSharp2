@@ -1,6 +1,5 @@
 using System.Collections.Immutable;
 using WasmSharp.Execution;
-using WasmSharp.Instructions;
 using WasmSharp.Modules;
 
 namespace WasmSharp.Tests.Execution;
@@ -37,6 +36,17 @@ internal class FunctionCode_ConstructorTests
             await Assert.That(code.LocalCount).IsEqualTo(5UL);
             await Assert.That(code.MaxOperandStack).IsEqualTo(7);
         }
+    }
+
+    [Test]
+    public async Task 未対応の値型を持つローカルを宣言する_初期値を作成するときに拒否する()
+    {
+        // Arrange
+        LocalDeclaration[] locals = [new LocalDeclaration(1, WasmValueKind.ExnRef)];
+
+        // Act & Assert
+        var error = await Assert.That(() => new FunctionCode([], locals, 0)).ThrowsExactly<InvalidOperationException>();
+        await Assert.That(error!.Message).Contains("値型");
     }
 
     [Test]

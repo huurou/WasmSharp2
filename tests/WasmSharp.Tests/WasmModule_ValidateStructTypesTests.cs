@@ -47,9 +47,14 @@ internal partial class WasmModule_ValidateTests
     }
 
     [Test]
-    public async Task 不変フィールドを具体的な構造体参照へ狭め可変フィールドの型を保って末尾に追加する_継承を検証できる()
+    [Arguments(false)]
+    [Arguments(true)]
+    public async Task 不変フィールドの型を狭め可変フィールドの型を保つ_フィールドを追加する場合も同数の場合も継承できる(
+        bool appendField
+    )
     {
         // Arrange
+        byte[] suffix = appendField ? [0x7E, 0] : [];
         var binary = HostLinkingModuleBinary.Create(
             HostLinkingModuleBinary.Section(
                 1,
@@ -67,14 +72,13 @@ internal partial class WasmModule_ValidateTests
                     1,
                     0,
                     0x5F,
-                    3,
+                    (byte)(appendField ? 3 : 2),
                     0x64,
                     1,
                     0,
                     0x78,
                     1,
-                    0x7E,
-                    0, // struct { ref 1, mut i8, i64 }
+                    .. suffix, // 子は先頭の2フィールドを継承し、任意でi64を末尾に持つ。
                 ]
             )
         );
@@ -117,7 +121,7 @@ internal partial class WasmModule_ValidateTests
     }
 
     [Test]
-    public async Task 可変フィールドの値型をeqrefからstructrefへ狭める_不変と可変のフィールドに使える値型を報告する()
+    public async Task 可変フィールドの値型をeqrefからstructrefへ狭める_構造体の上位型とフィールドの継承条件を報告する()
     {
         // Arrange
         var binary = HostLinkingModuleBinary.Create(
@@ -130,13 +134,17 @@ internal partial class WasmModule_ValidateTests
         using (Assert.Multiple())
         {
             await Assert.That(error!.Message).StartsWith("sub type 1 does not match super type 0");
+            await Assert
+                .That(error.Message)
+                .Contains("上位型には構造体型を指定し、そのすべてのフィールドを子の構造体の先頭に同じ順序");
+            await Assert.That(error.Message).Contains("対応するフィールドの可変性と詰め込み型は一致");
             await Assert.That(error.Message).Contains("不変フィールドには親と同じ値型かその部分型");
             await Assert.That(error.Message).Contains("可変フィールドには親と同値の値型");
         }
     }
 
     [Test]
-    [Arguments("025F004F01005F00", "sub type 1 has final super type 0", 15L)]
+    [Arguments("025F004F01005F00", "sub type 1 has final super type 0: finalな構造体型", 15L)]
     [Arguments("025F016301005F00", "unknown type 1", 14L)] // フィールドが後続グループを参照
     [Arguments("015F01630900", "unknown type 9", 14L)] // 範囲外の参照
     public async Task 構造体の親がfinalであるかフィールドの型番号を解決できない_検証で型番号の位置を報告する(

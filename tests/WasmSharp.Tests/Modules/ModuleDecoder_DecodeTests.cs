@@ -47,7 +47,7 @@ internal partial class ModuleDecoder_DecodeTests
     [Arguments("0404017F0000", "malformed reference type", 11L, (byte)4)]
     [Arguments("040401F00000", "integer representation too long", 12L, (byte)4)]
     [Arguments("020401000004", "malformed import kind", 13L, (byte)2)]
-    [Arguments("0606017F0241000B", "malformed mutability", 12L, (byte)6)]
+    [Arguments("0606017F0241000B", "malformed mutability: globalの可変性", 12L, (byte)6)]
     [Arguments("070401000400", "malformed export kind", 12L, (byte)7)]
     [Arguments("0D", "malformed section id", 8L, (byte)13)]
     [Arguments("01010001", "unexpected content after last section", 11L, (byte)1)]
