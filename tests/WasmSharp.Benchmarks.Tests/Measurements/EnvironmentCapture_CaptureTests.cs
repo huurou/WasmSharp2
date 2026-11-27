@@ -96,6 +96,22 @@ internal partial class EnvironmentCapture_CaptureTests
                     await Assert.That(captured.Power.PowerSource).IsEqualTo(expectedSource);
                 }
             }
+            else if (OperatingSystem.IsLinux())
+            {
+                var cpuInfo = File.Exists("/proc/cpuinfo") ? File.ReadAllText("/proc/cpuinfo") : "";
+                var model = LinuxCpuModelRegex().Match(cpuInfo);
+                if (model.Success)
+                {
+                    await Assert.That(captured.Cpu).IsEqualTo(model.Groups["name"].Value.Trim());
+                }
+                else
+                {
+                    await Assert.That(captured.Cpu).StartsWith("Unavailable: ").And.Contains("CPU名");
+                }
+                await Assert.That(captured.Power.PlanId).IsEqualTo("Unavailable");
+                await Assert.That(captured.Power.PlanName).StartsWith("Unavailable: ").And.Contains("対応していません");
+                await Assert.That(captured.Power.PowerSource).IsEqualTo(PowerSource.Unknown);
+            }
             await Assert.That(collector.Role).IsEqualTo("Collector");
             await Assert.That(collector.JobId).IsEqualTo("");
             await Assert.That(collector.LaunchCount).IsEqualTo(1);
@@ -208,4 +224,7 @@ internal partial class EnvironmentCapture_CaptureTests
 
     [GeneratedRegex(@"(?<id>[0-9a-fA-F-]{36})\s+\((?<name>.*)\)$")]
     private static partial Regex PowerPlanRegex();
+
+    [GeneratedRegex(@"^model name[ \t]*:(?<name>.*)$", RegexOptions.Multiline)]
+    private static partial Regex LinuxCpuModelRegex();
 }

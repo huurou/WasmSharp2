@@ -457,6 +457,7 @@ internal static class ModuleBinaryFormat
         const int InitialCapacityLimit = 4;
         var types = ImmutableArray.CreateBuilder<WasmValueType>((int)Math.Min(count, InitialCapacityLimit));
         do
+        // Stryker disable once Block,Statement: ループ本体を空にすると、読み取った型の件数が増えずループが終了しない。
         {
             types.Add(ReadValueType(ref reader));
         } while (types.Count < count);

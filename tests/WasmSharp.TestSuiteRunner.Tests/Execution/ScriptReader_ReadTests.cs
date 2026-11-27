@@ -465,6 +465,10 @@ internal class ScriptReader_ReadTests
         "F32"
     )]
     [Arguments(
+        """{"type":"action","line":7,"action":{"type":"invoke","field":"f","args":[{"type":"i16","value":"0"}]},"expected":[]}""",
+        "action.args[0].typeのi16は固定形式にない値です。"
+    )]
+    [Arguments(
         """{"type": "assert_return", "line": 7, "action": {"type": "invoke", "field": "f", "args": [{"type": "i32", "value": 1}]}, "expected": []}""",
         "action.args[0].value"
     )]

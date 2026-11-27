@@ -37,7 +37,10 @@ public abstract class WasmDefinedType
         {
             var structure = new StructureReader(member);
             hash.Add(structure.Header);
-            while (structure.TryRead(out var value, out var storage))
+            while (
+                // Stryker disable once Boolean: 条件を反転すると、要素が空の型で読み取りを繰り返す。
+                structure.TryRead(out var value, out var storage)
+            )
             {
                 if (storage != default)
                 {
@@ -322,6 +325,7 @@ public abstract class WasmDefinedType
                 {
                     return false;
                 }
+                // Stryker disable once Logical: 両方を要求すると、別々に生成した自己参照型の同じ組を照合し続ける。
                 if (local || ReferenceEquals(nested, otherTarget))
                 {
                     return true;
@@ -388,16 +392,25 @@ public abstract class WasmDefinedType
         internal bool TryRead(out WasmValueType value, out (bool IsMutable, WasmPackedType PackedType) storage)
         {
             storage = default;
-            if (Take(ref _supertypes, out value) || Take(ref _parameters, out value) || Take(ref _results, out value))
+            if (
+                // Stryker disable once Boolean: 条件を反転すると、3つの型列がすべて空でも読み取り成功を返し続ける。
+                Take(ref _supertypes, out value)
+                || Take(ref _parameters, out value)
+                || Take(ref _results, out value)
+            )
             {
                 return true;
             }
-            if (Take(ref _fields, out var field))
+            if (
+                // Stryker disable once Boolean: 条件を反転すると、フィールドが空でも読み取り成功を返し続ける。
+                Take(ref _fields, out var field)
+            )
             {
                 value = field.ValueType;
                 storage = (field.IsMutable, field.PackedType);
                 return true;
             }
+            // Stryker disable once Boolean: 終端でtrueを返すと、呼び出し側の列挙が終了しない。
             return false;
         }
 
@@ -407,6 +420,7 @@ public abstract class WasmDefinedType
             if (remaining.IsEmpty)
             {
                 value = default;
+                // Stryker disable once Boolean: 空の列でtrueを返すと、TryReadは次の列に進めず同じ位置を読み続ける。
                 return false;
             }
             value = remaining[0];

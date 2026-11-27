@@ -842,6 +842,7 @@ internal static class FunctionValidator
             }
             // elseとendでは、この制御に入ってから初めて代入したlocalだけを未初期化に戻す。
             while (initializationOrder.Count > frame.InitializedLocalCount)
+            // Stryker disable once Block,Statement: ループ本体を空にすると初期化履歴が減らず、巻き戻しが終了しない。
             {
                 initializedLocals.Remove(initializationOrder.Pop());
             }

@@ -44,32 +44,32 @@ internal class ReportStore_ReadTests
     [Test]
     [Arguments(
         """
-            "schema_version":2,"kind":"run_report"
-            """,
+        "schema_version":2,"kind":"run_report"
+        """,
         "schema_version"
     )]
     [Arguments(
         """
-            "kind":"run_report"
-            """,
+        "kind":"run_report"
+        """,
         "schema_version"
     )]
     [Arguments(
         """
-            "schema_version":1
-            """,
+        "schema_version":1
+        """,
         "kind"
     )]
     [Arguments(
         """
-            "schema_version":1,"kind":"comparison_report"
-            """,
+        "schema_version":1,"kind":"comparison_report"
+        """,
         "kind"
     )]
     [Arguments(
         """
-            "schema_version":1,"kind":1
-            """,
+        "schema_version":1,"kind":1
+        """,
         "kind"
     )]
     public async Task 有効な実行結果のschemaやkindだけを変える_読み替えず読取を拒否する(string header, string expected)
@@ -96,43 +96,43 @@ internal class ReportStore_ReadTests
     [Test]
     [Arguments(
         """
-            "kind":"run_report"
-            """,
+        "kind":"run_report"
+        """,
         """
-            "kind":"run_report","kind":"run_report"
-            """
+        "kind":"run_report","kind":"run_report"
+        """
     )]
     [Arguments(
         """
-            "outcome":"failed"
-            """,
+        "outcome":"failed"
+        """,
         """
-            "outcome":"failed","outcome":"passed"
-            """
+        "outcome":"failed","outcome":"passed"
+        """
     )]
     [Arguments(
         """
-            "outcome":"failed"
-            """,
+        "outcome":"failed"
+        """,
         """
-            "outcome":1
-            """
+        "outcome":1
+        """
     )]
     [Arguments(
         """
-            "outcome":"failed"
-            """,
+        "outcome":"failed"
+        """,
         """
-            "outcome":"runtime_unsupported, out_of_scope"
-            """
+        "outcome":"runtime_unsupported, out_of_scope"
+        """
     )]
     [Arguments(
         """
-            "outcome":"failed"
-            """,
+        "outcome":"failed"
+        """,
         """
-            "outcome":"passed,failed"
-            """
+        "outcome":"passed,failed"
+        """
     )]
     public async Task 有効な実行結果に重複キーや数値と複合表記の分類を含める_構造不正として読取を拒否する(
         string original,
@@ -184,20 +184,14 @@ internal class ReportStore_ReadTests
     }
 
     [Test]
-    [Arguments(
-        """
-            "cases":[
-            """
-    )]
-    [Arguments(
-        """
-            "inputs":[
-            """
-    )]
-    public async Task 有効な実行結果の一覧にnullの要素を含める_構造不正として読取を拒否する(string original)
+    [Arguments("cases")]
+    [Arguments("inputs")]
+    [Arguments("features")]
+    public async Task 有効な実行結果の一覧にnullの要素を含める_構造不正として読取を拒否する(string propertyName)
     {
         // Arrange
         using var directory = new TemporaryDirectory();
+        var original = $"\"{propertyName}\":[";
         var path = await WriteModifiedSampleAsync(directory, original, original + "null,");
 
         // Act & Assert
@@ -206,7 +200,7 @@ internal class ReportStore_ReadTests
         {
             await Assert.That(exception!.Message).Contains(path);
             await Assert.That(exception.InnerException).IsTypeOf<JsonException>();
-            await Assert.That(exception.InnerException!.Message).Contains("null");
+            await Assert.That(exception.InnerException!.Message).Contains("一覧にnullの要素があります");
         }
     }
 

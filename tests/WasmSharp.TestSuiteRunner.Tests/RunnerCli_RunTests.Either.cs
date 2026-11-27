@@ -1,12 +1,42 @@
 using System.Text.Json;
 using TUnit.Assertions.Enums;
 using WasmSharp.TestSuiteRunner.Corpus;
+using WasmSharp.TestSuiteRunner.Reports;
 using WasmSharp.TestSuiteRunner.Tests.Fixtures;
 
 namespace WasmSharp.TestSuiteRunner.Tests;
 
 internal partial class RunnerCli_RunTests
 {
+    [Test]
+    public async Task Core3のeitherに候補がない_返された値を不一致として空の候補配列とともに保存する()
+    {
+        // Arrange
+        using var fixture = CorpusFixture.Create();
+        fixture.ReplaceScriptA(
+            """
+            {"type":"module","line":1,"filename":"a.0.wasm"},
+            {"type":"assert_return","line":2,"action":{"type":"invoke","field":"f","args":[]},"expected":[{"type":"either","values":[]}]}
+            """,
+            ScriptExecutionFixture.Exports()
+        );
+
+        // Act
+        var (exitCode, cases) = RunAssertions(fixture, WasmSpecVersion.Core3);
+
+        // Assert
+        var assertion = cases[1];
+        var expected = assertion.ExpectedValues.Single();
+        using (Assert.Multiple())
+        {
+            await Assert.That(exitCode).IsEqualTo(1);
+            await Assert.That(assertion.Outcome).IsEqualTo(CaseOutcome.Failed);
+            await Assert.That(assertion.ActualValues.Single().Bits).IsEqualTo("00000007");
+            await Assert.That(expected.Type).IsEqualTo("either");
+            await Assert.That(expected.Values?.Count).IsEqualTo(0);
+        }
+    }
+
     [Test]
     [Arguments((byte)2, "3", "passed")]
     [Arguments((byte)4, "3", "failed")]
